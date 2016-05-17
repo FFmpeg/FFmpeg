@@ -997,52 +997,6 @@ int ff_h264_get_profile(SPS *sps)
     return profile;
 }
 
-int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
-{
-    int ref_count[2], list_count;
-    int num_ref_idx_active_override_flag;
-
-    // set defaults, might be overridden a few lines later
-    ref_count[0] = h->pps.ref_count[0];
-    ref_count[1] = h->pps.ref_count[1];
-
-    if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-        unsigned max[2];
-        max[0] = max[1] = h->picture_structure == PICT_FRAME ? 15 : 31;
-
-        num_ref_idx_active_override_flag = get_bits1(&sl->gb);
-
-        if (num_ref_idx_active_override_flag) {
-            ref_count[0] = get_ue_golomb(&sl->gb) + 1;
-            if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-                ref_count[1] = get_ue_golomb(&sl->gb) + 1;
-            } else
-                // full range is spec-ok in this case, even for frames
-                ref_count[1] = 1;
-        }
-
-        if (ref_count[0]-1 > max[0] || ref_count[1]-1 > max[1]){
-            av_log(h->avctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n", ref_count[0]-1, max[0], ref_count[1]-1, max[1]);
-            sl->ref_count[0] = sl->ref_count[1] = 0;
-            sl->list_count   = 0;
-            return AVERROR_INVALIDDATA;
-        }
-
-        if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
-            list_count = 2;
-        else
-            list_count = 1;
-    } else {
-        list_count   = 0;
-        ref_count[0] = ref_count[1] = 0;
-    }
-
-    sl->ref_count[0] = ref_count[0];
-    sl->ref_count[1] = ref_count[1];
-    sl->list_count   = list_count;
-
-    return 0;
-}
 
 #if FF_API_CAP_VDPAU
 static const uint8_t start_code[] = { 0x00, 0x00, 0x01 };

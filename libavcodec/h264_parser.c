@@ -144,6 +144,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
     H264ParseContext *p = s->priv_data;
     H264Context      *h = &p->h;
     H264SliceContext *sl = &h->slice_ctx[0];
+    int list_count, ref_count[2];
 
     sl->slice_type_nos = s->pict_type & 3;
 
@@ -153,12 +154,13 @@ static int scan_mmco_reset(AVCodecParserContext *s)
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B)
         get_bits1(&sl->gb); // direct_spatial_mv_pred
 
-    if (ff_set_ref_count(h, sl) < 0)
+    if (ff_h264_parse_ref_count(&list_count, ref_count, &sl->gb, &h->pps,
+                                sl->slice_type_nos, h->picture_structure, h->avctx) < 0)
         return AVERROR_INVALIDDATA;
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         int list;
-        for (list = 0; list < sl->list_count; list++) {
+        for (list = 0; list < list_count; list++) {
             if (get_bits1(&sl->gb)) {
                 int index;
                 for (index = 0; ; index++) {
@@ -174,7 +176,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
                     } else
                         break;
 
-                    if (index >= sl->ref_count[list]) {
+                    if (index >= ref_count[list]) {
                         av_log(h->avctx, AV_LOG_ERROR,
                                "reference count %d overflow\n", index);
                         return AVERROR_INVALIDDATA;
@@ -186,7 +188,7 @@ static int scan_mmco_reset(AVCodecParserContext *s)
 
     if ((h->pps.weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||
         (h->pps.weighted_bipred_idc == 1 && sl->slice_type_nos == AV_PICTURE_TYPE_B))
-        ff_h264_pred_weight_table(&sl->gb, &h->sps, sl->ref_count, sl->slice_type_nos,
+        ff_h264_pred_weight_table(&sl->gb, &h->sps, ref_count, sl->slice_type_nos,
                                   &sl->pwt);
 
     if (get_bits1(&sl->gb)) { // adaptive_ref_pic_marking_mode_flag
