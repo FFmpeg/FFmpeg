@@ -1167,6 +1167,13 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
         release_unused_pictures(h, 0);
     }
 
+    ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
+                     h->ps.sps, &h->poc, h->picture_structure, nal->ref_idc);
+
+    memcpy(h->mmco, sl->mmco, sl->nb_mmco * sizeof(*h->mmco));
+    h->nb_mmco = sl->nb_mmco;
+    h->explicit_ref_marking = sl->explicit_ref_marking;
+
     return 0;
 }
 
@@ -1436,15 +1443,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
     if (h->picture_structure == PICT_BOTTOM_FIELD)
         sl->resync_mb_y = sl->mb_y = sl->mb_y + 1;
     assert(sl->mb_y < h->mb_height);
-
-    if (!h->setup_finished) {
-        ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
-                         h->ps.sps, &h->poc, h->picture_structure, nal->ref_idc);
-
-        memcpy(h->mmco, sl->mmco, sl->nb_mmco * sizeof(*h->mmco));
-        h->nb_mmco = sl->nb_mmco;
-        h->explicit_ref_marking = sl->explicit_ref_marking;
-    }
 
     ret = ff_h264_build_ref_list(h, sl);
     if (ret < 0)
