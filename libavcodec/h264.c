@@ -926,8 +926,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
         case NAL_SPS_EXT:
         case NAL_AUXILIARY_SLICE:
             break;
-        case NAL_FF_IGNORE:
-            break;
         default:
             av_log(avctx, AV_LOG_DEBUG, "Unknown NAL code: %d (%d bits)\n",
                    nal->type, nal->size_bits);
