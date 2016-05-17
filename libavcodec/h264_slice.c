@@ -377,6 +377,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->coded_picture_number = h1->coded_picture_number;
     h->first_field          = h1->first_field;
     h->picture_structure    = h1->picture_structure;
+    h->mb_aff_frame         = h1->mb_aff_frame;
     h->droppable            = h1->droppable;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
@@ -500,6 +501,8 @@ static int h264_frame_start(H264Context *h)
     h->next_output_pic = NULL;
 
     h->postpone_filter = 0;
+
+    h->mb_aff_frame = h->ps.sps->mb_aff && (h->picture_structure == PICT_FRAME);
 
     assert(h->cur_pic_ptr->long_ref == 0);
 
@@ -1173,7 +1176,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     unsigned int slice_type, tmp, i;
     int field_pic_flag, bottom_field_flag;
     int frame_num, droppable, picture_structure;
-    int mb_aff_frame = 0;
 
     sl->first_mb_addr = get_ue_golomb(&sl->gb);
 
@@ -1236,11 +1238,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
             picture_structure = PICT_TOP_FIELD + bottom_field_flag;
         } else {
             picture_structure = PICT_FRAME;
-            mb_aff_frame      = sps->mb_aff;
         }
-    }
-    if (!h->setup_finished) {
-        h->mb_aff_frame      = mb_aff_frame;
     }
     sl->picture_structure      = picture_structure;
     sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
