@@ -451,6 +451,8 @@ typedef struct H264SliceContext {
     int poc_lsb;
     int delta_poc_bottom;
     int delta_poc[2];
+    int curr_pic_num;
+    int max_pic_num;
 } H264SliceContext;
 
 /**
@@ -564,16 +566,6 @@ typedef struct H264Context {
     uint16_t *slice_table_base;
 
     H264POCContext poc;
-
-    /**
-     * frame_num for frames or 2 * frame_num + 1 for field pics.
-     */
-    int curr_pic_num;
-
-    /**
-     * max_frame_num or 2 * max_frame_num for field pics.
-     */
-    int max_pic_num;
 
     H264Picture *short_ref[32];
     H264Picture *long_ref[32];

@@ -405,9 +405,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     memcpy(&h->poc,        &h1->poc,        sizeof(h->poc));
 
-    h->curr_pic_num      = h1->curr_pic_num;
-    h->max_pic_num       = h1->max_pic_num;
-
     memcpy(h->short_ref,   h1->short_ref,   sizeof(h->short_ref));
     memcpy(h->long_ref,    h1->long_ref,    sizeof(h->long_ref));
     memcpy(h->delayed_pic, h1->delayed_pic, sizeof(h->delayed_pic));
@@ -1173,7 +1170,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
     return 0;
 }
 
-static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
+static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
                                    const H2645NAL *nal)
 {
     const SPS *sps;
@@ -1248,11 +1245,11 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
 
     if (picture_structure == PICT_FRAME) {
-        h->curr_pic_num = sl->frame_num;
-        h->max_pic_num  = 1 << sps->log2_max_frame_num;
+        sl->curr_pic_num = sl->frame_num;
+        sl->max_pic_num  = 1 << sps->log2_max_frame_num;
     } else {
-        h->curr_pic_num = 2 * sl->frame_num + 1;
-        h->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
+        sl->curr_pic_num = 2 * sl->frame_num + 1;
+        sl->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
     }
 
     if (nal->type == NAL_IDR_SLICE)
