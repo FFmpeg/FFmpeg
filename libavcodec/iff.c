@@ -52,6 +52,7 @@ typedef struct IffContext {
     uint32_t *mask_palbuf;  ///< masking palette table
     unsigned  compression;  ///< delta compression method used
     unsigned  is_short;     ///< short compression method used
+    unsigned  is_interlaced;///< video is interlaced
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
@@ -221,12 +222,15 @@ static int extract_header(AVCodecContext *const avctx,
             if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
                 bytestream2_skip(gb, data_size + (data_size & 1));
             } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
+                unsigned extra;
                 if (data_size < 40)
                     return AVERROR_INVALIDDATA;
 
                 s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
                 bytestream2_skip(gb, 19);
-                s->is_short = !(bytestream2_get_be32(gb) & 1);
+                extra = bytestream2_get_be32(gb);
+                s->is_short = !(extra & 1);
+                s->is_interlaced = !!(extra & 0x40);
                 data_size -= 24;
                 bytestream2_skip(gb, data_size + (data_size & 1));
             } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
@@ -1213,6 +1217,116 @@ static void decode_long_vertical_delta2(uint8_t *dst,
     }
 }
 
+static void decode_delta_d(uint8_t *dst,
+                           const uint8_t *buf, const uint8_t *buf_end,
+                           int w, int flag, int bpp, int dst_size)
+{
+    int planepitch = FFALIGN(w, 16) >> 3;
+    int pitch = planepitch * bpp;
+    int planepitch_byte = (w + 7) / 8;
+    unsigned entries, ofssrc;
+    GetByteContext gb, ptrs;
+    PutByteContext pb;
+    int k;
+
+    if (buf_end - buf <= 4 * bpp)
+        return;
+
+    bytestream2_init_writer(&pb, dst, dst_size);
+    bytestream2_init(&ptrs, buf, bpp * 4);
+
+    for (k = 0; k < bpp; k++) {
+        ofssrc = bytestream2_get_be32(&ptrs);
+
+        if (!ofssrc)
+            continue;
+
+        if (ofssrc >= buf_end - buf)
+            continue;
+
+        bytestream2_init(&gb, buf + ofssrc, buf_end - (buf + ofssrc));
+
+        entries = bytestream2_get_be32(&gb);
+        while (entries) {
+            int32_t opcode  = bytestream2_get_be32(&gb);
+            unsigned offset = bytestream2_get_be32(&gb);
+
+            bytestream2_seek_p(&pb, (offset / planepitch_byte) * pitch + (offset % planepitch_byte) + k * planepitch, SEEK_SET);
+            if (opcode >= 0) {
+                uint32_t x = bytestream2_get_be32(&gb);
+                while (opcode && bytestream2_get_bytes_left_p(&pb) > 0) {
+                    bytestream2_put_be32(&pb, x);
+                    bytestream2_skip_p(&pb, pitch - 4);
+                    opcode--;
+                }
+            } else {
+                opcode = -opcode;
+                while (opcode && bytestream2_get_bytes_left(&gb) > 0) {
+                    bytestream2_put_be32(&pb, bytestream2_get_be32(&gb));
+                    bytestream2_skip_p(&pb, pitch - 4);
+                    opcode--;
+                }
+            }
+            entries--;
+        }
+    }
+}
+
+static void decode_delta_e(uint8_t *dst,
+                           const uint8_t *buf, const uint8_t *buf_end,
+                           int w, int flag, int bpp, int dst_size)
+{
+    int planepitch = FFALIGN(w, 16) >> 3;
+    int pitch = planepitch * bpp;
+    int planepitch_byte = (w + 7) / 8;
+    unsigned entries, ofssrc;
+    GetByteContext gb, ptrs;
+    PutByteContext pb;
+    int k;
+
+    if (buf_end - buf <= 4 * bpp)
+        return;
+
+    bytestream2_init_writer(&pb, dst, dst_size);
+    bytestream2_init(&ptrs, buf, bpp * 4);
+
+    for (k = 0; k < bpp; k++) {
+        ofssrc = bytestream2_get_be32(&ptrs);
+
+        if (!ofssrc)
+            continue;
+
+        if (ofssrc >= buf_end - buf)
+            continue;
+
+        bytestream2_init(&gb, buf + ofssrc, buf_end - (buf + ofssrc));
+
+        entries = bytestream2_get_be16(&gb);
+        while (entries) {
+            int16_t opcode  = bytestream2_get_be16(&gb);
+            unsigned offset = bytestream2_get_be32(&gb);
+
+            bytestream2_seek_p(&pb, (offset / planepitch_byte) * pitch + (offset % planepitch_byte) + k * planepitch, SEEK_SET);
+            if (opcode >= 0) {
+                uint16_t x = bytestream2_get_be16(&gb);
+                while (opcode && bytestream2_get_bytes_left_p(&pb) > 0) {
+                    bytestream2_put_be16(&pb, x);
+                    bytestream2_skip_p(&pb, pitch - 2);
+                    opcode--;
+                }
+            } else {
+                opcode = -opcode;
+                while (opcode && bytestream2_get_bytes_left(&gb) > 0) {
+                    bytestream2_put_be16(&pb, bytestream2_get_be16(&gb));
+                    bytestream2_skip_p(&pb, pitch - 2);
+                    opcode--;
+                }
+            }
+            entries--;
+        }
+    }
+}
+
 static void decode_delta_l(uint8_t *dst,
                            const uint8_t *buf, const uint8_t *buf_end,
                            int w, int flag, int bpp, int dst_size)
@@ -1279,7 +1393,7 @@ static void decode_delta_l(uint8_t *dst,
 static int unsupported(AVCodecContext *avctx)
 {
     IffContext *s = avctx->priv_data;
-    avpriv_request_sample(avctx, "bitmap (compression 0x%0x, bpp %i, ham %i)", s->compression, s->bpp, s->ham);
+    avpriv_request_sample(avctx, "bitmap (compression 0x%0x, bpp %i, ham %i, interlaced %i)", s->compression, s->bpp, s->ham, s->is_interlaced);
     return AVERROR_INVALIDDATA;
 }
 
@@ -1532,6 +1646,18 @@ static int decode_frame(AVCodecContext *avctx,
     case 0x4a00:
     case 0x4a01:
         decode_delta_j(s->video[0], buf, buf_end, avctx->width, avctx->height, s->bpp, s->video_size);
+        break;
+    case 0x6400:
+    case 0x6401:
+        if (s->is_interlaced)
+            return unsupported(avctx);
+        decode_delta_d(s->video[0], buf, buf_end, avctx->width, s->is_interlaced, s->bpp, s->video_size);
+        break;
+    case 0x6500:
+    case 0x6501:
+        if (s->is_interlaced)
+            return unsupported(avctx);
+        decode_delta_e(s->video[0], buf, buf_end, avctx->width, s->is_interlaced, s->bpp, s->video_size);
         break;
     case 0x6c00:
     case 0x6c01:
