@@ -115,23 +115,22 @@ static av_cold void h264_pred_init_mmi(H264PredContext *h, int codec_id,
         h->pred8x8l [TOP_DC_PRED            ] = ff_pred8x8l_top_dc_8_mmi;
         h->pred8x8l [DC_PRED                ] = ff_pred8x8l_dc_8_mmi;
 
+#if ARCH_MIPS64
         switch (codec_id) {
         case AV_CODEC_ID_SVQ3:
             h->pred16x16[PLANE_PRED8x8      ] = ff_pred16x16_plane_svq3_8_mmi;
-            ;
             break;
         case AV_CODEC_ID_RV40:
             h->pred16x16[PLANE_PRED8x8      ] = ff_pred16x16_plane_rv40_8_mmi;
-            ;
             break;
         case AV_CODEC_ID_VP7:
         case AV_CODEC_ID_VP8:
-            ;
             break;
         default:
             h->pred16x16[PLANE_PRED8x8      ] = ff_pred16x16_plane_h264_8_mmi;
             break;
         }
+#endif
 
         if (codec_id == AV_CODEC_ID_SVQ3 || codec_id == AV_CODEC_ID_H264) {
             if (chroma_format_idc == 1) {
