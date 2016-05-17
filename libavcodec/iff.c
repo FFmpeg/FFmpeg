@@ -1366,9 +1366,9 @@ static int decode_frame(AVCodecContext *avctx,
             }
         } else if (avctx->codec_tag == MKTAG('I', 'L', 'B', 'M') || // interleaved
                    avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
+            if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))
+                memcpy(s->video[0], buf, FFMIN(buf_end - buf, s->video_size));
             if (avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
-                if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))
-                    memcpy(s->video[0], buf, FFMIN(buf_end - buf, s->video_size));
                 for (y = 0; y < avctx->height; y++) {
                     uint8_t *row = &frame->data[0][y * frame->linesize[0]];
                     memset(row, 0, avctx->width);
