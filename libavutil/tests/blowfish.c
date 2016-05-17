@@ -174,13 +174,13 @@ int main(void)
         av_blowfish_crypt_ecb(&ctx, &tmptext_l[i], &tmptext_r[i], 0);
         if (tmptext_l[i] != ciphertext_l[i] || tmptext_r[i] != ciphertext_r[i]) {
             printf("Test encryption failed.\n");
-            return 1;
+            return 2;
         }
 
         av_blowfish_crypt_ecb(&ctx, &tmptext_l[i], &tmptext_r[i], 1);
         if (tmptext_l[i] != plaintext_l[i] || tmptext_r[i] != plaintext_r[i]) {
             printf("Test decryption failed.\n");
-            return 1;
+            return 3;
         }
     }
     printf("Test encryption/decryption success.\n");
