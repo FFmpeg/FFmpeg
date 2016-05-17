@@ -1037,14 +1037,9 @@ int ff_set_ref_count(H264Context *h, H264SliceContext *sl)
         ref_count[0] = ref_count[1] = 0;
     }
 
-    if (list_count   != sl->list_count   ||
-        ref_count[0] != sl->ref_count[0] ||
-        ref_count[1] != sl->ref_count[1]) {
-        sl->ref_count[0] = ref_count[0];
-        sl->ref_count[1] = ref_count[1];
-        sl->list_count   = list_count;
-        return 1;
-    }
+    sl->ref_count[0] = ref_count[0];
+    sl->ref_count[1] = ref_count[1];
+    sl->list_count   = list_count;
 
     return 0;
 }
