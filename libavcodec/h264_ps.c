@@ -431,8 +431,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     sps->ref_frame_count = get_ue_golomb_31(gb);
-    if (sps->ref_frame_count > H264_MAX_PICTURE_COUNT - 2 ||
-        sps->ref_frame_count >= 32U) {
+    if (sps->ref_frame_count > MAX_DELAYED_PIC_COUNT) {
         av_log(avctx, AV_LOG_ERROR,
                "too many reference frames %d\n", sps->ref_frame_count);
         goto fail;
