@@ -26,8 +26,10 @@
 
 static av_cold int m101_decode_init(AVCodecContext *avctx)
 {
-    if (avctx->extradata_size < 6*4)
+    if (avctx->extradata_size < 6*4) {
+        avpriv_request_sample(avctx, "Missing or too small extradata (size %d)\n", avctx->extradata_size);
         return AVERROR_INVALIDDATA;
+    }
 
     if (avctx->extradata[2*4] == 10)
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
