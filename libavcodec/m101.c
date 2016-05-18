@@ -31,9 +31,12 @@ static av_cold int m101_decode_init(AVCodecContext *avctx)
 
     if (avctx->extradata[2*4] == 10)
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
-    else
+    else if (avctx->extradata[2*4] == 8) {
         avctx->pix_fmt = AV_PIX_FMT_YUYV422;
-
+    } else {
+        avpriv_request_sample(avctx, "BPS %d\n", avctx->extradata[2*4]);
+        return AVERROR_INVALIDDATA;
+    }
 
     return 0;
 }
