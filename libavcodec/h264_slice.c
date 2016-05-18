@@ -40,6 +40,7 @@
 #include "h264data.h"
 #include "h264chroma.h"
 #include "h264_mvpred.h"
+#include "h264_ps.h"
 #include "golomb.h"
 #include "mathops.h"
 #include "mpegutils.h"
