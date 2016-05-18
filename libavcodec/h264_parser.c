@@ -83,14 +83,14 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
                 state >>= 1;           // 2->1, 1->0, 0->0
         } else if (state <= 5) {
             int nalu_type = buf[i] & 0x1F;
-            if (nalu_type == NAL_SEI || nalu_type == NAL_SPS ||
-                nalu_type == NAL_PPS || nalu_type == NAL_AUD) {
+            if (nalu_type == H264_NAL_SEI || nalu_type == H264_NAL_SPS ||
+                nalu_type == H264_NAL_PPS || nalu_type == H264_NAL_AUD) {
                 if (pc->frame_start_found) {
                     i++;
                     goto found;
                 }
-            } else if (nalu_type == NAL_SLICE || nalu_type == NAL_DPA ||
-                       nalu_type == NAL_IDR_SLICE) {
+            } else if (nalu_type == H264_NAL_SLICE || nalu_type == H264_NAL_DPA ||
+                       nalu_type == H264_NAL_IDR_SLICE) {
                 if (pc->frame_start_found) {
                     state += 8;
                     continue;
@@ -234,10 +234,10 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         --buf;
         src_length = buf_end - buf;
         switch (state & 0x1f) {
-        case NAL_SLICE:
-        case NAL_IDR_SLICE:
+        case H264_NAL_SLICE:
+        case H264_NAL_IDR_SLICE:
             // Do not walk the whole buffer just to decode slice header
-            if ((state & 0x1f) == NAL_IDR_SLICE || ((state >> 5) & 0x3) == 0) {
+            if ((state & 0x1f) == H264_NAL_IDR_SLICE || ((state >> 5) & 0x3) == 0) {
                 /* IDR or disposable slice
                  * No need to decode many bytes because MMCOs shall not be present. */
                 if (src_length > 60)
@@ -262,17 +262,17 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         nal.type    = get_bits(&nal.gb, 5);
 
         switch (nal.type) {
-        case NAL_SPS:
+        case H264_NAL_SPS:
             ff_h264_decode_seq_parameter_set(&nal.gb, avctx, &p->ps);
             break;
-        case NAL_PPS:
+        case H264_NAL_PPS:
             ff_h264_decode_picture_parameter_set(&nal.gb, avctx, &p->ps,
                                                  nal.size_bits);
             break;
-        case NAL_SEI:
+        case H264_NAL_SEI:
             ff_h264_sei_decode(&p->sei, &nal.gb, &p->ps, avctx);
             break;
-        case NAL_IDR_SLICE:
+        case H264_NAL_IDR_SLICE:
             s->key_frame = 1;
 
             p->poc.prev_frame_num        = 0;
@@ -280,7 +280,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             p->poc.prev_poc_msb          =
             p->poc.prev_poc_lsb          = 0;
         /* fall through */
-        case NAL_SLICE:
+        case H264_NAL_SLICE:
             get_ue_golomb(&nal.gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&nal.gb);
             s->pict_type = ff_h264_golomb_to_pict_type[slice_type % 5];
@@ -353,7 +353,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 }
             }
 
-            if (nal.type == NAL_IDR_SLICE)
+            if (nal.type == H264_NAL_IDR_SLICE)
                 get_ue_golomb(&nal.gb); /* idr_pic_id */
             if (sps->poc_type == 0) {
                 p->poc.poc_lsb = get_bits(&nal.gb, sps->log2_max_poc_lsb);
@@ -382,7 +382,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
              * FIXME: MMCO_RESET could appear in non-first slice.
              *        Maybe, we should parse all undisposable non-IDR slice of this
              *        picture until encountering MMCO_RESET in a slice of it. */
-            if (nal.ref_idc && nal.type != NAL_IDR_SLICE) {
+            if (nal.ref_idc && nal.type != H264_NAL_IDR_SLICE) {
                 got_reset = scan_mmco_reset(s, &nal.gb, avctx);
                 if (got_reset < 0)
                     goto fail;
