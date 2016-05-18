@@ -53,6 +53,7 @@ typedef struct IffContext {
     unsigned  compression;  ///< delta compression method used
     unsigned  is_short;     ///< short compression method used
     unsigned  is_interlaced;///< video is interlaced
+    unsigned  is_brush;     ///< video is in ANBR format
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
@@ -230,6 +231,7 @@ static int extract_header(AVCodecContext *const avctx,
                 bytestream2_skip(gb, 19);
                 extra = bytestream2_get_be32(gb);
                 s->is_short = !(extra & 1);
+                s->is_brush = extra == 2;
                 s->is_interlaced = !!(extra & 0x40);
                 data_size -= 24;
                 bytestream2_skip(gb, data_size + (data_size & 1));
@@ -763,7 +765,7 @@ static void decode_short_horizontal_delta(uint8_t *dst,
 
 static void decode_byte_vertical_delta(uint8_t *dst,
                                        const uint8_t *buf, const uint8_t *buf_end,
-                                       int w, int bpp, int dst_size)
+                                       int w, int xor, int bpp, int dst_size)
 {
     int ncolumns = ((w + 15) / 16) * 2;
     int dstpitch = ncolumns * bpp;
@@ -798,7 +800,11 @@ static void decode_byte_vertical_delta(uint8_t *dst,
 
                     while (opcode) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
-                        bytestream2_put_byte(&pb, x);
+                        if (xor && ofsdst < dst_size) {
+                            bytestream2_put_byte(&pb, dst[ofsdst] ^ x);
+                        } else {
+                            bytestream2_put_byte(&pb, x);
+                        }
                         ofsdst += dstpitch;
                         opcode--;
                     }
@@ -809,7 +815,11 @@ static void decode_byte_vertical_delta(uint8_t *dst,
 
                     while (opcode) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
-                        bytestream2_put_byte(&pb, bytestream2_get_byte(&gb));
+                        if (xor && ofsdst < dst_size) {
+                            bytestream2_put_byte(&pb, dst[ofsdst] ^ bytestream2_get_byte(&gb));
+                        } else {
+                            bytestream2_put_byte(&pb, bytestream2_get_byte(&gb));
+                        }
                         ofsdst += dstpitch;
                         opcode--;
                     }
@@ -1627,7 +1637,7 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 0x500:
     case 0x501:
-        decode_byte_vertical_delta(s->video[0], buf, buf_end, avctx->width, s->bpp, s->video_size);
+        decode_byte_vertical_delta(s->video[0], buf, buf_end, avctx->width, s->is_brush, s->bpp, s->video_size);
         break;
     case 0x700:
     case 0x701:
@@ -1719,8 +1729,10 @@ static int decode_frame(AVCodecContext *avctx,
             return unsupported(avctx);
         }
 
-        FFSWAP(uint8_t *, s->video[0], s->video[1]);
-        FFSWAP(uint32_t *, s->pal[0], s->pal[1]);
+        if (!s->is_brush) {
+            FFSWAP(uint8_t *, s->video[0], s->video[1]);
+            FFSWAP(uint32_t *, s->pal[0], s->pal[1]);
+        }
     }
 
     if (avpkt->flags & AV_PKT_FLAG_KEY) {
