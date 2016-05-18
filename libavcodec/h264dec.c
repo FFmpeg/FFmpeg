@@ -371,11 +371,9 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
-    if (avctx->codec_id == AV_CODEC_ID_H264) {
-        if (avctx->ticks_per_frame == 1)
-            h->avctx->framerate.num *= 2;
-        avctx->ticks_per_frame = 2;
-    }
+    if (avctx->ticks_per_frame == 1)
+        h->avctx->framerate.num *= 2;
+    avctx->ticks_per_frame = 2;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
        ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
