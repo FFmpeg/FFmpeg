@@ -217,6 +217,7 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     return 0;
 }
 
+// 3GPP TS 26.244
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
