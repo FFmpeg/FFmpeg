@@ -25,7 +25,7 @@
 #include <CoreFoundation/CFString.h>
 
 #include "libavutil/avutil.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "internal.h"
 #include "vda.h"
 #include "vda_internal.h"

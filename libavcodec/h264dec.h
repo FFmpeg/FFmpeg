@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef AVCODEC_H264_H
-#define AVCODEC_H264_H
+#ifndef AVCODEC_H264DEC_H
+#define AVCODEC_H264DEC_H
 
 #include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
@@ -935,4 +935,4 @@ void ff_h264_flush_change(H264Context *h);
 
 void ff_h264_free_tables(H264Context *h);
 
-#endif /* AVCODEC_H264_H */
+#endif /* AVCODEC_H264DEC_H */

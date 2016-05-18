@@ -30,7 +30,7 @@
 
 #include "internal.h"
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "mpegutils.h"
 
 #include <assert.h>

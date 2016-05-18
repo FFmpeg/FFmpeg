@@ -31,7 +31,7 @@
 #include "libavutil/avutil.h"
 
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264data.h"
 
 const uint8_t ff_h264_golomb_to_pict_type[5] = {

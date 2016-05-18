@@ -25,7 +25,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264_sei.h"
 #include "internal.h"
 #include "vaapi_encode.h"

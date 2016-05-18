@@ -21,7 +21,7 @@
  */
 
 #include "vaapi_internal.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "mpegutils.h"
 
 /**
