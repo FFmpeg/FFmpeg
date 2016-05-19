@@ -4766,8 +4766,7 @@ enabled vdpau &&
     disable vdpau
 
 enabled vdpau && enabled xlib &&
-    check_func_headers "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
-    prepend avconv_libs $($ldflags_filter "-lvdpau") &&
+    check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     enable vdpau_x11
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
