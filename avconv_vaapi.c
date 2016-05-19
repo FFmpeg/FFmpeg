@@ -523,102 +523,14 @@ fail:
 
 static AVClass *vaapi_log = &vaapi_class;
 
-static av_cold void vaapi_device_uninit(AVHWDeviceContext *hwdev)
-{
-    AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
-    av_log(&vaapi_log, AV_LOG_VERBOSE, "Terminating VAAPI connection.\n");
-    vaTerminate(hwctx->display);
-}
-
 av_cold int vaapi_device_init(const char *device)
 {
-    AVHWDeviceContext    *hwdev;
-    AVVAAPIDeviceContext *hwctx;
-    VADisplay display;
-    VAStatus vas;
-    int major, minor, err;
+    int err;
 
-    display = 0;
-
-#if HAVE_VAAPI_X11
-    if (!display) {
-        Display *x11_display;
-
-        // Try to open the device as an X11 display.
-        x11_display = XOpenDisplay(device);
-        if (!x11_display) {
-            av_log(&vaapi_log, AV_LOG_WARNING, "Cannot open X11 display "
-                   "%s.\n", XDisplayName(device));
-        } else {
-            display = vaGetDisplay(x11_display);
-            if (!display) {
-                av_log(&vaapi_log, AV_LOG_WARNING, "Cannot open a VA display "
-                       "from X11 display %s.\n", XDisplayName(device));
-                XCloseDisplay(x11_display);
-            } else {
-                av_log(&vaapi_log, AV_LOG_VERBOSE, "Opened VA display via "
-                       "X11 display %s.\n", XDisplayName(device));
-            }
-        }
-    }
-#endif
-
-#if HAVE_VAAPI_DRM
-    if (!display && device) {
-        int drm_fd;
-
-        // Try to open the device as a DRM path.
-        drm_fd = open(device, O_RDWR);
-        if (drm_fd < 0) {
-            av_log(&vaapi_log, AV_LOG_WARNING, "Cannot open DRM device %s.\n",
-                   device);
-        } else {
-            display = vaGetDisplayDRM(drm_fd);
-            if (!display) {
-                av_log(&vaapi_log, AV_LOG_WARNING, "Cannot open a VA display "
-                       "from DRM device %s.\n", device);
-                close(drm_fd);
-            } else {
-                av_log(&vaapi_log, AV_LOG_VERBOSE, "Opened VA display via "
-                       "DRM device %s.\n", device);
-            }
-        }
-    }
-#endif
-
-    if (!display) {
-        av_log(&vaapi_log, AV_LOG_ERROR, "No VA display found for "
-               "device %s.\n", device);
-        return AVERROR(EINVAL);
-    }
-
-    vas = vaInitialize(display, &major, &minor);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(&vaapi_log, AV_LOG_ERROR, "Failed to initialise VAAPI "
-               "connection: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EIO);
-    }
-    av_log(&vaapi_log, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
-           "version %d.%d\n", major, minor);
-
-    hw_device_ctx = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_VAAPI);
-    if (!hw_device_ctx) {
-        av_log(&vaapi_log, AV_LOG_ERROR, "Failed to create VAAPI "
-               "hardware context.\n");
-        vaTerminate(display);
-        return AVERROR(ENOMEM);
-    }
-
-    hwdev = (AVHWDeviceContext*)hw_device_ctx->data;
-    hwdev->free = &vaapi_device_uninit;
-
-    hwctx = hwdev->hwctx;
-    hwctx->display = display;
-
-    err = av_hwdevice_ctx_init(hw_device_ctx);
+    err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
+                                 device, NULL, 0);
     if (err < 0) {
-        av_log(&vaapi_log, AV_LOG_ERROR, "Failed to initialise VAAPI "
-               "hardware context: %d\n", err);
+        av_log(&vaapi_log, AV_LOG_ERROR, "Failed to create a VAAPI device\n");
         return err;
     }
 
