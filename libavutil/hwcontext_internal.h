@@ -64,6 +64,9 @@ typedef struct HWContextType {
      */
     size_t             frames_priv_size;
 
+    int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
+                                      AVDictionary *opts, int flags);
+
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);
 
