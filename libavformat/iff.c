@@ -66,6 +66,7 @@
 #define ID_ANIM       MKTAG('A','N','I','M')
 #define ID_ANHD       MKTAG('A','N','H','D')
 #define ID_DLTA       MKTAG('D','L','T','A')
+#define ID_DPAN       MKTAG('D','P','A','N')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -554,6 +555,11 @@ static int iff_read_header(AVFormatContext *s)
             break;
 
         case ID_ANHD:
+            break;
+
+        case ID_DPAN:
+            avio_skip(pb, 2);
+            st->duration = avio_rb16(pb);
             break;
 
         case ID_DPEL:
