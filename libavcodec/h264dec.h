@@ -366,6 +366,11 @@ typedef struct H264Context {
      */
     int postpone_filter;
 
+    /*
+     * Set to 1 when the current picture is IDR, 0 otherwise.
+     */
+    int picture_idr;
+
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
 

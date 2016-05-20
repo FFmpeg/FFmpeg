@@ -1333,6 +1333,8 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
     h->nb_mmco = sl->nb_mmco;
     h->explicit_ref_marking = sl->explicit_ref_marking;
 
+    h->picture_idr = nal->type == H264_NAL_IDR_SLICE;
+
     /* Set the frame properties/side data. Only done for the second field in
      * field coded frames, since some SEI information is present for each field
      * and is merged by the SEI parsing code. */
@@ -1597,6 +1599,11 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                    h->current_slice + 1);
             return AVERROR_INVALIDDATA;
         }
+    }
+
+    if (h->picture_idr && nal->type != H264_NAL_IDR_SLICE) {
+        av_log(h->avctx, AV_LOG_ERROR, "Invalid mix of IDR and non-IDR slices\n");
+        return AVERROR_INVALIDDATA;
     }
 
     assert(h->mb_num == h->mb_width * h->mb_height);
