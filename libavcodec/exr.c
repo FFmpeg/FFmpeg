@@ -1025,7 +1025,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
-        uncompressed_size = s->current_channel_offset * td->ysize * td->xsize;
+        uncompressed_size = s->current_channel_offset * (uint64_t)td->ysize * td->xsize;
 
         if (col) { /* not the first tile of the line */
             bxmin = 0; axmax = 0; /* doesn't add pixel at the left of the datawindow */

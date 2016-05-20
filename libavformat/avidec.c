@@ -1699,6 +1699,8 @@ static int guess_ni_flag(AVFormatContext *s)
             size = avio_rl32(s->pb);
             if (get_stream_idx(tag) == i && pos + size > st->index_entries[1].pos)
                 last_start = INT64_MAX;
+            if (get_stream_idx(tag) == i && size == st->index_entries[0].size + 8)
+                last_start = INT64_MAX;
         }
 
         if (st->index_entries[0].pos > last_start)

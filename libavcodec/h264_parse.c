@@ -186,3 +186,56 @@ int ff_h264_check_intra_pred_mode(void *logctx, int top_samples_available,
 
     return mode;
 }
+
+int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
+                            GetBitContext *gb, const PPS *pps,
+                            int slice_type_nos, int picture_structure, void *logctx)
+{
+    int list_count;
+    int num_ref_idx_active_override_flag;
+
+    // set defaults, might be overridden a few lines later
+    ref_count[0] = pps->ref_count[0];
+    ref_count[1] = pps->ref_count[1];
+
+    if (slice_type_nos != AV_PICTURE_TYPE_I) {
+        unsigned max[2];
+        max[0] = max[1] = picture_structure == PICT_FRAME ? 15 : 31;
+
+        num_ref_idx_active_override_flag = get_bits1(gb);
+
+        if (num_ref_idx_active_override_flag) {
+            ref_count[0] = get_ue_golomb(gb) + 1;
+            if (slice_type_nos == AV_PICTURE_TYPE_B) {
+                ref_count[1] = get_ue_golomb(gb) + 1;
+            } else
+                // full range is spec-ok in this case, even for frames
+                ref_count[1] = 1;
+        }
+
+        if (ref_count[0] - 1 > max[0] || ref_count[1] - 1 > max[1]) {
+            av_log(logctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n",
+                   ref_count[0] - 1, max[0], ref_count[1] - 1, max[1]);
+            ref_count[0] = ref_count[1] = 0;
+            *plist_count = 0;
+            goto fail;
+        }
+
+        if (slice_type_nos == AV_PICTURE_TYPE_B)
+            list_count = 2;
+        else
+            list_count = 1;
+    } else {
+        list_count   = 0;
+        ref_count[0] = ref_count[1] = 0;
+    }
+
+    *plist_count = list_count;
+
+    return 0;
+fail:
+    *plist_count = 0;
+    ref_count[0] = 0;
+    ref_count[1] = 0;
+    return AVERROR_INVALIDDATA;
+}

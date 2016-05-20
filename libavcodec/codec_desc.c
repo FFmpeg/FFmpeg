@@ -887,7 +887,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_IFF_ILBM,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "iff_ilbm",
-        .long_name = NULL_IF_CONFIG_SMALL("IFF ILBM"),
+        .long_name = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
@@ -2682,6 +2682,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "xma2",
         .long_name = NULL_IF_CONFIG_SMALL("Xbox Media Audio 2"),
         .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_DST,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "dst",
+        .long_name = NULL_IF_CONFIG_SMALL("DST (Direct Stream Transfer)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
     },
 
     /* subtitle codecs */

@@ -728,7 +728,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_ERROR, "Cannot connect video filter to audio input\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     if (!fr.num)
@@ -737,7 +738,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = sub2video_prepare(ist);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     sar = ist->st->sample_aspect_ratio.num ?
@@ -761,11 +762,11 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
                                             args.str, NULL, fg->graph)) < 0)
-        return ret;
+        goto fail;
     par->hw_frames_ctx = ist->hw_frames_ctx;
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     if (ret < 0)
-        return ret;
+        goto fail;
     av_freep(&par);
     last_filter = ifilter->filter;
 
@@ -840,6 +841,10 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if ((ret = avfilter_link(last_filter, 0, in->filter_ctx, in->pad_idx)) < 0)
         return ret;
     return 0;
+fail:
+    av_freep(&par);
+
+    return ret;
 }
 
 static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,

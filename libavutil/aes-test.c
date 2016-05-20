@@ -22,6 +22,7 @@
 #include "aes.h"
 #include "lfg.h"
 #include "log.h"
+#include "mem.h"
 
 int main(int argc, char **argv)
 {
@@ -64,6 +65,7 @@ int main(int argc, char **argv)
             }
         }
     }
+    av_free(b);
 
     if (argc > 1 && !strcmp(argv[1], "-t")) {
         struct AVAES *ae, *ad;
@@ -108,6 +110,8 @@ int main(int argc, char **argv)
                 }
             }
         }
+        av_free(ae);
+        av_free(ad);
     }
     return err;
 }
