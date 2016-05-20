@@ -52,6 +52,8 @@ typedef struct IffContext {
     uint32_t *mask_palbuf;  ///< masking palette table
     unsigned  compression;  ///< delta compression method used
     unsigned  is_short;     ///< short compression method used
+    unsigned  is_interlaced;///< video is interlaced
+    unsigned  is_brush;     ///< video is in ANBR format
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
@@ -63,7 +65,6 @@ typedef struct IffContext {
     uint8_t *video[2];
     unsigned video_size;
     uint32_t *pal[2];
-    int first;
 } IffContext;
 
 #define LUT8_PART(plane, v)                             \
@@ -222,12 +223,16 @@ static int extract_header(AVCodecContext *const avctx,
             if (chunk_id == MKTAG('B', 'M', 'H', 'D')) {
                 bytestream2_skip(gb, data_size + (data_size & 1));
             } else if (chunk_id == MKTAG('A', 'N', 'H', 'D')) {
+                unsigned extra;
                 if (data_size < 40)
                     return AVERROR_INVALIDDATA;
 
                 s->compression = (bytestream2_get_byte(gb) << 8) | (s->compression & 0xFF);
                 bytestream2_skip(gb, 19);
-                s->is_short = !(bytestream2_get_be32(gb) & 1);
+                extra = bytestream2_get_be32(gb);
+                s->is_short = !(extra & 1);
+                s->is_brush = extra == 2;
+                s->is_interlaced = !!(extra & 0x40);
                 data_size -= 24;
                 bytestream2_skip(gb, data_size + (data_size & 1));
             } else if (chunk_id == MKTAG('D', 'L', 'T', 'A') ||
@@ -422,7 +427,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->pal[1] = av_calloc(256, sizeof(*s->pal[1]));
         if (!s->video[0] || !s->video[1] || !s->pal[0] || !s->pal[1])
             return AVERROR(ENOMEM);
-        s->first = 1;
     }
 
     if ((err = extract_header(avctx, NULL)) < 0)
@@ -761,7 +765,7 @@ static void decode_short_horizontal_delta(uint8_t *dst,
 
 static void decode_byte_vertical_delta(uint8_t *dst,
                                        const uint8_t *buf, const uint8_t *buf_end,
-                                       int w, int bpp, int dst_size)
+                                       int w, int xor, int bpp, int dst_size)
 {
     int ncolumns = ((w + 15) / 16) * 2;
     int dstpitch = ncolumns * bpp;
@@ -796,7 +800,11 @@ static void decode_byte_vertical_delta(uint8_t *dst,
 
                     while (opcode) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
-                        bytestream2_put_byte(&pb, x);
+                        if (xor && ofsdst < dst_size) {
+                            bytestream2_put_byte(&pb, dst[ofsdst] ^ x);
+                        } else {
+                            bytestream2_put_byte(&pb, x);
+                        }
                         ofsdst += dstpitch;
                         opcode--;
                     }
@@ -807,7 +815,11 @@ static void decode_byte_vertical_delta(uint8_t *dst,
 
                     while (opcode) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
-                        bytestream2_put_byte(&pb, bytestream2_get_byte(&gb));
+                        if (xor && ofsdst < dst_size) {
+                            bytestream2_put_byte(&pb, dst[ofsdst] ^ bytestream2_get_byte(&gb));
+                        } else {
+                            bytestream2_put_byte(&pb, bytestream2_get_byte(&gb));
+                        }
                         ofsdst += dstpitch;
                         opcode--;
                     }
@@ -823,7 +835,7 @@ static void decode_delta_j(uint8_t *dst,
                            int w, int h, int bpp, int dst_size)
 {
     int32_t pitch;
-    uint8_t *end = dst + dst_size, *ptr;
+    uint8_t *ptr;
     uint32_t type, flag, cols, groups, rows, bytes;
     uint32_t offset;
     int planepitch_byte = (w + 7) / 8;
@@ -850,27 +862,28 @@ static void decode_delta_j(uint8_t *dst,
             for (g = 0; g < groups; g++) {
                 offset = bytestream2_get_be16(&gb);
 
+                if (bytestream2_get_bytes_left(&gb) < 1)
+                    return;
+
                 if (kludge_j)
                     offset = ((offset / (320 / 8)) * pitch) + (offset % (320 / 8)) - kludge_j;
                 else
                     offset = ((offset / planepitch_byte) * pitch) + (offset % planepitch_byte);
 
-                ptr = dst + offset;
-                if (ptr >= end)
-                    return;
-
                 for (b = 0; b < cols; b++) {
                     for (d = 0; d < bpp; d++) {
                         uint8_t value = bytestream2_get_byte(&gb);
+
+                        if (offset >= dst_size)
+                            return;
+                        ptr = dst + offset;
 
                         if (flag)
                             ptr[0] ^= value;
                         else
                             ptr[0]  = value;
 
-                        ptr += planepitch;
-                        if (ptr >= end)
-                            return;
+                        offset += planepitch;
                     }
                 }
                 if ((cols * bpp) & 1)
@@ -893,21 +906,24 @@ static void decode_delta_j(uint8_t *dst,
 
                 for (r = 0; r < rows; r++) {
                     for (d = 0; d < bpp; d++) {
-                        ptr = dst + offset + (r * pitch) + d * planepitch;
-                        if (ptr >= end)
+                        unsigned noffset = offset + (r * pitch) + d * planepitch;
+
+                        if (bytestream2_get_bytes_left(&gb) < 1)
                             return;
 
                         for (b = 0; b < bytes; b++) {
                             uint8_t value = bytestream2_get_byte(&gb);
+
+                            if (noffset >= dst_size)
+                                return;
+                            ptr = dst + noffset;
 
                             if (flag)
                                 ptr[0] ^= value;
                             else
                                 ptr[0]  = value;
 
-                            ptr++;
-                            if (ptr >= end)
-                                return;
+                            noffset++;
                         }
                     }
                 }
@@ -1211,6 +1227,116 @@ static void decode_long_vertical_delta2(uint8_t *dst,
     }
 }
 
+static void decode_delta_d(uint8_t *dst,
+                           const uint8_t *buf, const uint8_t *buf_end,
+                           int w, int flag, int bpp, int dst_size)
+{
+    int planepitch = FFALIGN(w, 16) >> 3;
+    int pitch = planepitch * bpp;
+    int planepitch_byte = (w + 7) / 8;
+    unsigned entries, ofssrc;
+    GetByteContext gb, ptrs;
+    PutByteContext pb;
+    int k;
+
+    if (buf_end - buf <= 4 * bpp)
+        return;
+
+    bytestream2_init_writer(&pb, dst, dst_size);
+    bytestream2_init(&ptrs, buf, bpp * 4);
+
+    for (k = 0; k < bpp; k++) {
+        ofssrc = bytestream2_get_be32(&ptrs);
+
+        if (!ofssrc)
+            continue;
+
+        if (ofssrc >= buf_end - buf)
+            continue;
+
+        bytestream2_init(&gb, buf + ofssrc, buf_end - (buf + ofssrc));
+
+        entries = bytestream2_get_be32(&gb);
+        while (entries && bytestream2_get_bytes_left(&gb) >= 8) {
+            int32_t opcode  = bytestream2_get_be32(&gb);
+            unsigned offset = bytestream2_get_be32(&gb);
+
+            bytestream2_seek_p(&pb, (offset / planepitch_byte) * pitch + (offset % planepitch_byte) + k * planepitch, SEEK_SET);
+            if (opcode >= 0) {
+                uint32_t x = bytestream2_get_be32(&gb);
+                while (opcode && bytestream2_get_bytes_left_p(&pb) > 0) {
+                    bytestream2_put_be32(&pb, x);
+                    bytestream2_skip_p(&pb, pitch - 4);
+                    opcode--;
+                }
+            } else {
+                opcode = -opcode;
+                while (opcode && bytestream2_get_bytes_left(&gb) > 0) {
+                    bytestream2_put_be32(&pb, bytestream2_get_be32(&gb));
+                    bytestream2_skip_p(&pb, pitch - 4);
+                    opcode--;
+                }
+            }
+            entries--;
+        }
+    }
+}
+
+static void decode_delta_e(uint8_t *dst,
+                           const uint8_t *buf, const uint8_t *buf_end,
+                           int w, int flag, int bpp, int dst_size)
+{
+    int planepitch = FFALIGN(w, 16) >> 3;
+    int pitch = planepitch * bpp;
+    int planepitch_byte = (w + 7) / 8;
+    unsigned entries, ofssrc;
+    GetByteContext gb, ptrs;
+    PutByteContext pb;
+    int k;
+
+    if (buf_end - buf <= 4 * bpp)
+        return;
+
+    bytestream2_init_writer(&pb, dst, dst_size);
+    bytestream2_init(&ptrs, buf, bpp * 4);
+
+    for (k = 0; k < bpp; k++) {
+        ofssrc = bytestream2_get_be32(&ptrs);
+
+        if (!ofssrc)
+            continue;
+
+        if (ofssrc >= buf_end - buf)
+            continue;
+
+        bytestream2_init(&gb, buf + ofssrc, buf_end - (buf + ofssrc));
+
+        entries = bytestream2_get_be16(&gb);
+        while (entries && bytestream2_get_bytes_left(&gb) >= 6) {
+            int16_t opcode  = bytestream2_get_be16(&gb);
+            unsigned offset = bytestream2_get_be32(&gb);
+
+            bytestream2_seek_p(&pb, (offset / planepitch_byte) * pitch + (offset % planepitch_byte) + k * planepitch, SEEK_SET);
+            if (opcode >= 0) {
+                uint16_t x = bytestream2_get_be16(&gb);
+                while (opcode && bytestream2_get_bytes_left_p(&pb) > 0) {
+                    bytestream2_put_be16(&pb, x);
+                    bytestream2_skip_p(&pb, pitch - 2);
+                    opcode--;
+                }
+            } else {
+                opcode = -opcode;
+                while (opcode && bytestream2_get_bytes_left(&gb) > 0) {
+                    bytestream2_put_be16(&pb, bytestream2_get_be16(&gb));
+                    bytestream2_skip_p(&pb, pitch - 2);
+                    opcode--;
+                }
+            }
+            entries--;
+        }
+    }
+}
+
 static void decode_delta_l(uint8_t *dst,
                            const uint8_t *buf, const uint8_t *buf_end,
                            int w, int flag, int bpp, int dst_size)
@@ -1248,7 +1374,7 @@ static void decode_delta_l(uint8_t *dst,
         bytestream2_init(&dgb, buf + 2 * poff0, buf_end - (buf + 2 * poff0));
         bytestream2_init(&ogb, buf + 2 * poff1, buf_end - (buf + 2 * poff1));
 
-        while ((bytestream2_peek_be16(&ogb)) != 0xFFFF) {
+        while ((bytestream2_peek_be16(&ogb)) != 0xFFFF && bytestream2_get_bytes_left(&ogb) >= 4) {
             uint32_t offset = bytestream2_get_be16(&ogb);
             int16_t cnt = bytestream2_get_be16(&ogb);
             uint16_t data;
@@ -1277,7 +1403,7 @@ static void decode_delta_l(uint8_t *dst,
 static int unsupported(AVCodecContext *avctx)
 {
     IffContext *s = avctx->priv_data;
-    avpriv_request_sample(avctx, "bitmap (compression 0x%0x, bpp %i, ham %i)", s->compression, s->bpp, s->ham);
+    avpriv_request_sample(avctx, "bitmap (compression 0x%0x, bpp %i, ham %i, interlaced %i)", s->compression, s->bpp, s->ham, s->is_interlaced);
     return AVERROR_INVALIDDATA;
 }
 
@@ -1318,15 +1444,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
     s->init = 1;
 
-    if (s->compression <= 0xff && avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
+    if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
             memcpy(s->pal[0], s->frame->data[1], 256 * 4);
-    }
-
-    if (s->compression > 0xff && s->first) {
-        memcpy(s->video[1], s->video[0], s->video_size);
-        memcpy(s->pal[1], s->pal[0], 256 * 4);
-        s->first = 0;
     }
 
     switch (s->compression) {
@@ -1370,9 +1490,9 @@ static int decode_frame(AVCodecContext *avctx,
             }
         } else if (avctx->codec_tag == MKTAG('I', 'L', 'B', 'M') || // interleaved
                    avctx->codec_tag == MKTAG('A', 'N', 'I', 'M')) {
+            if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))
+                memcpy(s->video[0], buf, FFMIN(buf_end - buf, s->video_size));
             if (avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
-                if (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))
-                    memcpy(s->video[0], buf, FFMIN(buf_end - buf, s->video_size));
                 for (y = 0; y < avctx->height; y++) {
                     uint8_t *row = &frame->data[0][y * frame->linesize[0]];
                     memset(row, 0, avctx->width);
@@ -1517,7 +1637,7 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 0x500:
     case 0x501:
-        decode_byte_vertical_delta(s->video[0], buf, buf_end, avctx->width, s->bpp, s->video_size);
+        decode_byte_vertical_delta(s->video[0], buf, buf_end, avctx->width, s->is_brush, s->bpp, s->video_size);
         break;
     case 0x700:
     case 0x701:
@@ -1537,12 +1657,29 @@ static int decode_frame(AVCodecContext *avctx,
     case 0x4a01:
         decode_delta_j(s->video[0], buf, buf_end, avctx->width, avctx->height, s->bpp, s->video_size);
         break;
+    case 0x6400:
+    case 0x6401:
+        if (s->is_interlaced)
+            return unsupported(avctx);
+        decode_delta_d(s->video[0], buf, buf_end, avctx->width, s->is_interlaced, s->bpp, s->video_size);
+        break;
+    case 0x6500:
+    case 0x6501:
+        if (s->is_interlaced)
+            return unsupported(avctx);
+        decode_delta_e(s->video[0], buf, buf_end, avctx->width, s->is_interlaced, s->bpp, s->video_size);
+        break;
     case 0x6c00:
     case 0x6c01:
         decode_delta_l(s->video[0], buf, buf_end, avctx->width, s->is_short, s->bpp, s->video_size);
         break;
     default:
         return unsupported(avctx);
+    }
+
+    if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
+        memcpy(s->pal[1], s->pal[0], 256 * 4);
+        memcpy(s->video[1], s->video[0], s->video_size);
     }
 
     if (s->compression > 0xff) {
@@ -1592,8 +1729,10 @@ static int decode_frame(AVCodecContext *avctx,
             return unsupported(avctx);
         }
 
-        FFSWAP(uint8_t *, s->video[0], s->video[1]);
-        FFSWAP(uint32_t *, s->pal[0], s->pal[1]);
+        if (!s->is_brush) {
+            FFSWAP(uint8_t *, s->video[0], s->video[1]);
+            FFSWAP(uint32_t *, s->pal[0], s->pal[1]);
+        }
     }
 
     if (avpkt->flags & AV_PKT_FLAG_KEY) {

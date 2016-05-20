@@ -3155,6 +3155,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->context_initialized = 1;
     s->eos = 0;
 
+    ff_hevc_reset_sei(s);
+
     return 0;
 
 fail:

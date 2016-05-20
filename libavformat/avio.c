@@ -270,6 +270,8 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
         *ptr = '\0';
 
     protocols = ffurl_get_protocols(NULL, NULL);
+    if (!protocols)
+        return NULL;
     for (i = 0; protocols[i]; i++) {
             const URLProtocol *up = protocols[i];
         if (!strcmp(proto_str, up->name)) {
@@ -282,6 +284,7 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
             return up;
         }
     }
+    av_freep(&protocols);
 
     return NULL;
 }
