@@ -27,6 +27,7 @@
 
 #include <nvEncodeAPI.h>
 
+#include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
@@ -89,15 +90,6 @@ typedef struct NvencData
     } u;
 } NvencData;
 
-typedef struct NvencDataList
-{
-    NvencData* data;
-
-    uint32_t pos;
-    uint32_t count;
-    uint32_t size;
-} NvencDataList;
-
 typedef struct NvencDynLoadFunctions
 {
     PCUINIT cu_init;
@@ -141,9 +133,9 @@ typedef struct NvencContext
     int max_surface_count;
     NvencSurface *surfaces;
 
-    NvencDataList output_surface_queue;
-    NvencDataList output_surface_ready_queue;
-    NvencDataList timestamp_list;
+    AVFifoBuffer *output_surface_queue;
+    AVFifoBuffer *output_surface_ready_queue;
+    AVFifoBuffer *timestamp_list;
     int64_t last_dts;
 
     void *nvencoder;
@@ -279,105 +271,18 @@ static int input_string_to_uint32(AVCodecContext *avctx, const NvencValuePair *p
     return AVERROR(EINVAL);
 }
 
-static NvencData* data_queue_dequeue(NvencDataList* queue)
+static void timestamp_queue_enqueue(AVFifoBuffer* queue, int64_t timestamp)
 {
-    uint32_t mask;
-    uint32_t read_pos;
-
-    av_assert0(queue);
-    av_assert0(queue->size);
-    av_assert0(queue->data);
-
-    if (!queue->count)
-        return NULL;
-
-    /* Size always is a multiple of two */
-    mask = queue->size - 1;
-    read_pos = (queue->pos - queue->count) & mask;
-    queue->count--;
-
-    return &queue->data[read_pos];
+    av_fifo_generic_write(queue, &timestamp, sizeof(timestamp), NULL);
 }
 
-static int data_queue_enqueue(NvencDataList* queue, NvencData *data)
+static int64_t timestamp_queue_dequeue(AVFifoBuffer* queue)
 {
-    NvencDataList new_queue;
-    NvencData* tmp_data;
-    uint32_t mask;
+    int64_t timestamp = AV_NOPTS_VALUE;
+    if (av_fifo_size(queue) > 0)
+        av_fifo_generic_read(queue, &timestamp, sizeof(timestamp), NULL);
 
-    if (!queue->size) {
-        /* size always has to be a multiple of two */
-        queue->size = 4;
-        queue->pos = 0;
-        queue->count = 0;
-
-        queue->data = av_malloc(queue->size * sizeof(*(queue->data)));
-
-        if (!queue->data) {
-            queue->size = 0;
-            return AVERROR(ENOMEM);
-        }
-    }
-
-    if (queue->count == queue->size) {
-        new_queue.size = queue->size << 1;
-        new_queue.pos = 0;
-        new_queue.count = 0;
-        new_queue.data = av_malloc(new_queue.size * sizeof(*(queue->data)));
-
-        if (!new_queue.data)
-            return AVERROR(ENOMEM);
-
-        while (tmp_data = data_queue_dequeue(queue))
-            data_queue_enqueue(&new_queue, tmp_data);
-
-        av_free(queue->data);
-        *queue = new_queue;
-    }
-
-    mask = queue->size - 1;
-
-    queue->data[queue->pos] = *data;
-    queue->pos = (queue->pos + 1) & mask;
-    queue->count++;
-
-    return 0;
-}
-
-static int out_surf_queue_enqueue(NvencDataList* queue, NvencSurface* surface)
-{
-    NvencData data;
-    data.u.surface = surface;
-
-    return data_queue_enqueue(queue, &data);
-}
-
-static NvencSurface* out_surf_queue_dequeue(NvencDataList* queue)
-{
-    NvencData* res = data_queue_dequeue(queue);
-
-    if (!res)
-        return NULL;
-
-    return res->u.surface;
-}
-
-static int timestamp_queue_enqueue(NvencDataList* queue, int64_t timestamp)
-{
-    NvencData data;
-    data.u.timestamp = timestamp;
-
-    return data_queue_enqueue(queue, &data);
-}
-
-static int64_t timestamp_queue_dequeue(NvencDataList* queue)
-{
-    NvencData* res = data_queue_dequeue(queue);
-
-    if (!res)
-        return AV_NOPTS_VALUE;
-
-    return res->u.timestamp;
+    return timestamp;
 }
 
 #define CHECK_LOAD_FUNC(t, f, s) \
@@ -1218,6 +1123,16 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx, int* surfaceCount
         return AVERROR(ENOMEM);
     }
 
+    ctx->timestamp_list = av_fifo_alloc(ctx->max_surface_count * sizeof(int64_t));
+    if (!ctx->timestamp_list)
+        return AVERROR(ENOMEM);
+    ctx->output_surface_queue = av_fifo_alloc(ctx->max_surface_count * sizeof(NvencSurface*));
+    if (!ctx->output_surface_queue)
+        return AVERROR(ENOMEM);
+    ctx->output_surface_ready_queue = av_fifo_alloc(ctx->max_surface_count * sizeof(NvencSurface*));
+    if (!ctx->output_surface_ready_queue)
+        return AVERROR(ENOMEM);
+
     for (*surfaceCount = 0; *surfaceCount < ctx->max_surface_count; ++*surfaceCount) {
         res = nvenc_alloc_surface(avctx, *surfaceCount);
         if (res)
@@ -1298,11 +1213,15 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
     return 0;
 
 error:
+    av_fifo_freep(&ctx->timestamp_list);
+    av_fifo_freep(&ctx->output_surface_ready_queue);
+    av_fifo_freep(&ctx->output_surface_queue);
 
     for (i = 0; i < surfaceCount; ++i) {
         p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
         p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
     }
+    av_freep(&ctx->surfaces);
 
     if (ctx->nvencoder)
         p_nvenc->nvEncDestroyEncoder(ctx->nvencoder);
@@ -1325,14 +1244,15 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
     int i;
 
-    av_freep(&ctx->timestamp_list.data);
-    av_freep(&ctx->output_surface_ready_queue.data);
-    av_freep(&ctx->output_surface_queue.data);
+    av_fifo_freep(&ctx->timestamp_list);
+    av_fifo_freep(&ctx->output_surface_ready_queue);
+    av_fifo_freep(&ctx->output_surface_queue);
 
     for (i = 0; i < ctx->max_surface_count; ++i) {
         p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
         p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
     }
+    av_freep(&ctx->surfaces);
     ctx->max_surface_count = 0;
 
     p_nvenc->nvEncDestroyEncoder(ctx->nvencoder);
@@ -1548,7 +1468,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         (lock_params.frameAvgQP - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     pkt->pts = lock_params.outputTimeStamp;
-    pkt->dts = timestamp_queue_dequeue(&ctx->timestamp_list);
+    pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
 
     /* when there're b frame(s), set dts offset */
     if (ctx->encode_config.frameIntervalP >= 2)
@@ -1569,9 +1489,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
 error:
 
     av_free(slice_offsets);
-    timestamp_queue_dequeue(&ctx->timestamp_list);
+    timestamp_queue_dequeue(ctx->timestamp_list);
 
     return res;
+}
+
+static int output_ready(NvencContext *ctx, int flush)
+{
+    int nb_ready, nb_pending;
+
+    nb_ready   = av_fifo_size(ctx->output_surface_ready_queue)   / sizeof(NvencSurface*);
+    nb_pending = av_fifo_size(ctx->output_surface_queue)         / sizeof(NvencSurface*);
+    return nb_ready > 0 && (flush || nb_ready + nb_pending >= ctx->buffer_delay);
 }
 
 static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -1621,48 +1550,32 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         nvenc_codec_specific_pic_params(avctx, &pic_params);
 
-        res = timestamp_queue_enqueue(&ctx->timestamp_list, frame->pts);
-
-        if (res) {
-            inSurf->lockCount = 0;
-            return res;
-        }
+        timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
 
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
 
-    if (frame && nv_status == NV_ENC_ERR_NEED_MORE_INPUT) {
-        res = out_surf_queue_enqueue(&ctx->output_surface_queue, inSurf);
-
-        if (res)
-            return res;
-    }
+    if (frame && nv_status == NV_ENC_ERR_NEED_MORE_INPUT)
+        av_fifo_generic_write(ctx->output_surface_queue, &inSurf, sizeof(inSurf), NULL);
 
     if (nv_status != NV_ENC_SUCCESS && nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
         return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
     }
 
     if (nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
-        while (ctx->output_surface_queue.count) {
-            tmpoutsurf = out_surf_queue_dequeue(&ctx->output_surface_queue);
-            res = out_surf_queue_enqueue(&ctx->output_surface_ready_queue, tmpoutsurf);
-
-            if (res)
-                return res;
+        while (av_fifo_size(ctx->output_surface_queue) > 0) {
+            av_fifo_generic_read(ctx->output_surface_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
+            av_fifo_generic_write(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
         }
 
-        if (frame) {
-            res = out_surf_queue_enqueue(&ctx->output_surface_ready_queue, inSurf);
-
-            if (res)
-                return res;
-        }
+        if (frame)
+            av_fifo_generic_write(ctx->output_surface_ready_queue, &inSurf, sizeof(inSurf), NULL);
     }
 
-    if (ctx->output_surface_ready_queue.count && (!frame || ctx->output_surface_ready_queue.count + ctx->output_surface_queue.count >= ctx->buffer_delay)) {
-        tmpoutsurf = out_surf_queue_dequeue(&ctx->output_surface_ready_queue);
+    if (output_ready(ctx, !frame)) {
+        av_fifo_generic_read(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
 
         res = process_output_surface(avctx, pkt, tmpoutsurf);
 
