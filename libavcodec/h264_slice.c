@@ -1335,6 +1335,24 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
 
     h->picture_idr = nal->type == H264_NAL_IDR_SLICE;
 
+    if (h->sei.recovery_point.recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
+        h->recovery_frame = (h->poc.frame_num + h->sei.recovery_point.recovery_frame_cnt) &
+                            ((1 << h->ps.sps->log2_max_frame_num) - 1);
+    }
+
+    h->cur_pic_ptr->f->key_frame |= (nal->type == H264_NAL_IDR_SLICE) ||
+                                    (h->sei.recovery_point.recovery_frame_cnt >= 0);
+
+    if (nal->type == H264_NAL_IDR_SLICE || h->recovery_frame == h->poc.frame_num) {
+        h->recovery_frame         = -1;
+        h->cur_pic_ptr->recovered = 1;
+    }
+    // If we have an IDR, all frames after it in decoded order are
+    // "recovered".
+    if (nal->type == H264_NAL_IDR_SLICE)
+        h->frame_recovered |= FRAME_RECOVERED_IDR;
+    h->cur_pic_ptr->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_IDR);
+
     /* Set the frame properties/side data. Only done for the second field in
      * field coded frames, since some SEI information is present for each field
      * and is merged by the SEI parsing code. */

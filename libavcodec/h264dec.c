@@ -704,24 +704,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             if (sl->redundant_pic_count > 0)
                 break;
 
-            if (h->sei.recovery_point.recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
-                h->recovery_frame = (h->poc.frame_num + h->sei.recovery_point.recovery_frame_cnt) &
-                                    ((1 << h->ps.sps->log2_max_frame_num) - 1);
-            }
-
-            h->cur_pic_ptr->f->key_frame |=
-                (nal->type == H264_NAL_IDR_SLICE) || (h->sei.recovery_point.recovery_frame_cnt >= 0);
-
-            if (nal->type == H264_NAL_IDR_SLICE || h->recovery_frame == h->poc.frame_num) {
-                h->recovery_frame         = -1;
-                h->cur_pic_ptr->recovered = 1;
-            }
-            // If we have an IDR, all frames after it in decoded order are
-            // "recovered".
-            if (nal->type == H264_NAL_IDR_SLICE)
-                h->frame_recovered |= FRAME_RECOVERED_IDR;
-            h->cur_pic_ptr->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_IDR);
-
             if (h->current_slice == 1) {
                 if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS))
                     decode_postinit(h, i >= nals_needed);
