@@ -1344,6 +1344,12 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
             return ret;
     }
 
+    if (h->avctx->hwaccel) {
+        ret = h->avctx->hwaccel->start_frame(h->avctx, NULL, 0);
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 }
 

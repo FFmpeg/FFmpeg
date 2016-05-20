@@ -722,10 +722,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             if (h->current_slice == 1) {
                 if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS))
                     decode_postinit(h, i >= nals_needed);
-
-                if (h->avctx->hwaccel &&
-                    (ret = h->avctx->hwaccel->start_frame(h->avctx, NULL, 0)) < 0)
-                    return ret;
             }
 
             if (sl->redundant_pic_count == 0 &&
