@@ -67,7 +67,7 @@ typedef CUresult(CUDAAPI *PCUCTXDESTROY)(CUcontext ctx);
 
 typedef NVENCSTATUS (NVENCAPI* PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTION_LIST *functionList);
 
-typedef struct NvencInputSurface
+typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
     int width;
@@ -76,23 +76,16 @@ typedef struct NvencInputSurface
     int lockCount;
 
     NV_ENC_BUFFER_FORMAT format;
-} NvencInputSurface;
 
-typedef struct NvencOutputSurface
-{
     NV_ENC_OUTPUT_PTR output_surface;
     int size;
-
-    NvencInputSurface* input_surface;
-
-    int busy;
-} NvencOutputSurface;
+} NvencSurface;
 
 typedef struct NvencData
 {
     union {
         int64_t timestamp;
-        NvencOutputSurface *surface;
+        NvencSurface *surface;
     } u;
 } NvencData;
 
@@ -146,8 +139,7 @@ typedef struct NvencContext
     CUcontext cu_context;
 
     int max_surface_count;
-    NvencInputSurface *input_surfaces;
-    NvencOutputSurface *output_surfaces;
+    NvencSurface *surfaces;
 
     NvencDataList output_surface_queue;
     NvencDataList output_surface_ready_queue;
@@ -216,6 +208,64 @@ static const NvencValuePair nvenc_hevc_level_pairs[] = {
     { "6.2" , NV_ENC_LEVEL_HEVC_62    },
     { NULL }
 };
+
+static const struct {
+    NVENCSTATUS nverr;
+    int         averr;
+    const char *desc;
+} nvenc_errors[] = {
+    { NV_ENC_SUCCESS,                      0,                "success"                  },
+    { NV_ENC_ERR_NO_ENCODE_DEVICE,         AVERROR(ENOENT),  "no encode device"         },
+    { NV_ENC_ERR_UNSUPPORTED_DEVICE,       AVERROR(ENOSYS),  "unsupported device"       },
+    { NV_ENC_ERR_INVALID_ENCODERDEVICE,    AVERROR(EINVAL),  "invalid encoder device"   },
+    { NV_ENC_ERR_INVALID_DEVICE,           AVERROR(EINVAL),  "invalid device"           },
+    { NV_ENC_ERR_DEVICE_NOT_EXIST,         AVERROR(EIO),     "device does not exist"    },
+    { NV_ENC_ERR_INVALID_PTR,              AVERROR(EFAULT),  "invalid ptr"              },
+    { NV_ENC_ERR_INVALID_EVENT,            AVERROR(EINVAL),  "invalid event"            },
+    { NV_ENC_ERR_INVALID_PARAM,            AVERROR(EINVAL),  "invalid param"            },
+    { NV_ENC_ERR_INVALID_CALL,             AVERROR(EINVAL),  "invalid call"             },
+    { NV_ENC_ERR_OUT_OF_MEMORY,            AVERROR(ENOMEM),  "out of memory"            },
+    { NV_ENC_ERR_ENCODER_NOT_INITIALIZED,  AVERROR(EINVAL),  "encoder not initialized"  },
+    { NV_ENC_ERR_UNSUPPORTED_PARAM,        AVERROR(ENOSYS),  "unsupported param"        },
+    { NV_ENC_ERR_LOCK_BUSY,                AVERROR(EAGAIN),  "lock busy"                },
+    { NV_ENC_ERR_NOT_ENOUGH_BUFFER,        AVERROR(ENOBUFS), "not enough buffer"        },
+    { NV_ENC_ERR_INVALID_VERSION,          AVERROR(EINVAL),  "invalid version"          },
+    { NV_ENC_ERR_MAP_FAILED,               AVERROR(EIO),     "map failed"               },
+    { NV_ENC_ERR_NEED_MORE_INPUT,          AVERROR(EAGAIN),  "need more input"          },
+    { NV_ENC_ERR_ENCODER_BUSY,             AVERROR(EAGAIN),  "encoder busy"             },
+    { NV_ENC_ERR_EVENT_NOT_REGISTERD,      AVERROR(EBADF),   "event not registered"     },
+    { NV_ENC_ERR_GENERIC,                  AVERROR_UNKNOWN,  "generic error"            },
+    { NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,  AVERROR(EINVAL),  "incompatible client key"  },
+    { NV_ENC_ERR_UNIMPLEMENTED,            AVERROR(ENOSYS),  "unimplemented"            },
+    { NV_ENC_ERR_RESOURCE_REGISTER_FAILED, AVERROR(EIO),     "resource register failed" },
+    { NV_ENC_ERR_RESOURCE_NOT_REGISTERED,  AVERROR(EBADF),   "resource not registered"  },
+    { NV_ENC_ERR_RESOURCE_NOT_MAPPED,      AVERROR(EBADF),   "resource not mapped"      },
+};
+
+static int nvenc_map_error(NVENCSTATUS err, const char **desc)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(nvenc_errors); i++) {
+        if (nvenc_errors[i].nverr == err) {
+            if (desc)
+                *desc = nvenc_errors[i].desc;
+            return nvenc_errors[i].averr;
+        }
+    }
+    if (desc)
+        *desc = "unknown error";
+    return AVERROR_UNKNOWN;
+}
+
+static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
+                                     const char *error_string)
+{
+    const char *desc;
+    int ret;
+    ret = nvenc_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
+    return ret;
+}
 
 static int input_string_to_uint32(AVCodecContext *avctx, const NvencValuePair *pair, const char *input, uint32_t *output)
 {
@@ -294,7 +344,7 @@ static int data_queue_enqueue(NvencDataList* queue, NvencData *data)
     return 0;
 }
 
-static int out_surf_queue_enqueue(NvencDataList* queue, NvencOutputSurface* surface)
+static int out_surf_queue_enqueue(NvencDataList* queue, NvencSurface* surface)
 {
     NvencData data;
     data.u.surface = surface;
@@ -302,7 +352,7 @@ static int out_surf_queue_enqueue(NvencDataList* queue, NvencOutputSurface* surf
     return data_queue_enqueue(queue, &data);
 }
 
-static NvencOutputSurface* out_surf_queue_dequeue(NvencDataList* queue)
+static NvencSurface* out_surf_queue_dequeue(NvencDataList* queue)
 {
     NvencData* res = data_queue_dequeue(queue);
 
@@ -499,7 +549,7 @@ static av_cold int nvenc_dyload_nvenc(AVCodecContext *avctx)
     nvstatus = nvEncodeAPICreateInstance(&dl_fn->nvenc_funcs);
 
     if (nvstatus != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "Failed to create nvenc instance\n");
+        nvenc_print_error(avctx, nvstatus, "Failed to create nvenc instance");
         goto error;
     }
 
@@ -589,8 +639,7 @@ static av_cold int nvenc_open_session(AVCodecContext *avctx)
     nv_status = p_nvenc->nvEncOpenEncodeSessionEx(&encode_session_params, &ctx->nvencoder);
     if (nv_status != NV_ENC_SUCCESS) {
         ctx->nvencoder = NULL;
-        av_log(avctx, AV_LOG_FATAL, "OpenEncodeSessionEx failed: 0x%x\n", (int)nv_status);
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "OpenEncodeSessionEx failed");
     }
 
     return 0;
@@ -963,8 +1012,7 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     nv_status = p_nvenc->nvEncGetEncodePresetConfig(ctx->nvencoder, codec, encoder_preset, &preset_config);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "GetEncodePresetConfig failed: 0x%x\n", (int)nv_status);
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "GetEncodePresetConfig failed");
     }
 
     ctx->init_encode_params.encodeGUID = codec;
@@ -1075,8 +1123,7 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     nv_status = p_nvenc->nvEncInitializeEncoder(ctx->nvencoder, &ctx->init_encode_params);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "InitializeEncoder failed: 0x%x\n", (int)nv_status);
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "InitializeEncoder failed");
     }
 
     if (ctx->encode_config.frameIntervalP > 1)
@@ -1133,15 +1180,14 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     nv_status = p_nvenc->nvEncCreateInputBuffer(ctx->nvencoder, &allocSurf);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "CreateInputBuffer failed\n");
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "CreateInputBuffer failed");
     }
 
-    ctx->input_surfaces[idx].lockCount = 0;
-    ctx->input_surfaces[idx].input_surface = allocSurf.inputBuffer;
-    ctx->input_surfaces[idx].format = allocSurf.bufferFmt;
-    ctx->input_surfaces[idx].width = allocSurf.width;
-    ctx->input_surfaces[idx].height = allocSurf.height;
+    ctx->surfaces[idx].lockCount = 0;
+    ctx->surfaces[idx].input_surface = allocSurf.inputBuffer;
+    ctx->surfaces[idx].format = allocSurf.bufferFmt;
+    ctx->surfaces[idx].width = allocSurf.width;
+    ctx->surfaces[idx].height = allocSurf.height;
 
     /* 1MB is large enough to hold most output frames. NVENC increases this automaticaly if it's not enough. */
     allocOut.size = 1024 * 1024;
@@ -1150,14 +1196,13 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     nv_status = p_nvenc->nvEncCreateBitstreamBuffer(ctx->nvencoder, &allocOut);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "CreateBitstreamBuffer failed\n");
-        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->input_surfaces[idx].input_surface);
-        return AVERROR_EXTERNAL;
+        int err = nvenc_print_error(avctx, nv_status, "CreateBitstreamBuffer failed");
+        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[idx].input_surface);
+        return err;
     }
 
-    ctx->output_surfaces[idx].output_surface = allocOut.bitstreamBuffer;
-    ctx->output_surfaces[idx].size = allocOut.size;
-    ctx->output_surfaces[idx].busy = 0;
+    ctx->surfaces[idx].output_surface = allocOut.bitstreamBuffer;
+    ctx->surfaces[idx].size = allocOut.size;
 
     return 0;
 }
@@ -1167,15 +1212,9 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx, int* surfaceCount
     int res;
     NvencContext *ctx = avctx->priv_data;
 
-    ctx->input_surfaces = av_malloc(ctx->max_surface_count * sizeof(*ctx->input_surfaces));
+    ctx->surfaces = av_malloc(ctx->max_surface_count * sizeof(*ctx->surfaces));
 
-    if (!ctx->input_surfaces) {
-        return AVERROR(ENOMEM);
-    }
-
-    ctx->output_surfaces = av_malloc(ctx->max_surface_count * sizeof(*ctx->output_surfaces));
-
-    if (!ctx->output_surfaces) {
+    if (!ctx->surfaces) {
         return AVERROR(ENOMEM);
     }
 
@@ -1206,8 +1245,7 @@ static av_cold int nvenc_setup_extradata(AVCodecContext *avctx)
 
     nv_status = p_nvenc->nvEncGetSequenceParams(ctx->nvencoder, &payload);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "GetSequenceParams failed\n");
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "GetSequenceParams failed");
     }
 
     avctx->extradata_size = outSize;
@@ -1262,9 +1300,8 @@ static av_cold int nvenc_encode_init(AVCodecContext *avctx)
 error:
 
     for (i = 0; i < surfaceCount; ++i) {
-        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->input_surfaces[i].input_surface);
-        if (ctx->output_surfaces[i].output_surface)
-            p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->output_surfaces[i].output_surface);
+        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
+        p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
     }
 
     if (ctx->nvencoder)
@@ -1293,8 +1330,8 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->output_surface_queue.data);
 
     for (i = 0; i < ctx->max_surface_count; ++i) {
-        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->input_surfaces[i].input_surface);
-        p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->output_surfaces[i].output_surface);
+        p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
+        p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
     }
     ctx->max_surface_count = 0;
 
@@ -1309,21 +1346,21 @@ static av_cold int nvenc_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static NvencInputSurface *get_free_frame(NvencContext *ctx)
+static NvencSurface *get_free_frame(NvencContext *ctx)
 {
     int i;
 
     for (i = 0; i < ctx->max_surface_count; ++i) {
-        if (!ctx->input_surfaces[i].lockCount) {
-            ctx->input_surfaces[i].lockCount = 1;
-            return &ctx->input_surfaces[i];
+        if (!ctx->surfaces[i].lockCount) {
+            ctx->surfaces[i].lockCount = 1;
+            return &ctx->surfaces[i];
         }
     }
 
     return NULL;
 }
 
-static int nvenc_copy_frame(AVCodecContext *avctx, NvencInputSurface *inSurf,
+static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
             NV_ENC_LOCK_INPUT_BUFFER *lockBufferParams, const AVFrame *frame)
 {
     uint8_t *buf = lockBufferParams->bufferDataPtr;
@@ -1380,7 +1417,7 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencInputSurface *inSurf,
 }
 
 static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
-                                      NvencInputSurface *nvenc_frame)
+                                      NvencSurface *nvenc_frame)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1395,16 +1432,14 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
 
     nv_status = p_nvenc->nvEncLockInputBuffer(ctx->nvencoder, &lockBufferParams);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed locking nvenc input buffer\n");
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "Failed locking nvenc input buffer");
     }
 
     res = nvenc_copy_frame(avctx, nvenc_frame, &lockBufferParams, frame);
 
     nv_status = p_nvenc->nvEncUnlockInputBuffer(ctx->nvencoder, nvenc_frame->input_surface);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "Failed unlocking input buffer!\n");
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "Failed unlocking input buffer!");
     }
 
     return res;
@@ -1427,7 +1462,7 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
     }
 }
 
-static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOutputSurface *tmpoutsurf)
+static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSurface *tmpoutsurf)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1466,8 +1501,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOut
 
     nv_status = p_nvenc->nvEncLockBitstream(ctx->nvencoder, &lock_params);
     if (nv_status != NV_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed locking bitstream buffer\n");
-        res = AVERROR_EXTERNAL;
+        res = nvenc_print_error(avctx, nv_status, "Failed locking bitstream buffer");
         goto error;
     }
 
@@ -1480,7 +1514,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencOut
 
     nv_status = p_nvenc->nvEncUnlockBitstream(ctx->nvencoder, tmpoutsurf->output_surface);
     if (nv_status != NV_ENC_SUCCESS)
-        av_log(avctx, AV_LOG_ERROR, "Failed unlocking bitstream buffer, expect the gates of mordor to open\n");
+        nvenc_print_error(avctx, nv_status, "Failed unlocking bitstream buffer, expect the gates of mordor to open");
 
     switch (lock_params.pictureType) {
     case NV_ENC_PIC_TYPE_IDR:
@@ -1544,8 +1578,8 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame *frame, int *got_packet)
 {
     NVENCSTATUS nv_status;
-    NvencOutputSurface *tmpoutsurf;
-    int res, i = 0;
+    NvencSurface *tmpoutsurf, *inSurf;
+    int res;
 
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1555,8 +1589,6 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pic_params.version = NV_ENC_PIC_PARAMS_VER;
 
     if (frame) {
-        NvencInputSurface *inSurf;
-
         inSurf = get_free_frame(ctx);
         av_assert0(inSurf);
 
@@ -1566,23 +1598,11 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return res;
         }
 
-        for (i = 0; i < ctx->max_surface_count; ++i)
-            if (!ctx->output_surfaces[i].busy)
-                break;
-
-        if (i == ctx->max_surface_count) {
-            inSurf->lockCount = 0;
-            av_log(avctx, AV_LOG_FATAL, "No free output surface found!\n");
-            return AVERROR_EXTERNAL;
-        }
-
-        ctx->output_surfaces[i].input_surface = inSurf;
-
         pic_params.inputBuffer = inSurf->input_surface;
         pic_params.bufferFmt = inSurf->format;
         pic_params.inputWidth = avctx->width;
         pic_params.inputHeight = avctx->height;
-        pic_params.outputBitstream = ctx->output_surfaces[i].output_surface;
+        pic_params.outputBitstream = inSurf->output_surface;
         pic_params.completionEvent = 0;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -1614,17 +1634,14 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
 
     if (frame && nv_status == NV_ENC_ERR_NEED_MORE_INPUT) {
-        res = out_surf_queue_enqueue(&ctx->output_surface_queue, &ctx->output_surfaces[i]);
+        res = out_surf_queue_enqueue(&ctx->output_surface_queue, inSurf);
 
         if (res)
             return res;
-
-        ctx->output_surfaces[i].busy = 1;
     }
 
     if (nv_status != NV_ENC_SUCCESS && nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
-        av_log(avctx, AV_LOG_ERROR, "EncodePicture failed!\n");
-        return AVERROR_EXTERNAL;
+        return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
     }
 
     if (nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
@@ -1637,12 +1654,10 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
 
         if (frame) {
-            res = out_surf_queue_enqueue(&ctx->output_surface_ready_queue, &ctx->output_surfaces[i]);
+            res = out_surf_queue_enqueue(&ctx->output_surface_ready_queue, inSurf);
 
             if (res)
                 return res;
-
-            ctx->output_surfaces[i].busy = 1;
         }
     }
 
@@ -1654,9 +1669,8 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (res)
             return res;
 
-        tmpoutsurf->busy = 0;
-        av_assert0(tmpoutsurf->input_surface->lockCount);
-        tmpoutsurf->input_surface->lockCount--;
+        av_assert0(tmpoutsurf->lockCount);
+        tmpoutsurf->lockCount--;
 
         *got_packet = 1;
     } else {
