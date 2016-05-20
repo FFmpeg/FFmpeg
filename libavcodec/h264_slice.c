@@ -1565,6 +1565,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
     if (ret < 0)
         return ret;
 
+    // discard redundant pictures
+    if (sl->redundant_pic_count > 0)
+        return 0;
+
     if (!h->setup_finished) {
         if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
             if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {

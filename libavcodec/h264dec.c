@@ -701,6 +701,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             if ((err = ff_h264_decode_slice_header(h, sl, nal)))
                 break;
 
+            if (sl->redundant_pic_count > 0)
+                break;
+
             if (h->sei.recovery_point.recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
                 h->recovery_frame = (h->poc.frame_num + h->sei.recovery_point.recovery_frame_cnt) &
                                     ((1 << h->ps.sps->log2_max_frame_num) - 1);
@@ -724,8 +727,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                     decode_postinit(h, i >= nals_needed);
             }
 
-            if (sl->redundant_pic_count == 0 &&
-                (avctx->skip_frame < AVDISCARD_NONREF || nal->ref_idc) &&
+            if ((avctx->skip_frame < AVDISCARD_NONREF || nal->ref_idc) &&
                 (avctx->skip_frame < AVDISCARD_BIDIR  ||
                  sl->slice_type_nos != AV_PICTURE_TYPE_B) &&
                 (avctx->skip_frame < AVDISCARD_NONKEY ||
