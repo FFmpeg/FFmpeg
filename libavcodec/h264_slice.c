@@ -1345,8 +1345,8 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
     return 0;
 }
 
-static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
-                                   const H2645NAL *nal)
+static int h264_slice_header_parse(H264SliceContext *sl, const H2645NAL *nal,
+                                   const H264ParamSets *ps, AVCodecContext *avctx)
 {
     const SPS *sps;
     const PPS *pps;
@@ -1359,7 +1359,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
 
     slice_type = get_ue_golomb_31(&sl->gb);
     if (slice_type > 9) {
-        av_log(h->avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "slice type %d too large at %d\n",
                slice_type, sl->first_mb_addr);
         return AVERROR_INVALIDDATA;
@@ -1376,29 +1376,29 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
 
     if (nal->type  == H264_NAL_IDR_SLICE &&
         sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-        av_log(h->avctx, AV_LOG_ERROR, "A non-intra slice in an IDR NAL unit.\n");
+        av_log(avctx, AV_LOG_ERROR, "A non-intra slice in an IDR NAL unit.\n");
         return AVERROR_INVALIDDATA;
     }
 
     sl->pps_id = get_ue_golomb(&sl->gb);
     if (sl->pps_id >= MAX_PPS_COUNT) {
-        av_log(h->avctx, AV_LOG_ERROR, "pps_id %u out of range\n", sl->pps_id);
+        av_log(avctx, AV_LOG_ERROR, "pps_id %u out of range\n", sl->pps_id);
         return AVERROR_INVALIDDATA;
     }
-    if (!h->ps.pps_list[sl->pps_id]) {
-        av_log(h->avctx, AV_LOG_ERROR,
+    if (!ps->pps_list[sl->pps_id]) {
+        av_log(avctx, AV_LOG_ERROR,
                "non-existing PPS %u referenced\n",
                sl->pps_id);
         return AVERROR_INVALIDDATA;
     }
-    pps = (const PPS*)h->ps.pps_list[sl->pps_id]->data;
+    pps = (const PPS*)ps->pps_list[sl->pps_id]->data;
 
-    if (!h->ps.sps_list[pps->sps_id]) {
-        av_log(h->avctx, AV_LOG_ERROR,
+    if (!ps->sps_list[pps->sps_id]) {
+        av_log(avctx, AV_LOG_ERROR,
                "non-existing SPS %u referenced\n", pps->sps_id);
         return AVERROR_INVALIDDATA;
     }
-    sps = (const SPS*)h->ps.sps_list[pps->sps_id]->data;
+    sps = (const SPS*)ps->sps_list[pps->sps_id]->data;
 
     sl->frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
 
@@ -1457,7 +1457,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
         return ret;
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-       ret = ff_h264_decode_ref_pic_list_reordering(h, sl);
+       ret = ff_h264_decode_ref_pic_list_reordering(sl, avctx);
        if (ret < 0) {
            sl->ref_count[1] = sl->ref_count[0] = 0;
            return ret;
@@ -1477,15 +1477,15 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
 
     sl->explicit_ref_marking = 0;
     if (nal->ref_idc) {
-        ret = ff_h264_decode_ref_pic_marking(h, sl, &sl->gb);
-        if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+        ret = ff_h264_decode_ref_pic_marking(sl, &sl->gb, nal, avctx);
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I && pps->cabac) {
         tmp = get_ue_golomb_31(&sl->gb);
         if (tmp > 2) {
-            av_log(h->avctx, AV_LOG_ERROR, "cabac_init_idc %u overflow\n", tmp);
+            av_log(avctx, AV_LOG_ERROR, "cabac_init_idc %u overflow\n", tmp);
             return AVERROR_INVALIDDATA;
         }
         sl->cabac_init_idc = tmp;
@@ -1494,7 +1494,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
     sl->last_qscale_diff = 0;
     tmp = pps->init_qp + get_se_golomb(&sl->gb);
     if (tmp > 51 + 6 * (sps->bit_depth_luma - 8)) {
-        av_log(h->avctx, AV_LOG_ERROR, "QP %u out of range\n", tmp);
+        av_log(avctx, AV_LOG_ERROR, "QP %u out of range\n", tmp);
         return AVERROR_INVALIDDATA;
     }
     sl->qscale       = tmp;
@@ -1513,7 +1513,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
     if (pps->deblocking_filter_parameters_present) {
         tmp = get_ue_golomb_31(&sl->gb);
         if (tmp > 2) {
-            av_log(h->avctx, AV_LOG_ERROR,
+            av_log(avctx, AV_LOG_ERROR,
                    "deblocking_filter_idc %u out of range\n", tmp);
             return AVERROR_INVALIDDATA;
         }
@@ -1528,7 +1528,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
                 sl->slice_alpha_c0_offset < -12 ||
                 sl->slice_beta_offset >  12     ||
                 sl->slice_beta_offset < -12) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "deblocking filter parameters %d %d out of range\n",
                        sl->slice_alpha_c0_offset, sl->slice_beta_offset);
                 return AVERROR_INVALIDDATA;
@@ -1552,7 +1552,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
 {
     int i, j, ret = 0;
 
-    ret = h264_slice_header_parse(h, sl, nal);
+    ret = h264_slice_header_parse(sl, nal, &h->ps, h->avctx);
     if (ret < 0)
         return ret;
 

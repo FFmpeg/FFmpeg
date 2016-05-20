@@ -367,7 +367,7 @@ int ff_h264_build_ref_list(const H264Context *h, H264SliceContext *sl)
     return 0;
 }
 
-int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl)
+int ff_h264_decode_ref_pic_list_reordering(H264SliceContext *sl, void *logctx)
 {
     int list, index;
 
@@ -385,10 +385,10 @@ int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContex
                 break;
 
             if (index >= sl->ref_count[list]) {
-                av_log(h->avctx, AV_LOG_ERROR, "reference count overflow\n");
+                av_log(logctx, AV_LOG_ERROR, "reference count overflow\n");
                 return AVERROR_INVALIDDATA;
             } else if (op > 2) {
-                av_log(h->avctx, AV_LOG_ERROR,
+                av_log(logctx, AV_LOG_ERROR,
                        "illegal modification_of_pic_nums_idc %u\n",
                        op);
                 return AVERROR_INVALIDDATA;
@@ -728,14 +728,14 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
     return (h->avctx->err_recognition & AV_EF_EXPLODE) ? err : 0;
 }
 
-int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
-                                   GetBitContext *gb)
+int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
+                                   const H2645NAL *nal, void *logctx)
 {
     int i;
     MMCO *mmco = sl->mmco;
     int nb_mmco = 0;
 
-    if (h->nal_unit_type == H264_NAL_IDR_SLICE) { // FIXME fields
+    if (nal->type == H264_NAL_IDR_SLICE) { // FIXME fields
         skip_bits1(gb); // broken_link
         if (get_bits1(gb)) {
             mmco[0].opcode   = MMCO_LONG;
@@ -770,8 +770,8 @@ int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
                     if (long_arg >= 32 ||
                         (long_arg >= 16 && !(opcode == MMCO_SET_MAX_LONG &&
                                              long_arg == 16) &&
-                         !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE(h)))) {
-                        av_log(h->avctx, AV_LOG_ERROR,
+                         !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE(sl)))) {
+                        av_log(logctx, AV_LOG_ERROR,
                                "illegal long ref in memory management control "
                                "operation %d\n", opcode);
                         return -1;
@@ -780,7 +780,7 @@ int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
                 }
 
                 if (opcode > (unsigned) MMCO_LONG) {
-                    av_log(h->avctx, AV_LOG_ERROR,
+                    av_log(logctx, AV_LOG_ERROR,
                            "illegal memory management control operation %d\n",
                            opcode);
                     return -1;
