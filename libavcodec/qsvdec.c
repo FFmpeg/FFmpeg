@@ -70,8 +70,9 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
-static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession session)
+static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
+    mfxSession session = NULL;
     mfxVideoParam param = { { 0 } };
     int ret;
 
@@ -82,12 +83,19 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxSession sess
             return AVERROR(ENOMEM);
     }
 
+    if (avctx->hwaccel_context) {
+        AVQSVContext *user_ctx = avctx->hwaccel_context;
+        session           = user_ctx->session;
+        q->iopattern      = user_ctx->iopattern;
+        q->ext_buffers    = user_ctx->ext_buffers;
+        q->nb_ext_buffers = user_ctx->nb_ext_buffers;
+    }
+
     ret = qsv_init_session(avctx, q, session);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing an MFX session\n");
         return ret;
     }
-
 
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
     if (ret < 0)
@@ -399,8 +407,6 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
     if (q->parser->format       != q->orig_pix_fmt    ||
         q->parser->coded_width  != avctx->coded_width ||
         q->parser->coded_height != avctx->coded_height) {
-        mfxSession session = NULL;
-
         enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
                                            AV_PIX_FMT_NONE,
                                            AV_PIX_FMT_NONE };
@@ -429,15 +435,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
 
         avctx->pix_fmt = ret;
 
-        if (avctx->hwaccel_context) {
-            AVQSVContext *user_ctx = avctx->hwaccel_context;
-            session           = user_ctx->session;
-            q->iopattern      = user_ctx->iopattern;
-            q->ext_buffers    = user_ctx->ext_buffers;
-            q->nb_ext_buffers = user_ctx->nb_ext_buffers;
-        }
-
-        ret = qsv_decode_init(avctx, q, session);
+        ret = qsv_decode_init(avctx, q);
         if (ret < 0)
             goto reinit_fail;
     }
