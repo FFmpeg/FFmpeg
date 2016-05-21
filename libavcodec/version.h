@@ -200,5 +200,8 @@
 #ifndef FF_API_OLD_BSF
 #define FF_API_OLD_BSF          (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_COPY_CONTEXT
+#define FF_API_COPY_CONTEXT     (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
 
 #endif /* AVCODEC_VERSION_H */
