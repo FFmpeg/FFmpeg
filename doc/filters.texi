@@ -12669,28 +12669,7 @@ Output:
 22222                           44444
 @end example
 
-@item drop_odd, 1
-Only output even frames, odd frames are dropped, generating a frame with
-unchanged height at half frame rate.
-
-@example
- ------> time
-Input:
-Frame 1         Frame 2         Frame 3         Frame 4
-
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-
-Output:
-                22222                           44444
-                22222                           44444
-                22222                           44444
-                22222                           44444
-@end example
-
-@item drop_even, 2
+@item drop_even, 1
 Only output odd frames, even frames are dropped, generating a frame with
 unchanged height at half frame rate.
 
@@ -12709,6 +12688,27 @@ Output:
 11111                           33333
 11111                           33333
 11111                           33333
+@end example
+
+@item drop_odd, 2
+Only output even frames, odd frames are dropped, generating a frame with
+unchanged height at half frame rate.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+                22222                           44444
+                22222                           44444
+                22222                           44444
+                22222                           44444
 @end example
 
 @item pad, 3
@@ -12805,9 +12805,11 @@ Output:
  11111   11111   22222   22222   33333   33333   44444
 @end example
 
+
 @item mergex2, 7
 Move odd frames into the upper field, even into the lower field,
 generating a double height frame at same frame rate.
+
 @example
  ------> time
 Input:
