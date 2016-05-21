@@ -3619,7 +3619,6 @@ void avcodec_register_all(void);
  *              important mainly for encoders, e.g. libx264).
  *
  * @return An AVCodecContext filled with default values or NULL on failure.
- * @see avcodec_get_context_defaults
  */
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec);
 
@@ -3629,16 +3628,14 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec);
  */
 void avcodec_free_context(AVCodecContext **avctx);
 
+#if FF_API_GET_CONTEXT_DEFAULTS
 /**
- * Set the fields of the given AVCodecContext to default values corresponding
- * to the given codec (defaults may be codec-dependent).
- *
- * Do not call this function if a non-NULL codec has been passed
- * to avcodec_alloc_context3() that allocated this AVCodecContext.
- * If codec is non-NULL, it is illegal to call avcodec_open2() with a
- * different codec on this AVCodecContext.
+ * @deprecated This function should not be used, as closing and opening a codec
+ * context multiple time is not supported. A new codec context should be
+ * allocated for each new use.
  */
 int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec);
+#endif
 
 /**
  * Get the AVClass for AVCodecContext. It can be used in combination with
@@ -3741,9 +3738,8 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
  * @param avctx The context to initialize.
  * @param codec The codec to open this context for. If a non-NULL codec has been
  *              previously passed to avcodec_alloc_context3() or
- *              avcodec_get_context_defaults3() for this context, then this
- *              parameter MUST be either NULL or equal to the previously passed
- *              codec.
+ *              for this context, then this parameter MUST be either NULL or
+ *              equal to the previously passed codec.
  * @param options A dictionary filled with AVCodecContext and codec-private options.
  *                On return this object will be filled with options that were not found.
  *
@@ -3758,9 +3754,8 @@ int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **op
  * (but not the AVCodecContext itself).
  *
  * Calling this function on an AVCodecContext that hasn't been opened will free
- * the codec-specific data allocated in avcodec_alloc_context3() /
- * avcodec_get_context_defaults3() with a non-NULL codec. Subsequent calls will
- * do nothing.
+ * the codec-specific data allocated in avcodec_alloc_context3() with a non-NULL
+ * codec. Subsequent calls will do nothing.
  */
 int avcodec_close(AVCodecContext *avctx);
 
