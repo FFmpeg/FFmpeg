@@ -570,7 +570,7 @@ error:
     exit_program(1);
 }
 
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_ERROR_FRAME
 static double psnr(double d)
 {
     return -10.0 * log(d) / log(10.0);
@@ -598,7 +598,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
         fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
                 ost->quality / (float)FF_QP2LAMBDA);
 
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_ERROR_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
         if (enc->flags & AV_CODEC_FLAG_PSNR)
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
@@ -913,7 +913,7 @@ static void print_report(int is_last_report, int64_t timer_start)
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
 
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_ERROR_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
             if (enc->flags & AV_CODEC_FLAG_PSNR) {
                 int j;
