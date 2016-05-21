@@ -372,6 +372,7 @@ typedef struct OutputStream {
     enum AVPixelFormat pix_fmts[2];
 
     AVCodecParserContext *parser;
+    AVCodecContext       *parser_avctx;
 
     /* stats */
     // combined size of all the packets written

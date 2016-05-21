@@ -184,6 +184,7 @@ static void avconv_cleanup(int ret)
         av_frame_free(&ost->filtered_frame);
 
         av_parser_close(ost->parser);
+        avcodec_free_context(&ost->parser_avctx);
 
         av_freep(&ost->forced_keyframes);
         av_freep(&ost->avfilter);
@@ -1101,7 +1102,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
        && ost->enc_ctx->codec_id != AV_CODEC_ID_MPEG2VIDEO
        && ost->enc_ctx->codec_id != AV_CODEC_ID_VC1
        ) {
-        if (av_parser_change(ost->parser, ost->st->codec,
+        if (av_parser_change(ost->parser, ost->parser_avctx,
                              &opkt.data, &opkt.size,
                              pkt->data, pkt->size,
                              pkt->flags & AV_PKT_FLAG_KEY)) {
@@ -1709,14 +1710,6 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
                    "Error initializing the output stream codec context.\n");
             exit_program(1);
         }
-        /*
-         * FIXME: this is only so that the bitstream filters and parsers (that still
-         * work with a codec context) get the parameter values.
-         * This should go away with the new BSF/parser API.
-         */
-        ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
-        if (ret < 0)
-            return ret;
 
         if (ost->enc_ctx->nb_coded_side_data) {
             int i;
@@ -1747,11 +1740,10 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             return ret;
 
         /*
-         * FIXME: this is only so that the bitstream filters and parsers (that still
-         * work with a codec context) get the parameter values.
-         * This should go away with the new BSF/parser API.
+         * FIXME: will the codec context used by the parser during streamcopy
+         * This should go away with the new parser API.
          */
-        ret = avcodec_parameters_to_context(ost->st->codec, ost->st->codecpar);
+        ret = avcodec_parameters_to_context(ost->parser_avctx, ost->st->codecpar);
         if (ret < 0)
             return ret;
     }
@@ -1913,6 +1905,9 @@ static int transcode_init(void)
             }
 
             ost->parser = av_parser_init(par_dst->codec_id);
+            ost->parser_avctx = avcodec_alloc_context3(NULL);
+            if (!ost->parser_avctx)
+                return AVERROR(ENOMEM);
 
             switch (par_dst->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
