@@ -203,6 +203,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
     *got_frame   = 1;
 
     return buf_size;
