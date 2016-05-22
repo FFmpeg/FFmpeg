@@ -219,6 +219,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LJPEG,             ljpeg);
     REGISTER_DECODER(LOCO,              loco);
     REGISTER_DECODER(M101,              m101);
+    REGISTER_DECODER(MAGICYUV,          magicyuv);
     REGISTER_DECODER(MDEC,              mdec);
     REGISTER_DECODER(MIMIC,             mimic);
     REGISTER_ENCDEC (MJPEG,             mjpeg);

@@ -348,6 +348,7 @@ OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
 OBJS-$(CONFIG_M101_DECODER)            += m101.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
+OBJS-$(CONFIG_MAGICYUV_DECODER)        += magicyuv.o
 OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_METASOUND_DECODER)       += metasound.o metasound_data.o \
                                           twinvq.o

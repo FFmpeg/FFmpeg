@@ -37,6 +37,7 @@ version <next>:
 - Direct Stream Transfer (DST) decoder
 - loudnorm filter
 - MTAF demuxer and decoder
+- MagicYUV decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

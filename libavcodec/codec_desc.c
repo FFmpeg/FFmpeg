@@ -1542,6 +1542,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0 Real Time"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_MAGICYUV,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "magicyuv",
+        .long_name = NULL_IF_CONFIG_SMALL("MagicYUV Lossless Video"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {
