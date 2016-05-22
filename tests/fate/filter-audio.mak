@@ -3,6 +3,11 @@ fate-filter-adelay: tests/data/asynth-44100-2.wav
 fate-filter-adelay: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-adelay: CMD = framecrc -i $(SRC) -af adelay=42
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, AECHO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-aecho
+fate-filter-aecho: tests/data/asynth-44100-2.wav
+fate-filter-aecho: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-aecho: CMD = framecrc -i $(SRC) -af aecho=0.5:0.5:32:0.5
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
