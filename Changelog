@@ -35,6 +35,8 @@ version <next>:
 - Generic OpenMAX IL encoder with support for Raspberry Pi
 - IFF ANIM demuxer & decoder
 - Direct Stream Transfer (DST) decoder
+- loudnorm filter
+- MTAF demuxer and decoder
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

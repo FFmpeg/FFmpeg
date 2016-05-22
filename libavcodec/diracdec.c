@@ -903,8 +903,8 @@ static int decode_lowdelay(DiracContext *s)
     } else {
         for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
             for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
-                bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
-                    - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
+                bytes = (slice_num+1) * (int64_t)s->lowdelay.bytes.num / s->lowdelay.bytes.den
+                       - slice_num    * (int64_t)s->lowdelay.bytes.num / s->lowdelay.bytes.den;
                 slices[slice_num].bytes   = bytes;
                 slices[slice_num].slice_x = slice_x;
                 slices[slice_num].slice_y = slice_y;

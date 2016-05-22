@@ -718,19 +718,20 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         AVIStream *avist = s->streams[stream_index]->priv_data;
         AVIOContext *pb  = s->pb;
         AVPacket *opkt   = pkt;
+        int reshuffle_ret;
         if (par->codec_id == AV_CODEC_ID_RAWVIDEO && par->codec_tag == 0) {
             int64_t bpc = par->bits_per_coded_sample != 15 ? par->bits_per_coded_sample : 16;
             int expected_stride = ((par->width * bpc + 31) >> 5)*4;
-            ret = ff_reshuffle_raw_rgb(s, &pkt, par, expected_stride);
-            if (ret < 0)
-                return ret;
+            reshuffle_ret = ff_reshuffle_raw_rgb(s, &pkt, par, expected_stride);
+            if (reshuffle_ret < 0)
+                return reshuffle_ret;
         } else
-            ret = 0;
+            reshuffle_ret = 0;
         if (par->format == AV_PIX_FMT_PAL8) {
-            int ret2 = ff_get_packet_palette(s, opkt, ret, avist->palette);
-            if (ret2 < 0)
-                return ret2;
-            if (ret2) {
+            ret = ff_get_packet_palette(s, opkt, reshuffle_ret, avist->palette);
+            if (ret < 0)
+                goto fail;
+            if (ret) {
                 int pal_size = 1 << par->bits_per_coded_sample;
                 int pc_tag, i;
 
@@ -752,7 +753,6 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                     avi_stream2fourcc(tag, stream_index, par->codec_type);
                     tag[2] = 'p'; tag[3] = 'c';
                     if (s->pb->seekable) {
-                        int ret;
                         if (avist->strh_flags_offset) {
                             int64_t cur_offset = avio_tell(pb);
                             avio_seek(pb, avist->strh_flags_offset, SEEK_SET);
@@ -763,7 +763,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                         ret = avi_add_ientry(s, stream_index, tag, AVIIF_NO_TIME,
                                        pal_size * 4 + 4);
                         if (ret < 0)
-                            return ret;
+                            goto fail;
                     }
                     pc_tag = ff_start_tag(pb, tag);
                     avio_w8(pb, 0);
@@ -778,9 +778,12 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             }
         }
-        if (ret) {
+        if (reshuffle_ret) {
             ret = avi_write_packet_internal(s, pkt);
-            av_packet_free(&pkt);
+
+fail:
+            if (reshuffle_ret)
+                av_packet_free(&pkt);
             return ret;
         }
     }

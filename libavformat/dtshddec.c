@@ -40,7 +40,6 @@
 #define TIMECODE 0x54494D45434F4445
 
 typedef struct DTSHDDemuxContext {
-    uint64_t    data_start;
     uint64_t    data_end;
 } DTSHDDemuxContext;
 
@@ -56,7 +55,7 @@ static int dtshd_read_header(AVFormatContext *s)
     DTSHDDemuxContext *dtshd = s->priv_data;
     AVIOContext *pb = s->pb;
     uint64_t chunk_type, chunk_size;
-    int64_t duration;
+    int64_t duration, data_start;
     AVStream *st;
     int ret;
     char *value;
@@ -86,8 +85,8 @@ static int dtshd_read_header(AVFormatContext *s)
 
         switch (chunk_type) {
         case STRMDATA:
-            dtshd->data_start = avio_tell(pb);
-            dtshd->data_end = dtshd->data_start + chunk_size;
+            data_start = avio_tell(pb);
+            dtshd->data_end = data_start + chunk_size;
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
             if (!pb->seekable)
@@ -131,7 +130,7 @@ skip:
     if (!dtshd->data_end)
         return AVERROR_EOF;
 
-    avio_seek(pb, dtshd->data_start, SEEK_SET);
+    avio_seek(pb, data_start, SEEK_SET);
 
 break_loop:
     if (st->codecpar->sample_rate)

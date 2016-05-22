@@ -40,7 +40,10 @@
 #define DCA_PACKET_EXSS         0x02
 #define DCA_PACKET_XLL          0x04
 #define DCA_PACKET_LBR          0x08
-#define DCA_PACKET_RECOVERY     0x10
+#define DCA_PACKET_MASK         0x0f
+
+#define DCA_PACKET_RECOVERY     0x10    ///< Sync error recovery flag
+#define DCA_PACKET_RESIDUAL     0x20    ///< Core valid for residual decoding
 
 typedef struct DCAContext {
     const AVClass   *class;       ///< class for AVOptions
@@ -59,8 +62,6 @@ typedef struct DCAContext {
     unsigned int    buffer_size;
 
     int     packet; ///< Packet flags
-
-    int     core_residual_valid;    ///< Core valid for residual decoding
 
     int     request_channel_layout; ///< Converted from avctx.request_channel_layout
     int     core_only;              ///< Core only decoding flag

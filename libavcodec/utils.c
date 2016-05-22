@@ -2281,6 +2281,9 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 
     *got_frame_ptr = 0;
 
+    if (!avctx->codec)
+        return AVERROR(EINVAL);
+
     if (!avctx->codec->decode) {
         av_log(avctx, AV_LOG_ERROR, "This decoder requires using the avcodec_send_packet() API.\n");
         return AVERROR(ENOSYS);
@@ -2290,8 +2293,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
         return AVERROR(EINVAL);
     }
-    if (!avctx->codec)
-        return AVERROR(EINVAL);
     if (avctx->codec->type != AVMEDIA_TYPE_AUDIO) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for audio\n");
         return AVERROR(EINVAL);
@@ -3600,6 +3601,8 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                     return blocks * ((ba - 4 * ch) * 2 / ch);
                 case AV_CODEC_ID_ADPCM_MS:
                     return blocks * (2 + (ba - 7 * ch) * 2 / ch);
+                case AV_CODEC_ID_ADPCM_MTAF:
+                    return blocks * (ba - 16) * 2 / ch;
                 }
             }
 

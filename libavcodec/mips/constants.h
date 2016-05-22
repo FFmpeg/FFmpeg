@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 extern const uint64_t ff_pw_1;
+extern const uint64_t ff_pw_2;
 extern const uint64_t ff_pw_3;
 extern const uint64_t ff_pw_4;
 extern const uint64_t ff_pw_5;

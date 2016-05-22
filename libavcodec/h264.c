@@ -1007,6 +1007,7 @@ static int get_last_needed_nal(H264Context *h)
     int nals_needed = 0;
     int first_slice = 0;
     int i;
+    int ret;
 
     for (i = 0; i < h->pkt.nb_nals; i++) {
         H2645NAL *nal = &h->pkt.nals[i];
@@ -1024,7 +1025,9 @@ static int get_last_needed_nal(H264Context *h)
         case NAL_DPA:
         case NAL_IDR_SLICE:
         case NAL_SLICE:
-            init_get_bits8(&gb, nal->data + 1, (nal->size - 1));
+            ret = init_get_bits8(&gb, nal->data + 1, (nal->size - 1));
+            if (ret < 0)
+                return ret;
             if (!get_ue_golomb_long(&gb) ||  // first_mb_in_slice
                 !first_slice ||
                 first_slice != nal->type)
@@ -1076,6 +1079,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
 
     if (avctx->active_thread_type & FF_THREAD_FRAME)
         nals_needed = get_last_needed_nal(h);
+    if (nals_needed < 0)
+        return nals_needed;
 
     for (i = 0; i < h->pkt.nb_nals; i++) {
         H2645NAL *nal = &h->pkt.nals[i];

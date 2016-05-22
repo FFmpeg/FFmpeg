@@ -353,6 +353,9 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_OPUS:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
+        case AV_CODEC_ID_TIMED_ID3:
+            stream_type = STREAM_TYPE_METADATA;
+            break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
             break;
@@ -605,6 +608,13 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'L';
                 *q++ = 'V';
                 *q++ = 'A';
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+                *q++ = 0x5; /* MPEG-2 registration descriptor */
+                *q++ = 4;
+                *q++ = 'I';
+                *q++ = 'D';
+                *q++ = '3';
+                *q++ = ' ';
             }
             break;
         }

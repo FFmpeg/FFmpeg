@@ -2711,6 +2711,61 @@ Modify the @var{N}-th control value.
 If the specified value is not valid, it is ignored and prior one is kept.
 @end table
 
+@section loudnorm
+
+EBU R128 loudness normalization. Includes both dynamic and linear normalization modes.
+Support for both single pass (livestreams, files) and double pass (files) modes.
+This algorithm can target IL, LRA, and maximum true peak.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libebur128}.
+
+The filter accepts the following options:
+
+@table @option
+@item I, i
+Set integrated loudness target.
+Range is -70.0 - -5.0. Default value is -24.0.
+
+@item LRA, lra
+Set loudness range target.
+Range is 1.0 - 20.0. Default value is 7.0.
+
+@item TP, tp
+Set maximum true peak.
+Range is -9.0 - +0.0. Default value is -2.0.
+
+@item measured_I, measured_i
+Measured IL of input file.
+Range is -99.0 - +0.0.
+
+@item measured_LRA, measured_lra
+Measured LRA of input file.
+Range is  0.0 - 99.0.
+
+@item measured_TP, measured_tp
+Measured true peak of input file.
+Range is  -99.0 - +99.0.
+
+@item measured_thresh
+Measured threshold of input file.
+Range is -99.0 - +0.0.
+
+@item offset
+Set offset gain. Gain is applied before the true-peak limiter.
+Range is  -99.0 - +99.0. Default is +0.0.
+
+@item linear
+Normalize linearly if possible.
+measured_I, measured_LRA, measured_TP, and measured_thresh must also
+to be specified in order to use this mode.
+Options are true or false. Default is true.
+
+@item print_format
+Set print format for stats. Options are summary, json, or none.
+Default value is none.
+@end table
+
 @section lowpass
 
 Apply a low-pass filter with 3dB point frequency.
@@ -12614,28 +12669,7 @@ Output:
 22222                           44444
 @end example
 
-@item drop_odd, 1
-Only output even frames, odd frames are dropped, generating a frame with
-unchanged height at half frame rate.
-
-@example
- ------> time
-Input:
-Frame 1         Frame 2         Frame 3         Frame 4
-
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-
-Output:
-                22222                           44444
-                22222                           44444
-                22222                           44444
-                22222                           44444
-@end example
-
-@item drop_even, 2
+@item drop_even, 1
 Only output odd frames, even frames are dropped, generating a frame with
 unchanged height at half frame rate.
 
@@ -12654,6 +12688,27 @@ Output:
 11111                           33333
 11111                           33333
 11111                           33333
+@end example
+
+@item drop_odd, 2
+Only output even frames, odd frames are dropped, generating a frame with
+unchanged height at half frame rate.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+                22222                           44444
+                22222                           44444
+                22222                           44444
+                22222                           44444
 @end example
 
 @item pad, 3
@@ -12750,9 +12805,11 @@ Output:
  11111   11111   22222   22222   33333   33333   44444
 @end example
 
+
 @item mergex2, 7
 Move odd frames into the upper field, even into the lower field,
 generating a double height frame at same frame rate.
+
 @example
  ------> time
 Input:

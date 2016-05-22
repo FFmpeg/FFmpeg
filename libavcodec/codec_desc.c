@@ -2690,6 +2690,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("DST (Direct Stream Transfer)"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_ADPCM_MTAF,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_mtaf",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM MTAF"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {
