@@ -271,9 +271,15 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
     /* ask all the sub-filters for their supported media formats */
     for (i = 0; i < graph->nb_filters; i++) {
         if (graph->filters[i]->filter->query_formats)
-            graph->filters[i]->filter->query_formats(graph->filters[i]);
+            ret = graph->filters[i]->filter->query_formats(graph->filters[i]);
         else
-            ff_default_query_formats(graph->filters[i]);
+            ret = ff_default_query_formats(graph->filters[i]);
+        if (ret < 0) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Error querying formats for the filter %s (%s)\n",
+                   graph->filters[i]->name, graph->filters[i]->filter->name);
+            return ret;
+        }
     }
 
     /* go through and merge as many format lists as possible */
