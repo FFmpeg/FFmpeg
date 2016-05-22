@@ -1469,7 +1469,7 @@ static int configure_complex_filters(void)
     int i, ret = 0;
 
     for (i = 0; i < nb_filtergraphs; i++)
-        if (!filtergraphs[i]->graph &&
+        if (!filtergraph_is_simple(filtergraphs[i]) &&
             (ret = configure_filtergraph(filtergraphs[i])) < 0)
             return ret;
     return 0;
@@ -1723,7 +1723,7 @@ loop_end:
     }
     av_dict_free(&unused_opts);
 
-    /* set the encoding/decoding_needed flags */
+    /* set the encoding/decoding_needed flags and create simple filtergraphs */
     for (i = of->ost_index; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
@@ -1731,6 +1731,18 @@ loop_end:
         if (ost->encoding_needed && ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
             ist->decoding_needed = 1;
+
+            if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+                ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+                err = init_simple_filtergraph(ist, ost);
+                if (err < 0) {
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Error initializing a simple filtergraph between streams "
+                           "%d:%d->%d:%d\n", ist->file_index, ost->source_index,
+                           nb_output_files - 1, ost->st->index);
+                    exit_program(1);
+                }
+            }
         }
     }
 

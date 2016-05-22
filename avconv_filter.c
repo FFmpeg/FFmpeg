@@ -76,7 +76,7 @@ DEF_CHOOSE_FORMAT(int, sample_rate, supported_samplerates, 0,
 DEF_CHOOSE_FORMAT(uint64_t, channel_layout, channel_layouts, 0,
                   GET_CH_LAYOUT_NAME)
 
-FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
+int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
     FilterGraph *fg = av_mallocz(sizeof(*fg));
 
@@ -104,7 +104,7 @@ FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     GROW_ARRAY(filtergraphs, nb_filtergraphs);
     filtergraphs[nb_filtergraphs - 1] = fg;
 
-    return fg;
+    return 0;
 }
 
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)

@@ -2008,11 +2008,10 @@ static int transcode_init(void)
                 exit_program(1);
 #endif
 
-            if (!ost->filter &&
-                (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-                 enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO)) {
-                    FilterGraph *fg;
-                    fg = init_simple_filtergraph(ist, ost);
+            if ((enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+                 enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
+                 filtergraph_is_simple(ost->filter->graph)) {
+                    FilterGraph *fg = ost->filter->graph;
                     if (configure_filtergraph(fg)) {
                         av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
                         exit_program(1);
