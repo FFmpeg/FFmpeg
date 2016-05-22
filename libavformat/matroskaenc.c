@@ -947,6 +947,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         return 0;
     }
 
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
     if (!bit_depth && par->codec_id != AV_CODEC_ID_ADPCM_G726) {
         if (par->bits_per_raw_sample)
             bit_depth = par->bits_per_raw_sample;
@@ -955,6 +956,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
     if (!bit_depth)
         bit_depth = par->bits_per_coded_sample;
+    }
 
     if (par->codec_id == AV_CODEC_ID_AAC) {
         ret = get_aac_sample_rates(s, par, &sample_rate, &output_sample_rate);
