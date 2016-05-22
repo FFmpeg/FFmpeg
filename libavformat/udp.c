@@ -55,13 +55,15 @@
 #define IPPROTO_UDPLITE                                  136
 #endif
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
 #include <pthread.h>
+
+#if !defined(HAVE_PTHREAD_CANCEL) || HAVE_PTHREAD_CANCEL == 0
+#define NO_PTHREAD_CANCEL
+#include "../compat/bionic/pthread_cancel.h"
 #endif
 
-#ifndef HAVE_PTHREAD_CANCEL
-#define HAVE_PTHREAD_CANCEL 0
-#endif
+#endif /*HAVE_PTHREADS*/
 
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -92,7 +94,7 @@ typedef struct UDPContext {
     int circular_buffer_size;
     AVFifoBuffer *fifo;
     int circular_buffer_error;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
@@ -485,13 +487,12 @@ static int udp_get_file_handle(URLContext *h)
     return s->udp_fd;
 }
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
 static void *circular_buffer_task( void *_URLContext)
 {
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
     int old_cancelstate;
-
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
     if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
@@ -508,6 +509,11 @@ static void *circular_buffer_task( void *_URLContext)
            in Single Unix. */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
+#ifdef NO_PTHREAD_CANCEL
+        /* We have a cancel signal pending but blocked it */
+        if(thread_canceled())
+            goto end;
+#endif
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         pthread_mutex_lock(&s->mutex);
         if (len < 0) {
@@ -617,7 +623,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
                 s->overrun_nonfatal = 1;
-            if (!HAVE_PTHREAD_CANCEL)
+            if (!HAVE_PTHREADS)
                 av_log(h, AV_LOG_WARNING,
                        "'overrun_nonfatal' option was set but it is not supported "
                        "on this build (pthread support is required)\n");
@@ -645,7 +651,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
             s->circular_buffer_size = strtol(buf, NULL, 10);
-            if (!HAVE_PTHREAD_CANCEL)
+            if (!HAVE_PTHREADS)
                 av_log(h, AV_LOG_WARNING,
                        "'circular_buffer_size' option was set but it is not supported "
                        "on this build (pthread support is required)\n");
@@ -828,7 +834,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     s->udp_fd = udp_fd;
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
     if (!is_output && s->circular_buffer_size) {
         int ret;
 
@@ -854,7 +860,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 #endif
 
     return 0;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
  thread_fail:
     pthread_cond_destroy(&s->cond);
  cond_fail:
@@ -885,7 +891,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
     int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
     if (s->fifo) {
@@ -968,7 +974,7 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage);
     closesocket(s->udp_fd);
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_PTHREADS
     if (s->thread_started) {
         int ret;
         pthread_cancel(s->circular_buffer_thread);
