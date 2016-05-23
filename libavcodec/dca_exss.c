@@ -128,7 +128,8 @@ static int parse_descriptor(DCAExssParser *s, DCAExssAsset *asset)
 
             // Number of speaker remapping sets
             if ((spkr_remap_nsets = get_bits(&s->gb, 3)) && !spkr_mask_nbits) {
-                av_log(s->avctx, AV_LOG_ERROR, "Speaker mask disabled yet there are remapping sets\n");
+                if (s->avctx)
+                    av_log(s->avctx, AV_LOG_ERROR, "Speaker mask disabled yet there are remapping sets\n");
                 return AVERROR_INVALIDDATA;
             }
 
@@ -213,7 +214,8 @@ static int parse_descriptor(DCAExssParser *s, DCAExssAsset *asset)
 
         for (i = 0; i < s->nmixoutconfigs; i++) {
             if (!s->nmixoutchs[i]) {
-                av_log(s->avctx, AV_LOG_ERROR, "Invalid speaker layout mask for mixing configuration\n");
+                if (s->avctx)
+                    av_log(s->avctx, AV_LOG_ERROR, "Invalid speaker layout mask for mixing configuration\n");
                 return AVERROR_INVALIDDATA;
             }
             for (j = 0; j < nchannels_dmix; j++) {
@@ -310,7 +312,8 @@ static int parse_descriptor(DCAExssParser *s, DCAExssAsset *asset)
     // Reserved
     // Zero pad
     if (ff_dca_seek_bits(&s->gb, descr_pos + descr_size * 8)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Read past end of EXSS asset descriptor\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Read past end of EXSS asset descriptor\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -373,7 +376,7 @@ static int set_exss_offsets(DCAExssAsset *asset)
     return 0;
 }
 
-int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
+int ff_dca_exss_parse(DCAExssParser *s, const uint8_t *data, int size)
 {
     int i, ret, offset, wide_hdr, header_size;
 
@@ -396,7 +399,7 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
     header_size = get_bits(&s->gb, 8 + 4 * wide_hdr) + 1;
 
     // Check CRC
-    if (ff_dca_check_crc(s->avctx, &s->gb, 32 + 8, header_size * 8)) {
+    if (s->avctx && ff_dca_check_crc(s->avctx, &s->gb, 32 + 8, header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid EXSS header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -406,7 +409,8 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
     // Number of bytes of extension substream
     s->exss_size = get_bits(&s->gb, s->exss_size_nbits) + 1;
     if (s->exss_size > size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Packet too short for EXSS frame\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Packet too short for EXSS frame\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -428,14 +432,16 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
         // Number of defined audio presentations
         s->npresents = get_bits(&s->gb, 3) + 1;
         if (s->npresents > 1) {
-            avpriv_request_sample(s->avctx, "%d audio presentations", s->npresents);
+            if (s->avctx)
+                avpriv_request_sample(s->avctx, "%d audio presentations", s->npresents);
             return AVERROR_PATCHWELCOME;
         }
 
         // Number of audio assets in extension substream
         s->nassets = get_bits(&s->gb, 3) + 1;
         if (s->nassets > 1) {
-            avpriv_request_sample(s->avctx, "%d audio assets", s->nassets);
+            if (s->avctx)
+                avpriv_request_sample(s->avctx, "%d audio assets", s->nassets);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -476,7 +482,8 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
         s->assets[i].asset_size = get_bits(&s->gb, s->exss_size_nbits) + 1;
         offset += s->assets[i].asset_size;
         if (offset > s->exss_size) {
-            av_log(s->avctx, AV_LOG_ERROR, "EXSS asset out of bounds\n");
+            if (s->avctx)
+                av_log(s->avctx, AV_LOG_ERROR, "EXSS asset out of bounds\n");
             return AVERROR_INVALIDDATA;
         }
     }
@@ -486,7 +493,8 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
         if ((ret = parse_descriptor(s, &s->assets[i])) < 0)
             return ret;
         if ((ret = set_exss_offsets(&s->assets[i])) < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid extension size in EXSS asset descriptor\n");
+            if (s->avctx)
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid extension size in EXSS asset descriptor\n");
             return ret;
         }
     }
@@ -498,7 +506,8 @@ int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size)
     // Byte align
     // CRC16 of extension substream header
     if (ff_dca_seek_bits(&s->gb, header_size * 8)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Read past end of EXSS header\n");
+        if (s->avctx)
+            av_log(s->avctx, AV_LOG_ERROR, "Read past end of EXSS header\n");
         return AVERROR_INVALIDDATA;
     }
 
