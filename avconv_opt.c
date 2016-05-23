@@ -1767,6 +1767,48 @@ loop_end:
                 }
             }
         }
+
+        /*
+         * We want CFR output if and only if one of those is true:
+         * 1) user specified output framerate with -r
+         * 2) user specified -vsync cfr
+         * 3) output format is CFR and the user didn't force vsync to
+         *    something else than CFR
+         *
+         * in such a case, set ost->frame_rate
+         */
+        if (ost->encoding_needed && ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+            int format_cfr = !(oc->oformat->flags & (AVFMT_NOTIMESTAMPS | AVFMT_VARIABLE_FPS));
+            int need_cfr = !!ost->frame_rate.num;
+
+            if (video_sync_method == VSYNC_CFR ||
+                (video_sync_method == VSYNC_AUTO && format_cfr))
+                need_cfr = 1;
+
+            if (need_cfr && !ost->frame_rate.num) {
+                InputStream *ist = ost->source_index >= 0 ? input_streams[ost->source_index] : NULL;
+
+                if (ist && ist->framerate.num)
+                    ost->frame_rate = ist->framerate;
+                else if (ist && ist->st->avg_frame_rate.num)
+                    ost->frame_rate = ist->st->avg_frame_rate;
+                else {
+                    av_log(NULL, AV_LOG_WARNING, "Constant framerate requested "
+                           "for the output stream #%d:%d, but no information "
+                           "about the input framerate is available. Falling "
+                           "back to a default value of 25fps. Use the -r option "
+                           "if you want a different framerate.\n",
+                           ost->file_index, ost->index);
+                    ost->frame_rate = (AVRational){ 25, 1 };
+                }
+            }
+
+            if (need_cfr && ost->enc->supported_framerates && !ost->force_fps) {
+                int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
+                ost->frame_rate = ost->enc->supported_framerates[idx];
+            }
+        }
+
     }
 
     /* check filename in case of an image number is expected */

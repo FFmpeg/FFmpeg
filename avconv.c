@@ -1954,40 +1954,6 @@ static int transcode_init(void)
                 enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
             }
 
-            /*
-             * We want CFR output if and only if one of those is true:
-             * 1) user specified output framerate with -r
-             * 2) user specified -vsync cfr
-             * 3) output format is CFR and the user didn't force vsync to
-             *    something else than CFR
-             *
-             * in such a case, set ost->frame_rate
-             */
-            if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-                !ost->frame_rate.num && ist &&
-                (video_sync_method ==  VSYNC_CFR ||
-                 (video_sync_method ==  VSYNC_AUTO &&
-                  !(oc->oformat->flags & (AVFMT_NOTIMESTAMPS | AVFMT_VARIABLE_FPS))))) {
-                if (ist->framerate.num)
-                    ost->frame_rate = ist->framerate;
-                else if (ist->st->avg_frame_rate.num)
-                    ost->frame_rate = ist->st->avg_frame_rate;
-                else {
-                    av_log(NULL, AV_LOG_WARNING, "Constant framerate requested "
-                           "for the output stream #%d:%d, but no information "
-                           "about the input framerate is available. Falling "
-                           "back to a default value of 25fps. Use the -r option "
-                           "if you want a different framerate.\n",
-                           ost->file_index, ost->index);
-                    ost->frame_rate = (AVRational){ 25, 1 };
-                }
-
-                if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
-                    int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
-                    ost->frame_rate = ost->enc->supported_framerates[idx];
-                }
-            }
-
 #if CONFIG_LIBMFX
             if (qsv_transcode_init(ost))
                 exit_program(1);
