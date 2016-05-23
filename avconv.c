@@ -1949,17 +1949,6 @@ static int transcode_init(void)
             AVCodecContext *enc_ctx = ost->enc_ctx;
             AVCodecContext *dec_ctx = NULL;
 
-            if (!ost->enc) {
-                /* should only happen when a default codec is not present. */
-                snprintf(error, sizeof(error), "Automatic encoder selection "
-                         "failed for output stream #%d:%d. Default encoder for "
-                         "format %s is probably disabled. Please choose an "
-                         "encoder manually.\n", ost->file_index, ost->index,
-                         oc->oformat->name);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
-
             set_encoder_id(output_files[ost->file_index], ost);
 
             if (ist) {
