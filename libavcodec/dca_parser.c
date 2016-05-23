@@ -23,6 +23,8 @@
  */
 
 #include "dca.h"
+#include "dcadata.h"
+#include "dca_exss.h"
 #include "dca_syncwords.h"
 #include "get_bits.h"
 #include "parser.h"
@@ -32,6 +34,8 @@ typedef struct DCAParseContext {
     uint32_t lastmarker;
     int size;
     int framesize;
+    DCAExssParser exss;
+    unsigned int sr_code;
 } DCAParseContext;
 
 #define IS_CORE_MARKER(state) \
@@ -177,11 +181,12 @@ static av_cold int dca_parse_init(AVCodecParserContext *s)
     DCAParseContext *pc1 = s->priv_data;
 
     pc1->lastmarker = 0;
+    pc1->sr_code = -1;
     return 0;
 }
 
-static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
-                            int *sample_rate)
+static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
+                            int buf_size, int *duration, int *sample_rate)
 {
     GetBitContext gb;
     uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
@@ -189,6 +194,63 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
 
     if (buf_size < 12)
         return AVERROR_INVALIDDATA;
+
+    if (AV_RB32(buf) == DCA_SYNCWORD_SUBSTREAM) {
+        DCAExssAsset *asset = &pc1->exss.assets[0];
+
+        if ((ret = ff_dca_exss_parse(&pc1->exss, buf, buf_size)) < 0)
+            return ret;
+
+        if (asset->extension_mask & DCA_EXSS_LBR) {
+            if ((ret = init_get_bits8(&gb, buf + asset->lbr_offset, asset->lbr_size)) < 0)
+                return ret;
+
+            if (get_bits_long(&gb, 32) != DCA_SYNCWORD_LBR)
+                return AVERROR_INVALIDDATA;
+
+            switch (get_bits(&gb, 8)) {
+            case 2:
+                pc1->sr_code = get_bits(&gb, 8);
+            case 1:
+                break;
+            default:
+                return AVERROR_INVALIDDATA;
+            }
+
+            if (pc1->sr_code >= FF_ARRAY_ELEMS(ff_dca_sampling_freqs))
+                return AVERROR_INVALIDDATA;
+
+            *sample_rate = ff_dca_sampling_freqs[pc1->sr_code];
+            *duration = 1024 << ff_dca_freq_ranges[pc1->sr_code];
+            return 0;
+        }
+
+        if (asset->extension_mask & DCA_EXSS_XLL) {
+            int nsamples_log2;
+
+            if ((ret = init_get_bits8(&gb, buf + asset->xll_offset, asset->xll_size)) < 0)
+                return ret;
+
+            if (get_bits_long(&gb, 32) != DCA_SYNCWORD_XLL)
+                return AVERROR_INVALIDDATA;
+
+            if (get_bits(&gb, 4))
+                return AVERROR_INVALIDDATA;
+
+            skip_bits(&gb, 8);
+            skip_bits_long(&gb, get_bits(&gb, 5) + 1);
+            skip_bits(&gb, 4);
+            nsamples_log2 = get_bits(&gb, 4) + get_bits(&gb, 4);
+            if (nsamples_log2 > 24)
+                return AVERROR_INVALIDDATA;
+
+            *sample_rate = asset->max_sample_rate;
+            *duration = (1 + (*sample_rate > 96000)) << nsamples_log2;
+            return 0;
+        }
+
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((ret = avpriv_dca_convert_bitstream(buf, 12, hdr, 12)) < 0)
         return ret;
@@ -230,7 +292,7 @@ static int dca_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     /* read the duration and sample rate from the frame header */
-    if (!dca_parse_params(buf, buf_size, &duration, &sample_rate)) {
+    if (!dca_parse_params(pc1, buf, buf_size, &duration, &sample_rate)) {
         if (!avctx->sample_rate)
             avctx->sample_rate = sample_rate;
         s->duration = av_rescale(duration, avctx->sample_rate, sample_rate);
