@@ -1473,6 +1473,7 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
     ost->filter       = ofilter;
 
     ofilter->ost      = ost;
+    ofilter->format   = -1;
 
     if (ost->stream_copy) {
         av_log(NULL, AV_LOG_ERROR, "Streamcopy requested for output stream %d:%d, "
@@ -1830,6 +1831,67 @@ loop_end:
             if (need_cfr && ost->enc->supported_framerates && !ost->force_fps) {
                 int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
                 ost->frame_rate = ost->enc->supported_framerates[idx];
+            }
+        }
+
+        /* set the filter output constraints */
+        if (ost->filter) {
+            OutputFilter *f = ost->filter;
+            int count;
+            switch (ost->enc_ctx->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+                f->frame_rate = ost->frame_rate;
+                f->width      = ost->enc_ctx->width;
+                f->height     = ost->enc_ctx->height;
+                if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
+                    f->format = ost->enc_ctx->pix_fmt;
+                } else if (ost->enc->pix_fmts) {
+                    count = 0;
+                    while (ost->enc->pix_fmts[count] != AV_PIX_FMT_NONE)
+                        count++;
+                    f->formats = av_mallocz_array(count + 1, sizeof(*f->formats));
+                    if (!f->formats)
+                        exit_program(1);
+                    memcpy(f->formats, ost->enc->pix_fmts, (count + 1) * sizeof(*f->formats));
+                }
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
+                    f->format = ost->enc_ctx->sample_fmt;
+                } else if (ost->enc->sample_fmts) {
+                    count = 0;
+                    while (ost->enc->sample_fmts[count] != AV_SAMPLE_FMT_NONE)
+                        count++;
+                    f->formats = av_mallocz_array(count + 1, sizeof(*f->formats));
+                    if (!f->formats)
+                        exit_program(1);
+                    memcpy(f->formats, ost->enc->sample_fmts, (count + 1) * sizeof(*f->formats));
+                }
+                if (ost->enc_ctx->sample_rate) {
+                    f->sample_rate = ost->enc_ctx->sample_rate;
+                } else if (ost->enc->supported_samplerates) {
+                    count = 0;
+                    while (ost->enc->supported_samplerates[count])
+                        count++;
+                    f->sample_rates = av_mallocz_array(count + 1, sizeof(*f->sample_rates));
+                    if (!f->sample_rates)
+                        exit_program(1);
+                    memcpy(f->sample_rates, ost->enc->supported_samplerates,
+                           (count + 1) * sizeof(*f->sample_rates));
+                }
+                if (ost->enc_ctx->channels) {
+                    f->channel_layout = av_get_default_channel_layout(ost->enc_ctx->channels);
+                } else if (ost->enc->channel_layouts) {
+                    count = 0;
+                    while (ost->enc->channel_layouts[count])
+                        count++;
+                    f->channel_layouts = av_mallocz_array(count + 1, sizeof(*f->channel_layouts));
+                    if (!f->channel_layouts)
+                        exit_program(1);
+                    memcpy(f->channel_layouts, ost->enc->channel_layouts,
+                           (count + 1) * sizeof(*f->channel_layouts));
+                }
+                break;
             }
         }
 

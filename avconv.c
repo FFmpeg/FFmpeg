@@ -154,6 +154,9 @@ static void avconv_cleanup(int ret)
         av_freep(&fg->inputs);
         for (j = 0; j < fg->nb_outputs; j++) {
             av_freep(&fg->outputs[j]->name);
+            av_freep(&fg->outputs[j]->formats);
+            av_freep(&fg->outputs[j]->channel_layouts);
+            av_freep(&fg->outputs[j]->sample_rates);
             av_freep(&fg->outputs[j]);
         }
         av_freep(&fg->outputs);
