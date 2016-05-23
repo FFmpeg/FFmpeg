@@ -192,6 +192,13 @@ static void avconv_cleanup(int ret)
 
         avcodec_free_context(&ost->enc_ctx);
 
+        while (av_fifo_size(ost->muxing_queue)) {
+            AVPacket pkt;
+            av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+            av_packet_unref(&pkt);
+        }
+        av_fifo_free(ost->muxing_queue);
+
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
@@ -255,10 +262,32 @@ static void abort_codec_experimental(AVCodec *c, int encoder)
     exit_program(1);
 }
 
-static void write_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
+static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
+    AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
     int ret;
+
+    if (!of->header_written) {
+        AVPacket tmp_pkt;
+        /* the muxer is not initialized yet, buffer the packet */
+        if (!av_fifo_space(ost->muxing_queue)) {
+            int new_size = FFMIN(2 * av_fifo_size(ost->muxing_queue),
+                                 ost->max_muxing_queue_size);
+            if (new_size <= av_fifo_size(ost->muxing_queue)) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Too many packets buffered for output stream %d:%d.\n",
+                       ost->file_index, ost->st->index);
+                exit_program(1);
+            }
+            ret = av_fifo_realloc2(ost->muxing_queue, new_size);
+            if (ret < 0)
+                exit_program(1);
+        }
+        av_packet_move_ref(&tmp_pkt, pkt);
+        av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
+        return;
+    }
 
     /*
      * Audio encoders may split the packets --  #frames in != #packets out.
@@ -315,7 +344,7 @@ static void write_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 }
 
-static void output_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
+static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 {
     int ret = 0;
 
@@ -345,10 +374,10 @@ static void output_packet(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                     goto finish;
                 idx++;
             } else
-                write_packet(s, pkt, ost);
+                write_packet(of, pkt, ost);
         }
     } else
-        write_packet(s, pkt, ost);
+        write_packet(of, pkt, ost);
 
 finish:
     if (ret < 0 && ret != AVERROR_EOF) {
@@ -371,7 +400,7 @@ static int check_recording_time(OutputStream *ost)
     return 1;
 }
 
-static void do_audio_out(AVFormatContext *s, OutputStream *ost,
+static void do_audio_out(OutputFile *of, OutputStream *ost,
                          AVFrame *frame)
 {
     AVCodecContext *enc = ost->enc_ctx;
@@ -401,7 +430,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
             goto error;
 
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-        output_packet(s, &pkt, ost);
+        output_packet(of, &pkt, ost);
     }
 
     return;
@@ -410,7 +439,7 @@ error:
     exit_program(1);
 }
 
-static void do_subtitle_out(AVFormatContext *s,
+static void do_subtitle_out(OutputFile *of,
                             OutputStream *ost,
                             InputStream *ist,
                             AVSubtitle *sub,
@@ -475,11 +504,11 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        output_packet(s, &pkt, ost);
+        output_packet(of, &pkt, ost);
     }
 }
 
-static void do_video_out(AVFormatContext *s,
+static void do_video_out(OutputFile *of,
                          OutputStream *ost,
                          AVFrame *in_picture,
                          int *frame_size)
@@ -492,8 +521,8 @@ static void do_video_out(AVFormatContext *s,
 
     format_video_sync = video_sync_method;
     if (format_video_sync == VSYNC_AUTO)
-        format_video_sync = (s->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH :
-                            (s->oformat->flags & AVFMT_VARIABLE_FPS) ? VSYNC_VFR : VSYNC_CFR;
+        format_video_sync = (of->ctx->oformat->flags & AVFMT_NOTIMESTAMPS) ? VSYNC_PASSTHROUGH :
+                            (of->ctx->oformat->flags & AVFMT_VARIABLE_FPS) ? VSYNC_VFR : VSYNC_CFR;
     if (format_video_sync != VSYNC_PASSTHROUGH &&
         ost->frame_number &&
         in_picture->pts != AV_NOPTS_VALUE &&
@@ -552,7 +581,7 @@ static void do_video_out(AVFormatContext *s,
             goto error;
 
         av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-        output_packet(s, &pkt, ost);
+        output_packet(of, &pkt, ost);
         *frame_size = pkt.size;
 
         /* if two pass, output log */
@@ -662,12 +691,12 @@ static int poll_filter(OutputStream *ost)
         if (!ost->frame_aspect_ratio)
             ost->enc_ctx->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
 
-        do_video_out(of->ctx, ost, filtered_frame, &frame_size);
+        do_video_out(of, ost, filtered_frame, &frame_size);
         if (vstats_filename && frame_size)
             do_video_stats(ost, frame_size);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        do_audio_out(of->ctx, ost, filtered_frame);
+        do_audio_out(of, ost, filtered_frame);
         break;
     default:
         // TODO support subtitle filters
@@ -975,7 +1004,7 @@ static void flush_encoders(void)
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream   *ost = output_streams[i];
         AVCodecContext *enc = ost->enc_ctx;
-        AVFormatContext *os = output_files[ost->file_index]->ctx;
+        OutputFile      *of = output_files[ost->file_index];
         int stop_encoding = 0;
 
         if (!ost->encoding_needed)
@@ -1022,7 +1051,7 @@ static void flush_encoders(void)
                     break;
                 }
                 av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
-                output_packet(os, &pkt, ost);
+                output_packet(of, &pkt, ost);
             }
 
             if (stop_encoding)
@@ -1115,7 +1144,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = pkt->size;
     }
 
-    output_packet(of->ctx, &opkt, ost);
+    output_packet(of, &opkt, ost);
 }
 
 // This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
@@ -1353,7 +1382,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
 
-        do_subtitle_out(output_files[ost->file_index]->ctx, ost, ist, &subtitle, pkt->pts);
+        do_subtitle_out(output_files[ost->file_index], ost, ist, &subtitle, pkt->pts);
     }
 
     avsubtitle_free(&subtitle);
@@ -1656,6 +1685,17 @@ static int check_init_output_file(OutputFile *of, int file_index)
 
     if (want_sdp)
         print_sdp();
+
+    /* flush the muxing queues */
+    for (i = 0; i < of->ctx->nb_streams; i++) {
+        OutputStream *ost = output_streams[of->ost_index + i];
+
+        while (av_fifo_size(ost->muxing_queue)) {
+            AVPacket pkt;
+            av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+            write_packet(of, &pkt, ost);
+        }
+    }
 
     return 0;
 }

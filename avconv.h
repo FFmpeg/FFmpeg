@@ -190,6 +190,8 @@ typedef struct OptionsContext {
     int        nb_pass;
     SpecifierOpt *passlogfiles;
     int        nb_passlogfiles;
+    SpecifierOpt *max_muxing_queue_size;
+    int        nb_max_muxing_queue_size;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -391,6 +393,11 @@ typedef struct OutputStream {
 
     /* packet quality factor */
     int quality;
+
+    int max_muxing_queue_size;
+
+    /* the packets are buffered here until the muxer is ready to be initialized */
+    AVFifoBuffer *muxing_queue;
 } OutputStream;
 
 typedef struct OutputFile {
