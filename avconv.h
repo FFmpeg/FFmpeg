@@ -366,6 +366,12 @@ typedef struct OutputStream {
     AVDictionary *resample_opts;
     int finished;        /* no more packets should be written for this stream */
     int stream_copy;
+
+    // init_output_stream() has been called for this stream
+    // The encoder and the bistream filters have been initialized and the stream
+    // parameters are set in the AVStream.
+    int initialized;
+
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
 
@@ -396,6 +402,8 @@ typedef struct OutputFile {
     uint64_t limit_filesize;
 
     int shortest;
+
+    int header_written;
 } OutputFile;
 
 extern InputStream **input_streams;
