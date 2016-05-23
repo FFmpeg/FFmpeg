@@ -112,12 +112,10 @@ static int parse_descriptor(DCAExssParser *s, DCAExssAsset *asset)
             int nspeakers[8];
 
             // Embedded stereo flag
-            if (asset->nchannels_total > 2)
-                asset->embedded_stereo = get_bits1(&s->gb);
+            asset->embedded_stereo = asset->nchannels_total > 2 && get_bits1(&s->gb);
 
             // Embedded 6 channels flag
-            if (asset->nchannels_total > 6)
-                asset->embedded_6ch = get_bits1(&s->gb);
+            asset->embedded_6ch = asset->nchannels_total > 6 && get_bits1(&s->gb);
 
             // Speaker mask enabled flag
             if (asset->spkr_mask_enabled = get_bits1(&s->gb)) {
