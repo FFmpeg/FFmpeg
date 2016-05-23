@@ -1616,8 +1616,17 @@ static int get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
 
 static int init_input_stream(int ist_index, char *error, int error_len)
 {
-    int ret;
+    int i, ret;
     InputStream *ist = input_streams[ist_index];
+
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = ifilter_parameters_from_decoder(ist->filters[i], ist->dec_ctx);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Error initializing filter input\n");
+            return ret;
+        }
+    }
+
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
         if (!codec) {
@@ -1872,6 +1881,136 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     return 0;
 }
 
+static void set_encoder_id(OutputFile *of, OutputStream *ost)
+{
+    AVDictionaryEntry *e;
+
+    uint8_t *encoder_string;
+    int encoder_string_len;
+    int format_flags = 0;
+
+    e = av_dict_get(of->opts, "fflags", NULL, 0);
+    if (e) {
+        const AVOption *o = av_opt_find(of->ctx, "fflags", NULL, 0, 0);
+        if (!o)
+            return;
+        av_opt_eval_flags(of->ctx, o, e->value, &format_flags);
+    }
+
+    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
+    encoder_string     = av_mallocz(encoder_string_len);
+    if (!encoder_string)
+        exit_program(1);
+
+    if (!(format_flags & AVFMT_FLAG_BITEXACT))
+        av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
+    av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
+    av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
+                AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
+}
+
+static void parse_forced_key_frames(char *kf, OutputStream *ost,
+                                    AVCodecContext *avctx)
+{
+    char *p;
+    int n = 1, i;
+    int64_t t;
+
+    for (p = kf; *p; p++)
+        if (*p == ',')
+            n++;
+    ost->forced_kf_count = n;
+    ost->forced_kf_pts   = av_malloc(sizeof(*ost->forced_kf_pts) * n);
+    if (!ost->forced_kf_pts) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
+        exit_program(1);
+    }
+
+    p = kf;
+    for (i = 0; i < n; i++) {
+        char *next = strchr(p, ',');
+
+        if (next)
+            *next++ = 0;
+
+        t = parse_time_or_die("force_key_frames", p, 1);
+        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+
+        p = next;
+    }
+}
+
+static int init_output_stream_encode(OutputStream *ost)
+{
+    InputStream *ist = get_input_stream(ost);
+    AVCodecContext *enc_ctx = ost->enc_ctx;
+    AVCodecContext *dec_ctx = NULL;
+
+    set_encoder_id(output_files[ost->file_index], ost);
+
+    if (ist) {
+        ost->st->disposition = ist->st->disposition;
+
+        dec_ctx = ist->dec_ctx;
+
+        enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
+        enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
+    }
+
+    if ((enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+         enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
+         filtergraph_is_simple(ost->filter->graph)) {
+        FilterGraph *fg = ost->filter->graph;
+
+        if (configure_filtergraph(fg)) {
+            av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
+            exit_program(1);
+        }
+    }
+
+    switch (enc_ctx->codec_type) {
+    case AVMEDIA_TYPE_AUDIO:
+        enc_ctx->sample_fmt     = ost->filter->filter->inputs[0]->format;
+        enc_ctx->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
+        enc_ctx->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
+        enc_ctx->channels       = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+        enc_ctx->time_base      = (AVRational){ 1, enc_ctx->sample_rate };
+        break;
+    case AVMEDIA_TYPE_VIDEO:
+        enc_ctx->time_base = ost->filter->filter->inputs[0]->time_base;
+
+        enc_ctx->width  = ost->filter->filter->inputs[0]->w;
+        enc_ctx->height = ost->filter->filter->inputs[0]->h;
+        enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
+            ost->frame_aspect_ratio ? // overridden by the -aspect cli option
+            av_d2q(ost->frame_aspect_ratio * enc_ctx->height/enc_ctx->width, 255) :
+            ost->filter->filter->inputs[0]->sample_aspect_ratio;
+        enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
+
+        ost->st->avg_frame_rate = ost->frame_rate;
+
+        if (dec_ctx &&
+            (enc_ctx->width   != dec_ctx->width  ||
+             enc_ctx->height  != dec_ctx->height ||
+             enc_ctx->pix_fmt != dec_ctx->pix_fmt)) {
+            enc_ctx->bits_per_raw_sample = 0;
+        }
+
+        if (ost->forced_keyframes)
+            parse_forced_key_frames(ost->forced_keyframes, ost,
+                                    ost->enc_ctx);
+        break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        enc_ctx->time_base = (AVRational){1, 1000};
+        break;
+    default:
+        abort();
+        break;
+    }
+
+    return 0;
+}
+
 static int init_output_stream(OutputStream *ost, char *error, int error_len)
 {
     int ret = 0;
@@ -1880,6 +2019,10 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         AVCodec      *codec = ost->enc;
         AVCodecContext *dec = NULL;
         InputStream *ist;
+
+        ret = init_output_stream_encode(ost);
+        if (ret < 0)
+            return ret;
 
         if ((ist = get_input_stream(ost)))
             dec = ist->dec_ctx;
@@ -1973,69 +2116,9 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
     return ret;
 }
 
-static void parse_forced_key_frames(char *kf, OutputStream *ost,
-                                    AVCodecContext *avctx)
-{
-    char *p;
-    int n = 1, i;
-    int64_t t;
-
-    for (p = kf; *p; p++)
-        if (*p == ',')
-            n++;
-    ost->forced_kf_count = n;
-    ost->forced_kf_pts   = av_malloc(sizeof(*ost->forced_kf_pts) * n);
-    if (!ost->forced_kf_pts) {
-        av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
-        exit_program(1);
-    }
-
-    p = kf;
-    for (i = 0; i < n; i++) {
-        char *next = strchr(p, ',');
-
-        if (next)
-            *next++ = 0;
-
-        t = parse_time_or_die("force_key_frames", p, 1);
-        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
-
-        p = next;
-    }
-}
-
-static void set_encoder_id(OutputFile *of, OutputStream *ost)
-{
-    AVDictionaryEntry *e;
-
-    uint8_t *encoder_string;
-    int encoder_string_len;
-    int format_flags = 0;
-
-    e = av_dict_get(of->opts, "fflags", NULL, 0);
-    if (e) {
-        const AVOption *o = av_opt_find(of->ctx, "fflags", NULL, 0, 0);
-        if (!o)
-            return;
-        av_opt_eval_flags(of->ctx, o, e->value, &format_flags);
-    }
-
-    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(ost->enc->name) + 2;
-    encoder_string     = av_mallocz(encoder_string_len);
-    if (!encoder_string)
-        exit_program(1);
-
-    if (!(format_flags & AVFMT_FLAG_BITEXACT))
-        av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
-    av_strlcat(encoder_string, ost->enc->name, encoder_string_len);
-    av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
-                AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
-}
-
 static int transcode_init(void)
 {
     int ret = 0, i, j, k;
-    AVFormatContext *oc;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
@@ -2046,97 +2129,6 @@ static int transcode_init(void)
         if (ifile->rate_emu)
             for (j = 0; j < ifile->nb_streams; j++)
                 input_streams[j + ifile->ist_index]->start = av_gettime_relative();
-    }
-
-    /* for each output stream, we compute the right encoding parameters */
-    for (i = 0; i < nb_output_streams; i++) {
-        ost = output_streams[i];
-        oc  = output_files[ost->file_index]->ctx;
-        ist = get_input_stream(ost);
-
-        if (ost->attachment_filename)
-            continue;
-
-        if (ist) {
-            ost->st->disposition          = ist->st->disposition;
-        }
-
-        if (!ost->stream_copy) {
-            AVCodecContext *enc_ctx = ost->enc_ctx;
-            AVCodecContext *dec_ctx = NULL;
-
-            set_encoder_id(output_files[ost->file_index], ost);
-
-            if (ist) {
-                dec_ctx = ist->dec_ctx;
-
-                enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
-                enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
-            }
-
-#if CONFIG_LIBMFX
-            if (qsv_transcode_init(ost))
-                exit_program(1);
-#endif
-
-            if ((enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
-                 enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
-                 filtergraph_is_simple(ost->filter->graph)) {
-                    FilterGraph *fg = ost->filter->graph;
-
-                    ret = ifilter_parameters_from_decoder(fg->inputs[0],
-                                                          dec_ctx);
-                    if (ret < 0) {
-                        av_log(NULL, AV_LOG_FATAL, "Error initializing filter input\n");
-                        exit_program(1);
-                    }
-
-                    if (configure_filtergraph(fg)) {
-                        av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
-                        exit_program(1);
-                    }
-            }
-
-            switch (enc_ctx->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                enc_ctx->sample_fmt     = ost->filter->filter->inputs[0]->format;
-                enc_ctx->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
-                enc_ctx->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
-                enc_ctx->channels       = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
-                enc_ctx->time_base      = (AVRational){ 1, enc_ctx->sample_rate };
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                enc_ctx->time_base = ost->filter->filter->inputs[0]->time_base;
-
-                enc_ctx->width  = ost->filter->filter->inputs[0]->w;
-                enc_ctx->height = ost->filter->filter->inputs[0]->h;
-                enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
-                    ost->frame_aspect_ratio ? // overridden by the -aspect cli option
-                    av_d2q(ost->frame_aspect_ratio * enc_ctx->height/enc_ctx->width, 255) :
-                    ost->filter->filter->inputs[0]->sample_aspect_ratio;
-                enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
-
-                ost->st->avg_frame_rate = ost->frame_rate;
-
-                if (dec_ctx &&
-                    (enc_ctx->width   != dec_ctx->width  ||
-                     enc_ctx->height  != dec_ctx->height ||
-                     enc_ctx->pix_fmt != dec_ctx->pix_fmt)) {
-                    enc_ctx->bits_per_raw_sample = 0;
-                }
-
-                if (ost->forced_keyframes)
-                    parse_forced_key_frames(ost->forced_keyframes, ost,
-                                            ost->enc_ctx);
-                break;
-            case AVMEDIA_TYPE_SUBTITLE:
-                enc_ctx->time_base = (AVRational){1, 1000};
-                break;
-            default:
-                abort();
-                break;
-            }
-        }
     }
 
     /* init input streams */
