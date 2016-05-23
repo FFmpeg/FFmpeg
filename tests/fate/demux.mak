@@ -1,4 +1,4 @@
-FATE_SAMPLES_AVCONV-$(CONFIG_AAC_DEMUXER) += fate-adts-demux
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AAC, AAC) += fate-adts-demux
 fate-adts-demux: CMD = crc -i $(TARGET_SAMPLES)/aac/ct_faac-adts.aac -acodec copy
 
 FATE_SAMPLES_AVCONV-$(CONFIG_AEA_DEMUXER) += fate-aea-demux
@@ -16,10 +16,10 @@ fate-cdxl-demux: CMD = framecrc -i $(TARGET_SAMPLES)/cdxl/mirage.cdxl -vcodec co
 FATE_SAMPLES_AVCONV-$(CONFIG_DAUD_DEMUXER) += fate-d-cinema-demux
 fate-d-cinema-demux: CMD = framecrc -i $(TARGET_SAMPLES)/d-cinema/THX_Science_FLT_1920-partial.302 -acodec copy
 
-FATE_SAMPLES_AVCONV-$(CONFIG_IV8_DEMUXER) += fate-iv8-demux
+FATE_SAMPLES_AVCONV-$(call ALLYES, IV8_DEMUXER MPEG4VIDEO_PARSER) += fate-iv8-demux
 fate-iv8-demux: CMD = framecrc -i $(TARGET_SAMPLES)/iv8/zzz-partial.mpg -vcodec copy
 
-FATE_SAMPLES_AVCONV-$(CONFIG_LMLM4_DEMUXER) += fate-lmlm4-demux
+FATE_SAMPLES_AVCONV-$(call ALLYES, LMLM4_DEMUXER MPEG4VIDEO_PARSER) += fate-lmlm4-demux
 fate-lmlm4-demux: CMD = framecrc -i $(TARGET_SAMPLES)/lmlm4/LMLM4_CIFat30fps.divx -t 3 -acodec copy -vcodec copy
 
 FATE_SAMPLES_AVCONV-$(CONFIG_XA_DEMUXER) += fate-maxis-xa
@@ -28,10 +28,10 @@ fate-maxis-xa: CMD = framecrc -i $(TARGET_SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a
 FATE_SAMPLES_AVCONV-$(CONFIG_MTV_DEMUXER) += fate-mtv
 fate-mtv: CMD = framecrc -i $(TARGET_SAMPLES)/mtv/comedian_auto-partial.mtv -c copy
 
-FATE_SAMPLES_AVCONV-$(CONFIG_MXF_DEMUXER) += fate-mxf-demux
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MXF, MPEG4) += fate-mxf-demux
 fate-mxf-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mxf/C0023S01.mxf -acodec copy -vcodec copy
 
-FATE_SAMPLES_AVCONV-$(CONFIG_NC_DEMUXER) += fate-nc-demux
+FATE_SAMPLES_AVCONV-$(call ALLYES, NC_DEMUXER MPEG4VIDEO_PARSER) += fate-nc-demux
 fate-nc-demux: CMD = framecrc -i $(TARGET_SAMPLES)/nc-camera/nc-sample-partial -vcodec copy
 
 FATE_SAMPLES_AVCONV-$(CONFIG_NSV_DEMUXER) += fate-nsv-demux
@@ -61,7 +61,7 @@ fate-smjpeg-demux: CMD = framecrc -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -c co
 FATE_SAMPLES_AVCONV-$(CONFIG_WSAUD_DEMUXER) += fate-westwood-aud
 fate-westwood-aud: CMD = framecrc -i $(TARGET_SAMPLES)/westwood-aud/excellent.aud -c copy
 
-FATE_SAMPLES_AVCONV-$(CONFIG_WTV_DEMUXER) += fate-wtv-demux
+FATE_SAMPLES_AVCONV-$(call ALLYES, WTV_DEMUXER MPEGVIDEO_PARSER) += fate-wtv-demux
 fate-wtv-demux: CMD = framecrc -i $(TARGET_SAMPLES)/wtv/law-and-order-partial.wtv -vcodec copy -acodec copy
 
 FATE_SAMPLES_AVCONV-$(CONFIG_XMV_DEMUXER) += fate-xmv-demux
