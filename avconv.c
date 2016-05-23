@@ -1734,7 +1734,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         }
 
         ost->st->time_base = ost->enc_ctx->time_base;
-    } else {
+    } else if (ost->stream_copy) {
         ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
         if (ret < 0)
             return ret;
