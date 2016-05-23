@@ -97,6 +97,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
         exit(1);
     fg->inputs[0]->ist   = ist;
     fg->inputs[0]->graph = fg;
+    fg->inputs[0]->format = -1;
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[0];
@@ -172,6 +173,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         exit(1);
     fg->inputs[fg->nb_inputs - 1]->ist   = ist;
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
+    fg->inputs[fg->nb_inputs - 1]->format = -1;
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
@@ -505,15 +507,12 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (!par)
         return AVERROR(ENOMEM);
 
-    par->sample_aspect_ratio = ist->st->sample_aspect_ratio.num ?
-                               ist->st->sample_aspect_ratio :
-                               ist->dec_ctx->sample_aspect_ratio;
-    par->width               = ist->dec_ctx->width;
-    par->height              = ist->dec_ctx->height;
-    par->format              = ist->hwaccel_retrieve_data ?
-                               ist->hwaccel_retrieved_pix_fmt : ist->dec_ctx->pix_fmt;
+    par->sample_aspect_ratio = ifilter->sample_aspect_ratio;
+    par->width               = ifilter->width;
+    par->height              = ifilter->height;
+    par->format              = ifilter->format;
     par->time_base           = tb;
-    par->hw_frames_ctx       = ist->hw_frames_ctx;
+    par->hw_frames_ctx       = ifilter->hw_frames_ctx;
 
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     av_freep(&par);
@@ -597,10 +596,10 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     if (!par)
         return AVERROR(ENOMEM);
 
-    par->time_base      = (AVRational){ 1, ist->dec_ctx->sample_rate };
-    par->sample_rate    = ist->dec_ctx->sample_rate;
-    par->format         = ist->dec_ctx->sample_fmt;
-    par->channel_layout = ist->dec_ctx->channel_layout;
+    par->time_base      = (AVRational){ 1, ifilter->sample_rate };
+    par->sample_rate    = ifilter->sample_rate;
+    par->format         = ifilter->format;
+    par->channel_layout = ifilter->channel_layout;
 
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     av_freep(&par);
@@ -747,6 +746,53 @@ int configure_filtergraph(FilterGraph *fg)
 
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         return ret;
+
+    return 0;
+}
+
+int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
+{
+    av_buffer_unref(&ifilter->hw_frames_ctx);
+
+    ifilter->format = frame->format;
+
+    ifilter->width               = frame->width;
+    ifilter->height              = frame->height;
+    ifilter->sample_aspect_ratio = frame->sample_aspect_ratio;
+
+    ifilter->sample_rate         = frame->sample_rate;
+    ifilter->channel_layout      = frame->channel_layout;
+
+    if (frame->hw_frames_ctx) {
+        ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
+        if (!ifilter->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
+int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *avctx)
+{
+    av_buffer_unref(&ifilter->hw_frames_ctx);
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+        ifilter->format = avctx->pix_fmt;
+    else
+        ifilter->format = avctx->sample_fmt;
+
+    ifilter->width               = avctx->width;
+    ifilter->height              = avctx->height;
+    ifilter->sample_aspect_ratio = avctx->sample_aspect_ratio;
+
+    ifilter->sample_rate         = avctx->sample_rate;
+    ifilter->channel_layout      = avctx->channel_layout;
+
+    if (avctx->hw_frames_ctx) {
+        ifilter->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!ifilter->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }

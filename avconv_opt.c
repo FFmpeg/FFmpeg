@@ -1498,12 +1498,28 @@ static int init_complex_filters(void)
 
 static int configure_complex_filters(void)
 {
-    int i, ret = 0;
+    int i, j, ret = 0;
 
-    for (i = 0; i < nb_filtergraphs; i++)
-        if (!filtergraph_is_simple(filtergraphs[i]) &&
-            (ret = configure_filtergraph(filtergraphs[i])) < 0)
+    for (i = 0; i < nb_filtergraphs; i++) {
+        FilterGraph *fg = filtergraphs[i];
+
+        if (filtergraph_is_simple(fg))
+            continue;
+
+        for (j = 0; j < fg->nb_inputs; j++) {
+            ret = ifilter_parameters_from_decoder(fg->inputs[j],
+                                                  fg->inputs[j]->ist->dec_ctx);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error initializing filtergraph %d input %d\n", i, j);
+                return ret;
+            }
+        }
+
+        ret = configure_filtergraph(filtergraphs[i]);
+        if (ret < 0)
             return ret;
+    }
     return 0;
 }
 
