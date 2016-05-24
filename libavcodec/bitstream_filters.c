@@ -34,6 +34,7 @@ extern const AVBitStreamFilter ff_imx_dump_header_bsf;
 extern const AVBitStreamFilter ff_mjpeg2jpeg_bsf;
 extern const AVBitStreamFilter ff_mjpega_dump_header_bsf;
 extern const AVBitStreamFilter ff_mov2textsub_bsf;
+extern const AVBitStreamFilter ff_null_bsf;
 extern const AVBitStreamFilter ff_text2movsub_bsf;
 extern const AVBitStreamFilter ff_noise_bsf;
 extern const AVBitStreamFilter ff_remove_extradata_bsf;

@@ -90,6 +90,9 @@ avconv -i frame_%d.jpg -c:v copy rotated.avi
 
 @section noise
 
+@section null
+This bitstream filter passes the packets through unchanged.
+
 @section remove_extradata
 
 @c man end BITSTREAM FILTERS

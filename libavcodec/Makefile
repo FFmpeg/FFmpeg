@@ -764,6 +764,7 @@ OBJS-$(CONFIG_MJPEG2JPEG_BSF)             += mjpeg2jpeg_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)     += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MOV2TEXTSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_NOISE_BSF)                  += noise_bsf.o
+OBJS-$(CONFIG_NULL_BSF)                   += null_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
