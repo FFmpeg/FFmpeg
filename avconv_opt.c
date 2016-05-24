@@ -1015,7 +1015,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
             *next++ = 0;
 
         filter = av_bsf_get_by_name(bsf);
-        if (!bsf) {
+        if (!filter) {
             av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf);
             exit_program(1);
         }
