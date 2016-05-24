@@ -24,7 +24,6 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
