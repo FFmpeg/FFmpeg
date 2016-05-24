@@ -63,11 +63,11 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(Q)echo '#include "$*.h"' >$@
 
 %.ver: %.v
-	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ | sed -e 's/:/:\
+	$(M)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ | sed -e 's/:/:\
 /' -e 's/; /;\
 /g' > $@
 
-%.c %.h: TAG = GEN
+%.c %.h %.ver: TAG = GEN
 
 AVPROGS-$(CONFIG_AVCONV)   += avconv
 AVPROGS-$(CONFIG_AVPLAY)   += avplay
