@@ -1,4 +1,6 @@
-LIBAVFORMAT_$MAJOR {
-        global: av*;
-        local: *;
+LIBAVFORMAT_MAJOR {
+    global:
+        av*;
+    local:
+        *;
 };

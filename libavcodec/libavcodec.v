@@ -1,4 +1,6 @@
-LIBAVCODEC_$MAJOR {
-        global: av*;
-        local:  *;
+LIBAVCODEC_MAJOR {
+    global:
+        av*;
+    local:
+        *;
 };

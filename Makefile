@@ -63,9 +63,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(Q)echo '#include "$*.h"' >$@
 
 %.ver: %.v
-	$(M)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ | sed -e 's/:/:\
-/' -e 's/; /;\
-/g' > $@
+	$(M)sed 's/MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
 
 %.c %.h %.ver: TAG = GEN
 

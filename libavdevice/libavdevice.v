@@ -1,4 +1,6 @@
-LIBAVDEVICE_$MAJOR {
-        global: avdevice_*;
-        local: *;
+LIBAVDEVICE_MAJOR {
+    global:
+        avdevice_*;
+    local:
+        *;
 };
