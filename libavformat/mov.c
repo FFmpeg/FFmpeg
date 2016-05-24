@@ -4235,7 +4235,7 @@ static int mov_seek_auxiliary_info(AVFormatContext *s, MOVStreamContext *sc)
     int i;
 
     if (sc->cenc.auxiliary_info_default_size) {
-        auxiliary_info_seek_offset = sc->cenc.auxiliary_info_default_size * sc->current_sample;
+        auxiliary_info_seek_offset = (size_t)sc->cenc.auxiliary_info_default_size * sc->current_sample;
     } else if (sc->cenc.auxiliary_info_sizes) {
         if (sc->current_sample > sc->cenc.auxiliary_info_sizes_count) {
             av_log(s, AV_LOG_ERROR, "current sample %d greater than the number of auxiliary info sample sizes %"SIZE_SPECIFIER"\n",
