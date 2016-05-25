@@ -104,6 +104,28 @@ typedef struct NvencDynLoadFunctions
 
 } NvencDynLoadFunctions;
 
+enum {
+    PRESET_DEFAULT = 0,
+    PRESET_SLOW,
+    PRESET_MEDIUM,
+    PRESET_FAST,
+    PRESET_HP,
+    PRESET_HQ,
+    PRESET_BD ,
+    PRESET_LOW_LATENCY_DEFAULT ,
+    PRESET_LOW_LATENCY_HQ ,
+    PRESET_LOW_LATENCY_HP,
+    PRESET_LOSSLESS_DEFAULT, // lossless presets must be the last ones
+    PRESET_LOSSLESS_HP,
+};
+
+enum {
+    NVENC_LOWLATENCY = 1,
+    NVENC_LOSSLESS   = 2,
+    NVENC_ONE_PASS   = 4,
+    NVENC_TWO_PASSES = 8,
+};
+
 typedef struct NvencContext
 {
     AVClass *avclass;
@@ -137,13 +159,14 @@ typedef struct NvencContext
 
     void *nvencoder;
 
-    char *preset;
+    int preset;
     char *profile;
     char *level;
     char *tier;
     int cbr;
     int twopass;
     int gpu;
+    int flags;
     int buffer_delay;
 } NvencContext;
 
