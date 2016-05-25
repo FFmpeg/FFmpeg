@@ -16973,6 +16973,11 @@ Default value is "1".
 
 Note that when the movie is looped the source timestamps are not
 changed, so it will generate non monotonically increasing timestamps.
+
+@item discontinuity
+Specifies the time difference between frames above which the point is
+considered a timestamp discontinuity which is removed by adjusting the later
+timestamps.
 @end table
 
 It allows overlaying a second video on top of the main input of

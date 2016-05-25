@@ -48,6 +48,8 @@ typedef struct MovieStream {
     AVStream *st;
     AVCodecContext *codec_ctx;
     int done;
+    int64_t discontinuity_threshold;
+    int64_t last_pts;
 } MovieStream;
 
 typedef struct MovieContext {
@@ -60,6 +62,8 @@ typedef struct MovieContext {
     char *stream_specs; /**< user-provided list of streams, separated by + */
     int stream_index; /**< for compatibility */
     int loop_count;
+    int64_t discontinuity_threshold;
+    int64_t ts_offset;
 
     AVFormatContext *format_ctx;
     int eof;
@@ -84,6 +88,7 @@ static const AVOption movie_options[]= {
     { "streams",      "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
     { "s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
     { "loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, FLAGS },
+    { "discontinuity", "set discontinuity threshold", OFFSET(discontinuity_threshold), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX, FLAGS },
     { NULL },
 };
 
@@ -282,6 +287,8 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
         st->discard = AVDISCARD_DEFAULT;
         movie->st[i].st = st;
         movie->max_stream_index = FFMAX(movie->max_stream_index, st->index);
+        movie->st[i].discontinuity_threshold =
+            av_rescale_q(movie->discontinuity_threshold, AV_TIME_BASE_Q, st->time_base);
     }
     if (av_strtok(NULL, "+", &cursor))
         return AVERROR_BUG;
@@ -549,6 +556,21 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     }
 
     frame->pts = av_frame_get_best_effort_timestamp(frame);
+    if (frame->pts != AV_NOPTS_VALUE) {
+        if (movie->ts_offset)
+            frame->pts += av_rescale_q_rnd(movie->ts_offset, AV_TIME_BASE_Q, outlink->time_base, AV_ROUND_UP);
+        if (st->discontinuity_threshold) {
+            if (st->last_pts != AV_NOPTS_VALUE) {
+                int64_t diff = frame->pts - st->last_pts;
+                if (diff < 0 || diff > st->discontinuity_threshold) {
+                    av_log(ctx, AV_LOG_VERBOSE, "Discontinuity in stream:%d diff:%"PRId64"\n", pkt_out_id, diff);
+                    movie->ts_offset += av_rescale_q_rnd(-diff, outlink->time_base, AV_TIME_BASE_Q, AV_ROUND_UP);
+                    frame->pts -= diff;
+                }
+            }
+        }
+        st->last_pts = frame->pts;
+    }
     ff_dlog(ctx, "movie_push_frame(): file:'%s' %s\n", movie->file_name,
             describe_frame_to_str((char[1024]){0}, 1024, frame, frame_type, outlink));
 
