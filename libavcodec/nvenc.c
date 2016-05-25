@@ -410,6 +410,9 @@ static av_cold int nvenc_check_cuda(AVCodecContext *avctx)
         goto error;
     }
 
+    if (!strncmp(ctx->preset, "lossless", 8))
+        target_smver = 0x52;
+
     if (!nvenc_dyload_cuda(avctx))
         return 0;
 
