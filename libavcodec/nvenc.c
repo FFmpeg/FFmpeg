@@ -19,43 +19,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #if defined(_WIN32)
 #include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
 
-#include <nvEncodeAPI.h>
-
-#include "libavutil/fifo.h"
-#include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
-#include "libavutil/opt.h"
 #include "libavutil/mem.h"
 #include "libavutil/hwcontext.h"
-#include "avcodec.h"
 #include "internal.h"
 #include "thread.h"
 
+#include "nvenc.h"
 
 #if CONFIG_CUDA
-#include <cuda.h>
 #include "libavutil/hwcontext_cuda.h"
-#else
-
-#if defined(_WIN32)
-#define CUDAAPI __stdcall
-#else
-#define CUDAAPI
-#endif
-
-typedef enum cudaError_enum {
-    CUDA_SUCCESS = 0
-} CUresult;
-typedef int CUdevice;
-typedef void* CUcontext;
-typedef void* CUdeviceptr;
 #endif
 
 #if defined(_WIN32)
@@ -66,34 +48,15 @@ typedef void* CUdeviceptr;
 #define DL_CLOSE_FUNC(l) dlclose(l)
 #endif
 
-typedef CUresult(CUDAAPI *PCUINIT)(unsigned int Flags);
-typedef CUresult(CUDAAPI *PCUDEVICEGETCOUNT)(int *count);
-typedef CUresult(CUDAAPI *PCUDEVICEGET)(CUdevice *device, int ordinal);
-typedef CUresult(CUDAAPI *PCUDEVICEGETNAME)(char *name, int len, CUdevice dev);
-typedef CUresult(CUDAAPI *PCUDEVICECOMPUTECAPABILITY)(int *major, int *minor, CUdevice dev);
-typedef CUresult(CUDAAPI *PCUCTXCREATE)(CUcontext *pctx, unsigned int flags, CUdevice dev);
-typedef CUresult(CUDAAPI *PCUCTXPOPCURRENT)(CUcontext *pctx);
-typedef CUresult(CUDAAPI *PCUCTXDESTROY)(CUcontext ctx);
-
-typedef NVENCSTATUS (NVENCAPI* PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTION_LIST *functionList);
-
-#define MAX_REGISTERED_FRAMES 64
-typedef struct NvencSurface
-{
-    NV_ENC_INPUT_PTR input_surface;
-    AVFrame *in_ref;
-    NV_ENC_MAP_INPUT_RESOURCE in_map;
-    int reg_idx;
-    int width;
-    int height;
-
-    int lockCount;
-
-    NV_ENC_BUFFER_FORMAT format;
-
-    NV_ENC_OUTPUT_PTR output_surface;
-    int size;
-} NvencSurface;
+const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NV12,
+    AV_PIX_FMT_YUV444P,
+#if CONFIG_CUDA
+    AV_PIX_FMT_CUDA,
+#endif
+    AV_PIX_FMT_NONE
+};
 
 typedef struct NvencData
 {
@@ -103,82 +66,11 @@ typedef struct NvencData
     } u;
 } NvencData;
 
-typedef struct NvencDynLoadFunctions
-{
-    PCUINIT cu_init;
-    PCUDEVICEGETCOUNT cu_device_get_count;
-    PCUDEVICEGET cu_device_get;
-    PCUDEVICEGETNAME cu_device_get_name;
-    PCUDEVICECOMPUTECAPABILITY cu_device_compute_capability;
-    PCUCTXCREATE cu_ctx_create;
-    PCUCTXPOPCURRENT cu_ctx_pop_current;
-    PCUCTXDESTROY cu_ctx_destroy;
-
-    NV_ENCODE_API_FUNCTION_LIST nvenc_funcs;
-    int nvenc_device_count;
-    CUdevice nvenc_devices[16];
-
-#if !CONFIG_CUDA
-#if defined(_WIN32)
-    HMODULE cuda_lib;
-#else
-    void* cuda_lib;
-#endif
-#endif
-#if defined(_WIN32)
-    HMODULE nvenc_lib;
-#else
-    void* nvenc_lib;
-#endif
-} NvencDynLoadFunctions;
-
 typedef struct NvencValuePair
 {
     const char *str;
     uint32_t num;
 } NvencValuePair;
-
-typedef struct NvencContext
-{
-    AVClass *avclass;
-
-    NvencDynLoadFunctions nvenc_dload_funcs;
-
-    NV_ENC_INITIALIZE_PARAMS init_encode_params;
-    NV_ENC_CONFIG encode_config;
-    CUcontext cu_context;
-    CUcontext cu_context_internal;
-
-    int max_surface_count;
-    NvencSurface *surfaces;
-
-    AVFifoBuffer *output_surface_queue;
-    AVFifoBuffer *output_surface_ready_queue;
-    AVFifoBuffer *timestamp_list;
-    int64_t last_dts;
-
-    struct {
-        CUdeviceptr ptr;
-        NV_ENC_REGISTERED_PTR regptr;
-        int mapped;
-    } registered_frames[MAX_REGISTERED_FRAMES];
-    int nb_registered_frames;
-
-    /* the actual data pixel format, different from
-     * AVCodecContext.pix_fmt when using hwaccel frames on input */
-    enum AVPixelFormat data_pix_fmt;
-
-    void *nvencoder;
-
-    char *preset;
-    char *profile;
-    char *level;
-    char *tier;
-    int cbr;
-    int twopass;
-    int gpu;
-    int buffer_delay;
-} NvencContext;
 
 static const NvencValuePair nvenc_h264_level_pairs[] = {
     { "auto", NV_ENC_LEVEL_AUTOSELECT },
@@ -1252,7 +1144,7 @@ static av_cold int nvenc_setup_extradata(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int nvenc_encode_init(AVCodecContext *avctx)
+av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1315,7 +1207,7 @@ error:
     return res;
 }
 
-static av_cold int nvenc_encode_close(AVCodecContext *avctx)
+av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
@@ -1697,7 +1589,7 @@ static int output_ready(NvencContext *ctx, int flush)
     return nb_ready > 0 && (flush || nb_ready + nb_pending >= ctx->buffer_delay);
 }
 
-static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame *frame, int *got_packet)
 {
     NVENCSTATUS nv_status;
@@ -1786,112 +1678,3 @@ static int nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     return 0;
 }
-
-static const enum AVPixelFormat pix_fmts_nvenc[] = {
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NV12,
-    AV_PIX_FMT_YUV444P,
-#if CONFIG_CUDA
-    AV_PIX_FMT_CUDA,
-#endif
-    AV_PIX_FMT_NONE
-};
-
-#define OFFSET(x) offsetof(NvencContext, x)
-#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption options[] = {
-    { "preset", "Set the encoding preset (one of slow = hq 2pass, medium = hq, fast = hp, hq, hp, bd, ll, llhq, llhp, lossless, losslesshp, default)", OFFSET(preset), AV_OPT_TYPE_STRING, { .str = "medium" }, 0, 0, VE },
-    { "profile", "Set the encoding profile (high, main, baseline or high444p)", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = "main" }, 0, 0, VE },
-    { "level", "Set the encoding level restriction (auto, 1.0, 1.0b, 1.1, 1.2, ..., 4.2, 5.0, 5.1)", OFFSET(level), AV_OPT_TYPE_STRING, { .str = "auto" }, 0, 0, VE },
-    { "tier", "Set the encoding tier (main or high)", OFFSET(tier), AV_OPT_TYPE_STRING, { .str = "main" }, 0, 0, VE },
-    { "cbr", "Use cbr encoding mode", OFFSET(cbr), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "2pass", "Use 2pass encoding mode", OFFSET(twopass), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VE },
-    { "gpu", "Selects which NVENC capable GPU to use. First GPU is 0, second is 1, and so on.", OFFSET(gpu), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
-    { "delay", "Delays frame output by the given amount of frames.", OFFSET(buffer_delay), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 0, INT_MAX, VE },
-    { NULL }
-};
-
-static const AVCodecDefault nvenc_defaults[] = {
-    { "b", "2M" },
-    { "qmin", "-1" },
-    { "qmax", "-1" },
-    { "qdiff", "-1" },
-    { "qblur", "-1" },
-    { "qcomp", "-1" },
-    { "g", "250" },
-    { "bf", "0" },
-    { NULL },
-};
-
-#if CONFIG_NVENC_ENCODER
-static const AVClass nvenc_class = {
-    .class_name = "nvenc",
-    .item_name = av_default_item_name,
-    .option = options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_nvenc_encoder = {
-    .name = "nvenc",
-    .long_name = NULL_IF_CONFIG_SMALL("NVIDIA NVENC h264 encoder"),
-    .type = AVMEDIA_TYPE_VIDEO,
-    .id = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(NvencContext),
-    .init = nvenc_encode_init,
-    .encode2 = nvenc_encode_frame,
-    .close = nvenc_encode_close,
-    .capabilities = AV_CODEC_CAP_DELAY,
-    .priv_class = &nvenc_class,
-    .defaults = nvenc_defaults,
-    .pix_fmts = pix_fmts_nvenc,
-};
-#endif
-
-/* Add an alias for nvenc_h264 */
-#if CONFIG_NVENC_H264_ENCODER
-static const AVClass nvenc_h264_class = {
-    .class_name = "nvenc_h264",
-    .item_name = av_default_item_name,
-    .option = options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_nvenc_h264_encoder = {
-    .name = "nvenc_h264",
-    .long_name = NULL_IF_CONFIG_SMALL("NVIDIA NVENC h264 encoder"),
-    .type = AVMEDIA_TYPE_VIDEO,
-    .id = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(NvencContext),
-    .init = nvenc_encode_init,
-    .encode2 = nvenc_encode_frame,
-    .close = nvenc_encode_close,
-    .capabilities = AV_CODEC_CAP_DELAY,
-    .priv_class = &nvenc_h264_class,
-    .defaults = nvenc_defaults,
-    .pix_fmts = pix_fmts_nvenc,
-};
-#endif
-
-#if CONFIG_NVENC_HEVC_ENCODER
-static const AVClass nvenc_hevc_class = {
-    .class_name = "nvenc_hevc",
-    .item_name = av_default_item_name,
-    .option = options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_nvenc_hevc_encoder = {
-    .name = "nvenc_hevc",
-    .long_name = NULL_IF_CONFIG_SMALL("NVIDIA NVENC hevc encoder"),
-    .type = AVMEDIA_TYPE_VIDEO,
-    .id = AV_CODEC_ID_H265,
-    .priv_data_size = sizeof(NvencContext),
-    .init = nvenc_encode_init,
-    .encode2 = nvenc_encode_frame,
-    .close = nvenc_encode_close,
-    .capabilities = AV_CODEC_CAP_DELAY,
-    .priv_class = &nvenc_hevc_class,
-    .defaults = nvenc_defaults,
-    .pix_fmts = pix_fmts_nvenc,
-};
-#endif
