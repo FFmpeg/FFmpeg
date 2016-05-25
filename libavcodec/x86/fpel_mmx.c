@@ -79,26 +79,26 @@ void ff_put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h)
 {
     __asm__ volatile (
-        "lea   (%3, %3), %%"REG_a"      \n\t"
+        "lea   (%3, %3), %%"FF_REG_a"   \n\t"
         ".p2align     3                 \n\t"
         "1:                             \n\t"
         "movq  (%1    ), %%mm0          \n\t"
         "movq  (%1, %3), %%mm1          \n\t"
         "movq     %%mm0, (%2)           \n\t"
         "movq     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
+        "add %%"FF_REG_a", %1           \n\t"
+        "add %%"FF_REG_a", %2           \n\t"
         "movq  (%1    ), %%mm0          \n\t"
         "movq  (%1, %3), %%mm1          \n\t"
         "movq     %%mm0, (%2)           \n\t"
         "movq     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
+        "add %%"FF_REG_a", %1           \n\t"
+        "add %%"FF_REG_a", %2           \n\t"
         "subl        $4, %0             \n\t"
         "jnz         1b                 \n\t"
         : "+g"(h), "+r"(pixels),  "+r"(block)
         : "r"((x86_reg)line_size)
-        : "%"REG_a, "memory"
+        : "%"FF_REG_a, "memory"
         );
 }
 
@@ -106,7 +106,7 @@ void ff_put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
                          ptrdiff_t line_size, int h)
 {
     __asm__ volatile (
-        "lea   (%3, %3), %%"REG_a"      \n\t"
+        "lea   (%3, %3), %%"FF_REG_a"   \n\t"
         ".p2align     3                 \n\t"
         "1:                             \n\t"
         "movq  (%1    ), %%mm0          \n\t"
@@ -117,8 +117,8 @@ void ff_put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
         "movq     %%mm4, 8(%2)          \n\t"
         "movq     %%mm1,  (%2, %3)      \n\t"
         "movq     %%mm5, 8(%2, %3)      \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
+        "add %%"FF_REG_a", %1           \n\t"
+        "add %%"FF_REG_a", %2           \n\t"
         "movq  (%1    ), %%mm0          \n\t"
         "movq 8(%1    ), %%mm4          \n\t"
         "movq  (%1, %3), %%mm1          \n\t"
@@ -127,13 +127,13 @@ void ff_put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
         "movq     %%mm4, 8(%2)          \n\t"
         "movq     %%mm1,  (%2, %3)      \n\t"
         "movq     %%mm5, 8(%2, %3)      \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
+        "add %%"FF_REG_a", %1           \n\t"
+        "add %%"FF_REG_a", %2           \n\t"
         "subl        $4, %0             \n\t"
         "jnz         1b                 \n\t"
         : "+g"(h), "+r"(pixels),  "+r"(block)
         : "r"((x86_reg)line_size)
-        : "%"REG_a, "memory"
+        : "%"FF_REG_a, "memory"
         );
 }
 

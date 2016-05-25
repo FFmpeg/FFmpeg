@@ -72,12 +72,12 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         "jnz    2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
-        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
+        "cmp    "end"       , %%"FF_REG_c"                              \n\t"\
         "jge    1f                                                      \n\t"\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c") , "tmp"                                     \n\t"\
+        "movzwl (%%"FF_REG_c"), "tmp"                                   \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -133,12 +133,12 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
-        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
+        "cmp    "end"       , %%"FF_REG_c"                              \n\t"\
         "jge    1f                                                      \n\t"\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -183,7 +183,7 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
           "i"(offsetof(CABACContext, bytestream)),
           "i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
     return bit & 1;
 }
@@ -214,7 +214,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "addl          %%edx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
 
@@ -254,7 +254,7 @@ static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
         "addl          %%ecx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
 

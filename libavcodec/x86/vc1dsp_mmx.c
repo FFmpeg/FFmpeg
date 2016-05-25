@@ -87,7 +87,7 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        int rnd, int64_t shift)
 {
     __asm__ volatile(
-        "mov       $3, %%"REG_c"           \n\t"
+        "mov       $3, %%"FF_REG_c"        \n\t"
         LOAD_ROUNDER_MMX("%5")
         "movq      "MANGLE(ff_pw_9)", %%mm6 \n\t"
         "1:                                \n\t"
@@ -106,12 +106,12 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
         SHIFT2_LINE(168, 4, 1, 2, 3)
         "sub       %6, %0                  \n\t"
         "add       $8, %1                  \n\t"
-        "dec       %%"REG_c"               \n\t"
+        "dec       %%"FF_REG_c"            \n\t"
         "jnz 1b                            \n\t"
         : "+r"(src), "+r"(dst)
         : "r"(stride), "r"(-2*stride),
           "m"(shift), "m"(rnd), "r"(9*stride-4)
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
 }
 
@@ -173,7 +173,7 @@ static void OPNAME ## vc1_shift2_mmx(uint8_t *dst, const uint8_t *src,\
 {\
     rnd = 8-rnd;\
     __asm__ volatile(\
-        "mov       $8, %%"REG_c"           \n\t"\
+        "mov       $8, %%"FF_REG_c"        \n\t"\
         LOAD_ROUNDER_MMX("%5")\
         "movq      "MANGLE(ff_pw_9)", %%mm6\n\t"\
         "1:                                \n\t"\
@@ -208,12 +208,12 @@ static void OPNAME ## vc1_shift2_mmx(uint8_t *dst, const uint8_t *src,\
         "movq      %%mm3, (%1)             \n\t"\
         "add       %6, %0                  \n\t"\
         "add       %4, %1                  \n\t"\
-        "dec       %%"REG_c"               \n\t"\
+        "dec       %%"FF_REG_c"            \n\t"\
         "jnz 1b                            \n\t"\
         : "+r"(src),  "+r"(dst)\
         : "r"(offset), "r"(-2*offset), "g"(stride), "m"(rnd),\
           "g"(stride-offset)\
-        : "%"REG_c, "memory"\
+        : "%"FF_REG_c, "memory"\
     );\
 }
 

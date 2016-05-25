@@ -649,9 +649,9 @@ static av_cold int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "jmp                         9f                 \n\t"
         // Begin
         "0:                                             \n\t"
-        "movq    (%%"REG_d", %%"REG_a"), %%mm3          \n\t"
-        "movd    (%%"REG_c", %%"REG_S"), %%mm0          \n\t"
-        "movd   1(%%"REG_c", %%"REG_S"), %%mm1          \n\t"
+        "movq  (%%"FF_REG_d", %%"FF_REG_a"), %%mm3      \n\t"
+        "movd  (%%"FF_REG_c", %%"FF_REG_S"), %%mm0      \n\t"
+        "movd 1(%%"FF_REG_c", %%"FF_REG_S"), %%mm1      \n\t"
         "punpcklbw                %%mm7, %%mm1          \n\t"
         "punpcklbw                %%mm7, %%mm0          \n\t"
         "pshufw                   $0xFF, %%mm1, %%mm1   \n\t"
@@ -659,14 +659,14 @@ static av_cold int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "pshufw                   $0xFF, %%mm0, %%mm0   \n\t"
         "2:                                             \n\t"
         "psubw                    %%mm1, %%mm0          \n\t"
-        "movl   8(%%"REG_b", %%"REG_a"), %%esi          \n\t"
+        "movl 8(%%"FF_REG_b", %%"FF_REG_a"), %%esi      \n\t"
         "pmullw                   %%mm3, %%mm0          \n\t"
         "psllw                       $7, %%mm1          \n\t"
         "paddw                    %%mm1, %%mm0          \n\t"
 
-        "movq                     %%mm0, (%%"REG_D", %%"REG_a") \n\t"
+        "movq       %%mm0, (%%"FF_REG_D", %%"FF_REG_a") \n\t"
 
-        "add                         $8, %%"REG_a"      \n\t"
+        "add                         $8, %%"FF_REG_a"   \n\t"
         // End
         "9:                                             \n\t"
         // "int $3                                         \n\t"
@@ -689,22 +689,22 @@ static av_cold int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "jmp                         9f                 \n\t"
         // Begin
         "0:                                             \n\t"
-        "movq    (%%"REG_d", %%"REG_a"), %%mm3          \n\t"
-        "movd    (%%"REG_c", %%"REG_S"), %%mm0          \n\t"
+        "movq (%%"FF_REG_d", %%"FF_REG_a"), %%mm3       \n\t"
+        "movd (%%"FF_REG_c", %%"FF_REG_S"), %%mm0       \n\t"
         "punpcklbw                %%mm7, %%mm0          \n\t"
         "pshufw                   $0xFF, %%mm0, %%mm1   \n\t"
         "1:                                             \n\t"
         "pshufw                   $0xFF, %%mm0, %%mm0   \n\t"
         "2:                                             \n\t"
         "psubw                    %%mm1, %%mm0          \n\t"
-        "movl   8(%%"REG_b", %%"REG_a"), %%esi          \n\t"
+        "movl 8(%%"FF_REG_b", %%"FF_REG_a"), %%esi      \n\t"
         "pmullw                   %%mm3, %%mm0          \n\t"
         "psllw                       $7, %%mm1          \n\t"
         "paddw                    %%mm1, %%mm0          \n\t"
 
-        "movq                     %%mm0, (%%"REG_D", %%"REG_a") \n\t"
+        "movq       %%mm0, (%%"FF_REG_D", %%"FF_REG_a") \n\t"
 
-        "add                         $8, %%"REG_a"      \n\t"
+        "add                      $8, %%"FF_REG_a"      \n\t"
         // End
         "9:                                             \n\t"
         // "int                       $3                   \n\t"
