@@ -170,6 +170,7 @@ typedef struct NvencContext
     int profile;
     int level;
     int tier;
+    int rc;
     int cbr;
     int twopass;
     int gpu;
