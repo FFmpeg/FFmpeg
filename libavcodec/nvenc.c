@@ -708,16 +708,7 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->level = ctx->level;
 
-    if (ctx->tier) {
-        if (!strcmp(ctx->tier, "main")) {
-            hevc->tier = NV_ENC_TIER_HEVC_MAIN;
-        } else if (!strcmp(ctx->tier, "high")) {
-            hevc->tier = NV_ENC_TIER_HEVC_HIGH;
-        } else {
-            av_log(avctx, AV_LOG_FATAL, "Tier \"%s\" is unknown! Supported tiers: main, high\n", ctx->tier);
-            return AVERROR(EINVAL);
-        }
-    }
+    hevc->tier = ctx->tier;
 
     return 0;
 }
