@@ -112,4 +112,5 @@ AVCodec ff_nvenc_hevc_encoder = {
     .defaults       = defaults,
     .pix_fmts       = ff_nvenc_pix_fmts,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

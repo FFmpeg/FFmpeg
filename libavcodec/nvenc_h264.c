@@ -115,6 +115,7 @@ AVCodec ff_nvenc_encoder = {
     .priv_class     = &nvenc_class,
     .defaults       = defaults,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_nvenc_pix_fmts,
 };
 #endif
@@ -140,6 +141,7 @@ AVCodec ff_nvenc_h264_encoder = {
     .priv_class     = &nvenc_h264_class,
     .defaults       = defaults,
     .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_nvenc_pix_fmts,
 };
 #endif
