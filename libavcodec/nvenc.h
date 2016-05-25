@@ -120,6 +120,13 @@ enum {
 };
 
 enum {
+    NV_ENC_H264_PROFILE_BASELINE,
+    NV_ENC_H264_PROFILE_MAIN,
+    NV_ENC_H264_PROFILE_HIGH,
+    NV_ENC_H264_PROFILE_HIGH_444P,
+};
+
+enum {
     NVENC_LOWLATENCY = 1,
     NVENC_LOSSLESS   = 2,
     NVENC_ONE_PASS   = 4,
@@ -160,7 +167,7 @@ typedef struct NvencContext
     void *nvencoder;
 
     int preset;
-    char *profile;
+    int profile;
     char *level;
     char *tier;
     int cbr;
