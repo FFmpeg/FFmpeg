@@ -190,6 +190,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
+    dest->hw_frames_ctx   = NULL;
 #if FF_API_MPV_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
     dest->rc_eq           = NULL;
@@ -219,13 +220,21 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->subtitle_header_size = src->subtitle_header_size;
 #undef alloc_and_copy_or_fail
 
+    if (src->hw_frames_ctx) {
+        dest->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dest->hw_frames_ctx)
+            goto fail;
+    }
+
     return 0;
 
 fail:
+    av_freep(&dest->subtitle_header);
     av_freep(&dest->rc_override);
     av_freep(&dest->intra_matrix);
     av_freep(&dest->inter_matrix);
     av_freep(&dest->extradata);
+    av_buffer_unref(&dest->hw_frames_ctx);
 #if FF_API_MPV_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
     av_freep(&dest->rc_eq);
