@@ -3265,7 +3265,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
 
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
-    int i, count, ret = 0, j;
+    int i, count = 0, ret = 0, j;
     int64_t read_size;
     AVStream *st;
     AVCodecContext *avctx;
@@ -3384,7 +3384,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ic->streams[i]->info->fps_last_dts  = AV_NOPTS_VALUE;
     }
 
-    count     = 0;
     read_size = 0;
     for (;;) {
         int analyzed_all_streams;
