@@ -257,19 +257,19 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
 
     /* buffer the input packet */
     if (avpkt->size) {
-        AVPacket input_ref = { 0 };
+        AVPacket input_pkt = { 0 };
 
-        if (av_fifo_space(s->fifo) < sizeof(input_ref)) {
+        if (av_fifo_space(s->fifo) < sizeof(input_pkt)) {
             ret = av_fifo_realloc2(s->fifo,
-                                   av_fifo_size(s->fifo) + sizeof(input_ref));
+                                   av_fifo_size(s->fifo) + sizeof(input_pkt));
             if (ret < 0)
                 return ret;
         }
 
-        ret = av_packet_ref(&input_ref, avpkt);
+        ret = av_packet_ref(&input_pkt, avpkt);
         if (ret < 0)
             return ret;
-        av_fifo_generic_write(s->fifo, &input_ref, sizeof(input_ref), NULL);
+        av_fifo_generic_write(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
     }
 
     /* process buffered data */
