@@ -23,7 +23,6 @@
  */
 
 #include "dca.h"
-#include "dcadata.h"
 #include "dca_exss.h"
 #include "dca_syncwords.h"
 #include "get_bits.h"
