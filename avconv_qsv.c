@@ -257,7 +257,6 @@ int qsv_transcode_init(OutputStream *ost)
 
     ist->hwaccel_ctx              = qsv;
     ist->dec_ctx->pix_fmt         = AV_PIX_FMT_QSV;
-    ist->resample_pix_fmt         = AV_PIX_FMT_QSV;
 
     return 0;
 

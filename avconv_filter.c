@@ -100,6 +100,10 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     fg->inputs[0]->graph = fg;
     fg->inputs[0]->format = -1;
 
+    fg->inputs[0]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    if (!fg->inputs[0])
+        exit_program(1);
+
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[0];
 
@@ -175,6 +179,10 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     fg->inputs[fg->nb_inputs - 1]->ist   = ist;
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
     fg->inputs[fg->nb_inputs - 1]->format = -1;
+
+    fg->inputs[fg->nb_inputs - 1]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    if (!fg->inputs[fg->nb_inputs - 1])
+        exit_program(1);
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
@@ -779,31 +787,6 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 
     if (frame->hw_frames_ctx) {
         ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
-        if (!ifilter->hw_frames_ctx)
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *avctx)
-{
-    av_buffer_unref(&ifilter->hw_frames_ctx);
-
-    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
-        ifilter->format = avctx->pix_fmt;
-    else
-        ifilter->format = avctx->sample_fmt;
-
-    ifilter->width               = avctx->width;
-    ifilter->height              = avctx->height;
-    ifilter->sample_aspect_ratio = avctx->sample_aspect_ratio;
-
-    ifilter->sample_rate         = avctx->sample_rate;
-    ifilter->channel_layout      = avctx->channel_layout;
-
-    if (avctx->hw_frames_ctx) {
-        ifilter->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
         if (!ifilter->hw_frames_ctx)
             return AVERROR(ENOMEM);
     }
