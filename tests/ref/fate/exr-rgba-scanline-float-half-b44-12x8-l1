@@ -2,5 +2,5 @@
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 12x8
-#sar 0: 0/1
+#sar 0: 9/10
 0,          0,          0,        1,      768, 0x1de5c7f1

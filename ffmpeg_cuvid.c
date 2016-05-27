@@ -125,7 +125,6 @@ int cuvid_transcode_init(OutputStream *ost)
         }
 
         ist->hwaccel_ctx = ctx;
-        ist->resample_pix_fmt = AV_PIX_FMT_CUDA;
         ist->hwaccel_uninit = cuvid_uninit;
 
         /* This is a bit hacky, av_hwframe_ctx_init is called by the cuvid decoder

@@ -217,6 +217,10 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     fg->inputs[0]->graph = fg;
     fg->inputs[0]->format = -1;
 
+    fg->inputs[0]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    if (!fg->inputs[0]->frame_queue)
+        exit_program(1);
+
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[0];
 
@@ -295,6 +299,11 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     fg->inputs[fg->nb_inputs - 1]->ist   = ist;
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
     fg->inputs[fg->nb_inputs - 1]->format = -1;
+    fg->inputs[fg->nb_inputs - 1]->type = ist->st->codecpar->codec_type;
+
+    fg->inputs[fg->nb_inputs - 1]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
+    if (!fg->inputs[fg->nb_inputs - 1]->frame_queue)
+        exit_program(1);
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
@@ -691,12 +700,15 @@ static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
         }
         av_log(avf, AV_LOG_INFO, "sub2video: using %dx%d canvas\n", w, h);
     }
-    ist->sub2video.w = ist->resample_width  = ifilter->width  = w;
-    ist->sub2video.h = ist->resample_height = ifilter->height = h;
+    ist->sub2video.w = ifilter->width  = w;
+    ist->sub2video.h = ifilter->height = h;
+
+    ifilter->width  = ist->dec_ctx->width  ? ist->dec_ctx->width  : ist->sub2video.w;
+    ifilter->height = ist->dec_ctx->height ? ist->dec_ctx->height : ist->sub2video.h;
 
     /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
        palettes for all rectangles are identical or compatible */
-    ist->resample_pix_fmt = ifilter->format = AV_PIX_FMT_RGB32;
+    ifilter->format = AV_PIX_FMT_RGB32;
 
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
@@ -1126,36 +1138,6 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 
     if (frame->hw_frames_ctx) {
         ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
-        if (!ifilter->hw_frames_ctx)
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
-int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *avctx)
-{
-    av_buffer_unref(&ifilter->hw_frames_ctx);
-
-    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
-        ifilter->format = avctx->pix_fmt;
-    else
-        ifilter->format = avctx->sample_fmt;
-
-    ifilter->width               = avctx->width;
-    ifilter->height              = avctx->height;
-    if (ifilter->ist && ifilter->ist->st && ifilter->ist->st->sample_aspect_ratio.num)
-        ifilter->sample_aspect_ratio = ifilter->ist->st->sample_aspect_ratio;
-    else
-        ifilter->sample_aspect_ratio = avctx->sample_aspect_ratio;
-
-    ifilter->sample_rate         = avctx->sample_rate;
-    ifilter->channels            = avctx->channels;
-    ifilter->channel_layout      = avctx->channel_layout;
-
-    if (ifilter->ist && ifilter->ist->hw_frames_ctx) {
-        ifilter->format = ifilter->ist->resample_pix_fmt;
-        ifilter->hw_frames_ctx = av_buffer_ref(ifilter->ist->hw_frames_ctx);
         if (!ifilter->hw_frames_ctx)
             return AVERROR(ENOMEM);
     }
