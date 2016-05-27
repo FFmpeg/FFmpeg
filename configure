@@ -2465,6 +2465,7 @@ objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 strip="strip"
+version_script='--version-script'
 yasmexe="yasm"
 
 # machine
@@ -2506,6 +2507,7 @@ SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 SLIB_INSTALL_NAME='$(SLIBNAME_WITH_VERSION)'
 SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
+VERSION_SCRIPT_POSTPROCESS_CMD="cat"
 
 asflags_filter=echo
 cflags_filter=echo
@@ -3748,7 +3750,8 @@ case $target_os in
             echo "hwcap_1 = OVERRIDE;" > mapfile &&
             add_ldflags -Wl,-M,mapfile
         nm_default='nm -P -g'
-        SLIB_CREATE_DEF_CMD='$(Q)perl $(SRC_PATH)/compat/solaris/make_sunver.pl $$(filter %.ver,$$^) $(OBJS) | grep -v @ > $(SUBDIR)lib$(NAME).ver-sol2'
+        version_script='-M'
+        VERSION_SCRIPT_POSTPROCESS_CMD='perl $(SRC_PATH)/compat/solaris/make_sunver.pl - $(OBJS)'
         ;;
     netbsd)
         disable symver
@@ -4829,13 +4832,9 @@ enabled xmm_clobber_test &&
     disable xmm_clobber_test
 
 echo "X { local: *; };" > $TMPV
-if test_ldflags -Wl,--version-script,$TMPV; then
-    append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
-elif test_ldflags -Wl,-M,$TMPV; then
-    append SHFLAGS '-Wl,-M,\$(SUBDIR)lib\$(NAME).ver-sol2'
-fi
-
-check_cc <<EOF && enable symver_asm_label
+if test_ldflags -Wl,${version_script},$TMPV; then
+    append SHFLAGS '-Wl,${version_script},\$(SUBDIR)lib\$(NAME).ver'
+    check_cc <<EOF && enable symver_asm_label
 void ff_foo(void) __asm__ ("av_foo@VERSION");
 void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
 EOF
@@ -4843,6 +4842,7 @@ EOF
 __asm__(".symver ff_foo,av_foo@VERSION");
 void ff_foo(void) {}
 EOF
+fi
 
 if [ -z "$optflags" ]; then
     if enabled small; then
@@ -5243,6 +5243,7 @@ SLIB_INSTALL_NAME=${SLIB_INSTALL_NAME}
 SLIB_INSTALL_LINKS=${SLIB_INSTALL_LINKS}
 SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
 SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
+VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(LIBAV_SAMPLES)}
 EOF
 

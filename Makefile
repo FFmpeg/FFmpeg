@@ -62,9 +62,6 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
-%.ver: %.v
-	$(M)sed 's/MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
-
 %.c %.h %.ver: TAG = GEN
 
 AVPROGS-$(CONFIG_AVCONV)   += avconv
