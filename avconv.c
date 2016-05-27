@@ -314,7 +314,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
 
         if (ost->frame_rate.num) {
             pkt->duration = av_rescale_q(1, av_inv_q(ost->frame_rate),
-                                         ost->st->time_base);
+                                         ost->mux_timebase);
         }
     }
 
@@ -341,6 +341,8 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     ost->packets_written++;
 
     pkt->stream_index = ost->index;
+    av_packet_rescale_ts(pkt, ost->mux_timebase, ost->st->time_base);
+
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
@@ -433,7 +435,6 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
         if (ret < 0)
             goto error;
 
-        av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
         output_packet(of, &pkt, ost);
     }
 
@@ -499,7 +500,7 @@ static void do_subtitle_out(OutputFile *of,
         av_init_packet(&pkt);
         pkt.data = subtitle_out;
         pkt.size = subtitle_out_size;
-        pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->st->time_base);
+        pkt.pts  = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ost->mux_timebase);
         if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
                it in the codec would be better */
@@ -584,7 +585,6 @@ static void do_video_out(OutputFile *of,
         if (ret < 0)
             goto error;
 
-        av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
         output_packet(of, &pkt, ost);
         *frame_size = pkt.size;
 
@@ -975,7 +975,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->last_mux_dts * av_q2d(ost->st->time_base);
+        pts = (double)ost->last_mux_dts * av_q2d(ost->mux_timebase);
         if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
@@ -1054,7 +1054,6 @@ static void flush_encoders(void)
                     stop_encoding = 1;
                     break;
                 }
-                av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
                 output_packet(of, &pkt, ost);
             }
 
@@ -1086,7 +1085,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     OutputFile *of = output_files[ost->file_index];
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
-    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
+    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
     AVPacket opkt;
 
     av_init_packet(&opkt);
@@ -1116,17 +1115,17 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         ost->sync_opts++;
 
     if (pkt->pts != AV_NOPTS_VALUE)
-        opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
+        opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->mux_timebase) - ost_tb_start_time;
     else
         opkt.pts = AV_NOPTS_VALUE;
 
     if (pkt->dts == AV_NOPTS_VALUE)
-        opkt.dts = av_rescale_q(ist->last_dts, AV_TIME_BASE_Q, ost->st->time_base);
+        opkt.dts = av_rescale_q(ist->last_dts, AV_TIME_BASE_Q, ost->mux_timebase);
     else
-        opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
+        opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->mux_timebase);
     opkt.dts -= ost_tb_start_time;
 
-    opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
+    opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
     opkt.flags    = pkt->flags;
 
     // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
@@ -2109,6 +2108,8 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
     ret = init_output_bsfs(ost);
     if (ret < 0)
         return ret;
+
+    ost->mux_timebase = ost->st->time_base;
 
     ost->initialized = 1;
 
