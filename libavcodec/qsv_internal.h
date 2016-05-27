@@ -47,6 +47,13 @@ typedef struct QSVFrame {
     struct QSVFrame *next;
 } QSVFrame;
 
+typedef struct QSVFramesContext {
+    AVBufferRef *hw_frames_ctx;
+    mfxFrameInfo info;
+    mfxMemId *mids;
+    int    nb_mids;
+} QSVFramesContext;
+
 /**
  * Convert a libmfx error code into a libav error code.
  */
@@ -56,5 +63,9 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 
 int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                                  const char *load_plugins);
+
+int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *session,
+                                  QSVFramesContext *qsv_frames_ctx,
+                                  const char *load_plugins, int opaque);
 
 #endif /* AVCODEC_QSV_INTERNAL_H */

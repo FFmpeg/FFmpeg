@@ -80,8 +80,6 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    s->qsv.iopattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
-
     return 0;
 fail:
     qsv_decode_close(avctx);
