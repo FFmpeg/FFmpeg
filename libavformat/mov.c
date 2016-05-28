@@ -1473,9 +1473,11 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (par->codec_tag == MKTAG('A', 'V', 'i', 'n') &&
             par->codec_id == AV_CODEC_ID_H264 &&
             atom.size > 11) {
+            int cid;
             avio_skip(pb, 10);
+            cid = avio_rb16(pb);
             /* For AVID AVCI50, force width of 1440 to be able to select the correct SPS and PPS */
-            if (avio_rb16(pb) == 0xd4d)
+            if (cid == 0xd4d || cid == 0xd4e)
                 par->width = 1440;
             return 0;
         } else if (par->codec_tag == MKTAG('A', 'V', 'd', '1') &&
