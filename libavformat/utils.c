@@ -2919,7 +2919,7 @@ static void compute_chapters_end(AVFormatContext *s)
     unsigned int i, j;
     int64_t max_time = 0;
 
-    if (s->duration > 0)
+    if (s->duration > 0 && s->start_time < INT64_MAX - s->duration)
         max_time = s->duration +
                        ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time);
 
