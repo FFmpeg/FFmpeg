@@ -1638,6 +1638,10 @@ enum AVFieldOrder {
  * version bump.
  * Please use AVOptions (av_opt* / av_set/get*()) to access these fields from user
  * applications.
+ * The name string for AVOptions options matches the associated command line
+ * parameter name and can be found in libavcodec/options_table.h
+ * The AVOption/command line parameter names differ in some cases from the C
+ * structure field names for historic reasons or brevity.
  * sizeof(AVCodecContext) must not be used outside libav*.
  */
 typedef struct AVCodecContext {
