@@ -4812,7 +4812,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (trk->par->format == AV_PIX_FMT_PAL8 && !trk->pal_done) {
                 ret = ff_get_packet_palette(s, opkt, reshuffle_ret, trk->palette);
                 if (ret < 0)
-                    return ret;
+                    goto fail;
                 if (ret)
                     trk->pal_done++;
             } else if (trk->par->codec_id == AV_CODEC_ID_RAWVIDEO &&
@@ -4823,7 +4823,9 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if (reshuffle_ret) {
                 ret = mov_write_single_packet(s, pkt);
-                av_packet_free(&pkt);
+fail:
+                if (reshuffle_ret)
+                    av_packet_free(&pkt);
                 return ret;
             }
         }
