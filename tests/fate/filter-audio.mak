@@ -8,6 +8,18 @@ fate-filter-aecho: tests/data/asynth-44100-2.wav
 fate-filter-aecho: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-aecho: CMD = framecrc -i $(SRC) -af aecho=0.5:0.5:32:0.5
 
+FATE_FILTER_AEMPHASIS += fate-filter-aemphasis-50fm
+fate-filter-aemphasis-50fm: tests/data/asynth-44100-2.wav
+fate-filter-aemphasis-50fm: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-aemphasis-50fm: CMD = framecrc -i $(SRC) -af aemphasis=1:5:reproduction:50fm
+
+FATE_FILTER_AEMPHASIS += fate-filter-aemphasis-75kf
+fate-filter-aemphasis-75kf: tests/data/asynth-44100-2.wav
+fate-filter-aemphasis-75kf: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-aemphasis-75kf: CMD = framecrc -i $(SRC) -af aemphasis=2:8:reproduction:75kf
+
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, AEMPHASIS, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_FILTER_AEMPHASIS)
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
