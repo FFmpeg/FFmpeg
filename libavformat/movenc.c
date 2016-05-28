@@ -4800,20 +4800,20 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (trk->mode == MODE_MOV && trk->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVPacket *opkt = pkt;
-            int ret;
+            int reshuffle_ret, ret;
             if (trk->is_unaligned_qt_rgb) {
                 int64_t bpc = trk->par->bits_per_coded_sample != 15 ? trk->par->bits_per_coded_sample : 16;
                 int expected_stride = ((trk->par->width * bpc + 15) >> 4)*2;
-                ret = ff_reshuffle_raw_rgb(s, &pkt, trk->par, expected_stride);
+                reshuffle_ret = ff_reshuffle_raw_rgb(s, &pkt, trk->par, expected_stride);
+                if (reshuffle_ret < 0)
+                    return reshuffle_ret;
+            } else
+                reshuffle_ret = 0;
+            if (trk->par->format == AV_PIX_FMT_PAL8 && !trk->pal_done) {
+                ret = ff_get_packet_palette(s, opkt, reshuffle_ret, trk->palette);
                 if (ret < 0)
                     return ret;
-            } else
-                ret = 0;
-            if (trk->par->format == AV_PIX_FMT_PAL8 && !trk->pal_done) {
-                int ret2 = ff_get_packet_palette(s, opkt, ret, trk->palette);
-                if (ret2 < 0)
-                    return ret2;
-                if (ret2)
+                if (ret)
                     trk->pal_done++;
             } else if (trk->par->codec_id == AV_CODEC_ID_RAWVIDEO &&
                        (trk->par->format == AV_PIX_FMT_GRAY8 ||
@@ -4821,7 +4821,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 for (i = 0; i < pkt->size; i++)
                     pkt->data[i] = ~pkt->data[i];
             }
-            if (ret) {
+            if (reshuffle_ret) {
                 ret = mov_write_single_packet(s, pkt);
                 av_packet_free(&pkt);
                 return ret;
