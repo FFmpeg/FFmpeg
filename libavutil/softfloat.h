@@ -160,6 +160,9 @@ static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     else             return a;
 }
 
+/**
+ * @returns the difference of 2 SoftFloats.
+ */
 static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
     return av_add_sf(a, (SoftFloat){ -b.mant, b.exp});
 }
@@ -180,6 +183,7 @@ static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
 }
 
 /**
+ * Converts a SoftFloat to an integer.
  * Rounding is to -inf.
  */
 static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
