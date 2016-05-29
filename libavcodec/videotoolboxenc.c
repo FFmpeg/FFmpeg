@@ -199,18 +199,51 @@ static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer)
     pthread_mutex_unlock(&vtctx->lock);
 }
 
+static int count_nalus(size_t length_code_size,
+                       CMSampleBufferRef sample_buffer,
+                       int *count)
+{
+    size_t offset = 0;
+    int status;
+    int nalu_ct = 0;
+    uint8_t size_buf[4];
+    size_t src_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
+    CMBlockBufferRef block = CMSampleBufferGetDataBuffer(sample_buffer);
+
+    if (length_code_size > 4)
+        return AVERROR_INVALIDDATA;
+
+    while (offset < src_size) {
+        size_t curr_src_len;
+        size_t box_len = 0;
+        size_t i;
+
+        status = CMBlockBufferCopyDataBytes(block,
+                                            offset,
+                                            length_code_size,
+                                            size_buf);
+
+        for (i = 0; i < length_code_size; i++) {
+            box_len <<= 8;
+            box_len |= size_buf[i];
+        }
+
+        curr_src_len = box_len + length_code_size;
+        offset += curr_src_len;
+
+        nalu_ct++;
+    }
+
+    *count = nalu_ct;
+    return 0;
+}
+
 static CMVideoCodecType get_cm_codec_type(enum AVCodecID id)
 {
     switch (id) {
     case AV_CODEC_ID_H264: return kCMVideoCodecType_H264;
     default:               return 0;
     }
-}
-
-static void vtenc_free_block(void *opaque, uint8_t *data)
-{
-    CMBlockBufferRef block = opaque;
-    CFRelease(block);
 }
 
 /**
@@ -1081,54 +1114,6 @@ static void vtenc_get_frame_info(CMSampleBufferRef buffer, bool *is_key_frame)
 }
 
 /**
- * Replaces length codes with H.264 Annex B start codes.
- * length_code_size must equal sizeof(start_code).
- * On failure, the contents of data may have been modified.
- *
- * @param length_code_size Byte length of each length code
- * @param data Call with NAL units prefixed with length codes.
- *             On success, the length codes are replace with
- *             start codes.
- * @param size Length of data, excluding any padding.
- * @return 0 on success
- *         AVERROR_BUFFER_TOO_SMALL if length code size is smaller
- *         than a start code or if a length_code in data specifies
- *         data beyond the end of its buffer.
- */
-static int replace_length_codes(size_t  length_code_size,
-                                uint8_t *data,
-                                size_t  size)
-{
-    size_t remaining_size = size;
-
-    if (length_code_size != sizeof(start_code)) {
-        av_log(NULL, AV_LOG_ERROR, "Start code size and length code size not equal.\n");
-        return AVERROR_BUFFER_TOO_SMALL;
-    }
-
-    while (remaining_size > 0) {
-        size_t box_len = 0;
-        size_t i;
-
-        for (i = 0; i < length_code_size; i++) {
-            box_len <<= 8;
-            box_len |= data[i];
-        }
-
-        if (remaining_size < box_len + sizeof(start_code)) {
-            av_log(NULL, AV_LOG_ERROR, "Length is out of range.\n");
-            AVERROR_BUFFER_TOO_SMALL;
-        }
-
-        memcpy(data, start_code, sizeof(start_code));
-        data += box_len + sizeof(start_code);
-        remaining_size -= box_len + sizeof(start_code);
-    }
-
-    return 0;
-}
-
-/**
  * Copies NAL units and replaces length codes with
  * H.264 Annex B start codes. On failure, the contents of
  * dst_data may have been modified.
@@ -1148,14 +1133,19 @@ static int replace_length_codes(size_t  length_code_size,
  *         the end of its buffer.
  */
 static int copy_replace_length_codes(
+    AVCodecContext *avctx,
     size_t        length_code_size,
-    const uint8_t *src_data,
-    size_t        src_size,
+    CMSampleBufferRef sample_buffer,
     uint8_t       *dst_data,
     size_t        dst_size)
 {
+    size_t src_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
     size_t remaining_src_size = src_size;
     size_t remaining_dst_size = dst_size;
+    size_t src_offset = 0;
+    int status;
+    uint8_t size_buf[4];
+    CMBlockBufferRef block = CMSampleBufferGetDataBuffer(sample_buffer);
 
     if (length_code_size > 4) {
         return AVERROR_INVALIDDATA;
@@ -1168,11 +1158,19 @@ static int copy_replace_length_codes(
         size_t i;
 
         uint8_t       *dst_box;
-        const uint8_t *src_box;
+
+        status = CMBlockBufferCopyDataBytes(block,
+                                            src_offset,
+                                            length_code_size,
+                                            size_buf);
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Cannot copy length: %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
 
         for (i = 0; i < length_code_size; i++) {
             box_len <<= 8;
-            box_len |= src_data[i];
+            box_len |= size_buf[i];
         }
 
         curr_src_len = box_len + length_code_size;
@@ -1187,12 +1185,19 @@ static int copy_replace_length_codes(
         }
 
         dst_box = dst_data + sizeof(start_code);
-        src_box = src_data + length_code_size;
 
         memcpy(dst_data, start_code, sizeof(start_code));
-        memcpy(dst_box,  src_box,    box_len);
+        status = CMBlockBufferCopyDataBytes(block,
+                                            src_offset + length_code_size,
+                                            box_len,
+                                            dst_box);
 
-        src_data += curr_src_len;
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Cannot copy data: %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
+
+        src_offset += curr_src_len;
         dst_data += curr_dst_len;
 
         remaining_src_size -= curr_src_len;
@@ -1212,16 +1217,15 @@ static int vtenc_cm_to_avpacket(
     int     status;
     bool    is_key_frame;
     bool    add_header;
-    char    *buf_data;
     size_t  length_code_size;
     size_t  header_size = 0;
     size_t  in_buf_size;
+    size_t  out_buf_size;
     int64_t dts_delta;
     int64_t time_base_num;
+    int nalu_count;
     CMTime  pts;
     CMTime  dts;
-
-    CMBlockBufferRef            block;
     CMVideoFormatDescriptionRef vid_fmt;
 
 
@@ -1235,82 +1239,42 @@ static int vtenc_cm_to_avpacket(
         vid_fmt = CMSampleBufferGetFormatDescription(sample_buffer);
         if (!vid_fmt) {
             av_log(avctx, AV_LOG_ERROR, "Cannot get format description.\n");
+            return AVERROR_EXTERNAL;
         }
 
         int status = get_params_size(avctx, vid_fmt, &header_size);
         if (status) return status;
     }
 
-    block = CMSampleBufferGetDataBuffer(sample_buffer);
-    if (!block) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get block buffer from sample buffer.\n");
-        return AVERROR_EXTERNAL;
+    status = count_nalus(length_code_size, sample_buffer, &nalu_count);
+    if(status)
+        return status;
+
+    in_buf_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
+    out_buf_size = header_size +
+                   in_buf_size +
+                   nalu_count * ((int)sizeof(start_code) - (int)length_code_size);
+
+    status = ff_alloc_packet2(avctx, pkt, out_buf_size, out_buf_size);
+    if (status < 0)
+        return status;
+
+    if (add_header) {
+        status = copy_param_sets(avctx, vid_fmt, pkt->data, out_buf_size);
+        if(status) return status;
     }
 
+    status = copy_replace_length_codes(
+        avctx,
+        length_code_size,
+        sample_buffer,
+        pkt->data + header_size,
+        pkt->size - header_size
+    );
 
-    status = CMBlockBufferGetDataPointer(block, 0, &in_buf_size, NULL, &buf_data);
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error: cannot get data pointer: %d\n", status);
-        return AVERROR_EXTERNAL;
-    }
-
-    size_t out_buf_size = header_size + in_buf_size;
-    bool can_reuse_cmbuffer = !add_header &&
-                              !pkt->data  &&
-                              length_code_size == sizeof(start_code);
-
-    av_init_packet(pkt);
-
-    if (can_reuse_cmbuffer) {
-        AVBufferRef* buf_ref = av_buffer_create(
-            buf_data,
-            out_buf_size,
-            vtenc_free_block,
-            block,
-            0
-        );
-
-        if (!buf_ref) return AVERROR(ENOMEM);
-
-        CFRetain(block);
-
-        pkt->buf  = buf_ref;
-        pkt->data = buf_data;
-        pkt->size = in_buf_size;
-
-        status = replace_length_codes(length_code_size, pkt->data, pkt->size);
-        if (status) {
-            av_log(avctx, AV_LOG_ERROR, "Error replacing length codes: %d\n", status);
-            return status;
-        }
-    } else {
-        if (!pkt->data) {
-            status = av_new_packet(pkt, out_buf_size);
-            if(status) return status;
-        }
-
-        if (pkt->size < out_buf_size) {
-            av_log(avctx, AV_LOG_ERROR, "Error: packet's buffer is too small.\n");
-            return AVERROR_BUFFER_TOO_SMALL;
-        }
-
-        if (add_header) {
-            status = copy_param_sets(avctx, vid_fmt, pkt->data, out_buf_size);
-            if(status) return status;
-        }
-
-        status = copy_replace_length_codes(
-            length_code_size,
-            buf_data,
-            in_buf_size,
-            pkt->data + header_size,
-            pkt->size - header_size
-        );
-
-        if (status) {
-            av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d", status);
-            return status;
-        }
+        av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d", status);
+        return status;
     }
 
     if (is_key_frame) {
@@ -1333,6 +1297,7 @@ static int vtenc_cm_to_avpacket(
     time_base_num = avctx->time_base.num;
     pkt->pts = pts.value / time_base_num;
     pkt->dts = dts.value / time_base_num - dts_delta;
+    pkt->size = out_buf_size;
 
     return 0;
 }
