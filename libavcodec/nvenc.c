@@ -141,20 +141,6 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
     return ret;
 }
 
-static void timestamp_queue_enqueue(AVFifoBuffer* queue, int64_t timestamp)
-{
-    av_fifo_generic_write(queue, &timestamp, sizeof(timestamp), NULL);
-}
-
-static int64_t timestamp_queue_dequeue(AVFifoBuffer* queue)
-{
-    int64_t timestamp = AV_NOPTS_VALUE;
-    if (av_fifo_size(queue) > 0)
-        av_fifo_generic_read(queue, &timestamp, sizeof(timestamp), NULL);
-
-    return timestamp;
-}
-
 static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
@@ -1389,20 +1375,38 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
 }
 
 static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
-                                                    NV_ENC_PIC_PARAMS *params)
+                                            NV_ENC_PIC_PARAMS *params)
 {
     NvencContext *ctx = avctx->priv_data;
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
-      params->codecPicParams.h264PicParams.sliceMode = ctx->encode_config.encodeCodecConfig.h264Config.sliceMode;
-      params->codecPicParams.h264PicParams.sliceModeData = ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData;
+        params->codecPicParams.h264PicParams.sliceMode =
+            ctx->encode_config.encodeCodecConfig.h264Config.sliceMode;
+        params->codecPicParams.h264PicParams.sliceModeData =
+            ctx->encode_config.encodeCodecConfig.h264Config.sliceModeData;
       break;
-    case AV_CODEC_ID_H265:
-      params->codecPicParams.hevcPicParams.sliceMode = ctx->encode_config.encodeCodecConfig.hevcConfig.sliceMode;
-      params->codecPicParams.hevcPicParams.sliceModeData = ctx->encode_config.encodeCodecConfig.hevcConfig.sliceModeData;
-      break;
+    case AV_CODEC_ID_HEVC:
+        params->codecPicParams.hevcPicParams.sliceMode =
+            ctx->encode_config.encodeCodecConfig.hevcConfig.sliceMode;
+        params->codecPicParams.hevcPicParams.sliceModeData =
+            ctx->encode_config.encodeCodecConfig.hevcConfig.sliceModeData;
+        break;
     }
+}
+
+static inline void timestamp_queue_enqueue(AVFifoBuffer* queue, int64_t timestamp)
+{
+    av_fifo_generic_write(queue, &timestamp, sizeof(timestamp), NULL);
+}
+
+static inline int64_t timestamp_queue_dequeue(AVFifoBuffer* queue)
+{
+    int64_t timestamp = AV_NOPTS_VALUE;
+    if (av_fifo_size(queue) > 0)
+        av_fifo_generic_read(queue, &timestamp, sizeof(timestamp), NULL);
+
+    return timestamp;
 }
 
 static int nvenc_set_timestamp(AVCodecContext *avctx,
@@ -1539,17 +1543,20 @@ error2:
     return res;
 }
 
-static int output_ready(NvencContext *ctx, int flush)
+static int output_ready(AVCodecContext *avctx, int flush)
 {
+    NvencContext *ctx = avctx->priv_data;
     int nb_ready, nb_pending;
 
     nb_ready   = av_fifo_size(ctx->output_surface_ready_queue)   / sizeof(NvencSurface*);
     nb_pending = av_fifo_size(ctx->output_surface_queue)         / sizeof(NvencSurface*);
-    return nb_ready > 0 && (flush || nb_ready + nb_pending >= ctx->async_depth);
+    if (flush)
+        return nb_ready > 0;
+    return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
 int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-    const AVFrame *frame, int *got_packet)
+                          const AVFrame *frame, int *got_packet)
 {
     NVENCSTATUS nv_status;
     NvencSurface *tmpoutsurf, *inSurf;
@@ -1564,7 +1571,10 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (frame) {
         inSurf = get_free_frame(ctx);
-        av_assert0(inSurf);
+        if (!inSurf) {
+            av_log(avctx, AV_LOG_ERROR, "No free surfaces\n");
+            return AVERROR_BUG;
+        }
 
         res = nvenc_upload_frame(avctx, frame, inSurf);
         if (res) {
@@ -1577,14 +1587,12 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.inputWidth = avctx->width;
         pic_params.inputHeight = avctx->height;
         pic_params.outputBitstream = inSurf->output_surface;
-        pic_params.completionEvent = 0;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-            if (frame->top_field_first) {
+            if (frame->top_field_first)
                 pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FIELD_TOP_BOTTOM;
-            } else {
+            else
                 pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FIELD_BOTTOM_TOP;
-            }
         } else {
             pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
         }
@@ -1601,25 +1609,22 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
+    if (nv_status != NV_ENC_SUCCESS &&
+        nv_status != NV_ENC_ERR_NEED_MORE_INPUT)
+        return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
 
-    if (frame && nv_status == NV_ENC_ERR_NEED_MORE_INPUT)
+    if (frame)
         av_fifo_generic_write(ctx->output_surface_queue, &inSurf, sizeof(inSurf), NULL);
 
-    if (nv_status != NV_ENC_SUCCESS && nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
-        return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
-    }
-
-    if (nv_status != NV_ENC_ERR_NEED_MORE_INPUT) {
+    /* all the pending buffers are now ready for output */
+    if (nv_status == NV_ENC_SUCCESS) {
         while (av_fifo_size(ctx->output_surface_queue) > 0) {
             av_fifo_generic_read(ctx->output_surface_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
             av_fifo_generic_write(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
         }
-
-        if (frame)
-            av_fifo_generic_write(ctx->output_surface_ready_queue, &inSurf, sizeof(inSurf), NULL);
     }
 
-    if (output_ready(ctx, !frame)) {
+    if (output_ready(avctx, !frame)) {
         av_fifo_generic_read(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
 
         res = process_output_surface(avctx, pkt, tmpoutsurf);
