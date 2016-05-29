@@ -1405,6 +1405,29 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
     }
 }
 
+static int nvenc_set_timestamp(AVCodecContext *avctx,
+                               NV_ENC_LOCK_BITSTREAM *params,
+                               AVPacket *pkt)
+{
+    NvencContext *ctx = avctx->priv_data;
+
+    pkt->pts = params->outputTimeStamp;
+    pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
+
+    /* when there're b frame(s), set dts offset */
+    if (ctx->encode_config.frameIntervalP >= 2)
+        pkt->dts -= 1;
+
+    if (pkt->dts > pkt->pts)
+        pkt->dts = pkt->pts;
+
+    if (ctx->last_dts != AV_NOPTS_VALUE && pkt->dts <= ctx->last_dts)
+        pkt->dts = ctx->last_dts + 1;
+
+    ctx->last_dts = pkt->dts;
+    return 0;
+}
+
 static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSurface *tmpoutsurf)
 {
     NvencContext *ctx = avctx->priv_data;
@@ -1434,7 +1457,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     slice_offsets = av_mallocz(slice_mode_data * sizeof(*slice_offsets));
 
     if (!slice_offsets)
-        return AVERROR(ENOMEM);
+        goto error;
 
     lock_params.version = NV_ENC_LOCK_BITSTREAM_VER;
 
@@ -1499,29 +1522,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_side_data_set_encoder_stats(pkt,
         (lock_params.frameAvgQP - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
-    pkt->pts = lock_params.outputTimeStamp;
-    pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
-
-    /* when there're b frame(s), set dts offset */
-    if (ctx->encode_config.frameIntervalP >= 2)
-        pkt->dts -= 1;
-
-    if (pkt->dts > pkt->pts)
-        pkt->dts = pkt->pts;
-
-    if (ctx->last_dts != AV_NOPTS_VALUE && pkt->dts <= ctx->last_dts)
-        pkt->dts = ctx->last_dts + 1;
-
-    ctx->last_dts = pkt->dts;
+    res = nvenc_set_timestamp(avctx, &lock_params, pkt);
+    if (res < 0)
+        goto error2;
 
     av_free(slice_offsets);
 
     return 0;
 
 error:
-
-    av_free(slice_offsets);
     timestamp_queue_dequeue(ctx->timestamp_list);
+
+error2:
+    av_free(slice_offsets);
 
     return res;
 }
