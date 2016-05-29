@@ -1602,8 +1602,6 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.inputDuration = 0;
 
         nvenc_codec_specific_pic_params(avctx, &pic_params);
-
-        timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
@@ -1613,8 +1611,10 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         nv_status != NV_ENC_ERR_NEED_MORE_INPUT)
         return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
 
-    if (frame)
+    if (frame) {
         av_fifo_generic_write(ctx->output_surface_queue, &inSurf, sizeof(inSurf), NULL);
+        timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
+    }
 
     /* all the pending buffers are now ready for output */
     if (nv_status == NV_ENC_SUCCESS) {
