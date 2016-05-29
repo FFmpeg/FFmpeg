@@ -5731,6 +5731,8 @@ static int mov_write_trailer(AVFormatContext *s)
         if (mov->flags & FF_MOV_FLAG_FASTSTART) {
             av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
+            if (res < 0)
+                goto error;
             if (res == 0) {
                 avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
                 if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
@@ -5762,6 +5764,8 @@ static int mov_write_trailer(AVFormatContext *s)
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX) {
             av_log(s, AV_LOG_INFO, "Starting second pass: inserting sidx atoms\n");
             res = shift_data(s);
+            if (res < 0)
+                goto error;
             if (res == 0) {
                 int64_t end = avio_tell(pb);
                 avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
