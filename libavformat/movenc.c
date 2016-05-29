@@ -2454,7 +2454,11 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
             if (!track_width_1616 ||
                 track->height != track->par->height ||
                 track_width_1616 > UINT32_MAX)
-                track_width_1616 = track->par->width * 0x10000U;
+                track_width_1616 = track->par->width * 0x10000ULL;
+            if (track_width_1616 > UINT32_MAX) {
+                av_log(mov->fc, AV_LOG_WARNING, "track width too large\n");
+                track_width_1616 = 0;
+            }
             avio_wb32(pb, track_width_1616);
             avio_wb32(pb, track->height * 0x10000U);
         }
