@@ -29,7 +29,7 @@
 #include "avcodec.h"
 
 #if CONFIG_CUDA
-#include <cuda.h>
+#include "libavutil/hwcontext_cuda.h"
 #else
 
 #if defined(_WIN32)
@@ -77,17 +77,9 @@ typedef NVENCSTATUS (NVENCAPI *PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTIO
 typedef struct NvencDynLoadFunctions
 {
 #if !CONFIG_CUDA
-#if defined(_WIN32)
-    HMODULE cuda_lib;
-#else
-    void* cuda_lib;
+    void *cuda;
 #endif
-#endif
-#if defined(_WIN32)
-    HMODULE nvenc_lib;
-#else
-    void* nvenc_lib;
-#endif
+    void *nvenc;
 
     PCUINIT cu_init;
     PCUDEVICEGETCOUNT cu_device_get_count;
@@ -100,8 +92,6 @@ typedef struct NvencDynLoadFunctions
 
     NV_ENCODE_API_FUNCTION_LIST nvenc_funcs;
     int nvenc_device_count;
-    CUdevice nvenc_devices[16];
-
 } NvencDynLoadFunctions;
 
 enum {
@@ -131,6 +121,11 @@ enum {
     NVENC_LOSSLESS   = 2,
     NVENC_ONE_PASS   = 4,
     NVENC_TWO_PASSES = 8,
+};
+
+enum {
+    LIST_DEVICES = -2,
+    ANY_DEVICE,
 };
 
 typedef struct NvencContext
@@ -173,7 +168,7 @@ typedef struct NvencContext
     int rc;
     int cbr;
     int twopass;
-    int gpu;
+    int device;
     int flags;
     int async_depth;
 } NvencContext;
