@@ -1099,7 +1099,6 @@ static int udp_close(URLContext *h)
 #if HAVE_PTHREAD_CANCEL
     // Request close once writing is finished
     if (s->thread_started && !(h->flags & AVIO_FLAG_READ)) {
-        int ret;
         pthread_mutex_lock(&s->mutex);
         s->close_req = 1;
         pthread_cond_signal(&s->cond);
