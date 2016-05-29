@@ -144,7 +144,7 @@ typedef struct NvencContext
     CUcontext cu_context;
     CUcontext cu_context_internal;
 
-    int max_surface_count;
+    int nb_surfaces;
     NvencSurface *surfaces;
 
     AVFifoBuffer *output_surface_queue;
@@ -175,7 +175,7 @@ typedef struct NvencContext
     int twopass;
     int gpu;
     int flags;
-    int buffer_delay;
+    int async_depth;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

@@ -784,7 +784,6 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     NV_ENC_PRESET_CONFIG preset_config = { 0 };
     NVENCSTATUS nv_status = NV_ENC_SUCCESS;
     AVCPBProperties *cpb_props;
-    int num_mbs;
     int res = 0;
     int dw, dh;
 
@@ -841,12 +840,6 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->init_encode_params.frameRateNum = avctx->time_base.den;
     ctx->init_encode_params.frameRateDen = avctx->time_base.num * avctx->ticks_per_frame;
-
-    num_mbs = ((avctx->width + 15) >> 4) * ((avctx->height + 15) >> 4);
-    ctx->max_surface_count = (num_mbs >= 8160) ? 32 : 48;
-
-    if (ctx->buffer_delay >= ctx->max_surface_count)
-        ctx->buffer_delay = ctx->max_surface_count - 1;
 
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
@@ -976,24 +969,27 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
     int i, res;
+    int num_mbs = ((avctx->width + 15) >> 4) * ((avctx->height + 15) >> 4);
+    ctx->nb_surfaces = FFMAX((num_mbs >= 8160) ? 32 : 48,
+                             ctx->nb_surfaces);
+    ctx->async_depth = FFMIN(ctx->async_depth, ctx->nb_surfaces - 1);
 
-    ctx->surfaces = av_malloc(ctx->max_surface_count * sizeof(*ctx->surfaces));
 
-    if (!ctx->surfaces) {
+    ctx->surfaces = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->surfaces));
+    if (!ctx->surfaces)
         return AVERROR(ENOMEM);
-    }
 
-    ctx->timestamp_list = av_fifo_alloc(ctx->max_surface_count * sizeof(int64_t));
+    ctx->timestamp_list = av_fifo_alloc(ctx->nb_surfaces * sizeof(int64_t));
     if (!ctx->timestamp_list)
         return AVERROR(ENOMEM);
-    ctx->output_surface_queue = av_fifo_alloc(ctx->max_surface_count * sizeof(NvencSurface*));
+    ctx->output_surface_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NvencSurface*));
     if (!ctx->output_surface_queue)
         return AVERROR(ENOMEM);
-    ctx->output_surface_ready_queue = av_fifo_alloc(ctx->max_surface_count * sizeof(NvencSurface*));
+    ctx->output_surface_ready_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NvencSurface*));
     if (!ctx->output_surface_ready_queue)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < ctx->max_surface_count; i++) {
+    for (i = 0; i < ctx->nb_surfaces; i++) {
         if ((res = nvenc_alloc_surface(avctx, i)) < 0)
             return res;
     }
@@ -1054,7 +1050,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_fifo_freep(&ctx->output_surface_queue);
 
     if (ctx->surfaces && avctx->pix_fmt == AV_PIX_FMT_CUDA) {
-        for (i = 0; i < ctx->max_surface_count; ++i) {
+        for (i = 0; i < ctx->nb_surfaces; ++i) {
             if (ctx->surfaces[i].input_surface) {
                  p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->surfaces[i].in_map.mappedResource);
             }
@@ -1067,7 +1063,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     }
 
     if (ctx->surfaces) {
-        for (i = 0; i < ctx->max_surface_count; ++i) {
+        for (i = 0; i < ctx->nb_surfaces; ++i) {
             if (avctx->pix_fmt != AV_PIX_FMT_CUDA)
                 p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
             av_frame_free(&ctx->surfaces[i].in_ref);
@@ -1075,7 +1071,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
         }
     }
     av_freep(&ctx->surfaces);
-    ctx->max_surface_count = 0;
+    ctx->nb_surfaces = 0;
 
     if (ctx->nvencoder)
         p_nvenc->nvEncDestroyEncoder(ctx->nvencoder);
@@ -1140,7 +1136,7 @@ static NvencSurface *get_free_frame(NvencContext *ctx)
 {
     int i;
 
-    for (i = 0; i < ctx->max_surface_count; ++i) {
+    for (i = 0; i < ctx->nb_surfaces; ++i) {
         if (!ctx->surfaces[i].lockCount) {
             ctx->surfaces[i].lockCount = 1;
             return &ctx->surfaces[i];
@@ -1470,7 +1466,7 @@ static int output_ready(NvencContext *ctx, int flush)
 
     nb_ready   = av_fifo_size(ctx->output_surface_ready_queue)   / sizeof(NvencSurface*);
     nb_pending = av_fifo_size(ctx->output_surface_queue)         / sizeof(NvencSurface*);
-    return nb_ready > 0 && (flush || nb_ready + nb_pending >= ctx->buffer_delay);
+    return nb_ready > 0 && (flush || nb_ready + nb_pending >= ctx->async_depth);
 }
 
 int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
