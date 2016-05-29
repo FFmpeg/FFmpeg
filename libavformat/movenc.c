@@ -5733,11 +5733,9 @@ static int mov_write_trailer(AVFormatContext *s)
             res = shift_data(s);
             if (res < 0)
                 goto error;
-            if (res == 0) {
-                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
-                if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
-                    goto error;
-            }
+            avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
+            if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
+                goto error;
         } else if (mov->reserved_moov_size > 0) {
             int64_t size;
             if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
@@ -5762,17 +5760,16 @@ static int mov_write_trailer(AVFormatContext *s)
         for (i = 0; i < mov->nb_streams; i++)
            mov->tracks[i].data_offset = 0;
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX) {
+            int64_t end;
             av_log(s, AV_LOG_INFO, "Starting second pass: inserting sidx atoms\n");
             res = shift_data(s);
             if (res < 0)
                 goto error;
-            if (res == 0) {
-                int64_t end = avio_tell(pb);
-                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
-                mov_write_sidx_tags(pb, mov, -1, 0);
-                avio_seek(pb, end, SEEK_SET);
-                mov_write_mfra_tag(pb, mov);
-            }
+            end = avio_tell(pb);
+            avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
+            mov_write_sidx_tags(pb, mov, -1, 0);
+            avio_seek(pb, end, SEEK_SET);
+            mov_write_mfra_tag(pb, mov);
         } else {
             mov_write_mfra_tag(pb, mov);
         }
