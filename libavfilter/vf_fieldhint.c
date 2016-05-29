@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -180,6 +181,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         top    = s->frame[1 + tf];
         bottom = s->frame[1 + bf];
         break;
+    default:
+        av_assert0(0);
     }
 
     switch (hint) {
