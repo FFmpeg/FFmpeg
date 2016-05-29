@@ -2444,24 +2444,28 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     /* Track width and height, for visual only */
     if (st && (track->par->codec_type == AVMEDIA_TYPE_VIDEO ||
                track->par->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+        int64_t track_width_1616;
         if (track->mode == MODE_MOV) {
-            avio_wb32(pb, track->par->width << 16);
-            avio_wb32(pb, track->height << 16);
+            track_width_1616 = track->par->width * 0x10000ULL;
         } else {
-            int64_t track_width_1616 = av_rescale(st->sample_aspect_ratio.num,
+            track_width_1616 = av_rescale(st->sample_aspect_ratio.num,
                                                   track->par->width * 0x10000LL,
                                                   st->sample_aspect_ratio.den);
             if (!track_width_1616 ||
                 track->height != track->par->height ||
                 track_width_1616 > UINT32_MAX)
                 track_width_1616 = track->par->width * 0x10000ULL;
-            if (track_width_1616 > UINT32_MAX) {
-                av_log(mov->fc, AV_LOG_WARNING, "track width too large\n");
-                track_width_1616 = 0;
-            }
-            avio_wb32(pb, track_width_1616);
-            avio_wb32(pb, track->height * 0x10000U);
         }
+        if (track_width_1616 > UINT32_MAX) {
+            av_log(mov->fc, AV_LOG_WARNING, "track width is too large\n");
+            track_width_1616 = 0;
+        }
+        avio_wb32(pb, track_width_1616);
+        if (track->height > 0xFFFF) {
+            av_log(mov->fc, AV_LOG_WARNING, "track height is too large\n");
+            avio_wb32(pb, 0);
+        } else
+            avio_wb32(pb, track->height * 0x10000U);
     } else {
         avio_wb32(pb, 0);
         avio_wb32(pb, 0);
