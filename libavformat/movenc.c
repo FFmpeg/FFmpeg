@@ -1894,9 +1894,7 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     avio_w8(pb, nb_frames);                 /* Number of frames */
     avio_w8(pb, 0);                         /* Reserved */
 
-    if (track->st)
-        t = av_dict_get(track->st->metadata, "reel_name", NULL, 0);
-
+    t = av_dict_get(track->st->metadata, "reel_name", NULL, 0);
     if (t && utf8len(t->value) && track->mode != MODE_MP4)
         mov_write_source_reference_tag(pb, track, t->value);
     else
