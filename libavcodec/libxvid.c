@@ -713,7 +713,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Encode a dummy frame to get the extradata immediately */
     if (x->quicktime_format) {
         AVFrame *picture;
-        AVPacket packet;
+        AVPacket packet = {0};
         int size, got_packet, ret;
 
         av_init_packet(&packet);
