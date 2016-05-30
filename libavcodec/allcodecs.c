@@ -294,6 +294,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(SDX2_DPCM,         sdx2_dpcm);
     REGISTER_ENCDEC (SGI,               sgi);
     REGISTER_DECODER(SGIRLE,            sgirle);
+    REGISTER_DECODER(SHEERVIDEO,        sheervideo);
     REGISTER_DECODER(SMACKER,           smacker);
     REGISTER_DECODER(SMC,               smc);
     REGISTER_DECODER(SMVJPEG,           smvjpeg);
