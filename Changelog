@@ -13,6 +13,7 @@ version <next>:
 - protocol blacklisting API
 - MediaCodec H264 decoding
 - VC-2 HQ RTP payload format (draft v1) depacketizer and packetizer
+- VP9 RTP payload format (draft v2) packetizer
 - AudioToolbox audio decoders
 - AudioToolbox audio encoders
 - coreimage filter (GPU based image filtering on OSX)
