@@ -453,6 +453,9 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         return;
     }
 
+    // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
+    avctx->properties = st->codec->properties;
+
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);
     avcodec_string(buf, sizeof(buf), avctx, is_output);

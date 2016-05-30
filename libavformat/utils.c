@@ -3805,6 +3805,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
             memcpy(st->codec->subtitle_header, st->internal->avctx->subtitle_header,
                    st->codec->subtitle_header_size);
         }
+
+        // Fields unavailable in AVCodecParameters
+        st->codec->properties = st->internal->avctx->properties;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
