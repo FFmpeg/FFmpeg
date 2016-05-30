@@ -54,6 +54,44 @@ static const uint8_t l_r_rgb[256] = {
      8,  8,  8,  7,  7,  7,  7,  7,  6,  6,  6,  5,  5,  4,  4,  4,
 };
 
+static const uint8_t l_r_rgbi[256] = {
+     3,  4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,  7,  7,  7,
+     8,  8,  8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9,  9,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10,  9,  9,  9,  9,  9,  9,  9,  8,  8,  8,  8,  8,  8,  8,
+     8,  7,  7,  7,  7,  7,  7,  6,  6,  6,  6,  5,  5,  4,  4,  4,
+};
+
+static const uint8_t l_g_rgbi[256] = {
+     1,  3,  4,  5,  6,  7,  7,  8,  9,  9, 10, 10, 10, 10, 11, 11,
+    11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14,
+    14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14,
+    14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12,
+    11, 11, 11, 10, 10, 10,  9,  9,  9,  8,  8,  7,  6,  5,  5,  3,
+};
+
 static const uint8_t l_g_rgb[256] = {
      2,  2,  4,  4,  6,  7,  9,  9, 10, 11, 11, 11, 12, 12, 12, 13,
     13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15,
@@ -1534,6 +1572,72 @@ static void decode_rgbx(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     }
 }
 
+static void decode_argbi(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint8_t *dst;
+    int x, y;
+
+    dst = p->data[0];
+    if (get_bits1(gb)) {
+        for (x = 0; x < avctx->width; x++) {
+            dst[x * 4 + 0] = get_bits(gb, 8);
+            dst[x * 4 + 1] = get_bits(gb, 8);
+            dst[x * 4 + 2] = get_bits(gb, 8);
+            dst[x * 4 + 3] = get_bits(gb, 8);
+        }
+    } else {
+        int pred[4] = { -128, -128, -128, -128 };
+
+        for (x = 0; x < avctx->width; x++) {
+            int a, r, g, b;
+
+            a = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+            g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+            dst[4 * x + 0] = pred[0] = (a + pred[0]) & 0xff;
+            dst[4 * x + 1] = pred[1] = (r + pred[1]) & 0xff;
+            dst[4 * x + 2] = pred[2] = (r + g + pred[2]) & 0xff;
+            dst[4 * x + 3] = pred[3] = (r + g + b + pred[3]) & 0xff;
+        }
+    }
+
+    dst += p->linesize[0];
+    for (y = 1; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst[x * 4 + 0] = get_bits(gb, 8);
+                dst[x * 4 + 1] = get_bits(gb, 8);
+                dst[x * 4 + 2] = get_bits(gb, 8);
+                dst[x * 4 + 3] = get_bits(gb, 8);
+            }
+        } else {
+            int pred_L[4];
+            int a, r, g, b;
+
+            pred_L[0] = dst[-p->linesize[0] + 0];
+            pred_L[1] = dst[-p->linesize[0] + 1];
+            pred_L[2] = dst[-p->linesize[0] + 2];
+            pred_L[3] = dst[-p->linesize[0] + 3];
+
+            for (x = 0; x < avctx->width; x++) {
+                a = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst[4 * x + 0] = pred_L[0] = (a + pred_L[0]) & 0xff;
+                dst[4 * x + 1] = pred_L[1] = (r + pred_L[1]) & 0xff;
+                dst[4 * x + 2] = pred_L[2] = (r + g + pred_L[2]) & 0xff;
+                dst[4 * x + 3] = pred_L[3] = (r + g + b + pred_L[3]) & 0xff;
+            }
+        }
+        dst += p->linesize[0];
+    }
+}
+
 static void decode_argb(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -1604,6 +1708,65 @@ static void decode_argb(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
                 pred_TL[1] = pred_T[1];
                 pred_TL[2] = pred_T[2];
                 pred_TL[3] = pred_T[3];
+            }
+        }
+        dst += p->linesize[0];
+    }
+}
+
+static void decode_rgbi(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint8_t *dst;
+    int x, y;
+
+    dst = p->data[0];
+    if (get_bits1(gb)) {
+        for (x = 0; x < avctx->width; x++) {
+            dst[x * 4 + 0] = get_bits(gb, 8);
+            dst[x * 4 + 1] = get_bits(gb, 8);
+            dst[x * 4 + 2] = get_bits(gb, 8);
+        }
+    } else {
+        int pred[4] = { -128, -128, -128, -128 };
+
+        for (x = 0; x < avctx->width; x++) {
+            int r, g, b;
+
+            r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+            g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+            dst[4 * x + 0] = pred[0] = (r + pred[0]) & 0xff;
+            dst[4 * x + 1] = pred[1] = (r + g + pred[1]) & 0xff;
+            dst[4 * x + 2] = pred[2] = (r + g + b + pred[2]) & 0xff;
+        }
+    }
+
+    dst += p->linesize[0];
+    for (y = 1; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst[x * 4 + 0] = get_bits(gb, 8);
+                dst[x * 4 + 1] = get_bits(gb, 8);
+                dst[x * 4 + 2] = get_bits(gb, 8);
+            }
+        } else {
+            int pred_L[4];
+            int r, g, b;
+
+            pred_L[0] = dst[-p->linesize[0] + 0];
+            pred_L[1] = dst[-p->linesize[0] + 1];
+            pred_L[2] = dst[-p->linesize[0] + 2];
+
+            for (x = 0; x < avctx->width; x++) {
+                r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst[4 * x + 0] = pred_L[0] = (r + pred_L[0]) & 0xff;
+                dst[4 * x + 1] = pred_L[1] = (r + g + pred_L[1]) & 0xff;
+                dst[4 * x + 2] = pred_L[2] = (r + g + b + pred_L[2]) & 0xff;
             }
         }
         dst += p->linesize[0];
@@ -1728,6 +1891,14 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_g_rgb, 256);
         }
         break;
+    case MKTAG(' ', 'r', 'G', 'B'):
+        avctx->pix_fmt = AV_PIX_FMT_RGB0;
+        s->decode_frame = decode_rgbi;
+        if (s->format != format) {
+            build_vlc(&s->vlc[0], l_r_rgbi, 256);
+            build_vlc(&s->vlc[1], l_g_rgbi, 256);
+        }
+        break;
     case MKTAG('A', 'R', 'G', 'X'):
         avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         s->decode_frame = decode_argx;
@@ -1750,6 +1921,14 @@ static int decode_frame(AVCodecContext *avctx,
         if (s->format != format) {
             build_vlc(&s->vlc[0], l_r_rgb, 256);
             build_vlc(&s->vlc[1], l_g_rgb, 256);
+        }
+        break;
+    case MKTAG('A', 'r', 'G', 'B'):
+        avctx->pix_fmt = AV_PIX_FMT_ARGB;
+        s->decode_frame = decode_argbi;
+        if (s->format != format) {
+            build_vlc(&s->vlc[0], l_r_rgbi, 256);
+            build_vlc(&s->vlc[1], l_g_rgbi, 256);
         }
         break;
     case MKTAG('A', 'Y', 'b', 'R'):
