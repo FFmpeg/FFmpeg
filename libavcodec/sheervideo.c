@@ -627,6 +627,44 @@ static const uint8_t l_u_yry10[1024] = {
     10, 10, 10, 10,  9,  9,  9,  8,  8,  7,  7,  6,  5,  4,  4,  3,
 };
 
+static const uint8_t l_y_ybri[256] = {
+     3,  3,  4,  4,  5,  5,  6,  6,  6,  7,  7,  7,  7,  7,  8,  8,
+     8,  8,  8,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12,
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10,
+    10, 10, 10, 10, 10, 10, 10,  9,  9,  9,  9,  9,  9,  9,  8,  8,
+     8,  8,  8,  7,  7,  7,  7,  7,  6,  6,  6,  5,  5,  5,  4,  3,
+};
+
+static const uint8_t l_u_ybri[256] = {
+     1,  3,  5,  6,  8,  8,  9, 10, 10, 11, 11, 12, 12, 13, 13, 13,
+    14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14,
+    14, 13, 13, 13, 12, 12, 11, 11, 10, 10,  9,  8,  8,  6,  5,  2,
+};
+
 static void decode_ca4p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -1244,6 +1282,74 @@ static void decode_byry(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     }
 }
 
+static void decode_ybri(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint8_t *dst_y, *dst_u, *dst_v;
+    int x, y;
+
+    dst_y = p->data[0];
+    dst_u = p->data[1];
+    dst_v = p->data[2];
+
+    if (get_bits1(gb)) {
+        for (x = 0; x < avctx->width; x++) {
+            dst_y[x] = get_bits(gb, 8);
+            dst_u[x] = get_bits(gb, 8);
+            dst_v[x] = get_bits(gb, 8);
+        }
+    } else {
+        int pred[4] = { 125, -128, -128, -128 };
+
+        for (x = 0; x < avctx->width; x++) {
+            int y, u, v;
+
+            y = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+            u = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            v = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+            dst_y[x] = pred[0] = (y + pred[0]) & 0xff;
+            dst_u[x] = pred[1] = (u + pred[1]) & 0xff;
+            dst_v[x] = pred[2] = (v + pred[2]) & 0xff;
+        }
+    }
+
+    dst_y += p->linesize[0];
+    dst_u += p->linesize[1];
+    dst_v += p->linesize[2];
+
+    for (y = 1; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst_y[x] = get_bits(gb, 8);
+                dst_u[x] = get_bits(gb, 8);
+                dst_v[x] = get_bits(gb, 8);
+            }
+        } else {
+            int pred_L[4];
+            int y, u, v;
+
+            pred_L[0] = dst_y[-p->linesize[0]];
+            pred_L[1] = dst_u[-p->linesize[1]];
+            pred_L[2] = dst_v[-p->linesize[2]];
+
+            for (x = 0; x < avctx->width; x++) {
+                y = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                u = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                v = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst_y[x] = pred_L[0] = (y + pred_L[0]) & 0xff;
+                dst_u[x] = pred_L[1] = (u + pred_L[1]) & 0xff;
+                dst_v[x] = pred_L[2] = (v + pred_L[2]) & 0xff;
+            }
+        }
+
+        dst_y += p->linesize[0];
+        dst_u += p->linesize[1];
+        dst_v += p->linesize[2];
+    }
+}
+
 static void decode_ybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -1314,6 +1420,84 @@ static void decode_ybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             }
         }
 
+        dst_y += p->linesize[0];
+        dst_u += p->linesize[1];
+        dst_v += p->linesize[2];
+    }
+}
+
+static void decode_aybri(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint8_t *dst_a, *dst_y, *dst_u, *dst_v;
+    int x, y;
+
+    dst_a = p->data[3];
+    dst_y = p->data[0];
+    dst_u = p->data[1];
+    dst_v = p->data[2];
+
+    if (get_bits1(gb)) {
+        for (x = 0; x < avctx->width; x++) {
+            dst_a[x] = get_bits(gb, 8);
+            dst_y[x] = get_bits(gb, 8);
+            dst_u[x] = get_bits(gb, 8);
+            dst_v[x] = get_bits(gb, 8);
+        }
+    } else {
+        int pred[4] = { 125, 125, -128, -128 };
+
+        for (x = 0; x < avctx->width; x++) {
+            int a, y, u, v;
+
+            a = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            y = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+            u = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+            v = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+            dst_a[x] = pred[0] = (a + pred[0]) & 0xff;
+            dst_y[x] = pred[1] = (y + pred[1]) & 0xff;
+            dst_u[x] = pred[2] = (u + pred[2]) & 0xff;
+            dst_v[x] = pred[3] = (v + pred[3]) & 0xff;
+        }
+    }
+
+    dst_a += p->linesize[3];
+    dst_y += p->linesize[0];
+    dst_u += p->linesize[1];
+    dst_v += p->linesize[2];
+
+    for (y = 1; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst_a[x] = get_bits(gb, 8);
+                dst_y[x] = get_bits(gb, 8);
+                dst_u[x] = get_bits(gb, 8);
+                dst_v[x] = get_bits(gb, 8);
+            }
+        } else {
+            int pred_L[4];
+            int a, y, u, v;
+
+            pred_L[0] = dst_a[-p->linesize[3]];
+            pred_L[1] = dst_y[-p->linesize[0]];
+            pred_L[2] = dst_u[-p->linesize[1]];
+            pred_L[3] = dst_v[-p->linesize[2]];
+
+            for (x = 0; x < avctx->width; x++) {
+                a = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                y = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                u = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                v = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst_a[x] = pred_L[0] = (a + pred_L[0]) & 0xff;
+                dst_y[x] = pred_L[1] = (y + pred_L[1]) & 0xff;
+                dst_u[x] = pred_L[2] = (u + pred_L[2]) & 0xff;
+                dst_v[x] = pred_L[3] = (v + pred_L[3]) & 0xff;
+            }
+        }
+
+        dst_a += p->linesize[3];
         dst_y += p->linesize[0];
         dst_u += p->linesize[1];
         dst_v += p->linesize[2];
@@ -1939,12 +2123,28 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_u_ybr, 256);
         }
         break;
+    case MKTAG('A', 'y', 'b', 'R'):
+        avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+        s->decode_frame = decode_aybri;
+        if (s->format != format) {
+            build_vlc(&s->vlc[0], l_y_ybri, 256);
+            build_vlc(&s->vlc[1], l_u_ybri, 256);
+        }
+        break;
     case MKTAG(' ', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybr;
         if (s->format != format) {
             build_vlc(&s->vlc[0], l_y_ybr, 256);
             build_vlc(&s->vlc[1], l_u_ybr, 256);
+        }
+        break;
+    case MKTAG(' ', 'y', 'b', 'R'):
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        s->decode_frame = decode_ybri;
+        if (s->format != format) {
+            build_vlc(&s->vlc[0], l_y_ybri, 256);
+            build_vlc(&s->vlc[1], l_u_ybri, 256);
         }
         break;
     case MKTAG('Y', 'B', 'R', 0x0a):
