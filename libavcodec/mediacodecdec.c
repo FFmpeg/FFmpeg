@@ -311,7 +311,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     s->first_buffer_at = av_gettime();
 
-    s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, avctx->width, avctx->height, avctx);
+    s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, avctx);
     if (!s->codec_name) {
         ret = AVERROR_EXTERNAL;
         goto fail;

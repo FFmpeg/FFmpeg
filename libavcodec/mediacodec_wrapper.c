@@ -32,9 +32,6 @@
 
 struct JNIAMediaCodecListFields {
 
-    jclass mediaformat_class;
-    jmethodID create_video_format_id;
-
     jclass mediacodec_list_class;
     jmethodID init_id;
     jmethodID find_decoder_for_format_id;
@@ -50,9 +47,6 @@ struct JNIAMediaCodecListFields {
 } JNIAMediaCodecListFields;
 
 static const struct FFJniField jni_amediacodeclist_mapping[] = {
-    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediaformat_class), 1 },
-        { "android/media/MediaFormat", "createVideoFormat", "(Ljava/lang/String;II)Landroid/media/MediaFormat;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecListFields, create_video_format_id), 1 },
-
     { "android/media/MediaCodecList", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_list_class), 1 },
         { "android/media/MediaCodecList", "<init>", "(I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, init_id), 0 },
         { "android/media/MediaCodecList", "findDecoderForFormat", "(Landroid/media/MediaFormat;)Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, find_decoder_for_format_id), 0 },
@@ -273,7 +267,7 @@ struct FFAMediaCodec {
         ff_jni_detach_env(log_ctx);            \
 } while (0)
 
-char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int height, void *log_ctx)
+char *ff_AMediaCodecList_getCodecNameByType(const char *mime, void *log_ctx)
 {
     int ret;
     char *name = NULL;
@@ -282,9 +276,11 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int hei
     int attached = 0;
     JNIEnv *env = NULL;
     struct JNIAMediaCodecListFields jfields = { 0 };
+    struct JNIAMediaFormatFields mediaformat_jfields = { 0 };
 
     jobject format = NULL;
     jobject codec = NULL;
+    jstring key = NULL;
     jstring tmp = NULL;
 
     jobject info = NULL;
@@ -297,16 +293,34 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int hei
         goto done;
     }
 
+    if ((ret = ff_jni_init_jfields(env, &mediaformat_jfields, jni_amediaformat_mapping, 0, log_ctx)) < 0) {
+        goto done;
+    }
+
     if (jfields.init_id && jfields.find_decoder_for_format_id) {
+        key = ff_jni_utf_chars_to_jstring(env, "mime", log_ctx);
+        if (!key) {
+            goto done;
+        }
+
         tmp = ff_jni_utf_chars_to_jstring(env, mime, log_ctx);
         if (!tmp) {
             goto done;
         }
 
-        format = (*env)->CallStaticObjectMethod(env, jfields.mediaformat_class, jfields.create_video_format_id, tmp, width, height);
+        format = (*env)->NewObject(env, mediaformat_jfields.mediaformat_class, mediaformat_jfields.init_id);
         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
             goto done;
         }
+
+        (*env)->CallVoidMethod(env, format, mediaformat_jfields.set_string_id, key, tmp);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
+
+        (*env)->DeleteLocalRef(env, key);
+        key = NULL;
+
         (*env)->DeleteLocalRef(env, tmp);
         tmp = NULL;
 
@@ -321,7 +335,7 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int hei
         }
         if (!tmp) {
             av_log(NULL, AV_LOG_ERROR, "Could not find decoder in media codec list "
-                                       "for format { mime=%s width=%d height=%d }\n", mime, width, height);
+                                       "for format { mime=%s }\n", mime);
             goto done;
         }
 
@@ -418,6 +432,10 @@ done:
         (*env)->DeleteLocalRef(env, codec);
     }
 
+    if (key) {
+        (*env)->DeleteLocalRef(env, key);
+    }
+
     if (tmp) {
         (*env)->DeleteLocalRef(env, tmp);
     }
@@ -437,6 +455,7 @@ done:
     av_freep(&supported_type);
 
     ff_jni_reset_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx);
+    ff_jni_reset_jfields(env, &mediaformat_jfields, jni_amediaformat_mapping, 0, log_ctx);
 
     JNI_DETACH_ENV(attached, log_ctx);
 
