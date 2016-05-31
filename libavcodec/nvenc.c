@@ -651,7 +651,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
     if (ctx->flags & NVENC_LOSSLESS) {
         set_lossless(avctx);
-    } else if (ctx->rc > 0) {
+    } else if (ctx->rc >= 0) {
         nvenc_override_rate_control(avctx);
     } else {
         ctx->encode_config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
