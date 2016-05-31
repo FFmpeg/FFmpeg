@@ -122,6 +122,7 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int hei
             goto done;
         }
         (*env)->DeleteLocalRef(env, tmp);
+        tmp = NULL;
 
         codec = (*env)->NewObject(env, jfields.mediacodec_list_class, jfields.init_id, 0);
         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
