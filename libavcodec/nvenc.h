@@ -157,7 +157,10 @@ typedef struct NvencContext
      * AVCodecContext.pix_fmt when using hwaccel frames on input */
     enum AVPixelFormat data_pix_fmt;
 
-    int64_t last_dts;
+    /* timestamps of the first two frames, for computing the first dts
+     * when B-frames are present */
+    int64_t initial_pts[2];
+    int first_packet_output;
 
     void *nvencoder;
 
