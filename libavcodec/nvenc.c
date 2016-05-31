@@ -598,15 +598,9 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
         set_vbr(avctx);
         break;
     case NV_ENC_PARAMS_RC_CBR:
-        break;
     case NV_ENC_PARAMS_RC_2_PASS_QUALITY:
     case NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP:
-        if (!(ctx->flags & NVENC_LOWLATENCY)) {
-            av_log(avctx, AV_LOG_WARNING,
-                   "The multipass rate-control requires "
-                   "a low-latency preset.\n");
-            return;
-        }
+        break;
     }
 
     rc->rateControlMode = ctx->rc;
