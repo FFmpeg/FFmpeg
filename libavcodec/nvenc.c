@@ -531,6 +531,14 @@ static av_cold void set_vbr(AVCodecContext *avctx)
         rc->maxQP.qpIntra = avctx->qmax;
 
         qp_inter_p = (avctx->qmax + 3 * avctx->qmin) / 4; // biased towards Qmin
+    } else if (avctx->qmin >= 0) {
+        rc->enableMinQP = 1;
+
+        rc->minQP.qpInterB = avctx->qmin;
+        rc->minQP.qpInterP = avctx->qmin;
+        rc->minQP.qpIntra = avctx->qmin;
+
+        qp_inter_p = avctx->qmin;
     } else {
         qp_inter_p = 26; // default to 26
     }
