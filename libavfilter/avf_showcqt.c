@@ -365,9 +365,9 @@ static enum AVPixelFormat convert_axis_pixel_format(enum AVPixelFormat format)
 {
     switch (format) {
         case AV_PIX_FMT_RGB24:   format = AV_PIX_FMT_RGBA; break;
-        case AV_PIX_FMT_YUV444P: format = AV_PIX_FMT_YUVA444P; break;
-        case AV_PIX_FMT_YUV422P: format = AV_PIX_FMT_YUVA422P; break;
-        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA420P; break;
+        case AV_PIX_FMT_YUV444P:
+        case AV_PIX_FMT_YUV422P:
+        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA444P; break;
     }
     return format;
 }
@@ -812,7 +812,7 @@ do { \
     lpay++; lpau++; lpav++; lpaa++; \
 } while (0)
 
-#define BLEND_WITHOUT_CHROMA(c) \
+#define BLEND_WITHOUT_CHROMA(c, alpha_inc) \
 do { \
     if (!*lpaa) { \
         *lpy = lrintf(c.yuv.y + 16.0f); \
@@ -823,7 +823,46 @@ do { \
         *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
     } \
     lpy++; \
-    lpay++; lpaa++; \
+    lpay++; lpaa += alpha_inc; \
+} while (0)
+
+#define BLEND_CHROMA2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.5f/255.0f) * lpaa[0]; \
+        float a1 = (0.5f/255.0f) * lpaa[1]; \
+        float b = 1.0f - a0 - a1; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
+} while (0)
+
+#define BLEND_CHROMA2x2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1] && !lpaa[lsaa] && !lpaa[lsaa+1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1] && \
+               255 == lpaa[lsaa] && 255 == lpaa[lsaa+1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.25f/255.0f) * lpaa[0]; \
+        float a1 = (0.25f/255.0f) * lpaa[1]; \
+        float a2 = (0.25f/255.0f) * lpaa[lsaa]; \
+        float a3 = (0.25f/255.0f) * lpaa[lsaa+1]; \
+        float b = 1.0f - a0 - a1 - a2 - a3; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + a2 * lpau[lsau] + a3 * lpau[lsau+1] \
+                    + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + a2 * lpav[lsav] + a3 * lpav[lsav+1] \
+                    + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
 } while (0)
 
 static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off)
@@ -842,18 +881,25 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpu = vu + (offh + yh) * lsu;
         lpv = vv + (offh + yh) * lsv;
         lpay = vay + y * lsay;
-        lpau = vau + yh * lsau;
-        lpav = vav + yh * lsav;
+        lpau = vau + y * lsau;
+        lpav = vav + y * lsav;
         lpaa = vaa + y * lsaa;
         if (fmt == AV_PIX_FMT_YUV444P) {
             for (x = 0; x < w; x += 2) {
                 BLEND_WITH_CHROMA(c[x]);
                 BLEND_WITH_CHROMA(c[x+1]);
             }
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
+            }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2x2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
 
@@ -871,13 +917,14 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
             }
         } else if (fmt == AV_PIX_FMT_YUV422P) {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITHOUT_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 1);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
     }
