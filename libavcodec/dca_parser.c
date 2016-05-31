@@ -109,25 +109,25 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
                 case DCA_SYNCWORD_CORE_LE:
                     if (size == 2) {
                         pc1->framesize = CORE_FRAMESIZE(STATE_LE(state));
-                        start_found    = 2;
+                        start_found    = 4;
                     }
                     break;
                 case DCA_SYNCWORD_CORE_14B_BE:
                     if (size == 4) {
                         pc1->framesize = CORE_FRAMESIZE(STATE_14(state)) * 8 / 14 * 2;
-                        start_found    = 2;
+                        start_found    = 4;
                     }
                     break;
                 case DCA_SYNCWORD_CORE_14B_LE:
                     if (size == 4) {
                         pc1->framesize = CORE_FRAMESIZE(STATE_14(STATE_LE(state))) * 8 / 14 * 2;
-                        start_found    = 2;
+                        start_found    = 4;
                     }
                     break;
                 case DCA_SYNCWORD_SUBSTREAM:
                     if (size == 6) {
                         pc1->framesize = EXSS_FRAMESIZE(state);
-                        start_found    = 2;
+                        start_found    = 4;
                     }
                     break;
                 default:
@@ -136,23 +136,19 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
                 continue;
             }
 
-            if (pc1->lastmarker == DCA_SYNCWORD_CORE_BE) {
-                if (pc1->framesize > size + 2)
-                    continue;
+            if (start_found == 2 && IS_EXSS_MARKER(state) &&
+                pc1->framesize <= size + 2) {
+                pc1->framesize  = size + 2;
+                start_found     = 3;
+                continue;
+            }
 
-                if (start_found == 2 && IS_EXSS_MARKER(state)) {
-                    pc1->framesize = size + 2;
-                    start_found    = 3;
-                    continue;
+            if (start_found == 3) {
+                if (size == pc1->framesize + 4) {
+                    pc1->framesize += EXSS_FRAMESIZE(state);
+                    start_found     = 4;
                 }
-
-                if (start_found == 3) {
-                    if (size == pc1->framesize + 4) {
-                        pc1->framesize += EXSS_FRAMESIZE(state);
-                        start_found     = 4;
-                    }
-                    continue;
-                }
+                continue;
             }
 
             if (pc1->framesize > size)
