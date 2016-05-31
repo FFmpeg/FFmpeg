@@ -1418,6 +1418,7 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     NvencContext *ctx = avctx->priv_data;
 
     pkt->pts = params->outputTimeStamp;
+    pkt->duration = params->outputDuration;
     pkt->dts = timestamp_queue_dequeue(ctx->timestamp_list);
 
     /* when there're b frame(s), set dts offset */
@@ -1601,7 +1602,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         pic_params.encodePicFlags = 0;
         pic_params.inputTimeStamp = frame->pts;
-        pic_params.inputDuration = 0;
+        pic_params.inputDuration  = av_frame_get_pkt_duration(frame);
 
         nvenc_codec_specific_pic_params(avctx, &pic_params);
     } else {
