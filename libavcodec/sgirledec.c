@@ -31,17 +31,9 @@
 #include "avcodec.h"
 #include "internal.h"
 
-typedef struct SGIRLEContext {
-    AVFrame *frame;
-} SGIRLEContext;
-
 static av_cold int sgirle_decode_init(AVCodecContext *avctx)
 {
-    SGIRLEContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_BGR8;
-    s->frame = av_frame_alloc();
-    if (!s->frame)
-        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -120,31 +112,23 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst,
 static int sgirle_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame, AVPacket *avpkt)
 {
-    SGIRLEContext *s = avctx->priv_data;
+    AVFrame *frame = data;
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    ret = decode_sgirle8(avctx, s->frame->data[0], avpkt->data, avpkt->size,
-                         avctx->width, avctx->height, s->frame->linesize[0]);
+    ret = decode_sgirle8(avctx, frame->data[0], avpkt->data, avpkt->size,
+                         avctx->width, avctx->height, frame->linesize[0]);
     if (ret < 0)
         return ret;
 
+    frame->pict_type = AV_PICTURE_TYPE_I;
+    frame->key_frame = 1;
+
     *got_frame = 1;
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
-        return ret;
 
     return avpkt->size;
-}
-
-static av_cold int sgirle_decode_end(AVCodecContext *avctx)
-{
-    SGIRLEContext *s = avctx->priv_data;
-
-    av_frame_free(&s->frame);
-
-    return 0;
 }
 
 AVCodec ff_sgirle_decoder = {
@@ -152,9 +136,7 @@ AVCodec ff_sgirle_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Silicon Graphics RLE 8-bit video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGIRLE,
-    .priv_data_size = sizeof(SGIRLEContext),
     .init           = sgirle_decode_init,
-    .close          = sgirle_decode_end,
     .decode         = sgirle_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
