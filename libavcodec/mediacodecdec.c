@@ -198,7 +198,7 @@ static int mediacodec_wrap_buffer(AVCodecContext *avctx,
 done:
     status = ff_AMediaCodec_releaseOutputBuffer(s->codec, index, 0);
     if (status < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to release output buffer\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
         ret = AVERROR_EXTERNAL;
     }
 
@@ -539,7 +539,7 @@ int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 
     status = ff_AMediaCodec_flush(codec);
     if (status < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to flush MediaCodec %p", codec);
+        av_log(avctx, AV_LOG_ERROR, "Failed to flush codec\n");
         return AVERROR_EXTERNAL;
     }
 
