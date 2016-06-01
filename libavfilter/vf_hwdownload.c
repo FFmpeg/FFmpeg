@@ -56,8 +56,10 @@ static int hwdownload_query_formats(AVFilterContext *avctx)
         }
     }
 
-    ff_formats_ref(infmts,  &avctx->inputs[0]->out_formats);
-    ff_formats_ref(outfmts, &avctx->outputs[0]->in_formats);
+    if ((err = ff_formats_ref(infmts,  &avctx->inputs[0]->out_formats)) < 0 ||
+        (err = ff_formats_ref(outfmts, &avctx->outputs[0]->in_formats)) < 0)
+        return err;
+
     return 0;
 }
 

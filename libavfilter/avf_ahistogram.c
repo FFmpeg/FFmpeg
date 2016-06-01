@@ -165,7 +165,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int H = s->histogram_h;
     const int w = s->w;
     int c, y, n, p, bin;
-    uint64_t acmax = 0;
+    uint64_t acmax = 1;
 
     if (!s->out || s->out->width  != outlink->w ||
                    s->out->height != outlink->h) {

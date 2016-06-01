@@ -24,6 +24,7 @@
 #include "constants.h"
 
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_1) =       {0x0001000100010001ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_2) =       {0x0002000200020002ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_3) =       {0x0003000300030003ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_4) =       {0x0004000400040004ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_5) =       {0x0005000500050005ULL};

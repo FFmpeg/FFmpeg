@@ -28,6 +28,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "idctdsp.h"
+#include "thread.h"
 #include "unary.h"
 
 #define AIC_HDR_SIZE    24
@@ -375,6 +376,7 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     uint32_t off;
     int x, y, ret;
     int slice_size;
+    ThreadFrame frame = { .f = data };
 
     ctx->frame            = data;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
@@ -393,7 +395,7 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return ret;
     }
 
-    if ((ret = ff_get_buffer(avctx, ctx->frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
     bytestream2_init(&gb, buf + AIC_HDR_SIZE,
@@ -488,5 +490,6 @@ AVCodec ff_aic_decoder = {
     .init           = aic_decode_init,
     .close          = aic_decode_close,
     .decode         = aic_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(aic_decode_init),
 };

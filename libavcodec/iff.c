@@ -1,5 +1,5 @@
 /*
- * IFF ACBM/ANIM/DEEP/ILBM/PBM bitmap decoder
+ * IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN bitmap decoder
  * Copyright (c) 2010 Peter Ross <pross@xvid.org>
  * Copyright (c) 2010 Sebastian Vater <cdgs.basty@googlemail.com>
  * Copyright (c) 2016 Paul B Mahol
@@ -23,7 +23,7 @@
 
 /**
  * @file
- * IFF ACBM/ANIM/DEEP/ILBM/PBM bitmap decoder
+ * IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN bitmap decoder
  */
 
 #include <stdint.h>
@@ -1751,7 +1751,7 @@ static int decode_frame(AVCodecContext *avctx,
 #if CONFIG_IFF_ILBM_DECODER
 AVCodec ff_iff_ilbm_decoder = {
     .name           = "iff",
-    .long_name      = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM"),
+    .long_name      = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_IFF_ILBM,
     .priv_data_size = sizeof(IffContext),

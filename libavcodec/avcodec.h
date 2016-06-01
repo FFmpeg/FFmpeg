@@ -406,6 +406,7 @@ enum AVCodecID {
     AV_CODEC_ID_CFHD,
     AV_CODEC_ID_TRUEMOTION2RT,
     AV_CODEC_ID_M101,
+    AV_CODEC_ID_MAGICYUV,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -489,6 +490,7 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_PSX,
     AV_CODEC_ID_ADPCM_AICA,
     AV_CODEC_ID_ADPCM_IMA_DAT4,
+    AV_CODEC_ID_ADPCM_MTAF,
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,

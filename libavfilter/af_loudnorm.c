@@ -789,6 +789,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     double i_in, i_out, lra_in, lra_out, thresh_in, thresh_out, tp_in, tp_out;
     int c;
 
+    if (!s->r128_in || !s->r128_out)
+        goto end;
+
     ebur128_loudness_range(s->r128_in, &lra_in);
     ebur128_loudness_global(s->r128_in, &i_in);
     ebur128_relative_threshold(s->r128_in, &thresh_in);
@@ -869,8 +872,11 @@ static av_cold void uninit(AVFilterContext *ctx)
         break;
     }
 
-    ebur128_destroy(&s->r128_in);
-    ebur128_destroy(&s->r128_out);
+end:
+    if (s->r128_in)
+        ebur128_destroy(&s->r128_in);
+    if (s->r128_out)
+        ebur128_destroy(&s->r128_out);
     av_freep(&s->limiter_buf);
     av_freep(&s->prev_smp);
     av_freep(&s->buf);

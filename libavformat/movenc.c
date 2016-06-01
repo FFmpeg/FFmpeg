@@ -1894,9 +1894,7 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     avio_w8(pb, nb_frames);                 /* Number of frames */
     avio_w8(pb, 0);                         /* Reserved */
 
-    if (track->st)
-        t = av_dict_get(track->st->metadata, "reel_name", NULL, 0);
-
+    t = av_dict_get(track->st->metadata, "reel_name", NULL, 0);
     if (t && utf8len(t->value) && track->mode != MODE_MP4)
         mov_write_source_reference_tag(pb, track, t->value);
     else
@@ -2444,20 +2442,28 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     /* Track width and height, for visual only */
     if (st && (track->par->codec_type == AVMEDIA_TYPE_VIDEO ||
                track->par->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+        int64_t track_width_1616;
         if (track->mode == MODE_MOV) {
-            avio_wb32(pb, track->par->width << 16);
-            avio_wb32(pb, track->height << 16);
+            track_width_1616 = track->par->width * 0x10000ULL;
         } else {
-            int64_t track_width_1616 = av_rescale(st->sample_aspect_ratio.num,
+            track_width_1616 = av_rescale(st->sample_aspect_ratio.num,
                                                   track->par->width * 0x10000LL,
                                                   st->sample_aspect_ratio.den);
             if (!track_width_1616 ||
                 track->height != track->par->height ||
                 track_width_1616 > UINT32_MAX)
-                track_width_1616 = track->par->width * 0x10000U;
-            avio_wb32(pb, track_width_1616);
-            avio_wb32(pb, track->height * 0x10000U);
+                track_width_1616 = track->par->width * 0x10000ULL;
         }
+        if (track_width_1616 > UINT32_MAX) {
+            av_log(mov->fc, AV_LOG_WARNING, "track width is too large\n");
+            track_width_1616 = 0;
+        }
+        avio_wb32(pb, track_width_1616);
+        if (track->height > 0xFFFF) {
+            av_log(mov->fc, AV_LOG_WARNING, "track height is too large\n");
+            avio_wb32(pb, 0);
+        } else
+            avio_wb32(pb, track->height * 0x10000U);
     } else {
         avio_wb32(pb, 0);
         avio_wb32(pb, 0);
@@ -4800,20 +4806,20 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (trk->mode == MODE_MOV && trk->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVPacket *opkt = pkt;
-            int ret;
+            int reshuffle_ret, ret;
             if (trk->is_unaligned_qt_rgb) {
                 int64_t bpc = trk->par->bits_per_coded_sample != 15 ? trk->par->bits_per_coded_sample : 16;
                 int expected_stride = ((trk->par->width * bpc + 15) >> 4)*2;
-                ret = ff_reshuffle_raw_rgb(s, &pkt, trk->par, expected_stride);
-                if (ret < 0)
-                    return ret;
+                reshuffle_ret = ff_reshuffle_raw_rgb(s, &pkt, trk->par, expected_stride);
+                if (reshuffle_ret < 0)
+                    return reshuffle_ret;
             } else
-                ret = 0;
+                reshuffle_ret = 0;
             if (trk->par->format == AV_PIX_FMT_PAL8 && !trk->pal_done) {
-                int ret2 = ff_get_packet_palette(s, opkt, ret, trk->palette);
-                if (ret2 < 0)
-                    return ret2;
-                if (ret2)
+                ret = ff_get_packet_palette(s, opkt, reshuffle_ret, trk->palette);
+                if (ret < 0)
+                    goto fail;
+                if (ret)
                     trk->pal_done++;
             } else if (trk->par->codec_id == AV_CODEC_ID_RAWVIDEO &&
                        (trk->par->format == AV_PIX_FMT_GRAY8 ||
@@ -4821,9 +4827,11 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 for (i = 0; i < pkt->size; i++)
                     pkt->data[i] = ~pkt->data[i];
             }
-            if (ret) {
+            if (reshuffle_ret) {
                 ret = mov_write_single_packet(s, pkt);
-                av_packet_free(&pkt);
+fail:
+                if (reshuffle_ret)
+                    av_packet_free(&pkt);
                 return ret;
             }
         }
@@ -5723,11 +5731,11 @@ static int mov_write_trailer(AVFormatContext *s)
         if (mov->flags & FF_MOV_FLAG_FASTSTART) {
             av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
-            if (res == 0) {
-                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
-                if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
-                    goto error;
-            }
+            if (res < 0)
+                goto error;
+            avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
+            if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
+                goto error;
         } else if (mov->reserved_moov_size > 0) {
             int64_t size;
             if ((res = mov_write_moov_tag(pb, mov, s)) < 0)
@@ -5752,15 +5760,16 @@ static int mov_write_trailer(AVFormatContext *s)
         for (i = 0; i < mov->nb_streams; i++)
            mov->tracks[i].data_offset = 0;
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX) {
+            int64_t end;
             av_log(s, AV_LOG_INFO, "Starting second pass: inserting sidx atoms\n");
             res = shift_data(s);
-            if (res == 0) {
-                int64_t end = avio_tell(pb);
-                avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
-                mov_write_sidx_tags(pb, mov, -1, 0);
-                avio_seek(pb, end, SEEK_SET);
-                mov_write_mfra_tag(pb, mov);
-            }
+            if (res < 0)
+                goto error;
+            end = avio_tell(pb);
+            avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
+            mov_write_sidx_tags(pb, mov, -1, 0);
+            avio_seek(pb, end, SEEK_SET);
+            mov_write_mfra_tag(pb, mov);
         } else {
             mov_write_mfra_tag(pb, mov);
         }

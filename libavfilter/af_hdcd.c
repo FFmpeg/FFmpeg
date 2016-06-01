@@ -893,7 +893,7 @@ static int integrate(hdcd_state_t *state, int *flag, const int32_t *samples, int
         state->code_counterC++;
     } else {
         if (bits)
-            state->readahead = readaheadtab[bits & ~(-1 << 8)];
+            state->readahead = readaheadtab[bits & 0xff];
         else
             state->readahead = 31; /* ffwd over digisilence */
     }

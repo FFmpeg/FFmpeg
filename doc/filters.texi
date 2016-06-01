@@ -16976,4 +16976,28 @@ movie=dvd.vob:s=v:0+#0x81 [video] [audio]
 @end example
 @end itemize
 
+@subsection Commands
+
+Both movie and amovie support the following commands:
+@table @option
+@item seek
+Perform seek using "av_seek_frame".
+The syntax is: seek @var{stream_index}|@var{timestamp}|@var{flags}
+@itemize
+@item
+@var{stream_index}: If stream_index is -1, a default
+stream is selected, and @var{timestamp} is automatically converted
+from AV_TIME_BASE units to the stream specific time_base.
+@item
+@var{timestamp}: Timestamp in AVStream.time_base units
+or, if no stream is specified, in AV_TIME_BASE units.
+@item
+@var{flags}: Flags which select direction and seeking mode.
+@end itemize
+
+@item get_duration
+Get movie duration in AV_TIME_BASE units.
+
+@end table
+
 @c man end MULTIMEDIA SOURCES

@@ -885,7 +885,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     int grouping     = 0;
     int uselongblock = 1;
     int attacks[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
-    float clippings[AAC_NUM_BLOCKS_SHORT];
     int i;
     FFPsyWindowInfo wi = { { 0 } };
 
@@ -977,7 +976,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
 
     wi.window_type[1] = prev_type;
     if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
-        float clipping = 0.0f;
 
         wi.num_windows  = 1;
         wi.grouping[0]  = 1;
@@ -986,9 +984,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         else
             wi.window_shape = 1;
 
-        for (i = 0; i < 8; i++)
-            clipping = FFMAX(clipping, clippings[i]);
-        wi.clipping[0] = clipping;
     } else {
         int lastgrp = 0;
 
@@ -998,15 +993,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             if (!((pch->next_grouping >> i) & 1))
                 lastgrp = i;
             wi.grouping[lastgrp]++;
-        }
-
-        for (i = 0; i < 8; i += wi.grouping[i]) {
-            int w;
-            float clipping = 0.0f;
-            for (w = 0; w < wi.grouping[i]; w++)
-                clipping = FFMAX(clipping, clippings[i+w]);
-            for (w = 0; w < wi.grouping[i]; w++)
-                wi.clipping[i+w] = clipping;
         }
     }
 

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -173,13 +174,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     switch (s->mode) {
     case 0:
-        top    = s->frame[1 + tf - outlink->frame_count];
-        bottom = s->frame[1 + bf - outlink->frame_count];
+        top    = s->frame[tf - outlink->frame_count + 1];
+        bottom = s->frame[bf - outlink->frame_count + 1];
         break;
     case 1:
         top    = s->frame[1 + tf];
         bottom = s->frame[1 + bf];
         break;
+    default:
+        av_assert0(0);
     }
 
     switch (hint) {

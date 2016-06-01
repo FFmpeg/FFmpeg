@@ -36,14 +36,18 @@ typedef struct SoftFloat{
     int32_t  exp;
 }SoftFloat;
 
-static const SoftFloat FLOAT_0          = {          0,   MIN_EXP};
-static const SoftFloat FLOAT_05         = { 0x20000000,   0};
-static const SoftFloat FLOAT_1          = { 0x20000000,   1};
-static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};
-static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};
-static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};
-static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};
+static const SoftFloat FLOAT_0          = {          0,   MIN_EXP};             ///< 0.0
+static const SoftFloat FLOAT_05         = { 0x20000000,   0};                   ///< 0.5
+static const SoftFloat FLOAT_1          = { 0x20000000,   1};                   ///< 1.0
+static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};                   ///< A small value
+static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};                   ///< 1.584893192 (10^.2)
+static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};                   ///< 100000
+static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};                   ///< 0.999999
 
+
+/**
+ * Convert a SoftFloat to a double precision float.
+ */
 static inline av_const double av_sf2double(SoftFloat v) {
     v.exp -= ONE_BITS +1;
     if(v.exp > 0) return (double)v.mant * (double)(1 << v.exp);
@@ -118,6 +122,12 @@ static inline av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
     return a;
 }
 
+/**
+ * Compares two SoftFloats.
+ * @returns < 0 if the first is less
+ *          > 0 if the first is greater
+ *            0 if they are equal
+ */
 static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if      (t <-31) return                  -  b.mant      ;
@@ -126,6 +136,10 @@ static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     else             return  a.mant                         ;
 }
 
+/**
+ * Compares two SoftFloats.
+ * @returns 1 if a is greater than b, 0 otherwise
+ */
 static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
 {
     int t= a.exp - b.exp;
@@ -135,6 +149,9 @@ static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
     else             return  a.mant          >  0           ;
 }
 
+/**
+ * @returns the sum of 2 SoftFloats.
+ */
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if      (t <-31) return b;
@@ -143,6 +160,9 @@ static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     else             return a;
 }
 
+/**
+ * @returns the difference of 2 SoftFloats.
+ */
 static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
     return av_add_sf(a, (SoftFloat){ -b.mant, b.exp});
 }
@@ -163,6 +183,7 @@ static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
 }
 
 /**
+ * Converts a SoftFloat to an integer.
  * Rounding is to -inf.
  */
 static inline av_const int av_sf2int(SoftFloat v, int frac_bits){

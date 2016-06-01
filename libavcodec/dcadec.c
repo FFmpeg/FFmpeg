@@ -141,22 +141,6 @@ void ff_dca_downmix_to_stereo_float(AVFloatDSPContext *fdsp, float **samples,
     }
 }
 
-static int convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst, int max_size)
-{
-    switch (AV_RB32(src)) {
-    case DCA_SYNCWORD_CORE_BE:
-    case DCA_SYNCWORD_SUBSTREAM:
-        memcpy(dst, src, src_size);
-        return src_size;
-    case DCA_SYNCWORD_CORE_LE:
-    case DCA_SYNCWORD_CORE_14B_BE:
-    case DCA_SYNCWORD_CORE_14B_LE:
-        return avpriv_dca_convert_bitstream(src, src_size, dst, max_size);
-    default:
-        return AVERROR_INVALIDDATA;
-    }
-}
-
 static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -165,27 +149,31 @@ static int dcadec_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *input = avpkt->data;
     int input_size = avpkt->size;
     int i, ret, prev_packet = s->packet;
+    uint32_t mrk;
 
     if (input_size < MIN_PACKET_SIZE || input_size > MAX_PACKET_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid packet size\n");
         return AVERROR_INVALIDDATA;
     }
 
-    av_fast_malloc(&s->buffer, &s->buffer_size,
-                   FFALIGN(input_size, 4096) + DCA_BUFFER_PADDING_SIZE);
-    if (!s->buffer)
-        return AVERROR(ENOMEM);
+    // Convert input to BE format
+    mrk = AV_RB32(input);
+    if (mrk != DCA_SYNCWORD_CORE_BE && mrk != DCA_SYNCWORD_SUBSTREAM) {
+        av_fast_padded_malloc(&s->buffer, &s->buffer_size, input_size);
+        if (!s->buffer)
+            return AVERROR(ENOMEM);
 
-    for (i = 0, ret = AVERROR_INVALIDDATA; i < input_size - MIN_PACKET_SIZE + 1 && ret < 0; i++)
-        ret = convert_bitstream(input + i, input_size - i, s->buffer, s->buffer_size);
+        for (i = 0, ret = AVERROR_INVALIDDATA; i < input_size - MIN_PACKET_SIZE + 1 && ret < 0; i++)
+            ret = avpriv_dca_convert_bitstream(input + i, input_size - i, s->buffer, s->buffer_size);
 
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
-        return ret;
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
+            return ret;
+        }
+
+        input      = s->buffer;
+        input_size = ret;
     }
-
-    input      = s->buffer;
-    input_size = ret;
 
     s->packet = 0;
 

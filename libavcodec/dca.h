@@ -154,6 +154,9 @@ enum DCADownMixType {
 
 extern av_export const uint32_t avpriv_dca_sample_rates[16];
 
+extern const uint32_t ff_dca_sampling_freqs[16];
+extern const uint8_t ff_dca_freq_ranges[16];
+
 /**
  * Convert bitstream to one representation based on sync marker
  */

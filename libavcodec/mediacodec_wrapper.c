@@ -958,6 +958,62 @@ struct FFAMediaCodec {
     int has_get_i_o_buffer;
 };
 
+static int codec_init_static_fields(FFAMediaCodec *codec)
+{
+    int ret = 0;
+    int attached = 0;
+    JNIEnv *env = NULL;
+
+    JNI_ATTACH_ENV_OR_RETURN(env, &attached, codec, AVERROR_EXTERNAL);
+
+    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    if (codec->jfields.buffer_flag_key_frame_id) {
+        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
+        if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+            goto fail;
+        }
+    }
+
+    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
+
+fail:
+    JNI_DETACH_ENV(attached, NULL);
+
+    return ret;
+}
+
 FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name)
 {
     int attached = 0;
@@ -996,46 +1052,12 @@ FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name)
         goto fail;
     }
 
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
     }
 
     JNI_DETACH_ENV(attached, codec);
@@ -1093,40 +1115,7 @@ FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime)
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
@@ -1189,46 +1178,12 @@ FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime)
         goto fail;
     }
 
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
     }
 
     JNI_DETACH_ENV(attached, NULL);

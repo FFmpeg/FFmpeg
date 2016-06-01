@@ -95,12 +95,14 @@ old_flac_header (AVFormatContext * s, int idx)
     st->codecpar->codec_id = AV_CODEC_ID_FLAC;
 
     avctx = avcodec_alloc_context3(NULL);
-    if (!avctx)
-        return -1;
+    if (!avctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ret = avcodec_parameters_to_context(avctx, st->codecpar);
     if (ret < 0)
-        return -1;
+        goto fail;
 
     parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
     av_parser_parse2(parser, avctx,
@@ -117,6 +119,10 @@ old_flac_header (AVFormatContext * s, int idx)
 
     avcodec_free_context(&avctx);
     return 1;
+fail:
+    av_parser_close(parser);
+    avcodec_free_context(&avctx);
+    return ret;
 }
 
 const struct ogg_codec ff_flac_codec = {
