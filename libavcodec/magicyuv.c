@@ -353,7 +353,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         s->slices[i][j].start = offset + header_size;
-        s->slices[i][j].size  = avpkt->size - offset;
+        s->slices[i][j].size  = avpkt->size - s->slices[i][j].start;
     }
 
     if (bytestream2_get_byte(&gb) != s->planes)
