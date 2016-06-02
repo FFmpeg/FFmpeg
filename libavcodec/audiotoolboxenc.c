@@ -22,6 +22,9 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
+#define FF_BUFQUEUE_SIZE 256
+#include "libavfilter/bufferqueue.h"
+
 #include "config.h"
 #include "audio_frame_queue.h"
 #include "avcodec.h"
@@ -38,8 +41,8 @@ typedef struct ATDecodeContext {
     int quality;
 
     AudioConverterRef converter;
-    AVFrame in_frame;
-    AVFrame new_in_frame;
+    struct FFBufQueue frame_queue;
+    struct FFBufQueue used_frame_queue;
 
     unsigned pkt_size;
     AudioFrameQueue afq;
@@ -449,28 +452,30 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
 {
     AVCodecContext *avctx = inctx;
     ATDecodeContext *at = avctx->priv_data;
+    AVFrame *frame;
 
-    if (at->eof) {
-        *nb_packets = 0;
-        return 0;
+    if (!at->frame_queue.available) {
+        if (at->eof) {
+            *nb_packets = 0;
+            return 0;
+        } else {
+            *nb_packets = 0;
+            return 1;
+        }
     }
 
-    av_frame_unref(&at->in_frame);
-    av_frame_move_ref(&at->in_frame, &at->new_in_frame);
-
-    if (!at->in_frame.data[0]) {
-        *nb_packets = 0;
-        return 1;
-    }
+    frame = ff_bufqueue_get(&at->frame_queue);
 
     data->mNumberBuffers              = 1;
     data->mBuffers[0].mNumberChannels = avctx->channels;
-    data->mBuffers[0].mDataByteSize   = at->in_frame.nb_samples *
+    data->mBuffers[0].mDataByteSize   = frame->nb_samples *
                                         av_get_bytes_per_sample(avctx->sample_fmt) *
                                         avctx->channels;
-    data->mBuffers[0].mData           = at->in_frame.data[0];
-    if (*nb_packets > at->in_frame.nb_samples)
-        *nb_packets = at->in_frame.nb_samples;
+    data->mBuffers[0].mData           = frame->data[0];
+    if (*nb_packets > frame->nb_samples)
+        *nb_packets = frame->nb_samples;
+
+    ff_bufqueue_add(avctx, &at->used_frame_queue, frame);
 
     return 0;
 }
@@ -492,19 +497,34 @@ static int ffat_encode(AVCodecContext *avctx, AVPacket *avpkt,
     };
     AudioStreamPacketDescription out_pkt_desc = {0};
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, at->pkt_size, 0)) < 0)
-        return ret;
-
-    av_frame_unref(&at->new_in_frame);
-
     if (frame) {
+        AVFrame *in_frame;
+
+        if (ff_bufqueue_is_full(&at->frame_queue)) {
+            /*
+             * The frame queue is significantly larger than needed in practice,
+             * but no clear way to determine the minimum number of samples to
+             * get output from AudioConverterFillComplexBuffer().
+             */
+            av_log(avctx, AV_LOG_ERROR, "Bug: frame queue is too small.\n");
+            return AVERROR_BUG;
+        }
+
         if ((ret = ff_af_queue_add(&at->afq, frame)) < 0)
             return ret;
-        if ((ret = av_frame_ref(&at->new_in_frame, frame)) < 0)
-            return ret;
+
+        in_frame = av_frame_clone(frame);
+        if (!in_frame)
+            return AVERROR(ENOMEM);
+
+        ff_bufqueue_add(avctx, &at->frame_queue, in_frame);
     } else {
         at->eof = 1;
     }
+
+    if ((ret = ff_alloc_packet2(avctx, avpkt, at->pkt_size, 0)) < 0)
+        return ret;
+
 
     out_buffers.mBuffers[0].mData = avpkt->data;
 
@@ -513,6 +533,9 @@ static int ffat_encode(AVCodecContext *avctx, AVPacket *avpkt,
     ret = AudioConverterFillComplexBuffer(at->converter, ffat_encode_callback, avctx,
                                           got_packet_ptr, &out_buffers,
                                           (avctx->frame_size > at->frame_size) ? NULL : &out_pkt_desc);
+
+    ff_bufqueue_discard_all(&at->used_frame_queue);
+
     if ((!ret || ret == 1) && *got_packet_ptr) {
         avpkt->size = out_buffers.mBuffers[0].mDataByteSize;
         ff_af_queue_remove(&at->afq, out_pkt_desc.mVariableFramesInPacket ?
@@ -531,16 +554,16 @@ static av_cold void ffat_encode_flush(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
     AudioConverterReset(at->converter);
-    av_frame_unref(&at->new_in_frame);
-    av_frame_unref(&at->in_frame);
+    ff_bufqueue_discard_all(&at->frame_queue);
+    ff_bufqueue_discard_all(&at->used_frame_queue);
 }
 
 static av_cold int ffat_close_encoder(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
     AudioConverterDispose(at->converter);
-    av_frame_unref(&at->new_in_frame);
-    av_frame_unref(&at->in_frame);
+    ff_bufqueue_discard_all(&at->frame_queue);
+    ff_bufqueue_discard_all(&at->used_frame_queue);
     ff_af_queue_close(&at->afq);
     return 0;
 }
