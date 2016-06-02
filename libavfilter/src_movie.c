@@ -303,15 +303,15 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
         pad.config_props  = movie_config_output_props;
         pad.request_frame = movie_request_frame;
         ff_insert_outpad(ctx, i, &pad);
-        ret = open_stream(ctx, &movie->st[i]);
-        if (ret < 0)
-            return ret;
         if ( movie->st[i].st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             !movie->st[i].st->codecpar->channel_layout) {
             ret = guess_channel_layout(&movie->st[i], i, ctx);
             if (ret < 0)
                 return ret;
         }
+        ret = open_stream(ctx, &movie->st[i]);
+        if (ret < 0)
+            return ret;
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "seek_point:%"PRIi64" format_name:%s file_name:%s stream_index:%d\n",
