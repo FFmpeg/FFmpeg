@@ -207,6 +207,7 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call DEMDEC, FLV, H264) += fate-h264-brokensps-2580
+FATE_H264-$(call DEMDEC, MXF, H264) += fate-h264-xavc-4389
 FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-dts_5frames
 
 FATE_SAMPLES_AVCONV += $(FATE_H264-yes)
@@ -408,6 +409,7 @@ fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAM
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 fate-h264-brokensps-2580:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/brokensps.flv -vf format=yuv420p,scale=w=192:h=144 -sws_flags bitexact+bilinear
+fate-h264-xavc-4389:                              CMD = framecrc -i $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF -pix_fmt yuv422p10le
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 
