@@ -605,7 +605,9 @@ static void *circular_buffer_task_tx( void *_URLContext)
             } else {
                 ret = ff_neterrno();
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR(EINTR)) {
+                    pthread_mutex_lock(&s->mutex);
                     s->circular_buffer_error = ret;
+                    pthread_mutex_unlock(&s->mutex);
                     return NULL;
                 }
             }
