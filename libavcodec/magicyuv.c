@@ -124,26 +124,37 @@ static int decode_slice(AVCodecContext *avctx, void *tdata,
         int sheight = AV_CEIL_RSHIFT(s->slice_height, s->vshift[i]);
         int fake_stride = p->linesize[i] * (1 + interlaced);
         int stride = p->linesize[i];
-        int pred;
+        int flags, pred;
 
         if ((ret = init_get_bits8(&b, s->buf + s->slices[i][j].start, s->slices[i][j].size)) < 0)
             return ret;
 
-        pred = get_bits(&b, 16);
+        flags = get_bits(&b, 8);
+        pred  = get_bits(&b, 8);
+
         dst = p->data[i] + j * sheight * stride;
-        for (k = 0; k < height; k++) {
-            for (x = 0; x < width; x++) {
-                int pix;
-                if (get_bits_left(&b) <= 0) {
-                    return AVERROR_INVALIDDATA;
+        if (flags & 1) {
+            for (k = 0; k < height; k++) {
+                for (x = 0; x < width; x++) {
+                    dst[x] = get_bits(&b, 8);
                 }
-                pix = get_vlc2(&b, s->vlc[i].table, s->vlc[i].bits, 3);
-                if (pix < 0) {
-                    return AVERROR_INVALIDDATA;
-                }
-                dst[x] = 255 - pix;
+                dst += stride;
             }
-            dst += stride;
+        } else {
+            for (k = 0; k < height; k++) {
+                for (x = 0; x < width; x++) {
+                    int pix;
+                    if (get_bits_left(&b) <= 0) {
+                        return AVERROR_INVALIDDATA;
+                    }
+                    pix = get_vlc2(&b, s->vlc[i].table, s->vlc[i].bits, 3);
+                    if (pix < 0) {
+                        return AVERROR_INVALIDDATA;
+                    }
+                    dst[x] = 255 - pix;
+                }
+                dst += stride;
+            }
         }
 
         if (pred == LEFT) {
