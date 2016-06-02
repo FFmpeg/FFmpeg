@@ -2773,12 +2773,12 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         AVStream av_unused *st;
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
-            av_log(ic, AV_LOG_TRACE, "%d: start_time: %0.3f duration: %0.3f\n", i,
-                    (double) st->start_time / AV_TIME_BASE,
-                    (double) st->duration   / AV_TIME_BASE);
+            av_log(ic, AV_LOG_TRACE, "stream %d: start_time: %0.3f duration: %0.3f\n", i,
+                   (double) st->start_time * av_q2d(st->time_base),
+                   (double) st->duration   * av_q2d(st->time_base));
         }
         av_log(ic, AV_LOG_TRACE,
-                "stream: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
+                "format: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
                 (double) ic->start_time / AV_TIME_BASE,
                 (double) ic->duration   / AV_TIME_BASE,
                 (int64_t)ic->bit_rate / 1000);
