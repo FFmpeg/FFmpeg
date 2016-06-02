@@ -11635,7 +11635,6 @@ To change the display aspect ratio to 16:9, specify one of the following:
 @example
 setdar=dar=1.77777
 setdar=dar=16/9
-setdar=dar=1.77777
 @end example
 
 @item
