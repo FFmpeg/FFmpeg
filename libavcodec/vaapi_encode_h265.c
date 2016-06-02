@@ -1196,7 +1196,7 @@ static av_cold int vaapi_encode_h265_init_constant_bitrate(AVCodecContext *avctx
     priv->fixed_qp_p   = 30;
     priv->fixed_qp_b   = 30;
 
-    av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %d bps.\n",
+    av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
            avctx->bit_rate);
     return 0;
 }
