@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - CrystalHD decoder moved to new decode API
 - add internal ebur128 library, remove external libebur128 dependency
+- Pro-MPEG CoP #3-R2 FEC protocol
 
 version 3.2:
 - libopenmpt demuxer
