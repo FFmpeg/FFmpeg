@@ -94,18 +94,6 @@ fate-delphine-cin-video: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-p
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ANM, ANM) += fate-deluxepaint-anm
 fate-deluxepaint-anm: CMD = framecrc -i $(TARGET_SAMPLES)/deluxepaint-anm/INTRO1.ANM -pix_fmt rgb24
 
-FATE_TRUEMOTION1 += fate-truemotion1-15
-fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
-
-FATE_TRUEMOTION1 += fate-truemotion1-24
-fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
-fate-truemotion1: $(FATE_TRUEMOTION1)
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
-fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
-
 FATE_DXA += fate-dxa-feeble
 fate-dxa-feeble: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24 -an
 
