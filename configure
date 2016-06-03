@@ -163,6 +163,7 @@ Hardware-accelerated decoding/encoding:
   --enable-nvenc           enable NVIDIA NVENC support [no]
   --enable-omx             enable encoding via OpenMAX IL [no]
   --enable-omx-rpi         enable encoding via OpenMAX IL for Raspberry Pi [no]
+  --enable-aml             enable decoding via AmLogic HW decoders [no]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -1571,6 +1572,7 @@ HW_CODECS_LIST="
     mmal
     nvenc
     omx
+    aml
 "
 
 HWACCEL_LIST="
@@ -2547,6 +2549,9 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mmal_decoder_deps="mmal"
 h264_mmal_decoder_select="mmal"
 h264_mmal_hwaccel_deps="mmal"
+h264_aml_decoder_deps="aml"
+h264_aml_decoder_select="aml"
+h264_aml_hwaccel_deps="aml"
 h264_omx_encoder_deps="omx"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
@@ -5714,6 +5719,8 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
 enabled mmal &&
     (check_code cc interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS" ||
      die "ERROR: mmal firmware headers too old")
+
+enabled aml               && { check_lib amcodec/codec.h codec_init "-lamcodec" || die "ERROR : amcodec not found."; }
 
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
 enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
