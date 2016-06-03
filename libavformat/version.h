@@ -29,7 +29,7 @@
 
 #include "libavutil/version.h"
 
-// When bumping major check Ticket5467 for regressing
+// When bumping major check Ticket5467, 5421 for regressing
 // Also please add any ticket numbers that you belive might regress here
 #define LIBAVFORMAT_VERSION_MAJOR  57
 #define LIBAVFORMAT_VERSION_MINOR  37
