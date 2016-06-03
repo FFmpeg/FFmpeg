@@ -1875,12 +1875,15 @@ static int transcode_init(void)
             par_dst->bit_rate        = par_src->bit_rate;
             par_dst->field_order     = par_src->field_order;
             par_dst->chroma_location = par_src->chroma_location;
-            par_dst->extradata       = av_mallocz(extra_size);
-            if (!par_dst->extradata) {
-                return AVERROR(ENOMEM);
+            if (par_src->extradata != NULL) {
+                par_dst->extradata = av_mallocz(extra_size);
+                if (!par_dst->extradata) {
+                    return AVERROR(ENOMEM);
+                }
+                memcpy(par_dst->extradata, par_src->extradata,
+                       par_src->extradata_size);
+                par_dst->extradata_size = par_src->extradata_size;
             }
-            memcpy(par_dst->extradata, par_src->extradata, par_src->extradata_size);
-            par_dst->extradata_size = par_src->extradata_size;
 
             ost->st->time_base = ist->st->time_base;
 
