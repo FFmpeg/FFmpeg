@@ -264,7 +264,7 @@ static struct addrinfo *udp_resolve_host(URLContext *h,
         res = NULL;
         av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
                node ? node : "unknown",
-               service ? service : "unknown",
+               service,
                gai_strerror(error));
     }
 
