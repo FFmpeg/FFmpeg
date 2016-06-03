@@ -10,6 +10,18 @@ fate-truemotion1: $(FATE_TRUEMOTION1)
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
 fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
 
+FATE_TRUEMOTION2RT += fate-truemotion2rt-low
+fate-truemotion2rt-low: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_low.avi -an
+
+FATE_TRUEMOTION2RT += fate-truemotion2rt-mid
+fate-truemotion2rt-mid: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_mid.avi -an
+
+FATE_TRUEMOTION2RT += fate-truemotion2rt-high
+fate-truemotion2rt-high: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_high.avi -an
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2RT) += $(FATE_TRUEMOTION2RT)
+fate-truemotion2rt: $(FATE_TRUEMOTION2RT)
+
 FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
 fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/coeff_level64.mkv
 
