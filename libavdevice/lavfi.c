@@ -319,7 +319,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         if (link->type == AVMEDIA_TYPE_VIDEO) {
             st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
             st->codecpar->format     = link->format;
-            st->avg_frame_rate       = av_inv_q(link->time_base);
             st->codecpar->width      = link->w;
             st->codecpar->height     = link->h;
             st       ->sample_aspect_ratio =
@@ -333,7 +332,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             st->codecpar->channels    = avfilter_link_get_channels(link);
             st->codecpar->format      = link->format;
             st->codecpar->sample_rate = link->sample_rate;
-            st->avg_frame_rate        = av_inv_q(link->time_base);
             st->codecpar->channel_layout = link->channel_layout;
             if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
                 av_log(avctx, AV_LOG_ERROR,
