@@ -930,6 +930,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     int indexHgX, indexHgY, indexOut, indexTmp;
     uint16_t tmpBuffer[16]; /* B44 use 4x4 half float pixel */
     int c, iY, iX, y, x;
+    int target_channel_offset = 0;
 
     /* calc B44 block count */
     nbB44BlockW = td->xsize / 4;
@@ -943,6 +944,7 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     for (c = 0; c < s->nb_channels; c++) {
         for (iY = 0; iY < nbB44BlockH; iY++) {
             for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
+                if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
                 if (stayToUncompress < 3) {
                     av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
                     return AVERROR_INVALIDDATA;
@@ -968,13 +970,27 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
 
                 for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
                     for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
-                        indexOut = (c * td->xsize + y * td->xsize * s->nb_channels + x) * 2;
+                        indexOut = target_channel_offset * td->xsize + y * td->channel_line_size + 2 * x;
                         indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
                         td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
                         td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
                     }
                 }
+                } else{/* Float or UINT 32 channel */
+                    for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
+                        for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
+                            indexOut = target_channel_offset * td->xsize + y * td->channel_line_size + 4 * x;
+                            memcpy(&td->uncompressed_data[indexOut], sr, 4);
+                            sr += 4;
+                        }
+                    }
+                }
             }
+        }
+        if (s->channels[c].pixel_type == EXR_HALF) {
+            target_channel_offset += 2;
+        } else {
+            target_channel_offset += 4;
         }
     }
 
