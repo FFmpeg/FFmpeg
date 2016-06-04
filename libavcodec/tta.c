@@ -27,12 +27,14 @@
  * @author Alex Beregszaszi
  */
 
-#define BITSTREAM_READER_LE
 #include <limits.h>
+
+#include "libavutil/crc.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "libavutil/crc.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2

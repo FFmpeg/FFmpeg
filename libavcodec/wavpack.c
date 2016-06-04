@@ -19,14 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define BITSTREAM_READER_LE
-
 #include "libavutil/channel_layout.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "unary.h"
-#include "bytestream.h"
 
 /**
  * @file

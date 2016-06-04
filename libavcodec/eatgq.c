@@ -28,13 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGQ
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "bytestream.h"
-#include "idctdsp.h"
 #include "aandcttab.h"
+#include "avcodec.h"
+#include "bytestream.h"
 #include "eaidct.h"
+#include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 
 typedef struct TgqContext {

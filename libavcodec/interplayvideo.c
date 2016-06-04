@@ -38,11 +38,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#include "hpeldsp.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "internal.h"
 
 #define PALETTE_COUNT 256

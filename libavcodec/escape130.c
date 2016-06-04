@@ -21,8 +21,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
-#include "avcodec.h"
+
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
 

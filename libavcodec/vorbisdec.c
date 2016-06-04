@@ -25,13 +25,13 @@
 #include <inttypes.h>
 #include <math.h>
 
-#define BITSTREAM_READER_LE
 #include "libavutil/float_dsp.h"
-#include "avcodec.h"
-#include "get_bits.h"
-#include "fft.h"
-#include "internal.h"
 
+#define BITSTREAM_READER_LE
+#include "avcodec.h"
+#include "fft.h"
+#include "get_bits.h"
+#include "internal.h"
 #include "vorbis.h"
 #include "vorbisdsp.h"
 #include "xiph.h"

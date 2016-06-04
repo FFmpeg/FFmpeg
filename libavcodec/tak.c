@@ -22,6 +22,8 @@
 #include "libavutil/bswap.h"
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+
+#define BITSTREAM_READER_LE
 #include "tak.h"
 
 static const uint16_t frame_duration_type_quants[] = {
