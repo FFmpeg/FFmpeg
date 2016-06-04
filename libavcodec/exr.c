@@ -945,37 +945,37 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
         for (iY = 0; iY < nbB44BlockH; iY++) {
             for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
                 if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
-                if (stayToUncompress < 3) {
-                    av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
-                    return AVERROR_INVALIDDATA;
-                }
-
-                if (src[compressed_size - stayToUncompress + 2] == 0xfc) { /* B44A block */
-                    unpack_3(sr, tmpBuffer);
-                    sr += 3;
-                    stayToUncompress -= 3;
-                }  else {/* B44 Block */
-                    if (stayToUncompress < 14) {
-                        av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stayToUncompress);
+                    if (stayToUncompress < 3) {
+                        av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
                         return AVERROR_INVALIDDATA;
                     }
-                    unpack_14(sr, tmpBuffer);
-                    sr += 14;
-                    stayToUncompress -= 14;
-                }
 
-                /* copy data to uncompress buffer (B44 block can exceed target resolution)*/
-                indexHgX = iX * 4;
-                indexHgY = iY * 4;
-
-                for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
-                    for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
-                        indexOut = target_channel_offset * td->xsize + y * td->channel_line_size + 2 * x;
-                        indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
-                        td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
-                        td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
+                    if (src[compressed_size - stayToUncompress + 2] == 0xfc) { /* B44A block */
+                        unpack_3(sr, tmpBuffer);
+                        sr += 3;
+                        stayToUncompress -= 3;
+                    }  else {/* B44 Block */
+                        if (stayToUncompress < 14) {
+                            av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stayToUncompress);
+                            return AVERROR_INVALIDDATA;
+                        }
+                        unpack_14(sr, tmpBuffer);
+                        sr += 14;
+                        stayToUncompress -= 14;
                     }
-                }
+
+                    /* copy data to uncompress buffer (B44 block can exceed target resolution)*/
+                    indexHgX = iX * 4;
+                    indexHgY = iY * 4;
+
+                    for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
+                        for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
+                            indexOut = target_channel_offset * td->xsize + y * td->channel_line_size + 2 * x;
+                            indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
+                            td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
+                            td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
+                        }
+                    }
                 } else{/* Float or UINT 32 channel */
                     for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
                         for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
