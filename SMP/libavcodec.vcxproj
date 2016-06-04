@@ -619,6 +619,7 @@
     <ClCompile Include="..\libavcodec\loco.c" />
     <ClCompile Include="..\libavcodec\m101.c" />
     <ClCompile Include="..\libavcodec\mace.c" />
+    <ClCompile Include="..\libavcodec\magicyuv.c" />
     <ClCompile Include="..\libavcodec\mdec.c" />
     <ClCompile Include="..\libavcodec\metasound.c" />
     <ClCompile Include="..\libavcodec\metasound_data.c" />
@@ -912,6 +913,8 @@
     <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />
     <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c" />
     <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c" />
+    <ClCompile Include="..\libavcodec\nvenc_h264.c" />
+    <ClCompile Include="..\libavcodec\nvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\libfdk-aacdec.c" />
     <ClCompile Include="..\libavcodec\libfdk-aacenc.c" />
     <ClCompile Include="..\libavcodec\libilbc.c" />
