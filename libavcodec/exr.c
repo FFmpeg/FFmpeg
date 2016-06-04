@@ -984,12 +984,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     const uint8_t *channel_buffer[4] = { 0 };
     const uint8_t *buf = s->buf;
     uint64_t line_offset, uncompressed_size;
-    uint32_t xdelta = s->xdelta;
     uint16_t *ptr_x;
     uint8_t *ptr;
     uint32_t data_size, line, col = 0;
     uint32_t tileX, tileY, tileLevelX, tileLevelY;
-    int channelLineSize, indexSrc, tX, tY, tCh;
+    int channel_line_size;
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components; /* nb pixel to add at the right of the datawindow */
     int bxmin = s->xmin * 2 * s->desc->nb_components; /* nb pixel to add at the left of the datawindow */
@@ -1025,14 +1024,16 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
-        uncompressed_size = s->current_channel_offset * (uint64_t)td->ysize * td->xsize;
 
         if (col) { /* not the first tile of the line */
-            bxmin = 0; axmax = 0; /* doesn't add pixel at the left of the datawindow */
+            bxmin = 0; /* doesn't add pixel at the left of the datawindow */
         }
 
         if ((col + td->xsize) != s->xdelta)/* not the last tile of the line */
             axmax = 0; /* doesn't add pixel at the right of the datawindow */
+
+        channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
     } else {
         if (line_offset > buf_size - 8)
             return AVERROR_INVALIDDATA;
@@ -1049,7 +1050,10 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
         td->xsize          = s->xdelta;
-        uncompressed_size = s->scan_line_size * td->ysize;
+
+        channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
+
         if ((s->compression == EXR_RAW && (data_size != uncompressed_size ||
                                            line_offset > buf_size - uncompressed_size)) ||
             (s->compression != EXR_RAW && (data_size > uncompressed_size ||
@@ -1098,34 +1102,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         src = td->uncompressed_data;
     }
 
-    if (s->is_tile) {
-        indexSrc = 0;
-        channelLineSize = td->xsize * 2;
-        if (s->pixel_type == EXR_FLOAT)
-            channelLineSize *= 2;
-
-        /* reorganise tile data to have each channel one after the other instead of line by line */
-        for (tY = 0; tY < td->ysize; tY ++) {
-            for (tCh = 0; tCh < s->nb_channels; tCh++) {
-                for (tX = 0; tX < channelLineSize; tX++) {
-                    td->tmp[tCh * channelLineSize * td->ysize + tY * channelLineSize + tX] = src[indexSrc];
-                    indexSrc++;
-                }
-            }
-        }
-
-        channel_buffer[0] = td->tmp + td->xsize * s->channel_offsets[0]  * td->ysize;
-        channel_buffer[1] = td->tmp + td->xsize * s->channel_offsets[1]  * td->ysize;
-        channel_buffer[2] = td->tmp + td->xsize * s->channel_offsets[2]  * td->ysize;
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = td->tmp + td->xsize * s->channel_offsets[3];
-    } else {
-        channel_buffer[0] = src + xdelta * s->channel_offsets[0];
-        channel_buffer[1] = src + xdelta * s->channel_offsets[1];
-        channel_buffer[2] = src + xdelta * s->channel_offsets[2];
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = src + xdelta * s->channel_offsets[3];
-    }
+    channel_buffer[0] = src + td->xsize * s->channel_offsets[0];
+    channel_buffer[1] = src + td->xsize * s->channel_offsets[1];
+    channel_buffer[2] = src + td->xsize * s->channel_offsets[2];
+    if (s->channel_offsets[3] >= 0)
+        channel_buffer[3] = src + td->xsize * s->channel_offsets[3];
 
     ptr = p->data[0] + line * p->linesize[0] + (col * s->desc->nb_components * 2);
 
@@ -1200,19 +1181,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         // Zero out the end if xmax+1 is not w
         memset(ptr_x, 0, axmax);
 
-        if (s->is_tile) {
-            channel_buffer[0] += channelLineSize;
-            channel_buffer[1] += channelLineSize;
-            channel_buffer[2] += channelLineSize;
-            if (channel_buffer[3])
-                channel_buffer[3] += channelLineSize;
-        } else {
-            channel_buffer[0] += s->scan_line_size;
-            channel_buffer[1] += s->scan_line_size;
-            channel_buffer[2] += s->scan_line_size;
-            if (channel_buffer[3])
-                channel_buffer[3] += s->scan_line_size;
-        }
+        channel_buffer[0] += channel_line_size;
+        channel_buffer[1] += channel_line_size;
+        channel_buffer[2] += channel_line_size;
+        if (channel_buffer[3])
+            channel_buffer[3] += channel_line_size;
     }
 
     return 0;
