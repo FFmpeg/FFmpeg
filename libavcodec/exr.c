@@ -1262,6 +1262,7 @@ static int check_header_variable(EXRContext *s,
 static int decode_header(EXRContext *s)
 {
     int magic_number, version, i, flags, sar = 0;
+    int layer_match = 0;
 
     s->current_channel_offset = 0;
     s->xmin               = ~0;
@@ -1332,14 +1333,21 @@ static int decode_header(EXRContext *s)
 
                 if (strcmp(s->layer, "") != 0) {
                     if (strncmp(ch_gb.buffer, s->layer, strlen(s->layer)) == 0) {
+                        layer_match = 1;
+                        av_log(s->avctx, AV_LOG_INFO,
+                               "Channel match layer : %s.\n", ch_gb.buffer);
                         ch_gb.buffer += strlen(s->layer);
                         if (*ch_gb.buffer == '.')
                             ch_gb.buffer++;         /* skip dot if not given */
+                    } else {
                         av_log(s->avctx, AV_LOG_INFO,
-                               "Layer %s.%s matched.\n", s->layer, ch_gb.buffer);
+                               "Channel doesn't match layer : %s.\n", ch_gb.buffer);
                     }
+                } else {
+                    layer_match = 1;
                 }
 
+                if (layer_match) { /* only search channel if the layer match is valid */
                 if (!strcmp(ch_gb.buffer, "R") ||
                     !strcmp(ch_gb.buffer, "X") ||
                     !strcmp(ch_gb.buffer, "U"))
@@ -1357,6 +1365,7 @@ static int decode_header(EXRContext *s)
                 else
                     av_log(s->avctx, AV_LOG_WARNING,
                            "Unsupported channel %.256s.\n", ch_gb.buffer);
+                }
 
                 /* skip until you get a 0 */
                 while (bytestream2_get_bytes_left(&ch_gb) > 0 &&
