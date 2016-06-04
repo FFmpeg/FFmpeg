@@ -105,6 +105,8 @@ typedef struct EXRThreadData {
     uint16_t *lut;
 
     int ysize, xsize;
+
+    int channel_line_size;
 } EXRThreadData;
 
 typedef struct EXRContext {
@@ -992,7 +994,6 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     uint8_t *ptr;
     uint32_t data_size, line, col = 0;
     uint32_t tileX, tileY, tileLevelX, tileLevelY;
-    int channel_line_size;
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components; /* nb pixel to add at the right of the datawindow */
     int bxmin = s->xmin * 2 * s->desc->nb_components; /* nb pixel to add at the left of the datawindow */
@@ -1036,8 +1037,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         if ((col + td->xsize) != s->xdelta)/* not the last tile of the line */
             axmax = 0; /* doesn't add pixel at the right of the datawindow */
 
-        channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
-        uncompressed_size = channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
+        td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
     } else {
         if (line_offset > buf_size - 8)
             return AVERROR_INVALIDDATA;
@@ -1055,8 +1056,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
         td->xsize          = s->xdelta;
 
-        channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
-        uncompressed_size = channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
+        td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
 
         if ((s->compression == EXR_RAW && (data_size != uncompressed_size ||
                                            line_offset > buf_size - uncompressed_size)) ||
@@ -1185,11 +1186,11 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         // Zero out the end if xmax+1 is not w
         memset(ptr_x, 0, axmax);
 
-        channel_buffer[0] += channel_line_size;
-        channel_buffer[1] += channel_line_size;
-        channel_buffer[2] += channel_line_size;
+        channel_buffer[0] += td->channel_line_size;
+        channel_buffer[1] += td->channel_line_size;
+        channel_buffer[2] += td->channel_line_size;
         if (channel_buffer[3])
-            channel_buffer[3] += channel_line_size;
+            channel_buffer[3] += td->channel_line_size;
     }
 
     return 0;
