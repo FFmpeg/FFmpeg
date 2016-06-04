@@ -1251,7 +1251,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
                 data += sz;
                 size -= sz;
             }
-            return size;
+            return avpkt->size;
         }
     }
 
