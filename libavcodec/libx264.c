@@ -310,46 +310,29 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         reconfig_encoder(ctx, frame);
 
         if (x4->a53_cc) {
-            side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
-            if (side_data) {
+            void *sei_data;
+            size_t sei_size;
+
+            ret = ff_alloc_a53_sei(frame, 0, &sei_data, &sei_size);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+            } else if (sei_data) {
                 x4->pic.extra_sei.payloads = av_mallocz(sizeof(x4->pic.extra_sei.payloads[0]));
                 if (x4->pic.extra_sei.payloads == NULL) {
                     av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                    goto skip_a53cc;
-                }
-                x4->pic.extra_sei.sei_free = av_free;
+                    av_free(sei_data);
+                } else {
+                    x4->pic.extra_sei.sei_free = av_free;
 
-                x4->pic.extra_sei.payloads[0].payload_size = side_data->size + 11;
-                x4->pic.extra_sei.payloads[0].payload = av_mallocz(x4->pic.extra_sei.payloads[0].payload_size);
-                if (x4->pic.extra_sei.payloads[0].payload == NULL) {
-                    av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                    av_freep(&x4->pic.extra_sei.payloads);
-                    goto skip_a53cc;
+                    x4->pic.extra_sei.payloads[0].payload_size = sei_size;
+                    x4->pic.extra_sei.payloads[0].payload = sei_data;
+                    x4->pic.extra_sei.num_payloads = 1;
+                    x4->pic.extra_sei.payloads[0].payload_type = 4;
                 }
-                x4->pic.extra_sei.num_payloads = 1;
-                x4->pic.extra_sei.payloads[0].payload_type = 4;
-                memcpy(x4->pic.extra_sei.payloads[0].payload + 10, side_data->data, side_data->size);
-                x4->pic.extra_sei.payloads[0].payload[0] = 181;
-                x4->pic.extra_sei.payloads[0].payload[1] = 0;
-                x4->pic.extra_sei.payloads[0].payload[2] = 49;
-
-                /**
-                 * 'GA94' is standard in North America for ATSC, but hard coding
-                 * this style may not be the right thing to do -- other formats
-                 * do exist. This information is not available in the side_data
-                 * so we are going with this right now.
-                 */
-                AV_WL32(x4->pic.extra_sei.payloads[0].payload + 3,
-                    MKTAG('G', 'A', '9', '4'));
-                x4->pic.extra_sei.payloads[0].payload[7] = 3;
-                x4->pic.extra_sei.payloads[0].payload[8] =
-                    ((side_data->size/3) & 0x1f) | 0x40;
-                x4->pic.extra_sei.payloads[0].payload[9] = 0;
-                x4->pic.extra_sei.payloads[0].payload[side_data->size+10] = 255;
             }
         }
     }
-skip_a53cc:
+
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
             return AVERROR_EXTERNAL;
