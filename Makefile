@@ -36,6 +36,7 @@ OBJS-ffmpeg-$(CONFIG_VAAPI)   += ffmpeg_vaapi.o
 ifndef CONFIG_VIDEOTOOLBOX
 OBJS-ffmpeg-$(CONFIG_VDA)     += ffmpeg_videotoolbox.o
 endif
+OBJS-ffmpeg-$(CONFIG_CUVID)   += ffmpeg_cuvid.o
 OBJS-ffmpeg-$(HAVE_DXVA2_LIB) += ffmpeg_dxva2.o
 OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 OBJS-ffserver                 += ffserver_config.o
