@@ -122,7 +122,6 @@ typedef struct EXRContext {
     uint32_t ymax, ymin;
     uint32_t xdelta, ydelta;
 
-    uint64_t scan_line_size;
     int scan_lines_per_block;
 
     EXRTileAttribute tile_attr; /* header data attribute of tile */
@@ -1523,8 +1522,6 @@ static int decode_header(EXRContext *s)
             return AVERROR_INVALIDDATA;
         }
     }
-
-    s->scan_line_size = s->xdelta * s->current_channel_offset;
 
     if (bytestream2_get_bytes_left(&s->gb) <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Incomplete frame.\n");
