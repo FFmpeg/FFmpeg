@@ -13,6 +13,7 @@ OBJS-$(CONFIG_PP7_FILTER)                    += x86/vf_pp7_init.o
 OBJS-$(CONFIG_PSNR_FILTER)                   += x86/vf_psnr_init.o
 OBJS-$(CONFIG_PULLUP_FILTER)                 += x86/vf_pullup_init.o
 OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += x86/vf_removegrain_init.o
+OBJS-$(CONFIG_SHOWCQT_FILTER)                += x86/avf_showcqt_init.o
 OBJS-$(CONFIG_SPP_FILTER)                    += x86/vf_spp.o
 OBJS-$(CONFIG_SSIM_FILTER)                   += x86/vf_ssim_init.o
 OBJS-$(CONFIG_STEREO3D_FILTER)               += x86/vf_stereo3d_init.o
@@ -37,6 +38,7 @@ YASM-OBJS-$(CONFIG_PULLUP_FILTER)            += x86/vf_pullup.o
 ifdef CONFIG_GPL
 YASM-OBJS-$(CONFIG_REMOVEGRAIN_FILTER)       += x86/vf_removegrain.o
 endif
+YASM-OBJS-$(CONFIG_SHOWCQT_FILTER)           += x86/avf_showcqt.o
 YASM-OBJS-$(CONFIG_SSIM_FILTER)              += x86/vf_ssim.o
 YASM-OBJS-$(CONFIG_STEREO3D_FILTER)          += x86/vf_stereo3d.o
 YASM-OBJS-$(CONFIG_TBLEND_FILTER)            += x86/vf_blend.o

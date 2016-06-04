@@ -320,6 +320,9 @@ static int init_cqt(ShowCQTContext *s)
             w *= sign * (1.0 / s->fft_len);
             s->coeffs[m].val[x - s->coeffs[m].start] = w;
         }
+
+        if (s->permute_coeffs)
+            s->permute_coeffs(s->coeffs[m].val, s->coeffs[m].len);
     }
 
     av_expr_free(expr);
@@ -1230,6 +1233,7 @@ static int config_output(AVFilterLink *outlink)
 
     s->cqt_align = 1;
     s->cqt_calc = cqt_calc;
+    s->permute_coeffs = NULL;
     s->draw_sono = draw_sono;
     if (s->format == AV_PIX_FMT_RGB24) {
         s->draw_bar = draw_bar_rgb;
@@ -1240,6 +1244,9 @@ static int config_output(AVFilterLink *outlink)
         s->draw_axis = draw_axis_yuv;
         s->update_sono = update_sono_yuv;
     }
+
+    if (ARCH_X86)
+        ff_showcqt_init_x86(s);
 
     if ((ret = init_cqt(s)) < 0)
         return ret;
