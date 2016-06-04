@@ -34,8 +34,6 @@
 #include "dca_xll.h"
 #include "dca_lbr.h"
 
-#define DCA_BUFFER_PADDING_SIZE     1024
-
 #define DCA_PACKET_CORE         0x01
 #define DCA_PACKET_EXSS         0x02
 #define DCA_PACKET_XLL          0x04

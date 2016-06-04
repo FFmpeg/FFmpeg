@@ -365,9 +365,9 @@ static enum AVPixelFormat convert_axis_pixel_format(enum AVPixelFormat format)
 {
     switch (format) {
         case AV_PIX_FMT_RGB24:   format = AV_PIX_FMT_RGBA; break;
-        case AV_PIX_FMT_YUV444P: format = AV_PIX_FMT_YUVA444P; break;
-        case AV_PIX_FMT_YUV422P: format = AV_PIX_FMT_YUVA422P; break;
-        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA420P; break;
+        case AV_PIX_FMT_YUV444P:
+        case AV_PIX_FMT_YUV422P:
+        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA444P; break;
     }
     return format;
 }
@@ -434,14 +434,16 @@ static double b_func(void *p, double x)
     return lrint(x*255.0);
 }
 
-static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
+static int init_axis_color(ShowCQTContext *s, AVFrame *tmp, int half)
 {
     const char *var_names[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
     const char *func_names[] = { "midi", "r", "g", "b", NULL };
     double (*funcs[])(void *, double) = { midi, r_func, g_func, b_func };
     AVExpr *expr = NULL;
     double *freq = NULL;
-    int x, y, ret;
+    int x, xs, y, ret;
+    int width = half ? 1920/2 : 1920, height = half ? 16 : 32;
+    int step = half ? 2 : 1;
 
     if (s->basefreq != (double) BASEFREQ || s->endfreq != (double) ENDFREQ) {
         av_log(s->ctx, AV_LOG_WARNING, "font axis rendering is not implemented in non-default frequency range,"
@@ -460,17 +462,16 @@ static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
         return ret;
     }
 
-    for (x = 0; x < 1920; x++) {
-        double vars[] = { s->timeclamp, s->timeclamp, freq[x], freq[x], freq[x] };
+    for (x = 0, xs = 0; x < width; x++, xs += step) {
+        double vars[] = { s->timeclamp, s->timeclamp, freq[xs], freq[xs], freq[xs] };
         int color = (int) av_expr_eval(expr, vars, NULL);
         uint8_t r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
         uint8_t *data = tmp->data[0];
         int linesize = tmp->linesize[0];
-        for (y = 0; y < 32; y++) {
+        for (y = 0; y < height; y++) {
             data[linesize * y + 4 * x] = r;
             data[linesize * y + 4 * x + 1] = g;
             data[linesize * y + 4 * x + 2] = b;
-            data[linesize * y + 4 * x + 3] = 0;
         }
     }
 
@@ -570,19 +571,18 @@ static int render_default_font(AVFrame *tmp)
     int x, u, v, mask;
     uint8_t *data = tmp->data[0];
     int linesize = tmp->linesize[0];
+    int width = 1920/2, height = 16;
 
-    for (x = 0; x < 1920; x += 192) {
+    for (x = 0; x < width; x += width/10) {
         uint8_t *startptr = data + 4 * x;
         for (u = 0; u < 12; u++) {
-            for (v = 0; v < 16; v++) {
-                uint8_t *p = startptr + 2 * v * linesize + 16 * 4 * u;
-                for (mask = 0x80; mask; mask >>= 1, p += 8) {
-                    if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
+            for (v = 0; v < height; v++) {
+                uint8_t *p = startptr + v * linesize + height/2 * 4 * u;
+                for (mask = 0x80; mask; mask >>= 1, p += 4) {
+                    if (mask & avpriv_vga16_font[str[u] * 16 + v])
                         p[3] = 255;
-                        p[7] = 255;
-                        p[linesize+3] = 255;
-                        p[linesize+7] = 255;
-                    }
+                    else
+                        p[3] = 0;
                 }
             }
         }
@@ -595,22 +595,27 @@ static int init_axis_from_font(ShowCQTContext *s)
 {
     AVFrame *tmp = NULL;
     int ret = AVERROR(ENOMEM);
+    int width = 1920, height = 32;
+    int default_font = 0;
 
-    if (!(tmp = alloc_frame_empty(AV_PIX_FMT_RGBA, 1920, 32)))
+    if (!(tmp = alloc_frame_empty(AV_PIX_FMT_RGBA, width, height)))
         goto fail;
 
     if (!(s->axis_frame = av_frame_alloc()))
         goto fail;
 
-    if ((ret = init_axis_color(s, tmp)) < 0)
+    if (render_freetype(s, tmp) < 0 && (default_font = 1, ret = render_default_font(tmp)) < 0)
         goto fail;
 
-    if (render_freetype(s, tmp) < 0 && (ret = render_default_font(tmp)) < 0)
+    if (default_font)
+        width /= 2, height /= 2;
+
+    if ((ret = init_axis_color(s, tmp, default_font)) < 0)
         goto fail;
 
     if ((ret = ff_scale_image(s->axis_frame->data, s->axis_frame->linesize, s->width, s->axis_h,
                               convert_axis_pixel_format(s->format), tmp->data, tmp->linesize,
-                              1920, 32, AV_PIX_FMT_RGBA, s->ctx)) < 0)
+                              width, height, AV_PIX_FMT_RGBA, s->ctx)) < 0)
         goto fail;
 
     av_frame_free(&tmp);
@@ -812,7 +817,7 @@ do { \
     lpay++; lpau++; lpav++; lpaa++; \
 } while (0)
 
-#define BLEND_WITHOUT_CHROMA(c) \
+#define BLEND_WITHOUT_CHROMA(c, alpha_inc) \
 do { \
     if (!*lpaa) { \
         *lpy = lrintf(c.yuv.y + 16.0f); \
@@ -823,7 +828,46 @@ do { \
         *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
     } \
     lpy++; \
-    lpay++; lpaa++; \
+    lpay++; lpaa += alpha_inc; \
+} while (0)
+
+#define BLEND_CHROMA2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.5f/255.0f) * lpaa[0]; \
+        float a1 = (0.5f/255.0f) * lpaa[1]; \
+        float b = 1.0f - a0 - a1; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
+} while (0)
+
+#define BLEND_CHROMA2x2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1] && !lpaa[lsaa] && !lpaa[lsaa+1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1] && \
+               255 == lpaa[lsaa] && 255 == lpaa[lsaa+1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.25f/255.0f) * lpaa[0]; \
+        float a1 = (0.25f/255.0f) * lpaa[1]; \
+        float a2 = (0.25f/255.0f) * lpaa[lsaa]; \
+        float a3 = (0.25f/255.0f) * lpaa[lsaa+1]; \
+        float b = 1.0f - a0 - a1 - a2 - a3; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + a2 * lpau[lsau] + a3 * lpau[lsau+1] \
+                    + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + a2 * lpav[lsav] + a3 * lpav[lsav+1] \
+                    + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
 } while (0)
 
 static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off)
@@ -842,18 +886,25 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpu = vu + (offh + yh) * lsu;
         lpv = vv + (offh + yh) * lsv;
         lpay = vay + y * lsay;
-        lpau = vau + yh * lsau;
-        lpav = vav + yh * lsav;
+        lpau = vau + y * lsau;
+        lpav = vav + y * lsav;
         lpaa = vaa + y * lsaa;
         if (fmt == AV_PIX_FMT_YUV444P) {
             for (x = 0; x < w; x += 2) {
                 BLEND_WITH_CHROMA(c[x]);
                 BLEND_WITH_CHROMA(c[x+1]);
             }
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
+            }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2x2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
 
@@ -871,13 +922,14 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
             }
         } else if (fmt == AV_PIX_FMT_YUV422P) {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITHOUT_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 1);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
     }

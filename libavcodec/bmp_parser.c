@@ -67,6 +67,8 @@ restart:
 
                 if (bpc->pc.index + i > 17) {
                     next = i - 17;
+                    state = 0;
+                    break;
                 } else
                     goto restart;
             } else if (bpc->pc.frame_start_found)

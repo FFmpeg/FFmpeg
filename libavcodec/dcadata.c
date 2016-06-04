@@ -8725,15 +8725,6 @@ const int32_t ff_dca_xll_band_coeff[20] = {
      3259333, -5074941,  6928550, -8204883
 };
 
-const uint32_t ff_dca_sampling_freqs[16] = {
-      8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
-    176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
-};
-
-const uint8_t ff_dca_freq_ranges[16] = {
-    0, 1, 2, 3, 4, 1, 2, 3, 4, 4, 0, 1, 2, 3, 4, 4
-};
-
 const uint16_t ff_dca_avg_g3_freqs[3] = { 16000, 18000, 24000 };
 
 const uint16_t ff_dca_fst_amp[44] = {

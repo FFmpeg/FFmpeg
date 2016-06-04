@@ -1,0 +1,15 @@
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 720x576
+#sar 0: 16/15
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 48000
+#channel_layout 1: 3
+0,          0,          0,        1,  1658880, 0x43d9c9e2
+1,          0,          0,     1024,     4096, 0x6c8a9a18
+1,       1024,       1024,     1024,     4096, 0x960dadcf
+0,          1,          1,        1,  1658880, 0xa2a72f9b
+1,       2048,       2048,     1024,     4096, 0xa913cd55

@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
@@ -41,13 +42,11 @@ typedef struct MediaCodecH264DecContext {
 
     MediaCodecDecContext ctx;
 
-    AVBitStreamFilterContext *bsf;
+    AVBSFContext *bsf;
 
     AVFifoBuffer *fifo;
 
-    AVPacket input_ref;
     AVPacket filtered_pkt;
-    uint8_t *filtered_data;
 
 } MediaCodecH264DecContext;
 
@@ -157,7 +156,8 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 
     av_fifo_free(s->fifo);
 
-    av_bitstream_filter_close(s->bsf);
+    av_bsf_free(&s->bsf);
+    av_packet_unref(&s->filtered_pkt);
 
     return 0;
 }
@@ -211,11 +211,22 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    s->bsf = av_bitstream_filter_init("h264_mp4toannexb");
-    if (!s->bsf) {
-        ret = AVERROR(ENOMEM);
+    const AVBitStreamFilter *bsf = av_bsf_get_by_name("h264_mp4toannexb");
+    if(!bsf) {
+        ret = AVERROR_BSF_NOT_FOUND;
         goto done;
     }
+
+    if ((ret = av_bsf_alloc(bsf, &s->bsf))) {
+        goto done;
+    }
+
+    if (((ret = avcodec_parameters_from_context(s->bsf->par_in, avctx)) < 0) ||
+        ((ret = av_bsf_init(s->bsf)) < 0)) {
+          goto done;
+    }
+
+    av_init_packet(&s->filtered_pkt);
 
 done:
     if (format) {
@@ -246,26 +257,28 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
 
     /* buffer the input packet */
     if (avpkt->size) {
-        AVPacket input_ref = { 0 };
+        AVPacket input_pkt = { 0 };
 
-        if (av_fifo_space(s->fifo) < sizeof(input_ref)) {
+        if (av_fifo_space(s->fifo) < sizeof(input_pkt)) {
             ret = av_fifo_realloc2(s->fifo,
-                                   av_fifo_size(s->fifo) + sizeof(input_ref));
+                                   av_fifo_size(s->fifo) + sizeof(input_pkt));
             if (ret < 0)
                 return ret;
         }
 
-        ret = av_packet_ref(&input_ref, avpkt);
+        ret = av_packet_ref(&input_pkt, avpkt);
         if (ret < 0)
             return ret;
-        av_fifo_generic_write(s->fifo, &input_ref, sizeof(input_ref), NULL);
+        av_fifo_generic_write(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
     }
 
     /* process buffered data */
     while (!*got_frame) {
         /* prepare the input data -- convert to Annex B if needed */
         if (s->filtered_pkt.size <= 0) {
-            int size;
+            AVPacket input_pkt = { 0 };
+
+            av_packet_unref(&s->filtered_pkt);
 
             /* no more data */
             if (av_fifo_size(s->fifo) < sizeof(AVPacket)) {
@@ -273,22 +286,24 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
                     ff_mediacodec_dec_decode(avctx, &s->ctx, frame, got_frame, avpkt);
             }
 
-            if (s->filtered_data != s->input_ref.data)
-                av_freep(&s->filtered_data);
-            s->filtered_data = NULL;
-            av_packet_unref(&s->input_ref);
+            av_fifo_generic_read(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
 
-            av_fifo_generic_read(s->fifo, &s->input_ref, sizeof(s->input_ref), NULL);
-            ret = av_bitstream_filter_filter(s->bsf, avctx, NULL,
-                                             &s->filtered_data, &size,
-                                             s->input_ref.data, s->input_ref.size, 0);
+            ret = av_bsf_send_packet(s->bsf, &input_pkt);
             if (ret < 0) {
-                s->filtered_data = s->input_ref.data;
-                size             = s->input_ref.size;
+                return ret;
             }
-            s->filtered_pkt      = s->input_ref;
-            s->filtered_pkt.data = s->filtered_data;
-            s->filtered_pkt.size = size;
+
+            ret = av_bsf_receive_packet(s->bsf, &s->filtered_pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                goto done;
+            }
+
+            /* h264_mp4toannexb is used here and does not requires flushing */
+            av_assert0(ret != AVERROR_EOF);
+
+            if (ret < 0) {
+                return ret;
+            }
         }
 
         ret = mediacodec_process_data(avctx, frame, got_frame, &s->filtered_pkt);
@@ -298,7 +313,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
         s->filtered_pkt.size -= ret;
         s->filtered_pkt.data += ret;
     }
-
+done:
     return avpkt->size;
 }
 
@@ -313,11 +328,7 @@ static void mediacodec_decode_flush(AVCodecContext *avctx)
     }
     av_fifo_reset(s->fifo);
 
-    av_packet_unref(&s->input_ref);
-
-    av_init_packet(&s->filtered_pkt);
-    s->filtered_pkt.data = NULL;
-    s->filtered_pkt.size = 0;
+    av_packet_unref(&s->filtered_pkt);
 
     ff_mediacodec_dec_flush(avctx, &s->ctx);
 }

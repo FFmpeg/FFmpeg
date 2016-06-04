@@ -348,6 +348,7 @@ OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
 OBJS-$(CONFIG_M101_DECODER)            += m101.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
+OBJS-$(CONFIG_MAGICYUV_DECODER)        += magicyuv.o
 OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_METASOUND_DECODER)       += metasound.o metasound_data.o \
                                           twinvq.o
@@ -779,6 +780,9 @@ OBJS-$(CONFIG_MPEG2_MMAL_DECODER)         += mmaldec.o
 OBJS-$(CONFIG_MPEG2_QSV_DECODER)          += qsvdec_mpeg2.o
 OBJS-$(CONFIG_MPEG2_QSV_ENCODER)          += qsvenc_mpeg2.o
 OBJS-$(CONFIG_MPEG4_OMX_ENCODER)          += omx.o
+OBJS-$(CONFIG_NVENC_ENCODER)              += nvenc_h264.o
+OBJS-$(CONFIG_NVENC_H264_ENCODER)         += nvenc_h264.o
+OBJS-$(CONFIG_NVENC_HEVC_ENCODER)         += nvenc_hevc.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
@@ -900,7 +904,7 @@ OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_BMP_PARSER)              += bmp_parser.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs_parser.o
 OBJS-$(CONFIG_COOK_PARSER)             += cook_parser.o
-OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o dca.o
+OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o dca_exss.o dca.o
 OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
 OBJS-$(CONFIG_DNXHD_PARSER)            += dnxhd_parser.o
 OBJS-$(CONFIG_DPX_PARSER)              += dpx_parser.o
@@ -986,6 +990,7 @@ SKIPHEADERS-$(CONFIG_LIBUTVIDEO)       += libutvideo.h
 SKIPHEADERS-$(CONFIG_LIBVPX)           += libvpx.h
 SKIPHEADERS-$(CONFIG_LIBWEBP_ENCODER)  += libwebpenc_common.h
 SKIPHEADERS-$(CONFIG_MEDIACODEC)       += mediacodecdec.h mediacodec_wrapper.h mediacodec_sw_buffer.h
+SKIPHEADERS-$(CONFIG_NVENC)            += nvenc.h
 SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsv_internal.h
 SKIPHEADERS-$(CONFIG_QSVDEC)           += qsvdec.h
 SKIPHEADERS-$(CONFIG_QSVENC)           += qsvenc.h

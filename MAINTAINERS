@@ -159,7 +159,6 @@ Codecs:
   cinepakenc.c                          Rl / Aetey G.T. AB
   ccaption_dec.c                        Anshul Maheshwari
   cljr                                  Alex Beregszaszi
-  cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
@@ -177,7 +176,6 @@ Codecs:
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
-  fic.c                                 Derek Buitenhuis
   flac*                                 Justin Ruggles
   flashsv*                              Benjamin Larsson
   flicvideo.c                           Mike Melanson
@@ -215,7 +213,6 @@ Codecs:
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
-  libx265.c                             Derek Buitenhuis
   libxavs.c                             Stefan Gehrer
   libzvbi-teletextdec.c                 Marton Balint
   loco.c                                Kostya Shishkov
@@ -234,7 +231,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
-  nvenc.c                               Timo Rothenpieler
+  nvenc*                                Timo Rothenpieler
   paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
@@ -273,9 +270,7 @@ Codecs:
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
-  v410*.c                               Derek Buitenhuis
   vb.c                                  Kostya Shishkov
-  vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov, Christophe Gisquet
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
@@ -302,7 +297,6 @@ Codecs:
   xl.c                                  Kostya Shishkov
   xvmc.c                                Ivan Kalvachev
   xwd*                                  Paul B Mahol
-  zerocodec.c                           Derek Buitenhuis
   zmbv*                                 Kostya Shishkov
 
 Hardware acceleration:

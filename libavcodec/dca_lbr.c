@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define UNCHECKED_BITSTREAM_READER  1
 #define BITSTREAM_READER_LE
 
 #include "libavutil/channel_layout.h"

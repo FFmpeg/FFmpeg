@@ -29,9 +29,11 @@
 
 #include "libavutil/version.h"
 
+// When bumping major check Ticket5467, 5421 for regressing
+// Also please add any ticket numbers that you belive might regress here
 #define LIBAVFORMAT_VERSION_MAJOR  57
 #define LIBAVFORMAT_VERSION_MINOR  37
-#define LIBAVFORMAT_VERSION_MICRO 100
+#define LIBAVFORMAT_VERSION_MICRO 101
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \

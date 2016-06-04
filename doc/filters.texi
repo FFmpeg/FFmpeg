@@ -11635,7 +11635,6 @@ To change the display aspect ratio to 16:9, specify one of the following:
 @example
 setdar=dar=1.77777
 setdar=dar=16/9
-setdar=dar=1.77777
 @end example
 
 @item
@@ -16975,5 +16974,29 @@ connected to the pad named "audio":
 movie=dvd.vob:s=v:0+#0x81 [video] [audio]
 @end example
 @end itemize
+
+@subsection Commands
+
+Both movie and amovie support the following commands:
+@table @option
+@item seek
+Perform seek using "av_seek_frame".
+The syntax is: seek @var{stream_index}|@var{timestamp}|@var{flags}
+@itemize
+@item
+@var{stream_index}: If stream_index is -1, a default
+stream is selected, and @var{timestamp} is automatically converted
+from AV_TIME_BASE units to the stream specific time_base.
+@item
+@var{timestamp}: Timestamp in AVStream.time_base units
+or, if no stream is specified, in AV_TIME_BASE units.
+@item
+@var{flags}: Flags which select direction and seeking mode.
+@end itemize
+
+@item get_duration
+Get movie duration in AV_TIME_BASE units.
+
+@end table
 
 @c man end MULTIMEDIA SOURCES

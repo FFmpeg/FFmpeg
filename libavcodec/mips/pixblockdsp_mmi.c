@@ -22,58 +22,77 @@
  */
 
 #include "pixblockdsp_mips.h"
+#include "libavutil/mips/asmdefs.h"
 
 void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         ptrdiff_t line_size)
 {
+    double ftmp[6];
+    mips_reg tmp[2];
+
     __asm__ volatile (
-        "move $8, $0                    \n\t"
-        "xor $f0, $f0, $f0              \n\t"
-        "1:                             \n\t"
-        "gsldlc1 $f2, 7(%1)             \n\t"
-        "gsldrc1 $f2, 0(%1)             \n\t"
-        "punpcklbh $f4, $f2, $f0        \n\t"
-        "punpckhbh $f6, $f2, $f0        \n\t"
-        "gssdxc1 $f4, 0(%0, $8)         \n\t"
-        "gssdxc1 $f6, 8(%0, $8)         \n\t"
-        "daddiu $8, $8, 16              \n\t"
-        "daddu %1, %1, %2               \n\t"
-        "daddi %3, %3, -1               \n\t"
-        "bnez %3, 1b                    \n\t"
-        ::"r"((uint8_t *)block),"r"(pixels),"r"(line_size),"r"(8)
-        : "$8","memory"
+        "li         %[tmp1],    0x08                                    \n\t"
+        "move       %[tmp0],    $0                                      \n\t"
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "1:                                                             \n\t"
+        "gsldlc1    %[ftmp1],   0x07(%[pixels])                         \n\t"
+        "gsldrc1    %[ftmp1],   0x00(%[pixels])                         \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp5],   %[ftmp1],       %[ftmp0]                \n\t"
+        "gssdxc1    %[ftmp2],   0x00(%[block],  %[tmp0])                \n\t"
+        "gssdxc1    %[ftmp5],   0x08(%[block],  %[tmp0])                \n\t"
+        PTR_ADDI   "%[tmp1],    %[tmp1],       -0x01                    \n\t"
+        PTR_ADDIU  "%[tmp0],    %[tmp0],        0x10                    \n\t"
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
+        "bnez       %[tmp1],    1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [tmp0]"=&r"(tmp[0]),              [tmp1]"=&r"(tmp[1]),
+          [pixels]"+&r"(pixels)
+        : [block]"r"((mips_reg)block),      [line_size]"r"((mips_reg)line_size)
+        : "memory"
     );
 }
 
 void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
         const uint8_t *src2, int stride)
 {
+    double ftmp[5];
+    mips_reg tmp[1];
+
     __asm__ volatile (
-        "dli $2, 8                     \n\t"
-        "xor $f14, $f14, $f14          \n\t"
-        "1:                            \n\t"
-        "gsldlc1 $f0, 7(%1)            \n\t"
-        "gsldrc1 $f0, 0(%1)            \n\t"
-        "or $f2, $f0, $f0              \n\t"
-        "gsldlc1 $f4, 7(%2)            \n\t"
-        "gsldrc1 $f4, 0(%2)            \n\t"
-        "or $f6, $f4, $f4              \n\t"
-        "punpcklbh $f0, $f0, $f14      \n\t"
-        "punpckhbh $f2, $f2, $f14      \n\t"
-        "punpcklbh $f4, $f4, $f14      \n\t"
-        "punpckhbh $f6, $f6, $f14      \n\t"
-        "psubh $f0, $f0, $f4           \n\t"
-        "psubh $f2, $f2, $f6           \n\t"
-        "gssdlc1 $f0, 7(%0)            \n\t"
-        "gssdrc1 $f0, 0(%0)            \n\t"
-        "gssdlc1 $f2, 15(%0)           \n\t"
-        "gssdrc1 $f2, 8(%0)            \n\t"
-        "daddi %0, %0, 16              \n\t"
-        "daddu %1, %1, %3              \n\t"
-        "daddu %2, %2, %3              \n\t"
-        "daddi $2, $2, -1              \n\t"
-        "bgtz $2, 1b                   \n\t"
-        ::"r"(block),"r"(src1),"r"(src2),"r"(stride)
-        : "$2","memory"
+        "li         %[tmp0],    0x08                                    \n\t"
+        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "1:                                                             \n\t"
+        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
+        "or         %[ftmp1],   %[ftmp0],       %[ftmp0]                \n\t"
+        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
+        "or         %[ftmp3],   %[ftmp2],       %[ftmp2]                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "punpckhbh  %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "punpckhbh  %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "psubh      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
+        "psubh      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "gssdlc1    %[ftmp0],   0x07(%[block])                          \n\t"
+        "gssdrc1    %[ftmp0],   0x00(%[block])                          \n\t"
+        "gssdlc1    %[ftmp1],   0x0f(%[block])                          \n\t"
+        "gssdrc1    %[ftmp1],   0x08(%[block])                          \n\t"
+        PTR_ADDI   "%[tmp0],    %[tmp0], -0x01                          \n\t"
+        PTR_ADDIU  "%[block],   %[block], 0x10                          \n\t"
+        PTR_ADDU   "%[src1],    %[src1],        %[stride]               \n\t"
+        PTR_ADDU   "%[src2],    %[src2],        %[stride]               \n\t"
+        "bgtz       %[tmp0],    1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),
+          [tmp0]"=&r"(tmp[0]),
+          [block]"+&r"(block),              [src1]"+&r"(src1),
+          [src2]"+&r"(src2)
+        : [stride]"r"((mips_reg)stride)
+        : "memory"
     );
 }

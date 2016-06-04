@@ -29,6 +29,7 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
@@ -92,6 +93,8 @@ typedef struct UDPContext {
     int circular_buffer_size;
     AVFifoBuffer *fifo;
     int circular_buffer_error;
+    int64_t packet_gap; /* delay between transmitted packets */
+    int close_req;
 #if HAVE_PTHREAD_CANCEL
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
@@ -112,6 +115,7 @@ typedef struct UDPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "buffer_size",    "System data size (in bytes)",                     OFFSET(buffer_size),    AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "packet_gap",     "Delay between packets",                           OFFSET(packet_gap),     AV_OPT_TYPE_DURATION,    { .i64 = 0  },     0, INT_MAX, .flags = E },
     { "localport",      "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, D|E },
     { "local_port",     "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "localaddr",      "Local address",                                   OFFSET(localaddr),      AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
@@ -260,7 +264,7 @@ static struct addrinfo *udp_resolve_host(URLContext *h,
         res = NULL;
         av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
                node ? node : "unknown",
-               service ? service : "unknown",
+               service,
                gai_strerror(error));
     }
 
@@ -486,7 +490,7 @@ static int udp_get_file_handle(URLContext *h)
 }
 
 #if HAVE_PTHREAD_CANCEL
-static void *circular_buffer_task( void *_URLContext)
+static void *circular_buffer_task_rx( void *_URLContext)
 {
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
@@ -542,6 +546,85 @@ end:
     pthread_mutex_unlock(&s->mutex);
     return NULL;
 }
+
+static void *circular_buffer_task_tx( void *_URLContext)
+{
+    URLContext *h = _URLContext;
+    UDPContext *s = h->priv_data;
+    int old_cancelstate;
+
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+    pthread_mutex_lock(&s->mutex);
+
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
+        s->circular_buffer_error = AVERROR(EIO);
+        goto end;
+    }
+
+    for(;;) {
+        int len;
+        const uint8_t *p;
+        uint8_t tmp[4];
+
+        len=av_fifo_size(s->fifo);
+
+        while (len<4) {
+            if (s->close_req)
+                goto end;
+            if (pthread_cond_wait(&s->cond, &s->mutex) < 0) {
+                goto end;
+            }
+            len=av_fifo_size(s->fifo);
+        }
+
+        av_fifo_generic_read(s->fifo, tmp, 4, NULL);
+        len=AV_RL32(tmp);
+
+        av_assert0(len >= 0);
+        av_assert0(len <= sizeof(s->tmp));
+
+        av_fifo_generic_read(s->fifo, s->tmp, len, NULL);
+
+        pthread_mutex_unlock(&s->mutex);
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
+
+        p = s->tmp;
+        while (len) {
+            int ret;
+            av_assert0(len > 0);
+            if (!s->is_connected) {
+                ret = sendto (s->udp_fd, p, len, 0,
+                            (struct sockaddr *) &s->dest_addr,
+                            s->dest_addr_len);
+            } else
+                ret = send(s->udp_fd, p, len, 0);
+            if (ret >= 0) {
+                len -= ret;
+                p   += ret;
+            } else {
+                ret = ff_neterrno();
+                if (ret != AVERROR(EAGAIN) && ret != AVERROR(EINTR)) {
+                    pthread_mutex_lock(&s->mutex);
+                    s->circular_buffer_error = ret;
+                    pthread_mutex_unlock(&s->mutex);
+                    return NULL;
+                }
+            }
+        }
+
+        av_usleep(s->packet_gap);
+
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+        pthread_mutex_lock(&s->mutex);
+    }
+
+end:
+    pthread_mutex_unlock(&s->mutex);
+    return NULL;
+}
+
+
 #endif
 
 static int parse_source_list(char *buf, char **sources, int *num_sources,
@@ -648,6 +731,16 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             if (!HAVE_PTHREAD_CANCEL)
                 av_log(h, AV_LOG_WARNING,
                        "'circular_buffer_size' option was set but it is not supported "
+                       "on this build (pthread support is required)\n");
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "packet_gap", p)) {
+            if (av_parse_time(&s->packet_gap, buf, 1)<0) {
+                av_log(h, AV_LOG_ERROR, "Can't parse 'packet_gap'");
+                goto fail;
+            }
+            if (!HAVE_PTHREAD_CANCEL)
+                av_log(h, AV_LOG_WARNING,
+                       "'packet_gap' option was set but it is not supported "
                        "on this build (pthread support is required)\n");
         }
         if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
@@ -829,7 +922,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->udp_fd = udp_fd;
 
 #if HAVE_PTHREAD_CANCEL
-    if (!is_output && s->circular_buffer_size) {
+    /*
+      Create thread in case of:
+      1. Input and circular_buffer_size is set
+      2. Output and packet_gap and circular_buffer_size is set
+    */
+
+    if (is_output && s->packet_gap && !s->circular_buffer_size) {
+        /* Warn user in case of 'circular_buffer_size' is not set */
+        av_log(h, AV_LOG_WARNING,"'packet_gap' option was set but 'circular_buffer_size' is not, but required\n");
+    }
+
+    if ((!is_output && s->circular_buffer_size) || (is_output && s->packet_gap && s->circular_buffer_size)) {
         int ret;
 
         /* start the task going */
@@ -844,7 +948,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", strerror(ret));
             goto cond_fail;
         }
-        ret = pthread_create(&s->circular_buffer_thread, NULL, circular_buffer_task, h);
+        ret = pthread_create(&s->circular_buffer_thread, NULL, is_output?circular_buffer_task_tx:circular_buffer_task_rx, h);
         if (ret != 0) {
             av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", strerror(ret));
             goto thread_fail;
@@ -945,6 +1049,35 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
 
+#if HAVE_PTHREAD_CANCEL
+    if (s->fifo) {
+        uint8_t tmp[4];
+
+        pthread_mutex_lock(&s->mutex);
+
+        /*
+          Return error if last tx failed.
+          Here we can't know on which packet error was, but it needs to know that error exists.
+        */
+        if (s->circular_buffer_error<0) {
+            int err=s->circular_buffer_error;
+            pthread_mutex_unlock(&s->mutex);
+            return err;
+        }
+
+        if(av_fifo_space(s->fifo) < size + 4) {
+            /* What about a partial packet tx ? */
+            pthread_mutex_unlock(&s->mutex);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(tmp, size);
+        av_fifo_generic_write(s->fifo, tmp, 4, NULL); /* size of packet */
+        av_fifo_generic_write(s->fifo, (uint8_t *)buf, size, NULL); /* the data */
+        pthread_cond_signal(&s->cond);
+        pthread_mutex_unlock(&s->mutex);
+        return size;
+    }
+#endif
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd(s->udp_fd, 1);
         if (ret < 0)
@@ -965,13 +1098,24 @@ static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
+#if HAVE_PTHREAD_CANCEL
+    // Request close once writing is finished
+    if (s->thread_started && !(h->flags & AVIO_FLAG_READ)) {
+        pthread_mutex_lock(&s->mutex);
+        s->close_req = 1;
+        pthread_cond_signal(&s->cond);
+        pthread_mutex_unlock(&s->mutex);
+    }
+#endif
+
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage);
-    closesocket(s->udp_fd);
 #if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
         int ret;
-        pthread_cancel(s->circular_buffer_thread);
+        // Cancel only read, as write has been signaled as success to the user
+        if (h->flags & AVIO_FLAG_READ)
+            pthread_cancel(s->circular_buffer_thread);
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
@@ -979,6 +1123,7 @@ static int udp_close(URLContext *h)
         pthread_cond_destroy(&s->cond);
     }
 #endif
+    closesocket(s->udp_fd);
     av_fifo_freep(&s->fifo);
     return 0;
 }

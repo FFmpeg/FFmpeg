@@ -1050,7 +1050,38 @@ Possible values:
 @item rc_min_vbv_use @var{float} (@emph{encoding,video})
 @item ticks_per_frame @var{integer} (@emph{decoding/encoding,audio,video})
 @item color_primaries @var{integer} (@emph{decoding/encoding,video})
+
 @item color_trc @var{integer} (@emph{decoding/encoding,video})
+Possible values:
+@table @samp
+@item bt709
+BT.709
+@item gamma22
+BT.470 M
+@item gamma28
+BT.470 BG
+@item linear
+SMPTE 170 M
+@item log
+SMPTE 240 M
+@item log_sqrt
+Linear
+@item iec61966_2_4
+Log
+@item bt1361
+Log square root
+@item iec61966_2_1
+IEC 61966-2-4
+@item bt2020_10bit
+BT.1361
+@item bt2020_12bit
+IEC 61966-2-1
+@item smpte2084
+BT.2020 - 10 bit
+@item smpte428_1
+BT.2020 - 12 bit
+@end table
+
 @item colorspace @var{integer} (@emph{decoding/encoding,video})
 
 @item color_range @var{integer} (@emph{decoding/encoding,video})

@@ -406,6 +406,7 @@ enum AVCodecID {
     AV_CODEC_ID_CFHD,
     AV_CODEC_ID_TRUEMOTION2RT,
     AV_CODEC_ID_M101,
+    AV_CODEC_ID_MAGICYUV,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -1637,6 +1638,10 @@ enum AVFieldOrder {
  * version bump.
  * Please use AVOptions (av_opt* / av_set/get*()) to access these fields from user
  * applications.
+ * The name string for AVOptions options matches the associated command line
+ * parameter name and can be found in libavcodec/options_table.h
+ * The AVOption/command line parameter names differ in some cases from the C
+ * structure field names for historic reasons or brevity.
  * sizeof(AVCodecContext) must not be used outside libav*.
  */
 typedef struct AVCodecContext {

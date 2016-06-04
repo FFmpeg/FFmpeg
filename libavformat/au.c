@@ -36,7 +36,7 @@
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
 /* the specification requires an annotation field of at least eight bytes */
-#define AU_HEADER_SIZE (24+8)
+#define AU_DEFAULT_HEADER_SIZE (24+8)
 
 static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_PCM_MULAW,  1 },
@@ -163,12 +163,53 @@ AVInputFormat ff_au_demuxer = {
 
 #if CONFIG_AU_MUXER
 
+typedef struct AUContext {
+    uint32_t header_size;
+} AUContext;
+
 #include "rawenc.h"
+
+static int au_get_annotations(AVFormatContext *s, char **buffer)
+{
+    static const char * keys[] = {
+        "Title",
+        "Artist",
+        "Album",
+        "Track",
+        "Genre",
+        NULL };
+    int i;
+    int cnt = 0;
+    AVDictionary *m = s->metadata;
+    AVDictionaryEntry *t = NULL;
+    AVBPrint bprint;
+
+    av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
+
+    for (i = 0; keys[i] != NULL; i++) {
+        t = av_dict_get(m, keys[i], NULL, 0);
+        if (t != NULL) {
+            if (cnt++)
+                av_bprint_chars(&bprint, '\n', 1);
+            av_bprint_append_data(&bprint, keys[i], strlen(keys[i]));
+            av_bprint_chars(&bprint, '=', 1);
+            av_bprint_append_data(&bprint, t->value, strlen(t->value));
+        }
+    }
+    /* pad with 0's */
+    av_bprint_append_data(&bprint, "\0\0\0\0\0\0\0\0", 8);
+    return av_bprint_finalize(&bprint, buffer);
+}
 
 static int au_write_header(AVFormatContext *s)
 {
+    int ret;
+    AUContext *au = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
+    char *annotations = NULL;
+
+    au->header_size = AU_DEFAULT_HEADER_SIZE;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
@@ -181,13 +222,28 @@ static int au_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    if (av_dict_count(s->metadata) > 0) {
+        ret = au_get_annotations(s, &annotations);
+        if (ret < 0)
+            return ret;
+        if (annotations != NULL) {
+            au->header_size = (24 + strlen(annotations) + 8) & ~7;
+            if (au->header_size < AU_DEFAULT_HEADER_SIZE)
+                au->header_size = AU_DEFAULT_HEADER_SIZE;
+        }
+    }
     ffio_wfourcc(pb, ".snd");                   /* magic number */
-    avio_wb32(pb, AU_HEADER_SIZE);              /* header size */
+    avio_wb32(pb, au->header_size);             /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
     avio_wb32(pb, par->codec_tag);              /* codec ID */
     avio_wb32(pb, par->sample_rate);
     avio_wb32(pb, par->channels);
-    avio_wb64(pb, 0); /* annotation field */
+    if (annotations != NULL) {
+        avio_write(pb, annotations, au->header_size - 24);
+        av_freep(&annotations);
+    } else {
+        avio_wb64(pb, 0); /* annotation field */
+    }
     avio_flush(pb);
 
     return 0;
@@ -196,12 +252,13 @@ static int au_write_header(AVFormatContext *s)
 static int au_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    AUContext *au = s->priv_data;
     int64_t file_size = avio_tell(pb);
 
     if (s->pb->seekable && file_size < INT32_MAX) {
         /* update file size */
         avio_seek(pb, 8, SEEK_SET);
-        avio_wb32(pb, (uint32_t)(file_size - AU_HEADER_SIZE));
+        avio_wb32(pb, (uint32_t)(file_size - au->header_size));
         avio_seek(pb, file_size, SEEK_SET);
         avio_flush(pb);
     }
@@ -214,6 +271,7 @@ AVOutputFormat ff_au_muxer = {
     .long_name     = NULL_IF_CONFIG_SMALL("Sun AU"),
     .mime_type     = "audio/basic",
     .extensions    = "au",
+    .priv_data_size = sizeof(AUContext),
     .audio_codec   = AV_CODEC_ID_PCM_S16BE,
     .video_codec   = AV_CODEC_ID_NONE,
     .write_header  = au_write_header,

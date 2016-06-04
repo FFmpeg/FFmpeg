@@ -420,6 +420,7 @@ enum AVColorTransferCharacteristic {
     AVCOL_TRC_BT2020_12    = 15, ///< ITU-R BT2020 for 12 bit system
     AVCOL_TRC_SMPTEST2084  = 16, ///< SMPTE ST 2084 for 10, 12, 14 and 16 bit systems
     AVCOL_TRC_SMPTEST428_1 = 17, ///< SMPTE ST 428-1
+    AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
     AVCOL_TRC_NB,                ///< Not part of ABI
 };
 
