@@ -31,8 +31,9 @@
 #define AVCODEC_MSMPEG4DATA_H
 
 #include "libavutil/common.h"
-#include "get_bits.h"
+
 #include "rl.h"
+#include "vlc.h"
 
 /* motion vector table */
 typedef struct MVTable {

@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
@@ -35,6 +36,7 @@
 #include "dv_tablegen.h"
 #include "fdctdsp.h"
 #include "internal.h"
+#include "mathops.h"
 #include "me_cmp.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"

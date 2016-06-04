@@ -23,9 +23,9 @@
 #include "libavutil/intmath.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "bswapdsp.h"
-#include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
 #include "lpc.h"

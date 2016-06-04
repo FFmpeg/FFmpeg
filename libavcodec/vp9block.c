@@ -24,7 +24,6 @@
 #include "libavutil/avassert.h"
 
 #include "avcodec.h"
-#include "get_bits.h"
 #include "internal.h"
 #include "videodsp.h"
 #include "vp56.h"
