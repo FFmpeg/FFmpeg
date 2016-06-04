@@ -1348,23 +1348,23 @@ static int decode_header(EXRContext *s)
                 }
 
                 if (layer_match) { /* only search channel if the layer match is valid */
-                if (!strcmp(ch_gb.buffer, "R") ||
-                    !strcmp(ch_gb.buffer, "X") ||
-                    !strcmp(ch_gb.buffer, "U"))
-                    channel_index = 0;
-                else if (!strcmp(ch_gb.buffer, "G") ||
-                         !strcmp(ch_gb.buffer, "Y") ||
-                         !strcmp(ch_gb.buffer, "V"))
-                    channel_index = 1;
-                else if (!strcmp(ch_gb.buffer, "B") ||
-                         !strcmp(ch_gb.buffer, "Z") ||
-                         !strcmp(ch_gb.buffer, "W"))
-                    channel_index = 2;
-                else if (!strcmp(ch_gb.buffer, "A"))
-                    channel_index = 3;
-                else
-                    av_log(s->avctx, AV_LOG_WARNING,
-                           "Unsupported channel %.256s.\n", ch_gb.buffer);
+                    if (!strcmp(ch_gb.buffer, "R") ||
+                        !strcmp(ch_gb.buffer, "X") ||
+                        !strcmp(ch_gb.buffer, "U"))
+                        channel_index = 0;
+                    else if (!strcmp(ch_gb.buffer, "G") ||
+                             !strcmp(ch_gb.buffer, "Y") ||
+                             !strcmp(ch_gb.buffer, "V"))
+                        channel_index = 1;
+                    else if (!strcmp(ch_gb.buffer, "B") ||
+                             !strcmp(ch_gb.buffer, "Z") ||
+                             !strcmp(ch_gb.buffer, "W"))
+                        channel_index = 2;
+                    else if (!strcmp(ch_gb.buffer, "A"))
+                        channel_index = 3;
+                    else
+                        av_log(s->avctx, AV_LOG_WARNING,
+                               "Unsupported channel %.256s.\n", ch_gb.buffer);
                 }
 
                 /* skip until you get a 0 */
