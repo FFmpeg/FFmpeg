@@ -163,6 +163,7 @@ Codecs:
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
+  cuvid.c                               Timo Rothenpieler
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
