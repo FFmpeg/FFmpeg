@@ -72,6 +72,7 @@
     <ClCompile Include="..\libavdevice\alldevices.c" />
     <ClCompile Include="..\libavdevice\avdevice.c" />
     <ClCompile Include="..\libavdevice\utils.c" />
+    <ClCompile Include="..\libavdevice\file_open.c" />
     <ClCompile Include="..\libavdevice\dshow_crossbar.c" />
     <ClCompile Include="..\libavdevice\dshow.c" />
     <ClCompile Include="..\libavdevice\dshow_enummediatypes.c" />
@@ -85,7 +86,6 @@
     <ClCompile Include="..\libavdevice\sdl.c" />
     <ClCompile Include="..\libavdevice\vfwcap.c" />
     <ClCompile Include="..\libavdevice\libcdio.c" />
-    <ClCompile Include="..\libavdevice\file_open.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavdevice\avdevice.h" />

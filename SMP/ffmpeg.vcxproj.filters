@@ -24,10 +24,10 @@
     <ClCompile Include="..\ffmpeg_filter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_dxva2.c">
+    <ClCompile Include="..\ffmpeg_qsv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_qsv.c">
+    <ClCompile Include="..\ffmpeg_dxva2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\ffmpeg.c">

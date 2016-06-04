@@ -75,7 +75,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libswscale\alphablend.c" />
+    <ClCompile Include="..\libswscale\hscale.c" />
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c" />
+    <ClCompile Include="..\libswscale\gamma.c" />
     <ClCompile Include="..\libswscale\input.c">
       <ObjectFileName>$(IntDir)\libswscale_input.obj</ObjectFileName>
     </ClCompile>
@@ -84,14 +86,12 @@
       <ObjectFileName>$(IntDir)\libswscale_output.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libswscale\rgb2rgb.c" />
+    <ClCompile Include="..\libswscale\slice.c" />
     <ClCompile Include="..\libswscale\swscale.c" />
     <ClCompile Include="..\libswscale\swscale_unscaled.c" />
     <ClCompile Include="..\libswscale\utils.c" />
     <ClCompile Include="..\libswscale\yuv2rgb.c" />
-    <ClCompile Include="..\libswscale\slice.c" />
-    <ClCompile Include="..\libswscale\hscale.c" />
     <ClCompile Include="..\libswscale\vscale.c" />
-    <ClCompile Include="..\libswscale\gamma.c" />
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">
       <ObjectFileName>$(IntDir)\libswscale_x86_rgb2rgb.obj</ObjectFileName>
     </ClCompile>

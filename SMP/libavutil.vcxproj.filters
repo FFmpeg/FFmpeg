@@ -105,6 +105,9 @@
     <ClCompile Include="..\libavutil\des.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\dict.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\display.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -178,9 +181,6 @@
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\murmur3.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\dict.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\opt.c">
@@ -338,6 +338,9 @@
     <ClInclude Include="..\libavutil\des.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\dict.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\display.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
@@ -413,9 +416,6 @@
     <ClInclude Include="..\libavutil\murmur3.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
-    <ClInclude Include="..\libavutil\dict.h">
-      <Filter>Header Files\libavutil</Filter>
-    </ClInclude>
     <ClInclude Include="..\libavutil\opt.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
@@ -437,10 +437,10 @@
     <ClInclude Include="..\libavutil\rc4.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
-    <ClInclude Include="..\libavutil\replaygain.h">
+    <ClInclude Include="..\libavutil\rational.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
-    <ClInclude Include="..\libavutil\rational.h">
+    <ClInclude Include="..\libavutil\replaygain.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\ripemd.h">

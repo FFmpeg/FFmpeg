@@ -45,7 +45,13 @@
     <ClCompile Include="..\libswscale\alphablend.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
+    <ClCompile Include="..\libswscale\hscale.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\hscale_fast_bilinear.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libswscale\gamma.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
     <ClCompile Include="..\libswscale\input.c">
@@ -60,6 +66,9 @@
     <ClCompile Include="..\libswscale\rgb2rgb.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
+    <ClCompile Include="..\libswscale\slice.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\swscale.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
@@ -72,16 +81,7 @@
     <ClCompile Include="..\libswscale\yuv2rgb.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
-    <ClCompile Include="..\libswscale\slice.c">
-      <Filter>Source Files\libswscale</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libswscale\hscale.c">
-      <Filter>Source Files\libswscale</Filter>
-    </ClCompile>
     <ClCompile Include="..\libswscale\vscale.c">
-      <Filter>Source Files\libswscale</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libswscale\gamma.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
     <ClCompile Include="..\libswscale\x86\rgb2rgb.c">

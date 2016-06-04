@@ -82,6 +82,9 @@
     <ClCompile Include="..\libavformat\utils.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\file_open.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\isom.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -226,13 +229,13 @@
     <ClCompile Include="..\libavformat\ads.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\adxdec.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavformat\adtsenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\id3v2enc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\adxdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\aea.c">
@@ -781,6 +784,9 @@
     <ClCompile Include="..\libavformat\msnwc_tcp.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mtaf.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mtv.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -925,6 +931,9 @@
     <ClCompile Include="..\libavformat\rsd.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\rpl.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\rsodec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -932,9 +941,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rsoenc.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\rpl.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_mpegts.c">
@@ -1216,10 +1222,10 @@
     <ClCompile Include="..\libavformat\yop.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\yuv4mpegenc.c">
+    <ClCompile Include="..\libavformat\yuv4mpegdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\yuv4mpegdec.c">
+    <ClCompile Include="..\libavformat\yuv4mpegenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\libgme.c">
@@ -1276,6 +1282,9 @@
     <ClCompile Include="..\libavformat\icecast.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\md5proto.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mmsh.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1283,9 +1292,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mmst.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\md5proto.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtmpproto.c">
@@ -1313,9 +1319,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\udp.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\file_open.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="libavformat\golomb_tab_wrap.c">

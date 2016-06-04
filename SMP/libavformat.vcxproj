@@ -87,6 +87,7 @@
     <ClCompile Include="..\libavformat\sdp.c" />
     <ClCompile Include="..\libavformat\url.c" />
     <ClCompile Include="..\libavformat\utils.c" />
+    <ClCompile Include="..\libavformat\file_open.c" />
     <ClCompile Include="..\libavformat\isom.c" />
     <ClCompile Include="..\libavformat\network.c" />
     <ClCompile Include="..\libavformat\riffdec.c" />
@@ -135,9 +136,9 @@
     <ClCompile Include="..\libavformat\sauce.c" />
     <ClCompile Include="..\libavformat\adp.c" />
     <ClCompile Include="..\libavformat\ads.c" />
-    <ClCompile Include="..\libavformat\adxdec.c" />
     <ClCompile Include="..\libavformat\adtsenc.c" />
     <ClCompile Include="..\libavformat\id3v2enc.c" />
+    <ClCompile Include="..\libavformat\adxdec.c" />
     <ClCompile Include="..\libavformat\aea.c" />
     <ClCompile Include="..\libavformat\pcm.c" />
     <ClCompile Include="..\libavformat\afc.c" />
@@ -320,6 +321,7 @@
     <ClCompile Include="..\libavformat\msf.c" />
     <ClCompile Include="..\libavformat\mpsubdec.c" />
     <ClCompile Include="..\libavformat\msnwc_tcp.c" />
+    <ClCompile Include="..\libavformat\mtaf.c" />
     <ClCompile Include="..\libavformat\mtv.c" />
     <ClCompile Include="..\libavformat\musx.c" />
     <ClCompile Include="..\libavformat\mvdec.c" />
@@ -368,10 +370,10 @@
     <ClCompile Include="..\libavformat\idroqdec.c" />
     <ClCompile Include="..\libavformat\idroqenc.c" />
     <ClCompile Include="..\libavformat\rsd.c" />
+    <ClCompile Include="..\libavformat\rpl.c" />
     <ClCompile Include="..\libavformat\rsodec.c" />
     <ClCompile Include="..\libavformat\rso.c" />
     <ClCompile Include="..\libavformat\rsoenc.c" />
-    <ClCompile Include="..\libavformat\rpl.c" />
     <ClCompile Include="..\libavformat\rtpenc_mpegts.c" />
     <ClCompile Include="..\libavformat\rtpenc_aac.c" />
     <ClCompile Include="..\libavformat\rtpenc_latm.c" />
@@ -465,8 +467,8 @@
     <ClCompile Include="..\libavformat\xvag.c" />
     <ClCompile Include="..\libavformat\xwma.c" />
     <ClCompile Include="..\libavformat\yop.c" />
-    <ClCompile Include="..\libavformat\yuv4mpegenc.c" />
     <ClCompile Include="..\libavformat\yuv4mpegdec.c" />
+    <ClCompile Include="..\libavformat\yuv4mpegenc.c" />
     <ClCompile Include="..\libavformat\libgme.c" />
     <ClCompile Include="..\libavformat\libmodplug.c" />
     <ClCompile Include="..\libavformat\libssh.c" />
@@ -485,10 +487,10 @@
     <ClCompile Include="..\libavformat\hlsproto.c" />
     <ClCompile Include="..\libavformat\http.c" />
     <ClCompile Include="..\libavformat\icecast.c" />
+    <ClCompile Include="..\libavformat\md5proto.c" />
     <ClCompile Include="..\libavformat\mmsh.c" />
     <ClCompile Include="..\libavformat\mms.c" />
     <ClCompile Include="..\libavformat\mmst.c" />
-    <ClCompile Include="..\libavformat\md5proto.c" />
     <ClCompile Include="..\libavformat\rtmpproto.c" />
     <ClCompile Include="..\libavformat\rtmppkt.c" />
     <ClCompile Include="..\libavformat\rtpproto.c" />
@@ -498,7 +500,6 @@
     <ClCompile Include="..\libavformat\tls_gnutls.c" />
     <ClCompile Include="..\libavformat\tls.c" />
     <ClCompile Include="..\libavformat\udp.c" />
-    <ClCompile Include="..\libavformat\file_open.c" />
     <ClCompile Include="libavformat\golomb_tab_wrap.c" />
     <ClCompile Include="libavformat\log2_tab_wrap.c" />
   </ItemGroup>

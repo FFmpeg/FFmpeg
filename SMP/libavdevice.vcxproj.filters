@@ -37,6 +37,9 @@
     <ClCompile Include="..\libavdevice\utils.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavdevice\file_open.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavdevice\dshow_crossbar.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
@@ -74,9 +77,6 @@
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
     <ClCompile Include="..\libavdevice\libcdio.c">
-      <Filter>Source Files\libavdevice</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavdevice\file_open.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
   </ItemGroup>

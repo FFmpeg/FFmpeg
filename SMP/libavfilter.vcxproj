@@ -106,6 +106,7 @@
     <ClCompile Include="..\libavfilter\opencl_allkernels.c" />
     <ClCompile Include="..\libavfilter\transform.c" />
     <ClCompile Include="..\libavfilter\video.c" />
+    <ClCompile Include="..\libavfilter\pthread.c" />
     <ClCompile Include="..\libavfilter\f_bench.c" />
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_afade.c" />
@@ -173,9 +174,9 @@
     <ClCompile Include="..\libavfilter\af_volumedetect.c" />
     <ClCompile Include="..\libavfilter\af_hdcd.c" />
     <ClCompile Include="..\libavfilter\asrc_anoisesrc.c" />
-    <ClCompile Include="..\libavfilter\asrc_anullsrc.c" />
     <ClCompile Include="..\libavfilter\asrc_sine.c" />
     <ClCompile Include="..\libavfilter\asink_anullsink.c" />
+    <ClCompile Include="..\libavfilter\asrc_anullsrc.c" />
     <ClCompile Include="..\libavfilter\vf_subtitles.c" />
     <ClCompile Include="..\libavfilter\vf_extractplanes.c" />
     <ClCompile Include="..\libavfilter\vf_alphamerge.c" />
@@ -350,10 +351,10 @@
     <ClCompile Include="..\libavfilter\vf_zoompan.c" />
     <ClCompile Include="..\libavfilter\vsrc_testsrc.c" />
     <ClCompile Include="..\libavfilter\vsrc_cellauto.c" />
+    <ClCompile Include="..\libavfilter\vsink_nullsink.c" />
     <ClCompile Include="..\libavfilter\vsrc_life.c" />
     <ClCompile Include="..\libavfilter\vsrc_mandelbrot.c" />
     <ClCompile Include="..\libavfilter\vsrc_mptestsrc.c" />
-    <ClCompile Include="..\libavfilter\vsink_nullsink.c" />
     <ClCompile Include="..\libavfilter\avf_ahistogram.c" />
     <ClCompile Include="..\libavfilter\avf_aphasemeter.c" />
     <ClCompile Include="..\libavfilter\avf_avectorscope.c" />
@@ -365,7 +366,6 @@
     <ClCompile Include="..\libavfilter\avf_showwaves.c" />
     <ClCompile Include="..\libavfilter\vaf_spectrumsynth.c" />
     <ClCompile Include="..\libavfilter\src_movie.c" />
-    <ClCompile Include="..\libavfilter\pthread.c" />
     <ClCompile Include="..\libavfilter\x86\vf_blend_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_bwdif_init.c" />
     <ClCompile Include="..\libavfilter\x86\colorspacedsp_init.c" />

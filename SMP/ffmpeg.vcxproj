@@ -38,8 +38,8 @@
     <ClCompile Include="..\cmdutils.c" />
     <ClCompile Include="..\ffmpeg_opt.c" />
     <ClCompile Include="..\ffmpeg_filter.c" />
-    <ClCompile Include="..\ffmpeg_dxva2.c" />
     <ClCompile Include="..\ffmpeg_qsv.c" />
+    <ClCompile Include="..\ffmpeg_dxva2.c" />
     <ClCompile Include="..\ffmpeg.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

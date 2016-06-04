@@ -93,6 +93,7 @@
     <ClCompile Include="..\libavutil\cpu.c" />
     <ClCompile Include="..\libavutil\crc.c" />
     <ClCompile Include="..\libavutil\des.c" />
+    <ClCompile Include="..\libavutil\dict.c" />
     <ClCompile Include="..\libavutil\display.c" />
     <ClCompile Include="..\libavutil\downmix_info.c" />
     <ClCompile Include="..\libavutil\error.c" />
@@ -124,7 +125,6 @@
     <ClCompile Include="..\libavutil\md5.c" />
     <ClCompile Include="..\libavutil\mem.c" />
     <ClCompile Include="..\libavutil\murmur3.c" />
-    <ClCompile Include="..\libavutil\dict.c" />
     <ClCompile Include="..\libavutil\opt.c" />
     <ClCompile Include="..\libavutil\parseutils.c" />
     <ClCompile Include="..\libavutil\pixdesc.c" />
@@ -182,6 +182,7 @@
     <ClInclude Include="..\libavutil\cpu.h" />
     <ClInclude Include="..\libavutil\crc.h" />
     <ClInclude Include="..\libavutil\des.h" />
+    <ClInclude Include="..\libavutil\dict.h" />
     <ClInclude Include="..\libavutil\display.h" />
     <ClInclude Include="..\libavutil\downmix_info.h" />
     <ClInclude Include="..\libavutil\error.h" />
@@ -207,7 +208,6 @@
     <ClInclude Include="..\libavutil\mem.h" />
     <ClInclude Include="..\libavutil\motion_vector.h" />
     <ClInclude Include="..\libavutil\murmur3.h" />
-    <ClInclude Include="..\libavutil\dict.h" />
     <ClInclude Include="..\libavutil\opt.h" />
     <ClInclude Include="..\libavutil\parseutils.h" />
     <ClInclude Include="..\libavutil\pixdesc.h" />
@@ -215,8 +215,8 @@
     <ClInclude Include="..\libavutil\pixfmt.h" />
     <ClInclude Include="..\libavutil\random_seed.h" />
     <ClInclude Include="..\libavutil\rc4.h" />
-    <ClInclude Include="..\libavutil\replaygain.h" />
     <ClInclude Include="..\libavutil\rational.h" />
+    <ClInclude Include="..\libavutil\replaygain.h" />
     <ClInclude Include="..\libavutil\ripemd.h" />
     <ClInclude Include="..\libavutil\samplefmt.h" />
     <ClInclude Include="..\libavutil\sha.h" />
@@ -527,6 +527,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -552,7 +553,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -560,8 +560,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -666,6 +666,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -691,7 +692,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -699,8 +699,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -811,6 +811,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -836,7 +837,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -844,8 +844,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -960,6 +960,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -985,7 +986,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -993,8 +993,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1110,6 +1110,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1135,7 +1136,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1143,8 +1143,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1259,6 +1259,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1284,7 +1285,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1292,8 +1292,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1409,6 +1409,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1434,7 +1435,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1442,8 +1442,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1554,6 +1554,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1579,7 +1580,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1587,8 +1587,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1705,6 +1705,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1730,7 +1731,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1738,8 +1738,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -1855,6 +1855,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -1880,7 +1881,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -1888,8 +1888,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -2006,6 +2006,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2031,7 +2032,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2039,8 +2039,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -2156,6 +2156,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2181,7 +2182,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2189,8 +2189,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -2301,6 +2301,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2326,7 +2327,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2334,8 +2334,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
@@ -2446,6 +2446,7 @@ copy ..\libavutil\common.h $(OutDir)\include\libavutil
 copy ..\libavutil\cpu.h $(OutDir)\include\libavutil
 copy ..\libavutil\crc.h $(OutDir)\include\libavutil
 copy ..\libavutil\des.h $(OutDir)\include\libavutil
+copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\display.h $(OutDir)\include\libavutil
 copy ..\libavutil\downmix_info.h $(OutDir)\include\libavutil
 copy ..\libavutil\error.h $(OutDir)\include\libavutil
@@ -2471,7 +2472,6 @@ copy ..\libavutil\md5.h $(OutDir)\include\libavutil
 copy ..\libavutil\mem.h $(OutDir)\include\libavutil
 copy ..\libavutil\motion_vector.h $(OutDir)\include\libavutil
 copy ..\libavutil\murmur3.h $(OutDir)\include\libavutil
-copy ..\libavutil\dict.h $(OutDir)\include\libavutil
 copy ..\libavutil\opt.h $(OutDir)\include\libavutil
 copy ..\libavutil\parseutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixdesc.h $(OutDir)\include\libavutil
@@ -2479,8 +2479,8 @@ copy ..\libavutil\pixelutils.h $(OutDir)\include\libavutil
 copy ..\libavutil\pixfmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\random_seed.h $(OutDir)\include\libavutil
 copy ..\libavutil\rc4.h $(OutDir)\include\libavutil
-copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\rational.h $(OutDir)\include\libavutil
+copy ..\libavutil\replaygain.h $(OutDir)\include\libavutil
 copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil

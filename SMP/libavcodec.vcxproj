@@ -280,16 +280,12 @@
       <ObjectFileName>$(IntDir)\libavcodec_mpegvideoencdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mss34dsp.c" />
-    <ClCompile Include="..\libavcodec\nvenc.c" />
     <ClCompile Include="..\libavcodec\pixblockdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_pixblockdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\qpeldsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\qsv.c" />
-    <ClCompile Include="..\libavcodec\qsvdec.c" />
-    <ClCompile Include="..\libavcodec\qsvenc.c" />
     <ClCompile Include="..\libavcodec\rangecoder.c" />
     <ClCompile Include="..\libavcodec\rdft.c" />
     <ClCompile Include="..\libavcodec\rv34dsp.c">
@@ -435,9 +431,9 @@
     <ClCompile Include="..\libavcodec\cljrenc.c" />
     <ClCompile Include="..\libavcodec\cllc.c" />
     <ClCompile Include="..\libavcodec\canopus.c" />
-    <ClCompile Include="..\libavcodec\cook.c" />
     <ClCompile Include="..\libavcodec\cngdec.c" />
     <ClCompile Include="..\libavcodec\cngenc.c" />
+    <ClCompile Include="..\libavcodec\cook.c" />
     <ClCompile Include="..\libavcodec\cpia.c" />
     <ClCompile Include="..\libavcodec\cscd.c" />
     <ClCompile Include="..\libavcodec\dcadec.c" />
@@ -447,6 +443,7 @@
     <ClCompile Include="..\libavcodec\dca_core.c" />
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
+    <ClCompile Include="..\libavcodec\dca_lbr.c" />
     <ClCompile Include="..\libavcodec\dcadsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
     </ClCompile>
@@ -474,9 +471,11 @@
     <ClCompile Include="..\libavcodec\dpx.c" />
     <ClCompile Include="..\libavcodec\dpxenc.c" />
     <ClCompile Include="..\libavcodec\dsddec.c" />
+    <ClCompile Include="..\libavcodec\dsd.c" />
     <ClCompile Include="..\libavcodec\dsicinaudio.c" />
     <ClCompile Include="..\libavcodec\dsicinvideo.c" />
     <ClCompile Include="..\libavcodec\dss_sp.c" />
+    <ClCompile Include="..\libavcodec\dstdec.c" />
     <ClCompile Include="..\libavcodec\dvbsubdec.c" />
     <ClCompile Include="..\libavcodec\dvbsub.c" />
     <ClCompile Include="..\libavcodec\dvdsubdec.c" />
@@ -563,8 +562,7 @@
     <ClCompile Include="..\libavcodec\h264_slice.c" />
     <ClCompile Include="..\libavcodec\h264data.c" />
     <ClCompile Include="..\libavcodec\h264_parse.c" />
-    <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
-    <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
+    <ClCompile Include="..\libavcodec\h2645_parse.c" />
     <ClCompile Include="..\libavcodec\hapdec.c" />
     <ClCompile Include="..\libavcodec\hap.c" />
     <ClCompile Include="..\libavcodec\hevc.c" />
@@ -576,10 +574,7 @@
     <ClCompile Include="..\libavcodec\hevcpred.c" />
     <ClCompile Include="..\libavcodec\hevcdsp.c" />
     <ClCompile Include="..\libavcodec\hevc_filter.c" />
-    <ClCompile Include="..\libavcodec\h2645_parse.c" />
     <ClCompile Include="..\libavcodec\hevc_data.c" />
-    <ClCompile Include="..\libavcodec\qsvenc_hevc.c" />
-    <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />
     <ClCompile Include="..\libavcodec\hnm4video.c" />
     <ClCompile Include="..\libavcodec\hq_hqa.c" />
     <ClCompile Include="..\libavcodec\hq_hqadata.c" />
@@ -649,18 +644,16 @@
     <ClCompile Include="..\libavcodec\mpc8.c" />
     <ClCompile Include="..\libavcodec\mpeg12dec.c" />
     <ClCompile Include="..\libavcodec\mpeg12enc.c" />
-    <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c" />
-    <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c" />
     <ClCompile Include="..\libavcodec\xvididct.c">
       <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c" />
+    <ClCompile Include="..\libavcodec\mss3.c" />
     <ClCompile Include="..\libavcodec\msmpeg4dec.c" />
     <ClCompile Include="..\libavcodec\msmpeg4.c" />
     <ClCompile Include="..\libavcodec\msmpeg4data.c" />
     <ClCompile Include="..\libavcodec\msmpeg4enc.c" />
     <ClCompile Include="..\libavcodec\msrle.c" />
-    <ClCompile Include="..\libavcodec\mss3.c" />
     <ClCompile Include="..\libavcodec\mss1.c" />
     <ClCompile Include="..\libavcodec\mss12.c" />
     <ClCompile Include="..\libavcodec\mss2.c" />
@@ -805,11 +798,11 @@
     <ClCompile Include="..\libavcodec\v210enc.c">
       <ObjectFileName>$(IntDir)\libavcodec_v210enc.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\v210x.c" />
     <ClCompile Include="..\libavcodec\v308dec.c" />
     <ClCompile Include="..\libavcodec\v308enc.c" />
     <ClCompile Include="..\libavcodec\v410dec.c" />
     <ClCompile Include="..\libavcodec\v410enc.c" />
-    <ClCompile Include="..\libavcodec\v210x.c" />
     <ClCompile Include="..\libavcodec\vb.c" />
     <ClCompile Include="..\libavcodec\vble.c" />
     <ClCompile Include="..\libavcodec\vc1dec.c" />
@@ -864,8 +857,8 @@
     <ClCompile Include="..\libavcodec\wmv2.c" />
     <ClCompile Include="..\libavcodec\wmv2enc.c" />
     <ClCompile Include="..\libavcodec\wnv1.c" />
-    <ClCompile Include="..\libavcodec\ws-snd1.c" />
     <ClCompile Include="..\libavcodec\wrapped_avframe.c" />
+    <ClCompile Include="..\libavcodec\ws-snd1.c" />
     <ClCompile Include="..\libavcodec\xan.c" />
     <ClCompile Include="..\libavcodec\xxan.c" />
     <ClCompile Include="..\libavcodec\xbmdec.c" />
@@ -909,6 +902,16 @@
     <ClCompile Include="..\libavcodec\dxva2_hevc.c" />
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
     <ClCompile Include="..\libavcodec\dxva2_vc1.c" />
+    <ClCompile Include="..\libavcodec\nvenc.c" />
+    <ClCompile Include="..\libavcodec\qsv.c" />
+    <ClCompile Include="..\libavcodec\qsvdec.c" />
+    <ClCompile Include="..\libavcodec\qsvenc.c" />
+    <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
+    <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
+    <ClCompile Include="..\libavcodec\qsvenc_hevc.c" />
+    <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />
+    <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c" />
+    <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c" />
     <ClCompile Include="..\libavcodec\libfdk-aacdec.c" />
     <ClCompile Include="..\libavcodec\libfdk-aacenc.c" />
     <ClCompile Include="..\libavcodec\libilbc.c" />
@@ -925,9 +928,9 @@
     <ClCompile Include="..\libavcodec\libx264.c" />
     <ClCompile Include="..\libavcodec\libx265.c" />
     <ClCompile Include="..\libavcodec\libxvid.c" />
+    <ClCompile Include="..\libavcodec\latm_parser.c" />
     <ClCompile Include="..\libavcodec\aac_parser.c" />
     <ClCompile Include="..\libavcodec\aac_ac3_parser.c" />
-    <ClCompile Include="..\libavcodec\latm_parser.c" />
     <ClCompile Include="..\libavcodec\ac3_parser.c" />
     <ClCompile Include="..\libavcodec\adx_parser.c" />
     <ClCompile Include="..\libavcodec\bmp_parser.c" />
@@ -1070,9 +1073,9 @@
     <ClInclude Include="..\libavcodec\avcodec.h" />
     <ClInclude Include="..\libavcodec\avdct.h" />
     <ClInclude Include="..\libavcodec\avfft.h" />
-    <ClInclude Include="..\libavcodec\dv_profile.h" />
     <ClInclude Include="..\libavcodec\d3d11va.h" />
     <ClInclude Include="..\libavcodec\dirac.h" />
+    <ClInclude Include="..\libavcodec\dv_profile.h" />
     <ClInclude Include="..\libavcodec\dxva2.h" />
     <ClInclude Include="..\libavcodec\jni.h" />
     <ClInclude Include="..\libavcodec\qsv.h" />
@@ -1349,7 +1352,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1359,9 +1362,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1432,7 +1435,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1442,9 +1445,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1518,7 +1521,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;fdk-aacd.lib;ilbcd.lib;mfxd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;lzmad.lib;zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;fdk-aacd.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;lzmad.lib;zlibd.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1531,9 +1534,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1612,7 +1615,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;fdk-aacd.lib;ilbcd.lib;mfxd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;lzmad.lib;zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;fdk-aacd.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;lzmad.lib;zlibd.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -1624,9 +1627,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1705,7 +1708,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1718,9 +1721,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1799,7 +1802,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmfxd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;libfdk-aacd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;liblzmad.lib;libzlibd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -1811,9 +1814,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1895,7 +1898,7 @@ echo            These errors are the result of dead code elimination not being p
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1905,9 +1908,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -1984,7 +1987,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1994,9 +1997,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2078,7 +2081,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;fdk-aac.lib;ilbc.lib;mfx.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;lzma.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;fdk-aac.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;lzma.lib;zlib.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -2089,9 +2092,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2173,7 +2176,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;fdk-aac.lib;ilbc.lib;mfx.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;lzma.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;fdk-aac.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;lzma.lib;zlib.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -2183,9 +2186,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2267,7 +2270,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -2278,9 +2281,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2362,7 +2365,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -2372,9 +2375,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2451,7 +2454,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2461,9 +2464,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
@@ -2540,7 +2543,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmfx.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;libfdk-aac.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;liblzma.lib;libzlib.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2550,9 +2553,9 @@ mkdir $(OutDir)\include\libavcodec
 copy ..\libavcodec\avcodec.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avdct.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\avfft.h $(OutDir)\include\libavcodec
-copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\d3d11va.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dirac.h $(OutDir)\include\libavcodec
+copy ..\libavcodec\dv_profile.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\dxva2.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\jni.h $(OutDir)\include\libavcodec
 copy ..\libavcodec\qsv.h $(OutDir)\include\libavcodec
