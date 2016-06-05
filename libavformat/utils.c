@@ -3803,8 +3803,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
             av_codec_set_lowres(st->codec, av_codec_get_lowres(st->internal->avctx));
             st->codec->width = st->internal->avctx->width;
             st->codec->height = st->internal->avctx->height;
-            st->codec->coded_width = st->internal->avctx->coded_width;
-            st->codec->coded_height = st->internal->avctx->coded_height;
         }
 
         if (st->codec->codec_tag != MKTAG('t','m','c','d'))
@@ -3821,6 +3819,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
         }
 
         // Fields unavailable in AVCodecParameters
+        st->codec->coded_width = st->internal->avctx->coded_width;
+        st->codec->coded_height = st->internal->avctx->coded_height;
         st->codec->properties = st->internal->avctx->properties;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
