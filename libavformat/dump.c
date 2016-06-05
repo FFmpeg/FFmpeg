@@ -458,6 +458,8 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     avctx->codec      = st->codec->codec;
     avctx->qmin       = st->codec->qmin;
     avctx->qmax       = st->codec->qmax;
+    avctx->coded_width  = st->codec->coded_width;
+    avctx->coded_height = st->codec->coded_height;
 
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);
