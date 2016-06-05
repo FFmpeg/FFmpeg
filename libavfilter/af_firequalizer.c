@@ -83,6 +83,7 @@ typedef struct {
     int           wfunc;
     int           fixed;
     int           multi;
+    int           zero_phase;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -109,6 +110,7 @@ static const AVOption firequalizer_options[] = {
         { "bharris", "blackman-harris window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_BHARRIS }, 0, 0, FLAGS, "wfunc" },
     { "fixed", "set fixed frame samples", OFFSET(fixed), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "multi", "set multi channels mode", OFFSET(multi), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "zero_phase", "set zero phase mode", OFFSET(zero_phase), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -493,7 +495,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                        (float *) frame->extended_data[ch], frame->nb_samples);
     }
 
-    s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, av_make_q(1, inlink->sample_rate), inlink->time_base);
+    s->next_pts = AV_NOPTS_VALUE;
+    if (frame->pts != AV_NOPTS_VALUE) {
+        s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, av_make_q(1, inlink->sample_rate), inlink->time_base);
+        if (s->zero_phase)
+            frame->pts -= av_rescale_q(s->fir_len/2, av_make_q(1, inlink->sample_rate), inlink->time_base);
+    }
     s->frame_nsamples_max = FFMAX(s->frame_nsamples_max, frame->nb_samples);
     return ff_filter_frame(ctx->outputs[0], frame);
 }

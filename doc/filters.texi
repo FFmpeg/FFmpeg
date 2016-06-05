@@ -2443,6 +2443,10 @@ filtering with large delay. Default is disabled.
 
 @item multi
 Enable multichannels evaluation on gain. Default is disabled.
+
+@item zero_phase
+Enable zero phase mode by substracting timestamp to compensate delay.
+Default is disabled.
 @end table
 
 @subsection Examples
@@ -2463,9 +2467,9 @@ custom equalization:
 firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
 @end example
 @item
-higher delay:
+higher delay with zero phase to compensate delay:
 @example
-firequalizer=delay=0.1:fixed=on
+firequalizer=delay=0.1:fixed=on:zero_phase=on
 @end example
 @item
 lowpass on left channel, highpass on right channel:
