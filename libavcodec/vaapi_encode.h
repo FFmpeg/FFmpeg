@@ -39,7 +39,6 @@ enum {
     MAX_PARAM_BUFFERS      = 16,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
-    MAX_OUTPUT_BUFFER_SIZE = 1024 * 1024,
 };
 
 enum {
@@ -84,6 +83,7 @@ typedef struct VAAPIEncodePicture {
     int          nb_param_buffers;
     VABufferID      param_buffers[MAX_PARAM_BUFFERS];
 
+    AVBufferRef    *output_buffer_ref;
     VABufferID      output_buffer;
 
     void           *priv_data;
@@ -129,6 +129,8 @@ typedef struct VAAPIEncodeContext {
     int          nb_recon_frames;
     AVBufferRef    *recon_frames_ref;
     AVHWFramesContext *recon_frames;
+
+    AVBufferPool   *output_buffer_pool;
 
     VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];
     int          nb_config_attributes;
