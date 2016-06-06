@@ -884,15 +884,15 @@ check_cflags(){
 }
 
 test_objcflags(){
-    log test_cflags "$@"
-    set -- $($cflags_filter "$@")
+    log test_objcflags "$@"
+    set -- $($objcflags_filter "$@")
     check_objcc "$@" <<EOF
 int x;
 EOF
 }
 
 check_objcflags(){
-    log check_cflags "$@"
+    log check_objcflags "$@"
     test_objcflags "$@" && add_objcflags "$@"
 }
 
