@@ -70,7 +70,7 @@ static const struct FFJniField jni_amediacodeclist_mapping[] = {
 
 struct JNIAMediaFormatFields {
 
-    jclass clazz;
+    jclass mediaformat_class;
 
     jmethodID init_id;
 
@@ -91,7 +91,7 @@ struct JNIAMediaFormatFields {
 } JNIAMediaFormatFields;
 
 static const struct FFJniField jni_amediaformat_mapping[] = {
-    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, clazz), 1 },
+    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, mediaformat_class), 1 },
 
         { "android/media/MediaFormat", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, init_id), 1 },
 
@@ -465,7 +465,7 @@ FFAMediaFormat *ff_AMediaFormat_new(void)
         goto fail;
     }
 
-    format->object = (*env)->NewObject(env, format->jfields.clazz, format->jfields.init_id);
+    format->object = (*env)->NewObject(env, format->jfields.mediaformat_class, format->jfields.init_id);
     if (!format->object) {
         goto fail;
     }
