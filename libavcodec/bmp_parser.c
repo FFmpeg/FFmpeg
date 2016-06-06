@@ -53,7 +53,8 @@ restart:
             if (bpc->pc.frame_start_found == 0) {
                 if ((state >> 48) == (('B' << 8) | 'M')) {
                     bpc->fsize = av_bswap32(state >> 16);
-                    bpc->pc.frame_start_found = 1;
+                    if (bpc->fsize > 17)
+                        bpc->pc.frame_start_found = 1;
                 }
             } else if (bpc->pc.frame_start_found == 2+4+4) {
 //                 unsigned hsize = av_bswap32(state>>32);
