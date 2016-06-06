@@ -69,8 +69,10 @@ restart:
                     next = i - 17;
                     state = 0;
                     break;
-                } else
+                } else {
+                    bpc->pc.state64 = 0;
                     goto restart;
+                }
             } else if (bpc->pc.frame_start_found)
                 bpc->pc.frame_start_found++;
         }
