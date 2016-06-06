@@ -91,7 +91,10 @@ flush:
     if (ff_combine_frame(&bpc->pc, next, &buf, &buf_size) < 0)
         return buf_size;
 
-    bpc->pc.frame_start_found = 0;
+    if (next != END_NOT_FOUND && next < 0)
+        bpc->pc.frame_start_found = FFMAX(bpc->pc.frame_start_found - i - 1, 0);
+    else
+        bpc->pc.frame_start_found = 0;
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
