@@ -304,6 +304,7 @@ Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar
   mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
+  vaapi_encode*                         Mark Thompson
   vda*                                  Sebastien Zwickert
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
   videotoolbox*                         Sebastien Zwickert
