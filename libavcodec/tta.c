@@ -197,7 +197,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     if (avctx->extradata_size < 30)
         return -1;
 
-    bitstream_init(&s->bc, avctx->extradata, avctx->extradata_size * 8);
+    bitstream_init8(&s->bc, avctx->extradata, avctx->extradata_size);
     if (bitstream_peek(&s->bc, 32) == AV_RL32("TTA1")) {
         if (avctx->err_recognition & AV_EF_CRCCHECK) {
             s->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
@@ -315,7 +315,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    bitstream_init(&s->bc, buf, buf_size * 8);
+    bitstream_init8(&s->bc, buf, buf_size);
 
     /* get output buffer */
     frame->nb_samples = framelen;

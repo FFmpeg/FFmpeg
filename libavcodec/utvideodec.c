@@ -147,7 +147,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
                           (uint32_t *) c->slice_bits,
                           (slice_data_end - slice_data_start + 3) >> 2);
-        bitstream_init(&bc, c->slice_bits, slice_size * 8);
+        bitstream_init8(&bc, c->slice_bits, slice_size);
 
         prev = 0x80;
         for (j = sstart; j < send; j++) {

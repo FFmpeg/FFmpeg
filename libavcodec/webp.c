@@ -1039,7 +1039,7 @@ static int apply_color_indexing_transform(WebPContext *s)
         for (y = 0; y < img->frame->height; y++) {
             p = GET_PIXEL(img->frame, 0, y);
             memcpy(line, p, img->frame->linesize[0]);
-            bitstream_init(&bc_g, line, img->frame->linesize[0] * 8);
+            bitstream_init8(&bc_g, line, img->frame->linesize[0]);
             bitstream_skip(&bc_g, 16);
             i = 0;
             for (x = 0; x < img->frame->width; x++) {
@@ -1083,7 +1083,7 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
     }
 
-    ret = bitstream_init(&s->bc, data_start, data_size * 8);
+    ret = bitstream_init8(&s->bc, data_start, data_size);
     if (ret < 0)
         return ret;
 

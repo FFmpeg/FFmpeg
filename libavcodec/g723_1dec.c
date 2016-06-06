@@ -72,7 +72,7 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
     int ad_cb_len;
     int temp, info_bits, i;
 
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
 
     /* Extract frame type and rate info */
     info_bits = bitstream_read(&bc, 2);

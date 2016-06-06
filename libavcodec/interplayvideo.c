@@ -898,7 +898,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
     s->upper_motion_limit_offset = (s->avctx->height - 8) * frame->linesize[0]
                                   + (s->avctx->width - 8) * (1 + s->is_16bpp);
 
-    bitstream_init(&bc, s->decoding_map, s->decoding_map_size * 8);
+    bitstream_init8(&bc, s->decoding_map, s->decoding_map_size);
     for (y = 0; y < s->avctx->height; y += 8) {
         for (x = 0; x < s->avctx->width; x += 8) {
             opcode = bitstream_read(&bc, 4);

@@ -147,7 +147,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     // process RLE-compressed data
-    bitstream_init(&bc, buf, (buf_end - buf) * 8);
+    bitstream_init8(&bc, buf, buf_end - buf);
     bitmap = sub->rects[0]->data[0];
     for (y = 0; y < h; y++) {
         // interlaced: do odd lines

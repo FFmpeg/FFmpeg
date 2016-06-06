@@ -298,7 +298,7 @@ static int jpg_decode_data(JPGContext *c, int width, int height,
         return ret;
     jpg_unescape(src, src_size, c->buf, &unesc_size);
     memset(c->buf + unesc_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    bitstream_init(&bc, c->buf, unesc_size * 8);
+    bitstream_init8(&bc, c->buf, unesc_size);
 
     width = FFALIGN(width, 16);
     mb_w  =  width        >> 4;
@@ -1015,7 +1015,7 @@ static void kempf_restore_buf(const uint8_t *src, int len,
     int i, j, nb, col;
     int align_width = FFALIGN(width, 16);
 
-    bitstream_init(&bc, src, len * 8);
+    bitstream_init8(&bc, src, len);
 
     if (npal <= 2)       nb = 1;
     else if (npal <= 4)  nb = 2;

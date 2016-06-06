@@ -73,7 +73,7 @@ static void bitplanar2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
     BitstreamContext bc;
     int x, y, plane;
 
-    bitstream_init(&bc, c->video, c->video_size * 8);
+    bitstream_init8(&bc, c->video, c->video_size);
     for (plane = 0; plane < c->bpp; plane++) {
         for (y = 0; y < c->avctx->height; y++) {
             for (x = 0; x < c->avctx->width; x++)
@@ -88,7 +88,7 @@ static void bitline2chunky(CDXLVideoContext *c, int linesize, uint8_t *out)
     BitstreamContext bc;
     int x, y, plane;
 
-    bitstream_init(&bc, c->video, c->video_size * 8);
+    bitstream_init8(&bc, c->video, c->video_size);
     for (y = 0; y < c->avctx->height; y++) {
         for (plane = 0; plane < c->bpp; plane++) {
             for (x = 0; x < c->avctx->width; x++)

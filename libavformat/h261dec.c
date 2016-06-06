@@ -34,7 +34,7 @@ static int h261_probe(AVProbeData *p)
     int src_fmt=0;
     BitstreamContext bc;
 
-    bitstream_init(&bc, p->buf, p->buf_size * 8);
+    bitstream_init8(&bc, p->buf, p->buf_size);
 
     for(i=0; i<p->buf_size*8; i++){
         if ((code & 0x01ff0000) || !(code & 0xff00)) {

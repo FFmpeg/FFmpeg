@@ -289,7 +289,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx, const uint8_t *src, int srcsize,
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
-    bitstream_init(&bc, src, srcsize * 8);
+    bitstream_init8(&bc, src, srcsize);
     for (j = 0; j < height; j++) {
         runend = runs + runsize;
         if (compr == TIFF_G4) {

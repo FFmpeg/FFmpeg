@@ -302,7 +302,7 @@ static int decode_header_trees(SmackVContext *smk) {
     full_size = AV_RL32(smk->avctx->extradata + 8);
     type_size = AV_RL32(smk->avctx->extradata + 12);
 
-    bitstream_init(&bc, smk->avctx->extradata + 16, (smk->avctx->extradata_size - 16) * 8);
+    bitstream_init8(&bc, smk->avctx->extradata + 16, smk->avctx->extradata_size - 16);
 
     if (!bitstream_read_bit(&bc)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MMAP tree\n");
@@ -417,7 +417,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     last_reset(smk->mclr_tbl, smk->mclr_last);
     last_reset(smk->full_tbl, smk->full_last);
     last_reset(smk->type_tbl, smk->type_last);
-    bitstream_init(&bc, avpkt->data + 769, (avpkt->size - 769) * 8);
+    bitstream_init8(&bc, avpkt->data + 769, avpkt->size - 769);
 
     blk = 0;
     bw = avctx->width >> 2;
@@ -618,7 +618,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     unp_size = AV_RL32(buf);
 
-    bitstream_init(&bc, buf + 4, (buf_size - 4) * 8);
+    bitstream_init8(&bc, buf + 4, buf_size - 4);
 
     if (!bitstream_read_bit(&bc)) {
         av_log(avctx, AV_LOG_INFO, "Sound: no data\n");

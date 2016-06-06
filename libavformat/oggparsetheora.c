@@ -63,7 +63,7 @@ static int theora_header(AVFormatContext *s, int idx)
         BitstreamContext bc;
         AVRational timebase;
 
-        bitstream_init(&bc, os->buf + os->pstart, os->psize * 8);
+        bitstream_init8(&bc, os->buf + os->pstart, os->psize);
 
         /* 0x80"theora" */
         bitstream_skip(&bc, 7 * 8);

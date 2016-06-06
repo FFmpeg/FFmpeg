@@ -217,7 +217,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     unsigned old_stride, new_stride;
     int ret;
 
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
 
     // This call also guards the potential depth reads for the
     // codebook unpacking.

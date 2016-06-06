@@ -332,7 +332,7 @@ static int mlp_parse(AVCodecParserContext *s,
         BitstreamContext bc;
         MLPHeaderInfo mh;
 
-        bitstream_init(&bc, buf + 4, (buf_size - 4) << 3);
+        bitstream_init8(&bc, buf + 4, buf_size - 4);
         if (ff_mlp_read_major_sync(avctx, &mh, &bc) < 0)
             goto lost_sync;
 

@@ -41,7 +41,7 @@ flac_header (AVFormatContext * s, int idx)
     if (os->buf[os->pstart] == 0xff)
         return 0;
 
-    bitstream_init(&bc, os->buf + os->pstart, os->psize * 8);
+    bitstream_init8(&bc, os->buf + os->pstart, os->psize);
     bitstream_skip(&bc, 1); /* metadata_last */
     mdt = bitstream_read(&bc, 7);
 

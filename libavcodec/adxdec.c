@@ -76,7 +76,7 @@ static int adx_decode(ADXContext *c, int16_t *out, int offset,
     if (scale & 0x8000)
         return -1;
 
-    bitstream_init(&bc, in + 2, (BLOCK_SIZE - 2) * 8);
+    bitstream_init8(&bc, in + 2, BLOCK_SIZE - 2);
     out += offset;
     s1 = prev->s1;
     s2 = prev->s2;

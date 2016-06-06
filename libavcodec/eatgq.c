@@ -157,7 +157,7 @@ static void tgq_decode_mb(TgqContext *s, AVFrame *frame, int mb_y, int mb_x)
     mode = bytestream2_get_byte(&s->gb);
     if (mode > 12) {
         BitstreamContext bc;
-        bitstream_init(&bc, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode) * 8);
+        bitstream_init8(&bc, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode));
         for (i = 0; i < 6; i++)
             tgq_decode_block(s, s->block[i], &bc);
         tgq_idct_put_mb(s, s->block, frame, mb_x, mb_y);

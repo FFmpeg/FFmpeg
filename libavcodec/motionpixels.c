@@ -285,7 +285,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     if (buf_size & 3)
         memcpy(mp->bswapbuf + (buf_size & ~3), buf + (buf_size & ~3), buf_size & 3);
     memset(mp->bswapbuf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    bitstream_init(&bc, mp->bswapbuf, buf_size * 8);
+    bitstream_init8(&bc, mp->bswapbuf, buf_size);
 
     memset(mp->changes_map, 0, avctx->width * avctx->height);
     for (i = !(avctx->extradata[1] & 2); i < 2; ++i) {

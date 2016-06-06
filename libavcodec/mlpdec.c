@@ -1095,7 +1095,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
     if (length < 4 || length > buf_size)
         return AVERROR_INVALIDDATA;
 
-    bitstream_init(&bc, (buf + 4), (length - 4) * 8);
+    bitstream_init8(&bc, buf + 4, length - 4);
 
     m->is_major_sync_unit = 0;
     if (bitstream_peek(&bc, 31) == (0xf8726fba >> 1)) {
@@ -1175,7 +1175,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
 
     for (substr = 0; substr <= m->max_decoded_substream; substr++) {
         SubStream *s = &m->substream[substr];
-        bitstream_init(&bc, buf, substream_data_len[substr] * 8);
+        bitstream_init8(&bc, buf, substream_data_len[substr]);
 
         m->matrix_changed = 0;
         memset(m->filter_changed, 0, sizeof(m->filter_changed));

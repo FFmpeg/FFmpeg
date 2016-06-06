@@ -616,7 +616,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     svq1_pmv *pmv;
 
     /* initialize bit buffer */
-    bitstream_init(&s->bc, buf, buf_size * 8);
+    bitstream_init8(&s->bc, buf, buf_size);
 
     /* decode frame header */
     s->frame_code = bitstream_read(&s->bc, 22);
@@ -647,7 +647,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < 4; i++)
             src[i] = ((src[i] << 16) | (src[i] >> 16)) ^ src[7 - i];
 
-        bitstream_init(&s->bc, buf, buf_size * 8);
+        bitstream_init8(&s->bc, buf, buf_size);
         bitstream_skip(&s->bc, 22);
     }
 

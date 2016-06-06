@@ -195,7 +195,7 @@ static int tscc2_decode_slice(TSCC2Context *c, int mb_y,
     int i, mb_x, q, ret;
     int off;
 
-    bitstream_init(&c->bc, buf, buf_size * 8);
+    bitstream_init8(&c->bc, buf, buf_size);
 
     for (mb_x = 0; mb_x < c->mb_width; mb_x++) {
         q = c->slice_quants[mb_x + c->mb_width * mb_y];

@@ -2138,7 +2138,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return ret;
     }
 
-    bitstream_init(&bc, buf, 8 * num_bytes);
+    bitstream_init8(&bc, buf, num_bytes);
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->sample_sizes[i] = bitstream_read(&bc, field_size);

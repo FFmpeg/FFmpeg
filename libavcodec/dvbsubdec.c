@@ -336,7 +336,7 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
     int run_length;
     int pixels_read = 0;
 
-    bitstream_init(&bc, *srcbuf, buf_size << 3);
+    bitstream_init8(&bc, *srcbuf, buf_size);
 
     while (bitstream_tell(&bc) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = bitstream_read(&bc, 2);
@@ -441,7 +441,7 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
     int run_length;
     int pixels_read = 0;
 
-    bitstream_init(&bc, *srcbuf, buf_size << 3);
+    bitstream_init8(&bc, *srcbuf, buf_size);
 
     while (bitstream_tell(&bc) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = bitstream_read(&bc, 4);

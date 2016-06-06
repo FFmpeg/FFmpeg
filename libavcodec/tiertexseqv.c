@@ -45,7 +45,7 @@ static const unsigned char *seq_unpack_rle_block(const unsigned char *src,
     int code_table[64];
 
     /* get the rle codes */
-    bitstream_init(&bc, src, (src_end - src) * 8);
+    bitstream_init8(&bc, src, src_end - src);
     for (i = 0, sz = 0; i < 64 && sz < dst_size; i++) {
         if (bitstream_bits_left(&bc) < 4)
             return NULL;
@@ -113,7 +113,7 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq,
             return NULL;
         color_table = src;
         src += len;
-        bitstream_init(&bc, src, bits * 8 * 8);
+        bitstream_init8(&bc, src, bits * 8);
         src += bits * 8;
         for (b = 0; b < 8; b++) {
             for (i = 0; i < 8; i++)
@@ -188,7 +188,7 @@ static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int 
     if (flags & 2) {
         if (data_end - data < 128)
             return AVERROR_INVALIDDATA;
-        bitstream_init(&bc, data, 128 * 8);
+        bitstream_init8(&bc, data, 128);
         data += 128;
         for (y = 0; y < 128; y += 8)
             for (x = 0; x < 256; x += 8) {

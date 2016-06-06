@@ -171,7 +171,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
         buf[i] = ff_reverse[buf[i]];
 #endif
 
-    bitstream_init(&s->bc, buf + start, (buf_size - start) * 8);
+    bitstream_init8(&s->bc, buf + start, buf_size - start);
 
     ltab = buf[0x22] & 3;
     ctab = buf[0x22] >> 2;

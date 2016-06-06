@@ -112,7 +112,7 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
 
     s->timestamp = s->cur_timestamp;
 
-    bitstream_init(&bc, buf, size * 8);
+    bitstream_init8(&bc, buf, size);
     if (bitstream_read(&bc, 22) == 0x20) { /* Picture Start Code */
         info.tr  = bitstream_read(&bc, 8);
         bitstream_skip(&bc, 2); /* PTYPE start, H.261 disambiguation */

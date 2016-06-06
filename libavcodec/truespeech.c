@@ -82,7 +82,7 @@ static void truespeech_read_frame(TSContext *dec, const uint8_t *input)
     BitstreamContext bc;
 
     dec->bdsp.bswap_buf((uint32_t *) dec->buffer, (const uint32_t *) input, 8);
-    bitstream_init(&bc, dec->buffer, 32 * 8);
+    bitstream_init8(&bc, dec->buffer, 32);
 
     dec->vector[7] = ts_codebook[7][bitstream_read(&bc, 3)];
     dec->vector[6] = ts_codebook[6][bitstream_read(&bc, 3)];

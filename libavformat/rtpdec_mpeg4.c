@@ -136,7 +136,7 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
     if (len < data->au_headers_length_bytes)
         return AVERROR_INVALIDDATA;
 
-    bitstream_init(&bctx, buf, data->au_headers_length_bytes * 8);
+    bitstream_init8(&bctx, buf, data->au_headers_length_bytes);
 
     /* XXX: Wrong if optional additional sections are present (cts, dts etc...) */
     au_header_size = data->sizelength + data->indexlength;

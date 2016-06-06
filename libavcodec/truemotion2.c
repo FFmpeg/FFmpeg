@@ -306,7 +306,7 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             pos = bytestream2_tell(&gb);
             if (skip <= pos)
                 return AVERROR_INVALIDDATA;
-            bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
+            bitstream_init8(&ctx->bc, buf + pos, skip - pos);
             if ((ret = tm2_read_deltas(ctx, stream_id)) < 0)
                 return ret;
             bytestream2_skip(&gb, ((bitstream_tell(&ctx->bc) + 31) >> 5) << 2);
@@ -323,7 +323,7 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     pos = bytestream2_tell(&gb);
     if (skip <= pos)
         return AVERROR_INVALIDDATA;
-    bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
+    bitstream_init8(&ctx->bc, buf + pos, skip - pos);
     if ((ret = tm2_build_huff_table(ctx, &codes)) < 0)
         return ret;
     bytestream2_skip(&gb, ((bitstream_tell(&ctx->bc) + 31) >> 5) << 2);
@@ -342,7 +342,7 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         pos = bytestream2_tell(&gb);
         if (skip <= pos)
             return AVERROR_INVALIDDATA;
-        bitstream_init(&ctx->bc, buf + pos, (skip - pos) * 8);
+        bitstream_init8(&ctx->bc, buf + pos, skip - pos);
         for (i = 0; i < toks; i++) {
             if (bitstream_bits_left(&ctx->bc) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);

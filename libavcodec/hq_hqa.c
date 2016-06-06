@@ -160,8 +160,8 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic,
                    "Invalid slice size %zu.\n", data_size);
             break;
         }
-        bitstream_init(&bc, src + slice_off[slice],
-                       (slice_off[slice + 1] - slice_off[slice]) * 8);
+        bitstream_init8(&bc, src + slice_off[slice],
+                        slice_off[slice + 1] - slice_off[slice]);
 
         for (i = 0; i < (next_off - start_off) * profile->tab_w; i++) {
             ret = hq_decode_mb(ctx, pic, &bc, perm[0] * 16, perm[1] * 16);
@@ -285,8 +285,8 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
                    "Invalid slice size %zu.\n", data_size);
             break;
         }
-        bitstream_init(&bc, src + slice_off[slice],
-                      (slice_off[slice + 1] - slice_off[slice]) * 8);
+        bitstream_init8(&bc, src + slice_off[slice],
+                        slice_off[slice + 1] - slice_off[slice]);
 
         ret = hqa_decode_slice(ctx, pic, &bc, quant, slice, width, height);
         if (ret < 0)

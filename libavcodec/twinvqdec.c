@@ -259,7 +259,7 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     BitstreamContext bc;
     int i, j, k;
 
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
     bitstream_skip(&bc, bitstream_read(&bc, 8));
 
     bits->window_type = bitstream_read(&bc, TWINVQ_WINDOW_TYPE_BITS);

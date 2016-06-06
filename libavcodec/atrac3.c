@@ -645,7 +645,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
     if (q->coding_mode == JOINT_STEREO) {
         /* channel coupling mode */
         /* decode Sound Unit 1 */
-        bitstream_init(&q->bc, databuf, avctx->block_align * 8);
+        bitstream_init8(&q->bc, databuf, avctx->block_align);
 
         ret = decode_channel_sound_unit(q, &q->bc, q->units, out_samples[0], 0,
                                         JOINT_STEREO);
@@ -674,7 +674,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
 
         /* set the bitstream reader at the start of the second Sound Unit*/
-        bitstream_init(&q->bc, ptr1, (avctx->block_align - i) * 8);
+        bitstream_init8(&q->bc, ptr1, avctx->block_align - i);
 
         /* Fill the Weighting coeffs delay buffer */
         memmove(q->weighting_delay, &q->weighting_delay[2],
@@ -705,9 +705,9 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         /* Decode the channel sound units. */
         for (i = 0; i < avctx->channels; i++) {
             /* Set the bitstream reader at the start of a channel sound unit. */
-            bitstream_init(&q->bc,
-                           databuf + i * avctx->block_align / avctx->channels,
-                           avctx->block_align * 8 / avctx->channels);
+            bitstream_init8(&q->bc,
+                            databuf + i * avctx->block_align / avctx->channels,
+                            avctx->block_align / avctx->channels);
 
             ret = decode_channel_sound_unit(q, &q->bc, &q->units[i],
                                             out_samples[i], i, q->coding_mode);

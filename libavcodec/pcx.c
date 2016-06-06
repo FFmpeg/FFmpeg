@@ -183,7 +183,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         BitstreamContext s;
 
         for (y = 0; y < h; y++) {
-            bitstream_init(&s, scanline, bytes_per_scanline << 3);
+            bitstream_init8(&s, scanline, bytes_per_scanline);
 
             pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
 

@@ -315,7 +315,7 @@ static void dss_sp_unpack_coeffs(DssSpContext *p, const uint8_t *src)
         p->bits[i + 1] = src[i];
     }
 
-    bitstream_init(&bc, p->bits, DSS_SP_FRAME_SIZE * 8);
+    bitstream_init8(&bc, p->bits, DSS_SP_FRAME_SIZE);
 
     for (i = 0; i < 2; i++)
         fparam->filter_idx[i] = bitstream_read(&bc, 5);

@@ -1016,7 +1016,7 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
 
         q->bdsp.bswap16_buf(buf16, (const uint16_t *) buf, IMC_BLOCK_SIZE / 2);
 
-        bitstream_init(&q->bc, (const uint8_t*)buf16, IMC_BLOCK_SIZE * 8);
+        bitstream_init8(&q->bc, (const uint8_t *)buf16, IMC_BLOCK_SIZE);
 
         buf += IMC_BLOCK_SIZE;
 

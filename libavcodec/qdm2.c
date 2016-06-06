@@ -1105,7 +1105,7 @@ static void process_subpacket_9(QDM2Context *q, QDM2SubPNode *node)
     BitstreamContext bc;
     int i, j, k, n, ch, run, level, diff;
 
-    bitstream_init(&bc, node->packet->data, node->packet->size * 8);
+    bitstream_init8(&bc, node->packet->data, node->packet->size);
 
     n = coeff_per_sb_for_avg[q->coeff_per_sb_select][QDM2_SB_USED(q->sub_sampling) - 1] + 1;
 
@@ -1142,7 +1142,7 @@ static void process_subpacket_10(QDM2Context *q, QDM2SubPNode *node)
     BitstreamContext bc;
 
     if (node) {
-        bitstream_init(&bc, node->packet->data, node->packet->size * 8);
+        bitstream_init8(&bc, node->packet->data, node->packet->size);
         init_tone_level_dequantization(q, &bc);
         fill_tone_level_array(q, 1);
     } else {
@@ -1252,7 +1252,7 @@ static void qdm2_decode_super_block(QDM2Context *q)
 
     average_quantized_coeffs(q); // average elements in quantized_coeffs[max_ch][10][8]
 
-    bitstream_init(&bc, q->compressed_data, q->compressed_size * 8);
+    bitstream_init8(&bc, q->compressed_data, q->compressed_size);
     qdm2_decode_sub_packet_header(&bc, &header);
 
     if (header.type < 2 || header.type >= 8) {
@@ -1264,7 +1264,7 @@ static void qdm2_decode_super_block(QDM2Context *q)
     q->superblocktype_2_3 = (header.type == 2 || header.type == 3);
     packet_bytes          = (q->compressed_size - bitstream_tell(&bc) / 8);
 
-    bitstream_init(&bc, header.data, header.size * 8);
+    bitstream_init8(&bc, header.data, header.size);
 
     if (header.type == 2 || header.type == 4 || header.type == 5) {
         int csum = 257 * bitstream_read(&bc, 8);
@@ -1300,7 +1300,7 @@ static void qdm2_decode_super_block(QDM2Context *q)
             q->sub_packet_list_A[i - 1].next = &q->sub_packet_list_A[i];
 
             /* seek to next block */
-            bitstream_init(&bc, header.data, header.size * 8);
+            bitstream_init8(&bc, header.data, header.size);
             bitstream_skip(&bc, next_index * 8);
 
             if (next_index >= header.size)
@@ -1495,7 +1495,7 @@ static void qdm2_decode_fft_packets(QDM2Context *q)
             return;
 
         /* decode FFT tones */
-        bitstream_init(&bc, packet->data, packet->size * 8);
+        bitstream_init8(&bc, packet->data, packet->size);
 
         if (packet->type >= 32 && packet->type < 48 && !fft_subpackets[packet->type - 16])
             unknown_flag = 1;

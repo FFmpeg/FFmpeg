@@ -426,7 +426,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ctx->bbdsp.bswap_buf(ctx->swap_buf,
                          (const uint32_t *) (buf + MIMIC_HEADER_SIZE),
                          swap_buf_size >> 2);
-    bitstream_init(&ctx->bc, ctx->swap_buf, swap_buf_size << 3);
+    bitstream_init8(&ctx->bc, ctx->swap_buf, swap_buf_size);
 
     res = decode(ctx, quality, num_coeffs, !is_pframe);
     ff_thread_report_progress(&ctx->frames[ctx->cur_index], INT_MAX, 0);

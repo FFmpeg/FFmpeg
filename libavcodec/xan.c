@@ -129,7 +129,7 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
     if (ptr_len < 0)
         return AVERROR_INVALIDDATA;
 
-    bitstream_init(&bc, ptr, ptr_len * 8);
+    bitstream_init8(&bc, ptr, ptr_len);
 
     while (val != 0x16) {
         unsigned idx = val - 0x17 + bitstream_read_bit(&bc) * byte;

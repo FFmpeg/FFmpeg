@@ -207,7 +207,7 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
     buf       += num_blocks_raw * 16;
 
     /* read compressed blocks */
-    bitstream_init(&bc, buf, (buf_end - buf) << 3);
+    bitstream_init8(&bc, buf, buf_end - buf);
     for (i = 0; i < num_blocks_packed; i++) {
         int tmp[4];
         for (j = 0; j < 4; j++)

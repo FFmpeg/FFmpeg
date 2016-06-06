@@ -238,7 +238,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         return AVERROR(ENOMEM);
     c->bdsp.bswap_buf((uint32_t *) c->bits, (const uint32_t *) buf,
                       buf_size >> 2);
-    bitstream_init(&bc, c->bits, buf_size * 8);
+    bitstream_init8(&bc, c->bits, buf_size);
     bitstream_skip(&bc, skip);
 
     /* read subband indexes */

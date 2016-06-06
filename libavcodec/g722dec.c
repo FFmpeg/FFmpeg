@@ -103,7 +103,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
     }
     out_buf = (int16_t *)frame->data[0];
 
-    bitstream_init(&bc, avpkt->data, avpkt->size * 8);
+    bitstream_init8(&bc, avpkt->data, avpkt->size);
 
     for (j = 0; j < avpkt->size; j++) {
         int ilow, ihigh, rlow, rhigh, dhigh;

@@ -443,7 +443,7 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     }
     samples = (int16_t *)frame->data[0];
 
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
 
     while (out_samples--)
         *samples++ = g726_decode(c, bitstream_read(&bc, c->code_size));

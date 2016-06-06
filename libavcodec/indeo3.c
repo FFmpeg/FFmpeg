@@ -857,7 +857,7 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->mc_vectors  = num_vectors ? data : 0;
 
     /* init the bitreader */
-    bitstream_init(&ctx->bc, &data[num_vectors * 2], (data_size - num_vectors * 2) << 3);
+    bitstream_init8(&ctx->bc, &data[num_vectors * 2], data_size - num_vectors * 2);
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 

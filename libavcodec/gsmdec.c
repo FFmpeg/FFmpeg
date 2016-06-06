@@ -88,7 +88,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_GSM:
-        bitstream_init(&bc, buf, buf_size * 8);
+        bitstream_init8(&bc, buf, buf_size);
         if (bitstream_read(&bc, 4) != 0xd)
             av_log(avctx, AV_LOG_WARNING, "Missing GSM magic!\n");
         res = gsm_decode_block(avctx, samples, &bc, GSM_13000);

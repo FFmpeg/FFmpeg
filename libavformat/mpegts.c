@@ -742,7 +742,7 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl,
     int padding_flag = 0, padding_bits = 0, inst_bitrate_flag = 0;
     int dts_flag = -1, cts_flag = -1;
     int64_t dts = AV_NOPTS_VALUE, cts = AV_NOPTS_VALUE;
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
 
     if (sl->use_au_start)
         au_start_flag = bitstream_read_bit(&bc);

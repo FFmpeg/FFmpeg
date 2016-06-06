@@ -56,7 +56,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    bitstream_init(&bc, buf, buf_size * 8);
+    bitstream_init8(&bc, buf, buf_size);
 
     for (y = 0; y < avctx->height; y++) {
         uint8_t *luma = &p->data[0][y * p->linesize[0]];

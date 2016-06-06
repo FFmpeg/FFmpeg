@@ -454,7 +454,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
                        bitstream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + bitstream_size,
            0, AV_INPUT_BUFFER_PADDING_SIZE);
-    bitstream_init(&f->bc, f->bitstream_buffer, 8 * bitstream_size);
+    bitstream_init8(&f->bc, f->bitstream_buffer, bitstream_size);
 
     wordstream_offset = extra + bitstream_size;
     bytestream_offset = extra + bitstream_size + wordstream_size;
@@ -765,7 +765,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
         return AVERROR_INVALIDDATA;
     }
 
-    bitstream_init(&f->bc, buf + 4, 8 * bitstream_size);
+    bitstream_init8(&f->bc, buf + 4, bitstream_size);
 
     prestream_size = length + buf - prestream;
 
@@ -777,7 +777,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
                        prestream_size / 4);
     memset((uint8_t*)f->bitstream_buffer + prestream_size,
            0, AV_INPUT_BUFFER_PADDING_SIZE);
-    bitstream_init(&f->pre_bc, f->bitstream_buffer, 8 * prestream_size);
+    bitstream_init8(&f->pre_bc, f->bitstream_buffer, prestream_size);
 
     f->last_dc = 0 * 128 * 8 * 8;
 

@@ -92,7 +92,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     }
     samples = (int16_t *)frame->data[0];
 
-    bitstream_init(&bc, buf, FRAMESIZE * 8);
+    bitstream_init8(&bc, buf, FRAMESIZE);
 
     for (i = 0; i < LPC_ORDER; i++)
         lpc_refl[i] = ff_lpc_refl_cb[i][bitstream_read(&bc, sizes[i])];

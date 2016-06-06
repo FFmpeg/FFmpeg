@@ -252,7 +252,7 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 11);
     ffio_wfourcc(pb, "dac3");
 
-    bitstream_init(&bc, track->vos_data + 4, (track->vos_len - 4) * 8);
+    bitstream_init8(&bc, track->vos_data + 4, track->vos_len - 4);
     fscod      = bitstream_read(&bc, 2);
     frmsizecod = bitstream_read(&bc, 6);
     bsid       = bitstream_read(&bc, 5);
@@ -470,7 +470,7 @@ static int mov_write_dvc1_structs(MOVTrack *track, uint8_t *buf)
         if (size <= 0)
             continue;
         unescaped_size = vc1_unescape_buffer(start + 4, size, unescaped);
-        bitstream_init(&bc, unescaped, 8 * unescaped_size);
+        bitstream_init8(&bc, unescaped, unescaped_size);
         if (AV_RB32(start) == VC1_CODE_SEQHDR) {
             int profile = bitstream_read(&bc, 2);
             if (profile != PROFILE_ADVANCED) {

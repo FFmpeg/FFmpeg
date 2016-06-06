@@ -216,7 +216,7 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
-    bitstream_init(&bc, buf + 16, (buf_size - 16) * 8);
+    bitstream_init8(&bc, buf + 16, buf_size - 16);
 
     new_y  = s->new_y;
     new_cb = s->new_u;

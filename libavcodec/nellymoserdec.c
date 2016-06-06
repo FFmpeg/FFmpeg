@@ -67,7 +67,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     int bits[NELLY_BUF_LEN];
     unsigned char v;
 
-    bitstream_init(&s->bc, block, NELLY_BLOCK_LEN * 8);
+    bitstream_init8(&s->bc, block, NELLY_BLOCK_LEN);
 
     bptr = buf;
     pptr = pows;
@@ -88,7 +88,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     for (i = 0; i < 2; i++) {
         aptr = audio + i * NELLY_BUF_LEN;
 
-        bitstream_init(&s->bc, block, NELLY_BLOCK_LEN * 8);
+        bitstream_init8(&s->bc, block, NELLY_BLOCK_LEN);
         bitstream_skip(&s->bc, NELLY_HEADER_BITS + i * NELLY_DETAIL_BITS);
 
         for (j = 0; j < NELLY_FILL_LEN; j++) {

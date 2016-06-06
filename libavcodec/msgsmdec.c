@@ -32,7 +32,7 @@ int ff_msgsm_decode_block(AVCodecContext *avctx, int16_t *samples,
 {
     int res;
     BitstreamContext bc;
-    bitstream_init(&bc, buf, GSM_MS_BLOCK_SIZE * 8);
+    bitstream_init8(&bc, buf, GSM_MS_BLOCK_SIZE);
     res = gsm_decode_block(avctx, samples, &bc, mode);
     if (res < 0)
         return res;

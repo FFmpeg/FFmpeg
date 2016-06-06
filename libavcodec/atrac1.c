@@ -297,7 +297,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     for (ch = 0; ch < avctx->channels; ch++) {
         AT1SUCtx* su = &q->SUs[ch];
 
-        bitstream_init(&bc, &buf[212 * ch], 212 * 8);
+        bitstream_init8(&bc, &buf[212 * ch], 212);
 
         /* parse block_size_mode, 1st byte */
         ret = at1_parse_bsm(&bc, su->log2_block_count);

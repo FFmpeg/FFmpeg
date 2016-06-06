@@ -72,7 +72,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
      * The RTP payload is described in:
      * http://developer.apple.com/quicktime/icefloe/dispatch026.html
      */
-    bitstream_init(&bc, buf, len << 3);
+    bitstream_init8(&bc, buf, len);
     ffio_init_context(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
 
     if (len < 4)

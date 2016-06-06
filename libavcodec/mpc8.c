@@ -259,7 +259,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         memset(c->Q, 0, sizeof(c->Q));
         c->last_bits_used = 0;
     }
-    bitstream_init(bc, buf, buf_size * 8);
+    bitstream_init8(bc, buf, buf_size);
     bitstream_skip(bc, c->last_bits_used & 7);
 
     if(keyframe)

@@ -436,7 +436,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
             offset += 4;
         }
 
-        bitstream_init(&bc, src + offset, src_size * 8);
+        bitstream_init8(&bc, src + offset, src_size);
 
         if (lag_read_prob_header(&rac, &bc) < 0)
             return -1;

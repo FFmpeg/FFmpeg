@@ -1029,7 +1029,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int             buf_size = avpkt->size;
     int             result, p, b;
 
-    bitstream_init(&ctx->bc, buf, buf_size * 8);
+    bitstream_init8(&ctx->bc, buf, buf_size);
     ctx->frame_data = buf;
     ctx->frame_size = buf_size;
 

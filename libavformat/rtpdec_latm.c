@@ -103,7 +103,7 @@ static int parse_fmtp_config(AVStream *st, const char *value)
     if (!config)
         return AVERROR(ENOMEM);
     ff_hex_to_data(config, value);
-    bitstream_init(&bc, config, len * 8);
+    bitstream_init8(&bc, config, len);
     audio_mux_version = bitstream_read(&bc, 1);
     same_time_framing = bitstream_read(&bc, 1);
     bitstream_skip(&bc, 6); /* num_sub_frames */
