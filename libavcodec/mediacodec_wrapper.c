@@ -49,7 +49,7 @@ struct JNIAMediaCodecListFields {
 
 } JNIAMediaCodecListFields;
 
-static const struct FFJniField jfields_mapping[] = {
+static const struct FFJniField jni_amediacodeclist_mapping[] = {
     { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediaformat_class), 1 },
         { "android/media/MediaFormat", "createVideoFormat", "(Ljava/lang/String;II)Landroid/media/MediaFormat;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecListFields, create_video_format_id), 1 },
 
@@ -107,7 +107,7 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int hei
 
     JNI_ATTACH_ENV_OR_RETURN(env, &attached, log_ctx, NULL);
 
-    if ((ret = ff_jni_init_jfields(env, &jfields, jfields_mapping, 0, log_ctx)) < 0) {
+    if ((ret = ff_jni_init_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx)) < 0) {
         goto done;
     }
 
@@ -250,7 +250,7 @@ done:
 
     av_freep(&supported_type);
 
-    ff_jni_reset_jfields(env, &jfields, jfields_mapping, 0, log_ctx);
+    ff_jni_reset_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx);
 
     JNI_DETACH_ENV(attached, log_ctx);
 
