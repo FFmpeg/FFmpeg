@@ -2353,7 +2353,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (track->codec_delay > 0) {
                 st->codecpar->initial_padding = av_rescale_q(track->codec_delay,
                                                              (AVRational){1, 1000000000},
-                                                             (AVRational){1, st->codecpar->sample_rate});
+                                                             (AVRational){1, st->codecpar->codec_id == AV_CODEC_ID_OPUS ?
+                                                                             48000 : st->codecpar->sample_rate});
             }
             if (track->seek_preroll > 0) {
                 st->codecpar->seek_preroll = av_rescale_q(track->seek_preroll,
