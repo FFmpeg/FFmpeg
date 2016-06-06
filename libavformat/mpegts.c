@@ -1804,8 +1804,11 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     case 0x05: /* registration descriptor */
         st->codecpar->codec_tag = bytestream_get_le32(pp);
         av_log(fc, AV_LOG_TRACE, "reg_desc=%.4s\n", (char *)&st->codecpar->codec_tag);
-        if (st->codecpar->codec_id == AV_CODEC_ID_NONE || st->request_probe > 0)
+        if (st->codecpar->codec_id == AV_CODEC_ID_NONE || st->request_probe > 0) {
             mpegts_find_stream_type(st, st->codecpar->codec_tag, REGD_types);
+            if (st->codecpar->codec_tag == MKTAG('B', 'S', 'S', 'D'))
+                st->request_probe = 50;
+        }
         break;
     case 0x52: /* stream identifier descriptor */
         st->stream_identifier = 1 + get8(pp, desc_end);
