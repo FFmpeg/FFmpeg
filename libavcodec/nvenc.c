@@ -306,6 +306,14 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_FIELD_ENCODING);
+    if (ret < 1 && avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Interlaced encoding is not supported. Supported level: %d\n",
+               ret);
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
