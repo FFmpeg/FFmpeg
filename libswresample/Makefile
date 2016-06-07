@@ -6,7 +6,8 @@ FFLIBS = avutil
 HEADERS = swresample.h                       \
           version.h                          \
 
-OBJS = audioconvert.o                        \
+OBJS = _debug.o                              \
+	   audioconvert.o                        \
        dither.o                              \
        options.o                             \
        rematrix.o                            \

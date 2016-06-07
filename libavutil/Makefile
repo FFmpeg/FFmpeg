@@ -84,7 +84,8 @@ ARCH_HEADERS = bswap.h                                                  \
 BUILT_HEADERS = avconfig.h                                              \
                 ffversion.h
 
-OBJS = adler32.o                                                        \
+OBJS = _debug.o                                                         \
+	   adler32.o                                                        \
        aes.o                                                            \
        aes_ctr.o                                                        \
        audio_fifo.o                                                     \

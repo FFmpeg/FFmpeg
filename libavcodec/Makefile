@@ -19,7 +19,8 @@ HEADERS = avcodec.h                                                     \
           vorbis_parser.h                                               \
           xvmc.h                                                        \
 
-OBJS = allcodecs.o                                                      \
+OBJS = _debug.o                                                         \
+	   allcodecs.o                                                      \
        audioconvert.o                                                   \
        avdct.o                                                          \
        avpacket.o                                                       \

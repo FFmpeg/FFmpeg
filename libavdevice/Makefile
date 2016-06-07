@@ -5,7 +5,8 @@ NAME    = avdevice
 HEADERS = avdevice.h                                                    \
           version.h                                                     \
 
-OBJS    = alldevices.o                                                  \
+OBJS    = _debug.o                                                      \
+		  alldevices.o                                                  \
           avdevice.o                                                    \
           utils.o                                                       \
 
