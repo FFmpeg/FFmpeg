@@ -2765,6 +2765,13 @@ measured_I, measured_LRA, measured_TP, and measured_thresh must also
 to be specified in order to use this mode.
 Options are true or false. Default is true.
 
+@item dual_mono
+Treat mono input files as "dual-mono". If a mono file is intended for playback
+on a stereo system, its EBU R128 measurement will be perceptually incorrect.
+If set to @code{true}, this option will compensate for this effect.
+Multi-channel input files are not affected by this option.
+Options are true or false. Default is false.
+
 @item print_format
 Set print format for stats. Options are summary, json, or none.
 Default value is none.

@@ -60,6 +60,7 @@ typedef struct LoudNormContext {
     double measured_thresh;
     double offset;
     int linear;
+    int dual_mono;
     enum PrintFormat print_format;
 
     double *buf;
@@ -113,6 +114,7 @@ static const AVOption loudnorm_options[] = {
     { "measured_thresh",  "measured threshold of input file",  OFFSET(measured_thresh),  AV_OPT_TYPE_DOUBLE,  {.dbl = -70.},   -99.,        0.,  FLAGS },
     { "offset",           "set offset gain",                   OFFSET(offset),           AV_OPT_TYPE_DOUBLE,  {.dbl =  0.},    -99.,       99.,  FLAGS },
     { "linear",           "normalize linearly if possible",    OFFSET(linear),           AV_OPT_TYPE_BOOL,    {.i64 =  1},        0,         1,  FLAGS },
+    { "dual_mono",        "treat mono input as dual-mono",     OFFSET(dual_mono),        AV_OPT_TYPE_BOOL,    {.i64 =  0},        0,         1,  FLAGS },
     { "print_format",     "set print format for stats",        OFFSET(print_format),     AV_OPT_TYPE_INT,     {.i64 =  NONE},  NONE,  PF_NB -1,  FLAGS, "print_format" },
     {     "none",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  NONE},     0,         0,  FLAGS, "print_format" },
     {     "json",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  JSON},     0,         0,  FLAGS, "print_format" },
@@ -730,6 +732,11 @@ static int config_input(AVFilterLink *inlink)
     s->r128_out = ebur128_init(inlink->channels, inlink->sample_rate, EBUR128_MODE_I | EBUR128_MODE_S | EBUR128_MODE_LRA | EBUR128_MODE_SAMPLE_PEAK);
     if (!s->r128_out)
         return AVERROR(ENOMEM);
+
+    if (inlink->channels == 1 && s->dual_mono) {
+        ebur128_set_channel(s->r128_in,  0, EBUR128_DUAL_MONO);
+        ebur128_set_channel(s->r128_out, 0, EBUR128_DUAL_MONO);
+    }
 
     s->buf_size = frame_size(inlink->sample_rate, 3000) * inlink->channels;
     s->buf = av_malloc_array(s->buf_size, sizeof(*s->buf));
