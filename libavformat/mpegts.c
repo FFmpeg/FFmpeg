@@ -542,13 +542,16 @@ static int analyze(const uint8_t *buf, int size, int packet_size,
     memset(stat, 0, packet_size * sizeof(*stat));
 
     for (i = 0; i < size - 3; i++) {
-        if (buf[i] == 0x47 &&
-            (!probe || (buf[i + 3] & 0x30))) {
-            int x = i % packet_size;
-            stat[x]++;
-            stat_all++;
-            if (stat[x] > best_score) {
-                best_score = stat[x];
+        if (buf[i] == 0x47) {
+            int pid = AV_RB16(buf+1) & 0x1FFF;
+            int asc = buf[i + 3] & 0x30;
+            if (!probe || pid == 0x1FFF || asc) {
+                int x = i % packet_size;
+                stat[x]++;
+                stat_all++;
+                if (stat[x] > best_score) {
+                    best_score = stat[x];
+                }
             }
         }
     }
