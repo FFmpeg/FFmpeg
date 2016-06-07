@@ -2467,7 +2467,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                    avctx->internal->skip_samples);
             discard_padding = AV_RL32(side + 4);
         }
-        if (avctx->internal->skip_samples && *got_frame_ptr) {
+        if (avctx->internal->skip_samples > 0 && *got_frame_ptr) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
