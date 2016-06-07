@@ -767,6 +767,11 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
             r                 = get_unary(gb, 0, 4);
             c                 = get_bits(gb, 2);
+            if (r >= 4) {
+                av_log(avctx, AV_LOG_ERROR, "r overflow\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             bd->ltp_gain[2]   = ltp_gain_values[r][c];
 
             bd->ltp_gain[3]   = decode_rice(gb, 2) << 3;
