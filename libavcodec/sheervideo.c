@@ -887,12 +887,12 @@ static void decode_ca2p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 
     if (get_bits1(gb)) {
         for (x = 0; x < avctx->width; x += 2) {
+            dst_a[x    ] = get_bits(gb, 10);
             dst_y[x    ] = get_bits(gb, 10);
             dst_u[x / 2] = get_bits(gb, 10);
-            dst_y[x + 1] = get_bits(gb, 10);
-            dst_a[x    ] = get_bits(gb, 10);
-            dst_v[x / 2] = get_bits(gb, 10);
             dst_a[x + 1] = get_bits(gb, 10);
+            dst_y[x + 1] = get_bits(gb, 10);
+            dst_v[x / 2] = get_bits(gb, 10);
         }
     } else {
         int pred[4] = { 502, 512, 512, 502 };
@@ -924,12 +924,12 @@ static void decode_ca2p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     for (y = 1; y < avctx->height; y++) {
         if (get_bits1(gb)) {
             for (x = 0; x < avctx->width; x += 2) {
+                dst_a[x    ] = get_bits(gb, 10);
                 dst_y[x    ] = get_bits(gb, 10);
                 dst_u[x / 2] = get_bits(gb, 10);
-                dst_y[x + 1] = get_bits(gb, 10);
-                dst_a[x    ] = get_bits(gb, 10);
-                dst_v[x / 2] = get_bits(gb, 10);
                 dst_a[x + 1] = get_bits(gb, 10);
+                dst_y[x + 1] = get_bits(gb, 10);
+                dst_v[x / 2] = get_bits(gb, 10);
             }
         } else {
             int pred_TL[6], pred_L[6], pred_T[6];
@@ -989,12 +989,12 @@ static void decode_c82p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 
     if (get_bits1(gb)) {
         for (x = 0; x < avctx->width; x += 2) {
+            dst_a[x    ] = get_bits(gb, 8);
             dst_y[x    ] = get_bits(gb, 8);
             dst_u[x / 2] = get_bits(gb, 8);
-            dst_y[x + 1] = get_bits(gb, 8);
-            dst_a[x    ] = get_bits(gb, 8);
-            dst_v[x / 2] = get_bits(gb, 8);
             dst_a[x + 1] = get_bits(gb, 8);
+            dst_y[x + 1] = get_bits(gb, 8);
+            dst_v[x / 2] = get_bits(gb, 8);
         }
     } else {
         int pred[4] = { -125, 128, 128, 125 };
@@ -1026,12 +1026,12 @@ static void decode_c82p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     for (y = 1; y < avctx->height; y++) {
         if (get_bits1(gb)) {
             for (x = 0; x < avctx->width; x += 2) {
+                dst_a[x    ] = get_bits(gb, 8);
                 dst_y[x    ] = get_bits(gb, 8);
                 dst_u[x / 2] = get_bits(gb, 8);
-                dst_y[x + 1] = get_bits(gb, 8);
-                dst_a[x    ] = get_bits(gb, 8);
-                dst_v[x / 2] = get_bits(gb, 8);
                 dst_a[x + 1] = get_bits(gb, 8);
+                dst_y[x + 1] = get_bits(gb, 8);
+                dst_v[x / 2] = get_bits(gb, 8);
             }
         } else {
             int pred_TL[6], pred_L[6], pred_T[6];
