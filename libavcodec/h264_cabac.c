@@ -38,7 +38,6 @@
 #include "h264.h"
 #include "h264data.h"
 #include "h264_mvpred.h"
-#include "golomb.h"
 #include "mpegutils.h"
 
 #if ARCH_X86

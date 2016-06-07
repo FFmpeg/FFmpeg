@@ -30,7 +30,6 @@
 #include "avcodec.h"
 #include "put_bits.h"
 #include "rangecoder.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
 
