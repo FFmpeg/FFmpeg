@@ -28,7 +28,6 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
-#include "unary.h"
 
 #include "on2avcdata.h"
 
