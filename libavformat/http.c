@@ -226,6 +226,30 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
             return err;
     }
 
+    // parse domain in url 
+    char* domain = strstr(path, "&domain=");
+    if (domain) {
+        domain += 8; //skip "&domain="
+        char* end = strchr(domain, '&');
+        int domain_len = 0;
+        if (end) {
+            domain_len = end - domain;
+        } else {
+            domain_len = strlen(domain) + 1;
+        }
+        if(domain_len < 256) {
+            memset(hoststr, 0, 256);
+            av_strlcpy(hoststr, domain, domain_len);
+            memset(domain - 8, 0, domain_len);
+            av_log(s, AV_LOG_DEBUG, "Parsed domain %s\n", hoststr);
+        } else {
+            domain = NULL;
+        }
+    }
+
+    av_log(NULL, AV_LOG_DEBUG, "Proto = %s, hostname = %s, hoststr = %s, port = %d, path = %s\n",
+       proto, hostname, hoststr, port, path);
+    
     err = http_connect(h, path, local_path, hoststr,
                        auth, proxyauth, &location_changed);
     if (err < 0)

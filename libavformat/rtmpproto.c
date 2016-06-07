@@ -2580,6 +2580,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], auth[100], *fname;
     char *old_app, *qmark, *n, fname_buffer[1024];
+    char domain_str[256];
     uint8_t buf[2048];
     int port;
     AVDictionary *opts = NULL;
@@ -2601,6 +2602,26 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                "by the libavformat internal RTMP handler currently enabled. "
                "See the documentation for the correct way to pass parameters.\n");
         *n = '\0'; // Trim not supported part
+    }
+
+    // parse domain in url 
+    char* domain = strstr(path, "&domain=");
+    if (domain) {
+        domain += 8; //skip "&domain="
+        char* end = strchr(domain, '&');
+        int domain_len = 0;
+        if (end) {
+            domain_len = end - domain;
+        } else {
+            domain_len = strlen(domain) + 1;
+        }
+        if(domain_len < 256) {
+            av_strlcpy(domain_str, domain, domain_len);
+            memset(domain - 8, 0, domain_len);
+            av_log(s, AV_LOG_DEBUG, "Parsed domain %s\n", domain_str);
+        } else {
+            domain = NULL;
+        }
     }
 
     if (auth[0]) {
@@ -2762,8 +2783,14 @@ reconnect:
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        ff_url_join(rt->tcurl, TCURL_MAX_LENGTH, proto, NULL, hostname,
+        if (domain) {
+            ff_url_join(rt->tcurl, TCURL_MAX_LENGTH, proto, NULL, domain_str,
                     port, "/%s", rt->app);
+        } else {
+            ff_url_join(rt->tcurl, TCURL_MAX_LENGTH, proto, NULL, hostname,
+                    port, "/%s", rt->app);
+        }
+
     }
 
     if (!rt->flashver) {
