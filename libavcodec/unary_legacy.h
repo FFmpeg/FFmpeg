@@ -21,37 +21,36 @@
 #ifndef AVCODEC_UNARY_H
 #define AVCODEC_UNARY_H
 
-#include "bitstream.h"
+#include "get_bits.h"
 
 /**
  * Get unary code of limited length
- * @param bc BitstreamContext
+ * @param gb GetBitContext
  * @param[in] stop The bitstop value (unary code of 1's or 0's)
  * @param[in] len Maximum length
  * @return Unary length/index
  */
-static inline int get_unary(BitstreamContext *bc, int stop, int len)
+static inline int get_unary(GetBitContext *gb, int stop, int len)
 {
     int i;
 
-    for (i = 0; i < len && bitstream_read_bit(bc) != stop; i++)
-        ;
+    for(i = 0; i < len && get_bits1(gb) != stop; i++);
     return i;
 }
 
 /**
  * Get unary code terminated by a 0 with a maximum length of 33
- * @param bc BitstreamContext
+ * @param gb GetBitContext
  * @return Unary length/index
  */
-static inline int get_unary_0_33(BitstreamContext *bc)
+static inline int get_unary_0_33(GetBitContext *gb)
 {
-    return get_unary(bc, 0, 33);
+    return get_unary(gb, 0, 33);
 }
 
-static inline int get_unary_0_9(BitstreamContext *bc)
+static inline int get_unary_0_9(GetBitContext *gb)
 {
-    return get_unary(bc, 0, 9);
+    return get_unary(gb, 0, 9);
 }
 
 #endif /* AVCODEC_UNARY_H */

@@ -40,7 +40,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "mpegutils.h"
-#include "unary.h"
+#include "unary_legacy.h"
 #include "flv.h"
 #include "rv10.h"
 #include "mpeg4video.h"

@@ -30,7 +30,7 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
-#include "unary.h"
+#include "unary_legacy.h"
 #include "vc1.h"
 #include "vc1_pred.h"
 #include "vc1acdata.h"

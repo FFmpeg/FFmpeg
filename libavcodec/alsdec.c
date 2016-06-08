@@ -29,12 +29,13 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "unary.h"
 #include "mpeg4audio.h"
 #include "bytestream.h"
 #include "bgmc.h"
 #include "bswapdsp.h"
 #include "internal.h"
+#include "unary_legacy.h"
+
 #include "libavutil/samplefmt.h"
 #include "libavutil/crc.h"
 

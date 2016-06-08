@@ -35,7 +35,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2

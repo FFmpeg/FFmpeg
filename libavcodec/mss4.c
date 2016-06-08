@@ -30,7 +30,7 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "mss34dsp.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 #define HEADER_SIZE 8
 

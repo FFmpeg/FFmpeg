@@ -52,8 +52,8 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "internal.h"
-#include "unary.h"
 #include "mathops.h"
+#include "unary_legacy.h"
 #include "alac_data.h"
 
 #define ALAC_EXTRADATA_SIZE 36

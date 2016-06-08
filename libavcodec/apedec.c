@@ -31,7 +31,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "get_bits.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 /**
  * @file

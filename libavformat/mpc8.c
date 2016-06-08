@@ -20,7 +20,8 @@
  */
 
 #include "libavcodec/get_bits.h"
-#include "libavcodec/unary.h"
+#include "libavcodec/unary_legacy.h"
+
 #include "apetag.h"
 #include "avformat.h"
 #include "internal.h"

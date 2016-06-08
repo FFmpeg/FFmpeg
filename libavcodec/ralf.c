@@ -32,7 +32,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
-#include "unary.h"
+#include "unary_legacy.h"
 #include "ralfdata.h"
 
 #define FILTER_NONE 0

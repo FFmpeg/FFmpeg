@@ -29,7 +29,7 @@
 #include "golomb.h"
 #include "idctdsp.h"
 #include "thread.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 #define AIC_HDR_SIZE    24
 #define AIC_BAND_COEFFS (64 + 32 + 192 + 96)

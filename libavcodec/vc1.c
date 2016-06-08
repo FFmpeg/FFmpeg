@@ -30,10 +30,10 @@
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
+#include "unary_legacy.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "wmv2data.h"
-#include "unary.h"
 #include "simple_idct.h"
 
 /***********************************************************************/

@@ -26,7 +26,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 /**
  * @file

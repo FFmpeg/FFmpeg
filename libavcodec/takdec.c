@@ -32,7 +32,7 @@
 #include "audiodsp.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "unary.h"
+#include "unary_legacy.h"
 #include "tak.h"
 
 #define MAX_SUBFRAMES     8                         // max number of subframes per channel

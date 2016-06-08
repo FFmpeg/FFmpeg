@@ -29,7 +29,7 @@
 #include "dca.h"
 #include "dcadata.h"
 #include "get_bits.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 /* Sign as bit 0 */
 static inline int get_bits_sm(GetBitContext *s, unsigned n)

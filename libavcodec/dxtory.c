@@ -30,7 +30,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "internal.h"
-#include "unary.h"
+#include "unary_legacy.h"
 
 static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
