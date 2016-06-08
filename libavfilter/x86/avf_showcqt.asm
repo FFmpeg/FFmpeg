@@ -35,17 +35,6 @@ struc Coeffs
     .sizeof:
 endstruc
 
-%macro EMULATE_HADDPS 3 ; dst, src, tmp
-%if cpuflag(sse3)
-    haddps  %1, %2
-%else
-    movaps  %3, %1
-    shufps  %1, %2, q2020
-    shufps  %3, %2, q3131
-    addps   %1, %3
-%endif
-%endmacro ; EMULATE_HADDPS
-
 %macro EMULATE_FMADDPS 5 ; dst, src1, src2, src3, tmp
 %if cpuflag(fma3) || cpuflag(fma4)
     fmaddps %1, %2, %3, %4
@@ -85,9 +74,9 @@ endstruc
     subps   m%6, m%3, m%1
     addps   m%1, m%3
     subps   m%2, m%4
-    EMULATE_HADDPS m%5, m%6, m%3
-    EMULATE_HADDPS m%1, m%2, m%3
-    EMULATE_HADDPS m%1, m%5, m%2
+    HADDPS  m%5, m%6, m%3
+    HADDPS  m%1, m%2, m%3
+    HADDPS  m%1, m%5, m%2
     %if mmsize == 32
     vextractf128 xmm%2, m%1, 1
     addps   xmm%1, xmm%2
@@ -141,7 +130,7 @@ cglobal showcqt_cqt_calc, 5, 10, 12, dst, src, coeffs, len, fft_len, x, coeffs_v
         CQT_SEPARATE 8, 9, 10, 11, 4, 5
         mulps   xmm0, xmm0
         mulps   xmm8, xmm8
-        EMULATE_HADDPS xmm0, xmm8, xmm1
+        HADDPS  xmm0, xmm8, xmm1
         movaps  [dstq], xmm0
         sub     lend, 2
         lea     dstq, [dstq + 16]
@@ -183,7 +172,7 @@ cglobal showcqt_cqt_calc, 4, 7, 8, dst, src, coeffs, len, x, coeffs_val, i
             jb      .loop_x
         CQT_SEPARATE 0, 1, 2, 3, 4, 5
         mulps   xmm0, xmm0
-        EMULATE_HADDPS xmm0, xmm0, xmm1
+        HADDPS  xmm0, xmm0, xmm1
         .store:
         movlps  [dstq], xmm0
         sub     lend, 1
