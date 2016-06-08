@@ -353,7 +353,6 @@ fail:
     if (ret >= 0)
         ret = ret2;
 
-	av_freep(&buf);
     av_freep(&pd.mime_type);
     return ret < 0 ? ret : score;
 }
