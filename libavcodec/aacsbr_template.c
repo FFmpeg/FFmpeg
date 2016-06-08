@@ -1473,7 +1473,7 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
     int err;
 
     if (id_aac != sbr->id_aac) {
-        av_log(ac->avctx, AV_LOG_ERROR,
+        av_log(ac->avctx, id_aac == TYPE_LFE ? AV_LOG_VERBOSE : AV_LOG_WARNING,
             "element type mismatch %d != %d\n", id_aac, sbr->id_aac);
         sbr_turnoff(sbr);
     }
