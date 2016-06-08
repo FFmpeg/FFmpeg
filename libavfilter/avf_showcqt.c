@@ -55,9 +55,9 @@
 static const AVOption showcqt_options[] = {
     { "size",         "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
     { "s",            "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
-    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
+    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
     { "bar_h",   "set bargraph height", OFFSET(bar_h),        AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "axis_h",      "set axis height", OFFSET(axis_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "sono_h",  "set sonogram height", OFFSET(sono_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
