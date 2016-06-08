@@ -72,8 +72,8 @@ endstruc
 %macro CQT_SEPARATE 6 ; a_re, a_im, b_re, b_im, tmp, tmp2
     addps   m%5, m%4, m%2
     subps   m%6, m%3, m%1
-    addps   m%1, m%3
-    subps   m%2, m%4
+    addps   m%1, m%1, m%3
+    subps   m%2, m%2, m%4
     HADDPS  m%5, m%6, m%3
     HADDPS  m%1, m%2, m%3
     HADDPS  m%1, m%5, m%2
@@ -90,7 +90,7 @@ cglobal showcqt_cqt_calc, 5, 10, 12, dst, src, coeffs, len, fft_len, x, coeffs_v
     align   16
     .loop_k:
         mov     xd, [coeffsq + Coeffs.len]
-        xorps   m0, m0
+        xorps   m0, m0, m0
         movaps  m1, m0
         movaps  m2, m0
         mov     coeffs_lend, [coeffsq + Coeffs.len + Coeffs.sizeof]
@@ -155,7 +155,7 @@ cglobal showcqt_cqt_calc, 4, 7, 8, dst, src, coeffs, len, x, coeffs_val, i
     align   16
     .loop_k:
         mov     xd, [coeffsq + Coeffs.len]
-        xorps   m0, m0
+        xorps   m0, m0, m0
         movaps  m1, m0
         movaps  m2, m0
         movaps  m3, m0

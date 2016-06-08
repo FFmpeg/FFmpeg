@@ -359,7 +359,7 @@
 
 %macro HADDPS 3 ; dst, src, tmp
 %if cpuflag(sse3)
-    haddps  %1, %2
+    haddps  %1, %1, %2
 %else
     movaps  %3, %1
     shufps  %1, %2, q2020
