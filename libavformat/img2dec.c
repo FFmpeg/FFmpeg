@@ -862,6 +862,56 @@ static int webp_probe(AVProbeData *p)
     return 0;
 }
 
+static int pnm_magic_check(const AVProbeData *p, int magic)
+{
+    const uint8_t *b = p->buf;
+
+    return b[0] == 'P' && b[1] == magic + '0';
+}
+
+static inline int pnm_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    while (b[2] == '\r')
+        b++;
+    if (b[2] == '\n' && (b[3] == '#' || (b[3] >= '0' && b[3] <= '9')))
+        return AVPROBE_SCORE_EXTENSION + 2;
+    return 0;
+}
+
+static int pbm_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 1) || pnm_magic_check(p, 4) ? pnm_probe(p) : 0;
+}
+
+static inline int pgmx_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 2) || pnm_magic_check(p, 5) ? pnm_probe(p) : 0;
+}
+
+static int pgm_probe(AVProbeData *p)
+{
+    int ret = pgmx_probe(p);
+    return ret && !av_match_ext(p->filename, "pgmyuv") ? ret : 0;
+}
+
+static int pgmyuv_probe(AVProbeData *p) // custom FFmpeg format recognized by file extension
+{
+    int ret = pgmx_probe(p);
+    return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
+}
+
+static int ppm_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
+}
+
+static int pam_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
+}
+
 #define IMAGEAUTO_DEMUXER(imgname, codecid)\
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
@@ -888,9 +938,14 @@ IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
 IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
 IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
 IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)
+IMAGEAUTO_DEMUXER(pam,     AV_CODEC_ID_PAM)
+IMAGEAUTO_DEMUXER(pbm,     AV_CODEC_ID_PBM)
 IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
+IMAGEAUTO_DEMUXER(pgm,     AV_CODEC_ID_PGM)
+IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
+IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)
 IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
 IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
