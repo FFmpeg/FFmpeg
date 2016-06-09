@@ -107,7 +107,7 @@ int ff_raw_data_read_header(AVFormatContext *s)
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_rawvideo_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC},
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
     { NULL },
 };
 
