@@ -414,7 +414,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     memcpy(h->delayed_pic, h1->delayed_pic, sizeof(h->delayed_pic));
     memcpy(h->last_pocs,   h1->last_pocs,   sizeof(h->last_pocs));
 
-    h->next_output_pic   = h1->next_output_pic;
     h->next_outputed_poc = h1->next_outputed_poc;
 
     memcpy(h->mmco, h1->mmco, sizeof(h->mmco));
@@ -498,8 +497,6 @@ static int h264_frame_start(H264Context *h)
     h->cur_pic_ptr->reference = 0;
 
     h->cur_pic_ptr->field_poc[0] = h->cur_pic_ptr->field_poc[1] = INT_MAX;
-
-    h->next_output_pic = NULL;
 
     h->postpone_filter = 0;
 
@@ -1143,6 +1140,140 @@ static int h264_export_frame_props(H264Context *h)
     return 0;
 }
 
+static int h264_select_output_frame(H264Context *h)
+{
+    const SPS *sps = h->ps.sps;
+    H264Picture *out = h->cur_pic_ptr;
+    H264Picture *cur = h->cur_pic_ptr;
+    int i, pics, out_of_order, out_idx;
+    int invalid = 0, cnt = 0;
+    int ret;
+
+    if (sps->bitstream_restriction_flag ||
+        h->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
+        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, sps->num_reorder_frames);
+    }
+
+    pics = 0;
+    while (h->delayed_pic[pics])
+        pics++;
+
+    assert(pics <= MAX_DELAYED_PIC_COUNT);
+
+    h->delayed_pic[pics++] = cur;
+    if (cur->reference == 0)
+        cur->reference = DELAYED_PIC_REF;
+
+    /* Frame reordering. This code takes pictures from coding order and sorts
+     * them by their incremental POC value into display order. It supports POC
+     * gaps, MMCO reset codes and random resets.
+     * A "display group" can start either with a IDR frame (f.key_frame = 1),
+     * and/or can be closed down with a MMCO reset code. In sequences where
+     * there is no delay, we can't detect that (since the frame was already
+     * output to the user), so we also set h->mmco_reset to detect the MMCO
+     * reset code.
+     * FIXME: if we detect insufficient delays (as per h->avctx->has_b_frames),
+     * we increase the delay between input and output. All frames affected by
+     * the lag (e.g. those that should have been output before another frame
+     * that we already returned to the user) will be dropped. This is a bug
+     * that we will fix later. */
+    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++) {
+        cnt     += out->poc < h->last_pocs[i];
+        invalid += out->poc == INT_MIN;
+    }
+    if (!h->mmco_reset && !cur->f->key_frame &&
+        cnt + invalid == MAX_DELAYED_PIC_COUNT && cnt > 0) {
+        h->mmco_reset = 2;
+        if (pics > 1)
+            h->delayed_pic[pics - 2]->mmco_reset = 2;
+    }
+    if (h->mmco_reset || cur->f->key_frame) {
+        for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+            h->last_pocs[i] = INT_MIN;
+        cnt     = 0;
+        invalid = MAX_DELAYED_PIC_COUNT;
+    }
+    out     = h->delayed_pic[0];
+    out_idx = 0;
+    for (i = 1; i < MAX_DELAYED_PIC_COUNT &&
+                h->delayed_pic[i] &&
+                !h->delayed_pic[i - 1]->mmco_reset &&
+                !h->delayed_pic[i]->f->key_frame;
+         i++)
+        if (h->delayed_pic[i]->poc < out->poc) {
+            out     = h->delayed_pic[i];
+            out_idx = i;
+        }
+    if (h->avctx->has_b_frames == 0 &&
+        (h->delayed_pic[0]->f->key_frame || h->mmco_reset))
+        h->next_outputed_poc = INT_MIN;
+    out_of_order = !out->f->key_frame && !h->mmco_reset &&
+                   (out->poc < h->next_outputed_poc);
+
+    if (sps->bitstream_restriction_flag &&
+        h->avctx->has_b_frames >= sps->num_reorder_frames) {
+    } else if (out_of_order && pics - 1 == h->avctx->has_b_frames &&
+               h->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT) {
+        if (invalid + cnt < MAX_DELAYED_PIC_COUNT) {
+            h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, cnt);
+        }
+    } else if (!h->avctx->has_b_frames &&
+               ((h->next_outputed_poc != INT_MIN &&
+                 out->poc > h->next_outputed_poc + 2) ||
+                cur->f->pict_type == AV_PICTURE_TYPE_B)) {
+        h->avctx->has_b_frames++;
+    }
+
+    if (pics > h->avctx->has_b_frames) {
+        out->reference &= ~DELAYED_PIC_REF;
+        for (i = out_idx; h->delayed_pic[i]; i++)
+            h->delayed_pic[i] = h->delayed_pic[i + 1];
+    }
+    memmove(h->last_pocs, &h->last_pocs[1],
+            sizeof(*h->last_pocs) * (MAX_DELAYED_PIC_COUNT - 1));
+    h->last_pocs[MAX_DELAYED_PIC_COUNT - 1] = cur->poc;
+    if (!out_of_order && pics > h->avctx->has_b_frames) {
+        av_frame_unref(h->output_frame);
+        ret = av_frame_ref(h->output_frame, out->f);
+        if (ret < 0)
+            return ret;
+
+        if (out->recovered) {
+            // We have reached an recovery point and all frames after it in
+            // display order are "recovered".
+            h->frame_recovered |= FRAME_RECOVERED_SEI;
+        }
+        out->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
+
+        if (!out->recovered) {
+            if (!(h->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT))
+                av_frame_unref(h->output_frame);
+            else
+                h->output_frame->flags |= AV_FRAME_FLAG_CORRUPT;
+        }
+
+        if (out->mmco_reset) {
+            if (out_idx > 0) {
+                h->next_outputed_poc                    = out->poc;
+                h->delayed_pic[out_idx - 1]->mmco_reset = out->mmco_reset;
+            } else {
+                h->next_outputed_poc = INT_MIN;
+            }
+        } else {
+            if (out_idx == 0 && pics > 1 && h->delayed_pic[0]->f->key_frame) {
+                h->next_outputed_poc = INT_MIN;
+            } else {
+                h->next_outputed_poc = out->poc;
+            }
+        }
+        h->mmco_reset = 0;
+    } else {
+        av_log(h->avctx, AV_LOG_DEBUG, "no picture\n");
+    }
+
+    return 0;
+}
+
 /* This function is called right after decoding the slice header for a first
  * slice in a field (or a frame). It decides whether we are decoding a new frame
  * or a second field in a pair and does the necessary setup.
@@ -1358,6 +1489,10 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
      * and is merged by the SEI parsing code. */
     if (!FIELD_PICTURE(h) || !h->first_field) {
         ret = h264_export_frame_props(h);
+        if (ret < 0)
+            return ret;
+
+        ret = h264_select_output_frame(h);
         if (ret < 0)
             return ret;
     }

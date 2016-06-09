@@ -449,7 +449,6 @@ typedef struct H264Context {
     H264Picture *long_ref[32];
     H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
     int last_pocs[MAX_DELAYED_PIC_COUNT];
-    H264Picture *next_output_pic;
     int next_outputed_poc;
 
     /**
@@ -508,6 +507,8 @@ typedef struct H264Context {
      * some context properties (which are supposed to stay constant between
      * slices) anymore */
     int setup_finished;
+
+    AVFrame *output_frame;
 
     int enable_er;
 
