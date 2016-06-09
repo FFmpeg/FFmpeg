@@ -3605,6 +3605,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (eof_reached && ic->internal->packet_buffer) {
         int stream_index;
         for (stream_index = 0; stream_index < ic->nb_streams; stream_index++) {
+            st = ic->streams[stream_index];
+
             // EOF already reached while reading the stream above.
             // So continue with reoordering DTS with whatever delay we have.
             if (!has_decode_delay_been_guessed(st)) {
