@@ -1123,7 +1123,7 @@ static void decode_c82p(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x / 2] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { -125, 128, 128, 125 };
+        int pred[4] = { 125, -128, -128, 125 };
 
         for (x = 0; x < avctx->width; x += 2) {
             int y1, y2, u, v, a1, a2;
