@@ -1004,6 +1004,8 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pict      = data;
     int buf_index      = 0;
     int ret;
+    const uint8_t *new_extradata;
+    int new_extradata_size;
 
     h->flags = avctx->flags;
     h->setup_finished = 0;
@@ -1040,6 +1042,17 @@ out:
         }
 
         return buf_index;
+    }
+
+    new_extradata_size = 0;
+    new_extradata = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &new_extradata_size);
+    if (new_extradata_size > 0 && new_extradata) {
+        ret = ff_h264_decode_extradata(new_extradata, new_extradata_size,
+                                       &h->ps, &h->is_avc, &h->nal_length_size,
+                                       avctx->err_recognition, avctx);
+        if (ret < 0)
+            return ret;
     }
 
     buf_index = decode_nal_units(h, buf, buf_size);
