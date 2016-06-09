@@ -552,6 +552,7 @@ static void *circular_buffer_task_tx( void *_URLContext)
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
     int old_cancelstate;
+    int64_t target_timestamp = 0;
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
@@ -566,6 +567,7 @@ static void *circular_buffer_task_tx( void *_URLContext)
         int len;
         const uint8_t *p;
         uint8_t tmp[4];
+        int64_t timestamp;
 
         len=av_fifo_size(s->fifo);
 
@@ -588,6 +590,17 @@ static void *circular_buffer_task_tx( void *_URLContext)
 
         pthread_mutex_unlock(&s->mutex);
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
+
+        if (s->packet_gap) {
+            timestamp = av_gettime_relative();
+            if (timestamp < target_timestamp) {
+                target_timestamp = FFMIN(target_timestamp, timestamp + s->packet_gap);
+                av_usleep(target_timestamp - timestamp);
+            } else {
+                target_timestamp = timestamp;
+            }
+            target_timestamp += s->packet_gap;
+        }
 
         p = s->tmp;
         while (len) {
@@ -612,8 +625,6 @@ static void *circular_buffer_task_tx( void *_URLContext)
                 }
             }
         }
-
-        av_usleep(s->packet_gap);
 
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         pthread_mutex_lock(&s->mutex);
