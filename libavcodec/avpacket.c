@@ -265,7 +265,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     int ret;
     uint8_t *data;
 
-    if ((unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+    if (!size || (unsigned)size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return NULL;
     data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
