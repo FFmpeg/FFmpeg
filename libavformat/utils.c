@@ -3753,6 +3753,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         /* if no packet was ever seen, update context now for has_codec_parameters */
         if (!st->internal->avctx_inited) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                st->codecpar->format == AV_SAMPLE_FMT_NONE)
+                st->codecpar->format = st->internal->avctx->sample_fmt;
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
             if (ret < 0)
                 goto find_stream_info_err;
