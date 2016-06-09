@@ -2277,6 +2277,7 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_g_rgbi, 256);
         }
         break;
+    case MKTAG('A', 'Y', 'B', 'R'):
     case MKTAG('A', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybr;
@@ -2285,6 +2286,7 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_u_ybr, 256);
         }
         break;
+    case MKTAG('A', 'y', 'B', 'R'):
     case MKTAG('A', 'y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybri;
@@ -2293,6 +2295,7 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_u_ybri, 256);
         }
         break;
+    case MKTAG(' ', 'Y', 'B', 'R'):
     case MKTAG(' ', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybr;
@@ -2301,6 +2304,7 @@ static int decode_frame(AVCodecContext *avctx,
             build_vlc(&s->vlc[1], l_u_ybr, 256);
         }
         break;
+    case MKTAG(' ', 'y', 'B', 'R'):
     case MKTAG(' ', 'y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybri;
