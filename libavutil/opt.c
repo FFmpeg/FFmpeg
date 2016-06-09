@@ -462,8 +462,13 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return set_string_number(obj, target_obj, o, val, dst);
     case AV_OPT_TYPE_IMAGE_SIZE:
         return set_string_image_size(obj, o, val, dst);
-    case AV_OPT_TYPE_VIDEO_RATE:
-        return set_string_video_rate(obj, o, val, dst);
+    case AV_OPT_TYPE_VIDEO_RATE: {
+        AVRational tmp;
+        ret = set_string_video_rate(obj, o, val, &tmp);
+        if (ret < 0)
+            return ret;
+        return write_number(obj, o, dst, 1, tmp.den, tmp.num);
+    }
     case AV_OPT_TYPE_PIXEL_FMT:
         return set_string_pixel_fmt(obj, o, val, dst);
     case AV_OPT_TYPE_SAMPLE_FMT:
