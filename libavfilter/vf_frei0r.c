@@ -510,7 +510,7 @@ static int source_request_frame(AVFilterLink *outlink)
 
 static const AVOption frei0r_src_options[] = {
     { "size",          "Dimensions of the generated video.", OFFSET(w),         AV_OPT_TYPE_IMAGE_SIZE, { .str = "320x240" }, .flags = FLAGS },
-    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = FLAGS },
+    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, 0, INT_MAX, .flags = FLAGS },
     { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { "filter_params", NULL,                                 OFFSET(params),    AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { NULL },
