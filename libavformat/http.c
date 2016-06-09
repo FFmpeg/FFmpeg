@@ -1220,7 +1220,8 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
 static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
-    int err, new_location, read_ret, seek_ret;
+    int err, new_location, read_ret;
+    int64_t seek_ret;
 
     if (!s->hd)
         return AVERROR_EOF;
