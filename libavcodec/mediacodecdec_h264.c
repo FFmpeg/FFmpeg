@@ -32,6 +32,7 @@
 #include "libavutil/atomic.h"
 
 #include "avcodec.h"
+#include "h264.h"
 #include "internal.h"
 #include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
@@ -50,104 +51,6 @@ typedef struct MediaCodecH264DecContext {
 
 } MediaCodecH264DecContext;
 
-static int h264_extradata_to_annexb_sps_pps(AVCodecContext *avctx,
-        uint8_t **extradata_annexb, int *extradata_annexb_size,
-        int *sps_offset, int *sps_size,
-        int *pps_offset, int *pps_size)
-{
-    uint16_t unit_size;
-    uint64_t total_size = 0;
-
-    uint8_t i, j, unit_nb;
-    uint8_t sps_seen = 0;
-    uint8_t pps_seen = 0;
-
-    const uint8_t *extradata;
-    static const uint8_t nalu_header[4] = { 0x00, 0x00, 0x00, 0x01 };
-
-    if (avctx->extradata_size < 8) {
-        av_log(avctx, AV_LOG_ERROR,
-            "Too small extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
-        return AVERROR(EINVAL);
-    }
-
-    *extradata_annexb = NULL;
-    *extradata_annexb_size = 0;
-
-    *sps_offset = *sps_size = 0;
-    *pps_offset = *pps_size = 0;
-
-    extradata = avctx->extradata + 4;
-
-    /* skip length size */
-    extradata++;
-
-    for (j = 0; j < 2; j ++) {
-
-        if (j == 0) {
-            /* number of sps unit(s) */
-            unit_nb = *extradata++ & 0x1f;
-        } else {
-            /* number of pps unit(s) */
-            unit_nb = *extradata++;
-        }
-
-        for (i = 0; i < unit_nb; i++) {
-            int err;
-
-            unit_size   = AV_RB16(extradata);
-            total_size += unit_size + 4;
-
-            if (total_size > INT_MAX) {
-                av_log(avctx, AV_LOG_ERROR,
-                    "Too big extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
-                av_freep(extradata_annexb);
-                return AVERROR(EINVAL);
-            }
-
-            if (extradata + 2 + unit_size > avctx->extradata + avctx->extradata_size) {
-                av_log(avctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
-                    "corrupted stream or invalid MP4/AVCC bitstream\n");
-                av_freep(extradata_annexb);
-                return AVERROR(EINVAL);
-            }
-
-            if ((err = av_reallocp(extradata_annexb, total_size)) < 0) {
-                return err;
-            }
-
-            memcpy(*extradata_annexb + total_size - unit_size - 4, nalu_header, 4);
-            memcpy(*extradata_annexb + total_size - unit_size, extradata + 2, unit_size);
-            extradata += 2 + unit_size;
-        }
-
-        if (unit_nb) {
-            if (j == 0) {
-                sps_seen = 1;
-                *sps_size = total_size;
-            } else {
-                pps_seen = 1;
-                *pps_size = total_size - *sps_size;
-                *pps_offset = *sps_size;
-            }
-        }
-    }
-
-    *extradata_annexb_size = total_size;
-
-    if (!sps_seen)
-        av_log(avctx, AV_LOG_WARNING,
-               "Warning: SPS NALU missing or invalid. "
-               "The resulting stream may not play.\n");
-
-    if (!pps_seen)
-        av_log(avctx, AV_LOG_WARNING,
-               "Warning: PPS NALU missing or invalid. "
-               "The resulting stream may not play.\n");
-
-    return 0;
-}
-
 static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
@@ -164,9 +67,19 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
+    int i;
     int ret;
+
+    H264ParamSets ps;
+    const PPS *pps = NULL;
+    const SPS *sps = NULL;
+    int is_avc = 0;
+    int nal_length_size = 0;
+
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
+
+    memset(&ps, 0, sizeof(ps));
 
     format = ff_AMediaFormat_new();
     if (!format) {
@@ -179,24 +92,32 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     ff_AMediaFormat_setInt32(format, "width", avctx->width);
     ff_AMediaFormat_setInt32(format, "height", avctx->height);
 
-    if (avctx->extradata[0] == 1) {
-        uint8_t *extradata = NULL;
-        int extradata_size = 0;
+    ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                   &ps, &is_avc, &nal_length_size, 0, avctx);
+    if (ret < 0) {
+        goto done;
+    }
 
-        int sps_offset, sps_size;
-        int pps_offset, pps_size;
-
-        if ((ret = h264_extradata_to_annexb_sps_pps(avctx, &extradata, &extradata_size,
-                &sps_offset, &sps_size, &pps_offset, &pps_size)) < 0) {
-            goto done;
+    for (i = 0; i < MAX_PPS_COUNT; i++) {
+        if (ps.pps_list[i]) {
+            pps = (const PPS*)ps.pps_list[i]->data;
+            break;
         }
+    }
 
-        ff_AMediaFormat_setBuffer(format, "csd-0", extradata + sps_offset, sps_size);
-        ff_AMediaFormat_setBuffer(format, "csd-1", extradata + pps_offset, pps_size);
+    if (pps) {
+        if (ps.sps_list[pps->sps_id]) {
+            sps = (const SPS*)ps.sps_list[pps->sps_id]->data;
+        }
+    }
 
-        av_freep(&extradata);
+    if (pps && sps) {
+        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)sps->data, sps->data_size);
+        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)pps->data, pps->data_size);
     } else {
-        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
+        av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
+        ret = AVERROR_INVALIDDATA;
+        goto done;
     }
 
     if ((ret = ff_mediacodec_dec_init(avctx, &s->ctx, CODEC_MIME, format)) < 0) {
@@ -236,6 +157,9 @@ done:
     if (ret < 0) {
         mediacodec_decode_close(avctx);
     }
+
+    ff_h264_ps_uninit(&ps);
+
     return ret;
 }
 
