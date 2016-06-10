@@ -1990,7 +1990,7 @@ static void decode_argx(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_b[x] = get_bits(gb, 10);
         }
     } else {
-        int pred[4] = { 512, 512, 512, 0 };
+        int pred[4] = { 512, 512, 512, 512 };
 
         for (x = 0; x < avctx->width; x++) {
             int r, g, b, a;
@@ -2463,7 +2463,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG('A', 'R', 'G', 'X'):
-        avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         s->decode_frame = decode_argx;
         if (s->format != format) {
             build_vlc(&s->vlc[0], l_r_rgbx, 1024);
