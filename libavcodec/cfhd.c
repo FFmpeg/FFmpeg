@@ -425,6 +425,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                     return ret;
                 }
             }
+            ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height);
+            if (ret < 0)
+                return ret;
+            frame.f->width =
+            frame.f->height = 0;
 
             if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
                 return ret;
