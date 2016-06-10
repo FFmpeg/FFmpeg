@@ -2060,6 +2060,34 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
                  AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
     },
+    [AV_PIX_FMT_GBRAP10LE] = {
+        .name = "gbrap10le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 10, 1, 9, 1 },       /* R */
+            { 0, 2, 0, 0, 10, 1, 9, 1 },       /* G */
+            { 1, 2, 0, 0, 10, 1, 9, 1 },       /* B */
+            { 3, 2, 0, 0, 10, 1, 9, 1 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_ALPHA,
+    },
+    [AV_PIX_FMT_GBRAP10BE] = {
+        .name = "gbrap10be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 10, 1, 9, 1 },       /* R */
+            { 0, 2, 0, 0, 10, 1, 9, 1 },       /* G */
+            { 1, 2, 0, 0, 10, 1, 9, 1 },       /* B */
+            { 3, 2, 0, 0, 10, 1, 9, 1 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
+                 AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
+    },
 };
 #if FF_API_PLUS1_MINUS1
 FF_ENABLE_DEPRECATION_WARNINGS
