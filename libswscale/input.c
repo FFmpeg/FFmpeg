@@ -699,9 +699,19 @@ static void planar_rgb10le_to_y(uint8_t *dst, const uint8_t *src[4], int w)
     planar_rgb16_to_y(dst, src, w, 10, 0);
 }
 
+static void planar_rgb10le_to_a(uint8_t *dst, const uint8_t *src[4], int w)
+{
+    planar_rgb16_to_a(dst, src, w, 10, 0);
+}
+
 static void planar_rgb10be_to_y(uint8_t *dst, const uint8_t *src[4], int w)
 {
     planar_rgb16_to_y(dst, src, w, 10, 1);
+}
+
+static void planar_rgb10be_to_a(uint8_t *dst, const uint8_t *src[4], int w)
+{
+    planar_rgb16_to_a(dst, src, w, 10, 1);
 }
 
 static void planar_rgb12le_to_y(uint8_t *dst, const uint8_t *src[4], int w)
@@ -842,6 +852,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP9LE:
         c->readChrPlanar = planar_rgb9le_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP10LE:
     case AV_PIX_FMT_GBRP10LE:
         c->readChrPlanar = planar_rgb10le_to_uv;
         break;
@@ -856,6 +867,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP9BE:
         c->readChrPlanar = planar_rgb9be_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP10BE:
     case AV_PIX_FMT_GBRP10BE:
         c->readChrPlanar = planar_rgb10be_to_uv;
         break;
@@ -1073,6 +1085,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP9LE:
         c->readLumPlanar = planar_rgb9le_to_y;
         break;
+    case AV_PIX_FMT_GBRAP10LE:
+        c->readAlpPlanar = planar_rgb10le_to_a;
     case AV_PIX_FMT_GBRP10LE:
         c->readLumPlanar = planar_rgb10le_to_y;
         break;
@@ -1089,6 +1103,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP9BE:
         c->readLumPlanar = planar_rgb9be_to_y;
         break;
+    case AV_PIX_FMT_GBRAP10BE:
+        c->readAlpPlanar = planar_rgb10be_to_a;
     case AV_PIX_FMT_GBRP10BE:
         c->readLumPlanar = planar_rgb10be_to_y;
         break;
