@@ -485,14 +485,14 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
         if (ret >= 0 && s->pb && s->pb->error < 0)
             ret = s->pb->error;
         if (ret < 0)
-            return ret;
+            goto fail;
         if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
             avio_flush(s->pb);
         s->internal->header_written = 1;
     }
 
     if ((ret = init_pts(s)) < 0)
-        return ret;
+        goto fail;
 
     if (s->avoid_negative_ts < 0) {
         av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
@@ -503,6 +503,11 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     }
 
     return 0;
+
+fail:
+    if (s->oformat->deinit)
+        s->oformat->deinit(s);
+    return ret;
 }
 
 #define AV_PKT_FLAG_UNCODED_FRAME 0x2000
