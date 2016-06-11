@@ -479,6 +479,7 @@ static int write_header_internal(AVFormatContext *s)
         int ret = s->oformat->write_header(s);
         if (ret >= 0 && s->pb && s->pb->error < 0)
             ret = s->pb->error;
+        s->internal->write_header_ret = ret;
         if (ret < 0)
             return ret;
         if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
@@ -713,7 +714,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     did_split = av_packet_split_side_data(pkt);
 
     if (!s->internal->header_written) {
-        ret = write_header_internal(s);
+        ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
         if (ret < 0)
             goto fail;
     }
@@ -1152,7 +1153,7 @@ int av_write_trailer(AVFormatContext *s)
     }
 
     if (!s->internal->header_written) {
-        ret = write_header_internal(s);
+        ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
         if (ret < 0)
             goto fail;
     }

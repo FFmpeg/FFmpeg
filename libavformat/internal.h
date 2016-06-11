@@ -124,6 +124,7 @@ struct AVFormatInternal {
      * Whether or not a header has already been written
      */
     int header_written;
+    int write_header_ret;
 };
 
 struct AVStreamInternal {
