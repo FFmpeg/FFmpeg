@@ -39,6 +39,9 @@
 #include <unistd.h>
 #include "amldec.h"
 
+#define ION (0)
+#define DEBUG (0)
+
 void ffaml_log_decoder_info(AVCodecContext *avctx)
 {
   AMLDecodeContext *aml_context = (AMLDecodeContext*)avctx->priv_data;
@@ -198,6 +201,8 @@ static av_cold int ffaml_init_decoder(AVCodecContext *avctx)
   aml_context->first_packet = 1;
   aml_context->bsf = NULL;
   aml_context->last_checkin_pts = 0;
+  aml_context->running = 0;
+  aml_context->last_decode_time = 0;
   ffaml_init_queue(&aml_context->writequeue);
   ffaml_init_queue(&aml_context->framequeue);
 
@@ -208,18 +213,22 @@ static av_cold int ffaml_init_decoder(AVCodecContext *avctx)
   memset(&aml_context->header, 0, sizeof(aml_context->header));
 
   // initialize ion driver
+#if ION
   ret = aml_ion_open(avctx, &aml_context->ion_context);
   if (ret < 0)
   {
     av_log(avctx, AV_LOG_ERROR, "failed to init ion driver\n");
     return -1;
   }
+#endif
 
   pcodec->stream_type = STREAM_TYPE_ES_VIDEO;
   pcodec->has_video = 1;
   pcodec->video_type = aml_get_vformat(avctx);
   pcodec->am_sysinfo.format = aml_get_vdec_type(avctx);
   pcodec->am_sysinfo.param = (void*)(EXTERNAL_PTS | SYNC_OUTSIDE);
+  pcodec->am_sysinfo.width = avctx->width;
+  pcodec->am_sysinfo.height = avctx->height;
 
   ret = codec_init(pcodec);
   if (ret != CODEC_ERROR_NONE)
@@ -234,6 +243,15 @@ static av_cold int ffaml_init_decoder(AVCodecContext *avctx)
   codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
   codec_set_cntl_syncthresh(pcodec, 0);
 
+  amlsysfs_write_int(avctx, "/sys/class/tsync/enable", 0);
+  amlsysfs_write_int(avctx, "/sys/class/tsync/mode", 0);
+
+  // disable blackout policy
+  amlsysfs_write_int(avctx, "/sys/class/video/blackout_policy", 0);
+
+  // disable video output
+  amlsysfs_write_int(avctx, "/sys/class/video/disable_video", 0);
+
   ret = ffmal_init_bitstream(avctx);
   if (ret != 0)
   {
@@ -241,8 +259,9 @@ static av_cold int ffaml_init_decoder(AVCodecContext *avctx)
     return -1;
   }
 
+  //codec_set_video_delay_limited_ms(pcodec,200);
 
-  av_log(avctx, AV_LOG_DEBUG, "amcodec intialized successfully\n");
+  av_log(avctx, AV_LOG_DEBUG, "amcodec intialized successfully (%d/%d)\n", pcodec->video_type, pcodec->am_sysinfo.format);
   return 0;
 }
 
@@ -259,8 +278,10 @@ static av_cold int ffaml_close_decoder(AVCodecContext *avctx)
   if (aml_context->bsf)
     av_bsf_free(&aml_context->bsf);
 
+#if ION
   // close ion driver
   aml_ion_close(avctx, &aml_context->ion_context);
+#endif
 
   av_log(avctx, AV_LOG_DEBUG, "amcodec closed successfully\n");
   return 0;
@@ -282,19 +303,9 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
   int got_buffer;
 
   //av_log(avctx, AV_LOG_DEBUG, "decode start\n");
-  //ffaml_log_decoder_info(avctx);
-//  ret = aml_ion_dequeue_buffer(avctx, &aml_context->ion_context, &got_buffer);
-//  if (got_buffer)
-//  {
-//    av_log(avctx, AV_LOG_DEBUG, "LongChair Got Buffer %d (pts=%ld)!!!\n", ret, aml_context->ion_context.buffers[ret].pts);
-//  }
-//  else
-//  {
-//    av_log(avctx, AV_LOG_DEBUG, "LongChair Didn't get buffer :(\n");
-//  }
-
-
-  //av_log(avctx, AV_LOG_DEBUG, "LongChair Queued buffer 0\n");
+#if 1
+  ffaml_log_decoder_info(avctx);
+#endif
 
   if ((avpkt) && (avpkt->data))
   {
@@ -331,16 +342,30 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
     {
       ret = codec_write(pcodec, aml_context->header.data, aml_context->header.size);
       aml_context->first_packet = 0;
-      //codec_resume(pcodec);
     }
 
     // queue the packet
     if (ffaml_queue_packet(avctx, &aml_context->writequeue, avpkt) < 0)
     {
-      av_log(avctx, AV_LOG_DEBUG, "failed to queue AvPacket\n");
+      av_log(avctx, AV_LOG_ERROR, "failed to queue AvPacket\n");
       return -1;
     }
   }
+
+  struct timespec systemtime;
+  clock_gettime(CLOCK_REALTIME, &systemtime);
+  unsigned long currenttime_us = (systemtime.tv_sec * 1000000) + (systemtime.tv_nsec / 1000);
+  av_log(avctx, AV_LOG_DEBUG, "decode call time %ld, diff=%ld\n", currenttime_us, currenttime_us - aml_context->last_decode_time);
+  int skippacket;
+  if (aml_context->last_decode_time != 0)
+    skippacket = ((currenttime_us - aml_context->last_decode_time) < 10000);
+  else
+    skippacket = 1;
+
+  skippacket = 0;
+
+  aml_context->last_decode_time = currenttime_us;
+
 
   // now we fill up decoder buffer
   if (aml_context->writequeue.tail)
@@ -360,16 +385,26 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
     {
       pkt = ffaml_dequeue_packet(avctx, &aml_context->writequeue);
 
-      //av_log(avctx, AV_LOG_DEBUG, "Writing packet to decoder (%d) bytes\n", avpkt->size);
-      av_log(avctx, AV_LOG_DEBUG, "LongChair : writing frame with pts=%f, checkin =%f\n", pkt->pts * av_q2d(avctx->time_base), aml_context->last_checkin_pts);
-      if (ffaml_write_pkt_data(avctx, pkt) < 0)
+      //#if DEBUG
+      if (!skippacket)
       {
-        av_log(avctx, AV_LOG_ERROR, "failed to write packet.\n");
-        return -1;
+        av_log(avctx, AV_LOG_DEBUG, "Writing frame with pts=%f, checkin =%f flag=%d\n", pkt->pts * av_q2d(avctx->time_base), aml_context->last_checkin_pts);
+        //s#endif
+
+        if (ffaml_write_pkt_data(avctx, pkt) < 0)
+        {
+          av_log(avctx, AV_LOG_ERROR, "failed to write packet.\n");
+          return -1;
+        }
+      }
+      else
+      {
+        av_log(avctx, AV_LOG_DEBUG, "Skipping packet with pts=%f, checkin =%f flag=%d\n", pkt->pts * av_q2d(avctx->time_base), aml_context->last_checkin_pts);
       }
 
+      //av_packet_free(&pkt);
      // now queue the packet to the frame queue
-#if 0
+#if (ION == 0)
      ffaml_queue_packet(avctx, &aml_context->framequeue, pkt);
 #endif
     }
@@ -383,62 +418,131 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
     return -1;
   }
 
-  ret = aml_ion_dequeue_buffer(avctx, &aml_context->ion_context, got_frame);
+ #if ION
+
+  int bufferid;
+  static int framecount = 0;
+  bufferid = aml_ion_dequeue_buffer(avctx, &aml_context->ion_context, got_frame);
   if (*got_frame)
   {
-    av_log(avctx, AV_LOG_DEBUG, "LongChair Got Buffer %d (pts=%f)!!!\n", ret, aml_context->ion_context.buffers[ret].pts * av_q2d(avctx->time_base));
+   framecount++;
+    avctx->pix_fmt = AV_PIX_FMT_NV12;
+    ff_set_dimensions(avctx, aml_context->decoder_status.width, aml_context->decoder_status.height);
 
-    frame->width = aml_context->decoder_status.width;
-    frame->height = aml_context->decoder_status.height;
-    frame->format = AV_PIX_FMT_AML;
+    ret = ff_get_buffer(avctx, frame, 0);
+    if (ret < 0)
+    {
+      av_log(avctx, AV_LOG_ERROR, "failed to allocate frame buffer (code=%d)\n", ret);
+      return -1;
+    }
 
-    ff_set_dimensions(avctx, frame->width, frame->height);
-    avctx->pix_fmt = frame->format;
+    uint8_t *src[4];
+    int linesize[4];
 
+    av_image_fill_arrays(src, linesize, aml_context->ion_context.buffers[bufferid].data,
+			avctx->pix_fmt, 
+			aml_context->ion_context.buffers[bufferid].stride, 
+			aml_context->ion_context.buffers[bufferid].height, 1);
+
+    av_image_copy(frame->data, frame->linesize, src, linesize,
+                      avctx->pix_fmt, avctx->width, avctx->height);
+
+    frame->pkt_pts = aml_context->ion_context.buffers[bufferid].pts;
+
+    aml_ion_queue_buffer(avctx, &aml_context->ion_context, &aml_context->ion_context.buffers[bufferid]);
+
+    //int ysize = aml_context->ion_context.buffers[bufferid].stride * aml_context->ion_context.buffers[bufferid].height;
+    //int uvsize = aml_context->ion_context.buffers[bufferid].stride * (aml_context->ion_context.buffers[bufferid].height / 2);
+
+
+//    if (framecount==100)
+//      aml_ion_save_buffer("yuv.dat", &aml_context->ion_context.buffers[ret]);
+
+    av_log(avctx, AV_LOG_DEBUG, "LongChair Got Buffer %d (pts=%f) (%dx%d)!!!\n", bufferid, aml_context->ion_context.buffers[bufferid].pts * av_q2d(avctx->time_base), frame->width, frame->height);
+#if 1
+
+
+    //frame->format = AV_PIX_FMT_NV12;
+    //frame->linesize[0] = aml_context->ion_context.buffers[bufferid].stride;
+    ///frame->linesize[1] =  frame->linesize[0];
+
+    //memcpy(frame->data[0], aml_context->ion_context.buffers[bufferid].data, ysize);
+    //memcpy(frame->data[1], aml_context->ion_context.buffers[bufferid].data + ysize, uvsize);
+
+#else
+    // setup the Y plane
     frame->buf[0] = av_buffer_create(NULL, 0, NULL, NULL, AV_BUFFER_FLAG_READONLY);
-    frame->data[0] = (uint8_t*)aml_context->ion_context.buffers[ret].data;
-    frame->pkt_pts = aml_context->ion_context.buffers[ret].pts;
 
-    //aml_ion_save_buffer("yuv.dat", &aml_context->ion_context.buffers[ret]);
+    //memcpy(frame->data[0], aml_context->ion_context.buffers[bufferid].data, ysize);
+    frame->data[0] = (uint8_t*)aml_context->ion_context.buffers[bufferid].data;
 
-    aml_ion_queue_buffer(avctx, &aml_context->ion_context, &aml_context->ion_context.buffers[ret]);
+    frame->buf[1] = av_buffer_create(NULL, 0, NULL, NULL, AV_BUFFER_FLAG_READONLY);
+    frame->data[1] = (uint8_t*)aml_context->ion_context.buffers[bufferid].data + (frame->height * frame->linesize[0]);
+#endif
+    // setup the UV plane
+    //memcpy(frame->data[1], aml_context->ion_context.buffers[bufferid].data + ysize, uvsize);
+
+
+
+
+
+
+//    //aml_ion_save_buffer("yuv.dat", &aml_context->ion_context.buffers[ret]);
+
   }
 
-
-#if 0
+#else
   // now we need to make a dummy avframe as we will not get any data out of the codec
   // we wait to have 16 frames because with some codecs, pts are in the wrong order
+  //if ((aml_context->decoder_status.width > 0) && (aml_context->framequeue.size >= MIN_FRAME_QUEUE_SIZE))
+  double amlpts = (double)codec_get_pcrscr(pcodec) / (double)PTS_FREQ;
+  double pktpts;
+  //av_log(avctx, AV_LOG_DEBUG, "current pts=%d, last =%d\n", currentpts, aml_context->last_pts);
+
+  //if ((aml_context->decoder_status.width > 0) && (amlpts != aml_context->last_pts))
   if ((aml_context->decoder_status.width > 0) && (aml_context->framequeue.size >= MIN_FRAME_QUEUE_SIZE))
   {
-    //av_log(avctx, AV_LOG_DEBUG, "peeking pts\n");
     pkt = ffaml_queue_peek_pts_packet(avctx, &aml_context->framequeue);
     if (pkt)
     {
-      av_log(avctx, AV_LOG_DEBUG, "preparing frame\n");
-      frame->width = aml_context->decoder_status.width;
-      frame->height = aml_context->decoder_status.height;
-      frame->format = AV_PIX_FMT_AML;
+        pktpts =  pkt->pts * av_q2d(avctx->time_base);
 
-      ff_set_dimensions(avctx, frame->width, frame->height);
-      avctx->pix_fmt = frame->format;
+        avctx->pix_fmt = AV_PIX_FMT_AML;
+        ff_set_dimensions(avctx, avctx->width  , avctx->height);
 
-      // we fake a ref on buf[0] and also pass the codec struct pointer
-      // in the first image plane, so that payer can use it.
-      frame->buf[0] = av_buffer_create(NULL, 0, NULL, NULL, AV_BUFFER_FLAG_READONLY);
-      frame->data[0] = (uint8_t*)pcodec;
-      frame->pkt_pts = pkt->pts;
+        // we use the frame planes to store some data to exchange with player
+        // data[0] = pointer to the amcodec structure
+        // data[1] = frame private info
 
-      av_log(avctx, AV_LOG_DEBUG, "LongChair sending frame with pts=%f, checkin =%f\n", pkt->pts * av_q2d(avctx->time_base), aml_context->last_checkin_pts);
+        frame->buf[0] = av_buffer_create(NULL, 0, NULL, NULL, AV_BUFFER_FLAG_READONLY);
+        frame->buf[1] = av_buffer_create(NULL, 0, NULL, NULL, AV_BUFFER_FLAG_READONLY);
 
-      av_packet_free(&pkt);
-      *got_frame = 1;
+        AMLFramePrivate *priv = malloc(sizeof(AMLFramePrivate));
+        //priv->pts = pkt->pts * av_q2d(avctx->time_base);;
+        priv->pts = pktpts ;
+
+        frame->data[0] = (uint8_t*)pcodec;
+        frame->data[1] = priv;
+
+        frame->pkt_pts = pkt->pts;
+        //frame->pkt_pts = (int64_t)(priv->pts / av_q2d(avctx->time_base));
+
+        av_log(avctx, AV_LOG_DEBUG, "Sending frame with pts=%f, flag=%d\n", frame->pkt_pts * av_q2d(avctx->time_base), pkt->flags);
+        #if DEBUG
+        av_log(avctx, AV_LOG_DEBUG, "LongChair sending frame with pts=%f, checkin =%f\n", pkt->pts * av_q2d(avctx->time_base), aml_context->last_checkin_pts);
+        #endif
+        av_packet_free(&pkt);
+        *got_frame = 1;
     }
 
   }
+
+  aml_context->last_pts = amlpts;
+
 #endif
 
   //av_log(avctx, AV_LOG_DEBUG, "decode end\n");
-  return 0;
+   return 0;
 }
 
 static void ffaml_flush(AVCodecContext *avctx)
@@ -448,6 +552,25 @@ static void ffaml_flush(AVCodecContext *avctx)
   av_log(avctx, AV_LOG_DEBUG, "Flushing ...\n");
   ffaml_queue_clear(avctx, &aml_context->writequeue);
   ffaml_queue_clear(avctx, &aml_context->framequeue);
+
+  int ret = codec_reset(&aml_context->codec);
+  if (ret < 0)
+  {
+    av_log(avctx, AV_LOG_ERROR, "failed to reset codec (code = %d)\n", ret);
+    aml_context->first_packet = 1;
+  }
+
+  //ret = codec_pause(&aml_context->codec);
+//  if (ret < 0)
+//  {
+//    av_log(avctx, AV_LOG_ERROR, "failed to pause codec (code = %d)\n", ret);
+//    aml_context->first_packet = 1;
+//  }
+
+  // we disable the video output here, playback should reenable it
+  //amlsysfs_write_int(avctx, "/sys/class/video/disable_video", 1);
+  //amlsysfs_write_string(avctx, "/sys/class/tsync/pts_video", "0x0");
+//  amlsysfs_write_string(avctx, "/sys/class/tsync/pts_pcrscr", "0x0");
   av_log(avctx, AV_LOG_DEBUG, "Flushing done.\n");
 }
 

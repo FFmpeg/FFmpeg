@@ -4,16 +4,21 @@
 #include "amlqueue.h"
 #include "amlion.h"
 #include <amcodec/codec.h>
+#include <amcodec/codec.h>
+#include <time.h>
 
-#define TRICKMODE_NONE (0)
-#define EXTERNAL_PTS   (1)
-#define SYNC_OUTSIDE   (2)
+#define TRICKMODE_NONE  0x00
+#define TRICKMODE_I     0x01
+#define TRICKMODE_FFFB  0x02
+
+#define EXTERNAL_PTS    1
+#define SYNC_OUTSIDE    2
 
 #define PTS_FREQ       90000
-#define PTS_FREQ_MS    PTS_FREQ / 1000
-#define AV_SYNC_THRESH PTS_FREQ * 30
+#define AV_SYNC_THRESH PTS_FREQ * 1
 
-#define MIN_FRAME_QUEUE_SIZE  8
+#define MIN_FRAME_QUEUE_SIZE  16
+#define MAX_WRITE_QUEUE_SIZE  1
 
 #define MAX_HEADER_SIZE 4096
 
@@ -21,6 +26,11 @@ typedef struct {
   char *data[MAX_HEADER_SIZE];
   int size;
 } AMLHeader;
+
+typedef struct
+{
+  double pts;
+} AMLFramePrivate;
 
 typedef struct {
   AVClass *av_class;
@@ -34,6 +44,9 @@ typedef struct {
   struct vdec_status decoder_status;
   AMLHeader header;
   AMLIonContext ion_context;
+  int64_t last_pts;
+  int running;
+  unsigned long last_decode_time;
 } AMLDecodeContext;
 
 // Functions prototypes

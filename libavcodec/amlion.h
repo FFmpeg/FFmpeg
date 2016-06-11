@@ -18,8 +18,7 @@ typedef struct {
   void *data;    // memory mmaped pointer to the ion buffer
   int phys_addr;
 
-
-
+  int queued;
   int index;
 } AMLIonBuffer;
 

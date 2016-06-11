@@ -226,6 +226,7 @@ int aml_ion_create_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuf
   buffer->height = avctx->height;
   buffer->stride = ALIGN(buffer->width, 16);
   buffer->size = ALIGN(buffer->width, 16) * (ALIGN(buffer->height, 32) + ALIGN(buffer->stride / 2, 16));
+  //buffer->size = ALIGN(buffer->width, 16) * (ALIGN(buffer->height, 32) + ALIGN(buffer->height / 2, 32));
 
   // allocate the buffer
   ion_alloc.len = buffer->size;
@@ -239,7 +240,7 @@ int aml_ion_create_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuf
   }
 
   buffer->handle = ion_alloc.handle;
-  av_log(avctx, AV_LOG_ERROR, "got ion alloc handle %d for buffer %d\n", buffer->handle, buffer->index);
+  av_log(avctx, AV_LOG_DEBUG, "got ion alloc handle %d for buffer %d (%d x %d)\n", buffer->handle, buffer->index, buffer->stride, buffer->height);
 
   // share the buffer
   fd_data.handle = buffer->handle;
@@ -252,7 +253,7 @@ int aml_ion_create_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuf
 
   buffer->fd_handle = fd_data.fd;
 
-  av_log(avctx, AV_LOG_ERROR, "got ion alloc fd %d  for buffer %d\n", buffer->fd_handle, buffer->index);
+  av_log(avctx, AV_LOG_DEBUG, "got ion alloc fd %d  for buffer %d\n", buffer->fd_handle, buffer->index);
 
   // now map the fd to a mem pointer
   data = mmap(NULL, buffer->size, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd_handle, 0);
@@ -263,9 +264,9 @@ int aml_ion_create_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuf
   }
 
   buffer->data = data;
-  buffer->phys_addr = vtop(buffer->data);
+  //buffer->phys_addr = vtop(buffer->data);
 
-  av_log(avctx, AV_LOG_ERROR, "got ion buffer pointer 0x%x for buffer %ld, (phy@%x)\n", (unsigned int)buffer->data, buffer->index, buffer->phys_addr);
+  av_log(avctx, AV_LOG_DEBUG, "got ion buffer pointer 0x%x for buffer %ld, (phy@%x)\n", (unsigned int)buffer->data, buffer->index, buffer->phys_addr);
   return 0;
 }
 
@@ -308,7 +309,7 @@ int aml_ion_queue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuff
   vbuf.m.fd = buffer->fd_handle;
   vbuf.length = buffer->size;
 
-  av_log(avctx, AV_LOG_DEBUG, "LongChair queuing buffer #%d\n", buffer->index);
+  av_log(avctx, AV_LOG_DEBUG, "queuing buffer #%d\n", buffer->index);
   ret = ioctl(ionctx->video_fd, VIDIOC_QBUF, &vbuf);
   if (ret < 0)
   {
@@ -316,6 +317,7 @@ int aml_ion_queue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuff
     return -1;
   }
 
+  buffer->queued = 1;
   return buffer->index;
 }
 
@@ -345,6 +347,8 @@ int aml_ion_dequeue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, int *got
     }
   }
 
+  av_log(avctx, AV_LOG_DEBUG, "Planes info bytes=%d\n", vbuf.bytesused);
+  ionctx->buffers[vbuf.index].queued = 0;
   ionctx->buffers[vbuf.index].pts = ((double)vbuf.timestamp.tv_usec / 1000000.0) / av_q2d(avctx->time_base);
   *got_buffer = 1;
   return vbuf.index;
