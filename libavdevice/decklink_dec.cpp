@@ -445,6 +445,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->list_formats = cctx->list_formats;
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
+    ctx->duplex_mode  = cctx->duplex_mode;
     cctx->ctx = ctx;
 
 #if !CONFIG_LIBZVBI

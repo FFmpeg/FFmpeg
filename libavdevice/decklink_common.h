@@ -44,6 +44,8 @@ struct decklink_ctx {
     IDeckLink *dl;
     IDeckLinkOutput *dlo;
     IDeckLinkInput *dli;
+    IDeckLinkConfiguration *cfg;
+    IDeckLinkAttributes *attr;
     decklink_output_callback *output_callback;
     decklink_input_callback *input_callback;
 
@@ -77,6 +79,7 @@ struct decklink_ctx {
     int list_formats;
     int64_t teletext_lines;
     double preroll;
+    int duplex_mode;
 
     int frames_preroll;
     int frames_buffer;

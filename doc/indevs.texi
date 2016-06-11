@@ -251,6 +251,10 @@ To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
 Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.
 Defaults to @samp{2}.
 
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
 @end table
 
 @subsection Examples

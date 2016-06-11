@@ -36,6 +36,10 @@ static const AVOption options[] = {
     { "standard",     NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7fff9fffeLL}, 0, 0,    DEC, "teletext_lines"},
     { "all",          NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7ffffffffLL}, 0, 0,    DEC, "teletext_lines"},
     { "channels",     "number of audio channels", OFFSET(audio_channels), AV_OPT_TYPE_INT , { .i64 = 2   }, 2, 16, DEC },
+    { "duplex_mode",  "duplex mode",              OFFSET(duplex_mode),    AV_OPT_TYPE_INT,   { .i64 = 0}, 0, 2,    DEC, "duplex_mode"},
+    { "unset",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 0}, 0, 0,    DEC, "duplex_mode"},
+    { "half",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 1}, 0, 0,    DEC, "duplex_mode"},
+    { "full",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 2}, 0, 0,    DEC, "duplex_mode"},
     { NULL },
 };
 

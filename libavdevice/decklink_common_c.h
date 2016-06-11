@@ -34,6 +34,7 @@ struct decklink_cctx {
     double preroll;
     int v210;
     int audio_channels;
+    int duplex_mode;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */

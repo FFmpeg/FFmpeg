@@ -111,6 +111,23 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     int i = 1;
     HRESULT res;
 
+    if (ctx->duplex_mode) {
+        bool duplex_supported = false;
+
+        if (ctx->attr->GetFlag(BMDDeckLinkSupportsDuplexModeConfiguration, &duplex_supported) != S_OK)
+            duplex_supported = false;
+
+        if (duplex_supported) {
+            res = ctx->cfg->SetInt(bmdDeckLinkConfigDuplexMode, ctx->duplex_mode == 2 ? bmdDuplexModeFull : bmdDuplexModeHalf);
+            if (res != S_OK)
+                av_log(avctx, AV_LOG_WARNING, "Setting duplex mode failed.\n");
+            else
+                av_log(avctx, AV_LOG_VERBOSE, "Succesfully set duplex mode to %s duplex.\n", ctx->duplex_mode == 2 ? "full" : "half");
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Unable to set duplex mode, because it is not supported.\n");
+        }
+    }
+
     if (direction == DIRECTION_IN) {
         res = ctx->dli->GetDisplayModeIterator (&itermode);
     } else {
@@ -249,6 +266,10 @@ void ff_decklink_cleanup(AVFormatContext *avctx)
         ctx->dli->Release();
     if (ctx->dlo)
         ctx->dlo->Release();
+    if (ctx->attr)
+        ctx->attr->Release();
+    if (ctx->cfg)
+        ctx->cfg->Release();
     if (ctx->dl)
         ctx->dl->Release();
 }
@@ -278,6 +299,18 @@ int ff_decklink_init_device(AVFormatContext *avctx, const char* name)
     iter->Release();
     if (!ctx->dl)
         return AVERROR(ENXIO);
+
+    if (ctx->dl->QueryInterface(IID_IDeckLinkConfiguration, (void **)&ctx->cfg) != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get configuration interface for '%s'\n", name);
+        ff_decklink_cleanup(avctx);
+        return AVERROR_EXTERNAL;
+    }
+
+    if (ctx->dl->QueryInterface(IID_IDeckLinkAttributes, (void **)&ctx->attr) != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get attributes interface for '%s'\n", name);
+        ff_decklink_cleanup(avctx);
+        return AVERROR_EXTERNAL;
+    }
 
     return 0;
 }

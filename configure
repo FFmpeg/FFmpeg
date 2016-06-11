@@ -5625,7 +5625,8 @@ enabled cuvid             && { check_lib cuviddec.h cuvidCreateDecoder -lnvcuvid
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
 enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
-enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
+enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
+                               { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
