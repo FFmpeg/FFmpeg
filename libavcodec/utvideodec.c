@@ -494,28 +494,36 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     /* parse plane structure to get frame flags and validate slice offsets */
     bytestream2_init(&gb, buf, buf_size);
     if (c->pro) {
+        if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
+            av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
+            return AVERROR_INVALIDDATA;
+        }
         c->frame_info = bytestream2_get_le32u(&gb);
-        c->slices = ((c->frame_info >> 24) & 0xff) + 1;
+        c->slices = ((c->frame_info >> 16) & 0xff) + 1;
         for (i = 0; i < c->planes; i++) {
-            plane_size = 0;
             plane_start[i] = gb.buffer;
             if (bytestream2_get_bytes_left(&gb) < 1024 + 4 * c->slices) {
                 av_log(avctx, AV_LOG_ERROR, "Insufficient data for a plane\n");
                 return AVERROR_INVALIDDATA;
             }
+            slice_start = 0;
+            slice_end   = 0;
             for (j = 0; j < c->slices; j++) {
-                slice_size     = bytestream2_get_le32u(&gb);
+                slice_end   = bytestream2_get_le32u(&gb);
+                if (slice_end < 0 || slice_end < slice_start ||
+                    bytestream2_get_bytes_left(&gb) < slice_end) {
+                    av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                slice_size  = slice_end - slice_start;
+                slice_start = slice_end;
                 max_slice_size = FFMAX(max_slice_size, slice_size);
-                plane_size    += slice_size;
             }
-            bytestream2_skipu(&gb, 1024);
+            plane_size = slice_end;
             bytestream2_skipu(&gb, plane_size);
+            bytestream2_skipu(&gb, 1024);
         }
         plane_start[c->planes] = gb.buffer;
-        if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
-            av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
-            return AVERROR_INVALIDDATA;
-        }
     } else {
         for (i = 0; i < c->planes; i++) {
             plane_start[i] = gb.buffer;
@@ -684,6 +692,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                AV_RB32(avctx->extradata + 4));
         c->interlaced  = 0;
         c->pro         = 1;
+        c->frame_info_size = 4;
     } else {
         av_log(avctx, AV_LOG_ERROR,
                "Insufficient extradata size %d, should be at least 16\n",
