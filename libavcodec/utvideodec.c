@@ -35,6 +35,50 @@
 #include "thread.h"
 #include "utvideo.h"
 
+static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
+{
+    int i;
+    HuffEntry he[1024];
+    int last;
+    uint32_t codes[1024];
+    uint8_t bits[1024];
+    uint16_t syms[1024];
+    uint32_t code;
+
+    *fsym = -1;
+    for (i = 0; i < 1024; i++) {
+        he[i].sym = i;
+        he[i].len = *src++;
+    }
+    qsort(he, 1024, sizeof(*he), ff_ut10_huff_cmp_len);
+
+    if (!he[0].len) {
+        *fsym = he[0].sym;
+        return 0;
+    }
+
+    last = 1023;
+    while (he[last].len == 255 && last)
+        last--;
+
+    if (he[last].len > 32) {
+        return -1;
+    }
+
+    code = 1;
+    for (i = last; i >= 0; i--) {
+        codes[i] = code >> (32 - he[i].len);
+        bits[i]  = he[i].len;
+        syms[i]  = he[i].sym;
+        code += 0x80000000u >> (he[i].len - 1);
+    }
+
+    return ff_init_vlc_sparse(vlc, FFMIN(he[last].len, 11), last + 1,
+                              bits,  sizeof(*bits),  sizeof(*bits),
+                              codes, sizeof(*codes), sizeof(*codes),
+                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+}
+
 static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 {
     int i;
@@ -76,6 +120,110 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
                               bits,  sizeof(*bits),  sizeof(*bits),
                               codes, sizeof(*codes), sizeof(*codes),
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
+}
+
+static int decode_plane10(UtvideoContext *c, int plane_no,
+                          uint16_t *dst, int step, int stride,
+                          int width, int height,
+                          const uint8_t *src, const uint8_t *huff,
+                          int use_pred)
+{
+    int i, j, slice, pix, ret;
+    int sstart, send;
+    VLC vlc;
+    GetBitContext gb;
+    int prev, fsym;
+
+    if ((ret = build_huff10(huff, &vlc, &fsym)) < 0) {
+        av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
+        return ret;
+    }
+    if (fsym >= 0) { // build_huff reported a symbol to fill slices with
+        send = 0;
+        for (slice = 0; slice < c->slices; slice++) {
+            uint16_t *dest;
+
+            sstart = send;
+            send   = (height * (slice + 1) / c->slices);
+            dest   = dst + sstart * stride;
+
+            prev = 0x200;
+            for (j = sstart; j < send; j++) {
+                for (i = 0; i < width * step; i += step) {
+                    pix = fsym;
+                    if (use_pred) {
+                        prev += pix;
+                        pix   = prev;
+                    }
+                    dest[i] = pix;
+                }
+                dest += stride;
+            }
+        }
+        return 0;
+    }
+
+    send = 0;
+    for (slice = 0; slice < c->slices; slice++) {
+        uint16_t *dest;
+        int slice_data_start, slice_data_end, slice_size;
+
+        sstart = send;
+        send   = (height * (slice + 1) / c->slices);
+        dest   = dst + sstart * stride;
+
+        // slice offset and size validation was done earlier
+        slice_data_start = slice ? AV_RL32(src + slice * 4 - 4) : 0;
+        slice_data_end   = AV_RL32(src + slice * 4);
+        slice_size       = slice_data_end - slice_data_start;
+
+        if (!slice_size) {
+            av_log(c->avctx, AV_LOG_ERROR, "Plane has more than one symbol "
+                   "yet a slice has a length of zero.\n");
+            goto fail;
+        }
+
+        memcpy(c->slice_bits, src + slice_data_start + c->slices * 4,
+               slice_size);
+        memset(c->slice_bits + slice_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+        c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
+                          (uint32_t *) c->slice_bits,
+                          (slice_data_end - slice_data_start + 3) >> 2);
+        init_get_bits(&gb, c->slice_bits, slice_size * 8);
+
+        prev = 0x200;
+        for (j = sstart; j < send; j++) {
+            for (i = 0; i < width * step; i += step) {
+                if (get_bits_left(&gb) <= 0) {
+                    av_log(c->avctx, AV_LOG_ERROR,
+                           "Slice decoding ran out of bits\n");
+                    goto fail;
+                }
+                pix = get_vlc2(&gb, vlc.table, vlc.bits, 3);
+                if (pix < 0) {
+                    av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
+                    goto fail;
+                }
+                if (use_pred) {
+                    prev += pix;
+                    prev &= 0x3FF;
+                    pix   = prev;
+                }
+                dest[i] = pix;
+            }
+            dest += stride;
+        }
+        if (get_bits_left(&gb) > 32)
+            av_log(c->avctx, AV_LOG_WARNING,
+                   "%d bits left after decoding slice\n", get_bits_left(&gb));
+    }
+
+    ff_free_vlc(&vlc);
+
+    return 0;
+fail:
+    ff_free_vlc(&vlc);
+    return AVERROR_INVALIDDATA;
 }
 
 static int decode_plane(UtvideoContext *c, int plane_no,
@@ -345,35 +493,60 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* parse plane structure to get frame flags and validate slice offsets */
     bytestream2_init(&gb, buf, buf_size);
-    for (i = 0; i < c->planes; i++) {
-        plane_start[i] = gb.buffer;
-        if (bytestream2_get_bytes_left(&gb) < 256 + 4 * c->slices) {
-            av_log(avctx, AV_LOG_ERROR, "Insufficient data for a plane\n");
-            return AVERROR_INVALIDDATA;
-        }
-        bytestream2_skipu(&gb, 256);
-        slice_start = 0;
-        slice_end   = 0;
-        for (j = 0; j < c->slices; j++) {
-            slice_end   = bytestream2_get_le32u(&gb);
-            if (slice_end < 0 || slice_end < slice_start ||
-                bytestream2_get_bytes_left(&gb) < slice_end) {
-                av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
+    if (c->pro) {
+        c->frame_info = bytestream2_get_le32u(&gb);
+        c->slices = ((c->frame_info >> 24) & 0xff) + 1;
+        for (i = 0; i < c->planes; i++) {
+            plane_size = 0;
+            plane_start[i] = gb.buffer;
+            if (bytestream2_get_bytes_left(&gb) < 1024 + 4 * c->slices) {
+                av_log(avctx, AV_LOG_ERROR, "Insufficient data for a plane\n");
                 return AVERROR_INVALIDDATA;
             }
-            slice_size  = slice_end - slice_start;
-            slice_start = slice_end;
-            max_slice_size = FFMAX(max_slice_size, slice_size);
+            for (j = 0; j < c->slices; j++) {
+                slice_size     = bytestream2_get_le32u(&gb);
+                max_slice_size = FFMAX(max_slice_size, slice_size);
+                plane_size    += slice_size;
+            }
+            bytestream2_skipu(&gb, 1024);
+            bytestream2_skipu(&gb, plane_size);
         }
-        plane_size = slice_end;
-        bytestream2_skipu(&gb, plane_size);
+        plane_start[c->planes] = gb.buffer;
+        if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
+            av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        for (i = 0; i < c->planes; i++) {
+            plane_start[i] = gb.buffer;
+            if (bytestream2_get_bytes_left(&gb) < 256 + 4 * c->slices) {
+                av_log(avctx, AV_LOG_ERROR, "Insufficient data for a plane\n");
+                return AVERROR_INVALIDDATA;
+            }
+            bytestream2_skipu(&gb, 256);
+            slice_start = 0;
+            slice_end   = 0;
+            for (j = 0; j < c->slices; j++) {
+                slice_end   = bytestream2_get_le32u(&gb);
+                if (slice_end < 0 || slice_end < slice_start ||
+                    bytestream2_get_bytes_left(&gb) < slice_end) {
+                    av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                slice_size  = slice_end - slice_start;
+                slice_start = slice_end;
+                max_slice_size = FFMAX(max_slice_size, slice_size);
+            }
+            plane_size = slice_end;
+            bytestream2_skipu(&gb, plane_size);
+        }
+        plane_start[c->planes] = gb.buffer;
+        if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
+            av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
+            return AVERROR_INVALIDDATA;
+        }
+        c->frame_info = bytestream2_get_le32u(&gb);
     }
-    plane_start[c->planes] = gb.buffer;
-    if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
-        av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
-        return AVERROR_INVALIDDATA;
-    }
-    c->frame_info = bytestream2_get_le32u(&gb);
     av_log(avctx, AV_LOG_DEBUG, "frame information flags %"PRIX32"\n",
            c->frame_info);
 
@@ -459,6 +632,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
         break;
+    case AV_PIX_FMT_YUV422P10:
+        for (i = 0; i < 3; i++) {
+            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], 1, frame.f->linesize[i] / 2,
+                                 avctx->width >> !!i, avctx->height,
+                                 plane_start[i], plane_start[i + 1] - 1024, c->frame_pred == PRED_LEFT);
+            if (ret)
+                return ret;
+        }
+        break;
     }
 
     frame.f->key_frame = 1;
@@ -479,27 +661,35 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_bswapdsp_init(&c->bdsp);
 
-    if (avctx->extradata_size < 16) {
+    if (avctx->extradata_size >= 16) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->frame_info_size = AV_RL32(avctx->extradata + 8);
+        c->flags           = AV_RL32(avctx->extradata + 12);
+
+        if (c->frame_info_size != 4)
+            avpriv_request_sample(avctx, "Frame info not 4 bytes");
+        av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
+        c->slices      = (c->flags >> 24) + 1;
+        c->compression = c->flags & 1;
+        c->interlaced  = c->flags & 0x800;
+    } else if (avctx->extradata_size == 8) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->interlaced  = 0;
+        c->pro         = 1;
+    } else {
         av_log(avctx, AV_LOG_ERROR,
                "Insufficient extradata size %d, should be at least 16\n",
                avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
-
-    av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
-           avctx->extradata[3], avctx->extradata[2],
-           avctx->extradata[1], avctx->extradata[0]);
-    av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
-           AV_RB32(avctx->extradata + 4));
-    c->frame_info_size = AV_RL32(avctx->extradata + 8);
-    c->flags           = AV_RL32(avctx->extradata + 12);
-
-    if (c->frame_info_size != 4)
-        avpriv_request_sample(avctx, "Frame info not 4 bytes");
-    av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
-    c->slices      = (c->flags >> 24) + 1;
-    c->compression = c->flags & 1;
-    c->interlaced  = c->flags & 0x800;
 
     c->slice_bits_size = 0;
 
@@ -521,6 +711,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->planes      = 3;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         avctx->colorspace = AVCOL_SPC_BT470BG;
+        break;
+    case MKTAG('U', 'Q', 'Y', '2'):
+        c->planes      = 3;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         break;
     case MKTAG('U', 'L', 'H', '0'):
         c->planes      = 3;
