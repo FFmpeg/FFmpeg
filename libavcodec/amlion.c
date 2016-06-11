@@ -309,7 +309,9 @@ int aml_ion_queue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, AMLIonBuff
   vbuf.m.fd = buffer->fd_handle;
   vbuf.length = buffer->size;
 
+#if DEBUG
   av_log(avctx, AV_LOG_DEBUG, "queuing buffer #%d\n", buffer->index);
+#endif
   ret = ioctl(ionctx->video_fd, VIDIOC_QBUF, &vbuf);
   if (ret < 0)
   {
@@ -338,6 +340,7 @@ int aml_ion_dequeue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, int *got
     if (errno == EAGAIN)
     {
        av_log(avctx, AV_LOG_DEBUG, "LongChair :dequeuing EAGAIN #%d, pts=%d\n", vbuf.index, vbuf.timestamp.tv_usec);
+       usleep(10000);
       return 0;
     }
     else
@@ -347,7 +350,6 @@ int aml_ion_dequeue_buffer(AVCodecContext *avctx,AMLIonContext *ionctx, int *got
     }
   }
 
-  av_log(avctx, AV_LOG_DEBUG, "Planes info bytes=%d\n", vbuf.bytesused);
   ionctx->buffers[vbuf.index].queued = 0;
   ionctx->buffers[vbuf.index].pts = ((double)vbuf.timestamp.tv_usec / 1000000.0) / av_q2d(avctx->time_base);
   *got_buffer = 1;

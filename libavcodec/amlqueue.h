@@ -24,6 +24,6 @@ AVPacket *ffaml_dequeue_packet(AVCodecContext *avctx,PacketQueue *queue);
 AVPacket *ffaml_queue_peek_pts_packet(AVCodecContext *avctx, PacketQueue *queue);
 void ffaml_queue_clear(AVCodecContext *avctx, PacketQueue *queue);
 
-#define DEBUG   (1)
+#define DEBUG   (0)
 
 #endif /* _AMLQUEUE_H_ */

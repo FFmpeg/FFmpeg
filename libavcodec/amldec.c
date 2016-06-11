@@ -296,7 +296,7 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
   int extradata_size;
 
   //av_log(avctx, AV_LOG_DEBUG, "decode start\n");
-#if 1
+#if DEBUG
   ffaml_log_decoder_info(avctx);
 #endif
 
@@ -398,13 +398,13 @@ static int ffaml_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
 
-    av_image_fill_arrays(src, linesize, aml_context->ion_context.buffers[bufferid].data,
-			avctx->pix_fmt, 
-			aml_context->ion_context.buffers[bufferid].stride, 
-			aml_context->ion_context.buffers[bufferid].height, 1);
+//    av_image_fill_arrays(src, linesize, aml_context->ion_context.buffers[bufferid].data,
+//			avctx->pix_fmt,
+//			aml_context->ion_context.buffers[bufferid].stride,
+//			aml_context->ion_context.buffers[bufferid].height, 1);
 
-    av_image_copy(frame->data, frame->linesize, (const uint8_t **)src, linesize,
-                      avctx->pix_fmt, avctx->width, avctx->height);
+//    av_image_copy(frame->data, frame->linesize, (const uint8_t **)src, linesize,
+//                      avctx->pix_fmt, avctx->width, avctx->height);
 
     frame->pkt_pts = aml_context->ion_context.buffers[bufferid].pts;
 
