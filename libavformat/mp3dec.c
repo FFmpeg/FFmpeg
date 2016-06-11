@@ -69,6 +69,7 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 static int mp3_read_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0;
+    int whole_used = 0;
     int frames, ret;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
@@ -93,8 +94,11 @@ static int mp3_read_probe(AVProbeData *p)
             buf2 += h.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
-        if(buf == buf0)
+        if(buf == buf0) {
             first_frames= frames;
+            if (buf2 == end + sizeof(uint32_t))
+                whole_used = 1;
+        }
     }
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
@@ -103,6 +107,7 @@ static int mp3_read_probe(AVProbeData *p)
     else if(max_frames>=4 && max_frames >= p->buf_size/10000) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
                            return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
+    else if(first_frames > 1 && whole_used) return 5;
     else if(max_frames>=1 && max_frames >= p->buf_size/10000) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
