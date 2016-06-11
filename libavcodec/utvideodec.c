@@ -153,6 +153,7 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
                     pix = fsym;
                     if (use_pred) {
                         prev += pix;
+                        prev &= 0x3FF;
                         pix   = prev;
                     }
                     dest[i] = pix;
@@ -346,6 +347,28 @@ static void restore_rgb_planes(uint8_t *src, int step, int stride, int width,
             src[i + 2] = b + g - 0x80;
         }
         src += stride;
+    }
+}
+
+static void restore_rgb_planes10(AVFrame *frame, int width, int height)
+{
+    uint16_t *src_r = (uint16_t *)frame->data[2];
+    uint16_t *src_g = (uint16_t *)frame->data[0];
+    uint16_t *src_b = (uint16_t *)frame->data[1];
+    int r, g, b;
+    int i, j;
+
+    for (j = 0; j < height; j++) {
+        for (i = 0; i < width; i++) {
+            r = src_r[i];
+            g = src_g[i];
+            b = src_b[i];
+            src_r[i] = (r + g - 0x200) & 0x3FF;
+            src_b[i] = (b + g - 0x200) & 0x3FF;
+        }
+        src_r += frame->linesize[2] / 2;
+        src_g += frame->linesize[0] / 2;
+        src_b += frame->linesize[1] / 2;
     }
 }
 
@@ -599,6 +622,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         restore_rgb_planes(frame.f->data[0], c->planes, frame.f->linesize[0],
                            avctx->width, avctx->height);
         break;
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRP10:
+        for (i = 0; i < c->planes; i++) {
+            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], 1,
+                                 frame.f->linesize[i] / 2, avctx->width,
+                                 avctx->height, plane_start[i],
+                                 plane_start[i + 1] - 1024,
+                                 c->frame_pred == PRED_LEFT);
+            if (ret)
+                return ret;
+        }
+        restore_rgb_planes10(frame.f, avctx->width, avctx->height);
+        break;
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
             ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
@@ -724,6 +760,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case MKTAG('U', 'Q', 'Y', '2'):
         c->planes      = 3;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+        break;
+    case MKTAG('U', 'Q', 'R', 'G'):
+        c->planes      = 3;
+        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        break;
+    case MKTAG('U', 'Q', 'R', 'A'):
+        c->planes      = 4;
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         break;
     case MKTAG('U', 'L', 'H', '0'):
         c->planes      = 3;
