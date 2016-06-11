@@ -2796,6 +2796,13 @@ static int decode_interrupt_cb(void *ctx)
     return is->abort_request;
 }
 
+static int stream_has_enough_packets(AVStream *st, int stream_id, PacketQueue *queue) {
+    return stream_id < 0 ||
+           queue->abort_request ||
+           (st->disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+           queue->nb_packets > MIN_FRAMES;
+}
+
 static int is_realtime(AVFormatContext *s)
 {
     if(   !strcmp(s->iformat->name, "rtp")
@@ -3060,10 +3067,9 @@ static int read_thread(void *arg)
         /* if the queue are full, no need to read more */
         if (infinite_buffer<1 &&
               (is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
-            || (   (is->audioq   .nb_packets > MIN_FRAMES || is->audio_stream < 0 || is->audioq.abort_request)
-                && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0 || is->videoq.abort_request
-                    || (is->video_st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-                && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0 || is->subtitleq.abort_request)))) {
+            || (stream_has_enough_packets(is->audio_st, is->audio_stream, &is->audioq) &&
+                stream_has_enough_packets(is->video_st, is->video_stream, &is->videoq) &&
+                stream_has_enough_packets(is->subtitle_st, is->subtitle_stream, &is->subtitleq)))) {
             /* wait 10 ms */
             SDL_LockMutex(wait_mutex);
             SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
