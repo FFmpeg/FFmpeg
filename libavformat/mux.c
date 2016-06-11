@@ -823,6 +823,11 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
+            if (!s->internal->header_written) {
+                ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
+                if (ret < 0)
+                    return ret;
+            }
             ret = s->oformat->write_packet(s, NULL);
             if (s->flush_packets && s->pb && s->pb->error >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
                 avio_flush(s->pb);
