@@ -109,9 +109,6 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     /* Allocate the output frame */
     avctx->coded_frame = av_frame_alloc();
 
-    /* Ut Video only supports 8-bit */
-    avctx->bits_per_raw_sample = 8;
-
     /* Is it interlaced? */
     avctx->coded_frame->interlaced_frame = info.flags & 0x800 ? 1 : 0;
 
