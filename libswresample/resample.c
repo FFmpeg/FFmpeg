@@ -297,13 +297,28 @@ fail:
 
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
                                     double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta,
-                                    double precision, int cheby)
+                                    double precision, int cheby, int exact_rational)
 {
     double cutoff = cutoff0? cutoff0 : 0.97;
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
 
-    if (!c || c->phase_shift != phase_shift || c->linear!=linear || c->factor != factor
+    if (exact_rational) {
+        int phase_count_exact, phase_count_exact_den;
+
+        av_reduce(&phase_count_exact, &phase_count_exact_den, out_rate, in_rate, INT_MAX);
+        /* FIXME this is not required, but build_filter needs even phase_count */
+        if (phase_count_exact & 1 && phase_count_exact > 1 && phase_count_exact < INT_MAX/2)
+            phase_count_exact *= 2;
+
+        if (phase_count_exact <= phase_count) {
+            /* FIXME this is not required when soft compensation is disabled */
+            phase_count_exact *= phase_count / phase_count_exact;
+            phase_count = phase_count_exact;
+        }
+    }
+
+    if (!c || c->phase_count != phase_count || c->linear!=linear || c->factor != factor
            || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format
            || c->filter_type != filter_type || c->kaiser_beta != kaiser_beta) {
         c = av_mallocz(sizeof(*c));
@@ -337,6 +352,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
 
         c->phase_shift   = phase_shift;
         c->phase_mask    = phase_count - 1;
+        c->phase_count   = phase_count;
         c->linear        = linear;
         c->factor        = factor;
         c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
@@ -399,7 +415,7 @@ static int swri_resample(ResampleContext *c,
                          uint8_t *dst, const uint8_t *src, int *consumed,
                          int src_size, int dst_size, int update_ctx)
 {
-    if (c->filter_length == 1 && c->phase_shift == 0) {
+    if (c->filter_length == 1 && c->phase_count == 1) {
         int index= c->index;
         int frac= c->frac;
         int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
@@ -418,7 +434,7 @@ static int swri_resample(ResampleContext *c,
             c->index = 0;
         }
     } else {
-        int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
+        int64_t end_index = (1LL + src_size - c->filter_length) * c->phase_count;
         int64_t delta_frac = (end_index - c->index) * c->src_incr - c->frac;
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
 
@@ -438,7 +454,7 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     int av_unused mm_flags = av_get_cpu_flags();
     int need_emms = c->format == AV_SAMPLE_FMT_S16P && ARCH_X86_32 &&
                     (mm_flags & (AV_CPU_FLAG_MMX2 | AV_CPU_FLAG_SSE2)) == AV_CPU_FLAG_MMX2;
-    int64_t max_src_size = (INT64_MAX >> (c->phase_shift+1)) / c->src_incr;
+    int64_t max_src_size = (INT64_MAX/2 / c->phase_count) / c->src_incr;
 
     if (c->compensation_distance)
         dst_size = FFMIN(dst_size, c->compensation_distance);
@@ -466,11 +482,11 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 static int64_t get_delay(struct SwrContext *s, int64_t base){
     ResampleContext *c = s->resample;
     int64_t num = s->in_buffer_count - (c->filter_length-1)/2;
-    num *= 1 << c->phase_shift;
+    num *= c->phase_count;
     num -= c->index;
     num *= c->src_incr;
     num -= c->frac;
-    return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr << c->phase_shift);
+    return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr * c->phase_count);
 }
 
 static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
@@ -479,9 +495,9 @@ static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
     // They also make it easier to proof that changes and optimizations do not
     // break the upper bound.
     int64_t num = s->in_buffer_count + 2LL + in_samples;
-    num *= 1 << c->phase_shift;
+    num *= c->phase_count;
     num -= c->index;
-    num = av_rescale_rnd(num, s->out_sample_rate, ((int64_t)s->in_sample_rate) << c->phase_shift, AV_ROUND_UP) + 2;
+    num = av_rescale_rnd(num, s->out_sample_rate, ((int64_t)s->in_sample_rate) * c->phase_count, AV_ROUND_UP) + 2;
 
     if (c->compensation_distance) {
         if (num > INT_MAX)
@@ -545,10 +561,13 @@ static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const Audio
     }
 
     res = num - *out_sz;
-    *out_idx = c->filter_length + (c->index >> c->phase_shift);
+    *out_idx = c->filter_length;
+    while (c->index < 0) {
+        --*out_idx;
+        c->index += c->phase_count;
+    }
     *out_sz = FFMAX(*out_sz + c->filter_length,
                     1 + c->filter_length * 2) - *out_idx;
-    c->index &= c->phase_mask;
 
     return FFMAX(res, 0);
 }

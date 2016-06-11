@@ -44,11 +44,15 @@ static int ff_resample_common_##TYPE##_neon(ResampleContext *c, void *dest, cons
     int dst_index;                                                                                \
     int index= c->index;                                                                          \
     int frac= c->frac;                                                                            \
-    int sample_index = index >> c->phase_shift;                                                   \
+    int sample_index = 0;                                                                         \
     int x4_aligned_filter_length = c->filter_length & ~3;                                         \
     int x8_aligned_filter_length = c->filter_length & ~7;                                         \
                                                                                                   \
-    index &= c->phase_mask;                                                                       \
+    while (index >= c->phase_count) {                                                             \
+        sample_index++;                                                                           \
+        index -= c->phase_count;                                                                  \
+    }                                                                                             \
+                                                                                                  \
     for (dst_index = 0; dst_index < n; dst_index++) {                                             \
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;                     \
                                                                                                   \
@@ -75,8 +79,11 @@ static int ff_resample_common_##TYPE##_neon(ResampleContext *c, void *dest, cons
             frac -= c->src_incr;                                                                  \
             index++;                                                                              \
         }                                                                                         \
-        sample_index += index >> c->phase_shift;                                                  \
-        index &= c->phase_mask;                                                                   \
+                                                                                                  \
+        while (index >= c->phase_count) {                                                         \
+            sample_index++;                                                                       \
+            index -= c->phase_count;                                                              \
+        }                                                                                         \
     }                                                                                             \
                                                                                                   \
     if(update_ctx){                                                                               \
