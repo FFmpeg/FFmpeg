@@ -82,6 +82,7 @@
     <YASM Include="..\libavfilter\x86\vf_psnr.asm" />
     <YASM Include="..\libavfilter\x86\vf_pullup.asm" />
     <YASM Include="..\libavfilter\x86\vf_removegrain.asm" />
+    <YASM Include="..\libavfilter\x86\avf_showcqt.asm" />
     <YASM Include="..\libavfilter\x86\vf_ssim.asm" />
     <YASM Include="..\libavfilter\x86\vf_stereo3d.asm" />
     <YASM Include="..\libavfilter\x86\af_volume.asm" />
@@ -359,7 +360,9 @@
     <ClCompile Include="..\libavfilter\avf_aphasemeter.c" />
     <ClCompile Include="..\libavfilter\avf_avectorscope.c" />
     <ClCompile Include="..\libavfilter\avf_concat.c" />
-    <ClCompile Include="..\libavfilter\avf_showcqt.c" />
+    <ClCompile Include="..\libavfilter\avf_showcqt.c">
+      <ObjectFileName>$(IntDir)\libavfilter_avf_showcqt.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\avf_showfreqs.c" />
     <ClCompile Include="..\libavfilter\avf_showspectrum.c" />
     <ClCompile Include="..\libavfilter\avf_showvolume.c" />
@@ -385,6 +388,7 @@
     <ClCompile Include="..\libavfilter\x86\vf_psnr_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_removegrain_init.c" />
+    <ClCompile Include="..\libavfilter\x86\avf_showcqt_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_spp.c">
       <ObjectFileName>$(IntDir)\libavfilter_x86_vf_spp.obj</ObjectFileName>
     </ClCompile>

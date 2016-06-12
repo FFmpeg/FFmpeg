@@ -1836,6 +1836,9 @@
     <ClCompile Include="..\libavcodec\sgirledec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\sheervideo.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\shorten.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

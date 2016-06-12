@@ -738,6 +738,7 @@
     <ClCompile Include="..\libavcodec\sgienc.c" />
     <ClCompile Include="..\libavcodec\rle.c" />
     <ClCompile Include="..\libavcodec\sgirledec.c" />
+    <ClCompile Include="..\libavcodec\sheervideo.c" />
     <ClCompile Include="..\libavcodec\shorten.c" />
     <ClCompile Include="..\libavcodec\sipr.c" />
     <ClCompile Include="..\libavcodec\sipr16k.c" />
