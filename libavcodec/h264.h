@@ -919,8 +919,6 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_cabac_states(const H264Context *h, H264SliceContext *sl);
 
-void ff_h264_init_dequant_tables(PPS *pps, const SPS *sps);
-
 void ff_h264_direct_dist_scale_factor(const H264Context *const h, H264SliceContext *sl);
 void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *sl);
 void ff_h264_pred_direct_motion(const H264Context *const h, H264SliceContext *sl,
