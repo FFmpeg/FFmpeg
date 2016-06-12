@@ -59,7 +59,7 @@ static int redspark_read_header(AVFormatContext *s)
     GetByteContext gbc;
     int i, coef_off, ret = 0;
     uint32_t key, data;
-    uint8_t *header, *pbc;
+    uint8_t header[HEADER_SIZE];
     AVStream *st;
 
     st = avformat_new_stream(s, NULL);
@@ -67,20 +67,15 @@ static int redspark_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     par = st->codecpar;
 
-    header = av_malloc(HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!header)
-        return AVERROR(ENOMEM);
-    pbc = header;
-
     /* Decrypt header */
     data = avio_rb32(pb);
     data = data ^ (key = data ^ 0x52656453);
-    bytestream_put_be32(&pbc, data);
+    AV_WB32(header, data);
     key = (key << 11) | (key >> 21);
 
     for (i = 4; i < HEADER_SIZE; i += 4) {
         data = avio_rb32(pb) ^ (key = ((key << 3) | (key >> 29)) + key);
-        bytestream_put_be32(&pbc, data);
+        AV_WB32(header + i, data);
     }
 
     par->codec_id    = AV_CODEC_ID_ADPCM_THP;
@@ -91,8 +86,7 @@ static int redspark_read_header(AVFormatContext *s)
     par->sample_rate = bytestream2_get_be32u(&gbc);
     if (par->sample_rate <= 0 || par->sample_rate > 96000) {
         av_log(s, AV_LOG_ERROR, "Invalid sample rate: %d\n", par->sample_rate);
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     st->duration = bytestream2_get_be32u(&gbc) * 14;
@@ -100,8 +94,7 @@ static int redspark_read_header(AVFormatContext *s)
     bytestream2_skipu(&gbc, 10);
     par->channels = bytestream2_get_byteu(&gbc);
     if (!par->channels) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     coef_off = 0x54 + par->channels * 8;
@@ -109,29 +102,23 @@ static int redspark_read_header(AVFormatContext *s)
         coef_off += 16;
 
     if (coef_off + par->channels * (32 + 14) > HEADER_SIZE) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     if (ff_alloc_extradata(par, 32 * par->channels)) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR_INVALIDDATA;
     }
 
     /* Get the ADPCM table */
     bytestream2_seek(&gbc, coef_off, SEEK_SET);
     for (i = 0; i < par->channels; i++) {
         if (bytestream2_get_bufferu(&gbc, par->extradata + i * 32, 32) != 32) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
         bytestream2_skipu(&gbc, 14);
     }
 
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
-
-fail:
-    av_free(header);
 
     return ret;
 }
