@@ -2304,6 +2304,9 @@
     <ClCompile Include="..\libavcodec\qsvenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\cuvid.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

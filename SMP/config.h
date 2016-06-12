@@ -21,7 +21,7 @@
 
 #ifndef FFMPEG_CONFIG_H
 #define FFMPEG_CONFIG_H
-#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-nonfree --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libfdk-aac --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --enable-cuda --enable-cuvid --toolchain=msvc"
 #define FFMPEG_LICENSE "nonfree and unredistributable"
 #define CONFIG_THIS_YEAR 2016
 #define FFMPEG_DATADIR "."
@@ -597,8 +597,8 @@
 #   define CONFIG_STATIC 1
 #endif
 #define CONFIG_SWSCALE_ALPHA 1
-#define CONFIG_CUDA 0
-#define CONFIG_CUVID 0
+#define CONFIG_CUDA 1
+#define CONFIG_CUVID 1
 #define CONFIG_LIBMFX 1
 #define CONFIG_MMAL 0
 #define CONFIG_NVENC 1
@@ -1191,11 +1191,11 @@
 #define CONFIG_BINTEXT_DECODER 1
 #define CONFIG_XBIN_DECODER 1
 #define CONFIG_IDF_DECODER 1
-#define CONFIG_H264_CUVID_DECODER 0
-#define CONFIG_HEVC_CUVID_DECODER 0
-#define CONFIG_VC1_CUVID_DECODER 0
-#define CONFIG_VP8_CUVID_DECODER 0
-#define CONFIG_VP9_CUVID_DECODER 0
+#define CONFIG_H264_CUVID_DECODER 1
+#define CONFIG_HEVC_CUVID_DECODER 1
+#define CONFIG_VC1_CUVID_DECODER 1
+#define CONFIG_VP8_CUVID_DECODER 1
+#define CONFIG_VP9_CUVID_DECODER 1
 #define CONFIG_AA_DEMUXER 1
 #define CONFIG_AAC_DEMUXER 1
 #define CONFIG_AC3_DEMUXER 1
@@ -1806,7 +1806,7 @@
 #define CONFIG_HQX_FILTER 1
 #define CONFIG_HWDOWNLOAD_FILTER 1
 #define CONFIG_HWUPLOAD_FILTER 1
-#define CONFIG_HWUPLOAD_CUDA_FILTER 0
+#define CONFIG_HWUPLOAD_CUDA_FILTER 1
 #define CONFIG_HSTACK_FILTER 1
 #define CONFIG_HUE_FILTER 1
 #define CONFIG_IDET_FILTER 1
@@ -1940,7 +1940,7 @@
 #define CONFIG_MOVIE_FILTER 1
 #define CONFIG_H263_VAAPI_HWACCEL 0
 #define CONFIG_H263_VIDEOTOOLBOX_HWACCEL 0
-#define CONFIG_H264_CUVID_HWACCEL 0
+#define CONFIG_H264_CUVID_HWACCEL 1
 #define CONFIG_H264_D3D11VA_HWACCEL 1
 #define CONFIG_H264_DXVA2_HWACCEL 1
 #define CONFIG_H264_MMAL_HWACCEL 0
@@ -1950,7 +1950,7 @@
 #define CONFIG_H264_VDA_OLD_HWACCEL 0
 #define CONFIG_H264_VDPAU_HWACCEL 0
 #define CONFIG_H264_VIDEOTOOLBOX_HWACCEL 0
-#define CONFIG_HEVC_CUVID_HWACCEL 0
+#define CONFIG_HEVC_CUVID_HWACCEL 1
 #define CONFIG_HEVC_D3D11VA_HWACCEL 1
 #define CONFIG_HEVC_DXVA2_HWACCEL 1
 #define CONFIG_HEVC_QSV_HWACCEL 1
@@ -1971,15 +1971,15 @@
 #define CONFIG_MPEG4_VAAPI_HWACCEL 0
 #define CONFIG_MPEG4_VDPAU_HWACCEL 0
 #define CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL 0
-#define CONFIG_VC1_CUVID_HWACCEL 0
+#define CONFIG_VC1_CUVID_HWACCEL 1
 #define CONFIG_VC1_D3D11VA_HWACCEL 1
 #define CONFIG_VC1_DXVA2_HWACCEL 1
 #define CONFIG_VC1_VAAPI_HWACCEL 0
 #define CONFIG_VC1_VDPAU_HWACCEL 0
 #define CONFIG_VC1_MMAL_HWACCEL 0
 #define CONFIG_VC1_QSV_HWACCEL 1
-#define CONFIG_VP8_CUVID_HWACCEL 0
-#define CONFIG_VP9_CUVID_HWACCEL 0
+#define CONFIG_VP8_CUVID_HWACCEL 1
+#define CONFIG_VP9_CUVID_HWACCEL 1
 #include <sdkddkver.h>
 #if defined(NTDDI_WIN10_TH2)
 #   define CONFIG_VP9_D3D11VA_HWACCEL 1
