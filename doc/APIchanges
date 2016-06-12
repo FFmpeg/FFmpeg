@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.19.0 - hwcontext_vaapi.h
+  Add driver quirks field to VAAPI-specific hwdevice and enum with
+  members AV_VAAPI_DRIVER_QUIRK_* to represent its values.
+
 2016-xx-xx - xxxxxxx - lavu 55.18.0 - pixdesc.h
   Add AV_PIX_FMT_P010(LE/BE).
 

@@ -263,12 +263,25 @@ fail:
     return err;
 }
 
+static const struct {
+    const char *friendly_name;
+    const char *match_string;
+    unsigned int quirks;
+} vaapi_driver_quirks_table[] = {
+    {
+        "Intel i965 (Quick Sync)",
+        "i965",
+        AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS,
+    },
+};
+
 static int vaapi_device_init(AVHWDeviceContext *hwdev)
 {
     VAAPIDeviceContext *ctx = hwdev->internal->priv;
     AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
     VAImageFormat *image_list = NULL;
     VAStatus vas;
+    const char *vendor_string;
     int err, i, image_count;
     enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
@@ -307,6 +320,32 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
             ctx->formats[ctx->nb_formats].pix_fmt      = pix_fmt;
             ctx->formats[ctx->nb_formats].image_format = image_list[i];
             ++ctx->nb_formats;
+        }
+    }
+
+    if (hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_USER_SET) {
+        av_log(hwdev, AV_LOG_VERBOSE, "Not detecting driver: "
+               "quirks set by user.\n");
+    } else {
+        // Detect the driver in use and set quirk flags if necessary.
+        vendor_string = vaQueryVendorString(hwctx->display);
+        hwctx->driver_quirks = 0;
+        if (vendor_string) {
+            for (i = 0; i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table); i++) {
+                if (strstr(vendor_string,
+                           vaapi_driver_quirks_table[i].match_string)) {
+                    av_log(hwdev, AV_LOG_VERBOSE, "Matched \"%s\" as known "
+                           "driver \"%s\".\n", vendor_string,
+                           vaapi_driver_quirks_table[i].friendly_name);
+                    hwctx->driver_quirks |=
+                        vaapi_driver_quirks_table[i].quirks;
+                    break;
+                }
+            }
+            if (!(i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table))) {
+                av_log(hwdev, AV_LOG_VERBOSE, "Unknown driver \"%s\", "
+                       "assuming standard behaviour.\n", vendor_string);
+            }
         }
     }
 
