@@ -49,6 +49,7 @@ typedef struct H264ParseContext {
     ParseContext pc;
     H264ParamSets ps;
     H264DSPContext h264dsp;
+    H264POCContext poc;
     int got_first;
 } H264ParseContext;
 
@@ -327,10 +328,10 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         case NAL_IDR_SLICE:
             s->key_frame = 1;
 
-            h->prev_frame_num        = 0;
-            h->prev_frame_num_offset = 0;
-            h->prev_poc_msb          =
-            h->prev_poc_lsb          = 0;
+            p->poc.prev_frame_num        = 0;
+            p->poc.prev_frame_num_offset = 0;
+            p->poc.prev_poc_msb          =
+            p->poc.prev_poc_lsb          = 0;
         /* fall through */
         case NAL_SLICE:
             get_ue_golomb_long(&nal.gb);  // skip first_mb_in_slice
@@ -367,7 +368,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (h->ps.sps->ref_frame_count <= 1 && h->ps.pps->ref_count[0] <= 1 && s->pict_type == AV_PICTURE_TYPE_I)
                 s->key_frame = 1;
 
-            h->frame_num = get_bits(&nal.gb, sps->log2_max_frame_num);
+            p->poc.frame_num = get_bits(&nal.gb, sps->log2_max_frame_num);
 
             s->coded_width  = 16 * sps->mb_width;
             s->coded_height = 16 * sps->mb_height;
@@ -414,26 +415,27 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             if (h->nal_unit_type == NAL_IDR_SLICE)
                 get_ue_golomb_long(&nal.gb); /* idr_pic_id */
             if (sps->poc_type == 0) {
-                h->poc_lsb = get_bits(&nal.gb, sps->log2_max_poc_lsb);
+                p->poc.poc_lsb = get_bits(&nal.gb, sps->log2_max_poc_lsb);
 
                 if (p->ps.pps->pic_order_present == 1 &&
                     h->picture_structure == PICT_FRAME)
-                    h->delta_poc_bottom = get_se_golomb(&nal.gb);
+                    p->poc.delta_poc_bottom = get_se_golomb(&nal.gb);
             }
 
             if (sps->poc_type == 1 &&
                 !sps->delta_pic_order_always_zero_flag) {
-                h->delta_poc[0] = get_se_golomb(&nal.gb);
+                p->poc.delta_poc[0] = get_se_golomb(&nal.gb);
 
                 if (p->ps.pps->pic_order_present == 1 &&
                     h->picture_structure == PICT_FRAME)
-                    h->delta_poc[1] = get_se_golomb(&nal.gb);
+                    p->poc.delta_poc[1] = get_se_golomb(&nal.gb);
             }
 
             /* Decode POC of this picture.
              * The prev_ values needed for decoding POC of the next picture are not set here. */
             field_poc[0] = field_poc[1] = INT_MAX;
-            ff_init_poc(h, field_poc, &s->output_picture_number);
+            ff_h264_init_poc(field_poc, &s->output_picture_number, sps,
+                             &p->poc, h->picture_structure, nal.ref_idc);
 
             /* Continue parsing to check if MMCO_RESET is present.
              * FIXME: MMCO_RESET could appear in non-first slice.
@@ -446,15 +448,15 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
 
             /* Set up the prev_ values for decoding POC of the next picture. */
-            h->prev_frame_num        = got_reset ? 0 : h->frame_num;
-            h->prev_frame_num_offset = got_reset ? 0 : h->frame_num_offset;
+            p->poc.prev_frame_num        = got_reset ? 0 : p->poc.frame_num;
+            p->poc.prev_frame_num_offset = got_reset ? 0 : p->poc.frame_num_offset;
             if (h->nal_ref_idc != 0) {
                 if (!got_reset) {
-                    h->prev_poc_msb = h->poc_msb;
-                    h->prev_poc_lsb = h->poc_lsb;
+                    p->poc.prev_poc_msb = p->poc.poc_msb;
+                    p->poc.prev_poc_lsb = p->poc.poc_lsb;
                 } else {
-                    h->prev_poc_msb = 0;
-                    h->prev_poc_lsb =
+                    p->poc.prev_poc_msb = 0;
+                    p->poc.prev_poc_lsb =
                         h->picture_structure == PICT_BOTTOM_FIELD ? 0 : field_poc[0];
                 }
             }

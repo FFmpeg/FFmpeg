@@ -648,17 +648,7 @@ typedef struct H264Context {
 
     uint16_t *slice_table_base;
 
-    // POC stuff
-    int poc_lsb;
-    int poc_msb;
-    int delta_poc_bottom;
-    int delta_poc[2];
-    int frame_num;
-    int prev_poc_msb;           ///< poc_msb of the last reference pic for POC type 0
-    int prev_poc_lsb;           ///< poc_lsb of the last reference pic for POC type 0
-    int frame_num_offset;       ///< for POC type 2
-    int prev_frame_num_offset;  ///< for POC type 2
-    int prev_frame_num;         ///< frame_num of the last pic for POC type 1/2
+    H264POCContext poc;
 
     /**
      * frame_num for frames or 2 * frame_num + 1 for field pics.
@@ -1188,7 +1178,6 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic);
 int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
-int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
 
 int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl);
 #define SLICE_SINGLETHREAD 1

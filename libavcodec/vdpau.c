@@ -459,7 +459,7 @@ void ff_vdpau_h264_picture_start(H264Context *h)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
-    render->info.h264.frame_num = h->frame_num;
+    render->info.h264.frame_num = h->poc.frame_num;
 }
 
 void ff_vdpau_h264_picture_complete(H264Context *h)

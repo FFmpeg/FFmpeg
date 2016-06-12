@@ -429,11 +429,11 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->slice_context_count   = 1;
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
-    h->prev_poc_msb          = 1 << 16;
+    h->poc.prev_poc_msb      = 1 << 16;
     h->x264_build            = -1;
     h->recovery_frame        = -1;
     h->frame_recovered       = 0;
-    h->prev_frame_num        = -1;
+    h->poc.prev_frame_num    = -1;
     h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
 
     h->next_outputed_poc = INT_MIN;
@@ -831,10 +831,10 @@ static void idr(H264Context *h)
 {
     int i;
     ff_h264_remove_all_refs(h);
-    h->prev_frame_num        =
-    h->prev_frame_num_offset = 0;
-    h->prev_poc_msb          = 1<<16;
-    h->prev_poc_lsb          = 0;
+    h->poc.prev_frame_num        =
+    h->poc.prev_frame_num_offset = 0;
+    h->poc.prev_poc_msb          = 1<<16;
+    h->poc.prev_poc_lsb          = 0;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
 }
@@ -848,7 +848,7 @@ void ff_h264_flush_change(H264Context *h)
     h->prev_interlaced_frame = 1;
     idr(h);
 
-    h->prev_frame_num = -1;
+    h->poc.prev_frame_num = -1;
     if (h->cur_pic_ptr) {
         h->cur_pic_ptr->reference = 0;
         for (j=i=0; h->delayed_pic[i]; i++)
@@ -887,85 +887,6 @@ static void flush_dpb(AVCodecContext *avctx)
 
     ff_h264_free_tables(h);
     h->context_initialized = 0;
-}
-
-int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
-{
-    const SPS *sps = h->ps.sps;
-    const int max_frame_num = 1 << sps->log2_max_frame_num;
-    int field_poc[2];
-
-    h->frame_num_offset = h->prev_frame_num_offset;
-    if (h->frame_num < h->prev_frame_num)
-        h->frame_num_offset += max_frame_num;
-
-    if (sps->poc_type == 0) {
-        const int max_poc_lsb = 1 << sps->log2_max_poc_lsb;
-
-        if (h->poc_lsb < h->prev_poc_lsb &&
-            h->prev_poc_lsb - h->poc_lsb >= max_poc_lsb / 2)
-            h->poc_msb = h->prev_poc_msb + max_poc_lsb;
-        else if (h->poc_lsb > h->prev_poc_lsb &&
-                 h->prev_poc_lsb - h->poc_lsb < -max_poc_lsb / 2)
-            h->poc_msb = h->prev_poc_msb - max_poc_lsb;
-        else
-            h->poc_msb = h->prev_poc_msb;
-        field_poc[0] =
-        field_poc[1] = h->poc_msb + h->poc_lsb;
-        if (h->picture_structure == PICT_FRAME)
-            field_poc[1] += h->delta_poc_bottom;
-    } else if (sps->poc_type == 1) {
-        int abs_frame_num, expected_delta_per_poc_cycle, expectedpoc;
-        int i;
-
-        if (sps->poc_cycle_length != 0)
-            abs_frame_num = h->frame_num_offset + h->frame_num;
-        else
-            abs_frame_num = 0;
-
-        if (h->nal_ref_idc == 0 && abs_frame_num > 0)
-            abs_frame_num--;
-
-        expected_delta_per_poc_cycle = 0;
-        for (i = 0; i < sps->poc_cycle_length; i++)
-            // FIXME integrate during sps parse
-            expected_delta_per_poc_cycle += sps->offset_for_ref_frame[i];
-
-        if (abs_frame_num > 0) {
-            int poc_cycle_cnt          = (abs_frame_num - 1) / sps->poc_cycle_length;
-            int frame_num_in_poc_cycle = (abs_frame_num - 1) % sps->poc_cycle_length;
-
-            expectedpoc = poc_cycle_cnt * expected_delta_per_poc_cycle;
-            for (i = 0; i <= frame_num_in_poc_cycle; i++)
-                expectedpoc = expectedpoc + sps->offset_for_ref_frame[i];
-        } else
-            expectedpoc = 0;
-
-        if (h->nal_ref_idc == 0)
-            expectedpoc = expectedpoc + sps->offset_for_non_ref_pic;
-
-        field_poc[0] = expectedpoc + h->delta_poc[0];
-        field_poc[1] = field_poc[0] + sps->offset_for_top_to_bottom_field;
-
-        if (h->picture_structure == PICT_FRAME)
-            field_poc[1] += h->delta_poc[1];
-    } else {
-        int poc = 2 * (h->frame_num_offset + h->frame_num);
-
-        if (!h->nal_ref_idc)
-            poc--;
-
-        field_poc[0] = poc;
-        field_poc[1] = poc;
-    }
-
-    if (h->picture_structure != PICT_BOTTOM_FIELD)
-        pic_field_poc[0] = field_poc[0];
-    if (h->picture_structure != PICT_TOP_FIELD)
-        pic_field_poc[1] = field_poc[1];
-    *pic_poc = FFMIN(pic_field_poc[0], pic_field_poc[1]);
-
-    return 0;
 }
 
 /**
@@ -1148,22 +1069,22 @@ again:
                 break;
 
             if (h->sei_recovery_frame_cnt >= 0) {
-                if (h->frame_num != h->sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
+                if (h->poc.frame_num != h->sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
                     h->valid_recovery_point = 1;
 
                 if (   h->recovery_frame < 0
-                    || av_mod_uintp2(h->recovery_frame - h->frame_num, h->ps.sps->log2_max_frame_num) > h->sei_recovery_frame_cnt) {
-                    h->recovery_frame = av_mod_uintp2(h->frame_num + h->sei_recovery_frame_cnt, h->ps.sps->log2_max_frame_num);
+                    || av_mod_uintp2(h->recovery_frame - h->poc.frame_num, h->ps.sps->log2_max_frame_num) > h->sei_recovery_frame_cnt) {
+                    h->recovery_frame = av_mod_uintp2(h->poc.frame_num + h->sei_recovery_frame_cnt, h->ps.sps->log2_max_frame_num);
 
                     if (!h->valid_recovery_point)
-                        h->recovery_frame = h->frame_num;
+                        h->recovery_frame = h->poc.frame_num;
                 }
             }
 
             h->cur_pic_ptr->f->key_frame |= (nal->type == NAL_IDR_SLICE);
 
             if (nal->type == NAL_IDR_SLICE ||
-                (h->recovery_frame == h->frame_num && nal->ref_idc)) {
+                (h->recovery_frame == h->poc.frame_num && nal->ref_idc)) {
                 h->recovery_frame         = -1;
                 h->cur_pic_ptr->recovered = 1;
             }

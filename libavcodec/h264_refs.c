@@ -725,7 +725,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
             for (j = 0; j < 16; j++) {
                 remove_long(h, j, 0);
             }
-            h->frame_num  = h->cur_pic_ptr->frame_num = 0;
+            h->poc.frame_num = h->cur_pic_ptr->frame_num = 0;
             h->mmco_reset = 1;
             h->cur_pic_ptr->mmco_reset = 1;
             for (j = 0; j < MAX_DELAYED_PIC_COUNT; j++)
