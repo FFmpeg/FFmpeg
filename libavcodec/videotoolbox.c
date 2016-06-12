@@ -102,11 +102,11 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     memcpy(p + 9, h->ps.sps->data, h->ps.sps->data_size);
     p += 9 + h->ps.sps->data_size;
     AV_W8(p + 0, 1); /* number of pps */
-    AV_WB16(p + 1, h->pps.data_size + 1);
+    AV_WB16(p + 1, h->ps.pps->data_size + 1);
     AV_W8(p + 3, NAL_PPS | (3 << 5)); // NAL unit header
-    memcpy(p + 4, h->pps.data, h->pps.data_size);
+    memcpy(p + 4, h->ps.pps->data, h->ps.pps->data_size);
 
-    p += 4 + h->pps.data_size;
+    p += 4 + h->ps.pps->data_size;
     av_assert0(p - vt_extradata == vt_extradata_size);
 
     data = CFDataCreate(kCFAllocatorDefault, vt_extradata, vt_extradata_size);
