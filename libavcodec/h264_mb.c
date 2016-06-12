@@ -635,7 +635,7 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
             for (i = 0; i < 16; i += 4) {
                 uint8_t *const ptr = dest_y + block_offset[i];
                 const int dir      = sl->intra4x4_pred_mode_cache[scan8[i]];
-                if (transform_bypass && h->sps.profile_idc == 244 && dir <= 1) {
+                if (transform_bypass && h->ps.sps->profile_idc == 244 && dir <= 1) {
                     if (h->x264_build != -1) {
                         h->hpc.pred8x8l_add[dir](ptr, sl->mb + (i * 16 + p * 256 << pixel_shift), linesize);
                     } else
@@ -666,7 +666,7 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
                 uint8_t *const ptr = dest_y + block_offset[i];
                 const int dir      = sl->intra4x4_pred_mode_cache[scan8[i]];
 
-                if (transform_bypass && h->sps.profile_idc == 244 && dir <= 1) {
+                if (transform_bypass && h->ps.sps->profile_idc == 244 && dir <= 1) {
                     h->hpc.pred4x4_add[dir](ptr, sl->mb + (i * 16 + p * 256 << pixel_shift), linesize);
                 } else {
                     uint8_t *topright;
@@ -705,7 +705,7 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
             if (!transform_bypass)
                 h->h264dsp.h264_luma_dc_dequant_idct(sl->mb + (p * 256 << pixel_shift),
                                                      sl->mb_luma_dc[p],
-                                                     h->dequant4_coeff[p][qscale][0]);
+                                                     h->ps.pps->dequant4_coeff[p][qscale][0]);
             else {
                 static const uint8_t dc_mapping[16] = {
                      0 * 16,  1 * 16,  4 * 16,  5 * 16,
@@ -737,7 +737,7 @@ static av_always_inline void hl_decode_mb_idct_luma(const H264Context *h, H264Sl
     if (!IS_INTRA4x4(mb_type)) {
         if (IS_INTRA16x16(mb_type)) {
             if (transform_bypass) {
-                if (h->sps.profile_idc == 244 &&
+                if (h->ps.sps->profile_idc == 244 &&
                     (sl->intra16x16_pred_mode == VERT_PRED8x8 ||
                      sl->intra16x16_pred_mode == HOR_PRED8x8)) {
                     h->hpc.pred16x16_add[sl->intra16x16_pred_mode](dest_y, block_offset,

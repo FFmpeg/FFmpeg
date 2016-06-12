@@ -28,6 +28,7 @@
 #ifndef AVCODEC_H264_H
 #define AVCODEC_H264_H
 
+#include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/thread.h"
 #include "cabac.h"
@@ -94,12 +95,12 @@
 #define FIELD_OR_MBAFF_PICTURE(h) (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
-#define CABAC(h) (h)->pps.cabac
+#define CABAC(h) (h)->ps.pps->cabac
 #endif
 
-#define CHROMA(h)    ((h)->sps.chroma_format_idc)
-#define CHROMA422(h) ((h)->sps.chroma_format_idc == 2)
-#define CHROMA444(h) ((h)->sps.chroma_format_idc == 3)
+#define CHROMA(h)    ((h)->ps.sps->chroma_format_idc)
+#define CHROMA422(h) ((h)->ps.sps->chroma_format_idc == 2)
+#define CHROMA444(h) ((h)->ps.sps->chroma_format_idc == 3)
 
 #define EXTENDED_SAR       255
 
@@ -231,7 +232,6 @@ typedef struct SPS {
     int bit_depth_chroma;                 ///< bit_depth_chroma_minus8 + 8
     int residual_color_transform_flag;    ///< residual_colour_transform_flag
     int constraint_set_flags;             ///< constraint_set[0-3]_flag
-    int new;                              ///< flag to keep track if the decoder context needs re-init due to changed SPS
     uint8_t data[4096];
     size_t data_size;
 } SPS;
@@ -261,7 +261,24 @@ typedef struct PPS {
     int chroma_qp_diff;
     uint8_t data[4096];
     size_t data_size;
+
+    uint32_t dequant4_buffer[6][QP_MAX_NUM + 1][16];
+    uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
+    uint32_t(*dequant4_coeff[6])[16];
+    uint32_t(*dequant8_coeff[6])[64];
 } PPS;
+
+typedef struct H264ParamSets {
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    AVBufferRef *pps_ref;
+    AVBufferRef *sps_ref;
+    /* currently active parameters sets */
+    const PPS *pps;
+    // FIXME this should properly be const
+    SPS *sps;
+} H264ParamSets;
 
 /**
  * Frame Packing Arrangement Type
@@ -572,15 +589,8 @@ typedef struct H264Context {
 
 
     unsigned current_sps_id; ///< id of the current SPS
-    SPS sps; ///< current sps
-    PPS pps; ///< current pps
 
     int au_pps_id; ///< pps_id of current access unit
-
-    uint32_t dequant4_buffer[6][QP_MAX_NUM + 1][16]; // FIXME should these be moved down?
-    uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
-    uint32_t(*dequant4_coeff[6])[16];
-    uint32_t(*dequant8_coeff[6])[64];
 
     uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
 
@@ -634,10 +644,7 @@ typedef struct H264Context {
     int bit_depth_luma;         ///< luma bit depth from sps to detect changes
     int chroma_format_idc;      ///< chroma format from sps to detect changes
 
-    SPS *sps_buffers[MAX_SPS_COUNT];
-    PPS *pps_buffers[MAX_PPS_COUNT];
-
-    int dequant_coeff_pps;      ///< reinit tables when pps changes
+    H264ParamSets ps;
 
     uint16_t *slice_table_base;
 
@@ -848,17 +855,19 @@ int ff_h264_decode_sei(H264Context *h);
 /**
  * Decode SPS
  */
-int ff_h264_decode_seq_parameter_set(H264Context *h, int ignore_truncation);
+int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
+                                     H264ParamSets *ps, int ignore_truncation);
 
 /**
  * compute profile from sps
  */
-int ff_h264_get_profile(SPS *sps);
+int ff_h264_get_profile(const SPS *sps);
 
 /**
  * Decode PPS
  */
-int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
+int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
+                                         H264ParamSets *ps, int bit_length);
 
 /**
  * Free any data that may have been allocated in the H264 context
@@ -910,7 +919,7 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl);
 
 void ff_h264_init_cabac_states(const H264Context *h, H264SliceContext *sl);
 
-void ff_h264_init_dequant_tables(H264Context *h);
+void ff_h264_init_dequant_tables(PPS *pps, const SPS *sps);
 
 void ff_h264_direct_dist_scale_factor(const H264Context *const h, H264SliceContext *sl);
 void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *sl);
@@ -1010,7 +1019,7 @@ static av_always_inline uint16_t pack8to16(unsigned a, unsigned b)
  */
 static av_always_inline int get_chroma_qp(const H264Context *h, int t, int qscale)
 {
-    return h->pps.chroma_qp_table[t][qscale];
+    return h->ps.pps->chroma_qp_table[t][qscale];
 }
 
 /**
@@ -1133,7 +1142,7 @@ static av_always_inline void write_back_motion(const H264Context *h,
 
 static av_always_inline int get_dct8x8_allowed(const H264Context *h, H264SliceContext *sl)
 {
-    if (h->sps.direct_8x8_inference_flag)
+    if (h->ps.sps->direct_8x8_inference_flag)
         return !(AV_RN64A(sl->sub_mb_type) &
                  ((MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8) *
                   0x0001000100010001ULL));

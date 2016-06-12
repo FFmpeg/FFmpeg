@@ -50,12 +50,17 @@ void ff_h264_reset_sei(H264Context *h)
 
 static int decode_picture_timing(H264Context *h)
 {
-    SPS *sps = &h->sps;
+    const SPS *sps = h->ps.sps;
     int i;
 
     for (i = 0; i<MAX_SPS_COUNT; i++)
-        if (!sps->log2_max_frame_num && h->sps_buffers[i])
-            sps = h->sps_buffers[i];
+        if ((!sps || !sps->log2_max_frame_num) && h->ps.sps_list[i])
+            sps = (const SPS *)h->ps.sps_list[i]->data;
+
+    if (!sps) {
+        av_log(h->avctx, AV_LOG_ERROR, "SPS unavailable in decode_picture_timing\n");
+        return 0;
+    }
 
     if (sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag) {
         h->sei_cpb_removal_delay = get_bits_long(&h->gb,
@@ -275,12 +280,12 @@ static int decode_buffering_period(H264Context *h)
     SPS *sps;
 
     sps_id = get_ue_golomb_31(&h->gb);
-    if (sps_id > 31 || !h->sps_buffers[sps_id]) {
+    if (sps_id > 31 || !h->ps.sps_list[sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
         return AVERROR_INVALIDDATA;
     }
-    sps = h->sps_buffers[sps_id];
+    sps = (SPS*)h->ps.sps_list[sps_id]->data;
 
     // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
     if (sps->nal_hrd_parameters_present_flag) {
