@@ -26,6 +26,7 @@
 #include "internal.h"
 
 #define HEADER_SIZE 4096
+#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 typedef struct RedSparkContext {
     int         samples_count;
@@ -38,11 +39,13 @@ static int redspark_probe(AVProbeData *p)
 
     /* Decrypt first 8 bytes of the header */
     data = AV_RB32(p->buf);
-    data = data ^ (key = data ^ 0x52656453);
+    key  = data ^ 0x52656453;
+    data ^= key;
     AV_WB32(header, data);
-    key = (key << 11) | (key >> 21);
+    key = rol(key, 11);
 
-    data = AV_RB32(p->buf + 4) ^ (((key << 3) | (key >> 29)) + key);
+    key += rol(key, 3);
+    data = AV_RB32(p->buf + 4) ^ key;
     AV_WB32(header + 4, data);
 
     if (AV_RB64(header) == AV_RB64("RedSpark"))
@@ -69,12 +72,14 @@ static int redspark_read_header(AVFormatContext *s)
 
     /* Decrypt header */
     data = avio_rb32(pb);
-    data = data ^ (key = data ^ 0x52656453);
+    key  = data ^ 0x52656453;
+    data ^= key;
     AV_WB32(header, data);
-    key = (key << 11) | (key >> 21);
+    key = rol(key, 11);
 
     for (i = 4; i < HEADER_SIZE; i += 4) {
-        data = avio_rb32(pb) ^ (key = ((key << 3) | (key >> 29)) + key);
+        key += rol(key, 3);
+        data = avio_rb32(pb) ^ key;
         AV_WB32(header + i, data);
     }
 
