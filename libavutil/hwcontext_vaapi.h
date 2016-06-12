@@ -33,6 +33,20 @@
  * with the data pointer set to a VASurfaceID.
  */
 
+enum {
+    /**
+     * The quirks field has been set by the user and should not be detected
+     * automatically by av_hwdevice_ctx_init().
+     */
+    AV_VAAPI_DRIVER_QUIRK_USER_SET = (1 << 0),
+    /**
+     * The driver does not destroy parameter buffers when they are used by
+     * vaRenderPicture().  Additional code will be required to destroy them
+     * separately afterwards.
+     */
+    AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS = (1 << 1),
+};
+
 /**
  * VAAPI connection details.
  *
@@ -43,6 +57,14 @@ typedef struct AVVAAPIDeviceContext {
      * The VADisplay handle, to be filled by the user.
      */
     VADisplay display;
+    /**
+     * Driver quirks to apply - this is filled by av_hwdevice_ctx_init(),
+     * with reference to a table of known drivers, unless the
+     * AV_VAAPI_DRIVER_QUIRK_USER_SET bit is already present.  The user
+     * may need to refer to this field when performing any later
+     * operations using VAAPI with the same VADisplay.
+     */
+    unsigned int driver_quirks;
 } AVVAAPIDeviceContext;
 
 /**
