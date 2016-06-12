@@ -84,7 +84,7 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     H264Context *h     = avctx->priv_data;
     CFDataRef data = NULL;
     uint8_t *p;
-    int vt_extradata_size = 6 + 3 + h->ps.sps->data_size + 4 + h->ps.sps->data_size;
+    int vt_extradata_size = 6 + 3 + h->ps.sps->data_size + 4 + h->ps.pps->data_size;
     uint8_t *vt_extradata = av_malloc(vt_extradata_size);
     if (!vt_extradata)
         return NULL;
