@@ -508,7 +508,6 @@ static int get_last_needed_nal(H264Context *h)
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
-    unsigned context_count = 0;
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int i, ret = 0;
 
@@ -532,8 +531,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     for (i = 0; i < h->pkt.nb_nals; i++) {
         H2645NAL *nal = &h->pkt.nals[i];
-        H264SliceContext *sl = &h->slice_ctx[context_count];
-        int err;
+        int max_slice_ctx, err;
 
         if (avctx->skip_frame >= AVDISCARD_NONREF &&
             nal->ref_idc == 0 && nal->type != H264_NAL_SEI)
@@ -548,12 +546,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
         case H264_NAL_IDR_SLICE:
             idr(h); // FIXME ensure we don't lose some frames if there is reordering
         case H264_NAL_SLICE:
-            sl->gb = nal->gb;
-
-            if ((err = ff_h264_decode_slice_header(h, sl, nal)))
-                break;
-
-            if (sl->redundant_pic_count > 0)
+            if ((err = ff_h264_queue_decode_slice(h, nal)))
                 break;
 
             if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
@@ -562,18 +555,14 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 h->setup_finished = 1;
             }
 
-            if ((avctx->skip_frame < AVDISCARD_NONREF || nal->ref_idc) &&
-                (avctx->skip_frame < AVDISCARD_BIDIR  ||
-                 sl->slice_type_nos != AV_PICTURE_TYPE_B) &&
-                (avctx->skip_frame < AVDISCARD_NONKEY ||
-                 h->cur_pic_ptr->f->key_frame) &&
-                avctx->skip_frame < AVDISCARD_ALL) {
-                if (avctx->hwaccel) {
+            max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
+            if (h->nb_slice_ctx_queued == max_slice_ctx) {
+                if (avctx->hwaccel)
                     ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
-                    if (ret < 0)
-                        return ret;
-                } else
-                    context_count++;
+                else
+                    ret = ff_h264_execute_decode_slices(h);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
             }
             break;
         case H264_NAL_DPA:
@@ -611,23 +600,14 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                    nal->type, nal->size_bits);
         }
 
-        if (context_count == h->nb_slice_ctx) {
-            ret = ff_h264_execute_decode_slices(h, context_count);
-            if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-                goto end;
-            context_count = 0;
-        }
-
         if (err < 0) {
             av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
-            sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
         }
     }
-    if (context_count) {
-        ret = ff_h264_execute_decode_slices(h, context_count);
-        if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-            goto end;
-    }
+
+    ret = ff_h264_execute_decode_slices(h);
+    if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+        goto end;
 
     ret = 0;
 end:
@@ -687,6 +667,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     h->flags = avctx->flags;
     h->setup_finished = 0;
+    h->nb_slice_ctx_queued = 0;
 
     /* end of stream, output what is still in the buffers */
 out:

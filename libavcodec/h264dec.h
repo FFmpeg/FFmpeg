@@ -345,6 +345,7 @@ typedef struct H264Context {
 
     H264SliceContext *slice_ctx;
     int            nb_slice_ctx;
+    int            nb_slice_ctx_queued;
 
     H2645Packet pkt;
 
@@ -793,9 +794,14 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl);
 
 void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, int height);
 
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
-                                const H2645NAL *nal);
-int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count);
+/**
+ * Submit a slice for decoding.
+ *
+ * Parse the slice header, starting a new field/frame if necessary. If any
+ * slices are queued for the previous field, they are decoded.
+ */
+int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal);
+int ff_h264_execute_decode_slices(H264Context *h);
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src);
 

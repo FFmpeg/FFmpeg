@@ -1699,49 +1699,12 @@ static int h264_slice_header_parse(H264SliceContext *sl, const H2645NAL *nal,
     return 0;
 }
 
-/**
- * Decode a slice header.
- * This will (re)initialize the decoder and call h264_frame_start() as needed.
- *
- * @param h h264context
- *
- * @return 0 if okay, <0 if an error occurred
- */
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
-                                const H2645NAL *nal)
+/* do all the per-slice initialization needed before we can start decoding the
+ * actual MBs */
+static int h264_slice_init(H264Context *h, H264SliceContext *sl,
+                           const H2645NAL *nal)
 {
     int i, j, ret = 0;
-
-    ret = h264_slice_header_parse(sl, nal, &h->ps, h->avctx);
-    if (ret < 0)
-        return ret;
-
-    // discard redundant pictures
-    if (sl->redundant_pic_count > 0)
-        return 0;
-
-    if (!h->setup_finished) {
-        if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
-            if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
-                ff_h264_field_end(h, sl, 1);
-            }
-
-            h->current_slice = 0;
-            if (!h->first_field) {
-                if (h->cur_pic_ptr && !h->droppable) {
-                    ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
-                                              h->picture_structure == PICT_BOTTOM_FIELD);
-                }
-                h->cur_pic_ptr = NULL;
-            }
-        }
-
-        if (h->current_slice == 0) {
-            ret = h264_field_start(h, sl, nal);
-            if (ret < 0)
-                return ret;
-        }
-    }
 
     if (h->current_slice > 0) {
         if (h->ps.pps != (const PPS*)h->ps.pps_list[sl->pps_id]->data) {
@@ -1881,6 +1844,75 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                sl->pwt.use_weight,
                sl->pwt.use_weight == 1 && sl->pwt.use_weight_chroma ? "c" : "",
                sl->slice_type == AV_PICTURE_TYPE_B ? (sl->direct_spatial_mv_pred ? "SPAT" : "TEMP") : "");
+    }
+
+    return 0;
+}
+
+int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
+{
+    H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
+    int ret;
+
+    sl->gb = nal->gb;
+
+    ret = h264_slice_header_parse(sl, nal, &h->ps, h->avctx);
+    if (ret < 0)
+        return ret;
+
+    // discard redundant pictures
+    if (sl->redundant_pic_count > 0)
+        return 0;
+
+    if (!h->setup_finished) {
+        if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
+            // this slice starts a new field
+            // first decode any pending queued slices
+            if (h->nb_slice_ctx_queued) {
+                H264SliceContext tmp_ctx;
+
+                ret = ff_h264_execute_decode_slices(h);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    return ret;
+
+                memcpy(&tmp_ctx, h->slice_ctx, sizeof(tmp_ctx));
+                memcpy(h->slice_ctx, sl, sizeof(tmp_ctx));
+                memcpy(sl, &tmp_ctx, sizeof(tmp_ctx));
+                sl = h->slice_ctx;
+            }
+
+            if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
+                ff_h264_field_end(h, sl, 1);
+            }
+
+            h->current_slice = 0;
+            if (!h->first_field) {
+                if (h->cur_pic_ptr && !h->droppable) {
+                    ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+                                              h->picture_structure == PICT_BOTTOM_FIELD);
+                }
+                h->cur_pic_ptr = NULL;
+            }
+        }
+
+        if (h->current_slice == 0) {
+            ret = h264_field_start(h, sl, nal);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    ret = h264_slice_init(h, sl, nal);
+    if (ret < 0)
+        return ret;
+
+    if ((h->avctx->skip_frame < AVDISCARD_NONREF || nal->ref_idc) &&
+        (h->avctx->skip_frame < AVDISCARD_BIDIR  ||
+         sl->slice_type_nos != AV_PICTURE_TYPE_B) &&
+        (h->avctx->skip_frame < AVDISCARD_NONKEY ||
+         h->cur_pic_ptr->f->key_frame) &&
+        h->avctx->skip_frame < AVDISCARD_ALL) {
+        h->nb_slice_ctx_queued++;
     }
 
     return 0;
@@ -2452,25 +2484,26 @@ finish:
  * Call decode_slice() for each context.
  *
  * @param h h264 master context
- * @param context_count number of contexts to execute
  */
-int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
+int ff_h264_execute_decode_slices(H264Context *h)
 {
     AVCodecContext *const avctx = h->avctx;
     H264SliceContext *sl;
+    int context_count = h->nb_slice_ctx_queued;
+    int ret = 0;
     int i, j;
 
-    if (h->avctx->hwaccel)
+    if (h->avctx->hwaccel || context_count < 1)
         return 0;
     if (context_count == 1) {
-        int ret;
 
         h->slice_ctx[0].next_slice_idx = h->mb_width * h->mb_height;
         h->postpone_filter = 0;
 
         ret = decode_slice(avctx, &h->slice_ctx[0]);
         h->mb_y = h->slice_ctx[0].mb_y;
-        return ret;
+        if (ret < 0)
+            goto finish;
     } else {
         for (i = 0; i < context_count; i++) {
             int next_slice_idx = h->mb_width * h->mb_height;
@@ -2520,5 +2553,7 @@ int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count)
         }
     }
 
-    return 0;
+finish:
+    h->nb_slice_ctx_queued = 0;
+    return ret;
 }
