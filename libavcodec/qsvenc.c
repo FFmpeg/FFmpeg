@@ -26,6 +26,8 @@
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/common.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
 #include "libavutil/time.h"
@@ -378,19 +380,25 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.EncodedOrder       = 0;
     q->param.mfx.BufferSizeInKB     = 0;
 
-    q->param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
-    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
-    q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
-    q->param.mfx.FrameInfo.CropX          = 0;
-    q->param.mfx.FrameInfo.CropY          = 0;
-    q->param.mfx.FrameInfo.CropW          = avctx->width;
-    q->param.mfx.FrameInfo.CropH          = avctx->height;
-    q->param.mfx.FrameInfo.AspectRatioW   = avctx->sample_aspect_ratio.num;
-    q->param.mfx.FrameInfo.AspectRatioH   = avctx->sample_aspect_ratio.den;
-    q->param.mfx.FrameInfo.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
-    q->param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
-    q->param.mfx.FrameInfo.BitDepthLuma   = 8;
-    q->param.mfx.FrameInfo.BitDepthChroma = 8;
+    if (avctx->hw_frames_ctx) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
+        q->param.mfx.FrameInfo = frames_hwctx->surfaces[0].Info;
+    } else {
+        q->param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
+        q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
+        q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
+        q->param.mfx.FrameInfo.CropX          = 0;
+        q->param.mfx.FrameInfo.CropY          = 0;
+        q->param.mfx.FrameInfo.CropW          = avctx->width;
+        q->param.mfx.FrameInfo.CropH          = avctx->height;
+        q->param.mfx.FrameInfo.AspectRatioW   = avctx->sample_aspect_ratio.num;
+        q->param.mfx.FrameInfo.AspectRatioH   = avctx->sample_aspect_ratio.den;
+        q->param.mfx.FrameInfo.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
+        q->param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
+        q->param.mfx.FrameInfo.BitDepthLuma   = 8;
+        q->param.mfx.FrameInfo.BitDepthChroma = 8;
+    }
 
     if (avctx->framerate.den > 0 && avctx->framerate.num > 0) {
         q->param.mfx.FrameInfo.FrameRateExtN = avctx->framerate.num;
@@ -653,12 +661,45 @@ static int qsv_init_opaque_alloc(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
+static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
+{
+    int ret;
+
+    if (avctx->hwaccel_context) {
+        AVQSVContext *qsv = avctx->hwaccel_context;
+        q->session = qsv->session;
+    } else if (avctx->hw_frames_ctx) {
+        q->frames_ctx.hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!q->frames_ctx.hw_frames_ctx)
+            return AVERROR(ENOMEM);
+
+        ret = ff_qsv_init_session_hwcontext(avctx, &q->internal_session,
+                                            &q->frames_ctx, q->load_plugins,
+                                            q->param.IOPattern == MFX_IOPATTERN_IN_OPAQUE_MEMORY);
+        if (ret < 0) {
+            av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
+            return ret;
+        }
+
+        q->session = q->internal_session;
+    } else {
+        ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
+                                           q->load_plugins);
+        if (ret < 0)
+            return ret;
+
+        q->session = q->internal_session;
+    }
+
+    return 0;
+}
+
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 {
+    int iopattern = 0;
     int opaque_alloc = 0;
     int ret;
 
-    q->param.IOPattern  = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
     q->param.AsyncDepth = q->async_depth;
 
     q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
@@ -669,20 +710,30 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (avctx->hwaccel_context) {
         AVQSVContext *qsv = avctx->hwaccel_context;
 
-        q->session         = qsv->session;
-        q->param.IOPattern = qsv->iopattern;
-
+        iopattern    = qsv->iopattern;
         opaque_alloc = qsv->opaque_alloc;
     }
 
-    if (!q->session) {
-        ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
-                                           q->load_plugins);
-        if (ret < 0)
-            return ret;
+    if (avctx->hw_frames_ctx) {
+        AVHWFramesContext    *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
 
-        q->session = q->internal_session;
+        if (!iopattern) {
+            if (frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME)
+                iopattern = MFX_IOPATTERN_IN_OPAQUE_MEMORY;
+            else if (frames_hwctx->frame_type &
+                     (MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET | MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET))
+                iopattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
+        }
     }
+
+    if (!iopattern)
+        iopattern = MFX_IOPATTERN_IN_SYSTEM_MEMORY;
+    q->param.IOPattern = iopattern;
+
+    ret = qsvenc_init_session(avctx, q);
+    if (ret < 0)
+        return ret;
 
     ret = init_video_param(avctx, q);
     if (ret < 0)
@@ -1016,6 +1067,10 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
         MFXClose(q->internal_session);
     q->session          = NULL;
     q->internal_session = NULL;
+
+    av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
+    av_freep(&q->frames_ctx.mids);
+    q->frames_ctx.nb_mids = 0;
 
     cur = q->work_frames;
     while (cur) {

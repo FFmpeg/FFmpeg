@@ -98,6 +98,8 @@ typedef struct QSVEncContext {
 
     AVFifoBuffer *async_fifo;
 
+    QSVFramesContext frames_ctx;
+
     // options set by the caller
     int async_depth;
     int idr_interval;

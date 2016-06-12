@@ -191,7 +191,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
     mfxFrameInfo      *i1 = &ctx->info;
 
     if (!(req->Type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET) ||
-        !(req->Type & (MFX_MEMTYPE_FROM_DECODE))               ||
+        !(req->Type & (MFX_MEMTYPE_FROM_DECODE | MFX_MEMTYPE_FROM_ENCODE)) ||
         !(req->Type & MFX_MEMTYPE_EXTERNAL_FRAME))
         return MFX_ERR_UNSUPPORTED;
     if (i->Width  != i1->Width || i->Height != i1->Height ||
