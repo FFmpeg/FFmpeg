@@ -76,6 +76,7 @@ typedef struct UtvideoContext {
     int      compression;
     int      interlaced;
     int      frame_pred;
+    int      pro;
 
     int      slice_stride;
     uint8_t *slice_bits, *slice_buffer[4];
@@ -83,12 +84,13 @@ typedef struct UtvideoContext {
 } UtvideoContext;
 
 typedef struct HuffEntry {
-    uint8_t  sym;
+    uint16_t sym;
     uint8_t  len;
     uint32_t code;
 } HuffEntry;
 
 /* Compare huffman tree nodes */
 int ff_ut_huff_cmp_len(const void *a, const void *b);
+int ff_ut10_huff_cmp_len(const void *a, const void *b);
 
 #endif /* AVCODEC_UTVIDEO_H */

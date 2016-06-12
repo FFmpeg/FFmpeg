@@ -3063,6 +3063,11 @@ static int transcode_init(void)
                 exit_program(1);
 #endif
 
+#if CONFIG_CUVID
+            if (cuvid_transcode_init(ost))
+                exit_program(1);
+#endif
+
             if (!ost->filter &&
                 (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO ||
                  enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO)) {

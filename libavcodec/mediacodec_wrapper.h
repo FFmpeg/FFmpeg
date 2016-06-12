@@ -52,7 +52,7 @@
  *
  */
 
-char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int height, void *log_ctx);
+char *ff_AMediaCodecList_getCodecNameByType(const char *mime, void *log_ctx);
 
 struct FFAMediaFormat;
 typedef struct FFAMediaFormat FFAMediaFormat;

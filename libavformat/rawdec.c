@@ -84,7 +84,6 @@ int ff_raw_video_read_header(AVFormatContext *s)
     st->codecpar->codec_id = s->iformat->raw_codec_id;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
-    st->avg_frame_rate = s1->framerate;
     st->internal->avctx->framerate = s1->framerate;
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
@@ -108,7 +107,7 @@ int ff_raw_data_read_header(AVFormatContext *s)
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_rawvideo_options[] = {
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC},
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
     { NULL },
 };
 

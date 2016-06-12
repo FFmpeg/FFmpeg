@@ -474,6 +474,7 @@ OBJS-$(CONFIG_SDX2_DPCM_DECODER)       += dpcm.o
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SGIRLE_DECODER)          += sgirledec.o
+OBJS-$(CONFIG_SHEERVIDEO_DECODER)      += sheervideo.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
 OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
                                           celp_math.o acelp_vectors.o \
@@ -767,12 +768,14 @@ OBJS-$(CONFIG_QSV)                        += qsv.o
 OBJS-$(CONFIG_QSVDEC)                     += qsvdec.o
 OBJS-$(CONFIG_QSVENC)                     += qsvenc.o
 
+OBJS-$(CONFIG_H264_CUVID_DECODER)         += cuvid.o
 OBJS-$(CONFIG_H264_MMAL_DECODER)          += mmaldec.o
 OBJS-$(CONFIG_H264_VDA_DECODER)           += vda_h264_dec.o
 OBJS-$(CONFIG_H264_OMX_ENCODER)           += omx.o
 OBJS-$(CONFIG_H264_QSV_DECODER)           += qsvdec_h2645.o
 OBJS-$(CONFIG_H264_QSV_ENCODER)           += qsvenc_h264.o
 OBJS-$(CONFIG_H264_VAAPI_ENCODER)         += vaapi_encode_h264.o vaapi_encode_h26x.o
+OBJS-$(CONFIG_HEVC_CUVID_DECODER)         += cuvid.o
 OBJS-$(CONFIG_HEVC_QSV_DECODER)           += qsvdec_h2645.o
 OBJS-$(CONFIG_HEVC_QSV_ENCODER)           += qsvenc_hevc.o hevc_ps_enc.o h2645_parse.o
 OBJS-$(CONFIG_HEVC_VAAPI_ENCODER)         += vaapi_encode_h265.o vaapi_encode_h26x.o
@@ -783,6 +786,9 @@ OBJS-$(CONFIG_MPEG4_OMX_ENCODER)          += omx.o
 OBJS-$(CONFIG_NVENC_ENCODER)              += nvenc_h264.o
 OBJS-$(CONFIG_NVENC_H264_ENCODER)         += nvenc_h264.o
 OBJS-$(CONFIG_NVENC_HEVC_ENCODER)         += nvenc_hevc.o
+OBJS-$(CONFIG_VC1_CUVID_DECODER)          += cuvid.o
+OBJS-$(CONFIG_VP8_CUVID_DECODER)          += cuvid.o
+OBJS-$(CONFIG_VP9_CUVID_DECODER)          += cuvid.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o

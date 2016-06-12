@@ -3602,12 +3602,23 @@ FF_ENABLE_DEPRECATION_WARNINGS
         count++;
     }
 
-    if (eof_reached && ic->internal->packet_buffer) {
+    if (eof_reached) {
         int stream_index;
         for (stream_index = 0; stream_index < ic->nb_streams; stream_index++) {
+            st = ic->streams[stream_index];
+            avctx = st->internal->avctx;
+            if (!has_codec_parameters(st, NULL)) {
+                AVCodec *codec = find_decoder(ic, st, st->codecpar->codec_id);
+                if (codec && !avctx->codec) {
+                    if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
+                        av_log(ic, AV_LOG_WARNING,
+                            "Failed to open codec in av_find_stream_info\n");
+                }
+            }
+
             // EOF already reached while reading the stream above.
             // So continue with reoordering DTS with whatever delay we have.
-            if (!has_decode_delay_been_guessed(st)) {
+            if (ic->internal->packet_buffer && !has_decode_delay_been_guessed(st)) {
                 update_dts_from_pts(ic, stream_index, ic->internal->packet_buffer);
             }
         }
@@ -3742,6 +3753,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         /* if no packet was ever seen, update context now for has_codec_parameters */
         if (!st->internal->avctx_inited) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                st->codecpar->format == AV_SAMPLE_FMT_NONE)
+                st->codecpar->format = st->internal->avctx->sample_fmt;
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
             if (ret < 0)
                 goto find_stream_info_err;

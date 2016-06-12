@@ -56,7 +56,7 @@ Communication
 website                                 Deby Barbara Lepage
 fate.ffmpeg.org                         Timothy Gu
 Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos, Lou Logan
-mailing lists                           Michael Niedermayer, Baptiste Coudurier, Lou Logan
+mailing lists                           Baptiste Coudurier, Lou Logan
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
 Twitter                                 Lou Logan, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
@@ -163,11 +163,12 @@ Codecs:
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
+  cuvid.c                               Timo Rothenpieler
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
-  dss_sp.c                              Oleksij Rempel, Michael Niedermayer
+  dss_sp.c                              Oleksij Rempel
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
@@ -304,6 +305,7 @@ Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar
   mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
+  vaapi_encode*                         Mark Thompson
   vda*                                  Sebastien Zwickert
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
   videotoolbox*                         Sebastien Zwickert
@@ -423,7 +425,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
-  dss.c                                 Oleksij Rempel, Michael Niedermayer
+  dss.c                                 Oleksij Rempel
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
@@ -459,7 +461,7 @@ Muxers/Demuxers:
   mgsts.c                               Paul B Mahol
   microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
-  mov.c                                 Michael Niedermayer, Baptiste Coudurier
+  mov.c                                 Baptiste Coudurier
   movenc.c                              Baptiste Coudurier, Matthieu Bouron
   movenccenc.c                          Eran Kornblau
   mpc.c                                 Kostya Shishkov
@@ -565,7 +567,6 @@ Windows MSVC                            Matthew Oliver, Hendrik Leppkes
 Windows ICL                             Matthew Oliver
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
-x86                                     Michael Niedermayer
 OS/2                                    KO Myung-Hun
 
 

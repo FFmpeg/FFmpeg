@@ -413,8 +413,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
             lastInChrBuf = firstChrSrcY - 1;
         }
-        av_assert0(firstLumSrcY >= lastInLumBuf - vLumFilterSize + 1);
-        av_assert0(firstChrSrcY >= lastInChrBuf - vChrFilterSize + 1);
 
         DEBUG_BUFFERS("dstY: %d\n", dstY);
         DEBUG_BUFFERS("\tfirstLumSrcY: %d lastLumSrcY: %d lastInLumBuf: %d\n",
@@ -433,10 +431,14 @@ static int swscale(SwsContext *c, const uint8_t *src[],
                           lastLumSrcY, lastChrSrcY);
         }
 
+        av_assert0((lastLumSrcY - firstLumSrcY + 1) <= hout_slice->plane[0].available_lines);
+        av_assert0((lastChrSrcY - firstChrSrcY + 1) <= hout_slice->plane[1].available_lines);
+
+
         posY = hout_slice->plane[0].sliceY + hout_slice->plane[0].sliceH;
         if (posY <= lastLumSrcY && !hasLumHoles) {
             firstPosY = FFMAX(firstLumSrcY, posY);
-            lastPosY = FFMIN(lastLumSrcY + MAX_LINES_AHEAD, srcSliceY + srcSliceH - 1);
+            lastPosY = FFMIN(firstLumSrcY + hout_slice->plane[0].available_lines - 1, srcSliceY + srcSliceH - 1);
         } else {
             firstPosY = lastInLumBuf + 1;
             lastPosY = lastLumSrcY;
@@ -445,7 +447,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         cPosY = hout_slice->plane[1].sliceY + hout_slice->plane[1].sliceH;
         if (cPosY <= lastChrSrcY && !hasChrHoles) {
             firstCPosY = FFMAX(firstChrSrcY, cPosY);
-            lastCPosY = FFMIN(lastChrSrcY + MAX_LINES_AHEAD, AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
+            lastCPosY = FFMIN(firstChrSrcY + hout_slice->plane[1].available_lines - 1, AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
         } else {
             firstCPosY = lastInChrBuf + 1;
             lastCPosY = lastChrSrcY;

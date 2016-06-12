@@ -1270,8 +1270,8 @@ again:
                 av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
             sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
         } else if (err == SLICE_SINGLETHREAD) {
-            if (context_count > 1) {
-                ret = ff_h264_execute_decode_slices(h, context_count - 1);
+            if (context_count > 0) {
+                ret = ff_h264_execute_decode_slices(h, context_count);
                 if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                     goto end;
                 context_count = 0;

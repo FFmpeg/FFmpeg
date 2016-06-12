@@ -1158,6 +1158,12 @@ static av_cold int vaapi_encode_h265_init_constant_bitrate(AVCodecContext *avctx
     int hrd_buffer_size;
     int hrd_initial_buffer_fullness;
 
+    if (avctx->bit_rate > INT32_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "Target bitrate of 2^31 bps or "
+               "higher is not supported.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->rc_buffer_size)
         hrd_buffer_size = avctx->rc_buffer_size;
     else

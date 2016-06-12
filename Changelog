@@ -38,6 +38,10 @@ version <next>:
 - loudnorm filter
 - MTAF demuxer and decoder
 - MagicYUV decoder
+- OpenExr improvements (tile data and B44/B44A support)
+- BitJazz SheerVideo decoder
+- CUDA CUVID H264/HEVC decoder
+
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

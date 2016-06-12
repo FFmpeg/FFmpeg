@@ -2443,6 +2443,10 @@ filtering with large delay. Default is disabled.
 
 @item multi
 Enable multichannels evaluation on gain. Default is disabled.
+
+@item zero_phase
+Enable zero phase mode by substracting timestamp to compensate delay.
+Default is disabled.
 @end table
 
 @subsection Examples
@@ -2463,9 +2467,9 @@ custom equalization:
 firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
 @end example
 @item
-higher delay:
+higher delay with zero phase to compensate delay:
 @example
-firequalizer=delay=0.1:fixed=on
+firequalizer=delay=0.1:fixed=on:zero_phase=on
 @end example
 @item
 lowpass on left channel, highpass on right channel:
@@ -2760,6 +2764,13 @@ Normalize linearly if possible.
 measured_I, measured_LRA, measured_TP, and measured_thresh must also
 to be specified in order to use this mode.
 Options are true or false. Default is true.
+
+@item dual_mono
+Treat mono input files as "dual-mono". If a mono file is intended for playback
+on a stereo system, its EBU R128 measurement will be perceptually incorrect.
+If set to @code{true}, this option will compensate for this effect.
+Multi-channel input files are not affected by this option.
+Options are true or false. Default is false.
 
 @item print_format
 Set print format for stats. Options are summary, json, or none.
@@ -5025,6 +5036,9 @@ SMPTE-240M
 
 @item fcc
 FCC
+
+@item bt2020
+BT.2020
 @end table
 @end table
 
@@ -16697,14 +16711,6 @@ Extract a channel split representation of the wave form of a whole audio track
 in a 1024x800 picture using @command{ffmpeg}:
 @example
 ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.png
-@end example
-
-@item
-Colorize the waveform with colorchannelmixer. This example will make
-the waveform a green color approximately RGB(66,217,150). Additional
-channels will be shades of this color.
-@example
-ffmpeg -i audio.mp3 -filter_complex "showwavespic,colorchannelmixer=rr=66/255:gg=217/255:bb=150/255" waveform.png
 @end example
 @end itemize
 

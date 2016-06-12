@@ -47,7 +47,6 @@ void av_register_all(void)
 
     if (initialized)
         return;
-    initialized = 1;
 
     avcodec_register_all();
 
@@ -371,4 +370,6 @@ void av_register_all(void)
     REGISTER_DEMUXER (LIBGME,           libgme);
     REGISTER_DEMUXER (LIBMODPLUG,       libmodplug);
     REGISTER_MUXDEMUX(LIBNUT,           libnut);
+
+    initialized = 1;
 }

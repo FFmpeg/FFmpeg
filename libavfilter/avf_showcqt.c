@@ -55,9 +55,9 @@
 static const AVOption showcqt_options[] = {
     { "size",         "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
     { "s",            "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
-    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
+    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
     { "bar_h",   "set bargraph height", OFFSET(bar_h),        AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "axis_h",      "set axis height", OFFSET(axis_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "sono_h",  "set sonogram height", OFFSET(sono_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
@@ -320,6 +320,9 @@ static int init_cqt(ShowCQTContext *s)
             w *= sign * (1.0 / s->fft_len);
             s->coeffs[m].val[x - s->coeffs[m].start] = w;
         }
+
+        if (s->permute_coeffs)
+            s->permute_coeffs(s->coeffs[m].val, s->coeffs[m].len);
     }
 
     av_expr_free(expr);
@@ -1230,6 +1233,7 @@ static int config_output(AVFilterLink *outlink)
 
     s->cqt_align = 1;
     s->cqt_calc = cqt_calc;
+    s->permute_coeffs = NULL;
     s->draw_sono = draw_sono;
     if (s->format == AV_PIX_FMT_RGB24) {
         s->draw_bar = draw_bar_rgb;
@@ -1240,6 +1244,9 @@ static int config_output(AVFilterLink *outlink)
         s->draw_axis = draw_axis_yuv;
         s->update_sono = update_sono_yuv;
     }
+
+    if (ARCH_X86)
+        ff_showcqt_init_x86(s);
 
     if ((ret = init_cqt(s)) < 0)
         return ret;

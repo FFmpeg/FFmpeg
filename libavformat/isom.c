@@ -277,6 +277,15 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'Y', '4') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'Y', 'A') },
 
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '0') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '1') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '2') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '3') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '4') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '5') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '6') },
+    { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '7') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 

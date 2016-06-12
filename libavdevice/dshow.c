@@ -953,6 +953,7 @@ dshow_add_device(AVFormatContext *avctx,
         }
 
         st->avg_frame_rate = av_inv_q(time_base);
+        st->r_frame_rate = av_inv_q(time_base);
 
         par->codec_type = AVMEDIA_TYPE_VIDEO;
         par->width      = bih->biWidth;
