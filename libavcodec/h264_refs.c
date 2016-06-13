@@ -524,18 +524,6 @@ void ff_h264_remove_all_refs(H264Context *h)
     h->short_ref_count = 0;
 }
 
-static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
-{
-    int i;
-
-    for (i = 0; i < n_mmcos; i++) {
-        if (mmco1[i].opcode != mmco2[i].opcode)
-            return -1;
-    }
-
-    return 0;
-}
-
 static void generate_sliding_window_mmcos(H264Context *h)
 {
     MMCO *mmco = h->mmco;
