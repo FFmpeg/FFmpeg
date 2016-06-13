@@ -381,7 +381,7 @@ static int decode_GreenMetadata(H264Context *h)
             av_log(h->avctx, AV_LOG_DEBUG,      "green_metadata_period_type                     = %d\n",
                    h->sei_green_metadata.period_type);
 
-        if (h->sei_green_metadata.green_metadata_type==2){
+        if (h->sei_green_metadata.period_type==2){
             h->sei_green_metadata.num_seconds = get_bits(&h->gb, 16);
             if (h->avctx->debug & FF_DEBUG_GREEN_MD)
                 av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_seconds                     = %d\n",
