@@ -363,28 +363,26 @@ static int decode_display_orientation(H264Context *h)
     return 0;
 }
 
-static int decode_GreenMetadata(H264SEIGreenMetaData *h, GetBitContext *gb)
+static int decode_green_metadata(H264SEIGreenMetaData *h, GetBitContext *gb)
 {
-    h->green_metadata_type=get_bits(gb, 8);
+    h->green_metadata_type = get_bits(gb, 8);
 
-    if (h->green_metadata_type==0){
-        h->period_type=get_bits(gb, 8);
+    if (h->green_metadata_type == 0) {
+        h->period_type = get_bits(gb, 8);
 
-        if (h->period_type==2){
+        if (h->period_type == 2)
             h->num_seconds = get_bits(gb, 16);
-        }
-        else if (h->period_type==3){
+        else if (h->period_type == 3)
             h->num_pictures = get_bits(gb, 16);
-        }
 
-        h->percent_non_zero_macroblocks=get_bits(gb, 8);
-        h->percent_intra_coded_macroblocks=get_bits(gb, 8);
-        h->percent_six_tap_filtering=get_bits(gb, 8);
-        h->percent_alpha_point_deblocking_instance=get_bits(gb, 8);
+        h->percent_non_zero_macroblocks            = get_bits(gb, 8);
+        h->percent_intra_coded_macroblocks         = get_bits(gb, 8);
+        h->percent_six_tap_filtering               = get_bits(gb, 8);
+        h->percent_alpha_point_deblocking_instance = get_bits(gb, 8);
 
-    }else if( h->green_metadata_type==1){
-        h->xsd_metric_type=get_bits(gb, 8);
-        h->xsd_metric_value=get_bits(gb, 16);
+    } else if (h->green_metadata_type == 1) {
+        h->xsd_metric_type  = get_bits(gb, 8);
+        h->xsd_metric_value = get_bits(gb, 16);
     }
 
     return 0;
@@ -443,7 +441,7 @@ int ff_h264_decode_sei(H264Context *h)
             ret = decode_display_orientation(h);
             break;
         case SEI_TYPE_GREEN_METADATA:
-            ret = decode_GreenMetadata(&h->sei_green_metadata, &h->gb);
+            ret = decode_green_metadata(&h->sei_green_metadata, &h->gb);
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);

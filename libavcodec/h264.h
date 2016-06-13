@@ -293,13 +293,13 @@ typedef struct FPA {
 } FPA;
 
 /**
- *     Green MetaData Information Type
+ * Green MetaData Information Type
  */
 typedef struct H264SEIGreenMetaData {
-    uint8_t  green_metadata_type;
-    uint8_t  period_type;
-    uint16_t  num_seconds;
-    uint16_t  num_pictures;
+    uint8_t green_metadata_type;
+    uint8_t period_type;
+    uint16_t num_seconds;
+    uint16_t num_pictures;
     uint8_t percent_non_zero_macroblocks;
     uint8_t percent_intra_coded_macroblocks;
     uint8_t percent_six_tap_filtering;
