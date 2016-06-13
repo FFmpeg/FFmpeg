@@ -62,5 +62,5 @@ incompatible libraries
 The Fraunhofer AAC library, FAAC and OpenSSL are under licenses incompatible
 with all (L)GPL versions. Thus, unfortunately, since both licenses cannot be
 satisfied simultaneously, binaries resulting from the combination of Libav
-with these libraries are nonfree und unredistributable. If you wish to enable
+with these libraries are nonfree and unredistributable. If you wish to enable
 any of these libraries nonetheless, pass --enable-nonfree to configure.
