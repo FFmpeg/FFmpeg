@@ -363,28 +363,28 @@ static int decode_display_orientation(H264Context *h)
     return 0;
 }
 
-static int decode_GreenMetadata(H264Context *h)
+static int decode_GreenMetadata(GreenMetaData *h, GetBitContext *gb)
 {
-    h->sei_green_metadata.green_metadata_type=get_bits(&h->gb, 8);
+    h->green_metadata_type=get_bits(gb, 8);
 
-    if (h->sei_green_metadata.green_metadata_type==0){
-        h->sei_green_metadata.period_type=get_bits(&h->gb, 8);
+    if (h->green_metadata_type==0){
+        h->period_type=get_bits(gb, 8);
 
-        if (h->sei_green_metadata.period_type==2){
-            h->sei_green_metadata.num_seconds = get_bits(&h->gb, 16);
+        if (h->period_type==2){
+            h->num_seconds = get_bits(gb, 16);
         }
-        else if (h->sei_green_metadata.period_type==3){
-            h->sei_green_metadata.num_pictures = get_bits(&h->gb, 16);
+        else if (h->period_type==3){
+            h->num_pictures = get_bits(gb, 16);
         }
 
-        h->sei_green_metadata.percent_non_zero_macroblocks=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_intra_coded_macroblocks=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_six_tap_filtering=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_alpha_point_deblocking_instance=get_bits(&h->gb, 8);
+        h->percent_non_zero_macroblocks=get_bits(gb, 8);
+        h->percent_intra_coded_macroblocks=get_bits(gb, 8);
+        h->percent_six_tap_filtering=get_bits(gb, 8);
+        h->percent_alpha_point_deblocking_instance=get_bits(gb, 8);
 
-    }else if( h->sei_green_metadata.green_metadata_type==1){
-        h->sei_green_metadata.xsd_metric_type=get_bits(&h->gb, 8);
-        h->sei_green_metadata.xsd_metric_value=get_bits(&h->gb, 16);
+    }else if( h->green_metadata_type==1){
+        h->xsd_metric_type=get_bits(gb, 8);
+        h->xsd_metric_value=get_bits(gb, 16);
     }
 
     return 0;
@@ -443,7 +443,7 @@ int ff_h264_decode_sei(H264Context *h)
             ret = decode_display_orientation(h);
             break;
         case SEI_TYPE_GREEN_METADATA:
-            ret = decode_GreenMetadata(h);
+            ret = decode_GreenMetadata(&h->sei_green_metadata, &h->gb);
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
