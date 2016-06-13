@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- YUY2 Lossless Codec decoder
+
+
+version 3.1:
 - DXVA2-accelerated HEVC Main10 decoding
 - fieldhint filter
 - loop video filter and aloop audio filter
