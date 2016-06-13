@@ -365,33 +365,16 @@ static int decode_display_orientation(H264Context *h)
 
 static int decode_GreenMetadata(H264Context *h)
 {
-    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-        av_log(h->avctx, AV_LOG_DEBUG,          "Green Metadata Info SEI message\n");
-
     h->sei_green_metadata.green_metadata_type=get_bits(&h->gb, 8);
-
-    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-        av_log(h->avctx, AV_LOG_DEBUG,          "green_metadata_type                            = %d\n",
-               h->sei_green_metadata.green_metadata_type);
 
     if (h->sei_green_metadata.green_metadata_type==0){
         h->sei_green_metadata.period_type=get_bits(&h->gb, 8);
 
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "green_metadata_period_type                     = %d\n",
-                   h->sei_green_metadata.period_type);
-
         if (h->sei_green_metadata.period_type==2){
             h->sei_green_metadata.num_seconds = get_bits(&h->gb, 16);
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_seconds                     = %d\n",
-                       h->sei_green_metadata.num_seconds);
         }
         else if (h->sei_green_metadata.period_type==3){
             h->sei_green_metadata.num_pictures = get_bits(&h->gb, 16);
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_pictures                    = %d\n",
-                       h->sei_green_metadata.num_pictures);
         }
 
         h->sei_green_metadata.percent_non_zero_macroblocks=get_bits(&h->gb, 8);
@@ -399,25 +382,9 @@ static int decode_GreenMetadata(H264Context *h)
         h->sei_green_metadata.percent_six_tap_filtering=get_bits(&h->gb, 8);
         h->sei_green_metadata.percent_alpha_point_deblocking_instance=get_bits(&h->gb, 8);
 
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "SEI GREEN Complexity Metrics                   = %f %f %f %f\n",
-                                           (float)h->sei_green_metadata.percent_non_zero_macroblocks/255,
-                                           (float)h->sei_green_metadata.percent_intra_coded_macroblocks/255,
-                                           (float)h->sei_green_metadata.percent_six_tap_filtering/255,
-                                           (float)h->sei_green_metadata.percent_alpha_point_deblocking_instance/255);
-
     }else if( h->sei_green_metadata.green_metadata_type==1){
         h->sei_green_metadata.xsd_metric_type=get_bits(&h->gb, 8);
         h->sei_green_metadata.xsd_metric_value=get_bits(&h->gb, 16);
-
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "xsd_metric_type                                = %d\n",
-                   h->sei_green_metadata.xsd_metric_type);
-        if ( h->sei_green_metadata.xsd_metric_type==0){
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "xsd_metric_value                               = %f\n",
-                       (float)h->sei_green_metadata.xsd_metric_value/100);
-        }
     }
 
     return 0;
