@@ -768,17 +768,18 @@ static int read_header(FFV1Context *f)
                    "chroma subsampling not supported in this colorspace\n");
             return AVERROR(ENOSYS);
         }
-        if (     f->avctx->bits_per_raw_sample ==  9)
+        if (     f->avctx->bits_per_raw_sample <=  8 && !f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_0RGB32;
+        else if (f->avctx->bits_per_raw_sample <=  8 && f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        else if (f->avctx->bits_per_raw_sample ==  9 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
-        else if (f->avctx->bits_per_raw_sample == 10)
+        else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-        else if (f->avctx->bits_per_raw_sample == 12)
+        else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
-        else if (f->avctx->bits_per_raw_sample == 14)
+        else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
-        else
-        if (f->transparency) f->avctx->pix_fmt = AV_PIX_FMT_RGB32;
-        else                 f->avctx->pix_fmt = AV_PIX_FMT_0RGB32;
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return AVERROR(ENOSYS);
