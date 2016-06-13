@@ -959,7 +959,7 @@ static int get_last_needed_nal(H264Context *h)
     return nals_needed;
 }
 
-static void debug_green_metadata(const GreenMetaData *gm, void *logctx)
+static void debug_green_metadata(const H264SEIGreenMetaData *gm, void *logctx)
 {
     av_log(logctx, AV_LOG_DEBUG, "Green Metadata Info SEI message\n");
     av_log(logctx, AV_LOG_DEBUG, "  green_metadata_type: %d\n", gm->green_metadata_type);

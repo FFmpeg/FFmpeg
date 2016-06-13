@@ -363,7 +363,7 @@ static int decode_display_orientation(H264Context *h)
     return 0;
 }
 
-static int decode_GreenMetadata(GreenMetaData *h, GetBitContext *gb)
+static int decode_GreenMetadata(H264SEIGreenMetaData *h, GetBitContext *gb)
 {
     h->green_metadata_type=get_bits(gb, 8);
 
