@@ -435,7 +435,7 @@ static void roll_up(CCaptionSubContext *ctx)
 
 static int capture_screen(CCaptionSubContext *ctx)
 {
-    int i;
+    int i, j, tab = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     enum cc_font prev_font = CCFONT_REGULAR;
     av_bprint_clear(&ctx->buffer);
@@ -444,14 +444,32 @@ static int capture_screen(CCaptionSubContext *ctx)
     {
         if (CHECK_FLAG(screen->row_used, i)) {
             const char *row = screen->characters[i];
+            const char *charset = screen->charsets[i];
+            j = 0;
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+                j++;
+            if (!tab || j < tab)
+                tab = j;
+        }
+    }
+
+    for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
+    {
+        if (CHECK_FLAG(screen->row_used, i)) {
+            const char *row = screen->characters[i];
             const char *font = screen->fonts[i];
             const char *charset = screen->charsets[i];
             const char *override;
-            int j = 0;
+            int x, y, seen_char = 0;
+            j = 0;
 
             /* skip leading space */
-            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN && j < tab)
                 j++;
+
+            x = ASS_DEFAULT_PLAYRESX * (0.1 + 0.0250 * j);
+            y = ASS_DEFAULT_PLAYRESY * (0.1 + 0.0533 * i);
+            av_bprintf(&ctx->buffer, "{\\an7}{\\pos(%d,%d)}", x, y);
 
             for (; j < SCREEN_COLUMNS; j++) {
                 const char *e_tag = "", *s_tag = "";
@@ -487,9 +505,14 @@ static int capture_screen(CCaptionSubContext *ctx)
                 override = charset_overrides[(int)charset[j]][(int)row[j]];
                 if (override) {
                     av_bprintf(&ctx->buffer, "%s%s%s", e_tag, s_tag, override);
+                    seen_char = 1;
+                } else if (row[j] == ' ' && !seen_char) {
+                    av_bprintf(&ctx->buffer, "%s%s\\h", e_tag, s_tag);
                 } else {
                     av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
+                    seen_char = 1;
                 }
+
             }
             av_bprintf(&ctx->buffer, "\\N");
         }
