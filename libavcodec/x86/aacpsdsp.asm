@@ -33,18 +33,22 @@ SECTION .text
 ;*************************************************************************
 %macro PS_ADD_SQUARES 1
 cglobal ps_add_squares, 3, 3, %1, dst, src, n
+    shl    nd, 3
+    add  srcq, nq
+    neg    nq
+
+align 16
 .loop:
-    movaps m0, [srcq]
-    movaps m1, [srcq+mmsize]
+    movaps m0, [srcq+nq]
+    movaps m1, [srcq+nq+mmsize]
     mulps  m0, m0
     mulps  m1, m1
     HADDPS m0, m1, m2
     addps  m0, [dstq]
     movaps [dstq], m0
     add  dstq, mmsize
-    add  srcq, mmsize*2
-    sub    nd, mmsize/4
-    jg .loop
+    add    nq, mmsize*2
+    jl .loop
     REP_RET
 %endmacro
 
