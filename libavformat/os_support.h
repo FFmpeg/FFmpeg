@@ -203,7 +203,7 @@ fallback:                                                 \
 }
 
 DEF_FS_FUNCTION2(access, _waccess, _access, int)
-DEF_FS_FUNCTION2(stat, _wstat64, _stat64, struct stat*)
+DEF_FS_FUNCTION2(stat, _wstati64, _stati64, struct stat*)
 
 static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
 {
