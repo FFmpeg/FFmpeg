@@ -315,7 +315,7 @@ static void flush_decoder(AVCodecContext *avctx)
 /**
  * @param ctx closed caption context just to print log
  */
-static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
+static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 {
     uint8_t col = ctx->cursor_column;
     char *row = screen->characters[ctx->cursor_row];
@@ -328,16 +328,16 @@ static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
         charset[col] = ctx->cursor_charset;
         ctx->cursor_charset = CCSET_BASIC_AMERICAN;
         if (ch) ctx->cursor_column++;
-        return 0;
+        return;
     }
     /* We have extra space at end only for null character */
     else if (col == SCREEN_COLUMNS && ch == 0) {
         row[col] = ch;
-        return 0;
+        return;
     }
     else {
         av_log(ctx, AV_LOG_WARNING, "Data Ignored since exceeding screen width\n");
-        return AVERROR_INVALIDDATA;
+        return;
     }
 }
 
