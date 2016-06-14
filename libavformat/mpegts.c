@@ -700,6 +700,7 @@ static const StreamType ISO_types[] = {
     { 0x11, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AAC_LATM   }, /* LATM syntax */
 #endif
     { 0x1b, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_H264       },
+    { 0x1c, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AAC        },
     { 0x20, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_H264       },
     { 0x21, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_JPEG2000   },
     { 0x24, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_HEVC       },
