@@ -289,6 +289,8 @@ struct dshow_ctx {
     IGraphBuilder *graph;
 
     char *device_name[2];
+    char *device_unique_name[2];
+
     int video_device_number;
     int audio_device_number;
 
