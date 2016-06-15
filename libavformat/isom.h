@@ -105,6 +105,8 @@ typedef struct MOVStreamContext {
     MOVStts *ctts_data;
     unsigned int stsc_count;
     MOVStsc *stsc_data;
+    int stsc_index;
+    int stsc_sample;
     unsigned int stps_count;
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
     int ctts_index;
@@ -136,6 +138,12 @@ typedef struct MOVStreamContext {
     int64_t track_end;    ///< used for dts generation in fragmented movie files
     unsigned int rap_group_count;
     MOVSbgp *rap_group;
+
+    /** extradata array (and size) for multiple stsd */
+    uint8_t **extradata;
+    int *extradata_size;
+    int last_stsd_index;
+    int stsd_count;
 
     int32_t *display_matrix;
 } MOVStreamContext;
