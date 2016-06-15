@@ -180,6 +180,7 @@ FATE_H264_REINIT_TESTS := large_420_8-to-small_420_8                    \
 FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               $(FATE_H264_REINIT_TESTS:%=fate-h264-reinit-%)            \
               fate-h264-extreme-plane-pred                              \
+              fate-h264-intra-refresh-recovery                          \
               fate-h264-lossless                                        \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
@@ -382,6 +383,7 @@ fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAM
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
+fate-h264-intra-refresh-recovery:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 -frames:v 10
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
