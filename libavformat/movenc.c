@@ -49,6 +49,7 @@
 #include "hevc.h"
 #include "rtpenc.h"
 #include "mov_chan.h"
+#include "vpcc.h"
 
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -1039,6 +1040,17 @@ static int mov_write_avcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_vpcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "vpcC");
+    avio_wb32(pb, 0); /* version & flags */
+    ff_isom_write_vpcc(s, pb, track->par);
+    return update_size(pb, pos);
+}
+
 static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1143,6 +1155,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     if      (track->par->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
     else if (track->par->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
+    else if (track->par->codec_id == AV_CODEC_ID_VP9)       tag = MKTAG('v','p','0','9');
     else if (track->par->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
     else if (track->par->codec_id == AV_CODEC_ID_EAC3)      tag = MKTAG('e','c','-','3');
     else if (track->par->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
@@ -1758,6 +1771,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         mov_write_avcc_tag(pb, track);
         if (track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
+    } else if (track->par->codec_id == AV_CODEC_ID_VP9) {
+        mov_write_vpcc_tag(mov->fc, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_VC1 && track->vos_len > 0)
         mov_write_dvc1_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_VP6F ||
@@ -5368,6 +5383,17 @@ static int mov_write_header(AVFormatContext *s)
                         pix_fmt == AV_PIX_FMT_GRAY8 ||
                         pix_fmt == AV_PIX_FMT_MONOWHITE ||
                         pix_fmt == AV_PIX_FMT_MONOBLACK;
+            }
+            if (track->mode == MODE_MP4 &&
+                track->par->codec_id == AV_CODEC_ID_VP9) {
+                if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+                    av_log(s, AV_LOG_ERROR,
+                           "VP9 in MP4 support is experimental, add "
+                           "'-strict %d' if you want to use it.\n",
+                           FF_COMPLIANCE_EXPERIMENTAL);
+                    ret = AVERROR_EXPERIMENTAL;
+                    goto error;
+                }
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codecpar->sample_rate;
