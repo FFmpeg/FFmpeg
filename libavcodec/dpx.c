@@ -264,10 +264,12 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         break;
     case 50120:
-    case 51120:
     case 50121:
-    case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        break;
+    case 51120:
+    case 51121:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
     case 6161:
         avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
@@ -338,9 +340,10 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 12:
         for (x = 0; x < avctx->height; x++) {
-            uint16_t *dst[3] = {(uint16_t*)ptr[0],
+            uint16_t *dst[4] = {(uint16_t*)ptr[0],
                                 (uint16_t*)ptr[1],
-                                (uint16_t*)ptr[2]};
+                                (uint16_t*)ptr[2],
+                                (uint16_t*)ptr[3]};
             for (y = 0; y < avctx->width; y++) {
                 *dst[2] = read16(&buf, endian) >> 4;
                 dst[2]++;
@@ -348,11 +351,10 @@ static int decode_frame(AVCodecContext *avctx,
                 dst[0]++;
                 *dst[1] = read16(&buf, endian) >> 4;
                 dst[1]++;
-                // For 12 bit, ignore alpha
                 if (elements == 4)
-                    buf += 2;
+                    *dst[3]++ = read16(&buf, endian) >> 4;
             }
-            for (i = 0; i < 3; i++)
+            for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
             // Jump to next aligned position
             buf += need_align;
