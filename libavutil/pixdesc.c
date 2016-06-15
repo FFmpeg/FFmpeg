@@ -1613,6 +1613,8 @@ static const char *color_primaries_names[] = {
     [AVCOL_PRI_FILM] = "film",
     [AVCOL_PRI_BT2020] = "bt2020",
     [AVCOL_PRI_SMPTEST428_1] = "smptest428-1",
+    [AVCOL_PRI_SMPTE431] = "smpte431",
+    [AVCOL_PRI_SMPTE432] = "smpte432",
 };
 
 static const char *color_transfer_names[] = {
@@ -1649,6 +1651,7 @@ static const char *color_space_names[] = {
     [AVCOL_SPC_YCOCG] = "ycgco",
     [AVCOL_SPC_BT2020_NCL] = "bt2020nc",
     [AVCOL_SPC_BT2020_CL] = "bt2020c",
+    [AVCOL_SPC_SMPTE2085] = "smpte2085",
 };
 
 static const char *chroma_location_names[] = {
