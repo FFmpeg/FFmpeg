@@ -79,6 +79,7 @@ static const uint8_t libavcodec_libopus_channel_map[8][8] = {
 
 static void libopus_write_header(AVCodecContext *avctx, int stream_count,
                                  int coupled_stream_count,
+                                 int mapping_family,
                                  const uint8_t *channel_mapping)
 {
     uint8_t *p   = avctx->extradata;
@@ -93,7 +94,7 @@ static void libopus_write_header(AVCodecContext *avctx, int stream_count,
 
     /* Channel mapping */
     if (channels > 2) {
-        bytestream_put_byte(&p, channels <= 8 ? 1 : 255);
+        bytestream_put_byte(&p, mapping_family);
         bytestream_put_byte(&p, stream_count);
         bytestream_put_byte(&p, coupled_stream_count);
         bytestream_put_buffer(&p, channel_mapping, channels);
@@ -159,36 +160,10 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
 static av_cold int libopus_encode_init(AVCodecContext *avctx)
 {
     LibopusEncContext *opus = avctx->priv_data;
-    const uint8_t *channel_mapping;
     OpusMSEncoder *enc;
+    uint8_t libopus_channel_mapping[255];
     int ret = OPUS_OK;
     int coupled_stream_count, header_size, frame_size;
-
-    coupled_stream_count = opus_coupled_streams[avctx->channels - 1];
-    opus->stream_count   = avctx->channels - coupled_stream_count;
-    channel_mapping      = libavcodec_libopus_channel_map[avctx->channels - 1];
-
-    /* FIXME: Opus can handle up to 255 channels. However, the mapping for
-     * anything greater than 8 is undefined. */
-    if (avctx->channels > 8) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Channel layout undefined for %d channels.\n", avctx->channels);
-        return AVERROR_PATCHWELCOME;
-    }
-    if (!avctx->bit_rate) {
-        /* Sane default copied from opusenc */
-        avctx->bit_rate = 64000 * opus->stream_count +
-                          32000 * coupled_stream_count;
-        av_log(avctx, AV_LOG_WARNING,
-               "No bit rate set. Defaulting to %"PRId64" bps.\n", (int64_t)avctx->bit_rate);
-    }
-
-    if (avctx->bit_rate < 500 || avctx->bit_rate > 256000 * avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "The bit rate %"PRId64" bps is unsupported. "
-               "Please choose a value between 500 and %d.\n", (int64_t)avctx->bit_rate,
-               256000 * avctx->channels);
-        return AVERROR(EINVAL);
-    }
 
     frame_size = opus->opts.frame_duration * 48000 / 1000;
     switch (frame_size) {
@@ -251,15 +226,47 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         }
     }
 
-    enc = opus_multistream_encoder_create(avctx->sample_rate, avctx->channels,
-                                          opus->stream_count,
-                                          coupled_stream_count,
-                                          channel_mapping,
-                                          opus->opts.application, &ret);
+    /* FIXME: Opus can handle up to 255 channels. However, the mapping for
+     * anything greater than 8 is undefined. */
+    if (avctx->channels > 8) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Channel layout undefined for %d channels.\n", avctx->channels);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    coupled_stream_count = opus_coupled_streams[avctx->channels - 1];
+    opus->stream_count   = avctx->channels - coupled_stream_count;
+
+    memcpy(libopus_channel_mapping,
+           opus_vorbis_channel_map[avctx->channels - 1],
+           avctx->channels * sizeof(*libopus_channel_mapping));
+
+    enc = opus_multistream_encoder_create(
+        avctx->sample_rate, avctx->channels, opus->stream_count,
+        coupled_stream_count,
+        libavcodec_libopus_channel_map[avctx->channels - 1],
+        opus->opts.application, &ret);
+
     if (ret != OPUS_OK) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to create encoder: %s\n", opus_strerror(ret));
         return ff_opus_error_to_averror(ret);
+    }
+
+    if (!avctx->bit_rate) {
+        /* Sane default copied from opusenc */
+        avctx->bit_rate = 64000 * opus->stream_count +
+                          32000 * coupled_stream_count;
+        av_log(avctx, AV_LOG_WARNING,
+               "No bit rate set. Defaulting to %"PRId64" bps.\n", (int64_t)avctx->bit_rate);
+    }
+
+    if (avctx->bit_rate < 500 || avctx->bit_rate > 256000 * avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "The bit rate %"PRId64" bps is unsupported. "
+               "Please choose a value between 500 and %d.\n", (int64_t)avctx->bit_rate,
+               256000 * avctx->channels);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     ret = libopus_configure_encoder(avctx, enc, &opus->opts);
@@ -292,7 +299,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
                opus_strerror(ret));
 
     libopus_write_header(avctx, opus->stream_count, coupled_stream_count,
-                         opus_vorbis_channel_map[avctx->channels - 1]);
+                         avctx->channels <= 8 ? 1 : 255, libopus_channel_mapping);
 
     ff_af_queue_init(avctx, &opus->afq);
 
@@ -310,8 +317,8 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
                           const AVFrame *frame, int *got_packet_ptr)
 {
     LibopusEncContext *opus = avctx->priv_data;
-    const int sample_size   = avctx->channels *
-                              av_get_bytes_per_sample(avctx->sample_fmt);
+    const int bytes_per_sample = av_get_bytes_per_sample(avctx->sample_fmt);
+    const int sample_size      = avctx->channels * bytes_per_sample;
     uint8_t *audio;
     int ret;
     int discard_padding;
