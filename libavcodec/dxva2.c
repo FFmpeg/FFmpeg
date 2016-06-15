@@ -158,9 +158,15 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
                                                  ff_dxva2_get_surface(frame),
                                                  NULL);
 #endif
-        if (hr == E_PENDING)
-            av_usleep(2000);
-    } while (hr == E_PENDING && ++runs < 50);
+        if (hr != E_PENDING || ++runs > 50)
+            break;
+#if CONFIG_D3D11VA
+        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+            if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
+                ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
+#endif
+        av_usleep(2000);
+    } while(1);
 
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%lx\n", hr);
