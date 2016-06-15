@@ -349,8 +349,6 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
             goto error;
         }
 
-        c->phase_shift   = phase_shift;
-        c->phase_mask    = phase_count - 1;
         c->phase_count   = phase_count;
         c->linear        = linear;
         c->factor        = factor;
