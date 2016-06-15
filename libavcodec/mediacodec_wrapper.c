@@ -403,148 +403,148 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
         goto done;
     }
 
-        codec_count = (*env)->CallStaticIntMethod(env, jfields.mediacodec_list_class, jfields.get_codec_count_id);
+    codec_count = (*env)->CallStaticIntMethod(env, jfields.mediacodec_list_class, jfields.get_codec_count_id);
+    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+        goto done;
+    }
+
+    for(i = 0; i < codec_count; i++) {
+        int j;
+        int type_count;
+        int is_encoder;
+
+        info = (*env)->CallStaticObjectMethod(env, jfields.mediacodec_list_class, jfields.get_codec_info_at_id, i);
         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
             goto done;
         }
 
-        for(i = 0; i < codec_count; i++) {
-            int j;
-            int type_count;
-            int is_encoder;
+        types = (*env)->CallObjectMethod(env, info, jfields.get_supported_types_id);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
 
-            info = (*env)->CallStaticObjectMethod(env, jfields.mediacodec_list_class, jfields.get_codec_info_at_id, i);
+        is_encoder = (*env)->CallBooleanMethod(env, info, jfields.is_encoder_id);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
+
+        if (is_encoder != encoder) {
+            goto done_with_info;
+        }
+
+        type_count = (*env)->GetArrayLength(env, types);
+        for (j = 0; j < type_count; j++) {
+            int k;
+            int profile_count;
+
+            type = (*env)->GetObjectArrayElement(env, types, j);
             if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
                 goto done;
             }
 
-            types = (*env)->CallObjectMethod(env, info, jfields.get_supported_types_id);
-            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            supported_type = ff_jni_jstring_to_utf_chars(env, type, log_ctx);
+            if (!supported_type) {
                 goto done;
             }
 
-            is_encoder = (*env)->CallBooleanMethod(env, info, jfields.is_encoder_id);
-            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                goto done;
-            }
-
-            if (is_encoder != encoder) {
-                goto done_with_info;
-            }
-
-            type_count = (*env)->GetArrayLength(env, types);
-            for (j = 0; j < type_count; j++) {
-                int k;
-                int profile_count;
-
-                type = (*env)->GetObjectArrayElement(env, types, j);
+            if (!av_strcasecmp(supported_type, mime)) {
+                codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
                 if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
                     goto done;
                 }
 
-                supported_type = ff_jni_jstring_to_utf_chars(env, type, log_ctx);
-                if (!supported_type) {
+                name = ff_jni_jstring_to_utf_chars(env, codec_name, log_ctx);
+                if (!name) {
                     goto done;
                 }
 
-                if (!av_strcasecmp(supported_type, mime)) {
-                    codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
+                if (strstr(name, "OMX.google")) {
+                    av_freep(&name);
+                    goto done_with_type;
+                }
+
+                capabilities = (*env)->CallObjectMethod(env, info, jfields.get_codec_capabilities_id, type);
+                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                    goto done;
+                }
+
+                profile_levels = (*env)->GetObjectField(env, capabilities, jfields.profile_levels_id);
+                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                    goto done;
+                }
+
+                profile_count = (*env)->GetArrayLength(env, profile_levels);
+                for (k = 0; k < profile_count; k++) {
+                    int supported_profile = 0;
+
+                    if (profile < 0) {
+                        found_codec = 1;
+                        break;
+                    }
+
+                    profile_level = (*env)->GetObjectArrayElement(env, profile_levels, k);
                     if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
                         goto done;
                     }
 
-                    name = ff_jni_jstring_to_utf_chars(env, codec_name, log_ctx);
-                    if (!name) {
-                        goto done;
-                    }
-
-                    if (strstr(name, "OMX.google")) {
-                        av_freep(&name);
-                        goto done_with_type;
-                    }
-
-                    capabilities = (*env)->CallObjectMethod(env, info, jfields.get_codec_capabilities_id, type);
+                    supported_profile = (*env)->GetIntField(env, profile_level, jfields.profile_id);
                     if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
                         goto done;
                     }
 
-                    profile_levels = (*env)->GetObjectField(env, capabilities, jfields.profile_levels_id);
-                    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                        goto done;
+                    found_codec = profile == supported_profile;
+
+                    if (profile_level) {
+                        (*env)->DeleteLocalRef(env, profile_level);
+                        profile_level = NULL;
                     }
 
-                    profile_count = (*env)->GetArrayLength(env, profile_levels);
-                    for (k = 0; k < profile_count; k++) {
-                        int supported_profile = 0;
-
-                        if (profile < 0) {
-                            found_codec = 1;
-                            break;
-                        }
-
-                        profile_level = (*env)->GetObjectArrayElement(env, profile_levels, k);
-                        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                            goto done;
-                        }
-
-                        supported_profile = (*env)->GetIntField(env, profile_level, jfields.profile_id);
-                        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                            goto done;
-                        }
-
-                        found_codec = profile == supported_profile;
-
-                        if (profile_level) {
-                            (*env)->DeleteLocalRef(env, profile_level);
-                            profile_level = NULL;
-                        }
-
-                        if (found_codec) {
-                            break;
-                        }
+                    if (found_codec) {
+                        break;
                     }
                 }
+            }
 
 done_with_type:
-                if (profile_levels) {
-                    (*env)->DeleteLocalRef(env, profile_levels);
-                    profile_levels = NULL;
-                }
-
-                if (capabilities) {
-                    (*env)->DeleteLocalRef(env, capabilities);
-                    capabilities = NULL;
-                }
-
-                if (type) {
-                    (*env)->DeleteLocalRef(env, type);
-                    type = NULL;
-                }
-
-                av_freep(&supported_type);
-
-                if (found_codec) {
-                    break;
-                }
-
-                av_freep(&name);
+            if (profile_levels) {
+                (*env)->DeleteLocalRef(env, profile_levels);
+                profile_levels = NULL;
             }
 
-done_with_info:
-            if (info) {
-                (*env)->DeleteLocalRef(env, info);
-                info = NULL;
+            if (capabilities) {
+                (*env)->DeleteLocalRef(env, capabilities);
+                capabilities = NULL;
             }
 
-            if (types) {
-                (*env)->DeleteLocalRef(env, types);
-                types = NULL;
+            if (type) {
+                (*env)->DeleteLocalRef(env, type);
+                type = NULL;
             }
+
+            av_freep(&supported_type);
 
             if (found_codec) {
                 break;
             }
+
+            av_freep(&name);
         }
+
+done_with_info:
+        if (info) {
+            (*env)->DeleteLocalRef(env, info);
+            info = NULL;
+        }
+
+        if (types) {
+            (*env)->DeleteLocalRef(env, types);
+            types = NULL;
+        }
+
+        if (found_codec) {
+            break;
+        }
+    }
 
 done:
     if (format) {
