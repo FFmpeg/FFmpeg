@@ -1634,6 +1634,7 @@ static const char *color_transfer_names[] = {
     [AVCOL_TRC_BT2020_12] = "bt2020-20",
     [AVCOL_TRC_SMPTEST2084] = "smptest2084",
     [AVCOL_TRC_SMPTEST428_1] = "smptest428-1",
+    [AVCOL_TRC_ARIB_STD_B67] = "arib-std-b67",
 };
 
 static const char *color_space_names[] = {

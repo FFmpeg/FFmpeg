@@ -453,6 +453,7 @@ static const AVOption avcodec_options[] = {
 {"bt2020_12bit", "BT.2020 - 12 bit", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT2020_12 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
 {"smptest2084",  "SMPTE ST 2084",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTEST2084 },  INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
 {"smptest428_1", "SMPTE ST 428-1",   0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTEST428_1 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+{"arib-std-b67", "ARIB STD-B67",     0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_ARIB_STD_B67 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
 {"colorspace", "color space", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64 = AVCOL_SPC_UNSPECIFIED }, 0, AVCOL_SPC_NB-1, V|E|D, "colorspace_type"},
 {"rgb",         "RGB",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_RGB },         INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
 {"bt709",       "BT.709",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT709 },       INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
