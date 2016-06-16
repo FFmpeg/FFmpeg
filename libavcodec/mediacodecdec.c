@@ -162,6 +162,7 @@ static int mediacodec_wrap_buffer(AVCodecContext *avctx,
      *   * N avpackets can be pushed before 1 frame is actually returned
      *   * 0-sized avpackets are pushed to flush remaining frames at EOS */
     frame->pkt_pts = info->presentationTimeUs;
+    frame->pkt_dts = AV_NOPTS_VALUE;
 
     av_log(avctx, AV_LOG_DEBUG,
             "Frame: width=%d stride=%d height=%d slice-height=%d "

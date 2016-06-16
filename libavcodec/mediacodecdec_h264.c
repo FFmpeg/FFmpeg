@@ -344,4 +344,5 @@ AVCodec ff_h264_mediacodec_decoder = {
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
     .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
