@@ -305,14 +305,14 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     double cutoff = cutoff0? cutoff0 : 0.97;
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
+    int phase_count_compensation = phase_count;
 
     if (exact_rational) {
         int phase_count_exact, phase_count_exact_den;
 
         av_reduce(&phase_count_exact, &phase_count_exact_den, out_rate, in_rate, INT_MAX);
         if (phase_count_exact <= phase_count) {
-            /* FIXME this is not required when soft compensation is disabled */
-            phase_count_exact *= phase_count / phase_count_exact;
+            phase_count_compensation = phase_count_exact * (phase_count / phase_count_exact);
             phase_count = phase_count_exact;
         }
     }
@@ -359,6 +359,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
         c->filter_bank   = av_calloc(c->filter_alloc, (phase_count+1)*c->felem_size);
         c->filter_type   = filter_type;
         c->kaiser_beta   = kaiser_beta;
+        c->phase_count_compensation = phase_count_compensation;
         if (!c->filter_bank)
             goto error;
         if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, c->filter_alloc, phase_count, 1<<c->filter_shift, filter_type, kaiser_beta))
@@ -397,7 +398,63 @@ static void resample_free(ResampleContext **c){
     av_freep(c);
 }
 
+static int rebuild_filter_bank_with_compensation(ResampleContext *c)
+{
+    uint8_t *new_filter_bank;
+    int new_src_incr, new_dst_incr;
+    int phase_count = c->phase_count_compensation;
+    int ret;
+
+    if (phase_count == c->phase_count)
+        return 0;
+
+    av_assert0(!c->frac && !c->dst_incr_mod && !c->compensation_distance);
+
+    new_filter_bank = av_calloc(c->filter_alloc, (phase_count + 1) * c->felem_size);
+    if (!new_filter_bank)
+        return AVERROR(ENOMEM);
+
+    ret = build_filter(c, new_filter_bank, c->factor, c->filter_length, c->filter_alloc,
+                       phase_count, 1 << c->filter_shift, c->filter_type, c->kaiser_beta);
+    if (ret < 0) {
+        av_freep(&new_filter_bank);
+        return ret;
+    }
+    memcpy(new_filter_bank + (c->filter_alloc*phase_count+1)*c->felem_size, new_filter_bank, (c->filter_alloc-1)*c->felem_size);
+    memcpy(new_filter_bank + (c->filter_alloc*phase_count  )*c->felem_size, new_filter_bank + (c->filter_alloc - 1)*c->felem_size, c->felem_size);
+
+    if (!av_reduce(&new_src_incr, &new_dst_incr, c->src_incr,
+                   c->dst_incr * (int64_t)(phase_count/c->phase_count), INT32_MAX/2))
+    {
+        av_freep(&new_filter_bank);
+        return AVERROR(EINVAL);
+    }
+
+    c->src_incr = new_src_incr;
+    c->dst_incr = new_dst_incr;
+    while (c->dst_incr < (1<<20) && c->src_incr < (1<<20)) {
+        c->dst_incr *= 2;
+        c->src_incr *= 2;
+    }
+    c->ideal_dst_incr = c->dst_incr;
+    c->dst_incr_div   = c->dst_incr / c->src_incr;
+    c->dst_incr_mod   = c->dst_incr % c->src_incr;
+    c->index         *= phase_count / c->phase_count;
+    c->phase_count    = phase_count;
+    av_freep(&c->filter_bank);
+    c->filter_bank = new_filter_bank;
+    return 0;
+}
+
 static int set_compensation(ResampleContext *c, int sample_delta, int compensation_distance){
+    int ret;
+
+    if (compensation_distance) {
+        ret = rebuild_filter_bank_with_compensation(c);
+        if (ret < 0)
+            return ret;
+    }
+
     c->compensation_distance= compensation_distance;
     if (compensation_distance)
         c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
