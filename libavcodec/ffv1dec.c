@@ -597,6 +597,12 @@ static int read_header(FFV1Context *f)
     }
 
     if (f->colorspace == 0) {
+        if (f->transparency && f->avctx->bits_per_raw_sample > 8) {
+            av_log(f->avctx, AV_LOG_ERROR,
+                   "Transparency not supported for bit depth %d\n",
+                   f->avctx->bits_per_raw_sample);
+            return AVERROR(ENOSYS);
+        }
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
@@ -694,6 +700,11 @@ static int read_header(FFV1Context *f)
             av_log(f->avctx, AV_LOG_ERROR,
                    "chroma subsampling not supported in this colorspace\n");
             return AVERROR(ENOSYS);
+        }
+        if (f->transparency) {
+            av_log(f->avctx, AV_LOG_ERROR,
+                   "Transparency not supported in this colorspace\n");
+                   return AVERROR(ENOSYS);
         }
         switch (f->avctx->bits_per_raw_sample) {
         case 0:
