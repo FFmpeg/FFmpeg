@@ -2574,7 +2574,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    unsigned int i, entries;
+    unsigned int i, entries, ctts_count = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2600,8 +2600,16 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         int count    =avio_rb32(pb);
         int duration =avio_rb32(pb);
 
-        sc->ctts_data[i].count   = count;
-        sc->ctts_data[i].duration= duration;
+        if (count <= 0) {
+            av_log(c->fc, AV_LOG_TRACE,
+                   "ignoring CTTS entry with count=%d duration=%d\n",
+                   count, duration);
+            continue;
+        }
+
+        sc->ctts_data[ctts_count].count    = count;
+        sc->ctts_data[ctts_count].duration = duration;
+        ctts_count++;
 
         av_log(c->fc, AV_LOG_TRACE, "count=%d, duration=%d\n",
                 count, duration);
@@ -2617,7 +2625,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             mov_update_dts_shift(sc, duration);
     }
 
-    sc->ctts_count = i;
+    sc->ctts_count = ctts_count;
 
     if (pb->eof_reached)
         return AVERROR_EOF;
