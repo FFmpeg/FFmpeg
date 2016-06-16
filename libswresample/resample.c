@@ -144,9 +144,10 @@ static double bessel(double x) {
 static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
                         int filter_type, double kaiser_beta){
     int ph, i;
+    int ph_nb = phase_count % 2 ? phase_count : phase_count / 2 + 1;
     double x, y, w, t, s;
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
-    double *sin_lut = av_malloc_array(phase_count / 2 + 1, sizeof(*sin_lut));
+    double *sin_lut = av_malloc_array(ph_nb, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
 
     if (!tab || !sin_lut)
@@ -156,13 +157,11 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     if (factor > 1.0)
         factor = 1.0;
 
-    av_assert0(phase_count == 1 || phase_count % 2 == 0);
-
     if (factor == 1.0) {
-        for (ph = 0; ph <= phase_count / 2; ph++)
+        for (ph = 0; ph < ph_nb; ph++)
             sin_lut[ph] = sin(M_PI * ph / phase_count);
     }
-    for(ph = 0; ph <= phase_count / 2; ph++) {
+    for(ph = 0; ph < ph_nb; ph++) {
         double norm = 0;
         s = sin_lut[ph];
         for(i=0;i<=tap_count;i++) {
@@ -203,6 +202,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S16P:
             for(i=0;i<tap_count;i++)
                 ((int16_t*)filter)[ph * alloc + i] = av_clip_int16(lrintf(tab[i] * scale / norm));
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int16_t*)filter)[ph * alloc + i];
@@ -216,6 +216,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
                 ((int32_t*)filter)[ph * alloc + i] = av_clipl_int32(llrint(tab[i] * scale / norm));
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int32_t*)filter)[ph * alloc + i];
@@ -229,6 +230,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * alloc + i] = tab[i] * scale / norm;
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((float*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((float*)filter)[ph * alloc + i];
@@ -241,6 +243,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
                 ((double*)filter)[ph * alloc + i] = tab[i] * scale / norm;
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((double*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((double*)filter)[ph * alloc + i];
@@ -307,10 +310,6 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
         int phase_count_exact, phase_count_exact_den;
 
         av_reduce(&phase_count_exact, &phase_count_exact_den, out_rate, in_rate, INT_MAX);
-        /* FIXME this is not required, but build_filter needs even phase_count */
-        if (phase_count_exact & 1 && phase_count_exact > 1 && phase_count_exact < INT_MAX/2)
-            phase_count_exact *= 2;
-
         if (phase_count_exact <= phase_count) {
             /* FIXME this is not required when soft compensation is disabled */
             phase_count_exact *= phase_count / phase_count_exact;
