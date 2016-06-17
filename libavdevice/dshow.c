@@ -104,14 +104,10 @@ dshow_read_close(AVFormatContext *s)
     if (ctx->device_filter[AudioDevice])
         IBaseFilter_Release(ctx->device_filter[AudioDevice]);
 
-    if (ctx->device_name[0])
-        av_freep(&ctx->device_name[0]);
-    if (ctx->device_name[1])
-        av_freep(&ctx->device_name[1]);
-    if (ctx->device_unique_name[0])
-        av_freep(&ctx->device_unique_name[0]);
-    if (ctx->device_unique_name[1])
-        av_freep(&ctx->device_unique_name[1]);
+    av_freep(&ctx->device_name[0]);
+    av_freep(&ctx->device_name[1]);
+    av_freep(&ctx->device_unique_name[0]);
+    av_freep(&ctx->device_unique_name[1]);
 
     if(ctx->mutex)
         CloseHandle(ctx->mutex);
