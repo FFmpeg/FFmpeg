@@ -48,14 +48,14 @@
 #define LOG2_OBMC_MAX 8
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 typedef struct BlockNode{
-    int16_t mx;
-    int16_t my;
-    uint8_t ref;
-    uint8_t color[3];
-    uint8_t type;
+    int16_t mx;                 ///< Motion vector component X, see mv_scale
+    int16_t my;                 ///< Motion vector component Y, see mv_scale
+    uint8_t ref;                ///< Reference frame index
+    uint8_t color[3];           ///< Color for intra
+    uint8_t type;               ///< Bitfield of BLOCK_*
 //#define TYPE_SPLIT    1
-#define BLOCK_INTRA   1
-#define BLOCK_OPT     2
+#define BLOCK_INTRA   1         ///< Intra block, inter otherwise
+#define BLOCK_OPT     2         ///< Block needs no checks in this round of iterative motion estiation
 //#define TYPE_NOCOLOR  4
     uint8_t level; //FIXME merge into type?
 }BlockNode;
