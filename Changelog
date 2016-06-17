@@ -58,6 +58,7 @@ version <next>:
 - MMAL-accelerated MPEG-2 and VC-1 decoding
 - G.729 raw demuxer
 - MagicYUV decoder
+- Duck TrueMotion 2.0 Real Time decoder
 
 
 version 11:
