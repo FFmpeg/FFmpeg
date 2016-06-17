@@ -628,8 +628,10 @@ static void videotoolbox_default_free(AVCodecContext *avctx)
         if (videotoolbox->cm_fmt_desc)
             CFRelease(videotoolbox->cm_fmt_desc);
 
-        if (videotoolbox->session)
+        if (videotoolbox->session) {
             VTDecompressionSessionInvalidate(videotoolbox->session);
+            CFRelease(videotoolbox->session);
+        }
     }
 }
 
