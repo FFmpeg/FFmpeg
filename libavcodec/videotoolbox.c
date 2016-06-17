@@ -407,7 +407,7 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                                                           AVCodecContext *avctx)
 {
     CFMutableDictionaryRef config_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                                   1,
+                                                                   0,
                                                                    &kCFTypeDictionaryKeyCallBacks,
                                                                    &kCFTypeDictionaryValueCallBacks);
 
