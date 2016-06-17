@@ -250,30 +250,6 @@ int ff_snow_get_buffer(SnowContext *s, AVFrame *frame);
 /* common inline functions */
 //XXX doublecheck all of them should stay inlined
 
-static inline void snow_set_blocks(SnowContext *s, int level, int x, int y, int l, int cb, int cr, int mx, int my, int ref, int type){
-    const int w= s->b_width << s->block_max_depth;
-    const int rem_depth= s->block_max_depth - level;
-    const int index= (x + y*w) << rem_depth;
-    const int block_w= 1<<rem_depth;
-    BlockNode block;
-    int i,j;
-
-    block.color[0]= l;
-    block.color[1]= cb;
-    block.color[2]= cr;
-    block.mx= mx;
-    block.my= my;
-    block.ref= ref;
-    block.type= type;
-    block.level= level;
-
-    for(j=0; j<block_w; j++){
-        for(i=0; i<block_w; i++){
-            s->block[index + i + j*w]= block;
-        }
-    }
-}
-
 static inline void pred_mv(SnowContext *s, int *mx, int *my, int ref,
                            const BlockNode *left, const BlockNode *top, const BlockNode *tr){
     if(s->ref_frames == 1){
