@@ -351,10 +351,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     case 26:                   // MTAP-16
     case 27:                   // MTAP-24
     case 29:                   // FU-B
-        av_log(ctx, AV_LOG_ERROR,
-               "Unhandled type (%d) (See RFC for implementation details)\n",
-               type);
-        result = AVERROR(ENOSYS);
+        avpriv_report_missing_feature(ctx, "RTP H.264 NAL unit type %d", type);
+        result = AVERROR_PATCHWELCOME;
         break;
 
     case 28:                   // FU-A (fragmented nal)

@@ -1871,14 +1871,10 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
         goto pe_cleanup;
     }
 
-    av_log(avctx, AV_LOG_INFO, "Completing\n");
-
     //Populates extradata - output frames are flushed and param sets are available.
     status = VTCompressionSessionCompleteFrames(vtctx->session,
                                                 kCMTimeIndefinite);
 
-
-    av_log(avctx, AV_LOG_INFO, "Completed: %d\n", status);
     if (status)
         goto pe_cleanup;
 
@@ -1901,8 +1897,6 @@ pe_cleanup:
 
     av_frame_unref(frame);
     av_frame_free(&frame);
-
-    av_log(avctx, AV_LOG_INFO, "status %d ed %p size %d\n", status, avctx->extradata, avctx->extradata_size);
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
 

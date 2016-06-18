@@ -592,7 +592,7 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
     int mmco_index = 0, i = 0;
 
     if (h->short_ref_count &&
-        h->long_ref_count + h->short_ref_count >= h->sps.ref_frame_count &&
+        h->long_ref_count + h->short_ref_count >= h->ps.sps->ref_frame_count &&
         !(FIELD_PICTURE(h) && !h->first_field && h->cur_pic_ptr->reference)) {
         mmco[0].opcode        = MMCO_SHORT2UNUSED;
         mmco[0].short_pic_num = h->short_ref[h->short_ref_count - 1]->frame_num;
@@ -725,7 +725,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
             for (j = 0; j < 16; j++) {
                 remove_long(h, j, 0);
             }
-            h->frame_num  = h->cur_pic_ptr->frame_num = 0;
+            h->poc.frame_num = h->cur_pic_ptr->frame_num = 0;
             h->mmco_reset = 1;
             h->cur_pic_ptr->mmco_reset = 1;
             for (j = 0; j < MAX_DELAYED_PIC_COUNT; j++)
@@ -768,7 +768,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
         }
     }
 
-    if (h->long_ref_count + h->short_ref_count > FFMAX(h->sps.ref_frame_count, 1)) {
+    if (h->long_ref_count + h->short_ref_count > FFMAX(h->ps.sps->ref_frame_count, 1)) {
 
         /* We have too many reference frames, probably due to corrupted
          * stream. Need to discard one frame. Prevents overrun of the
@@ -777,7 +777,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
         av_log(h->avctx, AV_LOG_ERROR,
                "number of reference frames (%d+%d) exceeds max (%d; probably "
                "corrupt input), discarding one\n",
-               h->long_ref_count, h->short_ref_count, h->sps.ref_frame_count);
+               h->long_ref_count, h->short_ref_count, h->ps.sps->ref_frame_count);
         err = AVERROR_INVALIDDATA;
 
         if (h->long_ref_count && !h->short_ref_count) {
@@ -796,8 +796,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     for (i = 0; i<h->short_ref_count; i++) {
         pic = h->short_ref[i];
         if (pic->invalid_gap) {
-            int d = av_mod_uintp2(h->cur_pic_ptr->frame_num - pic->frame_num, h->sps.log2_max_frame_num);
-            if (d > h->sps.ref_frame_count)
+            int d = av_mod_uintp2(h->cur_pic_ptr->frame_num - pic->frame_num, h->ps.sps->log2_max_frame_num);
+            if (d > h->ps.sps->ref_frame_count)
                 remove_short(h, pic->frame_num, 0);
         }
     }
@@ -805,10 +805,11 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     print_short_term(h);
     print_long_term(h);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(h->pps_buffers); i++) {
-        if (h->pps_buffers[i]) {
-            pps_ref_count[0] = FFMAX(pps_ref_count[0], h->pps_buffers[i]->ref_count[0]);
-            pps_ref_count[1] = FFMAX(pps_ref_count[1], h->pps_buffers[i]->ref_count[1]);
+    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
+        if (h->ps.pps_list[i]) {
+            const PPS *pps = (const PPS *)h->ps.pps_list[i]->data;
+            pps_ref_count[0] = FFMAX(pps_ref_count[0], pps->ref_count[0]);
+            pps_ref_count[1] = FFMAX(pps_ref_count[1], pps->ref_count[1]);
         }
     }
 

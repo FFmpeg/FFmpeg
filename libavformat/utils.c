@@ -2773,12 +2773,12 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         AVStream av_unused *st;
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
-            av_log(ic, AV_LOG_TRACE, "%d: start_time: %0.3f duration: %0.3f\n", i,
-                    (double) st->start_time / AV_TIME_BASE,
-                    (double) st->duration   / AV_TIME_BASE);
+            av_log(ic, AV_LOG_TRACE, "stream %d: start_time: %0.3f duration: %0.3f\n", i,
+                   (double) st->start_time * av_q2d(st->time_base),
+                   (double) st->duration   * av_q2d(st->time_base));
         }
         av_log(ic, AV_LOG_TRACE,
-                "stream: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
+                "format: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
                 (double) ic->start_time / AV_TIME_BASE,
                 (double) ic->duration   / AV_TIME_BASE,
                 (int64_t)ic->bit_rate / 1000);
@@ -3297,8 +3297,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     }
 
     if (ic->pb)
-        av_log(ic, AV_LOG_DEBUG, "Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d\n",
-               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count);
+        av_log(ic, AV_LOG_DEBUG, "Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d nb_streams:%d\n",
+               avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, ic->nb_streams);
 
     for (i = 0; i < ic->nb_streams; i++) {
         const AVCodec *codec;
@@ -3803,8 +3803,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
             av_codec_set_lowres(st->codec, av_codec_get_lowres(st->internal->avctx));
             st->codec->width = st->internal->avctx->width;
             st->codec->height = st->internal->avctx->height;
-            st->codec->coded_width = st->internal->avctx->coded_width;
-            st->codec->coded_height = st->internal->avctx->coded_height;
         }
 
         if (st->codec->codec_tag != MKTAG('t','m','c','d'))
@@ -3821,6 +3819,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
         }
 
         // Fields unavailable in AVCodecParameters
+        st->codec->coded_width = st->internal->avctx->coded_width;
+        st->codec->coded_height = st->internal->avctx->coded_height;
         st->codec->properties = st->internal->avctx->properties;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif

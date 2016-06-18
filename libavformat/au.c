@@ -66,6 +66,72 @@ static int au_probe(AVProbeData *p)
         return 0;
 }
 
+static int au_read_annotation(AVFormatContext *s, int size)
+{
+    static const char * keys[] = {
+        "title",
+        "artist",
+        "album",
+        "track",
+        "genre",
+        NULL };
+    AVIOContext *pb = s->pb;
+    enum { PARSE_KEY, PARSE_VALUE, PARSE_FINISHED } state = PARSE_KEY;
+    char c;
+    AVBPrint bprint;
+    char * key = NULL;
+    char * value = NULL;
+    int i;
+
+    av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
+
+    while (size-- > 0) {
+        c = avio_r8(pb);
+        switch(state) {
+        case PARSE_KEY:
+            if (c == '\0') {
+                state = PARSE_FINISHED;
+            } else if (c == '=') {
+                av_bprint_finalize(&bprint, &key);
+                av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
+                state = PARSE_VALUE;
+            } else {
+                av_bprint_chars(&bprint, c, 1);
+            }
+            break;
+        case PARSE_VALUE:
+            if (c == '\0' || c == '\n') {
+                if (av_bprint_finalize(&bprint, &value) != 0) {
+                    av_log(s, AV_LOG_ERROR, "Memory error while parsing AU metadata.\n");
+                } else {
+                    av_bprint_init(&bprint, 64, AV_BPRINT_SIZE_UNLIMITED);
+                    for (i = 0; keys[i] != NULL && key != NULL; i++) {
+                        if (av_strcasecmp(keys[i], key) == 0) {
+                            av_dict_set(&(s->metadata), keys[i], value, AV_DICT_DONT_STRDUP_VAL);
+                            av_freep(&key);
+                            value = NULL;
+                        }
+                    }
+                }
+                av_freep(&key);
+                av_freep(&value);
+                state = (c == '\0') ? PARSE_FINISHED : PARSE_KEY;
+            } else {
+                av_bprint_chars(&bprint, c, 1);
+            }
+            break;
+        case PARSE_FINISHED:
+            break;
+        default:
+            /* should never happen */
+            av_assert0(0);
+        }
+    }
+    av_bprint_finalize(&bprint, NULL);
+    av_freep(&key);
+    return 0;
+}
+
 #define BLOCK_SIZE 1024
 
 static int au_read_header(AVFormatContext *s)
@@ -94,8 +160,8 @@ static int au_read_header(AVFormatContext *s)
     channels = avio_rb32(pb);
 
     if (size > 24) {
-        /* skip unused data */
-        avio_skip(pb, size - 24);
+        /* parse annotation field to get metadata */
+        au_read_annotation(s, size - 24);
     }
 
     codec = ff_codec_get_id(codec_au_tags, id);

@@ -15,16 +15,16 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2016-04-27 - xxxxxxx - lavu 55.23.100 - log.h
+2016-04-27 - fb91871 - lavu 55.23.100 - log.h
   Add a new function av_log_format_line2() which returns number of bytes
   written to the target buffer.
 
-2016-xx-xx - xxxxxxx - lavc 57.37.100 - avcodec.h
+2016-04-21 - 7fc329e - lavc 57.37.100 - avcodec.h
   Add a new audio/video encoding and decoding API with decoupled input
   and output -- avcodec_send_packet(), avcodec_receive_frame(),
   avcodec_send_frame() and avcodec_receive_packet().
 
-2016-xx-xx - xxxxxxx - lavc 57.15.0 - avcodec.h
+2016-03-20 - af9cac1 / 33d1898 - lavc 57.35.100 / 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
   Deprecate the old bitstream filtering API.
 
@@ -40,33 +40,33 @@ API changes, most recent first:
 2016-04-11 - xxxxxxx - lavf 57.33.0 - avformat.h
   Add AVStream.codecpar, deprecate AVStream.codec.
 
-2016-04-02 - xxxxxxx - lavu 55.20.100 - base64.h
+2016-04-02 - e8a9b64 - lavu 55.20.100 - base64.h
   Add AV_BASE64_DECODE_SIZE(x) macro.
 
 2016-xx-xx - lavc 57.33.0 - avcodec.h
   xxxxxxx - Add AVCodecParameters and its related API.
   xxxxxxx - Add av_get_audio_frame_duration2().
 
-2016-03-11 - xxxxxxx - lavf/lavc 57.28.101
+2016-03-11 - 6d8ab35 - lavf/lavc 57.28.101
   Add requirement to bitstream filtering API that returned packets with
   size == 0 and side_data_elems == 0 are to be skipped by the caller.
 
-2016-XX-XX - xxxxxxx - lavf 57.28.100
+2016-03-04 - 9362973 - lavf 57.28.100
   Add protocol blacklisting API
 
-2016-02-28 - xxxxxxx - lavc 57.27.101
+2016-02-28 - 4dd4d53 - lavc 57.27.101
   Validate AVFrame returned by get_buffer2 to have required
   planes not NULL and unused planes set to NULL as crashes
   and buffer overflow are possible with certain streams if
   that is not the case.
 
-2016-xx-xx - xxxxxxx - lavc 57.27.100 - avcodec.h
+2016-02-26 - 30e7685 - lavc 57.27.100 - avcodec.h
   "flags2" decoding option now allows the flag "ass_ro_flush_noop" preventing
   the reset of the ASS ReadOrder field on flush. This affects the content of
   AVSubtitles.rects[N]->ass when "sub_text_format" is set to "ass" (see
   previous entry).
 
-2016-xx-xx - xxxxxxx - lavc 57.26.100 - avcodec.h
+2016-02-26 - 2941282 - lavc 57.26.100 - avcodec.h
   Add a "sub_text_format" subtitles decoding option allowing the values "ass"
   (recommended) and "ass_with_timings" (not recommended, deprecated, default).
   The default value for this option will change to "ass" at the next major
@@ -90,7 +90,7 @@ API changes, most recent first:
   xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
   xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
 
-2016-02-xx - xxxxxxx - lavc 57.25.100
+2016-02-23 - 14f7a3d - lavc 57.25.100
   Add AV_PKT_DATA_MPEGTS_STREAM_ID for exporting the MPEGTS stream ID.
 
 2016-xx-xx - lavu 55.18.100

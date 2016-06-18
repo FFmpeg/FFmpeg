@@ -250,7 +250,7 @@ static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
     int left_type = sl->left_type[LTOP];
     int top_type  = sl->top_type;
 
-    int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
+    int qp_bd_offset = 6 * (h->ps.sps->bit_depth_luma - 8);
     int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
     int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
@@ -420,7 +420,7 @@ void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl,
                             unsigned int linesize, unsigned int uvlinesize)
 {
     av_assert2(!FRAME_MBAFF(h));
-    if(!h->h264dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
+    if(!h->h264dsp.h264_loop_filter_strength || h->ps.pps->chroma_qp_diff) {
         ff_h264_filter_mb(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
     }
@@ -724,7 +724,7 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
     int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
-    int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
+    int qp_bd_offset = 6 * (h->ps.sps->bit_depth_luma - 8);
     int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
     int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
@@ -767,7 +767,7 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
                     bS[i] = 4;
                 else{
                     bS[i] = 1 + !!(sl->non_zero_count_cache[12+8*(i>>1)] |
-                         ((!h->pps.cabac && IS_8x8DCT(mbn_type)) ?
+                         ((!h->ps.pps->cabac && IS_8x8DCT(mbn_type)) ?
                             (h->cbp_table[mbn_xy] & (((MB_FIELD(sl) ? (i&2) : (mb_y&1)) ? 8 : 2) << 12))
                                                                        :
                             h->non_zero_count[mbn_xy][ off[i] ]));

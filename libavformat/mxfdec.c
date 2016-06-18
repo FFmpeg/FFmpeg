@@ -1914,7 +1914,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 break;
             }
         }
-        if (!source_track || !component)
+        if (!source_track || !component || !source_package)
             continue;
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {

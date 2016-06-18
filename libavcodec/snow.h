@@ -48,14 +48,14 @@
 #define LOG2_OBMC_MAX 8
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 typedef struct BlockNode{
-    int16_t mx;
-    int16_t my;
-    uint8_t ref;
-    uint8_t color[3];
-    uint8_t type;
+    int16_t mx;                 ///< Motion vector component X, see mv_scale
+    int16_t my;                 ///< Motion vector component Y, see mv_scale
+    uint8_t ref;                ///< Reference frame index
+    uint8_t color[3];           ///< Color for intra
+    uint8_t type;               ///< Bitfield of BLOCK_*
 //#define TYPE_SPLIT    1
-#define BLOCK_INTRA   1
-#define BLOCK_OPT     2
+#define BLOCK_INTRA   1         ///< Intra block, inter otherwise
+#define BLOCK_OPT     2         ///< Block needs no checks in this round of iterative motion estiation
 //#define TYPE_NOCOLOR  4
     uint8_t level; //FIXME merge into type?
 }BlockNode;
@@ -249,30 +249,6 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t st
 int ff_snow_get_buffer(SnowContext *s, AVFrame *frame);
 /* common inline functions */
 //XXX doublecheck all of them should stay inlined
-
-static inline void snow_set_blocks(SnowContext *s, int level, int x, int y, int l, int cb, int cr, int mx, int my, int ref, int type){
-    const int w= s->b_width << s->block_max_depth;
-    const int rem_depth= s->block_max_depth - level;
-    const int index= (x + y*w) << rem_depth;
-    const int block_w= 1<<rem_depth;
-    BlockNode block;
-    int i,j;
-
-    block.color[0]= l;
-    block.color[1]= cb;
-    block.color[2]= cr;
-    block.mx= mx;
-    block.my= my;
-    block.ref= ref;
-    block.type= type;
-    block.level= level;
-
-    for(j=0; j<block_w; j++){
-        for(i=0; i<block_w; i++){
-            s->block[index + i + j*w]= block;
-        }
-    }
-}
 
 static inline void pred_mv(SnowContext *s, int *mx, int *my, int ref,
                            const BlockNode *left, const BlockNode *top, const BlockNode *tr){

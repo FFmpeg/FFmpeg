@@ -971,6 +971,140 @@ static const uint8_t l_u_byryi[256] = {
     12, 11, 11, 11, 10, 10, 10,  9,  9,  8,  8,  7,  7,  5,  4,  3,
 };
 
+static const uint8_t l_r_rgbxi[1024] = {
+     3,  4,  4,  4,  5,  5,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,
+     8,  8,  8,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,
+     9,  9,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12,
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,  9,  9,
+     9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  8,  8,  8,
+     8,  8,  8,  8,  7,  7,  7,  7,  6,  6,  6,  5,  5,  4,  4,  4,
+};
+
+static const uint8_t l_g_rgbxi[1024] = {
+     2,  3,  4,  4,  6,  6,  7,  7,  7,  7,  7,  7,  8,  8,  8,  8,
+     9,  9,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11,
+    11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13,
+    13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16, 16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+    13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11,
+    11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10,  9,  9,  9,
+     9,  8,  8,  8,  8,  7,  7,  7,  7,  7,  7,  6,  6,  4,  4,  3,
+};
+
 static void decode_ca4i(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -2197,6 +2331,50 @@ static void decode_aybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     }
 }
 
+static void decode_argxi(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint16_t *dst_r, *dst_g, *dst_b, *dst_a;
+    int x, y;
+
+    dst_r = (uint16_t *)p->data[2];
+    dst_g = (uint16_t *)p->data[0];
+    dst_b = (uint16_t *)p->data[1];
+    dst_a = (uint16_t *)p->data[3];
+
+    for (y = 0; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst_a[x] = get_bits(gb, 10);
+                dst_r[x] = get_bits(gb, 10);
+                dst_g[x] = get_bits(gb, 10);
+                dst_b[x] = get_bits(gb, 10);
+            }
+        } else {
+            int pred[4] = { 512, 512, 512, 512 };
+
+            for (x = 0; x < avctx->width; x++) {
+                int r, g, b, a;
+
+                a = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst_a[x] = pred[3] = (a + pred[3]) & 0x3ff;
+                dst_r[x] = pred[0] = (r + pred[0]) & 0x3ff;
+                dst_g[x] = pred[1] = (r + g + pred[1]) & 0x3ff;
+                dst_b[x] = pred[2] = (r + g + b + pred[2]) & 0x3ff;
+            }
+        }
+
+        dst_r += p->linesize[2] / 2;
+        dst_g += p->linesize[0] / 2;
+        dst_b += p->linesize[1] / 2;
+        dst_a += p->linesize[3] / 2;
+    }
+}
+
 static void decode_argx(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -2282,6 +2460,45 @@ static void decode_argx(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
         dst_g += p->linesize[0] / 2;
         dst_b += p->linesize[1] / 2;
         dst_a += p->linesize[3] / 2;
+    }
+}
+
+static void decode_rgbxi(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
+{
+    SheerVideoContext *s = avctx->priv_data;
+    uint16_t *dst_r, *dst_g, *dst_b;
+    int x, y;
+
+    dst_r = (uint16_t *)p->data[2];
+    dst_g = (uint16_t *)p->data[0];
+    dst_b = (uint16_t *)p->data[1];
+
+    for (y = 0; y < avctx->height; y++) {
+        if (get_bits1(gb)) {
+            for (x = 0; x < avctx->width; x++) {
+                dst_r[x] = get_bits(gb, 10);
+                dst_g[x] = get_bits(gb, 10);
+                dst_b[x] = get_bits(gb, 10);
+            }
+        } else {
+            int pred[4] = { 512, 512, 512, 0 };
+
+            for (x = 0; x < avctx->width; x++) {
+                int r, g, b;
+
+                r = get_vlc2(gb, s->vlc[0].table, s->vlc[0].bits, 2);
+                g = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+                b = get_vlc2(gb, s->vlc[1].table, s->vlc[1].bits, 2);
+
+                dst_r[x] = pred[0] = (r + pred[0]) & 0x3ff;
+                dst_g[x] = pred[1] = (r + g + pred[1]) & 0x3ff;
+                dst_b[x] = pred[2] = (r + g + b + pred[2]) & 0x3ff;
+            }
+        }
+
+        dst_r += p->linesize[2] / 2;
+        dst_g += p->linesize[0] / 2;
+        dst_b += p->linesize[1] / 2;
     }
 }
 
@@ -2676,48 +2893,64 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         s->decode_frame = decode_rgb;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgb, 256);
-            build_vlc(&s->vlc[1], l_g_rgb, 256);
+            ret  = build_vlc(&s->vlc[0], l_r_rgb, 256);
+            ret |= build_vlc(&s->vlc[1], l_g_rgb, 256);
         }
         break;
     case MKTAG(' ', 'r', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         s->decode_frame = decode_rgbi;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgbi, 256);
-            build_vlc(&s->vlc[1], l_g_rgbi, 256);
+            ret  = build_vlc(&s->vlc[0], l_r_rgbi, 256);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbi, 256);
         }
         break;
     case MKTAG('A', 'R', 'G', 'X'):
         avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         s->decode_frame = decode_argx;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgbx, 1024);
-            build_vlc(&s->vlc[1], l_g_rgbx, 1024);
+            ret  = build_vlc(&s->vlc[0], l_r_rgbx, 1024);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbx, 1024);
+        }
+        break;
+    case MKTAG('A', 'r', 'G', 'X'):
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
+        s->decode_frame = decode_argxi;
+        if (s->format != format) {
+            ret  = build_vlc(&s->vlc[0], l_r_rgbxi, 1024);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbxi, 1024);
         }
         break;
     case MKTAG('R', 'G', 'B', 'X'):
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
         s->decode_frame = decode_rgbx;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgbx, 1024);
-            build_vlc(&s->vlc[1], l_g_rgbx, 1024);
+            ret  = build_vlc(&s->vlc[0], l_r_rgbx, 1024);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbx, 1024);
+        }
+        break;
+    case MKTAG('r', 'G', 'B', 'X'):
+        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        s->decode_frame = decode_rgbxi;
+        if (s->format != format) {
+            ret  = build_vlc(&s->vlc[0], l_r_rgbxi, 1024);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbxi, 1024);
         }
         break;
     case MKTAG('A', 'R', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
         s->decode_frame = decode_argb;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgb, 256);
-            build_vlc(&s->vlc[1], l_g_rgb, 256);
+            ret  = build_vlc(&s->vlc[0], l_r_rgb, 256);
+            ret |= build_vlc(&s->vlc[1], l_g_rgb, 256);
         }
         break;
     case MKTAG('A', 'r', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
         s->decode_frame = decode_argbi;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_r_rgbi, 256);
-            build_vlc(&s->vlc[1], l_g_rgbi, 256);
+            ret  = build_vlc(&s->vlc[0], l_r_rgbi, 256);
+            ret |= build_vlc(&s->vlc[1], l_g_rgbi, 256);
         }
         break;
     case MKTAG('A', 'Y', 'B', 'R'):
@@ -2725,8 +2958,8 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybr;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr, 256);
-            build_vlc(&s->vlc[1], l_u_ybr, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr, 256);
         }
         break;
     case MKTAG('A', 'y', 'B', 'R'):
@@ -2734,8 +2967,8 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybri;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybri, 256);
-            build_vlc(&s->vlc[1], l_u_ybri, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_ybri, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_ybri, 256);
         }
         break;
     case MKTAG(' ', 'Y', 'B', 'R'):
@@ -2743,8 +2976,8 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybr;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr, 256);
-            build_vlc(&s->vlc[1], l_u_ybr, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr, 256);
         }
         break;
     case MKTAG(' ', 'y', 'B', 'R'):
@@ -2752,119 +2985,124 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybri;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybri, 256);
-            build_vlc(&s->vlc[1], l_u_ybri, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_ybri, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_ybri, 256);
         }
         break;
     case MKTAG('Y', 'B', 'R', 0x0a):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         s->decode_frame = decode_ybr10;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr10, 1024);
-            build_vlc(&s->vlc[1], l_u_ybr10, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr10, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr10, 1024);
         }
         break;
     case MKTAG('y', 'B', 'R', 0x0a):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         s->decode_frame = decode_ybr10i;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr10i, 1024);
-            build_vlc(&s->vlc[1], l_u_ybr10i, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr10i, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr10i, 1024);
         }
         break;
     case MKTAG('C', 'A', '4', 'p'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P10;
         s->decode_frame = decode_ca4p;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr10, 1024);
-            build_vlc(&s->vlc[1], l_u_ybr10, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr10, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr10, 1024);
         }
         break;
     case MKTAG('C', 'A', '4', 'i'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P10;
         s->decode_frame = decode_ca4i;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybr10i, 1024);
-            build_vlc(&s->vlc[1], l_u_ybr10i, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_ybr10i, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_ybr10i, 1024);
         }
         break;
     case MKTAG('B', 'Y', 'R', 'Y'):
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         s->decode_frame = decode_byry;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_byry, 256);
-            build_vlc(&s->vlc[1], l_u_byry, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_byry, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_byry, 256);
         }
         break;
     case MKTAG('B', 'Y', 'R', 'y'):
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         s->decode_frame = decode_byryi;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_byryi, 256);
-            build_vlc(&s->vlc[1], l_u_byryi, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_byryi, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_byryi, 256);
         }
         break;
     case MKTAG('Y', 'b', 'Y', 'r'):
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         s->decode_frame = decode_ybyr;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_ybyr, 256);
-            build_vlc(&s->vlc[1], l_u_ybyr, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_ybyr, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_ybyr, 256);
         }
         break;
     case MKTAG('C', '8', '2', 'p'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
         s->decode_frame = decode_c82p;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_byry, 256);
-            build_vlc(&s->vlc[1], l_u_byry, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_byry, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_byry, 256);
         }
         break;
     case MKTAG('C', '8', '2', 'i'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
         s->decode_frame = decode_c82i;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_byryi, 256);
-            build_vlc(&s->vlc[1], l_u_byryi, 256);
+            ret  = build_vlc(&s->vlc[0], l_y_byryi, 256);
+            ret |= build_vlc(&s->vlc[1], l_u_byryi, 256);
         }
         break;
     case MKTAG(0xa2, 'Y', 'R', 'Y'):
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         s->decode_frame = decode_yry10;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_yry10, 1024);
-            build_vlc(&s->vlc[1], l_u_yry10, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_yry10, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_yry10, 1024);
         }
         break;
     case MKTAG(0xa2, 'Y', 'R', 'y'):
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         s->decode_frame = decode_yry10i;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_yry10i, 1024);
-            build_vlc(&s->vlc[1], l_u_yry10i, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_yry10i, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_yry10i, 1024);
         }
         break;
     case MKTAG('C', 'A', '2', 'p'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA422P10;
         s->decode_frame = decode_ca2p;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_yry10, 1024);
-            build_vlc(&s->vlc[1], l_u_yry10, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_yry10, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_yry10, 1024);
         }
         break;
     case MKTAG('C', 'A', '2', 'i'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA422P10;
         s->decode_frame = decode_ca2i;
         if (s->format != format) {
-            build_vlc(&s->vlc[0], l_y_yry10i, 1024);
-            build_vlc(&s->vlc[1], l_u_yry10i, 1024);
+            ret  = build_vlc(&s->vlc[0], l_y_yry10i, 1024);
+            ret |= build_vlc(&s->vlc[1], l_u_yry10i, 1024);
         }
         break;
     default:
         avpriv_request_sample(avctx, "unsupported format: 0x%X", format);
         return AVERROR_PATCHWELCOME;
     }
-    s->format = format;
+
+    if (s->format != format) {
+        if (ret < 0)
+            return ret;
+        s->format = format;
+    }
 
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;

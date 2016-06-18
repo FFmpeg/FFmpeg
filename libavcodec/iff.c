@@ -541,6 +541,8 @@ static int decode_byterun(uint8_t *dst, int dst_size,
         if (value >= 0) {
             length = FFMIN3(value + 1, dst_size - x, bytestream2_get_bytes_left(gb));
             bytestream2_get_buffer(gb, dst + x, length);
+            if (length < value + 1)
+                bytestream2_skip(gb, value + 1 - length);
         } else if (value > -128) {
             length = FFMIN(-value + 1, dst_size - x);
             memset(dst + x, bytestream2_get_byte(gb), length);

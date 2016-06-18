@@ -358,7 +358,8 @@ This muxer supports the following options:
 
 @table @option
 @item hls_time @var{seconds}
-Set the segment length in seconds. Default value is 2.
+Set the target segment length in seconds. Default value is 2.
+Segment will be cut on the next key frame after this time has passed.
 
 @item hls_list_size @var{size}
 Set the maximum number of playlist entries. If set to 0 the list file
@@ -907,41 +908,41 @@ and @code{service_name}. If they are not set the default for
 The muxer options are:
 
 @table @option
-@item -mpegts_original_network_id @var{number}
+@item mpegts_original_network_id @var{number}
 Set the original_network_id (default 0x0001). This is unique identifier
 of a network in DVB. Its main use is in the unique identification of a
 service through the path Original_Network_ID, Transport_Stream_ID.
-@item -mpegts_transport_stream_id @var{number}
+@item mpegts_transport_stream_id @var{number}
 Set the transport_stream_id (default 0x0001). This identifies a
 transponder in DVB.
-@item -mpegts_service_id @var{number}
+@item mpegts_service_id @var{number}
 Set the service_id (default 0x0001) also known as program in DVB.
-@item -mpegts_service_type @var{number}
+@item mpegts_service_type @var{number}
 Set the program service_type (default @var{digital_tv}), see below
 a list of pre defined values.
-@item -mpegts_pmt_start_pid @var{number}
+@item mpegts_pmt_start_pid @var{number}
 Set the first PID for PMT (default 0x1000, max 0x1f00).
-@item -mpegts_start_pid @var{number}
+@item mpegts_start_pid @var{number}
 Set the first PID for data packets (default 0x0100, max 0x0f00).
-@item -mpegts_m2ts_mode @var{number}
+@item mpegts_m2ts_mode @var{number}
 Enable m2ts mode if set to 1. Default value is -1 which disables m2ts mode.
-@item -muxrate @var{number}
+@item muxrate @var{number}
 Set a constant muxrate (default VBR).
-@item -pcr_period @var{numer}
+@item pcr_period @var{numer}
 Override the default PCR retransmission time (default 20ms), ignored
 if variable muxrate is selected.
 @item pat_period @var{number}
 Maximal time in seconds between PAT/PMT tables.
 @item sdt_period @var{number}
 Maximal time in seconds between SDT tables.
-@item -pes_payload_size @var{number}
+@item pes_payload_size @var{number}
 Set minimum PES packet payload in bytes.
-@item -mpegts_flags @var{flags}
+@item mpegts_flags @var{flags}
 Set flags (see below).
-@item -mpegts_copyts @var{number}
+@item mpegts_copyts @var{number}
 Preserve original timestamps, if value is set to 1. Default value is -1, which
 results in shifting timestamps so that they start from 0.
-@item -tables_version @var{number}
+@item tables_version @var{number}
 Set PAT, PMT and SDT version (default 0, valid values are from 0 to 31, inclusively).
 This option allows updating stream structure so that standard consumer may
 detect the change. To do so, reopen output AVFormatContext (in case of API
@@ -957,7 +958,7 @@ ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
 @end example
 @end table
 
-Option mpegts_service_type accepts the following values:
+Option @option{mpegts_service_type} accepts the following values:
 
 @table @option
 @item hex_value
@@ -978,7 +979,7 @@ Advanced Codec Digital SDTV service.
 Advanced Codec Digital HDTV service.
 @end table
 
-Option mpegts_flags may take a set of such flags:
+Option @option{mpegts_flags} may take a set of such flags:
 
 @table @option
 @item resend_headers

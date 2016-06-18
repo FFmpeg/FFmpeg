@@ -144,9 +144,10 @@ static double bessel(double x) {
 static int build_filter(ResampleContext *c, void *filter, double factor, int tap_count, int alloc, int phase_count, int scale,
                         int filter_type, double kaiser_beta){
     int ph, i;
+    int ph_nb = phase_count % 2 ? phase_count : phase_count / 2 + 1;
     double x, y, w, t, s;
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
-    double *sin_lut = av_malloc_array(phase_count / 2 + 1, sizeof(*sin_lut));
+    double *sin_lut = av_malloc_array(ph_nb, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
 
     if (!tab || !sin_lut)
@@ -156,13 +157,11 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     if (factor > 1.0)
         factor = 1.0;
 
-    av_assert0(phase_count == 1 || phase_count % 2 == 0);
-
     if (factor == 1.0) {
-        for (ph = 0; ph <= phase_count / 2; ph++)
+        for (ph = 0; ph < ph_nb; ph++)
             sin_lut[ph] = sin(M_PI * ph / phase_count);
     }
-    for(ph = 0; ph <= phase_count / 2; ph++) {
+    for(ph = 0; ph < ph_nb; ph++) {
         double norm = 0;
         s = sin_lut[ph];
         for(i=0;i<=tap_count;i++) {
@@ -203,6 +202,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S16P:
             for(i=0;i<tap_count;i++)
                 ((int16_t*)filter)[ph * alloc + i] = av_clip_int16(lrintf(tab[i] * scale / norm));
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int16_t*)filter)[ph * alloc + i];
@@ -216,6 +216,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
                 ((int32_t*)filter)[ph * alloc + i] = av_clipl_int32(llrint(tab[i] * scale / norm));
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int32_t*)filter)[ph * alloc + i];
@@ -229,6 +230,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * alloc + i] = tab[i] * scale / norm;
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((float*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((float*)filter)[ph * alloc + i];
@@ -241,6 +243,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
         case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
                 ((double*)filter)[ph * alloc + i] = tab[i] * scale / norm;
+            if (phase_count % 2) break;
             if (tap_count % 2 == 0 || tap_count == 1) {
                 for (i = 0; i < tap_count; i++)
                     ((double*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((double*)filter)[ph * alloc + i];
@@ -297,13 +300,24 @@ fail:
 
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
                                     double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta,
-                                    double precision, int cheby)
+                                    double precision, int cheby, int exact_rational)
 {
     double cutoff = cutoff0? cutoff0 : 0.97;
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
+    int phase_count_compensation = phase_count;
 
-    if (!c || c->phase_shift != phase_shift || c->linear!=linear || c->factor != factor
+    if (exact_rational) {
+        int phase_count_exact, phase_count_exact_den;
+
+        av_reduce(&phase_count_exact, &phase_count_exact_den, out_rate, in_rate, INT_MAX);
+        if (phase_count_exact <= phase_count) {
+            phase_count_compensation = phase_count_exact * (phase_count / phase_count_exact);
+            phase_count = phase_count_exact;
+        }
+    }
+
+    if (!c || c->phase_count != phase_count || c->linear!=linear || c->factor != factor
            || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format
            || c->filter_type != filter_type || c->kaiser_beta != kaiser_beta) {
         c = av_mallocz(sizeof(*c));
@@ -337,6 +351,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
 
         c->phase_shift   = phase_shift;
         c->phase_mask    = phase_count - 1;
+        c->phase_count   = phase_count;
         c->linear        = linear;
         c->factor        = factor;
         c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
@@ -344,6 +359,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
         c->filter_bank   = av_calloc(c->filter_alloc, (phase_count+1)*c->felem_size);
         c->filter_type   = filter_type;
         c->kaiser_beta   = kaiser_beta;
+        c->phase_count_compensation = phase_count_compensation;
         if (!c->filter_bank)
             goto error;
         if (build_filter(c, (void*)c->filter_bank, factor, c->filter_length, c->filter_alloc, phase_count, 1<<c->filter_shift, filter_type, kaiser_beta))
@@ -382,7 +398,63 @@ static void resample_free(ResampleContext **c){
     av_freep(c);
 }
 
+static int rebuild_filter_bank_with_compensation(ResampleContext *c)
+{
+    uint8_t *new_filter_bank;
+    int new_src_incr, new_dst_incr;
+    int phase_count = c->phase_count_compensation;
+    int ret;
+
+    if (phase_count == c->phase_count)
+        return 0;
+
+    av_assert0(!c->frac && !c->dst_incr_mod && !c->compensation_distance);
+
+    new_filter_bank = av_calloc(c->filter_alloc, (phase_count + 1) * c->felem_size);
+    if (!new_filter_bank)
+        return AVERROR(ENOMEM);
+
+    ret = build_filter(c, new_filter_bank, c->factor, c->filter_length, c->filter_alloc,
+                       phase_count, 1 << c->filter_shift, c->filter_type, c->kaiser_beta);
+    if (ret < 0) {
+        av_freep(&new_filter_bank);
+        return ret;
+    }
+    memcpy(new_filter_bank + (c->filter_alloc*phase_count+1)*c->felem_size, new_filter_bank, (c->filter_alloc-1)*c->felem_size);
+    memcpy(new_filter_bank + (c->filter_alloc*phase_count  )*c->felem_size, new_filter_bank + (c->filter_alloc - 1)*c->felem_size, c->felem_size);
+
+    if (!av_reduce(&new_src_incr, &new_dst_incr, c->src_incr,
+                   c->dst_incr * (int64_t)(phase_count/c->phase_count), INT32_MAX/2))
+    {
+        av_freep(&new_filter_bank);
+        return AVERROR(EINVAL);
+    }
+
+    c->src_incr = new_src_incr;
+    c->dst_incr = new_dst_incr;
+    while (c->dst_incr < (1<<20) && c->src_incr < (1<<20)) {
+        c->dst_incr *= 2;
+        c->src_incr *= 2;
+    }
+    c->ideal_dst_incr = c->dst_incr;
+    c->dst_incr_div   = c->dst_incr / c->src_incr;
+    c->dst_incr_mod   = c->dst_incr % c->src_incr;
+    c->index         *= phase_count / c->phase_count;
+    c->phase_count    = phase_count;
+    av_freep(&c->filter_bank);
+    c->filter_bank = new_filter_bank;
+    return 0;
+}
+
 static int set_compensation(ResampleContext *c, int sample_delta, int compensation_distance){
+    int ret;
+
+    if (compensation_distance) {
+        ret = rebuild_filter_bank_with_compensation(c);
+        if (ret < 0)
+            return ret;
+    }
+
     c->compensation_distance= compensation_distance;
     if (compensation_distance)
         c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
@@ -399,7 +471,7 @@ static int swri_resample(ResampleContext *c,
                          uint8_t *dst, const uint8_t *src, int *consumed,
                          int src_size, int dst_size, int update_ctx)
 {
-    if (c->filter_length == 1 && c->phase_shift == 0) {
+    if (c->filter_length == 1 && c->phase_count == 1) {
         int index= c->index;
         int frac= c->frac;
         int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
@@ -418,7 +490,7 @@ static int swri_resample(ResampleContext *c,
             c->index = 0;
         }
     } else {
-        int64_t end_index = (1LL + src_size - c->filter_length) << c->phase_shift;
+        int64_t end_index = (1LL + src_size - c->filter_length) * c->phase_count;
         int64_t delta_frac = (end_index - c->index) * c->src_incr - c->frac;
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
 
@@ -438,7 +510,7 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     int av_unused mm_flags = av_get_cpu_flags();
     int need_emms = c->format == AV_SAMPLE_FMT_S16P && ARCH_X86_32 &&
                     (mm_flags & (AV_CPU_FLAG_MMX2 | AV_CPU_FLAG_SSE2)) == AV_CPU_FLAG_MMX2;
-    int64_t max_src_size = (INT64_MAX >> (c->phase_shift+1)) / c->src_incr;
+    int64_t max_src_size = (INT64_MAX/2 / c->phase_count) / c->src_incr;
 
     if (c->compensation_distance)
         dst_size = FFMIN(dst_size, c->compensation_distance);
@@ -466,11 +538,11 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
 static int64_t get_delay(struct SwrContext *s, int64_t base){
     ResampleContext *c = s->resample;
     int64_t num = s->in_buffer_count - (c->filter_length-1)/2;
-    num *= 1 << c->phase_shift;
+    num *= c->phase_count;
     num -= c->index;
     num *= c->src_incr;
     num -= c->frac;
-    return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr << c->phase_shift);
+    return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr * c->phase_count);
 }
 
 static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
@@ -479,9 +551,9 @@ static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
     // They also make it easier to proof that changes and optimizations do not
     // break the upper bound.
     int64_t num = s->in_buffer_count + 2LL + in_samples;
-    num *= 1 << c->phase_shift;
+    num *= c->phase_count;
     num -= c->index;
-    num = av_rescale_rnd(num, s->out_sample_rate, ((int64_t)s->in_sample_rate) << c->phase_shift, AV_ROUND_UP) + 2;
+    num = av_rescale_rnd(num, s->out_sample_rate, ((int64_t)s->in_sample_rate) * c->phase_count, AV_ROUND_UP) + 2;
 
     if (c->compensation_distance) {
         if (num > INT_MAX)
@@ -545,10 +617,13 @@ static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const Audio
     }
 
     res = num - *out_sz;
-    *out_idx = c->filter_length + (c->index >> c->phase_shift);
+    *out_idx = c->filter_length;
+    while (c->index < 0) {
+        --*out_idx;
+        c->index += c->phase_count;
+    }
     *out_sz = FFMAX(*out_sz + c->filter_length,
                     1 + c->filter_length * 2) - *out_idx;
-    c->index &= c->phase_mask;
 
     return FFMAX(res, 0);
 }

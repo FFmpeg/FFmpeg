@@ -39,6 +39,19 @@ typedef struct H264PredWeightTable {
     int implicit_weight[48][48][2];
 } H264PredWeightTable;
 
+typedef struct H264POCContext {
+    int poc_lsb;
+    int poc_msb;
+    int delta_poc_bottom;
+    int delta_poc[2];
+    int frame_num;
+    int prev_poc_msb;           ///< poc_msb of the last reference pic for POC type 0
+    int prev_poc_lsb;           ///< poc_lsb of the last reference pic for POC type 0
+    int frame_num_offset;       ///< for POC type 2
+    int prev_frame_num_offset;  ///< for POC type 2
+    int prev_frame_num;         ///< frame_num of the last pic for POC type 1/2
+} H264POCContext;
+
 struct SPS;
 struct PPS;
 
@@ -64,5 +77,9 @@ int ff_h264_check_intra_pred_mode(void *logctx, int top_samples_available,
 int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
                             GetBitContext *gb, const struct PPS *pps,
                             int slice_type_nos, int picture_structure, void *logctx);
+
+int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
+                     const struct SPS *sps, H264POCContext *poc,
+                     int picture_structure, int nal_ref_idc);
 
 #endif /* AVCODEC_H264_PARSE_H */

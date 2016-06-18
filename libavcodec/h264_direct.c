@@ -315,7 +315,7 @@ single_col:
                 *mb_type |= MB_TYPE_DIRECT2 |
                             (mb_type_col[0] & (MB_TYPE_16x8 | MB_TYPE_8x16));
             } else {
-                if (!h->sps.direct_8x8_inference_flag) {
+                if (!h->ps.sps->direct_8x8_inference_flag) {
                     /* FIXME: Save sub mb types from previous frames (or derive
                      * from MVs) so we know exactly what block size to use. */
                     sub_mb_type += (MB_TYPE_8x8 - MB_TYPE_16x16); /* B_SUB_4x4 */
@@ -538,7 +538,7 @@ single_col:
                 *mb_type |= MB_TYPE_L0L1 | MB_TYPE_DIRECT2 |
                             (mb_type_col[0] & (MB_TYPE_16x8 | MB_TYPE_8x16));
             } else {
-                if (!h->sps.direct_8x8_inference_flag) {
+                if (!h->ps.sps->direct_8x8_inference_flag) {
                     /* FIXME: save sub mb types from previous frames (or derive
                      * from MVs) so we know exactly what block size to use */
                     sub_mb_type = MB_TYPE_8x8 | MB_TYPE_P0L0 | MB_TYPE_P0L1 |
@@ -579,7 +579,7 @@ single_col:
 
         if (IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])) {
             int y_shift = 2 * !IS_INTERLACED(*mb_type);
-            assert(h->sps.direct_8x8_inference_flag);
+            assert(h->ps.sps->direct_8x8_inference_flag);
 
             for (i8 = 0; i8 < 4; i8++) {
                 const int x8 = i8 & 1;

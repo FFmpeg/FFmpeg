@@ -47,6 +47,10 @@ av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
 {
     int av_unused mm_flags = av_get_cpu_flags();
 
+    /* FIXME use phase_count on asm */
+    if (c->phase_count != 1 << c->phase_shift)
+        return;
+
     switch(c->format){
     case AV_SAMPLE_FMT_S16P:
         if (ARCH_X86_32 && EXTERNAL_MMXEXT(mm_flags)) {
