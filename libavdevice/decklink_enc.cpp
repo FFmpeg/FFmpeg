@@ -312,7 +312,6 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx;
-    IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkIterator *iter;
     IDeckLink *dl = NULL;
     unsigned int n;
@@ -371,12 +370,6 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
-    if (ctx->dlo->GetDisplayModeIterator(&itermode) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
-        ctx->dl->Release();
-        return AVERROR(EIO);
-    }
-
     /* Setup streams. */
     for (n = 0; n < avctx->nb_streams; n++) {
         AVStream *st = avctx->streams[n];
@@ -392,7 +385,6 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
             goto error;
         }
     }
-    itermode->Release();
 
     return 0;
 
