@@ -28,6 +28,7 @@ extern "C" {
 #include "config.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #if CONFIG_LIBZVBI
 #include <libzvbi.h>
@@ -446,6 +447,10 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
     ctx->duplex_mode  = cctx->duplex_mode;
+    if (cctx->video_input > 0 && (unsigned int)cctx->video_input < FF_ARRAY_ELEMS(decklink_video_connection_map))
+        ctx->video_input = decklink_video_connection_map[cctx->video_input];
+    if (cctx->audio_input > 0 && (unsigned int)cctx->audio_input < FF_ARRAY_ELEMS(decklink_audio_connection_map))
+        ctx->audio_input = decklink_audio_connection_map[cctx->audio_input];
     cctx->ctx = ctx;
 
 #if !CONFIG_LIBZVBI

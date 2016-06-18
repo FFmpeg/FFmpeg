@@ -255,6 +255,16 @@ Defaults to @samp{2}.
 Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
 Defaults to @samp{unset}.
 
+@item video_input
+Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
+@samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.
+Defaults to @samp{unset}.
+
+@item audio_input
+Sets the audio input source. Must be @samp{unset}, @samp{embedded},
+@samp{aes_ebu}, @samp{analog}, @samp{analog_xlr}, @samp{analog_rca} or
+@samp{microphone}. Defaults to @samp{unset}.
+
 @end table
 
 @subsection Examples

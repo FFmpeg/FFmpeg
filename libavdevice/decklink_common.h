@@ -53,6 +53,8 @@ struct decklink_ctx {
     BMDTimeValue bmd_tb_den;
     BMDTimeValue bmd_tb_num;
     BMDDisplayMode bmd_mode;
+    BMDVideoConnection video_input;
+    BMDAudioConnection audio_input;
     int bmd_width;
     int bmd_height;
     int bmd_field_dominance;
@@ -102,6 +104,25 @@ IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
 typedef uint32_t buffercount_type;
 #endif
 
+static const BMDAudioConnection decklink_audio_connection_map[] = {
+    0,
+    bmdAudioConnectionEmbedded,
+    bmdAudioConnectionAESEBU,
+    bmdAudioConnectionAnalog,
+    bmdAudioConnectionAnalogXLR,
+    bmdAudioConnectionAnalogRCA,
+    bmdAudioConnectionMicrophone,
+};
+
+static const BMDVideoConnection decklink_video_connection_map[] = {
+    0,
+    bmdVideoConnectionSDI,
+    bmdVideoConnectionHDMI,
+    bmdVideoConnectionOpticalSDI,
+    bmdVideoConnectionComponent,
+    bmdVideoConnectionComposite,
+    bmdVideoConnectionSVideo,
+};
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName);
 int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb_num, int tb_den, decklink_direction_t direction = DIRECTION_OUT, int num = 0);
