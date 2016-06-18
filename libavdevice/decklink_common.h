@@ -105,5 +105,6 @@ int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num);
 int ff_decklink_list_devices(AVFormatContext *avctx);
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction = DIRECTION_OUT);
+void ff_decklink_cleanup(AVFormatContext *avctx);
 
 #endif /* AVDEVICE_DECKLINK_COMMON_H */

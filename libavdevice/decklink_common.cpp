@@ -239,3 +239,16 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
 
     return 0;
 }
+
+void ff_decklink_cleanup(AVFormatContext *avctx)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+
+    if (ctx->dli)
+        ctx->dli->Release();
+    if (ctx->dlo)
+        ctx->dlo->Release();
+    if (ctx->dl)
+        ctx->dl->Release();
+}

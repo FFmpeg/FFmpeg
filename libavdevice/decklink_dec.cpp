@@ -419,11 +419,7 @@ av_cold int ff_decklink_read_close(AVFormatContext *avctx)
         ctx->dli->DisableAudioInput();
     }
 
-    if (ctx->dli)
-        ctx->dli->Release();
-    if (ctx->dl)
-        ctx->dl->Release();
-
+    ff_decklink_cleanup(avctx);
     avpacket_queue_end(&ctx->queue);
 
     av_freep(&cctx->ctx);
@@ -620,10 +616,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     return 0;
 
 error:
-
-    ctx->dli->Release();
-    ctx->dl->Release();
-
+    ff_decklink_cleanup(avctx);
     return AVERROR(EIO);
 }
 

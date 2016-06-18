@@ -193,10 +193,7 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
             ctx->dlo->DisableAudioOutput();
     }
 
-    if (ctx->dlo)
-        ctx->dlo->Release();
-    if (ctx->dl)
-        ctx->dl->Release();
+    ff_decklink_cleanup(avctx);
 
     if (ctx->output_callback)
         delete ctx->output_callback;
@@ -400,10 +397,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     return 0;
 
 error:
-
-    ctx->dlo->Release();
-    ctx->dl->Release();
-
+    ff_decklink_cleanup(avctx);
     return AVERROR(EIO);
 }
 
