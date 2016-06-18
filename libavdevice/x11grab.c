@@ -668,7 +668,7 @@ static const AVOption options[] = {
     { "centered",     "keep the mouse pointer at the center of grabbing region when following",
       0, AV_OPT_TYPE_CONST, {.i64 = -1}, INT_MIN, INT_MAX, DEC, "follow_mouse" },
 
-    { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, DEC },
+    { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, INT_MAX, DEC },
     { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {.i64 = 0}, 0, 1, DEC },
     { "video_size",  "set video frame size",     OFFSET(width),       AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { "use_shm",     "use MIT-SHM extension",    OFFSET(use_shm),     AV_OPT_TYPE_INT,        {.i64 = 1}, 0, 1, DEC },

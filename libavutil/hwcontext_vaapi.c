@@ -86,16 +86,16 @@ static struct {
     MAP(YUY2, YUV422,  YUYV422),
     MAP(Y800, YUV400,  GRAY8),
 #ifdef VA_FOURCC_P010
-  //MAP(P010, YUV420_10BPP, P010),
+    MAP(P010, YUV420_10BPP, P010),
 #endif
     MAP(BGRA, RGB32,   BGRA),
-  //MAP(BGRX, RGB32,   BGR0),
+    MAP(BGRX, RGB32,   BGR0),
     MAP(RGBA, RGB32,   RGBA),
-  //MAP(RGBX, RGB32,   RGB0),
+    MAP(RGBX, RGB32,   RGB0),
     MAP(ABGR, RGB32,   ABGR),
-  //MAP(XBGR, RGB32,   0BGR),
+    MAP(XBGR, RGB32,   0BGR),
     MAP(ARGB, RGB32,   ARGB),
-  //MAP(XRGB, RGB32,   0RGB),
+    MAP(XRGB, RGB32,   0RGB),
 };
 #undef MAP
 

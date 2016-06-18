@@ -223,8 +223,12 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             if (av_match_ext(lpd.filename, fmt1->extensions))
                 score = AVPROBE_SCORE_EXTENSION;
         }
-        if (av_match_name(lpd.mime_type, fmt1->mime_type))
-            score = FFMAX(score, AVPROBE_SCORE_MIME);
+        if (av_match_name(lpd.mime_type, fmt1->mime_type)) {
+            if (AVPROBE_SCORE_MIME > score) {
+                av_log(NULL, AV_LOG_DEBUG, "Probing %s score:%d increased to %d due to MIME type\n", fmt1->name, score, AVPROBE_SCORE_MIME);
+                score = AVPROBE_SCORE_MIME;
+            }
+        }
         if (score > score_max) {
             score_max = score;
             fmt       = fmt1;

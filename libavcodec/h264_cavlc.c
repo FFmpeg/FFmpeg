@@ -656,7 +656,7 @@ int decode_luma_residual(const H264Context *h, H264SliceContext *sl,
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= i4x4 + 4*i8x8 + p*16;
                     if( decode_residual(h, sl, gb, sl->mb + (16*index << pixel_shift),
-                        index, scan + 1, h->dequant4_coeff[p][qscale], 15) < 0 ){
+                        index, scan + 1, h->ps.pps->dequant4_coeff[p][qscale], 15) < 0 ){
                         return -1;
                     }
                 }
@@ -678,7 +678,7 @@ int decode_luma_residual(const H264Context *h, H264SliceContext *sl,
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
                         if( decode_residual(h, sl, gb, buf, index, scan8x8+16*i4x4,
-                                            h->dequant8_coeff[cqm][qscale], 16) < 0 )
+                                            h->ps.pps->dequant8_coeff[cqm][qscale], 16) < 0 )
                             return -1;
                     }
                     nnz = &sl->non_zero_count_cache[scan8[4 * i8x8 + p * 16]];
@@ -688,7 +688,7 @@ int decode_luma_residual(const H264Context *h, H264SliceContext *sl,
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
                         if( decode_residual(h, sl, gb, sl->mb + (16*index << pixel_shift), index,
-                                            scan, h->dequant4_coeff[cqm][qscale], 16) < 0 ){
+                                            scan, h->ps.pps->dequant4_coeff[cqm][qscale], 16) < 0 ){
                             return -1;
                         }
                         new_cbp |= sl->non_zero_count_cache[scan8[index]] << i8x8;
@@ -708,13 +708,13 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
-    int dct8x8_allowed= h->pps.transform_8x8_mode;
-    int decode_chroma = h->sps.chroma_format_idc == 1 || h->sps.chroma_format_idc == 2;
+    int dct8x8_allowed= h->ps.pps->transform_8x8_mode;
+    int decode_chroma = h->ps.sps->chroma_format_idc == 1 || h->ps.sps->chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
 
-    ff_tlog(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, sl->mb_x, sl->mb_y);
+    ff_tlog(h->avctx, "pic:%d mb:%d/%d\n", h->poc.frame_num, sl->mb_x, sl->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
@@ -775,8 +775,8 @@ decode_intra_mb:
     h->slice_table[mb_xy] = sl->slice_num;
 
     if(IS_INTRA_PCM(mb_type)){
-        const int mb_size = ff_h264_mb_sizes[h->sps.chroma_format_idc] *
-                            h->sps.bit_depth_luma;
+        const int mb_size = ff_h264_mb_sizes[h->ps.sps->chroma_format_idc] *
+                            h->ps.sps->bit_depth_luma;
 
         // We assume these blocks are very rare so we do not optimize it.
         sl->intra_pcm_ptr = align_get_bits(&sl->gb);
@@ -949,7 +949,7 @@ decode_intra_mb:
         }
     }else if(IS_DIRECT(mb_type)){
         ff_h264_pred_direct_motion(h, sl, &mb_type);
-        dct8x8_allowed &= h->sps.direct_8x8_inference_flag;
+        dct8x8_allowed &= h->ps.sps->direct_8x8_inference_flag;
     }else{
         int list, mx, my, i;
          //FIXME we should set ref_idx_l? to 0 if we use that later ...
@@ -1104,7 +1104,7 @@ decode_intra_mb:
         int ret;
         GetBitContext *gb = &sl->gb;
         const uint8_t *scan, *scan8x8;
-        const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
+        const int max_qp = 51 + 6 * (h->ps.sps->bit_depth_luma - 8);
 
         if(IS_INTERLACED(mb_type)){
             scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
@@ -1142,7 +1142,7 @@ decode_intra_mb:
                 return -1;
             }
         } else {
-            const int num_c8x8 = h->sps.chroma_format_idc;
+            const int num_c8x8 = h->ps.sps->chroma_format_idc;
 
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
@@ -1156,7 +1156,7 @@ decode_intra_mb:
 
             if(cbp&0x20){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++){
-                    const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[chroma_idx]];
+                    const uint32_t *qmul = h->ps.pps->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][sl->chroma_qp[chroma_idx]];
                     int16_t *mb = sl->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
                     for (i8x8 = 0; i8x8<num_c8x8; i8x8++) {
                         for (i4x4 = 0; i4x4 < 4; i4x4++) {

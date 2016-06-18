@@ -158,6 +158,7 @@ Hardware accelerators:
 
 Hardware-accelerated decoding/encoding:
   --enable-cuda            enable dynamically linked CUDA [no]
+  --enable-cuvid           enable CUVID support [autodetect]
   --enable-libmfx          enable HW acceleration through libmfx
   --enable-mmal            enable decoding via MMAL [no]
   --enable-nvenc           enable NVIDIA NVENC support [no]
@@ -1567,6 +1568,7 @@ FEATURE_LIST="
 
 HW_CODECS_LIST="
     cuda
+    cuvid
     libmfx
     mmal
     nvenc
@@ -2522,6 +2524,7 @@ audiotoolbox_extralibs="-framework CoreFoundation -framework AudioToolbox -frame
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
+cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 vaapi_deps="va_va_h"
@@ -2539,6 +2542,7 @@ h263_vaapi_hwaccel_select="h263_decoder"
 h263_videotoolbox_hwaccel_deps="videotoolbox"
 h263_videotoolbox_hwaccel_select="h263_decoder"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
+h264_cuvid_hwaccel_deps="cuda cuvid CUVIDH264PICPARAMS"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
@@ -2564,6 +2568,7 @@ h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
 h264_videotoolbox_hwaccel_select="h264_decoder"
+hevc_cuvid_hwaccel_deps="cuda cuvid CUVIDHEVCPICPARAMS"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
@@ -2618,6 +2623,7 @@ mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 vc1_crystalhd_decoder_select="crystalhd"
+vc1_cuvid_hwaccel_deps="cuda cuvid CUVIDVC1PICPARAMS"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
@@ -2633,6 +2639,8 @@ vc1_vdpau_decoder_deps="vdpau"
 vc1_vdpau_decoder_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
+vp8_cuvid_hwaccel_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp9_cuvid_hwaccel_deps="cuda cuvid CUVIDVP9PICPARAMS"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
@@ -2657,6 +2665,8 @@ hwupload_cuda_filter_deps="cuda"
 scale_npp_filter_deps="cuda libnpp"
 
 nvenc_encoder_deps="nvenc"
+h264_cuvid_decoder_deps="cuda cuvid CUVIDH264PICPARAMS"
+h264_cuvid_decoder_select="h264_mp4toannexb_bsf h264_cuvid_hwaccel"
 h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
 h264_qsv_encoder_deps="libmfx"
@@ -2664,6 +2674,8 @@ h264_qsv_encoder_select="qsvenc"
 h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="vaapi_encode golomb"
 
+hevc_cuvid_decoder_deps="cuda cuvid CUVIDHEVCPICPARAMS"
+hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf hevc_cuvid_hwaccel"
 hevc_qsv_decoder_deps="libmfx"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
 hevc_qsv_encoder_deps="libmfx"
@@ -2676,6 +2688,13 @@ mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
 nvenc_h264_encoder_deps="nvenc"
 nvenc_hevc_encoder_deps="nvenc"
+
+vc1_cuvid_decoder_deps="cuda cuvid CUVIDVC1PICPARAMS"
+vc1_cuvid_decoder_select="vc1_cuvid_hwaccel"
+vp8_cuvid_decoder_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp8_cuvid_decoder_select="vp8_cuvid_hwaccel"
+vp9_cuvid_decoder_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
 # parsers
 h264_parser_select="h264_decoder"
@@ -2768,7 +2787,7 @@ libwebp_encoder_deps="libwebp"
 libwebp_anim_encoder_deps="libwebp"
 libx262_encoder_deps="libx262"
 libx264_encoder_deps="libx264"
-libx264rgb_encoder_deps="libx264"
+libx264rgb_encoder_deps="libx264 x264_csp_bgr"
 libx264rgb_encoder_select="libx264_encoder"
 libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
@@ -5002,6 +5021,7 @@ die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree cuda
+die_license_disabled nonfree cuvid
 die_license_disabled nonfree libfaac
 die_license_disabled nonfree libnpp
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
@@ -5393,6 +5413,7 @@ check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwai
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
+check_builtin x264_csp_bgr "stdint.h x264.h" "X264_CSP_BGR"
 
 case "$custom_allocator" in
     jemalloc)
@@ -5508,6 +5529,11 @@ check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
+check_type "cuviddec.h" "CUVIDH264PICPARAMS"
+check_type "cuviddec.h" "CUVIDHEVCPICPARAMS"
+check_type "cuviddec.h" "CUVIDVC1PICPARAMS"
+check_type "cuviddec.h" "CUVIDVP9PICPARAMS"
+
 check_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
 
 if ! disabled w32threads && ! enabled pthreads; then
@@ -5571,6 +5597,11 @@ for func in $COMPLEX_FUNCS; do
     eval check_complexfunc $func \${${func}_args:-1}
 done
 
+# Enable CUVID by default if CUDA is enabled
+if enabled cuda && ! disabled cuvid; then
+    enable cuvid
+fi
+
 # these are off by default, so fail if requested and not available
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
@@ -5580,6 +5611,10 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
                                die "ERROR: CUDA not found"; }
+enabled cuvid             && { check_lib cuviddec.h cuvidCreateDecoder -lnvcuvid ||
+                               die "ERROR: CUVID not found"; } &&
+                             { enabled cuda ||
+                               die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
 enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }

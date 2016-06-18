@@ -459,7 +459,7 @@ void ff_vdpau_h264_picture_start(H264Context *h)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
-    render->info.h264.frame_num = h->frame_num;
+    render->info.h264.frame_num = h->poc.frame_num;
 }
 
 void ff_vdpau_h264_picture_complete(H264Context *h)
@@ -476,30 +476,30 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     render->info.h264.is_reference                           = (h->cur_pic_ptr->reference & 3) ? VDP_TRUE : VDP_FALSE;
     render->info.h264.field_pic_flag                         = h->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = h->picture_structure == PICT_BOTTOM_FIELD;
-    render->info.h264.num_ref_frames                         = h->sps.ref_frame_count;
-    render->info.h264.mb_adaptive_frame_field_flag           = h->sps.mb_aff && !render->info.h264.field_pic_flag;
-    render->info.h264.constrained_intra_pred_flag            = h->pps.constrained_intra_pred;
-    render->info.h264.weighted_pred_flag                     = h->pps.weighted_pred;
-    render->info.h264.weighted_bipred_idc                    = h->pps.weighted_bipred_idc;
-    render->info.h264.frame_mbs_only_flag                    = h->sps.frame_mbs_only_flag;
-    render->info.h264.transform_8x8_mode_flag                = h->pps.transform_8x8_mode;
-    render->info.h264.chroma_qp_index_offset                 = h->pps.chroma_qp_index_offset[0];
-    render->info.h264.second_chroma_qp_index_offset          = h->pps.chroma_qp_index_offset[1];
-    render->info.h264.pic_init_qp_minus26                    = h->pps.init_qp - 26;
-    render->info.h264.num_ref_idx_l0_active_minus1           = h->pps.ref_count[0] - 1;
-    render->info.h264.num_ref_idx_l1_active_minus1           = h->pps.ref_count[1] - 1;
-    render->info.h264.log2_max_frame_num_minus4              = h->sps.log2_max_frame_num - 4;
-    render->info.h264.pic_order_cnt_type                     = h->sps.poc_type;
-    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
-    render->info.h264.delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
-    render->info.h264.direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
-    render->info.h264.entropy_coding_mode_flag               = h->pps.cabac;
-    render->info.h264.pic_order_present_flag                 = h->pps.pic_order_present;
-    render->info.h264.deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
-    render->info.h264.redundant_pic_cnt_present_flag         = h->pps.redundant_pic_cnt_present;
-    memcpy(render->info.h264.scaling_lists_4x4, h->pps.scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
-    memcpy(render->info.h264.scaling_lists_8x8[0], h->pps.scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
-    memcpy(render->info.h264.scaling_lists_8x8[1], h->pps.scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    render->info.h264.num_ref_frames                         = h->ps.sps->ref_frame_count;
+    render->info.h264.mb_adaptive_frame_field_flag           = h->ps.sps->mb_aff && !render->info.h264.field_pic_flag;
+    render->info.h264.constrained_intra_pred_flag            = h->ps.pps->constrained_intra_pred;
+    render->info.h264.weighted_pred_flag                     = h->ps.pps->weighted_pred;
+    render->info.h264.weighted_bipred_idc                    = h->ps.pps->weighted_bipred_idc;
+    render->info.h264.frame_mbs_only_flag                    = h->ps.sps->frame_mbs_only_flag;
+    render->info.h264.transform_8x8_mode_flag                = h->ps.pps->transform_8x8_mode;
+    render->info.h264.chroma_qp_index_offset                 = h->ps.pps->chroma_qp_index_offset[0];
+    render->info.h264.second_chroma_qp_index_offset          = h->ps.pps->chroma_qp_index_offset[1];
+    render->info.h264.pic_init_qp_minus26                    = h->ps.pps->init_qp - 26;
+    render->info.h264.num_ref_idx_l0_active_minus1           = h->ps.pps->ref_count[0] - 1;
+    render->info.h264.num_ref_idx_l1_active_minus1           = h->ps.pps->ref_count[1] - 1;
+    render->info.h264.log2_max_frame_num_minus4              = h->ps.sps->log2_max_frame_num - 4;
+    render->info.h264.pic_order_cnt_type                     = h->ps.sps->poc_type;
+    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->ps.sps->poc_type ? 0 : h->ps.sps->log2_max_poc_lsb - 4;
+    render->info.h264.delta_pic_order_always_zero_flag       = h->ps.sps->delta_pic_order_always_zero_flag;
+    render->info.h264.direct_8x8_inference_flag              = h->ps.sps->direct_8x8_inference_flag;
+    render->info.h264.entropy_coding_mode_flag               = h->ps.pps->cabac;
+    render->info.h264.pic_order_present_flag                 = h->ps.pps->pic_order_present;
+    render->info.h264.deblocking_filter_control_present_flag = h->ps.pps->deblocking_filter_parameters_present;
+    render->info.h264.redundant_pic_cnt_present_flag         = h->ps.pps->redundant_pic_cnt_present;
+    memcpy(render->info.h264.scaling_lists_4x4, h->ps.pps->scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
+    memcpy(render->info.h264.scaling_lists_8x8[0], h->ps.pps->scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    memcpy(render->info.h264.scaling_lists_8x8[1], h->ps.pps->scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
 
     ff_h264_draw_horiz_band(h, &h->slice_ctx[0], 0, h->avctx->height);
     render->bitstream_buffers_used = 0;

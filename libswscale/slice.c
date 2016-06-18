@@ -210,6 +210,42 @@ static void fill_ones(SwsSlice *s, int n, int is16bit)
     }
 }
 
+/*
+ Calculates the minimum ring buffer size, it should be able to store vFilterSize
+ more n lines where n is the max difference between each adjacent slice which
+ outputs a line.
+ The n lines are needed only when there is not enough src lines to output a single
+ dst line, then we should buffer these lines to process them on the next call to scale.
+*/
+static void get_min_buffer_size(SwsContext *c, int *out_lum_size, int *out_chr_size)
+{
+    int lumY;
+    int dstH = c->dstH;
+    int chrDstH = c->chrDstH;
+    int *lumFilterPos = c->vLumFilterPos;
+    int *chrFilterPos = c->vChrFilterPos;
+    int lumFilterSize = c->vLumFilterSize;
+    int chrFilterSize = c->vChrFilterSize;
+    int chrSubSample = c->chrSrcVSubSample;
+
+    *out_lum_size = lumFilterSize;
+    *out_chr_size = chrFilterSize;
+
+    for (lumY = 0; lumY < dstH; lumY++) {
+        int chrY      = (int64_t)lumY * chrDstH / dstH;
+        int nextSlice = FFMAX(lumFilterPos[lumY] + lumFilterSize - 1,
+                              ((chrFilterPos[chrY] + chrFilterSize - 1)
+                               << chrSubSample));
+
+        nextSlice >>= chrSubSample;
+        nextSlice <<= chrSubSample;
+        (*out_lum_size) = FFMAX((*out_lum_size), nextSlice - lumFilterPos[lumY]);
+        (*out_chr_size) = FFMAX((*out_chr_size), (nextSlice >> chrSubSample) - chrFilterPos[chrY]);
+    }
+}
+
+
+
 int ff_init_filters(SwsContext * c)
 {
     int i;
@@ -225,6 +261,13 @@ int ff_init_filters(SwsContext * c)
 
     uint32_t * pal = usePal(c->srcFormat) ? c->pal_yuv : (uint32_t*)c->input_rgb2yuv_table;
     int res = 0;
+
+    int lumBufSize;
+    int chrBufSize;
+
+    get_min_buffer_size(c, &lumBufSize, &chrBufSize);
+    lumBufSize = FFMAX(lumBufSize, c->vLumFilterSize + MAX_LINES_AHEAD);
+    chrBufSize = FFMAX(chrBufSize, c->vChrFilterSize + MAX_LINES_AHEAD);
 
     if (c->dstBpc == 16)
         dst_stride <<= 1;
@@ -248,13 +291,13 @@ int ff_init_filters(SwsContext * c)
     res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
     if (res < 0) goto cleanup;
     for (i = 1; i < c->numSlice-2; ++i) {
-        res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+        res = alloc_slice(&c->slice[i], c->srcFormat, lumBufSize, chrBufSize, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
         if (res < 0) goto cleanup;
         res = alloc_lines(&c->slice[i], FFALIGN(c->srcW*2+78, 16), c->srcW);
         if (res < 0) goto cleanup;
     }
     // horizontal scaler output
-    res = alloc_slice(&c->slice[i], c->srcFormat, c->vLumFilterSize + MAX_LINES_AHEAD, c->vChrFilterSize + MAX_LINES_AHEAD, c->chrDstHSubSample, c->chrDstVSubSample, 1);
+    res = alloc_slice(&c->slice[i], c->srcFormat, lumBufSize, chrBufSize, c->chrDstHSubSample, c->chrDstVSubSample, 1);
     if (res < 0) goto cleanup;
     res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
     if (res < 0) goto cleanup;

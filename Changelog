@@ -13,6 +13,7 @@ version <next>:
 - protocol blacklisting API
 - MediaCodec H264 decoding
 - VC-2 HQ RTP payload format (draft v1) depacketizer and packetizer
+- VP9 RTP payload format (draft v2) packetizer
 - AudioToolbox audio decoders
 - AudioToolbox audio encoders
 - coreimage filter (GPU based image filtering on OSX)
@@ -38,6 +39,10 @@ version <next>:
 - loudnorm filter
 - MTAF demuxer and decoder
 - MagicYUV decoder
+- OpenExr improvements (tile data and B44/B44A support)
+- BitJazz SheerVideo decoder
+- CUDA CUVID H264/HEVC decoder
+
 
 version 3.0:
 - Common Encryption (CENC) MP4 encoding and decoding support

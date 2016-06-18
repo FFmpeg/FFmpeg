@@ -220,7 +220,7 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
+    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
 };
 

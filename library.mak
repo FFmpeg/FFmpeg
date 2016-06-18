@@ -21,6 +21,7 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%$(YASMD).asm
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)
 $(LIBOBJS) $(LIBOBJS:.o=.s) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
+$(TESTOBJS) $(TESTOBJS:.o=.i): CFLAGS += -Umain
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@

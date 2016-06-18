@@ -526,31 +526,15 @@ align 16
     xorps   m2, [ps_mask3]
     xorps   m5, [ps_mask3]
     xorps   m6, [ps_mask3]
+    HADDPS  m2, m5, m3
+    HADDPS  m7, m6, m4
 %if cpuflag(sse3)
     movshdup m0, m1
-    haddps  m2, m5
-    haddps  m7, m6
-    addss   m1, m0
 %else
-    movaps  m3, m2
-    movaps  m0, m5
-    movaps  m4, m6
-    shufps  m3, m3, q0301
-    shufps  m0, m0, q0301
-    shufps  m4, m4, q0301
-    addps   m2, m3
-    addps   m5, m0
-    addps   m6, m4
-
-    movss   m0, m7
-    movss   m3, m1
-    shufps  m7, m7, q0001
+    movss   m0, m1
     shufps  m1, m1, q0001
-    addss   m7, m0
-    addss   m1, m3
-    shufps  m2, m5, q2020
-    shufps  m7, m6, q2020
 %endif
+    addss   m1, m0
     movaps  [phiq     ], m2
     movhps  [phiq+0x18], m7
     movss   [phiq+0x28], m7

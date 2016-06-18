@@ -74,6 +74,7 @@ typedef struct {
     /* callback */
     void                (*cqt_calc)(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
                                     int len, int fft_len);
+    void                (*permute_coeffs)(float *v, int len);
     void                (*draw_bar)(AVFrame *out, const float *h, const float *rcp_h,
                                     const ColorFloat *c, int bar_h);
     void                (*draw_axis)(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off);
@@ -111,5 +112,7 @@ typedef struct {
     char                *axisfile;
     int                 axis;
 } ShowCQTContext;
+
+void ff_showcqt_init_x86(ShowCQTContext *s);
 
 #endif

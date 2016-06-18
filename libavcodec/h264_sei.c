@@ -50,12 +50,17 @@ void ff_h264_reset_sei(H264Context *h)
 
 static int decode_picture_timing(H264Context *h)
 {
-    SPS *sps = &h->sps;
+    const SPS *sps = h->ps.sps;
     int i;
 
     for (i = 0; i<MAX_SPS_COUNT; i++)
-        if (!sps->log2_max_frame_num && h->sps_buffers[i])
-            sps = h->sps_buffers[i];
+        if ((!sps || !sps->log2_max_frame_num) && h->ps.sps_list[i])
+            sps = (const SPS *)h->ps.sps_list[i]->data;
+
+    if (!sps) {
+        av_log(h->avctx, AV_LOG_ERROR, "SPS unavailable in decode_picture_timing\n");
+        return 0;
+    }
 
     if (sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag) {
         h->sei_cpb_removal_delay = get_bits_long(&h->gb,
@@ -275,12 +280,12 @@ static int decode_buffering_period(H264Context *h)
     SPS *sps;
 
     sps_id = get_ue_golomb_31(&h->gb);
-    if (sps_id > 31 || !h->sps_buffers[sps_id]) {
+    if (sps_id > 31 || !h->ps.sps_list[sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
         return AVERROR_INVALIDDATA;
     }
-    sps = h->sps_buffers[sps_id];
+    sps = (SPS*)h->ps.sps_list[sps_id]->data;
 
     // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
     if (sps->nal_hrd_parameters_present_flag) {
@@ -358,61 +363,26 @@ static int decode_display_orientation(H264Context *h)
     return 0;
 }
 
-static int decode_GreenMetadata(H264Context *h)
+static int decode_green_metadata(H264SEIGreenMetaData *h, GetBitContext *gb)
 {
-    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-        av_log(h->avctx, AV_LOG_DEBUG,          "Green Metadata Info SEI message\n");
+    h->green_metadata_type = get_bits(gb, 8);
 
-    h->sei_green_metadata.green_metadata_type=get_bits(&h->gb, 8);
+    if (h->green_metadata_type == 0) {
+        h->period_type = get_bits(gb, 8);
 
-    if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-        av_log(h->avctx, AV_LOG_DEBUG,          "green_metadata_type                            = %d\n",
-               h->sei_green_metadata.green_metadata_type);
+        if (h->period_type == 2)
+            h->num_seconds = get_bits(gb, 16);
+        else if (h->period_type == 3)
+            h->num_pictures = get_bits(gb, 16);
 
-    if (h->sei_green_metadata.green_metadata_type==0){
-        h->sei_green_metadata.period_type=get_bits(&h->gb, 8);
+        h->percent_non_zero_macroblocks            = get_bits(gb, 8);
+        h->percent_intra_coded_macroblocks         = get_bits(gb, 8);
+        h->percent_six_tap_filtering               = get_bits(gb, 8);
+        h->percent_alpha_point_deblocking_instance = get_bits(gb, 8);
 
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "green_metadata_period_type                     = %d\n",
-                   h->sei_green_metadata.period_type);
-
-        if (h->sei_green_metadata.green_metadata_type==2){
-            h->sei_green_metadata.num_seconds = get_bits(&h->gb, 16);
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_seconds                     = %d\n",
-                       h->sei_green_metadata.num_seconds);
-        }
-        else if (h->sei_green_metadata.period_type==3){
-            h->sei_green_metadata.num_pictures = get_bits(&h->gb, 16);
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "green_metadata_num_pictures                    = %d\n",
-                       h->sei_green_metadata.num_pictures);
-        }
-
-        h->sei_green_metadata.percent_non_zero_macroblocks=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_intra_coded_macroblocks=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_six_tap_filtering=get_bits(&h->gb, 8);
-        h->sei_green_metadata.percent_alpha_point_deblocking_instance=get_bits(&h->gb, 8);
-
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "SEI GREEN Complexity Metrics                   = %f %f %f %f\n",
-                                           (float)h->sei_green_metadata.percent_non_zero_macroblocks/255,
-                                           (float)h->sei_green_metadata.percent_intra_coded_macroblocks/255,
-                                           (float)h->sei_green_metadata.percent_six_tap_filtering/255,
-                                           (float)h->sei_green_metadata.percent_alpha_point_deblocking_instance/255);
-
-    }else if( h->sei_green_metadata.green_metadata_type==1){
-        h->sei_green_metadata.xsd_metric_type=get_bits(&h->gb, 8);
-        h->sei_green_metadata.xsd_metric_value=get_bits(&h->gb, 16);
-
-        if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-            av_log(h->avctx, AV_LOG_DEBUG,      "xsd_metric_type                                = %d\n",
-                   h->sei_green_metadata.xsd_metric_type);
-        if ( h->sei_green_metadata.xsd_metric_type==0){
-            if (h->avctx->debug & FF_DEBUG_GREEN_MD)
-                av_log(h->avctx, AV_LOG_DEBUG,  "xsd_metric_value                               = %f\n",
-                       (float)h->sei_green_metadata.xsd_metric_value/100);
-        }
+    } else if (h->green_metadata_type == 1) {
+        h->xsd_metric_type  = get_bits(gb, 8);
+        h->xsd_metric_value = get_bits(gb, 16);
     }
 
     return 0;
@@ -471,7 +441,7 @@ int ff_h264_decode_sei(H264Context *h)
             ret = decode_display_orientation(h);
             break;
         case SEI_TYPE_GREEN_METADATA:
-            ret = decode_GreenMetadata(h);
+            ret = decode_green_metadata(&h->sei_green_metadata, &h->gb);
             break;
         default:
             av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);

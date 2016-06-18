@@ -453,6 +453,14 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         return;
     }
 
+    // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
+    avctx->properties = st->codec->properties;
+    avctx->codec      = st->codec->codec;
+    avctx->qmin       = st->codec->qmin;
+    avctx->qmax       = st->codec->qmax;
+    avctx->coded_width  = st->codec->coded_width;
+    avctx->coded_height = st->codec->coded_height;
+
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);
     avcodec_string(buf, sizeof(buf), avctx, is_output);
@@ -486,16 +494,19 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbr = st->r_frame_rate.den && st->r_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
+        int tbc = st->codec->time_base.den && st->codec->time_base.num;
 
-        if (fps || tbr || tbn)
+        if (fps || tbr || tbn || tbc)
             av_log(NULL, AV_LOG_INFO, "%s", separator);
 
         if (fps)
-            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn ? "fps, " : "fps");
+            print_fps(av_q2d(st->avg_frame_rate), tbr || tbn || tbc ? "fps, " : "fps");
         if (tbr)
-            print_fps(av_q2d(st->r_frame_rate), tbn ? "tbr, " : "tbr");
+            print_fps(av_q2d(st->r_frame_rate), tbn || tbc ? "tbr, " : "tbr");
         if (tbn)
-            print_fps(1 / av_q2d(st->time_base), "tbn");
+            print_fps(1 / av_q2d(st->time_base), tbc ? "tbn, " : "tbn");
+        if (tbc)
+            print_fps(1 / av_q2d(st->codec->time_base), "tbc");
     }
 
     if (st->disposition & AV_DISPOSITION_DEFAULT)

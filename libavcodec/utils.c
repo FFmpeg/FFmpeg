@@ -2346,7 +2346,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             skip_reason = AV_RL8(side + 8);
             discard_reason = AV_RL8(side + 9);
         }
-        if (avctx->internal->skip_samples && *got_frame_ptr &&
+        if (avctx->internal->skip_samples > 0 && *got_frame_ptr &&
             !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
@@ -4157,6 +4157,7 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->sample_rate     = par->sample_rate;
         codec->block_align     = par->block_align;
         codec->frame_size      = par->frame_size;
+        codec->delay           =
         codec->initial_padding = par->initial_padding;
         codec->seek_preroll    = par->seek_preroll;
         break;

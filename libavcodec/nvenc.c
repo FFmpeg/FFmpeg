@@ -306,6 +306,14 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_FIELD_ENCODING);
+    if (ret < 1 && avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "Interlaced encoding is not supported. Supported level: %d\n",
+               ret);
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
@@ -1415,7 +1423,6 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
     NvencContext *ctx = avctx->priv_data;
 
     pkt->pts = params->outputTimeStamp;
-    pkt->duration = params->outputDuration;
 
     /* generate the first dts by linearly extrapolating the
      * first two pts values to the past */
@@ -1616,7 +1623,6 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         pic_params.encodePicFlags = 0;
         pic_params.inputTimeStamp = frame->pts;
-        pic_params.inputDuration  = av_frame_get_pkt_duration(frame);
 
         nvenc_codec_specific_pic_params(avctx, &pic_params);
     } else {

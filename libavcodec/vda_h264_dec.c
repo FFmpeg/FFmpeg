@@ -226,7 +226,7 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     ctx->h264_initialized = 1;
 
     for (i = 0; i < MAX_SPS_COUNT; i++) {
-        SPS *sps = ctx->h264ctx.sps_buffers[i];
+        const SPS *sps = (const SPS*)ctx->h264ctx.ps.sps_list[i]->data;
         if (sps && (sps->bit_depth_luma != 8 ||
                 sps->chroma_format_idc == 2 ||
                 sps->chroma_format_idc == 3)) {

@@ -165,7 +165,7 @@ static int vc2hq_handle_frame_fragment(AVFormatContext *ctx, PayloadContext *pl_
     if (res < 0)
         return res;
 
-    fill_parse_info_header(pl_ctx, pkt->data, 0xE8, pl_ctx->frame_size);
+    fill_parse_info_header(pl_ctx, pkt->data, DIRAC_PCODE_PICTURE_HQ, pl_ctx->frame_size);
     AV_WB32(&pkt->data[13], pl_ctx->frame_nr);
 
     pl_ctx->frame_size = 0;

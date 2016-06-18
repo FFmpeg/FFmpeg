@@ -56,7 +56,7 @@ Communication
 website                                 Deby Barbara Lepage
 fate.ffmpeg.org                         Timothy Gu
 Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos, Lou Logan
-mailing lists                           Michael Niedermayer, Baptiste Coudurier, Lou Logan
+mailing lists                           Baptiste Coudurier, Lou Logan
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
 Twitter                                 Lou Logan, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
@@ -159,16 +159,16 @@ Codecs:
   cinepakenc.c                          Rl / Aetey G.T. AB
   ccaption_dec.c                        Anshul Maheshwari
   cljr                                  Alex Beregszaszi
-  cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
+  cuvid.c                               Timo Rothenpieler
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
-  dss_sp.c                              Oleksij Rempel, Michael Niedermayer
+  dss_sp.c                              Oleksij Rempel
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
   dxa.c                                 Kostya Shishkov
@@ -177,7 +177,6 @@ Codecs:
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
-  fic.c                                 Derek Buitenhuis
   flac*                                 Justin Ruggles
   flashsv*                              Benjamin Larsson
   flicvideo.c                           Mike Melanson
@@ -215,7 +214,6 @@ Codecs:
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
-  libx265.c                             Derek Buitenhuis
   libxavs.c                             Stefan Gehrer
   libzvbi-teletextdec.c                 Marton Balint
   loco.c                                Kostya Shishkov
@@ -273,9 +271,7 @@ Codecs:
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
-  v410*.c                               Derek Buitenhuis
   vb.c                                  Kostya Shishkov
-  vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov, Christophe Gisquet
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
@@ -302,7 +298,6 @@ Codecs:
   xl.c                                  Kostya Shishkov
   xvmc.c                                Ivan Kalvachev
   xwd*                                  Paul B Mahol
-  zerocodec.c                           Derek Buitenhuis
   zmbv*                                 Kostya Shishkov
 
 Hardware acceleration:
@@ -310,9 +305,9 @@ Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar
   mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
-  vda*                                  Sebastien Zwickert
+  vaapi_encode*                         Mark Thompson
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
-  videotoolbox*                         Sebastien Zwickert
+  videotoolbox*                         Rick Kern
 
 
 libavdevice
@@ -429,7 +424,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
-  dss.c                                 Oleksij Rempel, Michael Niedermayer
+  dss.c                                 Oleksij Rempel
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
@@ -465,7 +460,7 @@ Muxers/Demuxers:
   mgsts.c                               Paul B Mahol
   microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
-  mov.c                                 Michael Niedermayer, Baptiste Coudurier
+  mov.c                                 Baptiste Coudurier
   movenc.c                              Baptiste Coudurier, Matthieu Bouron
   movenccenc.c                          Eran Kornblau
   mpc.c                                 Kostya Shishkov
@@ -571,7 +566,6 @@ Windows MSVC                            Matthew Oliver, Hendrik Leppkes
 Windows ICL                             Matthew Oliver
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
-x86                                     Michael Niedermayer
 OS/2                                    KO Myung-Hun
 
 

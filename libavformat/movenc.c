@@ -49,6 +49,7 @@
 #include "hevc.h"
 #include "rtpenc.h"
 #include "mov_chan.h"
+#include "vpcc.h"
 
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -1039,6 +1040,17 @@ static int mov_write_avcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_vpcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "vpcC");
+    avio_wb32(pb, 0); /* version & flags */
+    ff_isom_write_vpcc(s, pb, track->par);
+    return update_size(pb, pos);
+}
+
 static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1143,6 +1155,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     if      (track->par->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
     else if (track->par->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
+    else if (track->par->codec_id == AV_CODEC_ID_VP9)       tag = MKTAG('v','p','0','9');
     else if (track->par->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
     else if (track->par->codec_id == AV_CODEC_ID_EAC3)      tag = MKTAG('e','c','-','3');
     else if (track->par->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
@@ -1758,6 +1771,8 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         mov_write_avcc_tag(pb, track);
         if (track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
+    } else if (track->par->codec_id == AV_CODEC_ID_VP9) {
+        mov_write_vpcc_tag(mov->fc, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_VC1 && track->vos_len > 0)
         mov_write_dvc1_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_VP6F ||
@@ -4939,20 +4954,24 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     return 0;
 }
 
-static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
+
+static int mov_check_timecode_track(AVFormatContext *s, AVTimecode *tc, int src_index, const char *tcstr)
+{
+    int ret;
+
+    /* compute the frame number */
+    ret = av_timecode_init_from_string(tc, find_fps(s,  s->streams[src_index]), tcstr, s);
+    return ret;
+}
+
+static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, AVTimecode tc)
 {
     int ret;
     MOVMuxContext *mov  = s->priv_data;
     MOVTrack *track     = &mov->tracks[index];
     AVStream *src_st    = s->streams[src_index];
-    AVTimecode tc;
     AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
     AVRational rate = find_fps(s, src_st);
-
-    /* compute the frame number */
-    ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
-    if (ret < 0)
-        return ret;
 
     /* tmcd track based on video stream */
     track->mode      = mov->mode;
@@ -5242,9 +5261,14 @@ static int mov_write_header(AVFormatContext *s)
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
+            t = global_tcr;
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (global_tcr || av_dict_get(st->metadata, "timecode", NULL, 0)))
-                mov->nb_meta_tmcd++;
+                (t || (t=av_dict_get(st->metadata, "timecode", NULL, 0)))) {
+                AVTimecode tc;
+                ret = mov_check_timecode_track(s, &tc, i, t->value);
+                if (ret >= 0)
+                    mov->nb_meta_tmcd++;
+            }
         }
 
         /* check if there is already a tmcd track to remux */
@@ -5359,6 +5383,17 @@ static int mov_write_header(AVFormatContext *s)
                         pix_fmt == AV_PIX_FMT_GRAY8 ||
                         pix_fmt == AV_PIX_FMT_MONOWHITE ||
                         pix_fmt == AV_PIX_FMT_MONOBLACK;
+            }
+            if (track->mode == MODE_MP4 &&
+                track->par->codec_id == AV_CODEC_ID_VP9) {
+                if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+                    av_log(s, AV_LOG_ERROR,
+                           "VP9 in MP4 support is experimental, add "
+                           "'-strict %d' if you want to use it.\n",
+                           FF_COMPLIANCE_EXPERIMENTAL);
+                    ret = AVERROR_EXPERIMENTAL;
+                    goto error;
+                }
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codecpar->sample_rate;
@@ -5509,11 +5544,14 @@ static int mov_write_header(AVFormatContext *s)
             t = global_tcr;
 
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                AVTimecode tc;
                 if (!t)
                     t = av_dict_get(st->metadata, "timecode", NULL, 0);
                 if (!t)
                     continue;
-                if ((ret = mov_create_timecode_track(s, tmcd_track, i, t->value)) < 0)
+                if (mov_check_timecode_track(s, &tc, i, t->value) < 0)
+                    continue;
+                if ((ret = mov_create_timecode_track(s, tmcd_track, i, tc)) < 0)
                     goto error;
                 tmcd_track++;
             }

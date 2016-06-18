@@ -66,6 +66,7 @@ enum HWAccelID {
     HWACCEL_VIDEOTOOLBOX,
     HWACCEL_QSV,
     HWACCEL_VAAPI,
+    HWACCEL_CUVID,
 };
 
 typedef struct HWAccel {
@@ -585,5 +586,7 @@ int qsv_init(AVCodecContext *s);
 int qsv_transcode_init(OutputStream *ost);
 int vaapi_decode_init(AVCodecContext *avctx);
 int vaapi_device_init(const char *device);
+int cuvid_init(AVCodecContext *s);
+int cuvid_transcode_init(OutputStream *ost);
 
 #endif /* FFMPEG_H */

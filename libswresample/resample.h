@@ -40,8 +40,10 @@ typedef struct ResampleContext {
     int frac;
     int src_incr;
     int compensation_distance;
-    int phase_shift;
-    int phase_mask;
+    /* TODO remove phase_shift and phase_mask */
+    attribute_deprecated int phase_shift;
+    attribute_deprecated int phase_mask;
+    int phase_count;
     int linear;
     enum SwrFilterType filter_type;
     double kaiser_beta;
@@ -49,6 +51,7 @@ typedef struct ResampleContext {
     enum AVSampleFormat format;
     int felem_size;
     int filter_shift;
+    int phase_count_compensation;      /* desired phase_count when compensation is enabled */
 
     struct {
         void (*resample_one)(void *dst, const void *src,
