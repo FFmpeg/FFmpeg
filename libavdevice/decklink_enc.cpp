@@ -337,19 +337,19 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     if (ctx->dl->QueryInterface(IID_IDeckLinkOutput, (void **) &ctx->dlo) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
                avctx->filename);
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error;
     }
 
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx);
-        ctx->dlo->Release();
-        ctx->dl->Release();
-        return AVERROR_EXIT;
+        ret = AVERROR_EXIT;
+        goto error;
     }
 
     /* Setup streams. */
+    ret = AVERROR(EIO);
     for (n = 0; n < avctx->nb_streams; n++) {
         AVStream *st = avctx->streams[n];
         AVCodecContext *c = st->codec;
@@ -369,7 +369,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 
 error:
     ff_decklink_cleanup(avctx);
-    return AVERROR(EIO);
+    return ret;
 }
 
 int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)

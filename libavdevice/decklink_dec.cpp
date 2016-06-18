@@ -486,21 +486,21 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     if (ctx->dl->QueryInterface(IID_IDeckLinkInput, (void **) &ctx->dli) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
                avctx->filename);
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error;
     }
 
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx, DIRECTION_IN);
-        ctx->dli->Release();
-        ctx->dl->Release();
-        return AVERROR_EXIT;
+        ret = AVERROR_EXIT;
+        goto error;
     }
 
     if (mode_num > 0) {
         if (ff_decklink_set_format(avctx, DIRECTION_IN, mode_num) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not set mode %d for %s\n", mode_num, fname);
+            ret = AVERROR(EIO);
             goto error;
         }
     }
@@ -509,6 +509,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st = avformat_new_stream(avctx, NULL);
     if (!st) {
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+        ret = AVERROR(ENOMEM);
         goto error;
     }
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
@@ -521,6 +522,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st = avformat_new_stream(avctx, NULL);
     if (!st) {
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+        ret = AVERROR(ENOMEM);
         goto error;
     }
     st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
@@ -549,6 +551,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         st = avformat_new_stream(avctx, NULL);
         if (!st) {
             av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+            ret = AVERROR(ENOMEM);
             goto error;
         }
         st->codecpar->codec_type  = AVMEDIA_TYPE_SUBTITLE;
@@ -564,6 +567,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable audio input\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
@@ -573,6 +577,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable video input\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
@@ -580,6 +585,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (decklink_start_input (avctx) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot start input stream\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
@@ -587,7 +593,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
 error:
     ff_decklink_cleanup(avctx);
-    return AVERROR(EIO);
+    return ret;
 }
 
 int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
