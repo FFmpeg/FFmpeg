@@ -153,114 +153,100 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
 {
     AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
     const AVVAAPIHWConfig *config = hwconfig;
-    AVVAAPIHWConfig *tmp_config;
+    VAAPIDeviceContext *ctx = hwdev->internal->priv;
     VASurfaceAttrib *attr_list = NULL;
     VAStatus vas;
     enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
     int err, i, j, attr_count, pix_fmt_count;
 
-    if (!hwconfig) {
-        // No configuration was provided, so we create a temporary pipeline
-        // configuration in order to query all supported image formats.
-
-        tmp_config = av_mallocz(sizeof(*config));
-        if (!tmp_config)
-            return AVERROR(ENOMEM);
-
-        vas = vaCreateConfig(hwctx->display,
-                             VAProfileNone, VAEntrypointVideoProc,
-                             NULL, 0, &tmp_config->config_id);
+    if (config) {
+        attr_count = 0;
+        vas = vaQuerySurfaceAttributes(hwctx->display, config->config_id,
+                                       0, &attr_count);
         if (vas != VA_STATUS_SUCCESS) {
-            // No vpp.  We might still be able to do something useful if
-            // codecs are supported, so try to make the most-commonly
-            // supported decoder configuration we can to query instead.
-            vas = vaCreateConfig(hwctx->display,
-                                 VAProfileH264ConstrainedBaseline,
-                                 VAEntrypointVLD, NULL, 0,
-                                 &tmp_config->config_id);
-            if (vas != VA_STATUS_SUCCESS) {
-                av_freep(&tmp_config);
-                return AVERROR(ENOSYS);
-            }
+            av_log(hwdev, AV_LOG_ERROR, "Failed to query surface attributes: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(ENOSYS);
+            goto fail;
         }
 
-        config = tmp_config;
-    }
-
-    attr_count = 0;
-    vas = vaQuerySurfaceAttributes(hwctx->display, config->config_id,
-                                   0, &attr_count);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(hwdev, AV_LOG_ERROR, "Failed to query surface attributes: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(ENOSYS);
-        goto fail;
-    }
-
-    attr_list = av_malloc(attr_count * sizeof(*attr_list));
-    if (!attr_list) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    vas = vaQuerySurfaceAttributes(hwctx->display, config->config_id,
-                                   attr_list, &attr_count);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(hwdev, AV_LOG_ERROR, "Failed to query surface attributes: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(ENOSYS);
-        goto fail;
-    }
-
-    pix_fmt_count = 0;
-    for (i = 0; i < attr_count; i++) {
-        switch (attr_list[i].type) {
-        case VASurfaceAttribPixelFormat:
-            fourcc = attr_list[i].value.value.i;
-            pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
-            if (pix_fmt != AV_PIX_FMT_NONE) {
-                ++pix_fmt_count;
-            } else {
-                // Something unsupported - ignore.
-            }
-            break;
-        case VASurfaceAttribMinWidth:
-            constraints->min_width  = attr_list[i].value.value.i;
-            break;
-        case VASurfaceAttribMinHeight:
-            constraints->min_height = attr_list[i].value.value.i;
-            break;
-        case VASurfaceAttribMaxWidth:
-            constraints->max_width  = attr_list[i].value.value.i;
-            break;
-        case VASurfaceAttribMaxHeight:
-            constraints->max_height = attr_list[i].value.value.i;
-            break;
+        attr_list = av_malloc(attr_count * sizeof(*attr_list));
+        if (!attr_list) {
+            err = AVERROR(ENOMEM);
+            goto fail;
         }
-    }
-    if (pix_fmt_count == 0) {
-        // Nothing usable found.  Presumably there exists something which
-        // works, so leave the set null to indicate unknown.
-        constraints->valid_sw_formats = NULL;
+
+        vas = vaQuerySurfaceAttributes(hwctx->display, config->config_id,
+                                       attr_list, &attr_count);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(hwdev, AV_LOG_ERROR, "Failed to query surface attributes: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(ENOSYS);
+            goto fail;
+        }
+
+        pix_fmt_count = 0;
+        for (i = 0; i < attr_count; i++) {
+            switch (attr_list[i].type) {
+            case VASurfaceAttribPixelFormat:
+                fourcc = attr_list[i].value.value.i;
+                pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
+                if (pix_fmt != AV_PIX_FMT_NONE) {
+                    ++pix_fmt_count;
+                } else {
+                    // Something unsupported - ignore.
+                }
+                break;
+            case VASurfaceAttribMinWidth:
+                constraints->min_width  = attr_list[i].value.value.i;
+                break;
+            case VASurfaceAttribMinHeight:
+                constraints->min_height = attr_list[i].value.value.i;
+                break;
+            case VASurfaceAttribMaxWidth:
+                constraints->max_width  = attr_list[i].value.value.i;
+                break;
+            case VASurfaceAttribMaxHeight:
+                constraints->max_height = attr_list[i].value.value.i;
+                break;
+            }
+        }
+        if (pix_fmt_count == 0) {
+            // Nothing usable found.  Presumably there exists something which
+            // works, so leave the set null to indicate unknown.
+            constraints->valid_sw_formats = NULL;
+        } else {
+            constraints->valid_sw_formats = av_malloc_array(pix_fmt_count + 1,
+                                                            sizeof(pix_fmt));
+            if (!constraints->valid_sw_formats) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            for (i = j = 0; i < attr_count; i++) {
+                if (attr_list[i].type != VASurfaceAttribPixelFormat)
+                    continue;
+                fourcc = attr_list[i].value.value.i;
+                pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
+                if (pix_fmt != AV_PIX_FMT_NONE)
+                    constraints->valid_sw_formats[j++] = pix_fmt;
+            }
+            av_assert0(j == pix_fmt_count);
+            constraints->valid_sw_formats[j] = AV_PIX_FMT_NONE;
+        }
     } else {
-        constraints->valid_sw_formats = av_malloc_array(pix_fmt_count + 1,
+        // No configuration supplied.
+        // Return the full set of image formats known by the implementation.
+        constraints->valid_sw_formats = av_malloc_array(ctx->nb_formats + 1,
                                                         sizeof(pix_fmt));
         if (!constraints->valid_sw_formats) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
-
-        for (i = j = 0; i < attr_count; i++) {
-            if (attr_list[i].type != VASurfaceAttribPixelFormat)
-                continue;
-            fourcc = attr_list[i].value.value.i;
-            pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
-            if (pix_fmt != AV_PIX_FMT_NONE)
-                constraints->valid_sw_formats[j++] = pix_fmt;
-        }
-        av_assert0(j == pix_fmt_count);
-        constraints->valid_sw_formats[j] = AV_PIX_FMT_NONE;
+        for (i = 0; i < ctx->nb_formats; i++)
+            constraints->valid_sw_formats[i] = ctx->formats[i].pix_fmt;
+        constraints->valid_sw_formats[i] = AV_PIX_FMT_NONE;
     }
 
     constraints->valid_hw_formats = av_malloc_array(2, sizeof(pix_fmt));
@@ -274,10 +260,6 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
     err = 0;
 fail:
     av_freep(&attr_list);
-    if (!hwconfig) {
-        vaDestroyConfig(hwctx->display, tmp_config->config_id);
-        av_freep(&tmp_config);
-    }
     return err;
 }
 
@@ -285,20 +267,11 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
 {
     VAAPIDeviceContext *ctx = hwdev->internal->priv;
     AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
-    AVHWFramesConstraints *constraints = NULL;
     VAImageFormat *image_list = NULL;
     VAStatus vas;
-    int err, i, j, image_count;
+    int err, i, image_count;
     enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
-
-    constraints = av_mallocz(sizeof(*constraints));
-    if (!constraints)
-        goto fail;
-
-    err = vaapi_frames_get_constraints(hwdev, NULL, constraints);
-    if (err < 0)
-        goto fail;
 
     image_count = vaMaxNumImageFormats(hwctx->display);
     if (image_count <= 0) {
@@ -325,28 +298,23 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
     for (i = 0; i < image_count; i++) {
         fourcc  = image_list[i].fourcc;
         pix_fmt = vaapi_pix_fmt_from_fourcc(fourcc);
-        for (j = 0; constraints->valid_sw_formats[j] != AV_PIX_FMT_NONE; j++) {
-            if (pix_fmt == constraints->valid_sw_formats[j])
-                break;
-        }
-        if (constraints->valid_sw_formats[j] != AV_PIX_FMT_NONE) {
+        if (pix_fmt == AV_PIX_FMT_NONE) {
+            av_log(hwdev, AV_LOG_DEBUG, "Format %#x -> unknown.\n",
+                   fourcc);
+        } else {
             av_log(hwdev, AV_LOG_DEBUG, "Format %#x -> %s.\n",
                    fourcc, av_get_pix_fmt_name(pix_fmt));
             ctx->formats[ctx->nb_formats].pix_fmt      = pix_fmt;
             ctx->formats[ctx->nb_formats].image_format = image_list[i];
             ++ctx->nb_formats;
-        } else {
-            av_log(hwdev, AV_LOG_DEBUG, "Format %#x -> unknown.\n", fourcc);
         }
     }
 
     av_free(image_list);
-    av_hwframe_constraints_free(&constraints);
     return 0;
 fail:
     av_freep(&ctx->formats);
     av_free(image_list);
-    av_hwframe_constraints_free(&constraints);
     return err;
 }
 
