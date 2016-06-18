@@ -134,9 +134,6 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #if QSV_HAVE_CO2
     mfxExtCodingOption2 *co2 = (mfxExtCodingOption2*)coding_opts[1];
 #endif
-#if QSV_HAVE_CO3
-    mfxExtCodingOption3 *co3 = (mfxExtCodingOption3*)coding_opts[2];
-#endif
 
     av_log(avctx, AV_LOG_VERBOSE, "profile: %s; level: %"PRIu16"\n",
            print_profile(info->CodecProfile), info->CodecLevel);
@@ -186,12 +183,6 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     } else if (info->RateControlMethod == MFX_RATECONTROL_LA_ICQ) {
         av_log(avctx, AV_LOG_VERBOSE, "ICQQuality: %"PRIu16"; LookAheadDepth: %"PRIu16"\n",
                info->ICQQuality, co2->LookAheadDepth);
-    }
-#endif
-#if QSV_HAVE_QVBR
-    else if (info->RateControlMethod == MFX_RATECONTROL_QVBR) {
-        av_log(avctx, AV_LOG_VERBOSE, "QVBRQuality: %"PRIu16"\n",
-               co3->QVBRQuality);
     }
 #endif
 
@@ -573,21 +564,12 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         .Header.BufferSz = sizeof(co2),
     };
 #endif
-#if QSV_HAVE_CO3
-    mfxExtCodingOption3 co3 = {
-        .Header.BufferId = MFX_EXTBUFF_CODING_OPTION3,
-        .Header.BufferSz = sizeof(co3),
-    };
-#endif
 
     mfxExtBuffer *ext_buffers[] = {
         (mfxExtBuffer*)&extradata,
         (mfxExtBuffer*)&co,
 #if QSV_HAVE_CO2
         (mfxExtBuffer*)&co2,
-#endif
-#if QSV_HAVE_CO3
-        (mfxExtBuffer*)&co3,
 #endif
     };
 
