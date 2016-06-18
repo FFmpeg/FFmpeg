@@ -395,7 +395,7 @@ single_col:
              (l1ref0[0] < 0 && !l1ref1[0] &&
               FFABS(l1mv1[0][0]) <= 1 &&
               FFABS(l1mv1[0][1]) <= 1 &&
-              h->x264_build > 33U))) {
+              h->sei.unregistered.x264_build > 33U))) {
             a = b = 0;
             if (ref[0] > 0)
                 a = mv[0];
@@ -430,7 +430,7 @@ single_col:
                 (l1ref0[i8] == 0 ||
                  (l1ref0[i8] < 0 &&
                   l1ref1[i8] == 0 &&
-                  h->x264_build > 33U))) {
+                  h->sei.unregistered.x264_build > 33U))) {
                 const int16_t (*l1mv)[2] = l1ref0[i8] == 0 ? l1mv0 : l1mv1;
                 if (IS_SUB_8X8(sub_mb_type)) {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * 3 * b4_stride];

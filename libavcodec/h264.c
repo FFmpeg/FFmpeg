@@ -430,17 +430,17 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
     h->poc.prev_poc_msb      = 1 << 16;
-    h->x264_build            = -1;
     h->recovery_frame        = -1;
     h->frame_recovered       = 0;
     h->poc.prev_frame_num    = -1;
-    h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
+    h->sei.frame_packing.frame_packing_arrangement_cancel_flag = -1;
+    h->sei.unregistered.x264_build = -1;
 
     h->next_outputed_poc = INT_MIN;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
 
-    ff_h264_reset_sei(h);
+    ff_h264_sei_uninit(&h->sei);
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
@@ -594,7 +594,8 @@ static void decode_postinit(H264Context *h, int setup_finished)
      * decoding process if it exists. */
 
     if (sps->pic_struct_present_flag) {
-        switch (h->sei_pic_struct) {
+        H264SEIPictureTiming *pt = &h->sei.picture_timing;
+        switch (pt->pic_struct) {
         case SEI_PIC_STRUCT_FRAME:
             break;
         case SEI_PIC_STRUCT_TOP_FIELD:
@@ -624,9 +625,9 @@ static void decode_postinit(H264Context *h, int setup_finished)
             break;
         }
 
-        if ((h->sei_ct_type & 3) &&
-            h->sei_pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
-            cur->f->interlaced_frame = (h->sei_ct_type & (1 << 1)) != 0;
+        if ((pt->ct_type & 3) &&
+            pt->pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
+            cur->f->interlaced_frame = (pt->ct_type & (1 << 1)) != 0;
     } else {
         /* Derive interlacing flag from used decoding process. */
         cur->f->interlaced_frame = FIELD_OR_MBAFF_PICTURE(h);
@@ -640,8 +641,8 @@ static void decode_postinit(H264Context *h, int setup_finished)
         if (sps->pic_struct_present_flag) {
             /* Use picture timing SEI information. Even if it is a
              * information of a past frame, better than nothing. */
-            if (h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
-                h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
+            if (h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
+                h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
                 cur->f->top_field_first = 1;
             else
                 cur->f->top_field_first = 0;
@@ -655,14 +656,14 @@ static void decode_postinit(H264Context *h, int setup_finished)
         }
     }
 
-    if (h->sei_frame_packing_present &&
-        h->frame_packing_arrangement_type >= 0 &&
-        h->frame_packing_arrangement_type <= 6 &&
-        h->content_interpretation_type > 0 &&
-        h->content_interpretation_type < 3) {
+    if (h->sei.frame_packing.present &&
+        h->sei.frame_packing.frame_packing_arrangement_type <= 6 &&
+        h->sei.frame_packing.content_interpretation_type > 0 &&
+        h->sei.frame_packing.content_interpretation_type < 3) {
+        H264SEIFramePacking *fp = &h->sei.frame_packing;
         AVStereo3D *stereo = av_stereo3d_create_side_data(cur->f);
         if (stereo) {
-        switch (h->frame_packing_arrangement_type) {
+        switch (fp->frame_packing_arrangement_type) {
         case 0:
             stereo->type = AV_STEREO3D_CHECKERBOARD;
             break;
@@ -673,7 +674,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
             stereo->type = AV_STEREO3D_LINES;
             break;
         case 3:
-            if (h->quincunx_subsampling)
+            if (fp->quincunx_sampling_flag)
                 stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
             else
                 stereo->type = AV_STEREO3D_SIDEBYSIDE;
@@ -689,42 +690,46 @@ static void decode_postinit(H264Context *h, int setup_finished)
             break;
         }
 
-        if (h->content_interpretation_type == 2)
+        if (fp->content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
         }
     }
 
-    if (h->sei_display_orientation_present &&
-        (h->sei_anticlockwise_rotation || h->sei_hflip || h->sei_vflip)) {
-        double angle = h->sei_anticlockwise_rotation * 360 / (double) (1 << 16);
+    if (h->sei.display_orientation.present &&
+        (h->sei.display_orientation.anticlockwise_rotation ||
+         h->sei.display_orientation.hflip ||
+         h->sei.display_orientation.vflip)) {
+        H264SEIDisplayOrientation *o = &h->sei.display_orientation;
+        double angle = o->anticlockwise_rotation * 360 / (double) (1 << 16);
         AVFrameSideData *rotation = av_frame_new_side_data(cur->f,
                                                            AV_FRAME_DATA_DISPLAYMATRIX,
                                                            sizeof(int32_t) * 9);
         if (rotation) {
             av_display_rotation_set((int32_t *)rotation->data, angle);
             av_display_matrix_flip((int32_t *)rotation->data,
-                                   h->sei_hflip, h->sei_vflip);
+                                   o->hflip, o->vflip);
         }
     }
 
-    if (h->sei_reguserdata_afd_present) {
+    if (h->sei.afd.present) {
         AVFrameSideData *sd = av_frame_new_side_data(cur->f, AV_FRAME_DATA_AFD,
                                                      sizeof(uint8_t));
 
         if (sd) {
-            *sd->data = h->active_format_description;
-            h->sei_reguserdata_afd_present = 0;
+            *sd->data = h->sei.afd.active_format_description;
+            h->sei.afd.present = 0;
         }
     }
 
-    if (h->a53_caption) {
+    if (h->sei.a53_caption.a53_caption) {
+        H264SEIA53Caption *a53 = &h->sei.a53_caption;
         AVFrameSideData *sd = av_frame_new_side_data(cur->f,
                                                      AV_FRAME_DATA_A53_CC,
-                                                     h->a53_caption_size);
+                                                     a53->a53_caption_size);
         if (sd)
-            memcpy(sd->data, h->a53_caption, h->a53_caption_size);
-        av_freep(&h->a53_caption);
-        h->a53_caption_size = 0;
+            memcpy(sd->data, a53->a53_caption, a53->a53_caption_size);
+        av_freep(&a53->a53_caption);
+        a53->a53_caption_size = 0;
         h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
@@ -859,7 +864,7 @@ void ff_h264_flush_change(H264Context *h)
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
     h->first_field = 0;
-    ff_h264_reset_sei(h);
+    ff_h264_sei_uninit(&h->sei);
     h->recovery_frame = -1;
     h->frame_recovered = 0;
     h->current_slice = 0;
@@ -1005,7 +1010,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
         h->current_slice = 0;
         if (!h->first_field)
             h->cur_pic_ptr = NULL;
-        ff_h264_reset_sei(h);
+        ff_h264_sei_uninit(&h->sei);
     }
 
     if (h->nal_length_size == 4) {
@@ -1096,13 +1101,15 @@ again:
             if ((err = ff_h264_decode_slice_header(h, sl)))
                 break;
 
-            if (h->sei_recovery_frame_cnt >= 0) {
-                if (h->poc.frame_num != h->sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
+            if (h->sei.recovery_point.recovery_frame_cnt >= 0) {
+                const int sei_recovery_frame_cnt = h->sei.recovery_point.recovery_frame_cnt;
+
+                if (h->poc.frame_num != sei_recovery_frame_cnt || sl->slice_type_nos != AV_PICTURE_TYPE_I)
                     h->valid_recovery_point = 1;
 
                 if (   h->recovery_frame < 0
-                    || av_mod_uintp2(h->recovery_frame - h->poc.frame_num, h->ps.sps->log2_max_frame_num) > h->sei_recovery_frame_cnt) {
-                    h->recovery_frame = av_mod_uintp2(h->poc.frame_num + h->sei_recovery_frame_cnt, h->ps.sps->log2_max_frame_num);
+                    || av_mod_uintp2(h->recovery_frame - h->poc.frame_num, h->ps.sps->log2_max_frame_num) > sei_recovery_frame_cnt) {
+                    h->recovery_frame = av_mod_uintp2(h->poc.frame_num + sei_recovery_frame_cnt, h->ps.sps->log2_max_frame_num);
 
                     if (!h->valid_recovery_point)
                         h->recovery_frame = h->poc.frame_num;
@@ -1167,10 +1174,15 @@ again:
             avpriv_request_sample(avctx, "data partitioning");
             break;
         case NAL_SEI:
-            h->gb = nal->gb;
-            ret = ff_h264_decode_sei(h);
+            ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
+            h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
-                debug_green_metadata(&h->sei_green_metadata, h->avctx);
+                debug_green_metadata(&h->sei.green_metadata, h->avctx);
+#if FF_API_AFD
+FF_DISABLE_DEPRECATION_WARNINGS
+            h->avctx->dtg_active_format = h->sei.afd.active_format_description;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_AFD */
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;
@@ -1314,7 +1326,7 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     if (ret < 0)
         return ret;
 
-    av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(h), 0);
+    av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(&h->sei.frame_packing), 0);
 
     h->backup_width   = h->avctx->width;
     h->backup_height  = h->avctx->height;
@@ -1532,8 +1544,7 @@ av_cold void ff_h264_free_context(H264Context *h)
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;
 
-    h->a53_caption_size = 0;
-    av_freep(&h->a53_caption);
+    ff_h264_sei_uninit(&h->sei);
 
     for (i = 0; i < MAX_SPS_COUNT; i++)
         av_buffer_unref(&h->ps.sps_list[i]);
