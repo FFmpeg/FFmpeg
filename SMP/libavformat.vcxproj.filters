@@ -736,6 +736,9 @@
     <ClCompile Include="..\libavformat\movenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\vpcc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\movenchint.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -980,6 +983,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_vp8.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\rtpenc_vp9.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtpenc_xiph.c">
