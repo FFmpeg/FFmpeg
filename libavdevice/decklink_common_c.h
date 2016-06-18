@@ -22,6 +22,13 @@
 #ifndef AVDEVICE_DECKLINK_COMMON_C_H
 #define AVDEVICE_DECKLINK_COMMON_C_H
 
+typedef enum DecklinkPtsSource {
+    PTS_SRC_AUDIO     = 1,
+    PTS_SRC_VIDEO     = 2,
+    PTS_SRC_REFERENCE = 3,
+    PTS_SRC_WALLCLOCK = 4,
+} DecklinkPtsSource;
+
 struct decklink_cctx {
     const AVClass *cclass;
 
@@ -35,6 +42,8 @@ struct decklink_cctx {
     int v210;
     int audio_channels;
     int duplex_mode;
+    DecklinkPtsSource audio_pts_source;
+    DecklinkPtsSource video_pts_source;
     int audio_input;
     int video_input;
 };

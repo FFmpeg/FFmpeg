@@ -265,6 +265,14 @@ Sets the audio input source. Must be @samp{unset}, @samp{embedded},
 @samp{aes_ebu}, @samp{analog}, @samp{analog_xlr}, @samp{analog_rca} or
 @samp{microphone}. Defaults to @samp{unset}.
 
+@item video_pts
+Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+
+@item audio_pts
+Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+
 @end table
 
 @subsection Examples

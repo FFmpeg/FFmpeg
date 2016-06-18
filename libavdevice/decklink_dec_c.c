@@ -56,6 +56,12 @@ static const AVOption options[] = {
     { "analog_xlr",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 4}, 0, 0,    DEC, "audio_input"},
     { "analog_rca",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 5}, 0, 0,    DEC, "audio_input"},
     { "microphone",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 6}, 0, 0,    DEC, "audio_input"},
+    { "audio_pts",     "audio pts source",   OFFSET(audio_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_AUDIO    }, 1, 4, DEC, "pts_source"},
+    { "video_pts",     "video pts source",   OFFSET(video_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_VIDEO    }, 1, 4, DEC, "pts_source"},
+    { "audio",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_AUDIO    }, 0, 0, DEC, "pts_source"},
+    { "video",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_VIDEO    }, 0, 0, DEC, "pts_source"},
+    { "reference",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_REFERENCE}, 0, 0, DEC, "pts_source"},
+    { "wallclock",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_WALLCLOCK}, 0, 0, DEC, "pts_source"},
     { NULL },
 };
 
