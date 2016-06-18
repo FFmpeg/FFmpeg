@@ -1114,8 +1114,11 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx,
                 break;
             }
         }
-        if (recon_format == AV_PIX_FMT_NONE)
-            recon_format = constraints->valid_sw_formats[i];
+        if (recon_format == AV_PIX_FMT_NONE) {
+            // No match.  Just use the first in the supported list and
+            // hope for the best.
+            recon_format = constraints->valid_sw_formats[0];
+        }
     } else {
         // No idea what to use; copy input format.
         recon_format = ctx->input_frames->sw_format;
