@@ -57,6 +57,7 @@ version <next>:
 - Generic OpenMAX IL encoder with support for Raspberry Pi
 - MMAL-accelerated MPEG-2 and VC-1 decoding
 - G.729 raw demuxer
+- MagicYUV decoder
 
 
 version 11:
