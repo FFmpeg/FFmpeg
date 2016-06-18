@@ -115,7 +115,7 @@ int ff_h264_check_intra4x4_pred_mode(int8_t *pred_mode_cache, void *logctx,
             int status = top[pred_mode_cache[scan8[0] + i]];
             if (status < 0) {
                 av_log(logctx, AV_LOG_ERROR,
-					   "top block unavailable for requested intra mode %d\n",
+                       "top block unavailable for requested intra mode %d\n",
                        status);
                 return AVERROR_INVALIDDATA;
             } else if (status) {
