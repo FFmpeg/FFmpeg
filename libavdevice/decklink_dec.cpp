@@ -431,13 +431,12 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx;
-    IDeckLinkIterator *iter;
-    IDeckLink *dl = NULL;
     AVStream *st;
     HRESULT result;
     char fname[1024];
     char *tmp;
     int mode_num = 0;
+    int ret;
 
     ctx = (struct decklink_ctx *) av_mallocz(sizeof(struct decklink_ctx));
     if (!ctx)
@@ -466,12 +465,6 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             return AVERROR(EINVAL);
     }
 
-    iter = CreateDeckLinkIteratorInstance();
-    if (!iter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
-        return AVERROR(EIO);
-    }
-
     /* List available devices. */
     if (ctx->list_devices) {
         ff_decklink_list_devices(avctx);
@@ -485,23 +478,9 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         *tmp = 0;
     }
 
-    /* Open device. */
-    while (iter->Next(&dl) == S_OK) {
-        const char *displayName;
-        ff_decklink_get_display_name(dl, &displayName);
-        if (!strcmp(fname, displayName)) {
-            av_free((void *) displayName);
-            ctx->dl = dl;
-            break;
-        }
-        av_free((void *) displayName);
-        dl->Release();
-    }
-    iter->Release();
-    if (!ctx->dl) {
-        av_log(avctx, AV_LOG_ERROR, "Could not open '%s'\n", fname);
-        return AVERROR(EIO);
-    }
+    ret = ff_decklink_init_device(avctx, fname);
+    if (ret < 0)
+        return ret;
 
     /* Get input device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkInput, (void **) &ctx->dli) != S_OK) {

@@ -252,3 +252,32 @@ void ff_decklink_cleanup(AVFormatContext *avctx)
     if (ctx->dl)
         ctx->dl->Release();
 }
+
+int ff_decklink_init_device(AVFormatContext *avctx, const char* name)
+{
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
+    IDeckLink *dl = NULL;
+    IDeckLinkIterator *iter = CreateDeckLinkIteratorInstance();
+    if (!iter) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    while (iter->Next(&dl) == S_OK) {
+        const char *displayName;
+        ff_decklink_get_display_name(dl, &displayName);
+        if (!strcmp(name, displayName)) {
+            av_free((void *)displayName);
+            ctx->dl = dl;
+            break;
+        }
+        av_free((void *)displayName);
+        dl->Release();
+    }
+    iter->Release();
+    if (!ctx->dl)
+        return AVERROR(ENXIO);
+
+    return 0;
+}
