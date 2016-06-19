@@ -52,6 +52,8 @@ typedef struct H264ParseContext {
     H264DSPContext h264dsp;
     H264POCContext poc;
     H264SEIContext sei;
+    int is_avc;
+    int nal_length_size;
     int got_first;
 } H264ParseContext;
 
@@ -64,20 +66,20 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
     uint32_t state;
     ParseContext *pc = &p->pc;
 
-    int next_avc= h->is_avc ? 0 : buf_size;
+    int next_avc = p->is_avc ? 0 : buf_size;
 //    mb_addr= pc->mb_addr - 1;
     state = pc->state;
     if (state > 13)
         state = 7;
 
-    if (h->is_avc && !h->nal_length_size)
+    if (p->is_avc && !p->nal_length_size)
         av_log(h->avctx, AV_LOG_ERROR, "AVC-parser: nal length size invalid\n");
 
     for (i = 0; i < buf_size; i++) {
         if (i >= next_avc) {
             int nalsize = 0;
             i = next_avc;
-            for (j = 0; j < h->nal_length_size; j++)
+            for (j = 0; j < p->nal_length_size; j++)
                 nalsize = (nalsize << 8) | buf[i++];
             if (nalsize <= 0 || nalsize > buf_size - i) {
                 av_log(h->avctx, AV_LOG_ERROR, "AVC-parser: nal size %d remaining %d\n", nalsize, buf_size - i);
@@ -132,14 +134,14 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
         }
     }
     pc->state = state;
-    if (h->is_avc)
+    if (p->is_avc)
         return next_avc;
     return END_NOT_FOUND;
 
 found:
     pc->state             = 7;
     pc->frame_start_found = 0;
-    if (h->is_avc)
+    if (p->is_avc)
         return next_avc;
     return i - (state & 5) - 5 * (state > 7);
 }
@@ -222,6 +224,26 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb)
     return 0;
 }
 
+static inline int get_avc_nalsize(H264ParseContext *p, const uint8_t *buf,
+                                  int buf_size, int *buf_index, void *logctx)
+{
+    int i, nalsize = 0;
+
+    if (*buf_index >= buf_size - p->nal_length_size) {
+        // the end of the buffer is reached, refill it
+        return AVERROR(EAGAIN);
+    }
+
+    for (i = 0; i < p->nal_length_size; i++)
+        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
+    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
+        av_log(logctx, AV_LOG_ERROR,
+               "AVC: nal size %d\n", nalsize);
+        return AVERROR_INVALIDDATA;
+    }
+    return nalsize;
+}
+
 /**
  * Parse NAL units of found picture and decode some basic information.
  *
@@ -258,13 +280,13 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         return 0;
 
     buf_index     = 0;
-    next_avc      = h->is_avc ? 0 : buf_size;
+    next_avc      = p->is_avc ? 0 : buf_size;
     for (;;) {
         const SPS *sps;
         int src_length, consumed, nalsize = 0;
 
         if (buf_index >= next_avc) {
-            nalsize = get_avc_nalsize(h, buf, buf_size, &buf_index);
+            nalsize = get_avc_nalsize(p, buf, buf_size, &buf_index, avctx);
             if (nalsize < 0)
                 break;
             next_avc = buf_index + nalsize;
@@ -547,8 +569,6 @@ static int h264_parse(AVCodecParserContext *s,
     if (!p->got_first) {
         p->got_first = 1;
         if (avctx->extradata_size) {
-            int i;
-
             h->avctx = avctx;
             // must be done like in decoder, otherwise opening the parser,
             // letting it create extradata and then closing and opening again
@@ -556,26 +576,9 @@ static int h264_parse(AVCodecParserContext *s,
             // Note that estimate_timings_from_pts does exactly this.
             if (!avctx->has_b_frames)
                 h->low_delay = 1;
-            ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size);
-
-            for (i = 0; i < FF_ARRAY_ELEMS(p->ps.sps_list); i++) {
-                av_buffer_unref(&p->ps.sps_list[i]);
-                if (h->ps.sps_list[i]) {
-                    p->ps.sps_list[i] = av_buffer_ref(h->ps.sps_list[i]);
-                    if (!p->ps.sps_list[i])
-                        return AVERROR(ENOMEM);
-                }
-            }
-            for (i = 0; i < FF_ARRAY_ELEMS(p->ps.pps_list); i++) {
-                av_buffer_unref(&p->ps.pps_list[i]);
-                if (h->ps.pps_list[i]) {
-                    p->ps.pps_list[i] = av_buffer_ref(h->ps.pps_list[i]);
-                    if (!p->ps.pps_list[i])
-                        return AVERROR(ENOMEM);
-                }
-            }
-
-            p->ps.sps = h->ps.sps;
+            ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                     &p->ps, &p->is_avc, &p->nal_length_size,
+                                     avctx->err_recognition, avctx);
         }
     }
 
