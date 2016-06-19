@@ -75,7 +75,7 @@ static int split_field_copy(H264Ref *dest, H264Picture *src, int parity, int id_
 }
 
 static int build_def_list(H264Ref *def, int def_len,
-                          H264Picture **in, int len, int is_long, int sel)
+                          H264Picture * const *in, int len, int is_long, int sel)
 {
     int  i[2] = { 0 };
     int index = 0;
@@ -100,7 +100,8 @@ static int build_def_list(H264Ref *def, int def_len,
     return index;
 }
 
-static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limit, int dir)
+static int add_sorted(H264Picture **sorted, H264Picture * const *src,
+                      int len, int limit, int dir)
 {
     int i, best_poc;
     int out_i = 0;
@@ -122,9 +123,9 @@ static int add_sorted(H264Picture **sorted, H264Picture **src, int len, int limi
     return out_i;
 }
 
-static int mismatches_ref(H264Context *h, H264Picture *pic)
+static int mismatches_ref(const H264Context *h, const H264Picture *pic)
 {
-    AVFrame *f = pic->f;
+    const AVFrame *f = pic->f;
     return (h->cur_pic_ptr->f->width  != f->width ||
             h->cur_pic_ptr->f->height != f->height ||
             h->cur_pic_ptr->f->format != f->format);
@@ -215,7 +216,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
 /**
  * print short term list
  */
-static void print_short_term(H264Context *h)
+static void print_short_term(const H264Context *h)
 {
     uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
@@ -231,7 +232,7 @@ static void print_short_term(H264Context *h)
 /**
  * print long term list
  */
-static void print_long_term(H264Context *h)
+static void print_long_term(const H264Context *h)
 {
     uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
@@ -256,7 +257,7 @@ static void print_long_term(H264Context *h)
  * @return frame number (short term) or long term index of picture
  *         described by pic_num
  */
-static int pic_num_extract(H264Context *h, int pic_num, int *structure)
+static int pic_num_extract(const H264Context *h, int pic_num, int *structure)
 {
     *structure = h->picture_structure;
     if (FIELD_PICTURE(h)) {
