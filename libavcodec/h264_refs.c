@@ -212,8 +212,39 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
         h->default_ref[i] = sl->ref_list[i][0];
 }
 
-static void print_short_term(H264Context *h);
-static void print_long_term(H264Context *h);
+/**
+ * print short term list
+ */
+static void print_short_term(H264Context *h)
+{
+    uint32_t i;
+    if (h->avctx->debug & FF_DEBUG_MMCO) {
+        av_log(h->avctx, AV_LOG_DEBUG, "short term list:\n");
+        for (i = 0; i < h->short_ref_count; i++) {
+            H264Picture *pic = h->short_ref[i];
+            av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
+                   i, pic->frame_num, pic->poc, pic->f->data[0]);
+        }
+    }
+}
+
+/**
+ * print long term list
+ */
+static void print_long_term(H264Context *h)
+{
+    uint32_t i;
+    if (h->avctx->debug & FF_DEBUG_MMCO) {
+        av_log(h->avctx, AV_LOG_DEBUG, "long term list:\n");
+        for (i = 0; i < 16; i++) {
+            H264Picture *pic = h->long_ref[i];
+            if (pic) {
+                av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
+                       i, pic->frame_num, pic->poc, pic->f->data[0]);
+            }
+        }
+    }
+}
 
 /**
  * Extract structure information about the picture described by pic_num in
@@ -534,40 +565,6 @@ void ff_h264_remove_all_refs(H264Context *h)
         H264SliceContext *sl = &h->slice_ctx[i];
         sl->list_count = sl->ref_count[0] = sl->ref_count[1] = 0;
         memset(sl->ref_list, 0, sizeof(sl->ref_list));
-    }
-}
-
-/**
- * print short term list
- */
-static void print_short_term(H264Context *h)
-{
-    uint32_t i;
-    if (h->avctx->debug & FF_DEBUG_MMCO) {
-        av_log(h->avctx, AV_LOG_DEBUG, "short term list:\n");
-        for (i = 0; i < h->short_ref_count; i++) {
-            H264Picture *pic = h->short_ref[i];
-            av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
-                   i, pic->frame_num, pic->poc, pic->f->data[0]);
-        }
-    }
-}
-
-/**
- * print long term list
- */
-static void print_long_term(H264Context *h)
-{
-    uint32_t i;
-    if (h->avctx->debug & FF_DEBUG_MMCO) {
-        av_log(h->avctx, AV_LOG_DEBUG, "long term list:\n");
-        for (i = 0; i < 16; i++) {
-            H264Picture *pic = h->long_ref[i];
-            if (pic) {
-                av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
-                       i, pic->frame_num, pic->poc, pic->f->data[0]);
-            }
-        }
     }
 }
 
