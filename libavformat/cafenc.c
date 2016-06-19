@@ -87,6 +87,7 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int bl
     case AV_CODEC_ID_AC3:
         return 1536;
     case AV_CODEC_ID_QDM2:
+    case AV_CODEC_ID_QDMC:
         return 2048 * channels;
     case AV_CODEC_ID_ALAC:
         return 4096;
@@ -169,7 +170,7 @@ static int caf_write_header(AVFormatContext *s)
         avio_wb16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
         avio_w8(pb, 0x00); /* Mode change period (no restriction) */
         avio_w8(pb, 0x01); /* Frames per sample */
-    } else if (par->codec_id == AV_CODEC_ID_QDM2) {
+    } else if (par->codec_id == AV_CODEC_ID_QDM2 || par->codec_id == AV_CODEC_ID_QDMC) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, par->extradata_size);
         avio_write(pb, par->extradata, par->extradata_size);
