@@ -1680,7 +1680,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     }
 
     if (FRAME_MBAFF(h)) {
-        ff_h264_fill_mbaff_ref_list(h, sl);
+        ff_h264_fill_mbaff_ref_list(sl);
 
         if (pps->weighted_bipred_idc == 2 && sl->slice_type_nos == AV_PICTURE_TYPE_B) {
             implicit_weight_table(h, sl, 0);

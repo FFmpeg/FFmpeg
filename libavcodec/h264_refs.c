@@ -401,7 +401,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl)
     return 0;
 }
 
-void ff_h264_fill_mbaff_ref_list(H264Context *h, H264SliceContext *sl)
+void ff_h264_fill_mbaff_ref_list(H264SliceContext *sl)
 {
     int list, i, j;
     for (list = 0; list < sl->list_count; list++) {
