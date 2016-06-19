@@ -2697,7 +2697,7 @@ vp9_cuvid_decoder_deps="cuda cuvid CUVIDVP9PICPARAMS"
 vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
 # parsers
-h264_parser_select="h264_decoder"
+h264_parser_select="golomb h264dsp"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"

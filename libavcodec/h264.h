@@ -708,11 +708,6 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                      H264ParamSets *ps, int ignore_truncation);
 
 /**
- * compute profile from sps
- */
-int ff_h264_get_profile(const SPS *sps);
-
-/**
  * Decode PPS
  */
 int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
