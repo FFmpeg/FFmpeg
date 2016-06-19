@@ -563,15 +563,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     st->time_base.den      = ctx->bmd_tb_den;
     st->time_base.num      = ctx->bmd_tb_num;
-    st->codecpar->bit_rate    = av_image_get_buffer_size((AVPixelFormat)st->codecpar->format, ctx->bmd_width, ctx->bmd_height, 1) * 1/av_q2d(st->time_base) * 8;
 
     if (cctx->v210) {
         st->codecpar->codec_id    = AV_CODEC_ID_V210;
         st->codecpar->codec_tag   = MKTAG('V', '2', '1', '0');
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 64, st->time_base.den, st->time_base.num * 3);
     } else {
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
         st->codecpar->format      = AV_PIX_FMT_UYVY422;
         st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 16, st->time_base.den, st->time_base.num);
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
