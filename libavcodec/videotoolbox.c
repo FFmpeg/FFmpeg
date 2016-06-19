@@ -495,6 +495,8 @@ static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(AVCodecContex
 {
     CMFormatDescriptionRef cm_fmt_desc = NULL;
     int status;
+
+#if TARGET_OS_IPHONE || defined(__MAC_10_9)
     H264Context *h = codec_type == kCMVideoCodecType_H264 ? avctx->priv_data : NULL;
 
     if (h && h->ps.sps->data_size && h->ps.pps->data_size) {
@@ -522,6 +524,7 @@ static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(AVCodecContex
             return NULL;
         }
     } else {
+#endif
         status = CMVideoFormatDescriptionCreate(kCFAllocatorDefault,
                                                 codec_type,
                                                 width,
@@ -533,7 +536,9 @@ static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(AVCodecContex
             av_log(avctx, AV_LOG_ERROR, "Error creating format description: %d\n", status);
             return NULL;
         }
+#if TARGET_OS_IPHONE || defined(__MAC_10_9)
     }
+#endif
 
     return cm_fmt_desc;
 }
