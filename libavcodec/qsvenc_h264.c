@@ -43,10 +43,10 @@ typedef struct QSVH264EncContext {
 static int qsv_h264_set_encode_ctrl(AVCodecContext *avctx,
                                     const AVFrame *frame, mfxEncodeCtrl* enc_ctrl)
 {
+    QSVH264EncContext *qh264 = avctx->priv_data;
+    QSVEncContext *q = &qh264->qsv;
+
     if (q->a53_cc && frame) {
-        AVFrameSideData *side_data = NULL;
-        QSVH264EncContext *qh264 = avctx->priv_data;
-        QSVEncContext *q = &qh264->qsv;
         mfxPayload* payload;
         mfxU8* sei_data;
         size_t sei_size;
