@@ -55,13 +55,15 @@ typedef struct H264ParseContext {
     int is_avc;
     int nal_length_size;
     int got_first;
+    uint8_t parse_history[6];
+    int parse_history_count;
+    int parse_last_mb;
 } H264ParseContext;
 
 
 static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
                                int buf_size, void *logctx)
 {
-    H264Context *h = &p->h;
     int i, j;
     uint32_t state;
     ParseContext *pc = &p->pc;
@@ -115,15 +117,15 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
             }
             state = 7;
         } else {
-            h->parse_history[h->parse_history_count++]= buf[i];
-            if (h->parse_history_count>5) {
-                unsigned int mb, last_mb= h->parse_last_mb;
+            p->parse_history[p->parse_history_count++] = buf[i];
+            if (p->parse_history_count > 5) {
+                unsigned int mb, last_mb = p->parse_last_mb;
                 GetBitContext gb;
 
-                init_get_bits(&gb, h->parse_history, 8*h->parse_history_count);
-                h->parse_history_count=0;
+                init_get_bits(&gb, p->parse_history, 8*p->parse_history_count);
+                p->parse_history_count = 0;
                 mb= get_ue_golomb_long(&gb);
-                h->parse_last_mb= mb;
+                p->parse_last_mb = mb;
                 if (pc->frame_start_found) {
                     if (mb <= last_mb)
                         goto found;
