@@ -4523,59 +4523,6 @@ tblend=all_mode=difference128
 @end example
 @end itemize
 
-@section bwdif
-
-Deinterlace the input video ("bwdif" stands for "Bob Weaver
-Deinterlacing Filter").
-
-Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
-interpolation algorithms.
-It accepts the following parameters:
-
-@table @option
-@item mode
-The interlacing mode to adopt. It accepts one of the following values:
-
-@table @option
-@item 0, send_frame
-Output one frame for each frame.
-@item 1, send_field
-Output one frame for each field.
-@end table
-
-The default value is @code{send_field}.
-
-@item parity
-The picture field parity assumed for the input interlaced video. It accepts one
-of the following values:
-
-@table @option
-@item 0, tff
-Assume the top field is first.
-@item 1, bff
-Assume the bottom field is first.
-@item -1, auto
-Enable automatic detection of field parity.
-@end table
-
-The default value is @code{auto}.
-If the interlacing is unknown or the decoder does not export this information,
-top field first will be assumed.
-
-@item deint
-Specify which frames to deinterlace. Accept one of the following
-values:
-
-@table @option
-@item 0, all
-Deinterlace all frames.
-@item 1, interlaced
-Only deinterlace frames marked as interlaced.
-@end table
-
-The default value is @code{all}.
-@end table
-
 @section boxblur
 
 Apply a boxblur algorithm to the input video.
@@ -4663,6 +4610,59 @@ Set the luma and chroma radii to a fraction of the video dimension:
 boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 @end itemize
+
+@section bwdif
+
+Deinterlace the input video ("bwdif" stands for "Bob Weaver
+Deinterlacing Filter").
+
+Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
+interpolation algorithms.
+It accepts the following parameters:
+
+@table @option
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item 0, send_frame
+Output one frame for each frame.
+@item 1, send_field
+Output one frame for each field.
+@end table
+
+The default value is @code{send_field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item 0, tff
+Assume the top field is first.
+@item 1, bff
+Assume the bottom field is first.
+@item -1, auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
+
+@table @option
+@item 0, all
+Deinterlace all frames.
+@item 1, interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+@end table
 
 @section chromakey
 YUV colorspace color/chroma keying.
