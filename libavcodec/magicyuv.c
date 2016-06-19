@@ -309,8 +309,9 @@ static int decode_frame(AVCodecContext *avctx,
     s->interlaced = !!(bytestream2_get_byte(&gb) & 2);
     bytestream2_skip(&gb, 3);
 
-    avctx->coded_width  = bytestream2_get_le32(&gb);
-    avctx->coded_height = bytestream2_get_le32(&gb);
+    if ((ret = ff_set_dimensions(avctx, bytestream2_get_le32(&gb), bytestream2_get_le32(&gb))) < 0)
+        return ret;
+
     slice_width = bytestream2_get_le32(&gb);
     if (slice_width != avctx->coded_width) {
         avpriv_request_sample(avctx, "unsupported slice width: %d", slice_width);
