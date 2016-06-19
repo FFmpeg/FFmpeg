@@ -292,10 +292,6 @@ static void copy_picture_range(H264Picture **to, H264Picture **from, int count,
     }
 }
 
-#define copy_fields(to, from, start_field, end_field)                   \
-    memcpy(&(to)->start_field, &(from)->start_field,                        \
-           (char *)&(to)->end_field - (char *)&(to)->start_field)
-
 static int h264_slice_header_init(H264Context *h);
 
 int ff_h264_update_thread_context(AVCodecContext *dst,
@@ -420,8 +416,25 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->nal_length_size = h1->nal_length_size;
     h->sei.unregistered.x264_build = h1->sei.unregistered.x264_build;
 
-    // POC timing
-    copy_fields(h, h1, poc, current_slice);
+    memcpy(&h->poc,        &h1->poc,        sizeof(h->poc));
+
+    h->curr_pic_num      = h1->curr_pic_num;
+    h->max_pic_num       = h1->max_pic_num;
+
+    memcpy(h->default_ref, h1->default_ref, sizeof(h->default_ref));
+    memcpy(h->short_ref,   h1->short_ref,   sizeof(h->short_ref));
+    memcpy(h->long_ref,    h1->long_ref,    sizeof(h->long_ref));
+    memcpy(h->delayed_pic, h1->delayed_pic, sizeof(h->delayed_pic));
+    memcpy(h->last_pocs,   h1->last_pocs,   sizeof(h->last_pocs));
+
+    h->next_output_pic   = h1->next_output_pic;
+    h->next_outputed_poc = h1->next_outputed_poc;
+
+    memcpy(h->mmco, h1->mmco, sizeof(h->mmco));
+    h->mmco_index      = h1->mmco_index;
+    h->mmco_reset      = h1->mmco_reset;
+    h->long_ref_count  = h1->long_ref_count;
+    h->short_ref_count = h1->short_ref_count;
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
     copy_picture_range(h->long_ref, h1->long_ref, 32, h, h1);
