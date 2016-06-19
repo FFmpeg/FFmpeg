@@ -59,7 +59,7 @@ typedef struct H264ParseContext {
 
 
 static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
-                               int buf_size)
+                               int buf_size, void *logctx)
 {
     H264Context *h = &p->h;
     int i, j;
@@ -73,7 +73,7 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
         state = 7;
 
     if (p->is_avc && !p->nal_length_size)
-        av_log(h->avctx, AV_LOG_ERROR, "AVC-parser: nal length size invalid\n");
+        av_log(logctx, AV_LOG_ERROR, "AVC-parser: nal length size invalid\n");
 
     for (i = 0; i < buf_size; i++) {
         if (i >= next_avc) {
@@ -82,7 +82,7 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
             for (j = 0; j < p->nal_length_size; j++)
                 nalsize = (nalsize << 8) | buf[i++];
             if (nalsize <= 0 || nalsize > buf_size - i) {
-                av_log(h->avctx, AV_LOG_ERROR, "AVC-parser: nal size %d remaining %d\n", nalsize, buf_size - i);
+                av_log(logctx, AV_LOG_ERROR, "AVC-parser: nal size %d remaining %d\n", nalsize, buf_size - i);
                 return buf_size;
             }
             next_avc = i + nalsize;
@@ -585,7 +585,7 @@ static int h264_parse(AVCodecParserContext *s,
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
     } else {
-        next = h264_find_frame_end(p, buf, buf_size);
+        next = h264_find_frame_end(p, buf, buf_size, avctx);
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf      = NULL;
@@ -595,7 +595,7 @@ static int h264_parse(AVCodecParserContext *s,
 
         if (next < 0 && next != END_NOT_FOUND) {
             av_assert1(pc->last_index + next >= 0);
-            h264_find_frame_end(p, &pc->buffer[pc->last_index + next], -next); // update state
+            h264_find_frame_end(p, &pc->buffer[pc->last_index + next], -next, avctx); // update state
         }
     }
 
