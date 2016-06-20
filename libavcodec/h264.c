@@ -368,10 +368,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    /* set defaults */
-    if (!avctx->has_b_frames)
-        h->low_delay = 1;
-
     ret = ff_thread_once(&h264_vlc_init, ff_h264_decode_init_vlc);
     if (ret != 0) {
         av_log(avctx, AV_LOG_ERROR, "pthread_once has failed.");
@@ -401,7 +397,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     if (h->ps.sps && h->ps.sps->bitstream_restriction_flag &&
         h->avctx->has_b_frames < h->ps.sps->num_reorder_frames) {
         h->avctx->has_b_frames = h->ps.sps->num_reorder_frames;
-        h->low_delay           = 0;
     }
 
     avctx->internal->allocate_progress = 1;
@@ -631,7 +626,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
         h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, sps->num_reorder_frames);
     }
-    h->low_delay = !h->avctx->has_b_frames;
 
     for (i = 0; 1; i++) {
         if(i == MAX_DELAYED_PIC_COUNT || cur->poc < h->last_pocs[i]){
@@ -655,7 +649,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
     } else if(h->avctx->has_b_frames < out_of_order && !sps->bitstream_restriction_flag){
         av_log(h->avctx, AV_LOG_INFO, "Increasing reorder buffer to %d\n", out_of_order);
         h->avctx->has_b_frames = out_of_order;
-        h->low_delay = 0;
     }
 
     pics = 0;
@@ -1353,7 +1346,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                                     h->next_output_pic->mb_type,
                                     h->next_output_pic->qscale_table,
                                     h->next_output_pic->motion_val,
-                                    &h->low_delay,
+                                    NULL,
                                     h->mb_width, h->mb_height, h->mb_stride, 1);
             }
         }

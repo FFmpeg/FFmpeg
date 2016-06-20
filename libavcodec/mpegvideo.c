@@ -1757,7 +1757,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         const int mv_stride      = (mb_width << mv_sample_log2) +
                                    (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
 
-        *low_delay = 0; // needed to see the vectors without trashing the buffers
+        if (low_delay)
+            *low_delay = 0; // needed to see the vectors without trashing the buffers
 
         avcodec_get_chroma_sub_sample(avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
 
