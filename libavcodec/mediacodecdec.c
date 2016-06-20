@@ -446,9 +446,9 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         }
     }
 
-    if (s->flushing) {
-        /* If the codec is flushing, block for a fair amount of time to
-        * ensure we got a frame */
+    if (need_flushing || s->flushing) {
+        /* If the codec is flushing or need to be flushed, block for a fair
+         * amount of time to ensure we got a frame */
         output_dequeue_timeout_us = OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US;
     } else if (s->dequeued_buffer_nb == 0) {
         /* If the codec hasn't produced any frames, do not block so we
