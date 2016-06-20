@@ -377,15 +377,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
     h->nb_slice_ctx = 0;
 
     ff_h264_sei_uninit(&h->sei);
-
-    for (i = 0; i < MAX_SPS_COUNT; i++)
-        av_buffer_unref(&h->ps.sps_list[i]);
-
-    for (i = 0; i < MAX_PPS_COUNT; i++)
-        av_buffer_unref(&h->ps.pps_list[i]);
-
-    av_buffer_unref(&h->ps.sps_ref);
-    av_buffer_unref(&h->ps.pps_ref);
+    ff_h264_ps_uninit(&h->ps);
 
     ff_h2645_packet_uninit(&h->pkt);
 

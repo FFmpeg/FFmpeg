@@ -649,17 +649,11 @@ static void h264_close(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     ParseContext *pc = &p->pc;
-    int i;
 
     av_freep(&pc->buffer);
 
     ff_h264_sei_uninit(&p->sei);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(p->ps.sps_list); i++)
-        av_buffer_unref(&p->ps.sps_list[i]);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(p->ps.pps_list); i++)
-        av_buffer_unref(&p->ps.pps_list[i]);
+    ff_h264_ps_uninit(&p->ps);
 }
 
 static av_cold int init(AVCodecParserContext *s)
