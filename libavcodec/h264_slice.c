@@ -1059,9 +1059,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     if (first_slice)
         av_assert0(!h->setup_finished);
 
-    h->qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
-    h->qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
-
     first_mb_in_slice = get_ue_golomb_long(&sl->gb);
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection

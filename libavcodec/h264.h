@@ -687,11 +687,6 @@ typedef struct H264Context {
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;
     AVBufferPool *ref_index_pool;
-
-    /* Motion Estimation */
-    qpel_mc_func (*qpel_put)[16];
-    qpel_mc_func (*qpel_avg)[16];
-
 } H264Context;
 
 extern const uint16_t ff_h264_mb_sizes[4];
