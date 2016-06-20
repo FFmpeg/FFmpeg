@@ -474,6 +474,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 " flags=%" PRIu32 "\n", index, info.offset, info.size,
                 info.presentationTimeUs, info.flags);
 
+        if (info.size) {
         data = ff_AMediaCodec_getOutputBuffer(codec, index, &size);
         if (!data) {
             av_log(avctx, AV_LOG_ERROR, "Failed to get output buffer\n");
@@ -488,6 +489,12 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         *got_frame = 1;
         s->queued_buffer_nb--;
         s->dequeued_buffer_nb++;
+        } else {
+            status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
+            if (status < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
+            }
+        }
 
     } else if (ff_AMediaCodec_infoOutputFormatChanged(codec, index)) {
         char *format = NULL;
