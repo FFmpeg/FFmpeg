@@ -396,7 +396,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         need_flushing = 1;
     }
 
-    if (s->flushing && need_flushing && s->queued_buffer_nb <= 0) {
+    if (s->flushing && s->eos) {
         return 0;
     }
 
@@ -443,10 +443,6 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 av_log(avctx, AV_LOG_ERROR, "Failed to queue input buffer (status = %d)\n", status);
                 return AVERROR_EXTERNAL;
             }
-
-            s->queued_buffer_nb++;
-            if (s->queued_buffer_nb > s->queued_buffer_max)
-                s->queued_buffer_max = s->queued_buffer_nb;
         }
     }
 
@@ -474,6 +470,10 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 " flags=%" PRIu32 "\n", index, info.offset, info.size,
                 info.presentationTimeUs, info.flags);
 
+        if (info.flags & ff_AMediaCodec_getBufferFlagEndOfStream(codec)) {
+            s->eos = 1;
+        }
+
         if (info.size) {
             data = ff_AMediaCodec_getOutputBuffer(codec, index, &size);
             if (!data) {
@@ -487,7 +487,6 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
             }
 
             *got_frame = 1;
-            s->queued_buffer_nb--;
             s->dequeued_buffer_nb++;
         } else {
             status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
@@ -528,8 +527,8 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
     } else if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
         if (s->flushing) {
             av_log(avctx, AV_LOG_ERROR, "Failed to dequeue output buffer within %" PRIi64 "ms "
-                                        "while flushing remaining frames, output will probably lack last %d frames\n",
-                                        output_dequeue_timeout_us / 1000, s->queued_buffer_nb);
+                                        "while flushing remaining frames, output will probably lack frames\n",
+                                        output_dequeue_timeout_us / 1000);
         } else {
             av_log(avctx, AV_LOG_DEBUG, "No output buffer available, try again later\n");
         }
@@ -546,10 +545,10 @@ int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
     FFAMediaCodec *codec = s->codec;
     int status;
 
-    s->queued_buffer_nb = 0;
     s->dequeued_buffer_nb = 0;
 
     s->flushing = 0;
+    s->eos = 0;
 
     status = ff_AMediaCodec_flush(codec);
     if (status < 0) {
