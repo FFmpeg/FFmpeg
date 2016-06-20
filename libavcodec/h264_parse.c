@@ -24,7 +24,7 @@
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                               const int *ref_count, int slice_type_nos,
-                              H264PredWeightTable *pwt)
+                              H264PredWeightTable *pwt, void *logctx)
 {
     int list, i;
     int luma_def, chroma_def;
@@ -36,11 +36,11 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
         pwt->chroma_log2_weight_denom = get_ue_golomb(gb);
 
     if (pwt->luma_log2_weight_denom > 7U) {
-        av_log(NULL, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", pwt->luma_log2_weight_denom);
+        av_log(logctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", pwt->luma_log2_weight_denom);
         pwt->luma_log2_weight_denom = 0;
     }
     if (pwt->chroma_log2_weight_denom > 7U) {
-        av_log(NULL, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", pwt->chroma_log2_weight_denom);
+        av_log(logctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", pwt->chroma_log2_weight_denom);
         pwt->chroma_log2_weight_denom = 0;
     }
 
