@@ -475,20 +475,20 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 info.presentationTimeUs, info.flags);
 
         if (info.size) {
-        data = ff_AMediaCodec_getOutputBuffer(codec, index, &size);
-        if (!data) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get output buffer\n");
-            return AVERROR_EXTERNAL;
-        }
+            data = ff_AMediaCodec_getOutputBuffer(codec, index, &size);
+            if (!data) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to get output buffer\n");
+                return AVERROR_EXTERNAL;
+            }
 
-        if ((ret = mediacodec_wrap_buffer(avctx, s, data, size, index, &info, frame)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to wrap MediaCodec buffer\n");
-            return ret;
-        }
+            if ((ret = mediacodec_wrap_buffer(avctx, s, data, size, index, &info, frame)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to wrap MediaCodec buffer\n");
+                return ret;
+            }
 
-        *got_frame = 1;
-        s->queued_buffer_nb--;
-        s->dequeued_buffer_nb++;
+            *got_frame = 1;
+            s->queued_buffer_nb--;
+            s->dequeued_buffer_nb++;
         } else {
             status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
             if (status < 0) {
