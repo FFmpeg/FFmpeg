@@ -713,12 +713,6 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
                                          H264ParamSets *ps, int bit_length);
 
 /**
- * Free any data that may have been allocated in the H264 context
- * like SPS, PPS etc.
- */
-void ff_h264_free_context(H264Context *h);
-
-/**
  * Reconstruct bitstream slice_type.
  */
 int ff_h264_get_slice_type(const H264SliceContext *sl);
