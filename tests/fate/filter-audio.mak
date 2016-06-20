@@ -63,6 +63,11 @@ fate-filter-agate: tests/data/asynth-44100-2.wav
 fate-filter-agate: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-agate: CMD = framecrc -i $(SRC) -af agate=level_in=10:range=0:threshold=1:ratio=1:attack=1:knee=1:makeup=4
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, AFADE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-alimiter
+fate-filter-alimiter: tests/data/asynth-44100-2.wav
+fate-filter-alimiter: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-alimiter: CMD = framecrc -i $(SRC) -af alimiter=level_in=1:level_out=2:limit=0.2
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
