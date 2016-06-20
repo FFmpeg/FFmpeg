@@ -89,7 +89,6 @@ Other:
   rational.c, rational.h                Michael Niedermayer
   rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
-  timecode                              Clément Bœsch
 
 
 libavcodec
@@ -190,7 +189,6 @@ Codecs:
   indeo5*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
   ivi*                                  Kostya Shishkov
-  jacosub*                              Clément Bœsch
   jni*, ffjni*                          Matthieu Bouron
   jpeg2000*                             Nicolas Bertrand
   jpeg_ls.c                             Kostya Shishkov
@@ -280,7 +278,7 @@ Codecs:
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
   vp8                                   David Conrad, Jason Garrett-Glaser, Ronald Bultje
-  vp9                                   Ronald Bultje, Clément Bœsch
+  vp9                                   Ronald Bultje
   vqavideo.c                            Mike Melanson
   wavpack.c                             Kostya Shishkov
   wmaprodec.c                           Sascha Sommer
@@ -396,6 +394,7 @@ Generic parts:
     libavformat/avformat.h              Michael Niedermayer
   Utility Code:
     libavformat/utils.c                 Michael Niedermayer
+  Text Subtitles                        Clément Bœsch
 
 
 Muxers/Demuxers:
@@ -440,7 +439,6 @@ Muxers/Demuxers:
   ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
-  jacosub*                              Clément Bœsch
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
