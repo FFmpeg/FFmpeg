@@ -407,7 +407,6 @@ typedef struct H264SliceContext {
     H264Ref ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
                                          *   Reordered version of default_ref_list
                                          *   according to picture reordering in slice header */
-    int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 
     const uint8_t *intra_pcm_ptr;
     int16_t *dc_val_base;
@@ -494,6 +493,11 @@ typedef struct H264Context {
     int context_initialized;
     int flags;
     int workaround_bugs;
+    /* Set when slice threading is used and at least one slice uses deblocking
+     * mode 1 (i.e. across slice boundaries). Then we disable the loop filter
+     * during normal MB decoding and execute it serially at the end.
+     */
+    int postpone_filter;
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
@@ -685,6 +689,7 @@ typedef struct H264Context {
     AVBufferPool *mb_type_pool;
     AVBufferPool *motion_val_pool;
     AVBufferPool *ref_index_pool;
+    int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 } H264Context;
 
 extern const uint16_t ff_h264_mb_sizes[4];
