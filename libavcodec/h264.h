@@ -450,10 +450,6 @@ typedef struct H264SliceContext {
     CABACContext cabac;
     uint8_t cabac_state[1024];
     int cabac_init_idc;
-
-    // rbsp buffer used for this slice
-    uint8_t *rbsp_buffer;
-    unsigned int rbsp_buffer_size;
 } H264SliceContext;
 
 /**
