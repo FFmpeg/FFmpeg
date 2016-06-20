@@ -499,6 +499,8 @@ static int h264_frame_start(H264Context *h)
     pic->invalid_gap = 0;
     pic->sei_recovery_frame_cnt = h->sei.recovery_point.recovery_frame_cnt;
 
+    pic->f->pict_type = h->slice_ctx[0].slice_type;
+
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
     if(!h->frame_recovered && !h->avctx->hwaccel
@@ -1139,10 +1141,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             return SLICE_SKIPED;
         }
     }
-
-    // to make a few old functions happy, it's wrong though
-    if (!h->setup_finished)
-        h->pict_type = sl->slice_type;
 
     pps_id = get_ue_golomb(&sl->gb);
     if (pps_id >= MAX_PPS_COUNT) {

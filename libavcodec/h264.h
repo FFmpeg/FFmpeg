@@ -627,8 +627,6 @@ typedef struct H264Context {
      */
     int single_decode_warning;
 
-    enum AVPictureType pict_type;
-
     /** @} */
 
     /**

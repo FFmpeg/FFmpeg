@@ -491,8 +491,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
     H264Picture *cur = h->cur_pic_ptr;
     int i, pics, out_of_order, out_idx;
 
-    h->cur_pic_ptr->f->pict_type = h->pict_type;
-
     if (h->next_output_pic)
         return;
 
