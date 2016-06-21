@@ -29,11 +29,11 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "internal.h"
 
 typedef struct TrueMotion2RTContext {
-    GetBitContext gb;
+    BitstreamContext bc;
     int delta_size;
     int hscale;
 } TrueMotion2RTContext;
@@ -107,7 +107,7 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
 {
     TrueMotion2RTContext *s = avctx->priv_data;
     AVFrame * const p = data;
-    GetBitContext *gb = &s->gb;
+    BitstreamContext *bc = &s->bc;
     uint8_t *dst;
     int x, y, delta_mode;
     int ret;
@@ -116,7 +116,7 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
-    ret = init_get_bits8(gb, avpkt->data + ret, avpkt->size - ret);
+    ret = bitstream_init8(bc, avpkt->data + ret, avpkt->size - ret);
     if (ret < 0)
         return ret;
 
@@ -124,13 +124,13 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
-    skip_bits(gb, 32);
+    bitstream_skip(bc, 32);
     delta_mode = s->delta_size - 2;
     dst = p->data[0];
     for (y = 0; y < avctx->height; y++) {
         int diff = 0;
         for (x = 0; x < avctx->width; x += s->hscale) {
-            diff  += delta_tabs[delta_mode][get_bits(gb, s->delta_size)];
+            diff  += delta_tabs[delta_mode][bitstream_read(bc, s->delta_size)];
             dst[x] = av_clip_uint8((y ? dst[x - p->linesize[0]] : 0) + diff);
         }
         dst += p->linesize[0];
@@ -156,7 +156,7 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
     for (y = 0; y < avctx->height >> 2; y++) {
         int diff = 0;
         for (x = 0; x < avctx->width >> 2; x += s->hscale) {
-            diff  += delta_tabs[delta_mode][get_bits(gb, s->delta_size)];
+            diff  += delta_tabs[delta_mode][bitstream_read(bc, s->delta_size)];
             dst[x] = av_clip_uint8((y ? dst[x - p->linesize[1]] : 128) + diff);
         }
         dst += p->linesize[1];
@@ -182,7 +182,7 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
     for (y = 0; y < avctx->height >> 2; y++) {
         int diff = 0;
         for (x = 0; x < avctx->width >> 2; x += s->hscale) {
-            diff  += delta_tabs[delta_mode][get_bits(gb, s->delta_size)];
+            diff  += delta_tabs[delta_mode][bitstream_read(bc, s->delta_size)];
             dst[x] = av_clip_uint8((y ? dst[x - p->linesize[2]] : 128) + diff);
         }
         dst += p->linesize[2];
