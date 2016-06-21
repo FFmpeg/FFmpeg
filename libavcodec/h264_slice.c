@@ -917,9 +917,6 @@ static int init_dimensions(H264Context *h)
 static int h264_slice_header_init(H264Context *h)
 {
     const SPS *sps = h->ps.sps;
-    int nb_slices = (HAVE_THREADS &&
-                     h->avctx->active_thread_type & FF_THREAD_SLICE) ?
-                    h->avctx->thread_count : 1;
     int i, ret;
 
     ff_set_sar(h->avctx, sps->sar);
@@ -981,19 +978,6 @@ static int h264_slice_header_init(H264Context *h)
                       sps->chroma_format_idc);
     ff_videodsp_init(&h->vdsp, sps->bit_depth_luma);
 
-    if (nb_slices > H264_MAX_THREADS || (nb_slices > h->mb_height && h->mb_height)) {
-        int max_slices;
-        if (h->mb_height)
-            max_slices = FFMIN(H264_MAX_THREADS, h->mb_height);
-        else
-            max_slices = H264_MAX_THREADS;
-        av_log(h->avctx, AV_LOG_WARNING, "too many threads/slices %d,"
-               " reducing to %d\n", nb_slices, max_slices);
-        nb_slices = max_slices;
-    }
-    h->slice_context_count = nb_slices;
-    h->max_contexts = FFMIN(h->max_contexts, nb_slices);
-
     if (!HAVE_THREADS || !(h->avctx->active_thread_type & FF_THREAD_SLICE)) {
         ret = ff_h264_slice_context_init(h, &h->slice_ctx[0]);
         if (ret < 0) {
@@ -1001,7 +985,7 @@ static int h264_slice_header_init(H264Context *h)
             goto fail;
         }
     } else {
-        for (i = 0; i < h->slice_context_count; i++) {
+        for (i = 0; i < h->nb_slice_ctx; i++) {
             H264SliceContext *sl = &h->slice_ctx[i];
 
             sl->h264               = h;
