@@ -243,7 +243,7 @@ static int vaapi_build_decoder_config(VAAPIDecoderContext *ctx,
             alt_profile = vaapi_profile_map[i].codec_profile;
         }
     }
-    av_free(profile_list);
+    av_freep(&profile_list);
 
     if (profile == VAProfileNone) {
         av_log(ctx, loglevel, "No VAAPI support for codec %s.\n",
@@ -374,7 +374,7 @@ fail:
     av_hwframe_constraints_free(&constraints);
     av_freep(&hwconfig);
     vaDestroyConfig(hwctx->display, ctx->va_config);
-    av_free(profile_list);
+    av_freep(&profile_list);
     return err;
 }
 
