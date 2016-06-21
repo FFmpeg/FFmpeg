@@ -126,7 +126,7 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
         temp += temp * (1 << 16);
         temp += temp * ((uint64_t) 1 << 32);
         AV_WN64A(row, temp);
-        AV_WN64A(row+4, temp);
+        AV_WN64A(row + 4, temp);
         return;
     }
 #else
