@@ -242,6 +242,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
             ctx->paletted   = 1;
             avctx->pix_fmt  = AV_PIX_FMT_PAL8;
             break;
+        case MKTAG('G', '1', ' ', ' '):
+            ctx->compressed = 0;
+            avctx->pix_fmt  = AV_PIX_FMT_MONOBLACK;
+            break;
         case MKTAG('D', 'X', '1', '0'):
             /* DirectX 10 extra header */
             dxgi = bytestream2_get_le32(gbc);
