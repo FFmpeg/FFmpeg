@@ -27,7 +27,6 @@
 
 #include "libavcodec/vdpau.h"
 
-#include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
