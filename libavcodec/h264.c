@@ -180,7 +180,7 @@ void ff_h264_free_tables(H264Context *h)
 int ff_h264_alloc_tables(H264Context *h)
 {
     const int big_mb_num = h->mb_stride * (h->mb_height + 1);
-    const int row_mb_num = 2*h->mb_stride*FFMAX(h->avctx->thread_count, 1);
+    const int row_mb_num = 2*h->mb_stride*FFMAX(h->nb_slice_ctx, 1);
     int x, y;
 
     FF_ALLOCZ_ARRAY_OR_GOTO(h->avctx, h->intra4x4_pred_mode,
