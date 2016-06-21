@@ -32,6 +32,8 @@
 #include "h264_sei.h"
 #include "internal.h"
 
+#define AVERROR_PS_NOT_FOUND      FFERRTAG(0xF8,'?','P','S')
+
 static const uint8_t sei_num_clock_ts_table[9] = {
     1, 1, 1, 2, 2, 3, 3, 2, 3
 };
@@ -64,7 +66,7 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
 
     if (!sps) {
         av_log(logctx, AV_LOG_ERROR, "SPS unavailable in decode_picture_timing\n");
-        return 0;
+        return AVERROR_PS_NOT_FOUND;
     }
 
     if (sps->nal_hrd_parameters_present_flag ||
@@ -282,7 +284,7 @@ static int decode_buffering_period(H264SEIBufferingPeriod *h, GetBitContext *gb,
     if (sps_id > 31 || !ps->sps_list[sps_id]) {
         av_log(logctx, AV_LOG_ERROR,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
-        return AVERROR_INVALIDDATA;
+        return sps_id > 31 ? AVERROR_INVALIDDATA : AVERROR_PS_NOT_FOUND;
     }
     sps = (SPS*)ps->sps_list[sps_id]->data;
 
@@ -380,6 +382,8 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetBitContext *gb)
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
+    int master_ret = 0;
+
     while (get_bits_left(gb) > 16 && show_bits(gb, 16)) {
         int type = 0;
         unsigned size = 0;
@@ -433,8 +437,10 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         default:
             av_log(logctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
         }
-        if (ret < 0)
+        if (ret < 0 && ret != AVERROR_PS_NOT_FOUND)
             return ret;
+        if (ret < 0)
+            master_ret = ret;
 
         skip_bits_long(gb, next - get_bits_count(gb));
 
@@ -442,7 +448,7 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         align_get_bits(gb);
     }
 
-    return 0;
+    return master_ret;
 }
 
 const char *ff_h264_sei_stereo_mode(const H264SEIFramePacking *h)
