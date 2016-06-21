@@ -4934,7 +4934,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         pkt.duration = end - pkt.dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
-            const char encd[12] = {
+            static const char encd[12] = {
                 0x00, 0x00, 0x00, 0x0C,
                 'e',  'n',  'c',  'd',
                 0x00, 0x00, 0x01, 0x00 };
