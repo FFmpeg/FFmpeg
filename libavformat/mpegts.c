@@ -1406,6 +1406,14 @@ static int parse_MP4SLDescrTag(MP4DescrParseContext *d, int64_t off, int len)
     if (!descr)
         return AVERROR_INVALIDDATA;
 
+#define R8_CHECK_CLIP_MAX(dst, maxv) do {                       \
+    descr->sl.dst = avio_r8(&d->pb);                            \
+    if (descr->sl.dst > maxv) {                                 \
+        descr->sl.dst = maxv;                                   \
+        return AVERROR_INVALIDDATA;                             \
+    }                                                           \
+} while (0)
+
     predefined = avio_r8(&d->pb);
     if (!predefined) {
         int lengths;
@@ -1418,14 +1426,9 @@ static int parse_MP4SLDescrTag(MP4DescrParseContext *d, int64_t off, int len)
         descr->sl.use_idle        = !!(flags & 0x02);
         descr->sl.timestamp_res   = avio_rb32(&d->pb);
         avio_rb32(&d->pb);
-        descr->sl.timestamp_len      = avio_r8(&d->pb);
-        if (descr->sl.timestamp_len > 64) {
-            avpriv_request_sample(NULL, "timestamp_len > 64");
-            descr->sl.timestamp_len = 64;
-            return AVERROR_PATCHWELCOME;
-        }
-        descr->sl.ocr_len            = avio_r8(&d->pb);
-        descr->sl.au_len             = avio_r8(&d->pb);
+        R8_CHECK_CLIP_MAX(timestamp_len, 63);
+        R8_CHECK_CLIP_MAX(ocr_len,       63);
+        R8_CHECK_CLIP_MAX(au_len,        31);
         descr->sl.inst_bitrate_len   = avio_r8(&d->pb);
         lengths                      = avio_rb16(&d->pb);
         descr->sl.degr_prior_len     = lengths >> 12;
