@@ -22,14 +22,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../libavutil/pixdesc.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "huffyuvdsp.h"
 #include "internal.h"
 #include "thread.h"
+#include "vlc.h"
 
 typedef struct Slice {
     uint32_t start;
@@ -108,7 +109,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
     int interlaced = s->interlaced;
     AVFrame *p = s->p;
     int i, k, x;
-    GetBitContext gb;
+    BitstreamContext bc;
     uint8_t *dst;
 
     for (i = 0; i < s->planes; i++) {
@@ -119,20 +120,20 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         ptrdiff_t fake_stride = p->linesize[i] * (1 + interlaced);
         ptrdiff_t stride = p->linesize[i];
         int flags, pred;
-        int ret = init_get_bits8(&gb, s->buf + s->slices[i][j].start,
-                                 s->slices[i][j].size);
+        int ret = bitstream_init8(&bc, s->buf + s->slices[i][j].start,
+                                  s->slices[i][j].size);
 
         if (ret < 0)
             return ret;
 
-        flags = get_bits(&gb, 8);
-        pred  = get_bits(&gb, 8);
+        flags = bitstream_read(&bc, 8);
+        pred  = bitstream_read(&bc, 8);
 
         dst = p->data[i] + j * sheight * stride;
         if (flags & 1) {
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++)
-                    dst[x] = get_bits(&gb, 8);
+                    dst[x] = bitstream_read(&bc, 8);
 
                 dst += stride;
             }
@@ -140,10 +141,10 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++) {
                     int pix;
-                    if (get_bits_left(&gb) <= 0)
+                    if (bitstream_bits_left(&bc) <= 0)
                         return AVERROR_INVALIDDATA;
 
-                    pix = get_vlc2(&gb, s->vlc[i].table, s->vlc[i].bits, 3);
+                    pix = bitstream_read_vlc(&bc, s->vlc[i].table, s->vlc[i].bits, 3);
                     if (pix < 0)
                         return AVERROR_INVALIDDATA;
 
@@ -238,7 +239,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     ThreadFrame frame = { .f = data };
     AVFrame *p = data;
     GetByteContext gbyte;
-    GetBitContext gbit;
+    BitstreamContext bc;
     uint32_t first_offset, offset, next_offset, header_size, slice_width;
     int width, height, format, version, table_size;
     int ret, i, j, k;
@@ -370,16 +371,16 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     if (table_size < 2)
         return AVERROR_INVALIDDATA;
 
-    ret = init_get_bits8(&gbit, avpkt->data + bytestream2_tell(&gbyte), table_size);
+    ret = bitstream_init8(&bc, avpkt->data + bytestream2_tell(&gbyte), table_size);
     if (ret < 0)
         return ret;
 
     memset(s->len, 0, sizeof(s->len));
     j = i = 0;
-    while (get_bits_left(&gbit) >= 8) {
-        int b = get_bits(&gbit, 4);
-        int x = get_bits(&gbit, 4);
-        int l = get_bitsz(&gbit, b) + 1;
+    while (bitstream_bits_left(&bc) >= 8) {
+        int b = bitstream_read(&bc, 4);
+        int x = bitstream_read(&bc, 4);
+        int l = bitstream_read(&bc, b) + 1;
 
         for (k = 0; k < l; k++)
             if (j + k < 256)
