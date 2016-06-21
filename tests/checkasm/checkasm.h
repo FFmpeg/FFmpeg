@@ -27,6 +27,7 @@
 #include "config.h"
 #include "libavutil/avstring.h"
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
 
@@ -161,6 +162,7 @@ void checkasm_checked_call(void *func, ...);
                     tcount++;\
                 }\
             }\
+            emms_c();\
             checkasm_update_bench(tcount, tsum);\
         }\
     } while (0)
