@@ -1378,8 +1378,7 @@ static int h264_slice_header_parse(H264SliceContext *sl, const H2645NAL *nal,
     const PPS *pps;
     int ret;
     unsigned int slice_type, tmp, i;
-    int field_pic_flag, bottom_field_flag;
-    int droppable, picture_structure;
+    int field_pic_flag, bottom_field_flag, picture_structure;
 
     sl->first_mb_addr = get_ue_golomb(&sl->gb);
 
@@ -1430,7 +1429,6 @@ static int h264_slice_header_parse(H264SliceContext *sl, const H2645NAL *nal,
 
     sl->mb_mbaff       = 0;
 
-    droppable = nal->ref_idc == 0;
     if (sps->frame_mbs_only_flag) {
         picture_structure = PICT_FRAME;
     } else {
