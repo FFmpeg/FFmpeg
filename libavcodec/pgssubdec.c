@@ -529,8 +529,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     }
     for (i = 0; i < ctx->presentation.object_count; i++) {
         PGSSubObject *object;
-        AVSubtitleRect *rect;
-        int j;
 
         sub->rects[i]  = av_mallocz(sizeof(*sub->rects[0]));
         if (!sub->rects[i]) {
@@ -597,11 +595,15 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+        AVSubtitleRect *rect;
+        int j;
         rect = sub->rects[i];
         for (j = 0; j < 4; j++) {
             rect->pict.data[j] = rect->data[j];
             rect->pict.linesize[j] = rect->linesize[j];
         }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
