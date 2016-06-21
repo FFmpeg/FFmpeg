@@ -356,7 +356,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->ps.sps_ref = av_buffer_ref(h1->ps.sps_ref);
         if (!h->ps.sps_ref)
             return AVERROR(ENOMEM);
-        h->ps.sps = (SPS*)h->ps.sps_ref->data;
+        h->ps.sps = (const SPS*)h->ps.sps_ref->data;
     }
 
     if (need_reinit || !inited) {
@@ -873,7 +873,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
 /* export coded and cropped frame dimensions to AVCodecContext */
 static int init_dimensions(H264Context *h)
 {
-    SPS *sps = h->ps.sps;
+    const SPS *sps = (const SPS*)h->ps.sps;
     int width  = h->width  - (sps->crop_right + sps->crop_left);
     int height = h->height - (sps->crop_top   + sps->crop_bottom);
     av_assert0(sps->crop_right + sps->crop_left < (unsigned)h->width);

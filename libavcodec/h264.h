@@ -234,8 +234,7 @@ typedef struct H264ParamSets {
     AVBufferRef *sps_ref;
     /* currently active parameters sets */
     const PPS *pps;
-    // FIXME this should properly be const
-    SPS *sps;
+    const SPS *sps;
 } H264ParamSets;
 
 /**

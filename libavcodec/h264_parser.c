@@ -373,7 +373,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                        "non-existing SPS %u referenced\n", p->ps.pps->sps_id);
                 goto fail;
             }
-            p->ps.sps = (SPS*)p->ps.sps_list[p->ps.pps->sps_id]->data;
+            p->ps.sps = (const SPS*)p->ps.sps_list[p->ps.pps->sps_id]->data;
 
             sps = p->ps.sps;
 

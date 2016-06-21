@@ -712,7 +712,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
                                          H264ParamSets *ps, int bit_length)
 {
     AVBufferRef *pps_buf;
-    SPS *sps;
+    const SPS *sps;
     unsigned int pps_id = get_ue_golomb(gb);
     PPS *pps;
     int qp_bd_offset;
@@ -743,7 +743,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    sps = (SPS*)ps->sps_list[pps->sps_id]->data;
+    sps = (const SPS*)ps->sps_list[pps->sps_id]->data;
     if (sps->bit_depth_luma > 14) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid luma bit depth=%d\n",
