@@ -261,8 +261,6 @@ typedef struct AVIOContext {
     const char *protocol_blacklist;
 } AVIOContext;
 
-/* unbuffered I/O */
-
 /**
  * Return the name of the protocol that will handle the passed URL.
  *
