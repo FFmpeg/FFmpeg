@@ -261,7 +261,7 @@ static char *extradata2psets_hevc(AVCodecParameters *par)
             goto err;
         nalu_type = extradata[pos] & 0x3f;
         // Not including libavcodec/hevc.h to avoid confusion between
-        // NAL_* with the same name for both H264 and HEVC.
+        // NAL_* with the same name for both H.264 and HEVC.
         if (nalu_type == 32) // VPS
             ps_pos[0] = pos;
         else if (nalu_type == 33) // SPS

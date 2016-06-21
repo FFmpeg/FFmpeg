@@ -62,7 +62,7 @@
         "sub    "tmp"       , "low"                        \n\t"
 #else /* HAVE_FAST_CMOV */
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
-/* P4 Prescott has crappy cmov,sbb,64bit shift so avoid them */ \
+/* P4 Prescott has crappy cmov,sbb,64-bit shift so avoid them */ \
         "sub    "low"       , "tmp"                        \n\t"\
         "sar    $31         , "tmp"                        \n\t"\
         "sub    %%ecx       , "range"                      \n\t"\

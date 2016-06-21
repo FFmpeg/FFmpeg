@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 macroblock decoding
+ * H.264 / AVC / MPEG-4 part10 macroblock decoding
  */
 
 #include <stdint.h>
@@ -90,7 +90,7 @@ static inline void get_lowest_part_y(const H264Context *h, H264SliceContext *sl,
 /**
  * Wait until all reference frames are available for MC operations.
  *
- * @param h the H264 context
+ * @param h the H.264 context
  */
 static void await_references(const H264Context *h, H264SliceContext *sl)
 {

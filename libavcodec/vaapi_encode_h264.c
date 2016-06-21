@@ -697,7 +697,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
 
     av_assert0(pic->nb_refs <= 2);
     if (pic->nb_refs >= 1) {
-        // Backward reference for P or B frame.
+        // Backward reference for P- or B-frame.
         av_assert0(pic->type == PICTURE_TYPE_P ||
                    pic->type == PICTURE_TYPE_B);
 
@@ -705,7 +705,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
         vslice->RefPicList0[0] = vpic->ReferenceFrames[0];
     }
     if (pic->nb_refs >= 2) {
-        // Forward reference for B frame.
+        // Forward reference for B-frame.
         av_assert0(pic->type == PICTURE_TYPE_B);
 
         vslice->num_ref_idx_l1_active_minus1 = 0;
@@ -799,7 +799,7 @@ static av_cold int vaapi_encode_h264_init_fixed_qp(AVCodecContext *avctx)
         priv->fixed_qp_b = priv->fixed_qp_p;
 
     av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
-           "%d / %d / %d for IDR / P / B frames.\n",
+           "%d / %d / %d for IDR- / P- / B-frames.\n",
            priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
     return 0;
 }
@@ -936,7 +936,7 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
                    offsetof(VAAPIEncodeH264Options, x))
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h264_options[] = {
-    { "qp", "Constant QP (for P frames; scaled by qfactor/qoffset for I/B)",
+    { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
       OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, FLAGS },

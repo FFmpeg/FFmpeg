@@ -1429,7 +1429,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 uint8_t *sc;
                 int slen, slen1, slen2;
 
-                /* MPEG1 scale factors */
+                /* MPEG-1 scale factors */
                 slen1 = slen_table[0][g->scalefac_compress];
                 slen2 = slen_table[1][g->scalefac_compress];
                 ff_dlog(s->avctx, "slen1=%d slen2=%d\n", slen1, slen2);

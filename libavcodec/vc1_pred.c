@@ -468,7 +468,7 @@ void ff_vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
     int A[2], B[2], C[2];
     int px = 0, py = 0;
     int a_valid = 0, b_valid = 0, c_valid = 0;
-    int field_a, field_b, field_c; // 0: same, 1: opposit
+    int field_a, field_b, field_c; // 0: same, 1: opposite
     int total_valid, num_samefield, num_oppfield;
     int pos_c, pos_b, n_adj;
 

@@ -182,7 +182,7 @@ int ff_get_cpu_flags_x86(void)
 
         /* Similar to the above but for AVX functions on AMD processors.
            This is necessary only for functions using YMM registers on Bulldozer
-           and Jaguar based CPUs as they lack 256-bits execution units. SSE/AVX
+           and Jaguar based CPUs as they lack 256-bit execution units. SSE/AVX
            functions using XMM registers are always faster on them.
            AV_CPU_FLAG_AVX and AV_CPU_FLAG_AVXSLOW are both set so that AVX is
            used unless explicitly disabled by checking AV_CPU_FLAG_AVXSLOW. */

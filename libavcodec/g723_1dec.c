@@ -466,7 +466,7 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
 }
 
 /**
- * Peform residual interpolation based on frame classification.
+ * Perform residual interpolation based on frame classification.
  *
  * @param buf   decoded excitation vector
  * @param out   output vector
@@ -914,7 +914,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
-            /* Peform pitch postfiltering */
+            /* Perform pitch postfiltering */
             if (p->postfilter) {
                 i = PITCH_MAX;
                 for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)

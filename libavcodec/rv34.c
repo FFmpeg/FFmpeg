@@ -1478,7 +1478,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
     return s->mb_y == s->mb_height;
 }
 
-/** @} */ // recons group end
+/** @} */ // reconstruction group end
 
 /**
  * Initialize decoder.

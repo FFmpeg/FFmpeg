@@ -708,7 +708,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         if (get_bits1(&s->gb) == 0) {
             if (get_bits1(&s->gb) == 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
-                       "invalid mb type in I Frame at %d %d\n",
+                       "Invalid mb type in I-frame at %d %d\n",
                        s->mb_x, s->mb_y);
                 return AVERROR_INVALIDDATA;
             }
@@ -721,7 +721,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         mb_type = get_vlc2(&s->gb, ff_mb_ptype_vlc.table, MB_PTYPE_VLC_BITS, 1);
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
-                   "invalid mb type in P Frame at %d %d\n", s->mb_x, s->mb_y);
+                   "Invalid mb type in P-frame at %d %d\n", s->mb_x, s->mb_y);
             return AVERROR_INVALIDDATA;
         }
         mb_type = ptype2mb_type[mb_type];
@@ -730,7 +730,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         mb_type = get_vlc2(&s->gb, ff_mb_btype_vlc.table, MB_BTYPE_VLC_BITS, 1);
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
-                   "invalid mb type in B Frame at %d %d\n", s->mb_x, s->mb_y);
+                   "Invalid mb type in B-frame at %d %d\n", s->mb_x, s->mb_y);
             return AVERROR_INVALIDDATA;
         }
         mb_type = btype2mb_type[mb_type];
@@ -1958,7 +1958,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                 int i;
                 if (s->pict_type == AV_PICTURE_TYPE_I) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
+                           "skipped MB in I-frame at %d %d\n", s->mb_x, s->mb_y);
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -2266,7 +2266,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
         int cc_count = 0;
         int i;
         // There is a caption count field in the data, but it is often
-        // incorect.  So count the number of captions present.
+        // incorrect.  So count the number of captions present.
         for (i = 5; i + 6 <= buf_size && ((p[i] & 0xfe) == 0xfe); i += 6)
             cc_count++;
         // Transform the DVD format into A53 Part 4 format

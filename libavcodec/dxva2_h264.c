@@ -1,5 +1,5 @@
 /*
- * DXVA2 H264 HW acceleration.
+ * DXVA2 H.264 HW acceleration.
  *
  * copyright (c) 2009 Laurent Aimar
  *

@@ -45,7 +45,7 @@
 
 /**
  * assert() equivalent, that does not lie in speed critical code.
- * These asserts() thus can be enabled without fearing speedloss.
+ * These asserts() thus can be enabled without fearing speed loss.
  */
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 0
 #define av_assert1(cond) av_assert0(cond)

@@ -41,7 +41,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timecode.h"
 
-#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32-bit audio
 
 struct DVMuxContext {
     AVClass          *av_class;
@@ -125,7 +125,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
         buf[4] = (1 << 7) | /* emphasis: 1 -- off */
                  (0 << 6) | /* emphasis time constant: 0 -- reserved */
                  (audio_type << 3) | /* frequency: 0 -- 48kHz, 1 -- 44,1kHz, 2 -- 32kHz */
-                  0;        /* quantization: 0 -- 16bit linear, 1 -- 12bit nonlinear */
+                  0;        /* quantization: 0 -- 16-bit linear, 1 -- 12-bit nonlinear */
 
         va_end(ap);
         break;

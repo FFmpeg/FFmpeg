@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10  reference picture handling.
+ * H.264 / AVC / MPEG-4 part10  reference picture handling.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -674,7 +674,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                 av_log(h->avctx, AV_LOG_DEBUG, "mmco: unref long failure\n");
             break;
         case MMCO_LONG:
-                    // Comment below left from previous code as it is an interresting note.
+                    // Comment below left from previous code as it is an interesting note.
                     /* First field in pair is in short term list or
                      * at a different long term index.
                      * This is not allowed; see 7.4.3.3, notes 2 and 3.

@@ -564,7 +564,7 @@ int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *
 
 /*
  * A wrapper around AVFormatContext.io_close that should be used
- * intead of calling the pointer directly.
+ * instead of calling the pointer directly.
  */
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
 

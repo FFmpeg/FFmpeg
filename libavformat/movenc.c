@@ -2561,7 +2561,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
         /* In the positive delay case, the delay includes the cts
          * offset, and the second edit list entry below trims out
          * the same amount from the actual content. This makes sure
-         * that the offsetted last sample is included in the edit
+         * that the offset last sample is included in the edit
          * list duration as well. */
         if (version == 1) {
             avio_wb64(pb, delay);
@@ -4512,8 +4512,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
     if (par->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
-        /* from x264 or from bytestream h264 */
-        /* nal reformating needed */
+        /* from x264 or from bytestream H.264 */
+        /* NAL reformatting needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
             ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
                                        &size);

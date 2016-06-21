@@ -91,9 +91,9 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
  * Write one line of horizontally scaled data to planar output
  * without any additional vertical scaling (or point-scaling).
  *
- * @param src     scaled source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For >8bit
+ * @param src     scaled source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For >8-bit
  *                output, this is in uint16_t
  * @param dstW    width of destination in pixels
  * @param dither  ordered dither array of type int16_t and size 8
@@ -106,11 +106,11 @@ typedef void (*yuv2planar1_fn)(const int16_t *src, uint8_t *dest, int dstW,
  * Write one line of horizontally scaled data to planar output
  * with multi-point vertical scaling between input pixels.
  *
- * @param filter        vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param src           scaled luma (Y) or alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param filter        vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param src           scaled luma (Y) or alpha (A) source data, 15 bits for
+ *                      8-10-bit output, 19 bits for 16-bit output (in int32_t)
  * @param filterSize    number of vertical input lines to scale
- * @param dest          pointer to output plane. For >8bit
+ * @param dest          pointer to output plane. For >8-bit
  *                      output, this is in uint16_t
  * @param dstW          width of destination pixels
  * @param offset        Dither offset
@@ -124,13 +124,13 @@ typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
  * with multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit
+ *                      output, 19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit
+ *                      output, 19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param dest          pointer to the output plane. For >8bit
+ * @param dest          pointer to the output plane. For >8-bit
  *                      output, this is in uint16_t
  * @param dstW          width of chroma planes
  */
@@ -147,15 +147,15 @@ typedef void (*yuv2interleavedX_fn)(struct SwsContext *c,
  * that this function may do chroma scaling, see the "uvalpha" argument.
  *
  * @param c       SWS scaling context
- * @param lumSrc  scaled luma (Y) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrUSrc scaled chroma (U) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrVSrc scaled chroma (V) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param alpSrc  scaled alpha (A) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For 16bit output, this is
+ * @param lumSrc  scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrUSrc scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param alpSrc  scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For 16-bit output, this is
  *                uint16_t
  * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
  *                to write into dest[]
@@ -180,15 +180,15 @@ typedef void (*yuv2packed1_fn)(struct SwsContext *c, const int16_t *lumSrc,
  * output by doing bilinear scaling between two input lines.
  *
  * @param c       SWS scaling context
- * @param lumSrc  scaled luma (Y) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrUSrc scaled chroma (U) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrVSrc scaled chroma (V) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param alpSrc  scaled alpha (A) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For 16bit output, this is
+ * @param lumSrc  scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrUSrc scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param alpSrc  scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For 16-bit output, this is
  *                uint16_t
  * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
  *                to write into dest[]
@@ -214,19 +214,19 @@ typedef void (*yuv2packed2_fn)(struct SwsContext *c, const int16_t *lumSrc[2],
  * output by doing multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param lumSrc        scaled luma (Y) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param lumFilterSize number of vertical luma/alpha input lines to scale
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param alpSrc        scaled alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param dest          pointer to the output plane. For 16bit output, this is
+ * @param alpSrc        scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param dest          pointer to the output plane. For 16-bit output, this is
  *                      uint16_t
  * @param dstW          width of lumSrc and alpSrc in pixels, number of pixels
  *                      to write into dest[]
@@ -248,19 +248,19 @@ typedef void (*yuv2packedX_fn)(struct SwsContext *c, const int16_t *lumFilter,
  * output by doing multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param lumSrc        scaled luma (Y) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param lumFilterSize number of vertical luma/alpha input lines to scale
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param alpSrc        scaled alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param dest          pointer to the output planes. For 16bit output, this is
+ * @param alpSrc        scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param dest          pointer to the output planes. For 16-bit output, this is
  *                      uint16_t
  * @param dstW          width of lumSrc and alpSrc in pixels, number of pixels
  *                      to write into dest[]
@@ -554,7 +554,7 @@ typedef struct SwsContext {
      * Scale one horizontal line of input data using a bilinear filter
      * to produce one line of output data. Compared to SwsContext->hScale(),
      * please take note of the following caveats when using these:
-     * - Scaling is done using only 7bit instead of 14bit coefficients.
+     * - Scaling is done using only 7 bits instead of 14-bit coefficients.
      * - You can use no more than 5 input pixels to produce 4 output
      *   pixels. Therefore, this filter should not be used for downscaling
      *   by more than ~20% in width (because that equals more than 5/4th
@@ -585,15 +585,15 @@ typedef struct SwsContext {
      * @param dst        pointer to destination buffer for horizontally scaled
      *                   data. If the number of bits per component of one
      *                   destination pixel (SwsContext->dstBpc) is <= 10, data
-     *                   will be 15bpc in 16bits (int16_t) width. Else (i.e.
+     *                   will be 15 bpc in 16 bits (int16_t) width. Else (i.e.
      *                   SwsContext->dstBpc == 16), data will be 19bpc in
-     *                   32bits (int32_t) width.
+     *                   32 bits (int32_t) width.
      * @param dstW       width of destination image
      * @param src        pointer to source data to be scaled. If the number of
      *                   bits per component of a source pixel (SwsContext->srcBpc)
-     *                   is 8, this is 8bpc in 8bits (uint8_t) width. Else
+     *                   is 8, this is 8bpc in 8 bits (uint8_t) width. Else
      *                   (i.e. SwsContext->dstBpc > 8), this is native depth
-     *                   in 16bits (uint16_t) width. In other words, for 9-bit
+     *                   in 16 bits (uint16_t) width. In other words, for 9-bit
      *                   YUV input, this is 9bpc, for 10-bit YUV input, this is
      *                   10bpc, and for 16-bit RGB or YUV, this is 16bpc.
      * @param filter     filter coefficients to be used per output pixel for

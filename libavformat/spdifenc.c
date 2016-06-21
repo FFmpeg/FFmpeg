@@ -32,7 +32,7 @@
 /*
  * Terminology used in specification:
  * data-burst - IEC61937 frame, contains header and encapsuled frame
- * burst-preambule - IEC61937 frame header, contains 16-bits words named Pa, Pb, Pc and Pd
+ * burst-preamble - IEC61937 frame header, contains 16-bit words named Pa, Pb, Pc and Pd
  * burst-payload - encapsuled frame
  * Pa, Pb - syncword - 0xF872, 0x4E1F
  * Pc - burst-info, contains data-type (bits 0-6), error flag (bit 7), data-type-dependent info (bits 8-12)
@@ -147,7 +147,7 @@ static int spdif_header_eac3(AVFormatContext *s, AVPacket *pkt)
  * DTS type IV (DTS-HD) can be transmitted with various frame repetition
  * periods; longer repetition periods allow for longer packets and therefore
  * higher bitrate. Longer repetition periods mean that the constant bitrate of
- * the outputted IEC 61937 stream is higher.
+ * the output IEC 61937 stream is higher.
  * The repetition period is measured in IEC 60958 frames (4 bytes).
  */
 static int spdif_dts4_subtype(int period)
@@ -319,8 +319,8 @@ static int spdif_header_dts(AVFormatContext *s, AVPacket *pkt)
 
 static const enum IEC61937DataType mpeg_data_type[2][3] = {
     //     LAYER1                      LAYER2                  LAYER3
-    { IEC61937_MPEG2_LAYER1_LSF, IEC61937_MPEG2_LAYER2_LSF, IEC61937_MPEG2_LAYER3_LSF },//MPEG2 LSF
-    { IEC61937_MPEG1_LAYER1,     IEC61937_MPEG1_LAYER23,    IEC61937_MPEG1_LAYER23 },   //MPEG1
+    { IEC61937_MPEG2_LAYER1_LSF, IEC61937_MPEG2_LAYER2_LSF, IEC61937_MPEG2_LAYER3_LSF }, // MPEG-2 LSF
+    { IEC61937_MPEG1_LAYER1,     IEC61937_MPEG1_LAYER23,    IEC61937_MPEG1_LAYER23 },    // MPEG-1
 };
 
 static int spdif_header_mpeg(AVFormatContext *s, AVPacket *pkt)

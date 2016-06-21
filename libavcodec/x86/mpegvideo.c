@@ -1,6 +1,6 @@
 /*
  * Optimized for ia32 CPUs by Nick Kurshev <nickols_k@mail.ru>
- * h263, mpeg1, mpeg2 dequantizer & draw_edges by Michael Niedermayer <michaelni@gmx.at>
+ * H.263, MPEG-1, MPEG-2 dequantizer & draw_edges by Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
  *
@@ -180,7 +180,7 @@ static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
         block0 = block[0] * s->y_dc_scale;
     else
         block0 = block[0] * s->c_dc_scale;
-    /* XXX: only mpeg1 */
+    /* XXX: only MPEG-1 */
     quant_matrix = s->intra_matrix;
 __asm__ volatile(
                 "pcmpeqw %%mm7, %%mm7           \n\t"

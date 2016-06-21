@@ -393,7 +393,7 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             dump_paramchange(ctx, &sd);
             break;
         case AV_PKT_DATA_H263_MB_INFO:
-            av_log(ctx, AV_LOG_INFO, "h263 macroblock info");
+            av_log(ctx, AV_LOG_INFO, "H.263 macroblock info");
             break;
         case AV_PKT_DATA_REPLAYGAIN:
             av_log(ctx, AV_LOG_INFO, "replaygain: ");

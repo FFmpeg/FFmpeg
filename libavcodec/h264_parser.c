@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 parser.
+ * H.264 / AVC / MPEG-4 part10 parser.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

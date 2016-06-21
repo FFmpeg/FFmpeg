@@ -160,7 +160,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-    /* extradata size is 4 * 32bit */
+    /* extradata size is 4 * 32 bits */
     avctx->extradata_size = 16;
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
@@ -371,7 +371,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
         src += width;
     }
 
-    /* Pad output to a 32bit boundary */
+    /* Pad output to a 32-bit boundary */
     count = put_bits_count(&pb) & 0x1F;
 
     if (count)
@@ -609,7 +609,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /*
-     * Write frame information (LE 32bit unsigned)
+     * Write frame information (LE 32-bit unsigned)
      * into the output packet.
      * Contains the prediction method.
      */

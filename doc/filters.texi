@@ -5667,7 +5667,7 @@ It accepts the following parameters:
 
 @item limit
 Set higher black value threshold, which can be optionally specified
-from nothing (0) to everything (255 for 8bit based formats). An intensity
+from nothing (0) to everything (255 for 8-bit based formats). An intensity
 value greater to the set value is considered non-black. It defaults to 24.
 You can also specify a value between 0.0 and 1.0 which will be scaled depending
 on the bitdepth of the pixel format.
@@ -8305,7 +8305,7 @@ geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit color depth.
+regions by truncation to 8-bit color depth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -15588,7 +15588,7 @@ select=between(t\,10\,20)
 @end example
 
 @item
-Select only I frames contained in the 10-20 time interval:
+Select only I-frames contained in the 10-20 time interval:
 @example
 select=between(t\,10\,20)*eq(pict_type\,I)
 @end example

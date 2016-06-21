@@ -239,8 +239,8 @@ static int vdpau_h264_init(AVCodecContext *avctx)
         break;
 #endif
     case FF_PROFILE_H264_HIGH_10:
-        /* XXX: High 10 can be treated as High so long as only 8-bits per
-         * formats are supported. */
+        /* XXX: High 10 can be treated as High so long as only 8 bits per
+         * format are supported. */
         profile = VDP_DECODER_PROFILE_H264_HIGH;
         break;
 #ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE

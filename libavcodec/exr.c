@@ -191,13 +191,13 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
                 mantissa <<= 1;
                 exp -= (1 << 23);
             }
-            // clamp the mantissa to 10-bits
+            // clamp the mantissa to 10 bits
             mantissa &= ((1 << 10) - 1);
-            // shift left to generate single-precision mantissa of 23-bits
+            // shift left to generate single-precision mantissa of 23 bits
             mantissa <<= 13;
         }
     } else {
-        // shift left to generate single-precision mantissa of 23-bits
+        // shift left to generate single-precision mantissa of 23 bits
         mantissa <<= 13;
         // generate single precision biased exponent value
         exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
@@ -1706,7 +1706,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;
@@ -1718,7 +1718,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_init_thread_copy(AVCodecContext *avctx)
 {    EXRContext *s = avctx->priv_data;
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;

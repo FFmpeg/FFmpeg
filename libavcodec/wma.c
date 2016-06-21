@@ -429,7 +429,7 @@ unsigned int ff_wma_get_large_val(GetBitContext *gb)
  * @param version 0 for wma1,2 1 for wmapro
  * @param ptr output buffer
  * @param offset offset in the output buffer
- * @param num_coefs number of input coefficents
+ * @param num_coefs number of input coefficients
  * @param block_len input buffer length (2^n)
  * @param frame_len_bits number of bits for escaped run codes
  * @param coef_nb_bits number of bits for escaped level codes

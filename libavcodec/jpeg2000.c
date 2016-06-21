@@ -249,7 +249,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
 
     band->i_stepsize = band->f_stepsize * (1 << 15);
 
-    /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+    /* FIXME: In OpenJPEG code stepsize = stepsize * 0.5. Why?
      * If not set output of entropic decoder is not correct. */
     if (!av_codec_is_encoder(avctx->codec))
         band->f_stepsize *= 0.5;

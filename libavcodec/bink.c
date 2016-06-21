@@ -1240,7 +1240,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 }
 
 /**
- * Caclulate quantization tables for version b
+ * Calculate quantization tables for version b
  */
 static av_cold void binkb_calc_quant(void)
 {

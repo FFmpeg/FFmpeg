@@ -1,6 +1,6 @@
 /*
  * Autodesk RLE Decoder
- * Copyright (c) 2005 The FFmpeg Project
+ * Copyright (C) 2005 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *

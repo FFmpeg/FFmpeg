@@ -1,6 +1,6 @@
 /*
  * AviSynth/AvxSynth support
- * Copyright (c) 2012 AvxSynth Team.
+ * Copyright (c) 2012 AvxSynth Team
  *
  * This file is part of FFmpeg
  * FFmpeg is free software; you can redistribute it and/or

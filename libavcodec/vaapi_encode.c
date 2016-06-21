@@ -636,7 +636,7 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
     start = end = pic;
 
     if (pic->type != PICTURE_TYPE_IDR) {
-        // If that was not an IDR frame, add B frames display-before and
+        // If that was not an IDR frame, add B-frames display-before and
         // encode-after it.
 
         for (i = 0; i < ctx->b_per_p; i++) {
@@ -708,7 +708,7 @@ static int vaapi_encode_mangle_end(AVCodecContext *avctx)
 
         if (last_pic->type == PICTURE_TYPE_B) {
             // Some fixing up is required.  Change the type of this
-            // picture to P, then modify preceeding B references which
+            // picture to P, then modify preceding B references which
             // point beyond it to point at it instead.
 
             last_pic->type = PICTURE_TYPE_P;

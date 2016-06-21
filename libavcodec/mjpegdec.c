@@ -190,7 +190,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
             s->quant_matrixes[index][i] = get_bits(&s->gb, pr ? 16 : 8);
         }
 
-        // XXX FIXME finetune, and perhaps add dc too
+        // XXX FIXME fine-tune, and perhaps add dc too
         s->qscale[index] = FFMAX(s->quant_matrixes[index][1],
                                  s->quant_matrixes[index][8]) >> 1;
         av_log(s->avctx, AV_LOG_DEBUG, "qscale[%d]: %d\n",

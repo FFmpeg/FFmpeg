@@ -108,7 +108,7 @@ static const AVClass nvenc_class = {
 
 AVCodec ff_nvenc_encoder = {
     .name           = "nvenc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC h264 encoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .init           = ff_nvenc_encode_init,
@@ -134,7 +134,7 @@ static const AVClass nvenc_h264_class = {
 
 AVCodec ff_nvenc_h264_encoder = {
     .name           = "nvenc_h264",
-    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC h264 encoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .init           = ff_nvenc_encode_init,

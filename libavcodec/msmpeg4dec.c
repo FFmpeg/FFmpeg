@@ -70,7 +70,7 @@ static VLC v2_mb_type_vlc;
 static VLC v2_mv_vlc;
 VLC ff_inter_intra_vlc;
 
-/* This is identical to h263 except that its range is multiplied by 2. */
+/* This is identical to H.263 except that its range is multiplied by 2. */
 static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
     int code, val, sign, shift;
@@ -572,7 +572,7 @@ int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     }
     else
     {
-        av_log(s->avctx, AV_LOG_ERROR, "I frame too long, ignoring ext header\n");
+        av_log(s->avctx, AV_LOG_ERROR, "I-frame too long, ignoring ext header\n");
     }
 
     return 0;

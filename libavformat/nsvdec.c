@@ -57,14 +57,14 @@
  * (that is the offset of the data table after the header).
  * After checking all samples from (S1) all confirms this.
  *
- * Then, about NSVf[12-15], faster.nsf has 179700. When veiwing it in VLC,
+ * Then, about NSVf[12-15], faster.nsf has 179700. When viewing it in VLC,
  * I noticed there was about 1 NVSs chunk/s, so I ran
  * strings faster.nsv | grep NSVs | wc -l
  * which gave me 180. That leads me to think that NSVf[12-15] might be the
  * file length in milliseconds.
  * Let's try that:
  * for f in *.nsv; do HTIME="$(od -t x4 "$f" | head -1 | sed 's/.* //')"; echo "'$f' $((0x$HTIME))s = $((0x$HTIME/1000/60)):$((0x$HTIME/1000%60))"; done
- * except for nstrailer (which doesn't have an NSVf header), it repports correct time.
+ * except for nsvtrailer (which doesn't have an NSVf header), it reports correct time.
  *
  * nsvtrailer.nsv (S1) does not have any NSVf header, only NSVs chunks,
  * so the header seems to not be mandatory. (for streaming).
@@ -579,7 +579,7 @@ null_chunk_retry:
               ((auxtag >> 24) & 0x0ff),
               auxsize);
         avio_skip(pb, auxsize);
-        vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming braindead */
+        vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming brain-dead */
     }
 
     if (avio_feof(pb))
@@ -683,7 +683,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    /* this restaurant is not approvisionned :^] */
+    /* this restaurant is not provisioned :^] */
     return -1;
 }
 

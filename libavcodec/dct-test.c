@@ -442,7 +442,7 @@ static void help(void)
     printf("dct-test [-i] [<test-number>] [<bits>]\n"
            "test-number 0 -> test with random matrixes\n"
            "            1 -> test with random sparse matrixes\n"
-           "            2 -> do 3. test from mpeg4 std\n"
+           "            2 -> do 3. test from MPEG-4 std\n"
            "bits        Number of time domain bits to use, 8 is default\n"
            "-i          test IDCT implementations\n"
            "-4          test IDCT248 implementations\n"

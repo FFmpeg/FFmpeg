@@ -880,7 +880,7 @@ typedef struct RcOverride{
  * Use only bitexact stuff (except (I)DCT).
  */
 #define AV_CODEC_FLAG_BITEXACT        (1 << 23)
-/* Fx : Flag for h263+ extra options */
+/* Fx : Flag for H.263+ extra options */
 /**
  * H.263 advanced intra coding / MPEG-4 AC prediction
  */
@@ -997,7 +997,7 @@ typedef struct RcOverride{
  * are connected to a parser to split what they return into proper frames.
  * This flag is reserved to the very rare category of codecs which have a
  * bitstream that cannot be split into frames without timeconsuming
- * operations like full decoding. Demuxers carring such bitstreams thus
+ * operations like full decoding. Demuxers carrying such bitstreams thus
  * may return multiple frames in a packet. This has many disadvantages like
  * prohibiting stream copy in many cases thus it should only be considered
  * as a last resort.
@@ -1177,7 +1177,7 @@ typedef struct RcOverride{
  * are connected to a parser to split what they return into proper frames.
  * This flag is reserved to the very rare category of codecs which have a
  * bitstream that cannot be split into frames without timeconsuming
- * operations like full decoding. Demuxers carring such bitstreams thus
+ * operations like full decoding. Demuxers carrying such bitstreams thus
  * may return multiple frames in a packet. This has many disadvantages like
  * prohibiting stream copy in many cases thus it should only be considered
  * as a last resort.
@@ -1257,7 +1257,7 @@ typedef struct RcOverride{
 #define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
 #define MB_TYPE_QUANT      0x00010000
 #define MB_TYPE_CBP        0x00020000
-//Note bits 24-31 are reserved for codec specific use (h264 ref0, mpeg1 0mv, ...)
+// Note bits 24-31 are reserved for codec specific use (H.264 ref0, MPEG-1 0mv, ...)
 #endif
 
 /**
@@ -1751,9 +1751,9 @@ typedef struct AVCodecContext {
 
     /**
      * some codecs need / can use extradata like Huffman tables.
-     * mjpeg: Huffman tables
+     * MJPEG: Huffman tables
      * rv10: additional flags
-     * mpeg4: global headers (they can be in the bitstream or here)
+     * MPEG-4: global headers (they can be in the bitstream or here)
      * The allocated memory should be AV_INPUT_BUFFER_PADDING_SIZE bytes larger
      * than extradata_size to avoid problems if it is read with the bitstream reader.
      * The bytewise contents of extradata must not depend on the architecture or CPU endianness.
@@ -1823,7 +1823,7 @@ typedef struct AVCodecContext {
      * picture width / height.
      *
      * @note Those fields may not match the values of the last
-     * AVFrame outputted by avcodec_decode_video2 due frame
+     * AVFrame output by avcodec_decode_video2 due frame
      * reordering.
      *
      * - encoding: MUST be set by user.
@@ -1839,7 +1839,7 @@ typedef struct AVCodecContext {
      * the decoded frame is cropped before being output or lowres is enabled.
      *
      * @note Those field may not match the value of the last
-     * AVFrame outputted by avcodec_receive_frame() due frame
+     * AVFrame output by avcodec_receive_frame() due frame
      * reordering.
      *
      * - encoding: unused
@@ -1866,7 +1866,7 @@ typedef struct AVCodecContext {
      * May be overridden by the decoder if it knows better.
      *
      * @note This field may not match the value of the last
-     * AVFrame outputted by avcodec_receive_frame() due frame
+     * AVFrame output by avcodec_receive_frame() due frame
      * reordering.
      *
      * - encoding: Set by user.
@@ -1976,8 +1976,8 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     * qscale factor between P and I-frames
-     * If > 0 then the last p frame quantizer will be used (q= lastp_q*factor+offset).
+     * qscale factor between P- and I-frames
+     * If > 0 then the last P-frame quantizer will be used (q = lastp_q * factor + offset).
      * If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
      * - encoding: Set by user.
      * - decoding: unused
@@ -2189,7 +2189,7 @@ typedef struct AVCodecContext {
      */
     int slice_flags;
 #define SLICE_FLAG_CODED_ORDER    0x0001 ///< draw_horiz_band() is called in coded order instead of display
-#define SLICE_FLAG_ALLOW_FIELD    0x0002 ///< allow draw_horiz_band() with field slices (MPEG2 field pics)
+#define SLICE_FLAG_ALLOW_FIELD    0x0002 ///< allow draw_horiz_band() with field slices (MPEG-2 field pics)
 #define SLICE_FLAG_ALLOW_PLANE    0x0004 ///< allow draw_horiz_band() with 1 component at a time (SVQ1)
 
 #if FF_API_XVMC
@@ -2280,14 +2280,14 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     * minimum MB lagrange multipler
+     * minimum MB Lagrange multiplier
      * - encoding: Set by user.
      * - decoding: unused
      */
     int mb_lmin;
 
     /**
-     * maximum MB lagrange multipler
+     * maximum MB Lagrange multiplier
      * - encoding: Set by user.
      * - decoding: unused
      */
@@ -2507,7 +2507,7 @@ typedef struct AVCodecContext {
      *     to all data planes. data[] must hold as many pointers as it can.
      *     extended_data must be allocated with av_malloc() and will be freed in
      *     av_frame_unref().
-     *   * otherwise exended_data must point to data
+     *   * otherwise extended_data must point to data
      * - buf[] must contain one or more pointers to AVBufferRef structures. Each of
      *   the frame's data and extended_data pointers must be contained in these. That
      *   is, one AVBufferRef for each allocated chunk of memory, not necessarily one
@@ -2851,7 +2851,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_TRUNCATED       16384
 
     /**
-     * strictly follow the standard (MPEG4, ...).
+     * strictly follow the standard (MPEG-4, ...).
      * - encoding: Set by user.
      * - decoding: Set by user.
      * Setting this to STRICT or higher means the encoder and decoder will
@@ -2922,9 +2922,9 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int debug_mv;
-#define FF_DEBUG_VIS_MV_P_FOR  0x00000001 //visualize forward predicted MVs of P frames
-#define FF_DEBUG_VIS_MV_B_FOR  0x00000002 //visualize forward predicted MVs of B frames
-#define FF_DEBUG_VIS_MV_B_BACK 0x00000004 //visualize backward predicted MVs of B frames
+#define FF_DEBUG_VIS_MV_P_FOR  0x00000001 // visualize forward predicted MVs of P-frames
+#define FF_DEBUG_VIS_MV_B_FOR  0x00000002 // visualize forward predicted MVs of B-frames
+#define FF_DEBUG_VIS_MV_B_BACK 0x00000004 // visualize backward predicted MVs of B-frames
 #endif
 
     /**
@@ -2952,7 +2952,7 @@ typedef struct AVCodecContext {
 
 
     /**
-     * opaque 64bit number (generally a PTS) that will be reordered and
+     * opaque 64-bit number (generally a PTS) that will be reordered and
      * output in AVFrame.reordered_opaque
      * - encoding: unused
      * - decoding: Set by user.
@@ -5950,7 +5950,7 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
  * a pointer to an AVClass struct
  * @param[in] feature string containing the name of the missing feature
  * @param[in] want_sample indicates if samples are wanted which exhibit this feature.
- * If want_sample is non-zero, additional verbage will be added to the log
+ * If want_sample is non-zero, additional verbiage will be added to the log
  * message which tells the user how to report samples to the development
  * mailing list.
  * @deprecated Use avpriv_report_missing_feature() instead.

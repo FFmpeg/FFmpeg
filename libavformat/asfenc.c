@@ -227,7 +227,7 @@ typedef struct ASFContext {
     const char *languages[128];
     int nb_languages;
     int64_t creation_time;
-    /* non streamed additonnal info */
+    /* non-streamed additional info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration;                    ///< in 100ns units
     /* packet filling */
@@ -578,7 +578,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     }
     end_header(pb, hpos);
 
-    /* title and other infos */
+    /* title and other info */
     if (has_title) {
         int len;
         uint8_t *buf;

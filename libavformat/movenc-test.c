@@ -349,7 +349,7 @@ int main(int argc, char **argv)
     finish();
     close_out();
 
-    // Write a similar file, but with b-frames and audio preroll, handled
+    // Write a similar file, but with B-frames and audio preroll, handled
     // via an edit list.
     init_out("non-empty-moov-elst");
     av_dict_set(&opts, "movflags", "frag_keyframe", 0);
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
     finish();
     close_out();
 
-    // Use b-frames but no audio-preroll, but without an edit list.
+    // Use B-frames but no audio-preroll, but without an edit list.
     // Due to avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO, the dts
     // of the first audio packet is > 0, but it is set to zero since edit
     // lists aren't used, increasing the duration of the first packet instead.
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
     close_out();
 
     format = "ismv";
-    // Write an ISMV, with b-frames and audio preroll.
+    // Write an ISMV, with B-frames and audio preroll.
     init_out("ismv");
     av_dict_set(&opts, "movflags", "frag_keyframe", 0);
     init(1, 1);
@@ -558,7 +558,7 @@ int main(int argc, char **argv)
     finish();
 
 
-    // Test discontinously written fragments with b-frames (where the
+    // Test discontinuously written fragments with B-frames (where the
     // assumption of starting at pts=0 works) but not with audio preroll
     // (which can't be guessed).
     av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
@@ -592,7 +592,7 @@ int main(int argc, char **argv)
     finish();
 
 
-    // Test discontinously written fragments with b-frames and audio preroll,
+    // Test discontinuously written fragments with B-frames and audio preroll,
     // properly signaled.
     av_dict_set(&opts, "movflags", "frag_custom+delay_moov+dash", 0);
     init(1, 1);

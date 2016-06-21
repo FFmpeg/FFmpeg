@@ -53,7 +53,7 @@ enum {
 
 
 /* Some constants for parsing frame bitstream flags. */
-#define BS_8BIT_PEL     (1 << 1) ///< 8bit pixel bitdepth indicator
+#define BS_8BIT_PEL     (1 << 1) ///< 8-bit pixel bitdepth indicator
 #define BS_KEYFRAME     (1 << 2) ///< intra frame indicator
 #define BS_MV_Y_HALF    (1 << 4) ///< vertical mv halfpel resolution indicator
 #define BS_MV_X_HALF    (1 << 5) ///< horizontal mv halfpel resolution indicator
@@ -317,7 +317,7 @@ static inline uint32_t replicate32(uint32_t a) {
 }
 
 
-/* Fill n lines with 64bit pixel value pix */
+/* Fill n lines with 64-bit pixel value pix */
 static inline void fill_64(uint8_t *dst, const uint64_t pix, int32_t n,
                            int32_t row_offset)
 {

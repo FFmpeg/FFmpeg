@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 codec.
+ * H.264 / AVC / MPEG-4 part10 codec.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -128,7 +128,7 @@ static int alloc_scratch_buffers(H264SliceContext *sl, int linesize)
 
     av_fast_malloc(&sl->bipred_scratchpad, &sl->bipred_scratchpad_allocated, 16 * 6 * alloc_size);
     // edge emu needs blocksize + filter length - 1
-    // (= 21x21 for  h264)
+    // (= 21x21 for  H.264)
     av_fast_malloc(&sl->edge_emu_buffer, &sl->edge_emu_buffer_allocated, alloc_size * 2 * 21);
 
     av_fast_mallocz(&sl->top_borders[0], &sl->top_borders_allocated[0],
@@ -1022,7 +1022,7 @@ static enum AVPixelFormat non_j_pixfmt(enum AVPixelFormat a)
 
 /**
  * Decode a slice header.
- * This will (re)intialize the decoder and call h264_frame_start() as needed.
+ * This will (re)initialize the decoder and call h264_frame_start() as needed.
  *
  * @param h h264context
  *

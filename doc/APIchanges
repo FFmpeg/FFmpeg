@@ -1175,7 +1175,7 @@ lavd 54.4.100 / 54.0.0, lavfi 3.5.0
                 * base -- is now stored in AVBufferRef
                 * reference, type, buffer_hints -- are unnecessary in the new API
                 * hwaccel_picture_private, owner, thread_opaque -- should not
-                  have been acessed from outside of lavc
+                  have been accessed from outside of lavc
                 * qscale_table, qstride, qscale_type, mbskip_table, motion_val,
                   mb_type, dct_coeff, ref_index -- mpegvideo-specific tables,
                   which are not exported anymore.

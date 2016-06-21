@@ -1,5 +1,5 @@
 /*
- * H.26L/H.264/AVC/JVT/14496-10/... sei decoding
+ * H.26L/H.264/AVC/JVT/14496-10/... SEI decoding
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 sei decoding.
+ * H.264 / AVC / MPEG-4 part10 SEI decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

@@ -235,7 +235,7 @@ static int qdm2_get_se_vlc(const VLC *vlc, GetBitContext *gb, int depth)
 /**
  * QDM2 checksum
  *
- * @param data      pointer to data to be checksum'ed
+ * @param data      pointer to data to be checksummed
  * @param length    data length
  * @param value     checksum value
  *
@@ -1831,7 +1831,7 @@ static int qdm2_decode(QDM2Context *q, const uint8_t *in, int16_t *out)
 
     q->sub_packet = (q->sub_packet + 1) % 16;
 
-    /* clip and convert output float[] to 16bit signed samples */
+    /* clip and convert output float[] to 16-bit signed samples */
     for (i = 0; i < frame_size; i++) {
         int value = (int)q->output_buffer[i];
 

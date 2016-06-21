@@ -106,7 +106,7 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
     if (len > 6) {
-        /* check for h264 start code */
+        /* check for H.264 start code */
         if (AV_RB32(data) == 0x00000001 ||
             AV_RB24(data) == 0x000001) {
             uint8_t *buf=NULL, *end, *start;

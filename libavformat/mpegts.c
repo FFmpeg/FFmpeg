@@ -1,5 +1,5 @@
 /*
- * MPEG2 transport stream (aka DVB) demuxer
+ * MPEG-2 transport stream (aka DVB) demuxer
  * Copyright (c) 2002-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -38,8 +38,8 @@
 #include "mpeg.h"
 #include "isom.h"
 
-/* maximum size in which we look for synchronisation if
- * synchronisation is lost */
+/* maximum size in which we look for synchronization if
+ * synchronization is lost */
 #define MAX_RESYNC_SIZE 65536
 
 #define MAX_PES_PAYLOAD 200 * 1024
@@ -1031,7 +1031,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                  * decide */
                 if (pes->header[0] == 0x00 && pes->header[1] == 0x00 &&
                     pes->header[2] == 0x01) {
-                    /* it must be an mpeg2 PES stream */
+                    /* it must be an MPEG-2 PES stream */
                     code = pes->header[3] | 0x100;
                     av_log(pes->stream, AV_LOG_TRACE, "pid=%x pes_code=%#x\n", pes->pid,
                             code);

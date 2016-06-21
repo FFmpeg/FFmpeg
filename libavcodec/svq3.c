@@ -138,7 +138,7 @@ typedef struct SVQ3Context {
 #define THIRDPEL_MODE 3
 #define PREDICT_MODE  4
 
-/* dual scan (from some older h264 draft)
+/* dual scan (from some older H.264 draft)
  * o-->o-->o   o
  *         |  /|
  * o   o   o / o

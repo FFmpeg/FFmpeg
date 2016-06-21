@@ -258,9 +258,9 @@ static int rv10_write_header(AVFormatContext *ctx,
             avio_wb16(s, stream->frame_rate.num / stream->frame_rate.den);  /* unknown meaning */
             avio_wb32(s,0);     /* unknown meaning */
             avio_wb16(s, 8);    /* unknown meaning */
-            /* Seems to be the codec version: only use basic H263. The next
-               versions seems to add a diffential DC coding as in
-               MPEG... nothing new under the sun */
+            /* Seems to be the codec version: only use basic H.263. The next
+               versions seems to add a differential DC coding as in
+               MPEG... nothing new under the sun. */
             if(stream->par->codec_id == AV_CODEC_ID_RV10)
                 avio_wb32(s,0x10000000);
             else
@@ -402,7 +402,7 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     write_packet_header(s, stream, size + 7 + (size >= 0x4000)*4, key_frame);
     /* bit 7: '1' if final packet of a frame converted in several packets */
     avio_w8(pb, 0x81);
-    /* bit 7: '1' if I frame. bits 6..0 : sequence number in current
+    /* bit 7: '1' if I-frame. bits 6..0 : sequence number in current
        frame starting from 1 */
     if (key_frame) {
         avio_w8(pb, 0x81);

@@ -720,7 +720,7 @@ For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
 
 @item qsv
-For QSV, this option corresponds to the valus of MFX_IMPL_* . Allowed values
+For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
 are:
 @table @option
 @item auto

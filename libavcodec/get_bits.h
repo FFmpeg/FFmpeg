@@ -91,7 +91,7 @@ typedef struct RL_VLC_ELEM {
  *
  * GET_CACHE(name, gb)
  *   Will output the contents of the internal cache,
- *   next bit is MSB of 32 or 64 bit (FIXME 64bit).
+ *   next bit is MSB of 32 or 64 bits (FIXME 64 bits).
  *
  * SHOW_UBITS(name, gb, num)
  *   Will return the next num bits.
@@ -224,7 +224,7 @@ static inline void skip_bits_long(GetBitContext *s, int n)
 }
 
 /**
- * read mpeg1 dc style vlc (sign bit + mantissa with no MSB).
+ * Read MPEG-1 dc-style VLC (sign bit + mantissa with no MSB).
  * if MSB not set it is negative
  * @param n length in bits
  */
