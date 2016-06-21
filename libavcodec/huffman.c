@@ -28,7 +28,6 @@
 
 #include "libavutil/qsort.h"
 #include "avcodec.h"
-#include "get_bits.h"
 #include "huffman.h"
 
 /* symbol for Huffman tree node */
