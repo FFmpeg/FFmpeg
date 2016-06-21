@@ -354,7 +354,7 @@ static int parse_palette_segment(AVCodecContext *avctx,
         cb        = bytestream_get_byte(&buf);
         alpha     = bytestream_get_byte(&buf);
 
-        /* Default to BT.709 colorimetry. In case of <= 576 height use BT.601 */
+        /* Default to BT.709 colorspace. In case of <= 576 height use BT.601 */
         if (avctx->height <= 0 || avctx->height > 576) {
             YUV_TO_RGB1_CCIR_BT709(cb, cr);
         } else {
