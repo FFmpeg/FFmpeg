@@ -573,6 +573,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 s1->seen_fmtp = 1;
                 av_strlcpy(s1->delayed_fmtp, buf, sizeof(s1->delayed_fmtp));
             }
+        } else if (av_strstart(p, "ssrc:", &p) && s->nb_streams > 0) {
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+            get_word(buf1, sizeof(buf1), &p);
+            rtsp_st->ssrc = strtoll(buf1, NULL, 10);
         } else if (av_strstart(p, "range:", &p)) {
             int64_t start, end;
 
@@ -831,6 +835,8 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
     } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RTP) {
+        RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
+        rtpctx->ssrc = rtsp_st->ssrc;
         if (rtsp_st->dynamic_handler) {
             ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
                                               rtsp_st->dynamic_protocol_context,
