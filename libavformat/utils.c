@@ -2565,11 +2565,11 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
 
     /* if bit_rate is already set, we believe it */
     if (ic->bit_rate <= 0) {
-        int bit_rate = 0;
+        int64_t bit_rate = 0;
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
             if (st->codecpar->bit_rate > 0) {
-                if (INT_MAX - st->codecpar->bit_rate < bit_rate) {
+                if (INT64_MAX - st->codecpar->bit_rate < bit_rate) {
                     bit_rate = 0;
                     break;
                 }
