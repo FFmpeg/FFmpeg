@@ -413,9 +413,9 @@ retry:
     if (atom.size < 0 || str_size >= INT_MAX/2)
         return AVERROR_INVALIDDATA;
 
-    // Allocates enough space if data_type is a float32 number, otherwise
+    // Allocates enough space if data_type is a int32 or float32 number, otherwise
     // worst-case requirement for output string in case of utf8 coded input
-    num = (data_type == 23);
+    num = (data_type >= 21 && data_type <= 23);
     str_size_alloc = (num ? 512 : (raw ? str_size : str_size * 2)) + 1;
     str = av_mallocz(str_size_alloc);
     if (!str)
@@ -426,6 +426,38 @@ retry:
     else {
         if (!raw && (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff)))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
+        } else if (data_type == 21) { // BE signed integer, variable size
+            int val = 0;
+            if (str_size == 1)
+                val = (int8_t)avio_r8(pb);
+            else if (str_size == 2)
+                val = (int16_t)avio_rb16(pb);
+            else if (str_size == 3)
+                val = ((int32_t)(avio_rb24(pb)<<8))>>8;
+            else if (str_size == 4)
+                val = (int32_t)avio_rb32(pb);
+            if (snprintf(str, str_size_alloc, "%d", val) >= str_size_alloc) {
+                av_log(c->fc, AV_LOG_ERROR,
+                       "Failed to store the number (%d) in string.\n", val);
+                av_free(str);
+                return AVERROR_INVALIDDATA;
+            }
+        } else if (data_type == 22) { // BE unsigned integer, variable size
+            unsigned int val = 0;
+            if (str_size == 1)
+                val = avio_r8(pb);
+            else if (str_size == 2)
+                val = avio_rb16(pb);
+            else if (str_size == 3)
+                val = avio_rb24(pb);
+            else if (str_size == 4)
+                val = avio_rb32(pb);
+            if (snprintf(str, str_size_alloc, "%u", val) >= str_size_alloc) {
+                av_log(c->fc, AV_LOG_ERROR,
+                       "Failed to store the number (%u) in string.\n", val);
+                av_free(str);
+                return AVERROR_INVALIDDATA;
+            }
         } else if (data_type == 23 && str_size >= 4) {  // BE float32
             float val = av_int2float(avio_rb32(pb));
             if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
