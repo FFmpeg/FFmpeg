@@ -592,8 +592,6 @@ skip_mean_and_median:
                              ref[pred_count]    = prev_ref;
                     pred_count++;
 
-skip_last_mv:
-
                     for (j = 0; j < pred_count; j++) {
                         int *linesize = s->cur_pic.f->linesize;
                         int score = 0;
