@@ -1412,6 +1412,13 @@ FF_DISABLE_DEPRECATION_WARNINGS
         }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+        if (avctx->time_base.num <= 0 || avctx->time_base.den <= 0) {
+            av_log(avctx, AV_LOG_ERROR, "The encoder timebase is not set.\n");
+            ret = AVERROR(EINVAL);
+            goto free_and_end;
+        }
+
         if (avctx->codec->sample_fmts) {
             for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
                 if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
