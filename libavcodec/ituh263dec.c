@@ -175,17 +175,17 @@ static int h263_decode_gob_header(MpegEncContext *s)
         return -1;
 
     if(s->h263_slice_structured){
-        if(check_marker(&s->gb, "before MBA")==0)
+        if(check_marker(s->avctx, &s->gb, "before MBA")==0)
             return -1;
 
         ff_h263_decode_mba(s);
 
         if(s->mb_num > 1583)
-            if(check_marker(&s->gb, "after MBA")==0)
+            if(check_marker(s->avctx, &s->gb, "after MBA")==0)
                 return -1;
 
         s->qscale = get_bits(&s->gb, 5); /* SQUANT */
-        if(check_marker(&s->gb, "after SQUANT")==0)
+        if(check_marker(s->avctx, &s->gb, "after SQUANT")==0)
             return -1;
         skip_bits(&s->gb, 2); /* GFID */
     }else{
@@ -904,7 +904,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     s->picture_number= (s->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */
-    if (check_marker(&s->gb, "in PTYPE") != 1) {
+    if (check_marker(s->avctx, &s->gb, "in PTYPE") != 1) {
         return -1;
     }
     if (get_bits1(&s->gb) != 0) {
@@ -1025,7 +1025,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                 6-14 - reserved
                 */
                 width = (get_bits(&s->gb, 9) + 1) * 4;
-                check_marker(&s->gb, "in dimensions");
+                check_marker(s->avctx, &s->gb, "in dimensions");
                 height = get_bits(&s->gb, 9) * 4;
                 ff_dlog(s->avctx, "\nH.263+ Custom picture: %dx%d\n",width,height);
                 if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
@@ -1120,13 +1120,13 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         return AVERROR_INVALIDDATA;
 
     if(s->h263_slice_structured){
-        if (check_marker(&s->gb, "SEPB1") != 1) {
+        if (check_marker(s->avctx, &s->gb, "SEPB1") != 1) {
             return -1;
         }
 
         ff_h263_decode_mba(s);
 
-        if (check_marker(&s->gb, "SEPB2") != 1) {
+        if (check_marker(s->avctx, &s->gb, "SEPB2") != 1) {
             return -1;
         }
     }

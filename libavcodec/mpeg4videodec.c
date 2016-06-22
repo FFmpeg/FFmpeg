@@ -196,13 +196,13 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
             x = get_xbits(gb, length);
 
         if (!(ctx->divx_version == 500 && ctx->divx_build == 413))
-            check_marker(gb, "before sprite_trajectory");
+            check_marker(s->avctx, gb, "before sprite_trajectory");
 
         length = get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
         if (length > 0)
             y = get_xbits(gb, length);
 
-        check_marker(gb, "after sprite_trajectory");
+        check_marker(s->avctx, gb, "after sprite_trajectory");
         ctx->sprite_traj[i][0] = d[i][0] = x;
         ctx->sprite_traj[i][1] = d[i][1] = y;
     }
@@ -381,12 +381,13 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
 }
 
 static int decode_new_pred(Mpeg4DecContext *ctx, GetBitContext *gb) {
+    MpegEncContext *s = &ctx->m;
     int len = FFMIN(ctx->time_increment_bits + 3, 15);
 
     get_bits(gb, len);
     if (get_bits1(gb))
         get_bits(gb, len);
-    check_marker(gb, "after new_pred");
+    check_marker(s->avctx, gb, "after new_pred");
 
     return 0;
 }
@@ -445,9 +446,9 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
         while (get_bits1(&s->gb) != 0)
             time_incr++;
 
-        check_marker(&s->gb, "before time_increment in video packed header");
+        check_marker(s->avctx, &s->gb, "before time_increment in video packed header");
         skip_bits(&s->gb, ctx->time_increment_bits);      /* time_increment */
-        check_marker(&s->gb, "before vop_coding_type in video packed header");
+        check_marker(s->avctx, &s->gb, "before vop_coding_type in video packed header");
 
         skip_bits(&s->gb, 2); /* vop coding type */
         // FIXME not rect stuff here
@@ -1685,7 +1686,7 @@ static int mpeg4_decode_gop_header(MpegEncContext *s, GetBitContext *gb)
 
     hours   = get_bits(gb, 5);
     minutes = get_bits(gb, 6);
-    check_marker(gb, "in gop_header");
+    check_marker(s->avctx, gb, "in gop_header");
     seconds = get_bits(gb, 6);
 
     s->time_base = seconds + 60*(minutes + 60*hours);
@@ -1740,16 +1741,16 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         s->low_delay = get_bits1(gb);
         if (get_bits1(gb)) {    /* vbv parameters */
             get_bits(gb, 15);   /* first_half_bitrate */
-            check_marker(gb, "after first_half_bitrate");
+            check_marker(s->avctx, gb, "after first_half_bitrate");
             get_bits(gb, 15);   /* latter_half_bitrate */
-            check_marker(gb, "after latter_half_bitrate");
+            check_marker(s->avctx, gb, "after latter_half_bitrate");
             get_bits(gb, 15);   /* first_half_vbv_buffer_size */
-            check_marker(gb, "after first_half_vbv_buffer_size");
+            check_marker(s->avctx, gb, "after first_half_vbv_buffer_size");
             get_bits(gb, 3);    /* latter_half_vbv_buffer_size */
             get_bits(gb, 11);   /* first_half_vbv_occupancy */
-            check_marker(gb, "after first_half_vbv_occupancy");
+            check_marker(s->avctx, gb, "after first_half_vbv_occupancy");
             get_bits(gb, 15);   /* latter_half_vbv_occupancy */
-            check_marker(gb, "after latter_half_vbv_occupancy");
+            check_marker(s->avctx, gb, "after latter_half_vbv_occupancy");
         }
     } else {
         /* is setting low delay flag only once the smartest thing to do?
@@ -1774,7 +1775,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         skip_bits(gb, 4);  /* video_object_layer_shape_extension */
     }
 
-    check_marker(gb, "before time_increment_resolution");
+    check_marker(s->avctx, gb, "before time_increment_resolution");
 
     s->avctx->framerate.num = get_bits(gb, 16);
     if (!s->avctx->framerate.num) {
@@ -1786,7 +1787,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->time_increment_bits < 1)
         ctx->time_increment_bits = 1;
 
-    check_marker(gb, "before fixed_vop_rate");
+    check_marker(s->avctx, gb, "before fixed_vop_rate");
 
     if (get_bits1(gb) != 0)     /* fixed_vop_rate  */
         s->avctx->framerate.den = get_bits(gb, ctx->time_increment_bits);
@@ -1799,11 +1800,11 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
         if (ctx->shape == RECT_SHAPE) {
-            check_marker(gb, "before width");
+            check_marker(s->avctx, gb, "before width");
             width = get_bits(gb, 13);
-            check_marker(gb, "before height");
+            check_marker(s->avctx, gb, "before height");
             height = get_bits(gb, 13);
-            check_marker(gb, "after height");
+            check_marker(s->avctx, gb, "after height");
             if (width && height &&  /* they should be non zero but who knows */
                 !(s->width && s->codec_tag == AV_RL32("MP4S"))) {
                 if (s->width && s->height &&
@@ -1831,13 +1832,13 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             ctx->vol_sprite_usage == GMC_SPRITE) {
             if (ctx->vol_sprite_usage == STATIC_SPRITE) {
                 skip_bits(gb, 13); // sprite_width
-                check_marker(gb, "after sprite_width");
+                check_marker(s->avctx, gb, "after sprite_width");
                 skip_bits(gb, 13); // sprite_height
-                check_marker(gb, "after sprite_height");
+                check_marker(s->avctx, gb, "after sprite_height");
                 skip_bits(gb, 13); // sprite_left
-                check_marker(gb, "after sprite_left");
+                check_marker(s->avctx, gb, "after sprite_left");
                 skip_bits(gb, 13); // sprite_top
-                check_marker(gb, "after sprite_top");
+                check_marker(s->avctx, gb, "after sprite_top");
             }
             ctx->num_sprite_warping_points = get_bits(gb, 6);
             if (ctx->num_sprite_warping_points > 3) {
@@ -1970,7 +1971,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* inter4v_blocks */
                     ctx->cplx_estimation_trash_i += 8 * get_bits1(gb);  /* not coded blocks */
                 }
-                if (!check_marker(gb, "in complexity estimation part 1")) {
+                if (!check_marker(s->avctx, gb, "in complexity estimation part 1")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
@@ -1988,7 +1989,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel2 */
                     ctx->cplx_estimation_trash_p += 8 * get_bits1(gb);  /* halfpel4 */
                 }
-                if (!check_marker(gb, "in complexity estimation part 2")) {
+                if (!check_marker(s->avctx, gb, "in complexity estimation part 2")) {
                     skip_bits_long(gb, pos - get_bits_count(gb));
                     goto no_cplx_est;
                 }
@@ -2262,7 +2263,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     while (get_bits1(gb) != 0)
         time_incr++;
 
-    check_marker(gb, "before time_increment");
+    check_marker(s->avctx, gb, "before time_increment");
 
     if (ctx->time_increment_bits == 0 ||
         !(show_bits(gb, ctx->time_increment_bits + 1) & 1)) {
@@ -2341,7 +2342,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         pts = AV_NOPTS_VALUE;
     ff_dlog(s->avctx, "MPEG4 PTS: %"PRId64"\n", pts);
 
-    check_marker(gb, "before vop_coded");
+    check_marker(s->avctx, gb, "before vop_coded");
 
     /* vop coded */
     if (get_bits1(gb) != 1) {
@@ -2366,11 +2367,11 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (ctx->shape != RECT_SHAPE) {
         if (ctx->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
             skip_bits(gb, 13);  /* width */
-            check_marker(gb, "after width");
+            check_marker(s->avctx, gb, "after width");
             skip_bits(gb, 13);  /* height */
-            check_marker(gb, "after height");
+            check_marker(s->avctx, gb, "after height");
             skip_bits(gb, 13);  /* hor_spat_ref */
-            check_marker(gb, "after hor_spat_ref");
+            check_marker(s->avctx, gb, "after hor_spat_ref");
             skip_bits(gb, 13);  /* ver_spat_ref */
         }
         skip_bits1(gb);         /* change_CR_disable */

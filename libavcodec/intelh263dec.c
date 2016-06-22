@@ -39,7 +39,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     }
     s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
 
-    if (check_marker(&s->gb, "after picture_number") != 1) {
+    if (check_marker(s->avctx, &s->gb, "after picture_number") != 1) {
         return -1;      /* marker */
     }
     if (get_bits1(&s->gb) != 0) {
@@ -95,7 +95,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     if(format == 6){
         int ar = get_bits(&s->gb, 4);
         skip_bits(&s->gb, 9); // display width
-        check_marker(&s->gb, "in dimensions");
+        check_marker(s->avctx, &s->gb, "in dimensions");
         skip_bits(&s->gb, 9); // display height
         if(ar == 15){
             s->avctx->sample_aspect_ratio.num = get_bits(&s->gb, 8); // aspect ratio - width
