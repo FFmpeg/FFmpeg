@@ -284,7 +284,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         st  = s->streams[i];
         par = st->codecpar;
 
-#if FF_API_LAVF_CODEC_TB
+#if FF_API_LAVF_CODEC_TB && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (!st->time_base.num && st->codec->time_base.num) {
             av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
@@ -530,7 +530,7 @@ fail:
 #define UNCODED_FRAME_PACKET_SIZE (INT_MIN / 3 * 2 + (int)sizeof(AVFrame))
 
 
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
@@ -769,7 +769,7 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-#if !FF_API_COMPUTE_PKT_FIELDS2
+#if !FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -838,7 +838,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return 1;
     }
 
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
 
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
@@ -1092,7 +1092,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 
-#if FF_API_COMPUTE_PKT_FIELDS2
+#if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
         if ((ret = compute_muxer_pkt_fields(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
             goto fail;
 #endif
