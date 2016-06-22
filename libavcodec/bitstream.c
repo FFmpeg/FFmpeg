@@ -34,8 +34,8 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-#include "get_bits.h"
 #include "put_bits.h"
+#include "vlc.h"
 
 const uint8_t ff_log2_run[41]={
  0, 0, 0, 0, 1, 1, 1, 1,

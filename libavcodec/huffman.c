@@ -27,8 +27,11 @@
 #include <stdint.h>
 
 #include "libavutil/qsort.h"
+#include"libavutil/common.h"
+
 #include "avcodec.h"
 #include "huffman.h"
+#include "vlc.h"
 
 /* symbol for Huffman tree node */
 #define HNODE -1
