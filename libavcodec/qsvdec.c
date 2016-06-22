@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
 
@@ -86,10 +87,15 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
 
 static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
+    const AVPixFmtDescriptor *desc;
     mfxSession session = NULL;
     int iopattern = 0;
     mfxVideoParam param = { { 0 } };
     int ret;
+
+    desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
+    if (!desc)
+        return AVERROR_BUG;
 
     if (!q->async_fifo) {
         q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
@@ -136,9 +142,9 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.mfx.CodecProfile = avctx->profile;
     param.mfx.CodecLevel   = avctx->level;
 
-    param.mfx.FrameInfo.BitDepthLuma   = 8;
-    param.mfx.FrameInfo.BitDepthChroma = 8;
-    param.mfx.FrameInfo.Shift          = 0;
+    param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
+    param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
+    param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
     param.mfx.FrameInfo.FourCC         = q->fourcc;
     param.mfx.FrameInfo.Width          = avctx->coded_width;
     param.mfx.FrameInfo.Height         = avctx->coded_height;
@@ -452,7 +458,8 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
         if (qsv_format < 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Only 8-bit YUV420 streams are supported.\n");
+                   "Decoding pixel format '%s' is not supported\n",
+                   av_get_pix_fmt_name(q->parser->format));
             ret = AVERROR(ENOSYS);
             goto reinit_fail;
         }
