@@ -144,6 +144,7 @@ static void test_copy(const AVCodec *c1, const AVCodec *c2)
     ctx1 = avcodec_alloc_context3(c1);
     ctx2 = avcodec_alloc_context3(c2);
     ctx1->width = ctx1->height = 128;
+    ctx1->time_base = (AVRational){12,34};
     if (ctx2->codec && ctx2->codec->priv_class && ctx2->codec->priv_data_size) {
         av_opt_set(ctx2->priv_data, "num", "667", 0);
         av_opt_set(ctx2->priv_data, "str", "i'm dest value before copy", 0);
