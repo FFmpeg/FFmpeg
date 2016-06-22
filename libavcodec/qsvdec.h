@@ -57,6 +57,7 @@ typedef struct QSVContext {
     AVCodecContext *avctx_internal;
     enum AVPixelFormat orig_pix_fmt;
     uint32_t fourcc;
+    mfxFrameInfo frame_info;
 
     // options set by the caller
     int async_depth;

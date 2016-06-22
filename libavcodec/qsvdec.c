@@ -155,10 +155,12 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return ff_qsv_error(ret);
     }
 
+    q->frame_info = param.mfx.FrameInfo;
+
     return 0;
 }
 
-static int alloc_frame(AVCodecContext *avctx, QSVFrame *frame)
+static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 {
     int ret;
 
@@ -169,12 +171,7 @@ static int alloc_frame(AVCodecContext *avctx, QSVFrame *frame)
     if (frame->frame->format == AV_PIX_FMT_QSV) {
         frame->surface = (mfxFrameSurface1*)frame->frame->data[3];
     } else {
-        frame->surface_internal.Info.BitDepthLuma   = 8;
-        frame->surface_internal.Info.BitDepthChroma = 8;
-        frame->surface_internal.Info.FourCC         = MFX_FOURCC_NV12;
-        frame->surface_internal.Info.Width          = avctx->coded_width;
-        frame->surface_internal.Info.Height         = avctx->coded_height;
-        frame->surface_internal.Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
+        frame->surface_internal.Info = q->frame_info;
 
         frame->surface_internal.Data.PitchLow = frame->frame->linesize[0];
         frame->surface_internal.Data.Y        = frame->frame->data[0];
@@ -209,7 +206,7 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     last  = &q->work_frames;
     while (frame) {
         if (!frame->surface) {
-            ret = alloc_frame(avctx, frame);
+            ret = alloc_frame(avctx, q, frame);
             if (ret < 0)
                 return ret;
             *surf = frame->surface;
@@ -230,7 +227,7 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     }
     *last = frame;
 
-    ret = alloc_frame(avctx, frame);
+    ret = alloc_frame(avctx, q, frame);
     if (ret < 0)
         return ret;
 
