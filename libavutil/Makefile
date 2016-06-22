@@ -221,4 +221,4 @@ TOOLS = crypto_bench ffhash ffeval ffescape
 tools/crypto_bench$(EXESUF): ELIBS += $(if $(VERSUS),$(subst +, -l,+$(VERSUS)),)
 tools/crypto_bench$(EXESUF): CFLAGS += -DUSE_EXT_LIBS=0$(if $(VERSUS),$(subst +,+USE_,+$(VERSUS)),)
 
-$(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2
+$(SUBDIR)tests/lzo$(EXESUF): ELIBS = -llzo2

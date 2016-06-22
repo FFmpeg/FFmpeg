@@ -1559,23 +1559,20 @@ static int mkv_write_header(AVFormatContext *s)
     if ((tag = av_dict_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
+        uint32_t segment_uid[4];
+        AVLFG lfg;
+
+        av_lfg_init(&lfg, av_get_random_seed());
+
+        for (i = 0; i < 4; i++)
+            segment_uid[i] = av_lfg_get(&lfg);
+
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
         if ((tag = av_dict_get(s->metadata, "encoding_tool", NULL, 0)))
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, tag->value);
         else
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-
-        if (mkv->mode != MODE_WEBM) {
-            uint32_t segment_uid[4];
-            AVLFG lfg;
-
-            av_lfg_init(&lfg, av_get_random_seed());
-
-            for (i = 0; i < 4; i++)
-                segment_uid[i] = av_lfg_get(&lfg);
-
-            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
-        }
+        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
     } else {
         const char *ident = "Lavf";
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , ident);

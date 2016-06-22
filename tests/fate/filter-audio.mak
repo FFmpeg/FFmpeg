@@ -174,8 +174,8 @@ fate-filter-hdcd: CMP = oneline
 fate-filter-hdcd: REF = 5db465a58d2fd0d06ca944b883b33476
 
 FATE_AFILTER-yes += fate-filter-formats
-fate-filter-formats: libavfilter/formats-test$(EXESUF)
-fate-filter-formats: CMD = run libavfilter/formats-test
+fate-filter-formats: libavfilter/tests/formats$(EXESUF)
+fate-filter-formats: CMD = run libavfilter/tests/formats
 
 FATE_SAMPLES_AVCONV += $(FATE_AFILTER_SAMPLES-yes)
 FATE_FFMPEG += $(FATE_AFILTER-yes)
