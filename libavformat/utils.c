@@ -2568,6 +2568,8 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
         int64_t bit_rate = 0;
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
+            if (st->codecpar->bit_rate <= 0 && st->internal->avctx->bit_rate > 0)
+                st->codecpar->bit_rate = st->internal->avctx->bit_rate;
             if (st->codecpar->bit_rate > 0) {
                 if (INT64_MAX - st->codecpar->bit_rate < bit_rate) {
                     bit_rate = 0;
