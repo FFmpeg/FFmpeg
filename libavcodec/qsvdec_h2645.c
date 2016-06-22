@@ -40,6 +40,7 @@
 enum LoadPlugin {
     LOAD_PLUGIN_NONE,
     LOAD_PLUGIN_HEVC_SW,
+    LOAD_PLUGIN_HEVC_HW,
 };
 
 typedef struct QSVH2645Context {
@@ -89,6 +90,7 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
         static const char *uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
+        static const char *uid_hevcdec_hw = "33a61c0b4c27454ca8d85dde757c6f8e";
 
         if (s->qsv.load_plugins[0]) {
             av_log(avctx, AV_LOG_WARNING,
@@ -96,7 +98,11 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
                    "The load_plugin value will be ignored.\n");
         } else {
             av_freep(&s->qsv.load_plugins);
-            s->qsv.load_plugins = av_strdup(uid_hevcdec_sw);
+
+            if (s->load_plugin == LOAD_PLUGIN_HEVC_SW)
+                s->qsv.load_plugins = av_strdup(uid_hevcdec_sw);
+            else
+                s->qsv.load_plugins = av_strdup(uid_hevcdec_hw);
             if (!s->qsv.load_plugins)
                 return AVERROR(ENOMEM);
         }
@@ -233,9 +239,10 @@ AVHWAccel ff_hevc_qsv_hwaccel = {
 static const AVOption hevc_options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
 
-    { "load_plugin", "A user plugin to load in an internal session", OFFSET(load_plugin), AV_OPT_TYPE_INT, { .i64 = LOAD_PLUGIN_HEVC_SW }, LOAD_PLUGIN_NONE, LOAD_PLUGIN_HEVC_SW, VD, "load_plugin" },
+    { "load_plugin", "A user plugin to load in an internal session", OFFSET(load_plugin), AV_OPT_TYPE_INT, { .i64 = LOAD_PLUGIN_HEVC_SW }, LOAD_PLUGIN_NONE, LOAD_PLUGIN_HEVC_HW, VD, "load_plugin" },
     { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_NONE },    0, 0, VD, "load_plugin" },
     { "hevc_sw",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_HEVC_SW }, 0, 0, VD, "load_plugin" },
+    { "hevc_hw",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_HEVC_HW }, 0, 0, VD, "load_plugin" },
 
     { "load_plugins", "A :-separate list of hexadecimal plugin UIDs to load in an internal session",
         OFFSET(qsv.load_plugins), AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
