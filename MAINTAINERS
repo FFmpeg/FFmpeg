@@ -552,7 +552,6 @@ AVR32                                   Mans Rullgard
 MIPS                                    Mans Rullgard, Nedeljko Babic
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
-Linux / PowerPC                         Luca Barbato
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
 Windows MSVC                            Matthew Oliver, Hendrik Leppkes
