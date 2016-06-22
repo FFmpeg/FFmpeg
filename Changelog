@@ -42,6 +42,8 @@ version <next>:
 - OpenExr improvements (tile data and B44/B44A support)
 - BitJazz SheerVideo decoder
 - CUDA CUVID H264/HEVC decoder
+- 10-bit depth support in native utvideo decoder
+- libutvideo wrapper removed
 
 
 version 3.0:

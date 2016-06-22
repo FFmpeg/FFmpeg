@@ -263,7 +263,6 @@ External library support:
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
-  --enable-libutvideo      enable Ut Video encoding and decoding via libutvideo [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvidstab      enable video stabilization using vid.stab [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
@@ -1510,7 +1509,6 @@ EXTERNAL_LIBRARY_LIST="
     libtesseract
     libtheora
     libtwolame
-    libutvideo
     libv4l2
     libvidstab
     libvo_amrwbenc
@@ -2773,8 +2771,6 @@ libspeex_encoder_deps="libspeex"
 libspeex_encoder_select="audio_frame_queue"
 libtheora_encoder_deps="libtheora"
 libtwolame_encoder_deps="libtwolame"
-libutvideo_decoder_deps="libutvideo"
-libutvideo_encoder_deps="libutvideo"
 libvo_amrwbenc_encoder_deps="libvo_amrwbenc"
 libvorbis_decoder_deps="libvorbis"
 libvorbis_encoder_deps="libvorbis"
@@ -5013,7 +5009,6 @@ die_license_disabled gpl frei0r
 die_license_disabled gpl libcdio
 die_license_disabled gpl librubberband
 die_license_disabled gpl libsmbclient
-die_license_disabled gpl libutvideo
 die_license_disabled gpl libvidstab
 die_license_disabled gpl libx264
 die_license_disabled gpl libx265
@@ -5685,9 +5680,6 @@ enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
-enabled libutvideo        && { require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++ &&
-                               check_cpp_condition utvideo/utvideo.h "!defined(UTVIDEO_VERSION_MAJOR) || UTVIDEO_VERSION_MAJOR < 15 || UTVIDEO_VERSION_MAJOR == 15 && UTVIDEO_VERSION_MINOR < 4" ||
-                               die "ERROR: libutvideo version must be <= 15.3.0."; }
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
