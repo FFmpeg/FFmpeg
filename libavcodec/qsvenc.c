@@ -385,7 +385,16 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
         q->param.mfx.FrameInfo = frames_hwctx->surfaces[0].Info;
     } else {
-        q->param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
+        enum AVPixelFormat sw_format = avctx->pix_fmt == AV_PIX_FMT_QSV ?
+                                       avctx->sw_pix_fmt : avctx->pix_fmt;
+        const AVPixFmtDescriptor *desc;
+
+        desc = av_pix_fmt_desc_get(sw_format);
+        if (!desc)
+            return AVERROR_BUG;
+
+        ff_qsv_map_pixfmt(sw_format, &q->param.mfx.FrameInfo.FourCC);
+
         q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
         q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
         q->param.mfx.FrameInfo.CropX          = 0;
@@ -396,8 +405,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.FrameInfo.AspectRatioH   = avctx->sample_aspect_ratio.den;
         q->param.mfx.FrameInfo.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
         q->param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
-        q->param.mfx.FrameInfo.BitDepthLuma   = 8;
-        q->param.mfx.FrameInfo.BitDepthChroma = 8;
+        q->param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
+        q->param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
+        q->param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
     }
 
     if (avctx->framerate.den > 0 && avctx->framerate.num > 0) {
