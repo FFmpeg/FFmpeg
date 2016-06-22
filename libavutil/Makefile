@@ -34,6 +34,7 @@ HEADERS = adler32.h                                                     \
           hmac.h                                                        \
           hwcontext.h                                                   \
           hwcontext_cuda.h                                              \
+          hwcontext_dxva2.h                                             \
           hwcontext_vaapi.h                                             \
           hwcontext_vdpau.h                                             \
           imgutils.h                                                    \
@@ -152,6 +153,7 @@ OBJS = adler32.o                                                        \
 OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
@@ -163,6 +165,7 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
 
 SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda.h
+SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h

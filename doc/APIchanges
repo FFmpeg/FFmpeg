@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-06-22 - xxxxxxx - lavu 55.25.100 - hwcontext_dxva2.h
+  Add new installed header with DXVA2-specific hwcontext definitions.
+
 2016-04-27 - fb91871 - lavu 55.23.100 - log.h
   Add a new function av_log_format_line2() which returns number of bytes
   written to the target buffer.
