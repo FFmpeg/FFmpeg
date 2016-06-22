@@ -582,6 +582,7 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         if (ret < 0)
             goto fail;
         memcpy(dst->buf->data, src->data, src->size);
+
         dst->data = dst->buf->data;
     } else {
         dst->buf = av_buffer_ref(src->buf);
