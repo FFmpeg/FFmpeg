@@ -70,6 +70,7 @@ static const AVOption options[] = {
     { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_colr", "Write colr atom (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -3109,7 +3110,71 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     return update_size(pb, pos);
 }
 
-/* iTunes meta data tag */
+static int mov_write_mdta_hdlr_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    avio_wb32(pb, 33); /* size */
+    ffio_wfourcc(pb, "hdlr");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "mdta");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    avio_w8(pb, 0);
+    return 33;
+}
+
+static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    AVDictionaryEntry *t = NULL;
+    int64_t pos = avio_tell(pb);
+    int64_t curpos, entry_pos;
+    int count = 0;
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "keys");
+    avio_wb32(pb, 0);
+    entry_pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* entry count */
+
+    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        avio_wb32(pb, strlen(t->key) + 8);
+        ffio_wfourcc(pb, "mdta");
+        avio_write(pb, t->key, strlen(t->key));
+        count += 1;
+    }
+    curpos = avio_tell(pb);
+    avio_seek(pb, entry_pos, SEEK_SET);
+    avio_wb32(pb, count); // rewrite entry count
+    avio_seek(pb, curpos, SEEK_SET);
+
+    return update_size(pb, pos);
+}
+
+static int mov_write_mdta_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    AVDictionaryEntry *t = NULL;
+    int64_t pos = avio_tell(pb);
+    int count = 1; /* keys are 1-index based */
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "ilst");
+
+    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        int64_t entry_pos = avio_tell(pb);
+        avio_wb32(pb, 0); /* size */
+        avio_wb32(pb, count); /* key */
+        mov_write_string_data_tag(pb, t->value, 0, 1);
+        update_size(pb, entry_pos);
+        count += 1;
+    }
+    return update_size(pb, pos);
+}
+
+/* meta data tags */
 static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
@@ -3118,8 +3183,16 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "meta");
     avio_wb32(pb, 0);
-    mov_write_itunes_hdlr_tag(pb, mov, s);
-    mov_write_ilst_tag(pb, mov, s);
+    if (mov->flags & FF_MOV_FLAG_USE_MDTA) {
+        mov_write_mdta_hdlr_tag(pb, mov, s);
+        mov_write_mdta_keys_tag(pb, mov, s);
+        mov_write_mdta_ilst_tag(pb, mov, s);
+    }
+    else {
+        /* iTunes metadata tag */
+        mov_write_itunes_hdlr_tag(pb, mov, s);
+        mov_write_ilst_tag(pb, mov, s);
+    }
     size = update_size(pb, pos);
     return size;
 }
@@ -3231,7 +3304,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_3gp_udta_tag(pb_buf, s, "cprt", "copyright");
         mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "date");
         mov_write_loci_tag(s, pb_buf);
-    } else if (mov->mode == MODE_MOV) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
+    } else if (mov->mode == MODE_MOV && !(mov->flags & FF_MOV_FLAG_USE_MDTA)) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
         mov_write_string_metadata(s, pb_buf, "\251ART", "artist",      0);
         mov_write_string_metadata(s, pb_buf, "\251nam", "title",       0);
         mov_write_string_metadata(s, pb_buf, "\251aut", "author",      0);

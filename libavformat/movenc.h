@@ -234,6 +234,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_GLOBAL_SIDX           (1 << 14)
 #define FF_MOV_FLAG_WRITE_COLR            (1 << 15)
 #define FF_MOV_FLAG_WRITE_GAMA            (1 << 16)
+#define FF_MOV_FLAG_USE_MDTA              (1 << 17)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
