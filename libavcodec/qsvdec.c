@@ -40,17 +40,6 @@
 #include "qsv_internal.h"
 #include "qsvdec.h"
 
-int ff_qsv_map_pixfmt(enum AVPixelFormat format)
-{
-    switch (format) {
-    case AV_PIX_FMT_YUV420P:
-    case AV_PIX_FMT_YUVJ420P:
-        return AV_PIX_FMT_NV12;
-    default:
-        return AVERROR(ENOSYS);
-    }
-}
-
 static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session,
                             AVBufferRef *hw_frames_ref)
 {
@@ -150,7 +139,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.mfx.FrameInfo.BitDepthLuma   = 8;
     param.mfx.FrameInfo.BitDepthChroma = 8;
     param.mfx.FrameInfo.Shift          = 0;
-    param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
+    param.mfx.FrameInfo.FourCC         = q->fourcc;
     param.mfx.FrameInfo.Width          = avctx->coded_width;
     param.mfx.FrameInfo.Height         = avctx->coded_height;
     param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
@@ -463,7 +452,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                                            AV_PIX_FMT_NONE };
         enum AVPixelFormat qsv_format;
 
-        qsv_format = ff_qsv_map_pixfmt(q->parser->format);
+        qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
         if (qsv_format < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "Only 8-bit YUV420 streams are supported.\n");

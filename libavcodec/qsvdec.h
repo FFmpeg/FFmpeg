@@ -56,6 +56,7 @@ typedef struct QSVContext {
     AVCodecParserContext *parser;
     AVCodecContext *avctx_internal;
     enum AVPixelFormat orig_pix_fmt;
+    uint32_t fourcc;
 
     // options set by the caller
     int async_depth;
@@ -66,8 +67,6 @@ typedef struct QSVContext {
     mfxExtBuffer **ext_buffers;
     int         nb_ext_buffers;
 } QSVContext;
-
-int ff_qsv_map_pixfmt(enum AVPixelFormat format);
 
 int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                         AVFrame *frame, int *got_frame, AVPacket *pkt);
