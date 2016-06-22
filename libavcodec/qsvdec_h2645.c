@@ -88,7 +88,7 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     int ret;
 
     if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
-        static const char *uid_hevcenc_sw = "15dd936825ad475ea34e35f3f54217a6";
+        static const char *uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
 
         if (s->qsv.load_plugins[0]) {
             av_log(avctx, AV_LOG_WARNING,
@@ -96,7 +96,7 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
                    "The load_plugin value will be ignored.\n");
         } else {
             av_freep(&s->qsv.load_plugins);
-            s->qsv.load_plugins = av_strdup(uid_hevcenc_sw);
+            s->qsv.load_plugins = av_strdup(uid_hevcdec_sw);
             if (!s->qsv.load_plugins)
                 return AVERROR(ENOMEM);
         }
