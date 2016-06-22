@@ -189,6 +189,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
             if (sep)
                 p = sep + 1;
+            else
+                break;
         }
     }
     if (ctx->playpath) {
