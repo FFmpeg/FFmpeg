@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx / db7968b - lavf 57.40.100 / 57.7.0 - avio.h
+  Add AVIODataMarkerType, write_data_type, ignore_boundary_point and
+  avio_write_marker.
+
 2016-xx-xx - xxxxxxx / 0c4468d - lavu 55.26.100 / 55.12.0 - opt.h
   Add av_stereo3d_type_name() and av_stereo3d_from_name().
 

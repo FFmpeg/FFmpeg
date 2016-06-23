@@ -475,6 +475,8 @@ static int init_pts(AVFormatContext *s)
 
 static int write_header_internal(AVFormatContext *s)
 {
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
     if (s->oformat->write_header) {
         int ret = s->oformat->write_header(s);
         if (ret >= 0 && s->pb && s->pb->error < 0)
@@ -486,6 +488,8 @@ static int write_header_internal(AVFormatContext *s)
             avio_flush(s->pb);
     }
     s->internal->header_written = 1;
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_UNKNOWN);
     return 0;
 }
 
@@ -1164,12 +1168,15 @@ int av_write_trailer(AVFormatContext *s)
     }
 
 fail:
-    if (s->internal->header_written && s->oformat->write_trailer)
+    if (s->internal->header_written && s->oformat->write_trailer) {
+        if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
         if (ret >= 0) {
         ret = s->oformat->write_trailer(s);
         } else {
             s->oformat->write_trailer(s);
         }
+    }
 
     if (s->oformat->deinit)
         s->oformat->deinit(s);
