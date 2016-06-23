@@ -53,7 +53,7 @@ L(\name):
 .endm
 
 .macro movrel rd, sym, gp
-    ld      \rd, \sym@got(r2)
+    ld      \rd, \sym@got(2)
 .endm
 
 .macro get_got rd
