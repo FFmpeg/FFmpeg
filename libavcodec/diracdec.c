@@ -406,57 +406,16 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-#define SIGN_CTX(x) (CTX_SIGN_ZERO + ((x) > 0) - ((x) < 0))
-
 static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffset)
 {
-    int sign, coeff;
-    uint32_t buf;
-
-    OPEN_READER(re, gb);
-    UPDATE_CACHE(re, gb);
-    buf = GET_CACHE(re, gb);
-
-    if (buf & 0x80000000) {
-        LAST_SKIP_BITS(re,gb,1);
-        CLOSE_READER(re, gb);
-        return 0;
-    }
-
-    if (buf & 0xAA800000) {
-        buf >>= 32 - 8;
-        SKIP_BITS(re, gb, ff_interleaved_golomb_vlc_len[buf]);
-
-        coeff = ff_interleaved_ue_golomb_vlc_code[buf];
-    } else {
-        unsigned ret = 1;
-
-        do {
-            buf >>= 32 - 8;
-            SKIP_BITS(re, gb,
-                           FFMIN(ff_interleaved_golomb_vlc_len[buf], 8));
-
-            if (ff_interleaved_golomb_vlc_len[buf] != 9) {
-                ret <<= (ff_interleaved_golomb_vlc_len[buf] - 1) >> 1;
-                ret  |= ff_interleaved_dirac_golomb_vlc_code[buf];
-                break;
-            }
-            ret = (ret << 4) | ff_interleaved_dirac_golomb_vlc_code[buf];
-            UPDATE_CACHE(re, gb);
-            buf = GET_CACHE(re, gb);
-        } while (ret<0x8000000U && BITS_AVAILABLE(re, gb));
-
-        coeff = ret - 1;
-    }
-
-    coeff = (coeff * qfactor + qoffset) >> 2;
-    sign  = SHOW_SBITS(re, gb, 1);
-    LAST_SKIP_BITS(re, gb, 1);
-    coeff = (coeff ^ sign) - sign;
-
-    CLOSE_READER(re, gb);
+    int coeff = dirac_get_se_golomb(gb);
+    const int sign = FFSIGN(coeff);
+    if (coeff)
+        coeff = sign*((sign * coeff * qfactor + qoffset) >> 2);
     return coeff;
 }
+
+#define SIGN_CTX(x) (CTX_SIGN_ZERO + ((x) > 0) - ((x) < 0))
 
 #define UNPACK_ARITH(n, type) \
     static inline void coeff_unpack_arith_##n(DiracArith *c, int qfactor, int qoffset, \
