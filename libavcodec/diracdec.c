@@ -486,7 +486,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
         b->quant = quant;
     }
 
-    if (b->quant > 115) {
+    if (b->quant > DIRAC_MAX_QUANT_INDEX) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", b->quant);
         b->quant = 0;
         return;
@@ -676,12 +676,12 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
     int x, y;
 
-    if (quant > 115) {
+    if (quant > DIRAC_MAX_QUANT_INDEX) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", quant);
         return;
     }
-    qfactor = ff_dirac_qscale_tab[quant & 0x7f];
-    qoffset = ff_dirac_qoffset_intra_tab[quant & 0x7f] + 2;
+    qfactor = ff_dirac_qscale_tab[quant];
+    qoffset = ff_dirac_qoffset_intra_tab[quant] + 2;
     /* we have to constantly check for overread since the spec explicitly
        requires this, with the meaning that all remaining coeffs are set to 0 */
     if (get_bits_count(gb) >= bits_end)
