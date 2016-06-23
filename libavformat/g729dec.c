@@ -56,7 +56,7 @@ static int g729_read_header(AVFormatContext *s)
         st->codecpar->block_align = 10;
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "Invalid bit_rate value %d. "
+        av_log(s, AV_LOG_ERROR, "Invalid bit_rate value %"PRId64". "
                "Only 6400 and 8000 b/s are supported.", s->bit_rate);
         return AVERROR(EINVAL);
     }
