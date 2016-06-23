@@ -37,6 +37,7 @@
 #include "libavutil/hash.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/libm.h"
@@ -1778,6 +1779,10 @@ static void print_pkt_side_data(WriterContext *w,
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
             print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
+        } else if (sd->type == AV_PKT_DATA_STEREO3D) {
+            const AVStereo3D *stereo = (AVStereo3D *)sd->data;
+            print_str("type", av_stereo3d_type_name(stereo->type));
+            print_int("inverted", !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
         }
         writer_print_section_footer(w);
     }
