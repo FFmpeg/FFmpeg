@@ -845,7 +845,6 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 s->output_buf_size = 0;
             }
             if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
-                ret = pkt->size;
                 pkt->pts = av_rescale_q(from_omx_ticks(buffer->nTimeStamp), AV_TIME_BASE_Q, avctx->time_base);
                 // We don't currently enable B-frames for the encoders, so set
                 // pkt->dts = pkt->pts. (The calling code behaves worse if the encoder
