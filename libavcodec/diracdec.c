@@ -1816,9 +1816,11 @@ static int dirac_decode_frame_internal(DiracContext *s)
 
     if (s->low_delay) {
         /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
-        for (comp = 0; comp < 3; comp++) {
-            Plane *p = &s->plane[comp];
-            memset(p->idwt.buf, 0, p->idwt.stride * p->idwt.height);
+        if (!s->hq_picture) {
+            for (comp = 0; comp < 3; comp++) {
+                Plane *p = &s->plane[comp];
+                memset(p->idwt.buf, 0, p->idwt.stride * p->idwt.height);
+            }
         }
         if (!s->zero_res) {
             if ((ret = decode_lowdelay(s)) < 0)
