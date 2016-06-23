@@ -60,6 +60,7 @@ version <next>:
 - MagicYUV decoder
 - Duck TrueMotion 2.0 Real Time decoder
 - Intel QSV video scaling filter
+- OpenH264 decoder wrapper
 
 
 version 11:
