@@ -263,3 +263,40 @@ ADD_RECT sse2
 HPEL_FILTER sse2
 ADD_OBMC 32, sse2
 ADD_OBMC 16, sse2
+
+INIT_XMM sse4
+
+; void dequant_subband_32(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h)
+cglobal dequant_subband_32, 7, 7, 4, src, dst, stride, qf, qs, tot_v, tot_h
+    movd   m2, qfd
+    movd   m3, qsd
+    SPLATD m2
+    SPLATD m3
+    mov    r4, tot_hq
+    mov    r3, dstq
+
+    .loop_v:
+    mov    tot_hq, r4
+    mov    dstq,   r3
+
+    .loop_h:
+    movu   m0, [srcq]
+
+    pabsd  m1, m0
+    pmulld m1, m2
+    paddd  m1, m3
+    psrld  m1,  2
+    psignd m1, m0
+
+    movu   [dstq], m1
+
+    add    srcq, mmsize
+    add    dstq, mmsize
+    sub    tot_hd, 4
+    jg     .loop_h
+
+    add    r3, strideq
+    dec    tot_vd
+    jg     .loop_v
+
+    RET

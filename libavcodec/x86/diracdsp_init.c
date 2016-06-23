@@ -46,6 +46,8 @@ void ff_put_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, 
 void ff_put_signed_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_signed_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 
+void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
+
 #if HAVE_YASM
 
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
@@ -183,5 +185,9 @@ void ff_diracdsp_init_x86(DiracDSPContext* c)
         c->avg_dirac_pixels_tab[1][0] = ff_avg_dirac_pixels16_sse2;
         c->put_dirac_pixels_tab[2][0] = ff_put_dirac_pixels32_sse2;
         c->avg_dirac_pixels_tab[2][0] = ff_avg_dirac_pixels32_sse2;
+    }
+
+    if (EXTERNAL_SSE4(mm_flags)) {
+        c->dequant_subband[1]         = ff_dequant_subband_32_sse4;
     }
 }
