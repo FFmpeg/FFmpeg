@@ -10,6 +10,7 @@ version <next>:
 - curves filter doesn't automatically insert points at x=0 and x=1 anymore
 - 16-bit support in curves filter
 - 16-bit support in selectivecolor filter
+- OpenH264 decoder wrapper
 
 
 version 3.1:

@@ -623,7 +623,7 @@ void avcodec_register_all(void)
 
     /* external libraries, that shouldn't be used by default if one of the
      * above is available */
-    REGISTER_ENCODER(LIBOPENH264,       libopenh264);
+    REGISTER_ENCDEC (LIBOPENH264,       libopenh264);
     REGISTER_DECODER(H264_CUVID,        h264_cuvid);
     REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_OMX,          h264_omx);
