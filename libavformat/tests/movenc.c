@@ -70,6 +70,8 @@ int skip_write;
 int skip_write_audio;
 int clear_duration;
 int force_iobuf_size;
+int do_interleave;
+int fake_pkt_duration;
 
 int num_warnings;
 
@@ -283,6 +285,8 @@ static void mux_frames(int n)
             }
             if (!bframes)
                 pkt.pts = pkt.dts;
+            if (fake_pkt_duration)
+                pkt.duration = fake_pkt_duration;
             frames++;
         }
 
@@ -295,7 +299,10 @@ static void mux_frames(int n)
             continue;
         if (skip_write_audio && pkt.stream_index == 1)
             continue;
-        av_write_frame(ctx, &pkt);
+        if (do_interleave)
+            av_interleaved_write_frame(ctx, &pkt);
+        else
+            av_write_frame(ctx, &pkt);
     }
 }
 
@@ -712,6 +719,32 @@ int main(int argc, char **argv)
     finish();
     close_out();
     force_iobuf_size = 0;
+
+    // Test VFR content with bframes with interleaving.
+    // Here, using av_interleaved_write_frame allows the muxer to get the
+    // fragment end durations right. We always set the packet duration to
+    // the expected, but we simulate dropped frames at one point.
+    do_interleave = 1;
+    init_out("vfr-noduration-interleave");
+    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov", 0);
+    av_dict_set(&opts, "frag_duration", "650000", 0);
+    init_fps(1, 1, 30);
+    mux_frames(gop_size/2);
+    // Pretend that the packet duration is the normal, even if
+    // we actually skip a bunch of frames. (I.e., simulate that
+    // we don't know of the framedrop in advance.)
+    fake_pkt_duration = duration;
+    duration *= 10;
+    mux_frames(1);
+    fake_pkt_duration = 0;
+    duration /= 10;
+    mux_frames(gop_size/2 - 1);
+    mux_gops(1);
+    finish();
+    close_out();
+    clear_duration = 0;
+    do_interleave = 0;
+
 
     av_free(md5);
 
