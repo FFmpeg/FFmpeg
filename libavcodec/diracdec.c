@@ -32,6 +32,7 @@
 #include "internal.h"
 #include "golomb.h"
 #include "dirac_arith.h"
+#include "dirac_vlc.h"
 #include "mpeg12data.h"
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideoencdsp.h"
@@ -125,6 +126,7 @@ typedef struct DiracContext {
     MpegvideoEncDSPContext mpvencdsp;
     VideoDSPContext vdsp;
     DiracDSPContext diracdsp;
+    DiracGolombLUT *reader_ctx;
     DiracVersionInfo version;
     GetBitContext gb;
     AVDiracSeqHeader seq;
@@ -378,6 +380,7 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     s->threads_num_buf = -1;
     s->thread_buf_size = -1;
 
+    ff_dirac_golomb_reader_init(&s->reader_ctx);
     ff_diracdsp_init(&s->diracdsp);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_videodsp_init(&s->vdsp, 8);
@@ -406,6 +409,8 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 {
     DiracContext *s = avctx->priv_data;
     int i;
+
+    ff_dirac_golomb_reader_end(&s->reader_ctx);
 
     dirac_decode_flush(avctx);
     for (i = 0; i < MAX_FRAMES; i++)
@@ -825,10 +830,11 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
 
     /* Luma + 2 Chroma planes */
     for (i = 0; i < 3; i++) {
-        int c, coef_num, coef_par, off = 0;
+        int coef_num, coef_par, off = 0;
         int64_t length = s->highquality.size_scaler*get_bits(gb, 8);
         int64_t start = get_bits_count(gb);
         int64_t bits_end = start + 8*length;
+        const uint8_t *addr = align_get_bits(gb);
 
         if (bits_end >= INT_MAX) {
             av_log(s->avctx, AV_LOG_ERROR, "end too far away\n");
@@ -837,17 +843,12 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
 
         coef_num = subband_coeffs(s, slice->slice_x, slice->slice_y, i, coeffs_num);
 
-        if (s->pshift) {
-            int32_t *dst = (int32_t *)tmp_buf;
-            for (c = 0; c < coef_num; c++)
-                dst[c] = dirac_get_se_golomb(gb);
-            coef_par = c;
-        } else {
-            int16_t *dst = (int16_t *)tmp_buf;
-            for (c = 0; c < coef_num; c++)
-                dst[c] = dirac_get_se_golomb(gb);
-            coef_par = c;
-        }
+        if (s->pshift)
+            coef_par = ff_dirac_golomb_read_32bit(s->reader_ctx, addr,
+                                                  length, tmp_buf, coef_num);
+        else
+            coef_par = ff_dirac_golomb_read_16bit(s->reader_ctx, addr,
+                                                  length, tmp_buf, coef_num);
 
         if (coef_num > coef_par) {
             const int start_b = coef_par * (4 >> s->pshift);
