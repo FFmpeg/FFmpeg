@@ -223,6 +223,9 @@ FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
 FATE_SAMPLES_AVCONV += $(FATE_TIFF-yes)
 fate-tiff: $(FATE_TIFF-yes)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, IMAGE2, WEBP) += fate-webp
+fate-webp: CMD = framecrc -i $(TARGET_SAMPLES)/webp/image_small.webp
+
 FATE_XBM += fate-xbm10
 fate-xbm10: CMD = framecrc -i $(TARGET_SAMPLES)/xbm/xl.xbm
 
