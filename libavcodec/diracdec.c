@@ -121,6 +121,14 @@ typedef struct Plane {
     SubBand band[MAX_DWT_LEVELS][4];
 } Plane;
 
+/* Used by Low Delay and High Quality profiles */
+typedef struct DiracSlice {
+    GetBitContext gb;
+    int slice_x;
+    int slice_y;
+    int bytes;
+} DiracSlice;
+
 typedef struct DiracContext {
     AVCodecContext *avctx;
     MpegvideoEncDSPContext mpvencdsp;
@@ -166,6 +174,9 @@ typedef struct DiracContext {
     uint8_t *thread_buf;         /* Per-thread buffer for coefficient storage */
     int threads_num_buf;         /* Current # of buffers allocated            */
     int thread_buf_size;         /* Each thread has a buffer this size        */
+
+    DiracSlice *slice_params_buf;
+    int slice_params_num_buf;
 
     struct {
         unsigned width;
@@ -417,6 +428,7 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
         av_frame_free(&s->all_frames[i].avframe);
 
     av_freep(&s->thread_buf);
+    av_freep(&s->slice_params_buf);
 
     return 0;
 }
@@ -724,15 +736,6 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     }
 }
 
-/* Used by Low Delay and High Quality profiles */
-typedef struct DiracSlice {
-    GetBitContext gb;
-    int slice_x;
-    int slice_y;
-    int bytes;
-} DiracSlice;
-
-
 /**
  * Dirac Specification ->
  * 13.5.2 Slices. slice(sx,sy)
@@ -904,9 +907,15 @@ static int decode_lowdelay(DiracContext *s)
     SliceCoeffs tmp[MAX_DWT_LEVELS];
     int slice_num = 0;
 
-    slices = av_mallocz_array(s->num_x, s->num_y * sizeof(DiracSlice));
-    if (!slices)
-        return AVERROR(ENOMEM);
+    if (s->slice_params_num_buf != (s->num_x * s->num_y)) {
+        s->slice_params_buf = av_realloc_f(s->thread_buf, s->num_x * s->num_y, sizeof(DiracSlice));
+        if (!s->slice_params_buf) {
+            av_log(s->avctx, AV_LOG_ERROR, "slice params buffer allocation failure\n");
+            return AVERROR(ENOMEM);
+        }
+        s->slice_params_num_buf = s->num_x * s->num_y;
+    }
+    slices = s->slice_params_buf;
 
     /* 8 becacuse that's how much the golomb reader could overread junk data
      * from another plane/slice at most, and 512 because SIMD */
@@ -941,7 +950,6 @@ static int decode_lowdelay(DiracContext *s)
                 }
                 if (bytes >= INT_MAX || bytes*8 > bufsize) {
                     av_log(s->avctx, AV_LOG_ERROR, "too many bytes\n");
-                    av_free(slices);
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -998,7 +1006,7 @@ static int decode_lowdelay(DiracContext *s)
             intra_dc_prediction_8(&s->plane[2].band[0][0]);
         }
     }
-    av_free(slices);
+
     return 0;
 }
 
