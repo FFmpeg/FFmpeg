@@ -22,6 +22,8 @@
 
 SECTION_RODATA
 pw_7: times 8 dw 7
+convert_to_unsigned_10bit: times 4 dd 0x200
+clip_10bit:                times 8 dw 0x3ff
 
 cextern pw_3
 cextern pw_16
@@ -300,3 +302,43 @@ cglobal dequant_subband_32, 7, 7, 4, src, dst, stride, qf, qs, tot_v, tot_h
     jg     .loop_v
 
     RET
+
+%if ARCH_X86_64 == 1
+; void put_signed_rect_clamped_10(uint8_t *dst, int dst_stride, const uint8_t *src, int src_stride, int width, int height)
+cglobal put_signed_rect_clamped_10, 6, 9, 6, dst, dst_stride, src, src_stride, w, h
+    mov      r6, srcq
+    mov      r7, dstq
+    mov      r8, wq
+    pxor     m2, m2
+    mova     m3, [clip_10bit]
+    mova     m4, [convert_to_unsigned_10bit]
+
+    .loop_h:
+    mov      srcq, r6
+    mov      dstq, r7
+    mov      wq,   r8
+
+    .loop_w:
+    movu     m0, [srcq+0*mmsize]
+    movu     m1, [srcq+1*mmsize]
+
+    paddd    m0, m4
+    paddd    m1, m4
+    packusdw m0, m0, m1
+    CLIPW    m0, m2, m3 ; packusdw saturates so it's fine
+
+    movu     [dstq], m0
+
+    add      srcq, 2*mmsize
+    add      dstq, 1*mmsize
+    sub      wd, 8
+    jg       .loop_w
+
+    add      r6, src_strideq
+    add      r7, dst_strideq
+    sub      hd, 1
+    jg       .loop_h
+
+    RET
+
+%endif
