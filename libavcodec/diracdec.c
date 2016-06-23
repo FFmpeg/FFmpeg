@@ -806,6 +806,16 @@ static int decode_hq_slice(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
+static int decode_hq_slice_row(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
+{
+    int i;
+    DiracContext *s = avctx->priv_data;
+    DiracSlice *slices = ((DiracSlice *)arg) + s->num_x*jobnr;
+    for (i = 0; i < s->num_x; i++)
+        decode_hq_slice(avctx, &slices[i]);
+    return 0;
+}
+
 /**
  * Dirac Specification ->
  * 13.5.1 low_delay_transform_data()
@@ -857,8 +867,7 @@ static int decode_lowdelay(DiracContext *s)
                     bufsize = 0;
             }
         }
-        avctx->execute(avctx, decode_hq_slice, slices, NULL, slice_num,
-                       sizeof(DiracSlice));
+        avctx->execute2(avctx, decode_hq_slice_row, slices, NULL, s->num_y);
     } else {
         for (slice_y = 0; bufsize > 0 && slice_y < s->num_y; slice_y++) {
             for (slice_x = 0; bufsize > 0 && slice_x < s->num_x; slice_x++) {
