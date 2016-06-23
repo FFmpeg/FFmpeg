@@ -752,35 +752,9 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
                         if(sign) level= -level;
                     }
 
-#if 0 // waste of time / this will detect very few errors
-                    {
-                        const int abs_level= FFABS(level);
-                        const int run1= run - rl->max_run[last][abs_level] - run_diff;
-                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
-                            if(abs_level <= rl->max_level[last][run]){
-                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
-                                return DECODING_AC_LOST;
-                            }
-                            if(abs_level <= rl->max_level[last][run]*2){
-                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
-                                return DECODING_AC_LOST;
-                            }
-                            if(run1>=0 && abs_level <= rl->max_level[last][run1]){
-                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
-                                return DECODING_AC_LOST;
-                            }
-                        }
-                    }
-#endif
                     //level = level * qmul + (level>0) * qadd - (level<=0) * qadd ;
                     if (level>0) level= level * qmul + qadd;
                     else         level= level * qmul - qadd;
-#if 0 // waste of time too :(
-                    if(level>2048 || level<-2048){
-                        av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc\n");
-                        return DECODING_AC_LOST;
-                    }
-#endif
                     i+= run + 1;
                     if(last) i+=192;
 #ifdef ERROR_DETAILS
