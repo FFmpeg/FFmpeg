@@ -537,6 +537,13 @@ static int read_extra_header(FFV1Context *f)
         }
     }
 
+    av_log(f->avctx, AV_LOG_VERBOSE,
+           "FFV1 version %d.%d colorspace %d - %d bits - %d/%d planes, %s transparent - tile geometry %dx%d - %s\n",
+           f->version, f->minor_version, f->colorspace, f->avctx->bits_per_raw_sample,
+           f->plane_count, f->chroma_planes, f->transparency ? "" : "not",
+           f->num_h_slices, f->num_v_slices,
+           f->ec ? "per-slice crc" : "no crc");
+
     return 0;
 }
 
