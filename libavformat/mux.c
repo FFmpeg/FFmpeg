@@ -357,6 +357,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
+    // If the timestamp offsetting below is adjusted, adjust
+    // ff_interleaved_peek similarly.
     if (s->avoid_negative_ts > 0) {
         AVRational time_base = s->streams[pkt->stream_index]->time_base;
         int64_t offset = 0;
@@ -614,15 +616,27 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 }
 
-const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
+int ff_interleaved_peek(AVFormatContext *s, int stream,
+                        AVPacket *pkt, int add_offset)
 {
     AVPacketList *pktl = s->internal->packet_buffer;
     while (pktl) {
-        if (pktl->pkt.stream_index == stream)
-            return &pktl->pkt;
+        if (pktl->pkt.stream_index == stream) {
+            *pkt = pktl->pkt;
+            if (add_offset && s->internal->offset != AV_NOPTS_VALUE) {
+                int64_t offset = av_rescale_q(s->internal->offset,
+                                              s->internal->offset_timebase,
+                                              s->streams[stream]->time_base);
+                if (pkt->dts != AV_NOPTS_VALUE)
+                    pkt->dts += offset;
+                if (pkt->pts != AV_NOPTS_VALUE)
+                    pkt->pts += offset;
+            }
+            return 0;
+        }
         pktl = pktl->next;
     }
-    return NULL;
+    return AVERROR(ENOENT);
 }
 
 /**
