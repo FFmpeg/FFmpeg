@@ -60,7 +60,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct RotContext {
     const AVClass *class;
     double angle;
     char *angle_expr_str;   ///< expression for the angle
@@ -77,6 +77,9 @@ typedef struct {
     double var_values[VAR_VARS_NB];
     FFDrawContext draw;
     FFDrawColor color;
+    uint8_t *(*interpolate_bilinear)(uint8_t *dst_color,
+                                    const uint8_t *src, int src_linesize, int src_linestep,
+                                    int x, int y, int max_x, int max_y);
 } RotContext;
 
 typedef struct ThreadData {
@@ -142,6 +145,14 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV420P10LE, AV_PIX_FMT_YUVA420P10LE,
+        AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUVA444P10LE,
+        AV_PIX_FMT_YUV420P12LE,
+        AV_PIX_FMT_YUV444P12LE,
+        AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
+        AV_PIX_FMT_YUV420P16LE, AV_PIX_FMT_YUVA420P16LE,
+        AV_PIX_FMT_YUV444P9LE, AV_PIX_FMT_YUVA444P9LE,
+        AV_PIX_FMT_YUV420P9LE, AV_PIX_FMT_YUVA420P9LE,
         AV_PIX_FMT_NONE
     };
 
@@ -187,6 +198,93 @@ static const char * const func1_names[] = {
     NULL
 };
 
+#define FIXP (1<<16)
+#define FIXP2 (1<<20)
+#define INT_PI 3294199 //(M_PI * FIXP2)
+
+/**
+ * Compute the sin of a using integer values.
+ * Input is scaled by FIXP2 and output values are scaled by FIXP.
+ */
+static int64_t int_sin(int64_t a)
+{
+    int64_t a2, res = 0;
+    int i;
+    if (a < 0) a = INT_PI-a; // 0..inf
+    a %= 2 * INT_PI;         // 0..2PI
+
+    if (a >= INT_PI*3/2) a -= 2*INT_PI;  // -PI/2 .. 3PI/2
+    if (a >= INT_PI/2  ) a = INT_PI - a; // -PI/2 ..  PI/2
+
+    /* compute sin using Taylor series approximated to the fifth term */
+    a2 = (a*a)/(FIXP2);
+    for (i = 2; i < 11; i += 2) {
+        res += a;
+        a = -a*a2 / (FIXP2*i*(i+1));
+    }
+    return (res + 8)>>4;
+}
+
+/**
+ * Interpolate the color in src at position x and y using bilinear
+ * interpolation.
+ */
+static uint8_t *interpolate_bilinear8(uint8_t *dst_color,
+                                      const uint8_t *src, int src_linesize, int src_linestep,
+                                      int x, int y, int max_x, int max_y)
+{
+    int int_x = av_clip(x>>16, 0, max_x);
+    int int_y = av_clip(y>>16, 0, max_y);
+    int frac_x = x&0xFFFF;
+    int frac_y = y&0xFFFF;
+    int i;
+    int int_x1 = FFMIN(int_x+1, max_x);
+    int int_y1 = FFMIN(int_y+1, max_y);
+
+    for (i = 0; i < src_linestep; i++) {
+        int s00 = src[src_linestep * int_x  + i + src_linesize * int_y ];
+        int s01 = src[src_linestep * int_x1 + i + src_linesize * int_y ];
+        int s10 = src[src_linestep * int_x  + i + src_linesize * int_y1];
+        int s11 = src[src_linestep * int_x1 + i + src_linesize * int_y1];
+        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
+        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
+
+        dst_color[i] = ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32;
+    }
+
+    return dst_color;
+}
+
+/**
+ * Interpolate the color in src at position x and y using bilinear
+ * interpolation.
+ */
+static uint8_t *interpolate_bilinear16(uint8_t *dst_color,
+                                       const uint8_t *src, int src_linesize, int src_linestep,
+                                       int x, int y, int max_x, int max_y)
+{
+    int int_x = av_clip(x>>16, 0, max_x);
+    int int_y = av_clip(y>>16, 0, max_y);
+    int frac_x = x&0xFFFF;
+    int frac_y = y&0xFFFF;
+    int i;
+    int int_x1 = FFMIN(int_x+1, max_x);
+    int int_y1 = FFMIN(int_y+1, max_y);
+
+    for (i = 0; i < src_linestep; i+=2) {
+        int s00 = AV_RL16(&src[src_linestep * int_x  + i + src_linesize * int_y ]);
+        int s01 = AV_RL16(&src[src_linestep * int_x1 + i + src_linesize * int_y ]);
+        int s10 = AV_RL16(&src[src_linestep * int_x  + i + src_linesize * int_y1]);
+        int s11 = AV_RL16(&src[src_linestep * int_x1 + i + src_linesize * int_y1]);
+        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
+        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
+
+        AV_WL16(&dst_color[i], ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32);
+    }
+
+    return dst_color;
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -202,6 +300,11 @@ static int config_props(AVFilterLink *outlink)
 
     rot->hsub = pixdesc->log2_chroma_w;
     rot->vsub = pixdesc->log2_chroma_h;
+
+    if (pixdesc->comp[0].depth == 8)
+        rot->interpolate_bilinear = interpolate_bilinear8;
+    else
+        rot->interpolate_bilinear = interpolate_bilinear16;
 
     rot->var_values[VAR_IN_W] = rot->var_values[VAR_IW] = inlink->w;
     rot->var_values[VAR_IN_H] = rot->var_values[VAR_IH] = inlink->h;
@@ -253,63 +356,6 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = rot->outw;
     outlink->h = rot->outh;
     return 0;
-}
-
-#define FIXP (1<<16)
-#define FIXP2 (1<<20)
-#define INT_PI 3294199 //(M_PI * FIXP2)
-
-/**
- * Compute the sin of a using integer values.
- * Input is scaled by FIXP2 and output values are scaled by FIXP.
- */
-static int64_t int_sin(int64_t a)
-{
-    int64_t a2, res = 0;
-    int i;
-    if (a < 0) a = INT_PI-a; // 0..inf
-    a %= 2 * INT_PI;         // 0..2PI
-
-    if (a >= INT_PI*3/2) a -= 2*INT_PI;  // -PI/2 .. 3PI/2
-    if (a >= INT_PI/2  ) a = INT_PI - a; // -PI/2 ..  PI/2
-
-    /* compute sin using Taylor series approximated to the fifth term */
-    a2 = (a*a)/(FIXP2);
-    for (i = 2; i < 11; i += 2) {
-        res += a;
-        a = -a*a2 / (FIXP2*i*(i+1));
-    }
-    return (res + 8)>>4;
-}
-
-/**
- * Interpolate the color in src at position x and y using bilinear
- * interpolation.
- */
-static uint8_t *interpolate_bilinear(uint8_t *dst_color,
-                                     const uint8_t *src, int src_linesize, int src_linestep,
-                                     int x, int y, int max_x, int max_y)
-{
-    int int_x = av_clip(x>>16, 0, max_x);
-    int int_y = av_clip(y>>16, 0, max_y);
-    int frac_x = x&0xFFFF;
-    int frac_y = y&0xFFFF;
-    int i;
-    int int_x1 = FFMIN(int_x+1, max_x);
-    int int_y1 = FFMIN(int_y+1, max_y);
-
-    for (i = 0; i < src_linestep; i++) {
-        int s00 = src[src_linestep * int_x  + i + src_linesize * int_y ];
-        int s01 = src[src_linestep * int_x1 + i + src_linesize * int_y ];
-        int s10 = src[src_linestep * int_x  + i + src_linesize * int_y1];
-        int s11 = src[src_linestep * int_x1 + i + src_linesize * int_y1];
-        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
-        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
-
-        dst_color[i] = ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32;
-    }
-
-    return dst_color;
 }
 
 static av_always_inline void copy_elem(uint8_t *pout, const uint8_t *pin, int elem_size)
@@ -421,9 +467,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                 uint8_t inp_inv[4]; /* interpolated input value */
                 pout = out->data[plane] + j * out->linesize[plane] + i * rot->draw.pixelstep[plane];
                 if (rot->use_bilinear) {
-                    pin = interpolate_bilinear(inp_inv,
-                                               in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
-                                               x, y, inw-1, inh-1);
+                    pin = rot->interpolate_bilinear(inp_inv,
+                                                    in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
+                                                    x, y, inw-1, inh-1);
                 } else {
                     int x2 = av_clip(x1, 0, inw-1);
                     int y2 = av_clip(y1, 0, inh-1);
@@ -434,7 +480,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                     *pout = *pin;
                     break;
                 case 2:
-                    *((uint16_t *)pout) = *((uint16_t *)pin);
+                    v = AV_RL16(pin);
+                    AV_WL16(pout, v);
                     break;
                 case 3:
                     v = AV_RB24(pin);
