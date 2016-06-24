@@ -2964,6 +2964,57 @@ static int mov_write_tmpo_tag(AVIOContext *pb, AVFormatContext *s)
     return size;
 }
 
+/* 3GPP TS 26.244 */
+static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
+{
+    int lang;
+    int64_t pos = avio_tell(pb);
+    double latitude, longitude, altitude;
+    int32_t latitude_fix, longitude_fix, altitude_fix;
+    AVDictionaryEntry *t = get_metadata_lang(s, "location", &lang);
+    const char *ptr, *place = "";
+    char *end;
+    const char *astronomical_body = "earth";
+    if (!t)
+        return 0;
+
+    ptr = t->value;
+    longitude = strtod(ptr, &end);
+    if (end == ptr) {
+        av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
+        return 0;
+    }
+    ptr = end;
+    latitude = strtod(ptr, &end);
+    if (end == ptr) {
+        av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
+        return 0;
+    }
+    ptr = end;
+    altitude = strtod(ptr, &end);
+    /* If no altitude was present, the default 0 should be fine */
+    if (*end == '/')
+        place = end + 1;
+
+    latitude_fix  = (int32_t) ((1 << 16) * latitude);
+    longitude_fix = (int32_t) ((1 << 16) * longitude);
+    altitude_fix  = (int32_t) ((1 << 16) * altitude);
+
+    avio_wb32(pb, 0);         /* size */
+    ffio_wfourcc(pb, "loci"); /* type */
+    avio_wb32(pb, 0);         /* version + flags */
+    avio_wb16(pb, lang);
+    avio_write(pb, place, strlen(place) + 1);
+    avio_w8(pb, 0);           /* role of place (0 == shooting location, 1 == real location, 2 == fictional location) */
+    avio_wb32(pb, latitude_fix);
+    avio_wb32(pb, longitude_fix);
+    avio_wb32(pb, altitude_fix);
+    avio_write(pb, astronomical_body, strlen(astronomical_body) + 1);
+    avio_w8(pb, 0);           /* additional notes, null terminated string */
+
+    return update_size(pb, pos);
+}
+
 /* iTunes track or disc number */
 static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s, int disc)
@@ -3179,6 +3230,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_3gp_udta_tag(pb_buf, s, "albm", "album");
         mov_write_3gp_udta_tag(pb_buf, s, "cprt", "copyright");
         mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "date");
+        mov_write_loci_tag(s, pb_buf);
     } else if (mov->mode == MODE_MOV) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
         mov_write_string_metadata(s, pb_buf, "\251ART", "artist",      0);
         mov_write_string_metadata(s, pb_buf, "\251nam", "title",       0);
@@ -3199,6 +3251,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     } else {
         /* iTunes meta data */
         mov_write_meta_tag(pb_buf, mov, s);
+        mov_write_loci_tag(s, pb_buf);
     }
 
     if (s->nb_chapters && !(mov->flags & FF_MOV_FLAG_DISABLE_CHPL))
