@@ -733,6 +733,8 @@ static const EbmlSyntax matroska_clusters_incremental[] = {
 
 static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
+static int matroska_read_close(AVFormatContext *s);
+
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {
     AVIOContext *pb = matroska->ctx->pb;
@@ -2437,7 +2439,7 @@ static int matroska_read_header(AVFormatContext *s)
     while (res != 1) {
         res = matroska_resync(matroska, pos);
         if (res < 0)
-            return res;
+            goto fail;
         pos = avio_tell(matroska->ctx->pb);
         res = ebml_parse(matroska, matroska_segment, matroska);
     }
@@ -2456,7 +2458,7 @@ static int matroska_read_header(AVFormatContext *s)
 
     res = matroska_parse_tracks(s);
     if (res < 0)
-        return res;
+        goto fail;
 
     attachments = attachments_list->elem;
     for (j = 0; j < attachments_list->nb_elem; j++) {
@@ -2530,6 +2532,9 @@ static int matroska_read_header(AVFormatContext *s)
     matroska_convert_tags(s);
 
     return 0;
+fail:
+    matroska_read_close(s);
+    return res;
 }
 
 /*
