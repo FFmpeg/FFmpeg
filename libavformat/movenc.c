@@ -2910,16 +2910,17 @@ static int mov_write_string_tag(AVIOContext *pb, const char *name,
     return size;
 }
 
-static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
-                                     const char *name, const char *tag,
-                                     int long_style)
+static AVDictionaryEntry *get_metadata_lang(AVFormatContext *s,
+                                            const char *tag, int *lang)
 {
-    int l, lang = 0, len, len2;
+    int l, len, len2;
     AVDictionaryEntry *t, *t2 = NULL;
     char tag2[16];
 
+    *lang = 0;
+
     if (!(t = av_dict_get(s->metadata, tag, NULL, 0)))
-        return 0;
+        return NULL;
 
     len = strlen(t->key);
     snprintf(tag2, sizeof(tag2), "%s-", tag);
@@ -2927,10 +2928,21 @@ static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
         len2 = strlen(t2->key);
         if (len2 == len + 4 && !strcmp(t->value, t2->value)
             && (l = ff_mov_iso639_to_lang(&t2->key[len2 - 3], 1)) >= 0) {
-            lang = l;
-            break;
+            *lang = l;
+            return t;
         }
     }
+    return t;
+}
+
+static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
+                                     const char *name, const char *tag,
+                                     int long_style)
+{
+    int lang;
+    AVDictionaryEntry *t = get_metadata_lang(s, tag, &lang);
+    if (!t)
+        return 0;
     return mov_write_string_tag(pb, name, t->value, lang, long_style);
 }
 
