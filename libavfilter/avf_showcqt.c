@@ -1073,6 +1073,8 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
         AVFrame *out = *frameout = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
+        out->sample_aspect_ratio = av_make_q(1, 1);
+        av_frame_set_color_range(out, AVCOL_RANGE_MPEG);
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {
