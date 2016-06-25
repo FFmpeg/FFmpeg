@@ -54,7 +54,7 @@ static int srt_probe(AVProbeData *p)
         return 0;
     pbuf = buf;
     if (buf[0] == '-')
-      pbuf++;
+        pbuf++;
     if (pbuf[0] >= '0' && pbuf[0] <= '9' && strstr(buf, " --> ")
         && sscanf(buf, "%*d:%*d:%*d%*1[,.]%*d --> %*d:%*d:%*d%*1[,.]%d", &v) == 1)
         return AVPROBE_SCORE_MAX;
