@@ -57,7 +57,10 @@ typedef struct QSVFramesContext {
 /**
  * Convert a libmfx error code into a libav error code.
  */
-int ff_qsv_error(int mfx_err);
+int ff_qsv_map_error(mfxStatus mfx_err, const char **desc);
+
+int ff_qsv_print_error(void *log_ctx, mfxStatus err,
+                       const char *error_string);
 
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 

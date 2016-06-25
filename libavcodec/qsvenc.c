@@ -601,7 +601,8 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
 
     ret = MFXVideoENCODE_GetVideoParam(q->session, &q->param);
     if (ret < 0)
-        return ff_qsv_error(ret);
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error calling GetVideoParam");
 
     q->packet_size = q->param.mfx.BufferSizeInKB * 1000;
 
@@ -750,10 +751,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
         return ret;
 
     ret = MFXVideoENCODE_QueryIOSurf(q->session, &q->param, &q->req);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error querying the encoding parameters\n");
-        return ff_qsv_error(ret);
-    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error querying the encoding parameters");
 
     if (opaque_alloc) {
         ret = qsv_init_opaque_alloc(avctx, q);
@@ -791,10 +791,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     }
 
     ret = MFXVideoENCODE_Init(q->session, &q->param);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing the encoder\n");
-        return ff_qsv_error(ret);
-    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error initializing the encoder");
 
     ret = qsv_retrieve_enc_params(avctx, q);
     if (ret < 0) {
@@ -979,7 +978,8 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         av_packet_unref(&new_pkt);
         av_freep(&bs);
         av_freep(&sync);
-        return (ret == MFX_ERR_MORE_DATA) ? 0 : ff_qsv_error(ret);
+        return (ret == MFX_ERR_MORE_DATA) ?
+               0 : ff_qsv_print_error(avctx, ret, "Error during encoding");
     }
 
     if (ret == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM && frame->interlaced_frame)

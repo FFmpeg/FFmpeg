@@ -161,10 +161,9 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.NumExtParam = q->nb_ext_buffers;
 
     ret = MFXVideoDECODE_Init(q->session, &param);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing the MFX video decoder\n");
-        return ff_qsv_error(ret);
-    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error initializing the MFX video decoder");
 
     q->frame_info = param.mfx.FrameInfo;
 
@@ -298,9 +297,9 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ret != MFX_ERR_MORE_DATA &&
         ret != MFX_WRN_VIDEO_PARAM_CHANGED &&
         ret != MFX_ERR_MORE_SURFACE) {
-        av_log(avctx, AV_LOG_ERROR, "Error during QSV decoding.\n");
         av_freep(&sync);
-        return ff_qsv_error(ret);
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error during QSV decoding.");
     }
 
     /* make sure we do not enter an infinite loop if the SDK

@@ -54,39 +54,67 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
     return AVERROR(ENOSYS);
 }
 
-int ff_qsv_error(int mfx_err)
+static const struct {
+    mfxStatus   mfxerr;
+    int         averr;
+    const char *desc;
+} qsv_errors[] = {
+    { MFX_ERR_NONE,                     0,               "success"                              },
+    { MFX_ERR_UNKNOWN,                  AVERROR_UNKNOWN, "unknown error"                        },
+    { MFX_ERR_NULL_PTR,                 AVERROR(EINVAL), "NULL pointer"                         },
+    { MFX_ERR_UNSUPPORTED,              AVERROR(ENOSYS), "unsupported"                          },
+    { MFX_ERR_MEMORY_ALLOC,             AVERROR(ENOMEM), "failed to allocate memory"            },
+    { MFX_ERR_NOT_ENOUGH_BUFFER,        AVERROR(ENOMEM), "insufficient input/output buffer"     },
+    { MFX_ERR_INVALID_HANDLE,           AVERROR(EINVAL), "invalid handle"                       },
+    { MFX_ERR_LOCK_MEMORY,              AVERROR(EIO),    "failed to lock the memory block"      },
+    { MFX_ERR_NOT_INITIALIZED,          AVERROR_BUG,     "not initialized"                      },
+    { MFX_ERR_NOT_FOUND,                AVERROR(ENOSYS), "specified object was not found"       },
+    { MFX_ERR_MORE_DATA,                AVERROR(EAGAIN), "expect more data at input"            },
+    { MFX_ERR_MORE_SURFACE,             AVERROR(EAGAIN), "expect more surface at output"        },
+    { MFX_ERR_ABORTED,                  AVERROR_UNKNOWN, "operation aborted"                    },
+    { MFX_ERR_DEVICE_LOST,              AVERROR(EIO),    "device lost"                          },
+    { MFX_ERR_INCOMPATIBLE_VIDEO_PARAM, AVERROR(EINVAL), "incompatible video parameters"        },
+    { MFX_ERR_INVALID_VIDEO_PARAM,      AVERROR(EINVAL), "invalid video parameters"             },
+    { MFX_ERR_UNDEFINED_BEHAVIOR,       AVERROR_BUG,     "undefined behavior"                   },
+    { MFX_ERR_DEVICE_FAILED,            AVERROR(EIO),    "device failed"                        },
+    { MFX_ERR_MORE_BITSTREAM,           AVERROR(EAGAIN), "expect more bitstream at output"      },
+    { MFX_ERR_INCOMPATIBLE_AUDIO_PARAM, AVERROR(EINVAL), "incompatible audio parameters"        },
+    { MFX_ERR_INVALID_AUDIO_PARAM,      AVERROR(EINVAL), "invalid audio parameters"             },
+
+    { MFX_WRN_IN_EXECUTION,             0,               "operation in execution"               },
+    { MFX_WRN_DEVICE_BUSY,              0,               "device busy"                          },
+    { MFX_WRN_VIDEO_PARAM_CHANGED,      0,               "video parameters changed"             },
+    { MFX_WRN_PARTIAL_ACCELERATION,     0,               "partial acceleration"                 },
+    { MFX_WRN_INCOMPATIBLE_VIDEO_PARAM, 0,               "incompatible video parameters"        },
+    { MFX_WRN_VALUE_NOT_CHANGED,        0,               "value is saturated"                   },
+    { MFX_WRN_OUT_OF_RANGE,             0,               "value out of range"                   },
+    { MFX_WRN_FILTER_SKIPPED,           0,               "filter skipped"                       },
+    { MFX_WRN_INCOMPATIBLE_AUDIO_PARAM, 0,               "incompatible audio parameters"        },
+};
+
+int ff_qsv_map_error(mfxStatus mfx_err, const char **desc)
 {
-    switch (mfx_err) {
-    case MFX_ERR_NONE:
-        return 0;
-    case MFX_ERR_MEMORY_ALLOC:
-    case MFX_ERR_NOT_ENOUGH_BUFFER:
-        return AVERROR(ENOMEM);
-    case MFX_ERR_INVALID_HANDLE:
-        return AVERROR(EINVAL);
-    case MFX_ERR_DEVICE_FAILED:
-    case MFX_ERR_DEVICE_LOST:
-    case MFX_ERR_LOCK_MEMORY:
-        return AVERROR(EIO);
-    case MFX_ERR_NULL_PTR:
-    case MFX_ERR_UNDEFINED_BEHAVIOR:
-    case MFX_ERR_NOT_INITIALIZED:
-        return AVERROR_BUG;
-    case MFX_ERR_UNSUPPORTED:
-    case MFX_ERR_NOT_FOUND:
-        return AVERROR(ENOSYS);
-    case MFX_ERR_MORE_DATA:
-    case MFX_ERR_MORE_SURFACE:
-    case MFX_ERR_MORE_BITSTREAM:
-        return AVERROR(EAGAIN);
-    case MFX_ERR_INCOMPATIBLE_VIDEO_PARAM:
-    case MFX_ERR_INVALID_VIDEO_PARAM:
-        return AVERROR(EINVAL);
-    case MFX_ERR_ABORTED:
-    case MFX_ERR_UNKNOWN:
-    default:
-        return AVERROR_UNKNOWN;
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(qsv_errors); i++) {
+        if (qsv_errors[i].mfxerr == mfx_err) {
+            if (desc)
+                *desc = qsv_errors[i].desc;
+            return qsv_errors[i].averr;
+        }
     }
+    if (desc)
+        *desc = "unknown error";
+    return AVERROR_UNKNOWN;
+}
+
+int ff_qsv_print_error(void *log_ctx, mfxStatus err,
+                       const char *error_string)
+{
+    const char *desc;
+    int ret;
+    ret = ff_qsv_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
+    return ret;
 }
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
@@ -138,9 +166,10 @@ static int qsv_load_plugins(mfxSession session, const char *load_plugins,
 
         ret = MFXVideoUSER_Load(session, &uid, 1);
         if (ret < 0) {
-            av_log(logctx, AV_LOG_ERROR, "Could not load the requested plugin: %s\n",
-                   plugin);
-            err = ff_qsv_error(ret);
+            char errorbuf[128];
+            snprintf(errorbuf, sizeof(errorbuf),
+                     "Could not load the requested plugin '%s'", plugin);
+            err = ff_qsv_print_error(logctx, ret, errorbuf);
             goto load_plugin_fail;
         }
 
@@ -166,10 +195,9 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
     int ret;
 
     ret = MFXInit(impl, &ver, session);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing an internal MFX session\n");
-        return ff_qsv_error(ret);
-    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error initializing an internal MFX session");
 
     ret = qsv_load_plugins(*session, load_plugins, avctx);
     if (ret < 0) {
@@ -282,10 +310,9 @@ int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
     err = MFXQueryIMPL(parent_session, &impl);
     if (err == MFX_ERR_NONE)
         err = MFXQueryVersion(parent_session, &ver);
-    if (err != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Error querying the session attributes\n");
-        return ff_qsv_error(err);
-    }
+    if (err != MFX_ERR_NONE)
+        return ff_qsv_print_error(avctx, err,
+                                  "Error querying the session attributes");
 
     for (i = 0; i < FF_ARRAY_ELEMS(handle_types); i++) {
         err = MFXVideoCORE_GetHandle(parent_session, handle_types[i], &handle);
@@ -301,18 +328,15 @@ int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
     }
 
     err = MFXInit(impl, &ver, &session);
-    if (err != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Error initializing a child MFX session: %d\n", err);
-        return ff_qsv_error(err);
-    }
+    if (err != MFX_ERR_NONE)
+        return ff_qsv_print_error(avctx, err,
+                                  "Error initializing a child MFX session");
 
     if (handle) {
         err = MFXVideoCORE_SetHandle(session, handle_type, handle);
-        if (err != MFX_ERR_NONE) {
-            av_log(avctx, AV_LOG_ERROR, "Error setting a HW handle: %d\n", err);
-            return ff_qsv_error(err);
-        }
+        if (err != MFX_ERR_NONE)
+            return ff_qsv_print_error(avctx, err,
+                                      "Error setting a HW handle");
     }
 
     ret = qsv_load_plugins(session, load_plugins, avctx);
@@ -334,10 +358,9 @@ int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
             qsv_frames_ctx->mids[i] = frames_hwctx->surfaces[i].Data.MemId;
 
         err = MFXVideoCORE_SetFrameAllocator(session, &frame_allocator);
-        if (err != MFX_ERR_NONE) {
-            av_log(avctx, AV_LOG_ERROR, "Error setting a frame allocator: %d\n", err);
-            return ff_qsv_error(err);
-        }
+        if (err != MFX_ERR_NONE)
+            return ff_qsv_print_error(avctx, err,
+                                      "Error setting a frame allocator");
     }
 
     *psession = session;
