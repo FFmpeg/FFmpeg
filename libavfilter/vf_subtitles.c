@@ -476,11 +476,9 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
 
 end:
     av_dict_free(&codec_opts);
-    if (dec_ctx)
-        avcodec_close(dec_ctx);
+    avcodec_close(dec_ctx);
     avcodec_free_context(&dec_ctx);
-    if (fmt)
-        avformat_close_input(&fmt);
+    avformat_close_input(&fmt);
     return ret;
 }
 
