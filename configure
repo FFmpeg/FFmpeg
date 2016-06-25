@@ -149,22 +149,6 @@ Component options:
   --disable-faan           disable floating point AAN (I)DCT code
   --disable-pixelutils     disable pixel utils in libavutil
 
-Hardware accelerators:
-  --disable-d3d11va        disable D3D11VA code [autodetect]
-  --disable-dxva2          disable DXVA2 code [autodetect]
-  --disable-vaapi          disable VAAPI code [autodetect]
-  --disable-vda            disable VDA code [autodetect]
-  --disable-vdpau          disable VDPAU code [autodetect]
-
-Hardware-accelerated decoding/encoding:
-  --enable-cuda            enable dynamically linked CUDA [no]
-  --enable-cuvid           enable CUVID support [autodetect]
-  --enable-libmfx          enable HW acceleration through libmfx
-  --enable-mmal            enable decoding via MMAL [no]
-  --enable-nvenc           enable NVIDIA NVENC support [no]
-  --enable-omx             enable encoding via OpenMAX IL [no]
-  --enable-omx-rpi         enable encoding via OpenMAX IL for Raspberry Pi [no]
-
 Individual component options:
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
@@ -217,7 +201,6 @@ External library support:
   Also note that the following help text describes the purpose of the libraries
   themselves, not all their features will necessarily be usable by FFmpeg.
 
-  --disable-audiotoolbox   enable AudioToolbox decoders and encoders [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
@@ -257,7 +240,6 @@ External library support:
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
                            native (de)muxer exists [no]
-  --enable-libnpp          enable NVIDIA Performance Primitives-based code [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -311,10 +293,26 @@ External library support:
   --disable-sdl            disable sdl [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
-  --disable-videotoolbox   disable VideoToolbox code [autodetect]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
+
+  The following libraries provide various hardware acceleration features:
+  --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
+  --enable-cuda            enable dynamically linked Nvidia CUDA code [no]
+  --enable-cuvid           enable Nvidia CUVID support [autodetect]
+  --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
+  --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
+  --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
+  --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
+  --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
+  --enable-nvenc           enable Nvidia video encoding code [no]
+  --enable-omx             enable OpenMAX IL code [no]
+  --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
+  --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
+  --disable-vda            disable Apple Video Decode Acceleration code [autodetect]
+  --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
+  --disable-videotoolbox   disable VideoToolbox code [autodetect]
 
 Toolchain options:
   --arch=ARCH              select architecture [$arch]
