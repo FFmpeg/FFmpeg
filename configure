@@ -203,6 +203,20 @@ Individual component options:
   --disable-filters        disable all filters
 
 External library support:
+
+  Using any of the following switches will allow FFmpeg to link to the
+  corresponding external library. All the components depending on that library
+  will become enabled, if all their other dependencies are met and they are not
+  explicitly disabled. E.g. --enable-libwavpack will enable linking to
+  libwavpack and allow the libwavpack encoder to be built, unless it is
+  specifically disabled with --disable-encoder=libwavpack.
+
+  Note that only the system libraries are auto-detected. All the other external
+  libraries must be explicitly enabled.
+
+  Also note that the following help text describes the purpose of the libraries
+  themselves, not all their features will necessarily be usable by FFmpeg.
+
   --disable-audiotoolbox   enable AudioToolbox decoders and encoders [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
