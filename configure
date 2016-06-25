@@ -1466,7 +1466,6 @@ EXAMPLE_LIST="
 "
 
 EXTERNAL_LIBRARY_LIST="
-    audiotoolbox
     avisynth
     bzlib
     chromaprint
@@ -1501,7 +1500,6 @@ EXTERNAL_LIBRARY_LIST="
     libmodplug
     libmp3lame
     libnut
-    libnpp
     libopencore_amrnb
     libopencore_amrwb
     libopencv
@@ -1555,6 +1553,24 @@ EXTERNAL_LIBRARY_LIST="
     zlib
 "
 
+HWACCEL_LIBRARY_LIST="
+    audiotoolbox
+    cuda
+    cuvid
+    d3d11va
+    dxva2
+    libmfx
+    libnpp
+    mmal
+    nvenc
+    omx
+    vaapi
+    vda
+    vdpau
+    videotoolbox_hwaccel
+    xvmc
+"
+
 DOCUMENT_LIST="
     doc
     htmlpages
@@ -1574,25 +1590,6 @@ FEATURE_LIST="
     small
     static
     swscale_alpha
-"
-
-HW_CODECS_LIST="
-    cuda
-    cuvid
-    libmfx
-    mmal
-    nvenc
-    omx
-"
-
-HWACCEL_LIST="
-    d3d11va
-    dxva2
-    vaapi
-    vda
-    vdpau
-    videotoolbox_hwaccel
-    xvmc
 "
 
 LIBRARY_LIST="
@@ -1640,9 +1637,8 @@ CONFIG_LIST="
     $DOCUMENT_LIST
     $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
+    $HWACCEL_LIBRARY_LIST
     $FEATURE_LIST
-    $HW_CODECS_LIST
-    $HWACCEL_LIST
     $LICENSE_LIST
     $LIBRARY_LIST
     $PROGRAM_LIST
@@ -6433,6 +6429,10 @@ echo "External libraries:"
 print_enabled '' $EXTERNAL_LIBRARY_LIST | print_in_columns
 echo
 
+echo "External libraries providing hardware acceleration:"
+print_enabled '' $HWACCEL_LIBRARY_LIST | print_in_columns
+echo
+
 echo "Libraries:"
 print_enabled '' $LIBRARY_LIST | print_in_columns
 echo
@@ -6443,10 +6443,6 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     print_enabled '_*' $list | print_in_columns
     echo
 done
-
-echo "Enabled Hardware-accelerated codecs:"
-print_enabled '' $HW_CODECS_LIST | print_in_columns
-echo
 
 license="LGPL version 2.1 or later"
 if enabled nonfree; then
