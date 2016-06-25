@@ -318,6 +318,14 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ctx, AVFrame *frame, int flags);
  * If dst->format is set, then this format will be used, otherwise (when
  * dst->format is AV_PIX_FMT_NONE) the first acceptable format will be chosen.
  *
+ * The two frames must have matching allocated dimensions (i.e. equal to
+ * AVHWFramesContext.width/height), since not all device types support
+ * transferring a sub-rectangle of the whole surface. The display dimensions
+ * (i.e. AVFrame.width/height) may be smaller than the allocated dimensions, but
+ * also have to be equal for both frames. When the display dimensions are
+ * smaller than the allocated dimensions, the content of the padding in the
+ * destination frame is unspecified.
+ *
  * @param dst the destination frame. dst is not touched on failure.
  * @param src the source frame.
  * @param flags currently unused, should be set to zero
