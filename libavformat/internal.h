@@ -130,6 +130,16 @@ struct AVFormatInternal {
      * Timestamp of the end of the shortest stream.
      */
     int64_t shortest_end;
+
+    /**
+     * Whether or not avformat_init_output has already been called
+     */
+    int initialized;
+
+    /**
+     * Whether or not avformat_init_output fully initialized streams
+     */
+    int streams_initialized;
 };
 
 struct AVStreamInternal {
