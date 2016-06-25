@@ -3610,7 +3610,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st = ic->streams[stream_index];
             avctx = st->internal->avctx;
             if (!has_codec_parameters(st, NULL)) {
-                AVCodec *codec = find_decoder(ic, st, st->codecpar->codec_id);
+                const AVCodec *codec = find_decoder(ic, st, st->codecpar->codec_id);
                 if (codec && !avctx->codec) {
                     if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
                         av_log(ic, AV_LOG_WARNING,
