@@ -478,6 +478,7 @@ end:
     av_dict_free(&codec_opts);
     if (dec_ctx)
         avcodec_close(dec_ctx);
+    avcodec_free_context(&dec_ctx);
     if (fmt)
         avformat_close_input(&fmt);
     return ret;
