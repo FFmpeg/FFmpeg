@@ -197,15 +197,15 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
     }
 
     dst += r->y * dst_linesize + r->x * 4;
-    src = r->pict.data[0];
-    pal = (uint32_t *)r->pict.data[1];
+    src = r->data[0];
+    pal = (uint32_t *)r->data[1];
     for (y = 0; y < r->h; y++) {
         dst2 = (uint32_t *)dst;
         src2 = src;
         for (x = 0; x < r->w; x++)
             *(dst2++) = pal[*(src2++)];
         dst += dst_linesize;
-        src += r->pict.linesize[0];
+        src += r->linesize[0];
     }
 }
 
