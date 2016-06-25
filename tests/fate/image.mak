@@ -355,6 +355,16 @@ FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
 FATE_IMAGE += $(FATE_TIFF-yes)
 fate-tiff: $(FATE_TIFF-yes)
 
+FATE_WEBP += fate-webp-rgb-lossless
+fate-webp-rgb-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lossless.webp
+
+FATE_WEBP += fate-webp-rgba-lossless
+fate-webp-rgba-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_lossless.webp
+
+FATE_WEBP-$(call DEMDEC, IMAGE2, WEBP) += $(FATE_WEBP)
+FATE_IMAGE += $(FATE_WEBP-yes)
+fate-webp: $(FATE_WEBP-yes)
+
 FATE_IMAGE-$(call DEMDEC, IMAGE2, XFACE) += fate-xface
 fate-xface: CMD = framecrc -i $(TARGET_SAMPLES)/xface/lena.xface
 
