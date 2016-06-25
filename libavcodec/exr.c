@@ -980,12 +980,19 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
             }
             target_channel_offset += 2;
         } else {/* Float or UINT 32 channel */
+            if (stayToUncompress < td->ysize * td->xsize * 4) {
+                av_log(s, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stayToUncompress);
+                return AVERROR_INVALIDDATA;
+            }
+
             for (y = 0; y < td->ysize; y++) {
                 indexOut = target_channel_offset * td->xsize + y * td->channel_line_size;
                 memcpy(&td->uncompressed_data[indexOut], sr, td->xsize * 4);
                 sr += td->xsize * 4;
             }
             target_channel_offset += 4;
+
+            stayToUncompress -= td->ysize * td->xsize * 4;
         }
     }
 
