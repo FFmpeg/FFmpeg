@@ -15,14 +15,14 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2016-xx-xx - xxxxxxx / db7968b - lavf 57.40.100 / 57.7.0 - avio.h
+2016-06-23 - 5d75e46 / db7968b - lavf 57.40.100 / 57.7.0 - avio.h
   Add AVIODataMarkerType, write_data_type, ignore_boundary_point and
   avio_write_marker.
 
-2016-xx-xx - xxxxxxx / 0c4468d - lavu 55.26.100 / 55.12.0 - opt.h
+2016-06-23 - abb3cc4 / 0c4468d - lavu 55.26.100 / 55.12.0 - opt.h
   Add av_stereo3d_type_name() and av_stereo3d_from_name().
 
-2016-06-22 - xxxxxxx - lavu 55.25.100 - hwcontext_dxva2.h
+2016-06-22 - 3689efe / c46db38 - lavu 55.25.100 / 55.11.0 - hwcontext_dxva2.h
   Add new installed header with DXVA2-specific hwcontext definitions.
 
 2016-04-27 - fb91871 - lavu 55.23.100 - log.h
@@ -34,28 +34,28 @@ API changes, most recent first:
   and output -- avcodec_send_packet(), avcodec_receive_frame(),
   avcodec_send_frame() and avcodec_receive_packet().
 
-2016-03-20 - af9cac1 / 33d1898 - lavc 57.35.100 / 57.15.0 - avcodec.h
+2016-04-17 - af9cac1 / 33d1898 - lavc 57.35.100 / 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
   Deprecate the old bitstream filtering API.
 
-2016-xx-xx - xxxxxxx - lavfi 6.42.0 - avfilter.h
+2016-04-14 - 8688d3a / 07a844f - lavfi 6.42.100 / 6.3.0 - avfilter.h
   Add AVFilterContext.hw_device_ctx.
 
-2016-xx-xx - xxxxxxx - lavu 55.22.0 - hwcontext_vaapi.h
+2016-04-14 - 28abb21 / 551c677 - lavu 55.22.100 / 55.9.0 - hwcontext_vaapi.h
   Add new installed header with VAAPI-specific hwcontext definitions.
 
-2016-xx-xx - xxxxxxx - lavu 55.21.0 - hwcontext.h
+2016-04-14 - afccfaf / b1f01e8 - lavu 55.21.100 / 55.7.0 - hwcontext.h
   Add AVHWFramesConstraints and associated API.
 
-2016-04-11 - xxxxxxx - lavf 57.33.0 - avformat.h
+2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
   Add AVStream.codecpar, deprecate AVStream.codec.
 
 2016-04-02 - e8a9b64 - lavu 55.20.100 - base64.h
   Add AV_BASE64_DECODE_SIZE(x) macro.
 
-2016-xx-xx - lavc 57.33.0 - avcodec.h
-  xxxxxxx - Add AVCodecParameters and its related API.
-  xxxxxxx - Add av_get_audio_frame_duration2().
+2016-xx-xx - lavc 57.33.100 / 57.14.0 - avcodec.h
+  f9b1cf1 / 998e1b8 - Add AVCodecParameters and its related API.
+  e6053b3 / a806834 - Add av_get_audio_frame_duration2().
 
 2016-03-11 - 6d8ab35 - lavf/lavc 57.28.101
   Add requirement to bitstream filtering API that returned packets with
@@ -93,28 +93,28 @@ API changes, most recent first:
   known as "the Matroska form". The timing information (start time, duration)
   can be found in the AVSubtitles fields.
 
-2016-xx-xx - lavc 57.25.0 - avcodec.h
+2016-02-24 - 7e49cdd / 7b3214d0 - lavc 57.25.100 / 57.13.0 - avcodec.h
   Add AVCodecContext.hw_frames_ctx.
 
-2016-xx-xx - lavfi 6.36.0 - avfilter.h
-  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
-  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+2016-02-24 - 1042402 / b3dd30d - lavfi 6.36.100 / 6.2.0 - avfilter.h
+  avfilter.h - Add AVFilterLink.hw_frames_ctx.
+  buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
 
 2016-02-23 - 14f7a3d - lavc 57.25.100
   Add AV_PKT_DATA_MPEGTS_STREAM_ID for exporting the MPEGTS stream ID.
 
-2016-xx-xx - lavu 55.18.100
-  xxxxxxx audio_fifo.h - Add av_audio_fifo_peek_at().
+2016-02-18 - 08acab8 - lavu 55.18.100 - audio_fifo.h
+  Add av_audio_fifo_peek_at().
 
-2016-xx-xx - lavu 55.18.0
-  xxxxxxx buffer.h - Add av_buffer_pool_init2().
-  xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
+2016-xx-xx - lavu 55.18.100 / 55.6.0
+  26abd51 / 721a4ef buffer.h - Add av_buffer_pool_init2().
+  1a70878 / 89923e4 hwcontext.h - Add a new installed header hwcontext.h with a new API
                         for handling hwaccel frames.
-  xxxxxxx hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
+  6992276 / ad884d1 hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
                              CUDA-specific hwcontext definitions.
-  xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
+  d779d8d / a001ce3 hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
-  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
+  63c3e35 / 7bc780c pixfmt.h - Add AV_PIX_FMT_CUDA.
 
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 
