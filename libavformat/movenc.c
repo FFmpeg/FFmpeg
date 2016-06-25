@@ -2974,7 +2974,7 @@ static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
     AVDictionaryEntry *t = get_metadata_lang(s, "location", &lang);
     const char *ptr, *place = "";
     char *end;
-    const char *astronomical_body = "earth";
+    static const char *astronomical_body = "earth";
     if (!t)
         return 0;
 
