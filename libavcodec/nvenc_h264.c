@@ -98,6 +98,14 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
+#if FF_API_NVENC_OLD_NAME
+
+static av_cold int nvenc_old_init(AVCodecContext *avctx)
+{
+    av_log(avctx, AV_LOG_WARNING, "This encoder is deprecated, use 'h264_nvenc' instead\n");
+    return ff_nvenc_encode_init(avctx);
+}
+
 #if CONFIG_NVENC_ENCODER
 static const AVClass nvenc_class = {
     .class_name = "nvenc",
@@ -111,7 +119,7 @@ AVCodec ff_nvenc_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
-    .init           = ff_nvenc_encode_init,
+    .init           = nvenc_old_init,
     .encode2        = ff_nvenc_encode_frame,
     .close          = ff_nvenc_encode_close,
     .priv_data_size = sizeof(NvencContext),
@@ -137,7 +145,7 @@ AVCodec ff_nvenc_h264_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
-    .init           = ff_nvenc_encode_init,
+    .init           = nvenc_old_init,
     .encode2        = ff_nvenc_encode_frame,
     .close          = ff_nvenc_encode_close,
     .priv_data_size = sizeof(NvencContext),
@@ -148,3 +156,28 @@ AVCodec ff_nvenc_h264_encoder = {
     .pix_fmts       = ff_nvenc_pix_fmts,
 };
 #endif
+
+#endif
+
+static const AVClass h264_nvenc_class = {
+    .class_name = "h264_nvenc",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_h264_nvenc_encoder = {
+    .name           = "h264_nvenc",
+    .long_name      = NULL_IF_CONFIG_SMALL("NVIDIA NVENC H.264 encoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_H264,
+    .init           = ff_nvenc_encode_init,
+    .encode2        = ff_nvenc_encode_frame,
+    .close          = ff_nvenc_encode_close,
+    .priv_data_size = sizeof(NvencContext),
+    .priv_class     = &h264_nvenc_class,
+    .defaults       = defaults,
+    .capabilities   = AV_CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .pix_fmts       = ff_nvenc_pix_fmts,
+};
