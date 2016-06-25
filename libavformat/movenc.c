@@ -4314,13 +4314,15 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
     for (i = 0; i < s->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
         if (!track->end_reliable) {
-            const AVPacket *next = ff_interleaved_peek(s, i);
+            int64_t ts_offset;
+            const AVPacket *next = ff_interleaved_peek(s, i, &ts_offset);
             if (next) {
-                track->track_duration = next->dts - track->start_dts;
+                track->track_duration = next->dts - track->start_dts + ts_offset;
                 if (next->pts != AV_NOPTS_VALUE)
                     track->end_pts = next->pts;
                 else
                     track->end_pts = next->dts;
+                track->end_pts += ts_offset;
             }
         }
     }

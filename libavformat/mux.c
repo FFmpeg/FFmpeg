@@ -1041,12 +1041,20 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 }
 
-const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream)
+const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream, int64_t *ts_offset)
 {
     AVPacketList *pktl = s->internal->packet_buffer;
     while (pktl) {
-        if (pktl->pkt.stream_index == stream)
-            return &pktl->pkt;
+        if (pktl->pkt.stream_index == stream) {
+            AVPacket *pkt = &pktl->pkt;
+            AVStream *st = s->streams[pkt->stream_index];
+            *ts_offset = st->mux_ts_offset;
+
+            if (s->output_ts_offset)
+                *ts_offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
+
+            return pkt;
+        }
         pktl = pktl->next;
     }
     return NULL;
