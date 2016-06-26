@@ -18,11 +18,6 @@
 
 #include <stdint.h>
 
-#include <vdpau/vdpau.h>
-#include <vdpau/vdpau_x11.h>
-
-#include <X11/Xlib.h>
-
 #include "ffmpeg.h"
 
 #include "libavcodec/vdpau.h"
@@ -37,23 +32,6 @@ typedef struct VDPAUContext {
     AVBufferRef *hw_frames_ctx;
     AVFrame *tmp_frame;
 } VDPAUContext;
-
-typedef struct VDPAUHWDevicePriv {
-    VdpDeviceDestroy *device_destroy;
-    Display *dpy;
-} VDPAUHWDevicePriv;
-
-static void device_free(AVHWDeviceContext *ctx)
-{
-    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
-    VDPAUHWDevicePriv     *priv = ctx->user_opaque;
-
-    if (priv->device_destroy)
-        priv->device_destroy(hwctx->device);
-    if (priv->dpy)
-        XCloseDisplay(priv->dpy);
-    av_freep(&priv);
-}
 
 static void vdpau_uninit(AVCodecContext *s)
 {
@@ -106,15 +84,8 @@ static int vdpau_alloc(AVCodecContext *s)
     InputStream  *ist = s->opaque;
     int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
     VDPAUContext *ctx;
-    const char *display, *vendor;
-    VdpStatus err;
     int ret;
 
-    VdpDevice                device;
-    VdpGetProcAddress       *get_proc_address;
-    VdpGetInformationString *get_information_string;
-
-    VDPAUHWDevicePriv    *device_priv = NULL;
     AVBufferRef          *device_ref = NULL;
     AVHWDeviceContext    *device_ctx;
     AVVDPAUDeviceContext *device_hwctx;
@@ -123,12 +94,6 @@ static int vdpau_alloc(AVCodecContext *s)
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return AVERROR(ENOMEM);
-
-    device_priv = av_mallocz(sizeof(*device_priv));
-    if (!device_priv) {
-        av_freep(&ctx);
-        goto fail;
-    }
 
     ist->hwaccel_ctx           = ctx;
     ist->hwaccel_uninit        = vdpau_uninit;
@@ -139,51 +104,12 @@ static int vdpau_alloc(AVCodecContext *s)
     if (!ctx->tmp_frame)
         goto fail;
 
-    device_priv->dpy = XOpenDisplay(ist->hwaccel_device);
-    if (!device_priv->dpy) {
-        av_log(NULL, loglevel, "Cannot open the X11 display %s.\n",
-               XDisplayName(ist->hwaccel_device));
-        goto fail;
-    }
-    display = XDisplayString(device_priv->dpy);
-
-    err = vdp_device_create_x11(device_priv->dpy, XDefaultScreen(device_priv->dpy),
-                                &device, &get_proc_address);
-    if (err != VDP_STATUS_OK) {
-        av_log(NULL, loglevel, "VDPAU device creation on X11 display %s failed.\n",
-               display);
-        goto fail;
-    }
-
-#define GET_CALLBACK(id, result)                                                \
-do {                                                                            \
-    void *tmp;                                                                  \
-    err = get_proc_address(device, id, &tmp);                                   \
-    if (err != VDP_STATUS_OK) {                                                 \
-        av_log(NULL, loglevel, "Error getting the " #id " callback.\n");        \
-        goto fail;                                                              \
-    }                                                                           \
-    result = tmp;                                                               \
-} while (0)
-
-    GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING, get_information_string);
-    GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,         device_priv->device_destroy);
-
-    device_ref = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_VDPAU);
-    if (!device_ref)
-        goto fail;
-    device_ctx                     = (AVHWDeviceContext*)device_ref->data;
-    device_hwctx                   = device_ctx->hwctx;
-    device_ctx->user_opaque        = device_priv;
-    device_ctx->free               = device_free;
-    device_hwctx->device           = device;
-    device_hwctx->get_proc_address = get_proc_address;
-
-    device_priv = NULL;
-
-    ret = av_hwdevice_ctx_init(device_ref);
+    ret = av_hwdevice_ctx_create(&device_ref, AV_HWDEVICE_TYPE_VDPAU,
+                                 ist->hwaccel_device, NULL, 0);
     if (ret < 0)
         goto fail;
+    device_ctx   = (AVHWDeviceContext*)device_ref->data;
+    device_hwctx = device_ctx->hwctx;
 
     ctx->hw_frames_ctx = av_hwframe_ctx_alloc(device_ref);
     if (!ctx->hw_frames_ctx)
@@ -200,26 +126,17 @@ do {                                                                            
     if (ret < 0)
         goto fail;
 
-    if (av_vdpau_bind_context(s, device, get_proc_address, 0))
+    if (av_vdpau_bind_context(s, device_hwctx->device, device_hwctx->get_proc_address, 0))
         goto fail;
 
-    get_information_string(&vendor);
-    av_log(NULL, AV_LOG_VERBOSE, "Using VDPAU -- %s -- on X11 display %s, "
-           "to decode input stream #%d:%d.\n", vendor,
-           display, ist->file_index, ist->st->index);
+    av_log(NULL, AV_LOG_VERBOSE, "Using VDPAU to decode input stream #%d:%d.\n",
+           ist->file_index, ist->st->index);
 
     return 0;
 
 fail:
     av_log(NULL, loglevel, "VDPAU init failed for stream #%d:%d.\n",
            ist->file_index, ist->st->index);
-    if (device_priv) {
-        if (device_priv->device_destroy)
-            device_priv->device_destroy(device);
-        if (device_priv->dpy)
-            XCloseDisplay(device_priv->dpy);
-    }
-    av_freep(&device_priv);
     av_buffer_unref(&device_ref);
     vdpau_uninit(s);
     return AVERROR(EINVAL);
