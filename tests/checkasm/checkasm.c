@@ -92,7 +92,7 @@ static const struct {
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
     #endif
-    #if CONFIG_PIXBLOCKDSP
+    #if CONFIG_PIXBLOCKDSP && !(ARCH_PPC64 && HAVE_BIGENDIAN)
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
     #if CONFIG_V210_ENCODER
