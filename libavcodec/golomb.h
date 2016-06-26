@@ -409,8 +409,6 @@ static inline int get_ue(GetBitContext *s, const char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d ue  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
@@ -426,8 +424,6 @@ static inline int get_se(GetBitContext *s, const char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d se  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
@@ -442,8 +438,6 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
     int i    = get_te0_golomb(s, r);
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
-
-    print_bin(bits, len);
 
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d te  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
