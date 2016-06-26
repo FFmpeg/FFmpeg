@@ -126,6 +126,7 @@ typedef struct VAAPIEncodeH264Context {
 typedef struct VAAPIEncodeH264Options {
     int qp;
     int quality;
+    int low_power;
 } VAAPIEncodeH264Options;
 
 
@@ -860,7 +861,17 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
                avctx->profile);
         return AVERROR(EINVAL);
     }
-    ctx->va_entrypoint = VAEntrypointEncSlice;
+    if (opt->low_power) {
+#if VA_CHECK_VERSION(0, 39, 1)
+        ctx->va_entrypoint = VAEntrypointEncSliceLP;
+#else
+        av_log(avctx, AV_LOG_ERROR, "Low-power encoding is not "
+               "supported with this VAAPI version.\n");
+        return AVERROR(EINVAL);
+#endif
+    } else {
+        ctx->va_entrypoint = VAEntrypointEncSlice;
+    }
 
     ctx->input_width    = avctx->width;
     ctx->input_height   = avctx->height;
@@ -943,7 +954,10 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
-      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, FLAGS },
+      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8, FLAGS },
+    { "low_power", "Use low-power encoding mode (experimental: only supported "
+      "on some platforms, does not support all features)",
+      OFFSET(low_power), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL },
 };
 
