@@ -75,6 +75,8 @@ struct decklink_ctx {
     /* Options */
     int list_devices;
     int list_formats;
+    int list_vinputs;
+    int list_ainputs;
     int64_t teletext_lines;
     double preroll;
 
@@ -84,6 +86,11 @@ struct decklink_ctx {
     sem_t semaphore;
 
     int channels;
+};
+
+struct decklink_input_connection {
+    const char *name;
+    int64_t bitmask;
 };
 
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;
@@ -105,5 +112,9 @@ int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num);
 int ff_decklink_list_devices(AVFormatContext *avctx);
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction = DIRECTION_OUT);
+int ff_decklink_list_vinputs(AVFormatContext *avctx);
+int ff_decklink_list_ainputs(AVFormatContext *avctx);
+int ff_decklink_set_vinput(AVFormatContext *avctx, int connection);
+int ff_decklink_set_ainput(AVFormatContext *avctx, int connection);
 
 #endif /* AVDEVICE_DECKLINK_COMMON_H */
