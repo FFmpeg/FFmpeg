@@ -89,7 +89,7 @@ static const AVClass av_codec_context_class = {
     .get_category            = get_category,
 };
 
-int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
+static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
 {
     int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
@@ -146,6 +146,13 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     return 0;
 }
 
+#if FF_API_GET_CONTEXT_DEFAULTS
+int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
+{
+    return init_context_defaults(s, codec);
+}
+#endif
+
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 {
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
@@ -153,7 +160,7 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     if (!avctx)
         return NULL;
 
-    if(avcodec_get_context_defaults3(avctx, codec) < 0){
+    if (init_context_defaults(avctx, codec) < 0) {
         av_free(avctx);
         return NULL;
     }
