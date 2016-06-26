@@ -252,7 +252,6 @@ static void dump_replaygain(void *ctx, AVPacketSideData *sd)
 static void dump_stereo3d(void *ctx, AVPacketSideData *sd)
 {
     AVStereo3D *stereo;
-    const char *name;
 
     if (sd->size < sizeof(*stereo)) {
         av_log(ctx, AV_LOG_INFO, "invalid data");
