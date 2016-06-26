@@ -71,6 +71,7 @@ typedef struct MPADecodeContext {
     MPA_DECODE_HEADER
     uint8_t last_buf[LAST_BUF_SIZE];
     int last_buf_size;
+    int extrasize;
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;
     GetBitContext gb;
@@ -819,9 +820,10 @@ static void exponents_from_scale_factors(MPADecodeContext *s, GranuleDef *g,
 static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
                           int *end_pos2)
 {
-    if (s->in_gb.buffer && *pos >= s->gb.size_in_bits) {
+    if (s->in_gb.buffer && *pos >= s->gb.size_in_bits - s->extrasize * 8) {
         s->gb           = s->in_gb;
         s->in_gb.buffer = NULL;
+        s->extrasize    = 0;
         av_assert2((get_bits_count(&s->gb) & 7) == 0);
         skip_bits_long(&s->gb, *pos - *end_pos);
         *end_pos2 =
@@ -853,7 +855,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     int i;
     int last_pos, bits_left;
     VLC *vlc;
-    int end_pos = FFMIN(end_pos2, s->gb.size_in_bits);
+    int end_pos = FFMIN(end_pos2, s->gb.size_in_bits - s->extrasize * 8);
 
     /* low frequencies (called big values) */
     s_index = 0;
@@ -1387,18 +1389,16 @@ static int mp_decode_layer3(MPADecodeContext *s)
     if (!s->adu_mode) {
         int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
-        int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0, EXTRABYTES);
+        s->extrasize = av_clip((get_bits_left(&s->gb) >> 3) - s->extrasize, 0,
+                               FFMAX(0, LAST_BUF_SIZE - s->last_buf_size));
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
         ff_dlog(s->avctx, "seekback:%d, lastbuf:%d\n",
                 main_data_begin, s->last_buf_size);
 
-        memcpy(s->last_buf + s->last_buf_size, ptr, extrasize);
+        memcpy(s->last_buf + s->last_buf_size, ptr, s->extrasize);
         s->in_gb = s->gb;
-        init_get_bits(&s->gb, s->last_buf, s->last_buf_size*8);
-#if !UNCHECKED_BITSTREAM_READER
-        s->gb.size_in_bits_plus8 += FFMAX(extrasize, LAST_BUF_SIZE - s->last_buf_size) * 8;
-#endif
+        init_get_bits(&s->gb, s->last_buf, (s->last_buf_size + s->extrasize) * 8);
         s->last_buf_size <<= 3;
         for (gr = 0; gr < nb_granules && (s->last_buf_size >> 3) < main_data_begin; gr++) {
             for (ch = 0; ch < s->nb_channels; ch++) {
@@ -1409,15 +1409,17 @@ static int mp_decode_layer3(MPADecodeContext *s)
             }
         }
         skip = s->last_buf_size - 8 * main_data_begin;
-        if (skip >= s->gb.size_in_bits && s->in_gb.buffer) {
-            skip_bits_long(&s->in_gb, skip - s->gb.size_in_bits);
+        if (skip >= s->gb.size_in_bits - s->extrasize * 8 && s->in_gb.buffer) {
+            skip_bits_long(&s->in_gb, skip - s->gb.size_in_bits + s->extrasize * 8);
             s->gb           = s->in_gb;
             s->in_gb.buffer = NULL;
+            s->extrasize    = 0;
         } else {
             skip_bits_long(&s->gb, skip);
         }
     } else {
         gr = 0;
+        s->extrasize = 0;
     }
 
     for (; gr < nb_granules; gr++) {
@@ -1582,7 +1584,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
         s->last_buf_size=0;
         if (s->in_gb.buffer) {
             align_get_bits(&s->gb);
-            i = get_bits_left(&s->gb)>>3;
+            i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
             if (i >= 0 && i <= BACKSTEP_SIZE) {
                 memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
                 s->last_buf_size=i;
@@ -1590,12 +1592,12 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
                 av_log(s->avctx, AV_LOG_ERROR, "invalid old backstep %d\n", i);
             s->gb           = s->in_gb;
             s->in_gb.buffer = NULL;
+            s->extrasize    = 0;
         }
 
         align_get_bits(&s->gb);
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
-        i = get_bits_left(&s->gb) >> 3;
-
+        i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
         if (i < 0 || i > BACKSTEP_SIZE || nb_frames < 0) {
             if (i < 0)
                 av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n", i);
