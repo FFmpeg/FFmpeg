@@ -295,7 +295,7 @@ static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
     const uint8_t *const scan = scan_patterns[type];
 
     for (limit = (16 >> intra); index < 16; index = limit, limit += 8) {
-        for (; (vlc = svq3_get_ue_golomb(gb)) != 0; index++) {
+        for (; (vlc = get_interleaved_ue_golomb(gb)) != 0; index++) {
             if ((int32_t)vlc < 0)
                 return -1;
 
@@ -534,8 +534,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
             if (mode == PREDICT_MODE) {
                 dx = dy = 0;
             } else {
-                dy = svq3_get_se_golomb(&s->gb_slice);
-                dx = svq3_get_se_golomb(&s->gb_slice);
+                dy = get_interleaved_se_golomb(&s->gb_slice);
+                dx = get_interleaved_se_golomb(&s->gb_slice);
 
                 if (dx == INVALID_VLC || dy == INVALID_VLC) {
                     av_log(s->avctx, AV_LOG_ERROR, "invalid MV vlc\n");
@@ -846,7 +846,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
             /* decode prediction codes for luma blocks */
             for (i = 0; i < 16; i += 2) {
-                vlc = svq3_get_ue_golomb(&s->gb_slice);
+                vlc = get_interleaved_ue_golomb(&s->gb_slice);
 
                 if (vlc >= 25U) {
                     av_log(s->avctx, AV_LOG_ERROR,
@@ -924,7 +924,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
 
     if (!IS_INTRA16x16(mb_type) &&
         (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
-        if ((vlc = svq3_get_ue_golomb(&s->gb_slice)) >= 48U){
+        if ((vlc = get_interleaved_ue_golomb(&s->gb_slice)) >= 48U){
             av_log(s->avctx, AV_LOG_ERROR, "cbp_vlc=%"PRIu32"\n", vlc);
             return -1;
         }
@@ -934,7 +934,7 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     }
     if (IS_INTRA16x16(mb_type) ||
         (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
-        s->qscale += svq3_get_se_golomb(&s->gb_slice);
+        s->qscale += get_interleaved_se_golomb(&s->gb_slice);
 
         if (s->qscale > 31u) {
             av_log(s->avctx, AV_LOG_ERROR, "qscale:%d\n", s->qscale);
@@ -1052,7 +1052,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         skip_bits_long(&s->gb, slice_bytes * 8);
     }
 
-    if ((slice_id = svq3_get_ue_golomb(&s->gb_slice)) >= 3) {
+    if ((slice_id = get_interleaved_ue_golomb(&s->gb_slice)) >= 3) {
         av_log(s->avctx, AV_LOG_ERROR, "illegal slice type %u \n", slice_id);
         return -1;
     }
@@ -1245,12 +1245,12 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         avctx->has_b_frames = !s->low_delay;
         if (s->has_watermark) {
 #if CONFIG_ZLIB
-            unsigned watermark_width  = svq3_get_ue_golomb(&gb);
-            unsigned watermark_height = svq3_get_ue_golomb(&gb);
-            int u1                    = svq3_get_ue_golomb(&gb);
+            unsigned watermark_width  = get_interleaved_ue_golomb(&gb);
+            unsigned watermark_height = get_interleaved_ue_golomb(&gb);
+            int u1                    = get_interleaved_ue_golomb(&gb);
             int u2                    = get_bits(&gb, 8);
             int u3                    = get_bits(&gb, 2);
-            int u4                    = svq3_get_ue_golomb(&gb);
+            int u4                    = get_interleaved_ue_golomb(&gb);
             unsigned long buf_len     = watermark_width *
                                         watermark_height * 4;
             int offset                = get_bits_count(&gb) + 7 >> 3;
@@ -1542,7 +1542,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                 /* TODO: support s->mb_skip_run */
             }
 
-            mb_type = svq3_get_ue_golomb(&s->gb_slice);
+            mb_type = get_interleaved_ue_golomb(&s->gb_slice);
 
             if (s->pict_type == AV_PICTURE_TYPE_I)
                 mb_type += 8;

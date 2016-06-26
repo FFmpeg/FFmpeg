@@ -112,7 +112,7 @@ static inline int get_ue_golomb_31(GetBitContext *gb)
     return ff_ue_golomb_vlc_code[buf];
 }
 
-static inline unsigned svq3_get_ue_golomb(GetBitContext *gb)
+static inline unsigned get_interleaved_ue_golomb(GetBitContext *gb)
 {
     uint32_t buf;
 
@@ -219,7 +219,7 @@ static inline int get_se_golomb_long(GetBitContext *gb)
     return ((buf >> 1) ^ sign) + 1;
 }
 
-static inline int svq3_get_se_golomb(GetBitContext *gb)
+static inline int get_interleaved_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
@@ -254,7 +254,7 @@ static inline int svq3_get_se_golomb(GetBitContext *gb)
 
 static inline int dirac_get_se_golomb(GetBitContext *gb)
 {
-    uint32_t ret = svq3_get_ue_golomb(gb);
+    uint32_t ret = get_interleaved_ue_golomb(gb);
 
     if (ret) {
         int sign = -get_bits1(gb);
