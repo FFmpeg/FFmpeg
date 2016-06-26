@@ -5,7 +5,6 @@ version <next>:
 
 
 version 3.1:
-- YUY2 Lossless Codec decoder
 - DXVA2-accelerated HEVC Main10 decoding
 - fieldhint filter
 - loop video filter and aloop audio filter
@@ -48,6 +47,7 @@ version 3.1:
 - CUDA CUVID H264/HEVC decoder
 - 10-bit depth support in native utvideo decoder
 - libutvideo wrapper removed
+- YUY2 Lossless Codec decoder
 
 
 version 3.0:
