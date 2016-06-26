@@ -390,7 +390,7 @@ static int dxva2_device_create(AVHWDeviceContext *ctx, const char *device,
     d3dpp.SwapEffect       = D3DSWAPEFFECT_DISCARD;
     d3dpp.Flags            = D3DPRESENTFLAG_VIDEO;
 
-    hr = IDirect3D9_CreateDevice(priv->d3d9, adapter, D3DDEVTYPE_HAL, GetShellWindow(),
+    hr = IDirect3D9_CreateDevice(priv->d3d9, adapter, D3DDEVTYPE_HAL, GetDesktopWindow(),
                                  D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
                                  &d3dpp, &priv->d3d9device);
     if (FAILED(hr)) {
