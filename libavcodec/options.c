@@ -233,6 +233,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
+    dest->hw_frames_ctx   = NULL;
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
@@ -253,14 +254,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_assert0(dest->subtitle_header_size == src->subtitle_header_size);
 #undef alloc_and_copy_or_fail
 
+    if (src->hw_frames_ctx) {
+        dest->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dest->hw_frames_ctx)
+            goto fail;
+    }
+
     return 0;
 
 fail:
+    av_freep(&dest->subtitle_header);
     av_freep(&dest->rc_override);
     av_freep(&dest->intra_matrix);
     av_freep(&dest->inter_matrix);
     av_freep(&dest->extradata);
-    av_freep(&dest->subtitle_header);
+    av_buffer_unref(&dest->hw_frames_ctx);
     dest->subtitle_header_size = 0;
     dest->extradata_size = 0;
     av_opt_free(dest);
