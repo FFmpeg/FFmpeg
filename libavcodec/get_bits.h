@@ -487,7 +487,7 @@ static inline const uint8_t *align_get_bits(GetBitContext *s)
         SKIP_BITS(name, gb, n);                                 \
     } while (0)
 
-#define GET_RL_VLC_INTERNAL(level, run, name, gb, table, bits,  \
+#define GET_RL_VLC(level, run, name, gb, table, bits,  \
                    max_depth, need_update)                      \
     do {                                                        \
         int n, nb_bits;                                         \
@@ -583,90 +583,5 @@ static inline int skip_1stop_8data_bits(GetBitContext *gb)
 
     return 0;
 }
-
-//#define TRACE
-
-#ifdef TRACE
-static inline void print_bin(int bits, int n)
-{
-    int i;
-
-    for (i = n - 1; i >= 0; i--)
-        av_log(NULL, AV_LOG_DEBUG, "%d", (bits >> i) & 1);
-    for (i = n; i < 24; i++)
-        av_log(NULL, AV_LOG_DEBUG, " ");
-}
-
-static inline int get_bits_trace(GetBitContext *s, int n, const char *file,
-                                 const char *func, int line)
-{
-    int r = get_bits(s, n);
-
-    print_bin(r, n);
-    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d bit @%5d in %s %s:%d\n",
-           r, n, r, get_bits_count(s) - n, file, func, line);
-
-    return r;
-}
-
-static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2],
-                                int bits, int max_depth, const char *file,
-                                const char *func, int line)
-{
-    int show  = show_bits(s, 24);
-    int pos   = get_bits_count(s);
-    int r     = get_vlc2(s, table, bits, max_depth);
-    int len   = get_bits_count(s) - pos;
-    int bits2 = show >> (24 - len);
-
-    print_bin(bits2, len);
-
-    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d vlc @%5d in %s %s:%d\n",
-           bits2, len, r, pos, file, func, line);
-
-    return r;
-}
-
-#define GET_RL_VLC(level, run, name, gb, table, bits,           \
-                   max_depth, need_update)                      \
-    do {                                                        \
-        int show  = SHOW_UBITS(name, gb, 24);                   \
-        int len;                                                \
-        int pos = name ## _index;                               \
-                                                                \
-        GET_RL_VLC_INTERNAL(level, run, name, gb, table, bits,max_depth, need_update); \
-                                                                \
-        len = name ## _index - pos + 1;                         \
-        show = show >> (24 - len);                              \
-                                                                \
-        print_bin(show, len);                                   \
-                                                                \
-        av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d/%-3d rlv @%5d in %s %s:%d\n",\
-               show, len, run-1, level, pos, __FILE__, __PRETTY_FUNCTION__, __LINE__);\
-    } while (0)                                                 \
-
-
-static inline int get_xbits_trace(GetBitContext *s, int n, const char *file,
-                                  const char *func, int line)
-{
-    int show = show_bits(s, n);
-    int r    = get_xbits(s, n);
-
-    print_bin(show, n);
-    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d xbt @%5d in %s %s:%d\n",
-           show, n, r, get_bits_count(s) - n, file, func, line);
-
-    return r;
-}
-
-#define get_bits(s, n)  get_bits_trace(s , n, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_bits1(s)    get_bits_trace(s,  1, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_xbits(s, n) get_xbits_trace(s, n, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-
-#define get_vlc(s, vlc)             get_vlc_trace(s, (vlc)->table, (vlc)->bits,   3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_vlc2(s, tab, bits, max) get_vlc_trace(s,          tab,        bits, max, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#else //TRACE
-#define GET_RL_VLC GET_RL_VLC_INTERNAL
-#endif
 
 #endif /* AVCODEC_GET_BITS_H */

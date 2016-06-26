@@ -633,6 +633,7 @@ OBJS-$(CONFIG_XWD_DECODER)             += xwddec.o
 OBJS-$(CONFIG_XWD_ENCODER)             += xwdenc.o
 OBJS-$(CONFIG_Y41P_DECODER)            += y41pdec.o
 OBJS-$(CONFIG_Y41P_ENCODER)            += y41penc.o
+OBJS-$(CONFIG_YLC_DECODER)             += ylc.o
 OBJS-$(CONFIG_YOP_DECODER)             += yop.o
 OBJS-$(CONFIG_YUV4_DECODER)            += yuv4dec.o
 OBJS-$(CONFIG_YUV4_ENCODER)            += yuv4enc.o

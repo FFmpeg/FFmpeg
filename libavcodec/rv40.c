@@ -231,7 +231,7 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
 
     if(!r->s.mb_skip_run) {
-        r->s.mb_skip_run = svq3_get_ue_golomb(gb) + 1;
+        r->s.mb_skip_run = get_interleaved_ue_golomb(gb) + 1;
         if(r->s.mb_skip_run > (unsigned)s->mb_num)
             return -1;
     }

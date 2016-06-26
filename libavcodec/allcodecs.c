@@ -370,6 +370,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(XL,                xl);
     REGISTER_ENCDEC (XWD,               xwd);
     REGISTER_ENCDEC (Y41P,              y41p);
+    REGISTER_DECODER(YLC,               ylc);
     REGISTER_DECODER(YOP,               yop);
     REGISTER_ENCDEC (YUV4,              yuv4);
     REGISTER_DECODER(ZERO12V,           zero12v);

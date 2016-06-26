@@ -3,9 +3,4 @@
 #codec_id 0: rawvideo
 #dimensions 0: 1280x720
 #sar 0: 0/1
-#tb 1: 1/48000
-#media_type 1: audio
-#codec_id 1: pcm_s16le
-#sample_rate 1: 48000
-#channel_layout 1: 3
 0,          0,          0,        1,  1382400, 0x44373645

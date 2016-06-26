@@ -101,8 +101,8 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
+    int next_frame_num;
     int64_t idr_pic_count;
-    int64_t last_idr_frame;
 
     // Rate control configuration.
     struct {
@@ -126,6 +126,7 @@ typedef struct VAAPIEncodeH264Context {
 typedef struct VAAPIEncodeH264Options {
     int qp;
     int quality;
+    int low_power;
 } VAAPIEncodeH264Options;
 
 
@@ -592,12 +593,17 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
 
     if (pic->type == PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
-        priv->last_idr_frame = pic->display_order;
+        vpic->frame_num = 0;
+        priv->next_frame_num = 1;
     } else {
-        av_assert0(pic->display_order > priv->last_idr_frame);
+        vpic->frame_num = priv->next_frame_num;
+        if (pic->type != PICTURE_TYPE_B) {
+            // nal_ref_idc != 0
+            ++priv->next_frame_num;
+        }
     }
 
-    vpic->frame_num = (pic->encode_order - priv->last_idr_frame) &
+    vpic->frame_num = vpic->frame_num &
         ((1 << (4 + vseq->seq_fields.bits.log2_max_frame_num_minus4)) - 1);
 
     vpic->CurrPic.picture_id          = pic->recon_surface;
@@ -608,10 +614,9 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
 
     for (i = 0; i < pic->nb_refs; i++) {
         VAAPIEncodePicture *ref = pic->refs[i];
-        av_assert0(ref && ref->encode_order >= priv->last_idr_frame);
+        av_assert0(ref && ref->encode_order < pic->encode_order);
         vpic->ReferenceFrames[i].picture_id = ref->recon_surface;
-        vpic->ReferenceFrames[i].frame_idx =
-            ref->encode_order - priv->last_idr_frame;
+        vpic->ReferenceFrames[i].frame_idx  = ref->encode_order;
         vpic->ReferenceFrames[i].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
         vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order;
         vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order;
@@ -856,7 +861,17 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
                avctx->profile);
         return AVERROR(EINVAL);
     }
-    ctx->va_entrypoint = VAEntrypointEncSlice;
+    if (opt->low_power) {
+#if VA_CHECK_VERSION(0, 39, 1)
+        ctx->va_entrypoint = VAEntrypointEncSliceLP;
+#else
+        av_log(avctx, AV_LOG_ERROR, "Low-power encoding is not "
+               "supported with this VAAPI version.\n");
+        return AVERROR(EINVAL);
+#endif
+    } else {
+        ctx->va_entrypoint = VAEntrypointEncSlice;
+    }
 
     ctx->input_width    = avctx->width;
     ctx->input_height   = avctx->height;
@@ -939,7 +954,10 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
-      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, FLAGS },
+      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8, FLAGS },
+    { "low_power", "Use low-power encoding mode (experimental: only supported "
+      "on some platforms, does not support all features)",
+      OFFSET(low_power), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL },
 };
 

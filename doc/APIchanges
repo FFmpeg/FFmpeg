@@ -15,6 +15,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-06-26 - xxxxxxx / 1c9e861 - lavu 55.27.100 / 55.13.0 - hwcontext.h
+  Add av_hwdevice_ctx_create().
+
+2016-06-26 - xxxxxxx / e47b8bb - lavc 57.48.101 / 57.19.1 - avcodec.h
+  Adjust values for JPEG 2000 profiles.
+
 -------- 8< --------- FFmpeg 3.1 was cut here -------- 8< ---------
 
 2016-06-23 - 5d75e46 / db7968b - lavf 57.40.100 / 57.7.0 - avio.h

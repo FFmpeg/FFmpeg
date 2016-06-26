@@ -60,19 +60,19 @@ static void send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int
     second_field = interlaced && (pic_nr & 0x01);
 
     init_get_bits(&gc, buf, 8  * size);
-                    svq3_get_ue_golomb(&gc); /* wavelet_idx */
-    wavelet_depth = svq3_get_ue_golomb(&gc);
-                    svq3_get_ue_golomb(&gc); /* num_x */
-                    svq3_get_ue_golomb(&gc); /* num_y */
-    prefix_bytes  = svq3_get_ue_golomb(&gc);
-    size_scaler   = svq3_get_ue_golomb(&gc);
+                    get_interleaved_ue_golomb(&gc); /* wavelet_idx */
+    wavelet_depth = get_interleaved_ue_golomb(&gc);
+                    get_interleaved_ue_golomb(&gc); /* num_x */
+                    get_interleaved_ue_golomb(&gc); /* num_y */
+    prefix_bytes  = get_interleaved_ue_golomb(&gc);
+    size_scaler   = get_interleaved_ue_golomb(&gc);
     /* pass the quantization matrices */
-    svq3_get_ue_golomb(&gc);
+    get_interleaved_ue_golomb(&gc);
     for(lvl = 0; lvl < wavelet_depth; lvl++)
     {
-        svq3_get_ue_golomb(&gc);
-        svq3_get_ue_golomb(&gc);
-        svq3_get_ue_golomb(&gc);
+        get_interleaved_ue_golomb(&gc);
+        get_interleaved_ue_golomb(&gc);
+        get_interleaved_ue_golomb(&gc);
     }
 
     frag_len = (get_bits_count(&gc) + 7) / 8; /* length of transform parameters */
