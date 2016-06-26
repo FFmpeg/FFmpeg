@@ -248,7 +248,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     AVCodecParameters *par = st->codecpar;
     char buf[256];
     int i;
-    AVCodec *c;
+    const AVCodecDescriptor *desc;
     const char *c_name;
 
     /* See if we can handle this kind of payload.
@@ -274,9 +274,9 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
             par->codec_id = ff_rtp_codec_id(buf, par->codec_type);
     }
 
-    c = avcodec_find_decoder(par->codec_id);
-    if (c && c->name)
-        c_name = c->name;
+    desc = avcodec_descriptor_get(par->codec_id);
+    if (desc && desc->name)
+        c_name = desc->name;
     else
         c_name = "(null)";
 
