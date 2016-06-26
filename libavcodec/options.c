@@ -179,6 +179,7 @@ void avcodec_free_context(AVCodecContext **pavctx)
     av_freep(pavctx);
 }
 
+#if FF_API_COPY_CONTEXT
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
     const AVCodec *orig_codec = dest->codec;
@@ -258,6 +259,7 @@ fail:
     av_opt_free(dest);
     return AVERROR(ENOMEM);
 }
+#endif
 
 const AVClass *avcodec_get_class(void)
 {

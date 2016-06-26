@@ -4147,6 +4147,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec);
  */
 const AVClass *avcodec_get_class(void);
 
+#if FF_API_COPY_CONTEXT
 /**
  * Get the AVClass for AVFrame. It can be used in combination with
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
@@ -4173,8 +4174,16 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  *             avcodec_alloc_context3(NULL), but otherwise uninitialized
  * @param src source codec context
  * @return AVERROR() on error (e.g. memory allocation error), 0 on success
+ *
+ * @deprecated The semantics of this function are ill-defined and it should not
+ * be used. If you need to transfer the stream parameters from one codec context
+ * to another, use an intermediate AVCodecParameters instance and the
+ * avcodec_parameters_from_context() / avcodec_parameters_to_context()
+ * functions.
  */
+attribute_deprecated
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
+#endif
 
 /**
  * Allocate a new AVCodecParameters and set its fields to default values
