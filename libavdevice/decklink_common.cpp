@@ -70,6 +70,7 @@ static char *dup_wchar_to_utf8(wchar_t *w)
 #define DECKLINK_STR    OLECHAR *
 #define DECKLINK_STRDUP dup_wchar_to_utf8
 #define DECKLINK_FREE(s) SysFreeString(s)
+#define DECKLINK_BOOL BOOL
 #elif defined(__APPLE__)
 static char *dup_cfstring_to_utf8(CFStringRef w)
 {
@@ -80,11 +81,13 @@ static char *dup_cfstring_to_utf8(CFStringRef w)
 #define DECKLINK_STR    const __CFString *
 #define DECKLINK_STRDUP dup_cfstring_to_utf8
 #define DECKLINK_FREE(s) free((void *) s)
+#define DECKLINK_BOOL bool
 #else
 #define DECKLINK_STR    const char *
 #define DECKLINK_STRDUP av_strdup
 /* free() is needed for a string returned by the DeckLink SDL. */
 #define DECKLINK_FREE(s) free((void *) s)
+#define DECKLINK_BOOL bool
 #endif
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName)
@@ -103,7 +106,7 @@ static int decklink_select_input(AVFormatContext *avctx, BMDDeckLinkConfiguratio
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     BMDDeckLinkAttributeID attr_id = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? BMDDeckLinkAudioInputConnections : BMDDeckLinkVideoInputConnections;
-    int64_t bmd_input              = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? ctx->audio_input : ctx->video_input;
+    int64_t bmd_input              = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? (int64_t)ctx->audio_input : (int64_t)ctx->video_input;
     const char *type_name          = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? "audio" : "video";
     int64_t supported_connections = 0;
     HRESULT res;
@@ -141,7 +144,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     HRESULT res;
 
     if (ctx->duplex_mode) {
-        bool duplex_supported = false;
+        DECKLINK_BOOL duplex_supported = false;
 
         if (ctx->attr->GetFlag(BMDDeckLinkSupportsDuplexModeConfiguration, &duplex_supported) != S_OK)
             duplex_supported = false;

@@ -107,7 +107,7 @@ typedef uint32_t buffercount_type;
 #endif
 
 static const BMDAudioConnection decklink_audio_connection_map[] = {
-    0,
+    (BMDAudioConnection)0,
     bmdAudioConnectionEmbedded,
     bmdAudioConnectionAESEBU,
     bmdAudioConnectionAnalog,
@@ -117,7 +117,7 @@ static const BMDAudioConnection decklink_audio_connection_map[] = {
 };
 
 static const BMDVideoConnection decklink_video_connection_map[] = {
-    0,
+    (BMDVideoConnection)0,
     bmdVideoConnectionSDI,
     bmdVideoConnectionHDMI,
     bmdVideoConnectionOpticalSDI,
