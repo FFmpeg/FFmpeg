@@ -361,6 +361,12 @@ fate-webp-rgb-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lossless.we
 FATE_WEBP += fate-webp-rgba-lossless
 fate-webp-rgba-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_lossless.webp
 
+FATE_WEBP += fate-webp-rgb-lossy-q80
+fate-webp-rgb-lossy-q80: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_q80.webp
+
+FATE_WEBP += fate-webp-rgba-lossy-q80
+fate-webp-rgba-lossy-q80: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_q80.webp
+
 FATE_WEBP-$(call DEMDEC, IMAGE2, WEBP) += $(FATE_WEBP)
 FATE_IMAGE += $(FATE_WEBP-yes)
 fate-webp: $(FATE_WEBP-yes)
