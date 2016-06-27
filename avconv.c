@@ -1231,17 +1231,6 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
             av_log(NULL, AV_LOG_ERROR, "Error reinitializing filters!\n");
             return ret;
         }
-
-        for (i = 0; i < fg->nb_inputs; i++) {
-            while (av_fifo_size(fg->inputs[i]->frame_queue)) {
-                AVFrame *tmp;
-                av_fifo_generic_read(fg->inputs[i]->frame_queue, &tmp, sizeof(tmp), NULL);
-                ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
-                av_frame_free(&tmp);
-                if (ret < 0)
-                    return ret;
-            }
-        }
     }
 
     ret = av_buffersrc_add_frame(ifilter->filter, frame);

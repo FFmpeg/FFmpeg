@@ -769,6 +769,17 @@ int configure_filtergraph(FilterGraph *fg)
         ofilter->channel_layout = link->channel_layout;
     }
 
+    for (i = 0; i < fg->nb_inputs; i++) {
+        while (av_fifo_size(fg->inputs[i]->frame_queue)) {
+            AVFrame *tmp;
+            av_fifo_generic_read(fg->inputs[i]->frame_queue, &tmp, sizeof(tmp), NULL);
+            ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
+            av_frame_free(&tmp);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
     return 0;
 }
 
