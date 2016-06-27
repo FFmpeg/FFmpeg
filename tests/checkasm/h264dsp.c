@@ -36,7 +36,7 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
     do {                                                                     \
         uint32_t mask = pixel_mask[bit_depth - 8];                           \
         for (y = 0; y < sz; y++) {                                           \
-            for (x = 0; x < sz * SIZEOF_PIXEL; x += 4) {                     \
+            for (x = 0; x < PIXEL_STRIDE; x += 4) {                          \
                 AV_WN32A(src + y * PIXEL_STRIDE + x, rnd() & mask);          \
                 AV_WN32A(dst + y * PIXEL_STRIDE + x, rnd() & mask);          \
             }                                                                \
