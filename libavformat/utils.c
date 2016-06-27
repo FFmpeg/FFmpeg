@@ -5007,8 +5007,13 @@ int ff_generate_avci_extradata(AVStream *st)
     return 0;
 }
 
-uint8_t *av_stream_get_side_data(AVStream *st, enum AVPacketSideDataType type,
-                                 int *size)
+#if FF_API_NOCONST_GET_SIDE_DATA
+uint8_t *av_stream_get_side_data(AVStream *st,
+                                 enum AVPacketSideDataType type, int *size)
+#else
+uint8_t *av_stream_get_side_data(const AVStream *st,
+                                 enum AVPacketSideDataType type, int *size)
+#endif
 {
     int i;
 
