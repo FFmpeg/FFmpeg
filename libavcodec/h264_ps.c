@@ -464,19 +464,20 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     sps->gaps_in_frame_num_allowed_flag = get_bits1(gb);
     sps->mb_width                       = get_ue_golomb(gb) + 1;
     sps->mb_height                      = get_ue_golomb(gb) + 1;
-    if ((unsigned)sps->mb_width  >= INT_MAX / 16 ||
-        (unsigned)sps->mb_height >= INT_MAX / 16 ||
-        av_image_check_size(16 * sps->mb_width,
-                            16 * sps->mb_height, 0, avctx)) {
-        av_log(avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
-        goto fail;
-    }
 
     sps->frame_mbs_only_flag = get_bits1(gb);
     if (!sps->frame_mbs_only_flag)
         sps->mb_aff = get_bits1(gb);
     else
         sps->mb_aff = 0;
+
+    if ((unsigned)sps->mb_width  >= INT_MAX / 16 ||
+        (unsigned)sps->mb_height >= INT_MAX / (16 * (2 - sps->frame_mbs_only_flag)) ||
+        av_image_check_size(16 * sps->mb_width,
+                            16 * sps->mb_height * (2 - sps->frame_mbs_only_flag), 0, avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
+        goto fail;
+    }
 
     sps->direct_8x8_inference_flag = get_bits1(gb);
 

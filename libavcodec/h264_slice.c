@@ -889,23 +889,6 @@ static int init_dimensions(H264Context *h)
         height = h->avctx->height;
     }
 
-    if (width <= 0 || height <= 0) {
-        av_log(h->avctx, AV_LOG_ERROR, "Invalid cropped dimensions: %dx%d.\n",
-               width, height);
-        if (h->avctx->err_recognition & AV_EF_EXPLODE)
-            return AVERROR_INVALIDDATA;
-
-        av_log(h->avctx, AV_LOG_WARNING, "Ignoring cropping information.\n");
-        sps->crop_bottom =
-        sps->crop_top    =
-        sps->crop_right  =
-        sps->crop_left   =
-        sps->crop        = 0;
-
-        width  = h->width;
-        height = h->height;
-    }
-
     h->avctx->coded_width  = h->width;
     h->avctx->coded_height = h->height;
     h->avctx->width        = width;
