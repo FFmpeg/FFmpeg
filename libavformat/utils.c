@@ -90,7 +90,7 @@ static int is_relative(int64_t ts) {
  * @param timestamp the time stamp to wrap
  * @return resulting time stamp
  */
-static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
+static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
 {
     if (st->pts_wrap_behavior != AV_PTS_WRAP_IGNORE &&
         st->pts_wrap_reference != AV_NOPTS_VALUE && timestamp != AV_NOPTS_VALUE) {
@@ -142,7 +142,7 @@ void av_format_inject_global_side_data(AVFormatContext *s)
     }
 }
 
-int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src)
+int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
 {
     av_assert0(!dst->codec_whitelist &&
                !dst->format_whitelist &&
@@ -162,7 +162,7 @@ int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src)
     return 0;
 }
 
-static const AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
+static const AVCodec *find_decoder(AVFormatContext *s, const AVStream *st, enum AVCodecID codec_id)
 {
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
