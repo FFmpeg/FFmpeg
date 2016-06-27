@@ -254,7 +254,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_PAL8:
-        pfd    = av_pix_fmt_desc_get(avctx->pix_fmt);
+        pfd = av_pix_fmt_desc_get(avctx->pix_fmt);
+        if (!pfd)
+            return AVERROR_BUG;
         s->bpp = av_get_bits_per_pixel(pfd);
         if (pfd->flags & AV_PIX_FMT_FLAG_PAL)
             s->photometric_interpretation = TIFF_PHOTOMETRIC_PALETTE;
