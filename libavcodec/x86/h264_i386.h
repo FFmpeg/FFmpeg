@@ -91,13 +91,13 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "sub  %10, %1                           \n\t"
         "mov  %2, %0                            \n\t"
         "movl %7, %%ecx                         \n\t"
-        "add  %1, %%"REG_c"                     \n\t"
+        "add  %1, %%"FF_REG_c"                  \n\t"
         "movl %%ecx, (%0)                       \n\t"
 
         "test $1, %4                            \n\t"
         " jnz 5f                                \n\t"
 
-        "add"OPSIZE"  $4, %2                    \n\t"
+        "add"FF_OPSIZE"  $4, %2                 \n\t"
 
         "4:                                     \n\t"
         "add  $1, %1                            \n\t"
@@ -105,7 +105,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         " jb 3b                                 \n\t"
         "mov  %2, %0                            \n\t"
         "movl %7, %%ecx                         \n\t"
-        "add  %1, %%"REG_c"                     \n\t"
+        "add  %1, %%"FF_REG_c"                  \n\t"
         "movl %%ecx, (%0)                       \n\t"
         "5:                                     \n\t"
         "add  %9, %k0                           \n\t"
@@ -116,7 +116,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
           "i"(offsetof(CABACContext, bytestream)),
           "i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
     return coeff_count;
 }
@@ -183,7 +183,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "test $1, %4                            \n\t"
         " jnz 5f                                \n\t"
 
-        "add"OPSIZE"  $4, %2                    \n\t"
+        "add"FF_OPSIZE"  $4, %2                 \n\t"
 
         "4:                                     \n\t"
         "add $1, %6                             \n\t"
@@ -202,7 +202,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
           "i"(offsetof(CABACContext, bytestream)),
           "i"(offsetof(CABACContext, bytestream_end)),
           "i"(H264_LAST_COEFF_FLAG_OFFSET_8x8_OFFSET) TABLES_ARG
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
     return coeff_count;
 }

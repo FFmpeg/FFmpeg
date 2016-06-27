@@ -84,7 +84,7 @@ static void OPNAME ## vc1_shift2_mmx(uint8_t *dst, const uint8_t *src,\
 {\
     rnd = 8-rnd;\
     __asm__ volatile(\
-        "mov       $8, %%"REG_c"           \n\t"\
+        "mov       $8, %%"FF_REG_c"        \n\t"\
         LOAD_ROUNDER_MMX("%5")\
         "movq      "MANGLE(ff_pw_9)", %%mm6\n\t"\
         "1:                                \n\t"\
@@ -119,13 +119,13 @@ static void OPNAME ## vc1_shift2_mmx(uint8_t *dst, const uint8_t *src,\
         "movq      %%mm3, (%1)             \n\t"\
         "add       %6, %0                  \n\t"\
         "add       %4, %1                  \n\t"\
-        "dec       %%"REG_c"               \n\t"\
+        "dec       %%"FF_REG_c"            \n\t"\
         "jnz 1b                            \n\t"\
         : "+r"(src),  "+r"(dst)\
         : "r"(offset), "r"(-2*offset), "g"(stride), "m"(rnd),\
           "g"(stride-offset)\
           NAMED_CONSTRAINTS_ADD(ff_pw_9)\
-        : "%"REG_c, "memory"\
+        : "%"FF_REG_c, "memory"\
     );\
 }
 

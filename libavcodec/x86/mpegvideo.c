@@ -188,13 +188,13 @@ __asm__ volatile(
                 "movd %2, %%mm6                 \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "mov %3, %%"REG_a"              \n\t"
+                "mov %3, %%"FF_REG_a"           \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %%"REG_a"), %%mm0    \n\t"
-                "movq 8(%0, %%"REG_a"), %%mm1   \n\t"
-                "movq (%1, %%"REG_a"), %%mm4    \n\t"
-                "movq 8(%1, %%"REG_a"), %%mm5   \n\t"
+                "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
+                "movq 8(%0, %%"FF_REG_a"), %%mm1\n\t"
+                "movq (%1, %%"FF_REG_a"), %%mm4 \n\t"
+                "movq 8(%1, %%"FF_REG_a"), %%mm5\n\t"
                 "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
                 "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
                 "pxor %%mm2, %%mm2              \n\t"
@@ -209,8 +209,8 @@ __asm__ volatile(
                 "pmullw %%mm5, %%mm1            \n\t" // abs(block[i])*q
                 "pxor %%mm4, %%mm4              \n\t"
                 "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%0, %%"REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw (%0, %%"FF_REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw 8(%0, %%"FF_REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
                 "psraw $3, %%mm0                \n\t"
                 "psraw $3, %%mm1                \n\t"
                 "psubw %%mm7, %%mm0             \n\t"
@@ -223,13 +223,13 @@ __asm__ volatile(
                 "psubw %%mm3, %%mm1             \n\t"
                 "pandn %%mm0, %%mm4             \n\t"
                 "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%0, %%"REG_a")    \n\t"
-                "movq %%mm5, 8(%0, %%"REG_a")   \n\t"
+                "movq %%mm4, (%0, %%"FF_REG_a") \n\t"
+                "movq %%mm5, 8(%0, %%"FF_REG_a")\n\t"
 
-                "add $16, %%"REG_a"             \n\t"
+                "add $16, %%"FF_REG_a"          \n\t"
                 "js 1b                          \n\t"
                 ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
-                : "%"REG_a, "memory"
+                : "%"FF_REG_a, "memory"
         );
     block[0]= block0;
 }
@@ -251,13 +251,13 @@ __asm__ volatile(
                 "movd %2, %%mm6                 \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "mov %3, %%"REG_a"              \n\t"
+                "mov %3, %%"FF_REG_a"           \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %%"REG_a"), %%mm0    \n\t"
-                "movq 8(%0, %%"REG_a"), %%mm1   \n\t"
-                "movq (%1, %%"REG_a"), %%mm4    \n\t"
-                "movq 8(%1, %%"REG_a"), %%mm5   \n\t"
+                "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
+                "movq 8(%0, %%"FF_REG_a"), %%mm1\n\t"
+                "movq (%1, %%"FF_REG_a"), %%mm4 \n\t"
+                "movq 8(%1, %%"FF_REG_a"), %%mm5\n\t"
                 "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
                 "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
                 "pxor %%mm2, %%mm2              \n\t"
@@ -276,8 +276,8 @@ __asm__ volatile(
                 "pmullw %%mm5, %%mm1            \n\t" // (abs(block[i])*2 + 1)*q
                 "pxor %%mm4, %%mm4              \n\t"
                 "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%0, %%"REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw (%0, %%"FF_REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw 8(%0, %%"FF_REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
                 "psraw $4, %%mm0                \n\t"
                 "psraw $4, %%mm1                \n\t"
                 "psubw %%mm7, %%mm0             \n\t"
@@ -290,13 +290,13 @@ __asm__ volatile(
                 "psubw %%mm3, %%mm1             \n\t"
                 "pandn %%mm0, %%mm4             \n\t"
                 "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%0, %%"REG_a")    \n\t"
-                "movq %%mm5, 8(%0, %%"REG_a")   \n\t"
+                "movq %%mm4, (%0, %%"FF_REG_a") \n\t"
+                "movq %%mm5, 8(%0, %%"FF_REG_a")\n\t"
 
-                "add $16, %%"REG_a"             \n\t"
+                "add $16, %%"FF_REG_a"          \n\t"
                 "js 1b                          \n\t"
                 ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
-                : "%"REG_a, "memory"
+                : "%"FF_REG_a, "memory"
         );
 }
 
@@ -326,13 +326,13 @@ __asm__ volatile(
                 "movd %2, %%mm6                 \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "mov %3, %%"REG_a"              \n\t"
+                "mov %3, %%"FF_REG_a"           \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %%"REG_a"), %%mm0    \n\t"
-                "movq 8(%0, %%"REG_a"), %%mm1   \n\t"
-                "movq (%1, %%"REG_a"), %%mm4    \n\t"
-                "movq 8(%1, %%"REG_a"), %%mm5   \n\t"
+                "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
+                "movq 8(%0, %%"FF_REG_a"), %%mm1\n\t"
+                "movq (%1, %%"FF_REG_a"), %%mm4 \n\t"
+                "movq 8(%1, %%"FF_REG_a"), %%mm5\n\t"
                 "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
                 "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
                 "pxor %%mm2, %%mm2              \n\t"
@@ -347,8 +347,8 @@ __asm__ volatile(
                 "pmullw %%mm5, %%mm1            \n\t" // abs(block[i])*q
                 "pxor %%mm4, %%mm4              \n\t"
                 "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%0, %%"REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw (%0, %%"FF_REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw 8(%0, %%"FF_REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
                 "psraw $4, %%mm0                \n\t"
                 "psraw $4, %%mm1                \n\t"
                 "pxor %%mm2, %%mm0              \n\t"
@@ -357,13 +357,13 @@ __asm__ volatile(
                 "psubw %%mm3, %%mm1             \n\t"
                 "pandn %%mm0, %%mm4             \n\t"
                 "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%0, %%"REG_a")    \n\t"
-                "movq %%mm5, 8(%0, %%"REG_a")   \n\t"
+                "movq %%mm4, (%0, %%"FF_REG_a") \n\t"
+                "movq %%mm5, 8(%0, %%"FF_REG_a")\n\t"
 
-                "add $16, %%"REG_a"             \n\t"
+                "add $16, %%"FF_REG_a"          \n\t"
                 "jng 1b                         \n\t"
                 ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
-                : "%"REG_a, "memory"
+                : "%"FF_REG_a, "memory"
         );
     block[0]= block0;
         //Note, we do not do mismatch control for intra as errors cannot accumulate
@@ -390,13 +390,13 @@ __asm__ volatile(
                 "movd %2, %%mm6                 \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "mov %3, %%"REG_a"              \n\t"
+                "mov %3, %%"FF_REG_a"           \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %%"REG_a"), %%mm0    \n\t"
-                "movq 8(%0, %%"REG_a"), %%mm1   \n\t"
-                "movq (%1, %%"REG_a"), %%mm4    \n\t"
-                "movq 8(%1, %%"REG_a"), %%mm5   \n\t"
+                "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
+                "movq 8(%0, %%"FF_REG_a"), %%mm1\n\t"
+                "movq (%1, %%"FF_REG_a"), %%mm4 \n\t"
+                "movq 8(%1, %%"FF_REG_a"), %%mm5\n\t"
                 "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
                 "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
                 "pxor %%mm2, %%mm2              \n\t"
@@ -415,8 +415,8 @@ __asm__ volatile(
                 "paddw %%mm5, %%mm1             \n\t" // (abs(block[i])*2 + 1)*q
                 "pxor %%mm4, %%mm4              \n\t"
                 "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%0, %%"REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw (%0, %%"FF_REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
+                "pcmpeqw 8(%0, %%"FF_REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
                 "psrlw $5, %%mm0                \n\t"
                 "psrlw $5, %%mm1                \n\t"
                 "pxor %%mm2, %%mm0              \n\t"
@@ -427,10 +427,10 @@ __asm__ volatile(
                 "pandn %%mm1, %%mm5             \n\t"
                 "pxor %%mm4, %%mm7              \n\t"
                 "pxor %%mm5, %%mm7              \n\t"
-                "movq %%mm4, (%0, %%"REG_a")    \n\t"
-                "movq %%mm5, 8(%0, %%"REG_a")   \n\t"
+                "movq %%mm4, (%0, %%"FF_REG_a") \n\t"
+                "movq %%mm5, 8(%0, %%"FF_REG_a")\n\t"
 
-                "add $16, %%"REG_a"             \n\t"
+                "add $16, %%"FF_REG_a"          \n\t"
                 "jng 1b                         \n\t"
                 "movd 124(%0, %3), %%mm0        \n\t"
                 "movq %%mm7, %%mm6              \n\t"
@@ -445,7 +445,7 @@ __asm__ volatile(
                 "movd %%mm0, 124(%0, %3)        \n\t"
 
                 ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "r" (-2*nCoeffs)
-                : "%"REG_a, "memory"
+                : "%"FF_REG_a, "memory"
         );
 }
 
