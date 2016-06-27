@@ -265,8 +265,9 @@ static void decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
         }
 }
 
-static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
-                                    PPS *pps, int is_sps,
+/* returns non zero if the provided SPS scaling matrix has been filled */
+static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
+                                    const PPS *pps, int is_sps,
                                     uint8_t(*scaling_matrix4)[16],
                                     uint8_t(*scaling_matrix8)[64])
 {
@@ -277,8 +278,9 @@ static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
         fallback_sps ? sps->scaling_matrix8[0] : default_scaling8[0],
         fallback_sps ? sps->scaling_matrix8[3] : default_scaling8[1]
     };
+    int ret = 0;
     if (get_bits1(gb)) {
-        sps->scaling_matrix_present |= is_sps;
+        ret = is_sps;
         decode_scaling_list(gb, scaling_matrix4[0], 16, default_scaling4[0], fallback[0]);        // Intra, Y
         decode_scaling_list(gb, scaling_matrix4[1], 16, default_scaling4[0], scaling_matrix4[0]); // Intra, Cr
         decode_scaling_list(gb, scaling_matrix4[2], 16, default_scaling4[0], scaling_matrix4[1]); // Intra, Cb
@@ -296,6 +298,8 @@ static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
             }
         }
     }
+
+    return ret;
 }
 
 void ff_h264_ps_uninit(H264ParamSets *ps)
@@ -401,7 +405,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
             goto fail;
         }
         sps->transform_bypass = get_bits1(gb);
-        decode_scaling_matrices(gb, sps, NULL, 1,
+        sps->scaling_matrix_present |= decode_scaling_matrices(gb, sps, NULL, 1,
                                 sps->scaling_matrix4, sps->scaling_matrix8);
     } else {
         sps->chroma_format_idc = 1;
