@@ -1146,10 +1146,10 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     }
 
     if (!s->is_luma) {
-    channel_buffer[0] = src + td->xsize * s->channel_offsets[0];
-    channel_buffer[1] = src + td->xsize * s->channel_offsets[1];
-    channel_buffer[2] = src + td->xsize * s->channel_offsets[2];
-    rgb_channel_count = 3;
+        channel_buffer[0] = src + td->xsize * s->channel_offsets[0];
+        channel_buffer[1] = src + td->xsize * s->channel_offsets[1];
+        channel_buffer[2] = src + td->xsize * s->channel_offsets[2];
+        rgb_channel_count = 3;
     } else { /* put y data in the first channel_buffer */
         channel_buffer[0] = src + td->xsize * s->channel_offsets[1];
         rgb_channel_count = 1;
@@ -1380,11 +1380,12 @@ static int decode_header(EXRContext *s)
                                !strcmp(ch_gb.buffer, "W")){
                                channel_index = 2;
                         s->is_luma = 0;
-                    } else if (!strcmp(ch_gb.buffer, "A"))
+                    } else if (!strcmp(ch_gb.buffer, "A")) {
                         channel_index = 3;
-                    else
+                    } else {
                         av_log(s->avctx, AV_LOG_WARNING,
                                "Unsupported channel %.256s.\n", ch_gb.buffer);
+                    }
                 }
 
                 /* skip until you get a 0 */
@@ -1443,17 +1444,17 @@ static int decode_header(EXRContext *s)
             /* Check if all channels are set with an offset or if the channels
              * are causing an overflow  */
             if (!s->is_luma){/* if we expected to have at least 3 channels */
-            if (FFMIN3(s->channel_offsets[0],
-                       s->channel_offsets[1],
-                       s->channel_offsets[2]) < 0) {
-                if (s->channel_offsets[0] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing red channel.\n");
-                if (s->channel_offsets[1] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing green channel.\n");
-                if (s->channel_offsets[2] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing blue channel.\n");
-                return AVERROR_INVALIDDATA;
-            }
+                if (FFMIN3(s->channel_offsets[0],
+                           s->channel_offsets[1],
+                           s->channel_offsets[2]) < 0) {
+                    if (s->channel_offsets[0] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing red channel.\n");
+                    if (s->channel_offsets[1] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing green channel.\n");
+                    if (s->channel_offsets[2] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing blue channel.\n");
+                    return AVERROR_INVALIDDATA;
+                }
             }
 
             // skip one last byte and update main gb
@@ -1606,13 +1607,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     case EXR_HALF:
         if (s->channel_offsets[3] >= 0) {
             if (!s->is_luma) {
-            avctx->pix_fmt = AV_PIX_FMT_RGBA64;
+                avctx->pix_fmt = AV_PIX_FMT_RGBA64;
             } else {
                 avctx->pix_fmt = AV_PIX_FMT_YA16;
             }
         } else {
             if (!s->is_luma) {
-            avctx->pix_fmt = AV_PIX_FMT_RGB48;
+                avctx->pix_fmt = AV_PIX_FMT_RGB48;
             } else {
                 avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             }
