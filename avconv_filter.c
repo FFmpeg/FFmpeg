@@ -780,6 +780,15 @@ int configure_filtergraph(FilterGraph *fg)
         }
     }
 
+    /* send the EOFs for the finished inputs */
+    for (i = 0; i < fg->nb_inputs; i++) {
+        if (fg->inputs[i]->eof) {
+            ret = av_buffersrc_add_frame(fg->inputs[i]->filter, NULL);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
     return 0;
 }
 

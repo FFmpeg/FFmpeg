@@ -1242,6 +1242,34 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
     return 0;
 }
 
+static int ifilter_send_eof(InputFilter *ifilter)
+{
+    int i, j, ret;
+
+    ifilter->eof = 1;
+
+    if (ifilter->filter) {
+        ret = av_buffersrc_add_frame(ifilter->filter, NULL);
+        if (ret < 0)
+            return ret;
+    } else {
+        // the filtergraph was never configured
+        FilterGraph *fg = ifilter->graph;
+        for (i = 0; i < fg->nb_inputs; i++)
+            if (!fg->inputs[i]->eof)
+                break;
+        if (i == fg->nb_inputs) {
+            // All the input streams have finished without the filtergraph
+            // ever being configured.
+            // Mark the output streams as finished.
+            for (j = 0; j < fg->nb_outputs; j++)
+                finish_output_stream(fg->outputs[j]->ost);
+        }
+    }
+
+    return 0;
+}
+
 // This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
 // There is the following difference: if you got a frame, you must call
 // it again with pkt=NULL. pkt==NULL is treated differently from pkt.size==0
@@ -1415,18 +1443,11 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 
 static int send_filter_eof(InputStream *ist)
 {
-    int i, j, ret;
+    int i, ret;
     for (i = 0; i < ist->nb_filters; i++) {
-        if (ist->filters[i]->filter) {
-            ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
-            if (ret < 0)
-                return ret;
-        } else {
-            // the filtergraph was never configured
-            FilterGraph *fg = ist->filters[i]->graph;
-            for (j = 0; j < fg->nb_outputs; j++)
-                finish_output_stream(fg->outputs[j]->ost);
-        }
+        ret = ifilter_send_eof(ist->filters[i]);
+        if (ret < 0)
+            return ret;
     }
     return 0;
 }
