@@ -48,6 +48,7 @@ version 3.1:
 - 10-bit depth support in native utvideo decoder
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
+- VideoToolbox H.264 encoder
 
 
 version 3.0:
