@@ -28,6 +28,7 @@ OBJS = allcodecs.o                                                      \
        imgconvert.o                                                     \
        log2_tab.o                                                       \
        mathtables.o                                                     \
+       mpeg12framerate.o                                                \
        options.o                                                        \
        parser.o                                                         \
        profiles.o                                                       \
