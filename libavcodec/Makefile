@@ -640,27 +640,17 @@ OBJS-$(CONFIG_ISO_MEDIA)               += mpeg4audio.o mpegaudiodata.o
 
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += ac3tab.o
-OBJS-$(CONFIG_FLAC_MUXER)              += flac.o flacdata.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
-OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
-OBJS-$(CONFIG_IFF_DEMUXER)             += iff.o
 OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o                  \
-                                          flac.o flacdata.o
-OBJS-$(CONFIG_MATROSKA_MUXER)          += flac.o flacdata.o
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
+OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_MP3_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
-OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_OGG_DEMUXER)             += mpeg12data.o \
-                                          dirac.o
-OBJS-$(CONFIG_OGG_MUXER)               += flac.o flacdata.o
-OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
-OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o mpegaudiodata.o  \
-                                          flac.o flacdata.o
+OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBDCADEC_DECODER)          += libdcadec.o dca.o
