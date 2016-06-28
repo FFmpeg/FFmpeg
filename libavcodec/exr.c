@@ -749,6 +749,9 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     uint16_t *tmp = (uint16_t *)td->tmp;
     uint8_t *out;
     int ret, i, j;
+    int pixel_half_size;/* 1 for half, 2 for float and uint32 */
+    EXRChannel *channel;
+    int tmp_offset;
 
     if (!td->bitmap)
         td->bitmap = av_malloc(BITMAP_SIZE);
@@ -781,24 +784,38 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
     ptr = tmp;
     for (i = 0; i < s->nb_channels; i++) {
-        EXRChannel *channel = &s->channels[i];
-        int size = channel->pixel_type;
+        channel = &s->channels[i];
 
-        for (j = 0; j < size; j++)
-            wav_decode(ptr + j, td->xsize, size, td->ysize,
-                       td->xsize * size, maxval);
-        ptr += td->xsize * td->ysize * size;
+        if (channel->pixel_type == EXR_HALF)
+            pixel_half_size = 1;
+        else
+            pixel_half_size = 2;
+
+        for (j = 0; j < pixel_half_size; j++)
+            wav_decode(ptr + j, td->xsize, pixel_half_size, td->ysize,
+                       td->xsize * pixel_half_size, maxval);
+        ptr += td->xsize * td->ysize * pixel_half_size;
     }
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
 
     out = td->uncompressed_data;
-    for (i = 0; i < td->ysize; i++)
+    for (i = 0; i < td->ysize; i++) {
+        tmp_offset = 0;
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in = tmp + j * td->xsize * td->ysize + i * td->xsize;
-            memcpy(out, in, td->xsize * 2);
-            out += td->xsize * 2;
+            uint16_t *in;
+            EXRChannel *channel = &s->channels[j];
+            if (channel->pixel_type == EXR_HALF)
+                pixel_half_size = 1;
+            else
+                pixel_half_size = 2;
+
+            in = tmp + tmp_offset * td->xsize * td->ysize + i * td->xsize * pixel_half_size;
+            tmp_offset += pixel_half_size;
+            memcpy(out, in, td->xsize * 2 * pixel_half_size);
+            out += td->xsize * 2 * pixel_half_size;
         }
+    }
 
     return 0;
 }
