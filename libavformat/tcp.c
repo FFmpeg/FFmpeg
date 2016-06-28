@@ -32,6 +32,9 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #endif
+#if HAVE_PTHREADS
+#include <pthread.h>
+#endif
 
 typedef struct TCPContext {
     const AVClass *class;
@@ -44,6 +47,9 @@ typedef struct TCPContext {
     int send_buffer_size;
     int tcp_nodelay;
     int64_t app_ctx_intptr;
+
+    int addrinfo_timeout;
+
     AVApplicationContext *app_ctx;
 } TCPContext;
 
@@ -58,6 +64,8 @@ static const AVOption options[] = {
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
     { "ijkapplication",   "AVApplicationContext",                              OFFSET(app_ctx_intptr),   AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, .flags = D },
+
+    { "addrinfo_timeout", "set timeout (in microseconds) for getaddrinfo()",   OFFSET(addrinfo_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT_MAX, .flags = D|E },
     { NULL }
 };
 
@@ -67,6 +75,221 @@ static const AVClass tcp_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
+#ifdef HAVE_PTHREADS
+
+typedef struct TCPAddrinfoRequest
+{
+    AVBufferRef *buffer;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+
+    AVIOInterruptCB interrupt_callback;
+
+    char            *hostname;
+    char            *servname;
+    struct addrinfo  hints;
+    struct addrinfo *res;
+
+    volatile int     finished;
+    int              last_error;
+} TCPAddrinfoRequest;
+
+static void tcp_getaddrinfo_request_free(TCPAddrinfoRequest *req)
+{
+    av_assert0(req);
+    if (req->res) {
+        freeaddrinfo(req->res);
+        req->res = NULL;
+    }
+
+    av_freep(&req->servname);
+    av_freep(&req->hostname);
+    pthread_cond_destroy(&req->cond);
+    pthread_mutex_destroy(&req->mutex);
+    av_freep(&req);
+}
+
+static void tcp_getaddrinfo_request_free_buffer(void *opaque, uint8_t *data)
+{
+    av_assert0(opaque);
+    TCPAddrinfoRequest *req = (TCPAddrinfoRequest *)opaque;
+    tcp_getaddrinfo_request_free(req);
+}
+
+static int tcp_getaddrinfo_request_create(TCPAddrinfoRequest **request,
+                                          const char *hostname,
+                                          const char *servname,
+                                          const struct addrinfo *hints,
+                                          const AVIOInterruptCB *int_cb)
+{
+    TCPAddrinfoRequest *req = (TCPAddrinfoRequest *) av_mallocz(sizeof(TCPAddrinfoRequest));
+    if (!req)
+        return AVERROR(ENOMEM);
+
+    if (pthread_mutex_init(&req->mutex, NULL)) {
+        av_freep(&req);
+        return AVERROR(ENOMEM);
+    }
+
+    if (pthread_cond_init(&req->cond, NULL)) {
+        pthread_mutex_destroy(&req->mutex);
+        av_freep(&req);
+        return AVERROR(ENOMEM);
+    }
+
+    if (int_cb)
+        req->interrupt_callback = *int_cb;
+
+    if (hostname) {
+        req->hostname = av_strdup(hostname);
+        if (!req->hostname)
+            goto fail;
+    }
+
+    if (servname) {
+        req->servname = av_strdup(servname);
+        if (!req->hostname)
+            goto fail;
+    }
+
+    if (hints) {
+        req->hints.ai_family   = hints->ai_family;
+        req->hints.ai_socktype = hints->ai_socktype;
+        req->hints.ai_protocol = hints->ai_protocol;
+        req->hints.ai_flags    = hints->ai_flags;
+    }
+
+    req->buffer = av_buffer_create(NULL, 0, tcp_getaddrinfo_request_free_buffer, req, 0);
+    if (!req->buffer)
+        goto fail;
+
+    *request = req;
+    return 0;
+fail:
+    tcp_getaddrinfo_request_free(req);
+    return AVERROR(ENOMEM);
+}
+
+static void *tcp_getaddrinfo_worker(void *arg)
+{
+    TCPAddrinfoRequest *req = arg;
+
+    getaddrinfo(req->hostname, req->servname, &req->hints, &req->res);
+    pthread_mutex_lock(&req->mutex);
+    req->finished = 1;
+    pthread_cond_signal(&req->cond);
+    pthread_mutex_unlock(&req->mutex);
+    av_buffer_unref(&req->buffer);
+    return NULL;
+}
+
+static void *tcp_getaddrinfo_one_by_one_worker(void *arg)
+{
+    struct addrinfo *temp_addrinfo = NULL;
+    struct addrinfo *cur = NULL;
+    int ret = EAI_FAIL;
+    int i = 0;
+    int option_length = 0;
+
+    pthread_mutex_lock(&req->mutex);
+    req->finished = 1;
+    pthread_cond_signal(&req->cond);
+    pthread_mutex_unlock(&req->mutex);
+    av_buffer_unref(&req->buffer);
+    return NULL;
+}
+
+int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
+                                 const struct addrinfo *hints, struct addrinfo **res,
+                                 int64_t timeout,
+                                 const AVIOInterruptCB *int_cb)
+{
+    int     ret;
+    int64_t start;
+    int64_t now;
+    AVBufferRef        *req_ref = NULL;
+    TCPAddrinfoRequest *req     = NULL;
+    pthread_t work_thread;
+
+    if (hostname && !hostname[0])
+        hostname = NULL;
+
+    if (timeout <= 0)
+        return getaddrinfo(hostname, servname, hints, res);
+
+    ret = tcp_getaddrinfo_request_create(&req, hostname, servname, hints, int_cb);
+    if (ret)
+        goto fail;
+
+    req_ref = av_buffer_ref(req->buffer);
+    if (req_ref == NULL) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    /* FIXME: using a thread pool would be better. */
+    ret = pthread_create(&work_thread, NULL, tcp_getaddrinfo_worker, req);
+    if (ret) {
+        ret = AVERROR(ret);
+        goto fail;
+    }
+
+    pthread_detach(work_thread);
+
+    start = av_gettime();
+    now   = start;
+
+    pthread_mutex_lock(&req->mutex);
+    while (1) {
+        int64_t wait_time = now + 100000;
+        struct timespec tv = { .tv_sec  =  wait_time / 1000000,
+                               .tv_nsec = (wait_time % 1000000) * 1000 };
+
+        if (req->finished || (start + timeout < now)) {
+            if (req->res) {
+                ret = 0;
+                *res = req->res;
+                req->res = NULL;
+            } else {
+                ret = req->last_error ? req->last_error : AVERROR_EXIT;
+            }
+            break;
+        }
+#if defined(__ANDROID__) && defined(HAVE_PTHREAD_COND_TIMEDWAIT_MONOTONIC)
+        ret = pthread_cond_timedwait_monotonic_np(&req->cond, &req->mutex, &tv);
+#else
+        ret = pthread_cond_timedwait(&req->cond, &req->mutex, &tv);
+#endif
+        if (ret != 0 && ret != ETIMEDOUT) {
+            av_log(NULL, AV_LOG_ERROR, "pthread_cond_timedwait failed: %d\n", ret);
+            ret = AVERROR_EXIT;
+            break;
+        }
+
+        if (ff_check_interrupt(&req->interrupt_callback)) {
+            ret = AVERROR_EXIT;
+            break;
+        }
+
+        now = av_gettime();
+    }
+    pthread_mutex_unlock(&req->mutex);
+fail:
+    av_buffer_unref(&req_ref);
+    return ret;
+}
+
+#else
+int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
+                                 const struct addrinfo *hints, struct addrinfo **res,
+                                 int64_t timeout,
+                                 const AVIOInterruptCB *int_cb)
+{
+    return getaddrinfo(hostname, servname, hints, res);
+}
+#endif
 
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
@@ -115,10 +338,17 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     snprintf(portstr, sizeof(portstr), "%d", port);
     if (s->listen)
         hints.ai_flags |= AI_PASSIVE;
+#ifdef HAVE_PTHREADS
+    ret = ijk_tcp_getaddrinfo_nonblock(hostname, portstr, &hints, &ai, s->addrinfo_timeout, &h->interrupt_callback);
+#else
+    if (s->addrinfo_timeout > 0)
+        av_log(h, AV_LOG_WARNING, "Ignore addrinfo_timeout without pthreads support.\n")
     if (!hostname[0])
         ret = getaddrinfo(NULL, portstr, &hints, &ai);
     else
         ret = getaddrinfo(hostname, portstr, &hints, &ai);
+#endif
+
     if (ret) {
         av_log(h, AV_LOG_ERROR,
                "Failed to resolve hostname %s: %s\n",
