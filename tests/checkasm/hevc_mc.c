@@ -304,17 +304,25 @@ void checkasm_check_hevc_mc(void)
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
-
         check_qpel(&h, buf16_0, buf16_1, buf8_0, mcbuffer, bit_depth);
-        report("qpel");
-
-        check_epel(&h, buf16_0, buf16_1, buf8_0, mcbuffer, bit_depth);
-        report("epel");
-
-        check_unweighted_pred(&h, buf8_0, buf8_1, buf16_0, buf16_1, bit_depth);
-        report("unweighted_pred");
-
-        check_weighted_pred(&h, buf8_0, buf8_1, buf16_0, buf16_1, bit_depth);
-        report("weighted_pred");
     }
+    report("qpel");
+
+    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+        ff_hevc_dsp_init(&h, bit_depth);
+        check_epel(&h, buf16_0, buf16_1, buf8_0, mcbuffer, bit_depth);
+    }
+    report("epel");
+
+    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+        ff_hevc_dsp_init(&h, bit_depth);
+        check_unweighted_pred(&h, buf8_0, buf8_1, buf16_0, buf16_1, bit_depth);
+    }
+    report("unweighted_pred");
+
+    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+        ff_hevc_dsp_init(&h, bit_depth);
+        check_weighted_pred(&h, buf8_0, buf8_1, buf16_0, buf16_1, bit_depth);
+    }
+    report("weighted_pred");
 }
