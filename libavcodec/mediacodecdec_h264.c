@@ -112,8 +112,25 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     }
 
     if (pps && sps) {
-        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)sps->data, sps->data_size);
-        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)pps->data, pps->data_size);
+        static const uint8_t nal_headers[] = { 0x00, 0x00, 0x00, 0x01 };
+
+        uint8_t *data = NULL;
+        size_t data_size = sizeof(nal_headers) + FFMAX(sps->data_size, pps->data_size);
+
+        data = av_mallocz(data_size);
+        if (!data) {
+            ret = AVERROR(ENOMEM);
+            goto done;
+        }
+
+        memcpy(data, nal_headers, sizeof(nal_headers));
+        memcpy(data + sizeof(nal_headers), sps->data, sps->data_size);
+        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, sizeof(nal_headers) + sps->data_size);
+
+        memcpy(data + sizeof(nal_headers), pps->data, pps->data_size);
+        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, sizeof(nal_headers) + pps->data_size);
+
+        av_freep(&data);
     } else {
         av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
         ret = AVERROR_INVALIDDATA;
