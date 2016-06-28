@@ -6207,6 +6207,10 @@ __declspec($_restrict) void* foo(int);
 EOF
     fi
     check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+    # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
+    # this flag should be re-checked on newer compiler releases and put under a
+    # version check once its fixed
+    check_cflags -d2SSAOptimizer-
 fi
 
 for pfx in "" host_; do
