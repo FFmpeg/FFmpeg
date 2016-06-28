@@ -5217,7 +5217,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if( st->discard == AVDISCARD_NONKEY && 0==(sample->flags & AVINDEX_KEYFRAME) ) {
-            av_log(mov->fc, AV_LOG_, "Nonkey frame from stream %d discarded due to AVDISCARD_NONKEY\n");
+            av_log(mov->fc, AV_LOG_DEBUG, "Nonkey frame from stream %d discarded due to AVDISCARD_NONKEY\n", sc->ffindex);
             goto retry;
         }
 
