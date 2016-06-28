@@ -154,7 +154,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
             if (res != S_OK)
                 av_log(avctx, AV_LOG_WARNING, "Setting duplex mode failed.\n");
             else
-                av_log(avctx, AV_LOG_VERBOSE, "Succesfully set duplex mode to %s duplex.\n", ctx->duplex_mode == 2 ? "full" : "half");
+                av_log(avctx, AV_LOG_VERBOSE, "Successfully set duplex mode to %s duplex.\n", ctx->duplex_mode == 2 ? "full" : "half");
         } else {
             av_log(avctx, AV_LOG_WARNING, "Unable to set duplex mode, because it is not supported.\n");
         }
