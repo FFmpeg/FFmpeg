@@ -5215,6 +5215,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->current_sample -= should_retry(sc->pb, ret64);
             return AVERROR_INVALIDDATA;
         }
+
+        if( st->discard == AVDISCARD_NONKEY && 0==(sample->flags & AVINDEX_KEYFRAME) ) {
+            av_log(mov->fc, AV_LOG_, "Nonkey frame from stream %d discarded due to AVDISCARD_NONKEY\n");
+            goto retry;
+        }
+
         ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             sc->current_sample -= should_retry(sc->pb, ret);
