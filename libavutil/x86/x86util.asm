@@ -552,7 +552,9 @@
 %endmacro
 
 %macro SPLATW 2-3 0
-%if mmsize == 16
+%if cpuflag(avx2) && %3 == 0
+    vpbroadcastw %1, %2
+%elif mmsize == 16
     pshuflw    %1, %2, (%3)*0x55
     punpcklqdq %1, %1
 %elif cpuflag(mmxext)
