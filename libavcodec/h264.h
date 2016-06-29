@@ -31,9 +31,9 @@
 #include "libavutil/buffer.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/thread.h"
+
 #include "cabac.h"
 #include "error_resilience.h"
-#include "get_bits.h"
 #include "h264_parse.h"
 #include "h264_sei.h"
 #include "h2645_parse.h"
@@ -460,7 +460,6 @@ typedef struct H264Context {
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;
     H264QpelContext h264qpel;
-    GetBitContext gb;
 
     H264Picture DPB[H264_MAX_PICTURE_COUNT];
     H264Picture *cur_pic_ptr;
