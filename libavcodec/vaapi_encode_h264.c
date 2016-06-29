@@ -61,7 +61,29 @@ typedef struct VAAPIEncodeH264MiscSequenceParams {
 
     int pic_init_qs_minus26;
 
-    char vui_parameters_present_flag;
+    char overscan_info_present_flag;
+    char overscan_appropriate_flag;
+
+    char video_signal_type_present_flag;
+    unsigned int video_format;
+    char video_full_range_flag;
+    char colour_description_present_flag;
+    unsigned int colour_primaries;
+    unsigned int transfer_characteristics;
+    unsigned int matrix_coefficients;
+
+    char chroma_loc_info_present_flag;
+    unsigned int chroma_sample_loc_type_top_field;
+    unsigned int chroma_sample_loc_type_bottom_field;
+
+    // Some timing elements are in VAEncSequenceParameterBufferH264.
+    char fixed_frame_rate_flag;
+
+    char nal_hrd_parameters_present_flag;
+    char vcl_hrd_parameters_present_flag;
+    char low_delay_hrd_flag;
+    char pic_struct_present_flag;
+    char bitstream_restriction_flag;
 } VAAPIEncodeH264MiscSequenceParams;
 
 // This structure contains all possibly-useful per-slice syntax elements
@@ -132,6 +154,7 @@ typedef struct VAAPIEncodeH264Options {
 
 #define vseq_var(name)     vseq->name, name
 #define vseq_field(name)   vseq->seq_fields.bits.name, name
+#define vvui_field(name)   vseq->vui_fields.bits.name, name
 #define vpic_var(name)     vpic->name, name
 #define vpic_field(name)   vpic->pic_fields.bits.name, name
 #define vslice_var(name)   vslice->name, name
@@ -152,6 +175,71 @@ static void vaapi_encode_h264_write_trailing_rbsp(PutBitContext *pbc)
     u(1, 1, rbsp_stop_one_bit);
     while (put_bits_count(pbc) & 7)
         u(1, 0, rbsp_alignment_zero_bit);
+}
+
+static void vaapi_encode_h264_write_vui(PutBitContext *pbc,
+                                        VAAPIEncodeContext *ctx)
+{
+    VAEncSequenceParameterBufferH264  *vseq = ctx->codec_sequence_params;
+    VAAPIEncodeH264Context            *priv = ctx->priv_data;
+    VAAPIEncodeH264MiscSequenceParams *mseq = &priv->misc_sequence_params;
+
+    u(1, vvui_field(aspect_ratio_info_present_flag));
+    if (vseq->vui_fields.bits.aspect_ratio_info_present_flag) {
+        u(8, vseq_var(aspect_ratio_idc));
+        if (vseq->aspect_ratio_idc == 255) {
+            u(16, vseq_var(sar_width));
+            u(16, vseq_var(sar_height));
+        }
+    }
+
+    u(1, mseq_var(overscan_info_present_flag));
+    if (mseq->overscan_info_present_flag)
+        u(1, mseq_var(overscan_appropriate_flag));
+
+    u(1, mseq_var(video_signal_type_present_flag));
+    if (mseq->video_signal_type_present_flag) {
+        u(3, mseq_var(video_format));
+        u(1, mseq_var(video_full_range_flag));
+        u(1, mseq_var(colour_description_present_flag));
+        if (mseq->colour_description_present_flag) {
+            u(8, mseq_var(colour_primaries));
+            u(8, mseq_var(transfer_characteristics));
+            u(8, mseq_var(matrix_coefficients));
+        }
+    }
+
+    u(1, mseq_var(chroma_loc_info_present_flag));
+    if (mseq->chroma_loc_info_present_flag) {
+        ue(mseq_var(chroma_sample_loc_type_top_field));
+        ue(mseq_var(chroma_sample_loc_type_bottom_field));
+    }
+
+    u(1, vvui_field(timing_info_present_flag));
+    if (vseq->vui_fields.bits.timing_info_present_flag) {
+        u(32, vseq_var(num_units_in_tick));
+        u(32, vseq_var(time_scale));
+        u(1, mseq_var(fixed_frame_rate_flag));
+    }
+
+    u(1, mseq_var(nal_hrd_parameters_present_flag));
+    if (mseq->nal_hrd_parameters_present_flag) {
+        av_assert0(0 && "nal hrd parameters not supported");
+    }
+    u(1, mseq_var(vcl_hrd_parameters_present_flag));
+    if (mseq->vcl_hrd_parameters_present_flag) {
+        av_assert0(0 && "vcl hrd parameters not supported");
+    }
+
+    if (mseq->nal_hrd_parameters_present_flag ||
+        mseq->vcl_hrd_parameters_present_flag)
+        u(1, mseq_var(low_delay_hrd_flag));
+    u(1, mseq_var(pic_struct_present_flag));
+
+    u(1, vvui_field(bitstream_restriction_flag));
+    if (vseq->vui_fields.bits.bitstream_restriction_flag) {
+        av_assert0(0 && "bitstream restrictions not supported");
+    }
 }
 
 static void vaapi_encode_h264_write_sps(PutBitContext *pbc,
@@ -233,7 +321,9 @@ static void vaapi_encode_h264_write_sps(PutBitContext *pbc,
         ue(vseq_var(frame_crop_bottom_offset));
     }
 
-    u(1, mseq_var(vui_parameters_present_flag));
+    u(1, vseq_var(vui_parameters_present_flag));
+    if (vseq->vui_parameters_present_flag)
+        vaapi_encode_h264_write_vui(pbc, ctx);
 
     vaapi_encode_h264_write_trailing_rbsp(pbc);
 }
@@ -529,13 +619,45 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             vseq->frame_cropping_flag = 0;
         }
 
+        vseq->vui_parameters_present_flag = 1;
+        if (avctx->sample_aspect_ratio.num != 0) {
+            vseq->vui_fields.bits.aspect_ratio_info_present_flag = 1;
+            // There is a large enum of these which we could support
+            // individually rather than using the generic X/Y form?
+            if (avctx->sample_aspect_ratio.num ==
+                avctx->sample_aspect_ratio.den) {
+                vseq->aspect_ratio_idc = 1;
+            } else {
+                vseq->aspect_ratio_idc = 255; // Extended SAR.
+                vseq->sar_width  = avctx->sample_aspect_ratio.num;
+                vseq->sar_height = avctx->sample_aspect_ratio.den;
+            }
+        }
+        if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+            avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
+            avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
+            mseq->video_signal_type_present_flag = 1;
+            mseq->video_format             = 5; // Unspecified.
+            mseq->video_full_range_flag    = 0;
+            mseq->colour_description_present_flag = 1;
+            // These enums are derived from the standard and hence
+            // we can just use the values directly.
+            mseq->colour_primaries         = avctx->color_primaries;
+            mseq->transfer_characteristics = avctx->color_trc;
+            mseq->matrix_coefficients      = avctx->colorspace;
+        }
+
         vseq->bits_per_second = avctx->bit_rate;
+
+        vseq->vui_fields.bits.timing_info_present_flag = 1;
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
             vseq->num_units_in_tick = avctx->framerate.num;
             vseq->time_scale        = 2 * avctx->framerate.den;
+            mseq->fixed_frame_rate_flag = 1;
         } else {
             vseq->num_units_in_tick = avctx->time_base.num;
             vseq->time_scale        = 2 * avctx->time_base.den;
+            mseq->fixed_frame_rate_flag = 0;
         }
 
         vseq->intra_period     = ctx->p_per_i * (ctx->b_per_p + 1);
