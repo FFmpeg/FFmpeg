@@ -15,6 +15,14 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-06-29 - xxxxxxx - lavfi 6.47.100 - avfilter.h
+  Fix accidental ABI breakage in AVFilterContext.
+  ABI was broken in 8688d3a, lavfi 6.42.100 and released as ffmpeg 3.1.
+
+  Because of this, ffmpeg and ffplay built against lavfi>=6.42.100 will not be
+  compatible with lavfi>=6.47.100. Potentially also affects other users of
+  libavfilter if they are using one of the affected fields.
+
 -------- 8< --------- FFmpeg 3.1 was cut here -------- 8< ---------
 
 2016-06-26 - 481f320 / 1c9e861 - lavu 55.27.100 / 55.13.0 - hwcontext.h
