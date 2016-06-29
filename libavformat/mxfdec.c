@@ -50,6 +50,7 @@
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
 #include "avformat.h"
 #include "internal.h"
@@ -2159,7 +2160,7 @@ fail_and_free:
     return ret;
 }
 
-static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
+static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
 {
     struct tm time = { 0 };
     time.tm_year = (timestamp >> 48) - 1900;
@@ -2178,13 +2179,7 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
     time.tm_min  = av_clip(time.tm_min,  0, 59);
     time.tm_sec  = av_clip(time.tm_sec,  0, 59);
 
-    *str = av_mallocz(32);
-    if (!*str)
-        return AVERROR(ENOMEM);
-    if (!strftime(*str, 32, "%Y-%m-%d %H:%M:%S", &time))
-        (*str)[0] = '\0';
-
-    return 0;
+    return (int64_t)av_timegm(&time) * 1000000;
 }
 
 #define SET_STR_METADATA(pb, name, str) do { \
@@ -2202,9 +2197,8 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
 
 #define SET_TS_METADATA(pb, name, var, str) do { \
     var = avio_rb64(pb); \
-    if ((ret = mxf_timestamp_to_str(var, &str)) < 0) \
+    if ((ret = avpriv_dict_set_timestamp(&s->metadata, name, mxf_timestamp_to_int64(var)) < 0)) \
         return ret; \
-    av_dict_set(&s->metadata, name, str, AV_DICT_DONT_STRDUP_VAL); \
 } while (0)
 
 static int mxf_read_identification_metadata(void *arg, AVIOContext *pb, int tag, int size, UID _uid, int64_t klv_offset)
