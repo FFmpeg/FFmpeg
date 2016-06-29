@@ -115,7 +115,8 @@ YASM-OBJS-$(CONFIG_APE_DECODER)        += x86/apedsp.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
 YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
 YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_deblock.o            \
-                                          x86/hevc_mc.o
+                                          x86/hevc_mc.o                 \
+                                          x86/hevc_idct.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
