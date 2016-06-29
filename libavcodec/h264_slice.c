@@ -1637,10 +1637,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
-        ff_h264_direct_dist_scale_factor(h, sl);
-    ff_h264_direct_ref_list_init(h, sl);
-
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I && pps->cabac) {
         tmp = get_ue_golomb_31(&sl->gb);
         if (tmp > 2) {
@@ -1713,6 +1709,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     ret = h264_slice_header_parse(h, sl);
     if (ret < 0)
         return ret;
+
+    if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
+        ff_h264_direct_dist_scale_factor(h, sl);
+    ff_h264_direct_ref_list_init(h, sl);
 
     if (h->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
