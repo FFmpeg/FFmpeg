@@ -516,8 +516,6 @@ typedef struct H264Context {
     int b_stride;       // FIXME use s->b4_stride
 
 
-    unsigned current_sps_id; ///< id of the current SPS
-
     int au_pps_id; ///< pps_id of current access unit
 
     uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1

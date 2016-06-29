@@ -1171,9 +1171,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if (h->ps.sps != (const SPS*)h->ps.sps_list[h->ps.pps->sps_id]->data ||
-        pps->sps_id != h->current_sps_id) {
-
+    if (h->ps.sps != (const SPS*)h->ps.sps_list[h->ps.pps->sps_id]->data) {
         if (!first_slice) {
             av_log(h->avctx, AV_LOG_ERROR,
                "SPS changed in the middle of the frame\n");
@@ -1783,7 +1781,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     }
 
     h->au_pps_id = pps_id;
-    h->current_sps_id = h->ps.pps->sps_id;
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,

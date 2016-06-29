@@ -308,7 +308,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->backup_width          = -1;
     h->backup_height         = -1;
     h->backup_pix_fmt        = AV_PIX_FMT_NONE;
-    h->current_sps_id        = -1;
     h->cur_chroma_format_idc = -1;
 
     h->picture_structure     = PICT_FRAME;
