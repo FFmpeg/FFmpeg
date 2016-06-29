@@ -1575,10 +1575,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         }
     }
 
-    if (!h->setup_finished)
-        ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
-                         sps, &h->poc, h->picture_structure, h->nal_ref_idc);
-
     if (pps->redundant_pic_cnt_present)
         sl->redundant_pic_count = get_ue_golomb(&sl->gb);
 
@@ -1695,6 +1691,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     ret = h264_slice_header_parse(h, sl);
     if (ret) // can not be ret<0 because of SLICE_SKIPED, SLICE_SINGLETHREAD, ...
         return ret;
+
+    if (!h->setup_finished)
+        ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
+                         h->ps.sps, &h->poc, h->picture_structure, h->nal_ref_idc);
 
     ret = ff_h264_build_ref_list(h, sl);
     if (ret < 0)
