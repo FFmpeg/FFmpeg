@@ -112,6 +112,7 @@ include $(SRC_PATH)/tests/fate/api.mak
 include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak
+include $(SRC_PATH)/tests/fate/canopus.mak
 include $(SRC_PATH)/tests/fate/cdxl.mak
 include $(SRC_PATH)/tests/fate/checkasm.mak
 include $(SRC_PATH)/tests/fate/concatdec.mak
