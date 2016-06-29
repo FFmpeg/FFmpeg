@@ -370,6 +370,7 @@ typedef struct H264SliceContext {
     int mb_xy;
     int resync_mb_x;
     int resync_mb_y;
+    unsigned int first_mb_addr;
     // index of the first MB of the next slice
     int next_slice_idx;
     int mb_skip_run;
