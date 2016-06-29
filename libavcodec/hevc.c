@@ -397,10 +397,13 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     export_stream_params(s->avctx, &s->ps, sps);
 
-    if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
+    if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P ||
+        sps->pix_fmt == AV_PIX_FMT_YUV420P10) {
 #if CONFIG_HEVC_DXVA2_HWACCEL
         *fmt++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
+    }
+    if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P) {
 #if CONFIG_HEVC_D3D11VA_HWACCEL
         *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
 #endif
