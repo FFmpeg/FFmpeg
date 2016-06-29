@@ -1597,6 +1597,9 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
            sl->ref_count[1] = sl->ref_count[0] = 0;
            return ret;
        }
+       ret = ff_h264_build_ref_list(h, sl);
+       if (ret < 0)
+           return ret;
     }
 
     if ((pps->weighted_pred && sl->slice_type_nos == AV_PICTURE_TYPE_P) ||

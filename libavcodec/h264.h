@@ -406,6 +406,11 @@ typedef struct H264SliceContext {
     H264Ref ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
                                          *   Reordered version of default_ref_list
                                          *   according to picture reordering in slice header */
+    struct {
+        uint8_t op;
+        uint32_t val;
+    } ref_modifications[2][32];
+    int nb_ref_modifications[2];
 
     const uint8_t *intra_pcm_ptr;
     int16_t *dc_val_base;
@@ -714,7 +719,8 @@ int ff_h264_get_slice_type(const H264SliceContext *sl);
  */
 int ff_h264_alloc_tables(H264Context *h);
 
-int ff_h264_decode_ref_pic_list_reordering(H264Context *h, H264SliceContext *sl);
+int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl);
+int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
 
 /**
