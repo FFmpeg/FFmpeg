@@ -5217,20 +5217,8 @@ int ff_standardize_creation_time(AVFormatContext *s)
 {
     int64_t timestamp;
     int ret = ff_parse_creation_time_metadata(s, &timestamp, 0);
-    if (ret == 1) {
-        time_t seconds = timestamp / 1000000;
-        struct tm *ptm, tmbuf;
-        ptm = gmtime_r(&seconds, &tmbuf);
-        if (ptm) {
-            char buf[32];
-            if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", ptm))
-                return AVERROR_EXTERNAL;
-            av_strlcatf(buf, sizeof(buf), ".%06dZ", (int)(timestamp % 1000000));
-            av_dict_set(&s->metadata, "creation_time", buf, 0);
-        } else {
-            return AVERROR_EXTERNAL;
-        }
-    }
+    if (ret == 1)
+        return avpriv_dict_set_timestamp(&s->metadata, "creation_time", timestamp);
     return ret;
 }
 
