@@ -1883,7 +1883,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int ret;
+    int ret, entries;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -1892,13 +1892,14 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
-    sc->stsd_count = avio_rb32(pb); /* entries */
+    entries = avio_rb32(pb);
 
     /* Prepare space for hosting multiple extradata. */
-    sc->extradata = av_mallocz_array(sc->stsd_count, sizeof(*sc->extradata));
+    sc->extradata = av_mallocz_array(entries, sizeof(*sc->extradata));
     if (!sc->extradata)
         return AVERROR(ENOMEM);
 
+    sc->stsd_count = entries;
     sc->extradata_size = av_mallocz_array(sc->stsd_count, sizeof(sc->extradata_size));
     if (!sc->extradata_size)
         return AVERROR(ENOMEM);
