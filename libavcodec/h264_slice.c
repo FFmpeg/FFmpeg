@@ -1139,12 +1139,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                pps_id);
         return AVERROR_INVALIDDATA;
     }
-    if (h->au_pps_id >= 0 && pps_id != h->au_pps_id) {
-        av_log(h->avctx, AV_LOG_ERROR,
-               "PPS change from %d to %d forbidden\n",
-               h->au_pps_id, pps_id);
-        return AVERROR_INVALIDDATA;
-    }
 
     pps = (const PPS*)h->ps.pps_list[pps_id]->data;
 
@@ -1779,8 +1773,6 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
             ref2frm[i + 4] = 4 * id_list[(i - 16) >> 1] +
                              (sl->ref_list[j][i].reference & 3);
     }
-
-    h->au_pps_id = pps_id;
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,

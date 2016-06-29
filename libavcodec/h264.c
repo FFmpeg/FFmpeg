@@ -950,9 +950,6 @@ again:
             h->has_recovery_point = 1;
         case NAL_SLICE:
             sl->gb = nal->gb;
-            if (   nals_needed >= i
-                || (!(avctx->active_thread_type & FF_THREAD_FRAME) && !context_count))
-                h->au_pps_id = -1;
 
             if ((err = ff_h264_decode_slice_header(h, sl)))
                 break;

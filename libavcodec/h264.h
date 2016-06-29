@@ -515,9 +515,6 @@ typedef struct H264Context {
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
 
-
-    int au_pps_id; ///< pps_id of current access unit
-
     uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
 
     // interlacing specific flags
