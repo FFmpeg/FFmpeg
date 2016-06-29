@@ -606,6 +606,30 @@ static void vaapi_encode_h264_write_pic_timing(PutBitContext *pbc,
     }
 }
 
+static void vaapi_encode_h264_write_identifier(PutBitContext *pbc,
+                                               VAAPIEncodeContext *ctx,
+                                               VAAPIEncodePicture *pic)
+{
+    const char *lavc   = LIBAVCODEC_IDENT;
+    const char *vaapi  = VA_VERSION_S;
+    const char *driver = vaQueryVendorString(ctx->hwctx->display);
+    char tmp[256];
+    int i;
+
+    // Random (version 4) ISO 11578 UUID.
+    uint8_t uuid[16] = {
+        0x59, 0x94, 0x8b, 0x28, 0x11, 0xec, 0x45, 0xaf,
+        0x96, 0x75, 0x19, 0xd4, 0x1f, 0xea, 0xa9, 0x4d,
+    };
+
+    for (i = 0; i < 16; i++)
+        u(8, uuid[i], uuid_iso_iec_11578);
+
+    snprintf(tmp, sizeof(tmp), "%s / VAAPI %s / %s", lavc, vaapi, driver);
+    for (i = 0; i < sizeof(tmp) && tmp[i]; i++)
+        u(8, tmp[i], user_data_payload_byte);
+}
+
 static void vaapi_encode_h264_write_sei(PutBitContext *pbc,
                                         VAAPIEncodeContext *ctx,
                                         VAAPIEncodePicture *pic)
@@ -632,6 +656,11 @@ static void vaapi_encode_h264_write_sei(PutBitContext *pbc,
             if (!priv->send_timing_sei)
                 continue;
             write_payload = &vaapi_encode_h264_write_pic_timing;
+            break;
+        case SEI_TYPE_USER_DATA_UNREGISTERED:
+            if (pic->encode_order != 0)
+                continue;
+            write_payload = &vaapi_encode_h264_write_identifier;
             break;
         default:
             continue;
