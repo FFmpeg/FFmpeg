@@ -84,6 +84,11 @@ fate-filter-anequalizer: tests/data/filtergraphs/anequalizer
 fate-filter-anequalizer: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-anequalizer: CMD = framecrc -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/anequalizer
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ASETNSAMPLES, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-asetnsamples
+fate-filter-asetnsamples: tests/data/asynth-44100-2.wav
+fate-filter-asetnsamples: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-asetnsamples: CMD = framecrc -i $(SRC) -af asetnsamples=512:p=1
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
