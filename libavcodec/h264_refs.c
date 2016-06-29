@@ -604,30 +604,30 @@ static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
 int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
 {
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
-    int mmco_index = 0, i = 0;
+    int nb_mmco = 0, i = 0;
 
     if (h->short_ref_count &&
         h->long_ref_count + h->short_ref_count >= h->ps.sps->ref_frame_count &&
         !(FIELD_PICTURE(h) && !h->first_field && h->cur_pic_ptr->reference)) {
         mmco[0].opcode        = MMCO_SHORT2UNUSED;
         mmco[0].short_pic_num = h->short_ref[h->short_ref_count - 1]->frame_num;
-        mmco_index            = 1;
+        nb_mmco               = 1;
         if (FIELD_PICTURE(h)) {
             mmco[0].short_pic_num *= 2;
             mmco[1].opcode         = MMCO_SHORT2UNUSED;
             mmco[1].short_pic_num  = mmco[0].short_pic_num + 1;
-            mmco_index             = 2;
+            nb_mmco                = 2;
         }
     }
 
     if (first_slice) {
-        h->mmco_index = mmco_index;
-    } else if (!first_slice && mmco_index >= 0 &&
-               (mmco_index != h->mmco_index ||
-                (i = check_opcodes(h->mmco, mmco_temp, mmco_index)))) {
+        h->nb_mmco = nb_mmco;
+    } else if (!first_slice && nb_mmco >= 0 &&
+               (nb_mmco != h->nb_mmco ||
+                (i = check_opcodes(h->mmco, mmco_temp, nb_mmco)))) {
         av_log(h->avctx, AV_LOG_ERROR,
                "Inconsistent MMCO state between slices [%d, %d]\n",
-               mmco_index, h->mmco_index);
+               nb_mmco, h->nb_mmco);
         return AVERROR_INVALIDDATA;
     }
     return 0;
@@ -847,14 +847,14 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
 {
     int i, ret;
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = mmco_temp;
-    int mmco_index = 0;
+    int nb_mmco = 0;
 
     if (h->nal_unit_type == NAL_IDR_SLICE) { // FIXME fields
         skip_bits1(gb); // broken_link
         if (get_bits1(gb)) {
             mmco[0].opcode   = MMCO_LONG;
             mmco[0].long_arg = 0;
-            mmco_index       = 1;
+            nb_mmco          = 1;
         }
     } else {
         if (get_bits1(gb)) { // adaptive_ref_pic_marking_mode_flag
@@ -900,26 +900,26 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
                 if (opcode == MMCO_END)
                     break;
             }
-            mmco_index = i;
+            nb_mmco = i;
         } else {
             if (first_slice) {
                 ret = ff_generate_sliding_window_mmcos(h, first_slice);
                 if (ret < 0 && h->avctx->err_recognition & AV_EF_EXPLODE)
                     return ret;
             }
-            mmco_index = -1;
+            nb_mmco = -1;
         }
     }
 
-    if (first_slice && mmco_index != -1) {
+    if (first_slice && nb_mmco != -1) {
         memcpy(h->mmco, mmco_temp, sizeof(h->mmco));
-        h->mmco_index = mmco_index;
-    } else if (!first_slice && mmco_index >= 0 &&
-               (mmco_index != h->mmco_index ||
-                check_opcodes(h->mmco, mmco_temp, mmco_index))) {
+        h->nb_mmco = nb_mmco;
+    } else if (!first_slice && nb_mmco >= 0 &&
+               (nb_mmco != h->nb_mmco ||
+                check_opcodes(h->mmco, mmco_temp, nb_mmco))) {
         av_log(h->avctx, AV_LOG_ERROR,
                "Inconsistent MMCO state between slices [%d, %d]\n",
-               mmco_index, h->mmco_index);
+               nb_mmco, h->nb_mmco);
         return AVERROR_INVALIDDATA;
     }
 

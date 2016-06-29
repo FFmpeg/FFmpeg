@@ -429,7 +429,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->next_outputed_poc = h1->next_outputed_poc;
 
     memcpy(h->mmco, h1->mmco, sizeof(h->mmco));
-    h->mmco_index      = h1->mmco_index;
+    h->nb_mmco         = h1->nb_mmco;
     h->mmco_reset      = h1->mmco_reset;
     h->long_ref_count  = h1->long_ref_count;
     h->short_ref_count = h1->short_ref_count;
@@ -445,7 +445,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         return 0;
 
     if (!h->droppable) {
-        err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+        err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->nb_mmco);
         h->poc.prev_poc_msb = h->poc.poc_msb;
         h->poc.prev_poc_lsb = h->poc.poc_lsb;
     }
@@ -1441,7 +1441,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
             ret = ff_generate_sliding_window_mmcos(h, 1);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
-            ret = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+            ret = ff_h264_execute_ref_pic_marking(h, h->mmco, h->nb_mmco);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
             /* Error concealment: If a ref is missing, copy the previous ref
@@ -1593,7 +1593,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
                                   sl->slice_type_nos, &sl->pwt, h->avctx);
 
     // If frame-mt is enabled, only update mmco tables for the first slice
-    // in a field. Subsequent slices can temporarily clobber h->mmco_index
+    // in a field. Subsequent slices can temporarily clobber h->nb_mmco
     // or h->mmco, which will cause ref list mix-ups and decoding errors
     // further down the line. This may break decoding if the first slice is
     // corrupt, thus we only do this if frame-mt is enabled.

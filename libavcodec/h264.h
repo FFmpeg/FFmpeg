@@ -599,7 +599,7 @@ typedef struct H264Context {
      * memory management control operations buffer.
      */
     MMCO mmco[MAX_MMCO_COUNT];
-    int mmco_index;
+    int  nb_mmco;
     int mmco_reset;
 
     int long_ref_count;     ///< number of actual long term references
