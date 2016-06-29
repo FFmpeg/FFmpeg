@@ -1597,9 +1597,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
            sl->ref_count[1] = sl->ref_count[0] = 0;
            return ret;
        }
-       ret = ff_h264_build_ref_list(h, sl);
-       if (ret < 0)
-           return ret;
     }
 
     sl->pwt.use_weight = 0;
@@ -1697,6 +1694,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     ret = h264_slice_header_parse(h, sl);
     if (ret) // can not be ret<0 because of SLICE_SKIPED, SLICE_SINGLETHREAD, ...
+        return ret;
+
+    ret = ff_h264_build_ref_list(h, sl);
+    if (ret < 0)
         return ret;
 
     if (h->ps.pps->weighted_bipred_idc == 2 &&
