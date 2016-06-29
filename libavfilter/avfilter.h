@@ -474,12 +474,6 @@ struct AVFilterLink {
     AVRational frame_rate;
 
     /**
-     * For hwaccel pixel formats, this should be a reference to the
-     * AVHWFramesContext describing the frames.
-     */
-    AVBufferRef *hw_frames_ctx;
-
-    /**
      * Buffer partially filled with samples to achieve a fixed/minimum size.
      */
     AVFrame *partial_buf;
@@ -550,6 +544,12 @@ struct AVFilterLink {
      * cleared when a frame is filtered.
      */
     int frame_wanted_out;
+
+    /**
+     * For hwaccel pixel formats, this should be a reference to the
+     * AVHWFramesContext describing the frames.
+     */
+    AVBufferRef *hw_frames_ctx;
 };
 
 /**
