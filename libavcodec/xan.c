@@ -34,9 +34,10 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "internal.h"
 

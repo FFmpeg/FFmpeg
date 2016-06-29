@@ -29,7 +29,6 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-
 #include "vorbis.h"
 
 
