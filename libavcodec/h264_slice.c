@@ -1702,7 +1702,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     int i, j, ret = 0;
 
     ret = h264_slice_header_parse(h, sl);
-    if (ret < 0)
+    if (ret) // can not be ret<0 because of SLICE_SKIPED, SLICE_SINGLETHREAD, ...
         return ret;
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
