@@ -358,6 +358,12 @@ fate-tiff: $(FATE_TIFF-yes)
 FATE_WEBP += fate-webp-rgb-lossless
 fate-webp-rgb-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lossless.webp
 
+FATE_WEBP += fate-webp-rgb-lena-lossless
+fate-webp-rgb-lena-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lena_lossless.webp
+
+FATE_WEBP += fate-webp-rgb-lena-lossless-rgb24
+fate-webp-rgb-lena-lossless-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lena_lossless.webp -pix_fmt rgb24
+
 FATE_WEBP += fate-webp-rgba-lossless
 fate-webp-rgba-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_lossless.webp
 
