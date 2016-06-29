@@ -27,9 +27,7 @@
 
 #ifdef _MSC_VER
 #   include <crtversion.h>
-#   if _VC_CRT_MAJOR_VERSION >= 14
-#       pragma comment(lib, "legacy_stdio_definitions.lib")
-#   else
+#   if _VC_CRT_MAJOR_VERSION < 14
 #       include <../compat/msvcrt/snprintf.h>
 #       define strtod avpriv_strtod
 #       define strtoll _strtoi64
