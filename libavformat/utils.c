@@ -1483,6 +1483,15 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0)
                 return ret;
 
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+            /* update deprecated public codec context */
+            ret = avcodec_parameters_to_context(st->codec, st->codecpar);
+            if (ret < 0)
+                return ret;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
             st->internal->need_context_update = 0;
         }
 
