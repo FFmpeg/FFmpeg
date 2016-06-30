@@ -3801,6 +3801,10 @@ static int process_input(int file_index)
         if ((ret = seek_to_start(ifile, is)) < 0)
             return ret;
         ret = get_input_packet(ifile, &pkt);
+        if (ret == AVERROR(EAGAIN)) {
+            ifile->eagain = 1;
+            return ret;
+        }
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {
