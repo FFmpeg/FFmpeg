@@ -1421,10 +1421,12 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
             h->cur_pic_ptr->invalid_gap = !sps->gaps_in_frame_num_allowed_flag;
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 0);
             ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX, 1);
-            ret = ff_generate_sliding_window_mmcos(h, 1);
+
+            ret = ff_generate_sliding_window_mmcos(h, sl);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
-            ret = ff_h264_execute_ref_pic_marking(h, h->mmco, h->nb_mmco);
+
+            ret = ff_h264_execute_ref_pic_marking(h, sl->mmco, sl->nb_mmco);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
             /* Error concealment: If a ref is missing, copy the previous ref
@@ -1575,15 +1577,8 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         ff_h264_pred_weight_table(&sl->gb, sps, sl->ref_count,
                                   sl->slice_type_nos, &sl->pwt, h->avctx);
 
-    // If frame-mt is enabled, only update mmco tables for the first slice
-    // in a field. Subsequent slices can temporarily clobber h->nb_mmco
-    // or h->mmco, which will cause ref list mix-ups and decoding errors
-    // further down the line. This may break decoding if the first slice is
-    // corrupt, thus we only do this if frame-mt is enabled.
     if (h->nal_ref_idc) {
-        ret = ff_h264_decode_ref_pic_marking(h, &sl->gb,
-                                             !(h->avctx->active_thread_type & FF_THREAD_FRAME) ||
-                                             h->current_slice == 0);
+        ret = ff_h264_decode_ref_pic_marking(h, sl, &sl->gb);
         if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }
@@ -1674,9 +1669,13 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         sl->resync_mb_y = sl->mb_y = sl->mb_y + 1;
     av_assert1(sl->mb_y < h->mb_height);
 
-    if (!h->setup_finished)
+    if (!h->setup_finished) {
         ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
                          h->ps.sps, &h->poc, h->picture_structure, h->nal_ref_idc);
+
+        memcpy(h->mmco, sl->mmco, sl->nb_mmco * sizeof(*h->mmco));
+        h->nb_mmco = sl->nb_mmco;
+    }
 
     ret = ff_h264_build_ref_list(h, sl);
     if (ret < 0)
