@@ -428,12 +428,6 @@ typedef struct AVFrame {
     enum AVChromaLocation chroma_location;
 
     /**
-     * For hwaccel-format frames, this should be a reference to the
-     * AVHWFramesContext describing the frame.
-     */
-    AVBufferRef *hw_frames_ctx;
-
-    /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavutil should access this field using:
      * av_frame_get_best_effort_timestamp(frame)
@@ -524,6 +518,11 @@ typedef struct AVFrame {
      */
     AVBufferRef *qp_table_buf;
 #endif
+    /**
+     * For hwaccel-format frames, this should be a reference to the
+     * AVHWFramesContext describing the frame.
+     */
+    AVBufferRef *hw_frames_ctx;
 } AVFrame;
 
 /**
