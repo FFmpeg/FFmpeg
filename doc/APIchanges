@@ -15,6 +15,14 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-06-30 - c1c7e0ab - lavf 57.41.100 - avformat.h
+  Moved codecpar field from AVStream to the end of the struct, so that
+  the following private fields are in the same location as in FFmpeg 3.0 (lavf 57.25.100).
+
+2016-06-30 - 042fb69d - lavu 55.28.100 - frame.h
+  Moved hw_frames_ctx field from AVFrame to the end of the struct, so that
+  the following private fields are in the same location as in FFmpeg 3.0 (lavu 55.17.103).
+
 2016-06-29 - xxxxxxx - lavfi 6.47.100 - avfilter.h
   Fix accidental ABI breakage in AVFilterContext.
   ABI was broken in 8688d3a, lavfi 6.42.100 and released as ffmpeg 3.1.
