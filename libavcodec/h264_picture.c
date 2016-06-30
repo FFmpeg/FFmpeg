@@ -164,7 +164,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (!h->droppable) {
-            err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->nb_mmco);
+            err = ff_h264_execute_ref_pic_marking(h);
             h->poc.prev_poc_msb = h->poc.poc_msb;
             h->poc.prev_poc_lsb = h->poc.poc_lsb;
         }

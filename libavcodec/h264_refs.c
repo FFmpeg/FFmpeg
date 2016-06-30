@@ -601,11 +601,10 @@ static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
     return 0;
 }
 
-int ff_generate_sliding_window_mmcos(const H264Context *h,
-                                     H264SliceContext *sl)
+static void generate_sliding_window_mmcos(H264Context *h)
 {
-    MMCO *mmco = sl->mmco;
-    int nb_mmco = 0, i = 0;
+    MMCO *mmco = h->mmco;
+    int nb_mmco = 0;
 
     if (h->short_ref_count &&
         h->long_ref_count + h->short_ref_count >= h->ps.sps->ref_frame_count &&
@@ -621,17 +620,21 @@ int ff_generate_sliding_window_mmcos(const H264Context *h,
         }
     }
 
-    sl->nb_mmco = nb_mmco;
-
-    return 0;
+    h->nb_mmco = nb_mmco;
 }
 
-int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
+int ff_h264_execute_ref_pic_marking(H264Context *h)
 {
+    MMCO *mmco = h->mmco;
+    int mmco_count;
     int i, av_uninit(j);
     int pps_ref_count[2] = {0};
     int current_ref_assigned = 0, err = 0;
     H264Picture *av_uninit(pic);
+
+    if (!h->explicit_ref_marking)
+        generate_sliding_window_mmcos(h);
+    mmco_count = h->nb_mmco;
 
     if ((h->avctx->debug & FF_DEBUG_MMCO) && mmco_count == 0)
         av_log(h->avctx, AV_LOG_DEBUG, "no mmco here\n");
@@ -838,7 +841,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
 int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
                                    GetBitContext *gb)
 {
-    int i, ret;
+    int i;
     MMCO *mmco = sl->mmco;
     int nb_mmco = 0;
 
@@ -849,8 +852,10 @@ int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
             mmco[0].long_arg = 0;
             nb_mmco          = 1;
         }
+        sl->explicit_ref_marking = 1;
     } else {
-        if (get_bits1(gb)) { // adaptive_ref_pic_marking_mode_flag
+        sl->explicit_ref_marking = get_bits1(gb);
+        if (sl->explicit_ref_marking) {
             for (i = 0; i < MAX_MMCO_COUNT; i++) {
                 MMCOOpcode opcode = get_ue_golomb_31(gb);
 
@@ -894,16 +899,10 @@ int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
                     break;
             }
             nb_mmco = i;
-        } else {
-            ret = ff_generate_sliding_window_mmcos(h, sl);
-            if (ret < 0 && h->avctx->err_recognition & AV_EF_EXPLODE)
-                return ret;
-            nb_mmco = -1;
         }
     }
 
-    if (nb_mmco != -1)
-        sl->nb_mmco = nb_mmco;
+    sl->nb_mmco = nb_mmco;
 
     return 0;
 }
