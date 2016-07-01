@@ -118,12 +118,12 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         );
 
     __asm__ volatile(
-        "lea (%2, %3), %%"REG_a"                \n\t"
+        "lea (%2, %3), %%"FF_REG_a"             \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %1      eax     eax+%2  eax+2%2 %1+4%2  ecx     ecx+%2  ecx+2%2 %1+8%2  ecx+4%2
 
         "movq (%2), %%mm0                       \n\t"
-        "movq (%%"REG_a"), %%mm1                \n\t"
+        "movq (%%"FF_REG_a"), %%mm1             \n\t"
         "movq %%mm0, %%mm3                      \n\t"
         "movq %%mm0, %%mm4                      \n\t"
         PMAXUB(%%mm1, %%mm4)
@@ -132,7 +132,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "paddb %%mm7, %%mm0                     \n\t"
         "pcmpgtb %%mm6, %%mm0                   \n\t"
 
-        "movq (%%"REG_a",%3), %%mm2             \n\t"
+        "movq (%%"FF_REG_a",%3), %%mm2          \n\t"
         PMAXUB(%%mm2, %%mm4)
         PMINUB(%%mm2, %%mm3, %%mm5)
         "psubb %%mm2, %%mm1                     \n\t"
@@ -140,7 +140,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3, 2), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %3, 2), %%mm1      \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -148,7 +148,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "pcmpgtb %%mm6, %%mm2                   \n\t"
         "paddb %%mm2, %%mm0                     \n\t"
 
-        "lea (%%"REG_a", %3, 4), %%"REG_a"      \n\t"
+        "lea (%%"FF_REG_a", %3, 4), %%"FF_REG_a"\n\t"
 
         "movq (%2, %3, 4), %%mm2                \n\t"
         PMAXUB(%%mm2, %%mm4)
@@ -158,7 +158,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a"), %%mm1                \n\t"
+        "movq (%%"FF_REG_a"), %%mm1             \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -166,7 +166,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "pcmpgtb %%mm6, %%mm2                   \n\t"
         "paddb %%mm2, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3), %%mm2            \n\t"
+        "movq (%%"FF_REG_a", %3), %%mm2         \n\t"
         PMAXUB(%%mm2, %%mm4)
         PMINUB(%%mm2, %%mm3, %%mm5)
         "psubb %%mm2, %%mm1                     \n\t"
@@ -174,7 +174,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3, 2), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %3, 2), %%mm1      \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -207,7 +207,7 @@ static inline int RENAME(vertClassify)(const uint8_t src[], int stride, PPContex
 
         : "=r" (numEq), "=r" (dcOk)
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
-        : "%"REG_a
+        : "%"FF_REG_a
         );
 
     numEq= (-numEq) &0xFF;
@@ -248,9 +248,9 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         "por %%mm2, %%mm6                       \n\t"// First Line to Filter
 
         "movq (%0, %1, 8), %%mm5                \n\t"
-        "lea (%0, %1, 4), %%"REG_a"             \n\t"
-        "lea (%0, %1, 8), %%"REG_c"             \n\t"
-        "sub %1, %%"REG_c"                      \n\t"
+        "lea (%0, %1, 4), %%"FF_REG_a"          \n\t"
+        "lea (%0, %1, 8), %%"FF_REG_c"          \n\t"
+        "sub %1, %%"FF_REG_c"                   \n\t"
         "add %1, %0                             \n\t" // %0 points to line 1 not 0
         "movq (%0, %1, 8), %%mm7                \n\t"
         "movq %%mm5, %%mm1                      \n\t"
@@ -279,7 +279,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 
         "movq (%0, %1, 4), %%mm2                \n\t" //     1
         "movq %%mm2, %%mm5                      \n\t" //     1
-        PAVGB((%%REGa), %%mm2)                        //    11        /2
+        PAVGB((%%FF_REGa), %%mm2)                     //    11        /2
         PAVGB((%0, %1, 2), %%mm2)                     //   211        /4
         "movq %%mm2, %%mm3                      \n\t" //   211        /4
         "movq (%0), %%mm4                       \n\t" // 1
@@ -291,15 +291,15 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         PAVGB(%%mm6, %%mm0)                           //1 1        /2
         "movq %%mm4, %%mm3                      \n\t" // 1
         PAVGB((%0,%1,2), %%mm3)                       // 1 1        /2
-        PAVGB((%%REGa,%1,2), %%mm5)                   //     11        /2
-        PAVGB((%%REGa), %%mm5)                        //    211 /4
+        PAVGB((%%FF_REGa,%1,2), %%mm5)                //     11        /2
+        PAVGB((%%FF_REGa), %%mm5)                     //    211 /4
         PAVGB(%%mm5, %%mm3)                           // 2 2211 /8
         PAVGB(%%mm0, %%mm3)                           //4242211 /16
         "movq %%mm3, (%0,%1)                    \n\t" //  X
         // mm1=2 mm2=3(211) mm4=1 mm5=4(211) mm6=0 mm7=9
         PAVGB(%%mm4, %%mm6)                                   //11        /2
-        "movq (%%"REG_c"), %%mm0                \n\t" //       1
-        PAVGB((%%REGa, %1, 2), %%mm0)                 //      11/2
+        "movq (%%"FF_REG_c"), %%mm0             \n\t" //       1
+        PAVGB((%%FF_REGa, %1, 2), %%mm0)              //      11/2
         "movq %%mm0, %%mm3                      \n\t" //      11/2
         PAVGB(%%mm1, %%mm0)                           //  2   11/4
         PAVGB(%%mm6, %%mm0)                           //222   11/8
@@ -307,17 +307,17 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         "movq (%0, %1, 2), %%mm2                \n\t" //   1
         "movq %%mm0, (%0, %1, 2)                \n\t" //   X
         // mm1=2 mm2=3 mm3=6(11) mm4=1 mm5=4(211) mm6=0(11) mm7=9
-        "movq (%%"REG_a", %1, 4), %%mm0         \n\t" //        1
-        PAVGB((%%REGc), %%mm0)                        //       11        /2
+        "movq (%%"FF_REG_a", %1, 4), %%mm0      \n\t" //        1
+        PAVGB((%%FF_REGc), %%mm0)                     //       11        /2
         PAVGB(%%mm0, %%mm6)                           //11     11        /4
         PAVGB(%%mm1, %%mm4)                           // 11                /2
         PAVGB(%%mm2, %%mm1)                           //  11                /2
         PAVGB(%%mm1, %%mm6)                           //1122   11        /8
         PAVGB(%%mm5, %%mm6)                           //112242211        /16
-        "movq (%%"REG_a"), %%mm5                \n\t" //    1
-        "movq %%mm6, (%%"REG_a")                \n\t" //    X
+        "movq (%%"FF_REG_a"), %%mm5             \n\t" //    1
+        "movq %%mm6, (%%"FF_REG_a")             \n\t" //    X
         // mm0=7(11) mm1=2(11) mm2=3 mm3=6(11) mm4=1(11) mm5=4 mm7=9
-        "movq (%%"REG_a", %1, 4), %%mm6         \n\t" //        1
+        "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t" //        1
         PAVGB(%%mm7, %%mm6)                           //        11        /2
         PAVGB(%%mm4, %%mm6)                           // 11     11        /4
         PAVGB(%%mm3, %%mm6)                           // 11   2211        /8
@@ -330,29 +330,29 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         PAVGB(%%mm7, %%mm1)                           //  11     2        /4
         PAVGB(%%mm4, %%mm5)                           //    11                /2
         PAVGB(%%mm5, %%mm0)                           //    11 11        /4
-        "movq (%%"REG_a", %1, 2), %%mm6         \n\t" //      1
+        "movq (%%"FF_REG_a", %1, 2), %%mm6      \n\t" //      1
         PAVGB(%%mm6, %%mm1)                           //  11  4  2        /8
         PAVGB(%%mm0, %%mm1)                           //  11224222        /16
-        "movq %%mm1, (%%"REG_a", %1, 2)         \n\t" //      X
+        "movq %%mm1, (%%"FF_REG_a", %1, 2)      \n\t" //      X
         // mm2=3(112) mm3=6(11) mm4=5 mm5=4(11) mm6=6 mm7=9
-        PAVGB((%%REGc), %%mm2)                        //   112 4        /8
-        "movq (%%"REG_a", %1, 4), %%mm0         \n\t" //        1
+        PAVGB((%%FF_REGc), %%mm2)                     //   112 4        /8
+        "movq (%%"FF_REG_a", %1, 4), %%mm0      \n\t" //        1
         PAVGB(%%mm0, %%mm6)                           //      1 1        /2
         PAVGB(%%mm7, %%mm6)                           //      1 12        /4
         PAVGB(%%mm2, %%mm6)                           //   1122424        /4
-        "movq %%mm6, (%%"REG_c")                \n\t" //       X
+        "movq %%mm6, (%%"FF_REG_c")             \n\t" //       X
         // mm0=8 mm3=6(11) mm4=5 mm5=4(11) mm7=9
         PAVGB(%%mm7, %%mm5)                           //    11   2        /4
         PAVGB(%%mm7, %%mm5)                           //    11   6        /8
 
         PAVGB(%%mm3, %%mm0)                           //      112        /4
         PAVGB(%%mm0, %%mm5)                           //    112246        /16
-        "movq %%mm5, (%%"REG_a", %1, 4)         \n\t" //        X
+        "movq %%mm5, (%%"FF_REG_a", %1, 4)      \n\t" //        X
         "sub %1, %0                             \n\t"
 
         :
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
-        : "%"REG_a, "%"REG_c
+        : "%"FF_REG_a, "%"FF_REG_c
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     const int l1= stride;
@@ -411,18 +411,18 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 
     __asm__ volatile(
         "pxor %%mm7, %%mm7                      \n\t" // 0
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_c"\n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  ecx     ecx+%1  ecx+2%1 %0+8%1  ecx+4%1
-        "movq (%%"REG_a", %1, 2), %%mm0         \n\t" // line 3
+        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t" // line 3
         "movq (%0, %1, 4), %%mm1                \n\t" // line 4
         "movq %%mm1, %%mm2                      \n\t" // line 4
         "psubusb %%mm0, %%mm1                   \n\t"
         "psubusb %%mm2, %%mm0                   \n\t"
         "por %%mm1, %%mm0                       \n\t" // |l2 - l3|
-        "movq (%%"REG_c"), %%mm3                \n\t" // line 5
-        "movq (%%"REG_c", %1), %%mm4            \n\t" // line 6
+        "movq (%%"FF_REG_c"), %%mm3             \n\t" // line 5
+        "movq (%%"FF_REG_c", %1), %%mm4         \n\t" // line 6
         "movq %%mm3, %%mm5                      \n\t" // line 5
         "psubusb %%mm4, %%mm3                   \n\t"
         "psubusb %%mm5, %%mm4                   \n\t"
@@ -454,44 +454,44 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
         "pxor %%mm2, %%mm0                      \n\t"
         "movq %%mm0, (%0, %1, 4)                \n\t" // line 4
 
-        "movq (%%"REG_c"), %%mm0                \n\t" // line 5
+        "movq (%%"FF_REG_c"), %%mm0             \n\t" // line 5
         "pxor %%mm2, %%mm0                      \n\t" //(l4 - l5) <= 0 ? -l5-1 : l5
         "paddusb %%mm3, %%mm0                   \n\t"
         "pxor %%mm2, %%mm0                      \n\t"
-        "movq %%mm0, (%%"REG_c")                \n\t" // line 5
+        "movq %%mm0, (%%"FF_REG_c")             \n\t" // line 5
 
         PAVGB(%%mm7, %%mm1)                           // d/4
 
-        "movq (%%"REG_a", %1, 2), %%mm0         \n\t" // line 3
+        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t" // line 3
         "pxor %%mm2, %%mm0                      \n\t" //(l4 - l5) <= 0 ? -l4-1 : l4
         "psubusb %%mm1, %%mm0                   \n\t"
         "pxor %%mm2, %%mm0                      \n\t"
-        "movq %%mm0, (%%"REG_a", %1, 2)         \n\t" // line 3
+        "movq %%mm0, (%%"FF_REG_a", %1, 2)      \n\t" // line 3
 
-        "movq (%%"REG_c", %1), %%mm0            \n\t" // line 6
+        "movq (%%"FF_REG_c", %1), %%mm0         \n\t" // line 6
         "pxor %%mm2, %%mm0                      \n\t" //(l4 - l5) <= 0 ? -l5-1 : l5
         "paddusb %%mm1, %%mm0                   \n\t"
         "pxor %%mm2, %%mm0                      \n\t"
-        "movq %%mm0, (%%"REG_c", %1)            \n\t" // line 6
+        "movq %%mm0, (%%"FF_REG_c", %1)         \n\t" // line 6
 
         PAVGB(%%mm7, %%mm1)                           // d/8
 
-        "movq (%%"REG_a", %1), %%mm0            \n\t" // line 2
+        "movq (%%"FF_REG_a", %1), %%mm0         \n\t" // line 2
         "pxor %%mm2, %%mm0                      \n\t" //(l4 - l5) <= 0 ? -l2-1 : l2
         "psubusb %%mm1, %%mm0                   \n\t"
         "pxor %%mm2, %%mm0                      \n\t"
-        "movq %%mm0, (%%"REG_a", %1)            \n\t" // line 2
+        "movq %%mm0, (%%"FF_REG_a", %1)         \n\t" // line 2
 
-        "movq (%%"REG_c", %1, 2), %%mm0         \n\t" // line 7
+        "movq (%%"FF_REG_c", %1, 2), %%mm0      \n\t" // line 7
         "pxor %%mm2, %%mm0                      \n\t" //(l4 - l5) <= 0 ? -l7-1 : l7
         "paddusb %%mm1, %%mm0                   \n\t"
         "pxor %%mm2, %%mm0                      \n\t"
-        "movq %%mm0, (%%"REG_c", %1, 2)         \n\t" // line 7
+        "movq %%mm0, (%%"FF_REG_c", %1, 2)      \n\t" // line 7
 
         :
         : "r" (src), "r" ((x86_reg)stride), "m" (co->pQPb)
           NAMED_CONSTRAINTS_ADD(b01)
-        : "%"REG_a, "%"REG_c
+        : "%"FF_REG_a, "%"FF_REG_c
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
 
@@ -553,8 +553,8 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 
 #if 0 //slightly more accurate and slightly slower
         "pxor %%mm7, %%mm7                      \n\t" // 0
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_c"\n\t"
 //      0       1       2       3       4       5       6       7
 //      %0      %0+%1   %0+2%1  eax+2%1 %0+4%1  eax+4%1 ecx+%1  ecx+2%1
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  ecx     ecx+%1  ecx+2%1
@@ -567,8 +567,8 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         PAVGB(%%mm1, %%mm0)                           // ~(l2 + 2l0)/4
         PAVGB(%%mm2, %%mm0)                           // ~(5l2 + 2l0)/8
 
-        "movq (%%"REG_a"), %%mm1                \n\t" // l1
-        "movq (%%"REG_a", %1, 2), %%mm3         \n\t" // l3
+        "movq (%%"FF_REG_a"), %%mm1             \n\t" // l1
+        "movq (%%"FF_REG_a", %1, 2), %%mm3      \n\t" // l3
         "movq %%mm1, %%mm4                      \n\t" // l1
         PAVGB(%%mm7, %%mm1)                           // ~l1/2
         PAVGB(%%mm3, %%mm1)                           // ~(l1 + 2l3)/4
@@ -586,7 +586,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         PAVGB(%%mm2, %%mm0)                           // ~(l4 + 2l2)/4
         PAVGB(%%mm4, %%mm0)                           // ~(5l4 + 2l2)/8
 
-        "movq (%%"REG_c"), %%mm2                \n\t" // l5
+        "movq (%%"FF_REG_c"), %%mm2             \n\t" // l5
         "movq %%mm3, %%mm5                      \n\t" // l3
         PAVGB(%%mm7, %%mm3)                           // ~l3/2
         PAVGB(%%mm2, %%mm3)                           // ~(l3 + 2l5)/4
@@ -599,13 +599,13 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "pcmpeqb %%mm7, %%mm0                   \n\t" // SIGN(2l2 - 5l3 + 5l4 - 2l5)
 // mm0= SIGN(menergy), mm1= |lenergy|, mm2= l5, mm3= |menergy|, mm4=l4, mm5= l3, mm7=0
 
-        "movq (%%"REG_c", %1), %%mm6            \n\t" // l6
+        "movq (%%"FF_REG_c", %1), %%mm6         \n\t" // l6
         "movq %%mm6, %%mm5                      \n\t" // l6
         PAVGB(%%mm7, %%mm6)                           // ~l6/2
         PAVGB(%%mm4, %%mm6)                           // ~(l6 + 2l4)/4
         PAVGB(%%mm5, %%mm6)                           // ~(5l6 + 2l4)/8
 
-        "movq (%%"REG_c", %1, 2), %%mm5         \n\t" // l7
+        "movq (%%"FF_REG_c", %1, 2), %%mm5      \n\t" // l7
         "movq %%mm2, %%mm4                      \n\t" // l5
         PAVGB(%%mm7, %%mm2)                           // ~l5/2
         PAVGB(%%mm5, %%mm2)                           // ~(l5 + 2l7)/4
@@ -632,7 +632,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "paddusb %%mm1, %%mm3                   \n\t"
 //        "paddusb "MANGLE(b01)", %%mm3           \n\t"
 
-        "movq (%%"REG_a", %1, 2), %%mm6         \n\t" //l3
+        "movq (%%"FF_REG_a", %1, 2), %%mm6      \n\t" //l3
         "movq (%0, %1, 4), %%mm5                \n\t" //l4
         "movq (%0, %1, 4), %%mm4                \n\t" //l4
         "psubusb %%mm6, %%mm5                   \n\t"
@@ -646,7 +646,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "psubusb "MANGLE(b01)", %%mm3           \n\t"
         PAVGB(%%mm7, %%mm3)
 
-        "movq (%%"REG_a", %1, 2), %%mm0         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t"
         "movq (%0, %1, 4), %%mm2                \n\t"
         "pxor %%mm6, %%mm0                      \n\t"
         "pxor %%mm6, %%mm2                      \n\t"
@@ -654,36 +654,36 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "paddb %%mm3, %%mm2                     \n\t"
         "pxor %%mm6, %%mm0                      \n\t"
         "pxor %%mm6, %%mm2                      \n\t"
-        "movq %%mm0, (%%"REG_a", %1, 2)         \n\t"
+        "movq %%mm0, (%%"FF_REG_a", %1, 2)      \n\t"
         "movq %%mm2, (%0, %1, 4)                \n\t"
 #endif //0
 
-        "lea (%0, %1), %%"REG_a"                \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
         "pcmpeqb %%mm6, %%mm6                   \n\t" // -1
 //      0       1       2       3       4       5       6       7
 //      %0      %0+%1   %0+2%1  eax+2%1 %0+4%1  eax+4%1 ecx+%1  ecx+2%1
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  ecx     ecx+%1  ecx+2%1
 
 
-        "movq (%%"REG_a", %1, 2), %%mm1         \n\t" // l3
+        "movq (%%"FF_REG_a", %1, 2), %%mm1      \n\t" // l3
         "movq (%0, %1, 4), %%mm0                \n\t" // l4
         "pxor %%mm6, %%mm1                      \n\t" // -l3-1
         PAVGB(%%mm1, %%mm0)                           // -q+128 = (l4-l3+256)/2
 // mm1=-l3-1, mm0=128-q
 
-        "movq (%%"REG_a", %1, 4), %%mm2         \n\t" // l5
-        "movq (%%"REG_a", %1), %%mm3            \n\t" // l2
+        "movq (%%"FF_REG_a", %1, 4), %%mm2      \n\t" // l5
+        "movq (%%"FF_REG_a", %1), %%mm3         \n\t" // l2
         "pxor %%mm6, %%mm2                      \n\t" // -l5-1
         "movq %%mm2, %%mm5                      \n\t" // -l5-1
         "movq "MANGLE(b80)", %%mm4              \n\t" // 128
-        "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_c"\n\t"
         PAVGB(%%mm3, %%mm2)                           // (l2-l5+256)/2
         PAVGB(%%mm0, %%mm4)                           // ~(l4-l3)/4 + 128
         PAVGB(%%mm2, %%mm4)                           // ~(l2-l5)/4 +(l4-l3)/8 + 128
         PAVGB(%%mm0, %%mm4)                           // ~(l2-l5)/8 +5(l4-l3)/16 + 128
 // mm1=-l3-1, mm0=128-q, mm3=l2, mm4=menergy/16 + 128, mm5= -l5-1
 
-        "movq (%%"REG_a"), %%mm2                \n\t" // l1
+        "movq (%%"FF_REG_a"), %%mm2             \n\t" // l1
         "pxor %%mm6, %%mm2                      \n\t" // -l1-1
         PAVGB(%%mm3, %%mm2)                           // (l2-l1+256)/2
         PAVGB((%0), %%mm1)                            // (l0-l3+256)/2
@@ -693,8 +693,8 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         PAVGB(%%mm2, %%mm3)                           // ~(l0-l3)/8 +5(l2-l1)/16 + 128
 // mm0=128-q, mm3=lenergy/16 + 128, mm4= menergy/16 + 128, mm5= -l5-1
 
-        PAVGB((%%REGc, %1), %%mm5)                    // (l6-l5+256)/2
-        "movq (%%"REG_c", %1, 2), %%mm1         \n\t" // l7
+        PAVGB((%%FF_REGc, %1), %%mm5)                 // (l6-l5+256)/2
+        "movq (%%"FF_REG_c", %1, 2), %%mm1      \n\t" // l7
         "pxor %%mm6, %%mm1                      \n\t" // -l7-1
         PAVGB((%0, %1, 4), %%mm1)                     // (l4-l7+256)/2
         "movq "MANGLE(b80)", %%mm2              \n\t" // 128
@@ -743,7 +743,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "pxor %%mm1, %%mm7                      \n\t" // SIGN(d*q)
 
         "pand %%mm7, %%mm4                      \n\t"
-        "movq (%%"REG_a", %1, 2), %%mm0         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t"
         "movq (%0, %1, 4), %%mm2                \n\t"
         "pxor %%mm1, %%mm0                      \n\t"
         "pxor %%mm1, %%mm2                      \n\t"
@@ -751,13 +751,13 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "psubb %%mm4, %%mm2                     \n\t"
         "pxor %%mm1, %%mm0                      \n\t"
         "pxor %%mm1, %%mm2                      \n\t"
-        "movq %%mm0, (%%"REG_a", %1, 2)         \n\t"
+        "movq %%mm0, (%%"FF_REG_a", %1, 2)      \n\t"
         "movq %%mm2, (%0, %1, 4)                \n\t"
 
         :
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
           NAMED_CONSTRAINTS_ADD(b80,b00,b01)
-        : "%"REG_a, "%"REG_c
+        : "%"FF_REG_a, "%"FF_REG_c
     );
 
 /*
@@ -830,12 +830,12 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "punpckhbw %%mm7, %%mm1                 \n\t" // high part of line 0
 
         "movq (%0, %1), %%mm2                   \n\t"
-        "lea (%0, %1, 2), %%"REG_a"             \n\t"
+        "lea (%0, %1, 2), %%"FF_REG_a"          \n\t"
         "movq %%mm2, %%mm3                      \n\t"
         "punpcklbw %%mm7, %%mm2                 \n\t" // low part of line 1
         "punpckhbw %%mm7, %%mm3                 \n\t" // high part of line 1
 
-        "movq (%%"REG_a"), %%mm4                \n\t"
+        "movq (%%"FF_REG_a"), %%mm4             \n\t"
         "movq %%mm4, %%mm5                      \n\t"
         "punpcklbw %%mm7, %%mm4                 \n\t" // low part of line 2
         "punpckhbw %%mm7, %%mm5                 \n\t" // high part of line 2
@@ -852,7 +852,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "psubw %%mm2, %%mm0                     \n\t" // 2L0 - 5L1 + 5L2
         "psubw %%mm3, %%mm1                     \n\t" // 2H0 - 5H1 + 5H2
 
-        "movq (%%"REG_a", %1), %%mm2            \n\t"
+        "movq (%%"FF_REG_a", %1), %%mm2         \n\t"
         "movq %%mm2, %%mm3                      \n\t"
         "punpcklbw %%mm7, %%mm2                 \n\t" // L3
         "punpckhbw %%mm7, %%mm3                 \n\t" // H3
@@ -864,7 +864,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "movq %%mm0, (%3)                       \n\t" // 2L0 - 5L1 + 5L2 - 2L3
         "movq %%mm1, 8(%3)                      \n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
-        "movq (%%"REG_a", %1, 2), %%mm0         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t"
         "movq %%mm0, %%mm1                      \n\t"
         "punpcklbw %%mm7, %%mm0                 \n\t" // L4
         "punpckhbw %%mm7, %%mm1                 \n\t" // H4
@@ -878,7 +878,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "psubw %%mm2, %%mm4                     \n\t" // 2L2 - L3 + L4
         "psubw %%mm3, %%mm5                     \n\t" // 2H2 - H3 + H4
 
-        "lea (%%"REG_a", %1), %0                \n\t"
+        "lea (%%"FF_REG_a", %1), %0             \n\t"
         "psllw $2, %%mm2                        \n\t" // 4L3 - 4L4
         "psllw $2, %%mm3                        \n\t" // 4H3 - 4H4
         "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4
@@ -893,10 +893,10 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4 - 2L5
         "psubw %%mm3, %%mm5                     \n\t" // 2H2 - 5H3 + 5H4 - 2H5
 
-        "movq (%%"REG_a", %1, 4), %%mm6         \n\t"
+        "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
         "punpcklbw %%mm7, %%mm6                 \n\t" // L6
         "psubw %%mm6, %%mm2                     \n\t" // L5 - L6
-        "movq (%%"REG_a", %1, 4), %%mm6         \n\t"
+        "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
         "punpckhbw %%mm7, %%mm6                 \n\t" // H6
         "psubw %%mm6, %%mm3                     \n\t" // H5 - H6
 
@@ -1045,7 +1045,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         : "+r" (src)
         : "r" ((x86_reg)stride), "m" (c->pQPb), "r"(tmp)
           NAMED_CONSTRAINTS_ADD(w05,w20)
-        : "%"REG_a
+        : "%"FF_REG_a
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     const int l1= stride;
@@ -1104,8 +1104,8 @@ static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
         "packuswb %%mm0, %%mm0                  \n\t"
         "movq %%mm0, %3                         \n\t"
 
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
 
 //        0        1        2        3        4        5        6        7        8        9
 //        %0        eax        eax+%1        eax+2%1        %0+4%1        edx        edx+%1        edx+2%1        %0+8%1        edx+4%1
@@ -1128,13 +1128,13 @@ static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 #endif
 #define FIND_MIN_MAX(addr)  REAL_FIND_MIN_MAX(addr)
 
-FIND_MIN_MAX((%%REGa))
-FIND_MIN_MAX((%%REGa, %1))
-FIND_MIN_MAX((%%REGa, %1, 2))
+FIND_MIN_MAX((%%FF_REGa))
+FIND_MIN_MAX((%%FF_REGa, %1))
+FIND_MIN_MAX((%%FF_REGa, %1, 2))
 FIND_MIN_MAX((%0, %1, 4))
-FIND_MIN_MAX((%%REGd))
-FIND_MIN_MAX((%%REGd, %1))
-FIND_MIN_MAX((%%REGd, %1, 2))
+FIND_MIN_MAX((%%FF_REGd))
+FIND_MIN_MAX((%%FF_REGd, %1))
+FIND_MIN_MAX((%%FF_REGd, %1, 2))
 FIND_MIN_MAX((%0, %1, 8))
 
         "movq %%mm7, %%mm4                      \n\t"
@@ -1218,13 +1218,13 @@ FIND_MIN_MAX((%0, %1, 8))
         "paddb %%mm2, %%mm0                     \n\t"
         "paddb %%mm3, %%mm0                     \n\t"
 
-        "movq (%%"REG_a"), %%mm2                \n\t" // L11
+        "movq (%%"FF_REG_a"), %%mm2             \n\t" // L11
         "movq %%mm2, %%mm3                      \n\t" // L11
         "movq %%mm2, %%mm4                      \n\t" // L11
         "psllq $8, %%mm3                        \n\t"
         "psrlq $8, %%mm4                        \n\t"
-        "movd -4(%%"REG_a"), %%mm5              \n\t"
-        "movd 8(%%"REG_a"), %%mm6               \n\t"
+        "movd -4(%%"FF_REG_a"), %%mm5           \n\t"
+        "movd 8(%%"FF_REG_a"), %%mm6            \n\t"
         "psrlq $24, %%mm5                       \n\t"
         "psllq $56, %%mm6                       \n\t"
         "por %%mm5, %%mm3                       \n\t" // L01
@@ -1304,20 +1304,20 @@ FIND_MIN_MAX((%0, %1, 8))
 1110111
 
 */
-//DERING_CORE(dst          ,src            ,ppsx ,psx  ,sx   ,pplx ,plx  ,lx   ,t0   ,t1)
-DERING_CORE((%%REGa)       ,(%%REGa, %1)   ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
-DERING_CORE((%%REGa, %1)   ,(%%REGa, %1, 2),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
-DERING_CORE((%%REGa, %1, 2),(%0, %1, 4)    ,%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
-DERING_CORE((%0, %1, 4)    ,(%%REGd)       ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
-DERING_CORE((%%REGd)       ,(%%REGd, %1)   ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
-DERING_CORE((%%REGd, %1)   ,(%%REGd, %1, 2),%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
-DERING_CORE((%%REGd, %1, 2),(%0, %1, 8)    ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
-DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
+//DERING_CORE(dst             ,src               ,ppsx ,psx  ,sx   ,pplx ,plx  ,lx   ,t0   ,t1)
+DERING_CORE((%%FF_REGa)       ,(%%FF_REGa, %1)   ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%%FF_REGa, %1)   ,(%%FF_REGa, %1, 2),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
+DERING_CORE((%%FF_REGa, %1, 2),(%0, %1, 4)       ,%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
+DERING_CORE((%0, %1, 4)       ,(%%FF_REGd)       ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%%FF_REGd)       ,(%%FF_REGd, %1)   ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
+DERING_CORE((%%FF_REGd, %1)   ,(%%FF_REGd, %1, 2),%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
+DERING_CORE((%%FF_REGd, %1, 2),(%0, %1, 8)       ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
 
         "1:                        \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
           NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
-        : "%"REG_a, "%"REG_d, "%"REG_sp
+        : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_sp
     );
 #else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
     int y;
@@ -1452,27 +1452,27 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 #if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     src+= 4*stride;
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_c"\n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  ecx     ecx+%1  ecx+2%1 %0+8%1  ecx+4%1
 
         "movq (%0), %%mm0                       \n\t"
-        "movq (%%"REG_a", %1), %%mm1            \n\t"
+        "movq (%%"FF_REG_a", %1), %%mm1         \n\t"
         PAVGB(%%mm1, %%mm0)
-        "movq %%mm0, (%%"REG_a")                \n\t"
+        "movq %%mm0, (%%"FF_REG_a")             \n\t"
         "movq (%0, %1, 4), %%mm0                \n\t"
         PAVGB(%%mm0, %%mm1)
-        "movq %%mm1, (%%"REG_a", %1, 2)         \n\t"
-        "movq (%%"REG_c", %1), %%mm1            \n\t"
+        "movq %%mm1, (%%"FF_REG_a", %1, 2)      \n\t"
+        "movq (%%"FF_REG_c", %1), %%mm1         \n\t"
         PAVGB(%%mm1, %%mm0)
-        "movq %%mm0, (%%"REG_c")                \n\t"
+        "movq %%mm0, (%%"FF_REG_c")             \n\t"
         "movq (%0, %1, 8), %%mm0                \n\t"
         PAVGB(%%mm0, %%mm1)
-        "movq %%mm1, (%%"REG_c", %1, 2)         \n\t"
+        "movq %%mm1, (%%"FF_REG_c", %1, 2)      \n\t"
 
         : : "r" (src), "r" ((x86_reg)stride)
-        : "%"REG_a, "%"REG_c
+        : "%"FF_REG_a, "%"FF_REG_c
     );
 #else
     int a, b, x;
@@ -1505,10 +1505,10 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
 #if TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     src+= stride*3;
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
-        "lea (%%"REG_d", %1, 4), %%"REG_c"      \n\t"
-        "add %1, %%"REG_c"                      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
+        "lea (%%"FF_REG_d", %1, 4), %%"FF_REG_c"\n\t"
+        "add %1, %%"FF_REG_c"                   \n\t"
 #if TEMPLATE_PP_SSE2
         "pxor %%xmm7, %%xmm7                    \n\t"
 #define REAL_DEINT_CUBIC(a,b,c,d,e)\
@@ -1554,17 +1554,17 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
 #endif //TEMPLATE_PP_SSE2
 #define DEINT_CUBIC(a,b,c,d,e)  REAL_DEINT_CUBIC(a,b,c,d,e)
 
-DEINT_CUBIC((%0)        , (%%REGa, %1), (%%REGa, %1, 2), (%0, %1, 4) , (%%REGd, %1))
-DEINT_CUBIC((%%REGa, %1), (%0, %1, 4) , (%%REGd)       , (%%REGd, %1), (%0, %1, 8))
-DEINT_CUBIC((%0, %1, 4) , (%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGc))
-DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, %1, 2))
+DEINT_CUBIC((%0)           , (%%FF_REGa, %1), (%%FF_REGa, %1, 2), (%0, %1, 4)    , (%%FF_REGd, %1))
+DEINT_CUBIC((%%FF_REGa, %1), (%0, %1, 4)    , (%%FF_REGd)       , (%%FF_REGd, %1), (%0, %1, 8))
+DEINT_CUBIC((%0, %1, 4)    , (%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8)    , (%%FF_REGc))
+DEINT_CUBIC((%%FF_REGd, %1), (%0, %1, 8)    , (%%FF_REGd, %1, 4), (%%FF_REGc)    , (%%FF_REGc, %1, 2))
 
         : : "r" (src), "r" ((x86_reg)stride)
         :
 #if TEMPLATE_PP_SSE2
         XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm7",)
 #endif
-        "%"REG_a, "%"REG_d, "%"REG_c
+        "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_c
     );
 #undef REAL_DEINT_CUBIC
 #else //TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
@@ -1592,8 +1592,8 @@ static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp
 #if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     src+= stride*4;
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
         "pxor %%mm7, %%mm7                      \n\t"
         "movq (%2), %%mm0                       \n\t"
 //      0       1       2       3       4       5       6       7       8       9       10
@@ -1629,14 +1629,14 @@ static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp
 
 #define DEINT_FF(a,b,c,d)  REAL_DEINT_FF(a,b,c,d)
 
-DEINT_FF((%0)        , (%%REGa)       , (%%REGa, %1), (%%REGa, %1, 2))
-DEINT_FF((%%REGa, %1), (%%REGa, %1, 2), (%0, %1, 4) , (%%REGd)       )
-DEINT_FF((%0, %1, 4) , (%%REGd)       , (%%REGd, %1), (%%REGd, %1, 2))
-DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
+DEINT_FF((%0)           , (%%FF_REGa)       , (%%FF_REGa, %1), (%%FF_REGa, %1, 2))
+DEINT_FF((%%FF_REGa, %1), (%%FF_REGa, %1, 2), (%0, %1, 4)    , (%%FF_REGd)       )
+DEINT_FF((%0, %1, 4)    , (%%FF_REGd)       , (%%FF_REGd, %1), (%%FF_REGd, %1, 2))
+DEINT_FF((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8)    , (%%FF_REGd, %1, 4))
 
         "movq %%mm0, (%2)                       \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     int x;
@@ -1671,8 +1671,8 @@ static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp
 #if (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
     src+= stride*4;
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
         "pxor %%mm7, %%mm7                      \n\t"
         "movq (%2), %%mm0                       \n\t"
         "movq (%3), %%mm1                       \n\t"
@@ -1714,19 +1714,19 @@ static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp
 
 #define DEINT_L5(t1,t2,a,b,c)  REAL_DEINT_L5(t1,t2,a,b,c)
 
-DEINT_L5(%%mm0, %%mm1, (%0)           , (%%REGa)       , (%%REGa, %1)   )
-DEINT_L5(%%mm1, %%mm0, (%%REGa)       , (%%REGa, %1)   , (%%REGa, %1, 2))
-DEINT_L5(%%mm0, %%mm1, (%%REGa, %1)   , (%%REGa, %1, 2), (%0, %1, 4)   )
-DEINT_L5(%%mm1, %%mm0, (%%REGa, %1, 2), (%0, %1, 4)    , (%%REGd)       )
-DEINT_L5(%%mm0, %%mm1, (%0, %1, 4)    , (%%REGd)       , (%%REGd, %1)   )
-DEINT_L5(%%mm1, %%mm0, (%%REGd)       , (%%REGd, %1)   , (%%REGd, %1, 2))
-DEINT_L5(%%mm0, %%mm1, (%%REGd, %1)   , (%%REGd, %1, 2), (%0, %1, 8)   )
-DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
+DEINT_L5(%%mm0, %%mm1, (%0)              , (%%FF_REGa)       , (%%FF_REGa, %1)   )
+DEINT_L5(%%mm1, %%mm0, (%%FF_REGa)       , (%%FF_REGa, %1)   , (%%FF_REGa, %1, 2))
+DEINT_L5(%%mm0, %%mm1, (%%FF_REGa, %1)   , (%%FF_REGa, %1, 2), (%0, %1, 4)   )
+DEINT_L5(%%mm1, %%mm0, (%%FF_REGa, %1, 2), (%0, %1, 4)       , (%%FF_REGd)       )
+DEINT_L5(%%mm0, %%mm1, (%0, %1, 4)       , (%%FF_REGd)       , (%%FF_REGd, %1)   )
+DEINT_L5(%%mm1, %%mm0, (%%FF_REGd)       , (%%FF_REGd, %1)   , (%%FF_REGd, %1, 2))
+DEINT_L5(%%mm0, %%mm1, (%%FF_REGd, %1)   , (%%FF_REGd, %1, 2), (%0, %1, 8)   )
+DEINT_L5(%%mm1, %%mm0, (%%FF_REGd, %1, 2), (%0, %1, 8)       , (%%FF_REGd, %1, 4))
 
         "movq %%mm0, (%2)                       \n\t"
         "movq %%mm1, (%3)                       \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp), "r"(tmp2)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
     int x;
@@ -1772,49 +1772,49 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 #if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     src+= 4*stride;
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
 
         "movq (%2), %%mm0                       \n\t" // L0
-        "movq (%%"REG_a"), %%mm1                \n\t" // L2
+        "movq (%%"FF_REG_a"), %%mm1             \n\t" // L2
         PAVGB(%%mm1, %%mm0)                           // L0+L2
         "movq (%0), %%mm2                       \n\t" // L1
         PAVGB(%%mm2, %%mm0)
         "movq %%mm0, (%0)                       \n\t"
-        "movq (%%"REG_a", %1), %%mm0            \n\t" // L3
+        "movq (%%"FF_REG_a", %1), %%mm0         \n\t" // L3
         PAVGB(%%mm0, %%mm2)                           // L1+L3
         PAVGB(%%mm1, %%mm2)                           // 2L2 + L1 + L3
-        "movq %%mm2, (%%"REG_a")                \n\t"
-        "movq (%%"REG_a", %1, 2), %%mm2         \n\t" // L4
+        "movq %%mm2, (%%"FF_REG_a")             \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm2      \n\t" // L4
         PAVGB(%%mm2, %%mm1)                           // L2+L4
         PAVGB(%%mm0, %%mm1)                           // 2L3 + L2 + L4
-        "movq %%mm1, (%%"REG_a", %1)            \n\t"
+        "movq %%mm1, (%%"FF_REG_a", %1)         \n\t"
         "movq (%0, %1, 4), %%mm1                \n\t" // L5
         PAVGB(%%mm1, %%mm0)                           // L3+L5
         PAVGB(%%mm2, %%mm0)                           // 2L4 + L3 + L5
-        "movq %%mm0, (%%"REG_a", %1, 2)         \n\t"
-        "movq (%%"REG_d"), %%mm0                \n\t" // L6
+        "movq %%mm0, (%%"FF_REG_a", %1, 2)      \n\t"
+        "movq (%%"FF_REG_d"), %%mm0             \n\t" // L6
         PAVGB(%%mm0, %%mm2)                           // L4+L6
         PAVGB(%%mm1, %%mm2)                           // 2L5 + L4 + L6
         "movq %%mm2, (%0, %1, 4)                \n\t"
-        "movq (%%"REG_d", %1), %%mm2            \n\t" // L7
+        "movq (%%"FF_REG_d", %1), %%mm2         \n\t" // L7
         PAVGB(%%mm2, %%mm1)                           // L5+L7
         PAVGB(%%mm0, %%mm1)                           // 2L6 + L5 + L7
-        "movq %%mm1, (%%"REG_d")                \n\t"
-        "movq (%%"REG_d", %1, 2), %%mm1         \n\t" // L8
+        "movq %%mm1, (%%"FF_REG_d")             \n\t"
+        "movq (%%"FF_REG_d", %1, 2), %%mm1      \n\t" // L8
         PAVGB(%%mm1, %%mm0)                           // L6+L8
         PAVGB(%%mm2, %%mm0)                           // 2L7 + L6 + L8
-        "movq %%mm0, (%%"REG_d", %1)            \n\t"
+        "movq %%mm0, (%%"FF_REG_d", %1)         \n\t"
         "movq (%0, %1, 8), %%mm0                \n\t" // L9
         PAVGB(%%mm0, %%mm2)                           // L7+L9
         PAVGB(%%mm1, %%mm2)                           // 2L8 + L7 + L9
-        "movq %%mm2, (%%"REG_d", %1, 2)         \n\t"
+        "movq %%mm2, (%%"FF_REG_d", %1, 2)      \n\t"
         "movq %%mm1, (%2)                       \n\t"
 
         : : "r" (src), "r" ((x86_reg)stride), "r" (tmp)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     int a, b, c, x;
@@ -1874,57 +1874,57 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
     src+= 4*stride;
 #if TEMPLATE_PP_MMXEXT
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
 
         "movq (%0), %%mm0                       \n\t"
-        "movq (%%"REG_a", %1), %%mm2            \n\t"
-        "movq (%%"REG_a"), %%mm1                \n\t"
+        "movq (%%"FF_REG_a", %1), %%mm2         \n\t"
+        "movq (%%"FF_REG_a"), %%mm1             \n\t"
         "movq %%mm0, %%mm3                      \n\t"
         "pmaxub %%mm1, %%mm0                    \n\t"
         "pminub %%mm3, %%mm1                    \n\t"
         "pmaxub %%mm2, %%mm1                    \n\t"
         "pminub %%mm1, %%mm0                    \n\t"
-        "movq %%mm0, (%%"REG_a")                \n\t"
+        "movq %%mm0, (%%"FF_REG_a")             \n\t"
 
         "movq (%0, %1, 4), %%mm0                \n\t"
-        "movq (%%"REG_a", %1, 2), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm1      \n\t"
         "movq %%mm2, %%mm3                      \n\t"
         "pmaxub %%mm1, %%mm2                    \n\t"
         "pminub %%mm3, %%mm1                    \n\t"
         "pmaxub %%mm0, %%mm1                    \n\t"
         "pminub %%mm1, %%mm2                    \n\t"
-        "movq %%mm2, (%%"REG_a", %1, 2)         \n\t"
+        "movq %%mm2, (%%"FF_REG_a", %1, 2)      \n\t"
 
-        "movq (%%"REG_d"), %%mm2                \n\t"
-        "movq (%%"REG_d", %1), %%mm1            \n\t"
+        "movq (%%"FF_REG_d"), %%mm2             \n\t"
+        "movq (%%"FF_REG_d", %1), %%mm1         \n\t"
         "movq %%mm2, %%mm3                      \n\t"
         "pmaxub %%mm0, %%mm2                    \n\t"
         "pminub %%mm3, %%mm0                    \n\t"
         "pmaxub %%mm1, %%mm0                    \n\t"
         "pminub %%mm0, %%mm2                    \n\t"
-        "movq %%mm2, (%%"REG_d")                \n\t"
+        "movq %%mm2, (%%"FF_REG_d")             \n\t"
 
-        "movq (%%"REG_d", %1, 2), %%mm2         \n\t"
+        "movq (%%"FF_REG_d", %1, 2), %%mm2      \n\t"
         "movq (%0, %1, 8), %%mm0                \n\t"
         "movq %%mm2, %%mm3                      \n\t"
         "pmaxub %%mm0, %%mm2                    \n\t"
         "pminub %%mm3, %%mm0                    \n\t"
         "pmaxub %%mm1, %%mm0                    \n\t"
         "pminub %%mm0, %%mm2                    \n\t"
-        "movq %%mm2, (%%"REG_d", %1, 2)         \n\t"
+        "movq %%mm2, (%%"FF_REG_d", %1, 2)      \n\t"
 
 
         : : "r" (src), "r" ((x86_reg)stride)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 
 #else // MMX without MMX2
     __asm__ volatile(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_d"\n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
         "pxor %%mm7, %%mm7                      \n\t"
@@ -1954,13 +1954,13 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
         "movq %%mm0, " #b "                     \n\t"
 #define MEDIAN(a,b,c)  REAL_MEDIAN(a,b,c)
 
-MEDIAN((%0)        , (%%REGa)       , (%%REGa, %1))
-MEDIAN((%%REGa, %1), (%%REGa, %1, 2), (%0, %1, 4))
-MEDIAN((%0, %1, 4) , (%%REGd)       , (%%REGd, %1))
-MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
+MEDIAN((%0)           , (%%FF_REGa)       , (%%FF_REGa, %1))
+MEDIAN((%%FF_REGa, %1), (%%FF_REGa, %1, 2), (%0, %1, 4))
+MEDIAN((%0, %1, 4)    , (%%FF_REGd)       , (%%FF_REGd, %1))
+MEDIAN((%%FF_REGd, %1), (%%FF_REGd, %1, 2), (%0, %1, 8))
 
         : : "r" (src), "r" ((x86_reg)stride)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #endif //TEMPLATE_PP_MMXEXT
 #else //TEMPLATE_PP_MMX
@@ -1992,17 +1992,17 @@ MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
 static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, const uint8_t *src, int srcStride)
 {
     __asm__(
-        "lea (%0, %1), %%"REG_a"                \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
         "movq (%0), %%mm0                       \n\t" // 12345678
-        "movq (%%"REG_a"), %%mm1                \n\t" // abcdefgh
+        "movq (%%"FF_REG_a"), %%mm1             \n\t" // abcdefgh
         "movq %%mm0, %%mm2                      \n\t" // 12345678
         "punpcklbw %%mm1, %%mm0                 \n\t" // 1a2b3c4d
         "punpckhbw %%mm1, %%mm2                 \n\t" // 5e6f7g8h
 
-        "movq (%%"REG_a", %1), %%mm1            \n\t"
-        "movq (%%"REG_a", %1, 2), %%mm3         \n\t"
+        "movq (%%"FF_REG_a", %1), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm3      \n\t"
         "movq %%mm1, %%mm4                      \n\t"
         "punpcklbw %%mm3, %%mm1                 \n\t"
         "punpckhbw %%mm3, %%mm4                 \n\t"
@@ -2029,16 +2029,16 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, const uint8_
         "psrlq $32, %%mm1                       \n\t"
         "movd %%mm1, 112(%3)                    \n\t"
 
-        "lea (%%"REG_a", %1, 4), %%"REG_a"      \n\t"
+        "lea (%%"FF_REG_a", %1, 4), %%"FF_REG_a"\n\t"
 
         "movq (%0, %1, 4), %%mm0                \n\t" // 12345678
-        "movq (%%"REG_a"), %%mm1                \n\t" // abcdefgh
+        "movq (%%"FF_REG_a"), %%mm1             \n\t" // abcdefgh
         "movq %%mm0, %%mm2                      \n\t" // 12345678
         "punpcklbw %%mm1, %%mm0                 \n\t" // 1a2b3c4d
         "punpckhbw %%mm1, %%mm2                 \n\t" // 5e6f7g8h
 
-        "movq (%%"REG_a", %1), %%mm1            \n\t"
-        "movq (%%"REG_a", %1, 2), %%mm3         \n\t"
+        "movq (%%"FF_REG_a", %1), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %1, 2), %%mm3      \n\t"
         "movq %%mm1, %%mm4                      \n\t"
         "punpcklbw %%mm3, %%mm1                 \n\t"
         "punpckhbw %%mm3, %%mm4                 \n\t"
@@ -2067,7 +2067,7 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, const uint8_
 
 
         :: "r" (src), "r" ((x86_reg)srcStride), "r" (dst1), "r" (dst2)
-        : "%"REG_a
+        : "%"FF_REG_a
     );
 }
 
@@ -2077,8 +2077,8 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, const uint8_
 static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, const uint8_t *src)
 {
     __asm__(
-        "lea (%0, %1), %%"REG_a"                \n\t"
-        "lea (%%"REG_a",%1,4), %%"REG_d"        \n\t"
+        "lea (%0, %1), %%"FF_REG_a"             \n\t"
+        "lea (%%"FF_REG_a",%1,4), %%"FF_REG_d"  \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
         "movq (%2), %%mm0                       \n\t" // 12345678
@@ -2102,16 +2102,16 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, const uint8_t
 
         "movd %%mm0, (%0)                       \n\t"
         "psrlq $32, %%mm0                       \n\t"
-        "movd %%mm0, (%%"REG_a")                \n\t"
-        "movd %%mm3, (%%"REG_a", %1)            \n\t"
+        "movd %%mm0, (%%"FF_REG_a")             \n\t"
+        "movd %%mm3, (%%"FF_REG_a", %1)         \n\t"
         "psrlq $32, %%mm3                       \n\t"
-        "movd %%mm3, (%%"REG_a", %1, 2)         \n\t"
+        "movd %%mm3, (%%"FF_REG_a", %1, 2)      \n\t"
         "movd %%mm2, (%0, %1, 4)                \n\t"
         "psrlq $32, %%mm2                       \n\t"
-        "movd %%mm2, (%%"REG_d")                \n\t"
-        "movd %%mm1, (%%"REG_d", %1)            \n\t"
+        "movd %%mm2, (%%"FF_REG_d")             \n\t"
+        "movd %%mm1, (%%"FF_REG_d", %1)         \n\t"
         "psrlq $32, %%mm1                       \n\t"
-        "movd %%mm1, (%%"REG_d", %1, 2)         \n\t"
+        "movd %%mm1, (%%"FF_REG_d", %1, 2)      \n\t"
 
 
         "movq 64(%2), %%mm0                     \n\t" // 12345678
@@ -2135,19 +2135,19 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, const uint8_t
 
         "movd %%mm0, 4(%0)                      \n\t"
         "psrlq $32, %%mm0                       \n\t"
-        "movd %%mm0, 4(%%"REG_a")               \n\t"
-        "movd %%mm3, 4(%%"REG_a", %1)           \n\t"
+        "movd %%mm0, 4(%%"FF_REG_a")            \n\t"
+        "movd %%mm3, 4(%%"FF_REG_a", %1)        \n\t"
         "psrlq $32, %%mm3                       \n\t"
-        "movd %%mm3, 4(%%"REG_a", %1, 2)        \n\t"
+        "movd %%mm3, 4(%%"FF_REG_a", %1, 2)     \n\t"
         "movd %%mm2, 4(%0, %1, 4)               \n\t"
         "psrlq $32, %%mm2                       \n\t"
-        "movd %%mm2, 4(%%"REG_d")               \n\t"
-        "movd %%mm1, 4(%%"REG_d", %1)           \n\t"
+        "movd %%mm2, 4(%%"FF_REG_d")            \n\t"
+        "movd %%mm1, 4(%%"FF_REG_d", %1)        \n\t"
         "psrlq $32, %%mm1                       \n\t"
-        "movd %%mm1, 4(%%"REG_d", %1, 2)        \n\t"
+        "movd %%mm1, 4(%%"FF_REG_d", %1, 2)     \n\t"
 
         :: "r" (dst), "r" ((x86_reg)dstStride), "r" (src)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 }
 #endif //TEMPLATE_PP_MMX
@@ -2166,9 +2166,9 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 //#define L1_DIFF //u should change the thresholds too if u try that one
 #if (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
     __asm__ volatile(
-        "lea (%2, %2, 2), %%"REG_a"             \n\t" // 3*stride
-        "lea (%2, %2, 4), %%"REG_d"             \n\t" // 5*stride
-        "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
+        "lea (%2, %2, 2), %%"FF_REG_a"          \n\t" // 3*stride
+        "lea (%2, %2, 4), %%"FF_REG_d"          \n\t" // 5*stride
+        "lea (%%"FF_REG_d", %2, 2), %%"FF_REG_c"\n\t" // 7*stride
 //      0       1       2       3       4       5       6       7       8       9
 //      %x      %x+%2   %x+2%2  %x+eax  %x+4%2  %x+edx  %x+2eax %x+ecx  %x+8%2
 //FIXME reorder?
@@ -2179,21 +2179,21 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
         "psadbw (%1, %2), %%mm1                 \n\t" // |L1-R1|
         "movq (%0, %2, 2), %%mm2                \n\t" // L2
         "psadbw (%1, %2, 2), %%mm2              \n\t" // |L2-R2|
-        "movq (%0, %%"REG_a"), %%mm3            \n\t" // L3
-        "psadbw (%1, %%"REG_a"), %%mm3          \n\t" // |L3-R3|
+        "movq (%0, %%"FF_REG_a"), %%mm3         \n\t" // L3
+        "psadbw (%1, %%"FF_REG_a"), %%mm3       \n\t" // |L3-R3|
 
         "movq (%0, %2, 4), %%mm4                \n\t" // L4
         "paddw %%mm1, %%mm0                     \n\t"
         "psadbw (%1, %2, 4), %%mm4              \n\t" // |L4-R4|
-        "movq (%0, %%"REG_d"), %%mm5            \n\t" // L5
+        "movq (%0, %%"FF_REG_d"), %%mm5         \n\t" // L5
         "paddw %%mm2, %%mm0                     \n\t"
-        "psadbw (%1, %%"REG_d"), %%mm5          \n\t" // |L5-R5|
-        "movq (%0, %%"REG_a", 2), %%mm6         \n\t" // L6
+        "psadbw (%1, %%"FF_REG_d"), %%mm5       \n\t" // |L5-R5|
+        "movq (%0, %%"FF_REG_a", 2), %%mm6      \n\t" // L6
         "paddw %%mm3, %%mm0                     \n\t"
-        "psadbw (%1, %%"REG_a", 2), %%mm6       \n\t" // |L6-R6|
-        "movq (%0, %%"REG_c"), %%mm7            \n\t" // L7
+        "psadbw (%1, %%"FF_REG_a", 2), %%mm6    \n\t" // |L6-R6|
+        "movq (%0, %%"FF_REG_c"), %%mm7         \n\t" // L7
         "paddw %%mm4, %%mm0                     \n\t"
-        "psadbw (%1, %%"REG_c"), %%mm7          \n\t" // |L7-R7|
+        "psadbw (%1, %%"FF_REG_c"), %%mm7       \n\t" // |L7-R7|
         "paddw %%mm5, %%mm6                     \n\t"
         "paddw %%mm7, %%mm6                     \n\t"
         "paddw %%mm6, %%mm0                     \n\t"
@@ -2239,14 +2239,14 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
 #define L2_DIFF_CORE(a, b)  REAL_L2_DIFF_CORE(a, b)
 
-L2_DIFF_CORE((%0)          , (%1))
-L2_DIFF_CORE((%0, %2)      , (%1, %2))
-L2_DIFF_CORE((%0, %2, 2)   , (%1, %2, 2))
-L2_DIFF_CORE((%0, %%REGa)  , (%1, %%REGa))
-L2_DIFF_CORE((%0, %2, 4)   , (%1, %2, 4))
-L2_DIFF_CORE((%0, %%REGd)  , (%1, %%REGd))
-L2_DIFF_CORE((%0, %%REGa,2), (%1, %%REGa,2))
-L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
+L2_DIFF_CORE((%0)             , (%1))
+L2_DIFF_CORE((%0, %2)         , (%1, %2))
+L2_DIFF_CORE((%0, %2, 2)      , (%1, %2, 2))
+L2_DIFF_CORE((%0, %%FF_REGa)  , (%1, %%FF_REGa))
+L2_DIFF_CORE((%0, %2, 4)      , (%1, %2, 4))
+L2_DIFF_CORE((%0, %%FF_REGd)  , (%1, %%FF_REGd))
+L2_DIFF_CORE((%0, %%FF_REGa,2), (%1, %%FF_REGa,2))
+L2_DIFF_CORE((%0, %%FF_REGc)  , (%1, %%FF_REGc))
 
 #endif //L1_DIFF
 
@@ -2255,94 +2255,94 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         "paddd %%mm0, %%mm4                     \n\t"
         "movd %%mm4, %%ecx                      \n\t"
         "shll $2, %%ecx                         \n\t"
-        "mov %3, %%"REG_d"                      \n\t"
-        "addl -4(%%"REG_d"), %%ecx              \n\t"
-        "addl 4(%%"REG_d"), %%ecx               \n\t"
-        "addl -1024(%%"REG_d"), %%ecx           \n\t"
+        "mov %3, %%"FF_REG_d"                   \n\t"
+        "addl -4(%%"FF_REG_d"), %%ecx           \n\t"
+        "addl 4(%%"FF_REG_d"), %%ecx            \n\t"
+        "addl -1024(%%"FF_REG_d"), %%ecx        \n\t"
         "addl $4, %%ecx                         \n\t"
-        "addl 1024(%%"REG_d"), %%ecx            \n\t"
+        "addl 1024(%%"FF_REG_d"), %%ecx         \n\t"
         "shrl $3, %%ecx                         \n\t"
-        "movl %%ecx, (%%"REG_d")                \n\t"
+        "movl %%ecx, (%%"FF_REG_d")             \n\t"
 
-//        "mov %3, %%"REG_c"                      \n\t"
-//        "mov %%"REG_c", test                    \n\t"
+//        "mov %3, %%"FF_REG_c"                   \n\t"
+//        "mov %%"FF_REG_c", test                 \n\t"
 //        "jmp 4f                                 \n\t"
-        "cmpl 512(%%"REG_d"), %%ecx             \n\t"
+        "cmpl 512(%%"FF_REG_d"), %%ecx          \n\t"
         " jb 2f                                 \n\t"
-        "cmpl 516(%%"REG_d"), %%ecx             \n\t"
+        "cmpl 516(%%"FF_REG_d"), %%ecx          \n\t"
         " jb 1f                                 \n\t"
 
-        "lea (%%"REG_a", %2, 2), %%"REG_d"      \n\t" // 5*stride
-        "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
+        "lea (%%"FF_REG_a", %2, 2), %%"FF_REG_d"\n\t" // 5*stride
+        "lea (%%"FF_REG_d", %2, 2), %%"FF_REG_c"\n\t" // 7*stride
         "movq (%0), %%mm0                       \n\t" // L0
         "movq (%0, %2), %%mm1                   \n\t" // L1
         "movq (%0, %2, 2), %%mm2                \n\t" // L2
-        "movq (%0, %%"REG_a"), %%mm3            \n\t" // L3
+        "movq (%0, %%"FF_REG_a"), %%mm3         \n\t" // L3
         "movq (%0, %2, 4), %%mm4                \n\t" // L4
-        "movq (%0, %%"REG_d"), %%mm5            \n\t" // L5
-        "movq (%0, %%"REG_a", 2), %%mm6         \n\t" // L6
-        "movq (%0, %%"REG_c"), %%mm7            \n\t" // L7
+        "movq (%0, %%"FF_REG_d"), %%mm5         \n\t" // L5
+        "movq (%0, %%"FF_REG_a", 2), %%mm6      \n\t" // L6
+        "movq (%0, %%"FF_REG_c"), %%mm7         \n\t" // L7
         "movq %%mm0, (%1)                       \n\t" // L0
         "movq %%mm1, (%1, %2)                   \n\t" // L1
         "movq %%mm2, (%1, %2, 2)                \n\t" // L2
-        "movq %%mm3, (%1, %%"REG_a")            \n\t" // L3
+        "movq %%mm3, (%1, %%"FF_REG_a")         \n\t" // L3
         "movq %%mm4, (%1, %2, 4)                \n\t" // L4
-        "movq %%mm5, (%1, %%"REG_d")            \n\t" // L5
-        "movq %%mm6, (%1, %%"REG_a", 2)         \n\t" // L6
-        "movq %%mm7, (%1, %%"REG_c")            \n\t" // L7
+        "movq %%mm5, (%1, %%"FF_REG_d")         \n\t" // L5
+        "movq %%mm6, (%1, %%"FF_REG_a", 2)      \n\t" // L6
+        "movq %%mm7, (%1, %%"FF_REG_c")         \n\t" // L7
         "jmp 4f                                 \n\t"
 
         "1:                                     \n\t"
-        "lea (%%"REG_a", %2, 2), %%"REG_d"      \n\t" // 5*stride
-        "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
+        "lea (%%"FF_REG_a", %2, 2), %%"FF_REG_d"\n\t" // 5*stride
+        "lea (%%"FF_REG_d", %2, 2), %%"FF_REG_c"\n\t" // 7*stride
         "movq (%0), %%mm0                       \n\t" // L0
         PAVGB((%1), %%mm0)                            // L0
         "movq (%0, %2), %%mm1                   \n\t" // L1
         PAVGB((%1, %2), %%mm1)                        // L1
         "movq (%0, %2, 2), %%mm2                \n\t" // L2
         PAVGB((%1, %2, 2), %%mm2)                     // L2
-        "movq (%0, %%"REG_a"), %%mm3            \n\t" // L3
-        PAVGB((%1, %%REGa), %%mm3)                    // L3
+        "movq (%0, %%"FF_REG_a"), %%mm3         \n\t" // L3
+        PAVGB((%1, %%FF_REGa), %%mm3)                 // L3
         "movq (%0, %2, 4), %%mm4                \n\t" // L4
         PAVGB((%1, %2, 4), %%mm4)                     // L4
-        "movq (%0, %%"REG_d"), %%mm5            \n\t" // L5
-        PAVGB((%1, %%REGd), %%mm5)                    // L5
-        "movq (%0, %%"REG_a", 2), %%mm6         \n\t" // L6
-        PAVGB((%1, %%REGa, 2), %%mm6)                 // L6
-        "movq (%0, %%"REG_c"), %%mm7            \n\t" // L7
-        PAVGB((%1, %%REGc), %%mm7)                    // L7
+        "movq (%0, %%"FF_REG_d"), %%mm5         \n\t" // L5
+        PAVGB((%1, %%FF_REGd), %%mm5)                 // L5
+        "movq (%0, %%"FF_REG_a", 2), %%mm6      \n\t" // L6
+        PAVGB((%1, %%FF_REGa, 2), %%mm6)              // L6
+        "movq (%0, %%"FF_REG_c"), %%mm7         \n\t" // L7
+        PAVGB((%1, %%FF_REGc), %%mm7)                 // L7
         "movq %%mm0, (%1)                       \n\t" // R0
         "movq %%mm1, (%1, %2)                   \n\t" // R1
         "movq %%mm2, (%1, %2, 2)                \n\t" // R2
-        "movq %%mm3, (%1, %%"REG_a")            \n\t" // R3
+        "movq %%mm3, (%1, %%"FF_REG_a")         \n\t" // R3
         "movq %%mm4, (%1, %2, 4)                \n\t" // R4
-        "movq %%mm5, (%1, %%"REG_d")            \n\t" // R5
-        "movq %%mm6, (%1, %%"REG_a", 2)         \n\t" // R6
-        "movq %%mm7, (%1, %%"REG_c")            \n\t" // R7
+        "movq %%mm5, (%1, %%"FF_REG_d")         \n\t" // R5
+        "movq %%mm6, (%1, %%"FF_REG_a", 2)      \n\t" // R6
+        "movq %%mm7, (%1, %%"FF_REG_c")         \n\t" // R7
         "movq %%mm0, (%0)                       \n\t" // L0
         "movq %%mm1, (%0, %2)                   \n\t" // L1
         "movq %%mm2, (%0, %2, 2)                \n\t" // L2
-        "movq %%mm3, (%0, %%"REG_a")            \n\t" // L3
+        "movq %%mm3, (%0, %%"FF_REG_a")         \n\t" // L3
         "movq %%mm4, (%0, %2, 4)                \n\t" // L4
-        "movq %%mm5, (%0, %%"REG_d")            \n\t" // L5
-        "movq %%mm6, (%0, %%"REG_a", 2)         \n\t" // L6
-        "movq %%mm7, (%0, %%"REG_c")            \n\t" // L7
+        "movq %%mm5, (%0, %%"FF_REG_d")         \n\t" // L5
+        "movq %%mm6, (%0, %%"FF_REG_a", 2)      \n\t" // L6
+        "movq %%mm7, (%0, %%"FF_REG_c")         \n\t" // L7
         "jmp 4f                                 \n\t"
 
         "2:                                     \n\t"
-        "cmpl 508(%%"REG_d"), %%ecx             \n\t"
+        "cmpl 508(%%"FF_REG_d"), %%ecx          \n\t"
         " jb 3f                                 \n\t"
 
-        "lea (%%"REG_a", %2, 2), %%"REG_d"      \n\t" // 5*stride
-        "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
+        "lea (%%"FF_REG_a", %2, 2), %%"FF_REG_d"\n\t" // 5*stride
+        "lea (%%"FF_REG_d", %2, 2), %%"FF_REG_c"\n\t" // 7*stride
         "movq (%0), %%mm0                       \n\t" // L0
         "movq (%0, %2), %%mm1                   \n\t" // L1
         "movq (%0, %2, 2), %%mm2                \n\t" // L2
-        "movq (%0, %%"REG_a"), %%mm3            \n\t" // L3
+        "movq (%0, %%"FF_REG_a"), %%mm3         \n\t" // L3
         "movq (%1), %%mm4                       \n\t" // R0
         "movq (%1, %2), %%mm5                   \n\t" // R1
         "movq (%1, %2, 2), %%mm6                \n\t" // R2
-        "movq (%1, %%"REG_a"), %%mm7            \n\t" // R3
+        "movq (%1, %%"FF_REG_a"), %%mm7         \n\t" // R3
         PAVGB(%%mm4, %%mm0)
         PAVGB(%%mm5, %%mm1)
         PAVGB(%%mm6, %%mm2)
@@ -2354,20 +2354,20 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         "movq %%mm0, (%1)                       \n\t" // R0
         "movq %%mm1, (%1, %2)                   \n\t" // R1
         "movq %%mm2, (%1, %2, 2)                \n\t" // R2
-        "movq %%mm3, (%1, %%"REG_a")            \n\t" // R3
+        "movq %%mm3, (%1, %%"FF_REG_a")         \n\t" // R3
         "movq %%mm0, (%0)                       \n\t" // L0
         "movq %%mm1, (%0, %2)                   \n\t" // L1
         "movq %%mm2, (%0, %2, 2)                \n\t" // L2
-        "movq %%mm3, (%0, %%"REG_a")            \n\t" // L3
+        "movq %%mm3, (%0, %%"FF_REG_a")         \n\t" // L3
 
         "movq (%0, %2, 4), %%mm0                \n\t" // L4
-        "movq (%0, %%"REG_d"), %%mm1            \n\t" // L5
-        "movq (%0, %%"REG_a", 2), %%mm2         \n\t" // L6
-        "movq (%0, %%"REG_c"), %%mm3            \n\t" // L7
+        "movq (%0, %%"FF_REG_d"), %%mm1         \n\t" // L5
+        "movq (%0, %%"FF_REG_a", 2), %%mm2      \n\t" // L6
+        "movq (%0, %%"FF_REG_c"), %%mm3         \n\t" // L7
         "movq (%1, %2, 4), %%mm4                \n\t" // R4
-        "movq (%1, %%"REG_d"), %%mm5            \n\t" // R5
-        "movq (%1, %%"REG_a", 2), %%mm6         \n\t" // R6
-        "movq (%1, %%"REG_c"), %%mm7            \n\t" // R7
+        "movq (%1, %%"FF_REG_d"), %%mm5         \n\t" // R5
+        "movq (%1, %%"FF_REG_a", 2), %%mm6      \n\t" // R6
+        "movq (%1, %%"FF_REG_c"), %%mm7         \n\t" // R7
         PAVGB(%%mm4, %%mm0)
         PAVGB(%%mm5, %%mm1)
         PAVGB(%%mm6, %%mm2)
@@ -2377,26 +2377,26 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         PAVGB(%%mm6, %%mm2)
         PAVGB(%%mm7, %%mm3)
         "movq %%mm0, (%1, %2, 4)                \n\t" // R4
-        "movq %%mm1, (%1, %%"REG_d")            \n\t" // R5
-        "movq %%mm2, (%1, %%"REG_a", 2)         \n\t" // R6
-        "movq %%mm3, (%1, %%"REG_c")            \n\t" // R7
+        "movq %%mm1, (%1, %%"FF_REG_d")         \n\t" // R5
+        "movq %%mm2, (%1, %%"FF_REG_a", 2)      \n\t" // R6
+        "movq %%mm3, (%1, %%"FF_REG_c")         \n\t" // R7
         "movq %%mm0, (%0, %2, 4)                \n\t" // L4
-        "movq %%mm1, (%0, %%"REG_d")            \n\t" // L5
-        "movq %%mm2, (%0, %%"REG_a", 2)         \n\t" // L6
-        "movq %%mm3, (%0, %%"REG_c")            \n\t" // L7
+        "movq %%mm1, (%0, %%"FF_REG_d")         \n\t" // L5
+        "movq %%mm2, (%0, %%"FF_REG_a", 2)      \n\t" // L6
+        "movq %%mm3, (%0, %%"FF_REG_c")         \n\t" // L7
         "jmp 4f                                 \n\t"
 
         "3:                                     \n\t"
-        "lea (%%"REG_a", %2, 2), %%"REG_d"      \n\t" // 5*stride
-        "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
+        "lea (%%"FF_REG_a", %2, 2), %%"FF_REG_d"\n\t" // 5*stride
+        "lea (%%"FF_REG_d", %2, 2), %%"FF_REG_c"\n\t" // 7*stride
         "movq (%0), %%mm0                       \n\t" // L0
         "movq (%0, %2), %%mm1                   \n\t" // L1
         "movq (%0, %2, 2), %%mm2                \n\t" // L2
-        "movq (%0, %%"REG_a"), %%mm3            \n\t" // L3
+        "movq (%0, %%"FF_REG_a"), %%mm3         \n\t" // L3
         "movq (%1), %%mm4                       \n\t" // R0
         "movq (%1, %2), %%mm5                   \n\t" // R1
         "movq (%1, %2, 2), %%mm6                \n\t" // R2
-        "movq (%1, %%"REG_a"), %%mm7            \n\t" // R3
+        "movq (%1, %%"FF_REG_a"), %%mm7         \n\t" // R3
         PAVGB(%%mm4, %%mm0)
         PAVGB(%%mm5, %%mm1)
         PAVGB(%%mm6, %%mm2)
@@ -2412,20 +2412,20 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         "movq %%mm0, (%1)                       \n\t" // R0
         "movq %%mm1, (%1, %2)                   \n\t" // R1
         "movq %%mm2, (%1, %2, 2)                \n\t" // R2
-        "movq %%mm3, (%1, %%"REG_a")            \n\t" // R3
+        "movq %%mm3, (%1, %%"FF_REG_a")         \n\t" // R3
         "movq %%mm0, (%0)                       \n\t" // L0
         "movq %%mm1, (%0, %2)                   \n\t" // L1
         "movq %%mm2, (%0, %2, 2)                \n\t" // L2
-        "movq %%mm3, (%0, %%"REG_a")            \n\t" // L3
+        "movq %%mm3, (%0, %%"FF_REG_a")         \n\t" // L3
 
         "movq (%0, %2, 4), %%mm0                \n\t" // L4
-        "movq (%0, %%"REG_d"), %%mm1            \n\t" // L5
-        "movq (%0, %%"REG_a", 2), %%mm2         \n\t" // L6
-        "movq (%0, %%"REG_c"), %%mm3            \n\t" // L7
+        "movq (%0, %%"FF_REG_d"), %%mm1         \n\t" // L5
+        "movq (%0, %%"FF_REG_a", 2), %%mm2      \n\t" // L6
+        "movq (%0, %%"FF_REG_c"), %%mm3         \n\t" // L7
         "movq (%1, %2, 4), %%mm4                \n\t" // R4
-        "movq (%1, %%"REG_d"), %%mm5            \n\t" // R5
-        "movq (%1, %%"REG_a", 2), %%mm6         \n\t" // R6
-        "movq (%1, %%"REG_c"), %%mm7            \n\t" // R7
+        "movq (%1, %%"FF_REG_d"), %%mm5         \n\t" // R5
+        "movq (%1, %%"FF_REG_a", 2), %%mm6      \n\t" // R6
+        "movq (%1, %%"FF_REG_c"), %%mm7         \n\t" // R7
         PAVGB(%%mm4, %%mm0)
         PAVGB(%%mm5, %%mm1)
         PAVGB(%%mm6, %%mm2)
@@ -2439,19 +2439,19 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         PAVGB(%%mm6, %%mm2)
         PAVGB(%%mm7, %%mm3)
         "movq %%mm0, (%1, %2, 4)                \n\t" // R4
-        "movq %%mm1, (%1, %%"REG_d")            \n\t" // R5
-        "movq %%mm2, (%1, %%"REG_a", 2)         \n\t" // R6
-        "movq %%mm3, (%1, %%"REG_c")            \n\t" // R7
+        "movq %%mm1, (%1, %%"FF_REG_d")         \n\t" // R5
+        "movq %%mm2, (%1, %%"FF_REG_a", 2)      \n\t" // R6
+        "movq %%mm3, (%1, %%"FF_REG_c")         \n\t" // R7
         "movq %%mm0, (%0, %2, 4)                \n\t" // L4
-        "movq %%mm1, (%0, %%"REG_d")            \n\t" // L5
-        "movq %%mm2, (%0, %%"REG_a", 2)         \n\t" // L6
-        "movq %%mm3, (%0, %%"REG_c")            \n\t" // L7
+        "movq %%mm1, (%0, %%"FF_REG_d")         \n\t" // L5
+        "movq %%mm2, (%0, %%"FF_REG_a", 2)      \n\t" // L6
+        "movq %%mm3, (%0, %%"FF_REG_c")         \n\t" // L7
 
         "4:                                     \n\t"
 
         :: "r" (src), "r" (tempBlurred), "r"((x86_reg)stride), "m" (tempBlurredPast)
           NAMED_CONSTRAINTS_ADD(b80)
-        : "%"REG_a, "%"REG_d, "%"REG_c, "memory"
+        : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_c, "memory"
     );
 #else //(TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW) && HAVE_6REGS
 {
@@ -2556,19 +2556,19 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         );
 
     __asm__ volatile(
-        "lea (%2, %3), %%"REG_a"                \n\t"
+        "lea (%2, %3), %%"FF_REG_a"             \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %1      eax     eax+%2  eax+2%2 %1+4%2  ecx     ecx+%2  ecx+2%2 %1+8%2  ecx+4%2
 
         "movq (%2), %%mm0                       \n\t"
-        "movq (%%"REG_a"), %%mm1                \n\t"
+        "movq (%%"FF_REG_a"), %%mm1             \n\t"
         "movq %%mm1, %%mm3                      \n\t"
         "movq %%mm1, %%mm4                      \n\t"
         "psubb %%mm1, %%mm0                     \n\t" // mm0 = difference
         "paddb %%mm7, %%mm0                     \n\t"
         "pcmpgtb %%mm6, %%mm0                   \n\t"
 
-        "movq (%%"REG_a",%3), %%mm2             \n\t"
+        "movq (%%"FF_REG_a",%3), %%mm2          \n\t"
         PMAXUB(%%mm2, %%mm4)
         PMINUB(%%mm2, %%mm3, %%mm5)
         "psubb %%mm2, %%mm1                     \n\t"
@@ -2576,7 +2576,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3, 2), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %3, 2), %%mm1      \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -2584,7 +2584,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm2                   \n\t"
         "paddb %%mm2, %%mm0                     \n\t"
 
-        "lea (%%"REG_a", %3, 4), %%"REG_a"      \n\t"
+        "lea (%%"FF_REG_a", %3, 4), %%"FF_REG_a"\n\t"
 
         "movq (%2, %3, 4), %%mm2                \n\t"
         PMAXUB(%%mm2, %%mm4)
@@ -2594,7 +2594,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a"), %%mm1                \n\t"
+        "movq (%%"FF_REG_a"), %%mm1             \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -2602,7 +2602,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm2                   \n\t"
         "paddb %%mm2, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3), %%mm2            \n\t"
+        "movq (%%"FF_REG_a", %3), %%mm2         \n\t"
         PMAXUB(%%mm2, %%mm4)
         PMINUB(%%mm2, %%mm3, %%mm5)
         "psubb %%mm2, %%mm1                     \n\t"
@@ -2610,7 +2610,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3, 2), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %3, 2), %%mm1      \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
         "psubb %%mm1, %%mm2                     \n\t"
@@ -2626,7 +2626,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "pcmpgtb %%mm6, %%mm1                   \n\t"
         "paddb %%mm1, %%mm0                     \n\t"
 
-        "movq (%%"REG_a", %3, 4), %%mm1         \n\t"
+        "movq (%%"FF_REG_a", %3, 4), %%mm1      \n\t"
         "psubb %%mm1, %%mm2                     \n\t"
         "paddb %%mm7, %%mm2                     \n\t"
         "pcmpgtb %%mm6, %%mm2                   \n\t"
@@ -2651,7 +2651,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 
         : "=m" (eq_mask), "=m" (dc_mask)
         : "r" (src), "r" ((x86_reg)step), "m" (c->pQPb), "m"(c->ppMode.flatnessThreshold)
-        : "%"REG_a
+        : "%"FF_REG_a
     );
 
     both_masks = dc_mask & eq_mask;
@@ -2851,12 +2851,12 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "punpckhbw %%mm7, %%mm1                 \n\t" // high part of line 0
 
             "movq (%0, %1), %%mm2                   \n\t"
-            "lea (%0, %1, 2), %%"REG_a"             \n\t"
+            "lea (%0, %1, 2), %%"FF_REG_a"          \n\t"
             "movq %%mm2, %%mm3                      \n\t"
             "punpcklbw %%mm7, %%mm2                 \n\t" // low part of line 1
             "punpckhbw %%mm7, %%mm3                 \n\t" // high part of line 1
 
-            "movq (%%"REG_a"), %%mm4                \n\t"
+            "movq (%%"FF_REG_a"), %%mm4             \n\t"
             "movq %%mm4, %%mm5                      \n\t"
             "punpcklbw %%mm7, %%mm4                 \n\t" // low part of line 2
             "punpckhbw %%mm7, %%mm5                 \n\t" // high part of line 2
@@ -2873,7 +2873,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "psubw %%mm2, %%mm0                     \n\t" // 2L0 - 5L1 + 5L2
             "psubw %%mm3, %%mm1                     \n\t" // 2H0 - 5H1 + 5H2
 
-            "movq (%%"REG_a", %1), %%mm2            \n\t"
+            "movq (%%"FF_REG_a", %1), %%mm2         \n\t"
             "movq %%mm2, %%mm3                      \n\t"
             "punpcklbw %%mm7, %%mm2                 \n\t" // L3
             "punpckhbw %%mm7, %%mm3                 \n\t" // H3
@@ -2885,7 +2885,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "movq %%mm0, (%4)                       \n\t" // 2L0 - 5L1 + 5L2 - 2L3
             "movq %%mm1, 8(%4)                      \n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
-            "movq (%%"REG_a", %1, 2), %%mm0         \n\t"
+            "movq (%%"FF_REG_a", %1, 2), %%mm0      \n\t"
             "movq %%mm0, %%mm1                      \n\t"
             "punpcklbw %%mm7, %%mm0                 \n\t" // L4
             "punpckhbw %%mm7, %%mm1                 \n\t" // H4
@@ -2899,7 +2899,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "psubw %%mm2, %%mm4                     \n\t" // 2L2 - L3 + L4
             "psubw %%mm3, %%mm5                     \n\t" // 2H2 - H3 + H4
 
-            "lea (%%"REG_a", %1), %0                \n\t"
+            "lea (%%"FF_REG_a", %1), %0             \n\t"
             "psllw $2, %%mm2                        \n\t" // 4L3 - 4L4
             "psllw $2, %%mm3                        \n\t" // 4H3 - 4H4
             "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4
@@ -2914,10 +2914,10 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             "psubw %%mm2, %%mm4                     \n\t" // 2L2 - 5L3 + 5L4 - 2L5
             "psubw %%mm3, %%mm5                     \n\t" // 2H2 - 5H3 + 5H4 - 2H5
 
-            "movq (%%"REG_a", %1, 4), %%mm6         \n\t"
+            "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
             "punpcklbw %%mm7, %%mm6                 \n\t" // L6
             "psubw %%mm6, %%mm2                     \n\t" // L5 - L6
-            "movq (%%"REG_a", %1, 4), %%mm6         \n\t"
+            "movq (%%"FF_REG_a", %1, 4), %%mm6      \n\t"
             "punpckhbw %%mm7, %%mm6                 \n\t" // H6
             "psubw %%mm6, %%mm3                     \n\t" // H5 - H6
 
@@ -3068,7 +3068,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
             : "+r" (temp_src)
             : "r" ((x86_reg)step), "m" (c->pQPb), "m"(eq_mask), "r"(tmp)
               NAMED_CONSTRAINTS_ADD(w05,w20)
-            : "%"REG_a
+            : "%"FF_REG_a
         );
     }
 /*if(step==16){
@@ -3099,10 +3099,10 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t
     if(levelFix){
 #if TEMPLATE_PP_MMX && HAVE_6REGS
     __asm__ volatile(
-        "movq (%%"REG_a"), %%mm2        \n\t" // packedYOffset
-        "movq 8(%%"REG_a"), %%mm3       \n\t" // packedYScale
-        "lea (%2,%4), %%"REG_a"         \n\t"
-        "lea (%3,%5), %%"REG_d"         \n\t"
+        "movq (%%"FF_REG_a"), %%mm2     \n\t" // packedYOffset
+        "movq 8(%%"FF_REG_a"), %%mm3    \n\t" // packedYScale
+        "lea (%2,%4), %%"FF_REG_a"      \n\t"
+        "lea (%3,%5), %%"FF_REG_d"      \n\t"
         "pxor %%mm4, %%mm4              \n\t"
 #if TEMPLATE_PP_MMXEXT
 #define REAL_SCALED_CPY(src1, src2, dst1, dst2)                                                \
@@ -3159,11 +3159,11 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t
    REAL_SCALED_CPY(src1, src2, dst1, dst2)
 
 SCALED_CPY((%2)       , (%2, %4)      , (%3)       , (%3, %5))
-SCALED_CPY((%2, %4, 2), (%%REGa, %4, 2), (%3, %5, 2), (%%REGd, %5, 2))
-SCALED_CPY((%2, %4, 4), (%%REGa, %4, 4), (%3, %5, 4), (%%REGd, %5, 4))
-        "lea (%%"REG_a",%4,4), %%"REG_a"        \n\t"
-        "lea (%%"REG_d",%5,4), %%"REG_d"        \n\t"
-SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
+SCALED_CPY((%2, %4, 2), (%%FF_REGa, %4, 2), (%3, %5, 2), (%%FF_REGd, %5, 2))
+SCALED_CPY((%2, %4, 4), (%%FF_REGa, %4, 4), (%3, %5, 4), (%%FF_REGd, %5, 4))
+        "lea (%%"FF_REG_a",%4,4), %%"FF_REG_a"        \n\t"
+        "lea (%%"FF_REG_d",%5,4), %%"FF_REG_d"        \n\t"
+SCALED_CPY((%%FF_REGa, %4), (%%FF_REGa, %4, 2), (%%FF_REGd, %5), (%%FF_REGd, %5, 2))
 
 
         : "=&a" (packedOffsetAndScale)
@@ -3172,7 +3172,7 @@ SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
         "r"(dst),
         "r" ((x86_reg)srcStride),
         "r" ((x86_reg)dstStride)
-        : "%"REG_d
+        : "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMX && HAVE_6REGS
     for(i=0; i<8; i++)
@@ -3182,8 +3182,8 @@ SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
     }else{
 #if TEMPLATE_PP_MMX && HAVE_6REGS
     __asm__ volatile(
-        "lea (%0,%2), %%"REG_a"                 \n\t"
-        "lea (%1,%3), %%"REG_d"                 \n\t"
+        "lea (%0,%2), %%"FF_REG_a"      \n\t"
+        "lea (%1,%3), %%"FF_REG_d"      \n\t"
 
 #define REAL_SIMPLE_CPY(src1, src2, dst1, dst2)                              \
         "movq " #src1 ", %%mm0          \n\t"\
@@ -3194,18 +3194,18 @@ SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
 #define SIMPLE_CPY(src1, src2, dst1, dst2)\
    REAL_SIMPLE_CPY(src1, src2, dst1, dst2)
 
-SIMPLE_CPY((%0)       , (%0, %2)       , (%1)       , (%1, %3))
-SIMPLE_CPY((%0, %2, 2), (%%REGa, %2, 2), (%1, %3, 2), (%%REGd, %3, 2))
-SIMPLE_CPY((%0, %2, 4), (%%REGa, %2, 4), (%1, %3, 4), (%%REGd, %3, 4))
-        "lea (%%"REG_a",%2,4), %%"REG_a"        \n\t"
-        "lea (%%"REG_d",%3,4), %%"REG_d"        \n\t"
-SIMPLE_CPY((%%REGa, %2), (%%REGa, %2, 2), (%%REGd, %3), (%%REGd, %3, 2))
+SIMPLE_CPY((%0)       , (%0, %2)          , (%1)       , (%1, %3))
+SIMPLE_CPY((%0, %2, 2), (%%FF_REGa, %2, 2), (%1, %3, 2), (%%FF_REGd, %3, 2))
+SIMPLE_CPY((%0, %2, 4), (%%FF_REGa, %2, 4), (%1, %3, 4), (%%FF_REGd, %3, 4))
+        "lea (%%"FF_REG_a",%2,4), %%"FF_REG_a"        \n\t"
+        "lea (%%"FF_REG_d",%3,4), %%"FF_REG_d"        \n\t"
+SIMPLE_CPY((%%FF_REGa, %2), (%%FF_REGa, %2, 2), (%%FF_REGd, %3), (%%FF_REGd, %3, 2))
 
         : : "r" (src),
         "r" (dst),
         "r" ((x86_reg)srcStride),
         "r" ((x86_reg)dstStride)
-        : "%"REG_a, "%"REG_d
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else //TEMPLATE_PP_MMX && HAVE_6REGS
     for(i=0; i<8; i++)

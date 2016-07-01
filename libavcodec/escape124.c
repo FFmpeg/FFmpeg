@@ -19,11 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
-#include "internal.h"
-
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 
 typedef union MacroBlock {
     uint16_t pixels[4];

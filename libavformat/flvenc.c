@@ -23,6 +23,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mathematics.h"
 #include "avc.h"
 #include "avformat.h"
 #include "flv.h"
@@ -594,6 +595,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         write_metadata(s, ts);
         s->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
     }
+
+    avio_write_marker(pb, av_rescale(ts, AV_TIME_BASE, 1000),
+                      pkt->flags & AV_PKT_FLAG_KEY && (flv->video_par ? par->codec_type == AVMEDIA_TYPE_VIDEO : 1) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:

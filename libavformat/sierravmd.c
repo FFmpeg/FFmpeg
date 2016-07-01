@@ -1,6 +1,6 @@
 /*
  * Sierra VMD Format Demuxer
- * Copyright (c) 2004 The FFmpeg Project
+ * Copyright (c) 2004 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *

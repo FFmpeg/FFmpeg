@@ -270,6 +270,8 @@ static av_cold int ffat_usable_extradata(AVCodecContext *avctx)
     ATDecodeContext *at = avctx->priv_data;
     return at->extradata_size &&
            (avctx->codec_id == AV_CODEC_ID_ALAC ||
+            avctx->codec_id == AV_CODEC_ID_QDM2 ||
+            avctx->codec_id == AV_CODEC_ID_QDMC ||
             avctx->codec_id == AV_CODEC_ID_AAC);
 }
 

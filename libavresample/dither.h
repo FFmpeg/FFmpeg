@@ -37,8 +37,8 @@ typedef struct DitherDSPContext {
      */
     void (*quantize)(int16_t *dst, const float *src, float *dither, int len);
 
-    int ptr_align;      ///< src and dst constraits for quantize()
-    int samples_align;  ///< len constraits for quantize()
+    int ptr_align;      ///< src and dst constraints for quantize()
+    int samples_align;  ///< len constraints for quantize()
 
     /**
      * Convert dither noise from int to float with triangular distribution.

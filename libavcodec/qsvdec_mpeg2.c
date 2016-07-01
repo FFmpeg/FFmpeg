@@ -1,5 +1,5 @@
 /*
- * Intel MediaSDK QSV based MPEG2 video decoder
+ * Intel MediaSDK QSV based MPEG-2 video decoder
  *
  * This file is part of FFmpeg.
  *

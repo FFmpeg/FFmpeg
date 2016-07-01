@@ -191,13 +191,13 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
                 mantissa <<= 1;
                 exp -= (1 << 23);
             }
-            // clamp the mantissa to 10-bits
+            // clamp the mantissa to 10 bits
             mantissa &= ((1 << 10) - 1);
-            // shift left to generate single-precision mantissa of 23-bits
+            // shift left to generate single-precision mantissa of 23 bits
             mantissa <<= 13;
         }
     } else {
-        // shift left to generate single-precision mantissa of 23-bits
+        // shift left to generate single-precision mantissa of 23 bits
         mantissa <<= 13;
         // generate single precision biased exponent value
         exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
@@ -749,6 +749,9 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     uint16_t *tmp = (uint16_t *)td->tmp;
     uint8_t *out;
     int ret, i, j;
+    int pixel_half_size;/* 1 for half, 2 for float and uint32 */
+    EXRChannel *channel;
+    int tmp_offset;
 
     if (!td->bitmap)
         td->bitmap = av_malloc(BITMAP_SIZE);
@@ -781,24 +784,38 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
     ptr = tmp;
     for (i = 0; i < s->nb_channels; i++) {
-        EXRChannel *channel = &s->channels[i];
-        int size = channel->pixel_type;
+        channel = &s->channels[i];
 
-        for (j = 0; j < size; j++)
-            wav_decode(ptr + j, td->xsize, size, td->ysize,
-                       td->xsize * size, maxval);
-        ptr += td->xsize * td->ysize * size;
+        if (channel->pixel_type == EXR_HALF)
+            pixel_half_size = 1;
+        else
+            pixel_half_size = 2;
+
+        for (j = 0; j < pixel_half_size; j++)
+            wav_decode(ptr + j, td->xsize, pixel_half_size, td->ysize,
+                       td->xsize * pixel_half_size, maxval);
+        ptr += td->xsize * td->ysize * pixel_half_size;
     }
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
 
     out = td->uncompressed_data;
-    for (i = 0; i < td->ysize; i++)
+    for (i = 0; i < td->ysize; i++) {
+        tmp_offset = 0;
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in = tmp + j * td->xsize * td->ysize + i * td->xsize;
-            memcpy(out, in, td->xsize * 2);
-            out += td->xsize * 2;
+            uint16_t *in;
+            EXRChannel *channel = &s->channels[j];
+            if (channel->pixel_type == EXR_HALF)
+                pixel_half_size = 1;
+            else
+                pixel_half_size = 2;
+
+            in = tmp + tmp_offset * td->xsize * td->ysize + i * td->xsize * pixel_half_size;
+            tmp_offset += pixel_half_size;
+            memcpy(out, in, td->xsize * 2 * pixel_half_size);
+            out += td->xsize * 2 * pixel_half_size;
         }
+    }
 
     return 0;
 }
@@ -942,9 +959,9 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
         nbB44BlockH++;
 
     for (c = 0; c < s->nb_channels; c++) {
-        for (iY = 0; iY < nbB44BlockH; iY++) {
-            for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
-                if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
+        if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
+            for (iY = 0; iY < nbB44BlockH; iY++) {
+                for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
                     if (stayToUncompress < 3) {
                         av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
                         return AVERROR_INVALIDDATA;
@@ -976,21 +993,23 @@ static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
                             td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
                         }
                     }
-                } else{/* Float or UINT 32 channel */
-                    for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
-                        for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
-                            indexOut = target_channel_offset * td->xsize + y * td->channel_line_size + 4 * x;
-                            memcpy(&td->uncompressed_data[indexOut], sr, 4);
-                            sr += 4;
-                        }
-                    }
                 }
             }
-        }
-        if (s->channels[c].pixel_type == EXR_HALF) {
             target_channel_offset += 2;
-        } else {
+        } else {/* Float or UINT 32 channel */
+            if (stayToUncompress < td->ysize * td->xsize * 4) {
+                av_log(s, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stayToUncompress);
+                return AVERROR_INVALIDDATA;
+            }
+
+            for (y = 0; y < td->ysize; y++) {
+                indexOut = target_channel_offset * td->xsize + y * td->channel_line_size;
+                memcpy(&td->uncompressed_data[indexOut], sr, td->xsize * 4);
+                sr += td->xsize * 4;
+            }
             target_channel_offset += 4;
+
+            stayToUncompress -= td->ysize * td->xsize * 4;
         }
     }
 
@@ -1706,7 +1725,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;
@@ -1718,7 +1737,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_init_thread_copy(AVCodecContext *avctx)
 {    EXRContext *s = avctx->priv_data;
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;

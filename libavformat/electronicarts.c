@@ -1,5 +1,5 @@
 /* Electronic Arts Multimedia File Demuxer
- * Copyright (c) 2004 The FFmpeg Project
+ * Copyright (c) 2004  The FFmpeg project
  * Copyright (c) 2006-2008 Peter Ross
  *
  * This file is part of FFmpeg.

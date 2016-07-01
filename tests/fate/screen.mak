@@ -3,7 +3,7 @@ FATE_SCREEN-$(call DEMDEC, AVI, CSCD) += fate-cscd
 fate-cscd: CMD = framecrc -i $(TARGET_SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24
 
 FATE_SCREEN-$(call DEMDEC, AVI, DXTORY) += fate-dxtory
-fate-dxtory: CMD = framecrc -i $(TARGET_SAMPLES)/dxtory/dxtory_mic.avi
+fate-dxtory: CMD = framecrc -i $(TARGET_SAMPLES)/dxtory/dxtory_mic.avi -an
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, FIC) += fate-fic-avi
 fate-fic-avi: CMD = framecrc -i $(TARGET_SAMPLES)/fic/fic-partial-2MB.avi -an

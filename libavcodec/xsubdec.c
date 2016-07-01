@@ -57,8 +57,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int64_t packet_time = 0;
     GetBitContext gb;
     int has_alpha = avctx->codec_tag == MKTAG('D','X','S','A');
-    AVSubtitleRect *rect;
-    int j;
 
     // check that at least header fits
     if (buf_size < 27 + 7 * 2 + 4 * (3 + has_alpha)) {
@@ -134,11 +132,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+    AVSubtitleRect *rect;
+    int j;
     rect = sub->rects[0];
     for (j = 0; j < 4; j++) {
         rect->pict.data[j] = rect->data[j];
         rect->pict.linesize[j] = rect->linesize[j];
     }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 

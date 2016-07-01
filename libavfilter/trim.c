@@ -16,8 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <float.h>
-#include <math.h>
 #include <stdint.h>
 
 #include "config.h"
@@ -43,9 +41,6 @@ typedef struct TrimContext {
     int64_t duration;
     int64_t start_time, end_time;
     int64_t start_frame, end_frame;
-
-    double duration_dbl;
-    double start_time_dbl, end_time_dbl;
     /*
      * in the link timebase for video,
      * in 1/samplerate for audio
@@ -91,13 +86,6 @@ static int config_input(AVFilterLink *inlink)
     AVRational tb = (inlink->type == AVMEDIA_TYPE_VIDEO) ?
                      inlink->time_base : (AVRational){ 1, inlink->sample_rate };
 
-    if (s->start_time_dbl != DBL_MAX)
-        s->start_time = s->start_time_dbl * 1e6;
-    if (s->end_time_dbl != DBL_MAX)
-        s->end_time = s->end_time_dbl * 1e6;
-    if (s->duration_dbl != 0)
-        s->duration = s->duration_dbl * 1e6;
-
     if (s->start_time != INT64_MAX) {
         int64_t start_pts = av_rescale_q(s->start_time, AV_TIME_BASE_Q, tb);
         if (s->start_pts == AV_NOPTS_VALUE || start_pts < s->start_pts)
@@ -116,22 +104,20 @@ static int config_input(AVFilterLink *inlink)
 
 #define OFFSET(x) offsetof(TrimContext, x)
 #define COMMON_OPTS                                                                                                                                                         \
+    { "start",       "Timestamp of the first frame that "                                                                                                        \
+        "should be passed",                                              OFFSET(start_time),  AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
     { "starti",      "Timestamp of the first frame that "                                                                                                        \
         "should be passed",                                              OFFSET(start_time),  AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
+    { "end",         "Timestamp of the first frame that "                                                                                                        \
+        "should be dropped again",                                       OFFSET(end_time),    AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
     { "endi",        "Timestamp of the first frame that "                                                                                                        \
         "should be dropped again",                                       OFFSET(end_time),    AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
     { "start_pts",   "Timestamp of the first frame that should be "                                                                                                         \
        " passed",                                                        OFFSET(start_pts),   AV_OPT_TYPE_INT64,  { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, FLAGS }, \
     { "end_pts",     "Timestamp of the first frame that should be "                                                                                                         \
         "dropped again",                                                 OFFSET(end_pts),     AV_OPT_TYPE_INT64,  { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, FLAGS }, \
+    { "duration",    "Maximum duration of the output",                   OFFSET(duration),    AV_OPT_TYPE_DURATION, { .i64 = 0 },                    0, INT64_MAX, FLAGS }, \
     { "durationi",   "Maximum duration of the output",                   OFFSET(duration),    AV_OPT_TYPE_DURATION, { .i64 = 0 },                    0, INT64_MAX, FLAGS },
-
-#define COMPAT_OPTS \
-    { "start",       "Timestamp in seconds of the first frame that "                                                                                                        \
-        "should be passed",                                              OFFSET(start_time_dbl),AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX },       -DBL_MAX, DBL_MAX,     FLAGS }, \
-    { "end",         "Timestamp in seconds of the first frame that "                                                                                                        \
-        "should be dropped again",                                       OFFSET(end_time_dbl),  AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX },       -DBL_MAX, DBL_MAX,     FLAGS }, \
-    { "duration",    "Maximum duration of the output in seconds",        OFFSET(duration_dbl),  AV_OPT_TYPE_DOUBLE, { .dbl = 0 },                      0,   DBL_MAX, FLAGS },
 
 
 #if CONFIG_TRIM_FILTER
@@ -197,7 +183,6 @@ static const AVOption trim_options[] = {
         "to the output",                                                 OFFSET(start_frame), AV_OPT_TYPE_INT64,  { .i64 = -1 },       -1, INT64_MAX, FLAGS },
     { "end_frame",   "Number of the first frame that should be dropped "
         "again",                                                         OFFSET(end_frame),   AV_OPT_TYPE_INT64,  { .i64 = INT64_MAX }, 0, INT64_MAX, FLAGS },
-    COMPAT_OPTS
     { NULL }
 };
 #undef FLAGS
@@ -352,7 +337,6 @@ static const AVOption atrim_options[] = {
         "passed to the output",                                          OFFSET(start_sample), AV_OPT_TYPE_INT64,  { .i64 = -1 },       -1, INT64_MAX, FLAGS },
     { "end_sample",   "Number of the first audio sample that should be "
         "dropped again",                                                 OFFSET(end_sample),   AV_OPT_TYPE_INT64,  { .i64 = INT64_MAX }, 0, INT64_MAX, FLAGS },
-    COMPAT_OPTS
     { NULL }
 };
 #undef FLAGS

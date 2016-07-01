@@ -29,10 +29,10 @@
 
 #include "libavutil/version.h"
 
-// When bumping major check Ticket5467, 5421, 5451(compatibility with Chromium) for regressing
-// Also please add any ticket numbers that you belive might regress here
+// Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
+// Also please add any ticket numbers that you belive might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  57
-#define LIBAVFORMAT_VERSION_MINOR  38
+#define LIBAVFORMAT_VERSION_MINOR  41
 #define LIBAVFORMAT_VERSION_MICRO 100
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \

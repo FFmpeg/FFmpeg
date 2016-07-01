@@ -115,6 +115,11 @@ int ffio_init_context(AVIOContext *s,
     s->read_pause = NULL;
     s->read_seek  = NULL;
 
+    s->write_data_type       = NULL;
+    s->ignore_boundary_point = 0;
+    s->current_type          = AVIO_DATA_MARKER_UNKNOWN;
+    s->last_time             = AV_NOPTS_VALUE;
+
     return 0;
 }
 
@@ -137,12 +142,24 @@ AVIOContext *avio_alloc_context(
 
 static void writeout(AVIOContext *s, const uint8_t *data, int len)
 {
-    if (s->write_packet && !s->error) {
-        int ret = s->write_packet(s->opaque, (uint8_t *)data, len);
+    if (!s->error) {
+        int ret = 0;
+        if (s->write_data_type)
+            ret = s->write_data_type(s->opaque, (uint8_t *)data,
+                                     len,
+                                     s->current_type,
+                                     s->last_time);
+        else if (s->write_packet)
+            ret = s->write_packet(s->opaque, (uint8_t *)data, len);
         if (ret < 0) {
             s->error = ret;
         }
     }
+    if (s->current_type == AVIO_DATA_MARKER_SYNC_POINT ||
+        s->current_type == AVIO_DATA_MARKER_BOUNDARY_POINT) {
+        s->current_type = AVIO_DATA_MARKER_UNKNOWN;
+    }
+    s->last_time = AV_NOPTS_VALUE;
     s->writeout_count ++;
     s->pos += len;
 }
@@ -448,6 +465,37 @@ void avio_wb24(AVIOContext *s, unsigned int val)
 {
     avio_wb16(s, (int)val >> 8);
     avio_w8(s, (uint8_t)val);
+}
+
+void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type)
+{
+    if (!s->write_data_type)
+        return;
+    // If ignoring boundary points, just treat it as unknown
+    if (type == AVIO_DATA_MARKER_BOUNDARY_POINT && s->ignore_boundary_point)
+        type = AVIO_DATA_MARKER_UNKNOWN;
+    // Avoid unnecessary flushes if we are already in non-header/trailer
+    // data and setting the type to unknown
+    if (type == AVIO_DATA_MARKER_UNKNOWN &&
+        (s->current_type != AVIO_DATA_MARKER_HEADER &&
+         s->current_type != AVIO_DATA_MARKER_TRAILER))
+        return;
+
+    switch (type) {
+    case AVIO_DATA_MARKER_HEADER:
+    case AVIO_DATA_MARKER_TRAILER:
+        // For header/trailer, ignore a new marker of the same type;
+        // consecutive header/trailer markers can be merged.
+        if (type == s->current_type)
+            return;
+        break;
+    }
+
+    // If we've reached here, we have a new, noteworthy marker.
+    // Flush the previous data and mark the start of the new data.
+    avio_flush(s);
+    s->current_type = type;
+    s->last_time = time;
 }
 
 /* Input stream */

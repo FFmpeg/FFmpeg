@@ -781,9 +781,7 @@ static void free_encoder_ctrl_payloads(mfxEncodeCtrl* enc_ctrl)
     if (enc_ctrl) {
         int i;
         for (i = 0; i < enc_ctrl->NumPayload && i < QSV_MAX_ENC_PAYLOAD; i++) {
-            mfxPayload* pay = enc_ctrl->Payload[i];
-            av_free(enc_ctrl->Payload[i]->Data);
-            av_free(pay);
+            av_free(enc_ctrl->Payload[i]);
         }
         enc_ctrl->NumPayload = 0;
     }

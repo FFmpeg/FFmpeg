@@ -29,8 +29,8 @@
 
 #include "avcodec.h"
 #include "dv_profile.h"
-#include "get_bits.h"
 #include "me_cmp.h"
+#include "vlc.h"
 
 typedef struct DVwork_chunk {
     uint16_t buf_offset;

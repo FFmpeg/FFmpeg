@@ -1496,7 +1496,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
         for (i = 0; i < mxf->edit_units_count; i++) {
             int temporal_offset = 0;
 
-            if (!(mxf->index_entries[i].flags & 0x33)) { // I frame
+            if (!(mxf->index_entries[i].flags & 0x33)) { // I-frame
                 mxf->last_key_index = key_index;
                 key_index = i;
             }
@@ -1523,7 +1523,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
                     mxf->last_key_index = key_index;
             }
 
-            if (!(mxf->index_entries[i].flags & 0x33) && // I frame
+            if (!(mxf->index_entries[i].flags & 0x33) && // I-frame
                 mxf->index_entries[i].flags & 0x40 && !temporal_offset)
                 mxf->index_entries[i].flags |= 0x80; // random access
             avio_w8(pb, mxf->index_entries[i].flags);
@@ -1976,10 +1976,10 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             e->temporal_ref = (pkt->data[i+1]<<2) | (pkt->data[i+2]>>6);
-            if (pict_type == 2) { // P frame
+            if (pict_type == 2) { // P-frame
                 e->flags |= 0x22;
-                sc->closed_gop = 0; // reset closed gop, don't matter anymore
-            } else if (pict_type == 3) { // B frame
+                sc->closed_gop = 0; // reset closed GOP, don't matter anymore
+            } else if (pict_type == 3) { // B-frame
                 if (sc->closed_gop)
                     e->flags |= 0x13; // only backward prediction
                 else
@@ -2447,7 +2447,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->index == 0) {
         if (!mxf->edit_unit_byte_count &&
             (!mxf->edit_units_count || mxf->edit_units_count > EDIT_UNITS_PER_BODY) &&
-            !(ie.flags & 0x33)) { // I frame, Gop start
+            !(ie.flags & 0x33)) { // I-frame, GOP start
             mxf_write_klv_fill(s);
             if ((err = mxf_write_partition(s, 1, 2, body_partition_key, 0)) < 0)
                 return err;

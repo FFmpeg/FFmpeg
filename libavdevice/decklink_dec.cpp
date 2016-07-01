@@ -28,7 +28,11 @@ extern "C" {
 #include "config.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/avutil.h"
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/time.h"
+#include "libavutil/mathematics.h"
 #if CONFIG_LIBZVBI
 #include <libzvbi.h>
 #endif
@@ -236,6 +240,44 @@ ULONG decklink_input_callback::Release(void)
     return (ULONG)m_refCount;
 }
 
+static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
+                           IDeckLinkAudioInputPacket *audioFrame,
+                           int64_t wallclock,
+                           DecklinkPtsSource pts_src,
+                           AVRational time_base, int64_t *initial_pts)
+{
+    int64_t pts = AV_NOPTS_VALUE;
+    BMDTimeValue bmd_pts;
+    BMDTimeValue bmd_duration;
+    HRESULT res = E_INVALIDARG;
+    switch (pts_src) {
+        case PTS_SRC_AUDIO:
+            if (audioFrame)
+                res = audioFrame->GetPacketTime(&bmd_pts, time_base.den);
+            break;
+        case PTS_SRC_VIDEO:
+            if (videoFrame)
+                res = videoFrame->GetStreamTime(&bmd_pts, &bmd_duration, time_base.den);
+            break;
+        case PTS_SRC_REFERENCE:
+            if (videoFrame)
+                res = videoFrame->GetHardwareReferenceTimestamp(time_base.den, &bmd_pts, &bmd_duration);
+            break;
+        case PTS_SRC_WALLCLOCK:
+            pts = av_rescale_q(wallclock, AV_TIME_BASE_Q, time_base);
+            break;
+    }
+    if (res == S_OK)
+        pts = bmd_pts / time_base.num;
+
+    if (pts != AV_NOPTS_VALUE && *initial_pts == AV_NOPTS_VALUE)
+        *initial_pts = pts;
+    if (*initial_pts != AV_NOPTS_VALUE)
+        pts -= *initial_pts;
+
+    return pts;
+}
+
 HRESULT decklink_input_callback::VideoInputFrameArrived(
     IDeckLinkVideoInputFrame *videoFrame, IDeckLinkAudioInputPacket *audioFrame)
 {
@@ -243,8 +285,11 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
     void *audioFrameBytes;
     BMDTimeValue frameTime;
     BMDTimeValue frameDuration;
+    int64_t wallclock = 0;
 
     ctx->frameCount++;
+    if (ctx->audio_pts_source == PTS_SRC_WALLCLOCK || ctx->video_pts_source == PTS_SRC_WALLCLOCK)
+        wallclock = av_gettime_relative();
 
     // Handle Video Frame
     if (videoFrame) {
@@ -291,13 +336,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             no_video = 0;
         }
 
-        pkt.pts = frameTime / ctx->video_st->time_base.num;
-
-        if (initial_video_pts == AV_NOPTS_VALUE) {
-            initial_video_pts = pkt.pts;
-        }
-
-        pkt.pts -= initial_video_pts;
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts);
         pkt.dts = pkt.pts;
 
         pkt.duration = frameDuration;
@@ -367,13 +406,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (16 / 8);
         audioFrame->GetBytes(&audioFrameBytes);
         audioFrame->GetPacketTime(&audio_pts, ctx->audio_st->time_base.den);
-        pkt.pts = audio_pts / ctx->audio_st->time_base.num;
-
-        if (initial_audio_pts == AV_NOPTS_VALUE) {
-            initial_audio_pts = pkt.pts;
-        }
-
-        pkt.pts -= initial_audio_pts;
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts);
         pkt.dts = pkt.pts;
 
         //fprintf(stderr,"Audio Frame size %d ts %d\n", pkt.size, pkt.pts);
@@ -419,11 +452,7 @@ av_cold int ff_decklink_read_close(AVFormatContext *avctx)
         ctx->dli->DisableAudioInput();
     }
 
-    if (ctx->dli)
-        ctx->dli->Release();
-    if (ctx->dl)
-        ctx->dl->Release();
-
+    ff_decklink_cleanup(avctx);
     avpacket_queue_end(&ctx->queue);
 
     av_freep(&cctx->ctx);
@@ -435,14 +464,12 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx;
-    IDeckLinkDisplayModeIterator *itermode;
-    IDeckLinkIterator *iter;
-    IDeckLink *dl = NULL;
     AVStream *st;
     HRESULT result;
     char fname[1024];
     char *tmp;
     int mode_num = 0;
+    int ret;
 
     ctx = (struct decklink_ctx *) av_mallocz(sizeof(struct decklink_ctx));
     if (!ctx)
@@ -451,6 +478,13 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->list_formats = cctx->list_formats;
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
+    ctx->duplex_mode  = cctx->duplex_mode;
+    if (cctx->video_input > 0 && (unsigned int)cctx->video_input < FF_ARRAY_ELEMS(decklink_video_connection_map))
+        ctx->video_input = decklink_video_connection_map[cctx->video_input];
+    if (cctx->audio_input > 0 && (unsigned int)cctx->audio_input < FF_ARRAY_ELEMS(decklink_audio_connection_map))
+        ctx->audio_input = decklink_audio_connection_map[cctx->audio_input];
+    ctx->audio_pts_source = cctx->audio_pts_source;
+    ctx->video_pts_source = cctx->video_pts_source;
     cctx->ctx = ctx;
 
 #if !CONFIG_LIBZVBI
@@ -471,12 +505,6 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             return AVERROR(EINVAL);
     }
 
-    iter = CreateDeckLinkIteratorInstance();
-    if (!iter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
-        return AVERROR(EIO);
-    }
-
     /* List available devices. */
     if (ctx->list_devices) {
         ff_decklink_list_devices(avctx);
@@ -490,59 +518,38 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         *tmp = 0;
     }
 
-    /* Open device. */
-    while (iter->Next(&dl) == S_OK) {
-        const char *displayName;
-        ff_decklink_get_display_name(dl, &displayName);
-        if (!strcmp(fname, displayName)) {
-            av_free((void *) displayName);
-            ctx->dl = dl;
-            break;
-        }
-        av_free((void *) displayName);
-        dl->Release();
-    }
-    iter->Release();
-    if (!ctx->dl) {
-        av_log(avctx, AV_LOG_ERROR, "Could not open '%s'\n", fname);
-        return AVERROR(EIO);
-    }
+    ret = ff_decklink_init_device(avctx, fname);
+    if (ret < 0)
+        return ret;
 
     /* Get input device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkInput, (void **) &ctx->dli) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
                avctx->filename);
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error;
     }
 
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx, DIRECTION_IN);
-        ctx->dli->Release();
-        ctx->dl->Release();
-        return AVERROR_EXIT;
-    }
-
-    if (ctx->dli->GetDisplayModeIterator(&itermode) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR_EXIT;
+        goto error;
     }
 
     if (mode_num > 0) {
         if (ff_decklink_set_format(avctx, DIRECTION_IN, mode_num) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not set mode %d for %s\n", mode_num, fname);
+            ret = AVERROR(EIO);
             goto error;
         }
     }
-
-    itermode->Release();
 
     /* Setup streams. */
     st = avformat_new_stream(avctx, NULL);
     if (!st) {
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+        ret = AVERROR(ENOMEM);
         goto error;
     }
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
@@ -555,6 +562,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st = avformat_new_stream(avctx, NULL);
     if (!st) {
         av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+        ret = AVERROR(ENOMEM);
         goto error;
     }
     st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
@@ -563,15 +571,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     st->time_base.den      = ctx->bmd_tb_den;
     st->time_base.num      = ctx->bmd_tb_num;
-    st->codecpar->bit_rate    = av_image_get_buffer_size((AVPixelFormat)st->codecpar->format, ctx->bmd_width, ctx->bmd_height, 1) * 1/av_q2d(st->time_base) * 8;
 
     if (cctx->v210) {
         st->codecpar->codec_id    = AV_CODEC_ID_V210;
         st->codecpar->codec_tag   = MKTAG('V', '2', '1', '0');
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 64, st->time_base.den, st->time_base.num * 3);
     } else {
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
         st->codecpar->format      = AV_PIX_FMT_UYVY422;
         st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 16, st->time_base.den, st->time_base.num);
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
@@ -582,6 +591,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         st = avformat_new_stream(avctx, NULL);
         if (!st) {
             av_log(avctx, AV_LOG_ERROR, "Cannot add stream\n");
+            ret = AVERROR(ENOMEM);
             goto error;
         }
         st->codecpar->codec_type  = AVMEDIA_TYPE_SUBTITLE;
@@ -597,6 +607,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable audio input\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
@@ -606,6 +617,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable video input\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
@@ -613,17 +625,15 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     if (decklink_start_input (avctx) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot start input stream\n");
+        ret = AVERROR(EIO);
         goto error;
     }
 
     return 0;
 
 error:
-
-    ctx->dli->Release();
-    ctx->dl->Release();
-
-    return AVERROR(EIO);
+    ff_decklink_cleanup(avctx);
+    return ret;
 }
 
 int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)

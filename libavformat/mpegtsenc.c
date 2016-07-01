@@ -1,5 +1,5 @@
 /*
- * MPEG2 transport stream (aka DVB) muxer
+ * MPEG-2 transport stream (aka DVB) muxer
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -38,6 +38,8 @@
 
 /* write DVB SI sections */
 
+#define DVB_PRIVATE_NETWORK_START 0xff01
+
 /*********************************************/
 /* mpegts section writer */
 
@@ -49,7 +51,7 @@ typedef struct MpegTSSection {
 } MpegTSSection;
 
 typedef struct MpegTSService {
-    MpegTSSection pmt; /* MPEG2 pmt table context */
+    MpegTSSection pmt; /* MPEG-2 PMT table context */
     int sid;           /* service ID */
     char *name;
     char *provider_name;
@@ -72,8 +74,8 @@ enum {
 };
 typedef struct MpegTSWrite {
     const AVClass *av_class;
-    MpegTSSection pat; /* MPEG2 pat table */
-    MpegTSSection sdt; /* MPEG2 sdt table context */
+    MpegTSSection pat; /* MPEG-2 PAT table */
+    MpegTSSection sdt; /* MPEG-2 SDT table context */
     MpegTSService **services;
     int sdt_packet_count;
     int sdt_packet_period;
@@ -1002,7 +1004,7 @@ fail:
     return ret;
 }
 
-/* send SDT, PAT and PMT tables regulary */
+/* send SDT, PAT and PMT tables regularly */
 static void retransmit_si_info(AVFormatContext *s, int force_pat, int64_t dts)
 {
     MpegTSWrite *ts = s->priv_data;
@@ -1802,7 +1804,7 @@ static const AVOption options[] = {
       { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_original_network_id", "Set original_network_id field.",
       offsetof(MpegTSWrite, original_network_id), AV_OPT_TYPE_INT,
-      { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = DVB_PRIVATE_NETWORK_START }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_service_id", "Set service_id field.",
       offsetof(MpegTSWrite, service_id), AV_OPT_TYPE_INT,
       { .i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM },

@@ -36,8 +36,7 @@
 #include "pixblockdsp.h"
 #include "dnxhdenc.h"
 
-
-// The largest value that will not lead to overflow for 10bit samples.
+// The largest value that will not lead to overflow for 10-bit samples.
 #define DNX10BIT_QMAT_SHIFT 18
 #define RC_VARIANCE 1 // use variance or ssd for fast rc
 #define LAMBDA_FRAC_BITS 10

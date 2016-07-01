@@ -55,7 +55,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
     { AV_CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
     { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','2') },
-    { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','C') },
+    { AV_CODEC_ID_QDMC,            MKTAG('Q','D','M','C') },
   /* currently unsupported codecs */
   /*{ AC-3 over S/PDIF          MKTAG('c','a','c','3') },*/
   /*{ MPEG4CELP                 MKTAG('c','e','l','p') },*/

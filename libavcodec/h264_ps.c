@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 parameter set decoding.
+ * H.264 / AVC / MPEG-4 part10 parameter set decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -265,8 +265,9 @@ static void decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
         }
 }
 
-static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
-                                    PPS *pps, int is_sps,
+/* returns non zero if the provided SPS scaling matrix has been filled */
+static int decode_scaling_matrices(GetBitContext *gb, const SPS *sps,
+                                    const PPS *pps, int is_sps,
                                     uint8_t(*scaling_matrix4)[16],
                                     uint8_t(*scaling_matrix8)[64])
 {
@@ -277,8 +278,9 @@ static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
         fallback_sps ? sps->scaling_matrix8[0] : default_scaling8[0],
         fallback_sps ? sps->scaling_matrix8[3] : default_scaling8[1]
     };
+    int ret = 0;
     if (get_bits1(gb)) {
-        sps->scaling_matrix_present |= is_sps;
+        ret = is_sps;
         decode_scaling_list(gb, scaling_matrix4[0], 16, default_scaling4[0], fallback[0]);        // Intra, Y
         decode_scaling_list(gb, scaling_matrix4[1], 16, default_scaling4[0], scaling_matrix4[0]); // Intra, Cr
         decode_scaling_list(gb, scaling_matrix4[2], 16, default_scaling4[0], scaling_matrix4[1]); // Intra, Cb
@@ -296,6 +298,25 @@ static void decode_scaling_matrices(GetBitContext *gb, SPS *sps,
             }
         }
     }
+
+    return ret;
+}
+
+void ff_h264_ps_uninit(H264ParamSets *ps)
+{
+    int i;
+
+    for (i = 0; i < MAX_SPS_COUNT; i++)
+        av_buffer_unref(&ps->sps_list[i]);
+
+    for (i = 0; i < MAX_PPS_COUNT; i++)
+        av_buffer_unref(&ps->pps_list[i]);
+
+    av_buffer_unref(&ps->sps_ref);
+    av_buffer_unref(&ps->pps_ref);
+
+    ps->pps = NULL;
+    ps->sps = NULL;
 }
 
 int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
@@ -384,7 +405,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
             goto fail;
         }
         sps->transform_bypass = get_bits1(gb);
-        decode_scaling_matrices(gb, sps, NULL, 1,
+        sps->scaling_matrix_present |= decode_scaling_matrices(gb, sps, NULL, 1,
                                 sps->scaling_matrix4, sps->scaling_matrix8);
     } else {
         sps->chroma_format_idc = 1;
@@ -443,19 +464,20 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     sps->gaps_in_frame_num_allowed_flag = get_bits1(gb);
     sps->mb_width                       = get_ue_golomb(gb) + 1;
     sps->mb_height                      = get_ue_golomb(gb) + 1;
-    if ((unsigned)sps->mb_width  >= INT_MAX / 16 ||
-        (unsigned)sps->mb_height >= INT_MAX / 16 ||
-        av_image_check_size(16 * sps->mb_width,
-                            16 * sps->mb_height, 0, avctx)) {
-        av_log(avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
-        goto fail;
-    }
 
     sps->frame_mbs_only_flag = get_bits1(gb);
     if (!sps->frame_mbs_only_flag)
         sps->mb_aff = get_bits1(gb);
     else
         sps->mb_aff = 0;
+
+    if ((unsigned)sps->mb_width  >= INT_MAX / 16 ||
+        (unsigned)sps->mb_height >= INT_MAX / (16 * (2 - sps->frame_mbs_only_flag)) ||
+        av_image_check_size(16 * sps->mb_width,
+                            16 * sps->mb_height * (2 - sps->frame_mbs_only_flag), 0, avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
+        goto fail;
+    }
 
     sps->direct_8x8_inference_flag = get_bits1(gb);
 
@@ -690,7 +712,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
                                          H264ParamSets *ps, int bit_length)
 {
     AVBufferRef *pps_buf;
-    SPS *sps;
+    const SPS *sps;
     unsigned int pps_id = get_ue_golomb(gb);
     PPS *pps;
     int qp_bd_offset;
@@ -721,7 +743,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    sps = (SPS*)ps->sps_list[pps->sps_id]->data;
+    sps = (const SPS*)ps->sps_list[pps->sps_id]->data;
     if (sps->bit_depth_luma > 14) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid luma bit depth=%d\n",

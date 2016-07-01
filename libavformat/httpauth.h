@@ -62,7 +62,7 @@ typedef struct HTTPAuthState {
      */
     char realm[200];
     /**
-     * The parameters specifiec to digest authentication.
+     * The parameters specific to digest authentication.
      */
     DigestParams digest_params;
     /**

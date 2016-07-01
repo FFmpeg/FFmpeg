@@ -22,7 +22,7 @@
 
 /**
  * @file
- * @brief MPEG4 / RTP Code
+ * @brief MPEG-4 / RTP Code
  * @author Fabrice Bellard
  * @author Romain Degez
  */

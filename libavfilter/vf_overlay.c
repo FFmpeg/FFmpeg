@@ -108,7 +108,7 @@ enum OverlayFormat {
 
 typedef struct OverlayContext {
     const AVClass *class;
-    int x, y;                   ///< position of overlayed picture
+    int x, y;                   ///< position of overlaid picture
 
     int allow_packed_rgb;
     uint8_t main_is_packed_rgb;

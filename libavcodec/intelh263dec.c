@@ -39,12 +39,12 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     }
     s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
 
-    if (check_marker(&s->gb, "after picture_number") != 1) {
+    if (check_marker(s->avctx, &s->gb, "after picture_number") != 1) {
         return -1;      /* marker */
     }
     if (get_bits1(&s->gb) != 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Bad H263 id\n");
-        return -1;      /* h263 id */
+        av_log(s->avctx, AV_LOG_ERROR, "Bad H.263 id\n");
+        return -1;      /* H.263 id */
     }
     skip_bits1(&s->gb);         /* split screen off */
     skip_bits1(&s->gb);         /* camera  off */
@@ -52,7 +52,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 
     format = get_bits(&s->gb, 3);
     if (format == 0 || format == 6) {
-        av_log(s->avctx, AV_LOG_ERROR, "Intel H263 free format not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Intel H.263 free format not supported\n");
         return -1;
     }
     s->h263_plus = 0;
@@ -77,7 +77,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     } else {
         format = get_bits(&s->gb, 3);
         if(format == 0 || format == 7){
-            av_log(s->avctx, AV_LOG_ERROR, "Wrong Intel H263 format\n");
+            av_log(s->avctx, AV_LOG_ERROR, "Wrong Intel H.263 format\n");
             return -1;
         }
         if(get_bits(&s->gb, 2))
@@ -95,7 +95,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     if(format == 6){
         int ar = get_bits(&s->gb, 4);
         skip_bits(&s->gb, 9); // display width
-        check_marker(&s->gb, "in dimensions");
+        check_marker(s->avctx, &s->gb, "in dimensions");
         skip_bits(&s->gb, 9); // display height
         if(ar == 15){
             s->avctx->sample_aspect_ratio.num = get_bits(&s->gb, 8); // aspect ratio - width

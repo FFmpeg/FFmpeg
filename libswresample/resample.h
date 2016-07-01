@@ -40,9 +40,6 @@ typedef struct ResampleContext {
     int frac;
     int src_incr;
     int compensation_distance;
-    /* TODO remove phase_shift and phase_mask */
-    attribute_deprecated int phase_shift;
-    attribute_deprecated int phase_mask;
     int phase_count;
     int linear;
     enum SwrFilterType filter_type;

@@ -417,7 +417,7 @@ av_cold void ff_vc1_init_transposed_scantables(VC1Context *v)
 
 /** Initialize a VC1/WMV3 decoder
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
- * @todo TODO: Decypher remaining bits in extra_data
+ * @todo TODO: Decipher remaining bits in extra_data
  */
 static av_cold int vc1_decode_init(AVCodecContext *avctx)
 {

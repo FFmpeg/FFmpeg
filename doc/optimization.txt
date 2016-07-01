@@ -7,7 +7,7 @@ If you plan to do non-x86 architecture specific optimizations (SIMD normally),
 then take a look in the x86/ directory, as most important functions are
 already optimized for MMX.
 
-If you want to do x86 optimizations then you can either try to finetune the
+If you want to do x86 optimizations then you can either try to fine-tune the
 stuff in the x86 directory or find some other functions in the C source to
 optimize, but there aren't many left.
 
@@ -163,7 +163,7 @@ general x86 registers (e.g. eax) as well as XMM registers. This last one is
 particularly important on Win64, where xmm6-15 are callee-save, and not
 restoring their contents leads to undefined results. In external asm (e.g.
 yasm), you do this by using:
-cglobal functon_name, num_args, num_regs, num_xmm_regs
+cglobal function_name, num_args, num_regs, num_xmm_regs
 In inline asm, you specify clobbered registers at the end of your asm:
 __asm__(".." ::: "%eax").
 If gcc is not set to support sse (-msse) it will not accept xmm registers

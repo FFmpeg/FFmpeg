@@ -248,7 +248,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     AVCodecParameters *par = st->codecpar;
     char buf[256];
     int i;
-    AVCodec *c;
+    const AVCodecDescriptor *desc;
     const char *c_name;
 
     /* See if we can handle this kind of payload.
@@ -274,9 +274,9 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
             par->codec_id = ff_rtp_codec_id(buf, par->codec_type);
     }
 
-    c = avcodec_find_decoder(par->codec_id);
-    if (c && c->name)
-        c_name = c->name;
+    desc = avcodec_descriptor_get(par->codec_id);
+    if (desc && desc->name)
+        c_name = desc->name;
     else
         c_name = "(null)";
 
@@ -573,6 +573,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 s1->seen_fmtp = 1;
                 av_strlcpy(s1->delayed_fmtp, buf, sizeof(s1->delayed_fmtp));
             }
+        } else if (av_strstart(p, "ssrc:", &p) && s->nb_streams > 0) {
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+            get_word(buf1, sizeof(buf1), &p);
+            rtsp_st->ssrc = strtoll(buf1, NULL, 10);
         } else if (av_strstart(p, "range:", &p)) {
             int64_t start, end;
 
@@ -831,6 +835,8 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
     } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RTP) {
+        RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
+        rtpctx->ssrc = rtsp_st->ssrc;
         if (rtsp_st->dynamic_handler) {
             ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
                                               rtsp_st->dynamic_protocol_context,

@@ -599,7 +599,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
 }
 
 /*
- * Output the mpeg audio layer 2 frame. Note how the code is small
+ * Output the MPEG audio layer 2 frame. Note how the code is small
  * compared to other encoders :-)
  */
 static void encode_frame(MpegAudioContext *s,
@@ -614,7 +614,7 @@ static void encode_frame(MpegAudioContext *s,
     /* header */
 
     put_bits(p, 12, 0xfff);
-    put_bits(p, 1, 1 - s->lsf); /* 1 = mpeg1 ID, 0 = mpeg2 lsf ID */
+    put_bits(p, 1, 1 - s->lsf); /* 1 = MPEG-1 ID, 0 = MPEG-2 lsf ID */
     put_bits(p, 2, 4-2);  /* layer 2 */
     put_bits(p, 1, 1); /* no error protection */
     put_bits(p, 4, s->bitrate_index);

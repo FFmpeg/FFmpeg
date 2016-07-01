@@ -265,7 +265,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
     } else {
         pkt->mode = OPUS_MODE_CELT;
         pkt->bandwidth = (pkt->config - 16) >> 2;
-        /* skip mediumband */
+        /* skip medium band */
         if (pkt->bandwidth)
             pkt->bandwidth++;
     }
@@ -397,7 +397,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        /* check that we din't see this index yet */
+        /* check that we did not see this index yet */
         map->copy = 0;
         for (j = 0; j < i; j++)
             if (channel_map[channel_reorder(channels, j)] == idx) {

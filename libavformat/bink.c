@@ -264,7 +264,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pts = bink->audio_pts[bink->current_track - 1];
 
             /* Each audio packet reports the number of decompressed samples
-               (in bytes). We use this value to calcuate the audio PTS */
+               (in bytes). We use this value to calculate the audio PTS */
             if (pkt->size >= 4)
                 bink->audio_pts[bink->current_track -1] +=
                     AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codecpar->channels);

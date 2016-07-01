@@ -23,8 +23,8 @@ fate-rdft-float: $(FATE_RDFT-yes)
 
 FATE_FFT_ALL = $(FATE_DCT-yes) $(FATE_FFT-yes) $(FATE_MDCT-yes) $(FATE_RDFT-yes)
 
-$(FATE_FFT_ALL): libavcodec/fft-test$(EXESUF)
-$(FATE_FFT_ALL): CMD = run libavcodec/fft-test $(CPUFLAGS:%=-c%) $(ARGS)
+$(FATE_FFT_ALL): libavcodec/tests/fft$(EXESUF)
+$(FATE_FFT_ALL): CMD = run libavcodec/tests/fft $(CPUFLAGS:%=-c%) $(ARGS)
 
 define DEF_FFT_FIXED
 FATE_FFT_FIXED-$(CONFIG_FFT)   += fate-fft-fixed-$(1)  fate-ifft-fixed-$(1)
@@ -43,8 +43,8 @@ fate-mdct-fixed: $(FATE_MDCT_FIXED-yes)
 
 FATE_FFT_FIXED_ALL = $(FATE_FFT_FIXED-yes) $(FATE_MDCT_FIXED-yes)
 
-$(FATE_FFT_FIXED_ALL): libavcodec/fft-fixed-test$(EXESUF)
-$(FATE_FFT_FIXED_ALL): CMD = run libavcodec/fft-fixed-test $(CPUFLAGS:%=-c%) $(ARGS)
+$(FATE_FFT_FIXED_ALL): libavcodec/tests/fft-fixed$(EXESUF)
+$(FATE_FFT_FIXED_ALL): CMD = run libavcodec/tests/fft-fixed $(CPUFLAGS:%=-c%) $(ARGS)
 
 $(FATE_FFT_ALL) $(FATE_FFT_FIXED_ALL): REF = /dev/null
 
@@ -60,13 +60,13 @@ endef
 
 $(foreach N, 4 5 6 7 8 9 10 11 12, $(eval $(call DEF_FFT_FIXED32,$(N))))
 
-fate-fft-fixed32-test: $(FATE_FFT_FIXED32)
-$(FATE_FFT_FIXED32): libavcodec/fft-fixed32-test$(EXESUF)
-$(FATE_FFT_FIXED32): CMD = run libavcodec/fft-fixed32-test $(CPUFLAGS:%=-c%) $(ARGS)
+fate-fft-fixed32: $(FATE_FFT_FIXED32)
+$(FATE_FFT_FIXED32): libavcodec/tests/fft-fixed32$(EXESUF)
+$(FATE_FFT_FIXED32): CMD = run libavcodec/tests/fft-fixed32 $(CPUFLAGS:%=-c%) $(ARGS)
 $(FATE_FFT_FIXED32): REF = /dev/null
 
 fate-dct: fate-dct-float
-fate-fft: fate-fft-float fate-fft-fixed fate-fft-fixed32-test
+fate-fft: fate-fft-float fate-fft-fixed fate-fft-fixed32
 fate-mdct: fate-mdct-float fate-mdct-fixed
 fate-rdft: fate-rdft-float
 

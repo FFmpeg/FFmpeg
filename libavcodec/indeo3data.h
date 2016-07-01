@@ -234,7 +234,7 @@
 
 
 /**
- * Pack two delta values (a,b) into one 16bit word
+ * Pack two delta values (a,b) into one 16-bit word
  * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN
@@ -281,7 +281,7 @@ static const int16_t delta_tab_3_5[79]  = { TAB_3_5 };
 #undef PD
 
 /**
- * Pack four delta values (a,a,b,b) into one 32bit word
+ * Pack four delta values (a,a,b,b) into one 32-bit word
  * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN

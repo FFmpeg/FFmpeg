@@ -45,7 +45,7 @@
 #define END_CHECK(end) ""
 #else
 #define END_CHECK(end) \
-        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "cmp    "end"       , %%"FF_REG_c"                              \n\t"\
         "jge    1f                                                      \n\t"
 #endif
 
@@ -62,7 +62,7 @@
         "sub    "tmp"       , "low"                        \n\t"
 #else /* HAVE_FAST_CMOV */
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
-/* P4 Prescott has crappy cmov,sbb,64bit shift so avoid them */ \
+/* P4 Prescott has crappy cmov,sbb,64-bit shift so avoid them */ \
         "sub    "low"       , "tmp"                        \n\t"\
         "sar    $31         , "tmp"                        \n\t"\
         "sub    %%ecx       , "range"                      \n\t"\
@@ -92,11 +92,11 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         "jnz    2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
         END_CHECK(end)\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c") , "tmp"                                     \n\t"\
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -153,11 +153,11 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
         END_CHECK(end)\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -203,7 +203,7 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
           "i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
           ,"1"(c->low), "2"(c->range)
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
     return bit & 1;
 }
@@ -240,7 +240,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "addl          %%edx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
 #endif
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
@@ -281,7 +281,7 @@ static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
         "addl          %%ecx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
 

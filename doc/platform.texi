@@ -63,7 +63,7 @@ bash ./configure
 @section Darwin (Mac OS X, iPhone)
 
 The toolchain provided with Xcode is sufficient to build the basic
-unacelerated code.
+unaccelerated code.
 
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{https://github.com/FFmpeg/gas-preprocessor} or
@@ -144,7 +144,7 @@ pacman -S make pkgconf diffutils
 pacman -S mingw-w64-x86_64-yasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL
 @end example
 
-To target 32bit replace the @code{x86_64} with @code{i686} in the command above.
+To target 32 bits replace @code{x86_64} with @code{i686} in the command above.
 
 @section Microsoft Visual C++ or Intel C++ Compiler for Windows
 

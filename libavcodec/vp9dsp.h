@@ -47,7 +47,7 @@ typedef struct VP9DSPContext {
      */
     // FIXME(rbultje) maybe replace left/top pointers with HAVE_TOP/
     // HAVE_LEFT/HAVE_TOPRIGHT flags instead, and then handle it in-place?
-    // also needs to fit in with what h264/vp8/etc do
+    // also needs to fit in with what H.264/VP8/etc do
     void (*intra_pred[N_TXFM_SIZES][N_INTRA_PRED_MODES])(uint8_t *dst,
                                                          ptrdiff_t stride,
                                                          const uint8_t *left,

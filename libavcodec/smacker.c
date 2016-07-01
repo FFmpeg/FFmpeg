@@ -32,13 +32,13 @@
 #include <stdlib.h>
 
 #include "libavutil/channel_layout.h"
-#include "avcodec.h"
-#include "internal.h"
-#include "mathops.h"
 
 #define BITSTREAM_READER_LE
-#include "get_bits.h"
+#include "avcodec.h"
 #include "bytestream.h"
+#include "get_bits.h"
+#include "internal.h"
+#include "mathops.h"
 
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000

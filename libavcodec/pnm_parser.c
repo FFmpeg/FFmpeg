@@ -66,6 +66,8 @@ retry:
         }
 #endif
         next = END_NOT_FOUND;
+    } else if (pnmctx.type < 4) {
+        next = END_NOT_FOUND;
     } else {
         next = pnmctx.bytestream - pnmctx.bytestream_start
                + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);

@@ -354,7 +354,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 p_frame_output->key_frame = 1;
 
             /* Parse the coded frame number from the bitstream. Bytes 14
-             * through 17 represesent the frame number. */
+             * through 17 represent the frame number. */
             p_frame_output->frame_num = AV_RB32(enc_buf->data + 13);
 
             ff_schro_queue_push_back(&p_schro_params->enc_frame_queue,

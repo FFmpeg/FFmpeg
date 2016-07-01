@@ -70,7 +70,7 @@ typedef struct IMCChannel {
     int sumLenArr[BANDS];      ///< bits for all coeffs in band
     int skipFlagRaw[BANDS];    ///< skip flags are stored in raw form or not
     int skipFlagBits[BANDS];   ///< bits used to code skip flags
-    int skipFlagCount[BANDS];  ///< skipped coeffients per band
+    int skipFlagCount[BANDS];  ///< skipped coefficients per band
     int skipFlags[COEFFS];     ///< skip coefficient decoding or not
     int codewords[COEFFS];     ///< raw codewords read from bitstream
 

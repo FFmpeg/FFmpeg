@@ -451,7 +451,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
                tmpstr, rt->app);
     ff_rtmp_packet_destroy(&pkt);
 
-    // Send Window Acknowledgement Size (as defined in speficication)
+    // Send Window Acknowledgement Size (as defined in specification)
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
                                      RTMP_PT_SERVER_BW, 0, 4)) < 0)
         return ret;
@@ -581,7 +581,7 @@ static int gen_release_stream(URLContext *s, RTMPContext *rt)
 
 /**
  * Generate 'FCPublish' call and send it to the server. It should make
- * the server preapare for receiving media streams.
+ * the server prepare for receiving media streams.
  */
 static int gen_fcpublish_stream(URLContext *s, RTMPContext *rt)
 {
@@ -2000,7 +2000,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
  * successful response, we will return set the value to number (otherwise number
  * will not be changed).
  *
- * @return 0 if reading the value succeeds, negative value otherwiss
+ * @return 0 if reading the value succeeds, negative value otherwise
  */
 static int read_number_result(RTMPPacket *pkt, double *number)
 {
@@ -2023,7 +2023,7 @@ static int read_number_result(RTMPPacket *pkt, double *number)
     // Value 3/4: Null
     if (ff_amf_read_null(&gbc))
         return AVERROR_INVALIDDATA;
-    // Value 4/4: The resonse as AMF_NUMBER
+    // Value 4/4: The response as AMF_NUMBER
     if (ff_amf_read_number(&gbc, &numbuffer))
         return AVERROR_INVALIDDATA;
     else
@@ -2514,7 +2514,7 @@ static int rtmp_close(URLContext *h)
  */
 static int inject_fake_duration_metadata(RTMPContext *rt)
 {
-    // We need to insert the metdata packet directly after the FLV
+    // We need to insert the metadata packet directly after the FLV
     // header, i.e. we need to move all other already read data by the
     // size of our fake metadata packet.
 

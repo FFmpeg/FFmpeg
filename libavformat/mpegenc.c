@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 muxer
+ * MPEG-1/2 muxer
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -151,7 +151,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,
         put_bits(&pb, 1, 1);
     } else {
         put_bits(&pb, 1, 0); /* variable bitrate */
-        put_bits(&pb, 1, 0); /* non constrainted bit stream */
+        put_bits(&pb, 1, 0); /* nonconstrained bitstream */
     }
 
     if (s->is_vcd || s->is_dvd) {
@@ -1190,7 +1190,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
             break;
     }
 
-    /* End header according to MPEG1 systems standard. We do not write
+    /* End header according to MPEG-1 systems standard. We do not write
      * it as it is usually not needed by decoders and because it
      * complicates MPEG stream concatenation. */
     // avio_wb32(ctx->pb, ISO_11172_END_CODE);

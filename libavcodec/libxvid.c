@@ -1,5 +1,5 @@
 /*
- * Interface to xvidcore for mpeg4 encoding
+ * Interface to xvidcore for MPEG-4 encoding
  * Copyright (c) 2004 Adam Thayer <krevnik@comcast.net>
  *
  * This file is part of FFmpeg.
@@ -84,7 +84,7 @@ struct xvid_context {
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
     int gmc;
     int me_quality;                /**< Motion estimation quality. 0: fast 6: best. */
-    int mpeg_quant;                /**< Quantization type. 0: H263, 1: MPEG */
+    int mpeg_quant;                /**< Quantization type. 0: H.263, 1: MPEG */
 };
 
 /**
@@ -145,7 +145,7 @@ static int xvid_ff_2pass_create(xvid_plg_create_t *param, void **handle)
  * Destroy the two-pass plugin context.
  *
  * @param ref Context pointer for the plugin
- * @param param Destrooy context
+ * @param param Destroy context
  * @return Returns 0, success guaranteed
  */
 static int xvid_ff_2pass_destroy(struct xvid_context *ref,
@@ -691,7 +691,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     avctx->extradata      = NULL;
     avctx->extradata_size = 0;
     if (xvid_flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-        /* In this case, we are claiming to be MPEG4 */
+        /* In this case, we are claiming to be MPEG-4 */
         x->quicktime_format = 1;
         avctx->codec_id     = AV_CODEC_ID_MPEG4;
     } else {

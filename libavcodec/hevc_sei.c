@@ -122,7 +122,7 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
         if (!s->quincunx_subsampling && s->frame_packing_arrangement_type != 5)
             skip_bits(gb, 16);  // frame[01]_grid_position_[xy]
         skip_bits(gb, 8);       // frame_packing_arrangement_reserved_byte
-        skip_bits1(gb);         // frame_packing_arrangement_persistance_flag
+        skip_bits1(gb);         // frame_packing_arrangement_persistence_flag
     }
     skip_bits1(gb);             // upsampled_aspect_ratio_flag
     return 0;

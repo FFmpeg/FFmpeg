@@ -215,6 +215,10 @@ typedef struct VAAPIEncodeType {
                                  VAAPIEncodePicture *pic,
                                  int index, int *type,
                                  char *data, size_t *data_len);
+    int    (*write_extra_header)(AVCodecContext *avctx,
+                                 VAAPIEncodePicture *pic,
+                                 int index, int *type,
+                                 char *data, size_t *data_len);
 } VAAPIEncodeType;
 
 

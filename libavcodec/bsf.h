@@ -22,7 +22,7 @@
 #include "avcodec.h"
 
 /**
- * Called by the biststream filters to get the next packet for filtering.
+ * Called by the bitstream filters to get the next packet for filtering.
  * The filter is responsible for either freeing the packet or passing it to the
  * caller.
  */

@@ -25,17 +25,18 @@
  * G.723.1 compatible decoder
  */
 
-#define BITSTREAM_READER_LE
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "avcodec.h"
-#include "get_bits.h"
+
+#define BITSTREAM_READER_LE
 #include "acelp_vectors.h"
+#include "avcodec.h"
 #include "celp_filters.h"
 #include "celp_math.h"
-#include "g723_1.h"
+#include "get_bits.h"
 #include "internal.h"
+#include "g723_1.h"
 
 #define CNG_RANDOM_SEED 12345
 
@@ -466,7 +467,7 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
 }
 
 /**
- * Peform residual interpolation based on frame classification.
+ * Perform residual interpolation based on frame classification.
  *
  * @param buf   decoded excitation vector
  * @param out   output vector
@@ -914,7 +915,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
-            /* Peform pitch postfiltering */
+            /* Perform pitch postfiltering */
             if (p->postfilter) {
                 i = PITCH_MAX;
                 for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)

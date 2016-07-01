@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
@@ -122,8 +121,8 @@ typedef struct ASFContext {
 
     int stream_index; // from packet header, for the subpayload case
 
-    // packet parameteres
-    uint64_t sub_header_offset; // offset of subplayload header
+    // packet parameters
+    uint64_t sub_header_offset; // offset of subpayload header
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0

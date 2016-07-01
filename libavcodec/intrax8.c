@@ -215,7 +215,7 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
         int t, l;
         if (i < 0) {
             *level =
-            *final =      // prevent 'may be used unilitialized'
+            *final =      // prevent 'may be used uninitialized'
             *run   = 64;  // this would cause error exit in the ac loop
             return;
         }
@@ -249,12 +249,12 @@ static void x8_get_ac_rlf(IntraX8Context *const w, const int mode,
         sm = ac_decode_table[i];
 
         e    = get_bits(w->gb, sm & 0xF);
-        sm >>= 8;                               // 3bits
+        sm >>= 8;                               // 3 bits
         mask = sm & 0xff;
-        sm >>= 8;                               // 1bit
+        sm >>= 8;                               // 1 bit
 
-        *run   = (sm &  0xff) + (e &  mask);    // 6bits
-        *level = (sm >>    8) + (e & ~mask);    // 5bits
+        *run   = (sm &  0xff) + (e &  mask);    // 6 bits
+        *level = (sm >>    8) + (e & ~mask);    // 5 bits
         *final = i > (58 - 46);
     } else if (i < 75) { // [73-74]
         static const uint8_t crazy_mix_runlevel[32] = {

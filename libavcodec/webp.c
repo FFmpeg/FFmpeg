@@ -40,13 +40,14 @@
  *   - XMP metadata
  */
 
-#define BITSTREAM_READER_LE
 #include "libavutil/imgutils.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
 #include "exif.h"
-#include "internal.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "thread.h"
 #include "vp8.h"
 

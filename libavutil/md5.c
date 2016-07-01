@@ -8,7 +8,7 @@
  *
  * based on http://ubiqx.org/libcifs/source/Auth/MD5.c
  *          from Christopher R. Hertel (crh@ubiqx.mn.org)
- * Simplified, cleaned and IMO redundant comments removed by michael.
+ * Simplified, cleaned and IMO redundant comments removed by Michael.
  *
  * If you use gcc, then version 4.1 or later and -fomit-frame-pointer is
  * strongly recommended.

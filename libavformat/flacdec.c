@@ -259,8 +259,10 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
         if (ret < 0){
             if (ret == AVERROR(EAGAIN))
                 continue;
-            else
-                break;
+            else {
+                av_packet_unref(&pkt);
+                av_assert1(!pkt.size);
+            }
         }
         av_init_packet(&out_pkt);
         av_parser_parse2(parser, st->internal->avctx,
@@ -277,7 +279,8 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
                 pts = parser->pts;
                 break;
             }
-        }
+        } else if (ret < 0)
+            break;
     }
     av_parser_close(parser);
     return pts;

@@ -370,6 +370,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(XL,                xl);
     REGISTER_ENCDEC (XWD,               xwd);
     REGISTER_ENCDEC (Y41P,              y41p);
+    REGISTER_DECODER(YLC,               ylc);
     REGISTER_DECODER(YOP,               yop);
     REGISTER_ENCDEC (YUV4,              yuv4);
     REGISTER_DECODER(ZERO12V,           zero12v);
@@ -599,7 +600,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (LIBSPEEX,          libspeex);
     REGISTER_ENCODER(LIBTHEORA,         libtheora);
     REGISTER_ENCODER(LIBTWOLAME,        libtwolame);
-    REGISTER_ENCDEC (LIBUTVIDEO,        libutvideo);
     REGISTER_ENCODER(LIBVO_AMRWBENC,    libvo_amrwbenc);
     REGISTER_ENCDEC (LIBVORBIS,         libvorbis);
     REGISTER_ENCDEC (LIBVPX_VP8,        libvpx_vp8);
@@ -624,14 +624,18 @@ void avcodec_register_all(void)
      * above is available */
     REGISTER_ENCODER(LIBOPENH264,       libopenh264);
     REGISTER_DECODER(H264_CUVID,        h264_cuvid);
+    REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
+    REGISTER_ENCODER(H264_OMX,          h264_omx);
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
     REGISTER_ENCODER(H264_VAAPI,        h264_vaapi);
     REGISTER_ENCODER(H264_VIDEOTOOLBOX, h264_videotoolbox);
+#if FF_API_NVENC_OLD_NAME
     REGISTER_ENCODER(NVENC,             nvenc);
-    REGISTER_ENCODER(H264_OMX,          h264_omx);
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
+#endif
     REGISTER_DECODER(HEVC_CUVID,        hevc_cuvid);
+    REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);

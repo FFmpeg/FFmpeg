@@ -58,7 +58,7 @@ typedef struct H2645NAL {
     int skipped_bytes_pos_size;
     int *skipped_bytes_pos;
     /**
-     * H264 only, nal_ref_idc
+     * H.264 only, nal_ref_idc
      */
     int ref_idc;
 } H2645NAL;

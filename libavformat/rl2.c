@@ -104,7 +104,7 @@ static av_cold int rl2_read_header(AVFormatContext *s)
     if(back_size > INT_MAX/2  || frame_count > INT_MAX / sizeof(uint32_t))
         return AVERROR_INVALIDDATA;
 
-    avio_skip(pb, 2);         /* encoding mentod */
+    avio_skip(pb, 2);         /* encoding method */
     sound_rate = avio_rl16(pb);
     rate = avio_rl16(pb);
     channels = avio_rl16(pb);

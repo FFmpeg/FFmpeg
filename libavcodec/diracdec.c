@@ -671,9 +671,9 @@ static void decode_component(DiracContext *s, int comp)
 
             align_get_bits(&s->gb);
             /* [DIRAC_STD] 13.4.2 subband() */
-            b->length = svq3_get_ue_golomb(&s->gb);
+            b->length = get_interleaved_ue_golomb(&s->gb);
             if (b->length) {
-                b->quant = svq3_get_ue_golomb(&s->gb);
+                b->quant = get_interleaved_ue_golomb(&s->gb);
                 align_get_bits(&s->gb);
                 b->coeff_data = s->gb.buffer + get_bits_count(&s->gb)/8;
                 b->length = FFMIN(b->length, FFMAX(get_bits_left(&s->gb)/8, 0));
@@ -1001,7 +1001,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     align_get_bits(gb);
     /* [DIRAC_STD] 11.2.2 Block parameters. block_parameters() */
     /* Luma and Chroma are equal. 11.2.3 */
-    idx = svq3_get_ue_golomb(gb); /* [DIRAC_STD] index */
+    idx = get_interleaved_ue_golomb(gb); /* [DIRAC_STD] index */
 
     if (idx > 4) {
         av_log(s->avctx, AV_LOG_ERROR, "Block prediction index too high\n");
@@ -1009,10 +1009,10 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     }
 
     if (idx == 0) {
-        s->plane[0].xblen = svq3_get_ue_golomb(gb);
-        s->plane[0].yblen = svq3_get_ue_golomb(gb);
-        s->plane[0].xbsep = svq3_get_ue_golomb(gb);
-        s->plane[0].ybsep = svq3_get_ue_golomb(gb);
+        s->plane[0].xblen = get_interleaved_ue_golomb(gb);
+        s->plane[0].yblen = get_interleaved_ue_golomb(gb);
+        s->plane[0].xbsep = get_interleaved_ue_golomb(gb);
+        s->plane[0].ybsep = get_interleaved_ue_golomb(gb);
     } else {
         /*[DIRAC_STD] preset_block_params(index). Table 11.1 */
         s->plane[0].xblen = default_blen[idx-1];
@@ -1046,7 +1046,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
 
     /*[DIRAC_STD] 11.2.5 Motion vector precision. motion_vector_precision()
       Read motion vector precision */
-    s->mv_precision = svq3_get_ue_golomb(gb);
+    s->mv_precision = get_interleaved_ue_golomb(gb);
     if (s->mv_precision > 3) {
         av_log(s->avctx, AV_LOG_ERROR, "MV precision finer than eighth-pel\n");
         return AVERROR_INVALIDDATA;
@@ -1066,7 +1066,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
             /* [DIRAC_STD] zoom_rotate_shear(gparams)
                zoom/rotation/shear parameters */
             if (get_bits1(gb)) {
-                s->globalmc[ref].zrs_exp   = svq3_get_ue_golomb(gb);
+                s->globalmc[ref].zrs_exp   = get_interleaved_ue_golomb(gb);
                 s->globalmc[ref].zrs[0][0] = dirac_get_se_golomb(gb);
                 s->globalmc[ref].zrs[0][1] = dirac_get_se_golomb(gb);
                 s->globalmc[ref].zrs[1][0] = dirac_get_se_golomb(gb);
@@ -1077,7 +1077,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
             }
             /* [DIRAC_STD] perspective(gparams) */
             if (get_bits1(gb)) {
-                s->globalmc[ref].perspective_exp = svq3_get_ue_golomb(gb);
+                s->globalmc[ref].perspective_exp = get_interleaved_ue_golomb(gb);
                 s->globalmc[ref].perspective[0]  = dirac_get_se_golomb(gb);
                 s->globalmc[ref].perspective[1]  = dirac_get_se_golomb(gb);
             }
@@ -1086,7 +1086,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
 
     /*[DIRAC_STD] 11.2.7 Picture prediction mode. prediction_mode()
       Picture prediction mode, not currently used. */
-    if (svq3_get_ue_golomb(gb)) {
+    if (get_interleaved_ue_golomb(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unknown picture prediction mode\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1098,7 +1098,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     s->weight[1]        = 1;
 
     if (get_bits1(gb)) {
-        s->weight_log2denom = svq3_get_ue_golomb(gb);
+        s->weight_log2denom = get_interleaved_ue_golomb(gb);
         s->weight[0] = dirac_get_se_golomb(gb);
         if (s->num_refs == 2)
             s->weight[1] = dirac_get_se_golomb(gb);
@@ -1117,7 +1117,7 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     unsigned tmp;
 
 #define CHECKEDREAD(dst, cond, errmsg) \
-    tmp = svq3_get_ue_golomb(gb); \
+    tmp = get_interleaved_ue_golomb(gb); \
     if (cond) { \
         av_log(s->avctx, AV_LOG_ERROR, errmsg); \
         return AVERROR_INVALIDDATA; \
@@ -1151,18 +1151,18 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         }
     }
     else {
-        s->num_x        = svq3_get_ue_golomb(gb);
-        s->num_y        = svq3_get_ue_golomb(gb);
+        s->num_x        = get_interleaved_ue_golomb(gb);
+        s->num_y        = get_interleaved_ue_golomb(gb);
         if (s->ld_picture) {
-            s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
-            s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
+            s->lowdelay.bytes.num = get_interleaved_ue_golomb(gb);
+            s->lowdelay.bytes.den = get_interleaved_ue_golomb(gb);
             if (s->lowdelay.bytes.den <= 0) {
                 av_log(s->avctx,AV_LOG_ERROR,"Invalid lowdelay.bytes.den\n");
                 return AVERROR_INVALIDDATA;
             }
         } else if (s->hq_picture) {
-            s->highquality.prefix_bytes = svq3_get_ue_golomb(gb);
-            s->highquality.size_scaler  = svq3_get_ue_golomb(gb);
+            s->highquality.prefix_bytes = get_interleaved_ue_golomb(gb);
+            s->highquality.size_scaler  = get_interleaved_ue_golomb(gb);
             if (s->highquality.prefix_bytes >= INT_MAX / 8) {
                 av_log(s->avctx,AV_LOG_ERROR,"too many prefix bytes\n");
                 return AVERROR_INVALIDDATA;
@@ -1173,11 +1173,11 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         if (get_bits1(gb)) {
             av_log(s->avctx,AV_LOG_DEBUG,"Low Delay: Has Custom Quantization Matrix!\n");
             /* custom quantization matrix */
-            s->lowdelay.quant[0][0] = svq3_get_ue_golomb(gb);
+            s->lowdelay.quant[0][0] = get_interleaved_ue_golomb(gb);
             for (level = 0; level < s->wavelet_depth; level++) {
-                s->lowdelay.quant[level][1] = svq3_get_ue_golomb(gb);
-                s->lowdelay.quant[level][2] = svq3_get_ue_golomb(gb);
-                s->lowdelay.quant[level][3] = svq3_get_ue_golomb(gb);
+                s->lowdelay.quant[level][1] = get_interleaved_ue_golomb(gb);
+                s->lowdelay.quant[level][2] = get_interleaved_ue_golomb(gb);
+                s->lowdelay.quant[level][3] = get_interleaved_ue_golomb(gb);
             }
         } else {
             if (s->wavelet_depth > 4) {
@@ -1388,7 +1388,7 @@ static int dirac_unpack_block_motion_data(DiracContext *s)
 
     /* [DIRAC_STD] 12.3.1 Superblock splitting modes. superblock_split_modes()
        decode superblock split modes */
-    ff_dirac_init_arith_decoder(arith, gb, svq3_get_ue_golomb(gb));     /* svq3_get_ue_golomb(gb) is the length */
+    ff_dirac_init_arith_decoder(arith, gb, get_interleaved_ue_golomb(gb));     /* get_interleaved_ue_golomb(gb) is the length */
     for (y = 0; y < s->sbheight; y++) {
         for (x = 0; x < s->sbwidth; x++) {
             unsigned int split  = dirac_get_arith_uint(arith, CTX_SB_F1, CTX_SB_DATA);
@@ -1400,13 +1400,13 @@ static int dirac_unpack_block_motion_data(DiracContext *s)
     }
 
     /* setup arith decoding */
-    ff_dirac_init_arith_decoder(arith, gb, svq3_get_ue_golomb(gb));
+    ff_dirac_init_arith_decoder(arith, gb, get_interleaved_ue_golomb(gb));
     for (i = 0; i < s->num_refs; i++) {
-        ff_dirac_init_arith_decoder(arith + 4 + 2 * i, gb, svq3_get_ue_golomb(gb));
-        ff_dirac_init_arith_decoder(arith + 5 + 2 * i, gb, svq3_get_ue_golomb(gb));
+        ff_dirac_init_arith_decoder(arith + 4 + 2 * i, gb, get_interleaved_ue_golomb(gb));
+        ff_dirac_init_arith_decoder(arith + 5 + 2 * i, gb, get_interleaved_ue_golomb(gb));
     }
     for (i = 0; i < 3; i++)
-        ff_dirac_init_arith_decoder(arith+1+i, gb, svq3_get_ue_golomb(gb));
+        ff_dirac_init_arith_decoder(arith+1+i, gb, get_interleaved_ue_golomb(gb));
 
     for (y = 0; y < s->sbheight; y++)
         for (x = 0; x < s->sbwidth; x++) {

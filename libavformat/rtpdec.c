@@ -21,8 +21,9 @@
 
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/time.h"
-#include "libavcodec/get_bits.h"
+
 #include "avformat.h"
 #include "network.h"
 #include "srtp.h"
@@ -504,7 +505,7 @@ int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
 
 /**
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
- * MPEG2-TS streams.
+ * MPEG-2 TS streams.
  */
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size)
@@ -845,7 +846,7 @@ int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     rv = rtp_parse_one_packet(s, pkt, bufptr, len);
     s->prev_ret = rv;
-    while (rv == AVERROR(EAGAIN) && has_next_packet(s))
+    while (rv < 0 && has_next_packet(s))
         rv = rtp_parse_queued_packet(s, pkt);
     return rv ? rv : has_next_packet(s);
 }

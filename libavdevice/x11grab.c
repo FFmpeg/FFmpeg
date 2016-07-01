@@ -77,7 +77,7 @@ typedef struct X11GrabContext {
     Display *dpy;            /**< X11 display from which x11grab grabs frames */
     XImage *image;           /**< X11 image holding the grab */
     int use_shm;             /**< !0 when using XShm extension */
-    XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
+    XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm info */
     int draw_mouse;          /**< Set by a private option. */
     int follow_mouse;        /**< Set by a private option. */
     int show_region;         /**< set by a private option. */
