@@ -2403,8 +2403,8 @@ decode_intra_mb:
                 if (sl->qscale < 0) sl->qscale += max_qp + 1;
                 else                sl->qscale -= max_qp + 1;
             }
-            sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-            sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+            sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
+            sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
         }else
             sl->last_qscale_diff=0;
 

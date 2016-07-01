@@ -1123,8 +1123,8 @@ decode_intra_mb:
             }
         }
 
-        sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-        sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+        sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
+        sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
 
         if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;
