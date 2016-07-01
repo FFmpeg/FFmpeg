@@ -4,6 +4,20 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 
+version 3.1.1:
+- doc/APIchanges: document the lavu/lavf field moves
+- avformat/avformat: Move new field to the end of AVStream
+- avformat/utils: update deprecated AVStream->codec when the context is updated
+- avutil/frame: Move new field to the end of AVFrame
+- libavcodec/exr : fix decoding piz float file.
+- avformat/mov: Check sample size
+- lavfi: Move new field to the end of AVFilterContext
+- lavfi: Move new field to the end of AVFilterLink
+- ffplay: Fix usage of private lavfi API
+- lavc/mediacodecdec_h264: add missing NAL headers to SPS/PPS buffers
+- lavc/pnm_parser: disable parsing for text based PNMs
+
+
 version 3.1:
 - DXVA2-accelerated HEVC Main10 decoding
 - fieldhint filter
