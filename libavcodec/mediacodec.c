@@ -43,9 +43,8 @@ int av_mediacodec_default_init(AVCodecContext *avctx, AVMediaCodecContext *ctx, 
 {
     int ret = 0;
     JNIEnv *env = NULL;
-    int attached = 0;
 
-    env = ff_jni_attach_env(&attached, avctx);
+    env = ff_jni_get_env(avctx);
     if (!env) {
         return AVERROR_EXTERNAL;
     }
@@ -58,17 +57,12 @@ int av_mediacodec_default_init(AVCodecContext *avctx, AVMediaCodecContext *ctx, 
         ret = AVERROR_EXTERNAL;
     }
 
-    if (attached) {
-        ff_jni_detach_env(avctx);
-    }
-
     return ret;
 }
 
 void av_mediacodec_default_free(AVCodecContext *avctx)
 {
     JNIEnv *env = NULL;
-    int attached = 0;
 
     AVMediaCodecContext *ctx = avctx->hwaccel_context;
 
@@ -76,7 +70,7 @@ void av_mediacodec_default_free(AVCodecContext *avctx)
         return;
     }
 
-    env = ff_jni_attach_env(&attached, avctx);
+    env = ff_jni_get_env(avctx);
     if (!env) {
         return;
     }
@@ -84,10 +78,6 @@ void av_mediacodec_default_free(AVCodecContext *avctx)
     if (ctx->surface) {
         (*env)->DeleteGlobalRef(env, ctx->surface);
         ctx->surface = NULL;
-    }
-
-    if (attached) {
-        ff_jni_detach_env(avctx);
     }
 
     av_freep(&avctx->hwaccel_context);
