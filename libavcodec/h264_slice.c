@@ -1415,6 +1415,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     }
 
     if (!h->context_initialized || must_reinit || needs_reinit) {
+        int flush_changes = h->context_initialized;
         h->context_initialized = 0;
         if (sl != h->slice_ctx) {
             av_log(h->avctx, AV_LOG_ERROR,
@@ -1428,7 +1429,8 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
 
         av_assert1(first_slice);
 
-        ff_h264_flush_change(h);
+        if(flush_changes)
+            ff_h264_flush_change(h);
 
         if ((ret = get_pixel_format(h, 1)) < 0)
             return ret;
