@@ -1812,39 +1812,23 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     AVCodecParameters *par_dst = ost->st->codecpar;
     AVCodecParameters *par_src = ist->st->codecpar;
     AVRational sar;
-    int i;
-    uint64_t extra_size;
+    uint32_t codec_tag = par_dst->codec_tag;
+    int i, ret;
 
-    extra_size = (uint64_t)par_src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
-    if (extra_size > INT_MAX) {
-        return AVERROR(EINVAL);
+    if (!codec_tag) {
+        if (!of->ctx->oformat->codec_tag ||
+             av_codec_get_id (of->ctx->oformat->codec_tag, par_src->codec_tag) == par_src->codec_id ||
+             av_codec_get_tag(of->ctx->oformat->codec_tag, par_src->codec_id) <= 0)
+            codec_tag = par_src->codec_tag;
     }
+
+    ret = avcodec_parameters_copy(par_dst, par_src);
+    if (ret < 0)
+        return ret;
+
+    par_dst->codec_tag = codec_tag;
 
     ost->st->disposition = ist->st->disposition;
-
-    /* if stream_copy is selected, no need to decode or encode */
-    par_dst->codec_id   = par_src->codec_id;
-    par_dst->codec_type = par_src->codec_type;
-
-    if (!par_dst->codec_tag) {
-        if (!of->ctx->oformat->codec_tag ||
-             av_codec_get_id (of->ctx->oformat->codec_tag, par_src->codec_tag) == par_dst->codec_id ||
-             av_codec_get_tag(of->ctx->oformat->codec_tag, par_src->codec_id) <= 0)
-            par_dst->codec_tag = par_src->codec_tag;
-    }
-
-    par_dst->bit_rate        = par_src->bit_rate;
-    par_dst->field_order     = par_src->field_order;
-    par_dst->chroma_location = par_src->chroma_location;
-
-    if (par_src->extradata) {
-        par_dst->extradata       = av_mallocz(extra_size);
-        if (!par_dst->extradata) {
-            return AVERROR(ENOMEM);
-        }
-        memcpy(par_dst->extradata, par_src->extradata, par_src->extradata_size);
-        par_dst->extradata_size = par_src->extradata_size;
-    }
 
     ost->st->time_base = ist->st->time_base;
 
@@ -1873,21 +1857,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     if (!ost->parser_avctx)
         return AVERROR(ENOMEM);
 
-    switch (par_dst->codec_type) {
-    case AVMEDIA_TYPE_AUDIO:
-        if (audio_volume != 256) {
-            av_log(NULL, AV_LOG_FATAL, "-acodec copy and -vol are incompatible (frames are not decoded)\n");
-            exit_program(1);
-        }
-        par_dst->channel_layout     = par_src->channel_layout;
-        par_dst->sample_rate        = par_src->sample_rate;
-        par_dst->channels           = par_src->channels;
-        par_dst->block_align        = par_src->block_align;
-        break;
-    case AVMEDIA_TYPE_VIDEO:
-        par_dst->format             = par_src->format;
-        par_dst->width              = par_src->width;
-        par_dst->height             = par_src->height;
+    if (par_dst->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (ost->frame_aspect_ratio)
             sar = av_d2q(ost->frame_aspect_ratio * par_dst->height / par_dst->width, 255);
         else if (ist->st->sample_aspect_ratio.num)
@@ -1895,16 +1865,6 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         else
             sar = par_src->sample_aspect_ratio;
         ost->st->sample_aspect_ratio = par_dst->sample_aspect_ratio = sar;
-        break;
-    case AVMEDIA_TYPE_SUBTITLE:
-        par_dst->width  = par_src->width;
-        par_dst->height = par_src->height;
-        break;
-    case AVMEDIA_TYPE_DATA:
-    case AVMEDIA_TYPE_ATTACHMENT:
-        break;
-    default:
-        abort();
     }
 
     return 0;
