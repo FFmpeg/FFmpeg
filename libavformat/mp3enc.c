@@ -245,11 +245,12 @@ static void mp3_write_xing(AVFormatContext *s)
     avio_w8(dyn_ctx, 0);      // unknown abr/minimal bitrate
 
     // encoder delay
-    if (par->initial_padding >= 1 << 12) {
-        av_log(s, AV_LOG_WARNING, "Too many samples of initial padding.\n");
+    if (par->initial_padding >= 1 << 12 ||
+        par->trailing_padding >= 1 << 12) {
+        av_log(s, AV_LOG_WARNING, "Too many samples of padding.\n");
         avio_wb24(dyn_ctx, 0);
     } else {
-        avio_wb24(dyn_ctx, par->initial_padding << 12);
+        avio_wb24(dyn_ctx, par->initial_padding << 12 | par->trailing_padding);
     }
 
     avio_w8(dyn_ctx,   0); // misc
