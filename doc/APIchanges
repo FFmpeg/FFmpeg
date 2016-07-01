@@ -23,7 +23,7 @@ API changes, most recent first:
   Moved hw_frames_ctx field from AVFrame to the end of the struct, so that
   the following private fields are in the same location as in FFmpeg 3.0 (lavu 55.17.103).
 
-2016-06-29 - xxxxxxx - lavfi 6.47.100 - avfilter.h
+2016-06-29 - 1a751455 - lavfi 6.47.100 - avfilter.h
   Fix accidental ABI breakage in AVFilterContext.
   ABI was broken in 8688d3a, lavfi 6.42.100 and released as ffmpeg 3.1.
 
