@@ -143,7 +143,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 #define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m)))
 
     uint16_t crc;
-    uint32_t v;
+    uint32_t v, delays;
 
     char version[10];
 
@@ -215,7 +215,9 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     avio_r8(s->pb);
 
     /* Encoder delays */
-    avio_rb24(s->pb);
+    delays = avio_rb24(s->pb);
+    st->codecpar->initial_padding  = delays >> 12;
+    st->codecpar->trailing_padding = delays & ((1 << 12) - 1);
 
     /* Misc */
     avio_r8(s->pb);
