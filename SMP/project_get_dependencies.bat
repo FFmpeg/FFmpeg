@@ -50,14 +50,17 @@ REM Store current directory and ensure working directory is the location of curr
 SET CURRDIR=%CD%
 cd %~dp0
 
+REM Initialise error check value
+SET ERROR=0
+
 cd ..\..
 FOR %%I IN %DEPENDENCIES% DO (
     ECHO !PASSDEPENDENCIES! | FINDSTR /C:"%%I" >NUL 2>&1 || (
         REM Check if MSVC_VER environment variable is set
         IF "%MSVC_VER%"=="" (
-            CALL :cloneOrUpdateRepo "%%I"
+            CALL :cloneOrUpdateRepo "%%I" || GOTO exit
         ) ELSE (
-            CALL :downloadLibs "%%I"
+            CALL :downloadLibs "%%I" || GOTO exit
         )
     )
 )
@@ -107,7 +110,7 @@ IF EXIST "%REPONAME%\SMP\project_get_dependencies.bat" (
     ECHO %REPONAME%: Found additional dependencies...
     ECHO.
     cd %REPONAME%\SMP
-    project_get_dependencies.bat "!PASSDEPENDENCIES!" || GOTO exitOnError
+    project_get_dependencies.bat "!PASSDEPENDENCIES!" || EXIT /B 1
     cd ..\..
 )
 ECHO.
@@ -122,16 +125,16 @@ REM Get latest release
 ECHO %REPONAME%: Getting latest release...
 SET UPSTREAMAPIURL=%UPSTREAMURL:github.com=api.github.com/repos%
 powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest > latest.json } catch {exit 1}"
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed getting latest %REPONAME% release & GOTO exitOnError )
+IF NOT %ERRORLEVEL% == 0 ( ECHO Failed getting latest %REPONAME% release & EXIT /B 1 )
 REM Get tag for latest release
 FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR /B "tag_name"`) DO SET TAG=%%F
 FOR /F "tokens=2 delims=: " %%F in ("%TAG%") DO SET TAG=%%F
-IF "%TAG%"=="" ( ECHO Failed getting latest %REPONAME% release tag information & GOTO exitOnError )
+IF "%TAG%"=="" ( ECHO Failed getting latest %REPONAME% release tag information & EXIT /B 1 )
 REM Get download name of latest release
 FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR "name="`) DO SET LIBNAME=%%F
 SET LIBNAME=%LIBNAME:*name=%
 FOR /F "tokens=1 delims=_" %%F in ("%LIBNAME:~1%") DO SET LIBNAME=%%F
-IF "%LIBNAME%"=="" ( ECHO Failed getting latest %REPONAME% release name information & GOTO exitOnError )
+IF "%LIBNAME%"=="" ( ECHO Failed getting latest %REPONAME% release name information & EXIT /B 1 )
 DEL /F /Q latest.json
 REM Get the download location for the required tag
 SET TAG2=%TAG:+=.%
@@ -141,15 +144,16 @@ ECHO %REPONAME%: Downloading %LIBNAME%_%TAG%_msvc%MSVC_VER%.zip...
 SET PREBUILTDIR=prebuilt
 MKDIR %PREBUILTDIR% >NUL 2>&1
 powershell -nologo -noprofile -command "try { (New-Object Net.WebClient).DownloadFile('%DLURL%', '%PREBUILTDIR%\temp.zip') } catch {exit 1}"
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed downloading %DLURL% & GOTO exitOnError )
-powershell -nologo -noprofile -command "try { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('%PREBUILTDIR%\temp.zip', '%PREBUILTDIR%'); } catch [System.IO.IOException] {exit 0} catch {exit 1}"
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed extracting downloaded archive & GOTO exitOnError )
+IF NOT %ERRORLEVEL% == 0 ( ECHO Failed downloading %DLURL% & EXIT /B 1 )
+powershell -nologo -noprofile -command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[System.IO.Compression.ZipFile]::OpenRead('%PREBUILTDIR%\temp.zip'); foreach ($item in $zip.Entries) { try {$file=(Join-Path -Path .\%PREBUILTDIR% -ChildPath $item.FullName); $null=[System.IO.Directory]::CreateDirectory((Split-Path -Path $file)); [System.IO.Compression.ZipFileExtensions]::ExtractToFile($item,$file,$true)} catch {exit 1} }"
+IF NOT %ERRORLEVEL% == 0 ( ECHO Failed extracting downloaded archive & EXIT /B 1 )
 DEL /F /Q %PREBUILTDIR%\\temp.zip
 ECHO.
 EXIT /B %ERRORLEVEL%
 
 :exitOnError
 cd %CURRDIR%
+SET ERROR=1
 
 :exit
 REM Directly exit if an AppVeyor build
@@ -168,4 +172,4 @@ ECHO %CMDCMDLINE% | FINDSTR /L %COMSPEC% >NUL 2>&1
 IF %ERRORLEVEL% == 0 IF "%~1"=="" PAUSE
 
 :return
-EXIT /B 0
+EXIT /B %ERROR%
