@@ -1832,6 +1832,13 @@ static int matroska_parse_tracks(AVFormatContext *s)
         avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
                             1000 * 1000 * 1000);    /* 64 bit pts in ns */
 
+        if (track->type == MATROSKA_TRACK_TYPE_AUDIO &&
+            track->audio.out_samplerate) {
+            st->codecpar->initial_padding = av_rescale_q(track->codec_delay,
+                                                         (AVRational){ 1, 1000000000 },
+                                                         (AVRational){ 1, track->audio.out_samplerate });
+        }
+
         /* convert the delay from ns to the track timebase */
         track->codec_delay = av_rescale_q(track->codec_delay,
                                           (AVRational){ 1, 1000000000 },
