@@ -263,8 +263,11 @@ FATE_PNG += fate-png-$(1)
 fate-png-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-$(1).png -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
 endef
 
-PNG_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba ya8 ya16
+PNG_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64 ya8 ya16
 $(foreach CLSP,$(PNG_COLORSPACES),$(eval $(call FATE_IMGSUITE_PNG,$(CLSP))))
+
+FATE_PNG += fate-png-int-rgb24
+fate-png-int-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
 
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_IMAGE += $(FATE_PNG-yes)
