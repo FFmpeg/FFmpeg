@@ -34,7 +34,7 @@ xvid, ^
 zlib ^
 )
 
-RREM Get passed in list of dependencies to skip
+REM Get passed in list of dependencies to skip
 SET PASSDEPENDENCIES=%~1
 
 REM Check if git is installed and available
