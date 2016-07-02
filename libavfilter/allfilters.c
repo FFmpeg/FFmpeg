@@ -70,6 +70,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(COPY,           copy,           vf);
     REGISTER_FILTER(CROP,           crop,           vf);
     REGISTER_FILTER(CROPDETECT,     cropdetect,     vf);
+    REGISTER_FILTER(DEINTERLACE_QSV,deinterlace_qsv,vf);
     REGISTER_FILTER(DELOGO,         delogo,         vf);
     REGISTER_FILTER(DRAWBOX,        drawbox,        vf);
     REGISTER_FILTER(DRAWTEXT,       drawtext,       vf);
