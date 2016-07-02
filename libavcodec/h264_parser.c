@@ -367,13 +367,26 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                        "non-existing PPS %u referenced\n", pps_id);
                 goto fail;
             }
-            p->ps.pps = (const PPS*)p->ps.pps_list[pps_id]->data;
+
+            av_buffer_unref(&p->ps.pps_ref);
+            av_buffer_unref(&p->ps.sps_ref);
+            p->ps.pps = NULL;
+            p->ps.sps = NULL;
+            p->ps.pps_ref = av_buffer_ref(p->ps.pps_list[pps_id]);
+            if (!p->ps.pps_ref)
+                goto fail;
+            p->ps.pps = (const PPS*)p->ps.pps_ref->data;
+
             if (!p->ps.sps_list[p->ps.pps->sps_id]) {
                 av_log(avctx, AV_LOG_ERROR,
                        "non-existing SPS %u referenced\n", p->ps.pps->sps_id);
                 goto fail;
             }
-            p->ps.sps = (const SPS*)p->ps.sps_list[p->ps.pps->sps_id]->data;
+
+            p->ps.sps_ref = av_buffer_ref(p->ps.sps_list[p->ps.pps->sps_id]);
+            if (!p->ps.sps_ref)
+                goto fail;
+            p->ps.sps = (const SPS*)p->ps.sps_ref->data;
 
             sps = p->ps.sps;
 
