@@ -249,7 +249,7 @@
     <ClCompile Include="..\libavutil\tea.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\hwcontext_cuda.c">
+    <ClCompile Include="..\libavutil\hwcontext_dxva2.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\lzo.c">
@@ -375,6 +375,9 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_cuda.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_dxva2.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_vaapi.h">

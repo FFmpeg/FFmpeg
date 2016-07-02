@@ -230,6 +230,7 @@ EXPORTS
     av_hmac_init
     av_hmac_update
     av_hwdevice_ctx_alloc
+    av_hwdevice_ctx_create
     av_hwdevice_ctx_init
     av_hwdevice_get_hwframe_constraints
     av_hwdevice_hwconfig_alloc
@@ -395,6 +396,8 @@ EXPORTS
     av_small_strptime
     av_stereo3d_alloc
     av_stereo3d_create_side_data
+    av_stereo3d_from_name
+    av_stereo3d_type_name
     av_strcasecmp
     av_strdup
     av_strerror
