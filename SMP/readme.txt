@@ -25,7 +25,6 @@ Required project dependencies include:
     libspeex
     libopus
     libilbc
-    libfdk-aac
     libtheora
     libx264
     libx265
@@ -56,8 +55,8 @@ These repositories can be manually downloaded or automatically cloned using the 
 Many of the possible FFmpeg dependencies (and there dependencies) are available in the ShiftMediaProject repositories.
 However the following is a list of possible extra dependency options that require external downloads:
     1) opengl (requires glext)
-		a) Download glext from the glext homepage.
-		b) Extract all the header files into OutputDir/include/gl/*.
+		a) Download glext.h and wglext.h from opengl.org.
+		b) Save the header files into OutputDir/include/gl/*.
     2) opencl (requires latest Intel/AMD or NVIDIA OpenCL SDK)
 		a) Download either the "Intel OpenCL SDK", "AMD OpenCL SDK" or the "NVIDIA CUDA SDK" from their respective suppliers.
 		b) Install the downloaded SDK wherever desired.
@@ -77,7 +76,7 @@ midl /win32 /h DeckLinkAPI.h DeckLinkAPI.idl
         d) Copy the newly created "DeckLinkAPI.h" and "DeckLinkAPI_i.c" files to OutputDir/include/*.
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
-The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expetced 
+The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expected 
 directory structure is:
     -  msvc          (OutputDir)
     -> source
