@@ -926,11 +926,11 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl)
     h->avctx->refs    = sps->ref_frame_count;
 
     if (h->mb_width  != sps->mb_width ||
-        h->mb_height != sps->mb_height * (2 - sps->frame_mbs_only_flag))
+        h->mb_height != sps->mb_height)
         needs_reinit = 1;
 
     h->mb_width  = sps->mb_width;
-    h->mb_height = sps->mb_height * (2 - sps->frame_mbs_only_flag);
+    h->mb_height = sps->mb_height;
     h->mb_num    = h->mb_width * h->mb_height;
     h->mb_stride = h->mb_width + 1;
 
