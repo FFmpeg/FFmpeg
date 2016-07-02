@@ -1794,9 +1794,9 @@ static void decode_ybyr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
     if (get_bits1(gb)) {
         for (x = 0; x < avctx->width; x += 2) {
             dst_y[x    ] = get_bits(gb, 8);
-            dst_u[x / 2] = get_bits(gb, 8);
+            dst_u[x / 2] = get_bits(gb, 8) + 128;
             dst_y[x + 1] = get_bits(gb, 8);
-            dst_v[x / 2] = get_bits(gb, 8);
+            dst_v[x / 2] = get_bits(gb, 8) + 128;
         }
     } else {
         int pred[4] = { -128, 128, 128, 0 };
@@ -1824,9 +1824,9 @@ static void decode_ybyr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
         if (get_bits1(gb)) {
             for (x = 0; x < avctx->width; x += 2) {
                 dst_y[x    ] = get_bits(gb, 8);
-                dst_u[x / 2] = get_bits(gb, 8);
+                dst_u[x / 2] = get_bits(gb, 8) + 128;
                 dst_y[x + 1] = get_bits(gb, 8);
-                dst_v[x / 2] = get_bits(gb, 8);
+                dst_v[x / 2] = get_bits(gb, 8) + 128;
             }
         } else {
             int pred_TL[4], pred_L[4], pred_T[4];

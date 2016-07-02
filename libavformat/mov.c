@@ -215,6 +215,7 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     return 0;
 }
 
+// 3GPP TS 26.244
 static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     char language[4] = { 0 };
@@ -242,7 +243,8 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     len -= 1;
 
     if (len < 12) {
-        av_log(c->fc, AV_LOG_ERROR, "no space for coordinates left (%d)\n", len);
+        av_log(c->fc, AV_LOG_ERROR,
+               "loci too short (%u bytes left, need at least %d)\n", len, 12);
         return AVERROR_INVALIDDATA;
     }
     longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
@@ -413,9 +415,9 @@ retry:
     if (atom.size < 0 || str_size >= INT_MAX/2)
         return AVERROR_INVALIDDATA;
 
-    // Allocates enough space if data_type is a float32 number, otherwise
+    // Allocates enough space if data_type is a int32 or float32 number, otherwise
     // worst-case requirement for output string in case of utf8 coded input
-    num = (data_type == 23);
+    num = (data_type >= 21 && data_type <= 23);
     str_size_alloc = (num ? 512 : (raw ? str_size : str_size * 2)) + 1;
     str = av_mallocz(str_size_alloc);
     if (!str)
@@ -426,6 +428,38 @@ retry:
     else {
         if (!raw && (data_type == 3 || (data_type == 0 && (langcode < 0x400 || langcode == 0x7fff)))) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, str_size_alloc);
+        } else if (data_type == 21) { // BE signed integer, variable size
+            int val = 0;
+            if (str_size == 1)
+                val = (int8_t)avio_r8(pb);
+            else if (str_size == 2)
+                val = (int16_t)avio_rb16(pb);
+            else if (str_size == 3)
+                val = ((int32_t)(avio_rb24(pb)<<8))>>8;
+            else if (str_size == 4)
+                val = (int32_t)avio_rb32(pb);
+            if (snprintf(str, str_size_alloc, "%d", val) >= str_size_alloc) {
+                av_log(c->fc, AV_LOG_ERROR,
+                       "Failed to store the number (%d) in string.\n", val);
+                av_free(str);
+                return AVERROR_INVALIDDATA;
+            }
+        } else if (data_type == 22) { // BE unsigned integer, variable size
+            unsigned int val = 0;
+            if (str_size == 1)
+                val = avio_r8(pb);
+            else if (str_size == 2)
+                val = avio_rb16(pb);
+            else if (str_size == 3)
+                val = avio_rb24(pb);
+            else if (str_size == 4)
+                val = avio_rb32(pb);
+            if (snprintf(str, str_size_alloc, "%u", val) >= str_size_alloc) {
+                av_log(c->fc, AV_LOG_ERROR,
+                       "Failed to store the number (%u) in string.\n", val);
+                av_free(str);
+                return AVERROR_INVALIDDATA;
+            }
         } else if (data_type == 23 && str_size >= 4) {  // BE float32
             float val = av_int2float(avio_rb32(pb));
             if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
@@ -1397,7 +1431,7 @@ static int64_t mov_read_atom_into_extradata(MOVContext *c, AVIOContext *pb, MOVA
     return result;
 }
 
-/* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
+/* FIXME modify QDM2/SVQ3/H.264 decoders to take full atom as extradata */
 static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
                               enum AVCodecID codec_id)
 {
@@ -1769,7 +1803,7 @@ static int mov_codec_id(AVStream *st, uint32_t format)
     if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO && id > 0) {
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     } else if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
-               /* skip old asf mpeg4 tag */
+               /* skip old ASF MPEG-4 tag */
                format && format != MKTAG('m','p','4','s')) {
         id = ff_codec_get_id(ff_codec_movvideo_tags, format);
         if (id <= 0)
@@ -1831,7 +1865,7 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
         st->codecpar->width &= ~1;
         st->codecpar->height &= ~1;
     }
-    /* Flash Media Server uses tag H263 with Sorenson Spark */
+    /* Flash Media Server uses tag H.263 with Sorenson Spark */
     if (st->codecpar->codec_tag == MKTAG('H','2','6','3') &&
         !memcmp(codec_name, "Sorenson H263", 13))
         st->codecpar->codec_id = AV_CODEC_ID_FLV1;
@@ -2574,7 +2608,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    unsigned int i, entries;
+    unsigned int i, entries, ctts_count = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2600,8 +2634,16 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         int count    =avio_rb32(pb);
         int duration =avio_rb32(pb);
 
-        sc->ctts_data[i].count   = count;
-        sc->ctts_data[i].duration= duration;
+        if (count <= 0) {
+            av_log(c->fc, AV_LOG_TRACE,
+                   "ignoring CTTS entry with count=%d duration=%d\n",
+                   count, duration);
+            continue;
+        }
+
+        sc->ctts_data[ctts_count].count    = count;
+        sc->ctts_data[ctts_count].duration = duration;
+        ctts_count++;
 
         av_log(c->fc, AV_LOG_TRACE, "count=%d, duration=%d\n",
                 count, duration);
@@ -2617,7 +2659,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             mov_update_dts_shift(sc, duration);
     }
 
-    sc->ctts_count = i;
+    sc->ctts_count = ctts_count;
 
     if (pb->eof_reached)
         return AVERROR_EOF;
@@ -2801,7 +2843,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 sample_size = sc->stsz_sample_size > 0 ? sc->stsz_sample_size : sc->sample_sizes[current_sample];
                 if (sc->pseudo_stream_id == -1 ||
                    sc->stsc_data[stsc_index].id - 1 == sc->pseudo_stream_id) {
-                    AVIndexEntry *e = &st->index_entries[st->nb_index_entries++];
+                    AVIndexEntry *e;
+                    if (sample_size > 0x3FFFFFFF) {
+                        av_log(mov->fc, AV_LOG_ERROR, "Sample size %u is too large\n", sample_size);
+                        return;
+                    }
+                    e = &st->index_entries[st->nb_index_entries++];
                     e->pos = current_offset;
                     e->timestamp = current_dts;
                     e->size = sample_size;
@@ -2924,6 +2971,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
                 if (st->nb_index_entries >= total) {
                     av_log(mov->fc, AV_LOG_ERROR, "wrong chunk count %d\n", total);
+                    return;
+                }
+                if (size > 0x3FFFFFFF) {
+                    av_log(mov->fc, AV_LOG_ERROR, "Sample size %u is too large\n", size);
                     return;
                 }
                 e = &st->index_entries[st->nb_index_entries++];
@@ -4634,6 +4685,31 @@ static int parse_timecode_in_framenum_format(AVFormatContext *s, AVStream *st,
     return 0;
 }
 
+static int mov_read_rtmd_track(AVFormatContext *s, AVStream *st)
+{
+    MOVStreamContext *sc = st->priv_data;
+    char buf[AV_TIMECODE_STR_SIZE];
+    int64_t cur_pos = avio_tell(sc->pb);
+    int hh, mm, ss, ff, drop;
+
+    if (!st->nb_index_entries)
+        return -1;
+
+    avio_seek(sc->pb, st->index_entries->pos, SEEK_SET);
+    avio_skip(s->pb, 13);
+    hh = avio_r8(s->pb);
+    mm = avio_r8(s->pb);
+    ss = avio_r8(s->pb);
+    drop = avio_r8(s->pb);
+    ff = avio_r8(s->pb);
+    snprintf(buf, AV_TIMECODE_STR_SIZE, "%02d:%02d:%02d%c%02d",
+             hh, mm, ss, drop ? ';' : ':', ff);
+    av_dict_set(&st->metadata, "timecode", buf, 0);
+
+    avio_seek(sc->pb, cur_pos, SEEK_SET);
+    return 0;
+}
+
 static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
@@ -4912,8 +4988,11 @@ static int mov_read_header(AVFormatContext *s)
         if (mov->chapter_track > 0 && !mov->ignore_chapters)
             mov_read_chapters(s);
         for (i = 0; i < s->nb_streams; i++)
-            if (s->streams[i]->codecpar->codec_tag == AV_RL32("tmcd"))
+            if (s->streams[i]->codecpar->codec_tag == AV_RL32("tmcd")) {
                 mov_read_timecode_track(s, s->streams[i]);
+            } else if (s->streams[i]->codecpar->codec_tag == AV_RL32("rtmd")) {
+                mov_read_rtmd_track(s, s->streams[i]);
+            }
     }
 
     /* copy timecode metadata from tmcd tracks to the related video streams */
@@ -5145,6 +5224,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->current_sample -= should_retry(sc->pb, ret64);
             return AVERROR_INVALIDDATA;
         }
+
+        if( st->discard == AVDISCARD_NONKEY && 0==(sample->flags & AVINDEX_KEYFRAME) ) {
+            av_log(mov->fc, AV_LOG_DEBUG, "Nonkey frame from stream %d discarded due to AVDISCARD_NONKEY\n", sc->ffindex);
+            goto retry;
+        }
+
         ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             sc->current_sample -= should_retry(sc->pb, ret);

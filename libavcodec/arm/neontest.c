@@ -23,7 +23,7 @@
 #include "libavutil/arm/neontest.h"
 
 wrap(avcodec_open2(AVCodecContext *avctx,
-                   AVCodec *codec,
+                   const AVCodec *codec,
                    AVDictionary **options))
 {
     testneonclobbers(avcodec_open2, avctx, codec, options);

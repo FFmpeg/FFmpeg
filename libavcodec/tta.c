@@ -27,8 +27,13 @@
  * @author Alex Beregszaszi
  */
 
-#define BITSTREAM_READER_LE
 #include <limits.h>
+
+#include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+
+#define BITSTREAM_READER_LE
 #include "ttadata.h"
 #include "ttadsp.h"
 #include "avcodec.h"
@@ -36,9 +41,6 @@
 #include "thread.h"
 #include "unary.h"
 #include "internal.h"
-#include "libavutil/crc.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/opt.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2

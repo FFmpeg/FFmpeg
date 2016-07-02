@@ -22,18 +22,25 @@
  */
 
 #include <limits.h>
-#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "h264.h"
 #include "vc1.h"
-
-#undef NDEBUG
-#include <assert.h>
-
 #include "vdpau.h"
 #include "vdpau_compat.h"
 #include "vdpau_internal.h"
+
+// XXX: at the time of adding this ifdefery, av_assert* wasn't use outside.
+// When dropping it, make sure other av_assert* were not added since then.
+#if FF_API_BUFS_VDPAU
+#include "libavutil/avassert.h"
+#endif
+
+#if FF_API_VDPAU
+#undef NDEBUG
+#include <assert.h>
+#endif
 
 /**
  * @addtogroup VDPAU_Decoding

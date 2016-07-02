@@ -28,7 +28,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/timer.h"
-#include "get_bits.h"
+
 #include "cabac.h"
 #include "cabac_functions.h"
 

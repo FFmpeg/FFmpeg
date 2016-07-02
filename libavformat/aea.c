@@ -32,7 +32,7 @@ static int aea_read_probe(AVProbeData *p)
     if (p->buf_size <= 2048+212)
         return 0;
 
-    /* Magic is '00 08 00 00' in Little Endian*/
+    /* Magic is '00 08 00 00' in little-endian*/
     if (AV_RL32(p->buf)==0x800) {
         int ch, i;
         ch = p->buf[264];

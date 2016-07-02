@@ -43,63 +43,33 @@ typedef struct QSVH264EncContext {
 static int qsv_h264_set_encode_ctrl(AVCodecContext *avctx,
                                     const AVFrame *frame, mfxEncodeCtrl* enc_ctrl)
 {
-    AVFrameSideData *side_data = NULL;
     QSVH264EncContext *qh264 = avctx->priv_data;
     QSVEncContext *q = &qh264->qsv;
 
     if (q->a53_cc && frame) {
-        side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
-        if (side_data) {
+        mfxPayload* payload;
+        mfxU8* sei_data;
+        size_t sei_size;
+        int res;
 
-            int sei_payload_size = 0;
-            mfxU8* sei_data = NULL;
-            mfxPayload* payload = NULL;
+        res = ff_alloc_a53_sei(frame, sizeof(mfxPayload) + 2, (void**)&payload, &sei_size);
+        if (res < 0)
+            return res;
 
-            sei_payload_size = side_data->size + 13;
+        sei_data = (mfxU8*)(payload + 1);
+        // SEI header
+        sei_data[0] = 4;
+        sei_data[1] = (mfxU8)sei_size; // size of SEI data
+        // SEI data filled in by ff_alloc_a53_sei
 
-            sei_data = av_mallocz(sei_payload_size);
-            if (!sei_data) {
-                av_log(avctx, AV_LOG_ERROR, "No memory for CC, skipping...\n");
-                return AVERROR(ENOMEM);
-            }
+        payload->BufSize = sei_size + 2;
+        payload->NumBit = payload->BufSize * 8;
+        payload->Type = 4;
+        payload->Data = sei_data;
 
-            // SEI header
-            sei_data[0] = 4;
-            sei_data[1] = sei_payload_size - 2; // size of SEI data
-
-            // country code
-            sei_data[2] = 181;
-            sei_data[3] = 0;
-            sei_data[4] = 49;
-
-            // ATSC_identifier - using 'GA94' only
-            AV_WL32(sei_data + 5,
-                MKTAG('G', 'A', '9', '4'));
-            sei_data[9] = 3;
-            sei_data[10] =
-                ((side_data->size/3) & 0x1f) | 0xC0;
-
-            sei_data[11] = 0xFF; // reserved
-
-            memcpy(sei_data + 12, side_data->data, side_data->size);
-
-            sei_data[side_data->size+12] = 255;
-
-            payload = av_mallocz(sizeof(mfxPayload));
-            if (!payload) {
-                av_log(avctx, AV_LOG_ERROR, "No memory, skipping captions\n");
-                av_freep(&sei_data);
-                return AVERROR(ENOMEM);
-            }
-            payload->BufSize = side_data->size + 13;
-            payload->NumBit = payload->BufSize * 8;
-            payload->Type = 4;
-            payload->Data = sei_data;
-
-            enc_ctrl->NumExtParam = 0;
-            enc_ctrl->NumPayload = 1;
-            enc_ctrl->Payload[0] = payload;
-        }
+        enc_ctrl->NumExtParam = 0;
+        enc_ctrl->NumPayload = 1;
+        enc_ctrl->Payload[0] = payload;
     }
     return 0;
 }

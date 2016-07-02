@@ -31,15 +31,15 @@
 #include "put_bits.h"
 
 /**
- * G.726 11bit float.
- * G.726 Standard uses rather odd 11bit floating point arithmetic for
+ * G.726 11-bit float.
+ * G.726 Standard uses rather odd 11-bit floating point arithmetic for
  * numerous occasions. It's a mystery to me why they did it this way
- * instead of simply using 32bit integer arithmetic.
+ * instead of simply using 32-bit integer arithmetic.
  */
 typedef struct Float11 {
-    uint8_t sign;   /**< 1bit sign */
-    uint8_t exp;    /**< 4bit exponent */
-    uint8_t mant;   /**< 6bit mantissa */
+    uint8_t sign;   /**< 1 bit sign */
+    uint8_t exp;    /**< 4 bits exponent */
+    uint8_t mant;   /**< 6 bits mantissa */
 } Float11;
 
 static inline Float11* i2f(int i, Float11* f)
@@ -98,7 +98,7 @@ typedef struct G726Context {
     int little_endian;  /**< little-endian bitstream as used in aiff and Sun AU */
 } G726Context;
 
-static const int quant_tbl16[] =                  /**< 16kbit/s 2bits per sample */
+static const int quant_tbl16[] =                  /**< 16kbit/s 2 bits per sample */
            { 260, INT_MAX };
 static const int16_t iquant_tbl16[] =
            { 116, 365, 365, 116 };
@@ -107,7 +107,7 @@ static const int16_t W_tbl16[] =
 static const uint8_t F_tbl16[] =
            { 0, 7, 7, 0 };
 
-static const int quant_tbl24[] =                  /**< 24kbit/s 3bits per sample */
+static const int quant_tbl24[] =                  /**< 24kbit/s 3 bits per sample */
            {  7, 217, 330, INT_MAX };
 static const int16_t iquant_tbl24[] =
            { INT16_MIN, 135, 273, 373, 373, 273, 135, INT16_MIN };
@@ -116,7 +116,7 @@ static const int16_t W_tbl24[] =
 static const uint8_t F_tbl24[] =
            { 0, 1, 2, 7, 7, 2, 1, 0 };
 
-static const int quant_tbl32[] =                  /**< 32kbit/s 4bits per sample */
+static const int quant_tbl32[] =                  /**< 32kbit/s 4 bits per sample */
            { -125,  79, 177, 245, 299, 348, 399, INT_MAX };
 static const int16_t iquant_tbl32[] =
          { INT16_MIN,   4, 135, 213, 273, 323, 373, 425,
@@ -127,7 +127,7 @@ static const int16_t W_tbl32[] =
 static const uint8_t F_tbl32[] =
            { 0, 0, 0, 1, 1, 1, 3, 7, 7, 3, 1, 1, 1, 0, 0, 0 };
 
-static const int quant_tbl40[] =                  /**< 40kbit/s 5bits per sample */
+static const int quant_tbl40[] =                  /**< 40kbit/s 5 bits per sample */
            { -122, -16,  67, 138, 197, 249, 297, 338,
               377, 412, 444, 474, 501, 527, 552, INT_MAX };
 static const int16_t iquant_tbl40[] =
@@ -152,7 +152,7 @@ static const G726Tables G726Tables_pool[] =
 
 
 /**
- * Para 4.2.2 page 18: Adaptive quantizer.
+ * Paragraph 4.2.2 page 18: Adaptive quantizer.
  */
 static inline uint8_t quant(G726Context* c, int d)
 {
@@ -178,14 +178,14 @@ static inline uint8_t quant(G726Context* c, int d)
 }
 
 /**
- * Para 4.2.3 page 22: Inverse adaptive quantizer.
+ * Paragraph 4.2.3 page 22: Inverse adaptive quantizer.
  */
 static inline int16_t inverse_quant(G726Context* c, int i)
 {
     int dql, dex, dqt;
 
     dql = c->tbls.iquant[i] + (c->y >> 2);
-    dex = (dql>>7) & 0xf;        /* 4bit exponent */
+    dex = (dql>>7) & 0xf;        /* 4-bit exponent */
     dqt = (1<<7) + (dql & 0x7f); /* log2 -> linear */
     return (dql < 0) ? 0 : ((dqt<<dex) >> 7);
 }

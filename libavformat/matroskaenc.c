@@ -119,6 +119,7 @@ typedef struct MatroskaMuxContext {
     AVPacket        cur_audio_pkt;
 
     int have_attachments;
+    int have_video;
 
     int reserve_cues_space;
     int cluster_size_limit;
@@ -1055,6 +1056,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
+        mkv->have_video = 1;
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
         if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
@@ -2034,6 +2036,11 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (mkv->cluster_pos != -1 && start_new_cluster) {
         mkv_start_new_cluster(s, pkt);
     }
+
+    if (!mkv->cluster_pos)
+        avio_write_marker(s->pb,
+                          av_rescale_q(pkt->dts, s->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q),
+                          keyframe && (mkv->have_video ? codec_type == AVMEDIA_TYPE_VIDEO : 1) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
 
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {

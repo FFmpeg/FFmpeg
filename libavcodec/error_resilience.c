@@ -592,8 +592,6 @@ skip_mean_and_median:
                              ref[pred_count]    = prev_ref;
                     pred_count++;
 
-skip_last_mv:
-
                     for (j = 0; j < pred_count; j++) {
                         int *linesize = s->cur_pic.f->linesize;
                         int score = 0;
@@ -1136,7 +1134,7 @@ void ff_er_frame_end(ERContext *s)
                 s->mv[0][0][1] = s->cur_pic.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
             }
 
-            s->decode_mb(s->opaque, 0 /* FIXME h264 partitioned slices need this set */,
+            s->decode_mb(s->opaque, 0 /* FIXME H.264 partitioned slices need this set */,
                          mv_dir, mv_type, &s->mv, mb_x, mb_y, 0, 0);
         }
     }

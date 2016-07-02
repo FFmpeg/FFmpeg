@@ -167,7 +167,7 @@ static inline void dxt3_block_internal(uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-/** Convert a premultiplied alpha pixel to a straigth alpha pixel. */
+/** Convert a premultiplied alpha pixel to a straight alpha pixel. */
 static av_always_inline void premult2straight(uint8_t *src)
 {
     int r = src[0];

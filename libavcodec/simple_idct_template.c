@@ -25,10 +25,8 @@
  * simpleidct in C.
  */
 
-/*
-  based upon some outcommented c code from mpeg2dec (idct_mmx.c
-  written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
- */
+/* Based upon some commented-out C code from mpeg2dec (idct_mmx.c
+ * written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>). */
 
 #include "simple_idct.h"
 
@@ -128,7 +126,7 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
         temp += temp * (1 << 16);
         temp += temp * ((uint64_t) 1 << 32);
         AV_WN64A(row, temp);
-        AV_WN64A(row+4, temp);
+        AV_WN64A(row + 4, temp);
         return;
     }
 #else

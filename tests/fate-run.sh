@@ -221,7 +221,7 @@ pixfmts(){
     prefilter_chain=$2
     nframes=${3:-1}
 
-    showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
+    showfiltfmts="$target_exec $target_path/libavfilter/tests/filtfmts"
     scale_exclude_fmts=${outfile}_scale_exclude_fmts
     scale_in_fmts=${outfile}_scale_in_fmts
     scale_out_fmts=${outfile}_scale_out_fmts

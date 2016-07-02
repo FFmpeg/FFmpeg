@@ -1,6 +1,6 @@
 /*
  * Quicktime Animation (RLE) Video Decoder
- * Copyright (c) 2004 The FFmpeg Project
+ * Copyright (C) 2004 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *

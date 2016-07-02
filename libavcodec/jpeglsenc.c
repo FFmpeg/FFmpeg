@@ -386,7 +386,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_freep(&state);
 
     /* the specification says that after doing 0xff escaping unused bits in
-     * the last byte must be set to 0, so just append 7 "optional" zero-bits
+     * the last byte must be set to 0, so just append 7 "optional" zero bits
      * to avoid special-casing. */
     put_bits(&pb2, 7, 0);
     size = put_bits_count(&pb2);

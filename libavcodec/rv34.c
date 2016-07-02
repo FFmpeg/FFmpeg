@@ -864,8 +864,8 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
 
     memset(r->dmv, 0, sizeof(r->dmv));
     for(i = 0; i < num_mvs[block_type]; i++){
-        r->dmv[i][0] = svq3_get_se_golomb(gb);
-        r->dmv[i][1] = svq3_get_se_golomb(gb);
+        r->dmv[i][0] = get_interleaved_se_golomb(gb);
+        r->dmv[i][1] = get_interleaved_se_golomb(gb);
     }
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
@@ -1478,7 +1478,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
     return s->mb_y == s->mb_height;
 }
 
-/** @} */ // recons group end
+/** @} */ // reconstruction group end
 
 /**
  * Initialize decoder.

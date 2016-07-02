@@ -84,7 +84,7 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(avioc, tag);
-    /* ID3v2.3 frame size is not synchsafe */
+    /* ID3v2.3 frame size is not sync-safe */
     if (id3->version == 3)
         avio_wb32(avioc, len);
     else

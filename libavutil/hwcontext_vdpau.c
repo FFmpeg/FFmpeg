@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -388,6 +390,82 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     return 0;
 }
 
+#if HAVE_VDPAU_X11
+#include <vdpau/vdpau_x11.h>
+#include <X11/Xlib.h>
+
+typedef struct VDPAUDevicePriv {
+    VdpDeviceDestroy *device_destroy;
+    Display *dpy;
+} VDPAUDevicePriv;
+
+static void vdpau_device_free(AVHWDeviceContext *ctx)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+    VDPAUDevicePriv       *priv = ctx->user_opaque;
+
+    if (priv->device_destroy)
+        priv->device_destroy(hwctx->device);
+    if (priv->dpy)
+        XCloseDisplay(priv->dpy);
+    av_freep(&priv);
+}
+
+static int vdpau_device_create(AVHWDeviceContext *ctx, const char *device,
+                               AVDictionary *opts, int flags)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+
+    VDPAUDevicePriv *priv;
+    VdpStatus err;
+    VdpGetInformationString *get_information_string;
+    const char *display, *vendor;
+
+    priv = av_mallocz(sizeof(*priv));
+    if (!priv)
+        return AVERROR(ENOMEM);
+
+    ctx->user_opaque = priv;
+    ctx->free        = vdpau_device_free;
+
+    priv->dpy = XOpenDisplay(device);
+    if (!priv->dpy) {
+        av_log(ctx, AV_LOG_ERROR, "Cannot open the X11 display %s.\n",
+               XDisplayName(device));
+        return AVERROR_UNKNOWN;
+    }
+    display = XDisplayString(priv->dpy);
+
+    err = vdp_device_create_x11(priv->dpy, XDefaultScreen(priv->dpy),
+                                &hwctx->device, &hwctx->get_proc_address);
+    if (err != VDP_STATUS_OK) {
+        av_log(ctx, AV_LOG_ERROR, "VDPAU device creation on X11 display %s failed.\n",
+               display);
+        return AVERROR_UNKNOWN;
+    }
+
+#define GET_CALLBACK(id, result)                                                \
+do {                                                                            \
+    void *tmp;                                                                  \
+    err = hwctx->get_proc_address(hwctx->device, id, &tmp);                     \
+    if (err != VDP_STATUS_OK) {                                                 \
+        av_log(ctx, AV_LOG_ERROR, "Error getting the " #id " callback.\n");     \
+        return AVERROR_UNKNOWN;                                                 \
+    }                                                                           \
+    result = tmp;                                                               \
+} while (0)
+
+    GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING, get_information_string);
+    GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,         priv->device_destroy);
+
+    get_information_string(&vendor);
+    av_log(ctx, AV_LOG_VERBOSE, "Successfully created a VDPAU device (%s) on "
+           "X11 display %s\n", vendor, display);
+
+    return 0;
+}
+#endif
+
 const HWContextType ff_hwcontext_type_vdpau = {
     .type                 = AV_HWDEVICE_TYPE_VDPAU,
     .name                 = "VDPAU",
@@ -396,6 +474,9 @@ const HWContextType ff_hwcontext_type_vdpau = {
     .device_priv_size     = sizeof(VDPAUDeviceContext),
     .frames_priv_size     = sizeof(VDPAUFramesContext),
 
+#if HAVE_VDPAU_X11
+    .device_create        = vdpau_device_create,
+#endif
     .device_init          = vdpau_device_init,
     .device_uninit        = vdpau_device_uninit,
     .frames_init          = vdpau_frames_init,

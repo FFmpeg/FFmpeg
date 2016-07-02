@@ -41,16 +41,17 @@
     b_add = FIX(1.77200*255.0/224.0) * cb + ONE_HALF;\
 }
 
-#define YUV_TO_RGB1_CCIR_BT709(cb1, cr1)\
-{\
-    cb = (cb1) - 128;\
-    cr = (cr1) - 128;\
-    r_add = FIX(1.5747*255.0/224.0) * cr + ONE_HALF;\
-    g_add = - FIX(0.1873*255.0/224.0) * cb - FIX(0.4682*255.0/224.0) * cr + \
-            ONE_HALF;\
-    b_add = FIX(1.8556*255.0/224.0) * cb + ONE_HALF;\
-}
+#define YUV_TO_RGB1_CCIR_BT709(cb1, cr1)                      \
+    {                                                         \
+        cb    = (cb1) - 128;                                  \
+        cr    = (cr1) - 128;                                  \
+        r_add = ONE_HALF + FIX(1.5747 * 255.0 / 224.0) * cr;  \
+        g_add = ONE_HALF - FIX(0.1873 * 255.0 / 224.0) * cb - \
+                           FIX(0.4682 * 255.0 / 224.0) * cr;  \
+        b_add = ONE_HALF + FIX(1.8556 * 255.0 / 224.0) * cb;  \
+    }
 
+// To be used for the BT709 variant as well
 #define YUV_TO_RGB2_CCIR(r, g, b, y1)\
 {\
     y = ((y1) - 16) * FIX(255.0/219.0);\

@@ -150,32 +150,32 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if((s->out_format == FMT_H263 || s->out_format == FMT_H261) && s->mpeg_quant==0){
 
         __asm__ volatile(
-            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            "movd %%"FF_REG_a", "MM"3           \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
             "pxor "MM"4, "MM"4                  \n\t" // 0
             MOVQ" (%2), "MM"5                   \n\t" // qmat[0]
             "pxor "MM"6, "MM"6                  \n\t"
             "psubw (%3), "MM"6                  \n\t" // -bias[0]
-            "mov $-128, %%"REG_a"               \n\t"
+            "mov $-128, %%"FF_REG_a"            \n\t"
             ".p2align 4                         \n\t"
             "1:                                 \n\t"
-            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            MOVQ" (%1, %%"FF_REG_a"), "MM"0     \n\t" // block[i]
             SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
             "psubusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
             "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16
             "por "MM"0, "MM"4                   \n\t"
             RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            MOVQ" "MM"0, (%5, %%"FF_REG_a")     \n\t"
             "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
-            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
-            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            MOVQ" (%4, %%"FF_REG_a"), "MM"1     \n\t"
+            MOVQ" "MM"7, (%1, %%"FF_REG_a")     \n\t" // 0
             "pandn "MM"1, "MM"0                 \n\t"
             PMAXW(MM"0", MM"3")
-            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
+            "add $"MMREG_WIDTH", %%"FF_REG_a"   \n\t"
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
-            "movd "MM"3, %%"REG_a"              \n\t"
+            "movd "MM"3, %%"FF_REG_a"           \n\t"
             "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat), "r" (bias),
@@ -185,31 +185,31 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         );
     }else{ // FMT_H263
         __asm__ volatile(
-            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            "movd %%"FF_REG_a", "MM"3           \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
             "pxor "MM"4, "MM"4                  \n\t" // 0
-            "mov $-128, %%"REG_a"               \n\t"
+            "mov $-128, %%"FF_REG_a"            \n\t"
             ".p2align 4                         \n\t"
             "1:                                 \n\t"
-            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            MOVQ" (%1, %%"FF_REG_a"), "MM"0     \n\t" // block[i]
             SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
-            MOVQ" (%3, %%"REG_a"), "MM"6        \n\t" // bias[0]
+            MOVQ" (%3, %%"FF_REG_a"), "MM"6     \n\t" // bias[0]
             "paddusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
-            MOVQ" (%2, %%"REG_a"), "MM"5        \n\t" // qmat[i]
+            MOVQ" (%2, %%"FF_REG_a"), "MM"5     \n\t" // qmat[i]
             "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] + bias[0]*qmat[0])>>16
             "por "MM"0, "MM"4                   \n\t"
             RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            MOVQ" "MM"0, (%5, %%"FF_REG_a")     \n\t"
             "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
-            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
-            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            MOVQ" (%4, %%"FF_REG_a"), "MM"1     \n\t"
+            MOVQ" "MM"7, (%1, %%"FF_REG_a")     \n\t" // 0
             "pandn "MM"1, "MM"0                 \n\t"
             PMAXW(MM"0", MM"3")
-            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
+            "add $"MMREG_WIDTH", %%"FF_REG_a"   \n\t"
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
-            "movd "MM"3, %%"REG_a"              \n\t"
+            "movd "MM"3, %%"FF_REG_a"           \n\t"
             "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),

@@ -25,9 +25,9 @@
  * libavcodec API use example.
  *
  * @example decoding_encoding.c
- * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
- * not file formats (avi, vob, mp4, mov, mkv, mxf, flv, mpegts, mpegps, etc...). See library 'libavformat' for the
- * format handling
+ * Note that libavcodec only handles codecs (MPEG, MPEG-4, etc...),
+ * not file formats (AVI, VOB, MP4, MOV, MKV, MXF, FLV, MPEG-TS, MPEG-PS, etc...).
+ * See library 'libavformat' for the format handling
  */
 
 #include <math.h>
@@ -253,7 +253,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     printf("Decode audio file %s to %s\n", filename, outfilename);
 
-    /* find the mpeg audio decoder */
+    /* find the MPEG audio decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -356,7 +356,7 @@ static void video_encode_example(const char *filename, int codec_id)
 
     printf("Encode video file %s\n", filename);
 
-    /* find the mpeg1 video encoder */
+    /* find the video encoder */
     codec = avcodec_find_encoder(codec_id);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -475,7 +475,7 @@ static void video_encode_example(const char *filename, int codec_id)
         }
     }
 
-    /* add sequence end code to have a real mpeg file */
+    /* add sequence end code to have a real MPEG file */
     fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
 
@@ -543,12 +543,12 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
     av_init_packet(&avpkt);
 
-    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
     memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     printf("Decode video file %s to %s\n", filename, outfilename);
 
-    /* find the mpeg1 video decoder */
+    /* find the MPEG-1 video decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -613,9 +613,9 @@ static void video_decode_example(const char *outfilename, const char *filename)
                 exit(1);
     }
 
-    /* some codecs, such as MPEG, transmit the I and P frame with a
+    /* Some codecs, such as MPEG, transmit the I- and P-frame with a
        latency of one frame. You must do the following to have a
-       chance to get the last frame of the video */
+       chance to get the last frame of the video. */
     avpkt.data = NULL;
     avpkt.size = 0;
     decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 1);

@@ -261,7 +261,7 @@ int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles);
 int ffurl_shutdown(URLContext *h, int flags);
 
 /**
- * Check if the user has requested to interrup a blocking function
+ * Check if the user has requested to interrupt a blocking function
  * associated with cb.
  */
 int ff_check_interrupt(AVIOInterruptCB *cb);

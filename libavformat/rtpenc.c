@@ -189,7 +189,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case AV_CODEC_ID_H261:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(s, AV_LOG_ERROR,
-                   "Packetizing H261 is experimental and produces incorrect "
+                   "Packetizing H.261 is experimental and produces incorrect "
                    "packetization for cases where GOBs don't fit into packets "
                    "(even though most receivers may handle it just fine). "
                    "Please set -f_strict experimental in order to enable it.\n");
@@ -205,7 +205,7 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_HEVC:
         /* Only check for the standardized hvcC version of extradata, keeping
-         * things simple and similar to the avcC/H264 case above, instead
+         * things simple and similar to the avcC/H.264 case above, instead
          * of trying to handle the pre-standardization versions (as in
          * libavcodec/hevc.c). */
         if (st->codecpar->extradata_size > 21 && st->codecpar->extradata[0] == 1) {

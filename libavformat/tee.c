@@ -27,8 +27,6 @@
 #include "avformat.h"
 #include "avio_internal.h"
 
-#define MAX_SLAVES 16
-
 typedef enum {
     ON_SLAVE_FAILURE_ABORT  = 1,
     ON_SLAVE_FAILURE_IGNORE = 2
@@ -52,7 +50,7 @@ typedef struct TeeContext {
     const AVClass *class;
     unsigned nb_slaves;
     unsigned nb_alive;
-    TeeSlave slaves[MAX_SLAVES];
+    TeeSlave *slaves;
 } TeeContext;
 
 static const char *const slave_delim     = "|";
@@ -203,6 +201,7 @@ static void close_slaves(AVFormatContext *avf)
     for (i = 0; i < tee->nb_slaves; i++) {
         close_slave(&tee->slaves[i]);
     }
+    av_freep(&tee->slaves);
 }
 
 static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
@@ -443,24 +442,28 @@ static int tee_write_header(AVFormatContext *avf)
     TeeContext *tee = avf->priv_data;
     unsigned nb_slaves = 0, i;
     const char *filename = avf->filename;
-    char *slaves[MAX_SLAVES];
+    char **slaves = NULL;
     int ret;
 
     while (*filename) {
-        if (nb_slaves == MAX_SLAVES) {
-            av_log(avf, AV_LOG_ERROR, "Maximum %d slave muxers reached.\n",
-                   MAX_SLAVES);
-            ret = AVERROR_PATCHWELCOME;
+        char *slave = av_get_token(&filename, slave_delim);
+        if (!slave) {
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
-        if (!(slaves[nb_slaves++] = av_get_token(&filename, slave_delim))) {
-            ret = AVERROR(ENOMEM);
+        ret = av_dynarray_add_nofree(&slaves, &nb_slaves, slave);
+        if (ret < 0) {
+            av_free(slave);
             goto fail;
         }
         if (strspn(filename, slave_delim))
             filename++;
     }
 
+    if (!(tee->slaves = av_mallocz_array(nb_slaves, sizeof(*tee->slaves)))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     tee->nb_slaves = tee->nb_alive = nb_slaves;
 
     for (i = 0; i < nb_slaves; i++) {
@@ -483,12 +486,14 @@ static int tee_write_header(AVFormatContext *avf)
             av_log(avf, AV_LOG_WARNING, "Input stream #%d is not mapped "
                    "to any slave.\n", i);
     }
+    av_free(slaves);
     return 0;
 
 fail:
     for (i = 0; i < nb_slaves; i++)
         av_freep(&slaves[i]);
     close_slaves(avf);
+    av_free(slaves);
     return ret;
 }
 
@@ -505,6 +510,7 @@ static int tee_write_trailer(AVFormatContext *avf)
                 ret_all = ret;
         }
     }
+    av_freep(&tee->slaves);
     return ret_all;
 }
 

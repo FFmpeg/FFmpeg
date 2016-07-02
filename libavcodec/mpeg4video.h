@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder/decoder internal header.
+ * MPEG-4 encoder/decoder internal header.
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -107,7 +107,7 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_b;
 } Mpeg4DecContext;
 
-/* dc encoding for mpeg4 */
+/* dc encoding for MPEG-4 */
 extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 

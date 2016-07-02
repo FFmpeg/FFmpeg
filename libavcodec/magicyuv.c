@@ -245,7 +245,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p = data;
     GetByteContext gb;
     GetBitContext b;
-    int i, j, k;
+    int i, j, k, width, height;
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     if (bytestream2_get_le32(&gb) != MKTAG('M','A','G','Y'))
@@ -309,8 +309,11 @@ static int decode_frame(AVCodecContext *avctx,
     s->interlaced = !!(bytestream2_get_byte(&gb) & 2);
     bytestream2_skip(&gb, 3);
 
-    avctx->coded_width  = bytestream2_get_le32(&gb);
-    avctx->coded_height = bytestream2_get_le32(&gb);
+    width  = bytestream2_get_le32(&gb);
+    height = bytestream2_get_le32(&gb);
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+        return ret;
+
     slice_width = bytestream2_get_le32(&gb);
     if (slice_width != avctx->coded_width) {
         avpriv_request_sample(avctx, "unsupported slice width: %d", slice_width);

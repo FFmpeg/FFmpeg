@@ -391,7 +391,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
            "Profile %i:\nfrmrtq_postproc=%i, bitrtq_postproc=%i\n"
            "LoopFilter=%i, MultiRes=%i, FastUVMC=%i, Extended MV=%i\n"
            "Rangered=%i, VSTransform=%i, Overlap=%i, SyncMarker=%i\n"
-           "DQuant=%i, Quantizer mode=%i, Max B frames=%i\n",
+           "DQuant=%i, Quantizer mode=%i, Max B-frames=%i\n",
            v->profile, v->frmrtq_postproc, v->bitrtq_postproc,
            v->s.loop_filter, v->multires, v->fastuvmc, v->extended_mv,
            v->rangered, v->vstransform, v->overlap, v->resync_marker,
@@ -764,7 +764,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
                "Imode: %i, Invert: %i\n", status>>1, status&1);
 
-        /* Hopefully this is correct for P frames */
+        /* Hopefully this is correct for P-frames */
         v->s.mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
         v->cbpcy_vlc = &ff_vc1_cbpcy_p_vlc[get_bits(gb, 2)];
 
@@ -1152,7 +1152,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
                    "Imode: %i, Invert: %i\n", status>>1, status&1);
 
-            /* Hopefully this is correct for P frames */
+            /* Hopefully this is correct for P-frames */
             v->s.mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
             v->cbpcy_vlc        = &ff_vc1_cbpcy_p_vlc[get_bits(gb, 2)];
         } else if (v->fcm == ILACE_FRAME) { // frame interlaced

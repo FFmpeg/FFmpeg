@@ -24,8 +24,8 @@
  * Tiertex Limited SEQ video decoder
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
 

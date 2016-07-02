@@ -64,6 +64,9 @@ typedef struct HWContextType {
      */
     size_t             frames_priv_size;
 
+    int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
+                                      AVDictionary *opts, int flags);
+
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);
 
@@ -97,6 +100,7 @@ struct AVHWFramesInternal {
 };
 
 extern const HWContextType ff_hwcontext_type_cuda;
+extern const HWContextType ff_hwcontext_type_dxva2;
 extern const HWContextType ff_hwcontext_type_vaapi;
 extern const HWContextType ff_hwcontext_type_vdpau;
 

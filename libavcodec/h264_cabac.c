@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 cabac decoding.
+ * H.264 / AVC / MPEG-4 part10 cabac decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -40,7 +40,6 @@
 #include "h264.h"
 #include "h264data.h"
 #include "h264_mvpred.h"
-#include "golomb.h"
 #include "mpegutils.h"
 
 #if ARCH_X86
@@ -56,7 +55,7 @@ static const int8_t cabac_context_init_I[1024][2] =
     {  2,  54 }, {  3, 74 },  { -28,127 }, { -23, 104 },
     { -6,  53 }, { -1, 54 },  {  7,  51 },
 
-    /* 11 - 23 unsused for I */
+    /* 11 - 23 unused for I */
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },
     { 0, 0 },    { 0, 0 },    { 0, 0 },      { 0, 0 },
@@ -2404,8 +2403,8 @@ decode_intra_mb:
                 if (sl->qscale < 0) sl->qscale += max_qp + 1;
                 else                sl->qscale -= max_qp + 1;
             }
-            sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-            sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+            sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
+            sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
         }else
             sl->last_qscale_diff=0;
 

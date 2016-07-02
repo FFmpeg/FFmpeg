@@ -713,6 +713,12 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
         /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
         ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;
+    } else if (hi == 0x17 && lo >= 0x21 && lo <= 0x23) {
+        int i;
+        /* Tab offsets (spacing) */
+        for (i = 0; i < lo - 0x20; i++) {
+            handle_char(ctx, ' ', 0, pts);
+        }
     } else {
         /* Ignoring all other non data code */
         ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);

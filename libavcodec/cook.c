@@ -141,7 +141,7 @@ typedef struct cook {
     VLC                 envelope_quant_index[13];
     VLC                 sqvh[7];          // scalar quantization
 
-    /* generatable tables and related variables */
+    /* generate tables and related variables */
     int                 gain_size_factor;
     float               gain_table[23];
 
@@ -1187,7 +1187,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         /* Initialize variable relations */
         q->subpacket[s].numvector_size = (1 << q->subpacket[s].log2_numvector_size);
 
-        /* Try to catch some obviously faulty streams, othervise it might be exploitable */
+        /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
         if (q->subpacket[s].total_subbands > 53) {
             avpriv_request_sample(avctx, "total_subbands > 53");
             return AVERROR_PATCHWELCOME;
@@ -1260,7 +1260,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->saturate_output = saturate_output_float;
     }
 
-    /* Try to catch some obviously faulty streams, othervise it might be exploitable */
+    /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
     if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
         q->samples_per_channel != 1024) {
         avpriv_request_sample(avctx, "samples_per_channel = %d",

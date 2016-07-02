@@ -4523,59 +4523,6 @@ tblend=all_mode=difference128
 @end example
 @end itemize
 
-@section bwdif
-
-Deinterlace the input video ("bwdif" stands for "Bob Weaver
-Deinterlacing Filter").
-
-Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
-interpolation algorithms.
-It accepts the following parameters:
-
-@table @option
-@item mode
-The interlacing mode to adopt. It accepts one of the following values:
-
-@table @option
-@item 0, send_frame
-Output one frame for each frame.
-@item 1, send_field
-Output one frame for each field.
-@end table
-
-The default value is @code{send_field}.
-
-@item parity
-The picture field parity assumed for the input interlaced video. It accepts one
-of the following values:
-
-@table @option
-@item 0, tff
-Assume the top field is first.
-@item 1, bff
-Assume the bottom field is first.
-@item -1, auto
-Enable automatic detection of field parity.
-@end table
-
-The default value is @code{auto}.
-If the interlacing is unknown or the decoder does not export this information,
-top field first will be assumed.
-
-@item deint
-Specify which frames to deinterlace. Accept one of the following
-values:
-
-@table @option
-@item 0, all
-Deinterlace all frames.
-@item 1, interlaced
-Only deinterlace frames marked as interlaced.
-@end table
-
-The default value is @code{all}.
-@end table
-
 @section boxblur
 
 Apply a boxblur algorithm to the input video.
@@ -4663,6 +4610,59 @@ Set the luma and chroma radii to a fraction of the video dimension:
 boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 @end itemize
+
+@section bwdif
+
+Deinterlace the input video ("bwdif" stands for "Bob Weaver
+Deinterlacing Filter").
+
+Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
+interpolation algorithms.
+It accepts the following parameters:
+
+@table @option
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item 0, send_frame
+Output one frame for each frame.
+@item 1, send_field
+Output one frame for each field.
+@end table
+
+The default value is @code{send_field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item 0, tff
+Assume the top field is first.
+@item 1, bff
+Assume the bottom field is first.
+@item -1, auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
+
+@table @option
+@item 0, all
+Deinterlace all frames.
+@item 1, interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+@end table
 
 @section chromakey
 YUV colorspace color/chroma keying.
@@ -5667,7 +5667,7 @@ It accepts the following parameters:
 
 @item limit
 Set higher black value threshold, which can be optionally specified
-from nothing (0) to everything (255 for 8bit based formats). An intensity
+from nothing (0) to everything (255 for 8-bit based formats). An intensity
 value greater to the set value is considered non-black. It defaults to 24.
 You can also specify a value between 0.0 and 1.0 which will be scaled depending
 on the bitdepth of the pixel format.
@@ -8305,7 +8305,7 @@ geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit color depth.
+regions by truncation to 8-bit color depth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -15588,7 +15588,7 @@ select=between(t\,10\,20)
 @end example
 
 @item
-Select only I frames contained in the 10-20 time interval:
+Select only I-frames contained in the 10-20 time interval:
 @example
 select=between(t\,10\,20)*eq(pict_type\,I)
 @end example
@@ -16973,6 +16973,11 @@ Default value is "1".
 
 Note that when the movie is looped the source timestamps are not
 changed, so it will generate non monotonically increasing timestamps.
+
+@item discontinuity
+Specifies the time difference between frames above which the point is
+considered a timestamp discontinuity which is removed by adjusting the later
+timestamps.
 @end table
 
 It allows overlaying a second video on top of the main input of

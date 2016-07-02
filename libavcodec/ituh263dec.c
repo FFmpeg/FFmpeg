@@ -1,7 +1,7 @@
 /*
- * ITU H263 bitstream decoder
+ * ITU H.263 bitstream decoder
  * Copyright (c) 2000,2001 Fabrice Bellard
- * H263+ support.
+ * H.263+ support.
  * Copyright (c) 2001 Juan J. Sierralta P
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -24,7 +24,7 @@
 
 /**
  * @file
- * h263 decoder.
+ * H.263 decoder.
  */
 
 #define UNCHECKED_BITSTREAM_READER 1
@@ -175,17 +175,17 @@ static int h263_decode_gob_header(MpegEncContext *s)
         return -1;
 
     if(s->h263_slice_structured){
-        if(check_marker(&s->gb, "before MBA")==0)
+        if(check_marker(s->avctx, &s->gb, "before MBA")==0)
             return -1;
 
         ff_h263_decode_mba(s);
 
         if(s->mb_num > 1583)
-            if(check_marker(&s->gb, "after MBA")==0)
+            if(check_marker(s->avctx, &s->gb, "after MBA")==0)
                 return -1;
 
         s->qscale = get_bits(&s->gb, 5); /* SQUANT */
-        if(check_marker(&s->gb, "after SQUANT")==0)
+        if(check_marker(s->avctx, &s->gb, "after SQUANT")==0)
             return -1;
         skip_bits(&s->gb, 2); /* GFID */
     }else{
@@ -277,7 +277,7 @@ int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code)
     if (!s->h263_long_vectors) {
         val = sign_extend(val, 5 + f_code);
     } else {
-        /* horrible h263 long vector mode */
+        /* horrible H.263 long vector mode */
         if (pred < -31 && val < -63)
             val += 64;
         if (pred > 32 && val > 63)
@@ -872,7 +872,7 @@ end:
     return SLICE_OK;
 }
 
-/* most is hardcoded. should extend to handle all h263 streams */
+/* Most is hardcoded; should extend to handle all H.263 streams. */
 int ff_h263_decode_picture_header(MpegEncContext *s)
 {
     int format, width, height, i, ret;
@@ -904,12 +904,12 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     s->picture_number= (s->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */
-    if (check_marker(&s->gb, "in PTYPE") != 1) {
+    if (check_marker(s->avctx, &s->gb, "in PTYPE") != 1) {
         return -1;
     }
     if (get_bits1(&s->gb) != 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Bad H263 id\n");
-        return -1;      /* h263 id */
+        av_log(s->avctx, AV_LOG_ERROR, "Bad H.263 id\n");
+        return -1;      /* H.263 id */
     }
     skip_bits1(&s->gb);         /* split screen off */
     skip_bits1(&s->gb);         /* camera  off */
@@ -936,7 +936,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         s->h263_long_vectors = get_bits1(&s->gb);
 
         if (get_bits1(&s->gb) != 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "H263 SAC not supported\n");
+            av_log(s->avctx, AV_LOG_ERROR, "H.263 SAC not supported\n");
             return -1; /* SAC: off */
         }
         s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
@@ -1025,11 +1025,11 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                 6-14 - reserved
                 */
                 width = (get_bits(&s->gb, 9) + 1) * 4;
-                check_marker(&s->gb, "in dimensions");
+                check_marker(s->avctx, &s->gb, "in dimensions");
                 height = get_bits(&s->gb, 9) * 4;
                 ff_dlog(s->avctx, "\nH.263+ Custom picture: %dx%d\n",width,height);
                 if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
-                    /* aspected dimensions */
+                    /* expected dimensions */
                     s->avctx->sample_aspect_ratio.num= get_bits(&s->gb, 8);
                     s->avctx->sample_aspect_ratio.den= get_bits(&s->gb, 8);
                 }else{
@@ -1120,13 +1120,13 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         return AVERROR_INVALIDDATA;
 
     if(s->h263_slice_structured){
-        if (check_marker(&s->gb, "SEPB1") != 1) {
+        if (check_marker(s->avctx, &s->gb, "SEPB1") != 1) {
             return -1;
         }
 
         ff_h263_decode_mba(s);
 
-        if (check_marker(&s->gb, "SEPB2") != 1) {
+        if (check_marker(s->avctx, &s->gb, "SEPB2") != 1) {
             return -1;
         }
     }

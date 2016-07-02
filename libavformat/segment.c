@@ -966,8 +966,10 @@ static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
         if (ret == 1) {
             AVStream *st = s->streams[pkt->stream_index];
             AVStream *ost = oc->streams[pkt->stream_index];
-            st->internal->bsfc = ost->internal->bsfc;
-            ost->internal->bsfc = NULL;
+            st->internal->bsfcs = ost->internal->bsfcs;
+            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
+            ost->internal->bsfcs = NULL;
+            ost->internal->nb_bsfcs = 0;
         }
         return ret;
     }

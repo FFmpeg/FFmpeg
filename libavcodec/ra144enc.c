@@ -128,7 +128,7 @@ static void orthogonalize(float *v, const float *u)
 
 /**
  * Calculate match score and gain of an LPC-filtered vector with respect to
- * input data, possibly othogonalizing it to up to 2 other vectors
+ * input data, possibly orthogonalizing it to up to two other vectors.
  *
  * @param work array used to calculate the filtered vector
  * @param coefs coefficients of the LPC filter
@@ -229,8 +229,8 @@ static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
 
 /**
  * Find the best vector of a fixed codebook by applying an LPC filter to
- * codebook entries, possibly othogonalizing them to up to 2 other vectors and
- * matching the results with input data
+ * codebook entries, possibly orthogonalizing them to up to two other vectors
+ * and matching the results with input data.
  *
  * @param work array used to calculate the filtered vectors
  * @param coefs coefficients of the LPC filter

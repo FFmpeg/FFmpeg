@@ -354,14 +354,14 @@ fft_data:
 .macro fft_calc interleave
 extfunc ff_fft_calc\interleave\()_altivec
     mflr    r0
-    stp     r0, 2*PS(r1)
-    stpu    r1, -(160+16*PS)(r1)
+    stp     r0, 2*PS(1)
+    stpu    r1, -(160+16*PS)(1)
     get_got r11
     addi    r6, r1, 16*PS
     stvm    r6, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
     mfvrsave r0
-    stw     r0, 15*PS(r1)
-    li      r6, 0xfffffffc
+    stw     r0, 15*PS(1)
+    li      r6, -4  #0xfffffffc
     mtvrsave r6
 
     movrel  r6, fft_data, r11
@@ -372,7 +372,7 @@ extfunc ff_fft_calc\interleave\()_altivec
     movrel  r12, X(ff_cos_tabs), r11
 
     movrel  r6, fft_dispatch_tab\interleave\()_altivec, r11
-    lwz     r3, 0(r3)
+    lwz     r3, 0(3)
     subi    r3, r3, 2
     slwi    r3, r3, 2+ARCH_PPC64
     lpx     r3, r3, r6
@@ -382,10 +382,10 @@ extfunc ff_fft_calc\interleave\()_altivec
 
     addi    r6, r1, 16*PS
     lvm     r6, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
-    lwz     r6, 15*PS(r1)
+    lwz     r6, 15*PS(1)
     mtvrsave r6
-    lp      r1, 0(r1)
-    lp      r0, 2*PS(r1)
+    lp      r1, 0(1)
+    lp      r0, 2*PS(1)
     mtlr    r0
     blr
 .endm
@@ -393,15 +393,15 @@ extfunc ff_fft_calc\interleave\()_altivec
 .macro DECL_FFT suffix, bits, n, n2, n4
 fft\n\suffix\()_altivec:
     mflr  r0
-    stp   r0,PS*(\bits-3)(r1)
+    stp   r0,PS*(\bits-3)(1)
     bl    fft\n2\()_altivec
     addi2 r3,\n*4
     bl    fft\n4\()_altivec
     addi2 r3,\n*2
     bl    fft\n4\()_altivec
     addi2 r3,\n*-6
-    lp    r0,PS*(\bits-3)(r1)
-    lp    r4,\bits*PS(r12)
+    lp    r0,PS*(\bits-3)(1)
+    lp    r4,\bits*PS(12)
     mtlr  r0
     li    r5,\n/16
     b     fft_pass\suffix\()_altivec

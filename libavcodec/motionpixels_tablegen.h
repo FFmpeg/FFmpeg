@@ -1,5 +1,5 @@
 /*
- * Header file for hardcoded motionpixels RGB to YUV table
+ * Header file for hardcoded motion pixels RGB to YUV table
  *
  * Copyright (c) 2009 Reimar Döffinger <Reimar.Doeffinger@gmx.de>
  *

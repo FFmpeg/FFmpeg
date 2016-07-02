@@ -57,7 +57,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    /* extract flag infos */
+    /* extract flag info */
     flags1 = 0;
     flags2 = 1;
     if (avctx->codec->id == AV_CODEC_ID_WMAV1) {

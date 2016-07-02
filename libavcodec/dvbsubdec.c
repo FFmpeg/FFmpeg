@@ -827,7 +827,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     AVSubtitleRect *rect;
     DVBSubCLUT *clut;
     uint32_t *clut_table;
-    int i,j;
+    int i;
     int offset_x=0, offset_y=0;
     int ret = 0;
 
@@ -924,10 +924,13 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+            int j;
             for (j = 0; j < 4; j++) {
                 rect->pict.data[j] = rect->data[j];
                 rect->pict.linesize[j] = rect->linesize[j];
             }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 

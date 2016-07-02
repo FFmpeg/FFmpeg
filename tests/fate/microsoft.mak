@@ -1,11 +1,8 @@
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/msmpeg4v1/mpg4.avi -an
 
-FATE_MSS1 += fate-mss1-pal
-fate-mss1-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += $(FATE_MSS1)
-fate-mss1: $(FATE_MSS1)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += fate-mss1-pal
+fate-mss1-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv -an
 
 FATE_MSS2 += fate-mss2-pal
 fate-mss2-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rlepal.wmv
@@ -39,6 +36,9 @@ fate-msvideo1-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/clock-cram16.avi -
 
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSVIDEO1) += $(FATE_MSVIDEO1)
 fate-msvideo1: $(FATE_MSVIDEO1)
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MTS2) += fate-mts2
+fate-mts2: CMD = framecrc -i $(TARGET_SAMPLES)/mts2/ScreenCapture.xesc
 
 FATE_WMV8_DRM += fate-wmv8-drm
 # discard last packet to avoid fails due to overread of VC-1 decoder

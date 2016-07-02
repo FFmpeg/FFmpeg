@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder.
+ * MPEG-4 encoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -29,7 +29,7 @@
 #include "mpeg4video.h"
 
 /* The uni_DCtab_* tables below contain unified bits+length tables to encode DC
- * differences in mpeg4. Unified in the sense that the specification specifies
+ * differences in MPEG-4. Unified in the sense that the specification specifies
  * this encoding in several steps. */
 static uint8_t  uni_DCtab_lum_len[512];
 static uint8_t  uni_DCtab_chrom_len[512];
@@ -47,7 +47,7 @@ static uint8_t  uni_mpeg4_inter_rl_len[64 * 64 * 2 * 2];
 //#define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) + (level) * 64)
 #define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) * 128 + (level))
 
-/* mpeg4
+/* MPEG-4
  * inter
  * max level: 24/6
  * max run: 53/63
@@ -120,7 +120,7 @@ static inline void restore_ac_coeffs(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * Return the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
+ * Return the optimal value (0 or 1) for the ac_pred element for the given MB in MPEG-4.
  * This function will also update s->block_last_index and s->ac_val.
  * @param[in,out] block MB coefficients, these will be updated if 1 is returned
  * @param[in] dir ac prediction direction for each 8x8 block
@@ -208,7 +208,7 @@ static inline int decide_ac_pred(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * modify mb_type & qscale so that encoding is actually possible in mpeg4
+ * modify mb_type & qscale so that encoding is actually possible in MPEG-4
  */
 void ff_clean_mpeg4_qscales(MpegEncContext *s)
 {
@@ -220,7 +220,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s)
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         int odd = 0;
         /* ok, come on, this isn't funny anymore, there's more code for
-         * handling this mpeg4 mess than for the actual adaptive quantization */
+         * handling this MPEG-4 mess than for the actual adaptive quantization */
 
         for (i = 0; i < s->mb_num; i++) {
             int mb_xy = s->mb_index2xy[i];
@@ -318,7 +318,7 @@ static inline void mpeg4_encode_block(MpegEncContext *s,
     const int last_index = s->block_last_index[n];
 
     if (s->mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
-        /* mpeg4 based DC predictor */
+        /* MPEG-4 based DC predictor */
         mpeg4_encode_dc(dc_pb, intra_dc, n);
         if (last_index < 1)
             return;
@@ -378,7 +378,7 @@ static int mpeg4_get_block_length(MpegEncContext *s,
     int len = 0;
 
     if (s->mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
-        /* mpeg4 based DC predictor */
+        /* MPEG-4 based DC predictor */
         len += mpeg4_get_dc_length(intra_dc, n);
         if (last_index < 1)
             return len;
@@ -529,7 +529,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
             av_assert2((s->dquant & 1) == 0);
             av_assert2(mb_type >= 0);
 
-            /* nothing to do if this MB was skipped in the next P Frame */
+            /* nothing to do if this MB was skipped in the next P-frame */
             if (s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]) {  // FIXME avoid DCT & ...
                 s->skip_count++;
                 s->mv[0][0][0] =
@@ -659,7 +659,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
             if ((cbp | motion_x | motion_y | s->dquant) == 0 &&
                 s->mv_type == MV_TYPE_16X16) {
-                /* check if the B frames can skip it too, as we must skip it
+                /* Check if the B-frames can skip it too, as we must skip it
                  * if we skip here why didn't they just compress
                  * the skip-mb bits instead of reusing them ?! */
                 if (s->max_b_frames > 0) {
@@ -886,7 +886,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * add mpeg4 stuffing bits (01...1)
+ * add MPEG-4 stuffing bits (01...1)
  */
 void ff_mpeg4_stuffing(PutBitContext *pbc)
 {
@@ -1054,7 +1054,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
         put_bits(&s->pb, 2, 0);       /* sprite enable */
 
     put_bits(&s->pb, 1, 0);             /* not 8 bit == false */
-    put_bits(&s->pb, 1, s->mpeg_quant); /* quant type= (0=h263 style)*/
+    put_bits(&s->pb, 1, s->mpeg_quant); /* quant type = (0 = H.263 style) */
 
     if (s->mpeg_quant) {
         ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
@@ -1085,7 +1085,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     }
 }
 
-/* write mpeg4 VOP header */
+/* write MPEG-4 VOP header */
 int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     uint64_t time_incr;

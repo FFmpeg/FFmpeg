@@ -28,12 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGV
  */
 
-#include "avcodec.h"
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
+#include "avcodec.h"
+#include "get_bits.h"
+#include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')

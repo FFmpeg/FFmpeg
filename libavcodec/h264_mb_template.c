@@ -170,14 +170,18 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
         } else {
             if (chroma422) {
                 FUNC(hl_motion_422)(h, sl, dest_y, dest_cb, dest_cr,
-                              h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
-                              h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
+                              h->h264qpel.put_h264_qpel_pixels_tab,
+                              h->h264chroma.put_h264_chroma_pixels_tab,
+                              h->h264qpel.avg_h264_qpel_pixels_tab,
+                              h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
                               h->h264dsp.biweight_h264_pixels_tab);
             } else {
                 FUNC(hl_motion_420)(h, sl, dest_y, dest_cb, dest_cr,
-                              h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
-                              h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
+                              h->h264qpel.put_h264_qpel_pixels_tab,
+                              h->h264chroma.put_h264_chroma_pixels_tab,
+                              h->h264qpel.avg_h264_qpel_pixels_tab,
+                              h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
                               h->h264dsp.biweight_h264_pixels_tab);
             }
@@ -333,8 +337,10 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
                                linesize, 0, 1, SIMPLE, PIXEL_SHIFT);
         } else {
             FUNC(hl_motion_444)(h, sl, dest[0], dest[1], dest[2],
-                      h->qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
-                      h->qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
+                      h->h264qpel.put_h264_qpel_pixels_tab,
+                      h->h264chroma.put_h264_chroma_pixels_tab,
+                      h->h264qpel.avg_h264_qpel_pixels_tab,
+                      h->h264chroma.avg_h264_chroma_pixels_tab,
                       h->h264dsp.weight_h264_pixels_tab,
                       h->h264dsp.biweight_h264_pixels_tab);
         }

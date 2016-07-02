@@ -47,7 +47,7 @@
 typedef struct ScreenpressoContext {
     AVFrame *current;
 
-    /* zlib interation */
+    /* zlib interaction */
     uint8_t *inflated_buf;
     uLongf inflated_size;
 } ScreenpressoContext;

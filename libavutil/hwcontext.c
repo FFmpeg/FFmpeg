@@ -32,6 +32,9 @@ static const HWContextType *hw_table[] = {
 #if CONFIG_CUDA
     &ff_hwcontext_type_cuda,
 #endif
+#if CONFIG_DXVA2
+    &ff_hwcontext_type_dxva2,
+#endif
 #if CONFIG_VAAPI
     &ff_hwcontext_type_vaapi,
 #endif
@@ -448,4 +451,40 @@ void av_hwframe_constraints_free(AVHWFramesConstraints **constraints)
         av_freep(&(*constraints)->valid_sw_formats);
     }
     av_freep(constraints);
+}
+
+int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
+                           const char *device, AVDictionary *opts, int flags)
+{
+    AVBufferRef *device_ref = NULL;
+    AVHWDeviceContext *device_ctx;
+    int ret = 0;
+
+    device_ref = av_hwdevice_ctx_alloc(type);
+    if (!device_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    device_ctx = (AVHWDeviceContext*)device_ref->data;
+
+    if (!device_ctx->internal->hw_type->device_create) {
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
+
+    ret = device_ctx->internal->hw_type->device_create(device_ctx, device,
+                                                       opts, flags);
+    if (ret < 0)
+        goto fail;
+
+    ret = av_hwdevice_ctx_init(device_ref);
+    if (ret < 0)
+        goto fail;
+
+    *pdevice_ref = device_ref;
+    return 0;
+fail:
+    av_buffer_unref(&device_ref);
+    *pdevice_ref = NULL;
+    return ret;
 }

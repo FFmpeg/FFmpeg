@@ -33,7 +33,7 @@ typedef struct H264PredWeightTable {
     int chroma_log2_weight_denom;
     int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
-    // The following 2 can be changed to int8_t but that causes 10cpu cycles speedloss
+    // The following 2 can be changed to int8_t but that causes a 10 CPU cycles speed loss
     int luma_weight[48][2][2];
     int chroma_weight[48][2][2][2];
     int implicit_weight[48][48][2];
@@ -54,10 +54,11 @@ typedef struct H264POCContext {
 
 struct SPS;
 struct PPS;
+struct H264ParamSets;
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const struct SPS *sps,
                               const int *ref_count, int slice_type_nos,
-                              H264PredWeightTable *pwt);
+                              H264PredWeightTable *pwt, void *logctx);
 
 /**
  * Check if the top & left blocks are available if needed & change the
@@ -81,5 +82,14 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
 int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
                      const struct SPS *sps, H264POCContext *poc,
                      int picture_structure, int nal_ref_idc);
+
+int ff_h264_decode_extradata(const uint8_t *data, int size, struct H264ParamSets *ps,
+                             int *is_avc, int *nal_length_size,
+                             int err_recognition, void *logctx);
+
+/**
+ * compute profile from sps
+ */
+int ff_h264_get_profile(const struct SPS *sps);
 
 #endif /* AVCODEC_H264_PARSE_H */

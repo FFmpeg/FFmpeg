@@ -40,7 +40,7 @@
 #include "flac.h"
 
 /** maximum number of adjacent headers that compare CRCs against each other   */
-#define FLAC_MAX_SEQUENTIAL_HEADERS 3
+#define FLAC_MAX_SEQUENTIAL_HEADERS 4
 /** minimum number of headers buffered and checked before returning frames    */
 #define FLAC_MIN_HEADERS 10
 /** estimate for average size of a FLAC frame                                 */
@@ -617,8 +617,8 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
         if (!av_fifo_space(fpc->fifo_buf) &&
             av_fifo_size(fpc->fifo_buf) / FLAC_AVG_FRAME_SIZE >
-            fpc->nb_headers_buffered * 10) {
-            /* There is less than one valid flac header buffered for 10 headers
+            fpc->nb_headers_buffered * 20) {
+            /* There is less than one valid flac header buffered for 20 headers
              * buffered. Therefore the fifo is most likely filled with invalid
              * data and the input is not a flac file. */
             goto handle_error;

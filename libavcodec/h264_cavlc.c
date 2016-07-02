@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 cavlc bitstream decoding.
+ * H.264 / AVC / MPEG-4 part10 cavlc bitstream decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -422,10 +422,6 @@ static inline int get_level_prefix(GetBitContext *gb){
     buf=GET_CACHE(re, gb);
 
     log= 32 - av_log2(buf);
-#ifdef TRACE
-    print_bin(buf>>(32-log), log);
-    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d lpr @%5d in %s get_level_prefix\n", buf>>(32-log), log, log-1, get_bits_count(gb), __FILE__);
-#endif
 
     LAST_SKIP_BITS(re, gb, log);
     CLOSE_READER(re, gb);
@@ -1127,8 +1123,8 @@ decode_intra_mb:
             }
         }
 
-        sl->chroma_qp[0] = get_chroma_qp(h, 0, sl->qscale);
-        sl->chroma_qp[1] = get_chroma_qp(h, 1, sl->qscale);
+        sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
+        sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
 
         if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;

@@ -70,6 +70,7 @@ static const AVOption options[] = {
     { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_colr", "Write colr atom (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -2561,7 +2562,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
         /* In the positive delay case, the delay includes the cts
          * offset, and the second edit list entry below trims out
          * the same amount from the actual content. This makes sure
-         * that the offsetted last sample is included in the edit
+         * that the offset last sample is included in the edit
          * list duration as well. */
         if (version == 1) {
             avio_wb64(pb, delay);
@@ -2910,16 +2911,17 @@ static int mov_write_string_tag(AVIOContext *pb, const char *name,
     return size;
 }
 
-static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
-                                     const char *name, const char *tag,
-                                     int long_style)
+static AVDictionaryEntry *get_metadata_lang(AVFormatContext *s,
+                                            const char *tag, int *lang)
 {
-    int l, lang = 0, len, len2;
+    int l, len, len2;
     AVDictionaryEntry *t, *t2 = NULL;
     char tag2[16];
 
+    *lang = 0;
+
     if (!(t = av_dict_get(s->metadata, tag, NULL, 0)))
-        return 0;
+        return NULL;
 
     len = strlen(t->key);
     snprintf(tag2, sizeof(tag2), "%s-", tag);
@@ -2927,10 +2929,21 @@ static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
         len2 = strlen(t2->key);
         if (len2 == len + 4 && !strcmp(t->value, t2->value)
             && (l = ff_mov_iso639_to_lang(&t2->key[len2 - 3], 1)) >= 0) {
-            lang = l;
-            break;
+            *lang = l;
+            return t;
         }
     }
+    return t;
+}
+
+static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
+                                     const char *name, const char *tag,
+                                     int long_style)
+{
+    int lang;
+    AVDictionaryEntry *t = get_metadata_lang(s, tag, &lang);
+    if (!t)
+        return 0;
     return mov_write_string_tag(pb, name, t->value, lang, long_style);
 }
 
@@ -2950,6 +2963,57 @@ static int mov_write_tmpo_tag(AVIOContext *pb, AVFormatContext *s)
         avio_wb16(pb, tmpo);        // data
     }
     return size;
+}
+
+/* 3GPP TS 26.244 */
+static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
+{
+    int lang;
+    int64_t pos = avio_tell(pb);
+    double latitude, longitude, altitude;
+    int32_t latitude_fix, longitude_fix, altitude_fix;
+    AVDictionaryEntry *t = get_metadata_lang(s, "location", &lang);
+    const char *ptr, *place = "";
+    char *end;
+    static const char *astronomical_body = "earth";
+    if (!t)
+        return 0;
+
+    ptr = t->value;
+    longitude = strtod(ptr, &end);
+    if (end == ptr) {
+        av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
+        return 0;
+    }
+    ptr = end;
+    latitude = strtod(ptr, &end);
+    if (end == ptr) {
+        av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
+        return 0;
+    }
+    ptr = end;
+    altitude = strtod(ptr, &end);
+    /* If no altitude was present, the default 0 should be fine */
+    if (*end == '/')
+        place = end + 1;
+
+    latitude_fix  = (int32_t) ((1 << 16) * latitude);
+    longitude_fix = (int32_t) ((1 << 16) * longitude);
+    altitude_fix  = (int32_t) ((1 << 16) * altitude);
+
+    avio_wb32(pb, 0);         /* size */
+    ffio_wfourcc(pb, "loci"); /* type */
+    avio_wb32(pb, 0);         /* version + flags */
+    avio_wb16(pb, lang);
+    avio_write(pb, place, strlen(place) + 1);
+    avio_w8(pb, 0);           /* role of place (0 == shooting location, 1 == real location, 2 == fictional location) */
+    avio_wb32(pb, latitude_fix);
+    avio_wb32(pb, longitude_fix);
+    avio_wb32(pb, altitude_fix);
+    avio_write(pb, astronomical_body, strlen(astronomical_body) + 1);
+    avio_w8(pb, 0);           /* additional notes, null terminated string */
+
+    return update_size(pb, pos);
 }
 
 /* iTunes track or disc number */
@@ -3046,7 +3110,71 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     return update_size(pb, pos);
 }
 
-/* iTunes meta data tag */
+static int mov_write_mdta_hdlr_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    avio_wb32(pb, 33); /* size */
+    ffio_wfourcc(pb, "hdlr");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "mdta");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    avio_wb32(pb, 0);
+    avio_w8(pb, 0);
+    return 33;
+}
+
+static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    AVDictionaryEntry *t = NULL;
+    int64_t pos = avio_tell(pb);
+    int64_t curpos, entry_pos;
+    int count = 0;
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "keys");
+    avio_wb32(pb, 0);
+    entry_pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* entry count */
+
+    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        avio_wb32(pb, strlen(t->key) + 8);
+        ffio_wfourcc(pb, "mdta");
+        avio_write(pb, t->key, strlen(t->key));
+        count += 1;
+    }
+    curpos = avio_tell(pb);
+    avio_seek(pb, entry_pos, SEEK_SET);
+    avio_wb32(pb, count); // rewrite entry count
+    avio_seek(pb, curpos, SEEK_SET);
+
+    return update_size(pb, pos);
+}
+
+static int mov_write_mdta_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                   AVFormatContext *s)
+{
+    AVDictionaryEntry *t = NULL;
+    int64_t pos = avio_tell(pb);
+    int count = 1; /* keys are 1-index based */
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "ilst");
+
+    while (t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        int64_t entry_pos = avio_tell(pb);
+        avio_wb32(pb, 0); /* size */
+        avio_wb32(pb, count); /* key */
+        mov_write_string_data_tag(pb, t->value, 0, 1);
+        update_size(pb, entry_pos);
+        count += 1;
+    }
+    return update_size(pb, pos);
+}
+
+/* meta data tags */
 static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
@@ -3055,8 +3183,16 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "meta");
     avio_wb32(pb, 0);
-    mov_write_itunes_hdlr_tag(pb, mov, s);
-    mov_write_ilst_tag(pb, mov, s);
+    if (mov->flags & FF_MOV_FLAG_USE_MDTA) {
+        mov_write_mdta_hdlr_tag(pb, mov, s);
+        mov_write_mdta_keys_tag(pb, mov, s);
+        mov_write_mdta_ilst_tag(pb, mov, s);
+    }
+    else {
+        /* iTunes metadata tag */
+        mov_write_itunes_hdlr_tag(pb, mov, s);
+        mov_write_ilst_tag(pb, mov, s);
+    }
     size = update_size(pb, pos);
     return size;
 }
@@ -3167,7 +3303,8 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_3gp_udta_tag(pb_buf, s, "albm", "album");
         mov_write_3gp_udta_tag(pb_buf, s, "cprt", "copyright");
         mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "date");
-    } else if (mov->mode == MODE_MOV) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
+        mov_write_loci_tag(s, pb_buf);
+    } else if (mov->mode == MODE_MOV && !(mov->flags & FF_MOV_FLAG_USE_MDTA)) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
         mov_write_string_metadata(s, pb_buf, "\251ART", "artist",      0);
         mov_write_string_metadata(s, pb_buf, "\251nam", "title",       0);
         mov_write_string_metadata(s, pb_buf, "\251aut", "author",      0);
@@ -3187,6 +3324,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     } else {
         /* iTunes meta data */
         mov_write_meta_tag(pb_buf, mov, s);
+        mov_write_loci_tag(s, pb_buf);
     }
 
     if (s->nb_chapters && !(mov->flags & FF_MOV_FLAG_DISABLE_CHPL))
@@ -4236,9 +4374,31 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
     int i, first_track = -1;
     int64_t mdat_size = 0;
     int ret;
+    int has_video = 0, starts_with_key = 0, first_video_track = 1;
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
         return 0;
+
+    // Try to fill in the duration of the last packet in each stream
+    // from queued packets in the interleave queues. If the flushing
+    // of fragments was triggered automatically by an AVPacket, we
+    // already have reliable info for the end of that track, but other
+    // tracks may need to be filled in.
+    for (i = 0; i < s->nb_streams; i++) {
+        MOVTrack *track = &mov->tracks[i];
+        if (!track->end_reliable) {
+            int64_t ts_offset;
+            const AVPacket *next = ff_interleaved_peek(s, i, &ts_offset);
+            if (next) {
+                track->track_duration = next->dts - track->start_dts + ts_offset;
+                if (next->pts != AV_NOPTS_VALUE)
+                    track->end_pts = next->pts;
+                else
+                    track->end_pts = next->dts;
+                track->end_pts += ts_offset;
+            }
+        }
+    }
 
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
@@ -4283,6 +4443,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         for (i = 0; i < mov->nb_streams; i++)
             mov->tracks[i].data_offset = pos + moov_size + 8;
 
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
             mov_write_identification(s->pb, s);
         if ((ret = mov_write_moov_tag(s->pb, mov, s)) < 0)
@@ -4314,6 +4475,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
                                              mov->tracks[i].track_duration -
                                              mov->tracks[i].cluster[0].dts;
             mov->tracks[i].entry = 0;
+            mov->tracks[i].end_reliable = 0;
         }
         avio_flush(s->pb);
         return 0;
@@ -4338,6 +4500,14 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             track->data_offset = 0;
         else
             track->data_offset = mdat_size;
+        if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
+            has_video = 1;
+            if (first_video_track) {
+                if (track->entry)
+                    starts_with_key = track->cluster[0].flags & MOV_SYNC_SAMPLE;
+                first_video_track = 0;
+            }
+        }
         if (!track->entry)
             continue;
         if (track->mdat_buf)
@@ -4348,6 +4518,10 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
     if (!mdat_size)
         return 0;
+
+    avio_write_marker(s->pb,
+                      av_rescale(mov->tracks[first_track].cluster[0].dts, AV_TIME_BASE, mov->tracks[first_track].timescale),
+                      (has_video ? starts_with_key : mov->tracks[first_track].cluster[0].flags & MOV_SYNC_SAMPLE) ? AVIO_DATA_MARKER_SYNC_POINT : AVIO_DATA_MARKER_BOUNDARY_POINT);
 
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
@@ -4381,6 +4555,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             track->frag_start += duration;
         track->entry = 0;
         track->entries_flushed = 0;
+        track->end_reliable = 0;
         if (!mov->frag_interleave) {
             if (!track->mdat_buf)
                 continue;
@@ -4512,8 +4687,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
     if (par->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
-        /* from x264 or from bytestream h264 */
-        /* nal reformating needed */
+        /* from x264 or from bytestream H.264 */
+        /* NAL reformatting needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
             ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
                                        &size);
@@ -4746,6 +4921,7 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->end_pts = pkt->pts;
                 else
                     trk->end_pts = pkt->dts;
+                trk->end_reliable = 1;
                 mov_auto_flush_fragment(s, 0);
             }
         }
@@ -4934,7 +5110,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         pkt.duration = end - pkt.dts;
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
-            const char encd[12] = {
+            static const char encd[12] = {
                 0x00, 0x00, 0x00, 0x0C,
                 'e',  'n',  'c',  'd',
                 0x00, 0x00, 0x01, 0x00 };
@@ -5807,8 +5983,10 @@ static int mov_write_trailer(AVFormatContext *s)
             avio_seek(pb, mov->reserved_header_pos, SEEK_SET);
             mov_write_sidx_tags(pb, mov, -1, 0);
             avio_seek(pb, end, SEEK_SET);
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
             mov_write_mfra_tag(pb, mov);
         } else {
+            avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
             mov_write_mfra_tag(pb, mov);
         }
     }

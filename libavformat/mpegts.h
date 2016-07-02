@@ -1,5 +1,5 @@
 /*
- * MPEG2 transport stream defines
+ * MPEG-2 transport stream defines
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.

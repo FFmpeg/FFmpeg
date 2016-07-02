@@ -20,12 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+
+#include "avcodec.h"
 #include "bytestream.h"
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 #include "internal.h"
 
 typedef struct XanContext {

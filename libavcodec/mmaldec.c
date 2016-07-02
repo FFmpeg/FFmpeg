@@ -357,19 +357,19 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in = decoder->input[0]->format;
     format_in->type = MMAL_ES_TYPE_VIDEO;
     switch (avctx->codec_id) {
-        case AV_CODEC_ID_MPEG2VIDEO:
-            format_in->encoding = MMAL_ENCODING_MP2V;
-            break;
-        case AV_CODEC_ID_MPEG4:
-            format_in->encoding = MMAL_ENCODING_MP4V;
-            break;
-        case AV_CODEC_ID_VC1:
-            format_in->encoding = MMAL_ENCODING_WVC1;
-            break;
-        case AV_CODEC_ID_H264:
-        default:
-            format_in->encoding = MMAL_ENCODING_H264;
-            break;
+    case AV_CODEC_ID_MPEG2VIDEO:
+        format_in->encoding = MMAL_ENCODING_MP2V;
+        break;
+    case AV_CODEC_ID_MPEG4:
+        format_in->encoding = MMAL_ENCODING_MP4V;
+        break;
+    case AV_CODEC_ID_VC1:
+        format_in->encoding = MMAL_ENCODING_WVC1;
+        break;
+    case AV_CODEC_ID_H264:
+    default:
+        format_in->encoding = MMAL_ENCODING_H264;
+        break;
     }
     format_in->es->video.width = FFALIGN(avctx->width, 32);
     format_in->es->video.height = FFALIGN(avctx->height, 16);
@@ -384,10 +384,12 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
     av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
 
+#if HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
                                        -1 - ctx->extra_decoder_buffers)) {
         av_log(avctx, AV_LOG_WARNING, "Could not set input buffering limit.\n");
     }
+#endif
 
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
@@ -658,7 +660,7 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // being busy from decoder waiting for input. So just poll at the start and
         // keep feeding new data to the buffer.
         // We are pretty sure the decoder will produce output if we sent more input
-        // frames than what a h264 decoder could logically delay. This avoids too
+        // frames than what a H.264 decoder could logically delay. This avoids too
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).

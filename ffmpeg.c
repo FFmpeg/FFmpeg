@@ -197,15 +197,15 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
     }
 
     dst += r->y * dst_linesize + r->x * 4;
-    src = r->pict.data[0];
-    pal = (uint32_t *)r->pict.data[1];
+    src = r->data[0];
+    pal = (uint32_t *)r->data[1];
     for (y = 0; y < r->h; y++) {
         dst2 = (uint32_t *)dst;
         src2 = src;
         for (x = 0; x < r->w; x++)
             *(dst2++) = pal[*(src2++)];
         dst += dst_linesize;
-        src += r->pict.linesize[0];
+        src += r->linesize[0];
     }
 }
 
@@ -1922,7 +1922,7 @@ int guess_input_channel_layout(InputStream *ist)
             return 0;
         av_get_channel_layout_string(layout_name, sizeof(layout_name),
                                      dec->channels, dec->channel_layout);
-        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Input Stream "
                "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
     }
     return 1;

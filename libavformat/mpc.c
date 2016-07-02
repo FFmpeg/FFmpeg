@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavcodec/get_bits.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "apetag.h"

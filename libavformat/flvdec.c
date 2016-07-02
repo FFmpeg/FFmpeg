@@ -4,8 +4,8 @@
  *
  * This demuxer will generate a 1 byte extradata for VP6F content.
  * It is composed of:
- *  - upper 4bits: difference between encoded width and visible width
- *  - lower 4bits: difference between encoded height and visible height
+ *  - upper 4 bits: difference between encoded width and visible width
+ *  - lower 4 bits: difference between encoded height and visible height
  *
  * This file is part of FFmpeg.
  *
@@ -1140,10 +1140,11 @@ retry_duration:
 
 leave:
     last = avio_rb32(s->pb);
-    if (last != orig_size + 11 &&
+    if (last != orig_size + 11 && last != orig_size + 10 &&
+        !avio_feof(s->pb) &&
         (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
         !flv->broken_sizes) {
-        av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d\n", last, orig_size + 11);
+        av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d %d\n", last, orig_size + 11, flv->sum_flv_tag_size);
         avio_seek(s->pb, pos + 1, SEEK_SET);
         ret = resync(s);
         av_packet_unref(pkt);

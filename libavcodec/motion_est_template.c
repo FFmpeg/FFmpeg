@@ -429,7 +429,7 @@ static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, 
     { /* ensure that the best point is in the MAP as h/qpel refinement needs it */
         const unsigned key = ((unsigned)best[1]<<ME_MAP_MV_BITS) + best[0] + map_generation;
         const int index= (((unsigned)best[1]<<ME_MAP_SHIFT) + best[0])&(ME_MAP_SIZE-1);
-        if(map[index]!=key){ //this will be executed only very rarey
+        if (map[index] != key) { // this will be executed only very rarely
             score_map[index]= cmp(s, best[0], best[1], 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);
             map[index]= key;
         }
@@ -758,7 +758,7 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
     if(   best[0] < xmax && best[0] > xmin
        && best[1] < ymax && best[1] > ymin){
         int d;
-        //ensure that the refernece samples for hpel refinement are in the map
+        // ensure that the reference samples for hpel refinement are in the map
         CHECK_MV(best[0]-1, best[1])
         CHECK_MV(best[0]+1, best[1])
         CHECK_MV(best[0], best[1]-1)
@@ -871,7 +871,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     unsigned map_generation;
     int penalty_factor;
     const int ref_mv_stride= s->mb_stride; //pass as arg  FIXME
-    const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride; //add to last_mv beforepassing FIXME
+    const int ref_mv_xy = s->mb_x + s->mb_y * ref_mv_stride; // add to last_mv before passing FIXME
     me_cmp_func cmpf, chroma_cmpf;
 
     LOAD_COMMON
@@ -972,7 +972,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     return dmin;
 }
 
-//this function is dedicated to the braindamaged gcc
+//this function is dedicated to the brain damaged gcc
 int ff_epzs_motion_search(MpegEncContext *s, int *mx_ptr, int *my_ptr,
                           int P[10][2], int src_index, int ref_index,
                           int16_t (*last_mv)[2], int ref_mv_scale,
