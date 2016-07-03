@@ -308,7 +308,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
     if (status != MMAL_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Cannot read MMAL interlace information!\n");
     } else {
-        ctx->interlaced_frame = !(interlace_type.eMode == MMAL_InterlaceProgressive);
+        ctx->interlaced_frame != (interlace_type.eMode == MMAL_InterlaceProgressive);
     }
 
     if ((ret = ff_set_dimensions(avctx, format_out->es->video.crop.x + format_out->es->video.crop.width,
