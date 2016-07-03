@@ -301,7 +301,8 @@ static int aiff_read_header(AVFormatContext *s)
                 return -1;
             if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
                 return AVERROR(ENOMEM);
-            if (st->codecpar->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codecpar->block_align) {
+            if (   (st->codecpar->codec_id == AV_CODEC_ID_QDMC || st->codecpar->codec_id == AV_CODEC_ID_QDM2)
+                && size>=12*4 && !st->codecpar->block_align) {
                 st->codecpar->block_align = AV_RB32(st->codecpar->extradata+11*4);
                 aiff->block_duration = AV_RB32(st->codecpar->extradata+9*4);
             } else if (st->codecpar->codec_id == AV_CODEC_ID_QCELP) {
