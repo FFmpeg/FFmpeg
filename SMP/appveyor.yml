@@ -4,13 +4,18 @@ branches:
   only:
   - master
 skip_non_tags: true
-configuration: Release+ReleaseDLLStaticDeps
 shallow_clone: true
+
+configuration: Release+ReleaseDLLStaticDeps
+
+platform:
+- Win32
+- x64
 
 environment:
   matrix:
-  - MSVC_VER: 14
   - MSVC_VER: 12
+  - MSVC_VER: 14
 
 before_build:
 # Create build project to compile all configurations and platforms at once
@@ -21,13 +26,21 @@ before_build:
       <ItemGroup>
         <ConfigurationList Condition="'@(ConfigurationList)' == '' and $(Configuration) != ''" Include="$(Configuration.Split('+'))" />
         <ConfigurationList Condition="'@(ConfigurationList)' == ''" Include="Release" />
+        <PlatformList Condition="'@(PlatformList)' == '' and $(Platform) != ''" Include="$(Platform.Split('+'))" />
         <PlatformList Condition="'@(PlatformList)' == ''" Include="x64;Win32" />
       </ItemGroup>
-      <Target Name="Build" Outputs="%(PlatformList.Identity)">
+      <Target Name="List" Outputs="%(PlatformList.Identity)">
         <PropertyGroup>
           <CurrentPlatform>%(PlatformList.Identity)</CurrentPlatform>
         </PropertyGroup>
-        <MSBuild Projects="SMP/APPVEYOR_PROJECT_NAME.sln" Properties="Configuration=%(ConfigurationList.Identity);Platform=$(CurrentPlatform);OutDir=$(MSBuildThisFileDirectory)build_out\;" />
+        <ItemGroup>
+          <ProjectToBuild Include="SMP/APPVEYOR_PROJECT_NAME.sln">
+            <Properties>Configuration=%(ConfigurationList.Identity);Platform=$(CurrentPlatform);OutDir=$(MSBuildThisFileDirectory)build_out\</Properties>
+          </ProjectToBuild>
+        </ItemGroup>
+      </Target>
+      <Target Name="Build" DependsOnTargets="List">
+        <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
       </Target>
     </Project>
 
@@ -73,7 +86,7 @@ after_build:
 
 artifacts:
 - path: build_out
-  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_msvc$(MSVC_VER)
+  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
   type: zip
 
 deploy:
@@ -82,5 +95,5 @@ deploy:
   description: Pre-built static and shared libraries in 32b and 64b for $(APPVEYOR_PROJECT_NAME) $(APPVEYOR_REPO_TAG_NAME)
   auth_token:
     secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
-  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_msvc$(MSVC_VER)
+  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
   force_update: true
