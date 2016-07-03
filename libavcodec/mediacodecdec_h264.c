@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
@@ -31,6 +32,7 @@
 #include "libavutil/atomic.h"
 
 #include "avcodec.h"
+#include "h264.h"
 #include "internal.h"
 #include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
@@ -41,113 +43,13 @@ typedef struct MediaCodecH264DecContext {
 
     MediaCodecDecContext ctx;
 
-    AVBitStreamFilterContext *bsf;
+    AVBSFContext *bsf;
 
     AVFifoBuffer *fifo;
 
-    AVPacket input_ref;
     AVPacket filtered_pkt;
-    uint8_t *filtered_data;
 
 } MediaCodecH264DecContext;
-
-static int h264_extradata_to_annexb_sps_pps(AVCodecContext *avctx,
-        uint8_t **extradata_annexb, int *extradata_annexb_size,
-        int *sps_offset, int *sps_size,
-        int *pps_offset, int *pps_size)
-{
-    uint16_t unit_size;
-    uint64_t total_size = 0;
-
-    uint8_t i, j, unit_nb;
-    uint8_t sps_seen = 0;
-    uint8_t pps_seen = 0;
-
-    const uint8_t *extradata;
-    static const uint8_t nalu_header[4] = { 0x00, 0x00, 0x00, 0x01 };
-
-    if (avctx->extradata_size < 8) {
-        av_log(avctx, AV_LOG_ERROR,
-            "Too small extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
-        return AVERROR(EINVAL);
-    }
-
-    *extradata_annexb = NULL;
-    *extradata_annexb_size = 0;
-
-    *sps_offset = *sps_size = 0;
-    *pps_offset = *pps_size = 0;
-
-    extradata = avctx->extradata + 4;
-
-    /* skip length size */
-    extradata++;
-
-    for (j = 0; j < 2; j ++) {
-
-        if (j == 0) {
-            /* number of sps unit(s) */
-            unit_nb = *extradata++ & 0x1f;
-        } else {
-            /* number of pps unit(s) */
-            unit_nb = *extradata++;
-        }
-
-        for (i = 0; i < unit_nb; i++) {
-            int err;
-
-            unit_size   = AV_RB16(extradata);
-            total_size += unit_size + 4;
-
-            if (total_size > INT_MAX) {
-                av_log(avctx, AV_LOG_ERROR,
-                    "Too big extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
-                av_freep(extradata_annexb);
-                return AVERROR(EINVAL);
-            }
-
-            if (extradata + 2 + unit_size > avctx->extradata + avctx->extradata_size) {
-                av_log(avctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
-                    "corrupted stream or invalid MP4/AVCC bitstream\n");
-                av_freep(extradata_annexb);
-                return AVERROR(EINVAL);
-            }
-
-            if ((err = av_reallocp(extradata_annexb, total_size)) < 0) {
-                return err;
-            }
-
-            memcpy(*extradata_annexb + total_size - unit_size - 4, nalu_header, 4);
-            memcpy(*extradata_annexb + total_size - unit_size, extradata + 2, unit_size);
-            extradata += 2 + unit_size;
-        }
-
-        if (unit_nb) {
-            if (j == 0) {
-                sps_seen = 1;
-                *sps_size = total_size;
-            } else {
-                pps_seen = 1;
-                *pps_size = total_size - *sps_size;
-                *pps_offset = *sps_size;
-            }
-        }
-    }
-
-    *extradata_annexb_size = total_size;
-
-    if (!sps_seen)
-        av_log(avctx, AV_LOG_WARNING,
-               "Warning: SPS NALU missing or invalid. "
-               "The resulting stream may not play.\n");
-
-    if (!pps_seen)
-        av_log(avctx, AV_LOG_WARNING,
-               "Warning: PPS NALU missing or invalid. "
-               "The resulting stream may not play.\n");
-
-    return 0;
-}
 
 static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 {
@@ -157,16 +59,27 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 
     av_fifo_free(s->fifo);
 
-    av_bitstream_filter_close(s->bsf);
+    av_bsf_free(&s->bsf);
+    av_packet_unref(&s->filtered_pkt);
 
     return 0;
 }
 
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
+    int i;
     int ret;
+
+    H264ParamSets ps;
+    const PPS *pps = NULL;
+    const SPS *sps = NULL;
+    int is_avc = 0;
+    int nal_length_size = 0;
+
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
+
+    memset(&ps, 0, sizeof(ps));
 
     format = ff_AMediaFormat_new();
     if (!format) {
@@ -179,24 +92,49 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     ff_AMediaFormat_setInt32(format, "width", avctx->width);
     ff_AMediaFormat_setInt32(format, "height", avctx->height);
 
-    if (avctx->extradata[0] == 1) {
-        uint8_t *extradata = NULL;
-        int extradata_size = 0;
+    ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                   &ps, &is_avc, &nal_length_size, 0, avctx);
+    if (ret < 0) {
+        goto done;
+    }
 
-        int sps_offset, sps_size;
-        int pps_offset, pps_size;
+    for (i = 0; i < MAX_PPS_COUNT; i++) {
+        if (ps.pps_list[i]) {
+            pps = (const PPS*)ps.pps_list[i]->data;
+            break;
+        }
+    }
 
-        if ((ret = h264_extradata_to_annexb_sps_pps(avctx, &extradata, &extradata_size,
-                &sps_offset, &sps_size, &pps_offset, &pps_size)) < 0) {
+    if (pps) {
+        if (ps.sps_list[pps->sps_id]) {
+            sps = (const SPS*)ps.sps_list[pps->sps_id]->data;
+        }
+    }
+
+    if (pps && sps) {
+        static const uint8_t nal_headers[] = { 0x00, 0x00, 0x00, 0x01 };
+
+        uint8_t *data = NULL;
+        size_t data_size = sizeof(nal_headers) + FFMAX(sps->data_size, pps->data_size);
+
+        data = av_mallocz(data_size);
+        if (!data) {
+            ret = AVERROR(ENOMEM);
             goto done;
         }
 
-        ff_AMediaFormat_setBuffer(format, "csd-0", extradata + sps_offset, sps_size);
-        ff_AMediaFormat_setBuffer(format, "csd-1", extradata + pps_offset, pps_size);
+        memcpy(data, nal_headers, sizeof(nal_headers));
+        memcpy(data + sizeof(nal_headers), sps->data, sps->data_size);
+        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, sizeof(nal_headers) + sps->data_size);
 
-        av_freep(&extradata);
+        memcpy(data + sizeof(nal_headers), pps->data, pps->data_size);
+        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, sizeof(nal_headers) + pps->data_size);
+
+        av_freep(&data);
     } else {
-        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
+        av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
+        ret = AVERROR_INVALIDDATA;
+        goto done;
     }
 
     if ((ret = ff_mediacodec_dec_init(avctx, &s->ctx, CODEC_MIME, format)) < 0) {
@@ -211,11 +149,22 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    s->bsf = av_bitstream_filter_init("h264_mp4toannexb");
-    if (!s->bsf) {
-        ret = AVERROR(ENOMEM);
+    const AVBitStreamFilter *bsf = av_bsf_get_by_name("h264_mp4toannexb");
+    if(!bsf) {
+        ret = AVERROR_BSF_NOT_FOUND;
         goto done;
     }
+
+    if ((ret = av_bsf_alloc(bsf, &s->bsf))) {
+        goto done;
+    }
+
+    if (((ret = avcodec_parameters_from_context(s->bsf->par_in, avctx)) < 0) ||
+        ((ret = av_bsf_init(s->bsf)) < 0)) {
+          goto done;
+    }
+
+    av_init_packet(&s->filtered_pkt);
 
 done:
     if (format) {
@@ -225,6 +174,9 @@ done:
     if (ret < 0) {
         mediacodec_decode_close(avctx);
     }
+
+    ff_h264_ps_uninit(&ps);
+
     return ret;
 }
 
@@ -246,26 +198,28 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
 
     /* buffer the input packet */
     if (avpkt->size) {
-        AVPacket input_ref = { 0 };
+        AVPacket input_pkt = { 0 };
 
-        if (av_fifo_space(s->fifo) < sizeof(input_ref)) {
+        if (av_fifo_space(s->fifo) < sizeof(input_pkt)) {
             ret = av_fifo_realloc2(s->fifo,
-                                   av_fifo_size(s->fifo) + sizeof(input_ref));
+                                   av_fifo_size(s->fifo) + sizeof(input_pkt));
             if (ret < 0)
                 return ret;
         }
 
-        ret = av_packet_ref(&input_ref, avpkt);
+        ret = av_packet_ref(&input_pkt, avpkt);
         if (ret < 0)
             return ret;
-        av_fifo_generic_write(s->fifo, &input_ref, sizeof(input_ref), NULL);
+        av_fifo_generic_write(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
     }
 
     /* process buffered data */
     while (!*got_frame) {
         /* prepare the input data -- convert to Annex B if needed */
         if (s->filtered_pkt.size <= 0) {
-            int size;
+            AVPacket input_pkt = { 0 };
+
+            av_packet_unref(&s->filtered_pkt);
 
             /* no more data */
             if (av_fifo_size(s->fifo) < sizeof(AVPacket)) {
@@ -273,22 +227,24 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
                     ff_mediacodec_dec_decode(avctx, &s->ctx, frame, got_frame, avpkt);
             }
 
-            if (s->filtered_data != s->input_ref.data)
-                av_freep(&s->filtered_data);
-            s->filtered_data = NULL;
-            av_packet_unref(&s->input_ref);
+            av_fifo_generic_read(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
 
-            av_fifo_generic_read(s->fifo, &s->input_ref, sizeof(s->input_ref), NULL);
-            ret = av_bitstream_filter_filter(s->bsf, avctx, NULL,
-                                             &s->filtered_data, &size,
-                                             s->input_ref.data, s->input_ref.size, 0);
+            ret = av_bsf_send_packet(s->bsf, &input_pkt);
             if (ret < 0) {
-                s->filtered_data = s->input_ref.data;
-                size             = s->input_ref.size;
+                return ret;
             }
-            s->filtered_pkt      = s->input_ref;
-            s->filtered_pkt.data = s->filtered_data;
-            s->filtered_pkt.size = size;
+
+            ret = av_bsf_receive_packet(s->bsf, &s->filtered_pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                goto done;
+            }
+
+            /* h264_mp4toannexb is used here and does not requires flushing */
+            av_assert0(ret != AVERROR_EOF);
+
+            if (ret < 0) {
+                return ret;
+            }
         }
 
         ret = mediacodec_process_data(avctx, frame, got_frame, &s->filtered_pkt);
@@ -298,7 +254,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
         s->filtered_pkt.size -= ret;
         s->filtered_pkt.data += ret;
     }
-
+done:
     return avpkt->size;
 }
 
@@ -313,11 +269,7 @@ static void mediacodec_decode_flush(AVCodecContext *avctx)
     }
     av_fifo_reset(s->fifo);
 
-    av_packet_unref(&s->input_ref);
-
-    av_init_packet(&s->filtered_pkt);
-    s->filtered_pkt.data = NULL;
-    s->filtered_pkt.size = 0;
+    av_packet_unref(&s->filtered_pkt);
 
     ff_mediacodec_dec_flush(avctx, &s->ctx);
 }
@@ -333,4 +285,5 @@ AVCodec ff_h264_mediacodec_decoder = {
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
     .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };

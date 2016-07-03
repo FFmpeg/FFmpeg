@@ -48,6 +48,12 @@ typedef struct HWContextType {
     size_t             device_priv_size;
 
     /**
+     * Size of the hardware-specific device configuration.
+     * (Used to query hwframe constraints.)
+     */
+    size_t             device_hwconfig_size;
+
+    /**
      * size of the public frame pool hardware-specific context,
      * i.e. AVHWFramesContext.hwctx
      */
@@ -58,8 +64,15 @@ typedef struct HWContextType {
      */
     size_t             frames_priv_size;
 
+    int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
+                                      AVDictionary *opts, int flags);
+
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);
+
+    int              (*frames_get_constraints)(AVHWDeviceContext *ctx,
+                                               const void *hwconfig,
+                                               AVHWFramesConstraints *constraints);
 
     int              (*frames_init)(AVHWFramesContext *ctx);
     void             (*frames_uninit)(AVHWFramesContext *ctx);
@@ -87,6 +100,8 @@ struct AVHWFramesInternal {
 };
 
 extern const HWContextType ff_hwcontext_type_cuda;
+extern const HWContextType ff_hwcontext_type_dxva2;
+extern const HWContextType ff_hwcontext_type_vaapi;
 extern const HWContextType ff_hwcontext_type_vdpau;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */

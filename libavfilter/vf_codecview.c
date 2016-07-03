@@ -38,22 +38,40 @@
 #define MV_P_FOR  (1<<0)
 #define MV_B_FOR  (1<<1)
 #define MV_B_BACK (1<<2)
+#define MV_TYPE_FOR  (1<<0)
+#define MV_TYPE_BACK (1<<1)
+#define FRAME_TYPE_I (1<<0)
+#define FRAME_TYPE_P (1<<1)
+#define FRAME_TYPE_B (1<<2)
 
 typedef struct {
     const AVClass *class;
     unsigned mv;
+    unsigned frame_type;
+    unsigned mv_type;
     int hsub, vsub;
     int qp;
 } CodecViewContext;
 
 #define OFFSET(x) offsetof(CodecViewContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, unit }
+
 static const AVOption codecview_options[] = {
     { "mv", "set motion vectors to visualize", OFFSET(mv), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, INT_MAX, FLAGS, "mv" },
-        {"pf", "forward predicted MVs of P-frames",  0, AV_OPT_TYPE_CONST, {.i64 = MV_P_FOR },  INT_MIN, INT_MAX, FLAGS, "mv"},
-        {"bf", "forward predicted MVs of B-frames",  0, AV_OPT_TYPE_CONST, {.i64 = MV_B_FOR },  INT_MIN, INT_MAX, FLAGS, "mv"},
-        {"bb", "backward predicted MVs of B-frames", 0, AV_OPT_TYPE_CONST, {.i64 = MV_B_BACK }, INT_MIN, INT_MAX, FLAGS, "mv"},
+        CONST("pf", "forward predicted MVs of P-frames",  MV_P_FOR,  "mv"),
+        CONST("bf", "forward predicted MVs of B-frames",  MV_B_FOR,  "mv"),
+        CONST("bb", "backward predicted MVs of B-frames", MV_B_BACK, "mv"),
     { "qp", NULL, OFFSET(qp), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
+    { "mv_type", "set motion vectors type", OFFSET(mv_type), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, INT_MAX, FLAGS, "mv_type" },
+    { "mvt",     "set motion vectors type", OFFSET(mv_type), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, INT_MAX, FLAGS, "mv_type" },
+        CONST("fp", "forward predicted MVs",  MV_TYPE_FOR,  "mv_type"),
+        CONST("bp", "backward predicted MVs", MV_TYPE_BACK, "mv_type"),
+    { "frame_type", "set frame types to visualize motion vectors of", OFFSET(frame_type), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, INT_MAX, FLAGS, "frame_type" },
+    { "ft",         "set frame types to visualize motion vectors of", OFFSET(frame_type), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, INT_MAX, FLAGS, "frame_type" },
+        CONST("if", "I-frames", FRAME_TYPE_I, "frame_type"),
+        CONST("pf", "P-frames", FRAME_TYPE_P, "frame_type"),
+        CONST("bf", "B-frames", FRAME_TYPE_B, "frame_type"),
     { NULL }
 };
 
@@ -224,20 +242,37 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
     }
 
-    if (s->mv) {
+    if (s->mv || s->mv_type) {
         AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
         if (sd) {
             int i;
             const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
+            const int is_iframe = (s->frame_type & FRAME_TYPE_I) && frame->pict_type == AV_PICTURE_TYPE_I;
+            const int is_pframe = (s->frame_type & FRAME_TYPE_P) && frame->pict_type == AV_PICTURE_TYPE_P;
+            const int is_bframe = (s->frame_type & FRAME_TYPE_B) && frame->pict_type == AV_PICTURE_TYPE_B;
+
             for (i = 0; i < sd->size / sizeof(*mvs); i++) {
                 const AVMotionVector *mv = &mvs[i];
                 const int direction = mv->source > 0;
-                if ((direction == 0 && (s->mv & MV_P_FOR)  && frame->pict_type == AV_PICTURE_TYPE_P) ||
-                    (direction == 0 && (s->mv & MV_B_FOR)  && frame->pict_type == AV_PICTURE_TYPE_B) ||
-                    (direction == 1 && (s->mv & MV_B_BACK) && frame->pict_type == AV_PICTURE_TYPE_B))
-                    draw_arrow(frame->data[0], mv->dst_x, mv->dst_y, mv->src_x, mv->src_y,
-                               frame->width, frame->height, frame->linesize[0],
-                               100, 0, mv->source > 0);
+
+                if (s->mv_type) {
+                    const int is_fp = direction == 0 && (s->mv_type & MV_TYPE_FOR);
+                    const int is_bp = direction == 1 && (s->mv_type & MV_TYPE_BACK);
+
+                    if ((!s->frame_type && (is_fp || is_bp)) ||
+                        is_iframe && is_fp || is_iframe && is_bp ||
+                        is_pframe && is_fp ||
+                        is_bframe && is_fp || is_bframe && is_bp)
+                        draw_arrow(frame->data[0], mv->dst_x, mv->dst_y, mv->src_x, mv->src_y,
+                                   frame->width, frame->height, frame->linesize[0],
+                                   100, 0, direction);
+                } else if (s->mv)
+                    if ((direction == 0 && (s->mv & MV_P_FOR)  && frame->pict_type == AV_PICTURE_TYPE_P) ||
+                        (direction == 0 && (s->mv & MV_B_FOR)  && frame->pict_type == AV_PICTURE_TYPE_B) ||
+                        (direction == 1 && (s->mv & MV_B_BACK) && frame->pict_type == AV_PICTURE_TYPE_B))
+                        draw_arrow(frame->data[0], mv->dst_x, mv->dst_y, mv->src_x, mv->src_y,
+                                   frame->width, frame->height, frame->linesize[0],
+                                   100, 0, direction);
             }
         }
     }

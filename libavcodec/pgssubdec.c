@@ -354,8 +354,14 @@ static int parse_palette_segment(AVCodecContext *avctx,
         cb        = bytestream_get_byte(&buf);
         alpha     = bytestream_get_byte(&buf);
 
-        YUV_TO_RGB1(cb, cr);
-        YUV_TO_RGB2(r, g, b, y);
+        /* Default to BT.709 colorspace. In case of <= 576 height use BT.601 */
+        if (avctx->height <= 0 || avctx->height > 576) {
+            YUV_TO_RGB1_CCIR_BT709(cb, cr);
+        } else {
+            YUV_TO_RGB1_CCIR(cb, cr);
+        }
+
+        YUV_TO_RGB2_CCIR(r, g, b, y);
 
         ff_dlog(avctx, "Color %d := (%d,%d,%d,%d)\n", color_id, r, g, b, alpha);
 
@@ -523,8 +529,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     }
     for (i = 0; i < ctx->presentation.object_count; i++) {
         PGSSubObject *object;
-        AVSubtitleRect *rect;
-        int j;
 
         sub->rects[i]  = av_mallocz(sizeof(*sub->rects[0]));
         if (!sub->rects[i]) {
@@ -591,11 +595,15 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+        AVSubtitleRect *rect;
+        int j;
         rect = sub->rects[i];
         for (j = 0; j < 4; j++) {
             rect->pict.data[j] = rect->data[j];
             rect->pict.linesize[j] = rect->linesize[j];
         }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }

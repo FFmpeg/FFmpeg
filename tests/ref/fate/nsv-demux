@@ -1,5 +1,13 @@
 #tb 0: 1001/15000
+#media_type 0: video
+#codec_id 0: vp3
+#dimensions 0: 160x112
+#sar 0: 0/1
 #tb 1: 1/30000000
+#media_type 1: audio
+#codec_id 1: mp3
+#sample_rate 1: 11025
+#channel_layout 1: 4
 0,          0,          0,        1,       12, 0x1396035f
 0,          1,          1,        1,       24, 0x8ab80ac7, F=0x0
 0,          2,          2,        1,      208, 0x1de1603e, F=0x0

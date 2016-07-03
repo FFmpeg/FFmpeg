@@ -27,7 +27,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
 #include "internal.h"
 
 #include "vp56.h"

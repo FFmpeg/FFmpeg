@@ -70,7 +70,7 @@ typedef struct H264DSPContext {
                                             int stride, int alpha, int beta);
     void (*h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix /*align 8*/,
                                                   int stride, int alpha, int beta);
-    // h264_loop_filter_strength: simd only. the C version is inlined in h264.c
+    // h264_loop_filter_strength: simd only. the C version is inlined in h264_loopfilter.c
     void (*h264_loop_filter_strength)(int16_t bS[2][4][4], uint8_t nnz[40],
                                       int8_t ref[2][40], int16_t mv[2][40][2],
                                       int bidir, int edges, int step,

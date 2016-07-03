@@ -193,10 +193,7 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
             ctx->dlo->DisableAudioOutput();
     }
 
-    if (ctx->dlo)
-        ctx->dlo->Release();
-    if (ctx->dl)
-        ctx->dl->Release();
+    ff_decklink_cleanup(avctx);
 
     if (ctx->output_callback)
         delete ctx->output_callback;
@@ -315,10 +312,8 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     struct decklink_ctx *ctx;
-    IDeckLinkDisplayModeIterator *itermode;
-    IDeckLinkIterator *iter;
-    IDeckLink *dl = NULL;
     unsigned int n;
+    int ret;
 
     ctx = (struct decklink_ctx *) av_mallocz(sizeof(struct decklink_ctx));
     if (!ctx)
@@ -328,59 +323,33 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     ctx->preroll      = cctx->preroll;
     cctx->ctx = ctx;
 
-    iter = CreateDeckLinkIteratorInstance();
-    if (!iter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
-        return AVERROR(EIO);
-    }
-
     /* List available devices. */
     if (ctx->list_devices) {
         ff_decklink_list_devices(avctx);
         return AVERROR_EXIT;
     }
 
-    /* Open device. */
-    while (iter->Next(&dl) == S_OK) {
-        const char *displayName;
-        ff_decklink_get_display_name(dl, &displayName);
-        if (!strcmp(avctx->filename, displayName)) {
-            av_free((void *) displayName);
-            ctx->dl = dl;
-            break;
-        }
-        av_free((void *) displayName);
-        dl->Release();
-    }
-    iter->Release();
-    if (!ctx->dl) {
-        av_log(avctx, AV_LOG_ERROR, "Could not open '%s'\n", avctx->filename);
-        return AVERROR(EIO);
-    }
+    ret = ff_decklink_init_device(avctx, avctx->filename);
+    if (ret < 0)
+        return ret;
 
     /* Get output device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkOutput, (void **) &ctx->dlo) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
                avctx->filename);
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error;
     }
 
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx);
-        ctx->dlo->Release();
-        ctx->dl->Release();
-        return AVERROR_EXIT;
-    }
-
-    if (ctx->dlo->GetDisplayModeIterator(&itermode) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get Display Mode Iterator\n");
-        ctx->dl->Release();
-        return AVERROR(EIO);
+        ret = AVERROR_EXIT;
+        goto error;
     }
 
     /* Setup streams. */
+    ret = AVERROR(EIO);
     for (n = 0; n < avctx->nb_streams; n++) {
         AVStream *st = avctx->streams[n];
         AVCodecContext *c = st->codec;
@@ -395,16 +364,12 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
             goto error;
         }
     }
-    itermode->Release();
 
     return 0;
 
 error:
-
-    ctx->dlo->Release();
-    ctx->dl->Release();
-
-    return AVERROR(EIO);
+    ff_decklink_cleanup(avctx);
+    return ret;
 }
 
 int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)

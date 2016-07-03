@@ -1,5 +1,13 @@
 #tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: mjpeg
+#dimensions 0: 320x240
+#sar 0: 1/1
 #tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: adpcm_ima_smjpeg
+#sample_rate 1: 22050
+#channel_layout 1: 4
 0,          0,          0,        0,      734, 0x5a042c2c
 1,          0,          0,       23,      260, 0x00000000
 1,         23,         23,       23,      260, 0x00000000

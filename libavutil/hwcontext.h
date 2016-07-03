@@ -27,6 +27,8 @@
 enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VDPAU,
     AV_HWDEVICE_TYPE_CUDA,
+    AV_HWDEVICE_TYPE_VAAPI,
+    AV_HWDEVICE_TYPE_DXVA2,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;
@@ -168,7 +170,7 @@ typedef struct AVHWFramesContext {
      * A pool from which the frames are allocated by av_hwframe_get_buffer().
      * This field may be set by the caller before calling av_hwframe_ctx_init().
      * The buffers returned by calling av_buffer_pool_get() on this pool must
-     * have the properties described in the documentation in the correponding hw
+     * have the properties described in the documentation in the corresponding hw
      * type's header (hwcontext_*.h). The pool will be freed strictly before
      * this struct's free() callback is invoked.
      *
@@ -238,6 +240,34 @@ AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type);
  * @return 0 on success, a negative AVERROR code on failure
  */
 int av_hwdevice_ctx_init(AVBufferRef *ref);
+
+/**
+ * Open a device of the specified type and create an AVHWDeviceContext for it.
+ *
+ * This is a convenience function intended to cover the simple cases. Callers
+ * who need to fine-tune device creation/management should open the device
+ * manually and then wrap it in an AVHWDeviceContext using
+ * av_hwdevice_ctx_alloc()/av_hwdevice_ctx_init().
+ *
+ * The returned context is already initialized and ready for use, the caller
+ * should not call av_hwdevice_ctx_init() on it. The user_opaque/free fields of
+ * the created AVHWDeviceContext are set by this function and should not be
+ * touched by the caller.
+ *
+ * @param device_ctx On success, a reference to the newly-created device context
+ *                   will be written here. The reference is owned by the caller
+ *                   and must be released with av_buffer_unref() when no longer
+ *                   needed. On failure, NULL will be written to this pointer.
+ * @param type The type of the device to create.
+ * @param device A type-specific string identifying the device to open.
+ * @param opts A dictionary of additional (type-specific) options to use in
+ *             opening the device. The dictionary remains owned by the caller.
+ * @param flags currently unused
+ *
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int av_hwdevice_ctx_create(AVBufferRef **device_ctx, enum AVHWDeviceType type,
+                           const char *device, AVDictionary *opts, int flags);
 
 /**
  * Allocate an AVHWFramesContext tied to a given device context.
@@ -325,5 +355,74 @@ int av_hwframe_transfer_get_formats(AVBufferRef *hwframe_ctx,
                                     enum AVHWFrameTransferDirection dir,
                                     enum AVPixelFormat **formats, int flags);
 
+
+/**
+ * This struct describes the constraints on hardware frames attached to
+ * a given device with a hardware-specific configuration.  This is returned
+ * by av_hwdevice_get_hwframe_constraints() and must be freed by
+ * av_hwframe_constraints_free() after use.
+ */
+typedef struct AVHWFramesConstraints {
+    /**
+     * A list of possible values for format in the hw_frames_ctx,
+     * terminated by AV_PIX_FMT_NONE.  This member will always be filled.
+     */
+    enum AVPixelFormat *valid_hw_formats;
+
+    /**
+     * A list of possible values for sw_format in the hw_frames_ctx,
+     * terminated by AV_PIX_FMT_NONE.  Can be NULL if this information is
+     * not known.
+     */
+    enum AVPixelFormat *valid_sw_formats;
+
+    /**
+     * The minimum size of frames in this hw_frames_ctx.
+     * (Zero if not known.)
+     */
+    int min_width;
+    int min_height;
+
+    /**
+     * The maximum size of frames in this hw_frames_ctx.
+     * (INT_MAX if not known / no limit.)
+     */
+    int max_width;
+    int max_height;
+} AVHWFramesConstraints;
+
+/**
+ * Allocate a HW-specific configuration structure for a given HW device.
+ * After use, the user must free all members as required by the specific
+ * hardware structure being used, then free the structure itself with
+ * av_free().
+ *
+ * @param device_ctx a reference to the associated AVHWDeviceContext.
+ * @return The newly created HW-specific configuration structure on
+ *         success or NULL on failure.
+ */
+void *av_hwdevice_hwconfig_alloc(AVBufferRef *device_ctx);
+
+/**
+ * Get the constraints on HW frames given a device and the HW-specific
+ * configuration to be used with that device.  If no HW-specific
+ * configuration is provided, returns the maximum possible capabilities
+ * of the device.
+ *
+ * @param device_ctx a reference to the associated AVHWDeviceContext.
+ * @param hwconfig a filled HW-specific configuration structure, or NULL
+ *        to return the maximum possible capabilities of the device.
+ * @return AVHWFramesConstraints structure describing the constraints
+ *         on the device, or NULL if not available.
+ */
+AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
+                                                           const void *hwconfig);
+
+/**
+ * Free an AVHWFrameConstraints structure.
+ *
+ * @param constraints The (filled or unfilled) AVHWFrameConstraints structure.
+ */
+void av_hwframe_constraints_free(AVHWFramesConstraints **constraints);
 
 #endif /* AVUTIL_HWCONTEXT_H */

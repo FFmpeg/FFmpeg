@@ -40,13 +40,14 @@
  *   - XMP metadata
  */
 
-#define BITSTREAM_READER_LE
 #include "libavutil/imgutils.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
 #include "exif.h"
-#include "internal.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "thread.h"
 #include "vp8.h"
 
@@ -1500,7 +1501,7 @@ exif_end:
         case MKTAG('A', 'N', 'M', 'F'):
         case MKTAG('X', 'M', 'P', ' '):
             AV_WL32(chunk_str, chunk_type);
-            av_log(avctx, AV_LOG_VERBOSE, "skipping unsupported chunk: %s\n",
+            av_log(avctx, AV_LOG_WARNING, "skipping unsupported chunk: %s\n",
                    chunk_str);
             bytestream2_skip(&gb, chunk_size);
             break;

@@ -81,7 +81,7 @@ static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yC
     }
 }
 
-//check if the two luma locations belong to the same mostion estimation region
+//check if the two luma locations belong to the same motion estimation region
 static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->ps.pps->log2_parallel_merge_level;

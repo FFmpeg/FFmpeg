@@ -1184,6 +1184,17 @@ following: 4000, 6000, 8000, 12000, or 20000, corresponding to
 narrowband, mediumband, wideband, super wideband, and fullband
 respectively. The default is 0 (cutoff disabled).
 
+@item mapping_family (@emph{mapping_family})
+Set channel mapping family to be used by the encoder. The default value of -1
+uses mapping family 0 for mono and stereo inputs, and mapping family 1
+otherwise. The default also disables the surround masking and LFE bandwidth
+optimzations in libopus, and requires that the input contains 8 channels or
+fewer.
+
+Other values include 0 for mono and stereo, 1 for surround sound with masking
+and LFE bandwidth optimizations, and 255 for independent streams with an
+unspecified channel layout.
+
 @end table
 
 @section libvorbis

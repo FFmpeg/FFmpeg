@@ -93,7 +93,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         if (pos + 12 > len)
             return AVERROR_INVALIDDATA;
 
-        skip_bits(&gb, 2); // has non-I frames:1, is sparse:1
+        skip_bits(&gb, 2); // has non-I-frames:1, is sparse:1
         is_start  = get_bits1(&gb);
         is_finish = get_bits1(&gb);
         if (!is_start || !is_finish) {
@@ -106,9 +106,9 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
 
         avio_seek(&pb, pos + 4, SEEK_SET);
         tag = avio_rl32(&pb);
-        if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+        if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                  tag != MKTAG('v','i','d','e')) ||
-            (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+            (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
                  tag != MKTAG('s','o','u','n')))
             return AVERROR_INVALIDDATA;
         avpriv_set_pts_info(st, 32, 1, avio_rb32(&pb));

@@ -895,11 +895,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                                   ff_eac3_default_spx_band_struct,
                                   &s->num_spx_bands,
                                   s->spx_band_sizes);
-        } else {
-            for (ch = 1; ch <= fbw_channels; ch++) {
-                s->channel_uses_spx[ch] = 0;
-                s->first_spx_coords[ch] = 1;
-            }
+        }
+    }
+    if (!s->eac3 || !s->spx_in_use) {
+        s->spx_in_use = 0;
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->channel_uses_spx[ch] = 0;
+            s->first_spx_coords[ch] = 1;
         }
     }
 
@@ -1443,8 +1445,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             /* skip frame if CRC is ok. otherwise use error concealment. */
             /* TODO: add support for substreams and dependent frames */
             if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT || s->substreamid) {
-                av_log(avctx, AV_LOG_WARNING, "unsupported frame type : "
-                       "skipping frame\n");
+                av_log(avctx, AV_LOG_DEBUG,
+                       "unsupported frame type %d: skipping frame\n",
+                       s->frame_type);
                 *got_frame_ptr = 0;
                 return buf_size;
             } else {

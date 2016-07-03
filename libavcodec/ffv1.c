@@ -32,10 +32,10 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/timer.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "rangecoder.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
 

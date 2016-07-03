@@ -715,11 +715,8 @@ static int v4l2_set_parameters(AVFormatContext *ctx)
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) < 0) {
         ret = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
-        return ret;
-    }
-
-    if (framerate_q.num && framerate_q.den) {
+        av_log(ctx, AV_LOG_WARNING, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
+    } else if (framerate_q.num && framerate_q.den) {
         if (streamparm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
             tpf = &streamparm.parm.capture.timeperframe;
 
@@ -938,8 +935,8 @@ static int v4l2_read_header(AVFormatContext *ctx)
     if ((res = v4l2_set_parameters(ctx)) < 0)
         goto fail;
 
-    st->codec->pix_fmt = ff_fmt_v4l2ff(desired_format, codec_id);
-    s->frame_size = av_image_get_buffer_size(st->codec->pix_fmt,
+    st->codecpar->format = ff_fmt_v4l2ff(desired_format, codec_id);
+    s->frame_size = av_image_get_buffer_size(st->codecpar->format,
                                              s->width, s->height, 1);
 
     if ((res = mmap_init(ctx)) ||
@@ -948,22 +945,22 @@ static int v4l2_read_header(AVFormatContext *ctx)
 
     s->top_field_first = first_field(s);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = codec_id;
     if (codec_id == AV_CODEC_ID_RAWVIDEO)
-        st->codec->codec_tag =
-            avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
+        st->codecpar->codec_tag =
+            avcodec_pix_fmt_to_codec_tag(st->codecpar->format);
     else if (codec_id == AV_CODEC_ID_H264) {
         st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     if (desired_format == V4L2_PIX_FMT_YVU420)
-        st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');
+        st->codecpar->codec_tag = MKTAG('Y', 'V', '1', '2');
     else if (desired_format == V4L2_PIX_FMT_YVU410)
-        st->codec->codec_tag = MKTAG('Y', 'V', 'U', '9');
-    st->codec->width = s->width;
-    st->codec->height = s->height;
+        st->codecpar->codec_tag = MKTAG('Y', 'V', 'U', '9');
+    st->codecpar->width = s->width;
+    st->codecpar->height = s->height;
     if (st->avg_frame_rate.den)
-        st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
+        st->codecpar->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
 
@@ -974,9 +971,9 @@ fail:
 
 static int v4l2_read_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
-    struct video_data *s = ctx->priv_data;
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
+    struct video_data *s = ctx->priv_data;
     AVFrame *frame = ctx->streams[0]->codec->coded_frame;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
@@ -987,7 +984,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return res;
     }
 
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
     if (frame && s->interlaced) {
         frame->interlaced_frame = 1;

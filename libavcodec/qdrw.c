@@ -281,10 +281,8 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_request_sample(avctx, "Pack type %d", pack_type);
                 return AVERROR_PATCHWELCOME;
             }
-            if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
-            }
 
             /* jump to data */
             bytestream2_skip(&gbc, 30);

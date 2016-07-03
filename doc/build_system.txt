@@ -39,9 +39,6 @@ examples
 libavformat/output-example
     Build the libavformat basic example.
 
-libavcodec/api-example
-    Build the libavcodec basic example.
-
 libswscale/swscale-test
     Build the swscale self-test (useful also as an example).
 

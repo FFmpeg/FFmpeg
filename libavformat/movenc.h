@@ -101,7 +101,7 @@ typedef struct MOVTrack {
     int         track_id;
     int         tag; ///< stsd fourcc
     AVStream        *st;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
     int multichannel_as_mono;
 
     int         vos_len;
@@ -115,6 +115,7 @@ typedef struct MOVTrack {
     int64_t     start_dts;
     int64_t     start_cts;
     int64_t     end_pts;
+    int         end_reliable;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint (or tmcd) track describes
@@ -233,6 +234,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_GLOBAL_SIDX           (1 << 14)
 #define FF_MOV_FLAG_WRITE_COLR            (1 << 15)
 #define FF_MOV_FLAG_WRITE_GAMA            (1 << 16)
+#define FF_MOV_FLAG_USE_MDTA              (1 << 17)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

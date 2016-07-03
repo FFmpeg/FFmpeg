@@ -885,13 +885,12 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     int grouping     = 0;
     int uselongblock = 1;
     int attacks[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
-    float clippings[AAC_NUM_BLOCKS_SHORT];
     int i;
     FFPsyWindowInfo wi = { { 0 } };
 
     if (la) {
         float hpfsmpl[AAC_BLOCK_SIZE_LONG];
-        float const *pf = hpfsmpl;
+        const float *pf = hpfsmpl;
         float attack_intensity[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_subshort[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_short[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
@@ -910,7 +909,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         }
 
         for (i = 0; i < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; i++) {
-            float const *const pfe = pf + AAC_BLOCK_SIZE_LONG / (AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS);
+            const float *const pfe = pf + AAC_BLOCK_SIZE_LONG / (AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS);
             float p = 1.0f;
             for (; pf < pfe; pf++)
                 p = FFMAX(p, fabsf(*pf));
@@ -943,9 +942,9 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         /* GB: tuned (1) to avoid too many short blocks for test sample TRUMPET */
         /* RH: tuned (2) to let enough short blocks through for test sample FSOL and SNAPS */
         for (i = 1; i < AAC_NUM_BLOCKS_SHORT + 1; i++) {
-            float const u = energy_short[i - 1];
-            float const v = energy_short[i];
-            float const m = FFMAX(u, v);
+            const float u = energy_short[i - 1];
+            const float v = energy_short[i];
+            const float m = FFMAX(u, v);
             if (m < 40000) {                          /* (2) */
                 if (u < 1.7f * v && v < 1.7f * u) {   /* (1) */
                     if (i == 1 && attacks[0] < attacks[i])
@@ -977,7 +976,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
 
     wi.window_type[1] = prev_type;
     if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
-        float clipping = 0.0f;
 
         wi.num_windows  = 1;
         wi.grouping[0]  = 1;
@@ -986,9 +984,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         else
             wi.window_shape = 1;
 
-        for (i = 0; i < 8; i++)
-            clipping = FFMAX(clipping, clippings[i]);
-        wi.clipping[0] = clipping;
     } else {
         int lastgrp = 0;
 
@@ -998,15 +993,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             if (!((pch->next_grouping >> i) & 1))
                 lastgrp = i;
             wi.grouping[lastgrp]++;
-        }
-
-        for (i = 0; i < 8; i += wi.grouping[i]) {
-            int w;
-            float clipping = 0.0f;
-            for (w = 0; w < wi.grouping[i]; w++)
-                clipping = FFMAX(clipping, clippings[i+w]);
-            for (w = 0; w < wi.grouping[i]; w++)
-                wi.clipping[i+w] = clipping;
         }
     }
 

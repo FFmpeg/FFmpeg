@@ -1,6 +1,14 @@
 #extradata 0:      150, 0xb4192fb9
 #tb 0: 1/90000
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 1280x720
+#sar 0: 1/1
 #tb 1: 1/90000
+#media_type 1: audio
+#codec_id 1: ac3
+#sample_rate 1: 48000
+#channel_layout 1: 60f
 1,          0,          0,     2880,     1536, 0x773ffeea, S=1,        1, 0x00bd00bd
 1,       2880,       2880,     2880,     1536, 0x6dc10748
 1,       5760,       5760,     2880,     1536, 0xbab5129c

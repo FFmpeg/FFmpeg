@@ -88,8 +88,10 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
         if (!out)
             return AVERROR(ENOMEM);
         ret = av_audio_fifo_peek_at(s->fifo, (void **)out->extended_data, out->nb_samples, s->current_sample);
-        if (ret < 0)
+        if (ret < 0) {
+            av_frame_free(&out);
             return ret;
+        }
         out->pts = s->pts;
         out->nb_samples = ret;
         s->pts += out->nb_samples;

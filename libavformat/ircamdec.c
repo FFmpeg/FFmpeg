@@ -85,19 +85,19 @@ static int ircam_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->channels    = channels;
-    st->codec->sample_rate = sample_rate;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->channels    = channels;
+    st->codecpar->sample_rate = sample_rate;
 
-    st->codec->codec_id = ff_codec_get_id(tags, tag);
-    if (st->codec->codec_id == AV_CODEC_ID_NONE) {
+    st->codecpar->codec_id = ff_codec_get_id(tags, tag);
+    if (st->codecpar->codec_id == AV_CODEC_ID_NONE) {
         av_log(s, AV_LOG_ERROR, "unknown tag %X\n", tag);
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
-    st->codec->block_align = st->codec->bits_per_coded_sample * st->codec->channels / 8;
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
+    st->codecpar->block_align = st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     avio_skip(s->pb, 1008);
 
     return 0;

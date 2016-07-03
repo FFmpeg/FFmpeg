@@ -31,11 +31,10 @@
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
 
-#include "nellymoser.h"
-#include "avcodec.h"
+#include "libavutil/common.h"
 
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
+#include "avcodec.h"
+#include "nellymoser.h"
 
 const float ff_nelly_dequantization_table[127] = {
  0.0000000000,

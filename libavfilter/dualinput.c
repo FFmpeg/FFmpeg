@@ -66,6 +66,9 @@ int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s)
         in[1].after = EXT_NULL;
         in[1].sync  = 0;
     }
+    if (s->skip_initial_unpaired) {
+        in[1].before = EXT_STOP;
+    }
 
     return ff_framesync_configure(&s->fs);
 }

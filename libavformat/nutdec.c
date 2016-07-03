@@ -415,11 +415,11 @@ static int decode_stream_header(NUTContext *nut)
 
     class                = ffio_read_varlen(bc);
     tmp                  = get_fourcc(bc);
-    st->codec->codec_tag = tmp;
+    st->codecpar->codec_tag = tmp;
     switch (class) {
     case 0:
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
                                                     ff_nut_video_tags,
                                                     ff_codec_bmp_tags,
                                                     ff_codec_movvideo_tags,
@@ -428,8 +428,8 @@ static int decode_stream_header(NUTContext *nut)
                                                 tmp);
         break;
     case 1:
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = av_codec_get_id((const AVCodecTag * const []) {
                                                     ff_nut_audio_tags,
                                                     ff_codec_wav_tags,
                                                     ff_nut_audio_extra_tags,
@@ -438,18 +438,18 @@ static int decode_stream_header(NUTContext *nut)
                                                 tmp);
         break;
     case 2:
-        st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-        st->codec->codec_id   = ff_codec_get_id(ff_nut_subtitle_tags, tmp);
+        st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+        st->codecpar->codec_id   = ff_codec_get_id(ff_nut_subtitle_tags, tmp);
         break;
     case 3:
-        st->codec->codec_type = AVMEDIA_TYPE_DATA;
-        st->codec->codec_id   = ff_codec_get_id(ff_nut_data_tags, tmp);
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+        st->codecpar->codec_id   = ff_codec_get_id(ff_nut_data_tags, tmp);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
         return AVERROR(ENOSYS);
     }
-    if (class < 3 && st->codec->codec_id == AV_CODEC_ID_NONE)
+    if (class < 3 && st->codecpar->codec_id == AV_CODEC_ID_NONE)
         av_log(s, AV_LOG_ERROR,
                "Unknown codec tag '0x%04x' for stream number %d\n",
                (unsigned int) tmp, stream_id);
@@ -458,18 +458,18 @@ static int decode_stream_header(NUTContext *nut)
     GET_V(stc->msb_pts_shift, tmp < 16);
     stc->max_pts_distance = ffio_read_varlen(bc);
     GET_V(stc->decode_delay, tmp < 1000); // sanity limit, raise this if Moore's law is true
-    st->codec->has_b_frames = stc->decode_delay;
+    st->codecpar->video_delay = stc->decode_delay;
     ffio_read_varlen(bc); // stream flags
 
-    GET_V(st->codec->extradata_size, tmp < (1 << 30));
-    if (st->codec->extradata_size) {
-        if (ff_get_extradata(st->codec, bc, st->codec->extradata_size) < 0)
+    GET_V(st->codecpar->extradata_size, tmp < (1 << 30));
+    if (st->codecpar->extradata_size) {
+        if (ff_get_extradata(s, st->codecpar, bc, st->codecpar->extradata_size) < 0)
             return AVERROR(ENOMEM);
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        GET_V(st->codec->width,  tmp > 0);
-        GET_V(st->codec->height, tmp > 0);
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        GET_V(st->codecpar->width,  tmp > 0);
+        GET_V(st->codecpar->height, tmp > 0);
         st->sample_aspect_ratio.num = ffio_read_varlen(bc);
         st->sample_aspect_ratio.den = ffio_read_varlen(bc);
         if ((!st->sample_aspect_ratio.num) != (!st->sample_aspect_ratio.den)) {
@@ -479,10 +479,10 @@ static int decode_stream_header(NUTContext *nut)
             goto fail;
         }
         ffio_read_varlen(bc); /* csp type */
-    } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        GET_V(st->codec->sample_rate, tmp > 0);
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        GET_V(st->codecpar->sample_rate, tmp > 0);
         ffio_read_varlen(bc); // samplerate_den
-        GET_V(st->codec->channels, tmp > 0);
+        GET_V(st->codecpar->channels, tmp > 0);
     }
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR,
@@ -495,9 +495,9 @@ static int decode_stream_header(NUTContext *nut)
                         stc->time_base->den);
     return 0;
 fail:
-    if (st && st->codec) {
-        av_freep(&st->codec->extradata);
-        st->codec->extradata_size = 0;
+    if (st && st->codecpar) {
+        av_freep(&st->codecpar->extradata);
+        st->codecpar->extradata_size = 0;
     }
     return ret;
 }

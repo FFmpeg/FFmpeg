@@ -22,6 +22,7 @@ HEADERS = adler32.h                                                     \
           cpu.h                                                         \
           crc.h                                                         \
           des.h                                                         \
+          dict.h                                                        \
           display.h                                                     \
           downmix_info.h                                                \
           error.h                                                       \
@@ -33,6 +34,8 @@ HEADERS = adler32.h                                                     \
           hmac.h                                                        \
           hwcontext.h                                                   \
           hwcontext_cuda.h                                              \
+          hwcontext_dxva2.h                                             \
+          hwcontext_vaapi.h                                             \
           hwcontext_vdpau.h                                             \
           imgutils.h                                                    \
           intfloat.h                                                    \
@@ -46,7 +49,6 @@ HEADERS = adler32.h                                                     \
           mem.h                                                         \
           motion_vector.h                                               \
           murmur3.h                                                     \
-          dict.h                                                        \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
@@ -54,8 +56,8 @@ HEADERS = adler32.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
           rc4.h                                                         \
-          replaygain.h                                                  \
           rational.h                                                    \
+          replaygain.h                                                  \
           ripemd.h                                                      \
           samplefmt.h                                                   \
           sha.h                                                         \
@@ -99,6 +101,7 @@ OBJS = adler32.o                                                        \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
+       dict.o                                                           \
        display.o                                                        \
        downmix_info.o                                                   \
        error.o                                                          \
@@ -124,7 +127,6 @@ OBJS = adler32.o                                                        \
        md5.o                                                            \
        mem.o                                                            \
        murmur3.o                                                        \
-       dict.o                                                           \
        opt.o                                                            \
        parseutils.o                                                     \
        pixdesc.o                                                        \
@@ -150,9 +152,11 @@ OBJS = adler32.o                                                        \
 
 OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
 
+OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
-OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
@@ -161,6 +165,8 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
 
 SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda.h
+SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
+SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
@@ -218,4 +224,4 @@ TOOLS = crypto_bench ffhash ffeval ffescape
 tools/crypto_bench$(EXESUF): ELIBS += $(if $(VERSUS),$(subst +, -l,+$(VERSUS)),)
 tools/crypto_bench$(EXESUF): CFLAGS += -DUSE_EXT_LIBS=0$(if $(VERSUS),$(subst +,+USE_,+$(VERSUS)),)
 
-$(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2
+$(SUBDIR)tests/lzo$(EXESUF): ELIBS = -llzo2

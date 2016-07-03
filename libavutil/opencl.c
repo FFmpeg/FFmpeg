@@ -445,7 +445,7 @@ cl_program av_opencl_compile(const char *program_name, const char *build_opts)
     int i;
     cl_int status, build_status;
     int kernel_code_idx = 0;
-    const char *kernel_source;
+    const char *kernel_source = NULL;
     size_t kernel_code_len;
     char* ptr = NULL;
     cl_program program = NULL;

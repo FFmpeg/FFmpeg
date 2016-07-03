@@ -108,8 +108,8 @@ static int create_subcc_streams(AVFormatContext *avctx)
             lavfi->sink_stream_subcc_map[sink_idx] = avctx->nb_streams;
             if (!(st = avformat_new_stream(avctx, NULL)))
                 return AVERROR(ENOMEM);
-            st->codec->codec_id = AV_CODEC_ID_EIA_608;
-            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            st->codecpar->codec_id = AV_CODEC_ID_EIA_608;
+            st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
         } else {
             lavfi->sink_stream_subcc_map[sink_idx] = -1;
         }
@@ -314,28 +314,26 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     for (i = 0; i < lavfi->nb_sinks; i++) {
         AVFilterLink *link = lavfi->sinks[lavfi->stream_sink_map[i]]->inputs[0];
         AVStream *st = avctx->streams[i];
-        st->codec->codec_type = link->type;
+        st->codecpar->codec_type = link->type;
         avpriv_set_pts_info(st, 64, link->time_base.num, link->time_base.den);
         if (link->type == AVMEDIA_TYPE_VIDEO) {
-            st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-            st->codec->pix_fmt    = link->format;
-            st->codec->time_base  = link->time_base;
-            st->codec->width      = link->w;
-            st->codec->height     = link->h;
+            st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+            st->codecpar->format     = link->format;
+            st->codecpar->width      = link->w;
+            st->codecpar->height     = link->h;
             st       ->sample_aspect_ratio =
-            st->codec->sample_aspect_ratio = link->sample_aspect_ratio;
+            st->codecpar->sample_aspect_ratio = link->sample_aspect_ratio;
             avctx->probesize = FFMAX(avctx->probesize,
                                      link->w * link->h *
                                      av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(link->format)) *
                                      30);
         } else if (link->type == AVMEDIA_TYPE_AUDIO) {
-            st->codec->codec_id    = av_get_pcm_codec(link->format, -1);
-            st->codec->channels    = avfilter_link_get_channels(link);
-            st->codec->sample_fmt  = link->format;
-            st->codec->sample_rate = link->sample_rate;
-            st->codec->time_base   = link->time_base;
-            st->codec->channel_layout = link->channel_layout;
-            if (st->codec->codec_id == AV_CODEC_ID_NONE)
+            st->codecpar->codec_id    = av_get_pcm_codec(link->format, -1);
+            st->codecpar->channels    = avfilter_link_get_channels(link);
+            st->codecpar->format      = link->format;
+            st->codecpar->sample_rate = link->sample_rate;
+            st->codecpar->channel_layout = link->channel_layout;
+            if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
                 av_log(avctx, AV_LOG_ERROR,
                        "Could not find PCM codec for sample format %s.\n",
                        av_get_sample_fmt_name(link->format));

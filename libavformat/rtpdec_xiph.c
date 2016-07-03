@@ -222,16 +222,17 @@ static int get_base128(const uint8_t ** buf, const uint8_t * buf_end)
  * Based off parse_packed_headers in Vorbis RTP
  */
 static int
-parse_packed_headers(const uint8_t * packed_headers,
+parse_packed_headers(AVFormatContext *s,
+                     const uint8_t * packed_headers,
                      const uint8_t * packed_headers_end,
-                     AVCodecContext * codec, PayloadContext * xiph_data)
+                     AVCodecParameters *par, PayloadContext * xiph_data)
 {
 
     unsigned num_packed, num_headers, length, length1, length2, extradata_alloc;
     uint8_t *ptr;
 
     if (packed_headers_end - packed_headers < 9) {
-        av_log(codec, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Invalid %"PTRDIFF_SPECIFIER" byte packed header.",
                packed_headers_end - packed_headers);
         return AVERROR_INVALIDDATA;
@@ -245,7 +246,7 @@ parse_packed_headers(const uint8_t * packed_headers,
     length2            = get_base128(&packed_headers, packed_headers_end);
 
     if (num_packed != 1 || num_headers > 3) {
-        av_log(codec, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Unimplemented number of headers: %d packed headers, %d headers\n",
                num_packed, num_headers);
         return AVERROR_PATCHWELCOME;
@@ -253,7 +254,7 @@ parse_packed_headers(const uint8_t * packed_headers,
 
     if (packed_headers_end - packed_headers != length ||
         length1 > length || length2 > length - length1) {
-        av_log(codec, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Bad packed header lengths (%d,%d,%"PTRDIFF_SPECIFIER",%d)\n", length1,
                length2, packed_headers_end - packed_headers, length);
         return AVERROR_INVALIDDATA;
@@ -265,19 +266,19 @@ parse_packed_headers(const uint8_t * packed_headers,
      * -- AV_INPUT_BUFFER_PADDING_SIZE required */
     extradata_alloc = length + length/255 + 3 + AV_INPUT_BUFFER_PADDING_SIZE;
 
-    if (ff_alloc_extradata(codec, extradata_alloc)) {
-        av_log(codec, AV_LOG_ERROR, "Out of memory\n");
+    if (ff_alloc_extradata(par, extradata_alloc)) {
+        av_log(s, AV_LOG_ERROR, "Out of memory\n");
         return AVERROR(ENOMEM);
     }
-    ptr = codec->extradata;
+    ptr = par->extradata;
     *ptr++ = 2;
     ptr += av_xiphlacing(ptr, length1);
     ptr += av_xiphlacing(ptr, length2);
     memcpy(ptr, packed_headers, length);
     ptr += length;
-    codec->extradata_size = ptr - codec->extradata;
+    par->extradata_size = ptr - par->extradata;
     // clear out remaining parts of the buffer
-    memset(ptr, 0, extradata_alloc - codec->extradata_size);
+    memset(ptr, 0, extradata_alloc - par->extradata_size);
 
     return 0;
 }
@@ -287,16 +288,16 @@ static int xiph_parse_fmtp_pair(AVFormatContext *s,
                                 PayloadContext *xiph_data,
                                 const char *attr, const char *value)
 {
-    AVCodecContext *codec = stream->codec;
+    AVCodecParameters *par = stream->codecpar;
     int result = 0;
 
     if (!strcmp(attr, "sampling")) {
         if (!strcmp(value, "YCbCr-4:2:0")) {
-            codec->pix_fmt = AV_PIX_FMT_YUV420P;
+            par->format = AV_PIX_FMT_YUV420P;
         } else if (!strcmp(value, "YCbCr-4:4:2")) {
-            codec->pix_fmt = AV_PIX_FMT_YUV422P;
+            par->format = AV_PIX_FMT_YUV422P;
         } else if (!strcmp(value, "YCbCr-4:4:4")) {
-            codec->pix_fmt = AV_PIX_FMT_YUV444P;
+            par->format = AV_PIX_FMT_YUV444P;
         } else {
             av_log(s, AV_LOG_ERROR,
                    "Unsupported pixel format %s\n", attr);
@@ -305,12 +306,12 @@ static int xiph_parse_fmtp_pair(AVFormatContext *s,
     } else if (!strcmp(attr, "width")) {
         /* This is an integer between 1 and 1048561
          * and MUST be in multiples of 16. */
-        codec->width = atoi(value);
+        par->width = atoi(value);
         return 0;
     } else if (!strcmp(attr, "height")) {
         /* This is an integer between 1 and 1048561
          * and MUST be in multiples of 16. */
-        codec->height = atoi(value);
+        par->height = atoi(value);
         return 0;
     } else if (!strcmp(attr, "delivery-method")) {
         /* Possible values are: inline, in_band, out_band/specific_name. */
@@ -334,7 +335,7 @@ static int xiph_parse_fmtp_pair(AVFormatContext *s,
                     av_base64_decode(decoded_packet, value, decoded_alloc);
 
                 result = parse_packed_headers
-                    (decoded_packet, decoded_packet + packet_size, codec,
+                    (s, decoded_packet, decoded_packet + packet_size, par,
                     xiph_data);
             } else {
                 av_log(s, AV_LOG_ERROR,

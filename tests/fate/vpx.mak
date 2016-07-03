@@ -20,10 +20,10 @@ FATE_VP6-$(call DEMDEC, EA, VP6) += fate-vp61
 fate-vp61: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 
 FATE_VP6-$(call DEMDEC, FLV, VP6A) += fate-vp6a
-fate-vp6a: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
+fate-vp6a: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.mov
 
 FATE_VP6-$(call DEMDEC, FLV, VP6A) += fate-vp6a-skip_alpha
-fate-vp6a-skip_alpha: CMD = framecrc -flags +bitexact -skip_alpha 1 -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
+fate-vp6a-skip_alpha: CMD = framecrc -flags +bitexact -skip_alpha 1 -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.mov
 
 FATE_VP6-$(call DEMDEC, FLV, VP6F) += fate-vp6f
 fate-vp6f: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/clip1024.flv

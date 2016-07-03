@@ -174,30 +174,70 @@ ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 
 See also the @ref{crc} muxer.
 
+@anchor{framehash}
+@section framehash
+
+Per-packet hash testing format.
+
+This muxer computes and prints a cryptographic hash for each audio
+and video packet. This can be used for packet-by-packet equality
+checks without having to individually do a binary comparison on each.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. It uses the
+SHA-256 cryptographic hash function by default, but supports several
+other algorithms.
+
+The output of the muxer consists of a line for each audio and video
+packet of the form:
+@example
+@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{hash}
+@end example
+
+@var{hash} is a hexadecimal number representing the computed hash
+for the packet.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.sha256}:
+@example
+ffmpeg -i INPUT -f framehash out.sha256
+@end example
+
+To print the information to stdout, using the MD5 hash function, use
+the command:
+@example
+ffmpeg -i INPUT -f framehash -hash md5 -
+@end example
+
+See also the @ref{hash} muxer.
+
 @anchor{framemd5}
 @section framemd5
 
 Per-packet MD5 testing format.
 
-This muxer computes and prints the MD5 hash for each audio
-and video packet. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash.
-
-The output of the muxer consists of a line for each audio and video
-packet of the form:
-@example
-@var{stream_index}, @var{packet_dts}, @var{packet_pts}, @var{packet_duration}, @var{packet_size}, @var{MD5}
-@end example
-
-@var{MD5} is a hexadecimal number representing the computed MD5 hash
-for the packet.
+This is a variant of the @ref{framehash} muxer. Unlike that muxer,
+it defaults to using the MD5 hash function.
 
 @subsection Examples
 
-For example to compute the MD5 of the audio and video frames in
-@file{INPUT}, converted to raw audio and video packets, and store it
-in the file @file{out.md5}:
+To compute the MD5 hash of the audio and video frames in @file{INPUT},
+converted to raw audio and video packets, and store it in the file
+@file{out.md5}:
 @example
 ffmpeg -i INPUT -f framemd5 out.md5
 @end example
@@ -207,7 +247,7 @@ To print the information to stdout, use the command:
 ffmpeg -i INPUT -f framemd5 -
 @end example
 
-See also the @ref{md5} muxer.
+See also the @ref{framehash} and @ref{md5} muxers.
 
 @anchor{gif}
 @section gif
@@ -243,6 +283,51 @@ ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 Note 2: the GIF format has a very small time base: the delay between two frames
 can not be smaller than one centi second.
 
+@anchor{hash}
+@section hash
+
+Hash testing format.
+
+This muxer computes and prints a cryptographic hash of all the input
+audio and video frames. This can be used for equality checks without
+having to do a complete binary comparison.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. Timestamps
+are ignored. It uses the SHA-256 cryptographic hash function by default,
+but supports several other algorithms.
+
+The output of the muxer consists of a single line of the form:
+@var{algo}=@var{hash}, where @var{algo} is a short string representing
+the hash function used, and @var{hash} is a hexadecimal number
+representing the computed hash.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the input converted to raw audio and
+video, and store it in the file @file{out.sha256}:
+@example
+ffmpeg -i INPUT -f hash out.sha256
+@end example
+
+To print an MD5 hash to stdout use the command:
+@example
+ffmpeg -i INPUT -f hash -hash md5 -
+@end example
+
+See also the @ref{framehash} muxer.
+
 @anchor{hls}
 @section hls
 
@@ -273,7 +358,8 @@ This muxer supports the following options:
 
 @table @option
 @item hls_time @var{seconds}
-Set the segment length in seconds. Default value is 2.
+Set the target segment length in seconds. Default value is 2.
+Segment will be cut on the next key frame after this time has passed.
 
 @item hls_list_size @var{size}
 Set the maximum number of playlist entries. If set to 0 the list file
@@ -629,16 +715,12 @@ have no effect if it is not.
 
 MD5 testing format.
 
-This muxer computes and prints the MD5 hash of all the input audio
-and video frames. By default audio frames are converted to signed
-16-bit raw audio and video frames to raw video before computing the
-hash. Timestamps are ignored.
+This is a variant of the @ref{hash} muxer. Unlike that muxer, it
+defaults to using the MD5 hash function.
 
-The output of the muxer consists of a single line of the form:
-MD5=@var{MD5}, where @var{MD5} is a hexadecimal number representing
-the computed MD5 hash.
+@subsection Examples
 
-For example to compute the MD5 hash of the input converted to raw
+To compute the MD5 hash of the input converted to raw
 audio and video, and store it in the file @file{out.md5}:
 @example
 ffmpeg -i INPUT -f md5 out.md5
@@ -649,7 +731,7 @@ You can print the MD5 to stdout with the command:
 ffmpeg -i INPUT -f md5 -
 @end example
 
-See also the @ref{framemd5} muxer.
+See also the @ref{hash} and @ref{framemd5} muxers.
 
 @section mov, mp4, ismv
 
@@ -826,41 +908,41 @@ and @code{service_name}. If they are not set the default for
 The muxer options are:
 
 @table @option
-@item -mpegts_original_network_id @var{number}
+@item mpegts_original_network_id @var{number}
 Set the original_network_id (default 0x0001). This is unique identifier
 of a network in DVB. Its main use is in the unique identification of a
 service through the path Original_Network_ID, Transport_Stream_ID.
-@item -mpegts_transport_stream_id @var{number}
+@item mpegts_transport_stream_id @var{number}
 Set the transport_stream_id (default 0x0001). This identifies a
 transponder in DVB.
-@item -mpegts_service_id @var{number}
+@item mpegts_service_id @var{number}
 Set the service_id (default 0x0001) also known as program in DVB.
-@item -mpegts_service_type @var{number}
+@item mpegts_service_type @var{number}
 Set the program service_type (default @var{digital_tv}), see below
 a list of pre defined values.
-@item -mpegts_pmt_start_pid @var{number}
+@item mpegts_pmt_start_pid @var{number}
 Set the first PID for PMT (default 0x1000, max 0x1f00).
-@item -mpegts_start_pid @var{number}
+@item mpegts_start_pid @var{number}
 Set the first PID for data packets (default 0x0100, max 0x0f00).
-@item -mpegts_m2ts_mode @var{number}
+@item mpegts_m2ts_mode @var{number}
 Enable m2ts mode if set to 1. Default value is -1 which disables m2ts mode.
-@item -muxrate @var{number}
+@item muxrate @var{number}
 Set a constant muxrate (default VBR).
-@item -pcr_period @var{numer}
+@item pcr_period @var{numer}
 Override the default PCR retransmission time (default 20ms), ignored
 if variable muxrate is selected.
 @item pat_period @var{number}
 Maximal time in seconds between PAT/PMT tables.
 @item sdt_period @var{number}
 Maximal time in seconds between SDT tables.
-@item -pes_payload_size @var{number}
+@item pes_payload_size @var{number}
 Set minimum PES packet payload in bytes.
-@item -mpegts_flags @var{flags}
+@item mpegts_flags @var{flags}
 Set flags (see below).
-@item -mpegts_copyts @var{number}
+@item mpegts_copyts @var{number}
 Preserve original timestamps, if value is set to 1. Default value is -1, which
 results in shifting timestamps so that they start from 0.
-@item -tables_version @var{number}
+@item tables_version @var{number}
 Set PAT, PMT and SDT version (default 0, valid values are from 0 to 31, inclusively).
 This option allows updating stream structure so that standard consumer may
 detect the change. To do so, reopen output AVFormatContext (in case of API
@@ -876,7 +958,7 @@ ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
 @end example
 @end table
 
-Option mpegts_service_type accepts the following values:
+Option @option{mpegts_service_type} accepts the following values:
 
 @table @option
 @item hex_value
@@ -897,7 +979,7 @@ Advanced Codec Digital SDTV service.
 Advanced Codec Digital HDTV service.
 @end table
 
-Option mpegts_flags may take a set of such flags:
+Option @option{mpegts_flags} may take a set of such flags:
 
 @table @option
 @item resend_headers
@@ -1372,6 +1454,12 @@ Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
 all the input streams. You may use multiple stream specifiers
 separated by commas (@code{,}) e.g.: @code{a:0,v}
+
+@item onfail
+Specify behaviour on output failure. This can be set to either @code{abort} (which is
+default) or @code{ignore}. @code{abort} will cause whole process to fail in case of failure
+on this slave output. @code{ignore} will ignore failure on this output, so other outputs
+will continue without being affected.
 @end table
 
 @subsection Examples
@@ -1383,6 +1471,14 @@ as MPEG-TS over UDP (the streams need to be explicitly mapped):
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
+@end example
+
+@item
+As above, but continue streaming even if output to local file fails
+(for example local drive fills up):
+@example
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
+  "[onfail=ignore]archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
 @item

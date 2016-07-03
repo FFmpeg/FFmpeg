@@ -1,0 +1,36 @@
+[CHAPTER]
+id=1
+time_base=1/1000
+start=0
+start_time=0.000000
+end=5000
+end_time=5.000000
+TAG:title=start
+[/CHAPTER]
+[CHAPTER]
+id=2
+time_base=1/1000
+start=5000
+start_time=5.000000
+end=10500
+end_time=10.500000
+TAG:title=Five Seconds
+[/CHAPTER]
+[CHAPTER]
+id=3
+time_base=1/1000
+start=10500
+start_time=10.500000
+end=15000
+end_time=15.000000
+TAG:title=Ten point 5 seconds
+[/CHAPTER]
+[CHAPTER]
+id=4
+time_base=1/1000
+start=15000
+start_time=15.000000
+end=19849
+end_time=19.849000
+TAG:title=15 sec - over soon
+[/CHAPTER]

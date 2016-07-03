@@ -1,4 +1,6 @@
-LIBAVUTIL_$MAJOR {
-        global: av*;
-        local: *;
+LIBAVUTIL_MAJOR {
+    global:
+        av*;
+    local:
+        *;
 };

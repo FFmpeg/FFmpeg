@@ -357,6 +357,17 @@
 %endif
 %endmacro
 
+%macro HADDPS 3 ; dst, src, tmp
+%if cpuflag(sse3)
+    haddps  %1, %1, %2
+%else
+    movaps  %3, %1
+    shufps  %1, %2, q2020
+    shufps  %3, %2, q3131
+    addps   %1, %3
+%endif
+%endmacro
+
 %macro PALIGNR 4-5
 %if cpuflag(ssse3)
 %if %0==5

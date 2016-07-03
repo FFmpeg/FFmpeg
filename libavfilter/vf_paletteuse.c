@@ -1003,6 +1003,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     PaletteUseContext *s = ctx->priv;
     s->dinput.repeatlast = 1; // only 1 frame in the palette
+    s->dinput.skip_initial_unpaired = 1;
     s->dinput.process    = load_apply_palette;
 
     s->set_frame = set_frame_lut[s->color_search_method][s->dither];

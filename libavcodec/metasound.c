@@ -25,12 +25,13 @@
 #include <math.h>
 #include <stdint.h>
 
-#define BITSTREAM_READER_LE
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
 #include "fft.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "lsp.h"
 #include "sinewin.h"

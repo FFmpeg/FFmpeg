@@ -251,6 +251,28 @@ To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
 Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.
 Defaults to @samp{2}.
 
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
+@item video_input
+Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
+@samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.
+Defaults to @samp{unset}.
+
+@item audio_input
+Sets the audio input source. Must be @samp{unset}, @samp{embedded},
+@samp{aes_ebu}, @samp{analog}, @samp{analog_xlr}, @samp{analog_rca} or
+@samp{microphone}. Defaults to @samp{unset}.
+
+@item video_pts
+Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+
+@item audio_pts
+Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+
 @end table
 
 @subsection Examples

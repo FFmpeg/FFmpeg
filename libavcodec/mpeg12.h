@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 common code
+ * MPEG-1/2 common code
  * Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.

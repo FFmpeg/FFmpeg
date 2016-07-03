@@ -36,6 +36,14 @@ particular protocol using the option
 The option "-protocols" of the ff* tools will display the list of
 supported protocols.
 
+All protocols accept the following options:
+
+@table @option
+@item rw_timeout
+Maximum time to wait for (network) read/write operations to complete,
+in microseconds.
+@end table
+
 A description of the currently available protocols follows.
 
 @section async
@@ -215,6 +223,17 @@ NOTE: Protocol can be used as output, but it is recommended to not do
 it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
+
+This protocol accepts the following options:
+
+@table @option
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
+
+@end table
 
 @section gopher
 
@@ -1265,6 +1284,14 @@ The list of supported options follows.
 Set the UDP maximum socket buffer size in bytes. This is used to set either
 the receive or send buffer size, depending on what the socket is used for.
 Default is 64KB.  See also @var{fifo_size}.
+
+@item bitrate=@var{bitrate}
+If set to nonzero, the output will have the specified constant bitrate if the
+input has enough packets to sustain it.
+
+@item burst_bits=@var{bits}
+When using @var{bitrate} this specifies the maximum number of bits in
+packet bursts.
 
 @item localport=@var{port}
 Override the local UDP port to bind with.

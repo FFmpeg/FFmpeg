@@ -45,9 +45,9 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
-    st->codec->codec_id = ctx->iformat->raw_codec_id;
+    st->codecpar->codec_id = ctx->iformat->raw_codec_id;
 
     if ((pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
         av_log(ctx, AV_LOG_ERROR, "No such pixel format: %s.\n",
@@ -57,14 +57,14 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
-    st->codec->width  = s->width;
-    st->codec->height = s->height;
-    st->codec->pix_fmt = pix_fmt;
-    packet_size = av_image_get_buffer_size(st->codec->pix_fmt, s->width, s->height, 1);
+    st->codecpar->width  = s->width;
+    st->codecpar->height = s->height;
+    st->codecpar->format = pix_fmt;
+    packet_size = av_image_get_buffer_size(st->codecpar->format, s->width, s->height, 1);
     if (packet_size < 0)
         return packet_size;
     ctx->packet_size = packet_size;
-    st->codec->bit_rate = av_rescale_q(ctx->packet_size,
+    st->codecpar->bit_rate = av_rescale_q(ctx->packet_size,
                                        (AVRational){8,1}, st->time_base);
 
     return 0;
@@ -89,7 +89,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption rawvideo_options[] = {
     { "video_size", "set frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "set pixel format", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
-    { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
+    { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
 };
 

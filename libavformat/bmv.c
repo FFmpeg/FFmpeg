@@ -1,6 +1,6 @@
 /*
  * Discworld II BMV demuxer
- * Copyright (c) 2011 Konstantin Shishkov.
+ * Copyright (c) 2011 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *
@@ -47,20 +47,20 @@ static int bmv_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_BMV_VIDEO;
-    st->codec->width      = 640;
-    st->codec->height     = 429;
-    st->codec->pix_fmt    = AV_PIX_FMT_PAL8;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_BMV_VIDEO;
+    st->codecpar->width      = 640;
+    st->codecpar->height     = 429;
+    st->codecpar->format     = AV_PIX_FMT_PAL8;
     avpriv_set_pts_info(st, 16, 1, 12);
     ast = avformat_new_stream(s, 0);
     if (!ast)
         return AVERROR(ENOMEM);
-    ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id        = AV_CODEC_ID_BMV_AUDIO;
-    ast->codec->channels        = 2;
-    ast->codec->channel_layout  = AV_CH_LAYOUT_STEREO;
-    ast->codec->sample_rate     = 22050;
+    ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
+    ast->codecpar->codec_id        = AV_CODEC_ID_BMV_AUDIO;
+    ast->codecpar->channels        = 2;
+    ast->codecpar->channel_layout  = AV_CH_LAYOUT_STEREO;
+    ast->codecpar->sample_rate     = 22050;
     avpriv_set_pts_info(ast, 16, 1, 22050);
 
     c->get_next  = 1;

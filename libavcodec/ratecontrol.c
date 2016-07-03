@@ -182,8 +182,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR(ENOMEM);
         rcc->num_entries = i;
 
-        /* init all to skipped p frames
-         * (with b frames we might have a not encoded frame at the end FIXME) */
+        /* init all to skipped P-frames
+         * (with B-frames we might have a not encoded frame at the end FIXME) */
         for (i = 0; i < rcc->num_entries; i++) {
             RateControlEntry *rce = &rcc->entry[i];
 
@@ -203,7 +203,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             next = strchr(p, ';');
             if (next) {
-                (*next) = 0; // sscanf in unbelievably slow on looong strings // FIXME copy / do not write
+                (*next) = 0; // sscanf is unbelievably slow on looong strings // FIXME copy / do not write
                 next++;
             }
             e = sscanf(p, " in:%d ", &picture_number);
@@ -652,9 +652,9 @@ static void adaptive_quantization(MpegEncContext *s, double q)
         int mb_distance;
         float mb_factor = 0.0;
         if (spat_cplx < 4)
-            spat_cplx = 4;              // FIXME finetune
+            spat_cplx = 4;              // FIXME fine-tune
         if (temp_cplx < 4)
-            temp_cplx = 4;              // FIXME finetune
+            temp_cplx = 4;              // FIXME fine-tune
 
         if ((s->mb_type[mb_xy] & CANDIDATE_MB_TYPE_INTRA)) { // FIXME hq mode
             cplx   = spat_cplx;

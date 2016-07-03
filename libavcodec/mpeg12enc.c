@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 encoder
+ * MPEG-1/2 encoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * MPEG1/2 encoder
+ * MPEG-1/2 encoder
  */
 
 #include <stdint.h>
@@ -144,12 +144,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (find_frame_rate_index(s) < 0) {
         if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "MPEG1/2 does not support %d/%d fps\n",
+            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
             return -1;
         } else {
             av_log(avctx, AV_LOG_INFO,
-                   "MPEG1/2 does not support %d/%d fps, there may be AV sync issues\n",
+                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
                    avctx->time_base.den, avctx->time_base.num);
         }
     }
@@ -249,7 +249,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     if (s->current_picture.f->key_frame) {
         AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
 
-        /* mpeg1 header repeated every gop */
+        /* MPEG-1 header repeated every GOP */
         put_header(s, SEQ_START_CODE);
 
         put_sbits(&s->pb, 12, s->width  & 0xFFF);
@@ -423,7 +423,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     AVFrameSideData *side_data;
     mpeg1_encode_sequence_header(s);
 
-    /* mpeg1 picture header */
+    /* MPEG-1 picture header */
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
 

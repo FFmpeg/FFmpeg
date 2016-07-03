@@ -352,7 +352,7 @@ int main(int argc, char **argv)
     for (i = 0; i < input_ctx->nb_streams; i++) {
         AVStream *st = input_ctx->streams[i];
 
-        if (st->codec->codec_id == AV_CODEC_ID_H264 && !video_st)
+        if (st->codecpar->codec_id == AV_CODEC_ID_H264 && !video_st)
             video_st = st;
         else
             st->discard = AVDISCARD_ALL;
@@ -404,16 +404,16 @@ int main(int argc, char **argv)
         goto finish;
     }
     decoder_ctx->codec_id = AV_CODEC_ID_H264;
-    if (video_st->codec->extradata_size) {
-        decoder_ctx->extradata = av_mallocz(video_st->codec->extradata_size +
+    if (video_st->codecpar->extradata_size) {
+        decoder_ctx->extradata = av_mallocz(video_st->codecpar->extradata_size +
                                             AV_INPUT_BUFFER_PADDING_SIZE);
         if (!decoder_ctx->extradata) {
             ret = AVERROR(ENOMEM);
             goto finish;
         }
-        memcpy(decoder_ctx->extradata, video_st->codec->extradata,
-               video_st->codec->extradata_size);
-        decoder_ctx->extradata_size = video_st->codec->extradata_size;
+        memcpy(decoder_ctx->extradata, video_st->codecpar->extradata,
+               video_st->codecpar->extradata_size);
+        decoder_ctx->extradata_size = video_st->codecpar->extradata_size;
     }
     decoder_ctx->refcounted_frames = 1;
 

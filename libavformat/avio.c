@@ -56,6 +56,7 @@ static void *urlcontext_child_next(void *obj, void *prev)
 static const AVOption options[] = {
     {"protocol_whitelist", "List of protocols that are allowed to be used", OFFSET(protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
     {"protocol_blacklist", "List of protocols that are not allowed to be used", OFFSET(protocol_blacklist), AV_OPT_TYPE_STRING, { .str = NULL },  CHAR_MIN, CHAR_MAX, D },
+    {"rw_timeout", "Timeout for IO operations (in microseconds)", offsetof(URLContext, rw_timeout), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
@@ -269,6 +270,8 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
         *ptr = '\0';
 
     protocols = ffurl_get_protocols(NULL, NULL);
+    if (!protocols)
+        return NULL;
     for (i = 0; protocols[i]; i++) {
             const URLProtocol *up = protocols[i];
         if (!strcmp(proto_str, up->name)) {
@@ -281,6 +284,7 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
             return up;
         }
     }
+    av_freep(&protocols);
 
     return NULL;
 }
@@ -297,20 +301,26 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     *puc = NULL;
     if (av_strstart(filename, "https:", NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile FFmpeg with "
-                                     "openssl, gnutls,\n"
+                                     "openssl, gnutls "
                                      "or securetransport enabled.\n");
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
 int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
                          const AVIOInterruptCB *int_cb, AVDictionary **options,
-                         const char *whitelist, const char* blacklist)
+                         const char *whitelist, const char* blacklist,
+                         URLContext *parent)
 {
     AVDictionary *tmp_opts = NULL;
     AVDictionaryEntry *e;
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;
+    if (parent)
+        av_opt_copy(*puc, parent);
+    if (options &&
+        (ret = av_opt_set_dict(*puc, options)) < 0)
+        goto fail;
     if (options && (*puc)->prot->priv_data_class &&
         (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
         goto fail;
@@ -348,7 +358,7 @@ int ffurl_open(URLContext **puc, const char *filename, int flags,
                const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
     return ffurl_open_whitelist(puc, filename, flags,
-                                int_cb, options, NULL, NULL);
+                                int_cb, options, NULL, NULL, NULL);
 }
 
 static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
@@ -385,8 +395,10 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
             }
         } else if (ret < 1)
             return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
-        if (ret)
+        if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
+            wait_since = 0;
+        }
         len += ret;
     }
     return len;

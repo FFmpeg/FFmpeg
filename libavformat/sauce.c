@@ -65,18 +65,18 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
     if (got_width && datatype && filetype) {
         if ((datatype == 1 && filetype <=2) || (datatype == 5 && filetype == 255) || datatype == 6) {
             if (t1) {
-                avctx->streams[0]->codec->width = t1<<3;
+                avctx->streams[0]->codecpar->width = t1<<3;
                 *got_width = 1;
             }
             if (get_height && t2)
-                avctx->streams[0]->codec->height = t2<<4;
+                avctx->streams[0]->codecpar->height = t2<<4;
         } else if (datatype == 5) {
             if (filetype) {
-                avctx->streams[0]->codec->width = (filetype == 1 ? t1 : filetype) << 4;
+                avctx->streams[0]->codecpar->width = (filetype == 1 ? t1 : filetype) << 4;
                 *got_width = 1;
             }
             if (get_height && t2)
-                avctx->streams[0]->codec->height = t2<<4;
+                avctx->streams[0]->codecpar->height = t2<<4;
         }
     }
 

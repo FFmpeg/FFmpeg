@@ -221,8 +221,8 @@ int ff_img_read_header(AVFormatContext *s1)
         avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     if (s->width && s->height) {
-        st->codec->width  = s->width;
-        st->codec->height = s->height;
+        st->codecpar->width  = s->width;
+        st->codecpar->height = s->height;
     }
 
     if (!s->is_pipe) {
@@ -307,18 +307,18 @@ int ff_img_read_header(AVFormatContext *s1)
     }
 
     if (s1->video_codec_id) {
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = s1->video_codec_id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = s1->video_codec_id;
     } else if (s1->audio_codec_id) {
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = s1->audio_codec_id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = s1->audio_codec_id;
     } else if (s1->iformat->raw_codec_id) {
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = s1->iformat->raw_codec_id;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = s1->iformat->raw_codec_id;
     } else {
         const char *str = strrchr(s->path, '.');
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         if (s1->pb) {
             int probe_buffer_size = 2048;
             uint8_t *probe_buffer = av_realloc(NULL, probe_buffer_size + AVPROBE_PADDING_SIZE);
@@ -346,7 +346,7 @@ int ff_img_read_header(AVFormatContext *s1)
                     !fmt->raw_codec_id)
                     continue;
                 if (fmt->read_probe(&pd) > 0) {
-                    st->codec->codec_id = fmt->raw_codec_id;
+                    st->codecpar->codec_id = fmt->raw_codec_id;
                     break;
                 }
             }
@@ -355,16 +355,16 @@ int ff_img_read_header(AVFormatContext *s1)
             } else
                 ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
         }
-        if (st->codec->codec_id == AV_CODEC_ID_NONE)
-            st->codec->codec_id = ff_guess_image2_codec(s->path);
-        if (st->codec->codec_id == AV_CODEC_ID_LJPEG)
-            st->codec->codec_id = AV_CODEC_ID_MJPEG;
-        if (st->codec->codec_id == AV_CODEC_ID_ALIAS_PIX) // we cannot distingiush this from BRENDER_PIX
-            st->codec->codec_id = AV_CODEC_ID_NONE;
+        if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
+            st->codecpar->codec_id = ff_guess_image2_codec(s->path);
+        if (st->codecpar->codec_id == AV_CODEC_ID_LJPEG)
+            st->codecpar->codec_id = AV_CODEC_ID_MJPEG;
+        if (st->codecpar->codec_id == AV_CODEC_ID_ALIAS_PIX) // we cannot distingiush this from BRENDER_PIX
+            st->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         pix_fmt != AV_PIX_FMT_NONE)
-        st->codec->pix_fmt = pix_fmt;
+        st->codecpar->format = pix_fmt;
 
     return 0;
 }
@@ -377,7 +377,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int i, res;
     int size[3]           = { 0 }, ret[3] = { 0 };
     AVIOContext *f[3]     = { NULL };
-    AVCodecContext *codec = s1->streams[0]->codec;
+    AVCodecParameters *par = s1->streams[0]->codecpar;
 
     if (!s->is_pipe) {
         /* loop over input */
@@ -418,7 +418,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             filename[strlen(filename) - 1] = 'U' + i;
         }
 
-        if (codec->codec_id == AV_CODEC_ID_NONE) {
+        if (par->codec_id == AV_CODEC_ID_NONE) {
             AVProbeData pd = { 0 };
             AVInputFormat *ifmt;
             uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
@@ -436,11 +436,11 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
             ifmt = av_probe_input_format3(&pd, 1, &score);
             if (ifmt && ifmt->read_packet == ff_img_read_packet && ifmt->raw_codec_id)
-                codec->codec_id = ifmt->raw_codec_id;
+                par->codec_id = ifmt->raw_codec_id;
         }
 
-        if (codec->codec_id == AV_CODEC_ID_RAWVIDEO && !codec->width)
-            infer_size(&codec->width, &codec->height, size[0]);
+        if (par->codec_id == AV_CODEC_ID_RAWVIDEO && !par->width)
+            infer_size(&par->width, &par->height, size[0]);
     } else {
         f[0] = s1->pb;
         if (avio_feof(f[0]) && s->loop && s->is_pipe)
@@ -561,7 +561,7 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 #define OFFSET(x) offsetof(VideoDemuxData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_img_options[] = {
-    { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0,   DEC },
+    { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX,   DEC },
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC },
 
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT,    {.i64=PT_DEFAULT}, 0,       INT_MAX, DEC, "pattern_type"},
@@ -862,6 +862,56 @@ static int webp_probe(AVProbeData *p)
     return 0;
 }
 
+static int pnm_magic_check(const AVProbeData *p, int magic)
+{
+    const uint8_t *b = p->buf;
+
+    return b[0] == 'P' && b[1] == magic + '0';
+}
+
+static inline int pnm_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    while (b[2] == '\r')
+        b++;
+    if (b[2] == '\n' && (b[3] == '#' || (b[3] >= '0' && b[3] <= '9')))
+        return AVPROBE_SCORE_EXTENSION + 2;
+    return 0;
+}
+
+static int pbm_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 1) || pnm_magic_check(p, 4) ? pnm_probe(p) : 0;
+}
+
+static inline int pgmx_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 2) || pnm_magic_check(p, 5) ? pnm_probe(p) : 0;
+}
+
+static int pgm_probe(AVProbeData *p)
+{
+    int ret = pgmx_probe(p);
+    return ret && !av_match_ext(p->filename, "pgmyuv") ? ret : 0;
+}
+
+static int pgmyuv_probe(AVProbeData *p) // custom FFmpeg format recognized by file extension
+{
+    int ret = pgmx_probe(p);
+    return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
+}
+
+static int ppm_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
+}
+
+static int pam_probe(AVProbeData *p)
+{
+    return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
+}
+
 #define IMAGEAUTO_DEMUXER(imgname, codecid)\
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
@@ -888,9 +938,14 @@ IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
 IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
 IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
 IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)
+IMAGEAUTO_DEMUXER(pam,     AV_CODEC_ID_PAM)
+IMAGEAUTO_DEMUXER(pbm,     AV_CODEC_ID_PBM)
 IMAGEAUTO_DEMUXER(pcx,     AV_CODEC_ID_PCX)
+IMAGEAUTO_DEMUXER(pgm,     AV_CODEC_ID_PGM)
+IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
+IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)
 IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
 IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)

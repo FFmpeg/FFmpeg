@@ -197,15 +197,15 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
     }
 
     dst += r->y * dst_linesize + r->x * 4;
-    src = r->pict.data[0];
-    pal = (uint32_t *)r->pict.data[1];
+    src = r->data[0];
+    pal = (uint32_t *)r->data[1];
     for (y = 0; y < r->h; y++) {
         dst2 = (uint32_t *)dst;
         src2 = src;
         for (x = 0; x < r->w; x++)
             *(dst2++) = pal[*(src2++)];
         dst += dst_linesize;
-        src += r->pict.linesize[0];
+        src += r->linesize[0];
     }
 }
 
@@ -696,6 +696,15 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
     if (pkt->size == 0 && pkt->side_data_elems == 0)
         return;
+    if (!ost->st->codecpar->extradata && avctx->extradata) {
+        ost->st->codecpar->extradata = av_malloc(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!ost->st->codecpar->extradata) {
+            av_log(NULL, AV_LOG_ERROR, "Could not allocate extradata buffer to copy parser data.\n");
+            exit_program(1);
+        }
+        ost->st->codecpar->extradata_size = avctx->extradata_size;
+        memcpy(ost->st->codecpar->extradata, avctx->extradata, avctx->extradata_size);
+    }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         if (pkt->dts != AV_NOPTS_VALUE &&
@@ -1913,7 +1922,7 @@ int guess_input_channel_layout(InputStream *ist)
             return 0;
         av_get_channel_layout_string(layout_name, sizeof(layout_name),
                                      dec->channels, dec->channel_layout);
-        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for  Input Stream "
+        av_log(NULL, AV_LOG_WARNING, "Guessed Channel Layout for Input Stream "
                "#%d.%d : %s\n", ist->file_index, ist->st->index, layout_name);
     }
     return 1;
@@ -2669,7 +2678,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
         ost->st->codec->codec= ost->enc_ctx->codec;
     } else {
-        ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+        ret = av_opt_set_dict(ost->st->codec, &ost->encoder_opts);
         if (ret < 0) {
            av_log(NULL, AV_LOG_FATAL,
                   "Error setting up codec context options.\n");
@@ -2908,7 +2917,8 @@ static int transcode_init(void)
              * overhead
              */
             if(!strcmp(oc->oformat->name, "avi")) {
-                if ( copy_tb<0 && av_q2d(ist->st->r_frame_rate) >= av_q2d(ist->st->avg_frame_rate)
+                if ( copy_tb<0 && ist->st->r_frame_rate.num
+                               && av_q2d(ist->st->r_frame_rate) >= av_q2d(ist->st->avg_frame_rate)
                                && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(ist->st->time_base)
                                && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(dec_ctx->time_base)
                                && av_q2d(ist->st->time_base) < 1.0/500 && av_q2d(dec_ctx->time_base) < 1.0/500
@@ -3002,6 +3012,10 @@ static int transcode_init(void)
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 enc_ctx->pix_fmt            = dec_ctx->pix_fmt;
+                enc_ctx->colorspace         = dec_ctx->colorspace;
+                enc_ctx->color_range        = dec_ctx->color_range;
+                enc_ctx->color_primaries    = dec_ctx->color_primaries;
+                enc_ctx->color_trc          = dec_ctx->color_trc;
                 enc_ctx->width              = dec_ctx->width;
                 enc_ctx->height             = dec_ctx->height;
                 enc_ctx->has_b_frames       = dec_ctx->has_b_frames;
@@ -3046,6 +3060,11 @@ static int transcode_init(void)
 
 #if CONFIG_LIBMFX
             if (qsv_transcode_init(ost))
+                exit_program(1);
+#endif
+
+#if CONFIG_CUVID
+            if (cuvid_transcode_init(ost))
                 exit_program(1);
 #endif
 
@@ -4203,6 +4222,8 @@ static int transcode(void)
                 ist->hwaccel_uninit(ist->dec_ctx);
         }
     }
+
+    av_buffer_unref(&hw_device_ctx);
 
     /* finished ! */
     ret = 0;

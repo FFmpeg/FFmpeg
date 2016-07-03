@@ -179,7 +179,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     // codec data (rtjpeg quant tables)
     if (buf[0] == 'D' && buf[1] == 'R') {
         int ret;
-        // skip rest of the frameheader.
+        // Skip the rest of the frame header.
         buf       = &buf[12];
         buf_size -= 12;
         ret       = get_quant(avctx, c, buf, buf_size);
@@ -207,7 +207,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     }
 retry:
-    // skip rest of the frameheader.
+    // Skip the rest of the frame header.
     buf       = &buf[12];
     buf_size -= 12;
     if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {

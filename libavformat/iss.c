@@ -107,23 +107,23 @@ static av_cold int iss_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_ISS;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_ISS;
     if (stereo) {
-        st->codec->channels       = 2;
-        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+        st->codecpar->channels       = 2;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
     } else {
-        st->codec->channels       = 1;
-        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codecpar->channels       = 1;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     }
-    st->codec->sample_rate = 44100;
+    st->codecpar->sample_rate = 44100;
     if(rate_divisor > 0)
-         st->codec->sample_rate /= rate_divisor;
-    st->codec->bits_per_coded_sample = 4;
-    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate
-                                      * st->codec->bits_per_coded_sample;
-    st->codec->block_align = iss->packet_size;
-    avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
+         st->codecpar->sample_rate /= rate_divisor;
+    st->codecpar->bits_per_coded_sample = 4;
+    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate
+                                      * st->codecpar->bits_per_coded_sample;
+    st->codecpar->block_align = iss->packet_size;
+    avpriv_set_pts_info(st, 32, 1, st->codecpar->sample_rate);
 
     return 0;
 }
@@ -138,8 +138,8 @@ static int iss_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     pkt->pts = avio_tell(s->pb) - iss->sample_start_pos;
-    if(s->streams[0]->codec->channels > 0)
-        pkt->pts /= s->streams[0]->codec->channels*2;
+    if(s->streams[0]->codecpar->channels > 0)
+        pkt->pts /= s->streams[0]->codecpar->channels*2;
     return 0;
 }
 

@@ -281,7 +281,7 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
 /**
- * The option is inteded for exporting values to the caller.
+ * The option is intended for exporting values to the caller.
  */
 #define AV_OPT_FLAG_EXPORT          64
 /**

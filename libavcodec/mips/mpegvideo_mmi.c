@@ -23,11 +23,14 @@
  */
 
 #include "mpegvideo_mips.h"
+#include "libavutil/mips/asmdefs.h"
 
 void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         int n, int qscale)
 {
     int64_t level, qmul, qadd, nCoeffs;
+    double ftmp[6];
+    mips_reg addr[1];
 
     qmul = qscale << 1;
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
@@ -49,48 +52,50 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
     __asm__ volatile (
-        "xor $f12, $f12, $f12           \r\n"
-        "lwc1 $f12, %1                  \n\r"
-        "xor $f10, $f10, $f10           \r\n"
-        "lwc1 $f10, %2                  \r\n"
-        "xor $f14, $f14, $f14           \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "packsswh $f10, $f10, $f10      \r\n"
-        "packsswh $f10, $f10, $f10      \r\n"
-        "psubh $f14, $f14, $f10         \r\n"
-        "xor $f8, $f8, $f8              \r\n"
-        ".p2align 4                     \r\n"
-        "1:                             \r\n"
-        "daddu $8, %0, %3               \r\n"
-        "gsldlc1 $f0, 7($8)             \r\n"
-        "gsldrc1 $f0, 0($8)             \r\n"
-        "gsldlc1 $f2, 15($8)            \r\n"
-        "gsldrc1 $f2, 8($8)             \r\n"
-        "mov.d $f4, $f0                 \r\n"
-        "mov.d $f6, $f2                 \r\n"
-        "pmullh $f0, $f0, $f12          \r\n"
-        "pmullh $f2, $f2, $f12          \r\n"
-        "pcmpgth $f4, $f4, $f8          \r\n"
-        "pcmpgth $f6, $f6, $f8          \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "paddh $f0, $f0, $f14           \r\n"
-        "paddh $f2, $f2, $f14           \r\n"
-        "xor $f4, $f4, $f0              \r\n"
-        "xor $f6, $f6, $f2              \r\n"
-        "pcmpeqh $f0, $f0, $f14         \r\n"
-        "pcmpeqh $f2, $f2, $f14         \r\n"
-        "pandn $f0, $f0, $f4            \r\n"
-        "pandn $f2, $f2, $f6            \r\n"
-        "gssdlc1 $f0, 7($8)             \r\n"
-        "gssdrc1 $f0, 0($8)             \r\n"
-        "gssdlc1 $f2, 15($8)            \r\n"
-        "gssdrc1 $f2, 8($8)             \r\n"
-        "addi %3, %3, 16                \r\n"
-        "blez %3, 1b                    \r\n"
-        ::"r"(block+nCoeffs),"m"(qmul),"m"(qadd),"r"(2*(-nCoeffs))
-        :"$8","memory"
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "packsswh   %[qmul],    %[qmul],        %[qmul]                 \n\t"
+        "packsswh   %[qmul],    %[qmul],        %[qmul]                 \n\t"
+        "packsswh   %[qadd],    %[qadd],        %[qadd]                 \n\t"
+        "packsswh   %[qadd],    %[qadd],        %[qadd]                 \n\t"
+        "psubh      %[ftmp0],   %[ftmp0],       %[qadd]                 \n\t"
+        "xor        %[ftmp5],   %[ftmp5],       %[ftmp5]                \n\t"
+        ".p2align   4                                                   \n\t"
+        "1:                                                             \n\t"
+        PTR_ADDU   "%[addr0],   %[block],       %[nCoeffs]              \n\t"
+        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
+        "gsldlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
+        "gsldrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
+        "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
+        "pmullh     %[ftmp1],   %[ftmp1],       %[qmul]                 \n\t"
+        "pmullh     %[ftmp2],   %[ftmp2],       %[qmul]                 \n\t"
+        "pcmpgth    %[ftmp3],   %[ftmp3],       %[ftmp5]                \n\t"
+        "pcmpgth    %[ftmp4],   %[ftmp4],       %[ftmp5]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp1]                \n\t"
+        "xor        %[ftmp4],   %[ftmp4],       %[ftmp2]                \n\t"
+        "pcmpeqh    %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
+        "pcmpeqh    %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "pandn      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "pandn      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        PTR_ADDIU  "%[nCoeffs], %[nCoeffs],     0x10                    \n\t"
+        "gssdlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        "gssdrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
+        "gssdlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
+        "gssdrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        "blez       %[nCoeffs], 1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [addr0]"=&r"(addr[0])
+        : [block]"r"((mips_reg)(block+nCoeffs)),
+          [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
+          [qmul]"f"(qmul),                  [qadd]"f"(qadd)
+        : "memory"
     );
 
     block[0] = level;
@@ -100,6 +105,8 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
         int n, int qscale)
 {
     int64_t qmul, qadd, nCoeffs;
+    double ftmp[6];
+    mips_reg addr[1];
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
@@ -107,48 +114,50 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
     nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
     __asm__ volatile (
-        "xor $f12, $f12, $f12           \r\n"
-        "lwc1 $f12, %1                  \r\n"
-        "xor $f10, $f10, $f10           \r\n"
-        "lwc1 $f10, %2                  \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "xor $f14, $f14, $f14           \r\n"
-        "packsswh $f10, $f10, $f10      \r\n"
-        "packsswh $f10, $f10, $f10      \r\n"
-        "psubh $f14, $f14, $f10         \r\n"
-        "xor $f8, $f8, $f8              \r\n"
-        ".p2align 4                     \r\n"
-        "1:                             \r\n"
-        "daddu $8, %0, %3               \r\n"
-        "gsldlc1 $f0, 7($8)             \r\n"
-        "gsldrc1 $f0, 0($8)             \r\n"
-        "gsldlc1 $f2, 15($8)            \r\n"
-        "gsldrc1 $f2, 8($8)             \r\n"
-        "mov.d $f4, $f0                 \r\n"
-        "mov.d $f6, $f2                 \r\n"
-        "pmullh $f0, $f0, $f12          \r\n"
-        "pmullh $f2, $f2, $f12          \r\n"
-        "pcmpgth $f4, $f4, $f8          \r\n"
-        "pcmpgth $f6, $f6, $f8          \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "paddh $f0, $f0, $f14           \r\n"
-        "paddh $f2, $f2, $f14           \r\n"
-        "xor $f4, $f4, $f0              \r\n"
-        "xor $f6, $f6, $f2              \r\n"
-        "pcmpeqh $f0, $f0, $f14         \r\n"
-        "pcmpeqh $f2, $f2, $f14         \r\n"
-        "pandn $f0, $f0, $f4            \r\n"
-        "pandn $f2, $f2, $f6            \r\n"
-        "gssdlc1 $f0, 7($8)             \r\n"
-        "gssdrc1 $f0, 0($8)             \r\n"
-        "gssdlc1 $f2, 15($8)            \r\n"
-        "gssdrc1 $f2, 8($8)             \r\n"
-        "addi %3, %3, 16                \r\n"
-        "blez %3, 1b                    \r\n"
-        ::"r"(block+nCoeffs),"m"(qmul),"m"(qadd),"r"(2*(-nCoeffs))
-        : "$8","memory"
+        "packsswh   %[qmul],    %[qmul],        %[qmul]                 \n\t"
+        "packsswh   %[qmul],    %[qmul],        %[qmul]                 \n\t"
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "packsswh   %[qadd],    %[qadd],        %[qadd]                 \n\t"
+        "packsswh   %[qadd],    %[qadd],        %[qadd]                 \n\t"
+        "psubh      %[ftmp0],   %[ftmp0],       %[qadd]                 \n\t"
+        "xor        %[ftmp5],   %[ftmp5],       %[ftmp5]                \n\t"
+        ".p2align   4                                                   \n\t"
+        "1:                                                             \n\t"
+        PTR_ADDU   "%[addr0],   %[block],       %[nCoeffs]              \n\t"
+        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
+        "gsldlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
+        "gsldrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
+        "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
+        "pmullh     %[ftmp1],   %[ftmp1],       %[qmul]                 \n\t"
+        "pmullh     %[ftmp2],   %[ftmp2],       %[qmul]                 \n\t"
+        "pcmpgth    %[ftmp3],   %[ftmp3],       %[ftmp5]                \n\t"
+        "pcmpgth    %[ftmp4],   %[ftmp4],       %[ftmp5]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp1]                \n\t"
+        "xor        %[ftmp4],   %[ftmp4],       %[ftmp2]                \n\t"
+        "pcmpeqh    %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
+        "pcmpeqh    %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "pandn      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "pandn      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        PTR_ADDIU  "%[nCoeffs], %[nCoeffs],     0x10                    \n\t"
+        "gssdlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        "gssdrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
+        "gssdlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
+        "gssdrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        "blez       %[nCoeffs], 1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [addr0]"=&r"(addr[0])
+        : [block]"r"((mips_reg)(block+nCoeffs)),
+          [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
+          [qmul]"f"(qmul),                  [qadd]"f"(qadd)
+        : "memory"
     );
 }
 
@@ -158,6 +167,9 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
     int64_t nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
+    double ftmp[10];
+    uint64_t tmp[1];
+    mips_reg addr[1];
 
     av_assert2(s->block_last_index[n]>=0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
@@ -171,60 +183,68 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
     quant_matrix = s->intra_matrix;
 
     __asm__ volatile (
-        "pcmpeqh $f14, $f14, $f14       \r\n"
-        "dli $10, 15                    \r\n"
-        "dmtc1 $10, $f16                \r\n"
-        "xor $f12, $f12, $f12           \r\n"
-        "lwc1 $f12, %2                  \r\n"
-        "psrlh $f14, $f14, $f16         \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "or $8, %3, $0                  \r\n"
-        ".p2align 4                     \r\n"
-        "1:                             \r\n"
-        "gsldxc1 $f0, 0($8, %0)         \r\n"
-        "gsldxc1 $f2, 8($8, %0)         \r\n"
-        "mov.d $f16, $f0                \r\n"
-        "mov.d $f18, $f2                \r\n"
-        "gsldxc1 $f8, 0($8, %1)         \r\n"
-        "gsldxc1 $f10, 8($8, %1)        \r\n"
-        "pmullh $f8, $f8, $f12          \r\n"
-        "pmullh $f10, $f10, $f12        \r\n"
-        "xor $f4, $f4, $f4              \r\n"
-        "xor $f6, $f6, $f6              \r\n"
-        "pcmpgth $f4, $f4, $f0          \r\n"
-        "pcmpgth $f6, $f6, $f2          \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "psubh $f0, $f0, $f4            \r\n"
-        "psubh $f2, $f2, $f6            \r\n"
-        "pmullh $f0, $f0, $f8           \r\n"
-        "pmullh $f2, $f2, $f10          \r\n"
-        "xor $f8, $f8, $f8              \r\n"
-        "xor $f10, $f10, $f10           \r\n"
-        "pcmpeqh $f8, $f8, $f16         \r\n"
-        "pcmpeqh $f10, $f10, $f18       \r\n"
-        "dli $10, 3                     \r\n"
-        "dmtc1 $10, $f16                \r\n"
-        "psrah $f0, $f0, $f16           \r\n"
-        "psrah $f2, $f2, $f16           \r\n"
-        "psubh $f0, $f0, $f14           \r\n"
-        "psubh $f2, $f2, $f14           \r\n"
-        "or $f0, $f0, $f14              \r\n"
-        "or $f2, $f2, $f14              \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "psubh $f0, $f0, $f4            \r\n"
-        "psubh $f2, $f2, $f6            \r\n"
-        "pandn $f8, $f8, $f0            \r\n"
-        "pandn $f10, $f10, $f2          \r\n"
-        "gssdxc1 $f8, 0($8, %0)         \r\n"
-        "gssdxc1 $f10, 8($8, %0)        \r\n"
-        "addi $8, $8, 16                \r\n"
-        "bltz $8, 1b                    \r\n"
-        ::"r"(block+nCoeffs),"r"(quant_matrix+nCoeffs),"m"(qscale),
-          "g"(-2*nCoeffs)
-        : "$8","$10","memory"
+        "dli        %[tmp0],    0x0f                                    \n\t"
+        "pcmpeqh    %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
+        "dmtc1      %[qscale],  %[ftmp1]                                \n\t"
+        "psrlh      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
+        ".p2align   4                                                   \n\t"
+        "1:                                                             \n\t"
+        "gsldxc1    %[ftmp2],   0x00(%[addr0],  %[block])               \n\t"
+        "gsldxc1    %[ftmp3],   0x08(%[addr0],  %[block])               \n\t"
+        "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
+        "mov.d      %[ftmp5],   %[ftmp3]                                \n\t"
+        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
+        "gsldxc1    %[ftmp7],   0x08(%[addr0],  %[quant])               \n\t"
+        "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp1]                \n\t"
+        "pmullh     %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
+        "xor        %[ftmp8],   %[ftmp8],       %[ftmp8]                \n\t"
+        "xor        %[ftmp9],   %[ftmp9],       %[ftmp9]                \n\t"
+        "pcmpgth    %[ftmp8],   %[ftmp8],       %[ftmp2]                \n\t"
+        "pcmpgth    %[ftmp9],   %[ftmp9],       %[ftmp3]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "pmullh     %[ftmp2],   %[ftmp2],       %[ftmp6]                \n\t"
+        "pmullh     %[ftmp3],   %[ftmp3],       %[ftmp7]                \n\t"
+        "xor        %[ftmp6],   %[ftmp6],       %[ftmp6]                \n\t"
+        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "pcmpeqh    %[ftmp6],   %[ftmp6],       %[ftmp4]                \n\t"
+        "dli        %[tmp0],    0x03                                    \n\t"
+        "pcmpeqh    %[ftmp7],   %[ftmp7],       %[ftmp5]                \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
+        "psrah      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "psrah      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "or         %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "or         %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
+        "pandn      %[ftmp7],   %[ftmp7],       %[ftmp3]                \n\t"
+        "gssdxc1    %[ftmp6],   0x00(%[addr0],  %[block])               \n\t"
+        "gssdxc1    %[ftmp7],   0x08(%[addr0],  %[block])               \n\t"
+        PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
+        "bltz       %[addr0],   1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
+          [tmp0]"=&r"(tmp[0]),
+          [addr0]"=&r"(addr[0])
+        : [block]"r"((mips_reg)(block+nCoeffs)),
+          [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
+          [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
+          [qscale]"r"(qscale)
+        : "memory"
     );
 
     block[0] = block0;
@@ -235,132 +255,81 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
 {
     int64_t nCoeffs;
     const uint16_t *quant_matrix;
+    double ftmp[10];
+    uint64_t tmp[1];
+    mips_reg addr[1];
 
     av_assert2(s->block_last_index[n] >= 0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
     quant_matrix = s->inter_matrix;
 
     __asm__ volatile (
-        "pcmpeqh $f14, $f14, $f14       \r\n"
-        "dli $10, 15                    \r\n"
-        "dmtc1 $10, $f16                \r\n"
-        "xor $f12, $f12, $f12           \r\n"
-        "lwc1 $f12, %2                  \r\n"
-        "psrlh $f14, $f14, $f16         \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "packsswh $f12, $f12, $f12      \r\n"
-        "or $8, %3, $0                  \r\n"
-        ".p2align 4                     \r\n"
-        "1:                             \r\n"
-        "gsldxc1 $f0, 0($8, %0)         \r\n"
-        "gsldxc1 $f2, 8($8, %0)         \r\n"
-        "mov.d $f16, $f0                \r\n"
-        "mov.d $f18, $f2                \r\n"
-        "gsldxc1 $f8, 0($8, %1)         \r\n"
-        "gsldxc1 $f10, 8($8, %1)        \r\n"
-        "pmullh $f8, $f8, $f12          \r\n"
-        "pmullh $f10, $f10, $f12        \r\n"
-        "xor $f4, $f4, $f4              \r\n"
-        "xor $f6, $f6, $f6              \r\n"
-        "pcmpgth $f4, $f4, $f0          \r\n"
-        "pcmpgth $f6, $f6, $f2          \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "psubh $f0, $f0, $f4            \r\n"
-        "psubh $f2, $f2, $f6            \r\n"
-        "paddh $f0, $f0, $f0            \r\n"
-        "paddh $f2, $f2, $f2            \r\n"
-        "paddh $f0, $f0, $f14           \r\n"
-        "paddh $f2, $f2, $f14           \r\n"
-        "pmullh $f0, $f0, $f8           \r\n"
-        "pmullh $f2, $f2, $f10          \r\n"
-        "xor $f8, $f8, $f8              \r\n"
-        "xor $f10, $f10, $f10           \r\n"
-        "pcmpeqh $f8, $f8, $f16         \r\n"
-        "pcmpeqh $f10, $f10, $f18       \r\n"
-        "dli $10, 4                     \r\n"
-        "dmtc1 $10, $f16                \r\n"
-        "psrah $f0, $f0, $f16           \r\n"
-        "psrah $f2, $f2, $f16           \r\n"
-        "psubh $f0, $f0, $f14           \r\n"
-        "psubh $f2, $f2, $f14           \r\n"
-        "or $f0, $f0, $f14              \r\n"
-        "or $f2, $f2, $f14              \r\n"
-        "xor $f0, $f0, $f4              \r\n"
-        "xor $f2, $f2, $f6              \r\n"
-        "psubh $f0, $f0, $f4            \r\n"
-        "psubh $f2, $f2, $f6            \r\n"
-        "pandn $f8, $f8, $f0            \r\n"
-        "pandn $f10, $f10, $f2          \r\n"
-        "gssdxc1 $f8, 0($8, %0)         \r\n"
-        "gssdxc1 $f10, 8($8, %0)        \r\n"
-        "addi $8, $8, 16                \r\n"
-        "bltz $8, 1b                    \r\n"
-        ::"r"(block+nCoeffs),"r"(quant_matrix+nCoeffs),"m"(qscale),
-          "g"(-2*nCoeffs)
-        :"$8","$10","memory"
-    );
-}
-
-void ff_denoise_dct_mmi(MpegEncContext *s, int16_t *block)
-{
-    const int intra = s->mb_intra;
-    int *sum = s->dct_error_sum[intra];
-    uint16_t *offset = s->dct_offset[intra];
-
-    s->dct_count[intra]++;
-
-    __asm__ volatile(
-        "xor $f14, $f14, $f14               \r\n"
-        "1:                                 \r\n"
-        "ldc1 $f4, 0(%[block])              \r\n"
-        "xor $f0, $f0, $f0                  \r\n"
-        "ldc1 $f6, 8(%[block])              \r\n"
-        "xor $f2, $f2, $f2                  \r\n"
-        "pcmpgth $f0, $f0, $f4              \r\n"
-        "pcmpgth $f2, $f2, $f6              \r\n"
-        "xor $f4, $f4, $f0                  \r\n"
-        "xor $f6, $f6, $f2                  \r\n"
-        "psubh $f4, $f4, $f0                \r\n"
-        "psubh $f6, $f6, $f2                \r\n"
-        "ldc1 $f12, 0(%[offset])            \r\n"
-        "mov.d $f8, $f4                     \r\n"
-        "psubush $f4, $f4, $f12             \r\n"
-        "ldc1 $f12, 8(%[offset])            \r\n"
-        "mov.d $f10, $f6                    \r\n"
-        "psubush $f6, $f6, $f12             \r\n"
-        "xor $f4, $f4, $f0                  \r\n"
-        "xor $f6, $f6, $f2                  \r\n"
-        "psubh $f4, $f4, $f0                \r\n"
-        "psubh $f6, $f6, $f2                \r\n"
-        "sdc1 $f4, 0(%[block])              \r\n"
-        "sdc1 $f6, 8(%[block])              \r\n"
-        "mov.d $f4, $f8                     \r\n"
-        "mov.d $f6, $f10                    \r\n"
-        "punpcklhw $f8, $f8, $f14           \r\n"
-        "punpckhhw $f4, $f4, $f14           \r\n"
-        "punpcklhw $f10, $f10, $f14         \r\n"
-        "punpckhhw $f6, $f6, $f14           \r\n"
-        "ldc1 $f0, 0(%[sum])                \r\n"
-        "paddw $f8, $f8, $f0                \r\n"
-        "ldc1 $f0, 8(%[sum])                \r\n"
-        "paddw $f4, $f4, $f0                \r\n"
-        "ldc1 $f0, 16(%[sum])               \r\n"
-        "paddw $f10, $f10, $f0              \r\n"
-        "ldc1 $f0, 24(%[sum])               \r\n"
-        "paddw $f6, $f6, $f0                \r\n"
-        "sdc1 $f8, 0(%[sum])                \r\n"
-        "sdc1 $f4, 8(%[sum])                \r\n"
-        "sdc1 $f10, 16(%[sum])              \r\n"
-        "sdc1 $f6, 24(%[sum])               \r\n"
-        "daddiu %[block], %[block], 16      \r\n"
-        "daddiu %[sum], %[sum], 32          \r\n"
-        "daddiu %[offset], %[offset], 16    \r\n"
-        "dsubu $8, %[block1], %[block]      \r\n"
-        "bgtz $8, 1b                        \r\n"
-        : [block]"+r"(block),[sum]"+r"(sum),[offset]"+r"(offset)
-        : [block1]"r"(block+64)
-        : "$8","$f0","$f2","$f4","$f6","$f8","$f10","$f12","$f14"
+        "dli        %[tmp0],    0x0f                                    \n\t"
+        "pcmpeqh    %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
+        "dmtc1      %[qscale],  %[ftmp1]                                \n\t"
+        "psrlh      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
+        "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
+        ".p2align   4                                                   \n\t"
+        "1:                                                             \n\t"
+        "gsldxc1    %[ftmp2],   0x00(%[addr0],  %[block])               \n\t"
+        "gsldxc1    %[ftmp3],   0x08(%[addr0],  %[block])               \n\t"
+        "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
+        "mov.d      %[ftmp5],   %[ftmp3]                                \n\t"
+        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
+        "gsldxc1    %[ftmp7],   0x08(%[addr0],  %[quant])               \n\t"
+        "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp1]                \n\t"
+        "pmullh     %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
+        "xor        %[ftmp8],   %[ftmp8],       %[ftmp8]                \n\t"
+        "xor        %[ftmp9],   %[ftmp9],       %[ftmp9]                \n\t"
+        "pcmpgth    %[ftmp8],   %[ftmp8],       %[ftmp2]                \n\t"
+        "pcmpgth    %[ftmp9],   %[ftmp9],       %[ftmp3]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],       %[ftmp2]                \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp3]                \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "pmullh     %[ftmp2],   %[ftmp2],       %[ftmp6]                \n\t"
+        "pmullh     %[ftmp3],   %[ftmp3],       %[ftmp7]                \n\t"
+        "xor        %[ftmp6],   %[ftmp6],       %[ftmp6]                \n\t"
+        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "pcmpeqh    %[ftmp6],   %[ftmp6],       %[ftmp4]                \n\t"
+        "dli        %[tmp0],    0x04                                    \n\t"
+        "pcmpeqh    %[ftmp7],   %[ftmp7],       %[ftmp5]                \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
+        "psrah      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
+        "psrah      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "or         %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
+        "or         %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
+        "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
+        "pandn      %[ftmp7],   %[ftmp7],       %[ftmp3]                \n\t"
+        "gssdxc1    %[ftmp6],   0x00(%[addr0],  %[block])               \n\t"
+        "gssdxc1    %[ftmp7],   0x08(%[addr0],  %[block])               \n\t"
+        PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
+        "bltz       %[addr0],   1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
+          [tmp0]"=&r"(tmp[0]),
+          [addr0]"=&r"(addr[0])
+        : [block]"r"((mips_reg)(block+nCoeffs)),
+          [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
+          [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
+          [qscale]"r"(qscale)
+        : "memory"
     );
 }
 
@@ -370,6 +339,9 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
     uint64_t nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
+    double ftmp[10];
+    uint64_t tmp[1];
+    mips_reg addr[1];
 
     assert(s->block_last_index[n]>=0);
 
@@ -386,58 +358,135 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
     quant_matrix = s->intra_matrix;
 
     __asm__ volatile (
-        "pcmpeqh $f14, $f14, $f14           \r\n"
-        "dli $10, 15                        \r\n"
-        "dmtc1 $10, $f16                    \r\n"
-        "xor $f12, $f12, $f12               \r\n"
-        "lwc1 $f12, %[qscale]               \r\n"
-        "psrlh $f14, $f14, $f16             \r\n"
-        "packsswh $f12, $f12, $f12          \r\n"
-        "packsswh $f12, $f12, $f12          \r\n"
-        "or $8, %[ncoeffs], $0              \r\n"
-        ".p2align 4                         \r\n"
-        "1:                                 \r\n"
-        "gsldxc1 $f0, 0($8, %[block])       \r\n"
-        "gsldxc1 $f2, 8($8, %[block])       \r\n"
-        "mov.d $f16, $f0                    \r\n"
-        "mov.d $f18, $f2                    \r\n"
-        "gsldxc1 $f8, 0($8, %[quant])       \r\n"
-        "gsldxc1 $f10, 0($8, %[quant])      \r\n"
-        "pmullh $f8, $f8, $f12              \r\n"
-        "pmullh $f10, $f10, $f12            \r\n"
-        "xor $f4, $f4, $f4                  \r\n"
-        "xor $f6, $f6, $f6                  \r\n"
-        "pcmpgth $f4, $f4, $f0              \r\n"
-        "pcmpgth $f6, $f6, $f2              \r\n"
-        "xor $f0, $f0, $f4                  \r\n"
-        "xor $f2, $f2, $f6                  \r\n"
-        "psubh $f0, $f0, $f4                \r\n"
-        "psubh $f2, $f2, $f6                \r\n"
-        "pmullh $f0, $f0, $f8               \r\n"
-        "pmullh $f2, $f2, $f10              \r\n"
-        "xor $f8, $f8, $f8                  \r\n"
-        "xor $f10, $f10, $f10               \r\n"
-        "pcmpeqh $f8, $f8, $f16             \r\n"
-        "pcmpeqh $f10 ,$f10, $f18           \r\n"
-        "dli $10, 3                         \r\n"
-        "dmtc1 $10, $f16                    \r\n"
-        "psrah $f0, $f0, $f16               \r\n"
-        "psrah $f2, $f2, $f16               \r\n"
-        "xor $f0, $f0, $f4                  \r\n"
-        "xor $f2, $f2, $f6                  \r\n"
-        "psubh $f0, $f0, $f4                \r\n"
-        "psubh $f2, $f2, $f6                \r\n"
-        "pandn $f8, $f8, $f0                \r\n"
-        "pandn $f10, $f10, $f2              \r\n"
-        "gssdxc1 $f8, 0($8, %[block])       \r\n"
-        "gssdxc1 $f10, 8($8, %[block])      \r\n"
-        "daddiu $8, $8, 16                  \r\n"
-        "blez $8, 1b                        \r\n"
-        ::[block]"r"(block+nCoeffs),[quant]"r"(quant_matrix+nCoeffs),
-          [qscale]"m"(qscale),[ncoeffs]"g"(-2*nCoeffs)
-        : "$8","$10","$f0","$f2","$f4","$f6","$f8","$f10","$f12","$f14","$f16",
-          "$f18"
+        "dli        %[tmp0],    0x0f                                    \n\t"
+        "pcmpeqh    %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "mtc1       %[qscale],  %[ftmp9]                                \n\t"
+        "psrlh      %[ftmp0],   %[ftmp0],       %[ftmp3]                \n\t"
+        "packsswh   %[ftmp9],   %[ftmp9],       %[ftmp9]                \n\t"
+        "packsswh   %[ftmp9],   %[ftmp9],       %[ftmp9]                \n\t"
+        "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
+        ".p2align   4                                                   \n\t"
+        "1:                                                             \n\t"
+        "gsldxc1    %[ftmp1],   0x00(%[addr0],  %[block])               \n\t"
+        "gsldxc1    %[ftmp2],   0x08(%[addr0],  %[block])               \n\t"
+        "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
+        "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
+        "gsldxc1    %[ftmp5],   0x00(%[addr0],  %[quant])               \n\t"
+        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
+        "pmullh     %[ftmp5],   %[ftmp5],       %[ftmp9]                \n\t"
+        "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp9]                \n\t"
+        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "xor        %[ftmp8],   %[ftmp8],       %[ftmp8]                \n\t"
+        "pcmpgth    %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
+        "pcmpgth    %[ftmp8],   %[ftmp8],       %[ftmp2]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp7]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp1],   %[ftmp1],       %[ftmp7]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "pmullh     %[ftmp1],   %[ftmp1],       %[ftmp5]                \n\t"
+        "pmullh     %[ftmp2],   %[ftmp2],       %[ftmp6]                \n\t"
+        "xor        %[ftmp5],   %[ftmp5],       %[ftmp5]                \n\t"
+        "xor        %[ftmp6],   %[ftmp6],       %[ftmp6]                \n\t"
+        "pcmpeqh    %[ftmp5],   %[ftmp5],       %[ftmp3]                \n\t"
+        "dli        %[tmp0],    0x03                                    \n\t"
+        "pcmpeqh    %[ftmp6] ,  %[ftmp6],       %[ftmp4]                \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "psrah      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "psrah      %[ftmp2],   %[ftmp2],       %[ftmp3]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp7]                \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "psubh      %[ftmp1],   %[ftmp1],       %[ftmp7]                \n\t"
+        "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
+        "pandn      %[ftmp5],   %[ftmp5],       %[ftmp1]                \n\t"
+        "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
+        PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
+        "gssdxc1    %[ftmp5],   0x00(%[addr0],  %[block])               \n\t"
+        "gssdxc1    %[ftmp6],   0x08(%[addr0],  %[block])               \n\t"
+        "blez       %[addr0],   1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
+          [tmp0]"=&r"(tmp[0]),
+          [addr0]"=&r"(addr[0])
+        : [block]"r"((mips_reg)(block+nCoeffs)),
+          [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
+          [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
+          [qscale]"r"(qscale)
+        : "memory"
     );
 
     block[0]= block0;
+}
+
+void ff_denoise_dct_mmi(MpegEncContext *s, int16_t *block)
+{
+    const int intra = s->mb_intra;
+    int *sum = s->dct_error_sum[intra];
+    uint16_t *offset = s->dct_offset[intra];
+    double ftmp[8];
+    mips_reg addr[1];
+
+    s->dct_count[intra]++;
+
+    __asm__ volatile(
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "1:                                                             \n\t"
+        "ldc1       %[ftmp1],   0x00(%[block])                          \n\t"
+        "xor        %[ftmp2],   %[ftmp2],       %[ftmp2]                \n\t"
+        "ldc1       %[ftmp3],   0x08(%[block])                          \n\t"
+        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "pcmpgth    %[ftmp2],   %[ftmp2],       %[ftmp1]                \n\t"
+        "pcmpgth    %[ftmp4],   %[ftmp4],       %[ftmp3]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "psubh      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "ldc1       %[ftmp6],   0x00(%[offset])                         \n\t"
+        "mov.d      %[ftmp5],   %[ftmp1]                                \n\t"
+        "psubush    %[ftmp1],   %[ftmp1],       %[ftmp6]                \n\t"
+        "ldc1       %[ftmp6],   0x08(%[offset])                         \n\t"
+        "mov.d      %[ftmp7],   %[ftmp3]                                \n\t"
+        "psubush    %[ftmp3],   %[ftmp3],       %[ftmp6]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
+        "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "psubh      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
+        "psubh      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
+        "sdc1       %[ftmp1],   0x00(%[block])                          \n\t"
+        "sdc1       %[ftmp3],   0x08(%[block])                          \n\t"
+        "mov.d      %[ftmp1],   %[ftmp5]                                \n\t"
+        "mov.d      %[ftmp3],   %[ftmp7]                                \n\t"
+        "punpcklhw  %[ftmp5],   %[ftmp5],       %[ftmp0]                \n\t"
+        "punpckhhw  %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp7],       %[ftmp0]                \n\t"
+        "punpckhhw  %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
+        "ldc1       %[ftmp2],   0x00(%[sum])                            \n\t"
+        "paddw      %[ftmp5],   %[ftmp5],       %[ftmp2]                \n\t"
+        "ldc1       %[ftmp2],   0x08(%[sum])                            \n\t"
+        "paddw      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
+        "ldc1       %[ftmp2],   0x10(%[sum])                            \n\t"
+        "paddw      %[ftmp7],   %[ftmp7],       %[ftmp2]                \n\t"
+        "ldc1       %[ftmp2],   0x18(%[sum])                            \n\t"
+        "paddw      %[ftmp3],   %[ftmp3],       %[ftmp2]                \n\t"
+        "sdc1       %[ftmp5],   0x00(%[sum])                            \n\t"
+        "sdc1       %[ftmp1],   0x08(%[sum])                            \n\t"
+        "sdc1       %[ftmp7],   0x10(%[sum])                            \n\t"
+        "sdc1       %[ftmp3],   0x18(%[sum])                            \n\t"
+        PTR_ADDIU  "%[block],   %[block],       0x10                    \n\t"
+        PTR_ADDIU  "%[sum],     %[sum],         0x20                    \n\t"
+        PTR_SUBU   "%[addr0],   %[block1],      %[block]                \n\t"
+        PTR_ADDIU  "%[offset],  %[offset],      0x10                    \n\t"
+        "bgtz       %[addr0],   1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          [addr0]"=&r"(addr[0]),
+          [block]"+&r"(block),              [sum]"+&r"(sum),
+          [offset]"+&r"(offset)
+        : [block1]"r"(block+64)
+        : "memory"
+    );
 }

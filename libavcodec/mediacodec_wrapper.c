@@ -26,14 +26,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/avstring.h"
 
+#include "avcodec.h"
 #include "ffjni.h"
 #include "version.h"
 #include "mediacodec_wrapper.h"
 
 struct JNIAMediaCodecListFields {
-
-    jclass mediaformat_class;
-    jmethodID create_video_format_id;
 
     jclass mediacodec_list_class;
     jmethodID init_id;
@@ -44,15 +42,29 @@ struct JNIAMediaCodecListFields {
 
     jclass mediacodec_info_class;
     jmethodID get_name_id;
+    jmethodID get_codec_capabilities_id;
     jmethodID get_supported_types_id;
     jmethodID is_encoder_id;
 
+    jclass codec_capabilities_class;
+    jfieldID color_formats_id;
+    jfieldID profile_levels_id;
+
+    jclass codec_profile_level_class;
+    jfieldID profile_id;
+    jfieldID level_id;
+
+    jfieldID avc_profile_baseline_id;
+    jfieldID avc_profile_main_id;
+    jfieldID avc_profile_extended_id;
+    jfieldID avc_profile_high_id;
+    jfieldID avc_profile_high10_id;
+    jfieldID avc_profile_high422_id;
+    jfieldID avc_profile_high444_id;
+
 } JNIAMediaCodecListFields;
 
-static const struct FFJniField jfields_mapping[] = {
-    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediaformat_class), 1 },
-        { "android/media/MediaFormat", "createVideoFormat", "(Ljava/lang/String;II)Landroid/media/MediaFormat;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecListFields, create_video_format_id), 1 },
-
+static const struct FFJniField jni_amediacodeclist_mapping[] = {
     { "android/media/MediaCodecList", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_list_class), 1 },
         { "android/media/MediaCodecList", "<init>", "(I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, init_id), 0 },
         { "android/media/MediaCodecList", "findDecoderForFormat", "(Landroid/media/MediaFormat;)Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, find_decoder_for_format_id), 0 },
@@ -62,203 +74,32 @@ static const struct FFJniField jfields_mapping[] = {
 
     { "android/media/MediaCodecInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_info_class), 1 },
         { "android/media/MediaCodecInfo", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_name_id), 1 },
+        { "android/media/MediaCodecInfo", "getCapabilitiesForType", "(Ljava/lang/String;)Landroid/media/MediaCodecInfo$CodecCapabilities;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_codec_capabilities_id), 1 },
         { "android/media/MediaCodecInfo", "getSupportedTypes", "()[Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_supported_types_id), 1 },
         { "android/media/MediaCodecInfo", "isEncoder", "()Z", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, is_encoder_id), 1 },
+
+    { "android/media/MediaCodecInfo$CodecCapabilities", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, codec_capabilities_class), 1 },
+        { "android/media/MediaCodecInfo$CodecCapabilities", "colorFormats", "[I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, color_formats_id), 1 },
+        { "android/media/MediaCodecInfo$CodecCapabilities", "profileLevels", "[Landroid/media/MediaCodecInfo$CodecProfileLevel;", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, profile_levels_id), 1 },
+
+    { "android/media/MediaCodecInfo$CodecProfileLevel", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, codec_profile_level_class), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "profile", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, profile_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "level", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, level_id), 1 },
+
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileBaseline", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_baseline_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileMain", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_main_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileExtended", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_extended_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh10", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high10_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh422", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high422_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh444", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high444_id), 1 },
 
     { NULL }
 };
 
-#define JNI_ATTACH_ENV_OR_RETURN(env, attached, log_ctx, ret) do { \
-    (env) = ff_jni_attach_env(attached, log_ctx);                  \
-    if (!(env)) {                                                  \
-        return ret;                                                \
-    }                                                              \
-} while (0)
-
-#define JNI_ATTACH_ENV_OR_RETURN_VOID(env, attached, log_ctx) do { \
-    (env) = ff_jni_attach_env(attached, log_ctx);              \
-    if (!(env)) {                                                  \
-        return;                                                    \
-    }                                                              \
-} while (0)
-
-#define JNI_DETACH_ENV(attached, log_ctx) do { \
-    if (attached)                              \
-        ff_jni_detach_env(log_ctx);            \
-} while (0)
-
-char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int height, void *log_ctx)
-{
-    int ret;
-    char *name = NULL;
-    char *supported_type = NULL;
-
-    int attached = 0;
-    JNIEnv *env = NULL;
-    struct JNIAMediaCodecListFields jfields = { 0 };
-
-    jobject format = NULL;
-    jobject codec = NULL;
-    jstring tmp = NULL;
-
-    jobject info = NULL;
-    jobject type = NULL;
-    jobjectArray types = NULL;
-
-    JNI_ATTACH_ENV_OR_RETURN(env, &attached, log_ctx, NULL);
-
-    if ((ret = ff_jni_init_jfields(env, &jfields, jfields_mapping, 0, log_ctx)) < 0) {
-        goto done;
-    }
-
-    if (jfields.init_id && jfields.find_decoder_for_format_id) {
-        tmp = ff_jni_utf_chars_to_jstring(env, mime, log_ctx);
-        if (!tmp) {
-            goto done;
-        }
-
-        format = (*env)->CallStaticObjectMethod(env, jfields.mediaformat_class, jfields.create_video_format_id, tmp, width, height);
-        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-            goto done;
-        }
-        (*env)->DeleteLocalRef(env, tmp);
-
-        codec = (*env)->NewObject(env, jfields.mediacodec_list_class, jfields.init_id, 0);
-        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-            goto done;
-        }
-
-        tmp = (*env)->CallObjectMethod(env, codec, jfields.find_decoder_for_format_id, format);
-        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-            goto done;
-        }
-        if (!tmp) {
-            av_log(NULL, AV_LOG_ERROR, "Could not find decoder in media codec list "
-                                       "for format { mime=%s width=%d height=%d }\n", mime, width, height);
-            goto done;
-        }
-
-        name = ff_jni_jstring_to_utf_chars(env, tmp, log_ctx);
-        if (!name) {
-            goto done;
-        }
-
-    } else {
-        int i;
-        int codec_count;
-
-        codec_count = (*env)->CallStaticIntMethod(env, jfields.mediacodec_list_class, jfields.get_codec_count_id);
-        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-            goto done;
-        }
-
-        for(i = 0; i < codec_count; i++) {
-            int j;
-            int type_count;
-            int is_encoder;
-
-            info = (*env)->CallStaticObjectMethod(env, jfields.mediacodec_list_class, jfields.get_codec_info_at_id, i);
-            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                goto done;
-            }
-
-            types = (*env)->CallObjectMethod(env, info, jfields.get_supported_types_id);
-            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                goto done;
-            }
-
-            is_encoder = (*env)->CallBooleanMethod(env, info, jfields.is_encoder_id);
-            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                goto done;
-            }
-
-            if (is_encoder) {
-                continue;
-            }
-
-            type_count = (*env)->GetArrayLength(env, types);
-            for (j = 0; j < type_count; j++) {
-
-                type = (*env)->GetObjectArrayElement(env, types, j);
-                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                    goto done;
-                }
-
-                supported_type = ff_jni_jstring_to_utf_chars(env, type, log_ctx);
-                if (!supported_type) {
-                    goto done;
-                }
-
-                if (!av_strcasecmp(supported_type, mime)) {
-                    jobject codec_name;
-
-                    codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
-                    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
-                        goto done;
-                    }
-
-                    name = ff_jni_jstring_to_utf_chars(env, codec_name, log_ctx);
-                    if (!name) {
-                        goto done;
-                    }
-
-                    if (strstr(name, "OMX.google")) {
-                        av_freep(&name);
-                        continue;
-                    }
-                }
-
-                av_freep(&supported_type);
-            }
-
-            (*env)->DeleteLocalRef(env, info);
-            info = NULL;
-
-            (*env)->DeleteLocalRef(env, types);
-            types = NULL;
-
-            if (name)
-                break;
-        }
-    }
-
-done:
-    if (format) {
-        (*env)->DeleteLocalRef(env, format);
-    }
-
-    if (codec) {
-        (*env)->DeleteLocalRef(env, codec);
-    }
-
-    if (tmp) {
-        (*env)->DeleteLocalRef(env, tmp);
-    }
-
-    if (info) {
-        (*env)->DeleteLocalRef(env, info);
-    }
-
-    if (type) {
-        (*env)->DeleteLocalRef(env, type);
-    }
-
-    if (types) {
-        (*env)->DeleteLocalRef(env, types);
-    }
-
-    av_freep(&supported_type);
-
-    ff_jni_reset_jfields(env, &jfields, jfields_mapping, 0, log_ctx);
-
-    JNI_DETACH_ENV(attached, log_ctx);
-
-    return name;
-}
-
 struct JNIAMediaFormatFields {
 
-    jclass clazz;
+    jclass mediaformat_class;
 
     jmethodID init_id;
 
@@ -279,7 +120,7 @@ struct JNIAMediaFormatFields {
 } JNIAMediaFormatFields;
 
 static const struct FFJniField jni_amediaformat_mapping[] = {
-    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, clazz), 1 },
+    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, mediaformat_class), 1 },
 
         { "android/media/MediaFormat", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, init_id), 1 },
 
@@ -313,6 +154,449 @@ struct FFAMediaFormat {
     jobject object;
 };
 
+struct JNIAMediaCodecFields {
+
+    jclass mediacodec_class;
+
+    jfieldID info_try_again_later_id;
+    jfieldID info_output_buffers_changed_id;
+    jfieldID info_output_format_changed_id;
+
+    jfieldID buffer_flag_codec_config_id;
+    jfieldID buffer_flag_end_of_stream_id;
+    jfieldID buffer_flag_key_frame_id;
+
+    jfieldID configure_flag_encode_id;
+
+    jmethodID create_by_codec_name_id;
+    jmethodID create_decoder_by_type_id;
+    jmethodID create_encoder_by_type_id;
+
+    jmethodID get_name_id;
+
+    jmethodID configure_id;
+    jmethodID start_id;
+    jmethodID flush_id;
+    jmethodID stop_id;
+    jmethodID release_id;
+
+    jmethodID get_output_format_id;
+
+    jmethodID dequeue_input_buffer_id;
+    jmethodID queue_input_buffer_id;
+    jmethodID get_input_buffer_id;
+    jmethodID get_input_buffers_id;
+
+    jmethodID dequeue_output_buffer_id;
+    jmethodID get_output_buffer_id;
+    jmethodID get_output_buffers_id;
+    jmethodID release_output_buffer_id;
+    jmethodID release_output_buffer_at_time_id;
+
+    jclass mediainfo_class;
+
+    jmethodID init_id;
+
+    jfieldID flags_id;
+    jfieldID offset_id;
+    jfieldID presentation_time_us_id;
+    jfieldID size_id;
+
+} JNIAMediaCodecFields;
+
+static const struct FFJniField jni_amediacodec_mapping[] = {
+    { "android/media/MediaCodec", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediacodec_class), 1 },
+
+        { "android/media/MediaCodec", "INFO_TRY_AGAIN_LATER", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_try_again_later_id), 1 },
+        { "android/media/MediaCodec", "INFO_OUTPUT_BUFFERS_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_buffers_changed_id), 1 },
+        { "android/media/MediaCodec", "INFO_OUTPUT_FORMAT_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_format_changed_id), 1 },
+
+        { "android/media/MediaCodec", "BUFFER_FLAG_CODEC_CONFIG", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_codec_config_id), 1 },
+        { "android/media/MediaCodec", "BUFFER_FLAG_END_OF_STREAM", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_end_of_stream_id), 1 },
+        { "android/media/MediaCodec", "BUFFER_FLAG_KEY_FRAME", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_key_frame_id), 0 },
+
+        { "android/media/MediaCodec", "CONFIGURE_FLAG_ENCODE", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, configure_flag_encode_id), 1 },
+
+        { "android/media/MediaCodec", "createByCodecName", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_by_codec_name_id), 1 },
+        { "android/media/MediaCodec", "createDecoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_decoder_by_type_id), 1 },
+        { "android/media/MediaCodec", "createEncoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_encoder_by_type_id), 1 },
+
+        { "android/media/MediaCodec", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_name_id), 1 },
+
+        { "android/media/MediaCodec", "configure", "(Landroid/media/MediaFormat;Landroid/view/Surface;Landroid/media/MediaCrypto;I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, configure_id), 1 },
+        { "android/media/MediaCodec", "start", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, start_id), 1 },
+        { "android/media/MediaCodec", "flush", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, flush_id), 1 },
+        { "android/media/MediaCodec", "stop", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, stop_id), 1 },
+        { "android/media/MediaCodec", "release", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_id), 1 },
+
+        { "android/media/MediaCodec", "getOutputFormat", "()Landroid/media/MediaFormat;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_format_id), 1 },
+
+        { "android/media/MediaCodec", "dequeueInputBuffer", "(J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_input_buffer_id), 1 },
+        { "android/media/MediaCodec", "queueInputBuffer", "(IIIJI)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, queue_input_buffer_id), 1 },
+        { "android/media/MediaCodec", "getInputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffer_id), 0 },
+        { "android/media/MediaCodec", "getInputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffers_id), 1 },
+
+        { "android/media/MediaCodec", "dequeueOutputBuffer", "(Landroid/media/MediaCodec$BufferInfo;J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_output_buffer_id), 1 },
+        { "android/media/MediaCodec", "getOutputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffer_id), 0 },
+        { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffers_id), 1 },
+        { "android/media/MediaCodec", "releaseOutputBuffer", "(IZ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_id), 1 },
+        { "android/media/MediaCodec", "releaseOutputBuffer", "(IJ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_at_time_id), 0 },
+
+    { "android/media/MediaCodec$BufferInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediainfo_class), 1 },
+
+        { "android/media/MediaCodec.BufferInfo", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, init_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "flags", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, flags_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "offset", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, offset_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "presentationTimeUs", "J", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, presentation_time_us_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "size", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, size_id), 1 },
+
+    { NULL }
+};
+
+static const AVClass amediacodec_class = {
+    .class_name = "amediacodec",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVCODEC_VERSION_INT,
+};
+
+struct FFAMediaCodec {
+
+    const AVClass *class;
+
+    struct JNIAMediaCodecFields jfields;
+
+    jobject object;
+
+    jobject input_buffers;
+    jobject output_buffers;
+
+    int INFO_TRY_AGAIN_LATER;
+    int INFO_OUTPUT_BUFFERS_CHANGED;
+    int INFO_OUTPUT_FORMAT_CHANGED;
+
+    int BUFFER_FLAG_CODEC_CONFIG;
+    int BUFFER_FLAG_END_OF_STREAM;
+    int BUFFER_FLAG_KEY_FRAME;
+
+    int CONFIGURE_FLAG_ENCODE;
+
+    int has_get_i_o_buffer;
+};
+
+#define JNI_ATTACH_ENV_OR_RETURN(env, attached, log_ctx, ret) do { \
+    (env) = ff_jni_attach_env(attached, log_ctx);                  \
+    if (!(env)) {                                                  \
+        return ret;                                                \
+    }                                                              \
+} while (0)
+
+#define JNI_ATTACH_ENV_OR_RETURN_VOID(env, attached, log_ctx) do { \
+    (env) = ff_jni_attach_env(attached, log_ctx);              \
+    if (!(env)) {                                                  \
+        return;                                                    \
+    }                                                              \
+} while (0)
+
+#define JNI_DETACH_ENV(attached, log_ctx) do { \
+    if (attached)                              \
+        ff_jni_detach_env(log_ctx);            \
+} while (0)
+
+
+
+int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
+{
+    int ret = -1;
+
+    int attached = 0;
+    JNIEnv *env = NULL;
+    struct JNIAMediaCodecListFields jfields = { 0 };
+
+    JNI_ATTACH_ENV_OR_RETURN(env, &attached, avctx, -1);
+
+    if (ff_jni_init_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, avctx) < 0) {
+        goto done;
+    }
+
+    if (avctx->codec_id == AV_CODEC_ID_H264) {
+        jfieldID field_id = 0;
+
+        switch(avctx->profile) {
+        case FF_PROFILE_H264_BASELINE:
+        case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+            field_id = jfields.avc_profile_baseline_id;
+            break;
+        case FF_PROFILE_H264_MAIN:
+            field_id = jfields.avc_profile_main_id;
+            break;
+        case FF_PROFILE_H264_EXTENDED:
+            field_id = jfields.avc_profile_extended_id;
+            break;
+        case FF_PROFILE_H264_HIGH:
+            field_id = jfields.avc_profile_high_id;
+            break;
+        case FF_PROFILE_H264_HIGH_10:
+        case FF_PROFILE_H264_HIGH_10_INTRA:
+            field_id = jfields.avc_profile_high10_id;
+            break;
+        case FF_PROFILE_H264_HIGH_422:
+        case FF_PROFILE_H264_HIGH_422_INTRA:
+            field_id = jfields.avc_profile_high422_id;
+            break;
+        case FF_PROFILE_H264_HIGH_444:
+        case FF_PROFILE_H264_HIGH_444_INTRA:
+        case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+            field_id = jfields.avc_profile_high444_id;
+            break;
+        }
+
+        if (field_id) {
+            ret = (*env)->GetStaticIntField(env, jfields.codec_profile_level_class, field_id);
+            if (ff_jni_exception_check(env, 1, avctx) < 0) {
+                ret = -1;
+                goto done;
+            }
+        }
+    }
+
+done:
+    ff_jni_reset_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, avctx);
+
+    JNI_DETACH_ENV(attached, avctx);
+
+    return ret;
+}
+
+char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int encoder, void *log_ctx)
+{
+    int ret;
+    int i;
+    int codec_count;
+    int found_codec = 0;
+    char *name = NULL;
+    char *supported_type = NULL;
+
+    int attached = 0;
+    JNIEnv *env = NULL;
+    struct JNIAMediaCodecListFields jfields = { 0 };
+    struct JNIAMediaFormatFields mediaformat_jfields = { 0 };
+
+    jobject format = NULL;
+    jobject codec = NULL;
+    jobject codec_name = NULL;
+
+    jobject info = NULL;
+    jobject type = NULL;
+    jobjectArray types = NULL;
+
+    jobject capabilities = NULL;
+    jobject profile_level = NULL;
+    jobjectArray profile_levels = NULL;
+
+    JNI_ATTACH_ENV_OR_RETURN(env, &attached, log_ctx, NULL);
+
+    if ((ret = ff_jni_init_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx)) < 0) {
+        goto done;
+    }
+
+    if ((ret = ff_jni_init_jfields(env, &mediaformat_jfields, jni_amediaformat_mapping, 0, log_ctx)) < 0) {
+        goto done;
+    }
+
+    codec_count = (*env)->CallStaticIntMethod(env, jfields.mediacodec_list_class, jfields.get_codec_count_id);
+    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+        goto done;
+    }
+
+    for(i = 0; i < codec_count; i++) {
+        int j;
+        int type_count;
+        int is_encoder;
+
+        info = (*env)->CallStaticObjectMethod(env, jfields.mediacodec_list_class, jfields.get_codec_info_at_id, i);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
+
+        types = (*env)->CallObjectMethod(env, info, jfields.get_supported_types_id);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
+
+        is_encoder = (*env)->CallBooleanMethod(env, info, jfields.is_encoder_id);
+        if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+            goto done;
+        }
+
+        if (is_encoder != encoder) {
+            goto done_with_info;
+        }
+
+        type_count = (*env)->GetArrayLength(env, types);
+        for (j = 0; j < type_count; j++) {
+            int k;
+            int profile_count;
+
+            type = (*env)->GetObjectArrayElement(env, types, j);
+            if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                goto done;
+            }
+
+            supported_type = ff_jni_jstring_to_utf_chars(env, type, log_ctx);
+            if (!supported_type) {
+                goto done;
+            }
+
+            if (!av_strcasecmp(supported_type, mime)) {
+                codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
+                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                    goto done;
+                }
+
+                name = ff_jni_jstring_to_utf_chars(env, codec_name, log_ctx);
+                if (!name) {
+                    goto done;
+                }
+
+                if (strstr(name, "OMX.google")) {
+                    av_freep(&name);
+                    goto done_with_type;
+                }
+
+                capabilities = (*env)->CallObjectMethod(env, info, jfields.get_codec_capabilities_id, type);
+                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                    goto done;
+                }
+
+                profile_levels = (*env)->GetObjectField(env, capabilities, jfields.profile_levels_id);
+                if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                    goto done;
+                }
+
+                profile_count = (*env)->GetArrayLength(env, profile_levels);
+                for (k = 0; k < profile_count; k++) {
+                    int supported_profile = 0;
+
+                    if (profile < 0) {
+                        found_codec = 1;
+                        break;
+                    }
+
+                    profile_level = (*env)->GetObjectArrayElement(env, profile_levels, k);
+                    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                        goto done;
+                    }
+
+                    supported_profile = (*env)->GetIntField(env, profile_level, jfields.profile_id);
+                    if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                        goto done;
+                    }
+
+                    found_codec = profile == supported_profile;
+
+                    if (profile_level) {
+                        (*env)->DeleteLocalRef(env, profile_level);
+                        profile_level = NULL;
+                    }
+
+                    if (found_codec) {
+                        break;
+                    }
+                }
+            }
+
+done_with_type:
+            if (profile_levels) {
+                (*env)->DeleteLocalRef(env, profile_levels);
+                profile_levels = NULL;
+            }
+
+            if (capabilities) {
+                (*env)->DeleteLocalRef(env, capabilities);
+                capabilities = NULL;
+            }
+
+            if (type) {
+                (*env)->DeleteLocalRef(env, type);
+                type = NULL;
+            }
+
+            av_freep(&supported_type);
+
+            if (found_codec) {
+                break;
+            }
+
+            av_freep(&name);
+        }
+
+done_with_info:
+        if (info) {
+            (*env)->DeleteLocalRef(env, info);
+            info = NULL;
+        }
+
+        if (types) {
+            (*env)->DeleteLocalRef(env, types);
+            types = NULL;
+        }
+
+        if (found_codec) {
+            break;
+        }
+    }
+
+done:
+    if (format) {
+        (*env)->DeleteLocalRef(env, format);
+    }
+
+    if (codec) {
+        (*env)->DeleteLocalRef(env, codec);
+    }
+
+    if (codec_name) {
+        (*env)->DeleteLocalRef(env, codec_name);
+    }
+
+    if (info) {
+        (*env)->DeleteLocalRef(env, info);
+    }
+
+    if (type) {
+        (*env)->DeleteLocalRef(env, type);
+    }
+
+    if (types) {
+        (*env)->DeleteLocalRef(env, types);
+    }
+
+    if (capabilities) {
+        (*env)->DeleteLocalRef(env, capabilities);
+    }
+
+    if (profile_level) {
+        (*env)->DeleteLocalRef(env, profile_level);
+    }
+
+    if (profile_levels) {
+        (*env)->DeleteLocalRef(env, profile_levels);
+    }
+
+    av_freep(&supported_type);
+
+    ff_jni_reset_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx);
+    ff_jni_reset_jfields(env, &mediaformat_jfields, jni_amediaformat_mapping, 0, log_ctx);
+
+    JNI_DETACH_ENV(attached, log_ctx);
+
+    if (!found_codec) {
+        av_freep(&name);
+    }
+
+    return name;
+}
+
 FFAMediaFormat *ff_AMediaFormat_new(void)
 {
     int attached = 0;
@@ -335,7 +619,7 @@ FFAMediaFormat *ff_AMediaFormat_new(void)
         goto fail;
     }
 
-    format->object = (*env)->NewObject(env, format->jfields.clazz, format->jfields.init_id);
+    format->object = (*env)->NewObject(env, format->jfields.mediaformat_class, format->jfields.init_id);
     if (!format->object) {
         goto fail;
     }
@@ -829,134 +1113,61 @@ fail:
     JNI_DETACH_ENV(attached, format);
 }
 
-struct JNIAMediaCodecFields {
+static int codec_init_static_fields(FFAMediaCodec *codec)
+{
+    int ret = 0;
+    int attached = 0;
+    JNIEnv *env = NULL;
 
-    jclass mediacodec_class;
+    JNI_ATTACH_ENV_OR_RETURN(env, &attached, codec, AVERROR_EXTERNAL);
 
-    jfieldID info_try_again_later_id;
-    jfieldID info_output_buffers_changed_id;
-    jfieldID info_output_format_changed_id;
+    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jfieldID buffer_flag_codec_config_id;
-    jfieldID buffer_flag_end_of_stream_id;
-    jfieldID buffer_flag_key_frame_id;
+    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jfieldID configure_flag_encode_id;
+    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jmethodID create_by_codec_name_id;
-    jmethodID create_decoder_by_type_id;
-    jmethodID create_encoder_by_type_id;
+    if (codec->jfields.buffer_flag_key_frame_id) {
+        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
+        if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+            goto fail;
+        }
+    }
 
-    jmethodID get_name_id;
+    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jmethodID configure_id;
-    jmethodID start_id;
-    jmethodID flush_id;
-    jmethodID stop_id;
-    jmethodID release_id;
+    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jmethodID get_output_format_id;
+    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jmethodID dequeue_input_buffer_id;
-    jmethodID queue_input_buffer_id;
-    jmethodID get_input_buffer_id;
-    jmethodID get_input_buffers_id;
+    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
+    if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
+        goto fail;
+    }
 
-    jmethodID dequeue_output_buffer_id;
-    jmethodID get_output_buffer_id;
-    jmethodID get_output_buffers_id;
-    jmethodID release_output_buffer_id;
-    jmethodID release_output_buffer_at_time_id;
+fail:
+    JNI_DETACH_ENV(attached, NULL);
 
-    jclass mediainfo_class;
-
-    jmethodID init_id;
-
-    jfieldID flags_id;
-    jfieldID offset_id;
-    jfieldID presentation_time_us_id;
-    jfieldID size_id;
-
-} JNIAMediaCodecFields;
-
-static const struct FFJniField jni_amediacodec_mapping[] = {
-    { "android/media/MediaCodec", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediacodec_class), 1 },
-
-        { "android/media/MediaCodec", "INFO_TRY_AGAIN_LATER", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_try_again_later_id), 1 },
-        { "android/media/MediaCodec", "INFO_OUTPUT_BUFFERS_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_buffers_changed_id), 1 },
-        { "android/media/MediaCodec", "INFO_OUTPUT_FORMAT_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_format_changed_id), 1 },
-
-        { "android/media/MediaCodec", "BUFFER_FLAG_CODEC_CONFIG", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_codec_config_id), 1 },
-        { "android/media/MediaCodec", "BUFFER_FLAG_END_OF_STREAM", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_end_of_stream_id), 1 },
-        { "android/media/MediaCodec", "BUFFER_FLAG_KEY_FRAME", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_key_frame_id), 0 },
-
-        { "android/media/MediaCodec", "CONFIGURE_FLAG_ENCODE", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, configure_flag_encode_id), 1 },
-
-        { "android/media/MediaCodec", "createByCodecName", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_by_codec_name_id), 1 },
-        { "android/media/MediaCodec", "createDecoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_decoder_by_type_id), 1 },
-        { "android/media/MediaCodec", "createEncoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_encoder_by_type_id), 1 },
-
-        { "android/media/MediaCodec", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_name_id), 1 },
-
-        { "android/media/MediaCodec", "configure", "(Landroid/media/MediaFormat;Landroid/view/Surface;Landroid/media/MediaCrypto;I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, configure_id), 1 },
-        { "android/media/MediaCodec", "start", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, start_id), 1 },
-        { "android/media/MediaCodec", "flush", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, flush_id), 1 },
-        { "android/media/MediaCodec", "stop", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, stop_id), 1 },
-        { "android/media/MediaCodec", "release", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_id), 1 },
-
-        { "android/media/MediaCodec", "getOutputFormat", "()Landroid/media/MediaFormat;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_format_id), 1 },
-
-        { "android/media/MediaCodec", "dequeueInputBuffer", "(J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_input_buffer_id), 1 },
-        { "android/media/MediaCodec", "queueInputBuffer", "(IIIJI)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, queue_input_buffer_id), 1 },
-        { "android/media/MediaCodec", "getInputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffer_id), 0 },
-        { "android/media/MediaCodec", "getInputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffers_id), 1 },
-
-        { "android/media/MediaCodec", "dequeueOutputBuffer", "(Landroid/media/MediaCodec$BufferInfo;J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_output_buffer_id), 1 },
-        { "android/media/MediaCodec", "getOutputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffer_id), 0 },
-        { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffers_id), 1 },
-        { "android/media/MediaCodec", "releaseOutputBuffer", "(IZ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_id), 1 },
-        { "android/media/MediaCodec", "releaseOutputBuffer", "(IJ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_at_time_id), 0 },
-
-    { "android/media/MediaCodec$BufferInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediainfo_class), 1 },
-
-        { "android/media/MediaCodec.BufferInfo", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, init_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "flags", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, flags_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "offset", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, offset_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "presentationTimeUs", "J", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, presentation_time_us_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "size", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, size_id), 1 },
-
-    { NULL }
-};
-
-static const AVClass amediacodec_class = {
-    .class_name = "amediacodec",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVCODEC_VERSION_INT,
-};
-
-struct FFAMediaCodec {
-
-    const AVClass *class;
-
-    struct JNIAMediaCodecFields jfields;
-
-    jobject object;
-
-    jobject input_buffers;
-    jobject output_buffers;
-
-    int INFO_TRY_AGAIN_LATER;
-    int INFO_OUTPUT_BUFFERS_CHANGED;
-    int INFO_OUTPUT_FORMAT_CHANGED;
-
-    int BUFFER_FLAG_CODEC_CONFIG;
-    int BUFFER_FLAG_END_OF_STREAM;
-    int BUFFER_FLAG_KEY_FRAME;
-
-    int CONFIGURE_FLAG_ENCODE;
-
-    int has_get_i_o_buffer;
-};
+    return ret;
+}
 
 FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name)
 {
@@ -996,46 +1207,12 @@ FFAMediaCodec* ff_AMediaCodec_createCodecByName(const char *name)
         goto fail;
     }
 
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
     }
 
     JNI_DETACH_ENV(attached, codec);
@@ -1093,40 +1270,7 @@ FFAMediaCodec* ff_AMediaCodec_createDecoderByType(const char *mime)
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
@@ -1189,46 +1333,12 @@ FFAMediaCodec* ff_AMediaCodec_createEncoderByType(const char *mime)
         goto fail;
     }
 
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
+    if (codec_init_static_fields(codec) < 0) {
         goto fail;
     }
 
-    codec->BUFFER_FLAG_CODEC_CONFIG = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_codec_config_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->BUFFER_FLAG_END_OF_STREAM = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_end_of_stream_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    if (codec->jfields.buffer_flag_key_frame_id) {
-        codec->BUFFER_FLAG_KEY_FRAME = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.buffer_flag_key_frame_id);
-        if (ff_jni_exception_check(env, 1, codec) < 0) {
-            goto fail;
-        }
-    }
-
-    codec->CONFIGURE_FLAG_ENCODE = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.configure_flag_encode_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_TRY_AGAIN_LATER = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_try_again_later_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_BUFFERS_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_buffers_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
-    }
-
-    codec->INFO_OUTPUT_FORMAT_CHANGED = (*env)->GetStaticIntField(env, codec->jfields.mediacodec_class, codec->jfields.info_output_format_changed_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        goto fail;
+    if (codec->jfields.get_input_buffer_id && codec->jfields.get_output_buffer_id) {
+        codec->has_get_i_o_buffer = 1;
     }
 
     JNI_DETACH_ENV(attached, NULL);

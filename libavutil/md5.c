@@ -8,7 +8,7 @@
  *
  * based on http://ubiqx.org/libcifs/source/Auth/MD5.c
  *          from Christopher R. Hertel (crh@ubiqx.mn.org)
- * Simplified, cleaned and IMO redundant comments removed by michael.
+ * Simplified, cleaned and IMO redundant comments removed by Michael.
  *
  * If you use gcc, then version 4.1 or later and -fomit-frame-pointer is
  * strongly recommended.
@@ -31,12 +31,13 @@
  */
 
 #include <stdint.h>
+
 #include "bswap.h"
 #include "intreadwrite.h"
-#include "md5.h"
 #include "mem.h"
+#include "md5.h"
 
-typedef struct AVMD5{
+typedef struct AVMD5 {
     uint64_t len;
     uint8_t  block[64];
     uint32_t ABCD[4];
@@ -78,16 +79,21 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
     0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 };
 
-#define CORE(i, a, b, c, d) do {                                        \
-        t = S[i >> 4][i & 3];                                           \
+#define CORE(i, a, b, c, d)                                             \
+    do {                                                                \
+        t  = S[i >> 4][i & 3];                                          \
         a += T[i];                                                      \
                                                                         \
         if (i < 32) {                                                   \
-            if (i < 16) a += (d ^ (b & (c ^ d)))  + X[       i  & 15];  \
-            else        a += ((d & b) | (~d & c)) + X[(1 + 5*i) & 15];  \
+            if (i < 16)                                                 \
+                a += (d ^ (b & (c ^ d)))  + X[       i  & 15];          \
+            else                                                        \
+                a += ((d & b) | (~d & c)) + X[(1 + 5*i) & 15];          \
         } else {                                                        \
-            if (i < 48) a += (b ^ c ^ d)          + X[(5 + 3*i) & 15];  \
-            else        a += (c ^ (b | ~d))       + X[(    7*i) & 15];  \
+            if (i < 48)                                                 \
+                a += (b ^ c ^ d)          + X[(5 + 3*i) & 15];          \
+            else                                                        \
+                a += (c ^ (b | ~d))       + X[(    7*i) & 15];          \
         }                                                               \
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
@@ -122,10 +128,13 @@ static void body(uint32_t ABCD[4], uint32_t *src, int nblocks)
         }
 #else
 #define CORE2(i)                                                        \
-        CORE( i,   a,b,c,d); CORE((i+1),d,a,b,c);                       \
-        CORE((i+2),c,d,a,b); CORE((i+3),b,c,d,a)
-#define CORE4(i) CORE2(i); CORE2((i+4)); CORE2((i+8)); CORE2((i+12))
-        CORE4(0); CORE4(16); CORE4(32); CORE4(48);
+        CORE(i, a, b, c, d); CORE((i + 1), d, a, b, c);                 \
+        CORE((i + 2), c, d, a, b); CORE((i + 3), b, c, d, a)
+#define CORE4(i) CORE2(i); CORE2((i + 4)); CORE2((i + 8)); CORE2((i + 12))
+        CORE4(0);
+        CORE4(16);
+        CORE4(32);
+        CORE4(48);
 #endif
 
         ABCD[0] += d;
@@ -150,7 +159,7 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
     const uint8_t *end;
     int j;
 
-    j = ctx->len & 63;
+    j         = ctx->len & 63;
     ctx->len += len;
 
     if (j) {
@@ -189,10 +198,10 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst)
     while ((ctx->len & 63) != 56)
         av_md5_update(ctx, "", 1);
 
-    av_md5_update(ctx, (uint8_t *)&finalcount, 8);
+    av_md5_update(ctx, (uint8_t *) &finalcount, 8);
 
     for (i = 0; i < 4; i++)
-        AV_WL32(dst + 4*i, ctx->ABCD[3 - i]);
+        AV_WL32(dst + 4 * i, ctx->ABCD[3 - i]);
 }
 
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
@@ -203,34 +212,3 @@ void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
     av_md5_update(&ctx, src, len);
     av_md5_final(&ctx, dst);
 }
-
-#ifdef TEST
-#include <stdio.h>
-
-static void print_md5(uint8_t *md5)
-{
-    int i;
-    for (i = 0; i < 16; i++)
-        printf("%02x", md5[i]);
-    printf("\n");
-}
-
-int main(void){
-    uint8_t md5val[16];
-    int i;
-    volatile uint8_t in[1000]; // volatile to workaround http://llvm.org/bugs/show_bug.cgi?id=20849
-    // FIXME remove volatile once it has been fixed and all fate clients are updated
-
-    for (i = 0; i < 1000; i++)
-        in[i] = i * i;
-    av_md5_sum(md5val, in, 1000); print_md5(md5val);
-    av_md5_sum(md5val, in,   63); print_md5(md5val);
-    av_md5_sum(md5val, in,   64); print_md5(md5val);
-    av_md5_sum(md5val, in,   65); print_md5(md5val);
-    for (i = 0; i < 1000; i++)
-        in[i] = i % 127;
-    av_md5_sum(md5val, in,  999); print_md5(md5val);
-
-    return 0;
-}
-#endif

@@ -65,8 +65,8 @@ static const VC2BaseVideoFormat base_video_fmts[] = {
     { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1280,  720, 0, 3,  "HD720P-50"  },
     { AV_PIX_FMT_YUV422P10, { 1001, 30000 }, 1920, 1080, 1, 3,  "HD1080I-60" },
     { AV_PIX_FMT_YUV422P10, {    1,    25 }, 1920, 1080, 1, 3,  "HD1080I-50" },
-    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1920, 1080, 1, 3,  "HD1080P-60" },
-    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1920, 1080, 1, 3,  "HD1080P-50" },
+    { AV_PIX_FMT_YUV422P10, { 1001, 60000 }, 1920, 1080, 0, 3,  "HD1080P-60" },
+    { AV_PIX_FMT_YUV422P10, {    1,    50 }, 1920, 1080, 0, 3,  "HD1080P-50" },
 
     { AV_PIX_FMT_YUV444P12, {    1,    24 }, 2048, 1080, 0, 4,        "DC2K" },
     { AV_PIX_FMT_YUV444P12, {    1,    24 }, 4096, 2160, 0, 5,        "DC4K" },
@@ -777,7 +777,10 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     uint8_t quants[MAX_DWT_LEVELS][4];
     int p, level, orientation;
 
+    /* The reference decoder ignores it, and its typical length is 0 */
+    memset(put_bits_ptr(pb), 0, s->prefix_bytes);
     skip_put_bytes(pb, s->prefix_bytes);
+
     put_bits(pb, 8, quant_idx);
 
     /* Slice quantization (slice_quantizers() in the specs) */
@@ -809,6 +812,8 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
         }
         pb->buf[bytes_start] = pad_s;
         flush_put_bits(pb);
+        /* vc2-reference uses that padding that decodes to '0' coeffs */
+        memset(put_bits_ptr(pb), 0xFF, pad_c);
         skip_put_bytes(pb, pad_c);
     }
 
@@ -994,8 +999,9 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret = 0;
     int sig_size = 256;
     VC2EncContext *s = avctx->priv_data;
-    const char aux_data[] = LIBAVCODEC_IDENT;
-    const int aux_data_size = sizeof(aux_data);
+    const int bitexact = avctx->flags & AV_CODEC_FLAG_BITEXACT;
+    const char *aux_data = bitexact ? "Lavc" : LIBAVCODEC_IDENT;
+    const int aux_data_size = bitexact ? sizeof("Lavc") : sizeof(LIBAVCODEC_IDENT);
     const int header_size = 100 + aux_data_size;
     int64_t max_frame_bytes, r_bitrate = avctx->bit_rate >> (s->interlaced);
 
@@ -1234,8 +1240,8 @@ alloc_fail:
 #define VC2ENC_FLAGS (AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption vc2enc_options[] = {
     {"tolerance",     "Max undershoot in percent", offsetof(VC2EncContext, tolerance), AV_OPT_TYPE_DOUBLE, {.dbl = 5.0f}, 0.0f, 45.0f, VC2ENC_FLAGS, "tolerance"},
-    {"slice_width",   "Slice width",  offsetof(VC2EncContext, slice_width), AV_OPT_TYPE_INT, {.i64 = 64}, 32, 1024, VC2ENC_FLAGS, "slice_width"},
-    {"slice_height",  "Slice height", offsetof(VC2EncContext, slice_height), AV_OPT_TYPE_INT, {.i64 = 32}, 8, 1024, VC2ENC_FLAGS, "slice_height"},
+    {"slice_width",   "Slice width",  offsetof(VC2EncContext, slice_width), AV_OPT_TYPE_INT, {.i64 = 32}, 32, 1024, VC2ENC_FLAGS, "slice_width"},
+    {"slice_height",  "Slice height", offsetof(VC2EncContext, slice_height), AV_OPT_TYPE_INT, {.i64 = 16}, 8, 1024, VC2ENC_FLAGS, "slice_height"},
     {"wavelet_depth", "Transform depth", offsetof(VC2EncContext, wavelet_depth), AV_OPT_TYPE_INT, {.i64 = 4}, 1, 5, VC2ENC_FLAGS, "wavelet_depth"},
     {"wavelet_type",  "Transform type",  offsetof(VC2EncContext, wavelet_idx), AV_OPT_TYPE_INT, {.i64 = VC2_TRANSFORM_9_7}, 0, VC2_TRANSFORMS_NB, VC2ENC_FLAGS, "wavelet_idx"},
         {"9_7",          "Deslauriers-Dubuc (9,7)", 0, AV_OPT_TYPE_CONST, {.i64 = VC2_TRANSFORM_9_7},    INT_MIN, INT_MAX, VC2ENC_FLAGS, "wavelet_idx"},

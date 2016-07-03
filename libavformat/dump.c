@@ -260,35 +260,7 @@ static void dump_stereo3d(void *ctx, AVPacketSideData *sd)
 
     stereo = (AVStereo3D *)sd->data;
 
-    switch (stereo->type) {
-    case AV_STEREO3D_2D:
-        av_log(ctx, AV_LOG_INFO, "2D");
-        break;
-    case AV_STEREO3D_SIDEBYSIDE:
-        av_log(ctx, AV_LOG_INFO, "side by side");
-        break;
-    case AV_STEREO3D_TOPBOTTOM:
-        av_log(ctx, AV_LOG_INFO, "top and bottom");
-        break;
-    case AV_STEREO3D_FRAMESEQUENCE:
-        av_log(ctx, AV_LOG_INFO, "frame alternate");
-        break;
-    case AV_STEREO3D_CHECKERBOARD:
-        av_log(ctx, AV_LOG_INFO, "checkerboard");
-        break;
-    case AV_STEREO3D_LINES:
-        av_log(ctx, AV_LOG_INFO, "interleaved lines");
-        break;
-    case AV_STEREO3D_COLUMNS:
-        av_log(ctx, AV_LOG_INFO, "interleaved columns");
-        break;
-    case AV_STEREO3D_SIDEBYSIDE_QUINCUNX:
-        av_log(ctx, AV_LOG_INFO, "side by side (quincunx subsampling)");
-        break;
-    default:
-        av_log(ctx, AV_LOG_WARNING, "unknown");
-        break;
-    }
+    av_log(ctx, AV_LOG_INFO, "%s", av_stereo3d_type_name(stereo->type));
 
     if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
@@ -393,7 +365,7 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             dump_paramchange(ctx, &sd);
             break;
         case AV_PKT_DATA_H263_MB_INFO:
-            av_log(ctx, AV_LOG_INFO, "h263 macroblock info");
+            av_log(ctx, AV_LOG_INFO, "H.263 macroblock info");
             break;
         case AV_PKT_DATA_REPLAYGAIN:
             av_log(ctx, AV_LOG_INFO, "replaygain: ");
@@ -422,7 +394,7 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             dump_mastering_display_metadata(ctx, &sd);
             break;
         default:
-            av_log(ctx, AV_LOG_WARNING,
+            av_log(ctx, AV_LOG_INFO,
                    "unknown side data type %d (%d bytes)", sd.type, sd.size);
             break;
         }
@@ -440,14 +412,32 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     AVStream *st = ic->streams[i];
     AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
     char *separator = ic->dump_separator;
-    char **codec_separator = av_opt_ptr(st->codec->av_class, st->codec, "dump_separator");
-    int use_format_separator = !*codec_separator;
+    AVCodecContext *avctx;
+    int ret;
 
-    if (use_format_separator)
-        *codec_separator = av_strdup(separator);
-    avcodec_string(buf, sizeof(buf), st->codec, is_output);
-    if (use_format_separator)
-        av_freep(codec_separator);
+    avctx = avcodec_alloc_context3(NULL);
+    if (!avctx)
+        return;
+
+    ret = avcodec_parameters_to_context(avctx, st->codecpar);
+    if (ret < 0) {
+        avcodec_free_context(&avctx);
+        return;
+    }
+
+    // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
+    avctx->properties = st->codec->properties;
+    avctx->codec      = st->codec->codec;
+    avctx->qmin       = st->codec->qmin;
+    avctx->qmax       = st->codec->qmax;
+    avctx->coded_width  = st->codec->coded_width;
+    avctx->coded_height = st->codec->coded_height;
+
+    if (separator)
+        av_opt_set(avctx, "dump_separator", separator, 0);
+    avcodec_string(buf, sizeof(buf), avctx, is_output);
+    avcodec_free_context(&avctx);
+
     av_log(NULL, AV_LOG_INFO, "    Stream #%d:%d", index, i);
 
     /* the pid is an important information, so we display it */
@@ -460,19 +450,19 @@ static void dump_stream_format(AVFormatContext *ic, int i,
            st->time_base.num, st->time_base.den);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
 
-    if (st->sample_aspect_ratio.num && // default
-        av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
+    if (st->sample_aspect_ratio.num &&
+        av_cmp_q(st->sample_aspect_ratio, st->codecpar->sample_aspect_ratio)) {
         AVRational display_aspect_ratio;
         av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
-                  st->codec->width  * (int64_t)st->sample_aspect_ratio.num,
-                  st->codec->height * (int64_t)st->sample_aspect_ratio.den,
+                  st->codecpar->width  * (int64_t)st->sample_aspect_ratio.num,
+                  st->codecpar->height * (int64_t)st->sample_aspect_ratio.den,
                   1024 * 1024);
         av_log(NULL, AV_LOG_INFO, ", SAR %d:%d DAR %d:%d",
                st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                display_aspect_ratio.num, display_aspect_ratio.den);
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         int tbr = st->r_frame_rate.den && st->r_frame_rate.num;
         int tbn = st->time_base.den && st->time_base.num;
@@ -552,10 +542,12 @@ void av_dump_format(AVFormatContext *ic, int index,
         if (ic->start_time != AV_NOPTS_VALUE) {
             int secs, us;
             av_log(NULL, AV_LOG_INFO, ", start: ");
-            secs = ic->start_time / AV_TIME_BASE;
+            secs = llabs(ic->start_time / AV_TIME_BASE);
             us   = llabs(ic->start_time % AV_TIME_BASE);
-            av_log(NULL, AV_LOG_INFO, "%d.%06d",
-                   secs, (int) av_rescale(us, 1000000, AV_TIME_BASE));
+            av_log(NULL, AV_LOG_INFO, "%s%d.%06d",
+                   ic->start_time >= 0 ? "" : "-",
+                   secs,
+                   (int) av_rescale(us, 1000000, AV_TIME_BASE));
         }
         av_log(NULL, AV_LOG_INFO, ", bitrate: ");
         if (ic->bit_rate)

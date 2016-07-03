@@ -48,7 +48,7 @@ static int celt_header(AVFormatContext *s, int idx)
         priv = av_malloc(sizeof(struct oggcelt_private));
         if (!priv)
             return AVERROR(ENOMEM);
-        if (ff_alloc_extradata(st->codec, 2 * sizeof(uint32_t)) < 0) {
+        if (ff_alloc_extradata(st->codecpar, 2 * sizeof(uint32_t)) < 0) {
             av_free(priv);
             return AVERROR(ENOMEM);
         }
@@ -59,17 +59,17 @@ static int celt_header(AVFormatContext *s, int idx)
         overlap          = AV_RL32(p + 48);
         /* unused bytes per packet field skipped */
         extra_headers    = AV_RL32(p + 56);
-        st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id       = AV_CODEC_ID_CELT;
-        st->codec->sample_rate    = sample_rate;
-        st->codec->channels       = nb_channels;
+        st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id       = AV_CODEC_ID_CELT;
+        st->codecpar->sample_rate    = sample_rate;
+        st->codecpar->channels       = nb_channels;
         if (sample_rate)
             avpriv_set_pts_info(st, 64, 1, sample_rate);
         priv->extra_headers_left  = 1 + extra_headers;
         av_free(os->private);
         os->private = priv;
-        AV_WL32(st->codec->extradata + 0, overlap);
-        AV_WL32(st->codec->extradata + 4, version);
+        AV_WL32(st->codecpar->extradata + 0, overlap);
+        AV_WL32(st->codecpar->extradata + 4, version);
         return 1;
     } else if (priv && priv->extra_headers_left) {
         /* Extra headers (vorbiscomment) */

@@ -23,16 +23,16 @@
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "binkdata.h"
 #include "binkdsp.h"
 #include "blockdsp.h"
+#include "get_bits.h"
 #include "hpeldsp.h"
 #include "internal.h"
 #include "mathops.h"
-
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 
 #define BINK_FLAG_ALPHA 0x00100000
 #define BINK_FLAG_GRAY  0x00020000
@@ -1240,7 +1240,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 }
 
 /**
- * Caclulate quantization tables for version b
+ * Calculate quantization tables for version b
  */
 static av_cold void binkb_calc_quant(void)
 {

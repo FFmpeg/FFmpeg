@@ -1,7 +1,15 @@
 #extradata 0:       93, 0xc2a32e14
 #extradata 1:        2, 0x00b200a1
 #tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 1280x718
+#sar 0: 1/1
 #tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: aac
+#sample_rate 1: 48000
+#channel_layout 1: 3
 0,        -42,          0,       41,     2969, 0xa7016742
 0,          0,         42,       41,      135, 0x33af1a9e, F=0x0
 1,          0,          0,       21,        6, 0x027e00e8

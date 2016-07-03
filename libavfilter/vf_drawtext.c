@@ -860,6 +860,8 @@ static int func_metadata(AVFilterContext *ctx, AVBPrint *bp,
 
     if (e && e->value)
         av_bprintf(bp, "%s", e->value);
+    else if (argc >= 2)
+        av_bprintf(bp, "%s", argv[1]);
     return 0;
 }
 
@@ -975,7 +977,7 @@ static const struct drawtext_function {
     { "localtime", 0, 1, 'L', func_strftime },
     { "frame_num", 0, 0, 0,   func_frame_num },
     { "n",         0, 0, 0,   func_frame_num },
-    { "metadata",  1, 1, 0,   func_metadata },
+    { "metadata",  1, 2, 0,   func_metadata },
 };
 
 static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
@@ -1222,7 +1224,9 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
         dummy.code = code;
         glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
         if (!glyph) {
-            load_glyph(ctx, &glyph, code);
+            ret = load_glyph(ctx, &glyph, code);
+            if (ret < 0)
+                return ret;
         }
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);

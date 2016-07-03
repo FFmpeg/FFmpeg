@@ -98,7 +98,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 
         /* creating URLContext */
         err = ffurl_open_whitelist(&uc, node_uri, flags,
-                                   &h->interrupt_callback, NULL, h->protocol_whitelist, h->protocol_blacklist);
+                                   &h->interrupt_callback, NULL, h->protocol_whitelist, h->protocol_blacklist, h);
         if (err < 0)
             break;
 

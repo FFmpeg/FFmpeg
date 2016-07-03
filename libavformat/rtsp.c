@@ -206,11 +206,11 @@ static int get_sockaddr(AVFormatContext *s,
 static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
                              RTSPStream *rtsp_st, AVStream *st)
 {
-    AVCodecContext *codec = st ? st->codec : NULL;
+    AVCodecParameters *par = st ? st->codecpar : NULL;
     if (!handler)
         return;
-    if (codec)
-        codec->codec_id          = handler->codec_id;
+    if (par)
+        par->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
     if (st)
         st->need_parsing = handler->need_parsing;
@@ -245,10 +245,10 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
                             AVStream *st, RTSPStream *rtsp_st,
                             int payload_type, const char *p)
 {
-    AVCodecContext *codec = st->codec;
+    AVCodecParameters *par = st->codecpar;
     char buf[256];
     int i;
-    AVCodec *c;
+    const AVCodecDescriptor *desc;
     const char *c_name;
 
     /* See if we can handle this kind of payload.
@@ -259,46 +259,46 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (payload_type < RTP_PT_PRIVATE) {
         /* We are in a standard case
          * (from http://www.iana.org/assignments/rtp-parameters). */
-        codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
+        par->codec_id = ff_rtp_codec_id(buf, par->codec_type);
     }
 
-    if (codec->codec_id == AV_CODEC_ID_NONE) {
+    if (par->codec_id == AV_CODEC_ID_NONE) {
         RTPDynamicProtocolHandler *handler =
-            ff_rtp_handler_find_by_name(buf, codec->codec_type);
+            ff_rtp_handler_find_by_name(buf, par->codec_type);
         init_rtp_handler(handler, rtsp_st, st);
         /* If no dynamic handler was found, check with the list of standard
          * allocated types, if such a stream for some reason happens to
          * use a private payload type. This isn't handled in rtpdec.c, since
          * the format name from the rtpmap line never is passed into rtpdec. */
         if (!rtsp_st->dynamic_handler)
-            codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
+            par->codec_id = ff_rtp_codec_id(buf, par->codec_type);
     }
 
-    c = avcodec_find_decoder(codec->codec_id);
-    if (c && c->name)
-        c_name = c->name;
+    desc = avcodec_descriptor_get(par->codec_id);
+    if (desc && desc->name)
+        c_name = desc->name;
     else
         c_name = "(null)";
 
     get_word_sep(buf, sizeof(buf), "/", &p);
     i = atoi(buf);
-    switch (codec->codec_type) {
+    switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         av_log(s, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
-        codec->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
-        codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
+        par->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
+        par->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
         if (i > 0) {
-            codec->sample_rate = i;
-            avpriv_set_pts_info(st, 32, 1, codec->sample_rate);
+            par->sample_rate = i;
+            avpriv_set_pts_info(st, 32, 1, par->sample_rate);
             get_word_sep(buf, sizeof(buf), "/", &p);
             i = atoi(buf);
             if (i > 0)
-                codec->channels = i;
+                par->channels = i;
         }
         av_log(s, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
-               codec->sample_rate);
+               par->sample_rate);
         av_log(s, AV_LOG_DEBUG, "audio channels set to: %i\n",
-               codec->channels);
+               par->channels);
         break;
     case AVMEDIA_TYPE_VIDEO:
         av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
@@ -503,17 +503,17 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 return;
             st->id = rt->nb_rtsp_streams - 1;
             rtsp_st->stream_index = st->index;
-            st->codec->codec_type = codec_type;
+            st->codecpar->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
                 RTPDynamicProtocolHandler *handler;
                 /* if standard payload type, we can find the codec right now */
-                ff_rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
-                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-                    st->codec->sample_rate > 0)
-                    avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
+                ff_rtp_get_codec_info(st->codecpar, rtsp_st->sdp_payload_type);
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    st->codecpar->sample_rate > 0)
+                    avpriv_set_pts_info(st, 32, 1, st->codecpar->sample_rate);
                 /* Even static payload types may need a custom depacketizer */
                 handler = ff_rtp_handler_find_by_id(
-                              rtsp_st->sdp_payload_type, st->codec->codec_type);
+                              rtsp_st->sdp_payload_type, st->codecpar->codec_type);
                 init_rtp_handler(handler, rtsp_st, st);
                 finalize_rtp_handler_init(s, rtsp_st, st);
             }
@@ -573,6 +573,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 s1->seen_fmtp = 1;
                 av_strlcpy(s1->delayed_fmtp, buf, sizeof(s1->delayed_fmtp));
             }
+        } else if (av_strstart(p, "ssrc:", &p) && s->nb_streams > 0) {
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+            get_word(buf1, sizeof(buf1), &p);
+            rtsp_st->ssrc = strtoll(buf1, NULL, 10);
         } else if (av_strstart(p, "range:", &p)) {
             int64_t start, end;
 
@@ -598,7 +602,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (av_strstart(p, "SampleRate:integer;", &p) &&
                    s->nb_streams > 0) {
             st = s->streams[s->nb_streams - 1];
-            st->codec->sample_rate = atoi(p);
+            st->codecpar->sample_rate = atoi(p);
         } else if (av_strstart(p, "crypto:", &p) && s->nb_streams > 0) {
             // RFC 4568
             rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
@@ -831,6 +835,8 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!rtsp_st->transport_priv) {
          return AVERROR(ENOMEM);
     } else if (CONFIG_RTPDEC && rt->transport == RTSP_TRANSPORT_RTP) {
+        RTPDemuxContext *rtpctx = rtsp_st->transport_priv;
+        rtpctx->ssrc = rtsp_st->ssrc;
         if (rtsp_st->dynamic_handler) {
             ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
                                               rtsp_st->dynamic_protocol_context,
@@ -1469,7 +1475,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 /* we will use two ports per rtp stream (rtp and rtcp) */
                 j += 2;
                 err = ffurl_open_whitelist(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
-                                 &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist);
+                                 &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
 
                 av_dict_free(&opts);
 
@@ -1501,7 +1507,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
              * will return an error. Therefore, we skip those streams. */
             if (rt->server_type == RTSP_SERVER_WMS &&
                 (rtsp_st->stream_index < 0 ||
-                 s->streams[rtsp_st->stream_index]->codec->codec_type ==
+                 s->streams[rtsp_st->stream_index]->codecpar->codec_type ==
                     AVMEDIA_TYPE_DATA))
                 continue;
             snprintf(transport, sizeof(transport) - 1,
@@ -1612,7 +1618,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "%s", optbuf);
             if (ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
-                           &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist) < 0) {
+                           &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1801,7 +1807,7 @@ redirect:
                     host, port,
                     "?timeout=%d", rt->stimeout);
         if ((ret = ffurl_open_whitelist(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                       &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist)) < 0) {
+                       &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL)) < 0) {
             err = ret;
             goto fail;
         }
@@ -2317,7 +2323,7 @@ static int sdp_read_header(AVFormatContext *s)
                                 rtsp_st->nb_exclude_source_addrs,
                                 rtsp_st->exclude_source_addrs);
             err = ffurl_open_whitelist(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ,
-                           &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist);
+                           &s->interrupt_callback, &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
 
             av_dict_free(&opts);
 
@@ -2377,7 +2383,7 @@ static int rtp_read_header(AVFormatContext *s)
     int ret, port;
     URLContext* in = NULL;
     int payload_type;
-    AVCodecContext codec = { 0 };
+    AVCodecParameters *par = NULL;
     struct sockaddr_storage addr;
     AVIOContext pb;
     socklen_t addrlen = sizeof(addr);
@@ -2387,7 +2393,7 @@ static int rtp_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     ret = ffurl_open_whitelist(&in, s->filename, AVIO_FLAG_READ,
-                     &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist);
+                     &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret)
         goto fail;
 
@@ -2418,13 +2424,19 @@ static int rtp_read_header(AVFormatContext *s)
     ffurl_close(in);
     in = NULL;
 
-    if (ff_rtp_get_codec_info(&codec, payload_type)) {
+    par = avcodec_parameters_alloc();
+    if (!par) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (ff_rtp_get_codec_info(par, payload_type)) {
         av_log(s, AV_LOG_ERROR, "Unable to receive RTP payload type %d "
                                 "without an SDP file describing it\n",
                                  payload_type);
         goto fail;
     }
-    if (codec.codec_type != AVMEDIA_TYPE_DATA) {
+    if (par->codec_type != AVMEDIA_TYPE_DATA) {
         av_log(s, AV_LOG_WARNING, "Guessing on RTP content - if not received "
                                   "properly you need an SDP file "
                                   "describing it\n");
@@ -2436,10 +2448,11 @@ static int rtp_read_header(AVFormatContext *s)
     snprintf(sdp, sizeof(sdp),
              "v=0\r\nc=IN IP%d %s\r\nm=%s %d RTP/AVP %d\r\n",
              addr.ss_family == AF_INET ? 4 : 6, host,
-             codec.codec_type == AVMEDIA_TYPE_DATA  ? "application" :
-             codec.codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio",
+             par->codec_type == AVMEDIA_TYPE_DATA  ? "application" :
+             par->codec_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio",
              port, payload_type);
     av_log(s, AV_LOG_VERBOSE, "SDP:\n%s\n", sdp);
+    avcodec_parameters_free(&par);
 
     ffio_init_context(&pb, sdp, strlen(sdp), 0, NULL, NULL, NULL, NULL);
     s->pb = &pb;
@@ -2454,6 +2467,7 @@ static int rtp_read_header(AVFormatContext *s)
     return ret;
 
 fail:
+    avcodec_parameters_free(&par);
     if (in)
         ffurl_close(in);
     ff_network_close();

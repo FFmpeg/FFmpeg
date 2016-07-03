@@ -215,17 +215,17 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_packet_unref(pkt);
             return AVERROR(ENOMEM);
         }
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = codec_id;
-    } else if (codec_id != s->streams[0]->codec->codec_id) {
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = codec_id;
+    } else if (codec_id != s->streams[0]->codecpar->codec_id) {
         avpriv_report_missing_feature(s, "Codec change in IEC 61937");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (!s->bit_rate && s->streams[0]->codec->sample_rate)
+    if (!s->bit_rate && s->streams[0]->codecpar->sample_rate)
         /* stream bitrate matches 16-bit stereo PCM bitrate for currently
            supported codecs */
-        s->bit_rate = 2 * 16 * s->streams[0]->codec->sample_rate;
+        s->bit_rate = 2 * 16 * s->streams[0]->codecpar->sample_rate;
 
     return 0;
 }

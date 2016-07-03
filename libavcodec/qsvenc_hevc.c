@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "hevc.h"
+#include "h2645_parse.h"
 #include "internal.h"
 #include "qsv.h"
 #include "qsv_internal.h"
@@ -54,7 +55,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     PutByteContext pbc;
 
     GetBitContext gb;
-    HEVCNAL sps_nal = { NULL };
+    H2645NAL sps_nal = { NULL };
     HEVCSPS sps = { 0 };
     HEVCVPS vps = { 0 };
     uint8_t vps_buf[128], vps_rbsp_buf[128];
@@ -68,7 +69,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     }
 
     /* parse the SPS */
-    ret = ff_hevc_extract_rbsp(NULL, avctx->extradata + 4, avctx->extradata_size - 4, &sps_nal);
+    ret = ff_h2645_extract_rbsp(avctx->extradata + 4, avctx->extradata_size - 4, &sps_nal);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error unescaping the SPS buffer\n");
         return ret;

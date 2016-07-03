@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 direct mb/block decoding.
+ * H.264 / AVC / MPEG-4 part10 direct mb/block decoding.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -315,7 +315,7 @@ single_col:
                 *mb_type |= MB_TYPE_DIRECT2 |
                             (mb_type_col[0] & (MB_TYPE_16x8 | MB_TYPE_8x16));
             } else {
-                if (!h->sps.direct_8x8_inference_flag) {
+                if (!h->ps.sps->direct_8x8_inference_flag) {
                     /* FIXME: Save sub mb types from previous frames (or derive
                      * from MVs) so we know exactly what block size to use. */
                     sub_mb_type += (MB_TYPE_8x8 - MB_TYPE_16x16); /* B_SUB_4x4 */
@@ -395,7 +395,7 @@ single_col:
              (l1ref0[0] < 0 && !l1ref1[0] &&
               FFABS(l1mv1[0][0]) <= 1 &&
               FFABS(l1mv1[0][1]) <= 1 &&
-              h->x264_build > 33U))) {
+              h->sei.unregistered.x264_build > 33U))) {
             a = b = 0;
             if (ref[0] > 0)
                 a = mv[0];
@@ -430,7 +430,7 @@ single_col:
                 (l1ref0[i8] == 0 ||
                  (l1ref0[i8] < 0 &&
                   l1ref1[i8] == 0 &&
-                  h->x264_build > 33U))) {
+                  h->sei.unregistered.x264_build > 33U))) {
                 const int16_t (*l1mv)[2] = l1ref0[i8] == 0 ? l1mv0 : l1mv1;
                 if (IS_SUB_8X8(sub_mb_type)) {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * 3 * b4_stride];
@@ -538,7 +538,7 @@ single_col:
                 *mb_type |= MB_TYPE_L0L1 | MB_TYPE_DIRECT2 |
                             (mb_type_col[0] & (MB_TYPE_16x8 | MB_TYPE_8x16));
             } else {
-                if (!h->sps.direct_8x8_inference_flag) {
+                if (!h->ps.sps->direct_8x8_inference_flag) {
                     /* FIXME: save sub mb types from previous frames (or derive
                      * from MVs) so we know exactly what block size to use */
                     sub_mb_type = MB_TYPE_8x8 | MB_TYPE_P0L0 | MB_TYPE_P0L1 |
@@ -579,7 +579,7 @@ single_col:
 
         if (IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])) {
             int y_shift = 2 * !IS_INTERLACED(*mb_type);
-            assert(h->sps.direct_8x8_inference_flag);
+            assert(h->ps.sps->direct_8x8_inference_flag);
 
             for (i8 = 0; i8 < 4; i8++) {
                 const int x8 = i8 & 1;

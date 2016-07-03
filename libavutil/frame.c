@@ -375,6 +375,9 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
 {
     int i, ret = 0;
 
+    av_assert1(dst->width == 0 && dst->height == 0);
+    av_assert1(dst->channels == 0);
+
     dst->format         = src->format;
     dst->width          = src->width;
     dst->height         = src->height;
@@ -504,6 +507,9 @@ void av_frame_unref(AVFrame *frame)
 
 void av_frame_move_ref(AVFrame *dst, AVFrame *src)
 {
+    av_assert1(dst->width == 0 && dst->height == 0);
+    av_assert1(dst->channels == 0);
+
     *dst = *src;
     if (src->extended_data == src->data)
         dst->extended_data = dst->data;

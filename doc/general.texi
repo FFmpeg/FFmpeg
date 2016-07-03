@@ -520,6 +520,7 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
+@item Wideband Single-bit Data (WSD) @tab   @tab X
 @item WVE                       @tab   @tab X
 @item XMV                       @tab   @tab X
     @tab Microsoft video container used in Xbox games.
@@ -643,6 +644,7 @@ following image formats are supported:
 @item Bethesda VID video     @tab     @tab  X
     @tab Used in some games from Bethesda Softworks.
 @item Bink Video             @tab     @tab  X
+@item BitJazz SheerVideo     @tab     @tab  X
 @item Bitmap Brothers JV video  @tab   @tab X
 @item y41p Brooktree uncompressed 4:1:1 12-bit     @tab  X  @tab  X
 @item Brute Force & Ignorance   @tab   @tab X
@@ -743,6 +745,7 @@ following image formats are supported:
 @item LucasArts SANM/Smush   @tab     @tab  X
     @tab Used in LucasArts games / SMUSH animations.
 @item lossless MJPEG         @tab  X  @tab  X
+@item MagicYUV Lossless Video @tab     @tab  X
 @item Microsoft ATC Screen   @tab     @tab  X
     @tab Also known as Microsoft Screen 3.
 @item Microsoft Expression Encoder Screen  @tab     @tab  X
@@ -950,7 +953,7 @@ following image formats are supported:
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
-    @tab supported extensions: XCh, XLL (partially)
+    @tab supported extensions: XCh, XXCH, X96, XBR, XLL, LBR (partially)
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
@@ -967,6 +970,7 @@ following image formats are supported:
 @item DSD (Direct Stream Digitial), least significant bit first, planar  @tab  @tab  X
 @item DSD (Direct Stream Digitial), most significant bit first, planar   @tab  @tab  X
 @item DSP Group TrueSpeech   @tab     @tab  X
+@item DST (Direct Stream Transfer) @tab  @tab  X
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab  X  @tab  X
 @item EVRC (Enhanced Variable Rate Codec) @tab     @tab  X

@@ -24,9 +24,9 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
 #include "bytestream.h"
 #include "hq_hqadsp.h"
+#include "vlc.h"
 
 #define NUM_HQ_AC_ENTRIES 746
 #define NUM_HQ_PROFILES   22

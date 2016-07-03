@@ -59,11 +59,11 @@ typedef struct LagarithContext {
 } LagarithContext;
 
 /**
- * Compute the 52bit mantissa of 1/(double)denom.
+ * Compute the 52-bit mantissa of 1/(double)denom.
  * This crazy format uses floats in an entropy coder and we have to match x86
  * rounding exactly, thus ordinary floats aren't portable enough.
  * @param denom denominator
- * @return 52bit mantissa
+ * @return 52-bit mantissa
  * @see softfloat_mul
  */
 static uint64_t softfloat_reciprocal(uint32_t denom)
@@ -80,9 +80,9 @@ static uint64_t softfloat_reciprocal(uint32_t denom)
 /**
  * (uint32_t)(x*f), where f has the given mantissa, and exponent 0
  * Used in combination with softfloat_reciprocal computes x/(double)denom.
- * @param x 32bit integer factor
+ * @param x 32-bit integer factor
  * @param mantissa mantissa of f with exponent 0
- * @return 32bit integer value (x*f)
+ * @return 32-bit integer value (x*f)
  * @see softfloat_reciprocal
  */
 static uint32_t softfloat_mul(uint32_t x, uint64_t mantissa)
@@ -234,7 +234,7 @@ static void add_lag_median_prediction(uint8_t *dst, uint8_t *src1,
                                       int *left_top)
 {
     /* This is almost identical to add_hfyu_median_pred in huffyuvdsp.h.
-     * However the &0xFF on the gradient predictor yealds incorrect output
+     * However the &0xFF on the gradient predictor yields incorrect output
      * for lagarith.
      */
     int i;

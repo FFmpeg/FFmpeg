@@ -32,7 +32,7 @@ static int get_linear(GetBitContext *gb, int n)
 
 static int get_rice_un(GetBitContext *gb, int k)
 {
-    unsigned int v = get_unary(gb, 1, 128);
+    unsigned int v = get_unary(gb, 1, get_bits_left(gb));
     return (v << k) | get_bits_long(gb, k);
 }
 
@@ -123,8 +123,7 @@ static int chs_parse_header(DCAXllDecoder *s, DCAXllChSet *c, DCAExssAsset *asse
     header_size = get_bits(&s->gb, 10) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, header_pos, header_pos + header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, header_pos, header_pos + header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XLL sub-header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -784,8 +783,7 @@ static int parse_common_header(DCAXllDecoder *s)
     header_size = get_bits(&s->gb, 8) + 1;
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, 32, header_size * 8)) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, 32, header_size * 8)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid XLL common header checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -993,8 +991,7 @@ static int parse_navi_table(DCAXllDecoder *s)
     skip_bits(&s->gb, 16);
 
     // Check CRC
-    if ((s->avctx->err_recognition & (AV_EF_CRCCHECK | AV_EF_CAREFUL))
-        && ff_dca_check_crc(&s->gb, navi_pos, get_bits_count(&s->gb))) {
+    if (ff_dca_check_crc(s->avctx, &s->gb, navi_pos, get_bits_count(&s->gb))) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid NAVI checksum\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1073,7 +1070,7 @@ static int copy_to_pbr(DCAXllDecoder *s, uint8_t *data, int size, int delay)
     if (size > DCA_XLL_PBR_BUFFER_MAX)
         return AVERROR(ENOSPC);
 
-    if (!s->pbr_buffer && !(s->pbr_buffer = av_malloc(DCA_XLL_PBR_BUFFER_MAX + DCA_BUFFER_PADDING_SIZE)))
+    if (!s->pbr_buffer && !(s->pbr_buffer = av_malloc(DCA_XLL_PBR_BUFFER_MAX + AV_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
 
     memcpy(s->pbr_buffer, data, size);

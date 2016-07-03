@@ -112,7 +112,7 @@ static inline int get_ue_golomb_31(GetBitContext *gb)
     return ff_ue_golomb_vlc_code[buf];
 }
 
-static inline unsigned svq3_get_ue_golomb(GetBitContext *gb)
+static inline unsigned get_interleaved_ue_golomb(GetBitContext *gb)
 {
     uint32_t buf;
 
@@ -219,7 +219,7 @@ static inline int get_se_golomb_long(GetBitContext *gb)
     return ((buf >> 1) ^ sign) + 1;
 }
 
-static inline int svq3_get_se_golomb(GetBitContext *gb)
+static inline int get_interleaved_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
@@ -254,7 +254,7 @@ static inline int svq3_get_se_golomb(GetBitContext *gb)
 
 static inline int dirac_get_se_golomb(GetBitContext *gb)
 {
-    uint32_t ret = svq3_get_ue_golomb(gb);
+    uint32_t ret = get_interleaved_ue_golomb(gb);
 
     if (ret) {
         int sign = -get_bits1(gb);
@@ -409,8 +409,6 @@ static inline int get_ue(GetBitContext *s, const char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d ue  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
@@ -426,8 +424,6 @@ static inline int get_se(GetBitContext *s, const char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d se  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
@@ -442,8 +438,6 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
     int i    = get_te0_golomb(s, r);
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
-
-    print_bin(bits, len);
 
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d te  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);

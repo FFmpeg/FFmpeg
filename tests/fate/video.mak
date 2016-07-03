@@ -7,6 +7,9 @@ fate-4xm-2: CMD = framecrc -i $(TARGET_SAMPLES)/4xm/version2.4xm -pix_fmt rgb24 
 FATE_VIDEO-$(call DEMDEC, FOURXM, FOURXM) += $(FATE_4XM)
 fate-4xm: $(FATE_4XM)
 
+FATE_VIDEO-$(call DEMDEC, AVI, ZERO12V) += fate-012v
+fate-012v: CMD = framecrc -i $(TARGET_SAMPLES)/012v/sample.avi -pix_fmt yuv422p16le
+
 FATE_VIDEO-$(call DEMDEC, AVI, AASC) += fate-aasc
 fate-aasc: CMD = framecrc -i $(TARGET_SAMPLES)/aasc/AASC-1.5MB.AVI -pix_fmt rgb24
 
@@ -60,27 +63,6 @@ FATE_VIDEO-$(call DEMDEC, BINK, BINK) += $(FATE_BINK_VIDEO)
 FATE_VIDEO-$(call DEMDEC, BMV, BMV_VIDEO) += fate-bmv-video
 fate-bmv-video: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24 -an
 
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-hq
-fate-canopus-hq_hqa-hq: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hq.avi
-
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-hqa
-fate-canopus-hq_hqa-hqa: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqa.avi
-
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-inter
-fate-canopus-hq_hqa-inter: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hq25i.avi
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, HQ_HQA) += $(FATE_CANOPUS_HQ_HQA)
-fate-canopus-hq_hqa: $(FATE_CANOPUS_HQ_HQA)
-
-FATE_CANOPUS_HQX += fate-canopus-hqx422
-fate-canopus-hqx422: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422.avi -pix_fmt yuv422p16be -an
-
-FATE_CANOPUS_HQX += fate-canopus-hqx422a
-fate-canopus-hqx422a: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422a.avi -pix_fmt yuv422p16be -an
-
-FATE_VIDEO-$(call DEMDEC, AVI, HQX) += $(FATE_CANOPUS_HQX)
-fate-canopus-hqx: $(FATE_CANOPUS_HQX)
-
 FATE_VIDEO-$(call DEMDEC, MPEGPS, CAVS) += fate-cavs
 fate-cavs: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/cavs.mpg -an
 
@@ -92,6 +74,9 @@ fate-cljr: CMD = framecrc -i $(TARGET_SAMPLES)/cljr/testcljr-partial.avi
 
 FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-corepng
 fate-corepng: CMD = framecrc -i $(TARGET_SAMPLES)/png1/corepng-partial.avi
+
+FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-rgbapng-4816
+fate-rgbapng-4816: CMD = framecrc -i $(TARGET_SAMPLES)/png1/55c99e750a5fd6_50314226.png
 
 FATE_VIDEO-$(call DEMDEC, AVS, AVS) += fate-creatureshock-avs
 fate-creatureshock-avs: CMD = framecrc -i $(TARGET_SAMPLES)/creatureshock-avs/OUTATIME.AVS -pix_fmt rgb24

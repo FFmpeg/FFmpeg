@@ -42,7 +42,6 @@ static int voc_read_header(AVFormatContext *s)
     VocDecContext *voc = s->priv_data;
     AVIOContext *pb = s->pb;
     int header_size;
-    AVStream *st;
 
     avio_skip(pb, 20);
     header_size = avio_rl16(pb) - 22;
@@ -51,10 +50,8 @@ static int voc_read_header(AVFormatContext *s)
         return AVERROR(ENOSYS);
     }
     avio_skip(pb, header_size);
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     voc->remaining_size = 0;
     return 0;
@@ -62,6 +59,12 @@ static int voc_read_header(AVFormatContext *s)
 
 static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    if (!s->nb_streams) {
+        AVStream *st = avformat_new_stream(s, NULL);
+        if (!st)
+            return AVERROR(ENOMEM);
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    }
     return ff_voc_get_packet(s, pkt, s->streams[0], 0);
 }
 
@@ -69,8 +72,16 @@ static int voc_read_seek(AVFormatContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
     VocDecContext *voc = s->priv_data;
-    AVStream *st = s->streams[stream_index];
-    int index = av_index_search_timestamp(st, timestamp, flags);
+    AVStream *st;
+    int index;
+
+    if (s->nb_streams < 1) {
+        av_log(s, AV_LOG_ERROR, "cannot seek while no stream was found yet\n");
+        return AVERROR(EINVAL);
+    }
+
+    st = s->streams[stream_index];
+    index = av_index_search_timestamp(st, timestamp, flags);
 
     if (index >= 0 && index < st->nb_index_entries - 1) {
         AVIndexEntry *e = &st->index_entries[index];

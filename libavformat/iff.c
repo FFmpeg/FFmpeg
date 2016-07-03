@@ -59,7 +59,14 @@
 #define ID_RGB8       MKTAG('R','G','B','8')
 #define ID_RGBN       MKTAG('R','G','B','N')
 #define ID_DSD        MKTAG('D','S','D',' ')
+#define ID_DST        MKTAG('D','S','T',' ')
+#define ID_DSTC       MKTAG('D','S','T','C')
+#define ID_DSTF       MKTAG('D','S','T','F')
+#define ID_FRTE       MKTAG('F','R','T','E')
 #define ID_ANIM       MKTAG('A','N','I','M')
+#define ID_ANHD       MKTAG('A','N','H','D')
+#define ID_DLTA       MKTAG('D','L','T','A')
+#define ID_DPAN       MKTAG('D','P','A','N')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_FRM8       MKTAG('F','R','M','8')
@@ -113,6 +120,7 @@ typedef struct IffDemuxContext {
     unsigned  transparency; ///< transparency color index in palette
     unsigned  masking;      ///< masking method used
     uint8_t   tvdc[32];     ///< TVDC lookup table
+    int64_t   pts;
 } IffDemuxContext;
 
 /* Metadata string read */
@@ -147,7 +155,6 @@ static int iff_probe(AVProbeData *p)
           AV_RL32(d+8) == ID_DEEP ||
           AV_RL32(d+8) == ID_ILBM ||
           AV_RL32(d+8) == ID_RGB8 ||
-          AV_RL32(d+8) == ID_RGB8 ||
           AV_RL32(d+8) == ID_ANIM ||
           AV_RL32(d+8) == ID_RGBN)) ||
          (AV_RL32(d) == ID_FRM8 && AV_RL32(d+12) == ID_DSD))
@@ -157,6 +164,7 @@ static int iff_probe(AVProbeData *p)
 
 static const AVCodecTag dsd_codec_tags[] = {
     { AV_CODEC_ID_DSD_MSBF, ID_DSD },
+    { AV_CODEC_ID_DST,      ID_DST },
     { AV_CODEC_ID_NONE, 0 },
 };
 
@@ -209,7 +217,7 @@ static int parse_dsd_diin(AVFormatContext *s, AVStream *st, uint64_t eof)
 {
     AVIOContext *pb = s->pb;
 
-    while (avio_tell(pb) + 12 <= eof) {
+    while (avio_tell(pb) + 12 <= eof && !avio_feof(pb)) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
@@ -243,7 +251,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     int dsd_layout[6];
     ID3v2ExtraMeta *id3v2_extra_meta;
 
-    while (avio_tell(pb) + 12 <= eof) {
+    while (avio_tell(pb) + 12 <= eof && !avio_feof(pb)) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
@@ -262,21 +270,21 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('C','H','N','L'):
             if (size < 2)
                 return AVERROR_INVALIDDATA;
-            st->codec->channels       = avio_rb16(pb);
-            if (size < 2 + st->codec->channels * 4)
+            st->codecpar->channels       = avio_rb16(pb);
+            if (size < 2 + st->codecpar->channels * 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->channel_layout = 0;
-            if (st->codec->channels > FF_ARRAY_ELEMS(dsd_layout)) {
+            st->codecpar->channel_layout = 0;
+            if (st->codecpar->channels > FF_ARRAY_ELEMS(dsd_layout)) {
                 avpriv_request_sample(s, "channel layout");
                 break;
             }
-            for (i = 0; i < st->codec->channels; i++)
+            for (i = 0; i < st->codecpar->channels; i++)
                 dsd_layout[i] = avio_rl32(pb);
             for (i = 0; i < FF_ARRAY_ELEMS(dsd_channel_layout); i++) {
                 const DSDLayoutDesc * d = &dsd_channel_layout[i];
-                if (av_get_channel_layout_nb_channels(d->layout) == st->codec->channels &&
-                    !memcmp(d->dsd_layout, dsd_layout, st->codec->channels * sizeof(uint32_t))) {
-                    st->codec->channel_layout = d->layout;
+                if (av_get_channel_layout_nb_channels(d->layout) == st->codecpar->channels &&
+                    !memcmp(d->dsd_layout, dsd_layout, st->codecpar->channels * sizeof(uint32_t))) {
+                    st->codecpar->channel_layout = d->layout;
                     break;
                 }
             }
@@ -285,9 +293,9 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('C','M','P','R'):
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            tag = avio_rl32(pb);
-            st->codec->codec_id = ff_codec_get_id(dsd_codec_tags, tag);
-            if (!st->codec->codec_id) {
+            st->codecpar->codec_tag = tag = avio_rl32(pb);
+            st->codecpar->codec_id = ff_codec_get_id(dsd_codec_tags, tag);
+            if (!st->codecpar->codec_id) {
                 av_log(s, AV_LOG_ERROR, "'%c%c%c%c' compression is not supported\n",
                     tag&0xFF, (tag>>8)&0xFF, (tag>>16)&0xFF, (tag>>24)&0xFF);
                 return AVERROR_PATCHWELCOME;
@@ -297,7 +305,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('F','S',' ',' '):
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->sample_rate = avio_rb32(pb) / 8;
+            st->codecpar->sample_rate = avio_rb32(pb) / 8;
             break;
 
         case MKTAG('I','D','3',' '):
@@ -323,8 +331,8 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             config = avio_rb16(pb);
             if (config != 0xFFFF) {
                 if (config < FF_ARRAY_ELEMS(dsd_loudspeaker_config))
-                    st->codec->channel_layout = dsd_loudspeaker_config[config];
-                if (!st->codec->channel_layout)
+                    st->codecpar->channel_layout = dsd_loudspeaker_config[config];
+                if (!st->codecpar->channel_layout)
                     avpriv_request_sample(s, "loudspeaker configuration %d", config);
             }
             break;
@@ -334,6 +342,63 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     }
 
     return 0;
+}
+
+static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
+{
+    IffDemuxContext *iff = s->priv_data;
+    AVIOContext *pb = s->pb;
+    uint32_t chunk_id;
+    uint64_t chunk_pos, data_pos, data_size;
+    int ret = AVERROR_EOF;
+
+    while (!avio_feof(pb)) {
+        chunk_pos = avio_tell(pb);
+        if (chunk_pos >= iff->body_end)
+            return AVERROR_EOF;
+
+        chunk_id = avio_rl32(pb);
+        data_size = iff->is_64bit ? avio_rb64(pb) : avio_rb32(pb);
+        data_pos = avio_tell(pb);
+
+        if (data_size < 1)
+            return AVERROR_INVALIDDATA;
+
+        switch (chunk_id) {
+        case ID_DSTF:
+            if (!pkt) {
+                iff->body_pos  = avio_tell(pb) - (iff->is_64bit ? 12 : 8);
+                iff->body_size = iff->body_end - iff->body_pos;
+                return 0;
+            }
+            ret = av_get_packet(pb, pkt, data_size);
+            if (ret < 0)
+                return ret;
+            if (data_size & 1)
+                avio_skip(pb, 1);
+            pkt->flags |= AV_PKT_FLAG_KEY;
+            pkt->stream_index = 0;
+            pkt->duration = 588 * s->streams[0]->codecpar->sample_rate / 44100;
+            pkt->pos = chunk_pos;
+
+            chunk_pos = avio_tell(pb);
+            if (chunk_pos >= iff->body_end)
+                return 0;
+
+            avio_seek(pb, chunk_pos, SEEK_SET);
+            return 0;
+
+        case ID_FRTE:
+            if (data_size < 4)
+                return AVERROR_INVALIDDATA;
+            s->streams[0]->duration = avio_rb32(pb) * 588LL * s->streams[0]->codecpar->sample_rate / 44100;
+            break;
+        }
+
+        avio_skip(pb, data_size - (avio_tell(pb) - data_pos) + (data_size & 1));
+    }
+
+    return ret;
 }
 
 static const uint8_t deep_rgb24[] = {0, 0, 0, 3, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
@@ -360,15 +425,14 @@ static int iff_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->channels = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->channels = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
     iff->is_64bit = avio_rl32(pb) == ID_FRM8;
     avio_skip(pb, iff->is_64bit ? 8 : 4);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
-    st->codec->codec_tag = avio_rl32(pb);
-    if (st->codec->codec_tag == ID_ANIM) {
-        avio_skip(pb, 8);
-        st->codec->codec_tag = avio_rl32(pb);
+    st->codecpar->codec_tag = avio_rl32(pb);
+    if (st->codecpar->codec_tag == ID_ANIM) {
+        avio_skip(pb, 12);
     }
     iff->bitmap_compression = -1;
     iff->svx8_compression = -1;
@@ -386,12 +450,12 @@ static int iff_read_header(AVFormatContext *s)
 
         switch(chunk_id) {
         case ID_VHDR:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
             if (data_size < 14)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 12);
-            st->codec->sample_rate = avio_rb16(pb);
+            st->codecpar->sample_rate = avio_rb16(pb);
             if (data_size >= 16) {
                 avio_skip(pb, 1);
                 iff->svx8_compression = avio_r8(pb);
@@ -399,7 +463,7 @@ static int iff_read_header(AVFormatContext *s)
             break;
 
         case ID_MHDR:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
             if (data_size < 32)
                 return AVERROR_INVALIDDATA;
@@ -411,34 +475,40 @@ static int iff_read_header(AVFormatContext *s)
             if (!den)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 2);
-            st->codec->sample_rate = num / den;
-            st->codec->channels = avio_rb16(pb);
+            st->codecpar->sample_rate = num / den;
+            st->codecpar->channels = avio_rb16(pb);
             iff->maud_compression = avio_rb16(pb);
-            if (st->codec->channels == 1)
-                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-            else if (st->codec->channels == 2)
-                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            if (st->codecpar->channels == 1)
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+            else if (st->codecpar->channels == 2)
+                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             break;
 
         case ID_ABIT:
         case ID_BODY:
         case ID_DBOD:
         case ID_DSD:
+        case ID_DST:
         case ID_MDAT:
             iff->body_pos = avio_tell(pb);
             iff->body_end = iff->body_pos + data_size;
             iff->body_size = data_size;
+            if (chunk_id == ID_DST) {
+                int ret = read_dst_frame(s, NULL);
+                if (ret < 0)
+                    return ret;
+            }
             break;
 
         case ID_CHAN:
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
             if (avio_rb32(pb) < 6) {
-                st->codec->channels       = 1;
-                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->channels       = 1;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             } else {
-                st->codec->channels       = 2;
-                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                st->codecpar->channels       = 2;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             }
             break;
 
@@ -454,22 +524,22 @@ static int iff_read_header(AVFormatContext *s)
                         data_size);
                  return AVERROR_INVALIDDATA;
             }
-            st->codec->extradata_size = data_size + IFF_EXTRA_VIDEO_SIZE;
-            st->codec->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+            st->codecpar->extradata_size = data_size + IFF_EXTRA_VIDEO_SIZE;
+            st->codecpar->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codecpar->extradata)
                 return AVERROR(ENOMEM);
-            if (avio_read(pb, st->codec->extradata + IFF_EXTRA_VIDEO_SIZE, data_size) < 0)
+            if (avio_read(pb, st->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size) < 0)
                 return AVERROR(EIO);
             break;
 
         case ID_BMHD:
-            st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_type            = AVMEDIA_TYPE_VIDEO;
             if (data_size <= 8)
                 return AVERROR_INVALIDDATA;
-            st->codec->width                 = avio_rb16(pb);
-            st->codec->height                = avio_rb16(pb);
+            st->codecpar->width                 = avio_rb16(pb);
+            st->codecpar->height                = avio_rb16(pb);
             avio_skip(pb, 4); // x, y offset
-            st->codec->bits_per_coded_sample = avio_r8(pb);
+            st->codecpar->bits_per_coded_sample = avio_r8(pb);
             if (data_size >= 10)
                 masking                      = avio_r8(pb);
             if (data_size >= 11)
@@ -484,21 +554,29 @@ static int iff_read_header(AVFormatContext *s)
             }
             break;
 
+        case ID_ANHD:
+            break;
+
+        case ID_DPAN:
+            avio_skip(pb, 2);
+            st->duration = avio_rb16(pb);
+            break;
+
         case ID_DPEL:
             if (data_size < 4 || (data_size & 3))
                 return AVERROR_INVALIDDATA;
             if ((fmt_size = avio_read(pb, fmt, sizeof(fmt))) < 0)
                 return fmt_size;
             if (fmt_size == sizeof(deep_rgb24) && !memcmp(fmt, deep_rgb24, sizeof(deep_rgb24)))
-                st->codec->pix_fmt = AV_PIX_FMT_RGB24;
+                st->codecpar->format = AV_PIX_FMT_RGB24;
             else if (fmt_size == sizeof(deep_rgba) && !memcmp(fmt, deep_rgba, sizeof(deep_rgba)))
-                st->codec->pix_fmt = AV_PIX_FMT_RGBA;
+                st->codecpar->format = AV_PIX_FMT_RGBA;
             else if (fmt_size == sizeof(deep_bgra) && !memcmp(fmt, deep_bgra, sizeof(deep_bgra)))
-                st->codec->pix_fmt = AV_PIX_FMT_BGRA;
+                st->codecpar->format = AV_PIX_FMT_BGRA;
             else if (fmt_size == sizeof(deep_argb) && !memcmp(fmt, deep_argb, sizeof(deep_argb)))
-                st->codec->pix_fmt = AV_PIX_FMT_ARGB;
+                st->codecpar->format = AV_PIX_FMT_ARGB;
             else if (fmt_size == sizeof(deep_abgr) && !memcmp(fmt, deep_abgr, sizeof(deep_abgr)))
-                st->codec->pix_fmt = AV_PIX_FMT_ABGR;
+                st->codecpar->format = AV_PIX_FMT_ABGR;
             else {
                 avpriv_request_sample(s, "color format %.16s", fmt);
                 return AVERROR_PATCHWELCOME;
@@ -506,22 +584,22 @@ static int iff_read_header(AVFormatContext *s)
             break;
 
         case ID_DGBL:
-            st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_type         = AVMEDIA_TYPE_VIDEO;
             if (data_size < 8)
                 return AVERROR_INVALIDDATA;
-            st->codec->width                 = avio_rb16(pb);
-            st->codec->height                = avio_rb16(pb);
+            st->codecpar->width              = avio_rb16(pb);
+            st->codecpar->height             = avio_rb16(pb);
             iff->bitmap_compression          = avio_rb16(pb);
             st->sample_aspect_ratio.num      = avio_r8(pb);
             st->sample_aspect_ratio.den      = avio_r8(pb);
-            st->codec->bits_per_coded_sample = 24;
+            st->codecpar->bits_per_coded_sample = 24;
             break;
 
         case ID_DLOC:
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->width  = avio_rb16(pb);
-            st->codec->height = avio_rb16(pb);
+            st->codecpar->width  = avio_rb16(pb);
+            st->codecpar->height = avio_rb16(pb);
             break;
 
         case ID_TVDC:
@@ -545,7 +623,7 @@ static int iff_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             version = avio_rb32(pb);
             av_log(s, AV_LOG_DEBUG, "DSIFF v%d.%d.%d.%d\n",version >> 24, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF);
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             break;
 
         case MKTAG('D','I','I','N'):
@@ -626,37 +704,41 @@ static int iff_read_header(AVFormatContext *s)
         avio_skip(pb, data_size - (avio_tell(pb) - orig_pos) + (data_size & 1));
     }
 
-    avio_seek(pb, iff->body_pos, SEEK_SET);
+    if (st->codecpar->codec_tag == ID_ANIM)
+        avio_seek(pb, 12, SEEK_SET);
+    else
+        avio_seek(pb, iff->body_pos, SEEK_SET);
 
-    switch(st->codec->codec_type) {
+    switch(st->codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 32, 1, st->codecpar->sample_rate);
 
-        if (st->codec->codec_tag == ID_16SV)
-            st->codec->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
-        else if (st->codec->codec_tag == ID_MAUD) {
+        if (st->codecpar->codec_tag == ID_16SV)
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
+        else if (st->codecpar->codec_tag == ID_MAUD) {
             if (iff->maud_bits == 8 && !iff->maud_compression) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
             } else if (iff->maud_bits == 16 && !iff->maud_compression) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
             } else if (iff->maud_bits ==  8 && iff->maud_compression == 2) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_ALAW;
             } else if (iff->maud_bits ==  8 && iff->maud_compression == 3) {
-                st->codec->codec_id = AV_CODEC_ID_PCM_MULAW;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_MULAW;
             } else {
                 avpriv_request_sample(s, "compression %d and bit depth %d", iff->maud_compression, iff->maud_bits);
                 return AVERROR_PATCHWELCOME;
             }
-        } else if (st->codec->codec_tag != ID_DSD) {
+        } else if (st->codecpar->codec_tag != ID_DSD &&
+                   st->codecpar->codec_tag != ID_DST) {
             switch (iff->svx8_compression) {
             case COMP_NONE:
-                st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
                 break;
             case COMP_FIB:
-                st->codec->codec_id = AV_CODEC_ID_8SVX_FIB;
+                st->codecpar->codec_id = AV_CODEC_ID_8SVX_FIB;
                 break;
             case COMP_EXP:
-                st->codec->codec_id = AV_CODEC_ID_8SVX_EXP;
+                st->codecpar->codec_id = AV_CODEC_ID_8SVX_EXP;
                 break;
             default:
                 av_log(s, AV_LOG_ERROR,
@@ -665,29 +747,33 @@ static int iff_read_header(AVFormatContext *s)
             }
         }
 
-        st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
-        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+        st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
+        st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample;
+        st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
+        if (st->codecpar->codec_tag == ID_DSD && st->codecpar->block_align <= 0)
+            return AVERROR_INVALIDDATA;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
-        iff->bpp          = st->codec->bits_per_coded_sample;
+        iff->bpp          = st->codecpar->bits_per_coded_sample;
+        if (st->codecpar->codec_tag == ID_ANIM)
+            avpriv_set_pts_info(st, 32, 1, 60);
         if ((screenmode & 0x800 /* Hold And Modify */) && iff->bpp <= 8) {
             iff->ham      = iff->bpp > 6 ? 6 : 4;
-            st->codec->bits_per_coded_sample = 24;
+            st->codecpar->bits_per_coded_sample = 24;
         }
         iff->flags        = (screenmode & 0x80 /* Extra HalfBrite */) && iff->bpp <= 8;
         iff->masking      = masking;
         iff->transparency = transparency;
 
-        if (!st->codec->extradata) {
-            st->codec->extradata_size = IFF_EXTRA_VIDEO_SIZE;
-            st->codec->extradata      = av_malloc(IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+        if (!st->codecpar->extradata) {
+            st->codecpar->extradata_size = IFF_EXTRA_VIDEO_SIZE;
+            st->codecpar->extradata      = av_malloc(IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codecpar->extradata)
                 return AVERROR(ENOMEM);
         }
-        av_assert0(st->codec->extradata_size >= IFF_EXTRA_VIDEO_SIZE);
-        buf = st->codec->extradata;
+        av_assert0(st->codecpar->extradata_size >= IFF_EXTRA_VIDEO_SIZE);
+        buf = st->codecpar->extradata;
         bytestream_put_be16(&buf, IFF_EXTRA_VIDEO_SIZE);
         bytestream_put_byte(&buf, iff->bitmap_compression);
         bytestream_put_byte(&buf, iff->bpp);
@@ -696,13 +782,35 @@ static int iff_read_header(AVFormatContext *s)
         bytestream_put_be16(&buf, iff->transparency);
         bytestream_put_byte(&buf, iff->masking);
         bytestream_put_buffer(&buf, iff->tvdc, sizeof(iff->tvdc));
-        st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
+        st->codecpar->codec_id = AV_CODEC_ID_IFF_ILBM;
         break;
     default:
         return -1;
     }
 
     return 0;
+}
+
+static unsigned get_anim_duration(uint8_t *buf, int size)
+{
+    GetByteContext gb;
+
+    bytestream2_init(&gb, buf, size);
+    bytestream2_skip(&gb, 4);
+    while (bytestream2_get_bytes_left(&gb) > 8) {
+        unsigned chunk = bytestream2_get_le32(&gb);
+        unsigned size = bytestream2_get_be32(&gb);
+
+        if (chunk == ID_ANHD) {
+            if (size < 40)
+                break;
+            bytestream2_skip(&gb, 14);
+            return bytestream2_get_be32(&gb);
+        } else {
+            bytestream2_skip(&gb, size + size & 1);
+        }
+    }
+    return 10;
 }
 
 static int iff_read_packet(AVFormatContext *s,
@@ -714,39 +822,61 @@ static int iff_read_packet(AVFormatContext *s,
     int ret;
     int64_t pos = avio_tell(pb);
 
-    if (pos >= iff->body_end)
+    if (avio_feof(pb))
+        return AVERROR_EOF;
+    if (st->codecpar->codec_tag != ID_ANIM && pos >= iff->body_end)
         return AVERROR_EOF;
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if (st->codec->codec_tag == ID_DSD || st->codec->codec_tag == ID_MAUD) {
-            ret = av_get_packet(pb, pkt, FFMIN(iff->body_end - pos, 1024 * st->codec->block_align));
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (st->codecpar->codec_tag == ID_DSD || st->codecpar->codec_tag == ID_MAUD) {
+            ret = av_get_packet(pb, pkt, FFMIN(iff->body_end - pos, 1024 * st->codecpar->block_align));
+        } else if (st->codecpar->codec_tag == ID_DST) {
+            return read_dst_frame(s, pkt);
         } else {
             if (iff->body_size > INT_MAX)
                 return AVERROR_INVALIDDATA;
             ret = av_get_packet(pb, pkt, iff->body_size);
         }
-    } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        uint8_t *buf;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+               st->codecpar->codec_tag  == ID_ANIM) {
+        uint64_t data_size, orig_pos;
+        uint32_t chunk_id, chunk_id2;
 
-        if (iff->body_size > INT_MAX - 2)
-            return AVERROR_INVALIDDATA;
-        if (av_new_packet(pkt, iff->body_size + 2) < 0) {
-            return AVERROR(ENOMEM);
+        while (!avio_feof(pb)) {
+            if (avio_feof(pb))
+                return AVERROR_EOF;
+
+            orig_pos  = avio_tell(pb);
+            chunk_id  = avio_rl32(pb);
+            data_size = avio_rb32(pb);
+            chunk_id2 = avio_rl32(pb);
+
+            if (chunk_id  == ID_FORM &&
+                chunk_id2 == ID_ILBM) {
+                avio_skip(pb, -4);
+                break;
+            } else if (chunk_id == ID_FORM &&
+                       chunk_id2 == ID_ANIM) {
+                continue;
+            } else {
+                avio_skip(pb, data_size);
+            }
         }
-
-        buf = pkt->data;
-        bytestream_put_be16(&buf, 2);
-        ret = avio_read(pb, buf, iff->body_size);
-        if (ret<0) {
-            av_packet_unref(pkt);
-        } else if (ret < iff->body_size)
-            av_shrink_packet(pkt, ret + 2);
+        ret = av_get_packet(pb, pkt, data_size);
+        pkt->pos = orig_pos;
+        pkt->duration = get_anim_duration(pkt->data, pkt->size);
+        if (pos == 12)
+            pkt->flags |= AV_PKT_FLAG_KEY;
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+               st->codecpar->codec_tag  != ID_ANIM) {
+        ret = av_get_packet(pb, pkt, iff->body_size);
+        pkt->pos = pos;
+        if (pos == iff->body_pos)
+            pkt->flags |= AV_PKT_FLAG_KEY;
     } else {
         av_assert0(0);
     }
 
-    if (pos == iff->body_pos)
-        pkt->flags |= AV_PKT_FLAG_KEY;
     if (ret < 0)
         return ret;
     pkt->stream_index = 0;

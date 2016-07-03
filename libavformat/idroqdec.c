@@ -1,6 +1,6 @@
 /*
  * id RoQ (.roq) File Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -130,14 +130,14 @@ static int roq_read_packet(AVFormatContext *s,
                     return AVERROR(ENOMEM);
                 avpriv_set_pts_info(st, 63, 1, roq->frame_rate);
                 roq->video_stream_index = st->index;
-                st->codec->codec_type   = AVMEDIA_TYPE_VIDEO;
-                st->codec->codec_id     = AV_CODEC_ID_ROQ;
-                st->codec->codec_tag    = 0;  /* no fourcc */
+                st->codecpar->codec_type   = AVMEDIA_TYPE_VIDEO;
+                st->codecpar->codec_id     = AV_CODEC_ID_ROQ;
+                st->codecpar->codec_tag    = 0;  /* no fourcc */
 
                 if (avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != RoQ_CHUNK_PREAMBLE_SIZE)
                     return AVERROR(EIO);
-                st->codec->width  = roq->width  = AV_RL16(preamble);
-                st->codec->height = roq->height = AV_RL16(preamble + 2);
+                st->codecpar->width  = roq->width  = AV_RL16(preamble);
+                st->codecpar->height = roq->height = AV_RL16(preamble + 2);
                 break;
             }
             /* don't care about this chunk anymore */
@@ -178,22 +178,22 @@ static int roq_read_packet(AVFormatContext *s,
                     return AVERROR(ENOMEM);
                 avpriv_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
-                st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id = AV_CODEC_ID_ROQ_DPCM;
-                st->codec->codec_tag = 0;  /* no tag */
+                st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+                st->codecpar->codec_id = AV_CODEC_ID_ROQ_DPCM;
+                st->codecpar->codec_tag = 0;  /* no tag */
                 if (chunk_type == RoQ_SOUND_STEREO) {
-                    st->codec->channels       = 2;
-                    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                    st->codecpar->channels       = 2;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
                 } else {
-                    st->codec->channels       = 1;
-                    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                    st->codecpar->channels       = 1;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
                 }
-                roq->audio_channels    = st->codec->channels;
-                st->codec->sample_rate = RoQ_AUDIO_SAMPLE_RATE;
-                st->codec->bits_per_coded_sample = 16;
-                st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-                    st->codec->bits_per_coded_sample;
-                st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+                roq->audio_channels    = st->codecpar->channels;
+                st->codecpar->sample_rate = RoQ_AUDIO_SAMPLE_RATE;
+                st->codecpar->bits_per_coded_sample = 16;
+                st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+                    st->codecpar->bits_per_coded_sample;
+                st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
             }
         case RoQ_QUAD_VQ:
             if (chunk_type == RoQ_QUAD_VQ) {

@@ -29,71 +29,14 @@
 #include "libavcodec/internal.h"
 #include "libavcodec/mathops.h"
 #include "avcodec.h"
-#include "dsd_tablegen.h"
-
-#define FIFOSIZE 16              /** must be a power of two */
-#define FIFOMASK (FIFOSIZE - 1)  /** bit mask for FIFO offsets */
-
-#if FIFOSIZE * 8 < HTAPS * 2
-#error "FIFOSIZE too small"
-#endif
-
-/**
- * Per-channel buffer
- */
-typedef struct {
-    unsigned char buf[FIFOSIZE];
-    unsigned pos;
-} DSDContext;
-
-static void dsd2pcm_translate(DSDContext* s, size_t samples, int lsbf,
-                              const unsigned char *src, ptrdiff_t src_stride,
-                              float *dst, ptrdiff_t dst_stride)
-{
-    unsigned pos, i;
-    unsigned char* p;
-    double sum;
-
-    pos = s->pos;
-
-    while (samples-- > 0) {
-        s->buf[pos] = lsbf ? ff_reverse[*src] : *src;
-        src += src_stride;
-
-        p = s->buf + ((pos - CTABLES) & FIFOMASK);
-        *p = ff_reverse[*p];
-
-        sum = 0.0;
-        for (i = 0; i < CTABLES; i++) {
-            unsigned char a = s->buf[(pos                   - i) & FIFOMASK];
-            unsigned char b = s->buf[(pos - (CTABLES*2 - 1) + i) & FIFOMASK];
-            sum += ctables[i][a] + ctables[i][b];
-        }
-
-        *dst = (float)sum;
-        dst += dst_stride;
-
-        pos = (pos + 1) & FIFOMASK;
-    }
-
-    s->pos = pos;
-}
-
-static av_cold void init_static_data(void)
-{
-    static int done = 0;
-    if (done)
-        return;
-    dsd_ctables_tableinit();
-    done = 1;
-}
+#include "dsd.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     DSDContext * s;
     int i;
 
-    init_static_data();
+    ff_init_dsd_data();
 
     s = av_malloc_array(sizeof(DSDContext), avctx->channels);
     if (!s)
@@ -140,7 +83,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     for (i = 0; i < avctx->channels; i++) {
         float * dst = ((float **)frame->extended_data)[i];
-        dsd2pcm_translate(&s[i], frame->nb_samples, lsbf,
+        ff_dsd2pcm_translate(&s[i], frame->nb_samples, lsbf,
             avpkt->data + i * src_next, src_stride,
             dst, 1);
     }

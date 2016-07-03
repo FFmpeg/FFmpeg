@@ -441,9 +441,9 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 
-@section mov/mp4/3gp/Quicktme
+@section mov/mp4/3gp/QuickTime
 
-Quicktime / MP4 demuxer.
+QuickTime / MP4 demuxer.
 
 This demuxer accepts the following options:
 @table @option

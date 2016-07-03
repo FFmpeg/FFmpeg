@@ -50,15 +50,15 @@ static int adx_probe(AVProbeData *p)
 static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADXDemuxerContext *c = s->priv_data;
-    AVCodecContext *avctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int ret, size;
 
-    if (avctx->channels <= 0) {
-        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", avctx->channels);
+    if (par->channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", par->channels);
         return AVERROR_INVALIDDATA;
     }
 
-    size = BLOCK_SIZE * avctx->channels;
+    size = BLOCK_SIZE * par->channels;
 
     pkt->pos = avio_tell(s->pb);
     pkt->stream_index = 0;
@@ -82,37 +82,38 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int adx_read_header(AVFormatContext *s)
 {
     ADXDemuxerContext *c = s->priv_data;
-    AVCodecContext *avctx;
+    AVCodecParameters *par;
 
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    avctx = s->streams[0]->codec;
+    par = s->streams[0]->codecpar;
 
     if (avio_rb16(s->pb) != 0x8000)
         return AVERROR_INVALIDDATA;
     c->header_size = avio_rb16(s->pb) + 4;
     avio_seek(s->pb, -4, SEEK_CUR);
 
-    if (ff_get_extradata(avctx, s->pb, c->header_size) < 0)
+    if (ff_get_extradata(s, par, s->pb, c->header_size) < 0)
         return AVERROR(ENOMEM);
 
-    if (avctx->extradata_size < 12) {
+    if (par->extradata_size < 12) {
         av_log(s, AV_LOG_ERROR, "Invalid extradata size.\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->channels    = AV_RB8(avctx->extradata + 7);
-    avctx->sample_rate = AV_RB32(avctx->extradata + 8);
+    par->channels    = AV_RB8 (par->extradata + 7);
+    par->sample_rate = AV_RB32(par->extradata + 8);
 
-    if (avctx->channels <= 0) {
-        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", avctx->channels);
+    if (par->channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n", par->channels);
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = s->iformat->raw_codec_id;
+    par->codec_type  = AVMEDIA_TYPE_AUDIO;
+    par->codec_id    = s->iformat->raw_codec_id;
+    par->bit_rate    = par->sample_rate * par->channels * BLOCK_SIZE * 8LL / BLOCK_SAMPLES;
 
-    avpriv_set_pts_info(st, 64, BLOCK_SAMPLES, avctx->sample_rate);
+    avpriv_set_pts_info(st, 64, BLOCK_SAMPLES, par->sample_rate);
 
     return 0;
 }

@@ -588,9 +588,9 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
     }
     if (layout_tag == 0) {
         if (label_mask)
-            st->codec->channel_layout = label_mask;
+            st->codecpar->channel_layout = label_mask;
     } else
-        st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
+        st->codecpar->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
     avio_skip(pb, size - 12);
 
     return 0;

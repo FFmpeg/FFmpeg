@@ -84,7 +84,7 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     H264Context *h     = avctx->priv_data;
     CFDataRef data = NULL;
     uint8_t *p;
-    int vt_extradata_size = 6 + 3 + h->sps.data_size + 4 + h->pps.data_size;
+    int vt_extradata_size = 6 + 2 + h->ps.sps->data_size + 3 + h->ps.pps->data_size;
     uint8_t *vt_extradata = av_malloc(vt_extradata_size);
     if (!vt_extradata)
         return NULL;
@@ -92,21 +92,19 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
     p = vt_extradata;
 
     AV_W8(p + 0, 1); /* version */
-    AV_W8(p + 1, h->sps.data[0]); /* profile */
-    AV_W8(p + 2, h->sps.data[1]); /* profile compat */
-    AV_W8(p + 3, h->sps.data[2]); /* level */
+    AV_W8(p + 1, h->ps.sps->data[1]); /* profile */
+    AV_W8(p + 2, h->ps.sps->data[2]); /* profile compat */
+    AV_W8(p + 3, h->ps.sps->data[3]); /* level */
     AV_W8(p + 4, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 3 (11) */
     AV_W8(p + 5, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
-    AV_WB16(p + 6, h->sps.data_size + 1);
-    AV_W8(p + 8, NAL_SPS | (3 << 5)); // NAL unit header
-    memcpy(p + 9, h->sps.data, h->sps.data_size);
-    p += 9 + h->sps.data_size;
+    AV_WB16(p + 6, h->ps.sps->data_size);
+    memcpy(p + 8, h->ps.sps->data, h->ps.sps->data_size);
+    p += 8 + h->ps.sps->data_size;
     AV_W8(p + 0, 1); /* number of pps */
-    AV_WB16(p + 1, h->pps.data_size + 1);
-    AV_W8(p + 3, NAL_PPS | (3 << 5)); // NAL unit header
-    memcpy(p + 4, h->pps.data, h->pps.data_size);
+    AV_WB16(p + 1, h->ps.pps->data_size);
+    memcpy(p + 3, h->ps.pps->data, h->ps.pps->data_size);
 
-    p += 4 + h->pps.data_size;
+    p += 3 + h->ps.pps->data_size;
     av_assert0(p - vt_extradata == vt_extradata_size);
 
     data = CFDataCreate(kCFAllocatorDefault, vt_extradata, vt_extradata_size);
@@ -407,7 +405,7 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                                                           AVCodecContext *avctx)
 {
     CFMutableDictionaryRef config_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                                   1,
+                                                                   0,
                                                                    &kCFTypeDictionaryKeyCallBacks,
                                                                    &kCFTypeDictionaryValueCallBacks);
 
@@ -597,8 +595,10 @@ static void videotoolbox_default_free(AVCodecContext *avctx)
         if (videotoolbox->cm_fmt_desc)
             CFRelease(videotoolbox->cm_fmt_desc);
 
-        if (videotoolbox->session)
+        if (videotoolbox->session) {
             VTDecompressionSessionInvalidate(videotoolbox->session);
+            CFRelease(videotoolbox->session);
+        }
     }
 }
 

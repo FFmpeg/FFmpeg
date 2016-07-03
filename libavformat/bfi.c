@@ -75,38 +75,38 @@ static int bfi_read_header(AVFormatContext * s)
     avio_rl32(pb);
     fps                    = avio_rl32(pb);
     avio_skip(pb, 12);
-    vstream->codec->width  = avio_rl32(pb);
-    vstream->codec->height = avio_rl32(pb);
+    vstream->codecpar->width  = avio_rl32(pb);
+    vstream->codecpar->height = avio_rl32(pb);
 
     /*Load the palette to extradata */
     avio_skip(pb, 8);
-    vstream->codec->extradata      = av_malloc(768);
-    if (!vstream->codec->extradata)
+    vstream->codecpar->extradata      = av_malloc(768);
+    if (!vstream->codecpar->extradata)
         return AVERROR(ENOMEM);
-    vstream->codec->extradata_size = 768;
-    avio_read(pb, vstream->codec->extradata,
-               vstream->codec->extradata_size);
+    vstream->codecpar->extradata_size = 768;
+    avio_read(pb, vstream->codecpar->extradata,
+               vstream->codecpar->extradata_size);
 
-    astream->codec->sample_rate = avio_rl32(pb);
+    astream->codecpar->sample_rate = avio_rl32(pb);
 
     /* Set up the video codec... */
     avpriv_set_pts_info(vstream, 32, 1, fps);
-    vstream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vstream->codec->codec_id   = AV_CODEC_ID_BFI;
-    vstream->codec->pix_fmt    = AV_PIX_FMT_PAL8;
-    vstream->nb_frames         =
-    vstream->duration          = bfi->nframes;
+    vstream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vstream->codecpar->codec_id   = AV_CODEC_ID_BFI;
+    vstream->codecpar->format     = AV_PIX_FMT_PAL8;
+    vstream->nb_frames            =
+    vstream->duration             = bfi->nframes;
 
     /* Set up the audio codec now... */
-    astream->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    astream->codec->codec_id        = AV_CODEC_ID_PCM_U8;
-    astream->codec->channels        = 1;
-    astream->codec->channel_layout  = AV_CH_LAYOUT_MONO;
-    astream->codec->bits_per_coded_sample = 8;
-    astream->codec->bit_rate        =
-        astream->codec->sample_rate * astream->codec->bits_per_coded_sample;
+    astream->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
+    astream->codecpar->codec_id        = AV_CODEC_ID_PCM_U8;
+    astream->codecpar->channels        = 1;
+    astream->codecpar->channel_layout  = AV_CH_LAYOUT_MONO;
+    astream->codecpar->bits_per_coded_sample = 8;
+    astream->codecpar->bit_rate        =
+        astream->codecpar->sample_rate * astream->codecpar->bits_per_coded_sample;
     avio_seek(pb, chunk_header - 3, SEEK_SET);
-    avpriv_set_pts_info(astream, 64, 1, astream->codec->sample_rate);
+    avpriv_set_pts_info(astream, 64, 1, astream->codecpar->sample_rate);
     return 0;
 }
 

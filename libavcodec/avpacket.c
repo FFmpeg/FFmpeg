@@ -110,24 +110,38 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
 {
     int new_size;
     av_assert0((unsigned)pkt->size <= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!pkt->size)
-        return av_new_packet(pkt, grow_by);
     if ((unsigned)grow_by >
         INT_MAX - (pkt->size + AV_INPUT_BUFFER_PADDING_SIZE))
         return -1;
 
     new_size = pkt->size + grow_by + AV_INPUT_BUFFER_PADDING_SIZE;
     if (pkt->buf) {
-        int ret = av_buffer_realloc(&pkt->buf, new_size);
-        if (ret < 0)
-            return ret;
+        size_t data_offset;
+        uint8_t *old_data = pkt->data;
+        if (pkt->data == NULL) {
+            data_offset = 0;
+            pkt->data = pkt->buf->data;
+        } else {
+            data_offset = pkt->data - pkt->buf->data;
+            if (data_offset > INT_MAX - new_size)
+                return -1;
+        }
+
+        if (new_size + data_offset > pkt->buf->size) {
+            int ret = av_buffer_realloc(&pkt->buf, new_size + data_offset);
+            if (ret < 0) {
+                pkt->data = old_data;
+                return ret;
+            }
+            pkt->data = pkt->buf->data + data_offset;
+        }
     } else {
         pkt->buf = av_buffer_alloc(new_size);
         if (!pkt->buf)
             return AVERROR(ENOMEM);
-        memcpy(pkt->buf->data, pkt->data, FFMIN(pkt->size, pkt->size + grow_by));
+        memcpy(pkt->buf->data, pkt->data, pkt->size);
+        pkt->data = pkt->buf->data;
     }
-    pkt->data  = pkt->buf->data;
     pkt->size += grow_by;
     memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
@@ -403,10 +417,12 @@ int av_packet_split_side_data(AVPacket *pkt){
         p = pkt->data + pkt->size - 8 - 5;
         for (i=1; ; i++){
             size = AV_RB32(p);
-            if (size>INT_MAX || p - pkt->data < size)
+            if (size>INT_MAX - 5 || p - pkt->data < size)
                 return 0;
             if (p[4]&128)
                 break;
+            if (p - pkt->data < size + 5)
+                return 0;
             p-= size+5;
         }
 
@@ -417,7 +433,7 @@ int av_packet_split_side_data(AVPacket *pkt){
         p= pkt->data + pkt->size - 8 - 5;
         for (i=0; ; i++){
             size= AV_RB32(p);
-            av_assert0(size<=INT_MAX && p - pkt->data >= size);
+            av_assert0(size<=INT_MAX - 5 && p - pkt->data >= size);
             pkt->side_data[i].data = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
             pkt->side_data[i].size = size;
             pkt->side_data[i].type = p[4]&127;
@@ -566,16 +582,19 @@ int av_packet_ref(AVPacket *dst, const AVPacket *src)
         if (ret < 0)
             goto fail;
         memcpy(dst->buf->data, src->data, src->size);
+
+        dst->data = dst->buf->data;
     } else {
         dst->buf = av_buffer_ref(src->buf);
         if (!dst->buf) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        dst->data = src->data;
     }
 
     dst->size = src->size;
-    dst->data = dst->buf->data;
+
     return 0;
 fail:
     av_packet_free_side_data(dst);
@@ -599,6 +618,8 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src)
 {
     *dst = *src;
     av_init_packet(src);
+    src->data = NULL;
+    src->size = 0;
 }
 
 void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)

@@ -9,6 +9,8 @@ OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
           utils.o                                                       \
 
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
+
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o timefilter.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa_enc.o alsa.o
@@ -53,8 +55,6 @@ OBJS-$(CONFIG_XV_OUTDEV)                 += xv.o
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
-OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
-
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o
 
@@ -70,4 +70,4 @@ SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio.h
 
-TESTPROGS = timefilter
+TESTPROGS-$(CONFIG_JACK_INDEV)           += timefilter

@@ -2443,6 +2443,10 @@ filtering with large delay. Default is disabled.
 
 @item multi
 Enable multichannels evaluation on gain. Default is disabled.
+
+@item zero_phase
+Enable zero phase mode by substracting timestamp to compensate delay.
+Default is disabled.
 @end table
 
 @subsection Examples
@@ -2463,9 +2467,9 @@ custom equalization:
 firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
 @end example
 @item
-higher delay:
+higher delay with zero phase to compensate delay:
 @example
-firequalizer=delay=0.1:fixed=on
+firequalizer=delay=0.1:fixed=on:zero_phase=on
 @end example
 @item
 lowpass on left channel, highpass on right channel:
@@ -2709,6 +2713,68 @@ This filter supports the following commands:
 Modify the @var{N}-th control value.
 
 If the specified value is not valid, it is ignored and prior one is kept.
+@end table
+
+@section loudnorm
+
+EBU R128 loudness normalization. Includes both dynamic and linear normalization modes.
+Support for both single pass (livestreams, files) and double pass (files) modes.
+This algorithm can target IL, LRA, and maximum true peak.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libebur128}.
+
+The filter accepts the following options:
+
+@table @option
+@item I, i
+Set integrated loudness target.
+Range is -70.0 - -5.0. Default value is -24.0.
+
+@item LRA, lra
+Set loudness range target.
+Range is 1.0 - 20.0. Default value is 7.0.
+
+@item TP, tp
+Set maximum true peak.
+Range is -9.0 - +0.0. Default value is -2.0.
+
+@item measured_I, measured_i
+Measured IL of input file.
+Range is -99.0 - +0.0.
+
+@item measured_LRA, measured_lra
+Measured LRA of input file.
+Range is  0.0 - 99.0.
+
+@item measured_TP, measured_tp
+Measured true peak of input file.
+Range is  -99.0 - +99.0.
+
+@item measured_thresh
+Measured threshold of input file.
+Range is -99.0 - +0.0.
+
+@item offset
+Set offset gain. Gain is applied before the true-peak limiter.
+Range is  -99.0 - +99.0. Default is +0.0.
+
+@item linear
+Normalize linearly if possible.
+measured_I, measured_LRA, measured_TP, and measured_thresh must also
+to be specified in order to use this mode.
+Options are true or false. Default is true.
+
+@item dual_mono
+Treat mono input files as "dual-mono". If a mono file is intended for playback
+on a stereo system, its EBU R128 measurement will be perceptually incorrect.
+If set to @code{true}, this option will compensate for this effect.
+Multi-channel input files are not affected by this option.
+Options are true or false. Default is false.
+
+@item print_format
+Set print format for stats. Options are summary, json, or none.
+Default value is none.
 @end table
 
 @section lowpass
@@ -3394,6 +3460,47 @@ channels. Default is 0.3.
 @item drymix
 Set level of input signal of original channel. Default is 0.8.
 @end table
+
+@section scale_npp
+
+Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel
+format conversion on CUDA video frames. Setting the output width and height
+works in the same way as for the @var{scale} filter.
+
+The following additional options are accepted:
+@table @option
+@item format
+The pixel format of the output CUDA frames. If set to the string "same" (the
+default), the input format will be kept. Note that automatic format negotiation
+and conversion is not yet supported for hardware frames
+
+@item interp_algo
+The interpolation algorithm used for resizing. One of the following:
+@table @option
+@item nn
+Nearest neighbour.
+
+@item linear
+@item cubic
+@item cubic2p_bspline
+2-parameter cubic (B=1, C=0)
+
+@item cubic2p_catmullrom
+2-parameter cubic (B=0, C=1/2)
+
+@item cubic2p_b05c03
+2-parameter cubic (B=1/2, C=3/10)
+
+@item super
+Supersampling
+
+@item lanczos
+@end table
+
+@end table
+
+@section select
+Select frames to pass in output.
 
 @section treble
 
@@ -4416,59 +4523,6 @@ tblend=all_mode=difference128
 @end example
 @end itemize
 
-@section bwdif
-
-Deinterlace the input video ("bwdif" stands for "Bob Weaver
-Deinterlacing Filter").
-
-Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
-interpolation algorithms.
-It accepts the following parameters:
-
-@table @option
-@item mode
-The interlacing mode to adopt. It accepts one of the following values:
-
-@table @option
-@item 0, send_frame
-Output one frame for each frame.
-@item 1, send_field
-Output one frame for each field.
-@end table
-
-The default value is @code{send_field}.
-
-@item parity
-The picture field parity assumed for the input interlaced video. It accepts one
-of the following values:
-
-@table @option
-@item 0, tff
-Assume the top field is first.
-@item 1, bff
-Assume the bottom field is first.
-@item -1, auto
-Enable automatic detection of field parity.
-@end table
-
-The default value is @code{auto}.
-If the interlacing is unknown or the decoder does not export this information,
-top field first will be assumed.
-
-@item deint
-Specify which frames to deinterlace. Accept one of the following
-values:
-
-@table @option
-@item 0, all
-Deinterlace all frames.
-@item 1, interlaced
-Only deinterlace frames marked as interlaced.
-@end table
-
-The default value is @code{all}.
-@end table
-
 @section boxblur
 
 Apply a boxblur algorithm to the input video.
@@ -4556,6 +4610,59 @@ Set the luma and chroma radii to a fraction of the video dimension:
 boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 @end itemize
+
+@section bwdif
+
+Deinterlace the input video ("bwdif" stands for "Bob Weaver
+Deinterlacing Filter").
+
+Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
+interpolation algorithms.
+It accepts the following parameters:
+
+@table @option
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item 0, send_frame
+Output one frame for each frame.
+@item 1, send_field
+Output one frame for each field.
+@end table
+
+The default value is @code{send_field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item 0, tff
+Assume the top field is first.
+@item 1, bff
+Assume the bottom field is first.
+@item -1, auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
+
+@table @option
+@item 0, all
+Deinterlace all frames.
+@item 1, interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+@end table
 
 @section chromakey
 YUV colorspace color/chroma keying.
@@ -4683,16 +4790,48 @@ backward predicted MVs of B-frames
 @end table
 
 @item qp
-Display quantization parameters using the chroma planes
+Display quantization parameters using the chroma planes.
+
+@item mv_type, mvt
+Set motion vectors type to visualize. Includes MVs from all frames unless specified by @var{frame_type} option.
+
+Available flags for @var{mv_type} are:
+
+@table @samp
+@item fp
+forward predicted MVs
+@item bp
+backward predicted MVs
+@end table
+
+@item frame_type, ft
+Set frame type to visualize motion vectors of.
+
+Available flags for @var{frame_type} are:
+
+@table @samp
+@item if
+intra-coded frames (I-frames)
+@item pf
+predicted frames (P-frames)
+@item bf
+bi-directionally predicted frames (B-frames)
+@end table
 @end table
 
 @subsection Examples
 
 @itemize
 @item
-Visualizes multi-directionals MVs from P and B-Frames using @command{ffplay}:
+Visualize forward predicted MVs of all frames using @command{ffplay}:
 @example
-ffplay -flags2 +export_mvs input.mpg -vf codecview=mv=pf+bf+bb
+ffplay -flags2 +export_mvs input.mp4 -vf codecview=mv_type=fp
+@end example
+
+@item
+Visualize multi-directionals MVs of P and B-Frames using @command{ffplay}:
+@example
+ffplay -flags2 +export_mvs input.mp4 -vf codecview=mv=pf+bf+bb
 @end example
 @end itemize
 
@@ -4929,12 +5068,226 @@ SMPTE-240M
 
 @item fcc
 FCC
+
+@item bt2020
+BT.2020
 @end table
 @end table
 
 For example to convert from BT.601 to SMPTE-240M, use the command:
 @example
 colormatrix=bt601:smpte240m
+@end example
+
+@section colorspace
+
+Convert colorspace, transfer characteristics or color primaries.
+
+The filter accepts the following options:
+
+@table @option
+@item all
+Specify all color properties at once.
+
+The accepted values are:
+@table @samp
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG
+
+@item bt601-6-525
+BT.601-6 525
+
+@item bt601-6-625
+BT.601-6 625
+
+@item bt709
+BT.709
+
+@item smpte170m
+SMPTE-170M
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item space
+Specify output colorspace.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item fcc
+FCC
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020ncl
+BT.2020 with non-constant luminance
+
+@end table
+
+@item trc
+Specify output transfer characteristics.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item gamma22
+Constant gamma of 2.2
+
+@item gamma28
+Constant gamma of 2.8
+
+@item smpte170m
+SMPTE-170M, BT.601-6 625 or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020-10
+BT.2020 for 10-bits content
+
+@item bt2020-12
+BT.2020 for 12-bits content
+
+@end table
+
+@item prm
+Specify output color primaries.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item rng
+Specify output color range.
+
+The accepted values are:
+@table @samp
+@item mpeg
+MPEG (restricted) range
+
+@item jpeg
+JPEG (full) range
+
+@end table
+
+@item format
+Specify output color format.
+
+The accepted values are:
+@table @samp
+@item yuv420p
+YUV 4:2:0 planar 8-bits
+
+@item yuv420p10
+YUV 4:2:0 planar 10-bits
+
+@item yuv420p12
+YUV 4:2:0 planar 12-bits
+
+@item yuv422p
+YUV 4:2:2 planar 8-bits
+
+@item yuv422p10
+YUV 4:2:2 planar 10-bits
+
+@item yuv422p12
+YUV 4:2:2 planar 12-bits
+
+@item yuv444p
+YUV 4:4:4 planar 8-bits
+
+@item yuv444p10
+YUV 4:4:4 planar 10-bits
+
+@item yuv444p12
+YUV 4:4:4 planar 12-bits
+
+@end table
+
+@item fast
+Do a fast conversion, which skips gamma/primary correction. This will take
+significantly less CPU, but will be mathematically incorrect. To get output
+compatible with that produced by the colormatrix filter, use fast=1.
+
+@item dither
+Specify dithering mode.
+
+The accepted values are:
+@table @samp
+@item none
+No dithering
+
+@item fsb
+Floyd-Steinberg dithering
+@end table
+
+@item wpadapt
+Whitepoint adaptation mode.
+
+The accepted values are:
+@table @samp
+@item bradford
+Bradford whitepoint adaptation
+
+@item vonkries
+von Kries whitepoint adaptation
+
+@item identity
+identity whitepoint adaptation (i.e. no whitepoint adaptation)
+@end table
+
+@end table
+
+The filter converts the transfer characteristics, color space and color
+primaries to the specified user values. The output value, if not specified,
+is set to a default value based on the "all" property. If that property is
+also not specified, the filter will log an error. The output color range and
+format default to the same value as the input color range and format. The
+input transfer characteristics, color space, color primaries and color range
+should be set on the input data. If any of these are missing, the filter will
+log an error and no conversion will take place.
+
+For example to convert the input to SMPTE-240M, use the command:
+@example
+colorspace=smpte240m
 @end example
 
 @section convolution
@@ -5314,7 +5667,7 @@ It accepts the following parameters:
 
 @item limit
 Set higher black value threshold, which can be optionally specified
-from nothing (0) to everything (255 for 8bit based formats). An intensity
+from nothing (0) to everything (255 for 8-bit based formats). An intensity
 value greater to the set value is considered non-black. It defaults to 24.
 You can also specify a value between 0.0 and 1.0 which will be scaled depending
 on the bitdepth of the pixel format.
@@ -6499,7 +6852,12 @@ The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
 
 @item metadata
-Frame metadata. It must take one argument specifying metadata key.
+Frame metadata. Takes one or two arguments.
+
+The first argument is mandatory and specifies the metadata key.
+
+The second argument is optional and specifies a default value, used when the
+metadata key is not found or empty.
 
 @item n, frame_num
 The frame number, starting from 0.
@@ -7947,7 +8305,7 @@ geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit color depth.
+regions by truncation to 8-bit color depth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -8066,6 +8424,11 @@ Then, the effect of this Hald CLUT can be visualized with:
 @example
 ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 @end example
+
+@section hdcd
+
+Decodes high definition audio cd data. 16-Bit PCM stream containing hdcd flags
+is converted to 20-bit PCM stream.
 
 @section hflip
 
@@ -9935,6 +10298,10 @@ The expressions can use the following variables:
 @item W
 @item H
 the width and height of video frame.
+@item in
+Input frame count.
+@item on
+Output frame count.
 @end table
 
 @item interpolation
@@ -9965,6 +10332,21 @@ by the given coordinates.
 
 Default value is @samp{source}.
 @end table
+
+@item eval
+Set when the expressions for coordinates @option{x0,y0,...x3,y3} are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+only evaluate expressions once during the filter initialization or
+when a command is processed
+
+@item frame
+evaluate expressions for each incoming frame
+@end table
+
+Default value is @samp{init}.
 @end table
 
 @section phase
@@ -10424,6 +10806,43 @@ Set seed for random number generator, must be an integer included between
 less than @code{0}, the filter will try to use a good random seed on a
 best effort basis.
 @end table
+
+@section readvitc
+
+Read vertical interval timecode (VITC) information from the top lines of a
+video frame.
+
+The filter adds frame metadata key @code{lavfi.readvitc.tc_str} with the
+timecode value, if a valid timecode has been detected. Further metadata key
+@code{lavfi.readvitc.found} is set to 0/1 depending on whether
+timecode data has been found or not.
+
+This filter accepts the following options:
+
+@table @option
+@item scan_max
+Set the maximum number of lines to scan for VITC data. If the value is set to
+@code{-1} the full video frame is scanned. Default is @code{45}.
+
+@item thr_b
+Set the luma threshold for black. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.2}. The value must be equal or less than @code{thr_w}.
+
+@item thr_w
+Set the luma threshold for white. Accepts float numbers in the range [0.0,1.0],
+default value is @code{0.6}. The value must be equal or greater than @code{thr_b}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Detect and draw VITC data onto the video frame; if no valid VITC is detected,
+draw @code{--:--:--:--} as a placeholder:
+@example
+ffmpeg -i input.avi -filter:v 'readvitc,drawtext=fontfile=FreeMono.ttf:text=%@{metadata\\:lavfi.readvitc.tc_str\\:--\\\\\\:--\\\\\\:--\\\\\\:--@}:x=(w-tw)/2:y=400-ascent'
+@end example
+@end itemize
 
 @section remap
 
@@ -11262,7 +11681,6 @@ To change the display aspect ratio to 16:9, specify one of the following:
 @example
 setdar=dar=1.77777
 setdar=dar=16/9
-setdar=dar=1.77777
 @end example
 
 @item
@@ -12296,28 +12714,7 @@ Output:
 22222                           44444
 @end example
 
-@item drop_odd, 1
-Only output even frames, odd frames are dropped, generating a frame with
-unchanged height at half frame rate.
-
-@example
- ------> time
-Input:
-Frame 1         Frame 2         Frame 3         Frame 4
-
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-11111           22222           33333           44444
-
-Output:
-                22222                           44444
-                22222                           44444
-                22222                           44444
-                22222                           44444
-@end example
-
-@item drop_even, 2
+@item drop_even, 1
 Only output odd frames, even frames are dropped, generating a frame with
 unchanged height at half frame rate.
 
@@ -12336,6 +12733,27 @@ Output:
 11111                           33333
 11111                           33333
 11111                           33333
+@end example
+
+@item drop_odd, 2
+Only output even frames, odd frames are dropped, generating a frame with
+unchanged height at half frame rate.
+
+@example
+ ------> time
+Input:
+Frame 1         Frame 2         Frame 3         Frame 4
+
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+11111           22222           33333           44444
+
+Output:
+                22222                           44444
+                22222                           44444
+                22222                           44444
+                22222                           44444
 @end example
 
 @item pad, 3
@@ -12432,9 +12850,11 @@ Output:
  11111   11111   22222   22222   33333   33333   44444
 @end example
 
+
 @item mergex2, 7
 Move odd frames into the upper field, even into the lower field,
 generating a double height frame at same frame rate.
+
 @example
  ------> time
 Input:
@@ -14330,7 +14750,8 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @anchor{smptebars}
 @anchor{smptehdbars}
 @anchor{testsrc}
-@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@anchor{testsrc2}
+@section allrgb, allyuv, color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc, testsrc2
 
 The @code{allrgb} source returns frames of size 4096x4096 of all rgb colors.
 
@@ -14358,6 +14779,10 @@ the SMPTE RP 219-2002.
 The @code{testsrc} source generates a test video pattern, showing a
 color pattern, a scrolling gradient and a timestamp. This is mainly
 intended for testing purposes.
+
+The @code{testsrc2} source is similar to testsrc, but supports more
+pixel formats instead of just @code{rgb24}. This allows using it as an
+input for other tests without requiring a format conversion.
 
 The sources accept the following parameters:
 
@@ -15163,7 +15588,7 @@ select=between(t\,10\,20)
 @end example
 
 @item
-Select only I frames contained in the 10-20 time interval:
+Select only I-frames contained in the 10-20 time interval:
 @example
 select=between(t\,10\,20)*eq(pict_type\,I)
 @end example
@@ -16319,14 +16744,6 @@ in a 1024x800 picture using @command{ffmpeg}:
 @example
 ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.png
 @end example
-
-@item
-Colorize the waveform with colorchannelmixer. This example will make
-the waveform a green color approximately RGB(66,217,150). Additional
-channels will be shades of this color.
-@example
-ffmpeg -i audio.mp3 -filter_complex "showwavespic,colorchannelmixer=rr=66/255:gg=217/255:bb=150/255" waveform.png
-@end example
 @end itemize
 
 @section spectrumsynth
@@ -16556,6 +16973,11 @@ Default value is "1".
 
 Note that when the movie is looped the source timestamps are not
 changed, so it will generate non monotonically increasing timestamps.
+
+@item discontinuity
+Specifies the time difference between frames above which the point is
+considered a timestamp discontinuity which is removed by adjusting the later
+timestamps.
 @end table
 
 It allows overlaying a second video on top of the main input of
@@ -16595,5 +17017,29 @@ connected to the pad named "audio":
 movie=dvd.vob:s=v:0+#0x81 [video] [audio]
 @end example
 @end itemize
+
+@subsection Commands
+
+Both movie and amovie support the following commands:
+@table @option
+@item seek
+Perform seek using "av_seek_frame".
+The syntax is: seek @var{stream_index}|@var{timestamp}|@var{flags}
+@itemize
+@item
+@var{stream_index}: If stream_index is -1, a default
+stream is selected, and @var{timestamp} is automatically converted
+from AV_TIME_BASE units to the stream specific time_base.
+@item
+@var{timestamp}: Timestamp in AVStream.time_base units
+or, if no stream is specified, in AV_TIME_BASE units.
+@item
+@var{flags}: Flags which select direction and seeking mode.
+@end itemize
+
+@item get_duration
+Get movie duration in AV_TIME_BASE units.
+
+@end table
 
 @c man end MULTIMEDIA SOURCES

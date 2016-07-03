@@ -33,6 +33,7 @@
 void checkasm_check_alacdsp(void);
 void checkasm_check_blend(void);
 void checkasm_check_bswapdsp(void);
+void checkasm_check_colorspace(void);
 void checkasm_check_flacdsp(void);
 void checkasm_check_fmtconvert(void);
 void checkasm_check_h264pred(void);

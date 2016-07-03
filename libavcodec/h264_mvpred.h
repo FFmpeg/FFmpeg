@@ -1,5 +1,5 @@
 /*
- * H.26L/H.264/AVC/JVT/14496-10/... motion vector predicion
+ * H.26L/H.264/AVC/JVT/14496-10/... motion vector prediction
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 motion vector predicion.
+ * H.264 / AVC / MPEG-4 part10 motion vector prediction.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -464,7 +464,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 
     if (!IS_SKIP(mb_type)) {
         if (IS_INTRA(mb_type)) {
-            int type_mask = h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
+            int type_mask = h->ps.pps->constrained_intra_pred ? IS_INTRA(-1) : -1;
             sl->topleft_samples_available     =
                 sl->top_samples_available     =
                     sl->left_samples_available = 0xFFFF;

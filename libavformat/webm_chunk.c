@@ -187,7 +187,7 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int ret;
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
                                              st->time_base,
                                              (AVRational) {1, 1000});
@@ -196,9 +196,9 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // For video, a new chunk is started only on key frames. For audio, a new
     // chunk is started based on chunk_duration.
-    if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
          (pkt->flags & AV_PKT_FLAG_KEY)) ||
-        (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
          (pkt->pts == 0 || wc->duration_written >= wc->chunk_duration))) {
         wc->duration_written = 0;
         if ((ret = chunk_end(s)) < 0 || (ret = chunk_start(s)) < 0) {

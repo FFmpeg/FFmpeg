@@ -1,5 +1,6 @@
 OBJS-$(CONFIG_BLEND_FILTER)                  += x86/vf_blend_init.o
 OBJS-$(CONFIG_BWDIF_FILTER)                  += x86/vf_bwdif_init.o
+OBJS-$(CONFIG_COLORSPACE_FILTER)             += x86/colorspacedsp_init.o
 OBJS-$(CONFIG_EQ_FILTER)                     += x86/vf_eq.o
 OBJS-$(CONFIG_FSPP_FILTER)                   += x86/vf_fspp_init.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += x86/vf_gradfun_init.o
@@ -12,6 +13,7 @@ OBJS-$(CONFIG_PP7_FILTER)                    += x86/vf_pp7_init.o
 OBJS-$(CONFIG_PSNR_FILTER)                   += x86/vf_psnr_init.o
 OBJS-$(CONFIG_PULLUP_FILTER)                 += x86/vf_pullup_init.o
 OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += x86/vf_removegrain_init.o
+OBJS-$(CONFIG_SHOWCQT_FILTER)                += x86/avf_showcqt_init.o
 OBJS-$(CONFIG_SPP_FILTER)                    += x86/vf_spp.o
 OBJS-$(CONFIG_SSIM_FILTER)                   += x86/vf_ssim_init.o
 OBJS-$(CONFIG_STEREO3D_FILTER)               += x86/vf_stereo3d_init.o
@@ -23,6 +25,7 @@ OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
 YASM-OBJS-$(CONFIG_BLEND_FILTER)             += x86/vf_blend.o
 YASM-OBJS-$(CONFIG_BWDIF_FILTER)             += x86/vf_bwdif.o
+YASM-OBJS-$(CONFIG_COLORSPACE_FILTER)        += x86/colorspacedsp.o
 YASM-OBJS-$(CONFIG_FSPP_FILTER)              += x86/vf_fspp.o
 YASM-OBJS-$(CONFIG_GRADFUN_FILTER)           += x86/vf_gradfun.o
 YASM-OBJS-$(CONFIG_HQDN3D_FILTER)            += x86/vf_hqdn3d.o
@@ -35,6 +38,7 @@ YASM-OBJS-$(CONFIG_PULLUP_FILTER)            += x86/vf_pullup.o
 ifdef CONFIG_GPL
 YASM-OBJS-$(CONFIG_REMOVEGRAIN_FILTER)       += x86/vf_removegrain.o
 endif
+YASM-OBJS-$(CONFIG_SHOWCQT_FILTER)           += x86/avf_showcqt.o
 YASM-OBJS-$(CONFIG_SSIM_FILTER)              += x86/vf_ssim.o
 YASM-OBJS-$(CONFIG_STEREO3D_FILTER)          += x86/vf_stereo3d.o
 YASM-OBJS-$(CONFIG_TBLEND_FILTER)            += x86/vf_blend.o

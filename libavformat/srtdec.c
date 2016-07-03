@@ -52,7 +52,10 @@ static int srt_probe(AVProbeData *p)
     /* Check if the next line matches a SRT timestamp */
     if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
         return 0;
-    if (buf[0] >= '0' && buf[0] <= '9' && strstr(buf, " --> ")
+    pbuf = buf;
+    if (buf[0] == '-')
+        pbuf++;
+    if (pbuf[0] >= '0' && pbuf[0] <= '9' && strstr(buf, " --> ")
         && sscanf(buf, "%*d:%*d:%*d%*1[,.]%*d --> %*d:%*d:%*d%*1[,.]%d", &v) == 1)
         return AVPROBE_SCORE_MAX;
 
@@ -135,8 +138,8 @@ static int srt_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 1000);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_SUBRIP;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_SUBRIP;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 

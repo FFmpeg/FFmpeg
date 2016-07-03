@@ -79,16 +79,16 @@ FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, JPEGLS,        AVI)     += jpegls
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, LJPEG MJPEG,   AVI)     += ljpeg
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MJPEG,         AVI)     += mjpeg
 
-FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=          \
-                                                    mpeg1                      \
+FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=    \
+                                                    mpeg1                    \
                                                     mpeg1b
 
-FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=          \
-                                                    mpeg2-422                  \
-                                                    mpeg2-idct-int             \
-                                                    mpeg2-ilace                \
-                                                    mpeg2-ivlc-qprd            \
-                                                    mpeg2-thread               \
+FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=    \
+                                                    mpeg2-422                \
+                                                    mpeg2-idct-int           \
+                                                    mpeg2-ilace              \
+                                                    mpeg2-ivlc-qprd          \
+                                                    mpeg2-thread             \
                                                     mpeg2-thread-ivlc
 
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG4,         MP4 MOV) += mpeg4
@@ -245,13 +245,13 @@ FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 
 FATE_SEEK_EXTRA-$(CONFIG_MP3_DEMUXER)   += fate-seek-extra-mp3
 FATE_SEEK_EXTRA-$(call ALLYES, CACHE_PROTOCOL PIPE_PROTOCOL MP3_DEMUXER) += fate-seek-cache-pipe
-fate-seek-extra-mp3:  CMD = run libavformat/seek-test$(EXESUF) $(TARGET_SAMPLES)/gapless/gapless.mp3 -fastseek 1
-fate-seek-cache-pipe: CMD = cat $(TARGET_SAMPLES)/gapless/gapless.mp3 | run libavformat/seek-test$(EXESUF) cache:pipe:0 -read_ahead_limit -1
+fate-seek-extra-mp3:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/gapless/gapless.mp3 -fastseek 1
+fate-seek-cache-pipe: CMD = cat $(TARGET_SAMPLES)/gapless/gapless.mp3 | run libavformat/tests/seek$(EXESUF) cache:pipe:0 -read_ahead_limit -1
 FATE_SEEK_EXTRA += $(FATE_SEEK_EXTRA-yes)
 
 
-$(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA): libavformat/seek-test$(EXESUF)
-$(FATE_SEEK) $(FATE_SAMPLES_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA): libavformat/tests/seek$(EXESUF)
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK): CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
 $(FATE_SEEK) $(FATE_SAMPLES_SEEK): fate-seek-%: fate-%
 fate-seek-%: REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 

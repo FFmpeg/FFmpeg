@@ -205,8 +205,6 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
             return AVERROR(ENOSYS);
         nb_planes = FFMAX(nb_planes, c->plane + 1);
     }
-    if ((desc->log2_chroma_w || desc->log2_chroma_h) && nb_planes < 3)
-        return AVERROR(ENOSYS); /* exclude NV12 and NV21 */
     memset(draw, 0, sizeof(*draw));
     draw->desc      = desc;
     draw->format    = format;
@@ -214,7 +212,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     memcpy(draw->pixelstep, pixelstep, sizeof(draw->pixelstep));
     draw->hsub[1] = draw->hsub[2] = draw->hsub_max = desc->log2_chroma_w;
     draw->vsub[1] = draw->vsub[2] = draw->vsub_max = desc->log2_chroma_h;
-    for (i = 0; i < ((desc->nb_components - 1) | 1); i++)
+    for (i = 0; i < (desc->nb_components - !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA)); i++)
         draw->comp_mask[desc->comp[i].plane] |=
             1 << desc->comp[i].offset;
     return 0;
@@ -243,20 +241,21 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
                     color->comp[rgba_map[i]].u16[0] = color->comp[rgba_map[i]].u8[0] << (draw->desc->comp[rgba_map[i]].depth - 8);
             }
         }
-    } else if (draw->nb_planes == 3 || draw->nb_planes == 4) {
+    } else if (draw->nb_planes >= 2) {
         /* assume YUV */
-        color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        color->comp[1].u8[0] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        color->comp[2].u8[0] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        const AVPixFmtDescriptor *desc = draw->desc;
+        color->comp[desc->comp[0].plane].u8[desc->comp[0].offset] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
+        color->comp[desc->comp[1].plane].u8[desc->comp[1].offset] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        color->comp[desc->comp[2].plane].u8[desc->comp[2].offset] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
         color->comp[3].u8[0] = rgba[3];
-        if (draw->desc->comp[0].depth > 8)
-            color->comp[0].u16[0] = color->comp[0].u8[0] << (draw->desc->comp[0].depth - 8);
-        if (draw->desc->comp[1].depth > 8)
-            color->comp[1].u16[0] = color->comp[1].u8[0] << (draw->desc->comp[1].depth - 8);
-        if (draw->desc->comp[2].depth > 8)
-            color->comp[2].u16[0] = color->comp[2].u8[0] << (draw->desc->comp[2].depth - 8);
-        if (draw->desc->comp[3].depth > 8)
-            color->comp[3].u16[0] = color->comp[3].u8[0] << (draw->desc->comp[3].depth - 8);
+#define EXPAND(compn) \
+        if (desc->comp[compn].depth > 8) \
+            color->comp[desc->comp[compn].plane].u16[desc->comp[compn].offset] = \
+            color->comp[desc->comp[compn].plane].u8[desc->comp[compn].offset] << (draw->desc->comp[compn].depth - 8)
+        EXPAND(3);
+        EXPAND(2);
+        EXPAND(1);
+        EXPAND(0);
     } else if (draw->format == AV_PIX_FMT_GRAY8 || draw->format == AV_PIX_FMT_GRAY8A) {
         color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
         color->comp[1].u8[0] = rgba[3];
@@ -450,7 +449,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
         /* 0x101 * alpha is in the [ 2 ; 0x1001] range */
         alpha = 0x101 * color->rgba[3] + 0x2;
     }
-    nb_planes = (draw->nb_planes - 1) | 1; /* eliminate alpha */
+    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];
         p0 = pointer_at(draw, dst, dst_linesize, plane, x0, y0);
@@ -627,7 +626,7 @@ void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
     } else {
         alpha = (0x101 * color->rgba[3] + 0x2) >> 8;
     }
-    nb_planes = (draw->nb_planes - 1) | 1; /* eliminate alpha */
+    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];
         p0 = pointer_at(draw, dst, dst_linesize, plane, x0, y0);
@@ -726,43 +725,3 @@ AVFilterFormats *ff_draw_supported_pixel_formats(unsigned flags)
             return NULL;
     return fmts;
 }
-
-#ifdef TEST
-
-#undef printf
-
-int main(void)
-{
-    enum AVPixelFormat f;
-    const AVPixFmtDescriptor *desc;
-    FFDrawContext draw;
-    FFDrawColor color;
-    int r, i;
-
-    for (f = 0; av_pix_fmt_desc_get(f); f++) {
-        desc = av_pix_fmt_desc_get(f);
-        if (!desc->name)
-            continue;
-        printf("Testing %s...%*s", desc->name,
-               (int)(16 - strlen(desc->name)), "");
-        r = ff_draw_init(&draw, f, 0);
-        if (r < 0) {
-            char buf[128];
-            av_strerror(r, buf, sizeof(buf));
-            printf("no: %s\n", buf);
-            continue;
-        }
-        ff_draw_color(&draw, &color, (uint8_t[]) { 1, 0, 0, 1 });
-        for (i = 0; i < sizeof(color); i++)
-            if (((uint8_t *)&color)[i] != 128)
-                break;
-        if (i == sizeof(color)) {
-            printf("fallback color\n");
-            continue;
-        }
-        printf("ok\n");
-    }
-    return 0;
-}
-
-#endif

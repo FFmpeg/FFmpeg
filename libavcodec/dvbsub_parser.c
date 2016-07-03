@@ -18,8 +18,14 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include <inttypes.h>
+#include <string.h>
+
+#include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
 #include "internal.h"
 
 /* Parser (mostly) copied from dvdsub.c */

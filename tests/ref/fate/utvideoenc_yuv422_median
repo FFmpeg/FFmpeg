@@ -1,7 +1,12 @@
 #format: frame checksums
-#version: 1
+#version: 2
 #hash: MD5
+#extradata 0,                              16, 7d613a4daaadf19228d42c98deb26024
 #tb 0: 1/25
+#media_type 0: video
+#codec_id 0: utvideo
+#dimensions 0: 352x288
+#sar 0: 0/1
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,        1,    89732, c8dbbbed6c59cff00c7cead39cadd7d4
 0,          1,          1,        1,    89652, f1c995c2bcb13f9de97fd8c5da2637a1

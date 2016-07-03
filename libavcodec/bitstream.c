@@ -34,8 +34,8 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-#include "get_bits.h"
 #include "put_bits.h"
+#include "vlc.h"
 
 const uint8_t ff_log2_run[41]={
  0, 0, 0, 0, 1, 1, 1, 1,
@@ -150,7 +150,7 @@ static int compare_vlcspec(const void *a, const void *b)
 /**
  * Build VLC decoding tables suitable for use with get_vlc().
  *
- * @param vlc            the context to be initted
+ * @param vlc            the context to be initialized
  *
  * @param table_nb_bits  max length of vlc codes to store directly in this table
  *                       (Longer codes are delegated to subtables.)
@@ -248,7 +248,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
 
 /* Build VLC decoding tables suitable for use with get_vlc().
 
-   'nb_bits' set the decoding table size (2^nb_bits) entries. The
+   'nb_bits' sets the decoding table size (2^nb_bits) entries. The
    bigger it is, the faster is the decoding. But it should not be too
    big to save memory and L1 cache. '9' is a good compromise.
 

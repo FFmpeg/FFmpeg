@@ -32,6 +32,12 @@ static const HWContextType *hw_table[] = {
 #if CONFIG_CUDA
     &ff_hwcontext_type_cuda,
 #endif
+#if CONFIG_DXVA2
+    &ff_hwcontext_type_dxva2,
+#endif
+#if CONFIG_VAAPI
+    &ff_hwcontext_type_vaapi,
+#endif
 #if CONFIG_VDPAU
     &ff_hwcontext_type_vdpau,
 #endif
@@ -206,6 +212,7 @@ AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
     ctx->device_ref = device_ref;
     ctx->device_ctx = device_ctx;
     ctx->format     = AV_PIX_FMT_NONE;
+    ctx->sw_format  = AV_PIX_FMT_NONE;
 
     ctx->internal->hw_type = hw_type;
 
@@ -399,4 +406,85 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
     }
 
     return 0;
+}
+
+void *av_hwdevice_hwconfig_alloc(AVBufferRef *ref)
+{
+    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->internal->hw_type;
+
+    if (hw_type->device_hwconfig_size == 0)
+        return NULL;
+
+    return av_mallocz(hw_type->device_hwconfig_size);
+}
+
+AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
+                                                           const void *hwconfig)
+{
+    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->internal->hw_type;
+    AVHWFramesConstraints *constraints;
+
+    if (!hw_type->frames_get_constraints)
+        return NULL;
+
+    constraints = av_mallocz(sizeof(*constraints));
+    if (!constraints)
+        return NULL;
+
+    constraints->min_width = constraints->min_height = 0;
+    constraints->max_width = constraints->max_height = INT_MAX;
+
+    if (hw_type->frames_get_constraints(ctx, hwconfig, constraints) >= 0) {
+        return constraints;
+    } else {
+        av_hwframe_constraints_free(&constraints);
+        return NULL;
+    }
+}
+
+void av_hwframe_constraints_free(AVHWFramesConstraints **constraints)
+{
+    if (*constraints) {
+        av_freep(&(*constraints)->valid_hw_formats);
+        av_freep(&(*constraints)->valid_sw_formats);
+    }
+    av_freep(constraints);
+}
+
+int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
+                           const char *device, AVDictionary *opts, int flags)
+{
+    AVBufferRef *device_ref = NULL;
+    AVHWDeviceContext *device_ctx;
+    int ret = 0;
+
+    device_ref = av_hwdevice_ctx_alloc(type);
+    if (!device_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    device_ctx = (AVHWDeviceContext*)device_ref->data;
+
+    if (!device_ctx->internal->hw_type->device_create) {
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
+
+    ret = device_ctx->internal->hw_type->device_create(device_ctx, device,
+                                                       opts, flags);
+    if (ret < 0)
+        goto fail;
+
+    ret = av_hwdevice_ctx_init(device_ref);
+    if (ret < 0)
+        goto fail;
+
+    *pdevice_ref = device_ref;
+    return 0;
+fail:
+    av_buffer_unref(&device_ref);
+    *pdevice_ref = NULL;
+    return ret;
 }

@@ -137,11 +137,17 @@ static void vert_filter(int16_t *output, int out_stride, int16_t *low, int low_s
 static void free_buffers(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
-    int i;
+    int i, j;
 
     for (i = 0; i < 4; i++) {
         av_freep(&s->plane[i].idwt_buf);
         av_freep(&s->plane[i].idwt_tmp);
+
+        for (j = 0; j < 9; j++)
+            s->plane[i].subband[j] = NULL;
+
+        for (j = 0; j < 8; j++)
+            s->plane[i].l_h[j] = NULL;
     }
     s->a_height = 0;
     s->a_width  = 0;
@@ -176,7 +182,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         w2 = w4 * 2;
         h2 = h4 * 2;
 
-        s->plane[i].idwt_buf = av_malloc_array(height * stride, sizeof(*s->plane[i].idwt_buf));
+        s->plane[i].idwt_buf = av_mallocz_array(height * stride, sizeof(*s->plane[i].idwt_buf));
         s->plane[i].idwt_tmp = av_malloc_array(height * stride, sizeof(*s->plane[i].idwt_tmp));
         if (!s->plane[i].idwt_buf || !s->plane[i].idwt_tmp) {
             return AVERROR(ENOMEM);
@@ -337,7 +343,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
             av_log(avctx, AV_LOG_DEBUG, "Transform-type? %"PRIu16"\n", data);
         } else if (abstag >= 0x4000 && abstag <= 0x40ff) {
-            av_log(avctx, AV_LOG_DEBUG, "Small chunk length %"PRIu16" %s\n", data * 4, tag < 0 ? "optional" : "required");
+            av_log(avctx, AV_LOG_DEBUG, "Small chunk length %d %s\n", data * 4, tag < 0 ? "optional" : "required");
             bytestream2_skipu(&gb, data * 4);
         } else if (tag == 23) {
             av_log(avctx, AV_LOG_DEBUG, "Skip frame\n");
@@ -432,6 +438,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                     return ret;
                 }
             }
+            ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height);
+            if (ret < 0)
+                return ret;
+            frame.f->width =
+            frame.f->height = 0;
 
             if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
                 return ret;
@@ -450,6 +461,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             int lowpass_a_height = s->plane[s->channel_num].band[0][0].a_height;
             int lowpass_a_width  = s->plane[s->channel_num].band[0][0].a_width;
 
+            if (!got_buffer) {
+                av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
+
             if (lowpass_height > lowpass_a_height || lowpass_width > lowpass_a_width ||
                 lowpass_a_width * lowpass_a_height * sizeof(int16_t) > bytestream2_get_bytes_left(&gb)) {
                 av_log(avctx, AV_LOG_ERROR, "Too many lowpass coefficients\n");
@@ -457,7 +474,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 goto end;
             }
 
-            av_log(avctx, AV_LOG_DEBUG, "Start of lowpass coeffs component %"PRIu16" height:%d, width:%d\n", s->channel_num, lowpass_height, lowpass_width);
+            av_log(avctx, AV_LOG_DEBUG, "Start of lowpass coeffs component %d height:%d, width:%d\n", s->channel_num, lowpass_height, lowpass_width);
             for (i = 0; i < lowpass_height; i++) {
                 for (j = 0; j < lowpass_width; j++)
                     coeff_data[j] = bytestream2_get_be16u(&gb);
@@ -475,7 +492,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                        lowpass_width * sizeof(*coeff_data));
             }
 
-            av_log(avctx, AV_LOG_DEBUG, "Lowpass coefficients %"PRIu16"\n", lowpass_width * lowpass_height);
+            av_log(avctx, AV_LOG_DEBUG, "Lowpass coefficients %d\n", lowpass_width * lowpass_height);
         }
 
         if (tag == 55 && s->subband_num_actual != 255 && s->a_width && s->a_height) {
@@ -488,6 +505,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             int a_expected = highpass_a_height * highpass_a_width;
             int level, run, coeff;
             int count = 0, bytes;
+
+            if (!got_buffer) {
+                av_log(avctx, AV_LOG_ERROR, "No end of header tag found\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
 
             if (highpass_height > highpass_a_height || highpass_width > highpass_a_width || a_expected < expected) {
                 av_log(avctx, AV_LOG_ERROR, "Too many highpass coefficents\n");

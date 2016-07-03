@@ -244,9 +244,21 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
         case AV_STEREO3D_FRAMESEQUENCE:
             fpa_type = 5;
             break;
+#if X264_BUILD >= 145
+        case AV_STEREO3D_2D:
+            fpa_type = 6;
+            break;
+#endif
         default:
             fpa_type = -1;
             break;
+        }
+
+        /* Inverted mode is not supported by x264 */
+        if (stereo->flags & AV_STEREO3D_FLAG_INVERT) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "Ignoring unsupported inverted stereo value %d\n", fpa_type);
+            fpa_type = -1;
         }
 
         if (fpa_type != x4->params.i_frame_packing) {
@@ -264,7 +276,6 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     int nnal, i, ret;
     x264_picture_t pic_out = {0};
     int pict_type;
-    AVFrameSideData *side_data;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -298,46 +309,29 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         reconfig_encoder(ctx, frame);
 
         if (x4->a53_cc) {
-            side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
-            if (side_data) {
+            void *sei_data;
+            size_t sei_size;
+
+            ret = ff_alloc_a53_sei(frame, 0, &sei_data, &sei_size);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+            } else if (sei_data) {
                 x4->pic.extra_sei.payloads = av_mallocz(sizeof(x4->pic.extra_sei.payloads[0]));
                 if (x4->pic.extra_sei.payloads == NULL) {
                     av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                    goto skip_a53cc;
-                }
-                x4->pic.extra_sei.sei_free = av_free;
+                    av_free(sei_data);
+                } else {
+                    x4->pic.extra_sei.sei_free = av_free;
 
-                x4->pic.extra_sei.payloads[0].payload_size = side_data->size + 11;
-                x4->pic.extra_sei.payloads[0].payload = av_mallocz(x4->pic.extra_sei.payloads[0].payload_size);
-                if (x4->pic.extra_sei.payloads[0].payload == NULL) {
-                    av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                    av_freep(&x4->pic.extra_sei.payloads);
-                    goto skip_a53cc;
+                    x4->pic.extra_sei.payloads[0].payload_size = sei_size;
+                    x4->pic.extra_sei.payloads[0].payload = sei_data;
+                    x4->pic.extra_sei.num_payloads = 1;
+                    x4->pic.extra_sei.payloads[0].payload_type = 4;
                 }
-                x4->pic.extra_sei.num_payloads = 1;
-                x4->pic.extra_sei.payloads[0].payload_type = 4;
-                memcpy(x4->pic.extra_sei.payloads[0].payload + 10, side_data->data, side_data->size);
-                x4->pic.extra_sei.payloads[0].payload[0] = 181;
-                x4->pic.extra_sei.payloads[0].payload[1] = 0;
-                x4->pic.extra_sei.payloads[0].payload[2] = 49;
-
-                /**
-                 * 'GA94' is standard in North America for ATSC, but hard coding
-                 * this style may not be the right thing to do -- other formats
-                 * do exist. This information is not available in the side_data
-                 * so we are going with this right now.
-                 */
-                AV_WL32(x4->pic.extra_sei.payloads[0].payload + 3,
-                    MKTAG('G', 'A', '9', '4'));
-                x4->pic.extra_sei.payloads[0].payload[7] = 3;
-                x4->pic.extra_sei.payloads[0].payload[8] =
-                    ((side_data->size/3) & 0x1f) | 0x40;
-                x4->pic.extra_sei.payloads[0].payload[9] = 0;
-                x4->pic.extra_sei.payloads[0].payload[side_data->size+10] = 255;
             }
         }
     }
-skip_a53cc:
+
     do {
         if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
             return AVERROR_EXTERNAL;
@@ -430,7 +424,7 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV444P10: return X264_CSP_I444;
-#ifdef X264_CSP_BGR
+#if CONFIG_LIBX264RGB_ENCODER
     case AV_PIX_FMT_BGR0:
         return X264_CSP_BGRA;
     case AV_PIX_FMT_BGR24:
@@ -884,14 +878,14 @@ static const enum AVPixelFormat pix_fmts_10bit[] = {
     AV_PIX_FMT_NV20,
     AV_PIX_FMT_NONE
 };
+#if CONFIG_LIBX264RGB_ENCODER
 static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
-#ifdef X264_CSP_BGR
     AV_PIX_FMT_BGR0,
     AV_PIX_FMT_BGR24,
     AV_PIX_FMT_RGB24,
-#endif
     AV_PIX_FMT_NONE
 };
+#endif
 
 static av_cold void X264_init_static(AVCodec *codec)
 {
@@ -1035,13 +1029,6 @@ static const AVClass x264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static const AVClass rgbclass = {
-    .class_name = "libx264rgb",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 AVCodec ff_libx264_encoder = {
     .name             = "libx264",
     .long_name        = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
@@ -1057,6 +1044,15 @@ AVCodec ff_libx264_encoder = {
     .init_static_data = X264_init_static,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
+};
+#endif
+
+#if CONFIG_LIBX264RGB_ENCODER
+static const AVClass rgbclass = {
+    .class_name = "libx264rgb",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_libx264rgb_encoder = {

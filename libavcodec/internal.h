@@ -160,6 +160,19 @@ typedef struct AVCodecInternal {
      * hwaccel-specific private data
      */
     void *hwaccel_priv_data;
+
+    /**
+     * checks API usage: after codec draining, flush is required to resume operation
+     */
+    int draining;
+
+    /**
+     * buffers for using new encode/decode API through legacy API
+     */
+    AVPacket *buffer_pkt;
+    int buffer_pkt_valid; // encoding: packet without data can be valid
+    AVFrame *buffer_frame;
+    int draining_done;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -293,6 +306,8 @@ const uint8_t *avpriv_find_start_code(const uint8_t *p,
                                       const uint8_t *end,
                                       uint32_t *state);
 
+int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
+
 /**
  * Check that the provided frame dimensions are valid and set them on the codec
  * context.
@@ -329,5 +344,20 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
+
+/**
+ * Check AVFrame for A53 side data and allocate and fill SEI message with A53 info
+ *
+ * @param frame      Raw frame to get A53 side data from
+ * @param prefix_len Number of bytes to allocate before SEI message
+ * @param data       Pointer to a variable to store allocated memory
+ *                   Upon return the variable will hold NULL on error or if frame has no A53 info.
+ *                   Otherwise it will point to prefix_len uninitialized bytes followed by
+ *                   *sei_size SEI message
+ * @param sei_size   Pointer to a variable to store generated SEI message length
+ * @return           Zero on success, negative error code on failure
+ */
+int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
+                     void **data, size_t *sei_size);
 
 #endif /* AVCODEC_INTERNAL_H */

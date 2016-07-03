@@ -38,6 +38,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 
@@ -367,19 +368,19 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in = decoder->input[0]->format;
     format_in->type = MMAL_ES_TYPE_VIDEO;
     switch (avctx->codec_id) {
-        case AV_CODEC_ID_MPEG2VIDEO:
-            format_in->encoding = MMAL_ENCODING_MP2V;
-            break;
-        case AV_CODEC_ID_MPEG4:
-            format_in->encoding = MMAL_ENCODING_MP4V;
-            break;
-        case AV_CODEC_ID_VC1:
-            format_in->encoding = MMAL_ENCODING_WVC1;
-            break;
-        case AV_CODEC_ID_H264:
-        default:
-            format_in->encoding = MMAL_ENCODING_H264;
-            break;
+    case AV_CODEC_ID_MPEG2VIDEO:
+        format_in->encoding = MMAL_ENCODING_MP2V;
+        break;
+    case AV_CODEC_ID_MPEG4:
+        format_in->encoding = MMAL_ENCODING_MP4V;
+        break;
+    case AV_CODEC_ID_VC1:
+        format_in->encoding = MMAL_ENCODING_WVC1;
+        break;
+    case AV_CODEC_ID_H264:
+    default:
+        format_in->encoding = MMAL_ENCODING_H264;
+        break;
     }
     format_in->es->video.width = FFALIGN(avctx->width, 32);
     format_in->es->video.height = FFALIGN(avctx->height, 16);
@@ -394,10 +395,12 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
     av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
 
+#if HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
                                        -1 - ctx->extra_decoder_buffers)) {
         av_log(avctx, AV_LOG_WARNING, "Could not set input buffering limit.\n");
     }
+#endif
 
     if ((status = mmal_port_format_commit(decoder->input[0])))
         goto fail;
@@ -635,24 +638,17 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     } else {
         int w = FFALIGN(avctx->width, 32);
         int h = FFALIGN(avctx->height, 16);
-        char *ptr;
-        int plane;
-        int i;
+        uint8_t *src[4];
+        int linesize[4];
 
         if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             goto done;
 
-        ptr = buffer->data + buffer->type->video.offset[0];
-        for (i = 0; i < avctx->height; i++)
-            memcpy(frame->data[0] + frame->linesize[0] * i, ptr + w * i, avctx->width);
-
-        ptr += w * h;
-
-        for (plane = 1; plane < 3; plane++) {
-            for (i = 0; i < avctx->height / 2; i++)
-                memcpy(frame->data[plane] + frame->linesize[plane] * i, ptr + w / 2 * i, (avctx->width + 1) / 2);
-            ptr += w / 2 * h / 2;
-        }
+        av_image_fill_arrays(src, linesize,
+                             buffer->data + buffer->type->video.offset[0],
+                             avctx->pix_fmt, w, h, 1);
+        av_image_copy(frame->data, frame->linesize, src, linesize,
+                      avctx->pix_fmt, avctx->width, avctx->height);
     }
 
     frame->pkt_pts = buffer->pts == MMAL_TIME_UNKNOWN ? AV_NOPTS_VALUE : buffer->pts;
@@ -681,7 +677,7 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // being busy from decoder waiting for input. So just poll at the start and
         // keep feeding new data to the buffer.
         // We are pretty sure the decoder will produce output if we sent more input
-        // frames than what a h264 decoder could logically delay. This avoids too
+        // frames than what a H.264 decoder could logically delay. This avoids too
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).

@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/pixdesc.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -283,7 +284,7 @@ static int ffm2_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     const AVCodecDescriptor *codec_desc;
-    int ret;
+    int ret, i;
     int f_main = 0, f_cprv = -1, f_stvi = -1, f_stau = -1;
     AVCodec *enc;
     char *buffer;
@@ -356,8 +357,12 @@ static int ffm2_read_header(AVFormatContext *s)
             codec->flags2 = avio_rb32(pb);
             codec->debug = avio_rb32(pb);
             if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-                if (ff_get_extradata(codec, pb, avio_rb32(pb)) < 0)
+                int size = avio_rb32(pb);
+                codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!codec->extradata)
                     return AVERROR(ENOMEM);
+                codec->extradata_size = size;
+                avio_read(pb, codec->extradata, size);
             }
             break;
         case MKBETAG('S', 'T', 'V', 'I'):
@@ -377,6 +382,11 @@ static int ffm2_read_header(AVFormatContext *s)
             codec->height = avio_rb16(pb);
             codec->gop_size = avio_rb16(pb);
             codec->pix_fmt = avio_rb32(pb);
+            if (!av_pix_fmt_desc_get(codec->pix_fmt)) {
+                av_log(s, AV_LOG_ERROR, "Invalid pix fmt id: %d\n", codec->pix_fmt);
+                codec->pix_fmt = AV_PIX_FMT_NONE;
+                goto fail;
+            }
             codec->qmin = avio_r8(pb);
             codec->qmax = avio_r8(pb);
             codec->max_qdiff = avio_r8(pb);
@@ -476,6 +486,9 @@ static int ffm2_read_header(AVFormatContext *s)
         avio_seek(pb, next, SEEK_SET);
     }
 
+    for (i = 0; i < s->nb_streams; i++)
+        avcodec_parameters_from_context(s->streams[i]->codecpar, s->streams[i]->codec);
+
     /* get until end of block reached */
     while ((avio_tell(pb) % ffm->packet_size) != 0 && !pb->eof_reached)
         avio_r8(pb);
@@ -569,6 +582,11 @@ static int ffm_read_header(AVFormatContext *s)
             codec->height = avio_rb16(pb);
             codec->gop_size = avio_rb16(pb);
             codec->pix_fmt = avio_rb32(pb);
+            if (!av_pix_fmt_desc_get(codec->pix_fmt)) {
+                av_log(s, AV_LOG_ERROR, "Invalid pix fmt id: %d\n", codec->pix_fmt);
+                codec->pix_fmt = AV_PIX_FMT_NONE;
+                goto fail;
+            }
             codec->qmin = avio_r8(pb);
             codec->qmax = avio_r8(pb);
             codec->max_qdiff = avio_r8(pb);
@@ -617,9 +635,15 @@ static int ffm_read_header(AVFormatContext *s)
             goto fail;
         }
         if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-            if (ff_get_extradata(codec, pb, avio_rb32(pb)) < 0)
+            int size = avio_rb32(pb);
+            codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!codec->extradata)
                 return AVERROR(ENOMEM);
+            codec->extradata_size = size;
+            avio_read(pb, codec->extradata, size);
         }
+
+        avcodec_parameters_from_context(st->codecpar, codec);
     }
 
     /* get until end of block reached */

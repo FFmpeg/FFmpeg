@@ -25,9 +25,9 @@ typedef struct IntraX8DSPContext {
     void (*v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*h_loop_filter)(uint8_t *src, int stride, int qscale);
 
-    void (*spatial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
+    void (*spatial_compensation[12])(uint8_t *src, uint8_t *dst, int linesize);
     void (*setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
-                                       int *range, int *sum,  int edges);
+                                       int *range, int *sum, int edges);
 } IntraX8DSPContext;
 
 void ff_intrax8dsp_init(IntraX8DSPContext *dsp);

@@ -169,6 +169,9 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('E', 'M', '2', 'V') },
     /* Matrox MPEG-2 intra-only */
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '2') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '3') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '4') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '5') },
     { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', 'v') },
     { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('B', 'W', '1', '0') },
@@ -352,6 +355,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_FRAPS,        MKTAG('F', 'P', 'S', '1') },
     { AV_CODEC_ID_THEORA,       MKTAG('t', 'h', 'e', 'o') },
     { AV_CODEC_ID_TRUEMOTION2,  MKTAG('T', 'M', '2', '0') },
+    { AV_CODEC_ID_TRUEMOTION2RT,MKTAG('T', 'R', '2', '0') },
     { AV_CODEC_ID_CSCD,         MKTAG('C', 'S', 'C', 'D') },
     { AV_CODEC_ID_ZMBV,         MKTAG('Z', 'M', 'B', 'V') },
     { AV_CODEC_ID_KMVC,         MKTAG('K', 'M', 'V', 'C') },
@@ -387,6 +391,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '0') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '2') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'Y', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'A') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'G') },
     { AV_CODEC_ID_VBLE,         MKTAG('V', 'B', 'L', 'E') },
     { AV_CODEC_ID_ESCAPE130,    MKTAG('E', '1', '3', '0') },
     { AV_CODEC_ID_DXTORY,       MKTAG('x', 't', 'o', 'r') },
@@ -415,6 +421,11 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_RSCC,         MKTAG('R', 'S', 'C', 'C') },
     { AV_CODEC_ID_RSCC,         MKTAG('I', 'S', 'C', 'C') },
     { AV_CODEC_ID_CFHD,         MKTAG('C', 'F', 'H', 'D') },
+    { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '1') },
+    { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '2') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', 'A', 'G', 'Y') },
+    { AV_CODEC_ID_YLC,          MKTAG('Y', 'L', 'C', '0') },
+
     { AV_CODEC_ID_NONE,         0 }
 };
 
@@ -443,6 +454,8 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_AMR_NB,          0x0038 },  /* rogue format number */
     { AV_CODEC_ID_G723_1,          0x0042 },
     { AV_CODEC_ID_ADPCM_G726,      0x0045 },
+    { AV_CODEC_ID_ADPCM_G726,      0x0014 },  /* g723 Antex */
+    { AV_CODEC_ID_ADPCM_G726,      0x0040 },  /* g721 Antex */
     { AV_CODEC_ID_MP2,             0x0050 },
     { AV_CODEC_ID_MP3,             0x0055 },
     { AV_CODEC_ID_AMR_NB,          0x0057 },

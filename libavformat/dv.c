@@ -110,11 +110,11 @@ static const int dv_audio_frequency[3] = {
 
 /*
  * There's a couple of assumptions being made here:
- * 1. By default we silence erroneous (0x8000/16bit 0x800/12bit) audio samples.
+ * 1. By default we silence erroneous (0x8000/16-bit 0x800/12-bit) audio samples.
  *    We can pass them upwards when libavcodec will be ready to deal with them.
  * 2. We don't do software emphasis.
- * 3. Audio is always returned as 16bit linear samples: 12bit nonlinear samples
- *    are converted into 16bit linear ones.
+ * 3. Audio is always returned as 16-bit linear samples: 12-bit nonlinear samples
+ *    are converted into 16-bit linear ones.
  */
 static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
                             const AVDVProfile *sys)
@@ -130,7 +130,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
 
     smpls = as_pack[1]      & 0x3f; /* samples in this frame - min. samples */
     freq  = as_pack[4] >> 3 & 0x07; /* 0 - 48kHz, 1 - 44,1kHz, 2 - 32kHz */
-    quant = as_pack[4]      & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
+    quant = as_pack[4]      & 0x07; /* 0 - 16-bit linear, 1 - 12-bit nonlinear */
 
     if (quant > 1)
         return -1;  /* unsupported quantization */
@@ -161,7 +161,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
         for (i = 0; i < sys->difseg_size; i++) {
             frame += 6 * 80; /* skip DIF segment header */
             if (quant == 1 && i == half_ch) {
-                /* next stereo channel (12bit mode only) */
+                /* next stereo channel (12-bit mode only) */
                 av_assert0(ipcm<4);
                 pcm = ppcm[ipcm++];
                 if (!pcm)
@@ -171,7 +171,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
             /* for each AV sequence */
             for (j = 0; j < 9; j++) {
                 for (d = 8; d < 80; d += 2) {
-                    if (quant == 0) {  /* 16bit quantization */
+                    if (quant == 0) {  /* 16-bit quantization */
                         of = sys->audio_shuffle[i][j] +
                              (d - 8) / 2 * sys->audio_stride;
                         if (of * 2 >= size)
@@ -184,7 +184,7 @@ static int dv_extract_audio(const uint8_t *frame, uint8_t **ppcm,
 
                         if (pcm[of * 2 + 1] == 0x80 && pcm[of * 2] == 0x00)
                             pcm[of * 2 + 1] = 0;
-                    } else {           /* 12bit quantization */
+                    } else {           /* 12-bit quantization */
                         lc = ((uint16_t)frame[d]     << 4) |
                              ((uint16_t)frame[d + 2] >> 4);
                         rc = ((uint16_t)frame[d + 1] << 4) |
@@ -233,7 +233,7 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
     smpls = as_pack[1]      & 0x3f; /* samples in this frame - min. samples */
     freq  = as_pack[4] >> 3 & 0x07; /* 0 - 48kHz, 1 - 44,1kHz, 2 - 32kHz */
     stype = as_pack[3]      & 0x1f; /* 0 - 2CH, 2 - 4CH, 3 - 8CH */
-    quant = as_pack[4]      & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
+    quant = as_pack[4]      & 0x07; /* 0 - 16-bit linear, 1 - 12-bit nonlinear */
 
     if (freq >= FF_ARRAY_ELEMS(dv_audio_frequency)) {
         av_log(c->fctx, AV_LOG_ERROR,
@@ -259,8 +259,8 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             if (!c->ast[i])
                 break;
             avpriv_set_pts_info(c->ast[i], 64, 1, 30000);
-            c->ast[i]->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            c->ast[i]->codec->codec_id   = AV_CODEC_ID_PCM_S16LE;
+            c->ast[i]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            c->ast[i]->codecpar->codec_id   = AV_CODEC_ID_PCM_S16LE;
 
             av_init_packet(&c->audio_pkt[i]);
             c->audio_pkt[i].size         = 0;
@@ -268,10 +268,10 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
             c->audio_pkt[i].stream_index = c->ast[i]->index;
             c->audio_pkt[i].flags       |= AV_PKT_FLAG_KEY;
         }
-        c->ast[i]->codec->sample_rate    = dv_audio_frequency[freq];
-        c->ast[i]->codec->channels       = 2;
-        c->ast[i]->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-        c->ast[i]->codec->bit_rate       = 2 * dv_audio_frequency[freq] * 16;
+        c->ast[i]->codecpar->sample_rate    = dv_audio_frequency[freq];
+        c->ast[i]->codecpar->channels       = 2;
+        c->ast[i]->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        c->ast[i]->codecpar->bit_rate       = 2 * dv_audio_frequency[freq] * 16;
         c->ast[i]->start_time            = 0;
     }
     c->ach = i;
@@ -282,10 +282,10 @@ static int dv_extract_audio_info(DVDemuxContext *c, const uint8_t *frame)
 static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
 {
     const uint8_t *vsc_pack;
-    AVCodecContext *avctx;
+    AVCodecParameters *par;
     int apt, is16_9;
 
-    avctx = c->vst->codec;
+    par = c->vst->codecpar;
 
     avpriv_set_pts_info(c->vst, 64, c->sys->time_base.num,
                         c->sys->time_base.den);
@@ -297,7 +297,7 @@ static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
     is16_9   = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
                              (!apt && (vsc_pack[2] & 0x07) == 0x07)));
     c->vst->sample_aspect_ratio = c->sys->sar[is16_9];
-    avctx->bit_rate = av_rescale_q(c->sys->frame_size,
+    par->bit_rate = av_rescale_q(c->sys->frame_size,
                                    (AVRational) { 8, 1 },
                                    c->sys->time_base);
     return c->sys->frame_size;
@@ -336,9 +336,9 @@ DVDemuxContext *avpriv_dv_init_demux(AVFormatContext *s)
     }
 
     c->fctx                   = s;
-    c->vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    c->vst->codec->codec_id   = AV_CODEC_ID_DVVIDEO;
-    c->vst->codec->bit_rate   = 25000000;
+    c->vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    c->vst->codecpar->codec_id   = AV_CODEC_ID_DVVIDEO;
+    c->vst->codecpar->bit_rate   = 25000000;
     c->vst->start_time        = 0;
 
     return c;
@@ -380,7 +380,7 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
         c->audio_pkt[i].pos  = pos;
         c->audio_pkt[i].size = size;
         c->audio_pkt[i].pts  = c->abytes * 30000 * 8 /
-                               c->ast[i]->codec->bit_rate;
+                               c->ast[i]->codecpar->bit_rate;
         ppcm[i] = c->audio_buf[i];
     }
     if (c->ach)
@@ -439,7 +439,7 @@ void ff_dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
     if (c->ach) {
         if (c->sys) {
         c->abytes = av_rescale_q(c->frames, c->sys->time_base,
-                                 (AVRational) { 8, c->ast[0]->codec->bit_rate });
+                                 (AVRational) { 8, c->ast[0]->codecpar->bit_rate });
         } else
             av_log(c->fctx, AV_LOG_ERROR, "cannot adjust audio bytes\n");
     }

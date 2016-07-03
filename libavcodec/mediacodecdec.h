@@ -41,6 +41,7 @@ typedef struct MediaCodecDecContext {
 
     int started;
     int flushing;
+    int eos;
 
     int width;
     int height;
@@ -53,8 +54,6 @@ typedef struct MediaCodecDecContext {
     int crop_left;
     int crop_right;
 
-    int queued_buffer_nb;
-    int queued_buffer_max;
     uint64_t dequeued_buffer_nb;
 
     int first_buffer;
