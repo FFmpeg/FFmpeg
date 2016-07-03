@@ -235,7 +235,8 @@ enum AVPixelFormat {
     AV_PIX_FMT_QSV,
     /**
      * HW acceleration though MMAL, data[3] contains a pointer to the
-     * MMAL_BUFFER_HEADER_T structure.
+     * MMAL_BUFFER_HEADER_T structure and data[2] contains a pointer to the
+     * MMAL_ES_FORMAT_T structure.
      */
     AV_PIX_FMT_MMAL,
 

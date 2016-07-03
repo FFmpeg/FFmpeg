@@ -88,6 +88,7 @@ typedef struct MMALDecodeContext {
     int eos_received;
     int eos_sent;
     int extradata_sent;
+    int interlaced_frame;
 } MMALDecodeContext;
 
 // Assume decoder is guaranteed to produce output after at least this many
@@ -274,6 +275,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
     int ret = 0;
     MMAL_COMPONENT_T *decoder = ctx->decoder;
     MMAL_ES_FORMAT_T *format_out = decoder->output[0]->format;
+    MMAL_PARAMETER_VIDEO_INTERLACE_TYPE_T interlace_type;
 
     ffmmal_poolref_unref(ctx->pool_out);
     if (!(ctx->pool_out = av_mallocz(sizeof(*ctx->pool_out)))) {
@@ -299,6 +301,15 @@ static int ffmal_update_format(AVCodecContext *avctx)
 
     if ((status = mmal_port_format_commit(decoder->output[0])))
         goto fail;
+
+    interlace_type.hdr.id = MMAL_PARAMETER_VIDEO_INTERLACE_TYPE;
+    interlace_type.hdr.size = sizeof(MMAL_PARAMETER_VIDEO_INTERLACE_TYPE_T);
+    status = mmal_port_parameter_get(decoder->output[0], &interlace_type.hdr);
+    if (status != MMAL_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot read MMAL interlace information!\n");
+    } else {
+        ctx->interlaced_frame = !(interlace_type.eMode == MMAL_InterlaceProgressive);
+    }
 
     if ((ret = ff_set_dimensions(avctx, format_out->es->video.crop.x + format_out->es->video.crop.width,
                                         format_out->es->video.crop.y + format_out->es->video.crop.height)) < 0)
@@ -609,7 +620,13 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
     MMALDecodeContext *ctx = avctx->priv_data;
     int ret = 0;
 
+    frame->interlaced_frame = ctx->interlaced_frame;
+
     if (avctx->pix_fmt == AV_PIX_FMT_MMAL) {
+
+        // in data[2] give the format struct for configure deinterlacer and renderer
+        frame->data[2] = ctx->decoder->output[0]->format;
+
         if (!ctx->pool_out)
             return AVERROR_UNKNOWN; // format change code failed with OOM previously
 
