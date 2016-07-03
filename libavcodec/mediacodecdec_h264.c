@@ -65,6 +65,58 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static int h264_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
+{
+    int i;
+    int ret = 0;
+    uint8_t *p = NULL;
+    static const uint8_t nalu_header[] = { 0x00, 0x00, 0x00, 0x01 };
+
+    if (!out || !out_size) {
+        return AVERROR(EINVAL);
+    }
+
+    p = av_malloc(sizeof(nalu_header) + src_size);
+    if (!p) {
+        return AVERROR(ENOMEM);
+    }
+
+    *out = p;
+    *out_size = sizeof(nalu_header) + src_size;
+
+    memcpy(p, nalu_header, sizeof(nalu_header));
+    memcpy(p + sizeof(nalu_header), src, src_size);
+
+    /* Escape 0x00, 0x00, 0x0{0-3} pattern */
+    for (i = 4; i < *out_size; i++) {
+        if (i < *out_size - 3 &&
+            p[i + 0] == 0 &&
+            p[i + 1] == 0 &&
+            p[i + 2] <= 3) {
+            uint8_t *new;
+
+            *out_size += 1;
+            new = av_realloc(*out, *out_size);
+            if (!new) {
+                ret = AVERROR(ENOMEM);
+                goto done;
+            }
+            *out = p = new;
+
+            i = i + 3;
+            memmove(p + i, p + i - 1, *out_size - i);
+            p[i - 1] = 0x03;
+        }
+    }
+done:
+    if (ret < 0) {
+        av_freep(out);
+        *out_size = 0;
+    }
+
+    return ret;
+}
+
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
     int i;
@@ -112,24 +164,19 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     }
 
     if (pps && sps) {
-        static const uint8_t nal_headers[] = { 0x00, 0x00, 0x00, 0x01 };
-
         uint8_t *data = NULL;
-        size_t data_size = sizeof(nal_headers) + FFMAX(sps->data_size, pps->data_size);
+        size_t data_size = 0;
 
-        data = av_mallocz(data_size);
-        if (!data) {
-            ret = AVERROR(ENOMEM);
+        if ((ret = h264_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
             goto done;
         }
+        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, data_size);
+        av_freep(&data);
 
-        memcpy(data, nal_headers, sizeof(nal_headers));
-        memcpy(data + sizeof(nal_headers), sps->data, sps->data_size);
-        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, sizeof(nal_headers) + sps->data_size);
-
-        memcpy(data + sizeof(nal_headers), pps->data, pps->data_size);
-        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, sizeof(nal_headers) + pps->data_size);
-
+        if ((ret = h264_ps_to_nalu(pps->data, pps->data_size, &data, &data_size)) < 0) {
+            goto done;
+        }
+        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, data_size);
         av_freep(&data);
     } else {
         av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
