@@ -177,19 +177,7 @@
     <ClCompile Include="..\libavcodec\vorbis_parser.c" />
     <ClCompile Include="..\libavcodec\xiph.c" />
     <ClCompile Include="..\libavcodec\aandcttab.c" />
-    <ClCompile Include="..\libavcodec\ac3dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_ac3dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\audio_frame_queue.c" />
-    <ClCompile Include="..\libavcodec\audiodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_audiodsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\blockdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_blockdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\bswapdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_bswapdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\cabac.c" />
     <ClCompile Include="..\libavcodec\dct.c" />
     <ClCompile Include="..\libavcodec\dct32_fixed.c" />
@@ -207,12 +195,6 @@
     <ClCompile Include="..\libavcodec\fft_float.c" />
     <ClCompile Include="..\libavcodec\fft_fixed_32.c" />
     <ClCompile Include="..\libavcodec\fft_init_table.c" />
-    <ClCompile Include="..\libavcodec\flacdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_flacdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\fmtconvert.c">
-      <ObjectFileName>$(IntDir)\libavcodec_fmtconvert.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\golomb.c" />
     <ClCompile Include="..\libavcodec\h263dsp.c" />
     <ClCompile Include="..\libavcodec\h264chroma.c" />
@@ -220,19 +202,7 @@
     <ClCompile Include="..\libavcodec\h264idct.c" />
     <ClCompile Include="..\libavcodec\h264pred.c" />
     <ClCompile Include="..\libavcodec\h264qpel.c" />
-    <ClCompile Include="..\libavcodec\hpeldsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_hpeldsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\huffman.c" />
-    <ClCompile Include="..\libavcodec\huffyuvdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_huffyuvdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\huffyuvencdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_huffyuvencdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\idctdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_idctdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\simple_idct.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
     <ClCompile Include="..\libavcodec\iirfilter.c" />
@@ -242,21 +212,12 @@
     <ClCompile Include="..\libavcodec\ivi_dsp.c" />
     <ClCompile Include="..\libavcodec\jpegtables.c" />
     <ClCompile Include="..\libavcodec\libxvid_rc.c" />
-    <ClCompile Include="..\libavcodec\lossless_audiodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_lossless_audiodsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\lossless_videodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_lossless_videodsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\lpc.c" />
     <ClCompile Include="..\libavcodec\lsp.c" />
     <ClCompile Include="..\libavcodec\lzf.c" />
     <ClCompile Include="..\libavcodec\mdct_fixed.c" />
     <ClCompile Include="..\libavcodec\mdct_float.c" />
     <ClCompile Include="..\libavcodec\mdct_fixed_32.c" />
-    <ClCompile Include="..\libavcodec\me_cmp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_me_cmp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg_er.c" />
     <ClCompile Include="..\libavcodec\mpegaudio.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodata.c" />
@@ -276,25 +237,13 @@
     <ClCompile Include="..\libavcodec\mpeg12data.c" />
     <ClCompile Include="..\libavcodec\motion_est.c" />
     <ClCompile Include="..\libavcodec\ratecontrol.c" />
-    <ClCompile Include="..\libavcodec\mpegvideoencdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_mpegvideoencdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mss34dsp.c" />
     <ClCompile Include="..\libavcodec\nvenc.c" />
-    <ClCompile Include="..\libavcodec\pixblockdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_pixblockdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\qpeldsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\qsv.c" />
     <ClCompile Include="..\libavcodec\qsvdec.c" />
     <ClCompile Include="..\libavcodec\qsvenc.c" />
     <ClCompile Include="..\libavcodec\rangecoder.c" />
     <ClCompile Include="..\libavcodec\rdft.c" />
-    <ClCompile Include="..\libavcodec\rv34dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_rv34dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\sinewin.c" />
     <ClCompile Include="..\libavcodec\sinewin_fixed.c" />
     <ClCompile Include="..\libavcodec\snappy.c" />
@@ -303,16 +252,7 @@
     <ClCompile Include="..\libavcodec\texturedspenc.c" />
     <ClCompile Include="..\libavcodec\tpeldsp.c" />
     <ClCompile Include="..\libavcodec\vc1dsp.c" />
-    <ClCompile Include="..\libavcodec\videodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_videodsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\vp3dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vp3dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\vp56dsp.c" />
-    <ClCompile Include="..\libavcodec\vp8dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vp8dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\wma_freqs.c" />
     <ClCompile Include="..\libavcodec\wmv2dsp.c" />
     <ClCompile Include="..\libavcodec\012v.c" />
@@ -325,9 +265,6 @@
     <ClCompile Include="..\libavcodec\aacadtsdec.c" />
     <ClCompile Include="..\libavcodec\mpeg4audio.c" />
     <ClCompile Include="..\libavcodec\kbdwin.c" />
-    <ClCompile Include="..\libavcodec\sbrdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_sbrdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\aacpsdsp_float.c" />
     <ClCompile Include="..\libavcodec\cbrt_data.c" />
     <ClCompile Include="..\libavcodec\aacdec_fixed.c" />
@@ -358,9 +295,6 @@
     <ClCompile Include="..\libavcodec\aic.c" />
     <ClCompile Include="..\libavcodec\alac.c" />
     <ClCompile Include="..\libavcodec\alac_data.c" />
-    <ClCompile Include="..\libavcodec\alacdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_alacdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\alacenc.c" />
     <ClCompile Include="..\libavcodec\aliaspixdec.c" />
     <ClCompile Include="..\libavcodec\aliaspixenc.c" />
@@ -381,9 +315,6 @@
     <ClCompile Include="..\libavcodec\apedec.c" />
     <ClCompile Include="..\libavcodec\png.c" />
     <ClCompile Include="..\libavcodec\pngdec.c" />
-    <ClCompile Include="..\libavcodec\pngdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_pngdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\pngenc.c" />
     <ClCompile Include="..\libavcodec\assdec.c" />
     <ClCompile Include="..\libavcodec\ass.c" />
@@ -448,30 +379,15 @@
     <ClCompile Include="..\libavcodec\dca_exss.c" />
     <ClCompile Include="..\libavcodec\dca_xll.c" />
     <ClCompile Include="..\libavcodec\dca_lbr.c" />
-    <ClCompile Include="..\libavcodec\dcadsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dcadct.c" />
-    <ClCompile Include="..\libavcodec\synth_filter.c">
-      <ObjectFileName>$(IntDir)\libavcodec_synth_filter.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dcaenc.c" />
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
-    <ClCompile Include="..\libavcodec\diracdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_diracdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\diractab.c" />
     <ClCompile Include="..\libavcodec\dirac_arith.c" />
-    <ClCompile Include="..\libavcodec\dirac_dwt.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dirac_dwt.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dfa.c" />
     <ClCompile Include="..\libavcodec\dnxhddec.c" />
     <ClCompile Include="..\libavcodec\dnxhddata.c" />
-    <ClCompile Include="..\libavcodec\dnxhdenc.c">
-      <ObjectFileName>$(IntDir)\libavcodec_dnxhdenc.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dpx.c" />
     <ClCompile Include="..\libavcodec\dpxenc.c" />
     <ClCompile Include="..\libavcodec\dsddec.c" />
@@ -613,9 +529,6 @@
     <ClCompile Include="..\libavcodec\jpeg2000.c" />
     <ClCompile Include="..\libavcodec\jpeg2000dwt.c" />
     <ClCompile Include="..\libavcodec\jpeg2000dec.c" />
-    <ClCompile Include="..\libavcodec\jpeg2000dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_jpeg2000dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mqcdec.c" />
     <ClCompile Include="..\libavcodec\jpeglsdec.c" />
     <ClCompile Include="..\libavcodec\jpegls.c" />
@@ -638,9 +551,6 @@
     <ClCompile Include="..\libavcodec\mimic.c" />
     <ClCompile Include="..\libavcodec\mjpegbdec.c" />
     <ClCompile Include="..\libavcodec\mlpdec.c" />
-    <ClCompile Include="..\libavcodec\mlpdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_mlpdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mmvideo.c" />
     <ClCompile Include="..\libavcodec\motionpixels.c" />
     <ClCompile Include="..\libavcodec\movtextdec.c" />
@@ -657,9 +567,6 @@
     <ClCompile Include="..\libavcodec\mpeg12enc.c" />
     <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c" />
     <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c" />
-    <ClCompile Include="..\libavcodec\xvididct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\mpl2dec.c" />
     <ClCompile Include="..\libavcodec\mss3.c" />
     <ClCompile Include="..\libavcodec\msmpeg4dec.c" />
@@ -701,9 +608,6 @@
     <ClCompile Include="..\libavcodec\pictordec.c" />
     <ClCompile Include="..\libavcodec\textdec.c" />
     <ClCompile Include="..\libavcodec\proresdec2.c" />
-    <ClCompile Include="..\libavcodec\proresdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_proresdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\proresdata.c" />
     <ClCompile Include="..\libavcodec\proresdec_lgpl.c" />
     <ClCompile Include="..\libavcodec\proresenc_anatoliy.c" />
@@ -737,9 +641,6 @@
     <ClCompile Include="..\libavcodec\rv34.c" />
     <ClCompile Include="..\libavcodec\rv30dsp.c" />
     <ClCompile Include="..\libavcodec\rv40.c" />
-    <ClCompile Include="..\libavcodec\rv40dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_rv40dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\samidec.c" />
     <ClCompile Include="..\libavcodec\htmlsubtitles.c" />
     <ClCompile Include="..\libavcodec\s302m.c" />
@@ -771,15 +672,9 @@
     <ClCompile Include="..\libavcodec\svq1dec.c" />
     <ClCompile Include="..\libavcodec\svq1.c" />
     <ClCompile Include="..\libavcodec\svq13.c" />
-    <ClCompile Include="..\libavcodec\svq1enc.c">
-      <ObjectFileName>$(IntDir)\libavcodec_svq1enc.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\svq3.c" />
     <ClCompile Include="..\libavcodec\takdec.c" />
     <ClCompile Include="..\libavcodec\tak.c" />
-    <ClCompile Include="..\libavcodec\takdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_takdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\targa.c" />
     <ClCompile Include="..\libavcodec\targaenc.c" />
     <ClCompile Include="..\libavcodec\targa_y216dec.c" />
@@ -798,9 +693,6 @@
     <ClCompile Include="..\libavcodec\tscc2.c" />
     <ClCompile Include="..\libavcodec\tta.c" />
     <ClCompile Include="..\libavcodec\ttadata.c" />
-    <ClCompile Include="..\libavcodec\ttadsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_ttadsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\ttaenc.c" />
     <ClCompile Include="..\libavcodec\twinvqdec.c" />
     <ClCompile Include="..\libavcodec\txd.c" />
@@ -809,9 +701,6 @@
     <ClCompile Include="..\libavcodec\utvideo.c" />
     <ClCompile Include="..\libavcodec\utvideoenc.c" />
     <ClCompile Include="..\libavcodec\v210dec.c" />
-    <ClCompile Include="..\libavcodec\v210enc.c">
-      <ObjectFileName>$(IntDir)\libavcodec_v210enc.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\v210x.c" />
     <ClCompile Include="..\libavcodec\v308dec.c" />
     <ClCompile Include="..\libavcodec\v308enc.c" />
@@ -834,9 +723,6 @@
     <ClCompile Include="..\libavcodec\vmdvideo.c" />
     <ClCompile Include="..\libavcodec\vmnc.c" />
     <ClCompile Include="..\libavcodec\vorbisdec.c" />
-    <ClCompile Include="..\libavcodec\vorbisdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vorbisdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\vorbis.c" />
     <ClCompile Include="..\libavcodec\vorbisenc.c" />
     <ClCompile Include="..\libavcodec\vp3.c" />
@@ -845,9 +731,6 @@
     <ClCompile Include="..\libavcodec\vp56data.c" />
     <ClCompile Include="..\libavcodec\vp56rac.c" />
     <ClCompile Include="..\libavcodec\vp6.c" />
-    <ClCompile Include="..\libavcodec\vp6dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_vp6dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\vp8.c" />
     <ClCompile Include="..\libavcodec\vp9.c" />
     <ClCompile Include="..\libavcodec\vp9dsp.c" />
@@ -904,9 +787,6 @@
     <ClCompile Include="..\libavcodec\adx.c" />
     <ClCompile Include="..\libavcodec\adxenc.c" />
     <ClCompile Include="..\libavcodec\g722.c" />
-    <ClCompile Include="..\libavcodec\g722dsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_g722dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\g722dec.c" />
     <ClCompile Include="..\libavcodec\g722enc.c" />
     <ClCompile Include="..\libavcodec\g726.c" />
@@ -1012,19 +892,7 @@
     <ClCompile Include="..\libavcodec\x86\huffyuvdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_mmx.c" />
     <ClCompile Include="..\libavcodec\x86\idctdsp_init.c" />
-    <ClCompile Include="..\libavcodec\x86\lpc.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_lpc.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\me_cmp_init.c" />
-    <ClCompile Include="..\libavcodec\x86\mpegaudiodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegaudiodsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\mpegvideo.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideo.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\mpegvideodsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideodsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\mpegvideoenc.c" />
     <ClCompile Include="..\libavcodec\x86\mpegvideoencdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\pixblockdsp_init.c" />
@@ -1039,9 +907,6 @@
     <ClCompile Include="..\libavcodec\x86\g722dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\alacdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\pngdsp_init.c" />
-    <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
@@ -1063,14 +928,149 @@
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_12bpp.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_16bpp.c" />
     <ClCompile Include="..\libavcodec\x86\fdct.c" />
-    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vc1dsp_mmx.c" />
     <ClCompile Include="..\libavcodec\x86\snowdsp.c" />
     <ClCompile Include="libavcodec\dxva2_vp9_wrap.c" />
     <ClCompile Include="libavcodec\log2_tab_wrap.c" />
     <ClCompile Include="libavcodec\reverse_wrap.c" />
+    <ClCompile Include="..\libavcodec\ac3dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_ac3dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\audiodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_audiodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\blockdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_blockdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\bswapdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_bswapdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\flacdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_flacdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\fmtconvert.c">
+      <ObjectFileName>$(IntDir)\libavcodec_fmtconvert.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\hpeldsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_hpeldsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\huffyuvdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_huffyuvdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\huffyuvencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_huffyuvencdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\idctdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_idctdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\lossless_audiodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_lossless_audiodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\lossless_videodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_lossless_videodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\me_cmp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_me_cmp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mpegvideoencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mpegvideoencdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pixblockdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pixblockdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\qpeldsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_qpeldsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\rv34dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_rv34dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\videodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_videodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp3dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vp3dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp8dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vp8dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\sbrdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_sbrdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\alacdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_alacdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\pngdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_pngdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dcadsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dcadsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\synth_filter.c">
+      <ObjectFileName>$(IntDir)\libavcodec_synth_filter.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\diracdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_diracdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dirac_dwt.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dirac_dwt.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dnxhdenc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_dnxhdenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\jpeg2000dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_jpeg2000dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mlpdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_mlpdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\xvididct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_xvididct.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\proresdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_proresdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\rv40dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_rv40dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\svq1enc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_svq1enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\takdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_takdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\ttadsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_ttadsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\v210enc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_v210enc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vorbisdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vorbisdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp6dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_vp6dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\g722dsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_g722dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\lpc.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_lpc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\mpegaudiodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegaudiodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\mpegvideo.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideo.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\mpegvideodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_mpegvideodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavcodec\avcodec.h" />
@@ -1333,7 +1333,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1416,7 +1416,7 @@ cd $(ProjectDir)
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1499,7 +1499,7 @@ cd $(ProjectDir)
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1593,7 +1593,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1686,7 +1686,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1780,7 +1780,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;$(CUDA_PATH)\include\;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1875,7 +1875,7 @@ echo            These errors are the result of dead code elimination not being p
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -1964,7 +1964,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2053,7 +2053,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2148,7 +2148,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2242,7 +2242,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2337,7 +2337,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2431,7 +2431,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2520,7 +2520,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>

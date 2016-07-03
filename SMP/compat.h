@@ -26,6 +26,7 @@
 #define SMP_COMPAT_H
 
 #ifdef _MSC_VER
+#   define inline __inline
 #   include <crtversion.h>
 #   if _VC_CRT_MAJOR_VERSION < 14
 #       include <../compat/msvcrt/snprintf.h>

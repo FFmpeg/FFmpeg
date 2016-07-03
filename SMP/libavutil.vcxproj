@@ -101,12 +101,6 @@
     <ClCompile Include="..\libavutil\fifo.c" />
     <ClCompile Include="..\libavutil\file.c" />
     <ClCompile Include="..\libavutil\file_open.c" />
-    <ClCompile Include="..\libavutil\float_dsp.c">
-      <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\fixed_dsp.c">
-      <ObjectFileName>$(IntDir)\libavutil_fixed_dsp.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavutil\frame.c" />
     <ClCompile Include="..\libavutil\hash.c" />
     <ClCompile Include="..\libavutil\hmac.c" />
@@ -115,9 +109,6 @@
     <ClCompile Include="..\libavutil\integer.c" />
     <ClCompile Include="..\libavutil\intmath.c" />
     <ClCompile Include="..\libavutil\lfg.c" />
-    <ClCompile Include="..\libavutil\lls.c">
-      <ObjectFileName>$(IntDir)\libavutil_lls.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavutil\log.c" />
     <ClCompile Include="..\libavutil\log2_tab.c" />
     <ClCompile Include="..\libavutil\mathematics.c" />
@@ -128,9 +119,6 @@
     <ClCompile Include="..\libavutil\opt.c" />
     <ClCompile Include="..\libavutil\parseutils.c" />
     <ClCompile Include="..\libavutil\pixdesc.c" />
-    <ClCompile Include="..\libavutil\pixelutils.c">
-      <ObjectFileName>$(IntDir)\libavutil_pixelutils.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavutil\random_seed.c" />
     <ClCompile Include="..\libavutil\rational.c" />
     <ClCompile Include="..\libavutil\reverse.c" />
@@ -154,13 +142,25 @@
     <ClCompile Include="..\compat\msvcrt\snprintf.c" />
     <ClCompile Include="..\compat\strtod.c" />
     <ClCompile Include="..\compat\getopt.c" />
-    <ClCompile Include="..\libavutil\x86\cpu.c">
-      <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="..\libavutil\x86\fixed_dsp_init.c" />
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c" />
     <ClCompile Include="..\libavutil\x86\lls_init.c" />
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c" />
+    <ClCompile Include="..\libavutil\float_dsp.c">
+      <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\fixed_dsp.c">
+      <ObjectFileName>$(IntDir)\libavutil_fixed_dsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\lls.c">
+      <ObjectFileName>$(IntDir)\libavutil_lls.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\pixelutils.c">
+      <ObjectFileName>$(IntDir)\libavutil_pixelutils.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\x86\cpu.c">
+      <ObjectFileName>$(IntDir)\libavutil_x86_cpu.obj</ObjectFileName>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavutil\adler32.h" />
@@ -480,7 +480,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -620,7 +620,7 @@ cd $(ProjectDir)
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -760,7 +760,7 @@ cd $(ProjectDir)
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -911,7 +911,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1061,7 +1061,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1212,7 +1212,7 @@ echo            These errors are the result of dead code elimination not being p
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
@@ -1364,7 +1364,7 @@ echo            These errors are the result of dead code elimination not being p
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -1510,7 +1510,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -1656,7 +1656,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -1808,7 +1808,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -1959,7 +1959,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2111,7 +2111,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2262,7 +2262,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -2408,7 +2408,7 @@ cd $(ProjectDir)
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;inline=__inline;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointExceptions>false</FloatingPointExceptions>

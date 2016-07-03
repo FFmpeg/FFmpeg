@@ -51,12 +51,6 @@
     <ClCompile Include="..\libswresample\options.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
-    <ClCompile Include="..\libswresample\rematrix.c">
-      <Filter>Source Files\libswresample</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libswresample\resample.c">
-      <Filter>Source Files\libswresample</Filter>
-    </ClCompile>
     <ClCompile Include="..\libswresample\resample_dsp.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
@@ -79,6 +73,12 @@
       <Filter>Source Files\libswresample\x86</Filter>
     </ClCompile>
     <ClCompile Include="libswresample\log2_tab_wrap.c">
+      <Filter>Source Files\libswresample</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libswresample\rematrix.c">
+      <Filter>Source Files\libswresample</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libswresample\resample.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
   </ItemGroup>

@@ -129,12 +129,6 @@
     <ClCompile Include="..\libavutil\file_open.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\float_dsp.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\fixed_dsp.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\frame.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -157,9 +151,6 @@
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\lfg.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\lls.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\log.c">
@@ -190,9 +181,6 @@
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\pixdesc.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\pixelutils.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\random_seed.c">
@@ -264,9 +252,6 @@
     <ClCompile Include="..\compat\getopt.c">
       <Filter>Source Files\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\x86\cpu.c">
-      <Filter>Source Files\libavutil\x86</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\x86\fixed_dsp_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
@@ -277,6 +262,21 @@
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\float_dsp.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\fixed_dsp.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\lls.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\pixelutils.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\x86\cpu.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
   </ItemGroup>
