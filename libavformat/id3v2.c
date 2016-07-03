@@ -86,7 +86,7 @@ const char ff_id3v2_3_tags[][4] = {
     { 0 },
 };
 
-const char *ff_id3v2_picture_types[21] = {
+const char * const ff_id3v2_picture_types[21] = {
     "Other",
     "32x32 pixels 'file icon'",
     "Other file icon",

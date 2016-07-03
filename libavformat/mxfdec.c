@@ -981,7 +981,7 @@ static const MXFCodecUL mxf_data_essence_container_uls[] = {
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, AV_CODEC_ID_NONE },
 };
 
-static const char* mxf_data_essence_descriptor[] = {
+static const char * const mxf_data_essence_descriptor[] = {
     "vbi_vanc_smpte_436M",
 };
 

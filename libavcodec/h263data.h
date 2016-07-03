@@ -71,7 +71,7 @@ extern const uint8_t ff_modified_quant_tab[2][32];
 
 extern const uint8_t ff_h263_chroma_qscale_table[32];
 
-extern uint16_t ff_mba_max[6];
-extern uint8_t ff_mba_length[7];
+extern const uint16_t ff_mba_max[6];
+extern const uint8_t ff_mba_length[7];
 
 #endif /* AVCODEC_H263DATA_H */

@@ -903,14 +903,14 @@ static const int tscc2_ac_vlc_sizes[NUM_VLC_SETS] = {
     172, 169, 165, 162, 131, 132, 130, 125, 121, 114, 110, 101, 96
 };
 
-static const uint16_t *tscc2_ac_vlc_syms[NUM_VLC_SETS] = {
+static const uint16_t * const tscc2_ac_vlc_syms[NUM_VLC_SETS] = {
     ac_vlc_desc0_syms, ac_vlc_desc1_syms, ac_vlc_desc2_syms, ac_vlc_desc3_syms,
     ac_vlc_desc4_syms, ac_vlc_desc5_syms, ac_vlc_desc6_syms, ac_vlc_desc7_syms,
     ac_vlc_desc8_syms, ac_vlc_desc9_syms, ac_vlc_descA_syms, ac_vlc_descB_syms,
     ac_vlc_descC_syms,
 };
 
-static const uint16_t *tscc2_ac_vlc_codes[NUM_VLC_SETS] = {
+static const uint16_t * const tscc2_ac_vlc_codes[NUM_VLC_SETS] = {
     ac_vlc_desc0_codes, ac_vlc_desc1_codes, ac_vlc_desc2_codes,
     ac_vlc_desc3_codes, ac_vlc_desc4_codes, ac_vlc_desc5_codes,
     ac_vlc_desc6_codes, ac_vlc_desc7_codes, ac_vlc_desc8_codes,
@@ -918,7 +918,7 @@ static const uint16_t *tscc2_ac_vlc_codes[NUM_VLC_SETS] = {
     ac_vlc_descC_codes,
 };
 
-static const uint8_t *tscc2_ac_vlc_bits[NUM_VLC_SETS] = {
+static const uint8_t * const tscc2_ac_vlc_bits[NUM_VLC_SETS] = {
     ac_vlc_desc0_bits, ac_vlc_desc1_bits, ac_vlc_desc2_bits, ac_vlc_desc3_bits,
     ac_vlc_desc4_bits, ac_vlc_desc5_bits, ac_vlc_desc6_bits, ac_vlc_desc7_bits,
     ac_vlc_desc8_bits, ac_vlc_desc9_bits, ac_vlc_descA_bits, ac_vlc_descB_bits,

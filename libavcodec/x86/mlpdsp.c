@@ -45,14 +45,14 @@ extern char ff_mlp_iirorder_2;
 extern char ff_mlp_iirorder_1;
 extern char ff_mlp_iirorder_0;
 
-static const void *firtable[9] = { &ff_mlp_firorder_0, &ff_mlp_firorder_1,
-                                   &ff_mlp_firorder_2, &ff_mlp_firorder_3,
-                                   &ff_mlp_firorder_4, &ff_mlp_firorder_5,
-                                   &ff_mlp_firorder_6, &ff_mlp_firorder_7,
-                                   &ff_mlp_firorder_8 };
-static const void *iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
-                                   &ff_mlp_iirorder_2, &ff_mlp_iirorder_3,
-                                   &ff_mlp_iirorder_4 };
+static const void * const firtable[9] = { &ff_mlp_firorder_0, &ff_mlp_firorder_1,
+                                          &ff_mlp_firorder_2, &ff_mlp_firorder_3,
+                                          &ff_mlp_firorder_4, &ff_mlp_firorder_5,
+                                          &ff_mlp_firorder_6, &ff_mlp_firorder_7,
+                                          &ff_mlp_firorder_8 };
+static const void * const iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
+                                          &ff_mlp_iirorder_2, &ff_mlp_iirorder_3,
+                                          &ff_mlp_iirorder_4 };
 
 #if ARCH_X86_64
 

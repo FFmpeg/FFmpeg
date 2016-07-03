@@ -118,8 +118,8 @@ static uint8_t requant_tab[8][128];
  */
 static av_cold void build_requant_tab(void)
 {
-    static int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
-    static int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
+    static const int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
+    static const int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
 
     int i, j, step;
 

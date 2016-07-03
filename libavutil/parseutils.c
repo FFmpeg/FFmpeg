@@ -152,7 +152,7 @@ typedef struct ColorEntry {
     uint8_t     rgb_color[3];    ///< RGB values for the color
 } ColorEntry;
 
-static ColorEntry color_table[] = {
+static const ColorEntry color_table[] = {
     { "AliceBlue",            { 0xF0, 0xF8, 0xFF } },
     { "AntiqueWhite",         { 0xFA, 0xEB, 0xD7 } },
     { "Aqua",                 { 0x00, 0xFF, 0xFF } },

@@ -483,7 +483,7 @@ const int16_t ff_vp9_default_scan_32x32[1024] = {
      924,  925,  956,  926,  957,  988,  927,  958,  989, 1020,  959,  990, 1021,  991, 1022, 1023,
 };
 
-const int16_t *ff_vp9_scans[5][4] = {
+const int16_t * const ff_vp9_scans[5][4] = {
     {
         ff_vp9_default_scan_4x4, ff_vp9_col_scan_4x4,
         ff_vp9_row_scan_4x4, ff_vp9_default_scan_4x4
@@ -1040,7 +1040,7 @@ const int16_t ff_vp9_default_scan_32x32_nb[1024][2] = {
     {  990,  959 }, { 1021,  990 }, { 1022,  991 }, {    0,    0 },
 };
 
-const int16_t (*ff_vp9_scans_nb[5][4])[2] = {
+const int16_t (* const ff_vp9_scans_nb[5][4])[2] = {
     {
         ff_vp9_default_scan_4x4_nb, ff_vp9_col_scan_4x4_nb,
         ff_vp9_row_scan_4x4_nb, ff_vp9_default_scan_4x4_nb

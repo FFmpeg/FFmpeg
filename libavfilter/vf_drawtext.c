@@ -219,7 +219,7 @@ static const AVClass drawtext_class = {
 #define FT_ERRORDEF(e, v, s) { (e), (s) },
 #define FT_ERROR_END_LIST { 0, NULL } };
 
-static struct ft_error {
+static const struct ft_error {
     int err;
     const char *err_msg;
 } ft_errors[] =

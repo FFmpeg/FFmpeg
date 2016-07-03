@@ -53,7 +53,7 @@ static const uint8_t run_value_bits_short[16] = {
     3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
 };
 
-static const uint8_t *run_value_bits[2] = {
+static const uint8_t * const run_value_bits[2] = {
     run_value_bits_long, run_value_bits_short
 };
 
@@ -1112,7 +1112,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
     }
 }
 
-AACCoefficientsEncoder ff_aac_coders[] = {
+const AACCoefficientsEncoder ff_aac_coders[] = {
     {
         search_for_quantizers_faac,
         encode_window_bands_info,

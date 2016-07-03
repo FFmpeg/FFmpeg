@@ -842,8 +842,8 @@ static int decode_coeffs(AVCodecContext *avctx)
     int uvstep1d = 1 << b->uvtx, uvstep = 1 << (b->uvtx * 2), ret;
     int16_t (*qmul)[2] = s->segmentation.feat[b->seg_id].qmul;
     int tx = 4 * s->lossless + b->tx;
-    const int16_t **yscans = ff_vp9_scans[tx];
-    const int16_t (**ynbs)[2] = ff_vp9_scans_nb[tx];
+    const int16_t * const *yscans = ff_vp9_scans[tx];
+    const int16_t (* const * ynbs)[2] = ff_vp9_scans_nb[tx];
     const int16_t *uvscan = ff_vp9_scans[b->uvtx][DCT_DCT];
     const int16_t (*uvnb)[2] = ff_vp9_scans_nb[b->uvtx][DCT_DCT];
     uint8_t *a = &s->above_y_nnz_ctx[col * 2];

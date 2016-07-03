@@ -46,7 +46,7 @@ typedef struct AACCoefficientsEncoder {
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe, const float lambda);
 } AACCoefficientsEncoder;
 
-extern AACCoefficientsEncoder ff_aac_coders[];
+extern const AACCoefficientsEncoder ff_aac_coders[];
 
 /**
  * AAC encoder context
@@ -67,7 +67,7 @@ typedef struct AACEncContext {
     ChannelElement *cpe;                         ///< channel elements
     FFPsyContext psy;
     struct FFPsyPreprocessContext* psypp;
-    AACCoefficientsEncoder *coder;
+    const AACCoefficientsEncoder *coder;
     int cur_channel;
     int last_frame;
     float lambda;

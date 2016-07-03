@@ -161,8 +161,8 @@ static av_cold int qsv_enc_init(AVCodecContext *avctx)
     int ret;
 
     if (q->load_plugin != LOAD_PLUGIN_NONE) {
-        static const char *uid_hevcenc_sw = "2fca99749fdb49aeb121a5b63ef568f7";
-        static const char *uid_hevcenc_hw = "6fadc791a0c2eb479ab6dcd5ea9da347";
+        static const char * const uid_hevcenc_sw = "2fca99749fdb49aeb121a5b63ef568f7";
+        static const char * const uid_hevcenc_hw = "6fadc791a0c2eb479ab6dcd5ea9da347";
 
         if (q->qsv.load_plugins[0]) {
             av_log(avctx, AV_LOG_WARNING,

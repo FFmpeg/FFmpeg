@@ -673,7 +673,7 @@ static const uint16_t order_MODE_23k85[] = {
 };
 
 /** Reordering array addresses for each mode */
-static const uint16_t* amr_bit_orderings_by_mode[] = {
+static const uint16_t * const amr_bit_orderings_by_mode[] = {
     order_MODE_6k60,
     order_MODE_8k85,
     order_MODE_12k65,
@@ -1805,7 +1805,7 @@ static const float ir_filter_mid[64] = {
     -7.501221e-02,  2.920532e-02,  1.660156e-02,  7.751465e-02
 };
 
-static const float *ir_filters_lookup[2] = {
+static const float * const ir_filters_lookup[2] = {
     ir_filter_str, ir_filter_mid
 };
 

@@ -70,7 +70,7 @@ DECLARE_ALIGNED(16, static const int16_t, fdct_one_corr)[8] = { X8(1) };
 
 DECLARE_ALIGNED(8, static const int32_t, fdct_r_row)[2] = {RND_FRW_ROW, RND_FRW_ROW };
 
-static struct
+static const struct
 {
  DECLARE_ALIGNED(16, const int32_t, fdct_r_row_sse2)[4];
 } fdct_r_row_sse2 =
@@ -153,7 +153,7 @@ DECLARE_ALIGNED(8, static const int16_t, tab_frw_01234567)[] = {  // forward_dct
   29692,  -12299,   26722,  -31521,
 };
 
-static struct
+static const struct
 {
  DECLARE_ALIGNED(16, const int16_t, tab_frw_01234567_sse2)[256];
 } tab_frw_01234567_sse2 =

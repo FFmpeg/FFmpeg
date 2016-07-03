@@ -477,8 +477,8 @@ reload:
 static int save_avio_options(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
-    static const char *opts[] = { "headers", "user_agent", NULL };
-    const char **opt = opts;
+    static const char * const opts[] = { "headers", "user_agent", NULL };
+    const char * const *opt = opts;
     uint8_t *buf;
     int ret = 0;
 

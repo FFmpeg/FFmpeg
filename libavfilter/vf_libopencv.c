@@ -321,7 +321,7 @@ typedef struct OCVFilterEntry {
     void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
 } OCVFilterEntry;
 
-static OCVFilterEntry ocv_filter_entries[] = {
+static const OCVFilterEntry ocv_filter_entries[] = {
     { "dilate", sizeof(DilateContext), dilate_init, dilate_uninit, dilate_end_frame_filter },
     { "erode",  sizeof(DilateContext), dilate_init, dilate_uninit, erode_end_frame_filter  },
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
@@ -333,7 +333,7 @@ static av_cold int init(AVFilterContext *ctx)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
-        OCVFilterEntry *entry = &ocv_filter_entries[i];
+        const OCVFilterEntry *entry = &ocv_filter_entries[i];
         if (!strcmp(s->name, entry->name)) {
             s->init             = entry->init;
             s->uninit           = entry->uninit;

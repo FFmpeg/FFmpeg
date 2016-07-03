@@ -1764,13 +1764,13 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-static const char *color_range_names[] = {
+static const char * const color_range_names[] = {
     [AVCOL_RANGE_UNSPECIFIED] = "unknown",
     [AVCOL_RANGE_MPEG] = "tv",
     [AVCOL_RANGE_JPEG] = "pc",
 };
 
-static const char *color_primaries_names[] = {
+static const char * const color_primaries_names[] = {
     [AVCOL_PRI_RESERVED0] = "reserved",
     [AVCOL_PRI_BT709] = "bt709",
     [AVCOL_PRI_UNSPECIFIED] = "unknown",
@@ -1787,7 +1787,7 @@ static const char *color_primaries_names[] = {
     [AVCOL_PRI_JEDEC_P22] = "jedec-p22",
 };
 
-static const char *color_transfer_names[] = {
+static const char * const color_transfer_names[] = {
     [AVCOL_TRC_RESERVED0] = "reserved",
     [AVCOL_TRC_BT709] = "bt709",
     [AVCOL_TRC_UNSPECIFIED] = "unknown",
@@ -1809,7 +1809,7 @@ static const char *color_transfer_names[] = {
     [AVCOL_TRC_ARIB_STD_B67] = "arib-std-b67",
 };
 
-static const char *color_space_names[] = {
+static const char * const color_space_names[] = {
     [AVCOL_SPC_RGB] = "gbr",
     [AVCOL_SPC_BT709] = "bt709",
     [AVCOL_SPC_UNSPECIFIED] = "unknown",
@@ -1824,7 +1824,7 @@ static const char *color_space_names[] = {
     [AVCOL_SPC_SMPTE2085] = "smpte2085",
 };
 
-static const char *chroma_location_names[] = {
+static const char * const chroma_location_names[] = {
     [AVCHROMA_LOC_UNSPECIFIED] = "unspecified",
     [AVCHROMA_LOC_LEFT] = "left",
     [AVCHROMA_LOC_CENTER] = "center",

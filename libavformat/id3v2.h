@@ -158,6 +158,6 @@ extern const char ff_id3v2_3_tags[][4];
 
 extern const CodecMime ff_id3v2_mime_tags[];
 
-extern const char *ff_id3v2_picture_types[21];
+extern const char * const ff_id3v2_picture_types[21];
 
 #endif /* AVFORMAT_ID3V2_H */
