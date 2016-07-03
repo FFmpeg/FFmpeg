@@ -1208,17 +1208,16 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
         }
     }
 
-    if (lc->cu.cu_transquant_bypass_flag) {
-        s->hevcdsp.transquant_bypass[log2_trafo_size - 2](dst, coeffs, stride);
-    } else {
+    if (!lc->cu.cu_transquant_bypass_flag) {
         if (transform_skip_flag)
-            s->hevcdsp.transform_skip(dst, coeffs, stride);
+            s->hevcdsp.dequant(coeffs);
         else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 &&
                  log2_trafo_size == 2)
-            s->hevcdsp.transform_4x4_luma_add(dst, coeffs, stride);
+            s->hevcdsp.transform_4x4_luma(coeffs);
         else
-            s->hevcdsp.transform_add[log2_trafo_size - 2](dst, coeffs, stride);
+            s->hevcdsp.idct[log2_trafo_size - 2](coeffs);
     }
+    s->hevcdsp.add_residual[log2_trafo_size - 2](dst, coeffs, stride);
 }
 
 static int hls_transform_unit(HEVCContext *s, int x0, int y0,
