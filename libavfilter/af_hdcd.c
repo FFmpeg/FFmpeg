@@ -949,6 +949,7 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
         int len = FFMIN(count, target_gain - gain);
         /* attenuate slowly */
         for (i = 0; i < len; i++) {
+            ++gain;
             APPLY_GAIN(*samples, gain);
             samples += stride;
         }
