@@ -13,72 +13,72 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2016-xx-xx - xxxxxxx - lavu 55.19.0 - hwcontext_vaapi.h
+2016-07-02 - 4926fa9 - lavu 55.19.0 - hwcontext_vaapi.h
   Add driver quirks field to VAAPI-specific hwdevice and enum with
   members AV_VAAPI_DRIVER_QUIRK_* to represent its values.
 
-2016-xx-xx - xxxxxxx - lavu 55.18.0 - pixdesc.h
+2016-07-02 - b7c5f88 - lavu 55.18.0 - pixfmt.h
   Add AV_PIX_FMT_P010(LE/BE).
 
-2016-xx-xx - xxxxxxx - lavc 57.24.0 - avcodec.h
+2016-06-21 - 32c8359 - lavc 57.24.0 - avcodec.h
   Decoders now export the frame timestamp as AVFrame.pts. It was
   previously exported as AVFrame.pkt_pts, which is now deprecated.
 
-2016-xx-xx - xxxxxxx - lavu 55.16.0 - hwcontext.h hwcontext_qsv.h
+2016-06-21 - 59e7361 - lavu 55.16.0 - hwcontext.h hwcontext_qsv.h
   Add AV_HWDEVICE_TYPE_QSV and a new installed header with QSV-specific
   hwcontext definitions.
 
-2016-xx-xx - xxxxxxx - lavc 57.23.0 - avcodec.h
+2016-06-21 - e85f6f7 - lavc 57.23.0 - avcodec.h
   AVCodecContext.hw_frames_ctx now may be used by decoders.
 
-2016-xx-xx - xxxxxxx - lavc 57.20.0 - avcodec.h
+2016-06-12 - 90f469a - lavc 57.20.0 - avcodec.h
   Add FF_PROFILE_H264_MULTIVIEW_HIGH and FF_PROFILE_H264_STEREO_HIGH.
 
-2016-xx-xx - xxxxxxx - lavu 55.13.0 - hwcontext.h
+2016-05-26 - 1c9e861 - lavu 55.13.0 - hwcontext.h
   Add av_hwdevice_ctx_create().
 
-2016-xx-xx - xxxxxxx - lavc 57.19.1 - avcodec.h
+2016-05-24 - ad61da05 - lavc 57.19.1 - avcodec.h
   Adjust values for JPEG 2000 profiles.
 
-2016-xx-xx - xxxxxxx - lavf 57.7.0 - avio.h
+2016-05-18 - db7968b - lavf 57.7.0 - avio.h
   Add AVIODataMarkerType, write_data_type, ignore_boundary_point and
   avio_write_marker.
 
-2016-xx-xx - xxxxxxx - lavu 55.12.0 - opt.h
+2016-05-17 - 0c4468d - lavu 55.12.0 - opt.h
   Add av_stereo3d_type_name() and av_stereo3d_from_name().
 
-2016-xx-xx - xxxxxxx - lavu 55.11.0 - hwcontext_dxva2.h
+2016-05-17 - c46db38 - lavu 55.11.0 - hwcontext_dxva2.h
   Add new installed header with DXVA2-specific hwcontext definitions.
 
-2016-xx-xx - xxxxxxx - lavu 55.10.0 - opt.h
+2016-03-24 - 564b459 - lavu 55.10.0 - opt.h
   Add av_opt_copy().
 
-2016-xx-xx - xxxxxxx - lavc 57.16.0 - avcodec.h
+2016-03-23 - 05f6670 - lavc 57.16.0 - avcodec.h
   Add a new audio/video encoding and decoding API with decoupled input
   and output -- avcodec_send_packet(), avcodec_receive_frame(),
   avcodec_send_frame() and avcodec_receive_packet().
 
-2016-xx-xx - xxxxxxx - lavc 57.15.0 - avcodec.h
+2016-03-20 - 33d1898 - lavc 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
   Deprecate the old bitstream filtering API.
 
-2016-xx-xx - xxxxxxx - lavfi 6.3.0 - avfilter.h
+2016-03-19 - 07a844f - lavfi 6.3.0 - avfilter.h
   Add AVFilterContext.hw_device_ctx.
 
-2016-xx-xx - xxxxxxx - lavu 55.9.0 - hwcontext_vaapi.h
+2016-03-19 - 551c677 - lavu 55.9.0 - hwcontext_vaapi.h
   Add new installed header with VAAPI-specific hwcontext definitions.
 
-2016-xx-xx - xxxxxxx - lavu 55.8.0 - pixfmt.h
+2016-03-19 - d264c72 - lavu 55.8.0 - pixfmt.h
   Deprecate all AV_PIX_FMT_VAAPI_* formats.
   Replaced by AV_PIX_FMT_VAAPI.
 
-2016-xx-xx - xxxxxxx - lavu 55.7.0 - hwcontext.h
+2016-03-19 - b1f01e8 - lavu 55.7.0 - hwcontext.h
   Add AVHWFramesConstraints and associated API.
 
 2016-02-23 - 9200514 - lavf 57.5.0 - avformat.h
   Add AVStream.codecpar, deprecate AVStream.codec.
 
-2016-xx-xx - lavc 57.14.0 - avcodec.h
+2016-02-23 - lavc 57.14.0 - avcodec.h
   998e1b8 - Add AVCodecParameters and its related API.
   a806834 - Add av_get_audio_frame_duration2().
 
