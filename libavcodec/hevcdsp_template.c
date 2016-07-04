@@ -154,26 +154,6 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         assign(dst[3 * dstep], e0 - o0);                                \
     } while (0)
 
-static void FUNC(idct_4x4)(int16_t *coeffs)
-{
-    int i;
-    int shift    = 7;
-    int add      = 1 << (shift - 1);
-    int16_t *src = coeffs;
-
-    for (i = 0; i < 4; i++) {
-        TR_4(src, src, 4, 4, SCALE);
-        src++;
-    }
-
-    shift = 20 - BIT_DEPTH;
-    add   = 1 << (shift - 1);
-    for (i = 0; i < 4; i++) {
-        TR_4(coeffs, coeffs, 1, 1, SCALE);
-        coeffs += 4;
-    }
-}
-
 #define TR_8(dst, src, dstep, sstep, assign)                      \
     do {                                                          \
         int i, j;                                                 \
@@ -222,67 +202,39 @@ static void FUNC(idct_4x4)(int16_t *coeffs)
         }                                                         \
     } while (0)
 
-
-
-static void FUNC(idct_8x8)(int16_t *coeffs)
-{
-    int i;
-    int shift    = 7;
-    int add      = 1 << (shift - 1);
-    int16_t *src = coeffs;
-
-    for (i = 0; i < 8; i++) {
-        TR_8(src, src, 8, 8, SCALE);
-        src++;
-    }
-
-    shift = 20 - BIT_DEPTH;
-    add   = 1 << (shift - 1);
-    for (i = 0; i < 8; i++) {
-        TR_8(coeffs, coeffs, 1, 1, SCALE);
-        coeffs += 8;
-    }
+#define IDCT(H)                                                   \
+static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs)          \
+{                                                                 \
+    int i;                                                        \
+    int      shift = 7;                                           \
+    int      add   = 1 << (shift - 1);                            \
+    int16_t *src   = coeffs;                                      \
+                                                                  \
+    for (i = 0; i < H; i++) {                                     \
+        TR_ ## H(src, src, H, H, SCALE);                          \
+        src++;                                                    \
+    }                                                             \
+                                                                  \
+    shift = 20 - BIT_DEPTH;                                       \
+    add   = 1 << (shift - 1);                                     \
+    for (i = 0; i < H; i++) {                                     \
+        TR_ ## H(coeffs, coeffs, 1, 1, SCALE);                    \
+        coeffs += H;                                              \
+    }                                                             \
 }
 
-static void FUNC(idct_16x16)(int16_t *coeffs)
-{
-    int i;
-    int shift    = 7;
-    int add      = 1 << (shift - 1);
-    int16_t *src = coeffs;
+IDCT( 4)
+IDCT( 8)
+IDCT(16)
+IDCT(32)
+#undef TR_4
+#undef TR_8
+#undef TR_16
+#undef TR_32
 
-    for (i = 0; i < 16; i++) {
-        TR_16(src, src, 16, 16, SCALE);
-        src++;
-    }
-
-    shift = 20 - BIT_DEPTH;
-    add   = 1 << (shift - 1);
-    for (i = 0; i < 16; i++) {
-        TR_16(coeffs, coeffs, 1, 1, SCALE);
-        coeffs += 16;
-    }
-}
-
-static void FUNC(idct_32x32)(int16_t *coeffs)
-{
-    int i;
-    int shift    = 7;
-    int add      = 1 << (shift - 1);
-    int16_t *src = coeffs;
-
-    for (i = 0; i < 32; i++) {
-        TR_32(src, src, 32, 32, SCALE);
-        src++;
-    }
-    src   = coeffs;
-    shift = 20 - BIT_DEPTH;
-    add   = 1 << (shift - 1);
-    for (i = 0; i < 32; i++) {
-        TR_32(coeffs, coeffs, 1, 1, SCALE);
-        coeffs += 32;
-    }
-}
+#undef SET
+#undef SCALE
+#undef ADD_AND_SCALE
 
 static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride, SAOParams *sao,
