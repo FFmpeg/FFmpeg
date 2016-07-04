@@ -5169,6 +5169,16 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options)
+{
+    if (!s->oformat)
+        return AVERROR(EINVAL);
+
+    if (!(s->oformat->flags & AVFMT_NOFILE))
+        return s->io_open(s, &s->pb, url, AVIO_FLAG_WRITE, options);
+    return 0;
+}
+
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
 {
     if (*pb)
