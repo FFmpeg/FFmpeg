@@ -223,10 +223,29 @@ static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs)          \
     }                                                             \
 }
 
+#define IDCT_DC(H)                                                \
+static void FUNC(idct_ ## H ## x ## H ## _dc)(int16_t *coeffs)    \
+{                                                                 \
+    int i, j;                                                     \
+    int shift = 14 - BIT_DEPTH;                                   \
+    int add   = 1 << (shift - 1);                                 \
+    int coeff = (((coeffs[0] + 1) >> 1) + add) >> shift;          \
+                                                                  \
+    for (j = 0; j < H; j++) {                                     \
+        for (i = 0; i < H; i++) {                                 \
+            coeffs[i + j * H] = coeff;                            \
+        }                                                         \
+    }                                                             \
+}
+
 IDCT( 4)
 IDCT( 8)
 IDCT(16)
 IDCT(32)
+IDCT_DC( 4)
+IDCT_DC( 8)
+IDCT_DC(16)
+IDCT_DC(32)
 #undef TR_4
 #undef TR_8
 #undef TR_16

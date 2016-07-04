@@ -175,6 +175,10 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
     hevcdsp->idct[2]                = FUNC(idct_16x16, depth);              \
     hevcdsp->idct[3]                = FUNC(idct_32x32, depth);              \
                                                                             \
+    hevcdsp->idct_dc[0]             = FUNC(idct_4x4_dc, depth);             \
+    hevcdsp->idct_dc[1]             = FUNC(idct_8x8_dc, depth);             \
+    hevcdsp->idct_dc[2]             = FUNC(idct_16x16_dc, depth);           \
+    hevcdsp->idct_dc[3]             = FUNC(idct_32x32_dc, depth);           \
     hevcdsp->sao_band_filter[0] = FUNC(sao_band_filter_0, depth);           \
     hevcdsp->sao_band_filter[1] = FUNC(sao_band_filter_1, depth);           \
     hevcdsp->sao_band_filter[2] = FUNC(sao_band_filter_2, depth);           \
