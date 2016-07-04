@@ -89,6 +89,11 @@ fate-filter-asetnsamples: tests/data/asynth-44100-2.wav
 fate-filter-asetnsamples: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-asetnsamples: CMD = framecrc -i $(SRC) -af asetnsamples=512:p=1
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ASETRATE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-asetrate
+fate-filter-asetrate: tests/data/asynth-44100-2.wav
+fate-filter-asetrate: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-asetrate: CMD = framecrc -i $(SRC) -aframes 20 -af asetrate=20000
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
