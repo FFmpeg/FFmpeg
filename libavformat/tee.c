@@ -294,17 +294,9 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             ret = AVERROR(ENOMEM);
             goto end;
         }
-        st2->id = st->id;
-        st2->r_frame_rate        = st->r_frame_rate;
-        st2->time_base           = st->time_base;
-        st2->start_time          = st->start_time;
-        st2->duration            = st->duration;
-        st2->nb_frames           = st->nb_frames;
-        st2->disposition         = st->disposition;
-        st2->sample_aspect_ratio = st->sample_aspect_ratio;
-        st2->avg_frame_rate      = st->avg_frame_rate;
-        av_dict_copy(&st2->metadata, st->metadata, 0);
-        if ((ret = avcodec_parameters_copy(st2->codecpar, st->codecpar)) < 0)
+
+        ret = ff_stream_encode_params_copy(st2, st);
+        if (ret < 0)
             goto end;
     }
 
