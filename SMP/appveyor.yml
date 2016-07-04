@@ -51,6 +51,9 @@ before_build:
 
     $script | Out-File build.vcxproj
     
+# Backup platform so it is not affected by vcvars
+- cmd: SET PLATFORMBACK=%PLATFORM%
+    
 # Setup msvc environment for required compiler version (specified by MSVC_VER)
 - ps: $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
 - cmd: call "%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
@@ -86,7 +89,7 @@ after_build:
 
 artifacts:
 - path: build_out
-  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
+  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORMBACK)_msvc$(MSVC_VER)
   type: zip
 
 deploy:
@@ -95,5 +98,5 @@ deploy:
   description: Pre-built static and shared libraries in 32b and 64b for $(APPVEYOR_PROJECT_NAME) $(APPVEYOR_REPO_TAG_NAME)
   auth_token:
     secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
-  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
+  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORMBACK)_msvc$(MSVC_VER)
   force_update: true
