@@ -14,12 +14,14 @@ FFMPEG_MULTILIB := 32
 include $(LOCAL_PATH)/../android/build.mk
 
 LOCAL_C_INCLUDES +=		\
-	external/zlib
+	external/zlib \
+	$(TARGET_OUT_HEADERS)/libva
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
 	libavutil \
-	libswresample
+	libswresample \
+	libva
 
 ifneq ($(ARCH_ARM_HAVE_NEON),)
   LOCAL_SRC_FILES += neon/mpegvideo.c
@@ -35,12 +37,14 @@ FFMPEG_MULTILIB := 64
 include $(LOCAL_PATH)/../android/build.mk
 
 LOCAL_C_INCLUDES +=		\
-	external/zlib
+	external/zlib \
+	$(TARGET_OUT_HEADERS)/libva
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
 	libavutil \
-	libswresample
+	libswresample \
+	libva
 
 ifneq ($(ARCH_ARM_HAVE_NEON),)
   LOCAL_SRC_FILES += neon/mpegvideo.c
