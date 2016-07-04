@@ -300,12 +300,11 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             goto end;
     }
 
-    if (!(avf2->oformat->flags & AVFMT_NOFILE)) {
-        if ((ret = avf2->io_open(avf2, &avf2->pb, filename, AVIO_FLAG_WRITE, NULL)) < 0) {
-            av_log(avf, AV_LOG_ERROR, "Slave '%s': error opening: %s\n",
-                   slave, av_err2str(ret));
-            goto end;
-        }
+    ret = ff_format_output_open(avf2, filename, NULL);
+    if (ret < 0) {
+        av_log(avf, AV_LOG_ERROR, "Slave '%s': error opening: %s\n", slave,
+               av_err2str(ret));
+        goto end;
     }
 
     if ((ret = avformat_write_header(avf2, &options)) < 0) {
