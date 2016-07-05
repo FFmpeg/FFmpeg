@@ -46,7 +46,7 @@ typedef struct HEVCDSPContext {
 
     void (*dequant)(int16_t *coeffs);
     void (*transform_4x4_luma)(int16_t *coeffs);
-    void (*idct[4])(int16_t *coeffs);
+    void (*idct[4])(int16_t *coeffs, int col_limit);
     void (*idct_dc[4])(int16_t *coeffs);
 
     void (*sao_band_filter[4])(uint8_t *dst, uint8_t *src, ptrdiff_t stride,

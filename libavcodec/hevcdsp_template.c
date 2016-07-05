@@ -137,7 +137,7 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
 
 #undef TR_4x4_LUMA
 
-#define TR_4(dst, src, dstep, sstep, assign)                            \
+#define TR_4(dst, src, dstep, sstep, assign, end)                       \
     do {                                                                \
         const int e0 = transform[8 * 0][0] * src[0 * sstep] +           \
                        transform[8 * 2][0] * src[2 * sstep];            \
@@ -154,15 +154,15 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         assign(dst[3 * dstep], e0 - o0);                                \
     } while (0)
 
-#define TR_8(dst, src, dstep, sstep, assign)                      \
+#define TR_8(dst, src, dstep, sstep, assign, end)                 \
     do {                                                          \
         int i, j;                                                 \
         int e_8[4];                                               \
         int o_8[4] = { 0 };                                       \
         for (i = 0; i < 4; i++)                                   \
-            for (j = 1; j < 8; j += 2)                            \
+            for (j = 1; j < end; j += 2)                          \
                 o_8[i] += transform[4 * j][i] * src[j * sstep];   \
-        TR_4(e_8, src, 1, 2 * sstep, SET);                        \
+        TR_4(e_8, src, 1, 2 * sstep, SET, 4);                     \
                                                                   \
         for (i = 0; i < 4; i++) {                                 \
             assign(dst[i * dstep], e_8[i] + o_8[i]);              \
@@ -170,15 +170,15 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         }                                                         \
     } while (0)
 
-#define TR_16(dst, src, dstep, sstep, assign)                     \
+#define TR_16(dst, src, dstep, sstep, assign, end)                \
     do {                                                          \
         int i, j;                                                 \
         int e_16[8];                                              \
         int o_16[8] = { 0 };                                      \
         for (i = 0; i < 8; i++)                                   \
-            for (j = 1; j < 16; j += 2)                           \
+            for (j = 1; j < end; j += 2)                          \
                 o_16[i] += transform[2 * j][i] * src[j * sstep];  \
-        TR_8(e_16, src, 1, 2 * sstep, SET);                       \
+        TR_8(e_16, src, 1, 2 * sstep, SET, 8);                    \
                                                                   \
         for (i = 0; i < 8; i++) {                                 \
             assign(dst[i * dstep], e_16[i] + o_16[i]);            \
@@ -186,15 +186,15 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         }                                                         \
     } while (0)
 
-#define TR_32(dst, src, dstep, sstep, assign)                     \
+#define TR_32(dst, src, dstep, sstep, assign, end)                \
     do {                                                          \
         int i, j;                                                 \
         int e_32[16];                                             \
         int o_32[16] = { 0 };                                     \
         for (i = 0; i < 16; i++)                                  \
-            for (j = 1; j < 32; j += 2)                           \
+            for (j = 1; j < end; j += 2)                          \
                 o_32[i] += transform[j][i] * src[j * sstep];      \
-        TR_16(e_32, src, 1, 2 * sstep, SET);                      \
+        TR_16(e_32, src, 1, 2 * sstep, SET, end / 2);             \
                                                                   \
         for (i = 0; i < 16; i++) {                                \
             assign(dst[i * dstep], e_32[i] + o_32[i]);            \
@@ -202,23 +202,35 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         }                                                         \
     } while (0)
 
+#define IDCT_VAR4(H)                                              \
+    int limit2 = FFMIN(col_limit + 4, H)
+#define IDCT_VAR8(H)                                              \
+    int limit  = FFMIN(col_limit, H);                             \
+    int limit2 = FFMIN(col_limit + 4, H)
+#define IDCT_VAR16(H)   IDCT_VAR8(H)
+#define IDCT_VAR32(H)   IDCT_VAR8(H)
+
 #define IDCT(H)                                                   \
-static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs)          \
+static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs,          \
+                                        int col_limit)            \
 {                                                                 \
     int i;                                                        \
     int      shift = 7;                                           \
     int      add   = 1 << (shift - 1);                            \
     int16_t *src   = coeffs;                                      \
+    IDCT_VAR ## H(H);                                             \
                                                                   \
     for (i = 0; i < H; i++) {                                     \
-        TR_ ## H(src, src, H, H, SCALE);                          \
+        TR_ ## H(src, src, H, H, SCALE, limit2);                  \
+        if (limit2 < H && i%4 == 0 && !!i)                        \
+            limit2 -= 4;                                          \
         src++;                                                    \
     }                                                             \
                                                                   \
     shift = 20 - BIT_DEPTH;                                       \
     add   = 1 << (shift - 1);                                     \
     for (i = 0; i < H; i++) {                                     \
-        TR_ ## H(coeffs, coeffs, 1, 1, SCALE);                    \
+        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);             \
         coeffs += H;                                              \
     }                                                             \
 }
