@@ -237,7 +237,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                 extract_length = (extract_length << 8) | buf[i];
 
             if (extract_length > length) {
-                av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
+                av_log(logctx, AV_LOG_ERROR,
+                       "Invalid NAL unit size (%d > %d).\n",
+                       extract_length, length);
                 return AVERROR_INVALIDDATA;
             }
             buf     += nal_length_size;
