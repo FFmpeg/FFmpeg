@@ -8427,8 +8427,23 @@ ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 
 @section hdcd
 
-Decodes high definition audio cd data. 16-Bit PCM stream containing hdcd flags
-is converted to 20-bit PCM stream.
+Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
+embedded HDCD codes is expanded into a 20-bit PCM stream.
+
+The filter supports the Peak Extend and Low-level Gain Adjustment features
+of HDCD, and detects the Transient Filter flag.
+
+@example
+ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
+@end example
+
+When using the filter with wav, note the default encoding for wav is 16-bit,
+so the resulting 20-bit stream will be truncated back to 16-bit. Use something
+like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+@example
+ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
+ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+@end example
 
 @section hflip
 
