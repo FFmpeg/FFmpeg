@@ -195,11 +195,27 @@ static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
     return 1;
 }
 
+static int find_next_start_code(const uint8_t *buf, const uint8_t *next_avc)
+{
+    int i = 0;
+
+    if (buf + 3 >= next_avc)
+        return next_avc - buf;
+
+    while (buf + i + 3 < next_avc) {
+        if (buf[i] == 0 && buf[i + 1] == 0 && buf[i + 2] == 1)
+            break;
+        i++;
+    }
+    return i + 3;
+}
+
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           void *logctx, int is_nalff, int nal_length_size,
                           enum AVCodecID codec_id)
 {
     int consumed, ret = 0;
+    const uint8_t *next_avc = buf + (is_nalff ? 0 : length);
 
     pkt->nb_nals = 0;
     while (length >= 4) {
@@ -207,29 +223,52 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         int extract_length = 0;
         int skip_trailing_zeros = 1;
 
-        if (is_nalff) {
+        /*
+         * Only parse an AVC1 length field if one is expected at the current
+         * buffer position. There are unfortunately streams with multiple
+         * NAL units covered by the length field. Those NAL units are delimited
+         * by Annex B start code prefixes. ff_h2645_extract_rbsp() detects it
+         * correctly and consumes only the first NAL unit. The additional NAL
+         * units are handled here in the Annex B parsing code.
+         */
+        if (buf == next_avc) {
             int i;
             for (i = 0; i < nal_length_size; i++)
                 extract_length = (extract_length << 8) | buf[i];
-            buf    += nal_length_size;
-            length -= nal_length_size;
 
             if (extract_length > length) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit size.\n");
                 return AVERROR_INVALIDDATA;
             }
+            buf     += nal_length_size;
+            length  -= nal_length_size;
+            // keep track of the next AVC1 length field
+            next_avc = buf + extract_length;
         } else {
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
-            }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1)
-                return AVERROR_INVALIDDATA;
+            /*
+             * expected to return immediately except for streams with mixed
+             * NAL unit coding
+             */
+            int buf_index = find_next_start_code(buf, next_avc);
 
-            buf           += 3;
-            length        -= 3;
-            extract_length = length;
+            buf    += buf_index;
+            length -= buf_index;
+
+            /*
+             * break if an AVC1 length field is expected at the current buffer
+             * position
+             */
+            if (buf == next_avc)
+                continue;
+
+            if (length > 0) {
+                extract_length = length;
+            } else if (pkt->nb_nals == 0) {
+                av_log(logctx, AV_LOG_ERROR, "No NAL unit found\n");
+                return AVERROR_INVALIDDATA;
+            } else {
+                break;
+            }
         }
 
         if (pkt->nals_allocated < pkt->nb_nals + 1) {
