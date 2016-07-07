@@ -1195,8 +1195,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             } else {
                 for (x = 0; x < td->xsize; x++) {
                     union av_intfloat32 t;
+                    int c;
 
-                    for (int c = 0; c < rgb_channel_count; c++) {
+                    for (c = 0; c < rgb_channel_count; c++) {
                         t.i = bytestream_get_le32(&rgb[c]);
                         if (t.f > 0.0f)  /* avoid negative values */
                             t.f = powf(t.f, one_gamma);
@@ -1210,7 +1211,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         } else {
             // 16-bit
             for (x = 0; x < td->xsize; x++) {
-                for (int c = 0; c < rgb_channel_count; c++) {
+                int c;
+                for (c = 0; c < rgb_channel_count; c++) {
                     *ptr_x++ = s->gamma_table[bytestream_get_le16(&rgb[c])];
                 }
 
