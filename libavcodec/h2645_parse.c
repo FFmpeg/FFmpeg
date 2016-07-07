@@ -293,7 +293,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
             buf           += 3;
             length        -= 3;
-            extract_length = length;
+            extract_length = FFMIN(length, next_avc - buf);
 
             if (buf >= next_avc) {
                 /* skip to the start of the next NAL */
