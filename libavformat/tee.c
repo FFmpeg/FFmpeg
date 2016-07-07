@@ -37,7 +37,7 @@ typedef enum {
 
 typedef struct {
     AVFormatContext *avf;
-    AVBitStreamFilterContext **bsfs; ///< bitstream filters per stream
+    AVBSFContext **bsfs; ///< bitstream filters per stream
 
     SlaveFailurePolicy on_fail;
 
@@ -63,46 +63,6 @@ static const AVClass tee_muxer_class = {
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
-/**
- * Parse list of bitstream filters and add them to the list of filters
- * pointed to by bsfs.
- *
- * The list must be specified in the form:
- * BSFS ::= BSF[,BSFS]
- */
-static int parse_bsfs(void *log_ctx, const char *bsfs_spec,
-                      AVBitStreamFilterContext **bsfs)
-{
-    char *bsf_name, *buf, *dup, *saveptr;
-    int ret = 0;
-
-    if (!(dup = buf = av_strdup(bsfs_spec)))
-        return AVERROR(ENOMEM);
-
-    while (bsf_name = av_strtok(buf, ",", &saveptr)) {
-        AVBitStreamFilterContext *bsf = av_bitstream_filter_init(bsf_name);
-
-        if (!bsf) {
-            av_log(log_ctx, AV_LOG_ERROR,
-                   "Cannot initialize bitstream filter with name '%s', "
-                   "unknown filter or internal error happened\n",
-                   bsf_name);
-            ret = AVERROR_UNKNOWN;
-            goto end;
-        }
-
-        /* append bsf context to the list of bsf contexts */
-        *bsfs = bsf;
-        bsfs = &bsf->next;
-
-        buf = NULL;
-    }
-
-end:
-    av_free(dup);
-    return ret;
-}
 
 static inline int parse_slave_failure_policy_option(const char *opt, TeeSlave *tee_slave)
 {
@@ -135,14 +95,8 @@ static int close_slave(TeeSlave *tee_slave)
         ret = av_write_trailer(avf);
 
     if (tee_slave->bsfs) {
-        for (i = 0; i < avf->nb_streams; ++i) {
-            AVBitStreamFilterContext *bsf_next, *bsf = tee_slave->bsfs[i];
-            while (bsf) {
-                bsf_next = bsf->next;
-                av_bitstream_filter_close(bsf);
-                bsf = bsf_next;
-            }
-        }
+        for (i = 0; i < avf->nb_streams; ++i)
+            av_bsf_free(&tee_slave->bsfs[i]);
     }
     av_freep(&tee_slave->stream_map);
     av_freep(&tee_slave->bsfs);
@@ -312,7 +266,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
                            "output '%s', filters will be ignored\n", i, filename);
                     continue;
                 }
-                ret = parse_bsfs(avf, entry->value, &tee_slave->bsfs[i]);
+                ret = av_bsf_list_parse_str(entry->value, &tee_slave->bsfs[i]);
                 if (ret < 0) {
                     av_log(avf, AV_LOG_ERROR,
                            "Error parsing bitstream filter sequence '%s' associated to "
@@ -323,6 +277,37 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
         }
 
         av_dict_set(&options, entry->key, NULL, 0);
+    }
+
+    for (i = 0; i < avf->nb_streams; i++){
+        int target_stream = tee_slave->stream_map[i];
+        if (target_stream < 0)
+            continue;
+
+        if (!tee_slave->bsfs[target_stream]) {
+            /* Add pass-through bitstream filter */
+            ret = av_bsf_get_null_filter(&tee_slave->bsfs[target_stream]);
+            if (ret < 0) {
+                av_log(avf, AV_LOG_ERROR,
+                       "Failed to create pass-through bitstream filter: %s\n",
+                       av_err2str(ret));
+                goto end;
+            }
+        }
+
+        tee_slave->bsfs[target_stream]->time_base_in = avf->streams[i]->time_base;
+        ret = avcodec_parameters_copy(tee_slave->bsfs[target_stream]->par_in,
+                                      avf->streams[i]->codecpar);
+        if (ret < 0)
+            goto end;
+
+        ret = av_bsf_init(tee_slave->bsfs[target_stream]);
+        if (ret < 0) {
+            av_log(avf, AV_LOG_ERROR,
+            "Failed to initialize bitstream filter(s): %s\n",
+            av_err2str(ret));
+            goto end;
+        }
     }
 
     if (options) {
@@ -349,20 +334,16 @@ static void log_slave(TeeSlave *slave, void *log_ctx, int log_level)
            slave->avf->filename, slave->avf->oformat->name);
     for (i = 0; i < slave->avf->nb_streams; i++) {
         AVStream *st = slave->avf->streams[i];
-        AVBitStreamFilterContext *bsf = slave->bsfs[i];
+        AVBSFContext *bsf = slave->bsfs[i];
+        const char *bsf_name;
 
         av_log(log_ctx, log_level, "    stream:%d codec:%s type:%s",
                i, avcodec_get_name(st->codecpar->codec_id),
                av_get_media_type_string(st->codecpar->codec_type));
-        if (bsf) {
-            av_log(log_ctx, log_level, " bsfs:");
-            while (bsf) {
-                av_log(log_ctx, log_level, "%s%s",
-                       bsf->filter->name, bsf->next ? "," : "");
-                bsf = bsf->next;
-            }
-        }
-        av_log(log_ctx, log_level, "\n");
+
+        bsf_name = bsf->filter->priv_class ?
+                   bsf->filter->priv_class->item_name(bsf) : bsf->filter->name;
+        av_log(log_ctx, log_level, " bsfs: %s\n", bsf_name);
     }
 }
 
@@ -469,11 +450,11 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     TeeContext *tee = avf->priv_data;
     AVFormatContext *avf2;
+    AVBSFContext *bsfs;
     AVPacket pkt2;
     int ret_all = 0, ret;
     unsigned i, s;
     int s2;
-    AVRational tb, tb2;
 
     for (i = 0; i < tee->nb_slaves; i++) {
         if (!(avf2 = tee->slaves[i].avf))
@@ -501,14 +482,35 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
                 ret_all = ret;
                 continue;
             }
-        tb  = avf ->streams[s ]->time_base;
-        tb2 = avf2->streams[s2]->time_base;
-        av_packet_rescale_ts(&pkt2, tb, tb2);
+        bsfs = tee->slaves[i].bsfs[s2];
         pkt2.stream_index = s2;
 
-        if ((ret = av_apply_bitstream_filters(avf2->streams[s2]->codec, &pkt2,
-                                              tee->slaves[i].bsfs[s2])) < 0 ||
-            (ret = av_interleaved_write_frame(avf2, &pkt2)) < 0) {
+        ret = av_bsf_send_packet(bsfs, &pkt2);
+        if (ret < 0) {
+            av_log(avf, AV_LOG_ERROR, "Error while sending packet to bitstream filter: %s\n",
+                   av_err2str(ret));
+            ret = tee_process_slave_failure(avf, i, ret);
+            if (!ret_all && ret < 0)
+                ret_all = ret;
+        }
+
+        while(1) {
+            ret = av_bsf_receive_packet(bsfs, &pkt2);
+            if (ret == AVERROR(EAGAIN)) {
+                ret = 0;
+                break;
+            } else if (ret < 0) {
+                break;
+            }
+
+            av_packet_rescale_ts(&pkt2, bsfs->time_base_out,
+                                 avf2->streams[s2]->time_base);
+            ret = av_interleaved_write_frame(avf2, &pkt2);
+            if (ret < 0)
+                break;
+        };
+
+        if (ret < 0) {
             ret = tee_process_slave_failure(avf, i, ret);
             if (!ret_all && ret < 0)
                 ret_all = ret;
