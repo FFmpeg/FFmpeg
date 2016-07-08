@@ -193,7 +193,7 @@ static int ogg_buffer_page(AVFormatContext *s, OGGStreamContext *oggstream)
         return AVERROR(ENOMEM);
     l->page = oggstream->page;
 
-    oggstream->page.start_granule = oggstream->page.granule;
+    oggstream->page.start_granule = ogg_granule_to_timestamp(oggstream, oggstream->page.granule);
     oggstream->page_count++;
     ogg_reset_cur_page(oggstream);
 
@@ -265,8 +265,8 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 
             int64_t start = av_rescale_q(page->start_granule, st->time_base,
                                          AV_TIME_BASE_Q);
-            int64_t next  = av_rescale_q(page->granule, st->time_base,
-                                         AV_TIME_BASE_Q);
+            int64_t next  = av_rescale_q(ogg_granule_to_timestamp(oggstream, page->granule),
+                                         st->time_base, AV_TIME_BASE_Q);
 
             if (page->segments_count == 255) {
                 ogg_buffer_page(s, oggstream);
