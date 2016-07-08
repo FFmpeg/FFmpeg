@@ -33,6 +33,10 @@
 #include "internal.h"
 #include "libopenh264.h"
 
+#if !OPENH264_VER_AT_LEAST(1, 6)
+#define SM_SIZELIMITED_SLICE SM_DYN_SLICE
+#endif
+
 typedef struct SVCContext {
     const AVClass *av_class;
     ISVCEncoder *encoder;
@@ -48,11 +52,20 @@ typedef struct SVCContext {
 #define OFFSET(x) offsetof(SVCContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+#if OPENH264_VER_AT_LEAST(1, 6)
+    { "slice_mode", "Slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_FIXEDSLCNUM_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE, "slice_mode" },
+#else
     { "slice_mode", "Slice mode", OFFSET(slice_mode), AV_OPT_TYPE_INT, { .i64 = SM_AUTO_SLICE }, SM_SINGLE_SLICE, SM_RESERVED, VE, "slice_mode" },
+#endif
     { "fixed", "A fixed number of slices", 0, AV_OPT_TYPE_CONST, { .i64 = SM_FIXEDSLCNUM_SLICE }, 0, 0, VE, "slice_mode" },
+#if OPENH264_VER_AT_LEAST(1, 6)
+    { "dyn", "Size limited (compatibility name)", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
+    { "sizelimited", "Size limited", 0, AV_OPT_TYPE_CONST, { .i64 = SM_SIZELIMITED_SLICE }, 0, 0, VE, "slice_mode" },
+#else
     { "rowmb", "One slice per row of macroblocks", 0, AV_OPT_TYPE_CONST, { .i64 = SM_ROWMB_SLICE }, 0, 0, VE, "slice_mode" },
     { "auto", "Automatic number of slices according to number of threads", 0, AV_OPT_TYPE_CONST, { .i64 = SM_AUTO_SLICE }, 0, 0, VE, "slice_mode" },
     { "dyn", "Dynamic slicing", 0, AV_OPT_TYPE_CONST, { .i64 = SM_DYN_SLICE }, 0, 0, VE, "slice_mode" },
+#endif
     { "loopfilter", "Enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "profile", "Set profile restrictions", OFFSET(profile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { "max_nal_size", "Set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
@@ -161,15 +174,24 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->slice_mode = SM_FIXEDSLCNUM_SLICE;
 
     if (s->max_nal_size)
-        s->slice_mode = SM_DYN_SLICE;
+        s->slice_mode = SM_SIZELIMITED_SLICE;
 
+#if OPENH264_VER_AT_LEAST(1, 6)
+    param.sSpatialLayers[0].sSliceArgument.uiSliceMode = s->slice_mode;
+    param.sSpatialLayers[0].sSliceArgument.uiSliceNum  = avctx->slices;
+#else
     param.sSpatialLayers[0].sSliceCfg.uiSliceMode               = s->slice_mode;
     param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceNum = avctx->slices;
+#endif
 
-    if (s->slice_mode == SM_DYN_SLICE) {
+    if (s->slice_mode == SM_SIZELIMITED_SLICE) {
         if (s->max_nal_size){
             param.uiMaxNalSize = s->max_nal_size;
+#if OPENH264_VER_AT_LEAST(1, 6)
+            param.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+#else
             param.sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = s->max_nal_size;
+#endif
         } else {
             av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
                    "specify a valid max_nal_size to use -slice_mode dyn\n");
