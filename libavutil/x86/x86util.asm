@@ -30,7 +30,10 @@
 %include "libavutil/x86/x86inc.asm"
 
 %macro SBUTTERFLY 4
-%if avx_enabled == 0
+%ifidn %1, dqqq
+    vperm2i128  m%4, m%2, m%3, q0301
+    vinserti128 m%2, m%2, xm%3, 1
+%elif avx_enabled == 0
     mova      m%4, m%2
     punpckl%1 m%2, m%3
     punpckh%1 m%4, m%3
@@ -191,6 +194,70 @@
     movdqa m%5, %10
 %endif
 %endif
+%endmacro
+
+%macro TRANSPOSE16x16W 18-19
+; in:  m0..m15, unless %19 in which case m6 is in %17
+; out: m0..m15, unless %19 in which case m4 is in %18
+; spills into %17 and %18
+%if %0 < 19
+    mova       %17, m%7
+%endif
+
+    SBUTTERFLY dqqq, %1,  %9, %7
+    SBUTTERFLY dqqq, %2, %10, %7
+    SBUTTERFLY dqqq, %3, %11, %7
+    SBUTTERFLY dqqq, %4, %12, %7
+    SBUTTERFLY dqqq, %5, %13, %7
+    SBUTTERFLY dqqq, %6, %14, %7
+    mova       %18, m%14
+    mova       m%7, %17
+    SBUTTERFLY dqqq, %7, %15, %14
+    SBUTTERFLY dqqq, %8, %16, %14
+
+    SBUTTERFLY  wd,  %1,  %2, %14
+    SBUTTERFLY  wd,  %3,  %4, %14
+    SBUTTERFLY  wd,  %5,  %6, %14
+    SBUTTERFLY  wd,  %7,  %8, %14
+    SBUTTERFLY  wd,  %9, %10, %14
+    SBUTTERFLY  wd, %11, %12, %14
+    mova       %17, m%12
+    mova      m%14, %18
+    SBUTTERFLY  wd, %13, %14, %12
+    SBUTTERFLY  wd, %15, %16, %12
+
+    SBUTTERFLY  dq,  %1,  %3, %12
+    SBUTTERFLY  dq,  %2,  %4, %12
+    SBUTTERFLY  dq,  %5,  %7, %12
+    SBUTTERFLY  dq,  %6,  %8, %12
+    SBUTTERFLY  dq,  %9, %11, %12
+    mova       %18, m%11
+    mova      m%12, %17
+    SBUTTERFLY  dq, %10, %12, %11
+    SBUTTERFLY  dq, %13, %15, %11
+    SBUTTERFLY  dq, %14, %16, %11
+
+    SBUTTERFLY qdq,  %1,  %5, %11
+    SBUTTERFLY qdq,  %2,  %6, %11
+    SBUTTERFLY qdq,  %3,  %7, %11
+    SBUTTERFLY qdq,  %4,  %8, %11
+
+    SWAP        %2, %5
+    SWAP        %4, %7
+
+    SBUTTERFLY qdq,  %9, %13, %11
+    SBUTTERFLY qdq, %10, %14, %11
+    mova      m%11, %18
+    mova       %18, m%5
+    SBUTTERFLY qdq, %11, %15, %5
+    SBUTTERFLY qdq, %12, %16, %5
+
+%if %0 < 19
+    mova       m%5, %18
+%endif
+
+    SWAP       %10, %13
+    SWAP       %12, %15
 %endmacro
 
 ; PABSW macro assumes %1 != %2, while ABS1/2 macros work in-place
