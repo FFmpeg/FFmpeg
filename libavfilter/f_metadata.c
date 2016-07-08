@@ -31,6 +31,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
+#include "libavformat/avio.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -80,7 +81,7 @@ typedef struct MetadataContext {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
 
-    FILE *file;
+    AVIOContext* avio_context;
     char *file_str;
 
     int (*compare)(struct MetadataContext *s,
@@ -180,8 +181,11 @@ static void print_file(AVFilterContext *ctx, const char *msg, ...)
     va_list argument_list;
 
     va_start(argument_list, msg);
-    if (msg)
-        vfprintf(s->file, msg, argument_list);
+    if (msg) {
+        char buf[128];
+        vsnprintf(buf, sizeof(buf), msg, argument_list);
+        avio_write(s->avio_context, buf, av_strnlen(buf, sizeof(buf)));
+    }
     va_end(argument_list);
 }
 
@@ -236,23 +240,27 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    if (s->file_str) {
-        if (!strcmp(s->file_str, "-")) {
-            s->file = stdout;
-        } else {
-            s->file = fopen(s->file_str, "w");
-            if (!s->file) {
-                int err = AVERROR(errno);
-                char buf[128];
-                av_strerror(err, buf, sizeof(buf));
-                av_log(ctx, AV_LOG_ERROR, "Could not open file %s: %s\n",
-                       s->file_str, buf);
-                return err;
-            }
-        }
+    if (s->mode == METADATA_PRINT && s->file_str) {
         s->print = print_file;
     } else {
         s->print = print_log;
+    }
+
+    s->avio_context = NULL;
+    if (s->file_str) {
+        if (!strcmp("-", s->file_str)) {
+            ret = avio_open(&s->avio_context, "pipe:1", AVIO_FLAG_WRITE);
+        } else {
+            ret = avio_open(&s->avio_context, s->file_str, AVIO_FLAG_WRITE);
+        }
+
+        if (ret < 0) {
+            char buf[128];
+            av_strerror(ret, buf, sizeof(buf));
+            av_log(ctx, AV_LOG_ERROR, "Could not open %s: %s\n",
+                   s->file_str, buf);
+            return ret;
+        }
     }
 
     return 0;
@@ -262,9 +270,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MetadataContext *s = ctx->priv;
 
-    if (s->file && s->file != stdout)
-        fclose(s->file);
-    s->file = NULL;
+    if (s->avio_context) {
+        avio_closep(&s->avio_context);
+    }
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)

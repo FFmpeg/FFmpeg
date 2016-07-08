@@ -9390,13 +9390,14 @@ Float representation of @code{value} from metadata key.
 
 @item VALUE2
 Float representation of @code{value} as supplied by user in @code{value} option.
-@end table
 
 @item file
-If specified in @code{print} mode, output is written to the named file. When
-filename equals "-" data is written to standard output.
-If @code{file} option is not set, output is written to the log with AV_LOG_INFO
-loglevel.
+If specified in @code{print} mode, output is written to the named file. Instead of
+plain filename any writable url can be specified. Filename ``-'' is a shorthand
+for standard output. If @code{file} option is not set, output is written to the log
+with AV_LOG_INFO loglevel.
+@end table
+
 @end table
 
 @subsection Examples
@@ -9406,8 +9407,18 @@ loglevel.
 Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
 between 0 and 1.
 @example
-@end example
 signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
+@end example
+@item
+Print silencedetect output to file @file{metadata.txt}.
+@example
+silencedetect,ametadata=mode=print:file=metadata.txt
+@end example
+@item
+Direct all metadata to a pipe with file descriptor 4.
+@example
+metadata=mode=print:file='pipe\:4'
+@end example
 @end itemize
 
 @section mpdecimate

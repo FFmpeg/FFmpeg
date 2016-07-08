@@ -49,6 +49,7 @@ version 3.1:
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
 - VideoToolbox H.264 encoder
+- Changed metadata print option to accept general urls
 
 
 version 3.0:
