@@ -90,7 +90,9 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
     (*s->decoder)->SetOption(s->decoder, DECODER_OPTION_TRACE_CALLBACK, (void *)&callback_function);
     (*s->decoder)->SetOption(s->decoder, DECODER_OPTION_TRACE_CALLBACK_CONTEXT, (void *)&avctx);
 
+#if !OPENH264_VER_AT_LEAST(1, 6)
     param.eOutputColorFormat = videoFormatI420;
+#endif
     param.eEcActiveIdc       = ERROR_CON_DISABLE;
     param.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;
 
