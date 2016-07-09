@@ -413,6 +413,8 @@ typedef struct H264SliceContext {
     } ref_modifications[2][32];
     int nb_ref_modifications[2];
 
+    unsigned int pps_id;
+
     const uint8_t *intra_pcm_ptr;
     int16_t *dc_val_base;
 
