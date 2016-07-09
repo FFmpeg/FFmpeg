@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-07-09 - xxxxxxx / 90f469a - lavc 57.50.100 / 57.20.0 - avcodec.h
+  Add FF_PROFILE_H264_MULTIVIEW_HIGH and FF_PROFILE_H264_STEREO_HIGH.
+
 2016-06-30 - c1c7e0ab - lavf 57.41.100 - avformat.h
   Moved codecpar field from AVStream to the end of the struct, so that
   the following private fields are in the same location as in FFmpeg 3.0 (lavf 57.25.100).
