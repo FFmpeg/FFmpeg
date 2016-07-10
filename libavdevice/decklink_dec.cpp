@@ -571,6 +571,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     st->time_base.den      = ctx->bmd_tb_den;
     st->time_base.num      = ctx->bmd_tb_num;
+    av_stream_set_r_frame_rate(st, av_make_q(st->time_base.den, st->time_base.num));
 
     if (cctx->v210) {
         st->codecpar->codec_id    = AV_CODEC_ID_V210;
