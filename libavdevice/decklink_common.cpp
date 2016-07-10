@@ -143,6 +143,9 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     int i = 1;
     HRESULT res;
 
+    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, direction %d, mode number %d\n",
+        width, height, tb_num, tb_den, direction, num);
+
     if (ctx->duplex_mode) {
         DECKLINK_BOOL duplex_supported = false;
 
@@ -178,11 +181,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
             return AVERROR(EIO);
     }
 
-
-    if (tb_num == 1) {
-        tb_num *= 1000;
-        tb_den *= 1000;
-    }
+    AVRational target_tb = av_make_q(tb_num, tb_den);
     ctx->bmd_mode = bmdModeUnknown;
     while ((ctx->bmd_mode == bmdModeUnknown) && itermode->Next(&mode) == S_OK) {
         BMDTimeValue bmd_tb_num, bmd_tb_den;
@@ -190,9 +189,10 @@ int ff_decklink_set_format(AVFormatContext *avctx,
         int bmd_height = mode->GetHeight();
 
         mode->GetFrameRate(&bmd_tb_num, &bmd_tb_den);
+        AVRational mode_tb = av_make_q(bmd_tb_num, bmd_tb_den);
 
         if ((bmd_width == width && bmd_height == height &&
-            bmd_tb_num == tb_num && bmd_tb_den == tb_den) || i == num) {
+            !av_cmp_q(mode_tb, target_tb)) || i == num) {
             ctx->bmd_mode   = mode->GetDisplayMode();
             ctx->bmd_width  = bmd_width;
             ctx->bmd_height = bmd_height;
@@ -200,7 +200,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
             ctx->bmd_tb_num = bmd_tb_num;
             ctx->bmd_field_dominance = mode->GetFieldDominance();
             av_log(avctx, AV_LOG_INFO, "Found Decklink mode %d x %d with rate %.2f%s\n",
-                bmd_width, bmd_height, (float)bmd_tb_den/(float)bmd_tb_num,
+                bmd_width, bmd_height, 1/av_q2d(mode_tb),
                 (ctx->bmd_field_dominance==bmdLowerFieldFirst || ctx->bmd_field_dominance==bmdUpperFieldFirst)?"(i)":"");
         }
 
