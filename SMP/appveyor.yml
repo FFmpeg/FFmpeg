@@ -9,7 +9,7 @@ shallow_clone: true
 configuration: Release+ReleaseDLLStaticDeps
 
 platform:
-- Win32
+- x86
 - x64
 
 environment:
@@ -17,17 +17,21 @@ environment:
   - MSVC_VER: 12
   - MSVC_VER: 14
 
+install:
+# Install GitLink
+- cmd: choco install gitlink
+
 before_build:
 # Create build project to compile all configurations and platforms at once
 - ps: >-
     $script = @'
 
-    <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
+    <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="GitLink" ToolsVersion="4.0">
       <ItemGroup>
         <ConfigurationList Condition="'@(ConfigurationList)' == '' and $(Configuration) != ''" Include="$(Configuration.Split('+'))" />
         <ConfigurationList Condition="'@(ConfigurationList)' == ''" Include="Release" />
         <PlatformList Condition="'@(PlatformList)' == '' and $(Platform) != ''" Include="$(Platform.Split('+'))" />
-        <PlatformList Condition="'@(PlatformList)' == ''" Include="x64;Win32" />
+        <PlatformList Condition="'@(PlatformList)' == ''" Include="x64;x86" />
       </ItemGroup>
       <Target Name="List" Outputs="%(PlatformList.Identity)">
         <PropertyGroup>
@@ -42,12 +46,22 @@ before_build:
       <Target Name="Build" DependsOnTargets="List">
         <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
       </Target>
+      <Target Name="GitLink" DependsOnTargets="Build" Outputs="%(PlatformList.Identity)">
+        <PropertyGroup>
+          <CurrentPlatform>%(PlatformList.Identity)</CurrentPlatform>
+        </PropertyGroup>
+        <Exec Command="GitLink . -f SMP/APPVEYOR_PROJECT_NAME.sln -c %(ConfigurationList.Identity) -p $(CurrentPlatform) -d $(MSBuildThisFileDirectory)build_out\lib\$(CurrentPlatform) -u https://github.com/APPVEYOR_REPO_NAME.git -s APPVEYOR_REPO_COMMIT -errorsaswarnings"/>
+      </Target>
     </Project>
 
     '@
 
 
     $script = $script -replace "APPVEYOR_PROJECT_NAME", "$env:APPVEYOR_PROJECT_NAME"
+
+    $script = $script -replace "APPVEYOR_REPO_NAME", "$env:APPVEYOR_REPO_NAME"
+
+    $script = $script -replace "APPVEYOR_REPO_COMMIT", "$env:APPVEYOR_REPO_COMMIT"
 
     $script | Out-File build.vcxproj
     
@@ -57,6 +71,9 @@ before_build:
 # Setup msvc environment for required compiler version (specified by MSVC_VER)
 - ps: $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
 - cmd: call "%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
+    
+# Reset platform
+- cmd: SET PLATFORM=%PLATFORMBACK%
 
 # Download and install yasm integration
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.tortall.net/projects/yasm/releases/vsyasm-1.3.0-win64.zip', "$pwd\yasm.zip")
@@ -64,7 +81,10 @@ before_build:
 - ps: Move-Item -Force "TempYASMUnpack\*.exe" "$env:VSCOMNTOOLS\..\..\VC\bin"
 - ps: $env:MSBUILDDIR=((Get-Command msbuild.exe).Path | Split-Path -parent)
 - ps: (Get-Content "$pwd\TempYASMUnpack\vsyasm.props") -replace '\$\(Platform\)', 'win$(PlatformArchitecture)' | Set-Content "$pwd\TempYASMUnpack\vsyasm.props"
-- ps: Move-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0\BuildCustomizations"
+- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0\BuildCustomizations"
+# Make additional copy so its available to GitLink (which currently looks in the wrong location)
+- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\BuildCustomizations"
+- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V120\BuildCustomizations"
 
 # Use project supplied script to download all required dependency libraries
 - cmd: call "%APPVEYOR_BUILD_FOLDER%\SMP\project_get_dependencies.bat"
@@ -85,11 +105,12 @@ build:
   verbosity: minimal
 
 after_build:
+# Copy licenses for dependencies
 - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\..\prebuilt\licenses\*.* %APPVEYOR_BUILD_FOLDER%\build_out\licenses\
 
 artifacts:
 - path: build_out
-  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORMBACK)_msvc$(MSVC_VER)
+  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
   type: zip
 
 deploy:
@@ -98,5 +119,5 @@ deploy:
   description: Pre-built static and shared libraries in 32b and 64b for $(APPVEYOR_PROJECT_NAME) $(APPVEYOR_REPO_TAG_NAME)
   auth_token:
     secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
-  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORMBACK)_msvc$(MSVC_VER)
+  artifact: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
   force_update: true
