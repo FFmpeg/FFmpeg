@@ -190,6 +190,10 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 # by using a previous ref frame instead of a missing one
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
 
+# this sample gives an explicit size for a single NAL unit, but contains
+# several NAL units
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-mixed-nal-coding
+
 # this sample has invalid extradata that is not escaped
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
 
@@ -380,6 +384,7 @@ fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAM
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
+fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
