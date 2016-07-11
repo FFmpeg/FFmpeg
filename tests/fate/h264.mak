@@ -375,11 +375,11 @@ fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -i $(TARGET_SAM
 
 fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
+fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
-fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
-fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
+fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
