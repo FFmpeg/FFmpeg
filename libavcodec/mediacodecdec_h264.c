@@ -286,7 +286,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
      * process again packets.
      *
      * ff_mediacodec_dec_flush returns a negative value if an error has
-     * occured.
+     * occurred.
      *
      */
     if (ff_mediacodec_dec_is_flushing(avctx, s->ctx)) {
