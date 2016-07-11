@@ -566,9 +566,6 @@ static av_cold void sws_init_swscale(SwsContext *c)
 
     ff_sws_init_input_funcs(c);
 
-    if (HAVE_VSX && (!HAVE_BIGENDIAN)) {
-        ff_sws_init_input_funcs_vsx(c);
-    }
 
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {
