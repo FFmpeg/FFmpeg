@@ -520,6 +520,17 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
         if (!(avf2 = tee->slaves[i].avf))
             continue;
 
+        /* Flush slave if pkt is NULL*/
+        if (!pkt) {
+            ret = av_interleaved_write_frame(avf2, NULL);
+            if (ret < 0) {
+                ret = tee_process_slave_failure(avf, i, ret);
+                if (!ret_all && ret < 0)
+                    ret_all = ret;
+            }
+            continue;
+        }
+
         s = pkt->stream_index;
         s2 = tee->slaves[i].stream_map[s];
         if (s2 < 0)
@@ -557,5 +568,5 @@ AVOutputFormat ff_tee_muxer = {
     .write_trailer     = tee_write_trailer,
     .write_packet      = tee_write_packet,
     .priv_class        = &tee_muxer_class,
-    .flags             = AVFMT_NOFILE,
+    .flags             = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
 };
