@@ -497,7 +497,7 @@ equal to the duration of the segment plus the duration of the playlist.
 
 @item hls_flags split_by_time
 If this flags is set, allow segments to start on frames other than keyframes.
-Thisimproves behavior on some players when the time between keyframes is
+This improves behavior on some players when the time between keyframes is
 inconsistent, but may make things worse on others, and can cause some oddities
 during seeking. This flag should be used with hls_time option.
 
