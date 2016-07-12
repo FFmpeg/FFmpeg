@@ -167,14 +167,16 @@ static inline void search_for_golomb(DiracGolombLUT *l, residual r, int bits)
 /* Parity LUTs - even and odd bit end positions */
 static void generate_parity_lut(DiracGolombLUT *lut, int even)
 {
-    for (int idx = 0; idx < LUT_SIZE; idx++) {
+    int idx;
+    for (idx = 0; idx < LUT_SIZE; idx++) {
         DiracGolombLUT *l = &lut[idx];
         int symbol_end_loc = -1;
         uint32_t code;
+        int i;
 
         INIT_RESIDUE(res, idx, LUT_BITS);
 
-        for (int i = 0; i < LUT_BITS; i++) {
+        for (i = 0; i < LUT_BITS; i++) {
             const int cond = even ? (i & 1) : !(i & 1);
             if (((res >> (RSIZE_BITS - i - 1)) & 1) && cond) {
                 symbol_end_loc = i + 2;
@@ -206,7 +208,8 @@ static void generate_parity_lut(DiracGolombLUT *lut, int even)
 /* Reset (off == 0) and needs-one-more-bit (off == 1) LUTs */
 static void generate_offset_lut(DiracGolombLUT *lut, int off)
 {
-    for (int idx = 0; idx < LUT_SIZE; idx++) {
+    int idx;
+    for (idx = 0; idx < LUT_SIZE; idx++) {
         DiracGolombLUT *l = &lut[idx];
 
         INIT_RESIDUE(res, idx, LUT_BITS);
