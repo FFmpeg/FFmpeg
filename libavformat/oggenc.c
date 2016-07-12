@@ -533,6 +533,14 @@ static int ogg_write_header(AVFormatContext *s)
             bytestream_put_buffer(&p, cstr, 6);
 
             if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
+                int den = AV_RB32(oggstream->header[0] + 22), num = AV_RB32(oggstream->header[0] + 26);
+                /* Make sure to use time base stored in the Theora stream header to write
+                   correct timestamps */
+                if (st->time_base.num != num || st->time_base.den != den) {
+                    av_log(s, AV_LOG_DEBUG, "Changing time base from %d/%d to %d/%d\n",
+                           st->time_base.num, st->time_base.den, num, den);
+                    avpriv_set_pts_info(st, 64, num, den);
+                }
                 /** KFGSHIFT is the width of the less significant section of the granule position
                     The less significant section is the frame count since the last keyframe */
                 oggstream->kfgshift = ((oggstream->header[0][40]&3)<<3)|(oggstream->header[0][41]>>5);
