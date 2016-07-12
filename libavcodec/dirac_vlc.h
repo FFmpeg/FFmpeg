@@ -22,7 +22,7 @@
 #ifndef AVCODEC_DIRAC_VLC_H
 #define AVCODEC_DIRAC_VLC_H
 
-#include <libavutil/avutil.h>
+#include "libavutil/avutil.h"
 
 /* Can be 32 bits wide for some performance gain on some machines, but it will
  * incorrectly decode very long coefficients (usually only 1 or 2 per frame) */
