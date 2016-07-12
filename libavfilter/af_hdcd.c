@@ -1165,13 +1165,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     /* log the HDCD decode information */
-    av_log(ctx, AV_LOG_INFO,
-        "HDCD detected: %s, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s\n",
-        (s->hdcd_detected) ? "yes" : "no",
-        (s->uses_peak_extend) ? "enabled" : "never enabled",
-        s->max_gain_adjustment,
-        (s->uses_transient_filter) ? "detected" : "not detected"
-        );
+    if (s->hdcd_detected)
+        av_log(ctx, AV_LOG_INFO,
+            "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s\n",
+            (s->uses_peak_extend) ? "enabled" : "never enabled",
+            s->max_gain_adjustment,
+            (s->uses_transient_filter) ? "detected" : "not detected"
+            );
+    else
+        av_log(ctx, AV_LOG_INFO, "HDCD detected: no\n");
 }
 
 static av_cold int init(AVFilterContext *ctx)
