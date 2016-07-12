@@ -854,8 +854,8 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
                                                   length, tmp_buf, coef_num);
 
         if (coef_num > coef_par) {
-            const int start_b = coef_par * (4 >> s->pshift);
-            const int end_b   = coef_num * (4 >> s->pshift);
+            const int start_b = coef_par * (1 << (s->pshift + 1));
+            const int end_b   = coef_num * (1 << (s->pshift + 1));
             memset(&tmp_buf[start_b], 0, end_b - start_b);
         }
 
