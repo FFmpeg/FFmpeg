@@ -1094,7 +1094,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->uses_peak_extend |= !!state->count_peak_extend;
         s->uses_transient_filter |= !!state->count_transient_filter;
         s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
-        s->hdcd_detected |= state->code_counterC || state->code_counterB || state->code_counterA;
+        s->hdcd_detected |= state->code_counterB || state->code_counterA;
     }
 
     av_frame_free(&in);
