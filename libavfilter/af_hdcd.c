@@ -883,7 +883,7 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->cb7 = 0;
 }
 
-static int integrate(hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
+static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
 {
     uint32_t bits = 0;
     int result = FFMIN(state->readahead, count);
@@ -941,7 +941,7 @@ static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int s
     result = 0;
     while (result < max) {
         int flag;
-        int consumed = integrate(state, &flag, samples, max - result, stride);
+        int consumed = hdcd_integrate(state, &flag, samples, max - result, stride);
         result += consumed;
         if (flag > 0) {
             state->sustain = state->sustain_reset;
