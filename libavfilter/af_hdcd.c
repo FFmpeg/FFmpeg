@@ -835,7 +835,6 @@ typedef struct {
      * steps of 0.5, but no value below -6.0 dB should appear. */
     int gain_counts[16]; /* for cursiosity, mostly */
     int max_gain;
-    int cb6, cb7; /* watch bits 6 and 7 of the control code, for curiosity */
 } hdcd_state_t;
 
 typedef struct HDCDContext {
@@ -879,8 +878,15 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->count_transient_filter = 0;
     for(i = 0; i < 16; i++) state->gain_counts[i] = 0;
     state->max_gain = 0;
-    state->cb6 = 0;
-    state->cb7 = 0;
+}
+
+/* update the user info/counters */
+static void hdcd_update_info(hdcd_state_t *state)
+{
+    if (state->control & 16) state->count_peak_extend++;
+    if (state->control & 32) state->count_transient_filter++;
+    state->gain_counts[state->control & 15]++;
+    state->max_gain = FFMAX(state->max_gain, (state->control & 15));
 }
 
 static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
@@ -913,6 +919,7 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
             *flag = 1;
             state->code_counterB++;
         }
+        if (*flag) hdcd_update_info(state);
         state->arg = 0;
     }
     if (bits == 0x7e0fa005 || bits == 0x7e0fa006) {
@@ -1011,18 +1018,6 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     return gain;
 }
 
-/* update the user info/flags */
-static void hdcd_update_info(hdcd_state_t *state)
-{
-    if (state->control & 16) state->count_peak_extend++;
-    if (state->control & 32) state->count_transient_filter++;
-    state->gain_counts[state->control & 15]++;
-    state->max_gain = FFMAX(state->max_gain, (state->control & 15));
-
-    if (state->control & 64) state->cb6++;
-    if (state->control & 128) state->cb7++;
-}
-
 static void hdcd_process(hdcd_state_t *state, int32_t *samples, int count, int stride)
 {
     int32_t *samples_end = samples + count * stride;
@@ -1030,8 +1025,6 @@ static void hdcd_process(hdcd_state_t *state, int32_t *samples, int count, int s
     int peak_extend = (state->control & 16);
     int target_gain = (state->control & 15) << 7;
     int lead = 0;
-
-    hdcd_update_info(state);
 
     while (count > lead) {
         int envelope_run;
@@ -1049,7 +1042,6 @@ static void hdcd_process(hdcd_state_t *state, int32_t *samples, int count, int s
         lead = run - envelope_run;
         peak_extend = (state->control & 16);
         target_gain = (state->control & 15) << 7;
-        hdcd_update_info(state);
     }
     if (lead > 0) {
         av_assert0(samples + lead * stride <= samples_end);
@@ -1157,10 +1149,10 @@ static av_cold void uninit(AVFilterContext *ctx)
         hdcd_state_t *state = &s->state[i];
         av_log(ctx, AV_LOG_VERBOSE, "Channel %d: counter A: %d, B: %d, C: %d\n", i, state->code_counterA,
                 state->code_counterB, state->code_counterC);
-        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: c(pe): %d, c(tf): %d, cb6: %d, cb7: %d\n", i,
-                state->count_peak_extend, state->count_transient_filter, state->cb6, state->cb7);
+        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: cpe: %d, ctf: %d\n", i,
+                state->count_peak_extend, state->count_transient_filter);
         for (j = 0; j <= state->max_gain; j++) {
-            av_log(ctx, AV_LOG_VERBOSE, "Channel %d: tg %0.1f - %d\n", i, GAINTOFLOAT(j), state->gain_counts[j]);
+            av_log(ctx, AV_LOG_VERBOSE, "Channel %d: tg %0.1f: %d\n", i, GAINTOFLOAT(j), state->gain_counts[j]);
         }
     }
 
