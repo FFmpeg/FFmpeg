@@ -79,7 +79,7 @@ int qsv_init(AVCodecContext *s)
     frames_ctx->width             = FFALIGN(s->coded_width,  32);
     frames_ctx->height            = FFALIGN(s->coded_height, 32);
     frames_ctx->format            = AV_PIX_FMT_QSV;
-    frames_ctx->sw_format         = AV_PIX_FMT_NV12;
+    frames_ctx->sw_format         = s->sw_pix_fmt;
     frames_ctx->initial_pool_size = 32;
     frames_hwctx->frame_type      = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
 
