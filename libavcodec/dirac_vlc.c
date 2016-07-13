@@ -31,6 +31,10 @@
     residual N = B ? CONVERT_TO_RESIDUE(I, B) : 0;                             \
     av_unused int32_t N ## _bits  = B
 
+#define APPEND_RESIDUE(N, M)                                                   \
+    N          |= M >> (N ## _bits);                                           \
+    N ## _bits +=      (M ## _bits)
+
 int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                                int bytes, uint8_t *_dst, int coeffs)
 {
@@ -38,10 +42,6 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int32_t *dst = (int32_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
     INIT_RESIDUE(res, 0, 1);
-
-#define APPEND_RESIDUE(N, M)         \
-    N          |= M >> (N ## _bits); \
-    N ## _bits +=      (M ## _bits)
 
     for (b = 1; b <= bytes; b++) {
         future[0] = &lut_ctx[buf[b]];
@@ -82,10 +82,6 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int16_t *dst = (int16_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
     INIT_RESIDUE(res, 0, 1);
-
-#define APPEND_RESIDUE(N, M)         \
-    N          |= M >> (N ## _bits); \
-    N ## _bits +=      (M ## _bits)
 
     for (b = 1; b <= bytes; b++) {
         future[0] = &lut_ctx[buf[b]];
