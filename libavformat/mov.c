@@ -1949,8 +1949,13 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->stsc_data[i].first = avio_rb32(pb);
         sc->stsc_data[i].count = avio_rb32(pb);
         sc->stsc_data[i].id = avio_rb32(pb);
-        if (sc->stsc_data[i].id > sc->stsd_count)
-            return AVERROR_INVALIDDATA;
+        if (sc->stsc_data[i].id < 0 || sc->stsc_data[i].id > sc->stsd_count) {
+            sc->stsc_data[i].id = 0;
+            if (c->fc->error_recognition & AV_EF_EXPLODE) {
+                av_log(c->fc, AV_LOG_ERROR, "Invalid stsc index.\n");
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     sc->stsc_count = i;
