@@ -861,7 +861,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     int res;
 
-    av_init_packet(pkt);
     if ((res = mmap_read_frame(s1, pkt)) < 0) {
         return res;
     }
