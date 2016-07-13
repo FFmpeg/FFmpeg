@@ -137,7 +137,7 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void rgb2rgb_init_x86(void)
+av_cold void ff_rgb2rgb_init_x86(void)
 {
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();

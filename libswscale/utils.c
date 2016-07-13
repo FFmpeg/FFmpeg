@@ -897,7 +897,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     flags     = c->flags;
     emms_c();
     if (!rgb15to16)
-        sws_rgb2rgb_init();
+        ff_rgb2rgb_init();
 
     unscaled = (srcW == dstW && srcH == dstH);
 
