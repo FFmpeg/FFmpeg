@@ -835,11 +835,10 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
     for (i = 0; i < 3; i++) {
         int coef_num, coef_par, off = 0;
         int64_t length = s->highquality.size_scaler*get_bits(gb, 8);
-        int64_t start = get_bits_count(gb);
-        int64_t bits_end = start + 8*length;
+        int64_t bits_end = get_bits_count(gb) + 8*length;
         const uint8_t *addr = align_get_bits(gb);
 
-        if (bits_end >= INT_MAX) {
+        if (length*8 > get_bits_left(gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "end too far away\n");
             return AVERROR_INVALIDDATA;
         }
