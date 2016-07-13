@@ -513,7 +513,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
         b->quant = quant;
     }
 
-    if (b->quant > DIRAC_MAX_QUANT_INDEX) {
+    if (b->quant > (DIRAC_MAX_QUANT_INDEX - 1)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", b->quant);
         b->quant = 0;
         return;
@@ -703,7 +703,7 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
     int x, y;
 
-    if (quant > DIRAC_MAX_QUANT_INDEX) {
+    if (quant > (DIRAC_MAX_QUANT_INDEX - 1)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", quant);
         return;
     }
