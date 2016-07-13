@@ -893,6 +893,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return 1;
     }
 
+    ret = do_packet_auto_bsf(s, pkt);
+    if (ret <= 0)
+        return ret;
+
 #if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
 
