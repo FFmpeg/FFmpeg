@@ -491,6 +491,15 @@ int ff_generate_avci_extradata(AVStream *st);
 int ff_stream_add_bitstream_filter(AVStream *st, const char *name, const char *args);
 
 /**
+ * Copy encoding parameters from source to destination stream
+ *
+ * @param dst pointer to destination AVStream
+ * @param src pointer to source AVStream
+ * @return >=0 on success, AVERROR code on error
+ */
+int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src);
+
+/**
  * Wrap errno on rename() error.
  *
  * @param oldpath source path
