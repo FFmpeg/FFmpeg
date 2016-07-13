@@ -37,7 +37,7 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int i, b, c_idx = 0;
     int32_t *dst = (int32_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res, 0, 0);
+    INIT_RESIDUE(res, 0, 1);
 
 #define APPEND_RESIDUE(N, M)         \
     N          |= M >> (N ## _bits); \
@@ -81,7 +81,7 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int i, b, c_idx = 0;
     int16_t *dst = (int16_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res, 0, 0);
+    INIT_RESIDUE(res, 0, 1);
 
 #define APPEND_RESIDUE(N, M)         \
     N          |= M >> (N ## _bits); \
