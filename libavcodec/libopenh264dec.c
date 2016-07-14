@@ -72,15 +72,12 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
         return err;
 
     s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
-    if (!s->packet_fifo) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!s->packet_fifo)
+        return AVERROR(ENOMEM);
 
     if (WelsCreateDecoder(&s->decoder)) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create decoder\n");
-        err = AVERROR_UNKNOWN;
-        goto fail;
+        return AVERROR_UNKNOWN;
     }
 
     // Pass all libopenh264 messages to our callback, to allow ourselves to filter them.
@@ -98,14 +95,12 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
 
     if ((*s->decoder)->Initialize(s->decoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
-        err = AVERROR_UNKNOWN;
-        goto fail;
+        return AVERROR_UNKNOWN;
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-fail:
-    return err;
+    return 0;
 }
 
 static int init_bsf(AVCodecContext *avctx)
