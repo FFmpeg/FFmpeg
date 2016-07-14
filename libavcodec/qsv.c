@@ -117,6 +117,16 @@ int ff_qsv_print_error(void *log_ctx, mfxStatus err,
     return ret;
 }
 
+int ff_qsv_print_warning(void *log_ctx, mfxStatus err,
+                         const char *warning_string)
+{
+    const char *desc;
+    int ret;
+    ret = ff_qsv_map_error(err, &desc);
+    av_log(log_ctx, AV_LOG_WARNING, "%s: %s (%d)\n", warning_string, desc, err);
+    return ret;
+}
+
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
 {
     switch (format) {

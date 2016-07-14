@@ -794,6 +794,9 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (ret < 0)
         return ff_qsv_print_error(avctx, ret,
                                   "Error initializing the encoder");
+    else if (ret > 0)
+        ff_qsv_print_warning(avctx, ret,
+                             "Warning in encoder initialization");
 
     ret = qsv_retrieve_enc_params(avctx, q);
     if (ret < 0) {
@@ -973,6 +976,9 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         if (ret == MFX_WRN_DEVICE_BUSY)
             av_usleep(1);
     } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_WRN_IN_EXECUTION);
+
+    if (ret > 0)
+        ff_qsv_print_warning(avctx, ret, "Warning during encoding");
 
     if (ret < 0) {
         av_packet_unref(&new_pkt);

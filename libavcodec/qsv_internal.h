@@ -62,6 +62,9 @@ int ff_qsv_map_error(mfxStatus mfx_err, const char **desc);
 int ff_qsv_print_error(void *log_ctx, mfxStatus err,
                        const char *error_string);
 
+int ff_qsv_print_warning(void *log_ctx, mfxStatus err,
+                         const char *warning_string);
+
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc);
