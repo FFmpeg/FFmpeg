@@ -1546,7 +1546,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_MAGICYUV,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "magicyuv",
-        .long_name = NULL_IF_CONFIG_SMALL("MagicYUV Lossless Video"),
+        .long_name = NULL_IF_CONFIG_SMALL("MagicYUV video"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
