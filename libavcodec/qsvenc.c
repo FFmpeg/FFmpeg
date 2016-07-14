@@ -982,7 +982,7 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, bs, sync);
         if (ret == MFX_WRN_DEVICE_BUSY)
             av_usleep(500);
-    } while (ret > 0);
+    } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_WRN_IN_EXECUTION);
 
     if (ret < 0) {
         av_packet_unref(&new_pkt);
