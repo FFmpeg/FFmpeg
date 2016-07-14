@@ -65,7 +65,7 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                 coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
             }
             dst[c_idx++] = l->sign * (coeff - 1);
-            SET_RESIDUE(res, 0, 0);
+            res_bits = res = 0;
         }
 
         memcpy(&dst[c_idx], l->ready, LUT_BITS*sizeof(int32_t));
@@ -104,7 +104,7 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                 coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
             }
             dst[c_idx++] = l->sign * (coeff - 1);
-            SET_RESIDUE(res, 0, 0);
+            res_bits = res = 0;
         }
 
         for (i = 0; i < LUT_BITS; i++)
