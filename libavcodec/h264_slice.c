@@ -1127,7 +1127,8 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
  * slice in a field (or a frame). It decides whether we are decoding a new frame
  * or a second field in a pair and does the necessary setup.
  */
-static int h264_field_start(H264Context *h, const H264SliceContext *sl)
+static int h264_field_start(H264Context *h, const H264SliceContext *sl,
+                            const H2645NAL *nal)
 {
     int i;
     const SPS *sps;
@@ -1138,7 +1139,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl)
 
     last_pic_droppable   = h->droppable;
     last_pic_structure   = h->picture_structure;
-    h->droppable         = (h->nal_ref_idc == 0);
+    h->droppable         = (nal->ref_idc == 0);
     h->picture_structure = sl->picture_structure;
 
     /* Shorten frame num gaps so we don't have to allocate reference
@@ -1322,7 +1323,8 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl)
     return 0;
 }
 
-static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
+static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
+                                   const H2645NAL *nal)
 {
     const SPS *sps;
     const PPS *pps;
@@ -1400,7 +1402,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     sl->slice_type     = slice_type;
     sl->slice_type_nos = slice_type & 3;
 
-    if (h->nal_unit_type  == NAL_IDR_SLICE &&
+    if (nal->type  == NAL_IDR_SLICE &&
         sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         av_log(h->avctx, AV_LOG_ERROR, "A non-intra slice in an IDR NAL unit.\n");
         return AVERROR_INVALIDDATA;
@@ -1473,7 +1475,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
     mb_aff_frame       = 0;
     last_mb_aff_frame  = h->mb_aff_frame;
 
-    droppable = h->nal_ref_idc == 0;
+    droppable = nal->ref_idc == 0;
     if (sps->frame_mbs_only_flag) {
         picture_structure = PICT_FRAME;
     } else {
@@ -1522,7 +1524,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
         h->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
     }
 
-    if (h->nal_unit_type == NAL_IDR_SLICE)
+    if (nal->type == NAL_IDR_SLICE)
         get_ue_golomb_long(&sl->gb); /* idr_pic_id */
 
     if (sps->poc_type == 0) {
@@ -1584,7 +1586,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
                                   sl->slice_type_nos, &sl->pwt, h->avctx);
 
     sl->explicit_ref_marking = 0;
-    if (h->nal_ref_idc) {
+    if (nal->ref_idc) {
         ret = ff_h264_decode_ref_pic_marking(h, sl, &sl->gb);
         if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
@@ -1655,16 +1657,17 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl)
  *
  * @return 0 if okay, <0 if an error occurred
  */
-int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
+int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
+                                const H2645NAL *nal)
 {
     int i, j, ret = 0;
 
-    ret = h264_slice_header_parse(h, sl);
+    ret = h264_slice_header_parse(h, sl, nal);
     if (ret) // can not be ret<0 because of SLICE_SKIPED, SLICE_SINGLETHREAD, ...
         return ret;
 
     if (h->current_slice == 0) {
-        ret = h264_field_start(h, sl);
+        ret = h264_field_start(h, sl, nal);
         if (ret < 0)
             return ret;
     }
@@ -1684,7 +1687,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
 
     if (!h->setup_finished) {
         ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
-                         h->ps.sps, &h->poc, h->picture_structure, h->nal_ref_idc);
+                         h->ps.sps, &h->poc, h->picture_structure, nal->ref_idc);
 
         memcpy(h->mmco, sl->mmco, sl->nb_mmco * sizeof(*h->mmco));
         h->nb_mmco = sl->nb_mmco;
@@ -1716,7 +1719,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
         (h->avctx->skip_loop_filter >= AVDISCARD_BIDIR  &&
          sl->slice_type_nos == AV_PICTURE_TYPE_B) ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONREF &&
-         h->nal_ref_idc == 0))
+         nal->ref_idc == 0))
         sl->deblocking_filter = 0;
 
     if (sl->deblocking_filter == 1 && h->max_contexts > 1) {
@@ -1787,7 +1790,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                sl->mb_y * h->mb_width + sl->mb_x,
                av_get_picture_type_char(sl->slice_type),
                sl->slice_type_fixed ? " fix" : "",
-               h->nal_unit_type == NAL_IDR_SLICE ? " IDR" : "",
+               nal->type == NAL_IDR_SLICE ? " IDR" : "",
                h->poc.frame_num,
                h->cur_pic_ptr->field_poc[0],
                h->cur_pic_ptr->field_poc[1],
