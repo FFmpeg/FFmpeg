@@ -180,7 +180,7 @@ fate-hapy: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy.mov
 FATE_HAP += fate-hap-chunk
 fate-hap-chunk: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy-12-chunks.mov
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
+FATE_VIDEO-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
 fate-hap: $(FATE_HAP)
 
 FATE_IFF-$(CONFIG_IFF_ILBM_DECODER) += fate-iff-byterun1
