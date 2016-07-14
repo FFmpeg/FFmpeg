@@ -1113,6 +1113,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
+            if (avctx->sw_pix_fmt != AV_PIX_FMT_NONE &&
+                avctx->sw_pix_fmt != frames_ctx->sw_format) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Mismatching AVCodecContext.sw_pix_fmt (%s) "
+                       "and AVHWFramesContext.sw_format (%s)\n",
+                       av_get_pix_fmt_name(avctx->sw_pix_fmt),
+                       av_get_pix_fmt_name(frames_ctx->sw_format));
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+            avctx->sw_pix_fmt = frames_ctx->sw_format;
         }
     }
 
