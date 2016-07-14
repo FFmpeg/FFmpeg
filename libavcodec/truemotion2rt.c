@@ -56,7 +56,7 @@ static const int16_t *const delta_tabs[] = {
 
 /* Returns the number of bytes consumed from the bytestream, or
  * AVERROR_INVALIDDATA if there was an error while decoding the header. */
-static int truemotion2rt_decode_header(AVCodecContext *avctx, AVPacket *avpkt)
+static int truemotion2rt_decode_header(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     TrueMotion2RTContext *s = avctx->priv_data;
     int header_size;
