@@ -48,7 +48,7 @@ static av_cold int svc_decode_close(AVCodecContext *avctx)
     if (s->decoder)
         WelsDestroyDecoder(s->decoder);
 
-    while (av_fifo_size(s->packet_fifo) >= sizeof(pkt)) {
+    while (s->packet_fifo && av_fifo_size(s->packet_fifo) >= sizeof(pkt)) {
         av_fifo_generic_read(s->packet_fifo, &pkt, sizeof(pkt), NULL);
         av_packet_unref(&pkt);
     }
