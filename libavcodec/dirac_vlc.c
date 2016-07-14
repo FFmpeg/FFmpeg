@@ -27,9 +27,13 @@
 #define CONVERT_TO_RESIDUE(a, b)                                               \
     (((residual)(a)) << (RSIZE_BITS - (b)))
 
-#define INIT_RESIDUE(N, I, B)                                                  \
-    residual N = B ? CONVERT_TO_RESIDUE(I, B) : 0;                             \
-    av_unused int32_t N ## _bits  = B
+#define INIT_RESIDUE(N)                                                        \
+    residual N = 0;                                                            \
+    av_unused int32_t N ## _bits  = 0
+
+#define SET_RESIDUE(N, I, B)                                                   \
+    N          = CONVERT_TO_RESIDUE(I, B);                                     \
+    N ## _bits = B
 
 #define APPEND_RESIDUE(N, M)                                                   \
     N          |= M >> (N ## _bits);                                           \
@@ -41,7 +45,7 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int i, b, c_idx = 0;
     int32_t *dst = (int32_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res, 0, 1);
+    INIT_RESIDUE(res);
 
     for (b = 1; b <= bytes; b++) {
         future[0] = &lut_ctx[buf[b]];
@@ -61,7 +65,7 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                 coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
             }
             dst[c_idx++] = l->sign * (coeff - 1);
-            res_bits = res = 0;
+            SET_RESIDUE(res, 0, 0);
         }
 
         memcpy(&dst[c_idx], l->ready, LUT_BITS*sizeof(int32_t));
@@ -81,7 +85,7 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
     int i, b, c_idx = 0;
     int16_t *dst = (int16_t *)_dst;
     DiracGolombLUT *future[4], *l = &lut_ctx[2*LUT_SIZE + buf[0]];
-    INIT_RESIDUE(res, 0, 1);
+    INIT_RESIDUE(res);
 
     for (b = 1; b <= bytes; b++) {
         future[0] = &lut_ctx[buf[b]];
@@ -100,7 +104,7 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                 coeff |= (res >> (RSIZE_BITS - 2*i - 2)) & 1;
             }
             dst[c_idx++] = l->sign * (coeff - 1);
-            res_bits = res = 0;
+            SET_RESIDUE(res, 0, 0);
         }
 
         for (i = 0; i < LUT_BITS; i++)
@@ -170,7 +174,8 @@ static void generate_parity_lut(DiracGolombLUT *lut, int even)
         uint32_t code;
         int i;
 
-        INIT_RESIDUE(res, idx, LUT_BITS);
+        INIT_RESIDUE(res);
+        SET_RESIDUE(res, idx, LUT_BITS);
 
         for (i = 0; i < LUT_BITS; i++) {
             const int cond = even ? (i & 1) : !(i & 1);
@@ -208,7 +213,8 @@ static void generate_offset_lut(DiracGolombLUT *lut, int off)
     for (idx = 0; idx < LUT_SIZE; idx++) {
         DiracGolombLUT *l = &lut[idx];
 
-        INIT_RESIDUE(res, idx, LUT_BITS);
+        INIT_RESIDUE(res);
+        SET_RESIDUE(res, idx, LUT_BITS);
 
         l->preamble      = CONVERT_TO_RESIDUE(res >> (RSIZE_BITS - off), off);
         l->preamble_bits = off;
