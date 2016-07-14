@@ -328,13 +328,14 @@ if [ $err -gt 128 ]; then
     test "${sig}" = "${sig%[!A-Za-z]*}" || unset sig
 fi
 
-if test -e "$ref" || test $cmp = "oneline" ; then
+if test -e "$ref" || test $cmp = "oneline" || test $cmp = "grep" ; then
     case $cmp in
         diff)   diff -u -b "$ref" "$outfile"            >$cmpfile ;;
         rawdiff)diff -u    "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;
         stddev) stddev     "$ref" "$outfile"            >$cmpfile ;;
         oneline)oneline    "$ref" "$outfile"            >$cmpfile ;;
+        grep)   grep       "$ref" "$errfile"            >$cmpfile ;;
         null)   cat               "$outfile"            >$cmpfile ;;
     esac
     cmperr=$?

@@ -219,6 +219,18 @@ fate-filter-hdcd: CMD = md5 -i $(SRC) -af hdcd -f s24le
 fate-filter-hdcd: CMP = oneline
 fate-filter-hdcd: REF = 5db465a58d2fd0d06ca944b883b33476
 
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-false-positive
+fate-filter-hdcd-false-positive: SRC = $(TARGET_SAMPLES)/filter/hdcd-false-positive.flac
+fate-filter-hdcd-false-positive: CMD = md5 -i $(SRC) -af hdcd -f s24le
+fate-filter-hdcd-false-positive: CMP = grep
+fate-filter-hdcd-false-positive: REF = HDCD detected: no
+
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-detect-errors
+fate-filter-hdcd-detect-errors: SRC = $(TARGET_SAMPLES)/filter/hdcd-encoding-errors.flac
+fate-filter-hdcd-detect-errors: CMD = md5 -i $(SRC) -af hdcd -f s24le
+fate-filter-hdcd-detect-errors: CMP = grep
+fate-filter-hdcd-detect-errors: REF = detectable errors: [1-9]
+
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)
 fate-filter-formats: CMD = run libavfilter/tests/formats
