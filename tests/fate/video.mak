@@ -213,6 +213,25 @@ fate-kgv1: CMD = framecrc -i $(TARGET_SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -
 FATE_VIDEO-$(call DEMDEC, AVI, KMVC) += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(TARGET_SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
 
+FATE_MAGICYUV += fate-magicyuv-y4444i \
+                 fate-magicyuv-y400i  \
+                 fate-magicyuv-y420   \
+                 fate-magicyuv-y422i  \
+                 fate-magicyuv-y444   \
+                 fate-magicyuv-rgba   \
+                 fate-magicyuv-rgb
+
+FATE_VIDEO-$(call DEMDEC, AVI, MAGICYUV) += $(FATE_MAGICYUV)
+fate-magicyuv: $(FATE_MAGICYUV)
+
+fate-magicyuv-rgb:    CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgb_median.avi
+fate-magicyuv-rgba:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgba_gradient.avi
+fate-magicyuv-y400i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv400_gradient_interlaced.avi
+fate-magicyuv-y420:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv420_median.avi
+fate-magicyuv-y422i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv422_median_interlaced.avi
+fate-magicyuv-y4444i: CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv4444_left_interlaced.avi
+fate-magicyuv-y444:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv444_left.avi
+
 FATE_VIDEO-$(call DEMDEC, EA, MDEC) += fate-mdec
 fate-mdec: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/ea-dct/NFS2Esprit-partial.dct -an
 
