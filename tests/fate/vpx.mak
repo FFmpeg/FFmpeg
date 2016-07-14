@@ -1,3 +1,15 @@
+FATE_TRUEMOTION1 += fate-truemotion1-15
+fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
+
+FATE_TRUEMOTION1 += fate-truemotion1-24
+fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
+fate-truemotion1: $(FATE_TRUEMOTION1)
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
+fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
+
 FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
 fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/coeff_level64.mkv
 
