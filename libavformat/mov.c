@@ -1900,7 +1900,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
 
     sc->stsd_count = entries;
-    sc->extradata_size = av_mallocz_array(sc->stsd_count, sizeof(sc->extradata_size));
+    sc->extradata_size = av_mallocz_array(sc->stsd_count, sizeof(*sc->extradata_size));
     if (!sc->extradata_size)
         return AVERROR(ENOMEM);
 
