@@ -773,7 +773,7 @@ static int pcx_probe(AVProbeData *p)
     if (   p->buf_size < 128
         || b[0] != 10
         || b[1] > 5
-        || b[2] != 1
+        || b[2] > 1
         || av_popcount(b[3]) != 1 || b[3] > 8
         || AV_RL16(&b[4]) > AV_RL16(&b[8])
         || AV_RL16(&b[6]) > AV_RL16(&b[10])
