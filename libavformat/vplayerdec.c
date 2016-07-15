@@ -36,8 +36,8 @@ static int vplayer_probe(AVProbeData *p)
     char c;
     const unsigned char *ptr = p->buf;
 
-    if ((sscanf(ptr, "%*d:%*d:%*d.%*d%c", &c) == 1 ||
-         sscanf(ptr, "%*d:%*d:%*d%c",     &c) == 1) && strchr(": =", c))
+    if ((sscanf(ptr, "%*3d:%*2d:%*2d.%*2d%c", &c) == 1 ||
+         sscanf(ptr, "%*3d:%*2d:%*2d%c",      &c) == 1) && strchr(": =", c))
         return AVPROBE_SCORE_MAX;
     return 0;
 }
