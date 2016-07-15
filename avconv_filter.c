@@ -519,6 +519,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     par->height              = ifilter->height;
     par->format              = ifilter->format;
     par->time_base           = tb;
+    if (ist->framerate.num)
+        par->frame_rate      = ist->framerate;
     par->hw_frames_ctx       = ifilter->hw_frames_ctx;
 
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
@@ -550,23 +552,6 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
             if (ret < 0)
                 return ret;
         }
-    }
-
-    if (ist->framerate.num) {
-        AVFilterContext *setpts;
-
-        snprintf(name, sizeof(name), "force CFR for input from stream %d:%d",
-                 ist->file_index, ist->st->index);
-        if ((ret = avfilter_graph_create_filter(&setpts,
-                                                avfilter_get_by_name("setpts"),
-                                                name, "N", NULL,
-                                                fg->graph)) < 0)
-            return ret;
-
-        if ((ret = avfilter_link(last_filter, 0, setpts, 0)) < 0)
-            return ret;
-
-        last_filter = setpts;
     }
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",

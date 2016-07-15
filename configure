@@ -2436,7 +2436,7 @@ swscale_deps="avutil"
 avconv_deps="avcodec avfilter avformat avresample swscale"
 avconv_select="aformat_filter anull_filter asyncts_filter atrim_filter format_filter
                fps_filter null_filter resample_filter scale_filter
-               setpts_filter trim_filter"
+               trim_filter"
 avplay_deps="avcodec avfilter avformat avresample sdl"
 avplay_libs='$sdl_libs'
 avplay_select="rdft format_filter transpose_filter hflip_filter vflip_filter"
