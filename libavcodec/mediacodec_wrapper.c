@@ -1416,12 +1416,9 @@ int ff_AMediaCodec_configure(FFAMediaCodec* codec, const FFAMediaFormat* format,
     int attached = 0;
     JNIEnv *env = NULL;
 
-    /* TODO: implement surface handling */
-    av_assert0(surface == NULL);
-
     JNI_ATTACH_ENV_OR_RETURN(env, &attached, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.configure_id, format->object, NULL, NULL, flags);
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.configure_id, format->object, surface, NULL, flags);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;

@@ -1974,6 +1974,10 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "qsv",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_MEDIACODEC] = {
+        .name = "mediacodec",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
     [AV_PIX_FMT_MMAL] = {
         .name = "mmal",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
@@ -2093,33 +2097,70 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-static const char *color_range_names[AVCOL_RANGE_NB] = {
-    "unknown", "tv", "pc",
+static const char *color_range_names[] = {
+    [AVCOL_RANGE_UNSPECIFIED] = "unknown",
+    [AVCOL_RANGE_MPEG] = "tv",
+    [AVCOL_RANGE_JPEG] = "pc",
 };
 
 static const char *color_primaries_names[AVCOL_PRI_NB] = {
-    "reserved", "bt709", "unknown", "reserved", "bt470m",
-    "bt470bg", "smpte170m", "smpte240m", "film", "bt2020",
-    "smpte428-1",
+    [AVCOL_PRI_RESERVED0] = "reserved",
+    [AVCOL_PRI_BT709] = "bt709",
+    [AVCOL_PRI_UNSPECIFIED] = "unknown",
+    [AVCOL_PRI_RESERVED] = "reserved",
+    [AVCOL_PRI_BT470M] = "bt470m",
+    [AVCOL_PRI_BT470BG] = "bt470bg",
+    [AVCOL_PRI_SMPTE170M] = "smpte170m",
+    [AVCOL_PRI_SMPTE240M] = "smpte240m",
+    [AVCOL_PRI_FILM] = "film",
+    [AVCOL_PRI_BT2020] = "bt2020",
+    [AVCOL_PRI_SMPTEST428_1] = "smpte428-1",
 };
 
-static const char *color_transfer_names[AVCOL_TRC_NB] = {
-    "reserved", "bt709", "unknown", "reserved", "bt470m",
-    "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
-    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1",
-    "bt2020-10", "bt2020-20", "smpte2084", "smpte428-1",
-    "arib-std-b67"
+static const char *color_transfer_names[] = {
+    [AVCOL_TRC_RESERVED0] = "reserved",
+    [AVCOL_TRC_BT709] = "bt709",
+    [AVCOL_TRC_UNSPECIFIED] = "unknown",
+    [AVCOL_TRC_RESERVED] = "reserved",
+    [AVCOL_TRC_GAMMA22] = "bt470m",
+    [AVCOL_TRC_GAMMA28] = "bt470bg",
+    [AVCOL_TRC_SMPTE170M] = "smpte170m",
+    [AVCOL_TRC_SMPTE240M] = "smpte240m",
+    [AVCOL_TRC_LINEAR] = "linear",
+    [AVCOL_TRC_LOG] = "log100",
+    [AVCOL_TRC_LOG_SQRT] = "log316",
+    [AVCOL_TRC_IEC61966_2_4] = "iec61966-2-4",
+    [AVCOL_TRC_BT1361_ECG] = "bt1361e",
+    [AVCOL_TRC_IEC61966_2_1] = "iec61966-2-1",
+    [AVCOL_TRC_BT2020_10] = "bt2020-10",
+    [AVCOL_TRC_BT2020_12] = "bt2020-20",
+    [AVCOL_TRC_SMPTEST2084] = "smpte2084",
+    [AVCOL_TRC_SMPTEST428_1] = "smpte428-1",
+    [AVCOL_TRC_ARIB_STD_B67] = "arib-std-b67",
 };
 
-static const char *color_space_names[AVCOL_SPC_NB] = {
-    "gbr", "bt709", "unknown", "reserved", "fcc",
-    "bt470bg", "smpte170m", "smpte240m", "ycgco",
-    "bt2020nc", "bt2020c",
+static const char *color_space_names[] = {
+    [AVCOL_SPC_RGB] = "gbr",
+    [AVCOL_SPC_BT709] = "bt709",
+    [AVCOL_SPC_UNSPECIFIED] = "unknown",
+    [AVCOL_SPC_RESERVED] = "reserved",
+    [AVCOL_SPC_FCC] = "fcc",
+    [AVCOL_SPC_BT470BG] = "bt470bg",
+    [AVCOL_SPC_SMPTE170M] = "smpte170m",
+    [AVCOL_SPC_SMPTE240M] = "smpte240m",
+    [AVCOL_SPC_YCOCG] = "ycgco",
+    [AVCOL_SPC_BT2020_NCL] = "bt2020nc",
+    [AVCOL_SPC_BT2020_CL] = "bt2020c",
 };
 
-static const char *chroma_location_names[AVCHROMA_LOC_NB] = {
-    "unspecified", "left", "center", "topleft",
-    "top", "bottomleft", "bottom",
+static const char *chroma_location_names[] = {
+    [AVCHROMA_LOC_UNSPECIFIED] = "unspecified",
+    [AVCHROMA_LOC_LEFT] = "left",
+    [AVCHROMA_LOC_CENTER] = "center",
+    [AVCHROMA_LOC_TOPLEFT] = "topleft",
+    [AVCHROMA_LOC_TOP] = "top",
+    [AVCHROMA_LOC_BOTTOMLEFT] = "bottomleft",
+    [AVCHROMA_LOC_BOTTOM] = "bottom",
 };
 
 static enum AVPixelFormat get_pix_fmt_internal(const char *name)

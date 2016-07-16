@@ -77,3 +77,13 @@ wrap(avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
 {
     testneonclobbers(avcodec_encode_video2, avctx, avpkt, frame, got_packet_ptr);
 }
+
+wrap(avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt))
+{
+    testneonclobbers(avcodec_send_packet, avctx, avpkt);
+}
+
+wrap(avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame))
+{
+    testneonclobbers(avcodec_receive_frame, avctx, frame);
+}

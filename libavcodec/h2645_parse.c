@@ -258,7 +258,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         int extract_length = 0;
         int skip_trailing_zeros = 1;
 
-        if (buf >= next_avc) {
+        if (buf == next_avc) {
             int i;
             for (i = 0; i < nal_length_size; i++)
                 extract_length = (extract_length << 8) | buf[i];
@@ -271,6 +271,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             }
             next_avc = buf + extract_length;
         } else {
+            if (buf > next_avc)
+                av_log(logctx, AV_LOG_WARNING, "Exceeded next NALFF position, re-syncing.\n");
+
             /* search start code */
             while (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
                 ++buf;
@@ -290,7 +293,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
             buf           += 3;
             length        -= 3;
-            extract_length = length;
+            extract_length = FFMIN(length, next_avc - buf);
 
             if (buf >= next_avc) {
                 /* skip to the start of the next NAL */

@@ -38,4 +38,6 @@ extern const int32_t ff_dirac_qoffset_intra_tab[120];
 /* Scaling offsets needed for quantization/dequantization, for inter frames */
 extern const int ff_dirac_qoffset_inter_tab[122];
 
+#define DIRAC_MAX_QUANT_INDEX (FF_ARRAY_ELEMS(ff_dirac_qscale_tab))
+
 #endif /* AVCODEC_DIRACTAB_H */

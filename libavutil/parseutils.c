@@ -687,6 +687,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             dt2.tm_sec  = dt.tm_sec;
             dt = dt2;
         }
+        dt.tm_isdst = is_utc ? 0 : -1;
         t = is_utc ? av_timegm(&dt) : mktime(&dt);
         t += tzoffset;
     }

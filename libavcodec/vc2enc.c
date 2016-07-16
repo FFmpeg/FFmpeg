@@ -29,11 +29,8 @@
 #include "vc2enc_dwt.h"
 #include "diractab.h"
 
-/* Quantizations above this usually zero coefficients and lower the quality */
-#define MAX_QUANT_INDEX FF_ARRAY_ELEMS(ff_dirac_qscale_tab)
-
 /* Total range is -COEF_LUT_TAB to +COEFF_LUT_TAB, but total tab size is half
- * (COEF_LUT_TAB*MAX_QUANT_INDEX) since the sign is appended during encoding */
+ * (COEF_LUT_TAB*DIRAC_MAX_QUANT_INDEX), as the sign is appended during encoding */
 #define COEF_LUT_TAB 2048
 
 /* The limited size resolution of each slice forces us to do this */
@@ -109,7 +106,7 @@ typedef struct Plane {
 
 typedef struct SliceArgs {
     PutBitContext pb;
-    int cache[MAX_QUANT_INDEX];
+    int cache[DIRAC_MAX_QUANT_INDEX];
     void *ctx;
     int x;
     int y;
@@ -1074,7 +1071,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     s->picture_number = 0;
 
     /* Total allowed quantization range */
-    s->q_ceil    = MAX_QUANT_INDEX;
+    s->q_ceil    = DIRAC_MAX_QUANT_INDEX;
 
     s->ver.major = 2;
     s->ver.minor = 0;

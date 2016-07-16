@@ -29,12 +29,14 @@
 
 static const enum AVPixelFormat vp9_pix_fmts_def[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_NONE
 };
 
 #if CONFIG_LIBVPX_VP9_ENCODER
 static const enum AVPixelFormat vp9_pix_fmts_highcol[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUV444P,
@@ -46,6 +48,7 @@ static const enum AVPixelFormat vp9_pix_fmts_highcol[] = {
 
 static const enum AVPixelFormat vp9_pix_fmts_highbd[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUV444P,

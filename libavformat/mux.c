@@ -817,6 +817,57 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
+    AVStream *st = s->streams[pkt->stream_index];
+    int i, ret;
+
+    if (s->oformat->check_bitstream) {
+        if (!st->internal->bitstream_checked) {
+            if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
+                return ret;
+            else if (ret == 1)
+                st->internal->bitstream_checked = 1;
+        }
+    }
+
+    for (i = 0; i < st->internal->nb_bsfcs; i++) {
+        AVBSFContext *ctx = st->internal->bsfcs[i];
+        if (i > 0) {
+            AVBSFContext* prev_ctx = st->internal->bsfcs[i - 1];
+            if (prev_ctx->par_out->extradata_size != ctx->par_in->extradata_size) {
+                if ((ret = avcodec_parameters_copy(ctx->par_in, prev_ctx->par_out)) < 0)
+                    return ret;
+            }
+        }
+        // TODO: when any bitstream filter requires flushing at EOF, we'll need to
+        // flush each stream's BSF chain on write_trailer.
+        if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                    "Failed to send packet to filter %s for stream %d",
+                    ctx->filter->name, pkt->stream_index);
+            return ret;
+        }
+        // TODO: when any automatically-added bitstream filter is generating multiple
+        // output packets for a single input one, we'll need to call this in a loop
+        // and write each output packet.
+        if ((ret = av_bsf_receive_packet(ctx, pkt)) < 0) {
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                return 0;
+            av_log(ctx, AV_LOG_ERROR,
+                    "Failed to send packet to filter %s for stream %d",
+                    ctx->filter->name, pkt->stream_index);
+            return ret;
+        }
+        if (i == st->internal->nb_bsfcs - 1) {
+            if (ctx->par_out->extradata_size != st->codecpar->extradata_size) {
+                if ((ret = avcodec_parameters_copy(st->codecpar, ctx->par_out)) < 0)
+                    return ret;
+            }
+        }
+    }
+    return 1;
+}
+
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
@@ -841,6 +892,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         }
         return 1;
     }
+
+    ret = do_packet_auto_bsf(s, pkt);
+    if (ret <= 0)
+        return ret;
 
 #if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
@@ -1082,7 +1137,7 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, flush = 0, i;
+    int ret, flush = 0;
 
     ret = prepare_input_packet(s, pkt);
     if (ret < 0)
@@ -1091,50 +1146,11 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
 
-        if (s->oformat->check_bitstream) {
-            if (!st->internal->bitstream_checked) {
-                if ((ret = s->oformat->check_bitstream(s, pkt)) < 0)
-                    goto fail;
-                else if (ret == 1)
-                    st->internal->bitstream_checked = 1;
-            }
-        }
-
-        for (i = 0; i < st->internal->nb_bsfcs; i++) {
-            AVBSFContext *ctx = st->internal->bsfcs[i];
-            if (i > 0) {
-                AVBSFContext* prev_ctx = st->internal->bsfcs[i - 1];
-                if (prev_ctx->par_out->extradata_size != ctx->par_in->extradata_size) {
-                    if ((ret = avcodec_parameters_copy(ctx->par_in, prev_ctx->par_out)) < 0)
-                        goto fail;
-                }
-            }
-            // TODO: when any bitstream filter requires flushing at EOF, we'll need to
-            // flush each stream's BSF chain on write_trailer.
-            if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Failed to send packet to filter %s for stream %d",
-                       ctx->filter->name, pkt->stream_index);
-                goto fail;
-            }
-            // TODO: when any automatically-added bitstream filter is generating multiple
-            // output packets for a single input one, we'll need to call this in a loop
-            // and write each output packet.
-            if ((ret = av_bsf_receive_packet(ctx, pkt)) < 0) {
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                    return 0;
-                av_log(ctx, AV_LOG_ERROR,
-                       "Failed to send packet to filter %s for stream %d",
-                       ctx->filter->name, pkt->stream_index);
-                goto fail;
-            }
-            if (i == st->internal->nb_bsfcs - 1) {
-                if (ctx->par_out->extradata_size != st->codecpar->extradata_size) {
-                    if ((ret = avcodec_parameters_copy(st->codecpar, ctx->par_out)) < 0)
-                        goto fail;
-                }
-            }
-        }
+        ret = do_packet_auto_bsf(s, pkt);
+        if (ret == 0)
+            return 0;
+        else if (ret < 0)
+            goto fail;
 
         if (s->debug & FF_FDEBUG_TS)
             av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",

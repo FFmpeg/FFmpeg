@@ -109,6 +109,7 @@ include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
 include $(SRC_PATH)/tests/fate/api.mak
+include $(SRC_PATH)/tests/fate/apng.mak
 include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak

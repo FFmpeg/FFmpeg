@@ -865,8 +865,10 @@ static void decode_delta_j(uint8_t *dst,
             for (g = 0; g < groups; g++) {
                 offset = bytestream2_get_be16(&gb);
 
-                if (bytestream2_get_bytes_left(&gb) < 1)
+                if (cols * bpp == 0 || bytestream2_get_bytes_left(&gb) < cols * bpp) {
+                    av_log(NULL, AV_LOG_ERROR, "cols*bpp is invalid (%d*%d)", cols, bpp);
                     return;
+                }
 
                 if (kludge_j)
                     offset = ((offset / (320 / 8)) * pitch) + (offset % (320 / 8)) - kludge_j;
@@ -911,8 +913,10 @@ static void decode_delta_j(uint8_t *dst,
                     for (d = 0; d < bpp; d++) {
                         unsigned noffset = offset + (r * pitch) + d * planepitch;
 
-                        if (bytestream2_get_bytes_left(&gb) < 1)
+                        if (!bytes || bytestream2_get_bytes_left(&gb) < bytes) {
+                            av_log(NULL, AV_LOG_ERROR, "bytes %d is invalid", bytes);
                             return;
+                        }
 
                         for (b = 0; b < bytes; b++) {
                             uint8_t value = bytestream2_get_byte(&gb);
@@ -1377,13 +1381,15 @@ static void decode_delta_l(uint8_t *dst,
         bytestream2_init(&dgb, buf + 2 * poff0, buf_end - (buf + 2 * poff0));
         bytestream2_init(&ogb, buf + 2 * poff1, buf_end - (buf + 2 * poff1));
 
-        while ((bytestream2_peek_be16(&ogb)) != 0xFFFF && bytestream2_get_bytes_left(&ogb) >= 4) {
+        while (bytestream2_peek_be16(&ogb) != 0xFFFF && bytestream2_get_bytes_left(&ogb) >= 4) {
             uint32_t offset = bytestream2_get_be16(&ogb);
             int16_t cnt = bytestream2_get_be16(&ogb);
             uint16_t data;
 
             offset = ((2 * offset) / planepitch_byte) * pitch + ((2 * offset) % planepitch_byte) + k * planepitch;
             if (cnt < 0) {
+                if (bytestream2_get_bytes_left(&dgb) < 2)
+                    break;
                 bytestream2_seek_p(&pb, offset, SEEK_SET);
                 cnt = -cnt;
                 data = bytestream2_get_be16(&dgb);
@@ -1392,6 +1398,8 @@ static void decode_delta_l(uint8_t *dst,
                     bytestream2_skip_p(&pb, dstpitch - 2);
                 }
             } else {
+                if (bytestream2_get_bytes_left(&dgb) < 2*cnt)
+                    break;
                 bytestream2_seek_p(&pb, offset, SEEK_SET);
                 for (i = 0; i < cnt; i++) {
                     data = bytestream2_get_be16(&dgb);

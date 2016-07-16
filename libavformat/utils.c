@@ -3951,6 +3951,63 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
+int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
+{
+    int ret, i;
+
+    dst->id                  = src->id;
+    dst->time_base           = src->time_base;
+    dst->nb_frames           = src->nb_frames;
+    dst->disposition         = src->disposition;
+    dst->sample_aspect_ratio = src->sample_aspect_ratio;
+    dst->avg_frame_rate      = src->avg_frame_rate;
+    dst->r_frame_rate        = src->r_frame_rate;
+
+    av_dict_free(&dst->metadata);
+    ret = av_dict_copy(&dst->metadata, src->metadata, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_parameters_copy(dst->codecpar, src->codecpar);
+    if (ret < 0)
+        return ret;
+
+    /* Free existing side data*/
+    for (i = 0; i < dst->nb_side_data; i++)
+        av_free(dst->side_data[i].data);
+    av_freep(&dst->side_data);
+    dst->nb_side_data = 0;
+
+    /* Copy side data if present */
+    if (src->nb_side_data) {
+        dst->side_data = av_mallocz_array(src->nb_side_data,
+                                          sizeof(AVPacketSideData));
+        if (!dst->side_data)
+            return AVERROR(ENOMEM);
+        dst->nb_side_data = src->nb_side_data;
+
+        for (i = 0; i < src->nb_side_data; i++) {
+            uint8_t *data = av_memdup(src->side_data[i].data,
+                                      src->side_data[i].size);
+            if (!data)
+                return AVERROR(ENOMEM);
+            dst->side_data[i].type = src->side_data[i].type;
+            dst->side_data[i].size = src->side_data[i].size;
+            dst->side_data[i].data = data;
+        }
+    }
+
+    av_freep(&dst->recommended_encoder_configuration);
+    if (src->recommended_encoder_configuration) {
+        const char *conf_str = src->recommended_encoder_configuration;
+        dst->recommended_encoder_configuration = av_strdup(conf_str);
+        if (!dst->recommended_encoder_configuration)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
 static void free_stream(AVStream **pst)
 {
     AVStream *st = *pst;
@@ -5111,6 +5168,16 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
 }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **options)
+{
+    if (!s->oformat)
+        return AVERROR(EINVAL);
+
+    if (!(s->oformat->flags & AVFMT_NOFILE))
+        return s->io_open(s, &s->pb, url, AVIO_FLAG_WRITE, options);
+    return 0;
+}
 
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
 {

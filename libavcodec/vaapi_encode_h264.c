@@ -861,12 +861,12 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             // Try to scale these to a sensible range so that the
             // golomb encode of the value is not overlong.
             mseq->bit_rate_scale =
-                av_clip(av_log2(avctx->bit_rate) - 15, 0, 15);
+                av_clip_uintp2(av_log2(avctx->bit_rate) - 15, 4);
             mseq->bit_rate_value_minus1[0] =
                 (avctx->bit_rate >> mseq->bit_rate_scale) - 1;
 
             mseq->cpb_size_scale =
-                av_clip(av_log2(priv->hrd_params.hrd.buffer_size) - 15, 0, 15);
+                av_clip_uintp2(av_log2(priv->hrd_params.hrd.buffer_size) - 15, 4);
             mseq->cpb_size_value_minus1[0] =
                 (priv->hrd_params.hrd.buffer_size >> mseq->cpb_size_scale) - 1;
 

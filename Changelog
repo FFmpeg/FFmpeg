@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- libopenmpt demuxer
 
 
 version 3.1:
@@ -49,6 +50,7 @@ version 3.1:
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
 - VideoToolbox H.264 encoder
+- Changed metadata print option to accept general urls
 
 
 version 3.0:

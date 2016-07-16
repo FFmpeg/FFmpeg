@@ -1348,6 +1348,14 @@ typedef struct AVCPBProperties {
  */
 enum AVPacketSideDataType {
     AV_PKT_DATA_PALETTE,
+
+    /**
+     * The AV_PKT_DATA_NEW_EXTRADATA is used to notify the codec or the format
+     * that the extradata buffer was changed and the receiving side should
+     * act upon it appropriately. The new extradata is embedded in the side
+     * data buffer and should be immediately used for processing the current
+     * frame or packet.
+     */
     AV_PKT_DATA_NEW_EXTRADATA,
 
     /**
@@ -3189,8 +3197,10 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_H264_HIGH                 100
 #define FF_PROFILE_H264_HIGH_10              110
 #define FF_PROFILE_H264_HIGH_10_INTRA        (110|FF_PROFILE_H264_INTRA)
+#define FF_PROFILE_H264_MULTIVIEW_HIGH       118
 #define FF_PROFILE_H264_HIGH_422             122
 #define FF_PROFILE_H264_HIGH_422_INTRA       (122|FF_PROFILE_H264_INTRA)
+#define FF_PROFILE_H264_STEREO_HIGH          128
 #define FF_PROFILE_H264_HIGH_444             144
 #define FF_PROFILE_H264_HIGH_444_PREDICTIVE  244
 #define FF_PROFILE_H264_HIGH_444_INTRA       (244|FF_PROFILE_H264_INTRA)

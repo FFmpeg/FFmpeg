@@ -284,6 +284,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
 #endif
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVA420P:
         enccfg->g_profile = 0;
         *img_fmt = VPX_IMG_FMT_I420;
         return 0;

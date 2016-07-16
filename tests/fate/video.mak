@@ -108,18 +108,6 @@ fate-deluxepaint-anm: CMD = framecrc -i $(TARGET_SAMPLES)/deluxepaint-anm/INTRO1
 FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac
 fate-dirac: CMD = framecrc -i $(TARGET_SAMPLES)/dirac/vts.profile-main.drc
 
-FATE_TRUEMOTION1 += fate-truemotion1-15
-fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
-
-FATE_TRUEMOTION1 += fate-truemotion1-24
-fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
-
-FATE_VIDEO-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
-fate-truemotion1: $(FATE_TRUEMOTION1)
-
-FATE_VIDEO-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
-fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
-
 FATE_DXA += fate-dxa-feeble
 fate-dxa-feeble: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24 -an
 
@@ -180,7 +168,7 @@ fate-hapy: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy.mov
 FATE_HAP += fate-hap-chunk
 fate-hap-chunk: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy-12-chunks.mov
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
+FATE_VIDEO-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
 fate-hap: $(FATE_HAP)
 
 FATE_IFF-$(CONFIG_IFF_ILBM_DECODER) += fate-iff-byterun1
@@ -212,6 +200,25 @@ fate-kgv1: CMD = framecrc -i $(TARGET_SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -
 
 FATE_VIDEO-$(call DEMDEC, AVI, KMVC) += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(TARGET_SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
+
+FATE_MAGICYUV += fate-magicyuv-y4444i \
+                 fate-magicyuv-y400i  \
+                 fate-magicyuv-y420   \
+                 fate-magicyuv-y422i  \
+                 fate-magicyuv-y444   \
+                 fate-magicyuv-rgba   \
+                 fate-magicyuv-rgb
+
+FATE_VIDEO-$(call DEMDEC, AVI, MAGICYUV) += $(FATE_MAGICYUV)
+fate-magicyuv: $(FATE_MAGICYUV)
+
+fate-magicyuv-rgb:    CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgb_median.avi
+fate-magicyuv-rgba:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgba_gradient.avi
+fate-magicyuv-y400i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv400_gradient_interlaced.avi
+fate-magicyuv-y420:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv420_median.avi
+fate-magicyuv-y422i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv422_median_interlaced.avi
+fate-magicyuv-y4444i: CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv4444_left_interlaced.avi
+fate-magicyuv-y444:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv444_left.avi
 
 FATE_VIDEO-$(call DEMDEC, EA, MDEC) += fate-mdec
 fate-mdec: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/ea-dct/NFS2Esprit-partial.dct -an

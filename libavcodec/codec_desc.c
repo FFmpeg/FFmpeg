@@ -1303,6 +1303,41 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_MAGICYUV,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "magicyuv",
+        .long_name = NULL_IF_CONFIG_SMALL("MagicYUV video"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_TRUEMOTION2RT,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "truemotion2rt",
+        .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0 Real Time"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_CFHD,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "cfhd",
+        .long_name = NULL_IF_CONFIG_SMALL("Cineform HD"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_SHEERVIDEO,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "sheervideo",
+        .long_name = NULL_IF_CONFIG_SMALL("BitJazz SheerVideo"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_YLC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "ylc",
+        .long_name = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* image codecs */
     {
@@ -1527,41 +1562,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
         .props     = AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/png"),
-    },
-    {
-        .id        = AV_CODEC_ID_CFHD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cfhd",
-        .long_name = NULL_IF_CONFIG_SMALL("Cineform HD"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-    {
-        .id        = AV_CODEC_ID_TRUEMOTION2RT,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "truemotion2rt",
-        .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0 Real Time"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-    {
-        .id        = AV_CODEC_ID_MAGICYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "magicyuv",
-        .long_name = NULL_IF_CONFIG_SMALL("MagicYUV Lossless Video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-    },
-    {
-        .id        = AV_CODEC_ID_SHEERVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sheervideo",
-        .long_name = NULL_IF_CONFIG_SMALL("BitJazz SheerVideo"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-    },
-    {
-        .id        = AV_CODEC_ID_YLC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ylc",
-        .long_name = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
 
     /* various PCM "codecs" */

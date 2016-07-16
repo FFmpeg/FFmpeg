@@ -245,6 +245,7 @@ External library support:
   --enable-libopencv       enable video filtering via libopencv [no]
   --enable-libopenh264     enable H.264 encoding via OpenH264 [no]
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
+  --enable-libopenmpt      enable decoding tracked files via libopenmpt [no]
   --enable-libopus         enable Opus de/encoding via libopus [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librubberband   enable rubberband needed for rubberband filter [no]
@@ -1505,6 +1506,7 @@ EXTERNAL_LIBRARY_LIST="
     libopencv
     libopenh264
     libopenjpeg
+    libopenmpt
     libopus
     libpulse
     librtmp
@@ -2555,6 +2557,7 @@ h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mediacodec_decoder_deps="mediacodec"
+h264_mediacodec_hwaccel_deps="mediacodec"
 h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mmal_decoder_deps="mmal"
 h264_mmal_decoder_select="mmal"
@@ -2769,6 +2772,7 @@ libopencore_amrwb_decoder_deps="libopencore_amrwb"
 libopenh264_encoder_deps="libopenh264"
 libopenjpeg_decoder_deps="libopenjpeg"
 libopenjpeg_encoder_deps="libopenjpeg"
+libopenmpt_demuxer_deps="libopenmpt"
 libopus_decoder_deps="libopus"
 libopus_encoder_deps="libopus"
 libopus_encoder_select="audio_frame_queue"
@@ -5678,6 +5682,7 @@ enabled libopenjpeg       && { check_lib openjpeg-2.1/openjpeg.h opj_version -lo
                                check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                die "ERROR: libopenjpeg not found"; }
+enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
 enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
@@ -6027,6 +6032,8 @@ enabled neon_clobber_test &&
                   -Wl,--wrap,avcodec_decode_subtitle2   \
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video2      \
+                  -Wl,--wrap,avcodec_send_packet        \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert ||
@@ -6040,6 +6047,8 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,avcodec_send_packet        \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert         \
                   -Wl,--wrap,sws_scale ||
@@ -6134,11 +6143,7 @@ elif enabled ccc; then
     add_cflags -msg_disable nonstandcast
     add_cflags -msg_disable unsupieee
 elif enabled gcc; then
-    case $gcc_basever in
-        4.9*) enabled x86 || check_optflags -fno-tree-vectorize ;;
-        4.*)                 check_optflags -fno-tree-vectorize ;;
-        *)    enabled x86 || check_optflags -fno-tree-vectorize ;;
-    esac
+    check_optflags -fno-tree-vectorize
     check_cflags -Werror=format-security
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
@@ -6203,6 +6208,10 @@ __declspec($_restrict) void* foo(int);
 EOF
     fi
     check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+    # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
+    # this flag should be re-checked on newer compiler releases and put under a
+    # version check once its fixed
+    check_cflags -d2SSAOptimizer-
 fi
 
 for pfx in "" host_; do

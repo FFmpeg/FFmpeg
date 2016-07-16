@@ -76,6 +76,7 @@ cextern pd_32
 
 %macro IDCT_ADD_10 0
 cglobal h264_idct_add_10, 3,3
+    movsxdifnidn r2, r2d
     IDCT4_ADD_10 r0, r1, r2
     RET
 %endmacro
@@ -137,6 +138,7 @@ ADD4x4IDCT
 
 %macro IDCT_ADD16_10 0
 cglobal h264_idct_add16_10, 5,6
+    movsxdifnidn r3, r3d
     ADD16_OP 0, 4+1*8
     ADD16_OP 1, 5+1*8
     ADD16_OP 2, 4+2*8
@@ -195,6 +197,7 @@ IDCT_ADD16_10
 
 INIT_MMX mmxext
 cglobal h264_idct_dc_add_10,3,3
+    movsxdifnidn r2, r2d
     movd      m0, [r1]
     mov dword [r1], 0
     paddd     m0, [pd_32]
@@ -210,6 +213,7 @@ cglobal h264_idct_dc_add_10,3,3
 ;-----------------------------------------------------------------------------
 %macro IDCT8_DC_ADD 0
 cglobal h264_idct8_dc_add_10,3,4,7
+    movsxdifnidn r2, r2d
     movd      m0, [r1]
     mov dword[r1], 0
     paddd     m0, [pd_32]
@@ -279,6 +283,7 @@ idct_dc_add %+ SUFFIX:
     ret
 
 cglobal h264_idct_add16intra_10,5,7,8
+    movsxdifnidn r3, r3d
     ADD16_OP_INTRA 0, 4+1*8
     ADD16_OP_INTRA 2, 4+2*8
     ADD16_OP_INTRA 4, 6+1*8
@@ -313,6 +318,7 @@ IDCT_ADD16INTRA_10
 ;-----------------------------------------------------------------------------
 %macro IDCT_ADD8 0
 cglobal h264_idct_add8_10,5,8,7
+    movsxdifnidn r3, r3d
 %if ARCH_X86_64
     mov      r7, r0
 %endif
@@ -449,6 +455,7 @@ IDCT_ADD8
 
 %macro IDCT8_ADD 0
 cglobal h264_idct8_add_10, 3,4,16
+    movsxdifnidn r2, r2d
 %if UNIX64 == 0
     %assign pad 16-gprsize-(stack_offset&15)
     sub  rsp, pad
@@ -573,6 +580,7 @@ IDCT8_ADD
 
 %macro IDCT8_ADD4 0
 cglobal h264_idct8_add4_10, 0,7,16
+    movsxdifnidn r3, r3d
     %assign pad 16-gprsize-(stack_offset&15)
     SUB      rsp, pad
     mov       r5, r0mp

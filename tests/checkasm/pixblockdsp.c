@@ -26,7 +26,7 @@
 #include "libavutil/intreadwrite.h"
 
 #define BUF_UNITS 8
-#define BUF_SIZE (BUF_UNITS * 128 + BUF_UNITS)
+#define BUF_SIZE (BUF_UNITS * 128 + 8 * BUF_UNITS)
 
 #define randomize_buffers()                 \
     do {                                    \
@@ -50,7 +50,7 @@
         declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *block, const uint8_t *pixels, ptrdiff_t line_size);    \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
-            int src_offset = i * 64 * sizeof(type) + i; /* Test various alignments */      \
+            int src_offset = i * 64 * sizeof(type) + 8 * i; /* Test various alignments */      \
             int dst_offset = i * 64; /* dst must be aligned */                             \
             randomize_buffers();                                                           \
             call_ref(dst0 + dst_offset, src10 + src_offset, 8);                            \
@@ -67,7 +67,7 @@
         declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, int stride); \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
-            int src_offset = i * 64 * sizeof(type) + i; /* Test various alignments */      \
+            int src_offset = i * 64 * sizeof(type) + 8 * i; /* Test various alignments */      \
             int dst_offset = i * 64; /* dst must be aligned */                             \
             randomize_buffers();                                                           \
             call_ref(dst0 + dst_offset, src10 + src_offset, src20 + src_offset, 8);        \

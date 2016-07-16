@@ -165,6 +165,15 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV444P12:
         ctx->params->internalCsp = X265_CSP_I444;
         break;
+    case AV_PIX_FMT_GRAY8:
+        if (ctx->api->api_build_number < 85) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "libx265 version is %d, must be at least 85 for gray encoding.\n",
+                   ctx->api->api_build_number);
+            return AVERROR_INVALIDDATA;
+        }
+        ctx->params->internalCsp = X265_CSP_I400;
+        break;
     }
 
     if (ctx->crf >= 0) {
@@ -325,6 +334,7 @@ static const enum AVPixelFormat x265_csp_eight[] = {
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
 
@@ -337,6 +347,7 @@ static const enum AVPixelFormat x265_csp_ten[] = {
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
 
@@ -353,6 +364,7 @@ static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_YUV422P12,
     AV_PIX_FMT_YUV444P12,
     AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
 };
 

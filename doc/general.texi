@@ -679,6 +679,8 @@ following image formats are supported:
     @tab fourcc: DUCK
 @item Duck TrueMotion 2.0    @tab     @tab  X
     @tab fourcc: TM20
+@item Duck TrueMotion 2.0 RT @tab     @tab  X
+    @tab fourcc: TR20
 @item DV (Digital Video)     @tab  X  @tab  X
 @item Dxtory capture format  @tab     @tab  X
 @item Feeble Files/ScummVM DXA  @tab     @tab  X
@@ -745,7 +747,7 @@ following image formats are supported:
 @item LucasArts SANM/Smush   @tab     @tab  X
     @tab Used in LucasArts games / SMUSH animations.
 @item lossless MJPEG         @tab  X  @tab  X
-@item MagicYUV Lossless Video @tab     @tab  X
+@item MagicYUV Video         @tab     @tab  X
 @item Microsoft ATC Screen   @tab     @tab  X
     @tab Also known as Microsoft Screen 3.
 @item Microsoft Expression Encoder Screen  @tab     @tab  X

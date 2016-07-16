@@ -495,6 +495,12 @@ Will produce the playlist, @file{out.m3u8}, and a single segment file,
 Segment files removed from the playlist are deleted after a period of time
 equal to the duration of the segment plus the duration of the playlist.
 
+@item hls_flags split_by_time
+If this flags is set, allow segments to start on frames other than keyframes.
+This improves behavior on some players when the time between keyframes is
+inconsistent, but may make things worse on others, and can cause some oddities
+during seeking. This flag should be used with hls_time option.
+
 @item hls_playlist_type event
 Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
 @option{hls_list_size} to 0; the playlist can only be appended to.
@@ -502,6 +508,17 @@ Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
 @item hls_playlist_type vod
 Emit @code{#EXT-X-PLAYLIST-TYPE:VOD} in the m3u8 header. Forces
 @option{hls_list_size} to 0; the playlist must not change.
+
+@item method
+Use the given HTTP method to create the hls files.
+@example
+ffmpeg -re -i in.ts -f hls -method PUT http://example.com/live/out.m3u8
+@end example
+This example will upload all the mpegts segment files to the HTTP
+server using the HTTP PUT method, and update the m3u8 files every
+@code{refresh} times using the same method.
+Note that the HTTP server must support the given method for uploading
+files.
 @end table
 
 @anchor{ico}
