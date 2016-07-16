@@ -68,7 +68,7 @@ static av_always_inline uint64_t ff_dnxhd_check_header_prefix_hr(uint64_t prefix
     uint64_t data_offset = prefix >> 16;
     if ((prefix & 0xFFFF0000FFFFLL) == 0x0300 &&
          data_offset >= 0x0280 && data_offset <= 0x2170 &&
-         data_offset % 4 == 0)
+         (data_offset & 3) == 0)
         return prefix;
     return 0;
 }
