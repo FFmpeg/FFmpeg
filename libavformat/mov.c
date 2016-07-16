@@ -43,6 +43,7 @@
 #include "libavutil/sha.h"
 #include "libavutil/timecode.h"
 #include "libavcodec/ac3tab.h"
+#include "libavcodec/mpegaudiodecheader.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -5340,6 +5341,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         }
 #endif
+        if (st->codecpar->codec_id == AV_CODEC_ID_MP3 && !st->need_parsing && pkt->size > 4) {
+            if (ff_mpa_check_header(AV_RB32(pkt->data)) < 0)
+                st->need_parsing = AVSTREAM_PARSE_FULL;
+        }
     }
 
     pkt->stream_index = sc->ffindex;
