@@ -35,9 +35,9 @@ endconst
 
 const error_message_fpscr
     .asciz "failed to preserve register FPSCR"
-const error_message_gpr
+error_message_gpr:
     .asciz "failed to preserve register r%d"
-const error_message_vfp
+error_message_vfp:
     .asciz "failed to preserve register d%d"
 endconst
 
