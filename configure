@@ -2213,6 +2213,8 @@ setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
+loongson2_deps="mips"
+loongson3_deps="mips"
 mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
