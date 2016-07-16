@@ -124,7 +124,12 @@ SET REPONAME=%~1
 REM Get latest release
 ECHO %REPONAME%: Getting latest release...
 SET UPSTREAMAPIURL=%UPSTREAMURL:github.com=api.github.com/repos%
-powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest > latest.json } catch {exit 1}"
+REM Check if secure OAuth is available
+IF "%GITHUBTOKEN%" == "" (
+    powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest > latest.json } catch {exit 1}"
+) ELSE (
+    powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest -Headers @{'Authorization' = 'token %GITHUBTOKEN%'} > latest.json } catch {exit 1}"
+)
 IF NOT %ERRORLEVEL% == 0 ( ECHO Failed getting latest %REPONAME% release & EXIT /B 1 )
 REM Get tag for latest release
 FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR /B "tag_name"`) DO SET TAG=%%F

@@ -13,6 +13,8 @@ platform:
 - x64
 
 environment:
+  GITHUBTOKEN:
+    secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
   matrix:
   - MSVC_VER: 12
   - MSVC_VER: 14
