@@ -147,7 +147,7 @@ Codecs:
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cinepakenc.c                          Rl / Aetey G.T. AB
-  ccaption_dec.c                        Anshul Maheshwari
+  ccaption_dec.c                        Anshul Maheshwari, Aman Gupta
   cljr                                  Alex Beregszaszi
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
