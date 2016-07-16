@@ -72,6 +72,10 @@ EXPORTS
     av_mdct_calc
     av_mdct_end
     av_mdct_init
+    av_mediacodec_alloc_context
+    av_mediacodec_default_free
+    av_mediacodec_default_init
+    av_mediacodec_release_buffer
     av_new_packet
     av_packet_add_side_data
     av_packet_alloc

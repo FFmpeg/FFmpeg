@@ -318,6 +318,9 @@
     <ClCompile Include="..\libavcodec\mathtables.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mediacodec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\options.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -973,6 +976,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dirac_arith.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\dirac_vlc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dfa.c">
@@ -2781,6 +2787,9 @@
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\jni.h">
+      <Filter>Header Files\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavcodec\mediacodec.h">
       <Filter>Header Files\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\libavcodec\qsv.h">
