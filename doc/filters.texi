@@ -5710,10 +5710,6 @@ strictly increasing over the x-axis, and their @var{x} and @var{y} values must
 be in the @var{[0;1]} interval.  If the computed curves happened to go outside
 the vector spaces, the values will be clipped accordingly.
 
-If there is no key point defined in @code{x=0}, the filter will automatically
-insert a @var{(0;0)} point. In the same way, if there is no key point defined
-in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
-
 The filter accepts the following options:
 
 @table @option
@@ -5765,13 +5761,13 @@ defined using the following syntax: @code{x0/y0 x1/y1 x2/y2 ...}.
 @item
 Increase slightly the middle level of blue:
 @example
-curves=blue='0.5/0.58'
+curves=blue='0/0 0.5/0.58 1/1'
 @end example
 
 @item
 Vintage effect:
 @example
-curves=r='0/0.11 .42/.51 1/0.95':g='0.50/0.48':b='0/0.22 .49/.44 1/0.8'
+curves=r='0/0.11 .42/.51 1/0.95':g='0/0 0.50/0.48 1/1':b='0/0.22 .49/.44 1/0.8'
 @end example
 Here we obtain the following coordinates for each components:
 @table @var
@@ -5798,7 +5794,7 @@ curves=vintage
 @item
 Use a Photoshop preset and redefine the points of the green component:
 @example
-curves=psfile='MyCurvesPresets/purple.acv':green='0.45/0.53'
+curves=psfile='MyCurvesPresets/purple.acv':green='0/0 0.45/0.53 1/1'
 @end example
 @end itemize
 

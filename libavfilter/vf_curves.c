@@ -110,25 +110,25 @@ static const struct {
     const char *master;
 } curves_presets[] = {
     [PRESET_COLOR_NEGATIVE] = {
-        "0/1 0.129/1 0.466/0.498 0.725/0 1/0",
-        "0/1 0.109/1 0.301/0.498 0.517/0 1/0",
-        "0/1 0.098/1 0.235/0.498 0.423/0 1/0",
+        "0.129/1 0.466/0.498 0.725/0",
+        "0.109/1 0.301/0.498 0.517/0",
+        "0.098/1 0.235/0.498 0.423/0",
     },
     [PRESET_CROSS_PROCESS] = {
-        "0.25/0.156 0.501/0.501 0.686/0.745",
-        "0.25/0.188 0.38/0.501 0.745/0.815 1/0.815",
-        "0.231/0.094 0.709/0.874",
+        "0/0 0.25/0.156 0.501/0.501 0.686/0.745 1/1",
+        "0/0 0.25/0.188 0.38/0.501 0.745/0.815 1/0.815",
+        "0/0 0.231/0.094 0.709/0.874 1/1",
     },
-    [PRESET_DARKER]             = { .master = "0.5/0.4" },
-    [PRESET_INCREASE_CONTRAST]  = { .master = "0.149/0.066 0.831/0.905 0.905/0.98" },
-    [PRESET_LIGHTER]            = { .master = "0.4/0.5" },
-    [PRESET_LINEAR_CONTRAST]    = { .master = "0.305/0.286 0.694/0.713" },
-    [PRESET_MEDIUM_CONTRAST]    = { .master = "0.286/0.219 0.639/0.643" },
+    [PRESET_DARKER]             = { .master = "0/0 0.5/0.4 1/1" },
+    [PRESET_INCREASE_CONTRAST]  = { .master = "0/0 0.149/0.066 0.831/0.905 0.905/0.98 1/1" },
+    [PRESET_LIGHTER]            = { .master = "0/0 0.4/0.5 1/1" },
+    [PRESET_LINEAR_CONTRAST]    = { .master = "0/0 0.305/0.286 0.694/0.713 1/1" },
+    [PRESET_MEDIUM_CONTRAST]    = { .master = "0/0 0.286/0.219 0.639/0.643 1/1" },
     [PRESET_NEGATIVE]           = { .master = "0/1 1/0" },
-    [PRESET_STRONG_CONTRAST]    = { .master = "0.301/0.196 0.592/0.6 0.686/0.737" },
+    [PRESET_STRONG_CONTRAST]    = { .master = "0/0 0.301/0.196 0.592/0.6 0.686/0.737 1/1" },
     [PRESET_VINTAGE] = {
         "0/0.11 0.42/0.51 1/0.95",
-        "0.50/0.48",
+        "0/0 0.50/0.48 1/1",
         "0/0.22 0.49/0.44 1/0.8",
     }
 };
@@ -177,28 +177,11 @@ static int parse_points_str(AVFilterContext *ctx, struct keypoint **points, cons
         last = point;
     }
 
-    /* auto insert first key point if missing at x=0 */
-    if (!*points) {
-        last = make_point(0, 0, NULL);
-        if (!last)
-            return AVERROR(ENOMEM);
-        last->x = last->y = 0;
-        *points = last;
-    } else if ((*points)->x != 0.) {
-        struct keypoint *newfirst = make_point(0, 0, *points);
-        if (!newfirst)
-            return AVERROR(ENOMEM);
-        *points = newfirst;
-    }
-
-    av_assert0(last);
-
-    /* auto insert last key point if missing at x=1 */
-    if (last->x != 1.) {
-        struct keypoint *point = make_point(1, 1, NULL);
-        if (!point)
-            return AVERROR(ENOMEM);
-        last->next = point;
+    if (*points && !(*points)->next) {
+        av_log(ctx, AV_LOG_WARNING, "Only one point (at (%f;%f)) is defined, "
+               "this is unlikely to behave as you expect. You probably want"
+               "at least 2 points.",
+               (*points)->x, (*points)->y);
     }
 
     return 0;
@@ -222,14 +205,28 @@ static int get_nb_points(const struct keypoint *d)
 static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *points)
 {
     int i, ret = 0;
-    const struct keypoint *point;
+    const struct keypoint *point = points;
     double xprev = 0;
 
+    double (*matrix)[3];
+    double *h, *r;
     int n = get_nb_points(points); // number of splines
 
-    double (*matrix)[3] = av_calloc(n, sizeof(*matrix));
-    double *h = av_malloc((n - 1) * sizeof(*h));
-    double *r = av_calloc(n, sizeof(*r));
+    if (n == 0) {
+        for (i = 0; i < 256; i++)
+            y[i] = i;
+        return 0;
+    }
+
+    if (n == 1) {
+        for (i = 0; i < 256; i++)
+            y[i] = av_clip_uint8(point->y * 255);
+        return 0;
+    }
+
+    matrix = av_calloc(n, sizeof(*matrix));
+    h = av_malloc((n - 1) * sizeof(*h));
+    r = av_calloc(n, sizeof(*r));
 
     if (!matrix || !h || !r) {
         ret = AVERROR(ENOMEM);
@@ -277,9 +274,14 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
     for (i = n - 2; i >= 0; i--)
         r[i] = r[i] - matrix[i][AD] * r[i + 1];
 
-    /* compute the graph with x=[0..255] */
-    i = 0;
     point = points;
+
+    /* left padding */
+    for (i = 0; i < (int)(point->x * 255); i++)
+        y[i] = av_clip_uint8(point->y * 255);
+
+    /* compute the graph with x=[x0..xN] */
+    i = 0;
     av_assert0(point->next); // always at least 2 key points
     while (point->next) {
         double yc = point->y;
@@ -300,13 +302,17 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
         for (x = x_start; x <= x_end; x++) {
             double xx = (x - x_start) * 1/255.;
             double yy = a + b*xx + c*xx*xx + d*xx*xx*xx;
-            y[x] = av_clipf(yy, 0, 1) * 255;
+            y[x] = av_clip_uint8(yy * 255);
             av_log(ctx, AV_LOG_DEBUG, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
         }
 
         point = point->next;
         i++;
     }
+
+    /* right padding */
+    for (i = (int)(point->x * 255); i <= 255; i++)
+        y[i] = av_clip_uint8(point->y * 255);
 
 end:
     av_free(matrix);
