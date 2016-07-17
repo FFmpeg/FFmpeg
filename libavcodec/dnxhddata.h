@@ -55,6 +55,7 @@ typedef struct CIDEntry {
     const uint8_t *run_bits, *run;
     int bit_rates[5]; ///< Helper to choose variants, rounded to nearest 5Mb/s
     AVRational frame_rates[5];
+    AVRational packet_scale;
 } CIDEntry;
 
 extern const CIDEntry ff_dnxhd_cid_table[];
