@@ -22,6 +22,12 @@
 
 #include "libavutil/arm/asm.S"
 
+/* override fpu so that NEON instructions are rejected */
+#if HAVE_VFP
+.fpu            vfp
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
+#endif
+
 const register_init, align=3
     .quad 0x21f86d66c8ca00ce
     .quad 0x75b6ba21077c48ad
@@ -85,9 +91,10 @@ function checkasm_checked_call_\variant, export=1
     movrel      r12, register_init
 .ifc \variant, vfp
 .macro check_reg_vfp, dreg, offset
-    vldr        d0,  [r12, #8 * (\offset)]
-    veor        d0,  d0,  \dreg
-    vmov        r2,  r3,  d0
+    ldrd        r2,  r3,  [r12, #8 * (\offset)]
+    vmov        r0,  lr,  \dreg
+    eor         r2,  r2,  r0
+    eor         r3,  r3,  lr
     orrs        r2,  r2,  r3
     bne         4f
 .endm
