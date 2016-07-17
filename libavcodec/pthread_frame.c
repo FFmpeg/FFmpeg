@@ -444,9 +444,11 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    int *progress = f->progress ? (int*)f->progress->data : NULL;
+    atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
 
-    if (!progress || progress[field] >= n) return;
+    if (!progress ||
+        atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
+        return;
 
     p = f->owner->internal->thread_ctx;
 
@@ -454,7 +456,9 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
         av_log(f->owner, AV_LOG_DEBUG, "%p finished %d field %d\n", progress, n, field);
 
     pthread_mutex_lock(&p->progress_mutex);
-    progress[field] = n;
+
+    atomic_store(&progress[field], n);
+
     pthread_cond_broadcast(&p->progress_cond);
     pthread_mutex_unlock(&p->progress_mutex);
 }
@@ -462,9 +466,11 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 {
     PerThreadContext *p;
-    int *progress = f->progress ? (int*)f->progress->data : NULL;
+    atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
 
-    if (!progress || progress[field] >= n) return;
+    if (!progress ||
+        atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
+        return;
 
     p = f->owner->internal->thread_ctx;
 
@@ -472,7 +478,7 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
         av_log(f->owner, AV_LOG_DEBUG, "thread awaiting %d field %d from %p\n", n, field, progress);
 
     pthread_mutex_lock(&p->progress_mutex);
-    while (progress[field] < n)
+    while (atomic_load_explicit(&progress[field], memory_order_relaxed) < n)
         pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
     pthread_mutex_unlock(&p->progress_mutex);
 }
@@ -719,14 +725,15 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     }
 
     if (avctx->internal->allocate_progress) {
-        int *progress;
-        f->progress = av_buffer_alloc(2 * sizeof(int));
+        atomic_int *progress;
+        f->progress = av_buffer_alloc(2 * sizeof(*progress));
         if (!f->progress) {
             return AVERROR(ENOMEM);
         }
-        progress = (int*)f->progress->data;
+        progress = (atomic_int*)f->progress->data;
 
-        progress[0] = progress[1] = -1;
+        atomic_store(&progress[0], -1);
+        atomic_store(&progress[1], -1);
     }
 
     pthread_mutex_lock(&p->parent->buffer_mutex);
