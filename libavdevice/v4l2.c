@@ -33,6 +33,7 @@
 #include "libavformat/internal.h"
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdatomic.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -42,7 +43,6 @@
 #else
 #include <linux/videodev2.h>
 #endif
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -70,7 +70,7 @@ struct video_data {
     int top_field_first;
 
     int buffers;
-    volatile int buffers_queued;
+    atomic_int buffers_queued;
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
@@ -441,7 +441,7 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
                errbuf);
     }
-    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+    atomic_fetch_add(&s->buffers_queued, 1);
 }
 
 static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
@@ -482,9 +482,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
         return AVERROR(EINVAL);
     }
-    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, -1);
+    atomic_fetch_add(&s->buffers_queued, -1);
     // always keep at least one buffer queued
-    av_assert0(avpriv_atomic_int_get(&s->buffers_queued) >= 1);
+    av_assert0(atomic_load(&s->buffers_queued) >= 1);
 
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
@@ -495,7 +495,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     /* Image is at s->buff_start[buf.index] */
-    if (avpriv_atomic_int_get(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
+    if (atomic_load(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
         /* when we start getting low on queued buffers, fall back on copying data */
         res = av_new_packet(pkt, buf.bytesused);
         if (res < 0) {
@@ -511,7 +511,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             av_packet_unref(pkt);
             return res;
         }
-        avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+        atomic_fetch_add(&s->buffers_queued, 1);
     } else {
         struct buff_data *buf_descriptor;
 
@@ -568,7 +568,7 @@ static int mmap_start(AVFormatContext *ctx)
             return err;
         }
     }
-    s->buffers_queued = s->buffers;
+    atomic_store(&s->buffers_queued, s->buffers);
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     res = ioctl(s->fd, VIDIOC_STREAMON, &type);
@@ -881,7 +881,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
 
-    if (avpriv_atomic_int_get(&s->buffers_queued) != s->buffers)
+    if (atomic_load(&s->buffers_queued) != s->buffers)
         av_log(s1, AV_LOG_WARNING, "Some buffers are still owned by the caller on "
                "close.\n");
 
