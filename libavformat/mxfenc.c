@@ -671,7 +671,7 @@ static uint64_t mxf_utf16len(const char *utf8_str)
             size += 2;
         continue;
 invalid:
-        av_log(NULL, AV_LOG_ERROR, "Invaid UTF8 sequence in mxf_utf16len\n\n");
+        av_log(NULL, AV_LOG_ERROR, "Invalid UTF8 sequence in mxf_utf16len\n\n");
     }
     size += 1;
     return size;

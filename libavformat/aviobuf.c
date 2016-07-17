@@ -385,7 +385,7 @@ static inline int put_str16(AVIOContext *s, const char *str, const int be)
                   ret += 2;)
         continue;
 invalid:
-        av_log(s, AV_LOG_ERROR, "Invaid UTF8 sequence in avio_put_str16%s\n", be ? "be" : "le");
+        av_log(s, AV_LOG_ERROR, "Invalid UTF8 sequence in avio_put_str16%s\n", be ? "be" : "le");
         err = AVERROR(EINVAL);
         if (!*(q-1))
             break;

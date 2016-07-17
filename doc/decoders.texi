@@ -279,7 +279,7 @@ present between the subtitle lines because of double-sized teletext charactes.
 Default value is 1.
 @item txt_duration
 Sets the display duration of the decoded teletext pages or subtitles in
-miliseconds. Default value is 30000 which is 30 seconds.
+milliseconds. Default value is 30000 which is 30 seconds.
 @item txt_transparent
 Force transparent background of the generated teletext bitmaps. Default value
 is 0 which means an opaque background.

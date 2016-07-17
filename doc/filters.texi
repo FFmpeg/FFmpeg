@@ -3243,7 +3243,7 @@ silenceremove=1:5:0.02
 @end example
 
 @item
-Trim all silence encountered from begining to end where there is more than 1
+Trim all silence encountered from beginning to end where there is more than 1
 second of silence in audio:
 @example
 silenceremove=0:0:0:-1:1:-90dB
@@ -4713,7 +4713,7 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 
 Display CIE color diagram with pixels overlaid onto it.
 
-The filter acccepts the following options:
+The filter accepts the following options:
 
 @table @option
 @item system
@@ -4743,7 +4743,7 @@ Set CIE system.
 @item gamuts
 Set what gamuts to draw.
 
-See @code{system} option for avaiable values.
+See @code{system} option for available values.
 
 @item size, s
 Set ciescope size, by default set to 512.

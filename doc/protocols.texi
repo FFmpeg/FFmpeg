@@ -695,7 +695,7 @@ This protocol accepts the following options.
 
 @table @option
 @item timeout
-Set timeout in miliseconds of socket I/O operations used by the underlying
+Set timeout in milliseconds of socket I/O operations used by the underlying
 low level operation. By default it is set to -1, which means that the timeout
 is not specified.
 

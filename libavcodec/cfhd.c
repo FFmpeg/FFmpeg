@@ -513,7 +513,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
 
             if (highpass_height > highpass_a_height || highpass_width > highpass_a_width || a_expected < expected) {
-                av_log(avctx, AV_LOG_ERROR, "Too many highpass coefficents\n");
+                av_log(avctx, AV_LOG_ERROR, "Too many highpass coefficients\n");
                 ret = AVERROR(EINVAL);
                 goto end;
             }

@@ -111,7 +111,7 @@ static int cine_read_header(AVFormatContext *avctx)
     compression = avio_rl16(pb);
     version     = avio_rl16(pb);
     if (version != 1) {
-        avpriv_request_sample(avctx, "uknown version %i", version);
+        avpriv_request_sample(avctx, "unknown version %i", version);
         return AVERROR_INVALIDDATA;
     }
 

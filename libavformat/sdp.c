@@ -641,7 +641,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
             if (p->extradata_size)
                 config = xiph_extradata2config(fmt, p);
             else
-                av_log(fmt, AV_LOG_ERROR, "Theora configuation info missing\n");
+                av_log(fmt, AV_LOG_ERROR, "Theora configuration info missing\n");
             if (!config)
                 return NULL;
 
