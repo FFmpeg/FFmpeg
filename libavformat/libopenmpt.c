@@ -73,6 +73,8 @@ static int read_header_openmpt(AVFormatContext *s)
     AVStream *st;
     OpenMPTContext *openmpt = s->priv_data;
     int64_t size = avio_size(s->pb);
+    if (!size)
+        return AVERROR_INVALIDDATA;
     char *buf = av_malloc(size);
     int ret;
 
@@ -118,9 +120,8 @@ static int read_header_openmpt(AVFormatContext *s)
         openmpt->module = NULL;
         return AVERROR(ENOMEM);
     }
-    avpriv_set_pts_info(st, 64, 1, 1000);
-    if (st->duration > 0)
-        st->duration = llrint(openmpt->duration*AV_TIME_BASE);
+    avpriv_set_pts_info(st, 64, 1, AV_TIME_BASE);
+    st->duration = llrint(openmpt->duration*AV_TIME_BASE);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_F32BE, AV_CODEC_ID_PCM_F32LE);
