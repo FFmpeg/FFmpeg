@@ -271,11 +271,11 @@ fail:
 
 static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
 {
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_rc, (ctx->m.avctx->qmax + 1), 8160 * sizeof(RCEntry), fail);
+    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_rc, (ctx->m.avctx->qmax + 1),
+                          ctx->m.mb_num * sizeof(RCEntry), fail);
     if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD)
         FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_cmp,
                           ctx->m.mb_num, sizeof(RCCMPEntry), fail);
-
     ctx->frame_bits = (ctx->cid_table->coding_unit_size -
                        640 - 4 - ctx->min_padding) * 8;
     ctx->qscale = 1;
@@ -661,8 +661,8 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg,
                 ssd += dnxhd_ssd_block(block, src_block);
             }
         }
-        ctx->mb_rc[qscale][mb].ssd  = ssd;
-        ctx->mb_rc[qscale][mb].bits = ac_bits + dc_bits + 12 +
+        ctx->mb_rc[(qscale * ctx->m.mb_num) + mb].ssd  = ssd;
+        ctx->mb_rc[(qscale * ctx->m.mb_num) + mb].bits = ac_bits + dc_bits + 12 +
                                       8 * ctx->vlc_bits[0];
     }
     return 0;
@@ -818,17 +818,20 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
                 unsigned min = UINT_MAX;
                 int qscale = 1;
                 int mb     = y * ctx->m.mb_width + x;
+                int rc = 0;
                 for (q = 1; q < avctx->qmax; q++) {
-                    unsigned score = ctx->mb_rc[q][mb].bits * lambda +
-                                     ((unsigned) ctx->mb_rc[q][mb].ssd << LAMBDA_FRAC_BITS);
+                    int i = (q*ctx->m.mb_num) + mb;
+                    unsigned score = ctx->mb_rc[i].bits * lambda +
+                                     ((unsigned) ctx->mb_rc[i].ssd << LAMBDA_FRAC_BITS);
                     if (score < min) {
                         min    = score;
                         qscale = q;
+                        rc = i;
                     }
                 }
-                bits += ctx->mb_rc[qscale][mb].bits;
+                bits += ctx->mb_rc[rc].bits;
                 ctx->mb_qscale[mb] = qscale;
-                ctx->mb_bits[mb]   = ctx->mb_rc[qscale][mb].bits;
+                ctx->mb_bits[mb]   = ctx->mb_rc[rc].bits;
             }
             bits = (bits + 31) & ~31; // padding
             if (bits > ctx->frame_bits)
@@ -889,7 +892,7 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
                                NULL, NULL, ctx->m.mb_height);
         for (y = 0; y < ctx->m.mb_height; y++) {
             for (x = 0; x < ctx->m.mb_width; x++)
-                bits += ctx->mb_rc[qscale][y*ctx->m.mb_width+x].bits;
+                bits += ctx->mb_rc[(qscale*ctx->m.mb_num) + (y*ctx->m.mb_width+x)].bits;
             bits = (bits+31)&~31; // padding
             if (bits > ctx->frame_bits)
                 break;
@@ -998,17 +1001,18 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
     for (y = 0; y < ctx->m.mb_height; y++) {
         for (x = 0; x < ctx->m.mb_width; x++) {
             int mb = y * ctx->m.mb_width + x;
+            int rc = (ctx->qscale * ctx->m.mb_num ) + mb;
             int delta_bits;
             ctx->mb_qscale[mb] = ctx->qscale;
-            ctx->mb_bits[mb] = ctx->mb_rc[ctx->qscale][mb].bits;
-            max_bits += ctx->mb_rc[ctx->qscale][mb].bits;
+            ctx->mb_bits[mb] = ctx->mb_rc[rc].bits;
+            max_bits += ctx->mb_rc[rc].bits;
             if (!RC_VARIANCE) {
-                delta_bits = ctx->mb_rc[ctx->qscale][mb].bits -
-                             ctx->mb_rc[ctx->qscale + 1][mb].bits;
+                delta_bits = ctx->mb_rc[rc].bits -
+                             ctx->mb_rc[rc + ctx->m.mb_num].bits;
                 ctx->mb_cmp[mb].mb = mb;
                 ctx->mb_cmp[mb].value =
-                    delta_bits ? ((ctx->mb_rc[ctx->qscale][mb].ssd -
-                                   ctx->mb_rc[ctx->qscale + 1][mb].ssd) * 100) /
+                    delta_bits ? ((ctx->mb_rc[rc].ssd -
+                                   ctx->mb_rc[rc + ctx->m.mb_num].ssd) * 100) /
                                   delta_bits
                                : INT_MIN; // avoid increasing qscale
             }
@@ -1022,10 +1026,11 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
         radix_sort(ctx->mb_cmp, ctx->m.mb_num);
         for (x = 0; x < ctx->m.mb_num && max_bits > ctx->frame_bits; x++) {
             int mb = ctx->mb_cmp[x].mb;
-            max_bits -= ctx->mb_rc[ctx->qscale][mb].bits -
-                        ctx->mb_rc[ctx->qscale + 1][mb].bits;
+            int rc = (ctx->qscale * ctx->m.mb_num ) + mb;
+            max_bits -= ctx->mb_rc[rc].bits -
+                        ctx->mb_rc[rc + ctx->m.mb_num].bits;
             ctx->mb_qscale[mb] = ctx->qscale + 1;
-            ctx->mb_bits[mb]   = ctx->mb_rc[ctx->qscale + 1][mb].bits;
+            ctx->mb_bits[mb]   = ctx->mb_rc[rc + ctx->m.mb_num].bits;
         }
     }
     return 0;

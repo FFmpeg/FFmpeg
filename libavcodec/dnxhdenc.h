@@ -89,7 +89,7 @@ typedef struct DNXHDEncContext {
     uint8_t  *mb_qscale;
 
     RCCMPEntry *mb_cmp;
-    RCEntry   (*mb_rc)[8160];
+    RCEntry    *mb_rc;
 
     void (*get_pixels_8x4_sym)(int16_t * /* align 16 */,
                                const uint8_t *, ptrdiff_t);
