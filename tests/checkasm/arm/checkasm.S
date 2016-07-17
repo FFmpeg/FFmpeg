@@ -40,7 +40,7 @@ const register_init, align=3
 endconst
 
 const error_message_fpscr
-    .asciz "failed to preserve register FPSCR"
+    .asciz "failed to preserve register FPSCR, changed bits: %x"
 error_message_gpr:
     .asciz "failed to preserve register r%d"
 error_message_vfp:
@@ -106,11 +106,13 @@ function checkasm_checked_call_\variant, export=1
 .endr
 .purgem check_reg_vfp
 
-    fmrx        r0,  FPSCR
+    fmrx        r1,  FPSCR
     ldr         r3,  [sp, #8]
-    eor         r0,  r0,  r3
+    eor         r1,  r1,  r3
+    @ Ignore changes in bits 0-4 and 7
+    bic         r1,  r1,  #0x9f
     @ Ignore changes in the topmost 5 bits
-    lsls        r0,  r0,  #5
+    bics        r1,  r1,  #0xf8000000
     bne         3f
 .endif
 
