@@ -5083,6 +5083,9 @@ if disabled stdatomic_h; then
     elif enabled pthreads; then
         add_compat atomics/pthread/stdatomic.o
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/pthread'
+    else
+        enabled threads && die "Threading is enabled, but no atomics are available"
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/dummy'
     fi
 fi
 
