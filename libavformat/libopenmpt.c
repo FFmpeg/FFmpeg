@@ -89,8 +89,11 @@ static int read_header_openmpt(AVFormatContext *s)
     add_meta(s, "comment", openmpt_module_get_metadata(openmpt->module, "message"));
 
     st = avformat_new_stream(s, NULL);
-    if (!st)
+    if (!st) {
+        openmpt_module_destroy(openmpt->module);
+        openmpt->module = NULL;
         return AVERROR(ENOMEM);
+    }
     avpriv_set_pts_info(st, 64, 1, 1000);
     if (st->duration > 0)
         st->duration = llrint(openmpt->duration*AV_TIME_BASE);
@@ -146,6 +149,7 @@ static int read_close_openmpt(AVFormatContext *s)
 {
     OpenMPTContext *openmpt = s->priv_data;
     openmpt_module_destroy(openmpt->module);
+    openmpt->module = NULL;
     return 0;
 }
 
