@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "mpegvideo.h"
 #include "pixblockdsp.h"
+#include "profiles.h"
 #include "dnxhdenc.h"
 
 // The largest value that will not lead to overflow for 10-bit samples.
@@ -1170,4 +1171,5 @@ AVCodec ff_dnxhd_encoder = {
     },
     .priv_class     = &dnxhd_class,
     .defaults       = dnxhd_defaults,
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
 };

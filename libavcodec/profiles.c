@@ -46,6 +46,16 @@ const AVProfile ff_dca_profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_dnxhd_profiles[] = {
+  { FF_PROFILE_DNXHD,      "DNXHD"},
+  { FF_PROFILE_DNXHR_LB,   "DNXHR LB"},
+  { FF_PROFILE_DNXHR_SQ,   "DNXHR SQ"},
+  { FF_PROFILE_DNXHR_HQ,   "DNXHR HQ" },
+  { FF_PROFILE_DNXHR_HQX,  "DNXHR HQX"},
+  { FF_PROFILE_DNXHR_444,  "DNXHR 444"},
+  { FF_PROFILE_UNKNOWN },
+};
+
 const AVProfile ff_h264_profiles[] = {
     { FF_PROFILE_H264_BASELINE,             "Baseline"              },
     { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },

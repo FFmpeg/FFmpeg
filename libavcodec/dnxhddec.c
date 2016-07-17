@@ -33,6 +33,7 @@
 #include "dnxhddata.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "profiles.h"
 #include "thread.h"
 
 typedef struct RowContext {
@@ -159,6 +160,23 @@ static av_cold int dnxhd_decode_init_thread_copy(AVCodecContext *avctx)
     return 0;
 }
 
+static int dnxhd_get_profile(int cid)
+{
+    switch(cid) {
+    case 1270:
+        return FF_PROFILE_DNXHR_444;
+    case 1271:
+        return FF_PROFILE_DNXHR_HQX;
+    case 1272:
+        return FF_PROFILE_DNXHR_HQ;
+    case 1273:
+        return FF_PROFILE_DNXHR_SQ;
+    case 1274:
+        return FF_PROFILE_DNXHR_LB;
+    }
+    return FF_PROFILE_DNXHD;
+}
+
 static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
                                const uint8_t *buf, int buf_size,
                                int first_field)
@@ -204,6 +222,9 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     }
 
     cid = AV_RB32(buf + 0x28);
+
+    ctx->avctx->profile = dnxhd_get_profile(cid);
+
     if ((ret = dnxhd_init_vlc(ctx, cid, bitdepth)) < 0)
         return ret;
     if (ctx->mbaff && ctx->cid_table->cid != 1260)
@@ -692,4 +713,5 @@ AVCodec ff_dnxhd_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(dnxhd_decode_init_thread_copy),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
 };
