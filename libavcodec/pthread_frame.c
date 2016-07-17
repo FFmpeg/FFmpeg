@@ -90,6 +90,8 @@ typedef struct PerThreadContext {
 
     AVFrame *requested_frame;       ///< AVFrame the codec passed to get_buffer()
     int      requested_flags;       ///< flags passed to get_buffer() for requested_frame
+
+    int die;                       ///< Set when the thread should exit.
 } PerThreadContext;
 
 /**
@@ -108,8 +110,6 @@ typedef struct FrameThreadContext {
                                     * Set for the first N packets, where N is the number of threads.
                                     * While it is set, ff_thread_en/decode_frame won't return any results.
                                     */
-
-    int die;                       ///< Set when threads should exit.
 } FrameThreadContext;
 
 /**
@@ -122,19 +122,21 @@ typedef struct FrameThreadContext {
 static attribute_align_arg void *frame_worker_thread(void *arg)
 {
     PerThreadContext *p = arg;
-    FrameThreadContext *fctx = p->parent;
     AVCodecContext *avctx = p->avctx;
     const AVCodec *codec = avctx->codec;
 
     while (1) {
-        if (p->state == STATE_INPUT_READY && !fctx->die) {
+        if (p->state == STATE_INPUT_READY) {
             pthread_mutex_lock(&p->mutex);
-            while (p->state == STATE_INPUT_READY && !fctx->die)
+            while (p->state == STATE_INPUT_READY) {
+                if (p->die) {
+                    pthread_mutex_unlock(&p->mutex);
+                    goto die;
+                }
                 pthread_cond_wait(&p->input_cond, &p->mutex);
+            }
             pthread_mutex_unlock(&p->mutex);
         }
-
-        if (fctx->die) break;
 
         if (!codec->update_thread_context && avctx->thread_safe_callbacks)
             ff_thread_finish_setup(avctx);
@@ -161,6 +163,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         pthread_mutex_unlock(&p->mutex);
     }
+die:
 
     return NULL;
 }
@@ -504,12 +507,11 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
         update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0);
 
-    fctx->die = 1;
-
     for (i = 0; i < thread_count; i++) {
         PerThreadContext *p = &fctx->threads[i];
 
         pthread_mutex_lock(&p->mutex);
+        p->die = 1;
         pthread_cond_signal(&p->input_cond);
         pthread_mutex_unlock(&p->mutex);
 
