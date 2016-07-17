@@ -95,6 +95,7 @@ static int read_header_openmpt(AVFormatContext *s)
     add_meta(s, "title",   openmpt_module_get_metadata(openmpt->module, "title"));
     add_meta(s, "encoder", openmpt_module_get_metadata(openmpt->module, "tracker"));
     add_meta(s, "comment", openmpt_module_get_metadata(openmpt->module, "message"));
+    add_meta(s, "date",    openmpt_module_get_metadata(openmpt->module, "date"));
 
     if (openmpt->subsong >= openmpt_module_get_num_subsongs(openmpt->module)) {
         openmpt_module_destroy(openmpt->module);
