@@ -402,6 +402,7 @@ Muxers/Demuxers:
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
+  libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
