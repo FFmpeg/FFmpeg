@@ -548,8 +548,8 @@ static void remove_dithering(AC3DecodeContext *s) {
     }
 }
 
-static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
-                                       mant_groups *m)
+static inline void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk,
+                                              int ch, mant_groups *m)
 {
     if (!s->channel_uses_aht[ch]) {
         ac3_decode_transform_coeffs_ch(s, ch, m);
@@ -568,7 +568,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
 /**
  * Decode the transform coefficients.
  */
-static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
+static inline void decode_transform_coeffs(AC3DecodeContext *s, int blk)
 {
     int ch, end;
     int got_cplchan = 0;
