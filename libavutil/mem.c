@@ -179,7 +179,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
         return NULL;
     }
     r = av_realloc(ptr, size);
-    if (!r && size)
+    if (!r)
         av_free(ptr);
     return r;
 }
