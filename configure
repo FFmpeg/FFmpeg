@@ -1597,6 +1597,7 @@ SYSTEM_FUNCS="
 
 TOOLCHAIN_FEATURES="
     as_dn_directive
+    as_fpu_directive
     as_func
     as_object_arch
     asm_mod_q
@@ -4242,6 +4243,9 @@ EOF
     check_as <<EOF && enable as_dn_directive
 ra .dn d0.i16
 .unreq ra
+EOF
+    check_as <<EOF && enable as_fpu_directive
+.fpu neon
 EOF
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5

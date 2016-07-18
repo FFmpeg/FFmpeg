@@ -24,7 +24,7 @@
 
 /* override fpu so that NEON instructions are rejected */
 #if HAVE_VFP
-.fpu            vfp
+FPU     .fpu            vfp
 ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
 #endif
 
