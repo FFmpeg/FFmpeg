@@ -495,6 +495,17 @@ Will produce the playlist, @file{out.m3u8}, and a single segment file,
 Segment files removed from the playlist are deleted after a period of time
 equal to the duration of the segment plus the duration of the playlist.
 
+@item hls_flags round_durations
+Round the duration info in the playlist file segment info to integer
+values, instead of using floating point.
+
+@item hls_flags discont_starts
+Add the @code{#EXT-X-DISCONTINUITY} tag to the playlist, before the
+first segment's information.
+
+@item hls_flags omit_endlist
+Do not append the @code{EXT-X-ENDLIST} tag at the end of the playlist.
+
 @item hls_flags split_by_time
 If this flags is set, allow segments to start on frames other than keyframes.
 This improves behavior on some players when the time between keyframes is
