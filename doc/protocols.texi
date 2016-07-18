@@ -1159,6 +1159,15 @@ Play an AVI file directly from a TAR archive:
 subfile,,start,183241728,end,366490624,,:archive.tar
 @end example
 
+@section tee
+
+Writes the output to multiple protocols. The individual outputs are seperated
+by |
+
+@example
+tee:file://path/to/local/this.avi|file://path/to/local/that.avi
+@end example
+
 @section tcp
 
 Transmission Control Protocol.
