@@ -1271,8 +1271,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* unused dummy data */
     if (s->skip_syntax && get_bits1(gbc)) {
         int skipl = get_bits(gbc, 9);
-        while (skipl--)
-            skip_bits(gbc, 8);
+        skip_bits_long(gbc, 8 * skipl);
     }
 
     /* unpack the transform coefficients
