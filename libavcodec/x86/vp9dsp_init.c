@@ -127,6 +127,7 @@ void ff_vp9_loop_filter_h_##size1##_##size2##_##opt(uint8_t *dst, ptrdiff_t stri
                                                     int E, int I, int H)
 
 lpf_funcs(4, 8, mmxext);
+lpf_funcs(8, 8, mmxext);
 lpf_funcs(16, 16, sse2);
 lpf_funcs(16, 16, ssse3);
 lpf_funcs(16, 16, avx);
@@ -284,6 +285,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         dsp->loop_filter_8[0][0] = ff_vp9_loop_filter_h_4_8_mmxext;
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_mmxext;
+        dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_mmxext;
+        dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_mmxext;
         init_subpel2(4, 0, 4, put, 8, mmxext);
         init_subpel2(4, 1, 4, avg, 8, mmxext);
         init_fpel_func(4, 1,  4, avg, _8, mmxext);
