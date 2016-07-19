@@ -267,6 +267,33 @@ track. Track indexes start at 0. The demuxer exports the number of tracks as
 
 For very large files, the @option{max_size} option may have to be adjusted.
 
+@section libopenmpt
+
+libopenmpt based module demuxer
+
+See @url{https://lib.openmpt.org/libopenmpt/} for more information.
+
+Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
+option.
+
+It accepts the following options:
+
+@table @option
+@item subsong
+Set the subsong index. This can be either  'all', 'auto', or the index of the
+subsong. Subsong indexes start at 0. The default is 'auto'.
+
+The default value is to let libopenmpt choose.
+
+@item layout
+Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
+The default value is STEREO.
+
+@item sample_rate
+Set the sample rate for libopenmpt to output.
+Range is from 1000 to INT_MAX. The value default is 48000.
+@end table
+
 @section gif
 
 Animated GIF demuxer.
