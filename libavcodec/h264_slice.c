@@ -1128,12 +1128,16 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
  * or a second field in a pair and does the necessary setup.
  */
 static int h264_field_start(H264Context *h, const H264SliceContext *sl,
-                            const H2645NAL *nal)
+                            const H2645NAL *nal, int first_slice)
 {
     int i;
     const SPS *sps;
 
     int last_pic_structure, last_pic_droppable, ret;
+
+    ret = h264_init_ps(h, sl, first_slice);
+    if (ret < 0)
+        return ret;
 
     sps = h->ps.sps;
 
@@ -1452,11 +1456,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
         }
     }
 
-    // TODO: should probably be moved to h264_field_start()
-    ret = h264_init_ps(h, sl, first_slice);
-    if (ret < 0)
-        return ret;
-
     sps = (const SPS*)h->ps.sps_list[pps->sps_id]->data;
 
     frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
@@ -1661,13 +1660,14 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                                 const H2645NAL *nal)
 {
     int i, j, ret = 0;
+    int first_slice = sl == h->slice_ctx && !h->current_slice;
 
     ret = h264_slice_header_parse(h, sl, nal);
     if (ret) // can not be ret<0 because of SLICE_SKIPED, SLICE_SINGLETHREAD, ...
         return ret;
 
     if (h->current_slice == 0) {
-        ret = h264_field_start(h, sl, nal);
+        ret = h264_field_start(h, sl, nal, first_slice);
         if (ret < 0)
             return ret;
     }
