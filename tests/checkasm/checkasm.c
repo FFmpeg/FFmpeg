@@ -190,7 +190,7 @@ int float_near_ulp(float a, float b, unsigned max_ulp)
         return a == b;
     }
 
-    if (abs(x.i - y.i) <= max_ulp)
+    if (llabs((int64_t)x.i - y.i) <= max_ulp)
         return 1;
 
     return 0;
