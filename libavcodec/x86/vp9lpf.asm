@@ -52,7 +52,7 @@ mask_mix48: times 8 db 0x00
 SECTION .text
 
 %macro SCRATCH 3
-%if ARCH_X86_64
+%ifdef m8
     SWAP                %1, %2
 %else
     mova              [%3], m%1
@@ -60,7 +60,7 @@ SECTION .text
 %endmacro
 
 %macro UNSCRATCH 3
-%if ARCH_X86_64
+%ifdef m8
     SWAP                %1, %2
 %else
     mova               m%1, [%3]
@@ -69,7 +69,7 @@ SECTION .text
 
 ; %1 = abs(%2-%3)
 %macro ABSSUB 4 ; dst, src1 (RO), src2 (RO), tmp
-%if ARCH_X86_64
+%ifdef m8
     psubusb             %1, %3, %2
     psubusb             %4, %2, %3
 %else
@@ -102,7 +102,7 @@ SECTION .text
 %endmacro
 
 %macro UNPACK 4
-%if ARCH_X86_64
+%ifdef m8
     punpck%1bw          %2, %3, %4
 %else
     mova                %2, %3
@@ -334,22 +334,24 @@ SECTION .text
 %endmacro
 
 %macro DEFINE_TRANSPOSED_P7_TO_Q7 0-1 0
-%define P3 rsp +   0 + %1
-%define P2 rsp +  16 + %1
-%define P1 rsp +  32 + %1
-%define P0 rsp +  48 + %1
-%define Q0 rsp +  64 + %1
-%define Q1 rsp +  80 + %1
-%define Q2 rsp +  96 + %1
-%define Q3 rsp + 112 + %1
-%define P7 rsp + 128 + %1
-%define P6 rsp + 144 + %1
-%define P5 rsp + 160 + %1
-%define P4 rsp + 176 + %1
-%define Q4 rsp + 192 + %1
-%define Q5 rsp + 208 + %1
-%define Q6 rsp + 224 + %1
-%define Q7 rsp + 240 + %1
+%define P3 rsp +  0*mmsize + %1
+%define P2 rsp +  1*mmsize + %1
+%define P1 rsp +  2*mmsize + %1
+%define P0 rsp +  3*mmsize + %1
+%define Q0 rsp +  4*mmsize + %1
+%define Q1 rsp +  5*mmsize + %1
+%define Q2 rsp +  6*mmsize + %1
+%define Q3 rsp +  7*mmsize + %1
+%if mmsize == 16
+%define P7 rsp +  8*mmsize + %1
+%define P6 rsp +  9*mmsize + %1
+%define P5 rsp + 10*mmsize + %1
+%define P4 rsp + 11*mmsize + %1
+%define Q4 rsp + 12*mmsize + %1
+%define Q5 rsp + 13*mmsize + %1
+%define Q6 rsp + 14*mmsize + %1
+%define Q7 rsp + 15*mmsize + %1
+%endif
 %endmacro
 
 ; ..............AB -> AAAAAAAABBBBBBBB
@@ -365,12 +367,12 @@ SECTION .text
 
 %macro LOOPFILTER 5 ; %1=v/h %2=size1 %3+%4=stack, %5=32bit stack only
 %if UNIX64
-cglobal vp9_loop_filter_%1_%2_16, 5, 9, 16, %3 + %4, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_ %+ mmsize, 5, 9, 16, %3 + %4, dst, stride, E, I, H, mstride, dst2, stride3, mstride3
 %else
 %if WIN64
-cglobal vp9_loop_filter_%1_%2_16, 4, 8, 16, %3 + %4, dst, stride, E, I, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_ %+ mmsize, 4, 8, 16, %3 + %4, dst, stride, E, I, mstride, dst2, stride3, mstride3
 %else
-cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, dst2, stride3, mstride3
+cglobal vp9_loop_filter_%1_%2_ %+ mmsize, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, dst2, stride3, mstride3
 %define Ed dword r2m
 %define Id dword r3m
 %endif
@@ -384,18 +386,22 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     lea              mstride3q, [mstrideq*3]
 
 %ifidn %1, h
-%if %2 > 16
+%if %2 != 16
+%if mmsize == 16
 %define movx movh
+%else
+%define movx mova
+%endif
     lea                   dstq, [dstq + 4*strideq - 4]
 %else
 %define movx movu
     lea                   dstq, [dstq + 4*strideq - 8] ; go from top center (h pos) to center left (v pos)
 %endif
-    lea                  dst2q, [dstq + 8*strideq]
 %else
     lea                   dstq, [dstq + 4*mstrideq]
-    lea                  dst2q, [dstq + 8*strideq]
 %endif
+    ; FIXME we shouldn't need two dts registers if mmsize == 8
+    lea                  dst2q, [dstq + 8*strideq]
 
     DEFINE_REAL_P7_TO_Q7
 
@@ -406,11 +412,11 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movx                    m3, [P4]
     movx                    m4, [P3]
     movx                    m5, [P2]
-%if ARCH_X86_64 || %2 != 16
+%if (ARCH_X86_64 && mmsize == 16) || %2 > 16
     movx                    m6, [P1]
 %endif
     movx                    m7, [P0]
-%if ARCH_X86_64
+%ifdef m8
     movx                    m8, [Q0]
     movx                    m9, [Q1]
     movx                   m10, [Q2]
@@ -502,7 +508,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movhps        [Q5], m6
     movhps        [Q7], m7
     DEFINE_TRANSPOSED_P7_TO_Q7
-%else ; %2 == 44/48/84/88
+%elif %2 > 16 ; %2 == 44/48/84/88
     punpcklbw        m0, m1
     punpcklbw        m2, m3
     punpcklbw        m4, m5
@@ -529,12 +535,31 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova           [Q1],  m5
     mova           [Q2],  m7
     mova           [Q3],  m3
+%else ; %2 == 4 || %2 == 8
+    SBUTTERFLY       bw, 0, 1, 6
+    SBUTTERFLY       bw, 2, 3, 6
+    SBUTTERFLY       bw, 4, 5, 6
+    mova [rsp+4*mmsize], m5
+    mova             m6, [P1]
+    SBUTTERFLY       bw, 6, 7, 5
+    DEFINE_TRANSPOSED_P7_TO_Q7
+    TRANSPOSE4x4W     0, 2, 4, 6, 5
+    mova           [P3], m0
+    mova           [P2], m2
+    mova           [P1], m4
+    mova           [P0], m6
+    mova             m5, [rsp+4*mmsize]
+    TRANSPOSE4x4W     1, 3, 5, 7, 0
+    mova           [Q0], m1
+    mova           [Q1], m3
+    mova           [Q2], m5
+    mova           [Q3], m7
 %endif ; %2
 %endif ; x86-32/64
 %endif ; %1 == h
 
     ; calc fm mask
-%if %2 == 16
+%if %2 == 16 || mmsize == 8
 %if cpuflag(ssse3)
     pxor                m0, m0
 %endif
@@ -552,7 +577,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                m0, [pb_80]
     pxor                m2, m0
     pxor                m3, m0
-%if ARCH_X86_64
+%ifdef m8
 %ifidn %1, v
     mova                m8, [P3]
     mova                m9, [P2]
@@ -613,10 +638,10 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 
     ; (m3: fm, m8..15: p3 p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8in (if not 44_16) and hev masks
-%if %2 != 44
+%if %2 != 44 && %2 != 4
     mova                m6, [pb_81]                     ; [1 1 1 1 ...] ^ 0x80
     ABSSUB_GT           m2, rp3, rp0, m6, m5            ; abs(p3 - p0) <= 1
-%if ARCH_X86_64
+%ifdef m8
     mova                m8, [pb_80]
 %define rb80 m8
 %else
@@ -655,8 +680,15 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %endif
 %else
     mova                m6, [pb_80]
+%if %2 == 44
     movd                m7, Hd
     SPLATB_MIX          m7
+%else
+%if cpuflag(ssse3)
+    pxor                m0, m0
+%endif
+    SPLATB_REG          m7, H, m0                       ; H H H H ...
+%endif
     pxor                m7, m6
     ABSSUB              m4, rp1, rp0, m1                ; abs(p1 - p0)
     pxor                m4, m6
@@ -670,7 +702,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 %if %2 == 16
     ; (m0: hev, m2: flat8in, m3: fm, m6: pb_81, m9..15: p2 p1 p0 q0 q1 q2 q3)
     ; calc flat8out mask
-%if ARCH_X86_64
+%ifdef m8
     mova                m8, [P7]
     mova                m9, [P6]
 %define rp7 m8
@@ -682,7 +714,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     ABSSUB_GT           m1, rp7, rp0, m6, m5            ; abs(p7 - p0) <= 1
     ABSSUB_GT           m7, rp6, rp0, m6, m5            ; abs(p6 - p0) <= 1
     por                 m1, m7
-%if ARCH_X86_64
+%ifdef m8
     mova                m8, [P5]
     mova                m9, [P4]
 %define rp5 m8
@@ -695,7 +727,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     por                 m1, m7
     ABSSUB_GT           m7, rp4, rp0, m6, m5            ; abs(p4 - p0) <= 1
     por                 m1, m7
-%if ARCH_X86_64
+%ifdef m8
     mova                m14, [Q4]
     mova                m15, [Q5]
 %define rq4 m14
@@ -708,7 +740,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     por                 m1, m7
     ABSSUB_GT           m7, rq5, rq0, m6, m5            ; abs(q5 - q0) <= 1
     por                 m1, m7
-%if ARCH_X86_64
+%ifdef m8
     mova                m14, [Q6]
     mova                m15, [Q7]
 %define rq6 m14
@@ -738,7 +770,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
 
     ; (m0: hev, [m1: flat8out], [m2: flat8in], m3: fm, m8..15: p5 p4 p1 p0 q0 q1 q6 q7)
     ; filter2()
-%if %2 != 44
+%if %2 != 44 && %2 != 4
     mova                m6, [pb_80]                     ; already in m6 if 44_16
     SCRATCH              2, 15, rsp+%3+%4
 %if %2 == 16
@@ -756,7 +788,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     paddsb              m4, m2                          ; 3*(q0 - p0) + (p1 - q1)
     paddsb              m6, m4, [pb_4]                  ; m6: f1 = clip(f + 4, 127)
     paddsb              m4, [pb_3]                      ; m4: f2 = clip(f + 3, 127)
-%if ARCH_X86_64
+%ifdef m8
     mova                m14, [pb_10]                    ; will be reused in filter4()
 %define rb10 m14
 %else
@@ -765,8 +797,8 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     SRSHIFT3B_2X        m6, m4, rb10, m7                ; f1 and f2 sign byte shift by 3
     SIGN_SUB            m7, rq0, m6, m5                 ; m7 = q0 - f1
     SIGN_ADD            m1, rp0, m4, m5                 ; m1 = p0 + f2
-%if %2 != 44
-%if ARCH_X86_64
+%if %2 != 44 && %2 != 4
+%ifdef m8
     pandn               m6, m15, m3                     ;  ~mask(in) & mask(fm)
 %else
     mova                m6, [rsp+%3+%4]
@@ -787,8 +819,8 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     paddsb              m6, m2, [pb_4]                  ; m6:  f1 = clip(f + 4, 127)
     paddsb              m2, [pb_3]                      ; m2: f2 = clip(f + 3, 127)
     SRSHIFT3B_2X        m6, m2, rb10, m4                ; f1 and f2 sign byte shift by 3
-%if %2 != 44
-%if ARCH_X86_64
+%if %2 != 44 && %2 != 4
+%ifdef m8
     pandn               m5, m15, m3                     ;               ~mask(in) & mask(fm)
 %else
     mova                m5, [rsp+%3+%4]
@@ -815,26 +847,26 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     mova                [P1], m1
     mova                [Q1], m4
 
-%if %2 != 44
+%if %2 != 44 && %2 != 4
     UNSCRATCH            2, 15, rsp+%3+%4
 %endif
 
     ; ([m1: flat8out], m2: flat8in, m3: fm, m10..13: p1 p0 q0 q1)
     ; filter6()
-%if %2 != 44
+%if %2 != 44 && %2 != 4
     pxor                m0, m0
 %if %2 > 16
     pand                m3, m2
 %else
     pand                m2, m3                          ;               mask(fm) & mask(in)
-%if ARCH_X86_64
+%ifdef m8
     pandn               m3, m8, m2                      ; ~mask(out) & (mask(fm) & mask(in))
 %else
     mova                m3, [rsp+%3+%4+16]
     pandn               m3, m2
 %endif
 %endif
-%if ARCH_X86_64
+%ifdef m8
     mova               m14, [P3]
     mova                m9, [Q3]
 %define rp3 m14
@@ -882,7 +914,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     pand            m1, m2                                                              ; mask(out) & (mask(fm) & mask(in))
     mova            m2, [P7]
     mova            m3, [P6]
-%if ARCH_X86_64
+%ifdef m8
     mova            m8, [P5]
     mova            m9, [P4]
 %define rp5 m8
@@ -1008,7 +1040,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movhps [Q5],  m6
     movhps [Q7],  m7
 %endif
-%elif %2 == 44
+%elif %2 == 44 || %2 == 4
     SWAP 0, 1   ; m0 = p1
     SWAP 1, 7   ; m1 = p0
     SWAP 2, 5   ; m2 = q0
@@ -1018,6 +1050,7 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     SBUTTERFLY  bw, 2, 3, 4
     SBUTTERFLY  wd, 0, 2, 4
     SBUTTERFLY  wd, 1, 3, 4
+%if mmsize == 16
     movd  [P7], m0
     movd  [P3], m2
     movd  [Q0], m1
@@ -1046,6 +1079,20 @@ cglobal vp9_loop_filter_%1_%2_16, 2, 6, 16, %3 + %4 + %5, dst, stride, mstride, 
     movd  [P0], m2
     movd  [Q3], m1
     movd  [Q7], m3
+%else
+    movd  [P7], m0
+    movd  [P5], m2
+    movd  [P3], m1
+    movd  [P1], m3
+    psrlq   m0, 32
+    psrlq   m2, 32
+    psrlq   m1, 32
+    psrlq   m3, 32
+    movd  [P6], m0
+    movd  [P4], m2
+    movd  [P2], m1
+    movd  [P0], m3
+%endif
 %else
     ; the following code do a transpose of 8 full lines to 16 half
     ; lines (high part). It is inlined to avoid the need of a staging area
@@ -1137,3 +1184,7 @@ LPF_16_VH_ALL_OPTS 44,   0, 128,  0
 LPF_16_VH_ALL_OPTS 48, 256, 128, 16
 LPF_16_VH_ALL_OPTS 84, 256, 128, 16
 LPF_16_VH_ALL_OPTS 88, 256, 128, 16
+
+INIT_MMX mmxext
+LOOPFILTER v, 4, 0,  0, 0
+LOOPFILTER h, 4, 0, 64, 0
