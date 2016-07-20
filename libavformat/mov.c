@@ -3680,7 +3680,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* Keep track of the stsc index for the given sample, then check
         * if the stsd index is different from the last used one. */
         sc->stsc_sample++;
-        if (sc->stsc_index < sc->stsc_count &&
+        if (sc->stsc_index + 1 < sc->stsc_count &&
             mov_get_stsc_samples(sc, sc->stsc_index) == sc->stsc_sample) {
             sc->stsc_index++;
             sc->stsc_sample = 0;
