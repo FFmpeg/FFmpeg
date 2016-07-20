@@ -1039,7 +1039,7 @@ static int probe_buf_write(void *opaque, uint8_t *buf, int buf_size)
 int main(int argc, char **argv)
 {
     int ret;
-    uint8_t *buffer = av_malloc(AVP_BUFFSIZE);
+    uint8_t *buffer = av_mallocz(AVP_BUFFSIZE);
 
     if (!buffer)
         exit(1);
