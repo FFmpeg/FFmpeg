@@ -103,12 +103,6 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         "isB",
         "avgQP",
         "qComp",
-#if 0
-        "lastIQP",
-        "lastPQP",
-        "lastBQP",
-        "nextNonBQP",
-#endif
         "avgIITex",
         "avgPITex",
         "avgPPTex",
@@ -380,12 +374,6 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce,
         rce->pict_type == AV_PICTURE_TYPE_B,
         rcc->qscale_sum[pict_type] / (double)rcc->frame_count[pict_type],
         a->qcompress,
-#if 0
-        rcc->last_qscale_for[AV_PICTURE_TYPE_I],
-        rcc->last_qscale_for[AV_PICTURE_TYPE_P],
-        rcc->last_qscale_for[AV_PICTURE_TYPE_B],
-        rcc->next_non_b_qscale,
-#endif
         rcc->i_cplx_sum[AV_PICTURE_TYPE_I] / (double)rcc->frame_count[AV_PICTURE_TYPE_I],
         rcc->i_cplx_sum[AV_PICTURE_TYPE_P] / (double)rcc->frame_count[AV_PICTURE_TYPE_P],
         rcc->p_cplx_sum[AV_PICTURE_TYPE_P] / (double)rcc->frame_count[AV_PICTURE_TYPE_P],
