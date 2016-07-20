@@ -110,13 +110,6 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         return res;
     }
 
-#if FF_API_RC_STRATEGY
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!s->rc_strategy)
-        s->rc_strategy = s->avctx->rc_strategy;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     for (i = 0; i < 5; i++) {
         rcc->pred[i].coeff = FF_QP2LAMBDA * 7.0;
         rcc->pred[i].count = 1.0;
@@ -198,17 +191,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ff_rate_control_uninit(s);
             return -1;
         }
-
-        // FIXME maybe move to end
-        if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1) {
-#if CONFIG_LIBXVID
-            return ff_xvid_rate_control_init(s);
-#else
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Xvid ratecontrol requires libavcodec compiled with Xvid support.\n");
-            return -1;
-#endif
-        }
     }
 
     if (!(s->avctx->flags & AV_CODEC_FLAG_PASS2)) {
@@ -278,11 +260,6 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
 
     av_expr_free(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
-
-#if CONFIG_LIBXVID
-    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1)
-        ff_xvid_rate_control_uninit(s);
-#endif
 }
 
 int ff_vbv_update(MpegEncContext *s, int frame_size)
@@ -722,11 +699,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     const int pict_type = s->pict_type;
     Picture * const pic = &s->current_picture;
     emms_c();
-
-#if CONFIG_LIBXVID
-    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == 1)
-        return ff_xvid_rate_estimate_qscale(s, dry_run);
-#endif
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
