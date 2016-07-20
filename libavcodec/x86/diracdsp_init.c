@@ -45,9 +45,7 @@ void ff_put_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t *src, i
 void ff_put_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_signed_rect_clamped_mmx(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
 void ff_put_signed_rect_clamped_sse2(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height);
-#if ARCH_X86_64
 void ff_put_signed_rect_clamped_10_sse4(uint8_t *dst, int dst_stride, const uint8_t *src, int src_stride, int width, int height);
-#endif
 
 void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
 
@@ -192,8 +190,6 @@ void ff_diracdsp_init_x86(DiracDSPContext* c)
 
     if (EXTERNAL_SSE4(mm_flags)) {
         c->dequant_subband[1]         = ff_dequant_subband_32_sse4;
-#if ARCH_X86_64
         c->put_signed_rect_clamped[1] = ff_put_signed_rect_clamped_10_sse4;
-#endif
     }
 }
