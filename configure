@@ -4008,6 +4008,9 @@ probe_libc(){
 #endif
 #endif
 EOF
+        if [ "$pfx" = "" ]; then
+            check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+        fi
     elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
     elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
@@ -4979,7 +4982,6 @@ elif enabled_any msvc icl; then
 __declspec($_restrict) void* foo(int);
 EOF
     fi
-    check_func strtoll || add_cflags -Dstrtoll=_strtoi64
 fi
 
 for pfx in "" host_; do
