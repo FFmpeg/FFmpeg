@@ -3239,7 +3239,6 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS'
     elif $_cc 2>&1 | grep -q Intel; then
         _type=icl
         _ident=$($_cc 2>&1 | head -n1)
@@ -3262,7 +3261,7 @@ probe_cc(){
         _flags='-nologo -Qdiag-error:4044,10157'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -Qms0 -Qvec- -Qsimd- -GS'
+        _cflags='-Qms0 -Qvec- -Qsimd- -GS'
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
         _ident=$($_cc --version | head -n1)
@@ -3989,6 +3988,7 @@ probe_libc(){
                                              vsnprintf=avpriv_vsnprintf
             fi
         fi
+        add_${pfx}cppflags -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
         # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
         # 0x601 by default unless something else is set by the user.
         # This can easily lead to us detecting functions only present
