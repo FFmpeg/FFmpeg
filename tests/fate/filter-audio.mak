@@ -99,6 +99,11 @@ fate-filter-chorus: tests/data/asynth-22050-1.wav
 fate-filter-chorus: SRC = $(TARGET_PATH)/tests/data/asynth-22050-1.wav
 fate-filter-chorus: CMD = framecrc -i $(SRC) -aframes 10 -af chorus=0.5:0.5:64:0.5:0.25:2
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, DCSHIFT, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-dcshift
+fate-filter-dcshift: tests/data/asynth-44100-2.wav
+fate-filter-dcshift: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-dcshift: CMD = framecrc -i $(SRC) -aframes 20 -af dcshift=shift=0.25:limitergain=0.05
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
