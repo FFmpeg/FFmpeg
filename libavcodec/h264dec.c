@@ -550,7 +550,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 break;
 
             if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
-                i >= nals_needed) {
+                i >= nals_needed && !h->setup_finished) {
                 ff_thread_finish_setup(avctx);
                 h->setup_finished = 1;
             }
