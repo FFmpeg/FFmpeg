@@ -668,7 +668,10 @@ AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
     .mime_type         = "application/ogg",
-    .extensions        = "ogg,ogv"
+    .extensions        = "ogg"
+#if !CONFIG_OGV_MUXER
+                         ",ogv"
+#endif
 #if !CONFIG_SPX_MUXER
                          ",spx"
 #endif
@@ -702,6 +705,25 @@ AVOutputFormat ff_oga_muxer = {
     .write_trailer     = ogg_write_trailer,
     .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
     .priv_class        = &oga_muxer_class,
+};
+#endif
+
+#if CONFIG_OGV_MUXER
+OGG_CLASS(ogv, Ogg video)
+AVOutputFormat ff_ogv_muxer = {
+    .name              = "ogv",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg Video"),
+    .mime_type         = "video/ogg",
+    .extensions        = "ogv",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = CONFIG_LIBVORBIS_ENCODER ?
+                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_FLAC,
+    .video_codec       = AV_CODEC_ID_THEORA,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
+    .priv_class        = &ogv_muxer_class,
 };
 #endif
 

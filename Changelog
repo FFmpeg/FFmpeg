@@ -5,6 +5,7 @@ version <next>:
 - libopenmpt demuxer
 - tee protocol
 - Changed metadata print option to accept general urls
+- Alias muxer for Ogg Video (.ogv)
 
 
 version 3.1:
