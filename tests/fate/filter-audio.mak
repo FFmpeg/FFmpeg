@@ -109,6 +109,11 @@ fate-filter-earwax: tests/data/asynth-44100-2.wav
 fate-filter-earwax: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-earwax: CMD = framecrc -i $(SRC) -aframes 20 -af earwax
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, EXTRASTEREO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-extrastereo
+fate-filter-extrastereo: tests/data/asynth-44100-2.wav
+fate-filter-extrastereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-extrastereo: CMD = framecrc -i $(SRC) -aframes 20 -af extrastereo=m=2
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
