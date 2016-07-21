@@ -67,6 +67,7 @@ typedef struct {
     char *psfile;
     uint8_t rgba_map[4];
     int step;
+    char *plot_filename;
 } CurvesContext;
 
 typedef struct ThreadData {
@@ -98,6 +99,7 @@ static const AVOption curves_options[] = {
     { "b",     "set blue points coordinates",  OFFSET(comp_points_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "all",   "set points coordinates for all components", OFFSET(comp_points_str_all), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "psfile", "set Photoshop curves file name", OFFSET(psfile), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "plot", "save Gnuplot script of the curves in specified file", OFFSET(plot_filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { NULL }
 };
 
@@ -377,6 +379,65 @@ end:
     return ret;
 }
 
+static int dump_curves(const char *fname, uint8_t graph[NB_COMP + 1][256],
+                       struct keypoint *comp_points[NB_COMP + 1])
+{
+    int i;
+    AVBPrint buf;
+    static const char * const colors[] = { "red", "green", "blue", "#404040", };
+    FILE *f = av_fopen_utf8(fname, "w");
+
+    av_assert0(FF_ARRAY_ELEMS(colors) == NB_COMP + 1);
+
+    if (!f) {
+        int ret = AVERROR(errno);
+        av_log(NULL, AV_LOG_ERROR, "Cannot open file '%s' for writing: %s\n",
+               fname, av_err2str(ret));
+        return ret;
+    }
+
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    av_bprintf(&buf, "set xtics 0.1\n");
+    av_bprintf(&buf, "set ytics 0.1\n");
+    av_bprintf(&buf, "set size square\n");
+    av_bprintf(&buf, "set grid\n");
+
+    for (i = 0; i < FF_ARRAY_ELEMS(colors); i++) {
+        av_bprintf(&buf, "%s'-' using 1:2 with lines lc '%s' title ''",
+                   i ? ", " : "plot ", colors[i]);
+        if (comp_points[i])
+            av_bprintf(&buf, ", '-' using 1:2 with points pointtype 3 lc '%s' title ''",
+                    colors[i]);
+    }
+    av_bprintf(&buf, "\n");
+
+    for (i = 0; i < FF_ARRAY_ELEMS(colors); i++) {
+        int x;
+
+        /* plot generated values */
+        for (x = 0; x < 256; x++)
+            av_bprintf(&buf, "%f %f\n", x/255., graph[i][x]/255.);
+        av_bprintf(&buf, "e\n");
+
+        /* plot user knots */
+        if (comp_points[i]) {
+            const struct keypoint *point = comp_points[i];
+
+            while (point) {
+                av_bprintf(&buf, "%f %f\n", point->x, point->y);
+                point = point->next;
+            }
+            av_bprintf(&buf, "e\n");
+        }
+    }
+
+    fwrite(buf.str, 1, buf.len, f);
+    fclose(f);
+    av_bprint_finalize(&buf, NULL);
+    return 0;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     int i, j, ret;
@@ -447,6 +508,9 @@ static av_cold int init(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_VERBOSE, "\n");
         }
     }
+
+    if (curves->plot_filename)
+        dump_curves(curves->plot_filename, curves->graph, comp_points);
 
     for (i = 0; i < NB_COMP + 1; i++) {
         struct keypoint *point = comp_points[i];

@@ -5750,6 +5750,8 @@ options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
 @item psfile
 Specify a Photoshop curves file (@code{.acv}) to import the settings from.
+@item plot
+Save Gnuplot script of the curves in specified file.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -5795,6 +5797,14 @@ curves=vintage
 Use a Photoshop preset and redefine the points of the green component:
 @example
 curves=psfile='MyCurvesPresets/purple.acv':green='0/0 0.45/0.53 1/1'
+@end example
+
+@item
+Check out the curves of the @code{cross_process} profile using @command{ffmpeg}
+and @command{gnuplot}:
+@example
+ffmpeg -f lavfi -i color -vf curves=cross_process:plot=/tmp/curves.plt -frames:v 1 -f null -
+gnuplot -p /tmp/curves.plt
 @end example
 @end itemize
 
