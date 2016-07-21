@@ -241,6 +241,7 @@ static int config_input_ref(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx  = inlink->dst;
     PSNRContext *s = ctx->priv;
+    double average_max;
     unsigned sum;
     int j;
 
@@ -273,10 +274,12 @@ static int config_input_ref(AVFilterLink *inlink)
     sum = 0;
     for (j = 0; j < s->nb_components; j++)
         sum += s->planeheight[j] * s->planewidth[j];
+    average_max = 0;
     for (j = 0; j < s->nb_components; j++) {
         s->planeweight[j] = (double) s->planeheight[j] * s->planewidth[j] / sum;
-        s->average_max += s->max[j] * s->planeweight[j];
+        average_max += s->max[j] * s->planeweight[j];
     }
+    s->average_max = lrint(average_max);
 
     s->dsp.sse_line = desc->comp[0].depth > 8 ? sse_line_16bit : sse_line_8bit;
     if (ARCH_X86)
