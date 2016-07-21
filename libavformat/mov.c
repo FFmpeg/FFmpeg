@@ -2345,12 +2345,14 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return ret;
 
     /* Restore back the primary extradata. */
-    av_free(st->codecpar->extradata);
+    av_freep(&st->codecpar->extradata);
     st->codecpar->extradata_size = sc->extradata_size[0];
-    st->codecpar->extradata = av_mallocz(sc->extradata_size[0] + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codecpar->extradata)
-        return AVERROR(ENOMEM);
-    memcpy(st->codecpar->extradata, sc->extradata[0], sc->extradata_size[0]);
+    if (sc->extradata_size[0]) {
+        st->codecpar->extradata = av_mallocz(sc->extradata_size[0] + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codecpar->extradata)
+            return AVERROR(ENOMEM);
+        memcpy(st->codecpar->extradata, sc->extradata[0], sc->extradata_size[0]);
+    }
 
     return 0;
 }
