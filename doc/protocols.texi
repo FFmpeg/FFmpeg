@@ -1161,7 +1161,7 @@ subfile,,start,183241728,end,366490624,,:archive.tar
 
 @section tee
 
-Writes the output to multiple protocols. The individual outputs are seperated
+Writes the output to multiple protocols. The individual outputs are separated
 by |
 
 @example
