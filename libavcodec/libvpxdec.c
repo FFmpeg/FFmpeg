@@ -20,7 +20,7 @@
 
 /**
  * @file
- * VP8 decoder support via libvpx
+ * VP8/9 decoder support via libvpx
  */
 
 #define VPX_CODEC_DISABLE_COMPAT 1
@@ -35,17 +35,17 @@
 #include "libvpx.h"
 #include "profiles.h"
 
-typedef struct VP8DecoderContext {
+typedef struct VPxDecoderContext {
     struct vpx_codec_ctx decoder;
     struct vpx_codec_ctx decoder_alpha;
     int has_alpha_channel;
-} VP8Context;
+} VPxContext;
 
 static av_cold int vpx_init(AVCodecContext *avctx,
                             const struct vpx_codec_iface *iface,
                             int is_alpha_decoder)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VPxContext *ctx = avctx->priv_data;
     struct vpx_codec_dec_cfg deccfg = {
         /* token partitions+1 would be a decent choice */
         .threads = FFMIN(avctx->thread_count, 16)
@@ -193,10 +193,10 @@ static int decode_frame(AVCodecContext *avctx, vpx_codec_ctx_t *decoder,
     return 0;
 }
 
-static int vp8_decode(AVCodecContext *avctx,
+static int vpx_decode(AVCodecContext *avctx,
                       void *data, int *got_frame, AVPacket *avpkt)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VPxContext *ctx = avctx->priv_data;
     AVFrame *picture = data;
     const void *iter = NULL;
     const void *iter_alpha = NULL;
@@ -282,9 +282,9 @@ static int vp8_decode(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-static av_cold int vp8_free(AVCodecContext *avctx)
+static av_cold int vpx_free(AVCodecContext *avctx)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VPxContext *ctx = avctx->priv_data;
     vpx_codec_destroy(&ctx->decoder);
     if (ctx->has_alpha_channel)
         vpx_codec_destroy(&ctx->decoder_alpha);
@@ -302,10 +302,10 @@ AVCodec ff_libvpx_vp8_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
-    .priv_data_size = sizeof(VP8Context),
+    .priv_data_size = sizeof(VPxContext),
     .init           = vp8_init,
-    .close          = vp8_free,
-    .decode         = vp8_decode,
+    .close          = vpx_free,
+    .decode         = vpx_decode,
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
 };
 #endif /* CONFIG_LIBVPX_VP8_DECODER */
@@ -321,10 +321,10 @@ AVCodec ff_libvpx_vp9_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP9,
-    .priv_data_size = sizeof(VP8Context),
+    .priv_data_size = sizeof(VPxContext),
     .init           = vp9_init,
-    .close          = vp8_free,
-    .decode         = vp8_decode,
+    .close          = vpx_free,
+    .decode         = vpx_decode,
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
     .init_static_data = ff_vp9_init_static,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
