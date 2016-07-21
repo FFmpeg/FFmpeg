@@ -6,6 +6,7 @@ version <next>:
 - tee protocol
 - Changed metadata print option to accept general urls
 - Alias muxer for Ogg Video (.ogv)
+- VP8 in Ogg muxing
 
 
 version 3.1:
