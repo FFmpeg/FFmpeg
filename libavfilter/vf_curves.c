@@ -63,7 +63,7 @@ typedef struct {
     int preset;
     char *comp_points_str[NB_COMP + 1];
     char *comp_points_str_all;
-    uint8_t graph[NB_COMP + 1][256];
+    uint8_t *graph[NB_COMP + 1];
     char *psfile;
     uint8_t rgba_map[4];
     int step;
@@ -379,7 +379,7 @@ end:
     return ret;
 }
 
-static int dump_curves(const char *fname, uint8_t graph[NB_COMP + 1][256],
+static int dump_curves(const char *fname, uint8_t *graph[NB_COMP + 1],
                        struct keypoint *comp_points[NB_COMP + 1])
 {
     int i;
@@ -479,6 +479,9 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     for (i = 0; i < NB_COMP + 1; i++) {
+        curves->graph[i] = av_mallocz(256);
+        if (!curves->graph[i])
+            return AVERROR(ENOMEM);
         ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i]);
         if (ret < 0)
             return ret;
@@ -606,6 +609,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    int i;
+    CurvesContext *curves = ctx->priv;
+
+    for (i = 0; i < NB_COMP + 1; i++)
+        av_freep(&curves->graph[i]);
+}
+
 static const AVFilterPad curves_inputs[] = {
     {
         .name         = "default",
@@ -629,6 +641,7 @@ AVFilter ff_vf_curves = {
     .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
     .priv_size     = sizeof(CurvesContext),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = curves_inputs,
     .outputs       = curves_outputs,
