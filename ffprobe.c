@@ -3277,6 +3277,7 @@ int main(int argc, char **argv)
     SET_DO_SHOW(FRAME_TAGS, frame_tags);
     SET_DO_SHOW(PROGRAM_TAGS, program_tags);
     SET_DO_SHOW(STREAM_TAGS, stream_tags);
+    SET_DO_SHOW(PROGRAM_STREAM_TAGS, stream_tags);
     SET_DO_SHOW(PACKET_TAGS, packet_tags);
 
     if (do_bitexact && (do_show_program_version || do_show_library_versions)) {
