@@ -3019,6 +3019,7 @@ static int transcode_init(void)
                 enc_ctx->width              = dec_ctx->width;
                 enc_ctx->height             = dec_ctx->height;
                 enc_ctx->has_b_frames       = dec_ctx->has_b_frames;
+                enc_ctx->profile            = dec_ctx->profile;
                 if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
                     sar =
                         av_mul_q(ost->frame_aspect_ratio,
