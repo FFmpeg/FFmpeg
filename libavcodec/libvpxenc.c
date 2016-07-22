@@ -552,6 +552,16 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
         timestamp                   = frame->pts;
+#if VPX_IMAGE_ABI_VERSION >= 4
+        switch (frame->color_range) {
+        case AVCOL_RANGE_MPEG:
+            rawimg->range = VPX_CR_STUDIO_RANGE;
+            break;
+        case AVCOL_RANGE_JPEG:
+            rawimg->range = VPX_CR_FULL_RANGE;
+            break;
+        }
+#endif
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
     }

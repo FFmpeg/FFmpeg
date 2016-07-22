@@ -99,6 +99,16 @@ static int vp8_decode(AVCodecContext *avctx,
             return ret;
         av_image_copy(picture->data, picture->linesize, img->planes,
                       img->stride, avctx->pix_fmt, img->d_w, img->d_h);
+#if VPX_IMAGE_ABI_VERSION >= 4
+        switch (img->range) {
+        case VPX_CR_STUDIO_RANGE:
+            picture->color_range = AVCOL_RANGE_MPEG;
+            break;
+        case VPX_CR_FULL_RANGE:
+            picture->color_range = AVCOL_RANGE_JPEG;
+            break;
+        }
+#endif
         *got_frame           = 1;
     }
     return avpkt->size;
