@@ -126,7 +126,11 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
             return ret;
         }
 
-        av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
+        ret = av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
+        if (ret < 0) {
+            av_packet_free(&in);
+            return ret;
+        }
         if (in->size <= MAX_NVOP_SIZE) {
             /* N-VOP */
             av_log(ctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");
