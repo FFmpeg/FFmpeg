@@ -501,11 +501,6 @@ static av_cold int init(AVFilterContext *ctx)
                 av_log(ctx, AV_LOG_VERBOSE, " (%f;%f)", point->x, point->y);
                 point = point->next;
             }
-            av_log(ctx, AV_LOG_VERBOSE, "\n");
-            av_log(ctx, AV_LOG_VERBOSE, "#%d values:", i);
-            for (j = 0; j < 256; j++)
-                av_log(ctx, AV_LOG_VERBOSE, " %02X", curves->graph[i][j]);
-            av_log(ctx, AV_LOG_VERBOSE, "\n");
         }
     }
 
