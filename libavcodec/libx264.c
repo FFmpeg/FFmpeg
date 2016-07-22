@@ -783,8 +783,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if(x4->x264opts){
         const char *p= x4->x264opts;
         while(p){
-            char param[256]={0}, val[256]={0};
-            if(sscanf(p, "%255[^:=]=%255[^:]", param, val) == 1){
+            char param[4096]={0}, val[4096]={0};
+            if(sscanf(p, "%4095[^:=]=%4095[^:]", param, val) == 1){
                 OPT_STR(param, "1");
             }else
                 OPT_STR(param, val);
