@@ -212,7 +212,7 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
 
     double (*matrix)[3];
     double *h, *r;
-    int n = get_nb_points(points); // number of splines
+    const int n = get_nb_points(points); // number of splines
 
     if (n == 0) {
         for (i = 0; i < 256; i++)
@@ -247,9 +247,9 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
     /* right-side of the polynomials, will be modified to contains the solution */
     point = points;
     for (i = 1; i < n - 1; i++) {
-        double yp = point->y,
-               yc = point->next->y,
-               yn = point->next->next->y;
+        const double yp = point->y;
+        const double yc = point->next->y;
+        const double yn = point->next->next->y;
         r[i] = 6 * ((yn-yc)/h[i] - (yc-yp)/h[i-1]);
         point = point->next;
     }
@@ -268,8 +268,8 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
 
     /* tridiagonal solving of the linear system */
     for (i = 1; i < n; i++) {
-        double den = matrix[i][MD] - matrix[i][BD] * matrix[i-1][AD];
-        double k = den ? 1./den : 1.;
+        const double den = matrix[i][MD] - matrix[i][BD] * matrix[i-1][AD];
+        const double k = den ? 1./den : 1.;
         matrix[i][AD] *= k;
         r[i] = (r[i] - matrix[i][BD] * r[i - 1]) * k;
     }
@@ -286,24 +286,24 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
     i = 0;
     av_assert0(point->next); // always at least 2 key points
     while (point->next) {
-        double yc = point->y;
-        double yn = point->next->y;
+        const double yc = point->y;
+        const double yn = point->next->y;
 
-        double a = yc;
-        double b = (yn-yc)/h[i] - h[i]*r[i]/2. - h[i]*(r[i+1]-r[i])/6.;
-        double c = r[i] / 2.;
-        double d = (r[i+1] - r[i]) / (6.*h[i]);
+        const double a = yc;
+        const double b = (yn-yc)/h[i] - h[i]*r[i]/2. - h[i]*(r[i+1]-r[i])/6.;
+        const double c = r[i] / 2.;
+        const double d = (r[i+1] - r[i]) / (6.*h[i]);
 
         int x;
-        int x_start = point->x       * 255;
-        int x_end   = point->next->x * 255;
+        const int x_start = point->x       * 255;
+        const int x_end   = point->next->x * 255;
 
         av_assert0(x_start >= 0 && x_start <= 255 &&
                    x_end   >= 0 && x_end   <= 255);
 
         for (x = x_start; x <= x_end; x++) {
-            double xx = (x - x_start) * 1/255.;
-            double yy = a + b*xx + c*xx*xx + d*xx*xx*xx;
+            const double xx = (x - x_start) * 1/255.;
+            const double yy = a + b*xx + c*xx*xx + d*xx*xx*xx;
             y[x] = av_clip_uint8(yy * 255);
             av_log(ctx, AV_LOG_DEBUG, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
         }
@@ -495,7 +495,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     if (av_log_get_level() >= AV_LOG_VERBOSE) {
         for (i = 0; i < NB_COMP; i++) {
-            struct keypoint *point = comp_points[i];
+            const struct keypoint *point = comp_points[i];
             av_log(ctx, AV_LOG_VERBOSE, "#%d points:", i);
             while (point) {
                 av_log(ctx, AV_LOG_VERBOSE, " (%f;%f)", point->x, point->y);
