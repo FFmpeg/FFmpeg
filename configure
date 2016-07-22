@@ -3262,6 +3262,18 @@ probe_cc(){
         # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency
         # with MSVC which enables it by default.
         _cflags='-Qms0 -Qvec- -Qsimd- -GS'
+    elif $_cc -? 2>/dev/null | grep -q 'LLVM.*Linker'; then
+        # lld can emulate multiple different linkers; in ms link.exe mode,
+        # the -? parameter gives the help output which contains an identifyable
+        # string, while it gives an error in other modes.
+        _type=lld-link
+        # The link.exe mode doesn't have a switch for getting the version,
+        # but we can force it back to gnu mode and get the version from there.
+        _ident=$($_cc -flavor gnu --version)
+        _ld_o='-out:$@'
+        _flags_filter=msvc_flags
+        _ld_lib='lib%.a'
+        _ld_path='-libpath:'
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
         _ident=$($_cc --version | head -n1)
