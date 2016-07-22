@@ -102,7 +102,7 @@ static int tee_open(URLContext *h, const char *filename, int flags)
             goto fail;
         }
         c->child = tmp;
-        memset(&c->child[c->child_count], 0, sizeof(&c->child[c->child_count]));
+        memset(&c->child[c->child_count], 0, sizeof(c->child[c->child_count]));
 
         ret = ffurl_open_whitelist(&c->child[c->child_count].url_context, child_name, flags,
                                    &h->interrupt_callback, /*AVDictionary **options*/NULL,
