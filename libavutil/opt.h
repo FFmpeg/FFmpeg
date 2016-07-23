@@ -58,7 +58,7 @@
  * The following example illustrates an AVOptions-enabled struct:
  * @code
  * typedef struct test_struct {
- *     AVClass *class;
+ *     const AVClass *class;
  *     int      int_opt;
  *     char    *str_opt;
  *     uint8_t *bin_opt;
@@ -96,7 +96,7 @@
  * @code
  * test_struct *alloc_test_struct(void)
  * {
- *     test_struct *ret = av_malloc(sizeof(*ret));
+ *     test_struct *ret = av_mallocz(sizeof(*ret));
  *     ret->class = &test_class;
  *     av_opt_set_defaults(ret);
  *     return ret;
