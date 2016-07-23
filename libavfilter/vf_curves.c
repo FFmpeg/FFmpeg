@@ -63,11 +63,13 @@ typedef struct {
     int preset;
     char *comp_points_str[NB_COMP + 1];
     char *comp_points_str_all;
-    uint8_t *graph[NB_COMP + 1];
+    uint16_t *graph[NB_COMP + 1];
+    int lut_size;
     char *psfile;
     uint8_t rgba_map[4];
     int step;
     char *plot_filename;
+    int is_16bit;
 } CurvesContext;
 
 typedef struct ThreadData {
@@ -147,10 +149,12 @@ static struct keypoint *make_point(double x, double y, struct keypoint *next)
     return point;
 }
 
-static int parse_points_str(AVFilterContext *ctx, struct keypoint **points, const char *s)
+static int parse_points_str(AVFilterContext *ctx, struct keypoint **points, const char *s,
+                            int lut_size)
 {
     char *p = (char *)s; // strtod won't alter the string
     struct keypoint *last = NULL;
+    const int scale = lut_size - 1;
 
     /* construct a linked list based on the key points string */
     while (p && *p) {
@@ -167,7 +171,7 @@ static int parse_points_str(AVFilterContext *ctx, struct keypoint **points, cons
         if (!*points)
             *points = point;
         if (last) {
-            if ((int)(last->x * 255) >= (int)(point->x * 255)) {
+            if ((int)(last->x * scale) >= (int)(point->x * scale)) {
                 av_log(ctx, AV_LOG_ERROR, "Key point coordinates (%f;%f) "
                        "and (%f;%f) are too close from each other or not "
                        "strictly increasing on the x-axis\n",
@@ -204,25 +208,31 @@ static int get_nb_points(const struct keypoint *d)
  * Finding curves using Cubic Splines notes by Steven Rauch and John Stockie.
  * @see http://people.math.sfu.ca/~stockie/teaching/macm316/notes/splines.pdf
  */
-static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *points)
+
+#define CLIP(v) (nbits == 8 ? av_clip_uint8(v) : av_clip_uint16(v))
+
+static inline int interpolate(AVFilterContext *ctx, uint16_t *y,
+                              const struct keypoint *points, int nbits)
 {
     int i, ret = 0;
     const struct keypoint *point = points;
     double xprev = 0;
+    const int lut_size = 1<<nbits;
+    const int scale = lut_size - 1;
 
     double (*matrix)[3];
     double *h, *r;
     const int n = get_nb_points(points); // number of splines
 
     if (n == 0) {
-        for (i = 0; i < 256; i++)
+        for (i = 0; i < lut_size; i++)
             y[i] = i;
         return 0;
     }
 
     if (n == 1) {
-        for (i = 0; i < 256; i++)
-            y[i] = av_clip_uint8(point->y * 255);
+        for (i = 0; i < lut_size; i++)
+            y[i] = CLIP(point->y * scale);
         return 0;
     }
 
@@ -279,8 +289,8 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
     point = points;
 
     /* left padding */
-    for (i = 0; i < (int)(point->x * 255); i++)
-        y[i] = av_clip_uint8(point->y * 255);
+    for (i = 0; i < (int)(point->x * scale); i++)
+        y[i] = CLIP(point->y * scale);
 
     /* compute the graph with x=[x0..xN] */
     i = 0;
@@ -295,16 +305,16 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
         const double d = (r[i+1] - r[i]) / (6.*h[i]);
 
         int x;
-        const int x_start = point->x       * 255;
-        const int x_end   = point->next->x * 255;
+        const int x_start = point->x       * scale;
+        const int x_end   = point->next->x * scale;
 
-        av_assert0(x_start >= 0 && x_start <= 255 &&
-                   x_end   >= 0 && x_end   <= 255);
+        av_assert0(x_start >= 0 && x_start < lut_size &&
+                   x_end   >= 0 && x_end   < lut_size);
 
         for (x = x_start; x <= x_end; x++) {
-            const double xx = (x - x_start) * 1/255.;
+            const double xx = (x - x_start) * 1./scale;
             const double yy = a + b*xx + c*xx*xx + d*xx*xx*xx;
-            y[x] = av_clip_uint8(yy * 255);
+            y[x] = CLIP(yy * scale);
             av_log(ctx, AV_LOG_DEBUG, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
         }
 
@@ -313,8 +323,8 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
     }
 
     /* right padding */
-    for (i = (int)(point->x * 255); i <= 255; i++)
-        y[i] = av_clip_uint8(point->y * 255);
+    for (i = (int)(point->x * scale); i < lut_size; i++)
+        y[i] = CLIP(point->y * scale);
 
 end:
     av_free(matrix);
@@ -322,6 +332,16 @@ end:
     av_free(r);
     return ret;
 }
+
+#define DECLARE_INTERPOLATE_FUNC(nbits)                                     \
+static const int interpolate##nbits(AVFilterContext *ctx, uint16_t *y,      \
+                                    const struct keypoint *points)          \
+{                                                                           \
+    return interpolate(ctx, y, points, nbits);                              \
+}
+
+DECLARE_INTERPOLATE_FUNC(8)
+DECLARE_INTERPOLATE_FUNC(16)
 
 static int parse_psfile(AVFilterContext *ctx, const char *fname)
 {
@@ -379,11 +399,13 @@ end:
     return ret;
 }
 
-static int dump_curves(const char *fname, uint8_t *graph[NB_COMP + 1],
-                       struct keypoint *comp_points[NB_COMP + 1])
+static int dump_curves(const char *fname, uint16_t *graph[NB_COMP + 1],
+                       struct keypoint *comp_points[NB_COMP + 1],
+                       int lut_size)
 {
     int i;
     AVBPrint buf;
+    const double scale = 1. / (lut_size - 1);
     static const char * const colors[] = { "red", "green", "blue", "#404040", };
     FILE *f = av_fopen_utf8(fname, "w");
 
@@ -416,8 +438,8 @@ static int dump_curves(const char *fname, uint8_t *graph[NB_COMP + 1],
         int x;
 
         /* plot generated values */
-        for (x = 0; x < 256; x++)
-            av_bprintf(&buf, "%f %f\n", x/255., graph[i][x]/255.);
+        for (x = 0; x < lut_size; x++)
+            av_bprintf(&buf, "%f %f\n", x * scale, graph[i][x] * scale);
         av_bprintf(&buf, "e\n");
 
         /* plot user knots */
@@ -488,6 +510,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
         AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
         AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -506,23 +530,26 @@ static int config_input(AVFilterLink *inlink)
     struct keypoint *comp_points[NB_COMP + 1] = {0};
 
     ff_fill_rgba_map(curves->rgba_map, inlink->format);
-    curves->step = av_get_padded_bits_per_pixel(desc) >> 3;
+    curves->is_16bit = desc->comp[0].depth > 8;
+    curves->lut_size = curves->is_16bit ? 1<<16 : 1<<8;
+    curves->step = av_get_padded_bits_per_pixel(desc) >> (3 + curves->is_16bit);
 
     for (i = 0; i < NB_COMP + 1; i++) {
-        curves->graph[i] = av_mallocz(256);
+        curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
         if (!curves->graph[i])
             return AVERROR(ENOMEM);
-        ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i]);
+        ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);
         if (ret < 0)
             return ret;
-        ret = interpolate(ctx, curves->graph[i], comp_points[i]);
+        if (curves->is_16bit) ret = interpolate16(ctx, curves->graph[i], comp_points[i]);
+        else                  ret = interpolate8(ctx, curves->graph[i], comp_points[i]);
         if (ret < 0)
             return ret;
     }
 
     if (pts[NB_COMP]) {
         for (i = 0; i < NB_COMP; i++)
-            for (j = 0; j < 256; j++)
+            for (j = 0; j < curves->lut_size; j++)
                 curves->graph[i][j] = curves->graph[NB_COMP][curves->graph[i][j]];
     }
 
@@ -538,7 +565,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (curves->plot_filename)
-        dump_curves(curves->plot_filename, curves->graph, comp_points);
+        dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size);
 
     for (i = 0; i < NB_COMP + 1; i++) {
         struct keypoint *point = comp_points[i];
@@ -567,6 +594,21 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const uint8_t a = curves->rgba_map[A];
     const int slice_start = (in->height *  jobnr   ) / nb_jobs;
     const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+
+    if (curves->is_16bit) {
+        for (y = slice_start; y < slice_end; y++) {
+            uint16_t       *dstp = (      uint16_t *)(out->data[0] + y * out->linesize[0]);
+            const uint16_t *srcp = (const uint16_t *)(in ->data[0] + y *  in->linesize[0]);
+
+            for (x = 0; x < in->width * step; x += step) {
+                dstp[x + r] = curves->graph[R][srcp[x + r]];
+                dstp[x + g] = curves->graph[G][srcp[x + g]];
+                dstp[x + b] = curves->graph[B][srcp[x + b]];
+                if (!direct && step == 4)
+                    dstp[x + a] = srcp[x + a];
+            }
+        }
+    } else {
     uint8_t       *dst = out->data[0] + slice_start * out->linesize[0];
     const uint8_t *src =  in->data[0] + slice_start *  in->linesize[0];
 
@@ -580,6 +622,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         }
         dst += out->linesize[0];
         src += in ->linesize[0];
+    }
     }
     return 0;
 }
