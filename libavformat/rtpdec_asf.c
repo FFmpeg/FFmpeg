@@ -101,7 +101,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
 {
     int ret = 0;
     if (av_strstart(p, "pgmpu:data:application/vnd.ms.wms-hdr.asfv1;base64,", &p)) {
-        AVIOContext pb;
+        AVIOContext pb = { 0 };
         RTSPState *rt = s->priv_data;
         AVDictionary *opts = NULL;
         int len = strlen(p) * 6 / 8;
