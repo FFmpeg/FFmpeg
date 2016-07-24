@@ -818,20 +818,28 @@ static const int32_t gaintab[] = {
 
 typedef struct {
     uint64_t window;
-    unsigned char readahead, arg, control;
-    int running_gain;
-    unsigned sustain, sustain_reset;
-    int code_counterA;
-    int code_counterA_almost; /* looks like an A code, but a bit expected to be 0 is 1 */
-    int code_counterB;
-    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
-    int code_counterC;
-    int code_counterC_unmatched; /* told to look for a code, but didn't find one */
+    unsigned char readahead;
 
-    /* For user information/stats, pulled up into HDCDContext
-     * by filter_frame() */
-    int count_peak_extend;
-    int count_transient_filter;
+    /* arg is set when a packet prefix is found.
+     * control is the active control code, where
+     * bit 0-3: target_gain, 4-bit (3.1) fixed-point value
+     * bit 4  : peak_extend
+     * bit 5  : transient_filter
+     * bit 6,7: always zero */
+    unsigned char arg, control;
+    unsigned sustain, sustain_reset; /* code detect timer */
+
+    int running_gain; /* 11-bit (3.8) fixed point, extended from target_gain */
+
+    /* counters */
+    int code_counterA;            /* 8-bit format packet */
+    int code_counterA_almost;     /* looks like an A code, but a bit expected to be 0 is 1 */
+    int code_counterB;            /* 16-bit format packet, 8-bit code, 8-bit XOR of code */
+    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
+    int code_counterC;            /* packet prefix was found, expect a code */
+    int code_counterC_unmatched;  /* told to look for a code, but didn't find one */
+    int count_peak_extend;        /* valid packets where peak_extend was enabled */
+    int count_transient_filter;   /* valid packets where filter was detected */
     /* target_gain is a 4-bit (3.1) fixed-point value, always
      * negative, but stored positive.
      * The 16 possible values range from -7.5 to 0.0 dB in
