@@ -181,7 +181,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     fg->inputs[fg->nb_inputs - 1]->format = -1;
 
     fg->inputs[fg->nb_inputs - 1]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
-    if (!fg->inputs[fg->nb_inputs - 1])
+    if (!fg->inputs[fg->nb_inputs - 1]->frame_queue)
         exit_program(1);
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
