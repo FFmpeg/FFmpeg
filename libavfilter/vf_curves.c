@@ -211,7 +211,7 @@ static int get_nb_points(const struct keypoint *d)
 
 #define CLIP(v) (nbits == 8 ? av_clip_uint8(v) : av_clip_uint16(v))
 
-static inline int interpolate(AVFilterContext *ctx, uint16_t *y,
+static inline int interpolate(void *log_ctx, uint16_t *y,
                               const struct keypoint *points, int nbits)
 {
     int i, ret = 0;
@@ -315,7 +315,7 @@ static inline int interpolate(AVFilterContext *ctx, uint16_t *y,
             const double xx = (x - x_start) * 1./scale;
             const double yy = a + b*xx + c*xx*xx + d*xx*xx*xx;
             y[x] = CLIP(yy * scale);
-            av_log(ctx, AV_LOG_DEBUG, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
+            av_log(log_ctx, AV_LOG_DEBUG, "f(%f)=%f -> y[%d]=%d\n", xx, yy, x, y[x]);
         }
 
         point = point->next;
@@ -334,10 +334,10 @@ end:
 }
 
 #define DECLARE_INTERPOLATE_FUNC(nbits)                                     \
-static const int interpolate##nbits(AVFilterContext *ctx, uint16_t *y,      \
+static const int interpolate##nbits(void *log_ctx, uint16_t *y,             \
                                     const struct keypoint *points)          \
 {                                                                           \
-    return interpolate(ctx, y, points, nbits);                              \
+    return interpolate(log_ctx, y, points, nbits);                          \
 }
 
 DECLARE_INTERPOLATE_FUNC(8)
