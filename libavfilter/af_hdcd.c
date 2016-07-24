@@ -1097,6 +1097,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int16_t *in_data;
     int32_t *out_data;
     int n, c;
+    int detect;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
@@ -1112,19 +1113,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         out_data[n] = in_data[n];
     }
 
+    detect = 0;
     s->det_errors = 0;
     for (c = 0; c < inlink->channels; c++) {
         hdcd_state_t *state = &s->state[c];
         hdcd_process(state, out_data + c, in->nb_samples, out->channels);
-
+        if (state->sustain) detect++;
         s->uses_peak_extend |= !!state->count_peak_extend;
         s->uses_transient_filter |= !!state->count_transient_filter;
         s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
-        s->hdcd_detected |= state->code_counterB || state->code_counterA;
         s->det_errors += state->code_counterA_almost
             + state->code_counterB_checkfails
             + state->code_counterC_unmatched;
     }
+    /* HDCD is detected if a valid packet is active in all (both)
+     * channels at the same time. */
+    if (detect == inlink->channels) s->hdcd_detected = 1;
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
