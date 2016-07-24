@@ -846,6 +846,7 @@ typedef struct {
      * steps of 0.5, but no value below -6.0 dB should appear. */
     int gain_counts[16]; /* for cursiosity, mostly */
     int max_gain;
+    int count_sustain_expired;    /* occurences of code detect timer expiring without detecting a code */
 
     AVFilterContext *fctx; /* filter context for logging errors */
 } hdcd_state_t;
@@ -895,6 +896,8 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->count_transient_filter = 0;
     for(i = 0; i < 16; i++) state->gain_counts[i] = 0;
     state->max_gain = 0;
+
+    state->count_sustain_expired = 0;
 }
 
 /* update the user info/counters */
@@ -978,8 +981,11 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
 
 static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int stride)
 {
+    int cdt_active = 0;
+    /* code detect timer */
     int result;
     if (state->sustain > 0) {
+        cdt_active = 1;
         if (state->sustain <= max) {
             state->control = 0;
             max = state->sustain;
@@ -992,11 +998,15 @@ static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int s
         int consumed = hdcd_integrate(state, &flag, samples, max - result, stride);
         result += consumed;
         if (flag > 0) {
+            /* reset timer if code detected in channel */
             state->sustain = state->sustain_reset;
             break;
         }
         samples += consumed * stride;
     }
+    /* code detect timer expired */
+    if (cdt_active && state->sustain == 0)
+        state->count_sustain_expired++;
     return result;
 }
 
@@ -1198,12 +1208,13 @@ static av_cold void uninit(AVFilterContext *ctx)
         hdcd_state_t *state = &s->state[i];
         av_log(ctx, AV_LOG_VERBOSE, "Channel %d: counter A: %d, B: %d, C: %d\n", i,
                 state->code_counterA, state->code_counterB, state->code_counterC);
-        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: pe: %d, tf: %d, almost_A: %d, checkfail_B: %d, unmatched_C: %d\n", i,
+        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: pe: %d, tf: %d, almost_A: %d, checkfail_B: %d, unmatched_C: %d, cdt_expired: %d\n", i,
             state->count_peak_extend,
             state->count_transient_filter,
             state->code_counterA_almost,
             state->code_counterB_checkfails,
-            state->code_counterC_unmatched);
+            state->code_counterC_unmatched,
+            state->count_sustain_expired);
         for (j = 0; j <= state->max_gain; j++) {
             av_log(ctx, AV_LOG_VERBOSE, "Channel %d: tg %0.1f: %d\n", i, GAINTOFLOAT(j), state->gain_counts[j]);
         }
