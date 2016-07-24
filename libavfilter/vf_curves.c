@@ -440,9 +440,8 @@ static int dump_curves(const char *fname, uint8_t *graph[NB_COMP + 1],
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    int i, j, ret;
+    int i, ret;
     CurvesContext *curves = ctx->priv;
-    struct keypoint *comp_points[NB_COMP + 1] = {0};
     char **pts = curves->comp_points_str;
     const char *allp = curves->comp_points_str_all;
 
@@ -477,6 +476,37 @@ static av_cold int init(AVFilterContext *ctx)
         SET_COMP_IF_NOT_SET(2, b);
         SET_COMP_IF_NOT_SET(3, master);
     }
+
+    return 0;
+}
+
+static int query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_NONE
+    };
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    int i, j, ret;
+    AVFilterContext *ctx = inlink->dst;
+    CurvesContext *curves = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    char **pts = curves->comp_points_str;
+    struct keypoint *comp_points[NB_COMP + 1] = {0};
+
+    ff_fill_rgba_map(curves->rgba_map, inlink->format);
+    curves->step = av_get_padded_bits_per_pixel(desc) >> 3;
 
     for (i = 0; i < NB_COMP + 1; i++) {
         curves->graph[i] = av_mallocz(256);
@@ -518,33 +548,6 @@ static av_cold int init(AVFilterContext *ctx)
             point = next;
         }
     }
-
-    return 0;
-}
-
-static int query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_NONE
-    };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
-}
-
-static int config_input(AVFilterLink *inlink)
-{
-    CurvesContext *curves = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-
-    ff_fill_rgba_map(curves->rgba_map, inlink->format);
-    curves->step = av_get_padded_bits_per_pixel(desc) >> 3;
 
     return 0;
 }
