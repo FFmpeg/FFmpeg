@@ -32,6 +32,7 @@
 #include "isom.h"
 #include "avc.h"
 #include "libavcodec/ac3_parser.h"
+#include "libavcodec/dnxhddata.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
@@ -1070,11 +1071,7 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     int cid;
 
     if (track->vos_data && track->vos_len > 0x29) {
-        if (track->vos_data[0] == 0x00 &&
-            track->vos_data[1] == 0x00 &&
-            track->vos_data[2] == 0x02 &&
-            track->vos_data[3] == 0x80 &&
-            (track->vos_data[4] == 0x01 || track->vos_data[4] == 0x02)) {
+        if (avpriv_dnxhd_parse_header_prefix(track->vos_data) != 0) {
             /* looks like a DNxHD bit stream */
             interlaced = (track->vos_data[5] & 2);
             cid = AV_RB32(track->vos_data + 0x28);
@@ -1098,6 +1095,18 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb32(pb, 2); /* Corresponds to RGB in official encoder */
     }
     avio_wb32(pb, 0); /* unknown */
+
+    if (track->tag == MKTAG('A','V','d','h')) {
+        avio_wb32(pb, 32);
+        ffio_wfourcc(pb, "ADHR");
+        ffio_wfourcc(pb, "0001");
+        avio_wb32(pb, cid);
+        avio_wb32(pb, 0); /* unknown */
+        avio_wb32(pb, 1); /* unknown */
+        avio_wb32(pb, 0); /* unknown */
+        avio_wb32(pb, 0); /* unknown */
+        return 0;
+    }
 
     avio_wb32(pb, 24); /* size */
     ffio_wfourcc(pb, "APRG");
@@ -1384,6 +1393,15 @@ static const struct {
     { AV_PIX_FMT_RGB48BE, MKTAG('b','4','8','r'), 48 },
 };
 
+static int mov_get_dnxhd_codec_tag(AVFormatContext *s, MOVTrack *track)
+{
+  int tag = MKTAG('A','V','d','n');
+  if (track->par->profile != FF_PROFILE_UNKNOWN &&
+      track->par->profile != FF_PROFILE_DNXHD)
+      tag = MKTAG('A','V','d','h');
+  return tag;
+}
+
 static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->par->codec_tag;
@@ -1418,6 +1436,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                   track->par->codec_id == AV_CODEC_ID_RAWVIDEO ||
                   track->par->codec_id == AV_CODEC_ID_H263 ||
                   track->par->codec_id == AV_CODEC_ID_H264 ||
+                  track->par->codec_id == AV_CODEC_ID_DNXHD ||
                   track->par->codec_id == AV_CODEC_ID_MPEG2VIDEO ||
                   av_get_bits_per_sample(track->par->codec_id)))) { // pcm audio
         if (track->par->codec_id == AV_CODEC_ID_DVVIDEO)
@@ -1428,6 +1447,8 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             tag = mov_get_mpeg2_xdcam_codec_tag(s, track);
         else if (track->par->codec_id == AV_CODEC_ID_H264)
             tag = mov_get_h264_codec_tag(s, track);
+        else if (track->par->codec_id == AV_CODEC_ID_DNXHD)
+            tag = mov_get_dnxhd_codec_tag(s, track);
         else if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             tag = ff_codec_get_tag(ff_codec_movvideo_tags, track->par->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags

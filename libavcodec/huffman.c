@@ -27,7 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/qsort.h"
-#include"libavutil/common.h"
+#include "libavutil/common.h"
 
 #include "avcodec.h"
 #include "huffman.h"

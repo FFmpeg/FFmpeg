@@ -94,6 +94,26 @@ fate-filter-asetrate: tests/data/asynth-44100-2.wav
 fate-filter-asetrate: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-asetrate: CMD = framecrc -i $(SRC) -aframes 20 -af asetrate=20000
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHORUS, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-chorus
+fate-filter-chorus: tests/data/asynth-22050-1.wav
+fate-filter-chorus: SRC = $(TARGET_PATH)/tests/data/asynth-22050-1.wav
+fate-filter-chorus: CMD = framecrc -i $(SRC) -aframes 10 -af chorus=0.050001:0.050002:64:0.050001:0.025003:2.00004
+
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, DCSHIFT, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-dcshift
+fate-filter-dcshift: tests/data/asynth-44100-2.wav
+fate-filter-dcshift: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-dcshift: CMD = framecrc -i $(SRC) -aframes 20 -af dcshift=shift=0.25:limitergain=0.05
+
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, EARWAX, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-earwax
+fate-filter-earwax: tests/data/asynth-44100-2.wav
+fate-filter-earwax: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-earwax: CMD = framecrc -i $(SRC) -aframes 20 -af earwax
+
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, EXTRASTEREO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-extrastereo
+fate-filter-extrastereo: tests/data/asynth-44100-2.wav
+fate-filter-extrastereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-extrastereo: CMD = framecrc -i $(SRC) -aframes 20 -af extrastereo=m=2
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \

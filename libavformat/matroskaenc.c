@@ -1261,7 +1261,7 @@ static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
         return AVERROR(ENOMEM);
 
     if ((p = strrchr(p, '-')) &&
-        (lang = av_convert_lang_to(p + 1, AV_LANG_ISO639_2_BIBL)))
+        (lang = ff_convert_lang_to(p + 1, AV_LANG_ISO639_2_BIBL)))
         *p = 0;
 
     p = key;

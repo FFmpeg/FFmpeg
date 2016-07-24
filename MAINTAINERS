@@ -43,7 +43,7 @@ Miscellaneous Areas
 ===================
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Lou Logan
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
@@ -147,7 +147,7 @@ Codecs:
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cinepakenc.c                          Rl / Aetey G.T. AB
-  ccaption_dec.c                        Anshul Maheshwari
+  ccaption_dec.c                        Anshul Maheshwari, Aman Gupta
   cljr                                  Alex Beregszaszi
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
@@ -402,6 +402,7 @@ Muxers/Demuxers:
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
+  libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
@@ -545,6 +546,7 @@ Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
+Nikolay Aleksandrov           8978 1D8C FB71 588E 4B27 EAA8 C4F0 B5FC E011 13B1
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
 Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
 Philip Langdale               5DC5 8D66 5FBA 3A43 18EC 045E F8D6 B194 6A75 682E

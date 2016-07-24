@@ -695,7 +695,7 @@ This protocol accepts the following options.
 
 @table @option
 @item timeout
-Set timeout in miliseconds of socket I/O operations used by the underlying
+Set timeout in milliseconds of socket I/O operations used by the underlying
 low level operation. By default it is set to -1, which means that the timeout
 is not specified.
 
@@ -1157,6 +1157,15 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 Play an AVI file directly from a TAR archive:
 @example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
+
+@section tee
+
+Writes the output to multiple protocols. The individual outputs are separated
+by |
+
+@example
+tee:file://path/to/local/this.avi|file://path/to/local/that.avi
 @end example
 
 @section tcp

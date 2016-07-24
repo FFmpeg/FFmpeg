@@ -23,6 +23,7 @@
 
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];
+extern const AVProfile ff_dnxhd_profiles[];
 extern const AVProfile ff_h264_profiles[];
 extern const AVProfile ff_hevc_profiles[];
 extern const AVProfile ff_jpeg2000_profiles[];

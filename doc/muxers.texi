@@ -396,8 +396,8 @@ which can be cyclic, for example if the @option{wrap} option is
 specified.
 
 @item hls_segment_filename @var{filename}
-Set the segment filename. Unless hls_flags single_file is set @var{filename}
-is used as a string format with the segment number:
+Set the segment filename. Unless @code{hls_flags single_file} is set,
+@var{filename} is used as a string format with the segment number:
 @example
 ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 @end example
@@ -495,11 +495,22 @@ Will produce the playlist, @file{out.m3u8}, and a single segment file,
 Segment files removed from the playlist are deleted after a period of time
 equal to the duration of the segment plus the duration of the playlist.
 
+@item hls_flags round_durations
+Round the duration info in the playlist file segment info to integer
+values, instead of using floating point.
+
+@item hls_flags discont_starts
+Add the @code{#EXT-X-DISCONTINUITY} tag to the playlist, before the
+first segment's information.
+
+@item hls_flags omit_endlist
+Do not append the @code{EXT-X-ENDLIST} tag at the end of the playlist.
+
 @item hls_flags split_by_time
-If this flags is set, allow segments to start on frames other than keyframes.
-This improves behavior on some players when the time between keyframes is
-inconsistent, but may make things worse on others, and can cause some oddities
-during seeking. This flag should be used with hls_time option.
+Allow segments to start on frames other than keyframes. This improves
+behavior on some players when the time between keyframes is inconsistent,
+but may make things worse on others, and can cause some oddities during
+seeking. This flag should be used with the @code{hls_time} option.
 
 @item hls_playlist_type event
 Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces

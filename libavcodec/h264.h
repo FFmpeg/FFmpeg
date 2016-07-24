@@ -675,7 +675,7 @@ typedef struct H264Context {
 
     int missing_fields;
 
-/* for frame threading, this is set to 1
+    /* for frame threading, this is set to 1
      * after finish_setup() has been called, so we cannot modify
      * some context properties (which are supposed to stay constant between
      * slices) anymore */

@@ -261,6 +261,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     /* taking by default roll up to 2 */
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
+    ctx->cursor_row = 10;
     ret = ff_ass_subtitle_header(avctx, "Monospace",
                                  ASS_DEFAULT_FONT_SIZE,
                                  ASS_DEFAULT_COLOR,
@@ -298,7 +299,7 @@ static void flush_decoder(AVCodecContext *avctx)
     ctx->prev_cmd[1] = 0;
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
-    ctx->cursor_row = 0;
+    ctx->cursor_row = 10;
     ctx->cursor_column = 0;
     ctx->cursor_font = 0;
     ctx->cursor_color = 0;
@@ -315,7 +316,7 @@ static void flush_decoder(AVCodecContext *avctx)
 /**
  * @param ctx closed caption context just to print log
  */
-static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
+static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 {
     uint8_t col = ctx->cursor_column;
     char *row = screen->characters[ctx->cursor_row];
@@ -328,16 +329,16 @@ static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
         charset[col] = ctx->cursor_charset;
         ctx->cursor_charset = CCSET_BASIC_AMERICAN;
         if (ch) ctx->cursor_column++;
-        return 0;
+        return;
     }
     /* We have extra space at end only for null character */
     else if (col == SCREEN_COLUMNS && ch == 0) {
         row[col] = ch;
-        return 0;
+        return;
     }
     else {
         av_log(ctx, AV_LOG_WARNING, "Data Ignored since exceeding screen width\n");
-        return AVERROR_INVALIDDATA;
+        return;
     }
 }
 
@@ -435,7 +436,7 @@ static void roll_up(CCaptionSubContext *ctx)
 
 static int capture_screen(CCaptionSubContext *ctx)
 {
-    int i;
+    int i, j, tab = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     enum cc_font prev_font = CCFONT_REGULAR;
     av_bprint_clear(&ctx->buffer);
@@ -444,14 +445,32 @@ static int capture_screen(CCaptionSubContext *ctx)
     {
         if (CHECK_FLAG(screen->row_used, i)) {
             const char *row = screen->characters[i];
+            const char *charset = screen->charsets[i];
+            j = 0;
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+                j++;
+            if (!tab || j < tab)
+                tab = j;
+        }
+    }
+
+    for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
+    {
+        if (CHECK_FLAG(screen->row_used, i)) {
+            const char *row = screen->characters[i];
             const char *font = screen->fonts[i];
             const char *charset = screen->charsets[i];
             const char *override;
-            int j = 0;
+            int x, y, seen_char = 0;
+            j = 0;
 
             /* skip leading space */
-            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN && j < tab)
                 j++;
+
+            x = ASS_DEFAULT_PLAYRESX * (0.1 + 0.0250 * j);
+            y = ASS_DEFAULT_PLAYRESY * (0.1 + 0.0533 * i);
+            av_bprintf(&ctx->buffer, "{\\an7}{\\pos(%d,%d)}", x, y);
 
             for (; j < SCREEN_COLUMNS; j++) {
                 const char *e_tag = "", *s_tag = "";
@@ -487,9 +506,14 @@ static int capture_screen(CCaptionSubContext *ctx)
                 override = charset_overrides[(int)charset[j]][(int)row[j]];
                 if (override) {
                     av_bprintf(&ctx->buffer, "%s%s%s", e_tag, s_tag, override);
+                    seen_char = 1;
+                } else if (row[j] == ' ' && !seen_char) {
+                    av_bprintf(&ctx->buffer, "%s%s\\h", e_tag, s_tag);
                 } else {
                     av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
+                    seen_char = 1;
                 }
+
             }
             av_bprintf(&ctx->buffer, "\\N");
         }

@@ -36,15 +36,19 @@ typedef struct OpenMPTContext {
     /* options */
     int sample_rate;
     int64_t layout;
+    int subsong;
 } OpenMPTContext;
 
 #define OFFSET(x) offsetof(OpenMPTContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    {"sample_rate", "set sample rate",    OFFSET(sample_rate), AV_OPT_TYPE_INT,            {.i64 = 48000},                   1000, INT_MAX,   A|D},
-    {"layout",      "set channel layout", OFFSET(layout),      AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64 = AV_CH_LAYOUT_STEREO},     0,    INT64_MAX, A|D},
-    {NULL}
+    { "sample_rate", "set sample rate",    OFFSET(sample_rate), AV_OPT_TYPE_INT,            { .i64 = 48000 },               1000, INT_MAX,   A | D },
+    { "layout",      "set channel layout", OFFSET(layout),      AV_OPT_TYPE_CHANNEL_LAYOUT, { .i64 = AV_CH_LAYOUT_STEREO }, 0,    INT64_MAX, A | D },
+    { "subsong",     "set subsong",        OFFSET(subsong),     AV_OPT_TYPE_INT,            { .i64 = -2 },                  -2,   INT_MAX,   A | D, "subsong"},
+    { "all",         "all",                0,                   AV_OPT_TYPE_CONST,          { .i64 = -1},                   0,    0,         A | D, "subsong" },
+    { "auto",        "auto",               0,                   AV_OPT_TYPE_CONST,          { .i64 = -2},                   0,    0,         A | D, "subsong" },
+    { NULL }
 };
 
 static void openmpt_logfunc(const char *message, void *userdata)
@@ -69,7 +73,11 @@ static int read_header_openmpt(AVFormatContext *s)
     AVStream *st;
     OpenMPTContext *openmpt = s->priv_data;
     int64_t size = avio_size(s->pb);
+    if (!size)
+        return AVERROR_INVALIDDATA;
     char *buf = av_malloc(size);
+    int ret;
+
 
     if (!buf)
         return AVERROR(ENOMEM);
@@ -87,13 +95,34 @@ static int read_header_openmpt(AVFormatContext *s)
     add_meta(s, "title",   openmpt_module_get_metadata(openmpt->module, "title"));
     add_meta(s, "encoder", openmpt_module_get_metadata(openmpt->module, "tracker"));
     add_meta(s, "comment", openmpt_module_get_metadata(openmpt->module, "message"));
+    add_meta(s, "date",    openmpt_module_get_metadata(openmpt->module, "date"));
+
+    if (openmpt->subsong >= openmpt_module_get_num_subsongs(openmpt->module)) {
+        openmpt_module_destroy(openmpt->module);
+        av_log(s, AV_LOG_ERROR, "Invalid subsong index: %d\n", openmpt->subsong);
+        return AVERROR(EINVAL);
+    }
+
+    if (openmpt->subsong != -2) {
+        if (openmpt->subsong >= 0) {
+            av_dict_set_int(&s->metadata, "track", openmpt->subsong + 1, 0);
+        }
+        ret = openmpt_module_select_subsong(openmpt->module, openmpt->subsong);
+        if (!ret){
+            openmpt_module_destroy(openmpt->module);
+            av_log(s, AV_LOG_ERROR, "Could not select requested subsong: %d", openmpt->subsong);
+            return AVERROR(EINVAL);
+        }
+    }
 
     st = avformat_new_stream(s, NULL);
-    if (!st)
+    if (!st) {
+        openmpt_module_destroy(openmpt->module);
+        openmpt->module = NULL;
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 64, 1, 1000);
-    if (st->duration > 0)
-        st->duration = llrint(openmpt->duration*AV_TIME_BASE);
+    }
+    avpriv_set_pts_info(st, 64, 1, AV_TIME_BASE);
+    st->duration = llrint(openmpt->duration*AV_TIME_BASE);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_F32BE, AV_CODEC_ID_PCM_F32LE);
@@ -146,6 +175,7 @@ static int read_close_openmpt(AVFormatContext *s)
 {
     OpenMPTContext *openmpt = s->priv_data;
     openmpt_module_destroy(openmpt->module);
+    openmpt->module = NULL;
     return 0;
 }
 

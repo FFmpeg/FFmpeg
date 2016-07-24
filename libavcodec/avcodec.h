@@ -3173,6 +3173,13 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_MPEG2_AAC_LOW 128
 #define FF_PROFILE_MPEG2_AAC_HE  131
 
+#define FF_PROFILE_DNXHD         0
+#define FF_PROFILE_DNXHR_LB      1
+#define FF_PROFILE_DNXHR_SQ      2
+#define FF_PROFILE_DNXHR_HQ      3
+#define FF_PROFILE_DNXHR_HQX     4
+#define FF_PROFILE_DNXHR_444     5
+
 #define FF_PROFILE_DTS         20
 #define FF_PROFILE_DTS_ES      30
 #define FF_PROFILE_DTS_96_24   40

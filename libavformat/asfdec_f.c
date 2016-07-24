@@ -912,7 +912,7 @@ static int asf_read_header(AVFormatContext *s)
                 const char *rfc1766 = asf->stream_languages[asf->streams[i].stream_language_index];
                 if (rfc1766 && strlen(rfc1766) > 1) {
                     const char primary_tag[3] = { rfc1766[0], rfc1766[1], '\0' }; // ignore country code if any
-                    const char *iso6392       = av_convert_lang_to(primary_tag,
+                    const char *iso6392       = ff_convert_lang_to(primary_tag,
                                                                    AV_LANG_ISO639_2_BIBL);
                     if (iso6392)
                         av_dict_set(&st->metadata, "language", iso6392, 0);

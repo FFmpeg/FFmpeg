@@ -116,7 +116,7 @@ static av_cold int x8_vlc_init(void)
 #undef init_or_vlc
 
     if (offset != sizeof(table) / sizeof(VLC_TYPE) / 2) {
-        av_log(NULL, AV_LOG_ERROR, "table size %zd does not match needed %i\n",
+        av_log(NULL, AV_LOG_ERROR, "table size %"SIZE_SPECIFIER" does not match needed %i\n",
                sizeof(table) / sizeof(VLC_TYPE) / 2, offset);
         return AVERROR_INVALIDDATA;
     }

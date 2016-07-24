@@ -3,6 +3,12 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - libopenmpt demuxer
+- tee protocol
+- Changed metadata print option to accept general urls
+- Alias muxer for Ogg Video (.ogv)
+- VP8 in Ogg muxing
+- curves filter doesn't automatically insert points at x=0 and x=1 anymore
+- 16-bit support in curves filter
 
 
 version 3.1:
@@ -50,7 +56,6 @@ version 3.1:
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
 - VideoToolbox H.264 encoder
-- Changed metadata print option to accept general urls
 
 
 version 3.0:

@@ -1401,7 +1401,7 @@ is 0. This is only used when @option{slice_mode} is set to
 @samp{fixed}.
 
 @item slice_mode
-Set slice mode. Can assume one of the follwing possible values:
+Set slice mode. Can assume one of the following possible values:
 
 @table @samp
 @item fixed

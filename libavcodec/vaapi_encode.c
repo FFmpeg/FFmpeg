@@ -334,7 +334,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         if (ctx->codec->init_slice_params) {
             err = ctx->codec->init_slice_params(avctx, pic, slice);
             if (err < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to initalise slice "
+                av_log(avctx, AV_LOG_ERROR, "Failed to initialise slice "
                        "parameters: %d.\n", err);
                 goto fail;
             }

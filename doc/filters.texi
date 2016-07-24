@@ -3243,7 +3243,7 @@ silenceremove=1:5:0.02
 @end example
 
 @item
-Trim all silence encountered from begining to end where there is more than 1
+Trim all silence encountered from beginning to end where there is more than 1
 second of silence in audio:
 @example
 silenceremove=0:0:0:-1:1:-90dB
@@ -4713,7 +4713,7 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 
 Display CIE color diagram with pixels overlaid onto it.
 
-The filter acccepts the following options:
+The filter accepts the following options:
 
 @table @option
 @item system
@@ -4743,7 +4743,7 @@ Set CIE system.
 @item gamuts
 Set what gamuts to draw.
 
-See @code{system} option for avaiable values.
+See @code{system} option for available values.
 
 @item size, s
 Set ciescope size, by default set to 512.
@@ -5710,10 +5710,6 @@ strictly increasing over the x-axis, and their @var{x} and @var{y} values must
 be in the @var{[0;1]} interval.  If the computed curves happened to go outside
 the vector spaces, the values will be clipped accordingly.
 
-If there is no key point defined in @code{x=0}, the filter will automatically
-insert a @var{(0;0)} point. In the same way, if there is no key point defined
-in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
-
 The filter accepts the following options:
 
 @table @option
@@ -5754,6 +5750,8 @@ options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
 @item psfile
 Specify a Photoshop curves file (@code{.acv}) to import the settings from.
+@item plot
+Save Gnuplot script of the curves in specified file.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -5765,13 +5763,13 @@ defined using the following syntax: @code{x0/y0 x1/y1 x2/y2 ...}.
 @item
 Increase slightly the middle level of blue:
 @example
-curves=blue='0.5/0.58'
+curves=blue='0/0 0.5/0.58 1/1'
 @end example
 
 @item
 Vintage effect:
 @example
-curves=r='0/0.11 .42/.51 1/0.95':g='0.50/0.48':b='0/0.22 .49/.44 1/0.8'
+curves=r='0/0.11 .42/.51 1/0.95':g='0/0 0.50/0.48 1/1':b='0/0.22 .49/.44 1/0.8'
 @end example
 Here we obtain the following coordinates for each components:
 @table @var
@@ -5798,7 +5796,15 @@ curves=vintage
 @item
 Use a Photoshop preset and redefine the points of the green component:
 @example
-curves=psfile='MyCurvesPresets/purple.acv':green='0.45/0.53'
+curves=psfile='MyCurvesPresets/purple.acv':green='0/0 0.45/0.53 1/1'
+@end example
+
+@item
+Check out the curves of the @code{cross_process} profile using @command{ffmpeg}
+and @command{gnuplot}:
+@example
+ffmpeg -f lavfi -i color -vf curves=cross_process:plot=/tmp/curves.plt -frames:v 1 -f null -
+gnuplot -p /tmp/curves.plt
 @end example
 @end itemize
 

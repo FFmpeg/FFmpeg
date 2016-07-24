@@ -3019,6 +3019,7 @@ static int transcode_init(void)
                 enc_ctx->width              = dec_ctx->width;
                 enc_ctx->height             = dec_ctx->height;
                 enc_ctx->has_b_frames       = dec_ctx->has_b_frames;
+                enc_ctx->profile            = dec_ctx->profile;
                 if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
                     sar =
                         av_mul_q(ost->frame_aspect_ratio,
@@ -3499,12 +3500,12 @@ static int check_keyboard_interaction(int64_t cur_time)
                                                           key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
                         fprintf(stderr, "Command reply for stream %d: ret:%d res:\n%s", i, ret, buf);
                     } else if (key == 'c') {
-                        fprintf(stderr, "Queing commands only on filters supporting the specific command is unsupported\n");
+                        fprintf(stderr, "Queuing commands only on filters supporting the specific command is unsupported\n");
                         ret = AVERROR_PATCHWELCOME;
                     } else {
                         ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
                         if (ret < 0)
-                            fprintf(stderr, "Queing command failed with error %s\n", av_err2str(ret));
+                            fprintf(stderr, "Queuing command failed with error %s\n", av_err2str(ret));
                     }
                 }
             }

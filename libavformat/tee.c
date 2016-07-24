@@ -543,9 +543,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
             }
         tb  = avf ->streams[s ]->time_base;
         tb2 = avf2->streams[s2]->time_base;
-        pkt2.pts      = av_rescale_q(pkt->pts,      tb, tb2);
-        pkt2.dts      = av_rescale_q(pkt->dts,      tb, tb2);
-        pkt2.duration = av_rescale_q(pkt->duration, tb, tb2);
+        av_packet_rescale_ts(&pkt2, tb, tb2);
         pkt2.stream_index = s2;
 
         if ((ret = av_apply_bitstream_filters(avf2->streams[s2]->codec, &pkt2,

@@ -53,6 +53,7 @@ extern const URLProtocol ff_rtp_protocol;
 extern const URLProtocol ff_sctp_protocol;
 extern const URLProtocol ff_srtp_protocol;
 extern const URLProtocol ff_subfile_protocol;
+extern const URLProtocol ff_tee_protocol;
 extern const URLProtocol ff_tcp_protocol;
 extern const URLProtocol ff_tls_gnutls_protocol;
 extern const URLProtocol ff_tls_schannel_protocol;

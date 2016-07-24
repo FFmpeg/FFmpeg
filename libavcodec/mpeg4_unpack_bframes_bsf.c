@@ -120,7 +120,17 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
 
     if (nb_vop == 1 && s->b_frame_buf) {
         /* use frame from BSFContext */
-        av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
+        ret = av_packet_copy_props(out, in);
+        if (ret < 0) {
+            av_packet_free(&in);
+            return ret;
+        }
+
+        ret = av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
+        if (ret < 0) {
+            av_packet_free(&in);
+            return ret;
+        }
         if (in->size <= MAX_NVOP_SIZE) {
             /* N-VOP */
             av_log(ctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");

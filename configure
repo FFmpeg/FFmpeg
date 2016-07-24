@@ -2213,6 +2213,8 @@ setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
+loongson2_deps="mips"
+loongson3_deps="mips"
 mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
@@ -2858,6 +2860,7 @@ nut_muxer_select="riffenc"
 nuv_demuxer_select="riffdec"
 oga_muxer_select="ogg_muxer"
 ogg_demuxer_select="dirac_parse"
+ogv_muxer_select="ogg_muxer"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
@@ -3799,11 +3802,11 @@ suncc_flags(){
                     westmere)                  echo -xtarget=westmere    ;;
                     silvermont)                echo -xarch=sse4_2        ;;
                     corei7-avx|sandybridge)    echo -xtarget=sandybridge ;;
-                    core-avx*|ivybridge|haswell|broadwell)
+                    core-avx*|ivybridge|haswell|broadwell|skylake*|knl)
                                                echo -xarch=avx           ;;
                     amdfam10|barcelona)        echo -xtarget=barcelona   ;;
                     btver1)                    echo -xarch=amdsse4a      ;;
-                    btver2|bdver*)             echo -xarch=avx           ;;
+                    btver2|bdver*|znver*)      echo -xarch=avx           ;;
                     athlon-4|athlon-[mx]p)     echo -xarch=ssea          ;;
                     k8|opteron|athlon64|athlon-fx)
                                                echo -xarch=sse2a         ;;
@@ -4499,7 +4502,8 @@ elif enabled x86; then
         ;;
         # targets that do support nopl and conditional mov (cmov)
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx\
-        |core*|atom|bonnell|nehalem|westmere|silvermont|sandybridge|ivybridge|haswell|broadwell|amdfam10|barcelona|b[dt]ver*)
+        |core*|atom|bonnell|nehalem|westmere|silvermont|sandybridge|ivybridge|haswell|broadwell|skylake*|knl\
+        |amdfam10|barcelona|b[dt]ver*|znver*)
             cpuflags="-march=$cpu"
             enable i686
             enable fast_cmov

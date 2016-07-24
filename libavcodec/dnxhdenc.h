@@ -45,6 +45,7 @@ typedef struct DNXHDEncContext {
     MpegEncContext m; ///< Used for quantization dsp functions
 
     int cid;
+    int profile;
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
@@ -57,6 +58,10 @@ typedef struct DNXHDEncContext {
     unsigned dct_y_offset;
     unsigned dct_uv_offset;
     unsigned block_width_l2;
+
+    int frame_size;
+    int coding_unit_size;
+    int data_offset;
 
     int interlaced;
     int cur_field;
@@ -89,7 +94,7 @@ typedef struct DNXHDEncContext {
     uint8_t  *mb_qscale;
 
     RCCMPEntry *mb_cmp;
-    RCEntry   (*mb_rc)[8160];
+    RCEntry    *mb_rc;
 
     void (*get_pixels_8x4_sym)(int16_t * /* align 16 */,
                                const uint8_t *, ptrdiff_t);

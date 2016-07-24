@@ -339,8 +339,8 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
 static inline int av_size_mult(size_t a, size_t b, size_t *r)
 {
     size_t t = a * b;
-    /* Hack inspired from glibc: only try the division if nelem and elsize
-     * are both greater than sqrt(SIZE_MAX). */
+    /* Hack inspired from glibc: don't try the division if nelem and elsize
+     * are both less than sqrt(SIZE_MAX). */
     if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
         return AVERROR(EINVAL);
     *r = t;
