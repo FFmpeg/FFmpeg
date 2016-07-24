@@ -851,6 +851,18 @@ typedef struct {
     AVFilterContext *fctx; /* filter context for logging errors */
 } hdcd_state_t;
 
+typedef enum {
+    HDCD_PE_NEVER        =0,
+    HDCD_PE_INTERMITTENT =1,
+    HDCD_PE_PERMANENT    =2
+} hdcd_pe_t;
+
+const char* pe_str[] = {
+    "never enabled",
+    "enabled intermittently",
+    "enabled permanently"
+    };
+
 typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[2];
@@ -858,7 +870,7 @@ typedef struct HDCDContext {
     /* User information/stats */
     int hdcd_detected;
     int det_errors;            /* detectable errors */
-    int uses_peak_extend;
+    hdcd_pe_t peak_extend;
     int uses_transient_filter; /* detected, but not implemented */
     float max_gain_adjustment; /* in dB, expected in the range -6.0 to 0.0 */
 } HDCDContext;
@@ -1115,7 +1127,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int16_t *in_data;
     int32_t *out_data;
     int n, c;
-    int detect;
+    int detect, packets, pe_packets;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
@@ -1132,18 +1144,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     detect = 0;
+    packets = 0;
+    pe_packets = 0;
     s->det_errors = 0;
     for (c = 0; c < inlink->channels; c++) {
         hdcd_state_t *state = &s->state[c];
         hdcd_process(state, out_data + c, in->nb_samples, out->channels);
         if (state->sustain) detect++;
-        s->uses_peak_extend |= !!state->count_peak_extend;
+        packets += state->code_counterA + state->code_counterB;
+        pe_packets += state->count_peak_extend;
         s->uses_transient_filter |= !!state->count_transient_filter;
         s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
         s->det_errors += state->code_counterA_almost
             + state->code_counterB_checkfails
             + state->code_counterC_unmatched;
     }
+    if (pe_packets) {
+        /* if every valid packet has used PE, call it permanent */
+        if (packets == pe_packets)
+            s->peak_extend = HDCD_PE_PERMANENT;
+        else
+            s->peak_extend = HDCD_PE_INTERMITTENT;
+    } else s->peak_extend = HDCD_PE_NEVER;
     /* HDCD is detected if a valid packet is active in all (both)
      * channels at the same time. */
     if (detect == inlink->channels) s->hdcd_detected = 1;
@@ -1224,7 +1246,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (s->hdcd_detected)
         av_log(ctx, AV_LOG_INFO,
             "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s, detectable errors: %d%s\n",
-            (s->uses_peak_extend) ? "enabled" : "never enabled",
+            pe_str[s->peak_extend],
             s->max_gain_adjustment,
             (s->uses_transient_filter) ? "detected" : "not detected",
             s->det_errors, (s->det_errors) ? " (try -v verbose)" : ""
