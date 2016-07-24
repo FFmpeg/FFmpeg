@@ -53,29 +53,16 @@ These repositories can be manually downloaded or automatically cloned using the 
   any dependency updates at any point after the first clone of the library.
 
 Many of the possible FFmpeg dependencies (and there dependencies) are available in the ShiftMediaProject repositories.
-However the following is a list of possible extra dependency options that require external downloads:
+However the following is a list of extra dependency options that require external downloads:
     1) opengl (requires glext)
 		a) Download glext.h and wglext.h from opengl.org.
 		b) Save the header files into OutputDir/include/gl/*.
-    2) opencl (requires latest Intel/AMD OpenCL or NVIDIA CUDA SDK)
-		a) Download either the "Intel OpenCL SDK", "AMD OpenCL SDK" or the "NVIDIA CUDA SDK" from their respective suppliers.
-		b) Install the downloaded SDK wherever desired.
-    3) cuda/libnpp (requires NVIDIA CUDA SDK)
-		a) Download the "NVIDIA CUDA SDK" from the NVIDIA website.
-		b) Install the downloaded SDK wherever desired.
-    4) nvenc (requires NVIDIA Video Codec SDK, recommended to also enable cuda)
+    2) nvenc (requires NVIDIA Video Codec SDK, recommended to also enable cuda)
         a) Enable cuda as above.
 		b) Download the "NVIDIA Video Codec SDK" from the NVIDIA website.
-		c) Copy 'nvEncodeAPI.h' from the "NVIDIA Video Codec SDK" into the installed %CUDA%\include folder 
-			(where %CUDA% is the location that the CUDA SDK was installed).
-    4) decklink (requires Blackmagic DeckLink SDK)
-		a) Download the "Blackmagic DeckLink SDK" from the Blackmagic website.
-		b) Extract the downloaded SDK wherever desired.
-        c) Create a batch file in the extracted "Win/include" folder containing the following (Note: you may have to change 
-            the first line depending on the installed Visual Studio version and location):
-call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat"
-midl /win32 /h DeckLinkAPI.h DeckLinkAPI.idl
-        d) Copy the newly created "DeckLinkAPI.h" and "DeckLinkAPI_i.c" files to OutputDir/include/*.
+		c) Copy 'nvEncodeAPI.h' from the "NVIDIA Video Codec SDK" into the installed %CUDA%/include folder 
+			(where %CUDA% is the location that the CUDA SDK was installed) or into OutputDir/include if CUDA
+            is not available.
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
 The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expected 
@@ -86,13 +73,11 @@ directory structure is:
         - ..Any other libraries source code..
 	
 Any dependencies supplied by ShiftMediaProject should be downloaded next to the FFmpeg folder as they will use the same OutputDir
-location. Projects to build each dependency can be found in the respective repository ./SMP directories.
-
-The exact options used to build the default supplied projects can be found in 'project_generate_msvc.bat'.
-To change these options and generate new projects see the readme contained with the project_generate project files.
+location. Projects to build each dependency can be found in the respective repository ./SMP directories or all together using
+the all inclusive ffmpeg_deps.sln.
 
 Only dependencies built from supplied ShiftMediaProject repositories are tested and supported. Using compiled dependencies from
-other sources may result in version or other issues. Although these external sources generally work fine any problems associated
+other sources may result in version mismatch or other issues. Although these external sources generally work fine any problems associated
 with them are not covered by ShiftMediaProject and so they should be used with discretion.
 	
 	
