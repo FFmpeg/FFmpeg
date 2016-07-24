@@ -498,6 +498,7 @@
     <ClCompile Include="..\libavformat\rtpproto.c" />
     <ClCompile Include="..\libavformat\srtpproto.c" />
     <ClCompile Include="..\libavformat\subfile.c" />
+    <ClCompile Include="..\libavformat\teeproto.c" />
     <ClCompile Include="..\libavformat\tcp.c" />
     <ClCompile Include="..\libavformat\tls_gnutls.c" />
     <ClCompile Include="..\libavformat\tls.c" />

@@ -1315,6 +1315,9 @@
     <ClCompile Include="..\libavformat\subfile.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\teeproto.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\tcp.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

@@ -28,6 +28,7 @@ static const URLProtocol *url_protocols[] = {
     &ff_rtp_protocol,
     &ff_srtp_protocol,
     &ff_subfile_protocol,
+    &ff_tee_protocol,
     &ff_tcp_protocol,
     &ff_tls_gnutls_protocol,
     &ff_udp_protocol,
