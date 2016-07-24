@@ -460,7 +460,7 @@ static int dump_curves(const char *fname, uint16_t *graph[NB_COMP + 1],
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx)
+static av_cold int curves_init(AVFilterContext *ctx)
 {
     int i, ret;
     CurvesContext *curves = ctx->priv;
@@ -655,7 +655,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
+static av_cold void curves_uninit(AVFilterContext *ctx)
 {
     int i;
     CurvesContext *curves = ctx->priv;
@@ -686,8 +686,8 @@ AVFilter ff_vf_curves = {
     .name          = "curves",
     .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
     .priv_size     = sizeof(CurvesContext),
-    .init          = init,
-    .uninit        = uninit,
+    .init          = curves_init,
+    .uninit        = curves_uninit,
     .query_formats = query_formats,
     .inputs        = curves_inputs,
     .outputs       = curves_outputs,
