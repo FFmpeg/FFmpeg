@@ -338,7 +338,7 @@ static inline int selective_color(AVFilterContext *ctx, ThreadData *td,
                                       | (b == max_color) << RANGE_BLUES
                                       | (b == min_color) << RANGE_YELLOWS
                                       | (r > 128 && g > 128 && b > 128) << RANGE_WHITES
-                                      | (color && (color & 0xffffff) != 0xffffff) << RANGE_NEUTRALS
+                                      | ((r || g || b) && (r != 255 || g != 255 || b != 255)) << RANGE_NEUTRALS
                                       | (r < 128 && g < 128 && b < 128) << RANGE_BLACKS;
 
             const float rnorm = r / 255.;
