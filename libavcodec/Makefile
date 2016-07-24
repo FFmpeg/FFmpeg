@@ -32,6 +32,7 @@ OBJS = allcodecs.o                                                      \
        codec_desc.o                                                     \
        d3d11va.o                                                        \
        dirac.o                                                          \
+       dnxhddata.o                                                      \
        dv_profile.o                                                     \
        imgconvert.o                                                     \
        jni.o                                                            \
@@ -241,8 +242,8 @@ OBJS-$(CONFIG_DIRAC_DECODER)           += diracdec.o dirac.o diracdsp.o diractab
                                           dirac_arith.o mpeg12data.o dirac_dwt.o \
                                           dirac_vlc.o
 OBJS-$(CONFIG_DFA_DECODER)             += dfa.o
-OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o dnxhddata.o
-OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o
+OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o
+OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o
 OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_ENCODER)             += dpxenc.o
 OBJS-$(CONFIG_DSD_LSBF_DECODER)        += dsddec.o dsd.o
