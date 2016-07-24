@@ -66,6 +66,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"S_DVBSUB"         , AV_CODEC_ID_DVB_SUBTITLE},
     {"S_HDMV/PGS"       , AV_CODEC_ID_HDMV_PGS_SUBTITLE},
 
+    {"V_AV1"            , AV_CODEC_ID_AV1},
     {"V_DIRAC"          , AV_CODEC_ID_DIRAC},
     {"V_MJPEG"          , AV_CODEC_ID_MJPEG},
     {"V_MPEG1"          , AV_CODEC_ID_MPEG1VIDEO},
