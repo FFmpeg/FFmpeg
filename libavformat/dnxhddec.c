@@ -30,7 +30,7 @@ static int dnxhd_probe(AVProbeData *p)
     int w, h, compression_id;
     if (p->buf_size < 0x2c)
         return 0;
-    if (avpriv_dnxhd_parse_header_prefix(p->buf) == 0)
+    if (ff_dnxhd_parse_header_prefix(p->buf) == 0)
         return 0;
     h = AV_RB16(p->buf + 0x18);
     w = AV_RB16(p->buf + 0x1a);
