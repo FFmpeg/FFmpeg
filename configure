@@ -1219,12 +1219,15 @@ EXAMPLE_LIST="
     transcode_aac_example
 "
 
-HWACCEL_LIBRARY_LIST="
+HWACCEL_LIBRARY_NONFREE_LIST="
     cuda
+    libnpp
+"
+HWACCEL_LIBRARY_LIST="
+    $HWACCEL_LIBRARY_NONFREE_LIST
     d3d11va
     dxva2
     libmfx
-    libnpp
     mmal
     nvenc
     omx
@@ -1233,25 +1236,45 @@ HWACCEL_LIBRARY_LIST="
     vdpau
 "
 
+EXTERNAL_LIBRARY_GPL_LIST="
+    libcdio
+    libx264
+    libx265
+    libxavs
+    libxvid
+    x11grab
+"
+
+EXTERNAL_LIBRARY_NONFREE_LIST="
+    libfaac
+    libfdk_aac
+    openssl
+"
+
+EXTERNAL_LIBRARY_VERSION3_LIST="
+    libopencore_amrnb
+    libopencore_amrwb
+    libvo_aacenc
+    libvo_amrwbenc
+"
+
 EXTERNAL_LIBRARY_LIST="
+    $EXTERNAL_LIBRARY_GPL_LIST
+    $EXTERNAL_LIBRARY_NONFREE_LIST
+    $EXTERNAL_LIBRARY_VERSION3_LIST
     avisynth
     bzlib
     frei0r
     gnutls
     libbs2b
-    libcdio
     libdc1394
     libdcadec
-    libfaac
-    libfdk_aac
     libfontconfig
     libfreetype
     libgsm
     libilbc
     libkvazaar
     libmp3lame
-    libopencore_amrnb
-    libopencore_amrwb
     libopencv
     libopenh264
     libopenjpeg
@@ -1263,21 +1286,13 @@ EXTERNAL_LIBRARY_LIST="
     libspeex
     libtheora
     libtwolame
-    libvo_aacenc
-    libvo_amrwbenc
     libvorbis
     libvpx
     libwavpack
     libwebp
-    libx264
-    libx265
-    libxavs
     libxcb
     libxcb_shm
     libxcb_xfixes
-    libxvid
-    openssl
-    x11grab
     zlib
 "
 
@@ -4087,26 +4102,12 @@ EOF
 fi
 
 die_license_disabled() {
-    enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
+    enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
 }
 
-die_license_disabled gpl libcdio
-die_license_disabled gpl libx264
-die_license_disabled gpl libx265
-die_license_disabled gpl libxavs
-die_license_disabled gpl libxvid
-die_license_disabled gpl x11grab
-
-die_license_disabled nonfree cuda
-die_license_disabled nonfree libfaac
-die_license_disabled nonfree libfdk_aac
-die_license_disabled nonfree libnpp
-die_license_disabled nonfree openssl
-
-die_license_disabled version3 libopencore_amrnb
-die_license_disabled version3 libopencore_amrwb
-die_license_disabled version3 libvo_aacenc
-die_license_disabled version3 libvo_amrwbenc
+map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST
+map "die_license_disabled nonfree"  $EXTERNAL_LIBRARY_NONFREE_LIST $HWACCEL_LIBRARY_NONFREE_LIST
+map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
