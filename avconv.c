@@ -203,13 +203,15 @@ static void avconv_cleanup(int ret)
 
         avcodec_free_context(&ost->enc_ctx);
 
-        while (av_fifo_size(ost->muxing_queue)) {
-            AVPacket pkt;
-            av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
-            av_packet_unref(&pkt);
+        if (ost->muxing_queue) {
+            while (av_fifo_size(ost->muxing_queue)) {
+                AVPacket pkt;
+                av_log(NULL, AV_LOG_INFO, "after av_fifo_size()\n");
+                av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
+                av_packet_unref(&pkt);
+            }
+            av_fifo_free(ost->muxing_queue);
         }
-        av_fifo_free(ost->muxing_queue);
-
         av_freep(&output_streams[i]);
     }
     for (i = 0; i < nb_input_files; i++) {
