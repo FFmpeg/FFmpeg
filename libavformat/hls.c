@@ -98,6 +98,7 @@ struct playlist {
     int index;
     AVFormatContext *ctx;
     AVPacket pkt;
+    int has_noheader_flag;
 
     /* main demuxer streams associated with this playlist
      * indexed by the subdemuxer stream indexes */
@@ -1555,6 +1556,27 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
     return 0;
 }
 
+static void update_noheader_flag(AVFormatContext *s)
+{
+    HLSContext *c = s->priv_data;
+    int flag_needed = 0;
+    int i;
+
+    for (i = 0; i < c->n_playlists; i++) {
+        struct playlist *pls = c->playlists[i];
+
+        if (pls->has_noheader_flag) {
+            flag_needed = 1;
+            break;
+        }
+    }
+
+    if (flag_needed)
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
+    else
+        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
@@ -1725,13 +1747,22 @@ static int hls_read_header(AVFormatContext *s)
             pls->id3_deferred_extra = NULL;
         }
 
-        pls->ctx->ctx_flags &= ~AVFMTCTX_NOHEADER;
-        ret = avformat_find_stream_info(pls->ctx, NULL);
-        if (ret < 0)
-            goto fail;
-
         if (pls->is_id3_timestamped == -1)
             av_log(s, AV_LOG_WARNING, "No expected HTTP requests have been made\n");
+
+        /*
+         * For ID3 timestamped raw audio streams we need to detect the packet
+         * durations to calculate timestamps in fill_timing_for_id3_timestamped_stream(),
+         * but for other streams we can rely on our user calling avformat_find_stream_info()
+         * on us if they want to.
+         */
+        if (pls->is_id3_timestamped) {
+            ret = avformat_find_stream_info(pls->ctx, NULL);
+            if (ret < 0)
+                goto fail;
+        }
+
+        pls->has_noheader_flag = !!(pls->ctx->ctx_flags & AVFMTCTX_NOHEADER);
 
         /* Create new AVStreams for each stream in this playlist */
         ret = update_streams_from_subdemuxer(s, pls);
@@ -1742,6 +1773,8 @@ static int hls_read_header(AVFormatContext *s)
         add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_VIDEO);
         add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_SUBTITLE);
     }
+
+    update_noheader_flag(s);
 
     return 0;
 fail:
@@ -1913,6 +1946,19 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* If we got a packet, return it */
     if (minplaylist >= 0) {
         struct playlist *pls = c->playlists[minplaylist];
+
+        ret = update_streams_from_subdemuxer(s, pls);
+        if (ret < 0) {
+            av_packet_unref(&pls->pkt);
+            reset_packet(&pls->pkt);
+            return ret;
+        }
+
+        /* check if noheader flag has been cleared by the subdemuxer */
+        if (pls->has_noheader_flag && !(pls->ctx->ctx_flags & AVFMTCTX_NOHEADER)) {
+            pls->has_noheader_flag = 0;
+            update_noheader_flag(s);
+        }
 
         if (pls->pkt.stream_index >= pls->n_main_streams) {
             av_log(s, AV_LOG_ERROR, "stream index inconsistency: index %d, %d main streams, %d subdemuxer streams\n",
