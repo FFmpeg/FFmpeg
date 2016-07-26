@@ -280,7 +280,7 @@ static void put_ebml_void(AVIOContext *pb, uint64_t size)
     // size we need to reserve so 2 cases, we use 8 bytes to store the
     // size if possible, 1 byte otherwise
     if (size < 10)
-        put_ebml_num(pb, size - 1, 0);
+        put_ebml_num(pb, size - 2, 0);
     else
         put_ebml_num(pb, size - 9, 8);
     ffio_fill(pb, 0, currentpos + size - avio_tell(pb));
