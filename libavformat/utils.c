@@ -3432,7 +3432,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     break;
             }
             if (st->parser && st->parser->parser->split &&
-                !st->codecpar->extradata)
+                !st->internal->avctx->extradata)
                 break;
             if (st->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
