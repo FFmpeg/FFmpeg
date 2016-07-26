@@ -6438,6 +6438,9 @@ Scroll from right to left.
 
 @item rscroll
 Scroll from left to right.
+
+@item picture
+Draw single picture.
 @end table
 
 Default is @code{frame}.
