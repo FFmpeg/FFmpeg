@@ -172,7 +172,7 @@ int av_bsf_init(AVBSFContext *ctx)
 
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
-    if (!pkt || !pkt->data) {
+    if (!pkt) {
         ctx->internal->eof = 1;
         return 0;
     }
