@@ -1150,6 +1150,12 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
     h->droppable         = (nal->ref_idc == 0);
     h->picture_structure = sl->picture_structure;
 
+    h->poc.frame_num        = sl->frame_num;
+    h->poc.poc_lsb          = sl->poc_lsb;
+    h->poc.delta_poc_bottom = sl->delta_poc_bottom;
+    h->poc.delta_poc[0]     = sl->delta_poc[0];
+    h->poc.delta_poc[1]     = sl->delta_poc[1];
+
     /* Shorten frame num gaps so we don't have to allocate reference
      * frames just to throw them away */
     if (h->poc.frame_num != h->poc.prev_frame_num) {
@@ -1340,7 +1346,7 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     unsigned int slice_type, tmp, i;
     int field_pic_flag, bottom_field_flag;
     int first_slice = sl == h->slice_ctx && !h->current_slice;
-    int frame_num, picture_structure;
+    int picture_structure;
 
     if (first_slice)
         av_assert0(!h->setup_finished);
@@ -1390,17 +1396,14 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     }
     sps = (const SPS*)h->ps.sps_list[pps->sps_id]->data;
 
-    frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
+    sl->frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
     if (!first_slice) {
-        if (h->poc.frame_num != frame_num) {
+        if (h->poc.frame_num != sl->frame_num) {
             av_log(h->avctx, AV_LOG_ERROR, "Frame num change from %d to %d\n",
-                   h->poc.frame_num, frame_num);
+                   h->poc.frame_num, sl->frame_num);
             return AVERROR_INVALIDDATA;
         }
     }
-
-    if (!h->setup_finished)
-        h->poc.frame_num = frame_num;
 
     sl->mb_mbaff       = 0;
 
@@ -1423,10 +1426,10 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
     sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
 
     if (picture_structure == PICT_FRAME) {
-        h->curr_pic_num = h->poc.frame_num;
+        h->curr_pic_num = sl->frame_num;
         h->max_pic_num  = 1 << sps->log2_max_frame_num;
     } else {
-        h->curr_pic_num = 2 * h->poc.frame_num + 1;
+        h->curr_pic_num = 2 * sl->frame_num + 1;
         h->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
     }
 
@@ -1434,30 +1437,17 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
         get_ue_golomb_long(&sl->gb); /* idr_pic_id */
 
     if (sps->poc_type == 0) {
-        int poc_lsb = get_bits(&sl->gb, sps->log2_max_poc_lsb);
+        sl->poc_lsb = get_bits(&sl->gb, sps->log2_max_poc_lsb);
 
-        if (!h->setup_finished)
-            h->poc.poc_lsb = poc_lsb;
-
-        if (pps->pic_order_present == 1 && picture_structure == PICT_FRAME) {
-            int delta_poc_bottom = get_se_golomb(&sl->gb);
-            if (!h->setup_finished)
-                h->poc.delta_poc_bottom = delta_poc_bottom;
-        }
+        if (pps->pic_order_present == 1 && picture_structure == PICT_FRAME)
+            sl->delta_poc_bottom = get_se_golomb(&sl->gb);
     }
 
     if (sps->poc_type == 1 && !sps->delta_pic_order_always_zero_flag) {
-        int delta_poc = get_se_golomb(&sl->gb);
+        sl->delta_poc[0] = get_se_golomb(&sl->gb);
 
-        if (!h->setup_finished)
-            h->poc.delta_poc[0] = delta_poc;
-
-        if (pps->pic_order_present == 1 && picture_structure == PICT_FRAME) {
-            delta_poc = get_se_golomb(&sl->gb);
-
-            if (!h->setup_finished)
-                h->poc.delta_poc[1] = delta_poc;
-        }
+        if (pps->pic_order_present == 1 && picture_structure == PICT_FRAME)
+            sl->delta_poc[1] = get_se_golomb(&sl->gb);
     }
 
     if (pps->redundant_pic_cnt_present)
