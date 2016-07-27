@@ -374,6 +374,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
                 return err;
             }
         }
+
         /* copy block_offset since frame_start may not be called */
         memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
     }
@@ -1380,7 +1381,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
                sl->pps_id);
         return AVERROR_INVALIDDATA;
     }
-
     pps = (const PPS*)h->ps.pps_list[sl->pps_id]->data;
 
     if (!h->ps.sps_list[pps->sps_id]) {
@@ -1388,7 +1388,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
                "non-existing SPS %u referenced\n", pps->sps_id);
         return AVERROR_INVALIDDATA;
     }
-
     sps = (const SPS*)h->ps.sps_list[pps->sps_id]->data;
 
     frame_num = get_bits(&sl->gb, sps->log2_max_frame_num);
@@ -1413,7 +1412,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
             return -1;
         }
         field_pic_flag = get_bits1(&sl->gb);
-
         if (field_pic_flag) {
             bottom_field_flag = get_bits1(&sl->gb);
             picture_structure = PICT_TOP_FIELD + bottom_field_flag;
@@ -1421,7 +1419,6 @@ static int h264_slice_header_parse(H264Context *h, H264SliceContext *sl,
             picture_structure = PICT_FRAME;
         }
     }
-
     sl->picture_structure      = picture_structure;
     sl->mb_field_decoding_flag = picture_structure != PICT_FRAME;
 
