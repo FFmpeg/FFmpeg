@@ -1560,12 +1560,15 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
     if (ret < 0)
         return ret;
 
+    if (sl->first_mb_addr == 0 || !h->current_slice) {
+        if (h->setup_finished) {
+            av_log(h->avctx, AV_LOG_ERROR, "Too many fields\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     if (sl->first_mb_addr == 0) { // FIXME better field boundary detection
         if (h->current_slice) {
-            if (h->setup_finished) {
-                av_log(h->avctx, AV_LOG_ERROR, "Too many fields\n");
-                return AVERROR_INVALIDDATA;
-            }
             if (h->max_contexts > 1) {
                 if (!h->single_decode_warning) {
                     av_log(h->avctx, AV_LOG_WARNING, "Cannot decode multiple access units as slice threads\n");
