@@ -227,7 +227,6 @@ External library support:
   --enable-libxcb-xfixes     X11 mouse rendering [auto]
   --enable-libxvid           MPEG-4 ASP video encoding
   --enable-openssl           crypto
-  --enable-x11grab           X11 grabbing through xlib (legacy, use xcb instead)
   --enable-zlib              compression [autodetect]
 
   The following libraries provide various hardware acceleration features:
@@ -1242,7 +1241,6 @@ EXTERNAL_LIBRARY_GPL_LIST="
     libx265
     libxavs
     libxvid
-    x11grab
 "
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
@@ -2369,7 +2367,6 @@ sndio_outdev_deps="sndio_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11grab_indev_deps="x11grab"
 x11grab_xcb_indev_deps="libxcb"
 
 # protocols
@@ -4752,10 +4749,10 @@ fi
 
 check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
 
-if enabled libxcb || enabled x11grab && ! disabled libxcb; then
+if enabled libxcb; then
     check_pkg_config xcb-shape xcb/shape.h xcb_shape_rectangles || {
         enabled libxcb && die "ERROR: libxcb not found";
-    } && disable x11grab && enable libxcb
+    } && enable libxcb
 
     disabled libxcb_shm ||
         check_pkg_config xcb-shm xcb/shm.h xcb_shm_attach || {
@@ -4769,12 +4766,6 @@ if enabled libxcb || enabled x11grab && ! disabled libxcb; then
 
     add_cflags "$xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
     add_extralibs "$xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
-fi
-
-if enabled x11grab; then
-    enabled xlib || die "ERROR: Xlib not found"
-    require Xext X11/extensions/XShm.h XShmCreateImage -lXext
-    require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
 
 enabled vaapi &&

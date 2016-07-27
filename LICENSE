@@ -13,7 +13,6 @@ configure to activate them. In this case, Libav's license changes to GPL v2+.
 
 Specifically, the GPL parts of Libav are
 
-- the X11 grabber in libavdevice/x11grab.c
 - the texi2pod.pl tool
 - the following filters in libavfilter:
     - vf_blackframe.c

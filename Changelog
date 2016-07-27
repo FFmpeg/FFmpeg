@@ -61,6 +61,7 @@ version <next>:
 - Duck TrueMotion 2.0 Real Time decoder
 - Intel QSV video scaling and deinterlacing filter
 - OpenH264 decoder wrapper
+- Removed the legacy X11 screen grabber, use XCB instead
 
 
 version 11:
