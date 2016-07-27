@@ -2367,7 +2367,7 @@ sndio_outdev_deps="sndio_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11grab_xcb_indev_deps="libxcb"
+xcbgrab_indev_deps="libxcb"
 
 # protocols
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"

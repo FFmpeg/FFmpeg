@@ -684,7 +684,7 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat ff_x11grab_xcb_demuxer = {
+AVInputFormat ff_xcbgrab_demuxer = {
     .name           = "x11grab",
     .long_name      = NULL_IF_CONFIG_SMALL("X11 screen capture, using XCB"),
     .priv_data_size = sizeof(XCBGrabContext),
