@@ -1520,6 +1520,7 @@ static int hls_read_header(AVFormatContext *s)
     void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
     HLSContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
+    int highest_cur_seq_no = 0;
 
     c->ctx                = s;
     c->interrupt_callback = &s->interrupt_callback;
@@ -1594,6 +1595,17 @@ static int hls_read_header(AVFormatContext *s)
             add_renditions_to_variant(c, var, AVMEDIA_TYPE_SUBTITLE, var->subtitles_group);
     }
 
+    /* Select the starting segments */
+    for (i = 0; i < c->n_playlists; i++) {
+        struct playlist *pls = c->playlists[i];
+
+        if (pls->n_segments == 0)
+            continue;
+
+        pls->cur_seq_no = select_cur_seq_no(c, pls);
+        highest_cur_seq_no = FFMAX(highest_cur_seq_no, pls->cur_seq_no);
+    }
+
     /* Open the demuxer for each playlist */
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
@@ -1610,7 +1622,18 @@ static int hls_read_header(AVFormatContext *s)
         pls->index  = i;
         pls->needed = 1;
         pls->parent = s;
-        pls->cur_seq_no = select_cur_seq_no(c, pls);
+
+        /*
+         * If this is a live stream and this playlist looks like it is one segment
+         * behind, try to sync it up so that every substream starts at the same
+         * time position (so e.g. avformat_find_stream_info() will see packets from
+         * all active streams within the first few seconds). This is not very generic,
+         * though, as the sequence numbers are technically independent.
+         */
+        if (!pls->finished && pls->cur_seq_no == highest_cur_seq_no - 1 &&
+            highest_cur_seq_no < pls->start_seq_no + pls->n_segments) {
+            pls->cur_seq_no = highest_cur_seq_no;
+        }
 
         pls->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
         if (!pls->read_buffer){
