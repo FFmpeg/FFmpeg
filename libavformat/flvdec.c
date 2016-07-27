@@ -128,6 +128,7 @@ static void add_keyframes_index(AVFormatContext *s)
 
 static AVStream *create_stream(AVFormatContext *s, int codec_type)
 {
+    FLVContext *flv   = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
@@ -138,6 +139,8 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
 
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
+    flv->last_keyframe_stream_index = s->nb_streams - 1;
+    add_keyframes_index(s);
     return st;
 }
 
@@ -413,7 +416,6 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, int64_t m
         flv->keyframe_count = timeslen;
         times = NULL;
         filepositions = NULL;
-        add_keyframes_index(s);
     } else {
 invalid:
         av_log(s, AV_LOG_WARNING, "Invalid keyframes object, skipping.\n");
@@ -455,12 +457,14 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         }
         break;
     case AMF_DATA_TYPE_OBJECT:
-        if ((vstream || astream) && key &&
+        if (key &&
             ioc->seekable &&
             !strcmp(KEYFRAMES_TAG, key) && depth == 1)
             if (parse_keyframes_index(s, ioc,
                                       max_pos) < 0)
                 av_log(s, AV_LOG_ERROR, "Keyframe index parsing failed\n");
+            else
+                add_keyframes_index(s);
         while (avio_tell(ioc) < max_pos - 2 &&
                amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
