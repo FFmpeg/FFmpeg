@@ -924,22 +924,25 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
 #if HAVE_VAAPI_DRM
-    if (!display && device) {
+    if (!display) {
         // Try to open the device as a DRM path.
-        priv->drm_fd = open(device, O_RDWR);
+        // Default to using the first render node if the user did not
+        // supply a path.
+        const char *path = device ? device : "/dev/dri/renderD128";
+        priv->drm_fd = open(path, O_RDWR);
         if (priv->drm_fd < 0) {
             av_log(ctx, AV_LOG_VERBOSE, "Cannot open DRM device %s.\n",
-                   device);
+                   path);
         } else {
             display = vaGetDisplayDRM(priv->drm_fd);
             if (!display) {
                 av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
-                       "from DRM device %s.\n", device);
+                       "from DRM device %s.\n", path);
                 return AVERROR_UNKNOWN;
             }
 
             av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
-                   "DRM device %s.\n", device);
+                   "DRM device %s.\n", path);
         }
     }
 #endif
