@@ -512,8 +512,10 @@ static int xmv_fetch_video_packet(AVFormatContext *s,
      * WMV2 is little-endian.
      * TODO: This manual swap is of course suboptimal.
      */
-    for (i = 0; i < frame_size; i += 4)
-        AV_WB32(pkt->data + i, avio_rl32(pb));
+    for (i = 0; i < frame_size; i += 4) {
+        uint32_t val = avio_rl32(pb);
+        AV_WB32(pkt->data + i, val);
+    }
 
     pkt->stream_index = video->stream_index;
 
