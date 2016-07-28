@@ -220,3 +220,19 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt)
 
     return 0;
 }
+
+int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt)
+{
+    AVBSFInternal *in = ctx->internal;
+
+    if (in->eof)
+        return AVERROR_EOF;
+
+    if (!ctx->internal->buffer_pkt->data &&
+        !ctx->internal->buffer_pkt->side_data_elems)
+        return AVERROR(EAGAIN);
+
+    av_packet_move_ref(pkt, ctx->internal->buffer_pkt);
+
+    return 0;
+}
