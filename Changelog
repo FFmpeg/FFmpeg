@@ -11,6 +11,7 @@ version <next>:
 - 16-bit support in curves filter
 - 16-bit support in selectivecolor filter
 - OpenH264 decoder wrapper
+- MediaCodec hwaccel
 
 
 version 3.1:
