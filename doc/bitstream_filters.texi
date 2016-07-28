@@ -18,7 +18,7 @@ comma-separated list of filters, whose parameters follow the filter
 name after a '='.
 
 @example
-ffmpeg -i INPUT -c:v copy -bsf:v filter1[=opt1=str1/opt2=str2][,filter2] OUTPUT
+ffmpeg -i INPUT -c:v copy -bsf:v filter1[=opt1=str1:opt2=str2][,filter2] OUTPUT
 @end example
 
 Below is a description of the currently available bitstream filters,
