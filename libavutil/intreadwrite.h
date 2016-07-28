@@ -467,7 +467,11 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
  * memory locations.
  */
 
-#define AV_COPYU(n, d, s) AV_WN##n(d, AV_RN##n(s));
+#define AV_COPYU(n, d, s)                                       \
+    do {                                                        \
+        uint##n##_t val = AV_RN##n(s);                          \
+        AV_WN##n(d, val);                                       \
+    } while (0)
 
 #ifndef AV_COPY16U
 #   define AV_COPY16U(d, s) AV_COPYU(16, d, s)
