@@ -857,7 +857,7 @@ typedef enum {
     HDCD_PE_PERMANENT    =2
 } hdcd_pe_t;
 
-const char* pe_str[] = {
+static const char * const pe_str[] = {
     "never enabled",
     "enabled intermittently",
     "enabled permanently"
