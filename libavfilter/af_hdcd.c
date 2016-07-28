@@ -852,16 +852,16 @@ typedef struct {
 } hdcd_state_t;
 
 typedef enum {
-    HDCD_PE_NEVER        =0,
-    HDCD_PE_INTERMITTENT =1,
-    HDCD_PE_PERMANENT    =2
+    HDCD_PE_NEVER        = 0,
+    HDCD_PE_INTERMITTENT = 1,
+    HDCD_PE_PERMANENT    = 2,
 } hdcd_pe_t;
 
 static const char * const pe_str[] = {
     "never enabled",
     "enabled intermittently",
     "enabled permanently"
-    };
+};
 
 typedef struct HDCDContext {
     const AVClass *class;
@@ -1165,7 +1165,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->peak_extend = HDCD_PE_PERMANENT;
         else
             s->peak_extend = HDCD_PE_INTERMITTENT;
-    } else s->peak_extend = HDCD_PE_NEVER;
+    } else {
+        s->peak_extend = HDCD_PE_NEVER;
+    }
     /* HDCD is detected if a valid packet is active in all (both)
      * channels at the same time. */
     if (detect == inlink->channels) s->hdcd_detected = 1;
