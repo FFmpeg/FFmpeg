@@ -26,7 +26,7 @@
 
 #include "vda.h"
 #include "libavutil/avutil.h"
-#include "h264.h"
+#include "h264dec.h"
 
 struct vda_buffer {
     CVPixelBufferRef cv_buffer;

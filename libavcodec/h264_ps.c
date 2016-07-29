@@ -31,7 +31,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264data.h"
 #include "golomb.h"
 

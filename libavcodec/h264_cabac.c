@@ -37,7 +37,7 @@
 #include "cabac_functions.h"
 #include "internal.h"
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264data.h"
 #include "h264_mvpred.h"
 #include "mpegutils.h"

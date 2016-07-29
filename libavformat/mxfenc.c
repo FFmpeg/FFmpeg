@@ -48,7 +48,7 @@
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "libavcodec/internal.h"
 #include "audiointerleave.h"
 #include "avformat.h"

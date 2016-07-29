@@ -32,7 +32,7 @@
 #include "libavutil/atomic.h"
 
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "internal.h"
 #include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"

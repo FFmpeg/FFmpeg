@@ -19,7 +19,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264_parse.h"
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,

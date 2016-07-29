@@ -22,7 +22,7 @@
 #ifndef AVCODEC_MIPS_H264DSP_MIPS_H
 #define AVCODEC_MIPS_H264DSP_MIPS_H
 
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "constants.h"
 
 void ff_h264_h_lpf_luma_inter_msa(uint8_t *src, int stride,
