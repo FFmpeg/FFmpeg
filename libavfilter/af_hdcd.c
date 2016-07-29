@@ -933,6 +933,45 @@ static void hdcd_update_info(hdcd_state_t *state)
     state->max_gain = FFMAX(state->max_gain, (state->control & 15));
 }
 
+typedef enum {
+    HDCD_CODE_NONE=0,
+    HDCD_CODE_A,
+    HDCD_CODE_A_ALMOST,
+    HDCD_CODE_B,
+    HDCD_CODE_B_CHECKFAIL,
+    HDCD_CODE_EXPECT_A,
+    HDCD_CODE_EXPECT_B,
+} hdcd_code_result_t;
+
+static hdcd_code_result_t hdcd_code(const uint32_t bits, unsigned char *code)
+{
+    if ((bits & 0x0fa00500) == 0x0fa00500) {
+        /* A: 8-bit code  0x7e0fa005[..] */
+        if ((bits & 0xc8) == 0) {
+            /*                   [..pt gggg]
+             * 0x0fa005[..] -> 0b[00.. 0...], gain part doubled */
+            *code = (bits & 255) + (bits & 7);
+            return HDCD_CODE_A;
+        } else
+            return HDCD_CODE_A_ALMOST; /* one of bits 3, 6, or 7 was not 0 */
+    } else if ((bits & 0xa0060000) == 0xa0060000) {
+        /* B: 8-bit code, 8-bit XOR check, 0x7e0fa006[....] */
+        if (((bits ^ (~bits >> 8 & 255)) & 0xffff00ff) == 0xa0060000) {
+            /*          check:   [..pt gggg ~(..pt gggg)]
+             * 0xa006[....] -> 0b[.... ....   .... .... ] */
+            *code = bits >> 8 & 255;
+            return HDCD_CODE_B;
+        } else
+            return HDCD_CODE_B_CHECKFAIL;  /* XOR check failed */
+    }
+    if (bits == 0x7e0fa005)
+        return HDCD_CODE_EXPECT_A;
+    else if (bits == 0x7e0fa006)
+        return HDCD_CODE_EXPECT_B;
+
+    return HDCD_CODE_NONE;
+}
+
 static int hdcd_integrate(HDCDContext *ctx, hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
 {
     uint32_t bits = 0;
@@ -953,44 +992,39 @@ static int hdcd_integrate(HDCDContext *ctx, hdcd_state_t *state, int *flag, cons
     bits = (state->window ^ state->window >> 5 ^ state->window >> 23);
 
     if (state->arg) {
-        if ((bits & 0x0fa00500) == 0x0fa00500) {
-            /* A: 8-bit code */
-            if ((bits & 0xc8) == 0) {
-                /*                   [..pt gggg]
-                 * 0x0fa005[..] -> 0b[00.. 0...], gain part doubled */
-                state->control = (bits & 255) + (bits & 7);
+        switch (hdcd_code(bits, &state->control)) {
+            case HDCD_CODE_A:
                 *flag = 1;
                 state->code_counterA++;
-            } else {
-                /* one of bits 3, 6, or 7 was not 0 */
+                break;
+            case HDCD_CODE_B:
+                *flag = 1;
+                state->code_counterB++;
+                break;
+            case HDCD_CODE_A_ALMOST:
                 state->code_counterA_almost++;
                 av_log(ctx->fctx, AV_LOG_VERBOSE,
                     "hdcd error: Control A almost: 0x%02x near %d\n", bits & 0xff, ctx->sample_count);
-            }
-        } else if ((bits & 0xa0060000) == 0xa0060000) {
-            /* B: 8-bit code, 8-bit XOR check */
-            if (((bits ^ (~bits >> 8 & 255)) & 0xffff00ff) == 0xa0060000) {
-                /*          check:   [..pt gggg ~(..pt gggg)]
-                 * 0xa006[....] -> 0b[.... ....   .... .... ] */
-                state->control = bits >> 8 & 255;
-                *flag = 1;
-                state->code_counterB++;
-            } else {
-                /* XOR check failed */
+                break;
+            case HDCD_CODE_B_CHECKFAIL:
                 state->code_counterB_checkfails++;
                 av_log(ctx->fctx, AV_LOG_VERBOSE,
-                       "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", bits & 0xffff, (bits & 0xff00) >> 8, ~bits & 0xff, ctx->sample_count);
-            }
-        } else {
-            /* told to look for a code, but didn't match one */
-            state->code_counterC_unmatched++;
-            av_log(ctx->fctx, AV_LOG_VERBOSE,
-                   "hdcd error: Unmatched code: 0x%08x near %d\n", bits, ctx->sample_count);
+                    "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", bits & 0xffff, (bits & 0xff00) >> 8, ~bits & 0xff, ctx->sample_count);
+                break;
+            case HDCD_CODE_NONE:
+                state->code_counterC_unmatched++;
+                av_log(ctx->fctx, AV_LOG_VERBOSE,
+                    "hdcd error: Unmatched code: 0x%08x near %d\n", bits, ctx->sample_count);
+            default:
+                av_log(ctx->fctx, AV_LOG_INFO,
+                    "hdcd error: Unexpected return value from hdcd_code()\n");
+                av_assert0(0); /* die */
         }
         if (*flag) hdcd_update_info(state);
         state->arg = 0;
     }
     if (bits == 0x7e0fa005 || bits == 0x7e0fa006) {
+        /* 0x7e0fa00[.]-> [0b0101 or 0b0110] */
         state->readahead = (bits & 3) * 8;
         state->arg = 1;
         state->code_counterC++;
