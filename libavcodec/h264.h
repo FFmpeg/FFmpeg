@@ -127,7 +127,6 @@ enum {
     NAL_FILLER_DATA     = 12,
     NAL_SPS_EXT         = 13,
     NAL_AUXILIARY_SLICE = 19,
-    NAL_FF_IGNORE       = 0xff0f001,
 };
 
 /**
