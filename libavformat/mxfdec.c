@@ -2479,8 +2479,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret64 = avio_seek(s->pb, pos, SEEK_SET)) < 0)
         return ret64;
 
-        if ((ret = av_get_packet(s->pb, pkt, size)) != size)
-            return ret < 0 ? ret : AVERROR_EOF;
+    if ((ret = av_get_packet(s->pb, pkt, size)) != size)
+        return ret < 0 ? ret : AVERROR_EOF;
 
     pkt->stream_index = 0;
 
