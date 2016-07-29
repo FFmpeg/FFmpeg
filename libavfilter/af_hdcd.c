@@ -885,6 +885,11 @@ typedef struct HDCDContext {
      * default is off */
     int force_pe;
 
+    /* config_input() and config_output() scan links for any resampling
+     * or format changes. If found, warnings are issued and bad_config
+     * is set. */
+    int bad_config;
+
     AVFilterContext *fctx; /* filter context for logging errors */
     int sample_count;      /* used in error logging */
     int val_target_gain;   /* last matching target_gain in both channels */
@@ -1519,25 +1524,29 @@ static av_cold void uninit(AVFilterContext *ctx)
     /* log the HDCD decode information */
     if (s->hdcd_detected)
         av_log(ctx, AV_LOG_INFO,
-            "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s, detectable errors: %d%s\n",
+            "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s, detectable errors: %d%s%s\n",
             pe_str[s->peak_extend],
             s->max_gain_adjustment,
             (s->uses_transient_filter) ? "detected" : "not detected",
-            s->det_errors, (s->det_errors) ? " (try -v verbose)" : ""
+            s->det_errors, (s->det_errors) ? " (try -v verbose)" : "",
+            (s->bad_config) ? " (bad_config)" : ""
             );
     else
-        av_log(ctx, AV_LOG_INFO, "HDCD detected: no\n");
+        av_log(ctx, AV_LOG_INFO, "HDCD detected: no%s\n",
+            (s->bad_config) ? " (bad_config)" : ""
+            );
 }
+
 
 static av_cold int init(AVFilterContext *ctx)
 {
-
     HDCDContext *s = ctx->priv;
     int c;
 
     s->max_gain_adjustment = 0.0;
     s->sample_count = 0;
     s->fctx = ctx;
+    s->bad_config = 0;
 
     for (c = 0; c < HDCD_MAX_CHANNELS; c++) {
         hdcd_reset(&s->state[c], 44100);
@@ -1551,19 +1560,64 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int config_input(AVFilterLink *inlink) {
+    AVFilterContext *ctx = inlink->dst;
+    HDCDContext *s = ctx->priv;
+    AVFilterLink *lk = inlink;
+    while(lk != NULL) {
+        AVFilterContext *nextf = lk->src;
+        if (lk->format != AV_SAMPLE_FMT_S16 || lk->sample_rate != 44100) {
+            av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
+                av_get_sample_fmt_name(lk->format), lk->sample_rate,
+                (nextf->name) ? nextf->name : "<unknown>"
+                );
+            s->bad_config = 1;
+            break;
+        }
+        lk = (nextf->inputs) ? nextf->inputs[0] : NULL;
+    }
+    /* more warning will appear after config_output() */
+    return 0;
+}
+
 static const AVFilterPad avfilter_af_hdcd_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
+
+static int config_output(AVFilterLink *outlink) {
+    static const char hdcd_baduse[] =
+        "The HDCD filter is unlikely to produce a desirable result in this context.";
+    AVFilterContext *ctx = outlink->src;
+    HDCDContext *s = ctx->priv;
+    AVFilterLink *lk = outlink;
+    while(lk != NULL) {
+        AVFilterContext *nextf = lk->dst;
+        if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
+            av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s. (Try -f s24le after the filter)\n",
+                av_get_sample_fmt_name(lk->format),
+                (nextf->name) ? nextf->name : "<unknown>"
+                );
+            s->bad_config = 1;
+            break;
+        }
+        lk = (nextf->outputs) ? nextf->outputs[0] : NULL;
+    }
+    if (s->bad_config)
+        av_log(ctx, AV_LOG_WARNING, "%s\n", hdcd_baduse);
+    return 0;
+}
 
 static const AVFilterPad avfilter_af_hdcd_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
     },
     { NULL }
 };
