@@ -846,7 +846,9 @@ typedef struct {
      * steps of 0.5, but no value below -6.0 dB should appear. */
     int gain_counts[16]; /* for cursiosity, mostly */
     int max_gain;
-    int count_sustain_expired;    /* occurences of code detect timer expiring without detecting a code */
+    /* occurences of code detect timer expiring without detecting
+     * a code. -1 for timer never set. */
+    int count_sustain_expired;
 
     AVFilterContext *fctx; /* filter context for logging errors */
 } hdcd_state_t;
@@ -909,7 +911,7 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     for(i = 0; i < 16; i++) state->gain_counts[i] = 0;
     state->max_gain = 0;
 
-    state->count_sustain_expired = 0;
+    state->count_sustain_expired = -1;
 }
 
 /* update the user info/counters */
@@ -991,6 +993,15 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
     return result;
 }
 
+static void hdcd_sustain_reset(hdcd_state_t *state)
+{
+    state->sustain = state->sustain_reset;
+    /* if this is the first reset then change
+     * from never set, to never expired */
+    if (state->count_sustain_expired == -1)
+        state->count_sustain_expired = 0;
+}
+
 static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int stride)
 {
     int cdt_active = 0;
@@ -1011,7 +1022,7 @@ static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int s
         result += consumed;
         if (flag > 0) {
             /* reset timer if code detected in channel */
-            state->sustain = state->sustain_reset;
+            hdcd_sustain_reset(state);
             break;
         }
         samples += consumed * stride;
