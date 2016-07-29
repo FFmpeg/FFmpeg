@@ -849,8 +849,6 @@ typedef struct {
     /* occurences of code detect timer expiring without detecting
      * a code. -1 for timer never set. */
     int count_sustain_expired;
-
-    AVFilterContext *fctx; /* filter context for logging errors */
 } hdcd_state_t;
 
 typedef enum {
@@ -868,6 +866,9 @@ static const char * const pe_str[] = {
 typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[2];
+
+    AVFilterContext *fctx; /* filter context for logging errors */
+    int sample_count;      /* used in error logging */
 
     /* User information/stats */
     int hdcd_detected;
@@ -923,7 +924,7 @@ static void hdcd_update_info(hdcd_state_t *state)
     state->max_gain = FFMAX(state->max_gain, (state->control & 15));
 }
 
-static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
+static int hdcd_integrate(HDCDContext *ctx, hdcd_state_t *state, int *flag, const int32_t *samples, int count, int stride)
 {
     uint32_t bits = 0;
     int result = FFMIN(state->readahead, count);
@@ -954,8 +955,8 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
             } else {
                 /* one of bits 3, 6, or 7 was not 0 */
                 state->code_counterA_almost++;
-                av_log(state->fctx, AV_LOG_VERBOSE,
-                    "hdcd error: Control A almost: 0x%08x\n", bits);
+                av_log(ctx->fctx, AV_LOG_VERBOSE,
+                    "hdcd error: Control A almost: 0x%02x near %d\n", bits & 0xff, ctx->sample_count);
             }
         } else if ((bits & 0xa0060000) == 0xa0060000) {
             /* B: 8-bit code, 8-bit XOR check */
@@ -968,14 +969,14 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
             } else {
                 /* XOR check failed */
                 state->code_counterB_checkfails++;
-                av_log(state->fctx, AV_LOG_VERBOSE,
-                    "hdcd error: Control B check failed: 0x%08x\n", bits);
+                av_log(ctx->fctx, AV_LOG_VERBOSE,
+                       "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", bits & 0xffff, (bits & 0xff00) >> 8, ~bits & 0xff, ctx->sample_count);
             }
         } else {
             /* told to look for a code, but didn't match one */
             state->code_counterC_unmatched++;
-            av_log(state->fctx, AV_LOG_VERBOSE,
-                "hdcd error: Unmatched code: 0x%08x\n", bits);
+            av_log(ctx->fctx, AV_LOG_VERBOSE,
+                   "hdcd error: Unmatched code: 0x%08x near %d\n", bits, ctx->sample_count);
         }
         if (*flag) hdcd_update_info(state);
         state->arg = 0;
@@ -1002,7 +1003,7 @@ static void hdcd_sustain_reset(hdcd_state_t *state)
         state->count_sustain_expired = 0;
 }
 
-static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int stride)
+static int hdcd_scan(HDCDContext *ctx, hdcd_state_t *state, const int32_t *samples, int max, int stride)
 {
     int cdt_active = 0;
     /* code detect timer */
@@ -1018,7 +1019,7 @@ static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int s
     result = 0;
     while (result < max) {
         int flag;
-        int consumed = hdcd_integrate(state, &flag, samples, max - result, stride);
+        int consumed = hdcd_integrate(ctx, state, &flag, samples, max - result, stride);
         result += consumed;
         if (flag > 0) {
             /* reset timer if code detected in channel */
@@ -1092,7 +1093,7 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     return gain;
 }
 
-static void hdcd_process(hdcd_state_t *state, int32_t *samples, int count, int stride)
+static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples, int count, int stride)
 {
     int32_t *samples_end = samples + count * stride;
     int gain = state->running_gain;
@@ -1105,7 +1106,7 @@ static void hdcd_process(hdcd_state_t *state, int32_t *samples, int count, int s
         int run;
 
         av_assert0(samples + lead * stride + stride * (count - lead) <= samples_end);
-        run = hdcd_scan(state, samples + lead * stride, count - lead, stride) + lead;
+        run = hdcd_scan(ctx, state, samples + lead * stride, count - lead, stride) + lead;
         envelope_run = run - 1;
 
         av_assert0(samples + envelope_run * stride <= samples_end);
@@ -1160,7 +1161,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->det_errors = 0;
     for (c = 0; c < inlink->channels; c++) {
         hdcd_state_t *state = &s->state[c];
-        hdcd_process(state, out_data + c, in->nb_samples, out->channels);
+        hdcd_process(s, state, out_data + c, in->nb_samples, out->channels);
         if (state->sustain) detect++;
         packets += state->code_counterA + state->code_counterB;
         pe_packets += state->count_peak_extend;
@@ -1182,6 +1183,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     /* HDCD is detected if a valid packet is active in all (both)
      * channels at the same time. */
     if (detect == inlink->channels) s->hdcd_detected = 1;
+
+    s->sample_count += in->nb_samples * in->channels;
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -1275,10 +1278,11 @@ static av_cold int init(AVFilterContext *ctx)
     int c;
 
     s->max_gain_adjustment = 0.0;
+    s->sample_count = 0;
+    s->fctx = ctx;
 
     for (c = 0; c < 2; c++) {
         hdcd_reset(&s->state[c], 44100);
-        s->state[c].fctx = ctx;
     }
 
     return 0;
