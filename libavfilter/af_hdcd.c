@@ -867,6 +867,12 @@ typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[2];
 
+    /* always extend peaks above -3dBFS even if PE isn't signaled
+     * -af hdcd=force_pe=0 for off
+     * -af hdcd=force_pe=1 for on
+     * default is off */
+    int force_pe;
+
     AVFilterContext *fctx; /* filter context for logging errors */
     int sample_count;      /* used in error logging */
 
@@ -878,7 +884,10 @@ typedef struct HDCDContext {
     float max_gain_adjustment; /* in dB, expected in the range -6.0 to 0.0 */
 } HDCDContext;
 
+#define OFFSET(x) offsetof(HDCDContext, x)
 static const AVOption hdcd_options[] = {
+    { "force_pe", "Always extend peaks above -3dBFS even when PE is not signaled.",
+        OFFSET(force_pe), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, 0 },
      {NULL}
 };
 
@@ -1093,14 +1102,21 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     return gain;
 }
 
+/* extract fields from control code */
+static void hdcd_control(HDCDContext *ctx, hdcd_state_t *state, int *peak_extend, int *target_gain)
+{
+    *peak_extend = (ctx->force_pe || state->control & 16);
+    *target_gain = (state->control & 15) << 7;
+}
+
 static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples, int count, int stride)
 {
     int32_t *samples_end = samples + count * stride;
     int gain = state->running_gain;
-    int peak_extend = (state->control & 16);
-    int target_gain = (state->control & 15) << 7;
+    int peak_extend, target_gain;
     int lead = 0;
 
+    hdcd_control(ctx, state, &peak_extend, &target_gain);
     while (count > lead) {
         int envelope_run;
         int run;
@@ -1115,8 +1131,7 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples
         samples += envelope_run * stride;
         count -= envelope_run;
         lead = run - envelope_run;
-        peak_extend = (state->control & 16);
-        target_gain = (state->control & 15) << 7;
+        hdcd_control(ctx, state, &peak_extend, &target_gain);
     }
     if (lead > 0) {
         av_assert0(samples + lead * stride <= samples_end);
@@ -1284,6 +1299,9 @@ static av_cold int init(AVFilterContext *ctx)
     for (c = 0; c < 2; c++) {
         hdcd_reset(&s->state[c], 44100);
     }
+
+    av_log(ctx, AV_LOG_VERBOSE, "Force PE: %s\n",
+        (s->force_pe) ? "on" : "off");
 
     return 0;
 }
