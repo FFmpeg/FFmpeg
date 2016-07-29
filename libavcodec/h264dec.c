@@ -39,6 +39,7 @@
 #include "cabac_functions.h"
 #include "error_resilience.h"
 #include "avcodec.h"
+#include "h264.h"
 #include "h264dec.h"
 #include "h2645_parse.h"
 #include "h264data.h"

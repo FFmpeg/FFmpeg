@@ -41,7 +41,7 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
-#include "h264dec.h"
+#include "h264.h"
 #include "internal.h"
 
 #ifdef OMX_SKIP64BIT
