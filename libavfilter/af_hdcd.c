@@ -23,12 +23,12 @@
    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 /*
   Original code reverse engineered from HDCD decoder library by Christopher Key,
   which was likely reverse engineered from Windows Media Player.
-*/
+ */
 
 /*
   HDCD is High Definition Compatible Digital
