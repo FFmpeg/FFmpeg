@@ -3410,101 +3410,115 @@ static int ipc_loop(void *arg)
     if (fgets(input, sizeof(input), stdin) == NULL) continue;
     switch(input[0]) {
       case 'p':
-	toggle_pause(cur_stream);
-	break;
+        toggle_pause(cur_stream);
+        break;
       case 's':
-	step_to_next_frame(cur_stream);
-	break;
+        step_to_next_frame(cur_stream);
+        break;
       case 'a':
         stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
-	break;
+        break;
       case 'v':
-	stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
-	break;
+        stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+        break;
       case 'c':
-	stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+        stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
         stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
         stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
-	break;
+        break;
       case 'w':
-	#if CONFIG_AVFILTER
+#if CONFIG_AVFILTER
         if (cur_stream->show_mode == SHOW_MODE_VIDEO && cur_stream->vfilter_idx < nb_vfilters - 1) {
-	  if (++cur_stream->vfilter_idx >= nb_vfilters)
-	    cur_stream->vfilter_idx = 0;
-	} else {
+            if (++cur_stream->vfilter_idx >= nb_vfilters)
+            cur_stream->vfilter_idx = 0;
+        } else {
             cur_stream->vfilter_idx = 0;
             toggle_audio_display(cur_stream);
         }
 #else
         toggle_audio_display(cur_stream);
 #endif
-	break;
+        break;
       case 'U':
-	if (cur_stream->ic->nb_chapters <= 1) {
-	  incr = 600.0;
-	  goto do_seek;
-	}
-	seek_chapter(cur_stream, 1);
-	break;
+        if (cur_stream->ic->nb_chapters <= 1) {
+            incr = 600.0;
+            goto do_seek;
+        }
+        seek_chapter(cur_stream, 1);
+        break;
       case 'D':
-	if (cur_stream->ic->nb_chapters <= 1) {
-	  incr = -600.0;
-	  goto do_seek;
-	}
-	seek_chapter(cur_stream, -1);
+        if (cur_stream->ic->nb_chapters <= 1) {
+            incr = -600.0;
+            goto do_seek;
+        }
+        seek_chapter(cur_stream, -1);
       case 'l':
-	incr = -10.0;
-	goto do_seek;
+        incr = -10.0;
+        goto do_seek;
       case 'r':
-	incr = 10.0;
-	goto do_seek;
+        incr = 10.0;
+        goto do_seek;
       case 'u':
-	incr = 60.0;
-	goto do_seek;
+        incr = 60.0;
+        goto do_seek;
       case 'd':
-	incr = -60.0;
-	do_seek:
-	if (seek_by_bytes) {
-	  pos = -1;
-	  if (pos < 0 && cur_stream->video_stream >= 0)
-	    pos = frame_queue_last_pos(&cur_stream->pictq);
-	  if (pos < 0 && cur_stream->audio_stream >= 0)
-	    pos = frame_queue_last_pos(&cur_stream->sampq);
-	  if (pos < 0)
-	    pos = avio_tell(cur_stream->ic->pb);
-	  if (cur_stream->ic->bit_rate)
-	    incr *= cur_stream->ic->bit_rate / 8.0;
-	  else
-	    incr *= 180000.0;
-	  pos += incr;
-	  stream_seek(cur_stream, pos, incr, 1);
-	} else {
-	  pos = get_master_clock(cur_stream);
-	  if (isnan(pos))
-	    pos = (double)cur_stream->seek_pos / AV_TIME_BASE;
-	  pos += incr;
-	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE && pos < cur_stream->ic->start_time / (double)AV_TIME_BASE)
-	    pos = cur_stream->ic->start_time / (double)AV_TIME_BASE;
-	  stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
-	}
-	break;
+        incr = -60.0;
+        do_seek:
+        if (seek_by_bytes) {
+            pos = -1;
+            if (pos < 0 && cur_stream->video_stream >= 0)
+                pos = frame_queue_last_pos(&cur_stream->pictq);
+            if (pos < 0 && cur_stream->audio_stream >= 0)
+                pos = frame_queue_last_pos(&cur_stream->sampq);
+            if (pos < 0)
+                pos = avio_tell(cur_stream->ic->pb);
+            if (cur_stream->ic->bit_rate)
+                incr *= cur_stream->ic->bit_rate / 8.0;
+            else
+                incr *= 180000.0;
+            pos += incr;
+            stream_seek(cur_stream, pos, incr, 1);
+        } else {
+            pos = get_master_clock(cur_stream);
+            if (isnan(pos))
+                pos = (double)cur_stream->seek_pos / AV_TIME_BASE;
+            pos += incr;
+        if (cur_stream->ic->start_time != AV_NOPTS_VALUE && pos < cur_stream->ic->start_time / (double)AV_TIME_BASE)
+            pos = cur_stream->ic->start_time / (double)AV_TIME_BASE;
+        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
+        }
+        break;
       case 'x':
-	// Parse everything after x as decimal
-	if (sscanf(input, "x%lf", &x) != 1) break;
-	if (seek_by_bytes || cur_stream->ic->duration <= 0) {
-	  uint64_t size =  avio_size(cur_stream->ic->pb);
-	  stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
-	} else {
-	  int64_t ts;
-	  frac = x / cur_stream->width;
-	  ts = frac * cur_stream->ic->duration;
-	  if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
-	    ts += cur_stream->ic->start_time;
-	  stream_seek(cur_stream, ts, 0, 0);
-	}
-	break;
+        // Parse everything after x as decimal
+        if (sscanf(input, "x%lf", &x) != 1) break;
+        if (seek_by_bytes || cur_stream->ic->duration <= 0) {
+            uint64_t size =  avio_size(cur_stream->ic->pb);
+            stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
+        } else {
+            int64_t ts;
+            frac = x / cur_stream->width;
+            ts = frac * cur_stream->ic->duration;
+            if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
+                ts += cur_stream->ic->start_time;
+            stream_seek(cur_stream, ts, 0, 0);
+        }
+        break;
+      case 'z':
+        int width;
+        int height;
+        if (sscanf(input, "z%ix%i" &width, &height) != 2) break;
+        screen = SDL_SetVideoMode(FFMIN(16383, width), height, 0,
+                                  SDL_HWSURFACE|SDL_NOFRAME|SDL_ASYNCBLIT|SDL_HWACCEL);
+        if (!screen) {
+            av_log(NULL, AV_LOG_FATAL, "Failed to set video mode\n");
+            do_exit(cur_stream);
+        }
+        screen_width  = cur_stream->width  = screen->w;
+        screen_height = cur_stream->height = screen->h;
+        cur_stream->force_refresh = 1;
+        break;
       default:
-	break;
+        break;
     }
   }
   return 0;
