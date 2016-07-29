@@ -64,7 +64,6 @@ BUILT_HEADERS = avconfig.h
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
-       atomic.o                                                         \
        audio_fifo.o                                                     \
        avstring.o                                                       \
        base64.o                                                         \
@@ -123,13 +122,9 @@ SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_LIBMFX)           += hwcontext_qsv.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
-SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
-SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
-SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
-            atomic                                                      \
             avstring                                                    \
             base64                                                      \
             blowfish                                                    \

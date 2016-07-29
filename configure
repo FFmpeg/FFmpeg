@@ -1651,7 +1651,6 @@ HAVE_LIST="
     $(add_suffix _external $ARCH_EXT_LIST)
     $(add_suffix _inline   $ARCH_EXT_LIST)
     $ARCH_FEATURES
-    $ATOMICS_LIST
     $BUILTIN_LIST
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
@@ -1662,7 +1661,6 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
-    atomics_native
     dos_paths
     dxva2_lib
     libc_msvcrt

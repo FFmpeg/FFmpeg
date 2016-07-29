@@ -8,11 +8,6 @@ fate-aes: libavutil/tests/aes$(EXESUF)
 fate-aes: CMD = run libavutil/tests/aes
 fate-aes: REF = /dev/null
 
-FATE_LIBAVUTIL += fate-atomic
-fate-atomic: libavutil/tests/atomic$(EXESUF)
-fate-atomic: CMD = run libavutil/tests/atomic
-fate-atomic: REF = /dev/null
-
 FATE_LIBAVUTIL += fate-avstring
 fate-avstring: libavutil/tests/avstring$(EXESUF)
 fate-avstring: CMD = run libavutil/tests/avstring
