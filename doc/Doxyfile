@@ -1989,8 +1989,7 @@ PREDEFINED             = __attribute__(x)= \
 # definition found in the source code.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-EXPAND_AS_DEFINED      = declare_idct \
-                         READ_PAR_DATA
+EXPAND_AS_DEFINED      =
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have
