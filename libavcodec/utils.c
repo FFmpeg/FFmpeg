@@ -178,7 +178,9 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
     return 0;
 }
 
-#if HAVE_SIMD_ALIGN_16
+#if HAVE_SIMD_ALIGN_32
+#   define STRIDE_ALIGN 32
+#elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
 #else
 #   define STRIDE_ALIGN 8
