@@ -407,13 +407,6 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
         av_log(s->avctx, AV_LOG_ERROR, "invalid picture type\n");
         return -1;
     }
-#if 0
-{
-    static int had_i=0;
-    if(s->pict_type == AV_PICTURE_TYPE_I) had_i=1;
-    if(!had_i) return -1;
-}
-#endif
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
     if(s->qscale==0){
         av_log(s->avctx, AV_LOG_ERROR, "invalid qscale\n");

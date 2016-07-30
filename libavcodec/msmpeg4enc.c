@@ -314,11 +314,6 @@ void ff_msmpeg4_encode_motion(MpegEncContext * s,
 
     mx += 32;
     my += 32;
-#if 0
-    if ((unsigned)mx >= 64 ||
-        (unsigned)my >= 64)
-        av_log(s->avctx, AV_LOG_ERROR, "error mx=%d my=%d\n", mx, my);
-#endif
     mv = &ff_mv_tables[s->mv_table_index];
 
     code = mv->table_mv_index[(mx << 6) | my];
