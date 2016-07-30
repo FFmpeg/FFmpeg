@@ -372,13 +372,6 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
                     }
                     coeff *= fone >> (30 + 24);
                 }
-#if 0
-                else if (flags & SWS_X) {
-                    double p  = param ? param * 0.01 : 0.3;
-                    coeff     = d ? sin(d * M_PI) / (d * M_PI) : 1.0;
-                    coeff    *= pow(2.0, -p * d * d);
-                }
-#endif
                 else if (flags & SWS_X) {
                     double A = param[0] != SWS_PARAM_DEFAULT ? param[0] : 1.0;
                     double c;
