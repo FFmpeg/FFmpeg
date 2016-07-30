@@ -1355,13 +1355,13 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator
 # instead of the = operator.
 
-PREDEFINED             = "__attribute__(x)=" \
-                         "DECLARE_ALIGNED(a,t,n)=t n" \
-                         "offsetof(x,y)=0x42" \
-                         av_alloc_size \
+PREDEFINED             = __attribute__(x)= \
+                         "DECLARE_ALIGNED(n,t,v)=t v" \
+                         offsetof(x,y)=0x42 \
+                         av_alloc_size(...)= \
                          AV_GCC_VERSION_AT_LEAST(x,y)=1 \
                          AV_GCC_VERSION_AT_MOST(x,y)=0 \
-                         __GNUC__=1 \
+                         __GNUC__ \
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
