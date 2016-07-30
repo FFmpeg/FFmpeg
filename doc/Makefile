@@ -125,7 +125,7 @@ $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
 DOXY_INPUT      = $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c)
-DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT))
+DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT)) config.mak
 
 doc/doxy/html: TAG = DOXY
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT_DEPS)
