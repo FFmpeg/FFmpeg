@@ -12354,6 +12354,9 @@ interleaved columns, left eye first
 
 @item icr
 interleaved columns, right eye first
+
+@item hdmi
+HDMI frame pack
 @end table
 
 Default value is @samp{arcd}.
