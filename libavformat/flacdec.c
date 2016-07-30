@@ -177,9 +177,24 @@ static int flac_read_header(AVFormatContext *s)
 
 static int flac_probe(AVProbeData *p)
 {
-    if (p->buf_size < 4 || memcmp(p->buf, "fLaC", 4))
-        return 0;
-    return AVPROBE_SCORE_EXTENSION;
+    /* file header + metadata header + checked bytes of streaminfo */
+    if (p->buf_size >= 4 + 4 + 13) {
+        int type           = p->buf[4] & 0x7f;
+        int size           = AV_RB24(p->buf + 5);
+        int min_block_size = AV_RB16(p->buf + 8);
+        int max_block_size = AV_RB16(p->buf + 10);
+        int sample_rate    = AV_RB24(p->buf + 18) >> 4;
+
+        if (!memcmp(p->buf, "fLaC", 4)            &&
+            type == FLAC_METADATA_TYPE_STREAMINFO &&
+            size == FLAC_STREAMINFO_SIZE          &&
+            min_block_size >= 16                  &&
+            max_block_size >= min_block_size      &&
+            sample_rate && sample_rate <= 655350)
+            return AVPROBE_SCORE_MAX;
+    }
+
+    return 0;
 }
 
 AVInputFormat ff_flac_demuxer = {
