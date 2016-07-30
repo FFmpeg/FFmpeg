@@ -463,12 +463,6 @@ static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
     assert(i >= 0);
 
-#if 0
-    if (i = 0) {
-        put_bits(pb, 1, 1);
-        return;
-    }
-#endif
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {
@@ -496,19 +490,9 @@ static inline void set_te_golomb(PutBitContext *pb, int i, int range)
  */
 static inline void set_se_golomb(PutBitContext *pb, int i)
 {
-#if 0
-    if (i <= 0)
-        i = -2 * i;
-    else
-        i = 2 * i - 1;
-#elif 1
     i = 2 * i - 1;
     if (i < 0)
         i ^= -1;    //FIXME check if gcc does the right thing
-#else
-    i  = 2 * i - 1;
-    i ^= (i >> 31);
-#endif
     set_ue_golomb(pb, i);
 }
 
