@@ -23,7 +23,8 @@
 
 /**
  * @file
- * external API header
+ * @ingroup lavu
+ * Convenience header that includes @ref lavu "libavutil"'s core.
  */
 
 /**
@@ -81,11 +82,14 @@
  * @defgroup lavu Common utility functions
  *
  * @brief
- * libavutil contains the code shared across all the other FFmpeg
- * libraries
+ * libavutil contains the code shared across all the other FFmpeg libraries.
  *
- * @note In order to use the functions provided by avutil you must include
- * the specific header.
+ * @note
+ * libavutil is designed to be modular. In most cases, in order to use the
+ * functions provided by one component of libavutil you must explicitly include
+ * the specific header containing that feature. If you are only using
+ * media-related components, you could simply include libavutil/avutil.h, which
+ * brings in most of the "core" components.
  *
  * @{
  *
