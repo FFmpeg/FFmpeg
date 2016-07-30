@@ -713,37 +713,6 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     if (pps->slice_group_count > 1) {
         pps->mb_slice_group_map_type = get_ue_golomb(gb);
         av_log(avctx, AV_LOG_ERROR, "FMO not supported\n");
-        switch (pps->mb_slice_group_map_type) {
-        case 0:
-#if 0
-    |       for (i = 0; i <= num_slice_groups_minus1; i++)  |   |      |
-    |           run_length[i]                               |1  |ue(v) |
-#endif
-            break;
-        case 2:
-#if 0
-    |       for (i = 0; i < num_slice_groups_minus1; i++) { |   |      |
-    |           top_left_mb[i]                              |1  |ue(v) |
-    |           bottom_right_mb[i]                          |1  |ue(v) |
-    |       }                                               |   |      |
-#endif
-            break;
-        case 3:
-        case 4:
-        case 5:
-#if 0
-    |       slice_group_change_direction_flag               |1  |u(1)  |
-    |       slice_group_change_rate_minus1                  |1  |ue(v) |
-#endif
-            break;
-        case 6:
-#if 0
-    |       slice_group_id_cnt_minus1                       |1  |ue(v) |
-    |       for (i = 0; i <= slice_group_id_cnt_minus1; i++)|   |      |
-    |           slice_group_id[i]                           |1  |u(v)  |
-#endif
-            break;
-        }
     }
     pps->ref_count[0] = get_ue_golomb(gb) + 1;
     pps->ref_count[1] = get_ue_golomb(gb) + 1;

@@ -754,15 +754,6 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                     mmco[i].short_pic_num =
                         (sl->curr_pic_num - get_ue_golomb(gb) - 1) &
                             (sl->max_pic_num - 1);
-#if 0
-                    if (mmco[i].short_pic_num >= h->short_ref_count ||
-                        !h->short_ref[mmco[i].short_pic_num]) {
-                        av_log(s->avctx, AV_LOG_ERROR,
-                               "illegal short ref in memory management control "
-                               "operation %d\n", mmco);
-                        return -1;
-                    }
-#endif
                 }
                 if (opcode == MMCO_SHORT2LONG || opcode == MMCO_LONG2UNUSED ||
                     opcode == MMCO_LONG || opcode == MMCO_SET_MAX_LONG) {
