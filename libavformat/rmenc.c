@@ -389,7 +389,6 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     /* Well, I spent some time finding the meaning of these bits. I am
        not sure I understood everything, but it works !! */
-#if 1
     if (size > MAX_PACKET_SIZE) {
         avpriv_report_missing_feature(s, "Muxing packets larger than 64 kB");
         return AVERROR(ENOSYS);
@@ -411,13 +410,6 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
         avio_wb16(pb, 0x4000 | size); /* total frame size */
         avio_wb16(pb, 0x4000 | size); /* offset from the start or the end */
     }
-#else
-    /* full frame */
-    write_packet_header(s, size + 6);
-    avio_w8(pb, 0xc0);
-    avio_wb16(pb, 0x4000 + size); /* total frame size */
-    avio_wb16(pb, 0x4000 + packet_number * 126); /* position in stream */
-#endif
     avio_w8(pb, stream->nb_frames & 0xff);
 
     avio_write(pb, buf, size);
