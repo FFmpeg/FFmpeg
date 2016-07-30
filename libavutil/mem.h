@@ -83,6 +83,16 @@
 void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
 
 /**
+ * Allocate a block of size bytes with alignment suitable for all
+ * memory accesses (including vectors if available on the CPU) and
+ * zero all the bytes of the block.
+ * @param size Size in bytes for the memory block to be allocated.
+ * @return Pointer to the allocated block, NULL if it cannot be allocated.
+ * @see av_malloc()
+ */
+void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
+
+/**
  * Allocate a block of size * nmemb bytes with av_malloc().
  * @param nmemb Number of elements
  * @param size Size of the single element
@@ -96,6 +106,34 @@ av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t siz
         return NULL;
     return av_malloc(nmemb * size);
 }
+
+/**
+ * Allocate a block of size * nmemb bytes with av_mallocz().
+ * @param nmemb Number of elements
+ * @param size Size of the single element
+ * @return Pointer to the allocated block, NULL if the block cannot
+ * be allocated.
+ * @see av_mallocz()
+ * @see av_malloc_array()
+ */
+av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
+{
+    if (!size || nmemb >= INT_MAX / size)
+        return NULL;
+    return av_mallocz(nmemb * size);
+}
+
+/**
+ * Allocate a block of nmemb * size bytes with alignment suitable for all
+ * memory accesses (including vectors if available on the CPU) and
+ * zero all the bytes of the block.
+ * The allocation will fail if nmemb * size is greater than or equal
+ * to INT_MAX.
+ * @param nmemb
+ * @param size
+ * @return Pointer to the allocated block, NULL if it cannot be allocated.
+ */
+void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
 
 /**
  * Allocate or reallocate a block of memory.
@@ -119,16 +157,6 @@ void *av_realloc(void *ptr, size_t size) av_alloc_size(2);
 
 /**
  * Allocate or reallocate a block of memory.
- * This function does the same thing as av_realloc, except:
- * - It takes two arguments and checks the result of the multiplication for
- *   integer overflow.
- * - It frees the input block in case of failure, thus avoiding the memory
- *   leak with the classic "buf = realloc(buf); if (!buf) return -1;".
- */
-void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
-
-/**
- * Allocate or reallocate a block of memory.
  * If *ptr is NULL and size > 0, allocate a new block. If
  * size is zero, free the memory block pointed to by ptr.
  * @param   ptr Pointer to a pointer to a memory block already allocated
@@ -146,6 +174,16 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
  */
 av_warn_unused_result
 int av_reallocp(void *ptr, size_t size);
+
+/**
+ * Allocate or reallocate a block of memory.
+ * This function does the same thing as av_realloc, except:
+ * - It takes two arguments and checks the result of the multiplication for
+ *   integer overflow.
+ * - It frees the input block in case of failure, thus avoiding the memory
+ *   leak with the classic "buf = realloc(buf); if (!buf) return -1;".
+ */
+void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
 
 /**
  * Allocate or reallocate an array.
@@ -186,6 +224,42 @@ av_alloc_size(2, 3) void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 av_alloc_size(2, 3) int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
 
 /**
+ * Reallocate the given block if it is not large enough, otherwise do nothing.
+ *
+ * @see av_realloc
+ */
+void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size);
+
+/**
+ * Allocate a buffer, reusing the given one if large enough.
+ *
+ * Contrary to av_fast_realloc the current buffer contents might not be
+ * preserved and on error the old buffer is freed, thus no special
+ * handling to avoid memleaks is necessary.
+ *
+ * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
+ * @param size size of the buffer *ptr points to
+ * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
+ *                 *size 0 if an error occurred.
+ */
+void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
+
+/**
+ * Allocate a buffer, reusing the given one if large enough.
+ *
+ * All newly allocated space is initially cleared
+ * Contrary to av_fast_realloc the current buffer contents might not be
+ * preserved and on error the old buffer is freed, thus no special
+ * handling to avoid memleaks is necessary.
+ *
+ * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
+ * @param size size of the buffer *ptr points to
+ * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
+ *                 *size 0 if an error occurred.
+ */
+void av_fast_mallocz(void *ptr, unsigned int *size, size_t min_size);
+
+/**
  * Free a memory block which has been allocated with av_malloc(z)() or
  * av_realloc().
  * @param ptr Pointer to the memory block which should be freed.
@@ -196,42 +270,14 @@ av_alloc_size(2, 3) int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
 void av_free(void *ptr);
 
 /**
- * Allocate a block of size bytes with alignment suitable for all
- * memory accesses (including vectors if available on the CPU) and
- * zero all the bytes of the block.
- * @param size Size in bytes for the memory block to be allocated.
- * @return Pointer to the allocated block, NULL if it cannot be allocated.
- * @see av_malloc()
+ * Free a memory block which has been allocated with av_malloc(z)() or
+ * av_realloc() and set the pointer pointing to it to NULL.
+ * @param ptr Pointer to the pointer to the memory block which should
+ * be freed.
+ * @note passing a pointer to a NULL pointer is safe and leads to no action.
+ * @see av_free()
  */
-void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
-
-/**
- * Allocate a block of nmemb * size bytes with alignment suitable for all
- * memory accesses (including vectors if available on the CPU) and
- * zero all the bytes of the block.
- * The allocation will fail if nmemb * size is greater than or equal
- * to INT_MAX.
- * @param nmemb
- * @param size
- * @return Pointer to the allocated block, NULL if it cannot be allocated.
- */
-void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
-
-/**
- * Allocate a block of size * nmemb bytes with av_mallocz().
- * @param nmemb Number of elements
- * @param size Size of the single element
- * @return Pointer to the allocated block, NULL if the block cannot
- * be allocated.
- * @see av_mallocz()
- * @see av_malloc_array()
- */
-av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
-{
-    if (!size || nmemb >= INT_MAX / size)
-        return NULL;
-    return av_mallocz(nmemb * size);
-}
+void av_freep(void *ptr);
 
 /**
  * Duplicate the string s.
@@ -260,14 +306,15 @@ char *av_strndup(const char *s, size_t len) av_malloc_attrib;
 void *av_memdup(const void *p, size_t size);
 
 /**
- * Free a memory block which has been allocated with av_malloc(z)() or
- * av_realloc() and set the pointer pointing to it to NULL.
- * @param ptr Pointer to the pointer to the memory block which should
- * be freed.
- * @note passing a pointer to a NULL pointer is safe and leads to no action.
- * @see av_free()
+ * deliberately overlapping memcpy implementation
+ * @param dst destination buffer
+ * @param back how many bytes back we start (the initial size of the overlapping window), must be > 0
+ * @param cnt number of bytes to copy, must be >= 0
+ *
+ * cnt > back is valid, this will copy the bytes we just copied,
+ * thus creating a repeating pattern with a period length of back.
  */
-void av_freep(void *ptr);
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
 
 /**
  * Add an element to a dynamic array.
@@ -351,53 +398,6 @@ static inline int av_size_mult(size_t a, size_t b, size_t *r)
  * Set the maximum size that may me allocated in one block.
  */
 void av_max_alloc(size_t max);
-
-/**
- * deliberately overlapping memcpy implementation
- * @param dst destination buffer
- * @param back how many bytes back we start (the initial size of the overlapping window), must be > 0
- * @param cnt number of bytes to copy, must be >= 0
- *
- * cnt > back is valid, this will copy the bytes we just copied,
- * thus creating a repeating pattern with a period length of back.
- */
-void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
-
-/**
- * Reallocate the given block if it is not large enough, otherwise do nothing.
- *
- * @see av_realloc
- */
-void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size);
-
-/**
- * Allocate a buffer, reusing the given one if large enough.
- *
- * Contrary to av_fast_realloc the current buffer contents might not be
- * preserved and on error the old buffer is freed, thus no special
- * handling to avoid memleaks is necessary.
- *
- * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
- * @param size size of the buffer *ptr points to
- * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
- *                 *size 0 if an error occurred.
- */
-void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
-
-/**
- * Allocate a buffer, reusing the given one if large enough.
- *
- * All newly allocated space is initially cleared
- * Contrary to av_fast_realloc the current buffer contents might not be
- * preserved and on error the old buffer is freed, thus no special
- * handling to avoid memleaks is necessary.
- *
- * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
- * @param size size of the buffer *ptr points to
- * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
- *                 *size 0 if an error occurred.
- */
-void av_fast_mallocz(void *ptr, unsigned int *size, size_t min_size);
 
 /**
  * @}
