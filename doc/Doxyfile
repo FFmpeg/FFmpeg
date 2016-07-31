@@ -177,7 +177,7 @@ SHORT_NAMES            = NO
 # description.)
 # The default value is: NO.
 
-JAVADOC_AUTOBRIEF      = YES
+JAVADOC_AUTOBRIEF      = NO
 
 # If the QT_AUTOBRIEF tag is set to YES then doxygen will interpret the first
 # line (until the first dot) of a Qt-style comment as the brief description. If
@@ -1616,7 +1616,7 @@ COMPACT_LATEX          = NO
 # The default value is: a4.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-PAPER_TYPE             = a4wide
+PAPER_TYPE             = a4
 
 # The EXTRA_PACKAGES tag can be used to specify one or more LaTeX package names
 # that should be included in the LaTeX output. To get the times font for
@@ -1669,7 +1669,7 @@ LATEX_EXTRA_FILES      =
 # The default value is: YES.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-PDF_HYPERLINKS         = NO
+PDF_HYPERLINKS         = YES
 
 # If the USE_PDFLATEX tag is set to YES, doxygen will use pdflatex to generate
 # the PDF file directly from the LaTeX files. Set this option to YES to get a
@@ -1677,7 +1677,7 @@ PDF_HYPERLINKS         = NO
 # The default value is: YES.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-USE_PDFLATEX           = NO
+USE_PDFLATEX           = YES
 
 # If the LATEX_BATCHMODE tag is set to YES, doxygen will add the \batchmode
 # command to the generated LaTeX files. This will instruct LaTeX to keep running
@@ -2114,7 +2114,7 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTNAME           = FreeSans
+DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
 # dot graphs.
@@ -2181,7 +2181,7 @@ UML_LIMIT_NUM_FIELDS   = 10
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-TEMPLATE_RELATIONS     = YES
+TEMPLATE_RELATIONS     = NO
 
 # If the INCLUDE_GRAPH, ENABLE_PREPROCESSING and SEARCH_INCLUDES tags are set to
 # YES then doxygen will generate a graph for each documented file showing the
@@ -2332,7 +2332,7 @@ MAX_DOT_GRAPH_DEPTH    = 0
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_TRANSPARENT        = YES
+DOT_TRANSPARENT        = NO
 
 # Set the DOT_MULTI_TARGETS tag to YES allow dot to generate multiple output
 # files in one run (i.e. multiple -o and -T options on the command line). This
