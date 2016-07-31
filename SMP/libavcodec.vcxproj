@@ -471,7 +471,7 @@
     <ClCompile Include="..\libavcodec\mpeg4videoenc.c" />
     <ClCompile Include="..\libavcodec\ituh263enc.c" />
     <ClCompile Include="..\libavcodec\flvenc.c" />
-    <ClCompile Include="..\libavcodec\h264.c" />
+    <ClCompile Include="..\libavcodec\h264dec.c" />
     <ClCompile Include="..\libavcodec\h264_cabac.c" />
     <ClCompile Include="..\libavcodec\h264_cavlc.c" />
     <ClCompile Include="..\libavcodec\h264_direct.c" />

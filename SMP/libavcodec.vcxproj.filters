@@ -1233,7 +1233,7 @@
     <ClCompile Include="..\libavcodec\flvenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\h264.c">
+    <ClCompile Include="..\libavcodec\h264dec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\h264_cabac.c">
