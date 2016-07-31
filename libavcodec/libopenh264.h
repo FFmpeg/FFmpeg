@@ -1,4 +1,7 @@
 /*
+ * OpenH264 shared utils
+ * Copyright (C) 2014 Martin Storsjo
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,30 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * H.264 common definitions
- */
+#ifndef AVCODEC_LIBOPENH264_H
+#define AVCODEC_LIBOPENH264_H
 
-#ifndef AVCODEC_H264_H
-#define AVCODEC_H264_H
+#define OPENH264_VER_AT_LEAST(maj, min) \
+    ((OPENH264_MAJOR  > (maj)) || \
+     (OPENH264_MAJOR == (maj) && OPENH264_MINOR >= (min)))
 
-/* NAL unit types */
-enum {
-    NAL_SLICE           = 1,
-    NAL_DPA             = 2,
-    NAL_DPB             = 3,
-    NAL_DPC             = 4,
-    NAL_IDR_SLICE       = 5,
-    NAL_SEI             = 6,
-    NAL_SPS             = 7,
-    NAL_PPS             = 8,
-    NAL_AUD             = 9,
-    NAL_END_SEQUENCE    = 10,
-    NAL_END_STREAM      = 11,
-    NAL_FILLER_DATA     = 12,
-    NAL_SPS_EXT         = 13,
-    NAL_AUXILIARY_SLICE = 19,
-};
+// This function will be provided to the libopenh264 library.  The function will be called
+// when libopenh264 wants to log a message (error, warning, info, etc.).  The signature for
+// this function (defined in .../codec/api/svc/codec_api.h) is:
+//
+//        typedef void (*WelsTraceCallback) (void* ctx, int level, const char* string);
 
-#endif /* AVCODEC_H264_H */
+void ff_libopenh264_trace_callback(void *ctx, int level, const char *msg);
+
+int ff_libopenh264_check_version(void *logctx);
+
+#endif /* AVCODEC_LIBOPENH264_H */

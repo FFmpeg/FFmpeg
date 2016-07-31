@@ -61,6 +61,11 @@ typedef struct FLVContext {
 
     int broken_sizes;
     int sum_flv_tag_size;
+
+    int last_keyframe_stream_index;
+    int keyframe_count;
+    int64_t *keyframe_times;
+    int64_t *keyframe_filepositions;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -92,8 +97,38 @@ static int live_flv_probe(AVProbeData *p)
     return probe(p, 1);
 }
 
+static void add_keyframes_index(AVFormatContext *s)
+{
+    FLVContext *flv   = s->priv_data;
+    AVStream *stream  = NULL;
+    unsigned int i    = 0;
+
+    if (flv->last_keyframe_stream_index < 0) {
+        av_log(s, AV_LOG_DEBUG, "keyframe stream hasn't been created\n");
+        return;
+    }
+
+    av_assert0(flv->last_keyframe_stream_index <= s->nb_streams);
+    stream = s->streams[flv->last_keyframe_stream_index];
+
+    if (stream->nb_index_entries == 0) {
+        for (i = 0; i < flv->keyframe_count; i++) {
+            av_add_index_entry(stream, flv->keyframe_filepositions[i],
+                flv->keyframe_times[i] * 1000, 0, 0, AVINDEX_KEYFRAME);
+        }
+    } else
+        av_log(s, AV_LOG_WARNING, "Skipping duplicate index\n");
+
+    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        av_freep(&flv->keyframe_times);
+        av_freep(&flv->keyframe_filepositions);
+        flv->keyframe_count = 0;
+    }
+}
+
 static AVStream *create_stream(AVFormatContext *s, int codec_type)
 {
+    FLVContext *flv   = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
@@ -104,6 +139,8 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
 
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
+    flv->last_keyframe_stream_index = s->nb_streams - 1;
+    add_keyframes_index(s);
     return st;
 }
 
@@ -305,8 +342,7 @@ static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize)
     return length;
 }
 
-static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
-                                 AVStream *vstream, int64_t max_pos)
+static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, int64_t max_pos)
 {
     FLVContext *flv       = s->priv_data;
     unsigned int timeslen = 0, fileposlen = 0, i;
@@ -316,10 +352,12 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
     int ret                = AVERROR(ENOSYS);
     int64_t initial_pos    = avio_tell(ioc);
 
-    if (vstream->nb_index_entries>0) {
-        av_log(s, AV_LOG_WARNING, "Skipping duplicate index\n");
+    if (flv->keyframe_count > 0) {
+        av_log(s, AV_LOG_DEBUG, "keyframes have been paresed\n");
         return 0;
     }
+    av_assert0(!flv->keyframe_times);
+    av_assert0(!flv->keyframe_filepositions);
 
     if (s->flags & AVFMT_FLAG_IGNIDX)
         return 0;
@@ -368,15 +406,16 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc,
     }
 
     if (timeslen == fileposlen && fileposlen>1 && max_pos <= filepositions[0]) {
-        for (i = 0; i < fileposlen; i++) {
-            av_add_index_entry(vstream, filepositions[i], times[i] * 1000,
-                               0, 0, AVINDEX_KEYFRAME);
-            if (i < 2) {
-                flv->validate_index[i].pos = filepositions[i];
-                flv->validate_index[i].dts = times[i] * 1000;
-                flv->validate_count        = i + 1;
-            }
+        for (i = 0; i < FFMIN(2,fileposlen); i++) {
+            flv->validate_index[i].pos = filepositions[i];
+            flv->validate_index[i].dts = times[i] * 1000;
+            flv->validate_count        = i + 1;
         }
+        flv->keyframe_times = times;
+        flv->keyframe_filepositions = filepositions;
+        flv->keyframe_count = timeslen;
+        times = NULL;
+        filepositions = NULL;
     } else {
 invalid:
         av_log(s, AV_LOG_WARNING, "Invalid keyframes object, skipping.\n");
@@ -418,13 +457,14 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         }
         break;
     case AMF_DATA_TYPE_OBJECT:
-        if ((vstream || astream) && key &&
+        if (key &&
             ioc->seekable &&
             !strcmp(KEYFRAMES_TAG, key) && depth == 1)
-            if (parse_keyframes_index(s, ioc, vstream ? vstream : astream,
+            if (parse_keyframes_index(s, ioc,
                                       max_pos) < 0)
                 av_log(s, AV_LOG_ERROR, "Keyframe index parsing failed\n");
-
+            else
+                add_keyframes_index(s);
         while (avio_tell(ioc) < max_pos - 2 &&
                amf_get_string(ioc, str_val, sizeof(str_val)) > 0)
             if (amf_parse_object(s, astream, vstream, str_val, max_pos,
@@ -574,6 +614,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
+    FLVContext *flv = s->priv_data;
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
     AVStream av_unused *dstream;
@@ -612,10 +653,14 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     // the lookup every time it is called.
     for (i = 0; i < s->nb_streams; i++) {
         stream = s->streams[i];
-        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             vstream = stream;
-        else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            flv->last_keyframe_stream_index = i;
+        } else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             astream = stream;
+            if (flv->last_keyframe_stream_index == -1)
+                flv->last_keyframe_stream_index = i;
+        }
         else if (stream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
             dstream = stream;
     }
@@ -643,6 +688,7 @@ static int flv_read_header(AVFormatContext *s)
 
     s->start_time = 0;
     flv->sum_flv_tag_size = 0;
+    flv->last_keyframe_stream_index = -1;
 
     return 0;
 }
@@ -653,6 +699,8 @@ static int flv_read_close(AVFormatContext *s)
     FLVContext *flv = s->priv_data;
     for (i=0; i<FLV_STREAM_TYPE_NB; i++)
         av_freep(&flv->new_extradata[i]);
+    av_freep(&flv->keyframe_times);
+    av_freep(&flv->keyframe_filepositions);
     return 0;
 }
 

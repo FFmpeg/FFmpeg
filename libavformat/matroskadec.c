@@ -3153,7 +3153,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         // Compare signed timecodes. Timecode may be negative due to codec delay
         // offset. We don't support timestamps greater than int64_t anyway - see
         // AVPacket's pts.
-        if ((int64_t)timecode < (int64_t)(matroska->skip_to_timecode))
+        if ((int64_t)timecode < (int64_t)matroska->skip_to_timecode)
             return res;
         if (is_keyframe)
             matroska->skip_to_keyframe = 0;

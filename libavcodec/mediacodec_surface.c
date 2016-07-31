@@ -27,40 +27,30 @@
 
 void *ff_mediacodec_surface_ref(void *surface, void *log_ctx)
 {
-    int attached = 0;
     JNIEnv *env = NULL;
 
     void *reference = NULL;
 
-    env = ff_jni_attach_env(&attached, log_ctx);
+    env = ff_jni_get_env(log_ctx);
     if (!env) {
         return NULL;
     }
 
     reference = (*env)->NewGlobalRef(env, surface);
 
-    if (attached) {
-        ff_jni_detach_env(log_ctx);
-    }
-
     return reference;
 }
 
 int ff_mediacodec_surface_unref(void *surface, void *log_ctx)
 {
-    int attached = 0;
     JNIEnv *env = NULL;
 
-    env = ff_jni_attach_env(&attached, log_ctx);
+    env = ff_jni_get_env(log_ctx);
     if (!env) {
         return AVERROR_EXTERNAL;
     }
 
     (*env)->DeleteGlobalRef(env, surface);
-
-    if (attached) {
-        ff_jni_detach_env(log_ctx);
-    }
 
     return 0;
 }

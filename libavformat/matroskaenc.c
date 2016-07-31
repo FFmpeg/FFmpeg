@@ -44,6 +44,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
@@ -1487,6 +1488,30 @@ static int mkv_write_attachments(AVFormatContext *s)
     return 0;
 }
 
+static int64_t get_metadata_duration(AVFormatContext *s)
+{
+    int i = 0;
+    int64_t max = 0;
+    int64_t us;
+
+    AVDictionaryEntry *explicitDuration = av_dict_get(s->metadata, "DURATION", NULL, 0);
+    if (explicitDuration && (av_parse_time(&us, explicitDuration->value, 1) == 0) && us > 0) {
+        av_log(s, AV_LOG_DEBUG, "get_metadata_duration found duration in context metadata: %" PRId64 "\n", us);
+        return us;
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        int64_t us;
+        AVDictionaryEntry *duration = av_dict_get(s->streams[i]->metadata, "DURATION", NULL, 0);
+
+        if (duration && (av_parse_time(&us, duration->value, 1) == 0))
+            max = FFMAX(max, us);
+    }
+
+    av_log(s, AV_LOG_DEBUG, "get_metadata_duration returned: %" PRId64 "\n", max);
+    return max;
+}
+
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1561,20 +1586,23 @@ static int mkv_write_header(AVFormatContext *s)
     if ((tag = av_dict_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
-        uint32_t segment_uid[4];
-        AVLFG lfg;
-
-        av_lfg_init(&lfg, av_get_random_seed());
-
-        for (i = 0; i < 4; i++)
-            segment_uid[i] = av_lfg_get(&lfg);
-
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP, LIBAVFORMAT_IDENT);
         if ((tag = av_dict_get(s->metadata, "encoding_tool", NULL, 0)))
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, tag->value);
         else
             put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
-        put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+
+        if (mkv->mode != MODE_WEBM) {
+            uint32_t segment_uid[4];
+            AVLFG lfg;
+
+            av_lfg_init(&lfg, av_get_random_seed());
+
+            for (i = 0; i < 4; i++)
+                segment_uid[i] = av_lfg_get(&lfg);
+
+            put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+        }
     } else {
         const char *ident = "Lavf";
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , ident);
@@ -1593,7 +1621,19 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->duration = 0;
     mkv->duration_offset = avio_tell(pb);
     if (!mkv->is_live) {
-        put_ebml_void(pb, 11);              // assumes double-precision float to be written
+        int64_t metadata_duration = get_metadata_duration(s);
+
+        if (s->duration > 0) {
+            int64_t scaledDuration = av_rescale(s->duration, 1000, AV_TIME_BASE);
+            put_ebml_float(pb, MATROSKA_ID_DURATION, scaledDuration);
+            av_log(s, AV_LOG_DEBUG, "Write early duration from recording time = %" PRIu64 "\n", scaledDuration);
+        } else if (metadata_duration > 0) {
+            int64_t scaledDuration = av_rescale(metadata_duration, 1000, AV_TIME_BASE);
+            put_ebml_float(pb, MATROSKA_ID_DURATION, scaledDuration);
+            av_log(s, AV_LOG_DEBUG, "Write early duration from metadata = %" PRIu64 "\n", scaledDuration);
+        } else {
+            put_ebml_void(pb, 11);              // assumes double-precision float to be written
+        }
     }
     end_ebml_master(pb, segment_info);
 

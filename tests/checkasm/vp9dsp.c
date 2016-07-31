@@ -448,7 +448,7 @@ static void check_loopfilter(void)
     static const char *const dir_name[2] = { "h", "v" };
     static const int E[2] = { 20, 28 }, I[2] = { 10, 16 };
     static const int H[2] = { 7, 11 }, F[2] = { 1, 1 };
-    declare_func(void, uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
+    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride, int E, int I, int H);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         ff_vp9dsp_init(&dsp, bit_depth, 0);

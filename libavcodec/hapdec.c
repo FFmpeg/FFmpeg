@@ -37,7 +37,6 @@
 #include "bytestream.h"
 #include "hap.h"
 #include "internal.h"
-#include "memory.h"
 #include "snappy.h"
 #include "texturedsp.h"
 #include "thread.h"

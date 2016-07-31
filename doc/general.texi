@@ -103,11 +103,18 @@ enable it.
 
 @section OpenH264
 
-FFmpeg can make use of the OpenH264 library for H.264 encoding.
+FFmpeg can make use of the OpenH264 library for H.264 encoding and decoding.
 
 Go to @url{http://www.openh264.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libopenh264} to configure to
 enable it.
+
+For decoding, this library is much more limited than the built-in decoder
+in libavcodec; currently, this library lacks support for decoding B-frames
+and some other main/high profile features. (It currently only supports
+constrained baseline profile and CABAC.) Using it is mostly useful for
+testing and for taking advantage of Cisco's patent portfolio license
+(@url{http://www.openh264.org/BINARY_LICENSE.txt}).
 
 @section x264
 

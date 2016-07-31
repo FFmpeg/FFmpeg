@@ -1238,6 +1238,9 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                         st->codecpar->codec_id == AV_CODEC_ID_AC3 &&
                         ts->m2ts_mode) {
                 *q++ = 0xfd;
+            } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
+                       st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+                *q++ = 0xbd;
             } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
                 *q++ = stream_id != -1 ? stream_id : 0xfc;
 

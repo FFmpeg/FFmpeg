@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 
 /** Additional profile info flags */
 #define DNXHD_INTERLACED   (1<<0)
@@ -83,7 +84,17 @@ static av_always_inline uint64_t ff_dnxhd_check_header_prefix(uint64_t prefix)
     return 0;
 }
 
+static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf)
+{
+    uint64_t prefix = AV_RB32(buf);
+    prefix = (prefix << 16) | buf[4] << 8;
+    return ff_dnxhd_check_header_prefix(prefix);
+}
+
 int avpriv_dnxhd_get_frame_size(int cid);
 int avpriv_dnxhd_get_interlaced(int cid);
+#if LIBAVCODEC_VERSION_MAJOR < 58
+attribute_deprecated
 uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf);
+#endif
 #endif /* AVCODEC_DNXHDDATA_H */

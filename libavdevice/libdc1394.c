@@ -302,9 +302,14 @@ static int dc1394_v2_read_header(AVFormatContext *c)
 
     /* Now let us prep the hardware. */
     dc1394->d = dc1394_new();
-    dc1394_camera_enumerate (dc1394->d, &list);
-    if ( !list || list->num == 0) {
-        av_log(c, AV_LOG_ERROR, "Unable to look for an IIDC camera\n\n");
+    if (dc1394_camera_enumerate(dc1394->d, &list) != DC1394_SUCCESS || !list) {
+        av_log(c, AV_LOG_ERROR, "Unable to look for an IIDC camera.\n");
+        goto out;
+    }
+
+    if (list->num == 0) {
+        av_log(c, AV_LOG_ERROR, "No cameras found.\n");
+        dc1394_camera_free_list(list);
         goto out;
     }
 

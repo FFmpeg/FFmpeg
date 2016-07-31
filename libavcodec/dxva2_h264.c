@@ -22,7 +22,7 @@
 
 #include "libavutil/avassert.h"
 
-#include "h264.h"
+#include "h264dec.h"
 #include "h264data.h"
 #include "mpegutils.h"
 

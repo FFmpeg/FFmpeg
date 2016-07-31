@@ -129,6 +129,7 @@
     <xsd:complexType name="frameSideDataType">
         <xsd:attribute name="side_data_type"              type="xsd:string"/>
         <xsd:attribute name="side_data_size"              type="xsd:int"   />
+        <xsd:attribute name="timecode"                    type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="subtitleType">

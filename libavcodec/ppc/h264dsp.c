@@ -31,7 +31,7 @@
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "libavcodec/h264dsp.h"
 
 #if HAVE_ALTIVEC

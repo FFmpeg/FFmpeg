@@ -190,7 +190,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    header_prefix = avpriv_dnxhd_parse_header_prefix(buf);
+    header_prefix = ff_dnxhd_parse_header_prefix(buf);
     if (header_prefix == 0) {
         av_log(ctx->avctx, AV_LOG_ERROR,
                "unknown header 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",

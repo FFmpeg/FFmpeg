@@ -818,29 +818,50 @@ static const int32_t gaintab[] = {
 
 typedef struct {
     uint64_t window;
-    unsigned char readahead, arg, control;
-    int running_gain;
-    unsigned sustain, sustain_reset;
-    int code_counterA;
-    int code_counterA_almost; /* looks like an A code, but a bit expected to be 0 is 1 */
-    int code_counterB;
-    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
-    int code_counterC;
-    int code_counterC_unmatched; /* told to look for a code, but didn't find one */
+    unsigned char readahead;
 
-    /* For user information/stats, pulled up into HDCDContext
-     * by filter_frame() */
-    int count_peak_extend;
-    int count_transient_filter;
+    /* arg is set when a packet prefix is found.
+     * control is the active control code, where
+     * bit 0-3: target_gain, 4-bit (3.1) fixed-point value
+     * bit 4  : peak_extend
+     * bit 5  : transient_filter
+     * bit 6,7: always zero */
+    unsigned char arg, control;
+    unsigned sustain, sustain_reset; /* code detect timer */
+
+    int running_gain; /* 11-bit (3.8) fixed point, extended from target_gain */
+
+    /* counters */
+    int code_counterA;            /* 8-bit format packet */
+    int code_counterA_almost;     /* looks like an A code, but a bit expected to be 0 is 1 */
+    int code_counterB;            /* 16-bit format packet, 8-bit code, 8-bit XOR of code */
+    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
+    int code_counterC;            /* packet prefix was found, expect a code */
+    int code_counterC_unmatched;  /* told to look for a code, but didn't find one */
+    int count_peak_extend;        /* valid packets where peak_extend was enabled */
+    int count_transient_filter;   /* valid packets where filter was detected */
     /* target_gain is a 4-bit (3.1) fixed-point value, always
      * negative, but stored positive.
      * The 16 possible values range from -7.5 to 0.0 dB in
      * steps of 0.5, but no value below -6.0 dB should appear. */
     int gain_counts[16]; /* for cursiosity, mostly */
     int max_gain;
+    int count_sustain_expired;    /* occurences of code detect timer expiring without detecting a code */
 
     AVFilterContext *fctx; /* filter context for logging errors */
 } hdcd_state_t;
+
+typedef enum {
+    HDCD_PE_NEVER        = 0,
+    HDCD_PE_INTERMITTENT = 1,
+    HDCD_PE_PERMANENT    = 2,
+} hdcd_pe_t;
+
+static const char * const pe_str[] = {
+    "never enabled",
+    "enabled intermittently",
+    "enabled permanently"
+};
 
 typedef struct HDCDContext {
     const AVClass *class;
@@ -849,7 +870,7 @@ typedef struct HDCDContext {
     /* User information/stats */
     int hdcd_detected;
     int det_errors;            /* detectable errors */
-    int uses_peak_extend;
+    hdcd_pe_t peak_extend;
     int uses_transient_filter; /* detected, but not implemented */
     float max_gain_adjustment; /* in dB, expected in the range -6.0 to 0.0 */
 } HDCDContext;
@@ -887,6 +908,8 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->count_transient_filter = 0;
     for(i = 0; i < 16; i++) state->gain_counts[i] = 0;
     state->max_gain = 0;
+
+    state->count_sustain_expired = 0;
 }
 
 /* update the user info/counters */
@@ -970,8 +993,11 @@ static int hdcd_integrate(hdcd_state_t *state, int *flag, const int32_t *samples
 
 static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int stride)
 {
+    int cdt_active = 0;
+    /* code detect timer */
     int result;
     if (state->sustain > 0) {
+        cdt_active = 1;
         if (state->sustain <= max) {
             state->control = 0;
             max = state->sustain;
@@ -984,11 +1010,15 @@ static int hdcd_scan(hdcd_state_t *state, const int32_t *samples, int max, int s
         int consumed = hdcd_integrate(state, &flag, samples, max - result, stride);
         result += consumed;
         if (flag > 0) {
+            /* reset timer if code detected in channel */
             state->sustain = state->sustain_reset;
             break;
         }
         samples += consumed * stride;
     }
+    /* code detect timer expired */
+    if (cdt_active && state->sustain == 0)
+        state->count_sustain_expired++;
     return result;
 }
 
@@ -1097,6 +1127,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int16_t *in_data;
     int32_t *out_data;
     int n, c;
+    int detect, packets, pe_packets;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
@@ -1112,19 +1143,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         out_data[n] = in_data[n];
     }
 
+    detect = 0;
+    packets = 0;
+    pe_packets = 0;
     s->det_errors = 0;
     for (c = 0; c < inlink->channels; c++) {
         hdcd_state_t *state = &s->state[c];
         hdcd_process(state, out_data + c, in->nb_samples, out->channels);
-
-        s->uses_peak_extend |= !!state->count_peak_extend;
+        if (state->sustain) detect++;
+        packets += state->code_counterA + state->code_counterB;
+        pe_packets += state->count_peak_extend;
         s->uses_transient_filter |= !!state->count_transient_filter;
         s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
-        s->hdcd_detected |= state->code_counterB || state->code_counterA;
         s->det_errors += state->code_counterA_almost
             + state->code_counterB_checkfails
             + state->code_counterC_unmatched;
     }
+    if (pe_packets) {
+        /* if every valid packet has used PE, call it permanent */
+        if (packets == pe_packets)
+            s->peak_extend = HDCD_PE_PERMANENT;
+        else
+            s->peak_extend = HDCD_PE_INTERMITTENT;
+    } else {
+        s->peak_extend = HDCD_PE_NEVER;
+    }
+    /* HDCD is detected if a valid packet is active in all (both)
+     * channels at the same time. */
+    if (detect == inlink->channels) s->hdcd_detected = 1;
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -1186,12 +1232,13 @@ static av_cold void uninit(AVFilterContext *ctx)
         hdcd_state_t *state = &s->state[i];
         av_log(ctx, AV_LOG_VERBOSE, "Channel %d: counter A: %d, B: %d, C: %d\n", i,
                 state->code_counterA, state->code_counterB, state->code_counterC);
-        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: pe: %d, tf: %d, almost_A: %d, checkfail_B: %d, unmatched_C: %d\n", i,
+        av_log(ctx, AV_LOG_VERBOSE, "Channel %d: pe: %d, tf: %d, almost_A: %d, checkfail_B: %d, unmatched_C: %d, cdt_expired: %d\n", i,
             state->count_peak_extend,
             state->count_transient_filter,
             state->code_counterA_almost,
             state->code_counterB_checkfails,
-            state->code_counterC_unmatched);
+            state->code_counterC_unmatched,
+            state->count_sustain_expired);
         for (j = 0; j <= state->max_gain; j++) {
             av_log(ctx, AV_LOG_VERBOSE, "Channel %d: tg %0.1f: %d\n", i, GAINTOFLOAT(j), state->gain_counts[j]);
         }
@@ -1201,7 +1248,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (s->hdcd_detected)
         av_log(ctx, AV_LOG_INFO,
             "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s, detectable errors: %d%s\n",
-            (s->uses_peak_extend) ? "enabled" : "never enabled",
+            pe_str[s->peak_extend],
             s->max_gain_adjustment,
             (s->uses_transient_filter) ? "detected" : "not detected",
             s->det_errors, (s->det_errors) ? " (try -v verbose)" : ""

@@ -334,8 +334,8 @@ end:
 }
 
 #define DECLARE_INTERPOLATE_FUNC(nbits)                                     \
-static const int interpolate##nbits(void *log_ctx, uint16_t *y,             \
-                                    const struct keypoint *points)          \
+static int interpolate##nbits(void *log_ctx, uint16_t *y,                   \
+                              const struct keypoint *points)                \
 {                                                                           \
     return interpolate(log_ctx, y, points, nbits);                          \
 }

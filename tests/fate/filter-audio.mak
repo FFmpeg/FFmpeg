@@ -114,6 +114,14 @@ fate-filter-extrastereo: tests/data/asynth-44100-2.wav
 fate-filter-extrastereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-extrastereo: CMD = framecrc -i $(SRC) -aframes 20 -af extrastereo=m=2
 
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, SILENCEREMOVE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-silenceremove
+fate-filter-silenceremove: SRC = $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav
+fate-filter-silenceremove: CMD = framecrc -i $(SRC) -aframes 30 -af silenceremove=0:0:0:-1:0:-90dB
+
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, STEREOTOOLS, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-stereotools
+fate-filter-stereotools: SRC = $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-filter-stereotools: CMD = framecrc -i $(SRC) -aframes 20 -af stereotools=mlev=0.015625
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
@@ -218,6 +226,18 @@ fate-filter-hdcd: SRC = $(TARGET_SAMPLES)/filter/hdcd.flac
 fate-filter-hdcd: CMD = md5 -i $(SRC) -af hdcd -f s24le
 fate-filter-hdcd: CMP = oneline
 fate-filter-hdcd: REF = 5db465a58d2fd0d06ca944b883b33476
+
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-false-positive
+fate-filter-hdcd-false-positive: SRC = $(TARGET_SAMPLES)/filter/hdcd-false-positive.flac
+fate-filter-hdcd-false-positive: CMD = md5 -i $(SRC) -af hdcd -f s24le
+fate-filter-hdcd-false-positive: CMP = grep
+fate-filter-hdcd-false-positive: REF = HDCD detected: no
+
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-detect-errors
+fate-filter-hdcd-detect-errors: SRC = $(TARGET_SAMPLES)/filter/hdcd-encoding-errors.flac
+fate-filter-hdcd-detect-errors: CMD = md5 -i $(SRC) -af hdcd -f s24le
+fate-filter-hdcd-detect-errors: CMP = grep
+fate-filter-hdcd-detect-errors: REF = detectable errors: [1-9]
 
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)

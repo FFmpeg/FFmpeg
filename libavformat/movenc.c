@@ -1071,7 +1071,7 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     int cid;
 
     if (track->vos_data && track->vos_len > 0x29) {
-        if (avpriv_dnxhd_parse_header_prefix(track->vos_data) != 0) {
+        if (ff_dnxhd_parse_header_prefix(track->vos_data) != 0) {
             /* looks like a DNxHD bit stream */
             interlaced = (track->vos_data[5] & 2);
             cid = AV_RB32(track->vos_data + 0x28);
