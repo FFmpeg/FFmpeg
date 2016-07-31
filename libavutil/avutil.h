@@ -98,7 +98,7 @@
  * @{
  * @}
  *
- * @defgroup lavu_math Maths
+ * @defgroup lavu_math Mathematics
  * @{
  *
  * @}
