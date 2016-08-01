@@ -28,6 +28,7 @@
 typedef struct VP9ParseContext {
     int n_frames; // 1-8
     int size[8];
+    int marker_size;
     int64_t pts;
 } VP9ParseContext;
 
@@ -89,6 +90,21 @@ static int parse(AVCodecParserContext *ctx,
     }
 
     if (s->n_frames > 0) {
+        int i;
+        int size_sum = 0;
+
+        for (i = 0; i < s->n_frames ;i++)
+            size_sum += s->size[i];
+        size_sum += s->marker_size;
+
+        if (size_sum != size) {
+            av_log(avctx, AV_LOG_ERROR, "Inconsistent input frame sizes %d %d\n",
+                   size_sum, size);
+            s->n_frames = 0;
+        }
+    }
+
+    if (s->n_frames > 0) {
         *out_data = data;
         *out_size = s->size[--s->n_frames];
         parse_frame(ctx, *out_data, *out_size);
@@ -131,6 +147,7 @@ static int parse(AVCodecParserContext *ctx,
                     data += sz; \
                     size -= sz; \
                 } \
+                s->marker_size = size; \
                 parse_frame(ctx, *out_data, *out_size); \
                 return s->n_frames > 0 ? *out_size : full_size
 
