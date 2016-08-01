@@ -41,6 +41,7 @@
 #include "h264.h"
 #include "h264dec.h"
 #include "h264_sei.h"
+#include "h264_ps.h"
 #include "h264data.h"
 #include "internal.h"
 #include "mpegutils.h"

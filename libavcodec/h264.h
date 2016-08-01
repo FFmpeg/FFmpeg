@@ -24,6 +24,8 @@
 #ifndef AVCODEC_H264_H
 #define AVCODEC_H264_H
 
+#define QP_MAX_NUM (51 + 6*6)           // The maximum supported qp
+
 /* NAL unit types */
 enum {
     NAL_SLICE           = 1,

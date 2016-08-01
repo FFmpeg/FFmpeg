@@ -22,6 +22,7 @@
 #include "h264.h"
 #include "h264dec.h"
 #include "h264_parse.h"
+#include "h264_ps.h"
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                               const int *ref_count, int slice_type_nos,
