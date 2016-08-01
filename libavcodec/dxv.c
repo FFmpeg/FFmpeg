@@ -121,10 +121,8 @@ static int dxv_decompress_dxt1(AVCodecContext *avctx)
     int pos = 2;
 
     /* Copy the first two elements */
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data, value);
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data + 4, value);
+    AV_WL32(ctx->tex_data, bytestream2_get_le32(gbc));
+    AV_WL32(ctx->tex_data + 4, bytestream2_get_le32(gbc));
 
     /* Process input until the whole texture has been filled */
     while (pos + 2 <= ctx->tex_size / 4) {
@@ -174,14 +172,10 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
     int probe, check;
 
     /* Copy the first four elements */
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data +  0, value);
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data +  4, value);
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data +  8, value);
-    value = bytestream2_get_le32(gbc);
-    AV_WL32(ctx->tex_data + 12, value);
+    AV_WL32(ctx->tex_data +  0, bytestream2_get_le32(gbc));
+    AV_WL32(ctx->tex_data +  4, bytestream2_get_le32(gbc));
+    AV_WL32(ctx->tex_data +  8, bytestream2_get_le32(gbc));
+    AV_WL32(ctx->tex_data + 12, bytestream2_get_le32(gbc));
 
     /* Process input until the whole texture has been filled */
     while (pos + 2 <= ctx->tex_size / 4) {
