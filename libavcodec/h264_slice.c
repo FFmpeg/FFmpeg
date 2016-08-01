@@ -2349,7 +2349,6 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
         sl->deblocking_filter = 0;
 
     sl->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
-                     avctx->codec_id != AV_CODEC_ID_H264 ||
                      (CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
 
     if (!(h->avctx->active_thread_type & FF_THREAD_SLICE) && h->picture_structure == PICT_FRAME && h->slice_ctx[0].er.error_status_table) {
