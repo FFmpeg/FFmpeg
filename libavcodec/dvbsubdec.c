@@ -344,7 +344,7 @@ static void delete_state(DVBSubContext *ctx)
 
     /* Should already be null */
     if (ctx->object_list)
-        av_log(0, AV_LOG_ERROR, "Memory deallocation error!\n");
+        av_log(NULL, AV_LOG_ERROR, "Memory deallocation error!\n");
 }
 
 static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
@@ -539,7 +539,7 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (get_bits(&gb, 6))
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(NULL, AV_LOG_ERROR, "DVBSub error: line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
@@ -660,7 +660,7 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (get_bits(&gb, 8))
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(NULL, AV_LOG_ERROR, "DVBSub error: line overflow\n");
 
     (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
 
@@ -712,7 +712,7 @@ static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
     }
 
     if (*(*srcbuf)++)
-        av_log(0, AV_LOG_ERROR, "DVBSub error: line overflow\n");
+        av_log(NULL, AV_LOG_ERROR, "DVBSub error: line overflow\n");
 
     return pixels_read;
 }
