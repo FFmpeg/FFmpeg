@@ -1860,11 +1860,11 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
             break;
         --buf;
         switch (state & 0x1f) {
-        case NAL_SPS:
+        case H264_NAL_SPS:
             st->codecpar->profile = buf[1];
             e->flags |= 0x40;
             break;
-        case NAL_PPS:
+        case H264_NAL_PPS:
             if (e->flags & 0x40) { // sequence header present
                 e->flags |= 0x80; // random access
                 extra_size = 0;

@@ -828,7 +828,7 @@ int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
     MMCO *mmco = sl->mmco;
     int nb_mmco = 0;
 
-    if (h->nal_unit_type == NAL_IDR_SLICE) { // FIXME fields
+    if (h->nal_unit_type == H264_NAL_IDR_SLICE) { // FIXME fields
         skip_bits1(gb); // broken_link
         if (get_bits1(gb)) {
             mmco[0].opcode   = MMCO_LONG;

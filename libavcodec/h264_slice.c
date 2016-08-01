@@ -1542,7 +1542,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
     sl->slice_type     = slice_type;
     sl->slice_type_nos = slice_type & 3;
 
-    if (nal->type  == NAL_IDR_SLICE &&
+    if (nal->type  == H264_NAL_IDR_SLICE &&
         sl->slice_type_nos != AV_PICTURE_TYPE_I) {
         av_log(h->avctx, AV_LOG_ERROR, "A non-intra slice in an IDR NAL unit.\n");
         return AVERROR_INVALIDDATA;
@@ -1605,7 +1605,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
         sl->max_pic_num  = 1 << (sps->log2_max_frame_num + 1);
     }
 
-    if (nal->type == NAL_IDR_SLICE)
+    if (nal->type == H264_NAL_IDR_SLICE)
         get_ue_golomb_long(&sl->gb); /* idr_pic_id */
 
     if (sps->poc_type == 0) {
@@ -1758,7 +1758,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                 h->current_slice = 0;
                 if (ret < 0)
                     return ret;
-            } else if (h->cur_pic_ptr && !FIELD_PICTURE(h) && !h->first_field && h->nal_unit_type  == NAL_IDR_SLICE) {
+            } else if (h->cur_pic_ptr && !FIELD_PICTURE(h) && !h->first_field && h->nal_unit_type  == H264_NAL_IDR_SLICE) {
                 av_log(h, AV_LOG_WARNING, "Broken frame packetizing\n");
                 ret = ff_h264_field_end(h, h->slice_ctx, 1);
                 h->current_slice = 0;
@@ -1788,7 +1788,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
             (h->avctx->skip_frame >= AVDISCARD_NONREF && !h->nal_ref_idc) ||
             (h->avctx->skip_frame >= AVDISCARD_BIDIR  && sl->slice_type_nos == AV_PICTURE_TYPE_B) ||
             (h->avctx->skip_frame >= AVDISCARD_NONINTRA && sl->slice_type_nos != AV_PICTURE_TYPE_I) ||
-            (h->avctx->skip_frame >= AVDISCARD_NONKEY && h->nal_unit_type != NAL_IDR_SLICE && h->sei.recovery_point.recovery_frame_cnt < 0) ||
+            (h->avctx->skip_frame >= AVDISCARD_NONKEY && h->nal_unit_type != H264_NAL_IDR_SLICE && h->sei.recovery_point.recovery_frame_cnt < 0) ||
             h->avctx->skip_frame >= AVDISCARD_ALL) {
             return SLICE_SKIPED;
         }
@@ -1861,7 +1861,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
 
     if (h->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
-         h->nal_unit_type != NAL_IDR_SLICE) ||
+         h->nal_unit_type != H264_NAL_IDR_SLICE) ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONINTRA &&
          sl->slice_type_nos != AV_PICTURE_TYPE_I) ||
         (h->avctx->skip_loop_filter >= AVDISCARD_BIDIR  &&
@@ -1938,7 +1938,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                sl->mb_y * h->mb_width + sl->mb_x,
                av_get_picture_type_char(sl->slice_type),
                sl->slice_type_fixed ? " fix" : "",
-               nal->type == NAL_IDR_SLICE ? " IDR" : "",
+               nal->type == H264_NAL_IDR_SLICE ? " IDR" : "",
                h->poc.frame_num,
                h->cur_pic_ptr->field_poc[0],
                h->cur_pic_ptr->field_poc[1],
