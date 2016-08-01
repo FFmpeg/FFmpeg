@@ -279,13 +279,6 @@ void mpeg_motion_internal(MpegEncContext *s,
         uvsrc_x, uvsrc_y, v_edge_pos;
     ptrdiff_t uvlinesize, linesize;
 
-#if 0
-    if (s->quarter_sample) {
-        motion_x >>= 1;
-        motion_y >>= 1;
-    }
-#endif
-
     v_edge_pos = s->v_edge_pos >> field_based;
     linesize   = s->current_picture.f->linesize[0] << field_based;
     uvlinesize = s->current_picture.f->linesize[1] << field_based;
