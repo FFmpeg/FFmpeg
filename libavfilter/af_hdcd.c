@@ -903,11 +903,12 @@ typedef struct HDCDContext {
 } HDCDContext;
 
 #define OFFSET(x) offsetof(HDCDContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hdcd_options[] = {
     { "process_stereo", "Process stereo channels together. Only apply target_gain when both channels match.",
-        OFFSET(process_stereo), AV_OPT_TYPE_INT, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, 0 },
+        OFFSET(process_stereo), AV_OPT_TYPE_INT, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, A },
     { "force_pe", "Always extend peaks above -3dBFS even when PE is not signaled.",
-        OFFSET(force_pe), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, 0 },
+        OFFSET(force_pe), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, A },
     {NULL}
 };
 
