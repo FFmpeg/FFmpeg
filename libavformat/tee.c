@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "tee_common.h"
 
 typedef enum {
     ON_SLAVE_FAILURE_ABORT  = 1,
@@ -54,9 +55,6 @@ typedef struct TeeContext {
 } TeeContext;
 
 static const char *const slave_delim     = "|";
-static const char *const slave_opt_open  = "[";
-static const char *const slave_opt_close = "]";
-static const char *const slave_opt_delim = ":]"; /* must have the close too */
 static const char *const slave_bsfs_spec_sep = "/";
 static const char *const slave_select_sep = ",";
 
@@ -65,44 +63,6 @@ static const AVClass tee_muxer_class = {
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
-static int parse_slave_options(void *log, char *slave,
-                               AVDictionary **options, char **filename)
-{
-    const char *p;
-    char *key, *val;
-    int ret;
-
-    if (!strspn(slave, slave_opt_open)) {
-        *filename = slave;
-        return 0;
-    }
-    p = slave + 1;
-    if (strspn(p, slave_opt_close)) {
-        *filename = (char *)p + 1;
-        return 0;
-    }
-    while (1) {
-        ret = av_opt_get_key_value(&p, "=", slave_opt_delim, 0, &key, &val);
-        if (ret < 0) {
-            av_log(log, AV_LOG_ERROR, "No option found near \"%s\"\n", p);
-            goto fail;
-        }
-        ret = av_dict_set(options, key, val,
-                          AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
-        if (ret < 0)
-            goto fail;
-        if (strspn(p, slave_opt_close))
-            break;
-        p++;
-    }
-    *filename = (char *)p + 1;
-    return 0;
-
-fail:
-    av_dict_free(options);
-    return ret;
-}
 
 /**
  * Parse list of bitstream filters and add them to the list of filters
@@ -217,7 +177,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     int fullret;
     char *subselect = NULL, *next_subselect = NULL, *first_subselect = NULL, *tmp_select = NULL;
 
-    if ((ret = parse_slave_options(avf, slave, &options, &filename)) < 0)
+    if ((ret = ff_tee_parse_slave_options(avf, slave, &options, &filename)) < 0)
         return ret;
 
 #define STEAL_OPTION(option, field) do {                                \
