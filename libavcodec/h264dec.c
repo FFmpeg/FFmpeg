@@ -564,9 +564,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
             max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
             if (h->nb_slice_ctx_queued == max_slice_ctx) {
-                if (avctx->hwaccel)
+                if (avctx->hwaccel) {
                     ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
-                else
+                    h->nb_slice_ctx_queued = 0;
+                } else
                     ret = ff_h264_execute_decode_slices(h);
                 if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                     goto end;
