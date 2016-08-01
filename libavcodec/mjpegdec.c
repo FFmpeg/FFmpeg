@@ -1215,16 +1215,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             s->bottom_field = 1;
         else if (i == 1)
             s->bottom_field = 0;
-#if 0
-        skip_bits(&s->gb, 8);
-        skip_bits(&s->gb, 32);
-        skip_bits(&s->gb, 32);
-        len -= 10;
-#endif
         goto out;
     }
-
-//    len -= 2;
 
     if (id == AV_RL32("JFIF")) {
         int t_w, t_h, v1, v2;
@@ -1297,16 +1289,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         len -= 4;
         /* Apple MJPEG-A */
         if (id == AV_RL32("mjpg")) {
-#if 0
-            skip_bits(&s->gb, 32); /* field size */
-            skip_bits(&s->gb, 32); /* pad field size */
-            skip_bits(&s->gb, 32); /* next off */
-            skip_bits(&s->gb, 32); /* quant off */
-            skip_bits(&s->gb, 32); /* huff off */
-            skip_bits(&s->gb, 32); /* image off */
-            skip_bits(&s->gb, 32); /* scan off */
-            skip_bits(&s->gb, 32); /* data off */
-#endif
             if (s->avctx->debug & FF_DEBUG_PICT_INFO)
                 av_log(s->avctx, AV_LOG_INFO, "mjpeg: Apple MJPEG-A header found\n");
         }
