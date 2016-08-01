@@ -26,11 +26,11 @@
 
 #include <mfx/mfxvideo.h>
 
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
-#include "h264dec.h"
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvenc.h"
