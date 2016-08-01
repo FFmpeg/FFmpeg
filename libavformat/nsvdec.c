@@ -179,7 +179,6 @@ typedef struct NSVContext {
     int16_t avsync;
     AVRational framerate;
     uint32_t *nsvs_timestamps;
-    //DVDemuxContext* dv_demux;
 } NSVContext;
 
 static const AVCodecTag nsv_codec_video_tags[] = {
@@ -229,8 +228,6 @@ static int nsv_resync(AVFormatContext *s)
     int i;
 
     av_log(s, AV_LOG_TRACE, "%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, avio_tell(pb), nsv->state);
-
-    //nsv->state = NSV_UNSYNC;
 
     for (i = 0; i < NSV_MAX_RESYNC; i++) {
         if (pb->eof_reached) {
@@ -286,7 +283,6 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
         return -1;
     nsv->NSVf_end = size;
 
-    //s->file_size = (uint32_t)avio_rl32(pb);
     file_size = (uint32_t)avio_rl32(pb);
     av_log(s, AV_LOG_TRACE, "NSV NSVf chunk_size %u\n", size);
     av_log(s, AV_LOG_TRACE, "NSV NSVf file_size %u\n", file_size);
