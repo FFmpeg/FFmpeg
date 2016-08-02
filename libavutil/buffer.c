@@ -170,7 +170,7 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
         return 0;
 
     if (!(buf->buffer->flags & BUFFER_FLAG_REALLOCATABLE) ||
-        !av_buffer_is_writable(buf)) {
+        !av_buffer_is_writable(buf) || buf->data != buf->buffer->data) {
         /* cannot realloc, allocate a new reallocable buffer and copy data */
         AVBufferRef *new = NULL;
 
