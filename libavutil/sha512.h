@@ -38,6 +38,15 @@
  * @ingroup lavu_hash
  * SHA-512 (Secure Hash Algorithm) hash function implementations.
  *
+ * This module supports the following SHA-2 hash functions:
+ *
+ * - SHA-512/224: 224 bits
+ * - SHA-512/256: 256 bits
+ * - SHA-384: 384 bits
+ * - SHA-512: 512 bits
+ *
+ * @see For SHA-1, SHA-256, and variants thereof, see @ref lavu_sha.
+ *
  * @{
  */
 

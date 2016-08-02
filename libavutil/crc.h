@@ -37,6 +37,10 @@
  * @ingroup lavu_hash
  * CRC (Cyclic Redundancy Check) hash function implementation.
  *
+ * This module supports numerous CRC polynomials, in addition to the most
+ * widely used CRC-32-IEEE. See @ref AVCRCId for a list of available
+ * polynomials.
+ *
  * @{
  */
 
