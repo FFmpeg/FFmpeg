@@ -271,6 +271,9 @@ typedef struct VP9Block {
     int row, row7, col, col7;
     uint8_t *dst[3];
     ptrdiff_t y_stride, uv_stride;
+
+    enum BlockLevel bl;
+    enum BlockPartition bp;
 } VP9Block;
 
 typedef struct VP9Context {
@@ -282,6 +285,14 @@ typedef struct VP9Context {
     unsigned c_b_size;
     VP9Block *b;
     VP9Block *b_base;
+
+    int alloc_width;
+    int alloc_height;
+
+    int pass;
+    int uses_2pass;
+    int last_uses_2pass;
+    int setup_finished;
 
     // bitstream header
     uint8_t profile;

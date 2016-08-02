@@ -105,14 +105,20 @@ static void vp9_decode_flush(AVCodecContext *avctx)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->refs); i++)
         ff_thread_release_buffer(avctx, &s->refs[i]);
+
+    s->use_last_frame_mvs = 0;
+
+    s->alloc_width  = 0;
+    s->alloc_height = 0;
 }
 
 static int update_size(AVCodecContext *avctx, int w, int h)
 {
     VP9Context *s = avctx->priv_data;
     uint8_t *p;
+    int nb_blocks, nb_superblocks;
 
-    if (s->above_partition_ctx && w == avctx->width && h == avctx->height)
+    if (s->above_partition_ctx && w == s->alloc_width && h == s->alloc_height)
         return 0;
 
     vp9_decode_flush(avctx);
@@ -154,16 +160,26 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 
     av_freep(&s->b_base);
     av_freep(&s->block_base);
-    s->b_base     = av_malloc(sizeof(*s->b_base));
-    s->block_base = av_mallocz((64 * 64 + 128) * 3);
+
+    if (avctx->active_thread_type & FF_THREAD_FRAME) {
+        nb_blocks      = s->cols * s->rows;
+        nb_superblocks = s->sb_cols * s->sb_rows;
+    } else {
+        nb_blocks = nb_superblocks = 1;
+    }
+
+    s->b_base     = av_malloc_array(nb_blocks, sizeof(*s->b_base));
+    s->block_base = av_mallocz_array(nb_superblocks, (64 * 64 + 128) * 3);
     if (!s->b_base || !s->block_base)
         return AVERROR(ENOMEM);
+    s->uvblock_base[0] = s->block_base      + nb_superblocks * 64 * 64;
+    s->uvblock_base[1] = s->uvblock_base[0] + nb_superblocks * 32 * 32;
+    s->eob_base        = (uint8_t *)(s->uvblock_base[1] + nb_superblocks * 32 * 32);
+    s->uveob_base[0]   = s->eob_base + nb_superblocks * 256;
+    s->uveob_base[1]   = s->uveob_base[0] + nb_superblocks * 64;
 
-    s->uvblock_base[0] = s->block_base + 64 * 64;
-    s->uvblock_base[1] = s->uvblock_base[0] + 32 * 32;
-    s->eob_base        = (uint8_t *) (s->uvblock_base[1] + 32 * 32);
-    s->uveob_base[0]   = s->eob_base + 256;
-    s->uveob_base[1]   = s->uveob_base[0] + 64;
+    s->alloc_width  = w;
+    s->alloc_height = h;
 
     return 0;
 }
@@ -278,7 +294,6 @@ static int decode_frame_header(AVCodecContext *avctx,
     last_invisible = s->invisible;
     s->invisible   = !get_bits1(&s->gb);
     s->errorres    = get_bits1(&s->gb);
-    // FIXME disable this upon resolution change
     s->use_last_frame_mvs = !s->errorres && !last_invisible;
 
     if (s->keyframe) {
@@ -851,6 +866,61 @@ static int decode_subblock(AVCodecContext *avctx, int row, int col,
     return ret;
 }
 
+static int decode_superblock_mem(AVCodecContext *avctx, int row, int col, struct VP9Filter *lflvl,
+                                 ptrdiff_t yoff, ptrdiff_t uvoff, enum BlockLevel bl)
+{
+    VP9Context *s = avctx->priv_data;
+    VP9Block *b = s->b;
+    ptrdiff_t hbs = 4 >> bl;
+    AVFrame *f = s->frames[CUR_FRAME].tf.f;
+    ptrdiff_t y_stride = f->linesize[0], uv_stride = f->linesize[1];
+    int res;
+
+    if (bl == BL_8X8) {
+        av_assert2(b->bl == BL_8X8);
+        res = ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
+    } else if (s->b->bl == bl) {
+        if ((res = ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp)) < 0)
+            return res;
+        if (b->bp == PARTITION_H && row + hbs < s->rows) {
+            yoff  += hbs * 8 * y_stride;
+            uvoff += hbs * 4 * uv_stride;
+            res = ff_vp9_decode_block(avctx, row + hbs, col, lflvl, yoff, uvoff, b->bl, b->bp);
+        } else if (b->bp == PARTITION_V && col + hbs < s->cols) {
+            yoff  += hbs * 8;
+            uvoff += hbs * 4;
+            res = ff_vp9_decode_block(avctx, row, col + hbs, lflvl, yoff, uvoff, b->bl, b->bp);
+        }
+    } else {
+        if ((res = decode_superblock_mem(avctx, row, col, lflvl, yoff, uvoff, bl + 1)) < 0)
+            return res;
+        if (col + hbs < s->cols) { // FIXME why not <=?
+            if (row + hbs < s->rows) {
+                if ((res = decode_superblock_mem(avctx, row, col + hbs, lflvl, yoff + 8 * hbs,
+                                                 uvoff + 4 * hbs, bl + 1)) < 0)
+                    return res;
+                yoff  += hbs * 8 * y_stride;
+                uvoff += hbs * 4 * uv_stride;
+                if ((res = decode_superblock_mem(avctx, row + hbs, col, lflvl, yoff,
+                                                 uvoff, bl + 1)) < 0)
+                    return res;
+                res = decode_superblock_mem(avctx, row + hbs, col + hbs, lflvl,
+                                            yoff + 8 * hbs, uvoff + 4 * hbs, bl + 1);
+            } else {
+                yoff  += hbs * 8;
+                uvoff += hbs * 4;
+                res = decode_superblock_mem(avctx, row, col + hbs, lflvl, yoff, uvoff, bl + 1);
+            }
+        } else if (row + hbs < s->rows) {
+            yoff  += hbs * 8 * y_stride;
+            uvoff += hbs * 4 * uv_stride;
+            res = decode_superblock_mem(avctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
+        }
+    }
+
+    return res;
+}
+
 static void loopfilter_subblock(AVCodecContext *avctx, VP9Filter *lflvl,
                                 int row, int col,
                                 ptrdiff_t yoff, ptrdiff_t uvoff)
@@ -1102,13 +1172,29 @@ static void set_tile_offset(int *start, int *end, int idx, int log2_n, int n)
     *end   = FFMIN(sb_end,   n) << 3;
 }
 
+static int update_refs(AVCodecContext *avctx)
+{
+    VP9Context *s = avctx->priv_data;
+    int i, ret;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->refs); i++)
+        if (s->refreshrefmask & (1 << i)) {
+            ff_thread_release_buffer(avctx, &s->refs[i]);
+            ret = ff_thread_ref_frame(&s->refs[i], &s->frames[CUR_FRAME].tf);
+            if (ret < 0)
+                return ret;
+        }
+
+    return 0;
+}
+
 static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, const uint8_t *data, int size)
+                            int *got_frame, const uint8_t *data, int size,
+                            int can_finish_setup)
 {
     VP9Context *s = avctx->priv_data;
     AVFrame *f;
     int ret, tile_row, tile_col, i, ref = -1, row, col;
-    ptrdiff_t yoff = 0, uvoff = 0;
 
     ret = decode_frame_header(avctx, data, size, &ref);
     if (ret < 0) {
@@ -1157,6 +1243,29 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     case 4: avctx->colorspace = AVCOL_SPC_SMPTE240M; break;
     }
 
+    s->pass = s->uses_2pass =
+        avctx->active_thread_type & FF_THREAD_FRAME && s->refreshctx && !s->parallelmode;
+
+    if (s->refreshctx && s->parallelmode) {
+        int j, k, l, m;
+        for (i = 0; i < 4; i++) {
+            for (j = 0; j < 2; j++)
+                for (k = 0; k < 2; k++)
+                    for (l = 0; l < 6; l++)
+                        for (m = 0; m < 6; m++)
+                            memcpy(s->prob_ctx[s->framectxid].coef[i][j][k][l][m],
+                                   s->prob.coef[i][j][k][l][m], 3);
+            if (s->txfmmode == i)
+                break;
+        }
+        s->prob_ctx[s->framectxid].p = s->prob.p;
+    }
+    if ((s->parallelmode || !s->refreshctx) &&
+        can_finish_setup && avctx->active_thread_type & FF_THREAD_FRAME) {
+        ff_thread_finish_setup(avctx);
+        s->setup_finished = 1;
+    }
+
     // main tile decode loop
     memset(s->above_partition_ctx, 0, s->cols);
     memset(s->above_skip_ctx, 0, s->cols);
@@ -1169,6 +1278,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 8);
     memset(s->above_segpred_ctx, 0, s->cols);
 
+    do {
+        ptrdiff_t yoff = 0, uvoff = 0;
     s->b          = s->b_base;
     s->block      = s->block_base;
     s->uvblock[0] = s->uvblock_base[0];
@@ -1180,6 +1291,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     for (tile_row = 0; tile_row < s->tiling.tile_rows; tile_row++) {
         set_tile_offset(&s->tiling.tile_row_start, &s->tiling.tile_row_end,
                         tile_row, s->tiling.log2_tile_rows, s->sb_rows);
+
+        if (s->pass != 2) {
         for (tile_col = 0; tile_col < s->tiling.tile_cols; tile_col++) {
             int64_t tile_size;
 
@@ -1191,13 +1304,18 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 data     += 4;
                 size     -= 4;
             }
-            if (tile_size > size)
-                return AVERROR_INVALIDDATA;
+            if (tile_size > size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             ff_vp56_init_range_decoder(&s->c_b[tile_col], data, tile_size);
-            if (vp56_rac_get_prob_branchy(&s->c_b[tile_col], 128)) // marker bit
-                return AVERROR_INVALIDDATA;
+            if (vp56_rac_get_prob_branchy(&s->c_b[tile_col], 128)) { // marker bit
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             data += tile_size;
             size -= tile_size;
+        }
         }
 
         for (row = s->tiling.tile_row_start;
@@ -1228,14 +1346,25 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                      col += 8, yoff2 += 64, uvoff2 += 32, lflvl++) {
                     // FIXME integrate with lf code (i.e. zero after each
                     // use, similar to invtxfm coefficients, or similar)
-                    memset(lflvl->mask, 0, sizeof(lflvl->mask));
+                    if (s->pass != 1)
+                        memset(lflvl->mask, 0, sizeof(lflvl->mask));
 
-                    if ((ret = decode_subblock(avctx, row, col, lflvl,
-                                               yoff2, uvoff2, BL_64X64)) < 0)
-                        return ret;
+                    if (s->pass == 2) {
+                        ret = decode_superblock_mem(avctx, row, col, lflvl,
+                                                    yoff2, uvoff2, BL_64X64);
+                    } else {
+                        ret = decode_subblock(avctx, row, col, lflvl,
+                                              yoff2, uvoff2, BL_64X64);
+                    }
+                    if (ret < 0)
+                        goto fail;
                 }
-                memcpy(&s->c_b[tile_col], &s->c, sizeof(s->c));
+                if (s->pass != 2)
+                    memcpy(&s->c_b[tile_col], &s->c, sizeof(s->c));
             }
+
+            if (s->pass == 1)
+                continue;
 
             // backup pre-loopfilter reconstruction data for intra
             // prediction of next row of sb64s
@@ -1263,38 +1392,33 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                      col += 8, yoff2 += 64, uvoff2 += 32, lflvl++)
                     loopfilter_subblock(avctx, lflvl, row, col, yoff2, uvoff2);
             }
+
+            // FIXME maybe we can make this more finegrained by running the
+            // loopfilter per-block instead of after each sbrow
+            // In fact that would also make intra pred left preparation easier?
+            ff_thread_report_progress(&s->frames[CUR_FRAME].tf, row >> 3, 0);
         }
     }
 
-    // bw adaptivity (or in case of parallel decoding mode, fw adaptivity
-    // probability maintenance between frames)
-    if (s->refreshctx) {
-        if (s->parallelmode) {
-            int j, k, l, m;
-            for (i = 0; i < 4; i++) {
-                for (j = 0; j < 2; j++)
-                    for (k = 0; k < 2; k++)
-                        for (l = 0; l < 6; l++)
-                            for (m = 0; m < 6; m++)
-                                memcpy(s->prob_ctx[s->framectxid].coef[i][j][k][l][m],
-                                       s->prob.coef[i][j][k][l][m], 3);
-                if (s->txfmmode == i)
-                    break;
-            }
-            s->prob_ctx[s->framectxid].p = s->prob.p;
-        } else {
+        if (s->pass < 2 && s->refreshctx && !s->parallelmode) {
             ff_vp9_adapt_probs(s);
+            if (can_finish_setup && avctx->active_thread_type & FF_THREAD_FRAME) {
+                ff_thread_finish_setup(avctx);
+                s->setup_finished = 1;
+            }
         }
-    }
+    } while (s->pass++ == 1);
+fail:
+    ff_thread_report_progress(&s->frames[CUR_FRAME].tf, INT_MAX, 0);
+    if (ret < 0)
+        return ret;
 
     // ref frame setup
-    for (i = 0; i < 8; i++)
-        if (s->refreshrefmask & (1 << i)) {
-            ff_thread_release_buffer(avctx, &s->refs[i]);
-            ret = ff_thread_ref_frame(&s->refs[i], &s->frames[CUR_FRAME].tf);
-            if (ret < 0)
-                return ret;
-        }
+    if (!s->setup_finished) {
+        ret = update_refs(avctx);
+        if (ret < 0)
+            return ret;
+    }
 
     if (!s->invisible) {
         av_frame_unref(frame);
@@ -1310,9 +1434,12 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
                              int *got_frame, AVPacket *avpkt)
 {
+    VP9Context *s = avctx->priv_data;
     const uint8_t *data = avpkt->data;
     int size            = avpkt->size;
     int marker, ret;
+
+    s->setup_finished = 0;
 
     /* Read superframe index - this is a collection of individual frames
      * that together lead to one visible frame */
@@ -1339,7 +1466,8 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
                     return AVERROR_INVALIDDATA;
                 }
 
-                ret = vp9_decode_frame(avctx, frame, got_frame, data, sz);
+                ret = vp9_decode_frame(avctx, frame, got_frame, data, sz,
+                                       !n_frames);
                 if (ret < 0)
                     return ret;
                 data += sz;
@@ -1351,7 +1479,7 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
 
     /* If we get here, there was no valid superframe index, i.e. this is just
      * one whole single frame. Decode it as such from the complete input buf. */
-    if ((ret = vp9_decode_frame(avctx, frame, got_frame, data, size)) < 0)
+    if ((ret = vp9_decode_frame(avctx, frame, got_frame, data, size, 1)) < 0)
         return ret;
     return size;
 }
@@ -1384,6 +1512,10 @@ static av_cold int vp9_decode_init(AVCodecContext *avctx)
     VP9Context *s = avctx->priv_data;
     int i;
 
+    memset(s, 0, sizeof(*s));
+
+    avctx->internal->allocate_progress = 1;
+
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     ff_vp9dsp_init(&s->dsp);
@@ -1408,6 +1540,49 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    VP9Context *s = dst->priv_data, *ssrc = src->priv_data;
+    int i, ret;
+
+    ret = update_size(dst, ssrc->alloc_width, ssrc->alloc_height);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < 2; i++) {
+        if (s->frames[i].tf.f->data[0])
+            vp9_frame_unref(dst, &s->frames[i]);
+        if (ssrc->frames[i].tf.f->data[0]) {
+            if ((ret = vp9_frame_ref(&s->frames[i], &ssrc->frames[i])) < 0)
+                return ret;
+        }
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(s->refs); i++) {
+        ff_thread_release_buffer(dst, &s->refs[i]);
+        if (ssrc->refs[i].f->buf[0]) {
+            ret = ff_thread_ref_frame(&s->refs[i], &ssrc->refs[i]);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    s->refreshrefmask = ssrc->refreshrefmask;
+    ret = update_refs(dst);
+    if (ret < 0)
+        return ret;
+
+    s->invisible       = ssrc->invisible;
+    s->keyframe        = ssrc->keyframe;
+    s->last_uses_2pass = ssrc->uses_2pass;
+
+    memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));
+    memcpy(&s->lf_delta, &ssrc->lf_delta, sizeof(s->lf_delta));
+    memcpy(&s->segmentation.feat, &ssrc->segmentation.feat,
+           sizeof(s->segmentation.feat));
+
+    return 0;
+}
+
 AVCodec ff_vp9_decoder = {
     .name           = "vp9",
     .long_name      = NULL_IF_CONFIG_SMALL("Google VP9"),
@@ -1418,5 +1593,7 @@ AVCodec ff_vp9_decoder = {
     .decode         = vp9_decode_packet,
     .flush          = vp9_decode_flush,
     .close          = vp9_decode_free,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .init_thread_copy      = vp9_decode_init,
+    .update_thread_context = vp9_decode_update_thread_context,
 };

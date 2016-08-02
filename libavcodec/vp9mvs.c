@@ -164,6 +164,9 @@ static void find_ref_mvs(VP9Context *s,
     if (s->use_last_frame_mvs) {
         VP9MVRefPair *mv = &s->frames[LAST_FRAME].mv[row * s->sb_cols * 8 + col];
 
+        if (!s->last_uses_2pass)
+            ff_thread_await_progress(&s->frames[LAST_FRAME].tf, row >> 3, 0);
+
         if (mv->ref[0] == ref)
             RETURN_MV(mv->mv[0]);
         else if (mv->ref[1] == ref)
@@ -205,6 +208,7 @@ static void find_ref_mvs(VP9Context *s,
     if (s->use_last_frame_mvs) {
         VP9MVRefPair *mv = &s->frames[LAST_FRAME].mv[row * s->sb_cols * 8 + col];
 
+        // no need to await_progress, because we already did that above
         if (mv->ref[0] != ref && mv->ref[0] >= 0)
             RETURN_SCALE_MV(mv->mv[0],
                             s->signbias[mv->ref[0]] != s->signbias[ref]);
