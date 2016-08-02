@@ -18,10 +18,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_hash_generic
+ * Generic hashing API
+ */
+
 #ifndef AVUTIL_HASH_H
 #define AVUTIL_HASH_H
 
 #include <stdint.h>
+
+/**
+ * @defgroup lavu_hash Hash Functions
+ * @ingroup lavu_crypto
+ *
+ * @{
+ *
+ * @defgroup lavu_hash_generic Generic Hashing API
+ *
+ * @{
+ */
 
 struct AVHashContext;
 
@@ -108,5 +125,10 @@ void av_hash_final_b64(struct AVHashContext *ctx, uint8_t *dst, int size);
  * Free hash context.
  */
 void av_hash_freep(struct AVHashContext **ctx);
+
+/**
+ * @}
+ * @}
+ */
 
 #endif /* AVUTIL_HASH_H */

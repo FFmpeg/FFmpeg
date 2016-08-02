@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_sha512
+ * Public header for SHA-512 implementation.
+ */
+
 #ifndef AVUTIL_SHA512_H
 #define AVUTIL_SHA512_H
 
@@ -28,8 +34,10 @@
 #include "version.h"
 
 /**
- * @defgroup lavu_sha512 SHA512
- * @ingroup lavu_crypto
+ * @defgroup lavu_sha512 SHA-512
+ * @ingroup lavu_hash
+ * SHA-512 (Secure Hash Algorithm) hash function implementations.
+ *
  * @{
  */
 
