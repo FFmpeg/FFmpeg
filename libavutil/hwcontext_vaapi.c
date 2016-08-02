@@ -115,8 +115,10 @@ static struct {
     MAP(BGRX, RGB32,   BGR0),
     MAP(RGBA, RGB32,   RGBA),
     MAP(RGBX, RGB32,   RGB0),
+#ifdef VA_FOURCC_ABGR
     MAP(ABGR, RGB32,   ABGR),
     MAP(XBGR, RGB32,   0BGR),
+#endif
     MAP(ARGB, RGB32,   ARGB),
     MAP(XRGB, RGB32,   0RGB),
 };
