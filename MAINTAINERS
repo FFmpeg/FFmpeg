@@ -164,6 +164,7 @@ Codecs:
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
+  fifo.c                                Jan Sebechlebsky
   flicvideo.c                           Mike Melanson
   g722.c                                Martin Storsjo
   g726.c                                Roman Shaposhnik
