@@ -1,5 +1,5 @@
 /*
- * Blackmagic DeckLink output
+ * Blackmagic DeckLink input
  * Copyright (c) 2014 Deti Fliegl
  *
  * This file is part of FFmpeg.
