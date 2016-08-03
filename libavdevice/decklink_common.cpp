@@ -103,7 +103,7 @@ HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName)
 
 static int decklink_select_input(AVFormatContext *avctx, BMDDeckLinkConfigurationID cfg_id)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     BMDDeckLinkAttributeID attr_id = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? BMDDeckLinkAudioInputConnections : BMDDeckLinkVideoInputConnections;
     int64_t bmd_input              = (cfg_id == bmdDeckLinkConfigAudioInputConnection) ? (int64_t)ctx->audio_input : (int64_t)ctx->video_input;
@@ -135,7 +135,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
                                int tb_num, int tb_den,
                                decklink_direction_t direction, int num)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     BMDDisplayModeSupport support;
     IDeckLinkDisplayModeIterator *itermode;
@@ -255,7 +255,7 @@ int ff_decklink_list_devices(AVFormatContext *avctx)
 
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkDisplayMode *mode;
@@ -305,8 +305,8 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
 
 void ff_decklink_cleanup(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     if (ctx->dli)
         ctx->dli->Release();
