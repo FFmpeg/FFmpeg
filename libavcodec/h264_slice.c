@@ -1635,7 +1635,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
         return ret;
 
     if (sl->slice_type_nos != AV_PICTURE_TYPE_I) {
-       ret = ff_h264_decode_ref_pic_list_reordering(h, sl);
+       ret = ff_h264_decode_ref_pic_list_reordering(sl, h->avctx);
        if (ret < 0) {
            sl->ref_count[1] = sl->ref_count[0] = 0;
            return ret;
@@ -1655,7 +1655,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
 
     sl->explicit_ref_marking = 0;
     if (nal->ref_idc) {
-        ret = ff_h264_decode_ref_pic_marking(h, sl, &sl->gb);
+        ret = ff_h264_decode_ref_pic_marking(sl, &sl->gb, nal, h->avctx);
         if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }

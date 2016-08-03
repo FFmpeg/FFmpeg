@@ -574,7 +574,7 @@ int ff_h264_get_slice_type(const H264SliceContext *sl);
  */
 int ff_h264_alloc_tables(H264Context *h);
 
-int ff_h264_decode_ref_pic_list_reordering(const H264Context *h, H264SliceContext *sl);
+int ff_h264_decode_ref_pic_list_reordering(H264SliceContext *sl, void *logctx);
 int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl);
 void ff_h264_remove_all_refs(H264Context *h);
 
@@ -583,8 +583,8 @@ void ff_h264_remove_all_refs(H264Context *h);
  */
 int ff_h264_execute_ref_pic_marking(H264Context *h);
 
-int ff_h264_decode_ref_pic_marking(const H264Context *h, H264SliceContext *sl,
-                                   GetBitContext *gb);
+int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
+                                   const H2645NAL *nal, void *logctx);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
 int ff_h264_decode_init(AVCodecContext *avctx);
