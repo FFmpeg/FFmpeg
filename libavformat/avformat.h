@@ -28,8 +28,8 @@
  */
 
 /**
- * @defgroup libavf I/O and Muxing/Demuxing Library
- * @{
+ * @defgroup libavf libavformat
+ * I/O and Muxing/Demuxing Library
  *
  * Libavformat (lavf) is a library for dealing with various media container
  * formats. Its main two purposes are demuxing - i.e. splitting a media file
@@ -89,6 +89,8 @@
  * Note that some schemes/protocols are quite powerful, allowing access to
  * both local and remote files, parts of them, concatenations of them, local
  * audio and video devices and so on.
+ *
+ * @{
  *
  * @defgroup lavf_decoding Demuxing
  * @{

@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu
+ * Libavutil version macros
+ */
+
 #ifndef AVUTIL_VERSION_H
 #define AVUTIL_VERSION_H
 
@@ -49,12 +55,6 @@
  */
 
 /**
- * @file
- * @ingroup lavu
- * Libavutil version macros
- */
-
-/**
  * @defgroup lavu_ver Version and Build diagnostics
  *
  * Macros and function useful to check at compiletime and at runtime
@@ -78,9 +78,7 @@
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
 /**
- * @}
- *
- * @defgroup depr_guards Deprecation guards
+ * @defgroup lavu_depr_guards Deprecation Guards
  * FF_API_* defines may be placed below to indicate public API that will be
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
@@ -122,6 +120,7 @@
 
 
 /**
+ * @}
  * @}
  */
 

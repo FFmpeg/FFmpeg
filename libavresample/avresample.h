@@ -28,7 +28,7 @@
  */
 
 /**
- * @defgroup lavr Libavresample
+ * @defgroup lavr libavresample
  * @{
  *
  * Libavresample (lavr) is a library that handles audio resampling, sample
