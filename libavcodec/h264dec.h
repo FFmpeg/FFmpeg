@@ -564,12 +564,6 @@ typedef struct H264Context {
 extern const uint16_t ff_h264_mb_sizes[4];
 
 /**
- * Uninit H264 param sets structure.
- */
-
-void ff_h264_ps_uninit(H264ParamSets *ps);
-
-/**
  * Reconstruct bitstream slice_type.
  */
 int ff_h264_get_slice_type(const H264SliceContext *sl);

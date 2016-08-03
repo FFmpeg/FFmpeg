@@ -156,4 +156,9 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
 int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                          H264ParamSets *ps, int bit_length);
 
+/**
+ * Uninit H264 param sets structure.
+ */
+void ff_h264_ps_uninit(H264ParamSets *ps);
+
 #endif /* AVCODEC_H264_PS_H */
