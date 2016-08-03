@@ -4315,7 +4315,7 @@ uint64_t ff_ntp_time(void)
     return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
 }
 
-int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
+int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)
 {
     const char *p;
     char *q, buf1[20], c;
@@ -4340,7 +4340,7 @@ int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
             case '%':
                 goto addchar;
             case 'd':
-                if (percentd_found)
+                if (!(flags & AV_FRAME_FILENAME_FLAGS_MULTIPLE) && percentd_found)
                     goto fail;
                 percentd_found = 1;
                 if (number < 0)
@@ -4368,6 +4368,11 @@ addchar:
 fail:
     *q = '\0';
     return -1;
+}
+
+int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
+{
+    return av_get_frame_filename2(buf, buf_size, path, number, 0);
 }
 
 void av_url_split(char *proto, int proto_size,

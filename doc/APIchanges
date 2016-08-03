@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-08-04 - xxxxxxx - lavf 57.46.100 - avformat.h
+  Add av_get_frame_filename2()
+
 2016-07-09 - xxxxxxx / 90f469a - lavc 57.50.100 / 57.20.0 - avcodec.h
   Add FF_PROFILE_H264_MULTIVIEW_HIGH and FF_PROFILE_H264_STEREO_HIGH.
 
