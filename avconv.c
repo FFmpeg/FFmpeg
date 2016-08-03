@@ -766,6 +766,15 @@ static int poll_filters(void)
         for (i = 0; i < nb_output_streams; i++) {
             int64_t pts = output_streams[i]->sync_opts;
 
+            if (output_streams[i]->filter && !output_streams[i]->filter->graph->graph &&
+                !output_streams[i]->filter->graph->nb_inputs) {
+                ret = configure_filtergraph(output_streams[i]->filter->graph);
+                if (ret < 0) {
+                    av_log(NULL, AV_LOG_ERROR, "Error reinitializing filters!\n");
+                    return ret;
+                }
+            }
+
             if (!output_streams[i]->filter || output_streams[i]->finished ||
                 !output_streams[i]->filter->graph->graph)
                 continue;
