@@ -783,12 +783,6 @@ again:
                 ret = -1;
                 goto end;
             }
-            if (nal->type != H264_NAL_IDR_SLICE) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "Invalid mix of idr and non-idr slices\n");
-                ret = -1;
-                goto end;
-            }
             if(!idr_cleared) {
                 if (h->current_slice && (avctx->active_thread_type & FF_THREAD_SLICE)) {
                     av_log(h, AV_LOG_ERROR, "invalid mixed IDR / non IDR frames cannot be decoded in slice multithreading mode\n");
