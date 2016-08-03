@@ -53,7 +53,6 @@
 #include "mathops.h"
 #include "rectangle.h"
 #include "tpeldsp.h"
-#include "vdpau_internal.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
