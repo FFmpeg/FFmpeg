@@ -799,6 +799,9 @@ again:
             if ((err = ff_h264_decode_slice_header(h, sl, nal)))
                 break;
 
+            if (sl->redundant_pic_count > 0)
+                break;
+
             if (h->sei.recovery_point.recovery_frame_cnt >= 0) {
                 const int sei_recovery_frame_cnt = h->sei.recovery_point.recovery_frame_cnt;
 
@@ -845,7 +848,6 @@ again:
 #endif
             }
 
-            if (sl->redundant_pic_count == 0) {
                 if (avctx->hwaccel) {
                     ret = avctx->hwaccel->decode_slice(avctx,
                                                        nal->raw_data,
@@ -864,7 +866,6 @@ again:
 #endif
                 } else
                     context_count++;
-            }
             break;
         case H264_NAL_DPA:
         case H264_NAL_DPB:
