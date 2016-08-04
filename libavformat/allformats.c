@@ -311,7 +311,7 @@ void av_register_all(void)
     REGISTER_MUXER   (MKVTIMESTAMP_V2,  mkvtimestamp_v2);
     REGISTER_DEMUXER (TMV,              tmv);
     REGISTER_MUXDEMUX(TRUEHD,           truehd);
-    REGISTER_DEMUXER (TTA,              tta);
+    REGISTER_MUXDEMUX(TTA,              tta);
     REGISTER_DEMUXER (TXD,              txd);
     REGISTER_DEMUXER (TTY,              tty);
     REGISTER_MUXER   (UNCODEDFRAMECRC,  uncodedframecrc);
