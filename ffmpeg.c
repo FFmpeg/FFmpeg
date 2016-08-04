@@ -2677,7 +2677,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         // copy timebase while removing common factors
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
         ost->st->codec->codec= ost->enc_ctx->codec;
-    } else {
+    } else if (ost->stream_copy) {
         ret = av_opt_set_dict(ost->st->codec, &ost->encoder_opts);
         if (ret < 0) {
            av_log(NULL, AV_LOG_FATAL,
