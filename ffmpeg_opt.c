@@ -2220,9 +2220,7 @@ loop_end:
         avio_read(pb, attachment, len);
 
         ost = new_attachment_stream(o, oc, -1);
-        ost->stream_copy               = 1;
         ost->attachment_filename       = o->attachments[i];
-        ost->finished                  = 1;
         ost->st->codec->extradata      = attachment;
         ost->st->codec->extradata_size = len;
 
