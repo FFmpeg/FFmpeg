@@ -816,24 +816,24 @@ again:
 #endif
             }
 
-                if (avctx->hwaccel) {
-                    ret = avctx->hwaccel->decode_slice(avctx,
-                                                       nal->raw_data,
-                                                       nal->raw_size);
-                    if (ret < 0)
-                        goto end;
+            if (avctx->hwaccel) {
+                ret = avctx->hwaccel->decode_slice(avctx,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+                if (ret < 0)
+                    goto end;
 #if FF_API_CAP_VDPAU
-                } else if (CONFIG_H264_VDPAU_DECODER &&
-                           h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
-                    ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                            start_code,
-                                            sizeof(start_code));
-                    ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                            nal->raw_data,
-                                            nal->raw_size);
+            } else if (CONFIG_H264_VDPAU_DECODER &&
+                       h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
+                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
+                                        start_code,
+                                        sizeof(start_code));
+                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
+                                        nal->raw_data,
+                                        nal->raw_size);
 #endif
-                } else
-                    context_count++;
+            } else
+                context_count++;
             break;
         case H264_NAL_DPA:
         case H264_NAL_DPB:
