@@ -111,6 +111,8 @@ void ffio_init_checksum(AVIOContext *s,
 unsigned long ffio_get_checksum(AVIOContext *s);
 unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
                                     unsigned int len);
+unsigned long ff_crcEDB88320_update(unsigned long checksum, const uint8_t *buf,
+                                    unsigned int len);
 unsigned long ff_crcA001_update(unsigned long checksum, const uint8_t *buf,
                                 unsigned int len);
 

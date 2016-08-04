@@ -560,6 +560,12 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
     return av_crc(av_crc_get_table(AV_CRC_32_IEEE), checksum, buf, len);
 }
 
+unsigned long ff_crcEDB88320_update(unsigned long checksum, const uint8_t *buf,
+                                    unsigned int len)
+{
+    return av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), checksum, buf, len);
+}
+
 unsigned long ff_crcA001_update(unsigned long checksum, const uint8_t *buf,
                                 unsigned int len)
 {
