@@ -1624,6 +1624,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
             sl->delta_poc[1] = get_se_golomb(&sl->gb);
     }
 
+    sl->redundant_pic_count = 0;
     if (pps->redundant_pic_cnt_present)
         sl->redundant_pic_count = get_ue_golomb(&sl->gb);
 
