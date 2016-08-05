@@ -140,6 +140,7 @@ const URLProtocol ff_tee_protocol = {
     .name                = "tee",
     .url_open            = tee_open,
     .url_write           = tee_write,
+    .url_close           = tee_close,
     .priv_data_size      = sizeof(TeeContext),
     .priv_data_class     = &tee_class,
     .default_whitelist   = "crypto,file,http,https,httpproxy,rtmp,tcp,tls"
