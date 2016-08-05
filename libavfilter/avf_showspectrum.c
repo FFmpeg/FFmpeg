@@ -61,6 +61,7 @@ typedef struct {
     int color_mode;             ///< display color scheme
     int scale;
     float saturation;           ///< color saturation multiplier
+    float rotation;             ///< color rotation
     int data;
     int xpos;                   ///< x position (current column)
     FFTContext *fft;            ///< Fast Fourier Transform context
@@ -140,6 +141,7 @@ static const AVOption showspectrum_options[] = {
     { "data", "set data mode", OFFSET(data), AV_OPT_TYPE_INT, {.i64 = 0}, 0, NB_DMODES-1, FLAGS, "data" },
         { "magnitude", NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_MAGNITUDE}, 0, 0, FLAGS, "data" },
         { "phase",     NULL, 0, AV_OPT_TYPE_CONST, {.i64=D_PHASE},     0, 0, FLAGS, "data" },
+    { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { NULL }
 };
 
@@ -542,13 +544,17 @@ static void color_range(ShowSpectrumContext *s, int ch,
 
     if (s->color_mode == CHANNEL) {
         if (s->nb_display_channels > 1) {
-            *uf *= 0.5 * sin((2 * M_PI * ch) / s->nb_display_channels);
-            *vf *= 0.5 * cos((2 * M_PI * ch) / s->nb_display_channels);
+            *uf *= 0.5 * sin((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
+            *vf *= 0.5 * cos((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
         } else {
-            *uf = 0.0f;
-            *vf = 0.0f;
+            *uf *= 0.5 * sin(M_PI * s->rotation);
+            *vf *= 0.5 * cos(M_PI * s->rotation + M_PI_2);
         }
+    } else {
+        *uf += *uf * sin(M_PI * s->rotation);
+        *vf += *vf * cos(M_PI * s->rotation + M_PI_2);
     }
+
     *uf *= s->saturation;
     *vf *= s->saturation;
 }
@@ -913,6 +919,7 @@ static const AVOption showspectrumpic_options[] = {
         { "horizontal", NULL, 0, AV_OPT_TYPE_CONST, {.i64=HORIZONTAL}, 0, 0, FLAGS, "orientation" },
     { "gain", "set scale gain", OFFSET(gain), AV_OPT_TYPE_FLOAT, {.dbl = 1}, 0, 128, FLAGS },
     { "legend", "draw legend", OFFSET(legend), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { NULL }
 };
 

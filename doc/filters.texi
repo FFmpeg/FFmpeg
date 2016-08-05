@@ -16500,6 +16500,10 @@ Default value is @code{1}.
 
 @item data
 Set which data to display. Can be @code{magnitude}, default or @code{phase}.
+
+@item rotation
+Set color rotation, must be in [-1.0, 1.0] range.
+Default value is @code{0}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -16633,6 +16637,10 @@ Default value is @code{1}.
 
 @item legend
 Draw time and frequency axes and legends. Default is enabled.
+
+@item rotation
+Set color rotation, must be in [-1.0, 1.0] range.
+Default value is @code{0}.
 @end table
 
 @subsection Examples
