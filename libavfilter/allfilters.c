@@ -156,6 +156,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(COLORMATRIX,    colormatrix,    vf);
     REGISTER_FILTER(COLORSPACE,     colorspace,     vf);
     REGISTER_FILTER(CONVOLUTION,    convolution,    vf);
+    REGISTER_FILTER(CONVSELECTIVE,  convselective,  vf);
     REGISTER_FILTER(COPY,           copy,           vf);
     REGISTER_FILTER(COREIMAGE,      coreimage,      vf);
     REGISTER_FILTER(COVER_RECT,     cover_rect,     vf);
