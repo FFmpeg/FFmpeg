@@ -67,10 +67,10 @@ static const AVOption convselective_options[] = {
     { "1bias", "set bias for 2nd plane", OFFSET(bias[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "2bias", "set bias for 3rd plane", OFFSET(bias[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "3bias", "set bias for 4th plane", OFFSET(bias[3]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
-    { "xoff", "x offset", OFFSET(x_offset), AV_OPT_TYPE_INT, {.dbl=0}, 0, INT_MAX, FLAGS},
-    { "yoff", "y offset", OFFSET(y_offset), AV_OPT_TYPE_INT, {.dbl=0}, 0, INT_MAX, FLAGS},
-    { "xfac", "x factor", OFFSET(x_factor), AV_OPT_TYPE_INT, {.dbl=1}, 0, INT_MAX, FLAGS},
-    { "yfac", "y factor", OFFSET(y_factor), AV_OPT_TYPE_INT, {.dbl=1}, 0, INT_MAX, FLAGS},
+    { "xoff", "x offset", OFFSET(x_offset), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
+    { "yoff", "y offset", OFFSET(y_offset), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
+    { "xfac", "x factor", OFFSET(x_factor), AV_OPT_TYPE_INT, {.i64=1}, 0, INT_MAX, FLAGS},
+    { "yfac", "y factor", OFFSET(y_factor), AV_OPT_TYPE_INT, {.i64=1}, 0, INT_MAX, FLAGS},
     { NULL }
 };
 
