@@ -171,9 +171,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     pic_param->sequence_fields.bits.syncmarker                      = v->resync_marker;
     pic_param->sequence_fields.bits.rangered                        = v->rangered;
     pic_param->sequence_fields.bits.max_b_frames                    = s->avctx->max_b_frames;
-#if VA_CHECK_VERSION(0,32,0)
     pic_param->sequence_fields.bits.profile                         = v->profile;
-#endif
     pic_param->coded_width                                          = s->avctx->coded_width;
     pic_param->coded_height                                         = s->avctx->coded_height;
     pic_param->entrypoint_fields.value                              = 0; /* reset all bits */
