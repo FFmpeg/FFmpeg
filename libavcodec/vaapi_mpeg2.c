@@ -26,22 +26,22 @@
 #include "internal.h"
 
 /** Reconstruct bitstream f_code */
-static inline int mpeg2_get_f_code(MpegEncContext *s)
+static inline int mpeg2_get_f_code(const MpegEncContext *s)
 {
     return (s->mpeg_f_code[0][0] << 12) | (s->mpeg_f_code[0][1] << 8) |
            (s->mpeg_f_code[1][0] <<  4) |  s->mpeg_f_code[1][1];
 }
 
 /** Determine frame start: first field for field picture or frame picture */
-static inline int mpeg2_get_is_frame_start(MpegEncContext *s)
+static inline int mpeg2_get_is_frame_start(const MpegEncContext *s)
 {
     return s->first_field || s->picture_structure == PICT_FRAME;
 }
 
 static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
 {
-    struct MpegEncContext * const s = avctx->priv_data;
-    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
+    const MpegEncContext *s = avctx->priv_data;
+    FFVAContext *vactx = ff_vaapi_get_context(avctx);
     VAPictureParameterBufferMPEG2 *pic_param;
     VAIQMatrixBufferMPEG2 *iq_matrix;
     int i;
@@ -101,8 +101,8 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 
 static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
-    MpegEncContext * const s = avctx->priv_data;
-    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
+    const MpegEncContext *s = avctx->priv_data;
+    FFVAContext *vactx = ff_vaapi_get_context(avctx);
     VASliceParameterBufferMPEG2 *slice_param;
     GetBitContext gb;
     uint32_t quantiser_scale_code, intra_slice_flag, macroblock_offset;
