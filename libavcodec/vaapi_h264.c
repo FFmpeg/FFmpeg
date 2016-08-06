@@ -53,7 +53,7 @@ static void init_vaapi_pic(VAPictureH264 *va_pic)
  *                             supersedes pic's field type if nonzero.
  */
 static void fill_vaapi_pic(VAPictureH264 *va_pic,
-                           H264Picture   *pic,
+                           const H264Picture *pic,
                            int            pic_structure)
 {
     if (pic_structure == 0)
@@ -91,7 +91,7 @@ typedef struct DPB {
  * available.  The decoded picture buffer's size must be large enough
  * to receive the new VA API picture object.
  */
-static int dpb_add(DPB *dpb, H264Picture *pic)
+static int dpb_add(DPB *dpb, const H264Picture *pic)
 {
     int i;
 
@@ -123,7 +123,7 @@ static int dpb_add(DPB *dpb, H264Picture *pic)
 
 /** Fill in VA API reference frames array. */
 static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
-                                      H264Context                  *h)
+                                      const H264Context            *h)
 {
     DPB dpb;
     int i;
@@ -135,13 +135,13 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
         init_vaapi_pic(&dpb.va_pics[i]);
 
     for (i = 0; i < h->short_ref_count; i++) {
-        H264Picture * const pic = h->short_ref[i];
+        const H264Picture *pic = h->short_ref[i];
         if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
             return -1;
     }
 
     for (i = 0; i < 16; i++) {
-        H264Picture * const pic = h->long_ref[i];
+        const H264Picture *pic = h->long_ref[i];
         if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
             return -1;
     }
@@ -157,7 +157,7 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
  * @param[in]  ref_count   The number of reference pictures in ref_list
  */
 static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],
-                                  H264Ref  *ref_list,
+                                  const H264Ref *ref_list,
                                   unsigned int  ref_count)
 {
     unsigned int i, n = 0;
@@ -184,7 +184,7 @@ static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],
  * @param[out] chroma_weight       VA API plain chroma weight table
  * @param[out] chroma_offset       VA API plain chroma offset table
  */
-static void fill_vaapi_plain_pred_weight_table(H264Context   *h,
+static void fill_vaapi_plain_pred_weight_table(const H264Context *h,
                                                int            list,
                                                unsigned char *luma_weight_flag,
                                                short          luma_weight[32],
@@ -193,7 +193,7 @@ static void fill_vaapi_plain_pred_weight_table(H264Context   *h,
                                                short          chroma_weight[32][2],
                                                short          chroma_offset[32][2])
 {
-    H264SliceContext *sl = &h->slice_ctx[0];
+    const H264SliceContext *sl = &h->slice_ctx[0];
     unsigned int i, j;
 
     *luma_weight_flag    = sl->pwt.luma_weight_flag[list];
@@ -226,7 +226,7 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
                                   av_unused const uint8_t *buffer,
                                   av_unused uint32_t       size)
 {
-    H264Context * const h = avctx->priv_data;
+    const H264Context *h = avctx->priv_data;
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     const PPS *pps = h->ps.pps;
     const SPS *sps = h->ps.sps;
@@ -293,7 +293,7 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
 static int vaapi_h264_end_frame(AVCodecContext *avctx)
 {
     struct vaapi_context * const vactx = avctx->hwaccel_context;
-    H264Context * const h = avctx->priv_data;
+    const H264Context *h = avctx->priv_data;
     H264SliceContext *sl = &h->slice_ctx[0];
     int ret;
 
@@ -317,8 +317,8 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
                                    const uint8_t  *buffer,
                                    uint32_t        size)
 {
-    H264Context * const h = avctx->priv_data;
-    H264SliceContext *sl  = &h->slice_ctx[0];
+    const H264Context *h = avctx->priv_data;
+    const H264SliceContext *sl  = &h->slice_ctx[0];
     VASliceParameterBufferH264 *slice_param;
 
     /* Fill in VASliceParameterBufferH264. */
