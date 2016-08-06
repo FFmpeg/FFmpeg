@@ -20,10 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "vaapi_internal.h"
 #include "h264dec.h"
 #include "h264_ps.h"
-#include "mpegutils.h"
+#include "vaapi_decode.h"
 
 /**
  * @file
@@ -227,88 +226,102 @@ static int vaapi_h264_start_frame(AVCodecContext          *avctx,
                                   av_unused uint32_t       size)
 {
     const H264Context *h = avctx->priv_data;
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    VAAPIDecodePicture *pic = h->cur_pic_ptr->hwaccel_picture_private;
     const PPS *pps = h->ps.pps;
     const SPS *sps = h->ps.sps;
-    VAPictureParameterBufferH264 *pic_param;
-    VAIQMatrixBufferH264 *iq_matrix;
+    VAPictureParameterBufferH264 pic_param;
+    VAIQMatrixBufferH264 iq_matrix;
+    int err;
 
-    vactx->slice_param_size = sizeof(VASliceParameterBufferH264);
+    pic->output_surface = ff_vaapi_get_surface_id(h->cur_pic_ptr->f);
 
-    /* Fill in VAPictureParameterBufferH264. */
-    pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferH264));
-    if (!pic_param)
-        return -1;
-    fill_vaapi_pic(&pic_param->CurrPic, h->cur_pic_ptr, h->picture_structure);
-    if (fill_vaapi_ReferenceFrames(pic_param, h) < 0)
-        return -1;
-    pic_param->picture_width_in_mbs_minus1                      = h->mb_width - 1;
-    pic_param->picture_height_in_mbs_minus1                     = h->mb_height - 1;
-    pic_param->bit_depth_luma_minus8                            = sps->bit_depth_luma - 8;
-    pic_param->bit_depth_chroma_minus8                          = sps->bit_depth_chroma - 8;
-    pic_param->num_ref_frames                                   = sps->ref_frame_count;
-    pic_param->seq_fields.value                                 = 0; /* reset all bits */
-    pic_param->seq_fields.bits.chroma_format_idc                = sps->chroma_format_idc;
-    pic_param->seq_fields.bits.residual_colour_transform_flag   = sps->residual_color_transform_flag; /* XXX: only for 4:4:4 high profile? */
-    pic_param->seq_fields.bits.gaps_in_frame_num_value_allowed_flag = sps->gaps_in_frame_num_allowed_flag;
-    pic_param->seq_fields.bits.frame_mbs_only_flag              = sps->frame_mbs_only_flag;
-    pic_param->seq_fields.bits.mb_adaptive_frame_field_flag     = sps->mb_aff;
-    pic_param->seq_fields.bits.direct_8x8_inference_flag        = sps->direct_8x8_inference_flag;
-    pic_param->seq_fields.bits.MinLumaBiPredSize8x8             = sps->level_idc >= 31; /* A.3.3.2 */
-    pic_param->seq_fields.bits.log2_max_frame_num_minus4        = sps->log2_max_frame_num - 4;
-    pic_param->seq_fields.bits.pic_order_cnt_type               = sps->poc_type;
-    pic_param->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = sps->log2_max_poc_lsb - 4;
-    pic_param->seq_fields.bits.delta_pic_order_always_zero_flag = sps->delta_pic_order_always_zero_flag;
-    pic_param->num_slice_groups_minus1                          = pps->slice_group_count - 1;
-    pic_param->slice_group_map_type                             = pps->mb_slice_group_map_type;
-    pic_param->slice_group_change_rate_minus1                   = 0; /* XXX: unimplemented in Libav */
-    pic_param->pic_init_qp_minus26                              = pps->init_qp - 26;
-    pic_param->pic_init_qs_minus26                              = pps->init_qs - 26;
-    pic_param->chroma_qp_index_offset                           = pps->chroma_qp_index_offset[0];
-    pic_param->second_chroma_qp_index_offset                    = pps->chroma_qp_index_offset[1];
-    pic_param->pic_fields.value                                 = 0; /* reset all bits */
-    pic_param->pic_fields.bits.entropy_coding_mode_flag         = pps->cabac;
-    pic_param->pic_fields.bits.weighted_pred_flag               = pps->weighted_pred;
-    pic_param->pic_fields.bits.weighted_bipred_idc              = pps->weighted_bipred_idc;
-    pic_param->pic_fields.bits.transform_8x8_mode_flag          = pps->transform_8x8_mode;
-    pic_param->pic_fields.bits.field_pic_flag                   = h->picture_structure != PICT_FRAME;
-    pic_param->pic_fields.bits.constrained_intra_pred_flag      = pps->constrained_intra_pred;
-    pic_param->pic_fields.bits.pic_order_present_flag           = pps->pic_order_present;
-    pic_param->pic_fields.bits.deblocking_filter_control_present_flag = pps->deblocking_filter_parameters_present;
-    pic_param->pic_fields.bits.redundant_pic_cnt_present_flag   = pps->redundant_pic_cnt_present;
-    pic_param->pic_fields.bits.reference_pic_flag               = h->nal_ref_idc != 0;
-    pic_param->frame_num                                        = h->poc.frame_num;
+    pic_param = (VAPictureParameterBufferH264) {
+        .picture_width_in_mbs_minus1                = h->mb_width - 1,
+        .picture_height_in_mbs_minus1               = h->mb_height - 1,
+        .bit_depth_luma_minus8                      = sps->bit_depth_luma - 8,
+        .bit_depth_chroma_minus8                    = sps->bit_depth_chroma - 8,
+        .num_ref_frames                             = sps->ref_frame_count,
+        .seq_fields.bits = {
+            .chroma_format_idc                      = sps->chroma_format_idc,
+            .residual_colour_transform_flag         = sps->residual_color_transform_flag,
+            .gaps_in_frame_num_value_allowed_flag   = sps->gaps_in_frame_num_allowed_flag,
+            .frame_mbs_only_flag                    = sps->frame_mbs_only_flag,
+            .mb_adaptive_frame_field_flag           = sps->mb_aff,
+            .direct_8x8_inference_flag              = sps->direct_8x8_inference_flag,
+            .MinLumaBiPredSize8x8                   = sps->level_idc >= 31, /* A.3.3.2 */
+            .log2_max_frame_num_minus4              = sps->log2_max_frame_num - 4,
+            .pic_order_cnt_type                     = sps->poc_type,
+            .log2_max_pic_order_cnt_lsb_minus4      = sps->log2_max_poc_lsb - 4,
+            .delta_pic_order_always_zero_flag       = sps->delta_pic_order_always_zero_flag,
+        },
+        .num_slice_groups_minus1                    = pps->slice_group_count - 1,
+        .slice_group_map_type                       = pps->mb_slice_group_map_type,
+        .slice_group_change_rate_minus1             = 0, /* FMO is not implemented */
+        .pic_init_qp_minus26                        = pps->init_qp - 26,
+        .pic_init_qs_minus26                        = pps->init_qs - 26,
+        .chroma_qp_index_offset                     = pps->chroma_qp_index_offset[0],
+        .second_chroma_qp_index_offset              = pps->chroma_qp_index_offset[1],
+        .pic_fields.bits = {
+            .entropy_coding_mode_flag               = pps->cabac,
+            .weighted_pred_flag                     = pps->weighted_pred,
+            .weighted_bipred_idc                    = pps->weighted_bipred_idc,
+            .transform_8x8_mode_flag                = pps->transform_8x8_mode,
+            .field_pic_flag                         = h->picture_structure != PICT_FRAME,
+            .constrained_intra_pred_flag            = pps->constrained_intra_pred,
+            .pic_order_present_flag                 = pps->pic_order_present,
+            .deblocking_filter_control_present_flag = pps->deblocking_filter_parameters_present,
+            .redundant_pic_cnt_present_flag         = pps->redundant_pic_cnt_present,
+            .reference_pic_flag                     = h->nal_ref_idc != 0,
+        },
+        .frame_num                                  = h->poc.frame_num,
+    };
 
-    /* Fill in VAIQMatrixBufferH264. */
-    iq_matrix = ff_vaapi_alloc_iq_matrix(vactx, sizeof(VAIQMatrixBufferH264));
-    if (!iq_matrix)
-        return -1;
-    memcpy(iq_matrix->ScalingList4x4, pps->scaling_matrix4, sizeof(iq_matrix->ScalingList4x4));
-    memcpy(iq_matrix->ScalingList8x8[0], pps->scaling_matrix8[0], sizeof(iq_matrix->ScalingList8x8[0]));
-    memcpy(iq_matrix->ScalingList8x8[1], pps->scaling_matrix8[3], sizeof(iq_matrix->ScalingList8x8[0]));
+    fill_vaapi_pic(&pic_param.CurrPic, h->cur_pic_ptr, h->picture_structure);
+    err = fill_vaapi_ReferenceFrames(&pic_param, h);
+    if (err < 0)
+        goto fail;
+
+    err = ff_vaapi_decode_make_param_buffer(avctx, pic,
+                                            VAPictureParameterBufferType,
+                                            &pic_param, sizeof(pic_param));
+    if (err < 0)
+        goto fail;
+
+    memcpy(iq_matrix.ScalingList4x4,
+           pps->scaling_matrix4, sizeof(iq_matrix.ScalingList4x4));
+    memcpy(iq_matrix.ScalingList8x8[0],
+           pps->scaling_matrix8[0], sizeof(iq_matrix.ScalingList8x8[0]));
+    memcpy(iq_matrix.ScalingList8x8[1],
+           pps->scaling_matrix8[3], sizeof(iq_matrix.ScalingList8x8[0]));
+
+    err = ff_vaapi_decode_make_param_buffer(avctx, pic,
+                                            VAIQMatrixBufferType,
+                                            &iq_matrix, sizeof(iq_matrix));
+    if (err < 0)
+        goto fail;
+
     return 0;
+
+fail:
+    ff_vaapi_decode_cancel(avctx, pic);
+    return err;
 }
 
 /** End a hardware decoding based frame. */
 static int vaapi_h264_end_frame(AVCodecContext *avctx)
 {
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
     const H264Context *h = avctx->priv_data;
+    VAAPIDecodePicture *pic = h->cur_pic_ptr->hwaccel_picture_private;
     H264SliceContext *sl = &h->slice_ctx[0];
     int ret;
 
-    ret = ff_vaapi_commit_slices(vactx);
-    if (ret < 0)
-        goto finish;
-
-    ret = ff_vaapi_render_picture(vactx, ff_vaapi_get_surface_id(h->cur_pic_ptr->f));
+    ret = ff_vaapi_decode_issue(avctx, pic);
     if (ret < 0)
         goto finish;
 
     ff_h264_draw_horiz_band(h, sl, 0, h->avctx->height);
 
 finish:
-    ff_vaapi_common_end_frame(avctx);
     return ret;
 }
 
@@ -318,45 +331,71 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
                                    uint32_t        size)
 {
     const H264Context *h = avctx->priv_data;
+    VAAPIDecodePicture *pic = h->cur_pic_ptr->hwaccel_picture_private;
     const H264SliceContext *sl  = &h->slice_ctx[0];
-    VASliceParameterBufferH264 *slice_param;
+    VASliceParameterBufferH264 slice_param;
+    int err;
 
-    /* Fill in VASliceParameterBufferH264. */
-    slice_param = (VASliceParameterBufferH264 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
-    if (!slice_param)
-        return -1;
-    slice_param->slice_data_bit_offset          = get_bits_count(&sl->gb);
-    slice_param->first_mb_in_slice              = (sl->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + sl->mb_x;
-    slice_param->slice_type                     = ff_h264_get_slice_type(sl);
-    slice_param->direct_spatial_mv_pred_flag    = sl->slice_type == AV_PICTURE_TYPE_B ? sl->direct_spatial_mv_pred : 0;
-    slice_param->num_ref_idx_l0_active_minus1   = sl->list_count > 0 ? sl->ref_count[0] - 1 : 0;
-    slice_param->num_ref_idx_l1_active_minus1   = sl->list_count > 1 ? sl->ref_count[1] - 1 : 0;
-    slice_param->cabac_init_idc                 = sl->cabac_init_idc;
-    slice_param->slice_qp_delta                 = sl->qscale - h->ps.pps->init_qp;
-    slice_param->disable_deblocking_filter_idc  = sl->deblocking_filter < 2 ? !sl->deblocking_filter : sl->deblocking_filter;
-    slice_param->slice_alpha_c0_offset_div2     = sl->slice_alpha_c0_offset / 2;
-    slice_param->slice_beta_offset_div2         = sl->slice_beta_offset     / 2;
-    slice_param->luma_log2_weight_denom         = sl->pwt.luma_log2_weight_denom;
-    slice_param->chroma_log2_weight_denom       = sl->pwt.chroma_log2_weight_denom;
+    slice_param = (VASliceParameterBufferH264) {
+        .slice_data_size               = size,
+        .slice_data_offset             = 0,
+        .slice_data_flag               = VA_SLICE_DATA_FLAG_ALL,
+        .slice_data_bit_offset         = get_bits_count(&sl->gb),
+        .first_mb_in_slice             = (sl->mb_y >> FIELD_OR_MBAFF_PICTURE(h)) * h->mb_width + sl->mb_x,
+        .slice_type                    = ff_h264_get_slice_type(sl),
+        .direct_spatial_mv_pred_flag   = sl->slice_type == AV_PICTURE_TYPE_B ? sl->direct_spatial_mv_pred : 0,
+        .num_ref_idx_l0_active_minus1  = sl->list_count > 0 ? sl->ref_count[0] - 1 : 0,
+        .num_ref_idx_l1_active_minus1  = sl->list_count > 1 ? sl->ref_count[1] - 1 : 0,
+        .cabac_init_idc                = sl->cabac_init_idc,
+        .slice_qp_delta                = sl->qscale - h->ps.pps->init_qp,
+        .disable_deblocking_filter_idc = sl->deblocking_filter < 2 ? !sl->deblocking_filter : sl->deblocking_filter,
+        .slice_alpha_c0_offset_div2    = sl->slice_alpha_c0_offset / 2,
+        .slice_beta_offset_div2        = sl->slice_beta_offset     / 2,
+        .luma_log2_weight_denom        = sl->pwt.luma_log2_weight_denom,
+        .chroma_log2_weight_denom      = sl->pwt.chroma_log2_weight_denom,
+    };
 
-    fill_vaapi_RefPicList(slice_param->RefPicList0, sl->ref_list[0], sl->list_count > 0 ? sl->ref_count[0] : 0);
-    fill_vaapi_RefPicList(slice_param->RefPicList1, sl->ref_list[1], sl->list_count > 1 ? sl->ref_count[1] : 0);
+    fill_vaapi_RefPicList(slice_param.RefPicList0, sl->ref_list[0],
+                          sl->list_count > 0 ? sl->ref_count[0] : 0);
+    fill_vaapi_RefPicList(slice_param.RefPicList1, sl->ref_list[1],
+                          sl->list_count > 1 ? sl->ref_count[1] : 0);
 
     fill_vaapi_plain_pred_weight_table(h, 0,
-                                       &slice_param->luma_weight_l0_flag,   slice_param->luma_weight_l0,   slice_param->luma_offset_l0,
-                                       &slice_param->chroma_weight_l0_flag, slice_param->chroma_weight_l0, slice_param->chroma_offset_l0);
+                                       &slice_param.luma_weight_l0_flag,
+                                       slice_param.luma_weight_l0,
+                                       slice_param.luma_offset_l0,
+                                       &slice_param.chroma_weight_l0_flag,
+                                       slice_param.chroma_weight_l0,
+                                       slice_param.chroma_offset_l0);
     fill_vaapi_plain_pred_weight_table(h, 1,
-                                       &slice_param->luma_weight_l1_flag,   slice_param->luma_weight_l1,   slice_param->luma_offset_l1,
-                                       &slice_param->chroma_weight_l1_flag, slice_param->chroma_weight_l1, slice_param->chroma_offset_l1);
+                                       &slice_param.luma_weight_l1_flag,
+                                       slice_param.luma_weight_l1,
+                                       slice_param.luma_offset_l1,
+                                       &slice_param.chroma_weight_l1_flag,
+                                       slice_param.chroma_weight_l1,
+                                       slice_param.chroma_offset_l1);
+
+    err = ff_vaapi_decode_make_slice_buffer(avctx, pic,
+                                            &slice_param, sizeof(slice_param),
+                                            buffer, size);
+    if (err) {
+        ff_vaapi_decode_cancel(avctx, pic);
+        return err;
+    }
+
     return 0;
 }
 
 AVHWAccel ff_h264_vaapi_hwaccel = {
-    .name           = "h264_vaapi",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .pix_fmt        = AV_PIX_FMT_VAAPI,
-    .start_frame    = vaapi_h264_start_frame,
-    .end_frame      = vaapi_h264_end_frame,
-    .decode_slice   = vaapi_h264_decode_slice,
+    .name                 = "h264_vaapi",
+    .type                 = AVMEDIA_TYPE_VIDEO,
+    .id                   = AV_CODEC_ID_H264,
+    .pix_fmt              = AV_PIX_FMT_VAAPI,
+    .start_frame          = &vaapi_h264_start_frame,
+    .end_frame            = &vaapi_h264_end_frame,
+    .decode_slice         = &vaapi_h264_decode_slice,
+    .frame_priv_data_size = sizeof(VAAPIDecodePicture),
+    .init                 = &ff_vaapi_decode_init,
+    .uninit               = &ff_vaapi_decode_uninit,
+    .priv_data_size       = sizeof(VAAPIDecodeContext),
 };
