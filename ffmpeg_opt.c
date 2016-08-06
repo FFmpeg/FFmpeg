@@ -1172,21 +1172,39 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
     return ret;
 }
 
-static void choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *ost)
+static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *ost)
 {
+    enum AVMediaType type = ost->st->codec->codec_type;
     char *codec_name = NULL;
 
-    MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
-    if (!codec_name) {
-        ost->st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename,
-                                                  NULL, ost->st->codec->codec_type);
-        ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
-    } else if (!strcmp(codec_name, "copy"))
-        ost->stream_copy = 1;
-    else {
-        ost->enc = find_codec_or_die(codec_name, ost->st->codec->codec_type, 1);
-        ost->st->codec->codec_id = ost->enc->id;
+    if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO || type == AVMEDIA_TYPE_SUBTITLE) {
+        MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
+        if (!codec_name) {
+            ost->st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename,
+                                                      NULL, ost->st->codec->codec_type);
+            ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+            if (!ost->enc) {
+                av_log(NULL, AV_LOG_FATAL, "Automatic encoder selection failed for "
+                       "output stream #%d:%d. Default encoder for format %s (codec %s) is "
+                       "probably disabled. Please choose an encoder manually.\n",
+                       ost->file_index, ost->index, s->oformat->name,
+                       avcodec_get_name(ost->st->codec->codec_id));
+                return AVERROR_ENCODER_NOT_FOUND;
+            }
+        } else if (!strcmp(codec_name, "copy"))
+            ost->stream_copy = 1;
+        else {
+            ost->enc = find_codec_or_die(codec_name, ost->st->codec->codec_type, 1);
+            ost->st->codec->codec_id = ost->enc->id;
+        }
+        ost->encoding_needed = !ost->stream_copy;
+    } else {
+        /* no encoding supported for other media types */
+        ost->stream_copy     = 1;
+        ost->encoding_needed = 0;
     }
+
+    return 0;
 }
 
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type, int source_index)
@@ -1216,7 +1234,13 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->index      = idx;
     ost->st         = st;
     st->codec->codec_type = type;
-    choose_encoder(o, oc, ost);
+
+    ret = choose_encoder(o, oc, ost);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Error selecting an encoder for stream "
+               "%d:%d\n", ost->file_index, ost->index);
+        exit_program(1);
+    }
 
     ost->enc_ctx = avcodec_alloc_context3(ost->enc);
     if (!ost->enc_ctx) {
@@ -2288,11 +2312,10 @@ loop_end:
     }
     av_dict_free(&unused_opts);
 
-    /* set the encoding/decoding_needed flags and create simple filtergraphs*/
+    /* set the decoding_needed flags and create simple filtergraphs */
     for (i = of->ost_index; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
-        ost->encoding_needed = !ost->stream_copy;
         if (ost->encoding_needed && ost->source_index >= 0) {
             InputStream *ist = input_streams[ost->source_index];
             ist->decoding_needed |= DECODING_FOR_OST;

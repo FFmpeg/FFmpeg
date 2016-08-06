@@ -3047,16 +3047,6 @@ static int transcode_init(void)
                 abort();
             }
         } else {
-            if (!ost->enc)
-                ost->enc = avcodec_find_encoder(enc_ctx->codec_id);
-            if (!ost->enc) {
-                /* should only happen when a default codec is not present. */
-                snprintf(error, sizeof(error), "Encoder (codec %s) not found for output stream #%d:%d",
-                         avcodec_get_name(ost->st->codec->codec_id), ost->file_index, ost->index);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
-
             set_encoder_id(output_files[ost->file_index], ost);
 
 #if CONFIG_LIBMFX
