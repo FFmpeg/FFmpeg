@@ -2110,6 +2110,20 @@ Set temperature degree in Celsius. This is the temperature of the environment.
 Default is 20.
 @end table
 
+@section crystalizer
+Simple algorithm to expand audio dynamic range.
+
+The filter accepts the following options:
+
+@table @option
+@item i
+Sets the intensity of effect (default: 2.0). Must be in range between 0.0
+(unchanged sound) to 10.0 (maximum effect).
+
+@item c
+Enable clipping. By default is enabled.
+@end table
+
 @section dcshift
 Apply a DC shift to the audio.
 
