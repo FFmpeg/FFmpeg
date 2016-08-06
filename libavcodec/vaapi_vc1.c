@@ -39,7 +39,7 @@ static int get_VAMvModeVC1(enum MVModes mv_mode)
 }
 
 /** Check whether the MVTYPEMB bitplane is present */
-static inline int vc1_has_MVTYPEMB_bitplane(VC1Context *v)
+static inline int vc1_has_MVTYPEMB_bitplane(const VC1Context *v)
 {
     if (v->mv_type_is_raw)
         return 0;
@@ -50,7 +50,7 @@ static inline int vc1_has_MVTYPEMB_bitplane(VC1Context *v)
 }
 
 /** Check whether the SKIPMB bitplane is present */
-static inline int vc1_has_SKIPMB_bitplane(VC1Context *v)
+static inline int vc1_has_SKIPMB_bitplane(const VC1Context *v)
 {
     if (v->skip_is_raw)
         return 0;
@@ -59,7 +59,7 @@ static inline int vc1_has_SKIPMB_bitplane(VC1Context *v)
 }
 
 /** Check whether the DIRECTMB bitplane is present */
-static inline int vc1_has_DIRECTMB_bitplane(VC1Context *v)
+static inline int vc1_has_DIRECTMB_bitplane(const VC1Context *v)
 {
     if (v->dmb_is_raw)
         return 0;
@@ -67,7 +67,7 @@ static inline int vc1_has_DIRECTMB_bitplane(VC1Context *v)
 }
 
 /** Check whether the ACPRED bitplane is present */
-static inline int vc1_has_ACPRED_bitplane(VC1Context *v)
+static inline int vc1_has_ACPRED_bitplane(const VC1Context *v)
 {
     if (v->acpred_is_raw)
         return 0;
@@ -77,7 +77,7 @@ static inline int vc1_has_ACPRED_bitplane(VC1Context *v)
 }
 
 /** Check whether the OVERFLAGS bitplane is present */
-static inline int vc1_has_OVERFLAGS_bitplane(VC1Context *v)
+static inline int vc1_has_OVERFLAGS_bitplane(const VC1Context *v)
 {
     if (v->overflg_is_raw)
         return 0;
@@ -89,9 +89,9 @@ static inline int vc1_has_OVERFLAGS_bitplane(VC1Context *v)
 }
 
 /** Reconstruct bitstream PTYPE (7.1.1.4, index into Table-35) */
-static int vc1_get_PTYPE(VC1Context *v)
+static int vc1_get_PTYPE(const VC1Context *v)
 {
-    MpegEncContext * const s = &v->s;
+    const MpegEncContext *s = &v->s;
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_I: return 0;
     case AV_PICTURE_TYPE_P: return v->p_frame_skipped ? 4 : 1;
@@ -101,7 +101,7 @@ static int vc1_get_PTYPE(VC1Context *v)
 }
 
 /** Reconstruct bitstream MVMODE (7.1.1.32) */
-static inline VAMvModeVC1 vc1_get_MVMODE(VC1Context *v)
+static inline VAMvModeVC1 vc1_get_MVMODE(const VC1Context *v)
 {
     if (v->s.pict_type == AV_PICTURE_TYPE_P ||
         (v->s.pict_type == AV_PICTURE_TYPE_B && !v->bi_type))
@@ -110,7 +110,7 @@ static inline VAMvModeVC1 vc1_get_MVMODE(VC1Context *v)
 }
 
 /** Reconstruct bitstream MVMODE2 (7.1.1.33) */
-static inline VAMvModeVC1 vc1_get_MVMODE2(VC1Context *v)
+static inline VAMvModeVC1 vc1_get_MVMODE2(const VC1Context *v)
 {
     if (v->s.pict_type == AV_PICTURE_TYPE_P && v->mv_mode == MV_PMODE_INTENSITY_COMP)
         return get_VAMvModeVC1(v->mv_mode2);
@@ -118,7 +118,7 @@ static inline VAMvModeVC1 vc1_get_MVMODE2(VC1Context *v)
 }
 
 /** Reconstruct bitstream TTFRM (7.1.1.41, Table-53) */
-static inline int vc1_get_TTFRM(VC1Context *v)
+static inline int vc1_get_TTFRM(const VC1Context *v)
 {
     switch (v->ttfrm) {
     case TT_8X8: return 0;
@@ -146,8 +146,8 @@ static inline void vc1_pack_bitplanes(uint8_t *bitplane, int n, const uint8_t *f
 
 static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
 {
-    VC1Context * const v = avctx->priv_data;
-    MpegEncContext * const s = &v->s;
+    const VC1Context *v = avctx->priv_data;
+    const MpegEncContext *s = &v->s;
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     VAPictureParameterBufferVC1 *pic_param;
 
@@ -311,8 +311,8 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
 
 static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
-    VC1Context * const v = avctx->priv_data;
-    MpegEncContext * const s = &v->s;
+    const VC1Context *v = avctx->priv_data;
+    const MpegEncContext *s = &v->s;
     VASliceParameterBufferVC1 *slice_param;
 
     /* Current bit buffer is beyond any marker for VC-1, so skip it */
