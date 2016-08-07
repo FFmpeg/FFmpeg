@@ -31,7 +31,10 @@ FATE_VCODEC-$(call ENCDEC, DNXHD, DNXHD) += dnxhd-720p                  \
                                             dnxhd-720p-hr-lb            \
                                             dnxhd-4k-hr-lb              \
                                             dnxhd-uhd-hr-sq             \
-                                            dnxhd-2k-hr-hq
+                                            dnxhd-2k-hr-hq              \
+                                            dnxhd-edge1-hr              \
+                                            dnxhd-edge2-hr              \
+                                            dnxhd-edge3-hr
 
 FATE_VCODEC-$(call ENCDEC, VC2 DIRAC, MOV) += vc2-420p vc2-420p10 vc2-420p12 \
                                               vc2-422p vc2-422p10 vc2-422p12 \
@@ -77,6 +80,21 @@ fate-vsynth%-dnxhd-2k-hr-hq:  ENCOPTS    = -s 2k -profile:v dnxhr_hq \
                                          -pix_fmt yuv422p -frames 5
 fate-vsynth%-dnxhd-2k-hr-hq:  DECOPTS    = -sws_flags area+accurate_rnd+bitexact
 fate-vsynth%-dnxhd-2k-hr-hq:  FMT        = dnxhd
+
+fate-vsynth%-dnxhd-edge1-hr:  ENCOPTS    = -s 264x128 -profile:v dnxhr_hq \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-edge1-hr:  DECOPTS    = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-edge1-hr:  FMT        = dnxhd
+
+fate-vsynth%-dnxhd-edge2-hr:  ENCOPTS    = -s 271x135 -profile:v dnxhr_hq \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-edge2-hr:  DECOPTS    = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-edge2-hr:  FMT        = dnxhd
+
+fate-vsynth%-dnxhd-edge3-hr:  ENCOPTS    = -s 257x121 -profile:v dnxhr_hq \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-edge3-hr:  DECOPTS    = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-edge3-hr:  FMT        = dnxhd
 
 FATE_VCODEC-$(call ENCDEC, DNXHD, MOV)  += dnxhd-1080i dnxhd-1080i-10bit dnxhd-1080i-colr
 fate-vsynth%-dnxhd-1080i:        ENCOPTS = -s hd1080 -b 120M -flags +ildct \

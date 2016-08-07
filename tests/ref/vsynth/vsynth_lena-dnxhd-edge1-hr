@@ -1,0 +1,4 @@
+c2802b8a262fd6fc304d01819ad49f31 *tests/data/fate/vsynth_lena-dnxhd-edge1-hr.dnxhd
+81920 tests/data/fate/vsynth_lena-dnxhd-edge1-hr.dnxhd
+12818941028a00036756031e4268e9af *tests/data/fate/vsynth_lena-dnxhd-edge1-hr.out.rawvideo
+stddev:    4.94 PSNR: 34.25 MAXDIFF:   78 bytes:  7603200/   760320
