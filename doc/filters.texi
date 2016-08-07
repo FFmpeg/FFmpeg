@@ -8356,6 +8356,38 @@ ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
 ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
 @end example
 
+The filter accepts the following options:
+
+@table @option
+@item process_stereo
+Process the stereo channels together. If target_gain does not match between
+channels, consider it invalid and use the last valid target_gain.
+
+@item force_pe
+Always extend peaks above -3dBFS even if PE isn't signaled.
+
+@item analyze_mode
+Replace audio with a solid tone and adjust the amplitude to signal some
+specific aspect of the decoding process. The output file can be loaded in
+an audio editor alongside the original to aid analysis.
+
+@code{analyze_mode=pe:force_pe=1} can be used to see all samples above the PE level.
+
+Modes are:
+@table @samp
+@item 0, off
+Disabled
+@item 1, lle
+Gain adjustment level at each sample
+@item 2, pe
+Samples where peak extend occurs
+@item 3, cdt
+Samples where the code detect timer is active
+@item 4, tgm
+Samples where the target gain does not match between channels
+@end table
+@end table
+
 @section hflip
 
 Flip the input video horizontally.
