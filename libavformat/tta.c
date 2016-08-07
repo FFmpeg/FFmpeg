@@ -35,12 +35,6 @@ typedef struct TTAContext {
     int last_frame_size;
 } TTAContext;
 
-static unsigned long tta_check_crc(unsigned long checksum, const uint8_t *buf,
-                                   unsigned int len)
-{
-    return av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), checksum, buf, len);
-}
-
 static int tta_probe(AVProbeData *p)
 {
     if (AV_RL32(&p->buf[0]) == MKTAG('T', 'T', 'A', '1') &&
@@ -65,7 +59,7 @@ static int tta_read_header(AVFormatContext *s)
     start_offset = avio_tell(s->pb);
     if (start_offset < 0)
         return start_offset;
-    ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
+    ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return AVERROR_INVALIDDATA;
 
@@ -121,7 +115,7 @@ static int tta_read_header(AVFormatContext *s)
     avio_seek(s->pb, start_offset, SEEK_SET);
     avio_read(s->pb, st->codecpar->extradata, st->codecpar->extradata_size);
 
-    ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
+    ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
         int r;

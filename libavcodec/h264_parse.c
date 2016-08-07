@@ -22,6 +22,7 @@
 #include "h264.h"
 #include "h264dec.h"
 #include "h264_parse.h"
+#include "h264_ps.h"
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                               const int *ref_count, int slice_type_nos,
@@ -345,12 +346,12 @@ static int decode_extradata_ps(const uint8_t *data, int size, H264ParamSets *ps,
     for (i = 0; i < pkt.nb_nals; i++) {
         H2645NAL *nal = &pkt.nals[i];
         switch (nal->type) {
-        case NAL_SPS:
+        case H264_NAL_SPS:
             ret = ff_h264_decode_seq_parameter_set(&nal->gb, logctx, ps, 0);
             if (ret < 0)
                 goto fail;
             break;
-        case NAL_PPS:
+        case H264_NAL_PPS:
             ret = ff_h264_decode_picture_parameter_set(&nal->gb, logctx, ps,
                                                        nal->size_bits);
             if (ret < 0)

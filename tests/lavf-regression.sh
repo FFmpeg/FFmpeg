@@ -145,6 +145,10 @@ if [ -n "$do_nut" ] ; then
 do_lavf nut "" "-acodec mp2 -ab 64k -ar 44100 -threads 1"
 fi
 
+if [ -n "$do_mka" ] ; then
+do_audio_only mka "" "-c:a tta"
+fi
+
 if [ -n "$do_mkv" ] ; then
 do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 \
  -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap -threads 1"
@@ -348,6 +352,10 @@ fi
 
 if [ -n "$do_sox" ] ; then
 do_audio_only sox
+fi
+
+if [ -n "$do_tta" ] ; then
+do_audio_only tta
 fi
 
 if [ -n "$do_caf" ] ; then

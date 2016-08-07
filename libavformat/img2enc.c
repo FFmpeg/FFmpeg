@@ -97,7 +97,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
                 return AVERROR(EINVAL);
             }
-        } else if (av_get_frame_filename(filename, sizeof(filename), img->path, img->img_number) < 0 &&
+        } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
+                                          img->img_number,
+                                          AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
                    img->img_number > 1) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s' (either set updatefirst or use a pattern like %%03d within the filename pattern)\n",

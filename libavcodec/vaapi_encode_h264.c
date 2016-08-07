@@ -283,7 +283,7 @@ static void vaapi_encode_h264_write_sps(PutBitContext *pbc,
     VAAPIEncodeH264MiscSequenceParams *mseq = &priv->misc_sequence_params;
     int i;
 
-    vaapi_encode_h264_write_nal_header(pbc, NAL_SPS, 3);
+    vaapi_encode_h264_write_nal_header(pbc, H264_NAL_SPS, 3);
 
     u(8, mseq_var(profile_idc));
     u(1, mseq_var(constraint_set0_flag));
@@ -368,7 +368,7 @@ static void vaapi_encode_h264_write_pps(PutBitContext *pbc,
     VAAPIEncodeH264Context            *priv = ctx->priv_data;
     VAAPIEncodeH264MiscSequenceParams *mseq = &priv->misc_sequence_params;
 
-    vaapi_encode_h264_write_nal_header(pbc, NAL_PPS, 3);
+    vaapi_encode_h264_write_nal_header(pbc, H264_NAL_PPS, 3);
 
     ue(vpic_var(pic_parameter_set_id));
     ue(vpic_var(seq_parameter_set_id));
@@ -642,7 +642,7 @@ static void vaapi_encode_h264_write_sei(PutBitContext *pbc,
                           VAAPIEncodeContext *ctx,
                           VAAPIEncodePicture *pic) = NULL;
 
-    vaapi_encode_h264_write_nal_header(pbc, NAL_SEI, 0);
+    vaapi_encode_h264_write_nal_header(pbc, H264_NAL_SEI, 0);
 
     for (payload_type = 0; payload_type < 64; payload_type++) {
         switch (payload_type) {
@@ -1010,9 +1010,9 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     mslice = &pslice->misc_slice_params;
 
     if (pic->type == PICTURE_TYPE_IDR)
-        mslice->nal_unit_type = NAL_IDR_SLICE;
+        mslice->nal_unit_type = H264_NAL_IDR_SLICE;
     else
-        mslice->nal_unit_type = NAL_SLICE;
+        mslice->nal_unit_type = H264_NAL_SLICE;
 
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
@@ -1323,10 +1323,10 @@ static const AVCodecDefault vaapi_encode_h264_defaults[] = {
     { "b",              "0"   },
     { "bf",             "2"   },
     { "g",              "120" },
-    { "i_qfactor",      "1.0" },
-    { "i_qoffset",      "0.0" },
-    { "b_qfactor",      "1.2" },
-    { "b_qoffset",      "0.0" },
+    { "i_qfactor",      "1"   },
+    { "i_qoffset",      "0"   },
+    { "b_qfactor",      "6/5" },
+    { "b_qoffset",      "0"   },
     { NULL },
 };
 

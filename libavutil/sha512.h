@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_sha512
+ * Public header for SHA-512 implementation.
+ */
+
 #ifndef AVUTIL_SHA512_H
 #define AVUTIL_SHA512_H
 
@@ -28,8 +34,19 @@
 #include "version.h"
 
 /**
- * @defgroup lavu_sha512 SHA512
- * @ingroup lavu_crypto
+ * @defgroup lavu_sha512 SHA-512
+ * @ingroup lavu_hash
+ * SHA-512 (Secure Hash Algorithm) hash function implementations.
+ *
+ * This module supports the following SHA-2 hash functions:
+ *
+ * - SHA-512/224: 224 bits
+ * - SHA-512/256: 256 bits
+ * - SHA-384: 384 bits
+ * - SHA-512: 512 bits
+ *
+ * @see For SHA-1, SHA-256, and variants thereof, see @ref lavu_sha.
+ *
  * @{
  */
 

@@ -509,7 +509,7 @@ library:
     @tab Used on the Nintendo GameCube.
 @item Tiertex Limited SEQ       @tab   @tab X
     @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
-@item True Audio                @tab   @tab X
+@item True Audio                @tab X @tab X
 @item VAG                       @tab   @tab X
     @tab Audio format used in many Sony PS2 games.
 @item VC-1 test bitstream       @tab X @tab X

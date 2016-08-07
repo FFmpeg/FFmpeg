@@ -1,5 +1,5 @@
 /*
- * Blackmagic DeckLink output
+ * Blackmagic DeckLink input
  * Copyright (c) 2013-2014 Luca Barbato, Deti Fliegl
  *
  * This file is part of FFmpeg.
@@ -206,8 +206,8 @@ private:
 decklink_input_callback::decklink_input_callback(AVFormatContext *_avctx) : m_refCount(0)
 {
     avctx = _avctx;
-    decklink_cctx       *cctx = (struct decklink_cctx *) avctx->priv_data;
-    ctx = (struct decklink_ctx *) cctx->ctx;
+    decklink_cctx       *cctx = (struct decklink_cctx *)avctx->priv_data;
+    ctx = (struct decklink_ctx *)cctx->ctx;
     initial_audio_pts = initial_video_pts = AV_NOPTS_VALUE;
     pthread_mutex_init(&m_mutex, NULL);
 }
@@ -431,8 +431,8 @@ HRESULT decklink_input_callback::VideoInputFormatChanged(
 
 static HRESULT decklink_start_input(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     ctx->input_callback = new decklink_input_callback(avctx);
     ctx->dli->SetCallback(ctx->input_callback);
@@ -443,8 +443,8 @@ extern "C" {
 
 av_cold int ff_decklink_read_close(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     if (ctx->capture_started) {
         ctx->dli->StopStreams();
@@ -462,7 +462,7 @@ av_cold int ff_decklink_read_close(AVFormatContext *avctx)
 
 av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx;
     AVStream *st;
     HRESULT result;
@@ -524,7 +524,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     /* Get input device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkInput, (void **) &ctx->dli) != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
+        av_log(avctx, AV_LOG_ERROR, "Could not open input device from '%s'\n",
                avctx->filename);
         ret = AVERROR(EIO);
         goto error;
@@ -571,6 +571,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     st->time_base.den      = ctx->bmd_tb_den;
     st->time_base.num      = ctx->bmd_tb_num;
+    av_stream_set_r_frame_rate(st, av_make_q(st->time_base.den, st->time_base.num));
 
     if (cctx->v210) {
         st->codecpar->codec_id    = AV_CODEC_ID_V210;
@@ -638,8 +639,8 @@ error:
 
 int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     AVFrame *frame = ctx->video_st->codec->coded_frame;
 
     avpacket_queue_get(&ctx->queue, pkt, 1);

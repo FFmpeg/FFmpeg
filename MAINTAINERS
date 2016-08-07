@@ -308,6 +308,7 @@ Filters:
   af_chorus.c                           Paul B Mahol
   af_compand.c                          Paul B Mahol
   af_firequalizer.c                     Muhammad Faiz
+  af_hdcd.c                             Burt P.
   af_ladspa.c                           Paul B Mahol
   af_loudnorm.c                         Kyle Swanson
   af_pan.c                              Nicolas George

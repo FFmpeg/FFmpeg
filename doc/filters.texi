@@ -2110,6 +2110,20 @@ Set temperature degree in Celsius. This is the temperature of the environment.
 Default is 20.
 @end table
 
+@section crystalizer
+Simple algorithm to expand audio dynamic range.
+
+The filter accepts the following options:
+
+@table @option
+@item i
+Sets the intensity of effect (default: 2.0). Must be in range between 0.0
+(unchanged sound) to 10.0 (maximum effect).
+
+@item c
+Enable clipping. By default is enabled.
+@end table
+
 @section dcshift
 Apply a DC shift to the audio.
 
@@ -2354,7 +2368,7 @@ equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g
 Linearly increases the difference between left and right channels which
 adds some sort of "live" effect to playback.
 
-The filter accepts the following option:
+The filter accepts the following options:
 
 @table @option
 @item m
@@ -10692,13 +10706,31 @@ The description of the accepted parameters follows.
 If specified the filter will use the named file to save the PSNR of
 each individual frame. When filename equals "-" the data is sent to
 standard output.
+
+@item stats_version
+Specifies which version of the stats file format to use. Details of
+each format are written below.
+Default value is 1.
 @end table
 
 The file printed if @var{stats_file} is selected, contains a sequence of
 key/value pairs of the form @var{key}:@var{value} for each compared
 couple of frames.
 
-A description of each shown parameter follows:
+If a @var{stats_version} greater than 1 is specified, a header line precedes
+the list of per-frame-pair stats, with key value pairs following the frame
+format with the following parameters:
+
+@table @option
+@item psnr_log_version
+The version of the log file format. Will match @var{stats_version}.
+
+@item fields
+A comma separated list of the per-frame-pair parameters included in
+the log.
+@end table
+
+A description of each shown per-frame-pair parameter follows:
 
 @table @option
 @item n
@@ -11201,16 +11233,16 @@ Set luma maximum difference between pixels to still be considered, must
 be a value in the 0.1-100.0 range, default value is 1.0.
 
 @item chroma_radius, cr
-Set chroma blur filter strength, must be a value in range 0.1-4.0. A
+Set chroma blur filter strength, must be a value in range -0.9-4.0. A
 greater value will result in a more blurred image, and in slower
 processing.
 
 @item chroma_pre_filter_radius, cpfr
-Set chroma pre-filter radius, must be a value in the 0.1-2.0 range.
+Set chroma pre-filter radius, must be a value in the -0.9-2.0 range.
 
 @item chroma_strength, cs
 Set chroma maximum difference between pixels to still be considered,
-must be a value in the 0.1-100.0 range.
+must be a value in the -0.9-100.0 range.
 @end table
 
 Each chroma option value, if not explicitly specified, is set to the
@@ -16482,6 +16514,10 @@ Default value is @code{1}.
 
 @item data
 Set which data to display. Can be @code{magnitude}, default or @code{phase}.
+
+@item rotation
+Set color rotation, must be in [-1.0, 1.0] range.
+Default value is @code{0}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -16615,6 +16651,10 @@ Default value is @code{1}.
 
 @item legend
 Draw time and frequency axes and legends. Default is enabled.
+
+@item rotation
+Set color rotation, must be in [-1.0, 1.0] range.
+Default value is @code{0}.
 @end table
 
 @subsection Examples

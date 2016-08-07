@@ -246,6 +246,14 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
              host, port, mmsh->request_seq++);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
+    if (!mms->mms_hd->protocol_whitelist && h->protocol_whitelist) {
+        mms->mms_hd->protocol_whitelist = av_strdup(h->protocol_whitelist);
+        if (!mms->mms_hd->protocol_whitelist) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     err = ffurl_connect(mms->mms_hd, NULL);
     if (err) {
         goto fail;
@@ -410,4 +418,5 @@ const URLProtocol ff_mmsh_protocol = {
     .url_read_seek  = mmsh_read_seek,
     .priv_data_size = sizeof(MMSHContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "http,tcp",
 };

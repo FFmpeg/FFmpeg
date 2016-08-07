@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "tee_common.h"
 
 typedef struct ChildContext {
     URLContext *url_context;
@@ -89,9 +90,11 @@ static int tee_open(URLContext *h, const char *filename, int flags)
         return AVERROR(ENOSYS);
 
     while (*filename) {
-        char *child_name = av_get_token(&filename, child_delim);
+        char *child_string = av_get_token(&filename, child_delim);
+        char *child_name = NULL;
         void *tmp;
-        if (!child_name) {
+        AVDictionary *options = NULL;
+        if (!child_string) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -99,16 +102,22 @@ static int tee_open(URLContext *h, const char *filename, int flags)
         tmp = av_realloc_array(c->child, c->child_count + 1, sizeof(*c->child));
         if (!tmp) {
             ret = AVERROR(ENOMEM);
-            goto fail;
+            goto loop_fail;
         }
         c->child = tmp;
         memset(&c->child[c->child_count], 0, sizeof(c->child[c->child_count]));
 
+        ret = ff_tee_parse_slave_options(h, child_string, &options, &child_name);
+        if (ret < 0)
+            goto loop_fail;
+
         ret = ffurl_open_whitelist(&c->child[c->child_count].url_context, child_name, flags,
-                                   &h->interrupt_callback, /*AVDictionary **options*/NULL,
+                                   &h->interrupt_callback, &options,
                                    h->protocol_whitelist, h->protocol_blacklist,
                                    h);
-        av_free(child_name);
+loop_fail:
+        av_freep(&child_string);
+        av_dict_free(&options);
         if (ret < 0)
             goto fail;
         c->child_count++;
@@ -131,6 +140,7 @@ const URLProtocol ff_tee_protocol = {
     .name                = "tee",
     .url_open            = tee_open,
     .url_write           = tee_write,
+    .url_close           = tee_close,
     .priv_data_size      = sizeof(TeeContext),
     .priv_data_class     = &tee_class,
     .default_whitelist   = "crypto,file,http,https,httpproxy,rtmp,tcp,tls"

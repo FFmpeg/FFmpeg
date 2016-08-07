@@ -90,8 +90,8 @@ public:
 
 static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     AVCodecContext *c = st->codec;
 
     if (ctx->video) {
@@ -140,8 +140,8 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
 
 static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     AVCodecContext *c = st->codec;
 
     if (ctx->audio) {
@@ -181,8 +181,8 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
 
 av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     if (ctx->playback_started) {
         BMDTimeValue actual;
@@ -207,8 +207,8 @@ av_cold int ff_decklink_write_trailer(AVFormatContext *avctx)
 
 static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     AVPicture *avpicture = (AVPicture *) pkt->data;
     AVFrame *avframe, *tmp;
     decklink_frame *frame;
@@ -287,8 +287,8 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
 
 static int decklink_write_audio_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     int sample_count = pkt->size / (ctx->channels << 1);
     buffercount_type buffered;
 
@@ -310,7 +310,7 @@ extern "C" {
 
 av_cold int ff_decklink_write_header(AVFormatContext *avctx)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx;
     unsigned int n;
     int ret;
@@ -374,8 +374,8 @@ error:
 
 int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
-    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
-    struct decklink_ctx *ctx = (struct decklink_ctx *) cctx->ctx;
+    struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
+    struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     AVStream *st = avctx->streams[pkt->stream_index];
 
     ctx->last_pts = FFMAX(ctx->last_pts, pkt->pts);

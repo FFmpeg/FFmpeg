@@ -79,10 +79,8 @@
  */
 
 /**
- * @defgroup lavu Common utility functions
- *
- * @brief
- * libavutil contains the code shared across all the other FFmpeg libraries.
+ * @defgroup lavu libavutil
+ * Common code shared across all FFmpeg libraries.
  *
  * @note
  * libavutil is designed to be modular. In most cases, in order to use the
@@ -98,7 +96,7 @@
  * @{
  * @}
  *
- * @defgroup lavu_math Maths
+ * @defgroup lavu_math Mathematics
  * @{
  *
  * @}

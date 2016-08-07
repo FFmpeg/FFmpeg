@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_crc32
+ * Public header for CRC hash function implementation.
+ */
+
 #ifndef AVUTIL_CRC_H
 #define AVUTIL_CRC_H
 
@@ -27,8 +33,14 @@
 #include "version.h"
 
 /**
- * @defgroup lavu_crc32 CRC32
- * @ingroup lavu_crypto
+ * @defgroup lavu_crc32 CRC
+ * @ingroup lavu_hash
+ * CRC (Cyclic Redundancy Check) hash function implementation.
+ *
+ * This module supports numerous CRC polynomials, in addition to the most
+ * widely used CRC-32-IEEE. See @ref AVCRCId for a list of available
+ * polynomials.
+ *
  * @{
  */
 

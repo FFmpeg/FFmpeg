@@ -1752,6 +1752,14 @@ redirect:
                  sessioncookie);
         av_opt_set(rt->rtsp_hd->priv_data, "headers", headers, 0);
 
+        if (!rt->rtsp_hd->protocol_whitelist && s->protocol_whitelist) {
+            rt->rtsp_hd->protocol_whitelist = av_strdup(s->protocol_whitelist);
+            if (!rt->rtsp_hd->protocol_whitelist) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+
         /* complete the connection */
         if (ffurl_connect(rt->rtsp_hd, NULL)) {
             err = AVERROR(EIO);

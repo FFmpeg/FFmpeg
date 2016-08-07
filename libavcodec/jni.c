@@ -20,19 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <stdlib.h>
 
-#include "config.h"
+#include "libavutil/error.h"
 #include "jni.h"
 
 #if CONFIG_JNI
-
-#include <errno.h>
 #include <jni.h>
 #include <pthread.h>
 
 #include "libavutil/log.h"
-#include "libavutil/error.h"
 #include "ffjni.h"
 
 void *java_vm;
@@ -69,7 +68,7 @@ void *av_jni_get_java_vm(void *log_ctx)
 
 int av_jni_set_java_vm(void *vm, void *log_ctx)
 {
-    return 0;
+    return AVERROR(ENOSYS);
 }
 
 void *av_jni_get_java_vm(void *log_ctx)
