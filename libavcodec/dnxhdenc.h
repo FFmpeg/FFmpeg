@@ -71,6 +71,8 @@ typedef struct DNXHDEncContext {
     int intra_quant_bias;
 
     DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
+    uint8_t edge_buf_y[256];
+    uint8_t edge_buf_uv[2][128];
 
     int      (*qmatrix_c)     [64];
     int      (*qmatrix_l)     [64];
