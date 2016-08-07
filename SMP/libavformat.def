@@ -34,6 +34,7 @@ EXPORTS
     av_format_set_subtitle_codec
     av_format_set_video_codec
     av_get_frame_filename
+    av_get_frame_filename2
     av_get_output_timestamp
     av_get_packet
     av_guess_codec

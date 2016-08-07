@@ -153,6 +153,7 @@
     <ClCompile Include="..\libavfilter\af_chorus.c" />
     <ClCompile Include="..\libavfilter\af_compand.c" />
     <ClCompile Include="..\libavfilter\af_compensationdelay.c" />
+    <ClCompile Include="..\libavfilter\af_crystalizer.c" />
     <ClCompile Include="..\libavfilter\af_dcshift.c" />
     <ClCompile Include="..\libavfilter\af_dynaudnorm.c" />
     <ClCompile Include="..\libavfilter\af_earwax.c" />

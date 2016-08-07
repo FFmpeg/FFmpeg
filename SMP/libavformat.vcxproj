@@ -428,12 +428,14 @@
     <ClCompile Include="..\libavformat\takdec.c" />
     <ClCompile Include="..\libavformat\tedcaptionsdec.c" />
     <ClCompile Include="..\libavformat\tee.c" />
+    <ClCompile Include="..\libavformat\tee_common.c" />
     <ClCompile Include="..\libavformat\thp.c" />
     <ClCompile Include="..\libavformat\3dostr.c" />
     <ClCompile Include="..\libavformat\tiertexseq.c" />
     <ClCompile Include="..\libavformat\mkvtimestamp_v2.c" />
     <ClCompile Include="..\libavformat\tmv.c" />
     <ClCompile Include="..\libavformat\tta.c" />
+    <ClCompile Include="..\libavformat\ttaenc.c" />
     <ClCompile Include="..\libavformat\tty.c" />
     <ClCompile Include="..\libavformat\txd.c" />
     <ClCompile Include="..\libavformat\uncodedframecrcenc.c" />

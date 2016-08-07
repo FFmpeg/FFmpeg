@@ -232,6 +232,9 @@
     <YASM Include="..\libavcodec\x86\ttadsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\ttaencdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\v210enc.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -2583,6 +2586,9 @@
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\ttaencdsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\v210-init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2731,6 +2737,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\ttadsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\ttaencdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\v210enc.c">
