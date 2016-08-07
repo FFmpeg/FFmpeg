@@ -274,6 +274,9 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 #undef TYPE
 #undef RENAME
 
+#define TYPE int32_t
+#define RENAME(name) name ## 32
+#include "ffv1enc_template.c"
 
 static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
                          int stride, int plane_index, int pixel_stride)
@@ -643,10 +646,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_GBRP14:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
+    case AV_PIX_FMT_GBRP16:
+        if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
+            s->bits_per_raw_sample = 16;
         else if (!s->bits_per_raw_sample)
             s->bits_per_raw_sample = avctx->bits_per_raw_sample;
         s->colorspace = 1;
         s->chroma_planes = 1;
+        if (s->bits_per_raw_sample >= 16) {
+            s->use32bit = 1;
+            if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+                av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
+                return AVERROR_INVALIDDATA;
+            }
+        }
         s->version = FFMAX(s->version, 1);
         if (s->ac == AC_GOLOMB_RICE) {
             av_log(avctx, AV_LOG_INFO,
@@ -1040,6 +1053,8 @@ retry:
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
         ret  = encode_plane(fs, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
         ret |= encode_plane(fs, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
+    } else if (f->use32bit) {
+        ret = encode_rgb_frame32(fs, planes, width, height, p->linesize);
     } else {
         ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
@@ -1071,7 +1086,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *buf_p;
     int i, ret;
     int64_t maxsize =   AV_INPUT_BUFFER_MIN_SIZE
-                      + avctx->width*avctx->height*35LL*4;
+                      + avctx->width*avctx->height*37LL*4;
 
     if(!pict) {
         if (avctx->flags & AV_CODEC_FLAG_PASS1) {
@@ -1275,6 +1290,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YA8,
+        AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_NONE
 
     },

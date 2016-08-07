@@ -103,6 +103,9 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
 #undef TYPE
 #undef RENAME
 
+#define TYPE int32_t
+#define RENAME(name) name ## 32
+#include "ffv1dec_template.c"
 
 static void decode_plane(FFV1Context *s, uint8_t *src,
                          int w, int h, int stride, int plane_index,
@@ -318,6 +321,11 @@ static int decode_slice(AVCodecContext *c, void *arg)
     } else if (f->colorspace == 0) {
          decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
          decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
+    } else if (f->use32bit) {
+        uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
+                               p->data[1] + ps * x + y * p->linesize[1],
+                               p->data[2] + ps * x + y * p->linesize[2] };
+        decode_rgb_frame32(fs, planes, width, height, p->linesize);
     } else {
         uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
@@ -648,6 +656,10 @@ static int read_header(FFV1Context *f)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
         else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
+        else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency) {
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRP16;
+            f->use32bit = 1;
+        }
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return AVERROR(ENOSYS);

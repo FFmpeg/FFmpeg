@@ -109,6 +109,9 @@ typedef struct FFV1Context {
     int run_index;
     int colorspace;
     int16_t *sample_buffer;
+    int32_t *sample_buffer32;
+
+    int use32bit;
 
     int ec;
     int intra;
@@ -194,6 +197,12 @@ static inline void update_vlc_state(VlcState *const state, const int v)
 
 #define TYPE int16_t
 #define RENAME(name) name
+#include "ffv1_template.c"
+#undef TYPE
+#undef RENAME
+
+#define TYPE int32_t
+#define RENAME(name) name ## 32
 #include "ffv1_template.c"
 #undef TYPE
 #undef RENAME
