@@ -2368,7 +2368,7 @@ equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g
 Linearly increases the difference between left and right channels which
 adds some sort of "live" effect to playback.
 
-The filter accepts the following option:
+The filter accepts the following options:
 
 @table @option
 @item m
