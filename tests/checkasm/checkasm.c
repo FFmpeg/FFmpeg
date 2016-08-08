@@ -64,6 +64,9 @@ static const struct {
     const char *name;
     void (*func)(void);
 } tests[] = {
+#if CONFIG_BLOCKDSP
+    { "blockdsp", checkasm_check_blockdsp },
+#endif
 #if CONFIG_BSWAPDSP
     { "bswapdsp", checkasm_check_bswapdsp },
 #endif
