@@ -267,9 +267,13 @@ static int aiff_read_header(AVFormatContext *s)
             avio_read(pb, st->codecpar->extradata, size);
             break;
         default: /* Jump */
-            if (size & 1)   /* Always even aligned */
-                size++;
             avio_skip(pb, size);
+        }
+
+        /* Skip required padding byte for odd-sized chunks. */
+        if (size & 1) {
+            filesize--;
+            avio_skip(pb, 1);
         }
     }
 
