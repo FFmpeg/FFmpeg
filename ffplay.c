@@ -3776,6 +3776,8 @@ int main(int argc, char **argv)
     char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
     char alsa_bufsize[] = "SDL_AUDIO_ALSA_SET_BUFFER_SIZE=1";
 
+    init_dynload();
+
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
 
