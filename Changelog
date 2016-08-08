@@ -4,6 +4,37 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 
+version 3.1.2:
+- cmdutils: remove the current working directory from the DLL search path on win32
+- avcodec/rawdec: Fix palette handling with changing palettes
+- avcodec/raw: Fix decoding of ilacetest.mov
+- avformat/mov: Enable mp3 parsing if a packet needs it
+- avformat/hls: Use an array instead of stream offset for stream mapping
+- avformat/hls: Sync starting segment across variants on live streams
+- avformat/hls: Fix regression with ranged media segments
+- avcodec/ffv1enc: Fix assertion failure with non zero bits per sample
+- avfilter/af_hdcd: small fix in af_hdcd.c where gain was not being adjusted for "attenuate slowly"
+- avformat/oggdec: Fix integer overflow with invalid pts
+- ffplay: Fix invalid array index
+- avcodec/alacenc: allocate bigger packets (cherry picked from commit 82b84c71b009884c8d041361027718b19922c76d)
+- libavcodec/dnxhd: Enable 12-bit DNxHR support.
+- lavc/vaapi_encode_h26x: Fix a crash if "." is not the decimal separator.
+- jni: Return ENOSYS on unsupported platforms
+- lavu/hwcontext_vaapi: Fix compilation if VA_FOURCC_ABGR is not defined.
+- avcodec/vp9_parser: Check the input frame sizes for being consistent
+- avformat/flvdec: parse keyframe before a\v stream was created add_keyframes_index() when stream created or keyframe parsed
+- avformat/flvdec: splitting add_keyframes_index() out from parse_keyframes_index()
+- libavformat/rtpdec_asf: zero initialize the AVIOContext struct
+- libavutil/opt: Small bugfix in example.
+- libx264: Increase x264 opts character limit to 4096
+- avcodec/h264_parser: Set sps/pps_ref
+- librtmp: Avoid an infiniloop setting connection arguments
+- avformat/oggparsevp8: fix pts calculation on pages ending with an invisible frame
+- lavc/Makefile: Fix standalone compilation of the svq3 decoder.
+- lavf/vplayerdec: Improve auto-detection.
+- lavc/mediacodecdec_h264: properly convert extradata to annex-b
+- Revert "configure: Enable GCC vectorization on ≥4.9 on x86"
+
 version 3.1.1:
 - doc/APIchanges: document the lavu/lavf field moves
 - avformat/avformat: Move new field to the end of AVStream
