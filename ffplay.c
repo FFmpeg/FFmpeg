@@ -3659,6 +3659,8 @@ int main(int argc, char **argv)
     VideoState *is;
     char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
 
+    init_dynload();
+
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
 
