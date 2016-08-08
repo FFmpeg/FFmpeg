@@ -3980,6 +3980,7 @@ int main(int argc, char **argv)
     int cfg_parsed;
     int ret = EXIT_FAILURE;
 
+    init_dynload();
 
     config.filename = av_strdup("/etc/ffserver.conf");
 
