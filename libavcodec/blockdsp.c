@@ -57,8 +57,6 @@ static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
 
 av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
-
     c->clear_block  = clear_block_8_c;
     c->clear_blocks = clear_blocks_8_c;
 
@@ -66,13 +64,13 @@ av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
     c->fill_block_tab[1] = fill_block8_c;
 
     if (ARCH_ARM)
-        ff_blockdsp_init_arm(c, high_bit_depth);
+        ff_blockdsp_init_arm(c);
     if (ARCH_PPC)
-        ff_blockdsp_init_ppc(c, high_bit_depth);
+        ff_blockdsp_init_ppc(c);
     if (ARCH_X86)
 #if FF_API_XVMC
-        ff_blockdsp_init_x86(c, high_bit_depth, avctx);
+        ff_blockdsp_init_x86(c, avctx);
 #else
-        ff_blockdsp_init_x86(c, high_bit_depth);
+        ff_blockdsp_init_x86(c);
 #endif /* FF_API_XVMC */
 }

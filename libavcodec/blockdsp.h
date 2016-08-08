@@ -40,13 +40,13 @@ typedef struct BlockDSPContext {
 
 void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx);
 
-void ff_blockdsp_init_arm(BlockDSPContext *c, unsigned high_bit_depth);
-void ff_blockdsp_init_ppc(BlockDSPContext *c, unsigned high_bit_depth);
+void ff_blockdsp_init_arm(BlockDSPContext *c);
+void ff_blockdsp_init_ppc(BlockDSPContext *c);
 #if FF_API_XVMC
-void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth,
+void ff_blockdsp_init_x86(BlockDSPContext *c,
                           AVCodecContext *avctx);
 #else
-void ff_blockdsp_init_x86(BlockDSPContext *c, unsigned high_bit_depth);
+void ff_blockdsp_init_x86(BlockDSPContext *c);
 #endif /* FF_API_XVMC */
 
 #endif /* AVCODEC_BLOCKDSP_H */
