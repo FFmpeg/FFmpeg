@@ -5177,7 +5177,7 @@ BT.2020 for 12-bits content
 
 @end table
 
-@item prm
+@item primaries
 Specify output color primaries.
 
 The accepted values are:
@@ -5202,7 +5202,7 @@ BT.2020
 
 @end table
 
-@item rng
+@item range
 Specify output color range.
 
 The accepted values are:
