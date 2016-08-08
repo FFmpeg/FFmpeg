@@ -1714,13 +1714,17 @@ static int config_input(AVFilterLink *inlink) {
     AVFilterLink *lk = inlink;
     while(lk != NULL) {
         AVFilterContext *nextf = lk->src;
-        if (lk->format != AV_SAMPLE_FMT_S16 || lk->sample_rate != 44100) {
-            av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
-                av_get_sample_fmt_name(lk->format), lk->sample_rate,
-                (nextf->name) ? nextf->name : "<unknown>"
-                );
-            s->bad_config = 1;
-            break;
+        if (lk->type == AVMEDIA_TYPE_AUDIO) {
+            int sfok = (lk->format == AV_SAMPLE_FMT_S16 ||
+                        lk->format == AV_SAMPLE_FMT_S16P);
+            if ( !sfok || lk->sample_rate != 44100) {
+                av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
+                    av_get_sample_fmt_name(lk->format), lk->sample_rate,
+                    (nextf->name) ? nextf->name : "<unknown>"
+                    );
+                s->bad_config = 1;
+                break;
+            }
         }
         lk = (nextf->inputs) ? nextf->inputs[0] : NULL;
     }
@@ -1746,13 +1750,15 @@ static int config_output(AVFilterLink *outlink) {
     AVFilterLink *lk = outlink;
     while(lk != NULL) {
         AVFilterContext *nextf = lk->dst;
-        if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
-            av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s. (Try -f s24le after the filter)\n",
-                av_get_sample_fmt_name(lk->format),
-                (nextf->name) ? nextf->name : "<unknown>"
-                );
-            s->bad_config = 1;
-            break;
+        if (lk->type == AVMEDIA_TYPE_AUDIO) {
+            if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
+                av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s.\n",
+                    av_get_sample_fmt_name(lk->format),
+                    (nextf->name) ? nextf->name : "<unknown>"
+                    );
+                s->bad_config = 1;
+                break;
+            }
         }
         lk = (nextf->outputs) ? nextf->outputs[0] : NULL;
     }
