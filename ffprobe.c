@@ -3142,6 +3142,8 @@ int main(int argc, char **argv)
     char *w_name = NULL, *w_args = NULL;
     int ret, i;
 
+    init_dynload();
+
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     register_exit(ffprobe_cleanup);
 

@@ -3817,6 +3817,8 @@ int main(int argc, char **argv)
     struct sigaction sigact = { { 0 } };
     int ret = 0;
 
+    init_dynload();
+
     config.filename = av_strdup("/etc/ffserver.conf");
 
     parse_loglevel(argc, argv, options);

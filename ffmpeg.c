@@ -4118,6 +4118,8 @@ int main(int argc, char **argv)
     int ret;
     int64_t ti;
 
+    init_dynload();
+
     register_exit(ffmpeg_cleanup);
 
     setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
