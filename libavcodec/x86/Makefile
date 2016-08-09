@@ -58,7 +58,6 @@ OBJS-$(CONFIG_VP9_DECODER)             += x86/vp9dsp_init.o
 
 # GCC inline assembly optimizations
 # subsystems
-MMX-OBJS-$(CONFIG_AUDIODSP)            += x86/audiodsp_mmx.o
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
 MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
                                           x86/hpeldsp_mmx.o

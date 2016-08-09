@@ -135,3 +135,46 @@ VECTOR_CLIP_INT32 11, 1, 1, 0
 %else
 VECTOR_CLIP_INT32 6, 1, 0, 0
 %endif
+
+; void ff_vector_clipf_sse(float *dst, const float *src,
+;                          int len, float min, float max)
+INIT_XMM sse
+cglobal vector_clipf, 3, 3, 6, dst, src, len, min, max
+%if ARCH_X86_32
+    VBROADCASTSS m0, minm
+    VBROADCASTSS m1, maxm
+%elif WIN64
+    VBROADCASTSS m0, m3
+    VBROADCASTSS m1, maxm
+%else ; 64bit sysv
+    VBROADCASTSS m0, m0
+    VBROADCASTSS m1, m1
+%endif
+
+    movsxdifnidn lenq, lend
+
+.loop
+    mova m2, [srcq + 4 * lenq - 4 * mmsize]
+    mova m3, [srcq + 4 * lenq - 3 * mmsize]
+    mova m4, [srcq + 4 * lenq - 2 * mmsize]
+    mova m5, [srcq + 4 * lenq - 1 * mmsize]
+
+    maxps m2, m0
+    maxps m3, m0
+    maxps m4, m0
+    maxps m5, m0
+
+    minps m2, m1
+    minps m3, m1
+    minps m4, m1
+    minps m5, m1
+
+    mova [dstq + 4 * lenq - 4 * mmsize], m2
+    mova [dstq + 4 * lenq - 3 * mmsize], m3
+    mova [dstq + 4 * lenq - 2 * mmsize], m4
+    mova [dstq + 4 * lenq - 1 * mmsize], m5
+
+    sub lenq, mmsize
+    jg .loop
+
+    RET
