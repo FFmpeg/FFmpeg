@@ -450,6 +450,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
         alpha = 0x101 * color->rgba[3] + 0x2;
     }
     nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    nb_planes += !nb_planes;
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];
         p0 = pointer_at(draw, dst, dst_linesize, plane, x0, y0);
@@ -627,6 +628,7 @@ void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
         alpha = (0x101 * color->rgba[3] + 0x2) >> 8;
     }
     nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    nb_planes += !nb_planes;
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];
         p0 = pointer_at(draw, dst, dst_linesize, plane, x0, y0);
