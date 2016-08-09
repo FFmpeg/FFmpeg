@@ -9128,6 +9128,12 @@ Discard least significant bits of luma:
 @example
 lutyuv=y='bitand(val, 128+64+32)'
 @end example
+
+@item
+Technicolor like effect:
+@example
+lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
+@end example
 @end itemize
 
 @section maskedmerge
