@@ -38,11 +38,10 @@
 
 typedef struct QSVFrame {
     AVFrame *frame;
-    mfxFrameSurface1 *surface;
-
-    mfxFrameSurface1 surface_internal;
+    mfxFrameSurface1 surface;
 
     int queued;
+    int used;
 
     struct QSVFrame *next;
 } QSVFrame;

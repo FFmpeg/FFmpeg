@@ -179,16 +179,16 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
         return ret;
 
     if (frame->frame->format == AV_PIX_FMT_QSV) {
-        frame->surface = (mfxFrameSurface1*)frame->frame->data[3];
+        frame->surface = *(mfxFrameSurface1*)frame->frame->data[3];
     } else {
-        frame->surface_internal.Info = q->frame_info;
+        frame->surface.Info = q->frame_info;
 
-        frame->surface_internal.Data.PitchLow = frame->frame->linesize[0];
-        frame->surface_internal.Data.Y        = frame->frame->data[0];
-        frame->surface_internal.Data.UV       = frame->frame->data[1];
-
-        frame->surface = &frame->surface_internal;
+        frame->surface.Data.PitchLow = frame->frame->linesize[0];
+        frame->surface.Data.Y        = frame->frame->data[0];
+        frame->surface.Data.UV       = frame->frame->data[1];
     }
+
+    frame->used = 1;
 
     return 0;
 }
@@ -197,8 +197,8 @@ static void qsv_clear_unused_frames(QSVContext *q)
 {
     QSVFrame *cur = q->work_frames;
     while (cur) {
-        if (cur->surface && !cur->surface->Data.Locked && !cur->queued) {
-            cur->surface = NULL;
+        if (cur->used && !cur->surface.Data.Locked && !cur->queued) {
+            cur->used = 0;
             av_frame_unref(cur->frame);
         }
         cur = cur->next;
@@ -215,11 +215,11 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     frame = q->work_frames;
     last  = &q->work_frames;
     while (frame) {
-        if (!frame->surface) {
+        if (!frame->used) {
             ret = alloc_frame(avctx, q, frame);
             if (ret < 0)
                 return ret;
-            *surf = frame->surface;
+            *surf = &frame->surface;
             return 0;
         }
 
@@ -241,7 +241,7 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     if (ret < 0)
         return ret;
 
-    *surf = frame->surface;
+    *surf = &frame->surface;
 
     return 0;
 }
@@ -250,7 +250,7 @@ static QSVFrame *find_frame(QSVContext *q, mfxFrameSurface1 *surf)
 {
     QSVFrame *cur = q->work_frames;
     while (cur) {
-        if (surf == cur->surface)
+        if (surf == &cur->surface)
             return cur;
         cur = cur->next;
     }
@@ -346,7 +346,7 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         if (ret < 0)
             return ret;
 
-        outsurf = out_frame->surface;
+        outsurf = &out_frame->surface;
 
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -363,6 +363,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             outsurf->Info.PicStruct & MFX_PICSTRUCT_FIELD_TFF;
         frame->interlaced_frame =
             !(outsurf->Info.PicStruct & MFX_PICSTRUCT_PROGRESSIVE);
+
+        /* update the surface properties */
+        if (avctx->pix_fmt == AV_PIX_FMT_QSV)
+            ((mfxFrameSurface1*)frame->data[3])->Info = outsurf->Info;
 
         *got_frame = 1;
     }

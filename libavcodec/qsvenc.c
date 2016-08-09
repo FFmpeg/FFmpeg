@@ -813,9 +813,9 @@ static void clear_unused_frames(QSVEncContext *q)
 {
     QSVFrame *cur = q->work_frames;
     while (cur) {
-        if (cur->surface && !cur->surface->Data.Locked) {
-            cur->surface = NULL;
+        if (cur->used && !cur->surface.Data.Locked) {
             av_frame_unref(cur->frame);
+            cur->used = 0;
         }
         cur = cur->next;
     }
@@ -830,8 +830,9 @@ static int get_free_frame(QSVEncContext *q, QSVFrame **f)
     frame = q->work_frames;
     last  = &q->work_frames;
     while (frame) {
-        if (!frame->surface) {
+        if (!frame->used) {
             *f = frame;
+            frame->used = 1;
             return 0;
         }
 
@@ -850,6 +851,7 @@ static int get_free_frame(QSVEncContext *q, QSVFrame **f)
     *last = frame;
 
     *f = frame;
+    frame->used = 1;
 
     return 0;
 }
@@ -869,7 +871,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
         if (ret < 0)
             return ret;
 
-        qf->surface = (mfxFrameSurface1*)qf->frame->data[3];
+        qf->surface = *(mfxFrameSurface1*)qf->frame->data[3];
     } else {
         /* make a copy if the input is not padded as libmfx requires */
         if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
@@ -893,29 +895,27 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
                 return ret;
         }
 
-        qf->surface_internal.Info = q->param.mfx.FrameInfo;
+        qf->surface.Info = q->param.mfx.FrameInfo;
 
-        qf->surface_internal.Info.PicStruct =
+        qf->surface.Info.PicStruct =
             !frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
             frame->top_field_first   ? MFX_PICSTRUCT_FIELD_TFF :
                                        MFX_PICSTRUCT_FIELD_BFF;
         if (frame->repeat_pict == 1)
-            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
+            qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
         else if (frame->repeat_pict == 2)
-            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
+            qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
         else if (frame->repeat_pict == 4)
-            qf->surface_internal.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
+            qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;
 
-        qf->surface_internal.Data.PitchLow  = qf->frame->linesize[0];
-        qf->surface_internal.Data.Y         = qf->frame->data[0];
-        qf->surface_internal.Data.UV        = qf->frame->data[1];
-
-        qf->surface = &qf->surface_internal;
+        qf->surface.Data.PitchLow  = qf->frame->linesize[0];
+        qf->surface.Data.Y         = qf->frame->data[0];
+        qf->surface.Data.UV        = qf->frame->data[1];
     }
 
-    qf->surface->Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
+    qf->surface.Data.TimeStamp = av_rescale_q(frame->pts, q->avctx->time_base, (AVRational){1, 90000});
 
-    *surface = qf->surface;
+    *surface = &qf->surface;
 
     return 0;
 }
