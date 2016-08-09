@@ -80,17 +80,17 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
     SPLATD    m4
     SPLATD    m5
 .loop:
-%assign %%i 1
+%assign %%i 0
 %rep %2
-    mova      m0,  [srcq+mmsize*0*%%i]
-    mova      m1,  [srcq+mmsize*1*%%i]
-    mova      m2,  [srcq+mmsize*2*%%i]
-    mova      m3,  [srcq+mmsize*3*%%i]
+    mova      m0,  [srcq + mmsize * (0 + %%i)]
+    mova      m1,  [srcq + mmsize * (1 + %%i)]
+    mova      m2,  [srcq + mmsize * (2 + %%i)]
+    mova      m3,  [srcq + mmsize * (3 + %%i)]
 %if %3
-    mova      m7,  [srcq+mmsize*4*%%i]
-    mova      m8,  [srcq+mmsize*5*%%i]
-    mova      m9,  [srcq+mmsize*6*%%i]
-    mova      m10, [srcq+mmsize*7*%%i]
+    mova      m7,  [srcq + mmsize * (4 + %%i)]
+    mova      m8,  [srcq + mmsize * (5 + %%i)]
+    mova      m9,  [srcq + mmsize * (6 + %%i)]
+    mova      m10, [srcq + mmsize * (7 + %%i)]
 %endif
     CLIPD  m0,  m4, m5, m6
     CLIPD  m1,  m4, m5, m6
@@ -102,17 +102,17 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
     CLIPD  m9,  m4, m5, m6
     CLIPD  m10, m4, m5, m6
 %endif
-    mova  [dstq+mmsize*0*%%i], m0
-    mova  [dstq+mmsize*1*%%i], m1
-    mova  [dstq+mmsize*2*%%i], m2
-    mova  [dstq+mmsize*3*%%i], m3
+    mova  [dstq + mmsize * (0 + %%i)], m0
+    mova  [dstq + mmsize * (1 + %%i)], m1
+    mova  [dstq + mmsize * (2 + %%i)], m2
+    mova  [dstq + mmsize * (3 + %%i)], m3
 %if %3
-    mova  [dstq+mmsize*4*%%i], m7
-    mova  [dstq+mmsize*5*%%i], m8
-    mova  [dstq+mmsize*6*%%i], m9
-    mova  [dstq+mmsize*7*%%i], m10
+    mova  [dstq + mmsize * (4 + %%i)], m7
+    mova  [dstq + mmsize * (5 + %%i)], m8
+    mova  [dstq + mmsize * (6 + %%i)], m9
+    mova  [dstq + mmsize * (7 + %%i)], m10
 %endif
-%assign %%i %%i+1
+%assign %%i (%%i + 4 * (1 + %3))
 %endrep
     add     srcq, mmsize*4*(%2+%3)
     add     dstq, mmsize*4*(%2+%3)
