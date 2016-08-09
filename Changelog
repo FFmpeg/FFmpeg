@@ -17,6 +17,7 @@ version <next>:
 - acrusher audio filter
 - bitplanenoise video filter
 - floating point support in als decoder
+- fifo muxer
 
 
 version 3.1:
