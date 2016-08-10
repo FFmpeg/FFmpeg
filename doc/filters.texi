@@ -441,6 +441,64 @@ ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c
 @end example
 @end itemize
 
+@section acrusher
+
+Reduce audio bit resolution.
+
+This filter is bit crusher with enhanced funcionality. A bit crusher
+is used to audibly reduce number of bits an audio signal is sampled
+with. This doesn't change the bit depth at all, it just produces the
+effect. Material reduced in bit depth sounds more harsh and "digital".
+This filter is able to even round to continous values instead of discrete
+bit depths.
+Additionally it has a D/C offset which results in different crushing of
+the lower and the upper half of the signal.
+An Anti-Aliasing setting is able to produce "softer" crushing sounds.
+
+Another feature of this filter is the logarithmic mode.
+This setting switches from linear distances between bits to logarithmic ones.
+The result is a much more "natural" sounding crusher which doesn't gate low
+signals for example. The human ear has a logarithmic perception, too
+so this kind of crushing is much more pleasant.
+Logarithmic crushing is also able to get anti-aliased.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set level in.
+
+@item level_out
+Set level out.
+
+@item bits
+Set bit reduction.
+
+@item mix
+Set mixing ammount.
+
+@item mode
+Can be linear: @code{lin} or logarithmic: @code{log}.
+
+@item dc
+Set DC.
+
+@item aa
+Set anti-aliasing.
+
+@item samples
+Set sample reduction.
+
+@item lfo
+Enable LFO. By default disabled.
+
+@item lforange
+Set LFO range.
+
+@item lforate
+Set LFO rate.
+@end table
+
 @section adelay
 
 Delay one or more audio channels.
