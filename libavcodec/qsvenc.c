@@ -1093,8 +1093,7 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     q->internal_session = NULL;
 
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
-    av_freep(&q->frames_ctx.mids);
-    q->frames_ctx.nb_mids = 0;
+    av_buffer_unref(&q->frames_ctx.mids_buf);
 
     cur = q->work_frames;
     while (cur) {
