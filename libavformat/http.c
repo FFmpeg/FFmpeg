@@ -355,7 +355,7 @@ static int http_write_reply(URLContext* h, int status_code)
     case 200:
         reply_code = 200;
         reply_text = "OK";
-        content_type = "application/octet-stream";
+        content_type = s->content_type ? s->content_type : "application/octet-stream";
         break;
     case AVERROR_HTTP_SERVER_ERROR:
     case 500:

@@ -276,7 +276,7 @@ value is -1.
 If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 
 @item content_type
-Set a specific content type for the POST messages.
+Set a specific content type for the POST messages or for listen mode.
 
 @item http_proxy
 set HTTP proxy to tunnel through e.g. http://example.com:1234
