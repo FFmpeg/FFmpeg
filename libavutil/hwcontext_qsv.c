@@ -559,6 +559,40 @@ static int qsv_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
+static int qsv_transfer_data_child(AVHWFramesContext *ctx, AVFrame *dst,
+                                   const AVFrame *src)
+{
+    QSVFramesContext *s = ctx->internal->priv;
+    AVHWFramesContext *child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+    int download = !!src->hw_frames_ctx;
+    mfxFrameSurface1 *surf = (mfxFrameSurface1*)(download ? src->data[3] : dst->data[3]);
+
+    AVFrame *dummy;
+    int ret;
+
+    dummy = av_frame_alloc();
+    if (!dummy)
+        return AVERROR(ENOMEM);
+
+    dummy->format        = child_frames_ctx->format;
+    dummy->width         = src->width;
+    dummy->height        = src->height;
+    dummy->buf[0]        = download ? src->buf[0] : dst->buf[0];
+    dummy->data[3]       = surf->Data.MemId;
+    dummy->hw_frames_ctx = s->child_frames_ref;
+
+    ret = download ? av_hwframe_transfer_data(dst, dummy, 0) :
+                     av_hwframe_transfer_data(dummy, src, 0);
+
+    dummy->buf[0]        = NULL;
+    dummy->data[3]       = NULL;
+    dummy->hw_frames_ctx = NULL;
+
+    av_frame_free(&dummy);
+
+    return ret;
+}
+
 static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                   const AVFrame *src)
 {
@@ -570,6 +604,9 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     mfxStatus err;
 
     if (!s->session_download) {
+        if (s->child_frames_ref)
+            return qsv_transfer_data_child(ctx, dst, src);
+
         av_log(ctx, AV_LOG_ERROR, "Surface download not possible\n");
         return AVERROR(ENOSYS);
     }
@@ -614,6 +651,9 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     mfxStatus err;
 
     if (!s->session_upload) {
+        if (s->child_frames_ref)
+            return qsv_transfer_data_child(ctx, dst, src);
+
         av_log(ctx, AV_LOG_ERROR, "Surface upload not possible\n");
         return AVERROR(ENOSYS);
     }
