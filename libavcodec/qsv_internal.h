@@ -36,6 +36,10 @@
     (MFX_VERSION_MAJOR > (MAJOR) ||         \
      MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
 
+typedef struct QSVMid {
+    mfxHDL handle;
+} QSVMid;
+
 typedef struct QSVFrame {
     AVFrame *frame;
     mfxFrameSurface1 surface;
@@ -49,8 +53,8 @@ typedef struct QSVFrame {
 typedef struct QSVFramesContext {
     AVBufferRef *hw_frames_ctx;
     mfxFrameInfo info;
-    mfxMemId *mids;
-    int    nb_mids;
+    QSVMid *mids;
+    int  nb_mids;
 } QSVFramesContext;
 
 /**
@@ -74,5 +78,7 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
 int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *session,
                                   QSVFramesContext *qsv_frames_ctx,
                                   const char *load_plugins, int opaque);
+
+int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame);
 
 #endif /* AVCODEC_QSV_INTERNAL_H */

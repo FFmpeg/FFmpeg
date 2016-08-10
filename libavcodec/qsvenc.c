@@ -872,6 +872,14 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
             return ret;
 
         qf->surface = *(mfxFrameSurface1*)qf->frame->data[3];
+
+        if (q->frames_ctx.mids) {
+            ret = ff_qsv_find_surface_idx(&q->frames_ctx, qf);
+            if (ret < 0)
+                return ret;
+
+            qf->surface.Data.MemId = &q->frames_ctx.mids[ret];
+        }
     } else {
         /* make a copy if the input is not padded as libmfx requires */
         if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
