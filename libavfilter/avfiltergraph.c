@@ -507,6 +507,14 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 char scale_args[256];
                 char inst_name[30];
 
+                if (graph->disable_auto_convert) {
+                    av_log(log_ctx, AV_LOG_ERROR,
+                           "The filters '%s' and '%s' do not have a common format "
+                           "and automatic conversion is disabled.\n",
+                           link->src->name, link->dst->name);
+                    return AVERROR(EINVAL);
+                }
+
                 /* couldn't merge format lists. auto-insert conversion filter */
                 switch (link->type) {
                 case AVMEDIA_TYPE_VIDEO:
