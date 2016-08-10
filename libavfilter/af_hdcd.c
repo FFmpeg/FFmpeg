@@ -916,9 +916,11 @@ typedef struct HDCDContext {
      *  the amplitude to signal some specific aspect of the decoding
      *  process. See docs or HDCD_ANA_* defines. */
     int analyze_mode;
-    int ana_snb;            /**< used in tone generation */
+    int ana_snb;              /**< used in tone generation */
 
-    int cdt_ms;             /**< code detect timer period in ms */
+    int cdt_ms;               /**< code detect timer period in ms */
+
+    int disable_autoconvert;  /**< disable any format conversion or resampling in the filter graph */
     /* end AVOption members */
 
     /** config_input() and config_output() scan links for any resampling
@@ -941,6 +943,8 @@ typedef struct HDCDContext {
 #define OFFSET(x) offsetof(HDCDContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hdcd_options[] = {
+    { "disable_autoconvert", "Disable any format conversion or resampling in the filter graph.",
+        OFFSET(disable_autoconvert), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, A },
     { "process_stereo", "Process stereo channels together. Only apply target_gain when both channels match.",
         OFFSET(process_stereo), AV_OPT_TYPE_BOOL, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, A },
     { "cdt_ms", "Code detect timer period in ms.",
@@ -1718,7 +1722,13 @@ static av_cold int init(AVFilterContext *ctx)
         (s->process_stereo) ? "process stereo channels together" : "process each channel separately");
     av_log(ctx, AV_LOG_VERBOSE, "Force PE: %s\n",
         (s->force_pe) ? "on" : "off");
-    av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n", s->analyze_mode, ana_mode_str[s->analyze_mode] );
+    av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n",
+        s->analyze_mode, ana_mode_str[s->analyze_mode] );
+    if (s->disable_autoconvert)
+        avfilter_graph_set_auto_convert(ctx->graph, AVFILTER_AUTO_CONVERT_NONE);
+    av_log(ctx, AV_LOG_VERBOSE, "Auto-convert: %s (requested: %s)\n",
+        (ctx->graph->disable_auto_convert) ? "disabled" : "enabled",
+        (s->disable_autoconvert) ? "disable" : "do not disable" );
 
     return 0;
 }
