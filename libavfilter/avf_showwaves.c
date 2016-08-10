@@ -45,6 +45,8 @@ enum ShowWavesMode {
 enum ShowWavesScale {
     SCALE_LIN,
     SCALE_LOG,
+    SCALE_SQRT,
+    SCALE_CBRT,
     SCALE_NB,
 };
 
@@ -100,6 +102,8 @@ static const AVOption showwaves_options[] = {
     { "scale", "set amplitude scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, SCALE_NB-1, FLAGS, .unit="scale" },
         { "lin", "linear",         0, AV_OPT_TYPE_CONST, {.i64=SCALE_LIN}, .flags=FLAGS, .unit="scale"},
         { "log", "logarithmic",    0, AV_OPT_TYPE_CONST, {.i64=SCALE_LOG}, .flags=FLAGS, .unit="scale"},
+        { "sqrt", "square root",   0, AV_OPT_TYPE_CONST, {.i64=SCALE_SQRT}, .flags=FLAGS, .unit="scale"},
+        { "cbrt", "cubic root",    0, AV_OPT_TYPE_CONST, {.i64=SCALE_CBRT}, .flags=FLAGS, .unit="scale"},
     { NULL }
 };
 
@@ -176,6 +180,26 @@ static int get_log_h(int16_t sample, int height)
 static int get_log_h2(int16_t sample, int height)
 {
     return log10(1 + FFABS(sample)) * height / log10(1 + INT16_MAX);
+}
+
+static int get_sqrt_h(int16_t sample, int height)
+{
+    return height/2 - FFSIGN(sample) * (sqrt(FFABS(sample)) * (height/2) / sqrt(INT16_MAX));
+}
+
+static int get_sqrt_h2(int16_t sample, int height)
+{
+    return sqrt(FFABS(sample)) * height / sqrt(INT16_MAX);
+}
+
+static int get_cbrt_h(int16_t sample, int height)
+{
+    return height/2 - FFSIGN(sample) * (cbrt(FFABS(sample)) * (height/2) / cbrt(INT16_MAX));
+}
+
+static int get_cbrt_h2(int16_t sample, int height)
+{
+    return cbrt(FFABS(sample)) * height / cbrt(INT16_MAX);
 }
 
 static void draw_sample_point_rgba(uint8_t *buf, int height, int linesize,
@@ -372,6 +396,26 @@ static int config_output(AVFilterLink *outlink)
         case MODE_LINE:
         case MODE_P2P:           showwaves->get_h = get_log_h;  break;
         case MODE_CENTERED_LINE: showwaves->get_h = get_log_h2; break;
+        default:
+            return AVERROR_BUG;
+        }
+        break;
+    case SCALE_SQRT:
+        switch (showwaves->mode) {
+        case MODE_POINT:
+        case MODE_LINE:
+        case MODE_P2P:           showwaves->get_h = get_sqrt_h;  break;
+        case MODE_CENTERED_LINE: showwaves->get_h = get_sqrt_h2; break;
+        default:
+            return AVERROR_BUG;
+        }
+        break;
+    case SCALE_CBRT:
+        switch (showwaves->mode) {
+        case MODE_POINT:
+        case MODE_LINE:
+        case MODE_P2P:           showwaves->get_h = get_cbrt_h;  break;
+        case MODE_CENTERED_LINE: showwaves->get_h = get_cbrt_h2; break;
         default:
             return AVERROR_BUG;
         }

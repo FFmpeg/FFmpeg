@@ -16834,9 +16834,24 @@ Set if channels should be drawn separately or overlap. Default value is 0.
 Set colors separated by '|' which are going to be used for drawing of each channel.
 
 @item scale
-Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
-Default is linear.
+Set amplitude scale.
 
+Available values are:
+@table @samp
+@item lin
+Linear.
+
+@item log
+Logarithmic.
+
+@item sqrt
+Square root.
+
+@item cbrt
+Cubic root.
+@end table
+
+Default is linear.
 @end table
 
 @subsection Examples
