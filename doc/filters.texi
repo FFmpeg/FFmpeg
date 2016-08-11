@@ -11946,6 +11946,18 @@ Expressed in range of [0-255].
 Display the average of sample value difference between all values of the V
 plane in the current frame and corresponding values of the previous input frame.
 Expressed in range of [0-255].
+
+@item YBITDEPTH
+Display bit depth of Y plane in current frame.
+Expressed in range of [0-16].
+
+@item UBITDEPTH
+Display bit depth of U plane in current frame.
+Expressed in range of [0-16].
+
+@item VBITDEPTH
+Display bit depth of V plane in current frame.
+Expressed in range of [0-16].
 @end table
 
 The filter accepts the following options:

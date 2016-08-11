@@ -541,6 +541,11 @@ static int compute_sat_hue_metrics16(AVFilterContext *ctx, void *arg, int jobnr,
     return 0;
 }
 
+static unsigned compute_bit_depth(uint16_t mask)
+{
+    return av_popcount(mask);
+}
+
 static int filter_frame8(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx = link->dst;
@@ -569,6 +574,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     int toty = 0, totu = 0, totv = 0, totsat=0;
     int tothue = 0;
     int dify = 0, difu = 0, difv = 0;
+    uint16_t masky = 0, masku = 0, maskv = 0;
 
     int filtot[FILT_NUMB] = {0};
     AVFrame *prev;
@@ -602,6 +608,8 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
             const int yuv = in->data[0][w + i];
+
+            masky |= yuv;
             histy[yuv]++;
             dify += abs(yuv - prev->data[0][pw + i]);
         }
@@ -614,6 +622,9 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = in->data[1][cw+i];
             const int yuvv = in->data[2][cw+i];
+
+            masku |= yuvu;
+            maskv |= yuvv;
             histu[yuvu]++;
             difu += abs(yuvu - prev->data[1][cpw+i]);
             histv[yuvv]++;
@@ -735,6 +746,10 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     SET_META("UDIF",    "%g", 1.0 * difu / s->cfs);
     SET_META("VDIF",    "%g", 1.0 * difv / s->cfs);
 
+    SET_META("YBITDEPTH", "%d", compute_bit_depth(masky));
+    SET_META("UBITDEPTH", "%d", compute_bit_depth(masku));
+    SET_META("VBITDEPTH", "%d", compute_bit_depth(maskv));
+
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
             char metaname[128];
@@ -777,6 +792,7 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     int64_t toty = 0, totu = 0, totv = 0, totsat=0;
     int64_t tothue = 0;
     int64_t dify = 0, difu = 0, difv = 0;
+    uint16_t masky = 0, masku = 0, maskv = 0;
 
     int filtot[FILT_NUMB] = {0};
     AVFrame *prev;
@@ -811,6 +827,8 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
             const int yuv = AV_RN16(in->data[0] + w + i * 2);
+
+            masky |= yuv;
             histy[yuv]++;
             dify += abs(yuv - AV_RN16(prev->data[0] + pw + i * 2));
         }
@@ -826,6 +844,9 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
             const int yuvv = AV_RN16(in->data[2] + cw + i * 2);
+
+            masku |= yuvu;
+            maskv |= yuvv;
             histu[yuvu]++;
             difu += abs(yuvu - AV_RN16(prev->data[1] + cpw + i * 2));
             histv[yuvv]++;
@@ -941,6 +962,10 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     SET_META("YDIF",    "%g", 1.0 * dify / s->fs);
     SET_META("UDIF",    "%g", 1.0 * difu / s->cfs);
     SET_META("VDIF",    "%g", 1.0 * difv / s->cfs);
+
+    SET_META("YBITDEPTH", "%d", compute_bit_depth(masky));
+    SET_META("UBITDEPTH", "%d", compute_bit_depth(masku));
+    SET_META("VBITDEPTH", "%d", compute_bit_depth(maskv));
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
