@@ -68,10 +68,6 @@ typedef struct AviSynthLibrary {
     AVSC_DECLARE_FUNC(avs_get_pitch_p);
     AVSC_DECLARE_FUNC(avs_get_read_ptr_p);
     AVSC_DECLARE_FUNC(avs_get_row_size_p);
-    AVSC_DECLARE_FUNC(avs_is_yv24);
-    AVSC_DECLARE_FUNC(avs_is_yv16);
-    AVSC_DECLARE_FUNC(avs_is_yv411);
-    AVSC_DECLARE_FUNC(avs_is_y8);
 #endif
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
@@ -142,10 +138,6 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_get_pitch_p, 1);
     LOAD_AVS_FUNC(avs_get_read_ptr_p, 1);
     LOAD_AVS_FUNC(avs_get_row_size_p, 1);
-    LOAD_AVS_FUNC(avs_is_yv24, 1);
-    LOAD_AVS_FUNC(avs_is_yv16, 1);
-    LOAD_AVS_FUNC(avs_is_yv411, 1);
-    LOAD_AVS_FUNC(avs_is_y8, 1);
 #endif
 #undef LOAD_AVS_FUNC
 
@@ -465,20 +457,11 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         return 0;
 
 #ifdef USING_AVISYNTH
-    /* Define the bpp values for the new AviSynth 2.6 colorspaces.
-     * Since AvxSynth doesn't have these functions, special-case
-     * it in order to avoid implicit declaration errors. */
+    /* avs_bits_per_pixel changed to AVSC_API with AviSynth 2.6, which
+     * requires going through avs_library, while AvxSynth has it under
+     * the older AVSC_INLINE type, so special-case this. */
 
-    if (avs_library.avs_is_yv24(avs->vi))
-        bits = 24;
-    else if (avs_library.avs_is_yv16(avs->vi))
-        bits = 16;
-    else if (avs_library.avs_is_yv411(avs->vi))
-        bits = 12;
-    else if (avs_library.avs_is_y8(avs->vi))
-        bits = 8;
-    else
-        bits = avs_library.avs_bits_per_pixel(avs->vi);
+    bits = avs_library.avs_bits_per_pixel(avs->vi);
 #else
     bits = avs_bits_per_pixel(avs->vi);
 #endif
