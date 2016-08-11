@@ -78,6 +78,10 @@ static const AVClass tcp_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
+                                 const struct addrinfo *hints, struct addrinfo **res,
+                                 int64_t timeout,
+                                 const AVIOInterruptCB *int_cb, int one_by_one);
 #ifdef HAVE_PTHREADS
 
 typedef struct TCPAddrinfoRequest
