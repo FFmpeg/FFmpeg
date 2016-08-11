@@ -23,6 +23,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/application.h"
 
 #include "internal.h"
 #include "network.h"
@@ -42,6 +43,8 @@ typedef struct TCPContext {
     int recv_buffer_size;
     int send_buffer_size;
     int tcp_nodelay;
+    int64_t app_ctx_intptr;
+    AVApplicationContext *app_ctx;
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -54,6 +57,7 @@ static const AVOption options[] = {
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
+    { "ijkapplication",   "AVApplicationContext",                              OFFSET(app_ctx_intptr),   AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, .flags = D },
     { NULL }
 };
 
@@ -76,6 +80,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
     s->open_timeout = 5000000;
+    s->app_ctx = (AVApplicationContext *)(intptr_t)s->app_ctx_intptr;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -166,13 +171,26 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
+        ret = av_application_on_tcp_will_open(s->app_ctx);
+        if (ret) {
+            av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
+            goto fail1;
+        }
+
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
-
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd))
+                goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
                 goto fail;
+        } else {
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd);
+            if (ret) {
+                av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
+                goto fail1;
+            }
         }
     }
 
@@ -227,6 +245,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     ret = recv(s->fd, buf, size, 0);
     if (ret == 0)
         return AVERROR_EOF;
+    if (ret > 0)
+        av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
     return ret < 0 ? ff_neterrno() : ret;
 }
 
