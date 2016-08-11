@@ -445,7 +445,7 @@ ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c
 
 Reduce audio bit resolution.
 
-This filter is bit crusher with enhanced funcionality. A bit crusher
+This filter is bit crusher with enhanced functionality. A bit crusher
 is used to audibly reduce number of bits an audio signal is sampled
 with. This doesn't change the bit depth at all, it just produces the
 effect. Material reduced in bit depth sounds more harsh and "digital".
