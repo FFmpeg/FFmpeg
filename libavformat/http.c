@@ -371,12 +371,14 @@ static int http_write_reply(URLContext* h, int status_code)
                  "HTTP/1.1 %03d %s\r\n"
                  "Content-Type: %s\r\n"
                  "Content-Length: %"SIZE_SPECIFIER"\r\n"
+                 "%s"
                  "\r\n"
                  "%03d %s\r\n",
                  reply_code,
                  reply_text,
                  content_type,
                  strlen(reply_text) + 6, // 3 digit status code + space + \r\n
+                 s->headers ? s->headers : "",
                  reply_code,
                  reply_text);
     } else {
@@ -385,10 +387,12 @@ static int http_write_reply(URLContext* h, int status_code)
                  "HTTP/1.1 %03d %s\r\n"
                  "Content-Type: %s\r\n"
                  "Transfer-Encoding: chunked\r\n"
+                 "%s"
                  "\r\n",
                  reply_code,
                  reply_text,
-                 content_type);
+                 content_type,
+                 s->headers ? s->headers : "");
     }
     av_log(h, AV_LOG_TRACE, "HTTP reply header: \n%s----\n", message);
     if ((ret = ffurl_write(s->hd, message, message_len)) < 0)
