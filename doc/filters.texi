@@ -15060,6 +15060,25 @@ Draw line between previous and current sample.
 @end table
 
 Default value is @samp{dot}.
+
+@item scale
+Specify amplitude scale of audio samples.
+
+Available values are:
+@table @samp
+@item lin
+Linear.
+
+@item sqrt
+Square root.
+
+@item cbrt
+Cubic root.
+
+@item log
+Logarithmic.
+@end table
+
 @end table
 
 @subsection Examples
