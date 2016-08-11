@@ -220,7 +220,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = s->frame_rate;
 
     s->prev_x = s->hw = s->w / 2;
-    s->prev_y = s->hh = s->h / 2;
+    s->prev_y = s->hh = s->mode == POLAR ? s->h - 1 : s->h / 2;
 
     return 0;
 }
