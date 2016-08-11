@@ -513,6 +513,7 @@ Set list of delays in milliseconds for each channel separated by '|'.
 At least one delay greater than 0 should be provided.
 Unused delays will be silently ignored. If number of given delays is
 smaller than number of channels all remaining channels will not be delayed.
+If you want to delay exact number of samples, append 'S' to number.
 @end table
 
 @subsection Examples
@@ -523,6 +524,13 @@ Delay first channel by 1.5 seconds, the third channel by 0.5 seconds and leave
 the second channel (and any other channels that may be present) unchanged.
 @example
 adelay=1500|0|500
+@end example
+
+@item
+Delay second channel by 500 samples, the third channel by 700 samples and leave
+the first channel (and any other channels that may be present) unchanged.
+@example
+adelay=0|500S|700S
 @end example
 @end itemize
 
