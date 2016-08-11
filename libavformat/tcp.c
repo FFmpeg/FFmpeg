@@ -48,6 +48,7 @@ typedef struct TCPContext {
     int tcp_nodelay;
     int64_t app_ctx_intptr;
 
+    int addrinfo_one_by_one;
     int addrinfo_timeout;
 
     AVApplicationContext *app_ctx;
@@ -65,6 +66,7 @@ static const AVOption options[] = {
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
     { "ijkapplication",   "AVApplicationContext",                              OFFSET(app_ctx_intptr),   AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, .flags = D },
 
+    { "addrinfo_one_by_one",  "parse addrinfo one by one in getaddrinfo()",    OFFSET(addrinfo_one_by_one), AV_OPT_TYPE_INT, { .i64 = 0 },         0, 1, .flags = D|E },
     { "addrinfo_timeout", "set timeout (in microseconds) for getaddrinfo()",   OFFSET(addrinfo_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT_MAX, .flags = D|E },
     { NULL }
 };
@@ -193,6 +195,31 @@ static void *tcp_getaddrinfo_one_by_one_worker(void *arg)
     int i = 0;
     int option_length = 0;
 
+    TCPAddrinfoRequest *req = (TCPAddrinfoRequest *)arg;
+
+    int family_option[2] = {AF_INET, AF_INET6};
+
+    option_length = sizeof(family_option) / sizeof(family_option[0]);
+
+    for (; i < option_length; ++i) {
+        struct addrinfo *hint = &req->hints;
+        hint->ai_family = family_option[i];
+        ret = getaddrinfo(req->hostname, req->servname, hint, &temp_addrinfo);
+        if (ret) {
+            req->last_error = ret;
+            continue;
+        }
+        pthread_mutex_lock(&req->mutex);
+        if (!req->res) {
+            req->res = temp_addrinfo;
+        } else {
+            cur = req->res;
+            while (cur->ai_next)
+                cur = cur->ai_next;
+            cur->ai_next = temp_addrinfo;
+        }
+        pthread_mutex_unlock(&req->mutex);
+    }
     pthread_mutex_lock(&req->mutex);
     req->finished = 1;
     pthread_cond_signal(&req->cond);
@@ -204,7 +231,7 @@ static void *tcp_getaddrinfo_one_by_one_worker(void *arg)
 int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
                                  const struct addrinfo *hints, struct addrinfo **res,
                                  int64_t timeout,
-                                 const AVIOInterruptCB *int_cb)
+                                 const AVIOInterruptCB *int_cb, int one_by_one)
 {
     int     ret;
     int64_t start;
@@ -230,7 +257,11 @@ int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
     }
 
     /* FIXME: using a thread pool would be better. */
-    ret = pthread_create(&work_thread, NULL, tcp_getaddrinfo_worker, req);
+    if (one_by_one)
+        ret = pthread_create(&work_thread, NULL, tcp_getaddrinfo_one_by_one_worker, req);
+    else
+        ret = pthread_create(&work_thread, NULL, tcp_getaddrinfo_worker, req);
+
     if (ret) {
         ret = AVERROR(ret);
         goto fail;
@@ -339,7 +370,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (s->listen)
         hints.ai_flags |= AI_PASSIVE;
 #ifdef HAVE_PTHREADS
-    ret = ijk_tcp_getaddrinfo_nonblock(hostname, portstr, &hints, &ai, s->addrinfo_timeout, &h->interrupt_callback);
+    ret = ijk_tcp_getaddrinfo_nonblock(hostname, portstr, &hints, &ai, s->addrinfo_timeout, &h->interrupt_callback, s->addrinfo_one_by_one);
 #else
     if (s->addrinfo_timeout > 0)
         av_log(h, AV_LOG_WARNING, "Ignore addrinfo_timeout without pthreads support.\n")
