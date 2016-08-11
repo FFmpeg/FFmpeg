@@ -422,7 +422,10 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
         return;
     }
 
-    if (dst && dst[0]) {
+    if (dst && !*dst)
+        av_freep(&dst);
+
+    if (dst) {
         key = (const char *) dst;
         dict_flags |= AV_DICT_DONT_STRDUP_KEY;
     }
