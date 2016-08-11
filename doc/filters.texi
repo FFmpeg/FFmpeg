@@ -2629,6 +2629,58 @@ Set delay-line interpolation, @var{linear} or @var{quadratic}.
 Default is @var{linear}.
 @end table
 
+@section hdcd
+
+Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
+embedded HDCD codes is expanded into a 20-bit PCM stream.
+
+The filter supports the Peak Extend and Low-level Gain Adjustment features
+of HDCD, and detects the Transient Filter flag.
+
+@example
+ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
+@end example
+
+When using the filter with wav, note the default encoding for wav is 16-bit,
+so the resulting 20-bit stream will be truncated back to 16-bit. Use something
+like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+@example
+ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
+ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+@end example
+
+The filter accepts the following options:
+
+@table @option
+@item process_stereo
+Process the stereo channels together. If target_gain does not match between
+channels, consider it invalid and use the last valid target_gain.
+
+@item force_pe
+Always extend peaks above -3dBFS even if PE isn't signaled.
+
+@item analyze_mode
+Replace audio with a solid tone and adjust the amplitude to signal some
+specific aspect of the decoding process. The output file can be loaded in
+an audio editor alongside the original to aid analysis.
+
+@code{analyze_mode=pe:force_pe=1} can be used to see all samples above the PE level.
+
+Modes are:
+@table @samp
+@item 0, off
+Disabled
+@item 1, lle
+Gain adjustment level at each sample
+@item 2, pe
+Samples where peak extend occurs
+@item 3, cdt
+Samples where the code detect timer is active
+@item 4, tgm
+Samples where the target gain does not match between channels
+@end table
+@end table
+
 @section highpass
 
 Apply a high-pass filter with 3dB point frequency.
@@ -8401,58 +8453,6 @@ Then, the effect of this Hald CLUT can be visualized with:
 @example
 ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 @end example
-
-@section hdcd
-
-Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
-embedded HDCD codes is expanded into a 20-bit PCM stream.
-
-The filter supports the Peak Extend and Low-level Gain Adjustment features
-of HDCD, and detects the Transient Filter flag.
-
-@example
-ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
-@end example
-
-When using the filter with wav, note the default encoding for wav is 16-bit,
-so the resulting 20-bit stream will be truncated back to 16-bit. Use something
-like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
-@example
-ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
-ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
-@end example
-
-The filter accepts the following options:
-
-@table @option
-@item process_stereo
-Process the stereo channels together. If target_gain does not match between
-channels, consider it invalid and use the last valid target_gain.
-
-@item force_pe
-Always extend peaks above -3dBFS even if PE isn't signaled.
-
-@item analyze_mode
-Replace audio with a solid tone and adjust the amplitude to signal some
-specific aspect of the decoding process. The output file can be loaded in
-an audio editor alongside the original to aid analysis.
-
-@code{analyze_mode=pe:force_pe=1} can be used to see all samples above the PE level.
-
-Modes are:
-@table @samp
-@item 0, off
-Disabled
-@item 1, lle
-Gain adjustment level at each sample
-@item 2, pe
-Samples where peak extend occurs
-@item 3, cdt
-Samples where the code detect timer is active
-@item 4, tgm
-Samples where the target gain does not match between channels
-@end table
-@end table
 
 @section hflip
 
