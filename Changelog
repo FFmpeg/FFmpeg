@@ -16,6 +16,7 @@ version <next>:
 - crystalizer audio filter
 - acrusher audio filter
 - bitplanenoise video filter
+- floating point support in als decoder
 
 
 version 3.1:

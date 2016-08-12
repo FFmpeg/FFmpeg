@@ -163,7 +163,7 @@ OBJS-$(CONFIG_ALAC_DECODER)            += alac.o alac_data.o alacdsp.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o alac_data.o
 OBJS-$(CONFIG_ALIAS_PIX_DECODER)       += aliaspixdec.o
 OBJS-$(CONFIG_ALIAS_PIX_ENCODER)       += aliaspixenc.o
-OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mpeg4audio.o
+OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mlz.o mpeg4audio.o
 OBJS-$(CONFIG_AMRNB_DECODER)           += amrnbdec.o celp_filters.o   \
                                           celp_math.o acelp_filters.o \
                                           acelp_vectors.o             \
