@@ -61,6 +61,10 @@ Reduce the latency introduced by optional buffering
 Only write platform-, build- and time-independent data.
 This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
+@item shortest
+Stop muxing at the end of the shortest stream.
+It may be needed to increase max_interleave_delta to avoid flusing the longer
+streams before EOF.
 @end table
 
 @item seek2any @var{integer} (@emph{input})

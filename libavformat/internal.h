@@ -125,6 +125,11 @@ struct AVFormatInternal {
      */
     int header_written;
     int write_header_ret;
+
+    /**
+     * Timestamp of the end of the shortest stream.
+     */
+    int64_t shortest_end;
 };
 
 struct AVStreamInternal {

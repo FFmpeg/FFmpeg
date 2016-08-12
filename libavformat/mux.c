@@ -1032,6 +1032,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     int stream_count = 0;
     int noninterleaved_count = 0;
     int i, ret;
+    int eof = flush;
 
     if (pkt) {
         if ((ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts)) < 0)
@@ -1081,6 +1082,44 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                    "muxing queue is %"PRId64" > %"PRId64": forcing output\n",
                    delta_dts, s->max_interleave_delta);
             flush = 1;
+        }
+    }
+
+    if (s->internal->packet_buffer &&
+        eof &&
+        (s->flags & AVFMT_FLAG_SHORTEST) &&
+        s->internal->shortest_end == AV_NOPTS_VALUE) {
+        AVPacket *top_pkt = &s->internal->packet_buffer->pkt;
+
+        s->internal->shortest_end = av_rescale_q(top_pkt->dts,
+                                       s->streams[top_pkt->stream_index]->time_base,
+                                       AV_TIME_BASE_Q);
+    }
+
+    if (s->internal->shortest_end != AV_NOPTS_VALUE) {
+        while (s->internal->packet_buffer) {
+            AVPacket *top_pkt = &s->internal->packet_buffer->pkt;
+            AVStream *st;
+            int64_t top_dts = av_rescale_q(top_pkt->dts,
+                                        s->streams[top_pkt->stream_index]->time_base,
+                                        AV_TIME_BASE_Q);
+
+            if (s->internal->shortest_end + 1 >= top_dts)
+                break;
+
+            pktl = s->internal->packet_buffer;
+            st   = s->streams[pktl->pkt.stream_index];
+
+            s->internal->packet_buffer = pktl->next;
+            if (!s->internal->packet_buffer)
+                s->internal->packet_buffer_end = NULL;
+
+            if (st->last_in_packet_buffer == pktl)
+                st->last_in_packet_buffer = NULL;
+
+            av_packet_unref(&pktl->pkt);
+            av_freep(&pktl);
+            flush = 0;
         }
     }
 
