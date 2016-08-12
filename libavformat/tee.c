@@ -161,6 +161,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     avf2->opaque   = avf->opaque;
     avf2->io_open  = avf->io_open;
     avf2->io_close = avf->io_close;
+    avf2->interrupt_callback = avf->interrupt_callback;
+    avf2->flags = avf->flags;
 
     tee_slave->stream_map = av_calloc(avf->nb_streams, sizeof(*tee_slave->stream_map));
     if (!tee_slave->stream_map) {
