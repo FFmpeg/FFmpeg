@@ -453,6 +453,17 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
+    if (avctx->codec_tag == AV_RL32("b64a") &&
+        avctx->pix_fmt   == AV_PIX_FMT_RGBA64BE) {
+        uint8_t *dst = frame->data[0];
+        uint64_t v;
+        int x;
+        for (x = 0; x >> 3 < avctx->width * avctx->height; x += 8) {
+            v = AV_RB64(&dst[x]);
+            AV_WB64(&dst[x], v << 16 | v >> 48);
+        }
+    }
+
     if (avctx->field_order > AV_FIELD_PROGRESSIVE) { /* we have interlaced material flagged in container */
         frame->interlaced_frame = 1;
         if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)

@@ -225,6 +225,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
     { AV_PIX_FMT_GRAY16BE,MKTAG('b', '1', '6', 'g') },
     { AV_PIX_FMT_RGB48BE, MKTAG('b', '4', '8', 'r') },
+    { AV_PIX_FMT_RGBA64BE,MKTAG('b', '6', '4', 'a') },
 
     /* vlc */
     { AV_PIX_FMT_YUV410P,     MKTAG('I', '4', '1', '0') },
