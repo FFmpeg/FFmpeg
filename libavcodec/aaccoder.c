@@ -200,7 +200,7 @@ static void set_special_band_scalefactors(AACEncContext *s, SingleChannelElement
     int bands = 0;
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             if (sce->zeroes[w*16+g])
                 continue;
             if (sce->band_type[w*16+g] == INTENSITY_BT || sce->band_type[w*16+g] == INTENSITY_BT2) {
@@ -220,7 +220,7 @@ static void set_special_band_scalefactors(AACEncContext *s, SingleChannelElement
 
     /* Clip the scalefactor indices */
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             if (sce->zeroes[w*16+g])
                 continue;
             if (sce->band_type[w*16+g] == INTENSITY_BT || sce->band_type[w*16+g] == INTENSITY_BT2) {
@@ -387,7 +387,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     }
     //set the same quantizers inside window groups
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
-        for (g = 0;  g < sce->ics.num_swb; g++)
+        for (g = 0; g < sce->ics.num_swb; g++)
             for (w2 = 1; w2 < sce->ics.group_len[w]; w2++)
                 sce->sf_idx[(w+w2)*16+g] = sce->sf_idx[w*16+g];
 }
@@ -408,11 +408,11 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
     // for values above this the decoder might end up in an endless loop
     // due to always having more bits than what can be encoded.
     destbits = FFMIN(destbits, 5800);
-    //XXX: some heuristic to determine initial quantizers will reduce search time
+    //some heuristic to determine initial quantizers will reduce search time
     //determine zero bands and upper limits
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = 0;
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             int nz = 0;
             float uplim = 0.0f, energy = 0.0f;
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
@@ -435,7 +435,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
         }
     }
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             if (sce->zeroes[w*16+g]) {
                 sce->sf_idx[w*16+g] = SCALE_ONE_POS;
                 continue;
@@ -451,7 +451,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             const float *scaled = s->scoefs + start;
             maxvals[w*16+g] = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
             start += sce->ics.swb_sizes[g];
@@ -470,7 +470,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
             tbits = 0;
             for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
                 start = w*128;
-                for (g = 0;  g < sce->ics.num_swb; g++) {
+                for (g = 0; g < sce->ics.num_swb; g++) {
                     const float *coefs = sce->coeffs + start;
                     const float *scaled = s->scoefs + start;
                     int bits = 0;
@@ -581,7 +581,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     ff_init_nextband_map(sce, nextband);
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         int wstart = w*128;
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             int noise_sfi;
             float dist1 = 0.0f, dist2 = 0.0f, noise_amp;
             float pns_energy = 0.0f, pns_tgt_energy, energy_ratio, dist_thresh;
@@ -717,7 +717,7 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
 
     memcpy(sce->band_alt, sce->band_type, sizeof(sce->band_type));
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        for (g = 0;  g < sce->ics.num_swb; g++) {
+        for (g = 0; g < sce->ics.num_swb; g++) {
             float sfb_energy = 0.0f, threshold = 0.0f, spread = 2.0f;
             float min_energy = -1.0f, max_energy = 0.0f;
             const int start = sce->ics.swb_offset[g];
@@ -776,7 +776,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe)
     prev_side = sce1->sf_idx[0];
     for (w = 0; w < sce0->ics.num_windows; w += sce0->ics.group_len[w]) {
         start = 0;
-        for (g = 0;  g < sce0->ics.num_swb; g++) {
+        for (g = 0; g < sce0->ics.num_swb; g++) {
             float bmax = bval2bmax(g * 17.0f / sce0->ics.num_swb) / 0.0045f;
             if (!cpe->is_mask[w*16+g])
                 cpe->ms_mask[w*16+g] = 0;
