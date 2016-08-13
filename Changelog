@@ -1,6 +1,73 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.0.3:
+- cmdutils: remove the current working directory from the DLL search path on win32
+- avcodec/raw: Fix decoding of ilacetest.mov
+- avcodec/ffv1enc: Fix assertion failure with non zero bits per sample
+- avformat/oggdec: Fix integer overflow with invalid pts
+- ffplay: Fix invalid array index
+- avcodec/vp9_parser: Check the input frame sizes for being consistent
+- libavformat/rtpdec_asf: zero initialize the AVIOContext struct
+- libavutil/opt: Small bugfix in example.
+- libx264: Increase x264 opts character limit to 4096
+- avformat/mov: Check sample size
+- avformat/format: Fix registering a format more than once and related races
+- avformat/flacdec: Fix seeking close to EOF
+- avcodec/flac_parser: Raise threshold for detecting invalid data
+- avformat/flvdec: Accept last size if its off by 1
+- tests/api/api-codec-param-test: Do not directly access caps_internal
+- avcodec: Add avpriv_codec_get_cap_skip_frame_fill_param()
+- avfilter/vf_telecine: Make frame writable before writing into it
+- avformat/mpegts: adjust probe score for low check_count
+- avcodec/mpc8: Correct end truncation
+- avformat/mp3dec: Increase probe score slightly when the whole data from begin to end is mp3
+- avcodec/cfhd: Set dimensions unconditionally
+- avcodec/mpegvideo: Do not clear the parse context during init
+- avcodec/h264: Fix off by 1 context count
+- avcodec/alsdec: Check r to prevent out of array read
+- avcodec/alsdec: fix max bits in ltp prefix code
+- avcodec/utils: check skip_samples signedness
+- avformat/mpegts: Do not trust BSSD descriptor, it is sometimes not an S302M stream
+- avcodec/bmp_parser: Check fsize
+- avcodec/bmp_parser: reset state
+- avcodec/bmp_parser: Fix remaining size
+- avcodec/bmp_parser: Fix frame_start_found in cross frame cases
+- avfilter/af_amix: do not fail if there are no samples in output_frame()
+- avformat/allformats: Making av_register_all() thread-safe.
+- librtmp: Avoid an infiniloop setting connection arguments
+- avformat/oggparsevp8: fix pts calculation on pages ending with an invisible frame
+- Revert "configure: Enable GCC vectorization on ≥4.9 on x86"
+- avcodec/libopenjpegenc: Set numresolutions by default to a value that is not too large
+- ffplay: Fix usage of private lavfi API
+- tests/checkasm/checkasm: Disable checkasm_check_pixblockdsp for ppc64be
+- avcodec/mpegvideo: Deallocate last/next picture earlier
+- avcodec/bmp_parser: Fix state
+- avformat/oggparseopus: Fix Undefined behavior in oggparseopus.c and libavformat/utils.c
+- avformat/utils: avoid overflow in compute_chapters_end()  with huge durations
+- avformat/utils: avoid overflow in update_stream_timings() with huge durations
+- doc/developer.texi: Add a code of conduct
+- ffserver: fixed deallocation bug in build_feed_streams
+- avcodec/diracdec: Fix potential integer overflow
+- avformat/avidec: Detect index with too short entries
+- avformat/utils: Check negative bps before shifting in ff_get_pcm_codec_id()
+- avformat/utils: Do not compute the bitrate from duration == 0
+- ffmpeg: Check that r_frame_rate is set before attempting to use it
+- swresample/resample: Fix division by 0 with tap_count=1
+- swresample/rematrix: Use clipping s16 rematrixing if overflows are possible
+- swresample/rematrix: Use error diffusion to avoid error in the DC component of the matrix
+- hevc: Fix memory leak related to a53_caption data
+- libavformat/oggdec: Free stream private when header parsing fails.
+- avformat/utils: Check bps before using it in a shift in ff_get_pcm_codec_id()
+- avformat/oggparseopus: Check that granule pos is within the supported range
+- avcodec/mjpegdec: Do not try to detect last scan but apply idct after all scans for progressive jpeg
+- avformat/options_table: Add missing identifier for very strict compliance
+- avformat/ffmdec: Check pix_fmt
+- doc/general: update supported DCA extensions
+- avcodec/rscc: check input buffer size for deflate mode
+- avcodec/dca: fix sync word search error condition
+- lavf/mpegts: Return small probe score for very short transport streams.
+
 
 version 3.0.2:
 - avcodec/ttaenc: Reallocate packet if its too small
