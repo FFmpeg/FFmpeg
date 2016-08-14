@@ -28,6 +28,8 @@
 #include "get_bits.h"
 #include "internal.h"
 
+#define PCX_HEADER_SIZE 128
+
 /**
  * @return advanced src pointer
  */
@@ -84,6 +86,11 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *bufstart = buf;
     uint8_t *scanline;
     int ret = -1;
+
+    if (buf_size < PCX_HEADER_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (buf[0] != 0x0a || buf[1] > 5) {
         av_log(avctx, AV_LOG_ERROR, "this is not PCX encoded data\n");
