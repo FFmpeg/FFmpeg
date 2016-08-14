@@ -148,7 +148,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ptr    = p->data[0];
     stride = p->linesize[0];
 
-    scanline = av_malloc(bytes_per_scanline);
+    scanline = av_malloc(bytes_per_scanline + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!scanline)
         return AVERROR(ENOMEM);
 
