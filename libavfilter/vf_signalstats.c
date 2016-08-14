@@ -190,7 +190,7 @@ static int config_props(AVFilterLink *outlink)
     if (!s->jobs_rets)
         return AVERROR(ENOMEM);
 
-    s->frame_sat = alloc_frame(AV_PIX_FMT_GRAY8,  inlink->w, inlink->h);
+    s->frame_sat = alloc_frame(s->depth > 8 ? AV_PIX_FMT_GRAY16 : AV_PIX_FMT_GRAY8,  inlink->w, inlink->h);
     s->frame_hue = alloc_frame(AV_PIX_FMT_GRAY16, inlink->w, inlink->h);
     if (!s->frame_sat || !s->frame_hue)
         return AVERROR(ENOMEM);
@@ -799,10 +799,10 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
 
     AVFrame *sat = s->frame_sat;
     AVFrame *hue = s->frame_hue;
-    const uint8_t *p_sat = sat->data[0];
-    const uint8_t *p_hue = hue->data[0];
-    const int lsz_sat = sat->linesize[0];
-    const int lsz_hue = hue->linesize[0];
+    const uint16_t *p_sat = (uint16_t *)sat->data[0];
+    const uint16_t *p_hue = (uint16_t *)hue->data[0];
+    const int lsz_sat = sat->linesize[0] / 2;
+    const int lsz_hue = hue->linesize[0] / 2;
     ThreadDataHueSatMetrics td_huesat = {
         .src     = in,
         .dst_sat = sat,
