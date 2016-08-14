@@ -447,6 +447,10 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "no end tag found. incomplete packet.\n");
         return AVERROR_INVALIDDATA;
     }
+    if (!alac->nb_samples) {
+        av_log(avctx, AV_LOG_ERROR, "No decodable data in the packet\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (avpkt->size * 8 - get_bits_count(&alac->gb) > 8) {
         av_log(avctx, AV_LOG_ERROR, "Error : %d bits left\n",
