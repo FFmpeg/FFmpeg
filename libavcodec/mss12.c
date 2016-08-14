@@ -588,6 +588,16 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
                avctx->coded_width, avctx->coded_height);
         return AVERROR_INVALIDDATA;
     }
+    if (avctx->width || avctx->height) {
+        if (avctx->width  <= 0 || avctx->width > avctx->coded_width ||
+            avctx->height <= 0 || avctx->height > avctx->coded_height) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid display dimensions\n");
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        avctx->width  = avctx->coded_width;
+        avctx->height = avctx->coded_height;
+    }
 
     av_log(avctx, AV_LOG_DEBUG, "Encoder version %"PRIu32".%"PRIu32"\n",
            AV_RB32(avctx->extradata + 4), AV_RB32(avctx->extradata + 8));
