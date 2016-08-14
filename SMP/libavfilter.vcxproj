@@ -111,6 +111,7 @@
     <ClCompile Include="..\libavfilter\f_bench.c" />
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_afade.c" />
+    <ClCompile Include="..\libavfilter\af_acrusher.c" />
     <ClCompile Include="..\libavfilter\af_adelay.c" />
     <ClCompile Include="..\libavfilter\af_aecho.c" />
     <ClCompile Include="..\libavfilter\af_aemphasis.c" />

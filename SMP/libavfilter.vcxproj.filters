@@ -153,6 +153,9 @@
     <ClCompile Include="..\libavfilter\af_afade.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_acrusher.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_adelay.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
