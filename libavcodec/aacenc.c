@@ -999,9 +999,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     /* Coder limitations */
     s->coder = &ff_aac_coders[s->options.coder];
-    if (s->options.coder != AAC_CODER_TWOLOOP) {
+    if (s->options.coder == AAC_CODER_ANMR) {
         ERROR_IF(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
-                 "Coders other than twoloop require -strict -2 and some may be removed in the future\n");
+                 "The ANMR coder is considered experimental, add -strict -2 to enable!\n");
         s->options.intensity_stereo = 0;
         s->options.pns = 0;
     }

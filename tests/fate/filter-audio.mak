@@ -127,6 +127,12 @@ fate-filter-tremolo: tests/data/asynth-44100-2.wav
 fate-filter-tremolo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-tremolo: CMD = framecrc -i $(SRC) -aframes 20 -af tremolo
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, COMPAND, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-compand
+fate-filter-compand: tests/data/asynth-44100-2.wav
+fate-filter-compand: tests/data/filtergraphs/compand
+fate-filter-compand: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-compand: CMD = framecrc -i $(SRC) -aframes 20 -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/compand
+
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \

@@ -870,6 +870,26 @@ static const char * const pe_str[] = {
  * the always-negative value is stored positive, so make it negative */
 #define GAINTOFLOAT(g) (g) ? -(float)(g>>1) - ((g & 1) ? 0.5 : 0.0) : 0.0
 
+#define HDCD_ANA_OFF 0
+#define HDCD_ANA_OFF_DESC "disabled"
+#define HDCD_ANA_LLE 1
+#define HDCD_ANA_LLE_DESC "gain adjustment level at each sample"
+#define HDCD_ANA_PE  2
+#define HDCD_ANA_PE_DESC  "samples where peak extend occurs"
+#define HDCD_ANA_CDT 3
+#define HDCD_ANA_CDT_DESC "samples where the code detect timer is active"
+#define HDCD_ANA_TGM 4
+#define HDCD_ANA_TGM_DESC "samples where the target gain does not match between channels"
+#define HDCD_ANA_TOP 5 /* used in max value of AVOption */
+
+static const char * const ana_mode_str[] = {
+    HDCD_ANA_OFF_DESC,
+    HDCD_ANA_LLE_DESC,
+    HDCD_ANA_PE_DESC,
+    HDCD_ANA_CDT_DESC,
+    HDCD_ANA_TGM_DESC,
+};
+
 typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[HDCD_MAX_CHANNELS];
@@ -884,6 +904,12 @@ typedef struct HDCDContext {
      * -af hdcd=force_pe=1 for on
      * default is off */
     int force_pe;
+
+    /* analyze mode replaces the audio with a solid tone and adjusts
+     * the amplitude to signal some specific aspect of the decoding
+     * process. See docs or HDCD_ANA_* defines. */
+    int analyze_mode;
+    int ana_snb;            /* used in tone generation */
 
     /* config_input() and config_output() scan links for any resampling
      * or format changes. If found, warnings are issued and bad_config
@@ -909,6 +935,13 @@ static const AVOption hdcd_options[] = {
         OFFSET(process_stereo), AV_OPT_TYPE_BOOL, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, A },
     { "force_pe", "Always extend peaks above -3dBFS even when PE is not signaled.",
         OFFSET(force_pe), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, A },
+    { "analyze_mode",  "Replace audio with solid tone and signal some processing aspect in the amplitude.",
+        OFFSET(analyze_mode), AV_OPT_TYPE_INT, { .i64=HDCD_ANA_OFF }, 0, HDCD_ANA_TOP-1, A, "analyze_mode"},
+        { "off", HDCD_ANA_OFF_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_OFF}, 0, 0, A, "analyze_mode" },
+        { "lle", HDCD_ANA_LLE_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_LLE}, 0, 0, A, "analyze_mode" },
+        { "pe",  HDCD_ANA_PE_DESC,  0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_PE},  0, 0, A, "analyze_mode" },
+        { "cdt", HDCD_ANA_CDT_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_CDT}, 0, 0, A, "analyze_mode" },
+        { "tgm", HDCD_ANA_TGM_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_TGM}, 0, 0, A, "analyze_mode" },
     {NULL}
 };
 
@@ -1209,6 +1242,77 @@ static int hdcd_scan_stereo(HDCDContext *ctx, const int32_t *samples, int max)
     return result;
 }
 
+/* encode a value in the given sample by adjusting the amplitude */
+static int32_t hdcd_analyze_gen(int32_t sample, unsigned int v, unsigned int maxv)
+{
+    float sflt = sample, vv = v;
+    vv /= maxv;
+    if (vv > 1.0) vv = 1.0;
+    sflt *= 1.0 + (vv * 18);
+    return (int32_t)sflt;
+}
+
+/* behaves like hdcd_envelope(), but encodes processing information in
+ * a way that is audible (and visible in an audio editor) to aid analysis. */
+static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int target_gain, int extend, int mode, int cdt_active, int tg_mismatch)
+{
+    static const int maxg = 0xf << 7;
+    int i;
+    int32_t *samples_end = samples + stride * count;
+
+    for (i = 0; i < count; i++) {
+        samples[i * stride] <<= 15;
+        if (mode == HDCD_ANA_PE) {
+            int pel = (samples[i * stride] >> 16) & 1;
+            int32_t sample = samples[i * stride];
+            samples[i * stride] = hdcd_analyze_gen(sample, !!(pel && extend), 1);
+        } else if (mode == HDCD_ANA_TGM && tg_mismatch > 0)
+            samples[i * stride] = hdcd_analyze_gen(samples[i * stride], 1, 1);
+          else if (mode == HDCD_ANA_CDT && cdt_active)
+            samples[i * stride] = hdcd_analyze_gen(samples[i * stride], 1, 1);
+    }
+
+    if (gain <= target_gain) {
+        int len = FFMIN(count, target_gain - gain);
+        /* attenuate slowly */
+        for (i = 0; i < len; i++) {
+            ++gain;
+            if (mode == HDCD_ANA_LLE)
+                *samples = hdcd_analyze_gen(*samples, gain, maxg);
+            samples += stride;
+        }
+        count -= len;
+    } else {
+        int len = FFMIN(count, (gain - target_gain) >> 3);
+        /* amplify quickly */
+        for (i = 0; i < len; i++) {
+            gain -= 8;
+            if (mode == HDCD_ANA_LLE)
+                *samples = hdcd_analyze_gen(*samples, gain, maxg);
+            samples += stride;
+        }
+        if (gain - 8 < target_gain)
+            gain = target_gain;
+        count -= len;
+    }
+
+    /* hold a steady level */
+    if (gain == 0) {
+        if (count > 0)
+            samples += count * stride;
+    } else {
+        while (--count >= 0) {
+            if (mode == HDCD_ANA_LLE)
+                *samples = hdcd_analyze_gen(*samples, gain, maxg);
+            samples += stride;
+        }
+    }
+
+    av_assert0(samples == samples_end);
+
+    return gain;
+}
+
 static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int target_gain, int extend)
 {
     int i;
@@ -1316,7 +1420,10 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples
         envelope_run = run - 1;
 
         av_assert0(samples + envelope_run * stride <= samples_end);
-        gain = hdcd_envelope(samples, envelope_run, stride, gain, target_gain, peak_extend);
+        if (ctx->analyze_mode)
+            gain = hdcd_analyze(samples, envelope_run, stride, gain, target_gain, peak_extend, ctx->analyze_mode, state->sustain, -1);
+        else
+            gain = hdcd_envelope(samples, envelope_run, stride, gain, target_gain, peak_extend);
 
         samples += envelope_run * stride;
         count -= envelope_run;
@@ -1325,7 +1432,10 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples
     }
     if (lead > 0) {
         av_assert0(samples + lead * stride <= samples_end);
-        gain = hdcd_envelope(samples, lead, stride, gain, target_gain, peak_extend);
+        if (ctx->analyze_mode)
+            gain = hdcd_analyze(samples, lead, stride, gain, target_gain, peak_extend, ctx->analyze_mode, state->sustain, -1);
+        else
+            gain = hdcd_envelope(samples, lead, stride, gain, target_gain, peak_extend);
     }
 
     state->running_gain = gain;
@@ -1339,7 +1449,7 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
     int peak_extend[2];
     int lead = 0;
 
-    hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
+    int ctlret = hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
     while (count > lead) {
         int envelope_run, run;
 
@@ -1349,7 +1459,16 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
 
         av_assert0(samples + envelope_run * stride <= samples_end);
 
-        if (envelope_run) {
+        if (ctx->analyze_mode) {
+            gain[0] = hdcd_analyze(samples, envelope_run, stride, gain[0], ctx->val_target_gain, peak_extend[0],
+                ctx->analyze_mode,
+                ctx->state[0].sustain,
+                (ctlret == HDCD_TG_MISMATCH) );
+            gain[1] = hdcd_analyze(samples + 1, envelope_run, stride, gain[1], ctx->val_target_gain, peak_extend[1],
+                ctx->analyze_mode,
+                ctx->state[1].sustain,
+                (ctlret == HDCD_TG_MISMATCH) );
+        } else {
             gain[0] = hdcd_envelope(samples, envelope_run, stride, gain[0], ctx->val_target_gain, peak_extend[0]);
             gain[1] = hdcd_envelope(samples + 1, envelope_run, stride, gain[1], ctx->val_target_gain, peak_extend[1]);
         }
@@ -1358,17 +1477,31 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
         count -= envelope_run;
         lead = run - envelope_run;
 
-        hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
+        ctlret = hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
     }
     if (lead > 0) {
         av_assert0(samples + lead * stride <= samples_end);
-        gain[0] = hdcd_envelope(samples, lead, stride, gain[0], ctx->val_target_gain, peak_extend[0]);
-        gain[1] = hdcd_envelope(samples + 1, lead, stride, gain[1], ctx->val_target_gain, peak_extend[1]);
+        if (ctx->analyze_mode) {
+            gain[0] = hdcd_analyze(samples, lead, stride, gain[0], ctx->val_target_gain, peak_extend[0],
+                ctx->analyze_mode,
+                ctx->state[0].sustain,
+                (ctlret == HDCD_TG_MISMATCH) );
+            gain[1] = hdcd_analyze(samples + 1, lead, stride, gain[1], ctx->val_target_gain, peak_extend[1],
+                ctx->analyze_mode,
+                ctx->state[1].sustain,
+                (ctlret == HDCD_TG_MISMATCH) );
+        } else {
+            gain[0] = hdcd_envelope(samples, lead, stride, gain[0], ctx->val_target_gain, peak_extend[0]);
+            gain[1] = hdcd_envelope(samples + 1, lead, stride, gain[1], ctx->val_target_gain, peak_extend[1]);
+        }
     }
 
     ctx->state[0].running_gain = gain[0];
     ctx->state[1].running_gain = gain[1];
 }
+
+/* tone generator: sample_number, frequency, sample_rate, amplitude */
+#define TONEGEN16(sn, f, sr, a) (int16_t)(sin((6.28318530718 * (sn) * (f)) /(sr)) * (a) * 0x7fff)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -1390,8 +1523,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     in_data  = (int16_t*)in->data[0];
     out_data = (int32_t*)out->data[0];
-    for (n = 0; n < in->nb_samples * in->channels; n++) {
+    for (c = n = 0; n < in->nb_samples * in->channels; n++) {
         out_data[n] = in_data[n];
+        if (s->analyze_mode) {
+            /* in analyze mode, the audio is replaced by a solid tone, and
+             * amplitude is changed to signal when the specified feature is
+             * used.
+             * bit 0: HDCD signal preserved
+             * bit 1: Original sample was above PE level */
+            int32_t save = (abs(in_data[n]) - 0x5981 >= 0) ? 2 : 0; /* above PE level */
+            save |= in_data[n] & 1;                      /* save LSB for HDCD packets */
+            out_data[n] = TONEGEN16(s->ana_snb, 277.18, 44100, 0.1);
+            out_data[n] = (out_data[n] | 3) ^ ((~save) & 3);
+            if (++c == in->channels) { s->ana_snb++; c = 0; }
+            if (s->ana_snb > 0x3fffffff) s->ana_snb = 0;
+        }
     }
 
     s->det_errors = 0; /* re-sum every pass */
@@ -1557,6 +1703,7 @@ static av_cold int init(AVFilterContext *ctx)
         (s->process_stereo) ? "process stereo channels together" : "process each channel separately");
     av_log(ctx, AV_LOG_VERBOSE, "Force PE: %s\n",
         (s->force_pe) ? "on" : "off");
+    av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n", s->analyze_mode, ana_mode_str[s->analyze_mode] );
 
     return 0;
 }
@@ -1567,13 +1714,17 @@ static int config_input(AVFilterLink *inlink) {
     AVFilterLink *lk = inlink;
     while(lk != NULL) {
         AVFilterContext *nextf = lk->src;
-        if (lk->format != AV_SAMPLE_FMT_S16 || lk->sample_rate != 44100) {
-            av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
-                av_get_sample_fmt_name(lk->format), lk->sample_rate,
-                (nextf->name) ? nextf->name : "<unknown>"
-                );
-            s->bad_config = 1;
-            break;
+        if (lk->type == AVMEDIA_TYPE_AUDIO) {
+            int sfok = (lk->format == AV_SAMPLE_FMT_S16 ||
+                        lk->format == AV_SAMPLE_FMT_S16P);
+            if ( !sfok || lk->sample_rate != 44100) {
+                av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
+                    av_get_sample_fmt_name(lk->format), lk->sample_rate,
+                    (nextf->name) ? nextf->name : "<unknown>"
+                    );
+                s->bad_config = 1;
+                break;
+            }
         }
         lk = (nextf->inputs) ? nextf->inputs[0] : NULL;
     }
@@ -1599,13 +1750,15 @@ static int config_output(AVFilterLink *outlink) {
     AVFilterLink *lk = outlink;
     while(lk != NULL) {
         AVFilterContext *nextf = lk->dst;
-        if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
-            av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s. (Try -f s24le after the filter)\n",
-                av_get_sample_fmt_name(lk->format),
-                (nextf->name) ? nextf->name : "<unknown>"
-                );
-            s->bad_config = 1;
-            break;
+        if (lk->type == AVMEDIA_TYPE_AUDIO) {
+            if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
+                av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s.\n",
+                    av_get_sample_fmt_name(lk->format),
+                    (nextf->name) ? nextf->name : "<unknown>"
+                    );
+                s->bad_config = 1;
+                break;
+            }
         }
         lk = (nextf->outputs) ? nextf->outputs[0] : NULL;
     }

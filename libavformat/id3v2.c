@@ -408,7 +408,7 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
     const char *key = "comment";
     uint8_t *dst;
     int encoding, dict_flags = AV_DICT_DONT_OVERWRITE | AV_DICT_DONT_STRDUP_VAL;
-    int language;
+    av_unused int language;
 
     if (taglen < 4)
         return;
@@ -422,7 +422,10 @@ static void read_comment(AVFormatContext *s, AVIOContext *pb, int taglen,
         return;
     }
 
-    if (dst && dst[0]) {
+    if (dst && !*dst)
+        av_freep(&dst);
+
+    if (dst) {
         key = (const char *) dst;
         dict_flags |= AV_DICT_DONT_STRDUP_KEY;
     }

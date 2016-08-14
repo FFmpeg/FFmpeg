@@ -31,6 +31,7 @@
 const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
     { AV_PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
+    { AV_PIX_FMT_YUV420P, MKTAG('y', 'v', '1', '2') },
     { AV_PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
     { AV_PIX_FMT_YUV410P, MKTAG('Y', 'U', 'V', '9') },
     { AV_PIX_FMT_YUV410P, MKTAG('Y', 'V', 'U', '9') },
@@ -224,6 +225,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
     { AV_PIX_FMT_GRAY16BE,MKTAG('b', '1', '6', 'g') },
     { AV_PIX_FMT_RGB48BE, MKTAG('b', '4', '8', 'r') },
+    { AV_PIX_FMT_RGBA64BE,MKTAG('b', '6', '4', 'a') },
 
     /* vlc */
     { AV_PIX_FMT_YUV410P,     MKTAG('I', '4', '1', '0') },

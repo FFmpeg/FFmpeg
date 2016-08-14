@@ -46,6 +46,14 @@ enum VectorScopeDraw {
     DRAW_NB,
 };
 
+enum VectorScopeScale {
+    LIN,
+    SQRT,
+    CBRT,
+    LOG,
+    SCALE_NB,
+};
+
 typedef struct AudioVectorScopeContext {
     const AVClass *class;
     AVFrame *outpicref;
@@ -53,6 +61,7 @@ typedef struct AudioVectorScopeContext {
     int hw, hh;
     int mode;
     int draw;
+    int scale;
     int contrast[4];
     int fade[4];
     double zoom;
@@ -85,6 +94,11 @@ static const AVOption avectorscope_options[] = {
     { "draw", "set draw mode", OFFSET(draw), AV_OPT_TYPE_INT, {.i64=DOT}, 0, DRAW_NB-1, FLAGS, "draw" },
     { "dot",   "", 0, AV_OPT_TYPE_CONST, {.i64=DOT} , 0, 0, FLAGS, "draw" },
     { "line",  "", 0, AV_OPT_TYPE_CONST, {.i64=LINE}, 0, 0, FLAGS, "draw" },
+    { "scale", "set amplitude scale mode", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LIN}, 0, SCALE_NB-1, FLAGS, "scale" },
+    { "lin",   "linear",      0, AV_OPT_TYPE_CONST, {.i64=LIN},  0, 0, FLAGS, "scale" },
+    { "sqrt",  "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT}, 0, 0, FLAGS, "scale" },
+    { "cbrt",  "cube root",   0, AV_OPT_TYPE_CONST, {.i64=CBRT}, 0, 0, FLAGS, "scale" },
+    { "log",   "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},  0, 0, FLAGS, "scale" },
     { NULL }
 };
 
@@ -206,7 +220,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = s->frame_rate;
 
     s->prev_x = s->hw = s->w / 2;
-    s->prev_y = s->hh = s->h / 2;
+    s->prev_y = s->hh = s->mode == POLAR ? s->h - 1 : s->h / 2;
 
     return 0;
 }
@@ -239,69 +253,61 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     fade(s);
 
-    switch (insamples->format) {
-    case AV_SAMPLE_FMT_S16:
-        for (i = 0; i < insamples->nb_samples; i++) {
-            int16_t *src = (int16_t *)insamples->data[0] + i * 2;
+    for (i = 0; i < insamples->nb_samples; i++) {
+        int16_t *samples = (int16_t *)insamples->data[0] + i * 2;
+        float *samplesf = (float *)insamples->data[0] + i * 2;
+        float src[2];
 
-            if (s->mode == LISSAJOUS) {
-                x = ((src[1] - src[0]) * zoom / (float)(UINT16_MAX) + 1) * hw;
-                y = (1.0 - (src[0] + src[1]) * zoom / (float)UINT16_MAX) * hh;
-            } else if (s->mode == LISSAJOUS_XY) {
-                x = (src[1] * zoom / (float)INT16_MAX + 1) * hw;
-                y = (src[0] * zoom / (float)INT16_MAX + 1) * hh;
-            } else {
-                float sx, sy, cx, cy;
-
-                sx = src[1] * zoom / (float)INT16_MAX;
-                sy = src[0] * zoom / (float)INT16_MAX;
-                cx = sx * sqrtf(1 - 0.5*sy*sy);
-                cy = sy * sqrtf(1 - 0.5*sx*sx);
-                x = hw + hw * FFSIGN(cx + cy) * (cx - cy) * .7;
-                y = s->h - s->h * fabsf(cx + cy) * .7;
-            }
-
-            if (s->draw == DOT) {
-                draw_dot(s, x, y);
-            } else {
-                draw_line(s, x, y, prev_x, prev_y);
-            }
-            prev_x = x;
-            prev_y = y;
+        switch (insamples->format) {
+        case AV_SAMPLE_FMT_S16:
+            src[0] = samples[0] / (float)INT16_MAX;
+            src[1] = samples[1] / (float)INT16_MAX;
+            break;
+        case AV_SAMPLE_FMT_FLT:
+            src[0] = samplesf[0];
+            src[1] = samplesf[1];
+            break;
         }
-        break;
-    case AV_SAMPLE_FMT_FLT:
-        for (i = 0; i < insamples->nb_samples; i++) {
-            float *src = (float *)insamples->data[0] + i * 2;
 
-            if (s->mode == LISSAJOUS) {
-                x = ((src[1] - src[0]) * zoom / 2 + 1) * hw;
-                y = (1.0 - (src[0] + src[1]) * zoom / 2) * hh;
-            } else if (s->mode == LISSAJOUS_XY){
-                x = (src[1] * zoom + 1) * hw;
-                y = (src[0] * zoom + 1) * hh;
-            } else {
-                float sx, sy, cx, cy;
-
-                sx = src[1] * zoom;
-                sy = src[0] * zoom;
-                cx = sx * sqrtf(1 - 0.5 * sy * sy);
-                cy = sy * sqrtf(1 - 0.5 * sx * sx);
-                x = hw + hw * FFSIGN(cx + cy) * (cx - cy) * .7;
-                y = s->h - s->h * fabsf(cx + cy) * .7;
-            }
-
-            if (s->draw == DOT) {
-                draw_dot(s, x, y);
-            } else {
-                draw_line(s, x, y, prev_x, prev_y);
-            }
-            prev_x = x;
-            prev_y = y;
+        switch (s->scale) {
+        case SQRT:
+            src[0] = FFSIGN(src[0]) * sqrtf(FFABS(src[0]));
+            src[1] = FFSIGN(src[1]) * sqrtf(FFABS(src[1]));
+            break;
+        case CBRT:
+            src[0] = FFSIGN(src[0]) * cbrtf(FFABS(src[0]));
+            src[1] = FFSIGN(src[1]) * cbrtf(FFABS(src[1]));
+            break;
+        case LOG:
+            src[0] = FFSIGN(src[0]) * logf(1 + FFABS(src[0])) / logf(2);
+            src[1] = FFSIGN(src[1]) * logf(1 + FFABS(src[1])) / logf(2);
+            break;
         }
-        break;
-    default:
-        av_assert0(0);
+
+        if (s->mode == LISSAJOUS) {
+            x = ((src[1] - src[0]) * zoom / 2 + 1) * hw;
+            y = (1.0 - (src[0] + src[1]) * zoom / 2) * hh;
+        } else if (s->mode == LISSAJOUS_XY) {
+            x = (src[1] * zoom + 1) * hw;
+            y = (src[0] * zoom + 1) * hh;
+        } else {
+            float sx, sy, cx, cy;
+
+            sx = src[1] * zoom;
+            sy = src[0] * zoom;
+            cx = sx * sqrtf(1 - 0.5 * sy * sy);
+            cy = sy * sqrtf(1 - 0.5 * sx * sx);
+            x = hw + hw * FFSIGN(cx + cy) * (cx - cy) * .7;
+            y = s->h - s->h * fabsf(cx + cy) * .7;
+        }
+
+        if (s->draw == DOT) {
+            draw_dot(s, x, y);
+        } else {
+            draw_line(s, x, y, prev_x, prev_y);
+        }
+        prev_x = x;
+        prev_y = y;
     }
 
     s->prev_x = x, s->prev_y = y;

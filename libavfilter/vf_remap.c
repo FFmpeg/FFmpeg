@@ -75,6 +75,14 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
+        AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_RGB48, AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat map_fmts[] = {
@@ -141,6 +149,37 @@ static void remap_planar(RemapContext *s, const AVFrame *in,
     }
 }
 
+static void remap_planar16(RemapContext *s, const AVFrame *in,
+                           const AVFrame *xin, const AVFrame *yin,
+                           AVFrame *out)
+{
+    const int xlinesize = xin->linesize[0] / 2;
+    const int ylinesize = yin->linesize[0] / 2;
+    int x , y, plane;
+
+    for (plane = 0; plane < s->nb_planes ; plane++) {
+        uint16_t *dst        = (uint16_t *)out->data[plane];
+        const int dlinesize  = out->linesize[plane] / 2;
+        const uint16_t *src  = (const uint16_t *)in->data[plane];
+        const int slinesize  = in->linesize[plane] / 2;
+        const uint16_t *xmap = (const uint16_t *)xin->data[0];
+        const uint16_t *ymap = (const uint16_t *)yin->data[0];
+
+        for (y = 0; y < out->height; y++) {
+            for (x = 0; x < out->width; x++) {
+                if (ymap[x] < in->height && xmap[x] < in->width) {
+                    dst[x] = src[ymap[x] * slinesize + xmap[x]];
+                } else {
+                    dst[x] = 0;
+                }
+            }
+            dst  += dlinesize;
+            xmap += xlinesize;
+            ymap += ylinesize;
+        }
+    }
+}
+
 /**
  * remap_packed algorithm expects pixels with both padded bits (step) and
  * number of components correctly set.
@@ -178,6 +217,37 @@ static void remap_packed(RemapContext *s, const AVFrame *in,
     }
 }
 
+static void remap_packed16(RemapContext *s, const AVFrame *in,
+                           const AVFrame *xin, const AVFrame *yin,
+                           AVFrame *out)
+{
+    uint16_t *dst = (uint16_t *)out->data[0];
+    const uint16_t *src  = (const uint16_t *)in->data[0];
+    const int dlinesize = out->linesize[0] / 2;
+    const int slinesize = in->linesize[0] / 2;
+    const int xlinesize = xin->linesize[0] / 2;
+    const int ylinesize = yin->linesize[0] / 2;
+    const uint16_t *xmap = (const uint16_t *)xin->data[0];
+    const uint16_t *ymap = (const uint16_t *)yin->data[0];
+    const int step = s->step / 2;
+    int c, x, y;
+
+    for (y = 0; y < out->height; y++) {
+        for (x = 0; x < out->width; x++) {
+            for (c = 0; c < s->nb_components; c++) {
+                if (ymap[x] < in->height && xmap[x] < in->width) {
+                    dst[x * step + c] = src[ymap[x] * slinesize + xmap[x] * step + c];
+                } else {
+                    dst[x * step + c] = 0;
+                }
+            }
+        }
+        dst  += dlinesize;
+        xmap += xlinesize;
+        ymap += ylinesize;
+    }
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -187,10 +257,18 @@ static int config_input(AVFilterLink *inlink)
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     s->nb_components = desc->nb_components;
 
-    if (s->nb_planes > 1 || s->nb_components == 1) {
-        s->remap = remap_planar;
+    if (desc->comp[0].depth == 8) {
+        if (s->nb_planes > 1 || s->nb_components == 1) {
+            s->remap = remap_planar;
+        } else {
+            s->remap = remap_packed;
+        }
     } else {
-        s->remap = remap_packed;
+        if (s->nb_planes > 1 || s->nb_components == 1) {
+            s->remap = remap_planar16;
+        } else {
+            s->remap = remap_packed16;
+        }
     }
 
     s->step = av_get_padded_bits_per_pixel(desc) >> 3;

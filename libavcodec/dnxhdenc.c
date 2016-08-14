@@ -368,6 +368,9 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ff_pixblockdsp_init(&ctx->m.pdsp, avctx);
     ff_dct_encode_init(&ctx->m);
 
+    if (ctx->profile != FF_PROFILE_DNXHD)
+        ff_videodsp_init(&ctx->m.vdsp, bit_depth);
+
     if (!ctx->m.dct_quantize)
         ctx->m.dct_quantize = ff_dct_quantize_c;
 
@@ -617,6 +620,10 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
 {
     const int bs = ctx->block_width_l2;
     const int bw = 1 << bs;
+    int dct_y_offset = ctx->dct_y_offset;
+    int dct_uv_offset = ctx->dct_uv_offset;
+    int linesize = ctx->m.linesize;
+    int uvlinesize = ctx->m.uvlinesize;
     const uint8_t *ptr_y = ctx->thread[0]->src[0] +
                            ((mb_y << 4) * ctx->m.linesize) + (mb_x << bs + 1);
     const uint8_t *ptr_u = ctx->thread[0]->src[1] +
@@ -624,26 +631,56 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
     const uint8_t *ptr_v = ctx->thread[0]->src[2] +
                            ((mb_y << 4) * ctx->m.uvlinesize) + (mb_x << bs);
     PixblockDSPContext *pdsp = &ctx->m.pdsp;
+    VideoDSPContext *vdsp = &ctx->m.vdsp;
 
-    pdsp->get_pixels(ctx->blocks[0], ptr_y,      ctx->m.linesize);
-    pdsp->get_pixels(ctx->blocks[1], ptr_y + bw, ctx->m.linesize);
-    pdsp->get_pixels(ctx->blocks[2], ptr_u,      ctx->m.uvlinesize);
-    pdsp->get_pixels(ctx->blocks[3], ptr_v,      ctx->m.uvlinesize);
+    if (vdsp->emulated_edge_mc && ((mb_x << 4) + 16 > ctx->m.avctx->width ||
+                                   (mb_y << 4) + 16 > ctx->m.avctx->height)) {
+        int y_w = ctx->m.avctx->width  - (mb_x << 4);
+        int y_h = ctx->m.avctx->height - (mb_y << 4);
+        int uv_w = (y_w + 1) / 2;
+        int uv_h = y_h;
+        linesize = 16;
+        uvlinesize = 8;
 
-    if (mb_y + 1 == ctx->m.mb_height && (ctx->m.avctx->height % 16) != 0) {
+        vdsp->emulated_edge_mc(&ctx->edge_buf_y[0], ptr_y,
+                               linesize, ctx->m.linesize,
+                               linesize, 16,
+                               0, 0, y_w, y_h);
+        vdsp->emulated_edge_mc(&ctx->edge_buf_uv[0][0], ptr_u,
+                               uvlinesize, ctx->m.uvlinesize,
+                               uvlinesize, 16,
+                               0, 0, uv_w, uv_h);
+        vdsp->emulated_edge_mc(&ctx->edge_buf_uv[1][0], ptr_v,
+                               uvlinesize, ctx->m.uvlinesize,
+                               uvlinesize, 16,
+                               0, 0, uv_w, uv_h);
+
+        dct_y_offset =  bw * linesize;
+        dct_uv_offset = bw * uvlinesize;
+        ptr_y = &ctx->edge_buf_y[0];
+        ptr_u = &ctx->edge_buf_uv[0][0];
+        ptr_v = &ctx->edge_buf_uv[1][0];
+    }
+
+    pdsp->get_pixels(ctx->blocks[0], ptr_y,      linesize);
+    pdsp->get_pixels(ctx->blocks[1], ptr_y + bw, linesize);
+    pdsp->get_pixels(ctx->blocks[2], ptr_u,      uvlinesize);
+    pdsp->get_pixels(ctx->blocks[3], ptr_v,      uvlinesize);
+
+    if (mb_y + 1 == ctx->m.mb_height && ctx->m.avctx->height == 1080) {
         if (ctx->interlaced) {
             ctx->get_pixels_8x4_sym(ctx->blocks[4],
-                                    ptr_y + ctx->dct_y_offset,
-                                    ctx->m.linesize);
+                                    ptr_y + dct_y_offset,
+                                    linesize);
             ctx->get_pixels_8x4_sym(ctx->blocks[5],
-                                    ptr_y + ctx->dct_y_offset + bw,
-                                    ctx->m.linesize);
+                                    ptr_y + dct_y_offset + bw,
+                                    linesize);
             ctx->get_pixels_8x4_sym(ctx->blocks[6],
-                                    ptr_u + ctx->dct_uv_offset,
-                                    ctx->m.uvlinesize);
+                                    ptr_u + dct_uv_offset,
+                                    uvlinesize);
             ctx->get_pixels_8x4_sym(ctx->blocks[7],
-                                    ptr_v + ctx->dct_uv_offset,
-                                    ctx->m.uvlinesize);
+                                    ptr_v + dct_uv_offset,
+                                    uvlinesize);
         } else {
             ctx->bdsp.clear_block(ctx->blocks[4]);
             ctx->bdsp.clear_block(ctx->blocks[5]);
@@ -652,13 +689,13 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
         }
     } else {
         pdsp->get_pixels(ctx->blocks[4],
-                         ptr_y + ctx->dct_y_offset, ctx->m.linesize);
+                         ptr_y + dct_y_offset, linesize);
         pdsp->get_pixels(ctx->blocks[5],
-                         ptr_y + ctx->dct_y_offset + bw, ctx->m.linesize);
+                         ptr_y + dct_y_offset + bw, linesize);
         pdsp->get_pixels(ctx->blocks[6],
-                         ptr_u + ctx->dct_uv_offset, ctx->m.uvlinesize);
+                         ptr_u + dct_uv_offset, uvlinesize);
         pdsp->get_pixels(ctx->blocks[7],
-                         ptr_v + ctx->dct_uv_offset, ctx->m.uvlinesize);
+                         ptr_v + dct_uv_offset, uvlinesize);
     }
 }
 

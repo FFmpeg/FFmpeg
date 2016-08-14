@@ -441,6 +441,64 @@ ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c
 @end example
 @end itemize
 
+@section acrusher
+
+Reduce audio bit resolution.
+
+This filter is bit crusher with enhanced functionality. A bit crusher
+is used to audibly reduce number of bits an audio signal is sampled
+with. This doesn't change the bit depth at all, it just produces the
+effect. Material reduced in bit depth sounds more harsh and "digital".
+This filter is able to even round to continous values instead of discrete
+bit depths.
+Additionally it has a D/C offset which results in different crushing of
+the lower and the upper half of the signal.
+An Anti-Aliasing setting is able to produce "softer" crushing sounds.
+
+Another feature of this filter is the logarithmic mode.
+This setting switches from linear distances between bits to logarithmic ones.
+The result is a much more "natural" sounding crusher which doesn't gate low
+signals for example. The human ear has a logarithmic perception, too
+so this kind of crushing is much more pleasant.
+Logarithmic crushing is also able to get anti-aliased.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set level in.
+
+@item level_out
+Set level out.
+
+@item bits
+Set bit reduction.
+
+@item mix
+Set mixing ammount.
+
+@item mode
+Can be linear: @code{lin} or logarithmic: @code{log}.
+
+@item dc
+Set DC.
+
+@item aa
+Set anti-aliasing.
+
+@item samples
+Set sample reduction.
+
+@item lfo
+Enable LFO. By default disabled.
+
+@item lforange
+Set LFO range.
+
+@item lforate
+Set LFO rate.
+@end table
+
 @section adelay
 
 Delay one or more audio channels.
@@ -455,6 +513,7 @@ Set list of delays in milliseconds for each channel separated by '|'.
 At least one delay greater than 0 should be provided.
 Unused delays will be silently ignored. If number of given delays is
 smaller than number of channels all remaining channels will not be delayed.
+If you want to delay exact number of samples, append 'S' to number.
 @end table
 
 @subsection Examples
@@ -465,6 +524,13 @@ Delay first channel by 1.5 seconds, the third channel by 0.5 seconds and leave
 the second channel (and any other channels that may be present) unchanged.
 @example
 adelay=1500|0|500
+@end example
+
+@item
+Delay second channel by 500 samples, the third channel by 700 samples and leave
+the first channel (and any other channels that may be present) unchanged.
+@example
+adelay=0|500S|700S
 @end example
 @end itemize
 
@@ -974,6 +1040,23 @@ slope
 Specify the band-width of a filter in width_type units.
 @end table
 
+@section aloop
+
+Loop audio samples.
+
+The filter accepts the following options:
+
+@table @option
+@item loop
+Set the number of loops.
+
+@item size
+Set maximal number of samples.
+
+@item start
+Set first sample of loop.
+@end table
+
 @anchor{amerge}
 @section amerge
 
@@ -1344,6 +1427,23 @@ Stretch/squeeze samples to the given timestamps, with a maximum of 1000
 samples per second compensation:
 @example
 aresample=async=1000
+@end example
+@end itemize
+
+@section areverse
+
+Reverse an audio clip.
+
+Warning: This filter requires memory to buffer the entire clip, so trimming
+is suggested.
+
+@subsection Examples
+
+@itemize
+@item
+Take the first 5 seconds of a clip, and reverse it.
+@example
+atrim=end=5,areverse
 @end example
 @end itemize
 
@@ -2529,6 +2629,58 @@ Set delay-line interpolation, @var{linear} or @var{quadratic}.
 Default is @var{linear}.
 @end table
 
+@section hdcd
+
+Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
+embedded HDCD codes is expanded into a 20-bit PCM stream.
+
+The filter supports the Peak Extend and Low-level Gain Adjustment features
+of HDCD, and detects the Transient Filter flag.
+
+@example
+ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
+@end example
+
+When using the filter with wav, note the default encoding for wav is 16-bit,
+so the resulting 20-bit stream will be truncated back to 16-bit. Use something
+like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+@example
+ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
+ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+@end example
+
+The filter accepts the following options:
+
+@table @option
+@item process_stereo
+Process the stereo channels together. If target_gain does not match between
+channels, consider it invalid and use the last valid target_gain.
+
+@item force_pe
+Always extend peaks above -3dBFS even if PE isn't signaled.
+
+@item analyze_mode
+Replace audio with a solid tone and adjust the amplitude to signal some
+specific aspect of the decoding process. The output file can be loaded in
+an audio editor alongside the original to aid analysis.
+
+@code{analyze_mode=pe:force_pe=1} can be used to see all samples above the PE level.
+
+Modes are:
+@table @samp
+@item 0, off
+Disabled
+@item 1, lle
+Gain adjustment level at each sample
+@item 2, pe
+Samples where peak extend occurs
+@item 3, cdt
+Samples where the code detect timer is active
+@item 4, tgm
+Samples where the target gain does not match between channels
+@end table
+@end table
+
 @section highpass
 
 Apply a high-pass filter with 3dB point frequency.
@@ -3474,47 +3626,6 @@ channels. Default is 0.3.
 @item drymix
 Set level of input signal of original channel. Default is 0.8.
 @end table
-
-@section scale_npp
-
-Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel
-format conversion on CUDA video frames. Setting the output width and height
-works in the same way as for the @var{scale} filter.
-
-The following additional options are accepted:
-@table @option
-@item format
-The pixel format of the output CUDA frames. If set to the string "same" (the
-default), the input format will be kept. Note that automatic format negotiation
-and conversion is not yet supported for hardware frames
-
-@item interp_algo
-The interpolation algorithm used for resizing. One of the following:
-@table @option
-@item nn
-Nearest neighbour.
-
-@item linear
-@item cubic
-@item cubic2p_bspline
-2-parameter cubic (B=1, C=0)
-
-@item cubic2p_catmullrom
-2-parameter cubic (B=0, C=1/2)
-
-@item cubic2p_b05c03
-2-parameter cubic (B=1/2, C=3/10)
-
-@item super
-Supersampling
-
-@item lanczos
-@end table
-
-@end table
-
-@section select
-Select frames to pass in output.
 
 @section treble
 
@@ -5184,7 +5295,7 @@ BT.2020 for 12-bits content
 
 @end table
 
-@item prm
+@item primaries
 Specify output color primaries.
 
 The accepted values are:
@@ -5209,7 +5320,7 @@ BT.2020
 
 @end table
 
-@item rng
+@item range
 Specify output color range.
 
 The accepted values are:
@@ -6383,111 +6494,6 @@ Draw a 2-pixel red 2.40:1 mask:
 drawbox=x=-t:y=0.5*(ih-iw/2.4)-t:w=iw+t*2:h=iw/2.4+t*2:t=2:c=red
 @end example
 @end itemize
-
-@section drawgraph, adrawgraph
-
-Draw a graph using input video or audio metadata.
-
-It accepts the following parameters:
-
-@table @option
-@item m1
-Set 1st frame metadata key from which metadata values will be used to draw a graph.
-
-@item fg1
-Set 1st foreground color expression.
-
-@item m2
-Set 2nd frame metadata key from which metadata values will be used to draw a graph.
-
-@item fg2
-Set 2nd foreground color expression.
-
-@item m3
-Set 3rd frame metadata key from which metadata values will be used to draw a graph.
-
-@item fg3
-Set 3rd foreground color expression.
-
-@item m4
-Set 4th frame metadata key from which metadata values will be used to draw a graph.
-
-@item fg4
-Set 4th foreground color expression.
-
-@item min
-Set minimal value of metadata value.
-
-@item max
-Set maximal value of metadata value.
-
-@item bg
-Set graph background color. Default is white.
-
-@item mode
-Set graph mode.
-
-Available values for mode is:
-@table @samp
-@item bar
-@item dot
-@item line
-@end table
-
-Default is @code{line}.
-
-@item slide
-Set slide mode.
-
-Available values for slide is:
-@table @samp
-@item frame
-Draw new frame when right border is reached.
-
-@item replace
-Replace old columns with new ones.
-
-@item scroll
-Scroll from right to left.
-
-@item rscroll
-Scroll from left to right.
-
-@item picture
-Draw single picture.
-@end table
-
-Default is @code{frame}.
-
-@item size
-Set size of graph video. For the syntax of this option, check the
-@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
-The default value is @code{900x256}.
-
-The foreground color expressions can use the following variables:
-@table @option
-@item MIN
-Minimal value of metadata value.
-
-@item MAX
-Maximal value of metadata value.
-
-@item VAL
-Current metadata key value.
-@end table
-
-The color is defined as 0xAABBGGRR.
-@end table
-
-Example using metadata from @ref{signalstats} filter:
-@example
-signalstats,drawgraph=lavfi.signalstats.YAVG:min=0:max=255
-@end example
-
-Example using metadata from @ref{ebur128} filter:
-@example
-ebur128=metadata=1,adrawgraph=lavfi.r128.M:min=-120:max=5
-@end example
 
 @section drawgrid
 
@@ -8448,26 +8454,6 @@ Then, the effect of this Hald CLUT can be visualized with:
 ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 @end example
 
-@section hdcd
-
-Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
-embedded HDCD codes is expanded into a 20-bit PCM stream.
-
-The filter supports the Peak Extend and Low-level Gain Adjustment features
-of HDCD, and detects the Transient Filter flag.
-
-@example
-ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
-@end example
-
-When using the filter with wav, note the default encoding for wav is 16-bit,
-so the resulting 20-bit stream will be truncated back to 16-bit. Use something
-like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
-@example
-ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
-ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
-@end example
-
 @section hflip
 
 Flip the input video horizontally.
@@ -9014,23 +9000,21 @@ The formula that generates the correction is:
 where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
 distances from the focal point in the source and target images, respectively.
 
-@section loop, aloop
+@section loop
 
-Loop video frames or audio samples.
+Loop video frames.
 
-Those filters accepts the following options:
+The filter accepts the following options:
 
 @table @option
 @item loop
 Set the number of loops.
 
 @item size
-Set maximal size in number of frames for @code{loop} filter or maximal number
-of samples in case of @code{aloop} filter.
+Set maximal size in number of frames.
 
 @item start
-Set first frame of loop for @code{loop} filter or first sample of loop in case
-of @code{aloop} filter.
+Set first frame of loop.
 @end table
 
 @anchor{lut3d}
@@ -9210,6 +9194,12 @@ Discard least significant bits of luma:
 @example
 lutyuv=y='bitand(val, 128+64+32)'
 @end example
+
+@item
+Technicolor like effect:
+@example
+lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
+@end example
 @end itemize
 
 @section maskedmerge
@@ -9331,116 +9321,6 @@ format=yuv420p,mergeplanes=0x000201:yuv420p
 Cast a rgb24 clip to yuv444p:
 @example
 format=rgb24,mergeplanes=0x000102:yuv444p
-@end example
-@end itemize
-
-@section metadata, ametadata
-
-Manipulate frame metadata.
-
-This filter accepts the following options:
-
-@table @option
-@item mode
-Set mode of operation of the filter.
-
-Can be one of the following:
-
-@table @samp
-@item select
-If both @code{value} and @code{key} is set, select frames
-which have such metadata. If only @code{key} is set, select
-every frame that has such key in metadata.
-
-@item add
-Add new metadata @code{key} and @code{value}. If key is already available
-do nothing.
-
-@item modify
-Modify value of already present key.
-
-@item delete
-If @code{value} is set, delete only keys that have such value.
-Otherwise, delete key.
-
-@item print
-Print key and its value if metadata was found. If @code{key} is not set print all
-metadata values available in frame.
-@end table
-
-@item key
-Set key used with all modes. Must be set for all modes except @code{print}.
-
-@item value
-Set metadata value which will be used. This option is mandatory for
-@code{modify} and @code{add} mode.
-
-@item function
-Which function to use when comparing metadata value and @code{value}.
-
-Can be one of following:
-
-@table @samp
-@item same_str
-Values are interpreted as strings, returns true if metadata value is same as @code{value}.
-
-@item starts_with
-Values are interpreted as strings, returns true if metadata value starts with
-the @code{value} option string.
-
-@item less
-Values are interpreted as floats, returns true if metadata value is less than @code{value}.
-
-@item equal
-Values are interpreted as floats, returns true if @code{value} is equal with metadata value.
-
-@item greater
-Values are interpreted as floats, returns true if metadata value is greater than @code{value}.
-
-@item expr
-Values are interpreted as floats, returns true if expression from option @code{expr}
-evaluates to true.
-@end table
-
-@item expr
-Set expression which is used when @code{function} is set to @code{expr}.
-The expression is evaluated through the eval API and can contain the following
-constants:
-
-@table @option
-@item VALUE1
-Float representation of @code{value} from metadata key.
-
-@item VALUE2
-Float representation of @code{value} as supplied by user in @code{value} option.
-
-@item file
-If specified in @code{print} mode, output is written to the named file. Instead of
-plain filename any writable url can be specified. Filename ``-'' is a shorthand
-for standard output. If @code{file} option is not set, output is written to the log
-with AV_LOG_INFO loglevel.
-@end table
-
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
-between 0 and 1.
-@example
-signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
-@end example
-@item
-Print silencedetect output to file @file{metadata.txt}.
-@example
-silencedetect,ametadata=mode=print:file=metadata.txt
-@end example
-@item
-Direct all metadata to a pipe with file descriptor 4.
-@example
-metadata=mode=print:file='pipe\:4'
 @end example
 @end itemize
 
@@ -11062,9 +10942,9 @@ pixels will slow things down on a large logo.
 This filter uses the repeat_field flag from the Video ES headers and hard repeats
 fields based on its value.
 
-@section reverse, areverse
+@section reverse
 
-Reverse a clip.
+Reverse a video clip.
 
 Warning: This filter requires memory to buffer the entire clip, so trimming
 is suggested.
@@ -11570,6 +11450,44 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section scale_npp
+
+Use the NVIDIA Performance Primitives (libnpp) to perform scaling and/or pixel
+format conversion on CUDA video frames. Setting the output width and height
+works in the same way as for the @var{scale} filter.
+
+The following additional options are accepted:
+@table @option
+@item format
+The pixel format of the output CUDA frames. If set to the string "same" (the
+default), the input format will be kept. Note that automatic format negotiation
+and conversion is not yet supported for hardware frames
+
+@item interp_algo
+The interpolation algorithm used for resizing. One of the following:
+@table @option
+@item nn
+Nearest neighbour.
+
+@item linear
+@item cubic
+@item cubic2p_bspline
+2-parameter cubic (B=1, C=0)
+
+@item cubic2p_catmullrom
+2-parameter cubic (B=0, C=1/2)
+
+@item cubic2p_b05c03
+2-parameter cubic (B=1/2, C=3/10)
+
+@item super
+Supersampling
+
+@item lanczos
+@end table
+
+@end table
+
 @section scale2ref
 
 Scale (resize) the input video, based on a reference video.
@@ -12028,6 +11946,18 @@ Expressed in range of [0-255].
 Display the average of sample value difference between all values of the V
 plane in the current frame and corresponding values of the previous input frame.
 Expressed in range of [0-255].
+
+@item YBITDEPTH
+Display bit depth of Y plane in current frame.
+Expressed in range of [0-16].
+
+@item UBITDEPTH
+Display bit depth of U plane in current frame.
+Expressed in range of [0-16].
+
+@item VBITDEPTH
+Display bit depth of V plane in current frame.
+Expressed in range of [0-16].
 @end table
 
 The filter accepts the following options:
@@ -15150,6 +15080,25 @@ Draw line between previous and current sample.
 @end table
 
 Default value is @samp{dot}.
+
+@item scale
+Specify amplitude scale of audio samples.
+
+Available values are:
+@table @samp
+@item lin
+Linear.
+
+@item sqrt
+Square root.
+
+@item cbrt
+Cubic root.
+
+@item log
+Logarithmic.
+@end table
+
 @end table
 
 @subsection Examples
@@ -15276,6 +15225,111 @@ Note that a desync will happen at the stitch if the audio and video streams
 do not have exactly the same duration in the first file.
 
 @end itemize
+
+@section drawgraph, adrawgraph
+
+Draw a graph using input video or audio metadata.
+
+It accepts the following parameters:
+
+@table @option
+@item m1
+Set 1st frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg1
+Set 1st foreground color expression.
+
+@item m2
+Set 2nd frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg2
+Set 2nd foreground color expression.
+
+@item m3
+Set 3rd frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg3
+Set 3rd foreground color expression.
+
+@item m4
+Set 4th frame metadata key from which metadata values will be used to draw a graph.
+
+@item fg4
+Set 4th foreground color expression.
+
+@item min
+Set minimal value of metadata value.
+
+@item max
+Set maximal value of metadata value.
+
+@item bg
+Set graph background color. Default is white.
+
+@item mode
+Set graph mode.
+
+Available values for mode is:
+@table @samp
+@item bar
+@item dot
+@item line
+@end table
+
+Default is @code{line}.
+
+@item slide
+Set slide mode.
+
+Available values for slide is:
+@table @samp
+@item frame
+Draw new frame when right border is reached.
+
+@item replace
+Replace old columns with new ones.
+
+@item scroll
+Scroll from right to left.
+
+@item rscroll
+Scroll from left to right.
+
+@item picture
+Draw single picture.
+@end table
+
+Default is @code{frame}.
+
+@item size
+Set size of graph video. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+The default value is @code{900x256}.
+
+The foreground color expressions can use the following variables:
+@table @option
+@item MIN
+Minimal value of metadata value.
+
+@item MAX
+Maximal value of metadata value.
+
+@item VAL
+Current metadata key value.
+@end table
+
+The color is defined as 0xAABBGGRR.
+@end table
+
+Example using metadata from @ref{signalstats} filter:
+@example
+signalstats,drawgraph=lavfi.signalstats.YAVG:min=0:max=255
+@end example
+
+Example using metadata from @ref{ebur128} filter:
+@example
+ebur128=metadata=1,adrawgraph=lavfi.r128.M:min=-120:max=5
+@end example
 
 @anchor{ebur128}
 @section ebur128
@@ -15430,6 +15484,116 @@ ffmpeg -i bambi.avi -i pr0n.mkv -filter_complex "[0:v][1:v] interleave" out.avi
 Add flickering blur effect:
 @example
 select='if(gt(random(0), 0.2), 1, 2)':n=2 [tmp], boxblur=2:2, [tmp] interleave
+@end example
+@end itemize
+
+@section metadata, ametadata
+
+Manipulate frame metadata.
+
+This filter accepts the following options:
+
+@table @option
+@item mode
+Set mode of operation of the filter.
+
+Can be one of the following:
+
+@table @samp
+@item select
+If both @code{value} and @code{key} is set, select frames
+which have such metadata. If only @code{key} is set, select
+every frame that has such key in metadata.
+
+@item add
+Add new metadata @code{key} and @code{value}. If key is already available
+do nothing.
+
+@item modify
+Modify value of already present key.
+
+@item delete
+If @code{value} is set, delete only keys that have such value.
+Otherwise, delete key.
+
+@item print
+Print key and its value if metadata was found. If @code{key} is not set print all
+metadata values available in frame.
+@end table
+
+@item key
+Set key used with all modes. Must be set for all modes except @code{print}.
+
+@item value
+Set metadata value which will be used. This option is mandatory for
+@code{modify} and @code{add} mode.
+
+@item function
+Which function to use when comparing metadata value and @code{value}.
+
+Can be one of following:
+
+@table @samp
+@item same_str
+Values are interpreted as strings, returns true if metadata value is same as @code{value}.
+
+@item starts_with
+Values are interpreted as strings, returns true if metadata value starts with
+the @code{value} option string.
+
+@item less
+Values are interpreted as floats, returns true if metadata value is less than @code{value}.
+
+@item equal
+Values are interpreted as floats, returns true if @code{value} is equal with metadata value.
+
+@item greater
+Values are interpreted as floats, returns true if metadata value is greater than @code{value}.
+
+@item expr
+Values are interpreted as floats, returns true if expression from option @code{expr}
+evaluates to true.
+@end table
+
+@item expr
+Set expression which is used when @code{function} is set to @code{expr}.
+The expression is evaluated through the eval API and can contain the following
+constants:
+
+@table @option
+@item VALUE1
+Float representation of @code{value} from metadata key.
+
+@item VALUE2
+Float representation of @code{value} as supplied by user in @code{value} option.
+
+@item file
+If specified in @code{print} mode, output is written to the named file. Instead of
+plain filename any writable url can be specified. Filename ``-'' is a shorthand
+for standard output. If @code{file} option is not set, output is written to the log
+with AV_LOG_INFO loglevel.
+@end table
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
+between 0 and 1.
+@example
+signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
+@end example
+@item
+Print silencedetect output to file @file{metadata.txt}.
+@example
+silencedetect,ametadata=mode=print:file=metadata.txt
+@end example
+@item
+Direct all metadata to a pipe with file descriptor 4.
+@example
+metadata=mode=print:file='pipe\:4'
 @end example
 @end itemize
 
@@ -16767,9 +16931,24 @@ Set if channels should be drawn separately or overlap. Default value is 0.
 Set colors separated by '|' which are going to be used for drawing of each channel.
 
 @item scale
-Set amplitude scale. Can be linear @code{lin} or logarithmic @code{log}.
-Default is linear.
+Set amplitude scale.
 
+Available values are:
+@table @samp
+@item lin
+Linear.
+
+@item log
+Logarithmic.
+
+@item sqrt
+Square root.
+
+@item cbrt
+Cubic root.
+@end table
+
+Default is linear.
 @end table
 
 @subsection Examples

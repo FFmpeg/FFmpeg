@@ -21,6 +21,7 @@
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/avassert.h"
 
 #include "avcodec.h"
 #include "bsf.h"
@@ -172,10 +173,12 @@ int av_bsf_init(AVBSFContext *ctx)
 
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
-    if (!pkt || !pkt->data) {
+    if (!pkt) {
         ctx->internal->eof = 1;
         return 0;
     }
+
+    av_assert0(pkt->data || pkt->side_data);
 
     if (ctx->internal->eof) {
         av_log(ctx, AV_LOG_ERROR, "A non-NULL packet sent after an EOF.\n");
@@ -214,6 +217,22 @@ int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt)
 
     *pkt = ctx->internal->buffer_pkt;
     ctx->internal->buffer_pkt = tmp_pkt;
+
+    return 0;
+}
+
+int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt)
+{
+    AVBSFInternal *in = ctx->internal;
+
+    if (in->eof)
+        return AVERROR_EOF;
+
+    if (!ctx->internal->buffer_pkt->data &&
+        !ctx->internal->buffer_pkt->side_data_elems)
+        return AVERROR(EAGAIN);
+
+    av_packet_move_ref(pkt, ctx->internal->buffer_pkt);
 
     return 0;
 }

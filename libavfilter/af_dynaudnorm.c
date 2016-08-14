@@ -519,7 +519,8 @@ static double setup_compress_thresh(double threshold)
         double step_size = 1.0;
 
         while (step_size > DBL_EPSILON) {
-            while ((current_threshold + step_size > current_threshold) &&
+            while ((llrint((current_threshold + step_size) * (UINT64_C(1) << 63)) >
+                    llrint(current_threshold * (UINT64_C(1) << 63))) &&
                    (bound(current_threshold + step_size, 1.0) <= threshold)) {
                 current_threshold += step_size;
             }

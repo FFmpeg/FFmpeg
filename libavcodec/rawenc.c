@@ -69,6 +69,14 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
         int x;
         for(x = 1; x < frame->height*frame->width*2; x += 2)
             pkt->data[x] ^= 0x80;
+    } else if (avctx->codec_tag == AV_RL32("b64a") && ret > 0 &&
+        frame->format == AV_PIX_FMT_RGBA64BE) {
+        uint64_t v;
+        int x;
+        for (x = 0; x < frame->height * frame->width; x++) {
+            v = AV_RB64(&pkt->data[8 * x]);
+            AV_WB64(&pkt->data[8 * x], v << 48 | v >> 16);
+        }
     }
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

@@ -1181,6 +1181,18 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                     memset(s->outpicref->data[1]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[1] + s->w + s->start_x + 20, av_clip_uint8(out[1]), 10);
                     memset(s->outpicref->data[2]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[2] + s->w + s->start_x + 20, av_clip_uint8(out[2]), 10);
                 }
+
+                for (y = 0; ch == 0 && y < h; y += h / 10) {
+                    float value = 120.0 * log10(1. - y / (float)h);
+                    char *text;
+
+                    if (value < -120)
+                        break;
+                    text = av_asprintf("%.0f dB", value);
+                    if (!text)
+                        continue;
+                    drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
+                }
             }
         }
 

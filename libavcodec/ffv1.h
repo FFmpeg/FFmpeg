@@ -109,6 +109,9 @@ typedef struct FFV1Context {
     int run_index;
     int colorspace;
     int16_t *sample_buffer;
+    int32_t *sample_buffer32;
+
+    int use32bit;
 
     int ec;
     int intra;
@@ -158,37 +161,6 @@ static av_always_inline int fold(int diff, int bits)
     return diff;
 }
 
-static inline int predict(int16_t *src, int16_t *last)
-{
-    const int LT = last[-1];
-    const int T  = last[0];
-    const int L  = src[-1];
-
-    return mid_pred(L, L + T - LT, T);
-}
-
-static inline int get_context(PlaneContext *p, int16_t *src,
-                              int16_t *last, int16_t *last2)
-{
-    const int LT = last[-1];
-    const int T  = last[0];
-    const int RT = last[1];
-    const int L  = src[-1];
-
-    if (p->quant_table[3][127]) {
-        const int TT = last2[0];
-        const int LL = src[-2];
-        return p->quant_table[0][(L - LT) & 0xFF] +
-               p->quant_table[1][(LT - T) & 0xFF] +
-               p->quant_table[2][(T - RT) & 0xFF] +
-               p->quant_table[3][(LL - L) & 0xFF] +
-               p->quant_table[4][(TT - T) & 0xFF];
-    } else
-        return p->quant_table[0][(L - LT) & 0xFF] +
-               p->quant_table[1][(LT - T) & 0xFF] +
-               p->quant_table[2][(T - RT) & 0xFF];
-}
-
 static inline void update_vlc_state(VlcState *const state, const int v)
 {
     int drift = state->drift;
@@ -222,5 +194,17 @@ static inline void update_vlc_state(VlcState *const state, const int v)
     state->drift = drift;
     state->count = count;
 }
+
+#define TYPE int16_t
+#define RENAME(name) name
+#include "ffv1_template.c"
+#undef TYPE
+#undef RENAME
+
+#define TYPE int32_t
+#define RENAME(name) name ## 32
+#include "ffv1_template.c"
+#undef TYPE
+#undef RENAME
 
 #endif /* AVCODEC_FFV1_H */

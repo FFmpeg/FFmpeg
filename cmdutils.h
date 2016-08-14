@@ -62,6 +62,11 @@ void register_exit(void (*cb)(int ret));
 void exit_program(int ret) av_noreturn;
 
 /**
+ * Initialize dynamic library loading
+ */
+void init_dynload(void);
+
+/**
  * Initialize the cmdutils option system, in particular
  * allocate the *_opts contexts.
  */
