@@ -4410,6 +4410,21 @@ The filter accepts the following option:
 Set the minimal luminance value. Default is @code{16}.
 @end table
 
+@section bitplanenoise
+
+Show and measure bit plane noise.
+
+The filter accepts the following options:
+
+@table @option
+@item bitplane
+Set which plane to analyze. Default is @code{1}.
+
+@item filter
+Filter out noisy pixels from @code{bitplane} set above.
+Default is disabled.
+@end table
+
 @section blackdetect
 
 Detect video intervals that are (almost) completely black. Can be

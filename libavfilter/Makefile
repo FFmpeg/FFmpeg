@@ -125,6 +125,7 @@ OBJS-$(CONFIG_ALPHAMERGE_FILTER)             += vf_alphamerge.o
 OBJS-$(CONFIG_ATADENOISE_FILTER)             += vf_atadenoise.o
 OBJS-$(CONFIG_BBOX_FILTER)                   += bbox.o vf_bbox.o
 OBJS-$(CONFIG_BENCH_FILTER)                  += f_bench.o
+OBJS-$(CONFIG_BITPLANENOISE_FILTER)          += vf_bitplanenoise.o
 OBJS-$(CONFIG_BLACKDETECT_FILTER)            += vf_blackdetect.o
 
 # video filters
