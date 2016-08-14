@@ -881,6 +881,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 s->end_mb_y = (i == n_slices     ) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             else
                 s->end_mb_y = (i <= n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
+
+            if (s->end_mb_y <= s->start_mb_y) {
+                av_log(v->s.avctx, AV_LOG_ERROR, "Invalid slice size\n");
+                goto err;
+            }
+
             ff_vc1_decode_blocks(v);
             if (i != n_slices)
                 s->gb = slices[i].gb;
