@@ -1,6 +1,54 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.8
+- avcodec/h264: Put context_count check back
+- cmdutils: remove the current working directory from the DLL search path on win32
+- avcodec/raw: Fix decoding of ilacetest.mov
+- avcodec/ffv1enc: Fix assertion failure with non zero bits per sample
+- avformat/oggdec: Fix integer overflow with invalid pts
+- ffplay: Fix invalid array index
+- avcodec/vp9_parser: Check the input frame sizes for being consistent
+- libavformat/rtpdec_asf: zero initialize the AVIOContext struct
+- libavutil/opt: Small bugfix in example.
+- libx264: Increase x264 opts character limit to 4096
+- avformat/mov: Check sample size
+- avformat/format: Fix registering a format more than once and related races
+- avcodec/flac_parser: Raise threshold for detecting invalid data
+- avfilter/vf_telecine: Make frame writable before writing into it
+- avcodec/mpc8: Correct end truncation
+- avcodec/mpegvideo: Do not clear the parse context during init
+- MAINTAINERs cleanup (remove myself from things i de facto dont maintain)
+- avcodec/h264: Fix off by 1 context count
+- avcodec/alsdec: Check r to prevent out of array read
+- avcodec/alsdec: fix max bits in ltp prefix code
+- avcodec/utils: check skip_samples signedness
+- avformat/mpegts: Do not trust BSSD descriptor, it is sometimes not an S302M stream
+- avcodec/bmp_parser: Check fsize
+- avcodec/bmp_parser: reset state
+- avcodec/bmp_parser: Fix remaining size
+- avcodec/bmp_parser: Fix frame_start_found in cross frame cases
+- avfilter/af_amix: dont fail if there are no samples in output_frame()
+- avformat/allformats: Making av_register_all() thread-safe.
+- avcodec/mpegvideo: Deallocate last/next picture earlier
+- avcodec/bmp_parser: Fix state
+- avformat/oggparseopus: Fix Undefined behavior in oggparseopus.c and libavformat/utils.c
+- doc/developer.texi: Add a code of conduct
+- avformat/avidec: Detect index with too short entries
+- avformat/utils: Check negative bps before shifting in ff_get_pcm_codec_id()
+- avformat/utils: Do not compute the bitrate from duration == 0
+- ffmpeg: Check that r_frame_rate is set before attempting to use it
+- swresample/rematrix: Use clipping s16 rematrixing if overflows are possible
+- swresample/rematrix: Use error diffusion to avoid error in the DC component of the matrix
+- libavformat/oggdec: Free stream private when header parsing fails.
+- avformat/utils: Check bps before using it in a shift in ff_get_pcm_codec_id()
+- avformat/oggparseopus: Check that granule pos is within the supported range
+- avcodec/mjpegdec: Do not try to detect last scan but apply idct after all scans for progressive jpeg
+- avformat/options_table: Add missing identifier for very strict compliance
+- librtmp: Avoid an infiniloop setting connection arguments
+- avformat/oggparsevp8: fix pts calculation on pages ending with an invisible frame
+
+
 version 2.8.7
 - avcodec/motion_est: Attempt to fix "short data segment overflowed" on IA64
 - avformat/ffmdec: Check pix_fmt
