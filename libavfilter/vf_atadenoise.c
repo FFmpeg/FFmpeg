@@ -67,7 +67,7 @@ static const AVOption atadenoise_options[] = {
     { "1b", "set threshold B for 2nd plane", OFFSET(fthrb[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "2a", "set threshold A for 3rd plane", OFFSET(fthra[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
-    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=33},   5, SIZE, FLAGS },
+    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, FLAGS },
     { NULL }
 };
 
