@@ -22,6 +22,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 
 #include "avcodec.h"
 #include "bsf.h"
@@ -235,4 +237,280 @@ int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt)
     av_packet_move_ref(pkt, ctx->internal->buffer_pkt);
 
     return 0;
+}
+
+typedef struct BSFListContext {
+    const AVClass *class;
+
+    AVBSFContext **bsfs;
+    int nb_bsfs;
+
+    unsigned idx;           // index of currently processed BSF
+    unsigned flushed_idx;   // index of BSF being flushed
+
+} BSFListContext;
+
+
+static int bsf_list_init(AVBSFContext *bsf)
+{
+    BSFListContext *lst = bsf->priv_data;
+    int ret, i;
+    const AVCodecParameters *cod_par = bsf->par_in;
+    AVRational tb = bsf->time_base_in;
+
+    for (i = 0; i < lst->nb_bsfs; ++i) {
+        ret = avcodec_parameters_copy(lst->bsfs[i]->par_in, cod_par);
+        if (ret < 0)
+            goto fail;
+
+        lst->bsfs[i]->time_base_in = tb;
+
+        ret = av_bsf_init(lst->bsfs[i]);
+        if (ret < 0)
+            goto fail;
+
+        cod_par = lst->bsfs[i]->par_out;
+        tb = lst->bsfs[i]->time_base_out;
+    }
+
+    bsf->time_base_out = tb;
+    ret = avcodec_parameters_copy(bsf->par_out, cod_par);
+
+fail:
+    return ret;
+}
+
+static int bsf_list_filter(AVBSFContext *bsf, AVPacket *out)
+{
+    BSFListContext *lst = bsf->priv_data;
+    int ret;
+
+    if (!lst->nb_bsfs)
+        return ff_bsf_get_packet_ref(bsf, out);
+
+    while (1) {
+        if (lst->idx > lst->flushed_idx) {
+            ret = av_bsf_receive_packet(lst->bsfs[lst->idx-1], out);
+            if (ret == AVERROR(EAGAIN)) {
+                /* no more packets from idx-1, try with previous */
+                ret = 0;
+                lst->idx--;
+                continue;
+            } else if (ret == AVERROR_EOF) {
+                /* filter idx-1 is done, continue with idx...nb_bsfs */
+                lst->flushed_idx = lst->idx;
+                continue;
+            }else if (ret < 0) {
+                /* filtering error */
+                break;
+            }
+        } else {
+            ret = ff_bsf_get_packet_ref(bsf, out);
+            if (ret == AVERROR_EOF) {
+                lst->idx = lst->flushed_idx;
+            } else if (ret < 0)
+                break;
+        }
+
+        if (lst->idx < lst->nb_bsfs) {
+            AVPacket *pkt;
+            if (ret == AVERROR_EOF && lst->idx == lst->flushed_idx) {
+                /* ff_bsf_get_packet_ref returned EOF and idx is first
+                 * filter of yet not flushed filter chain */
+                pkt = NULL;
+            } else {
+                pkt = out;
+            }
+            ret = av_bsf_send_packet(lst->bsfs[lst->idx], pkt);
+            if (ret < 0)
+                break;
+            lst->idx++;
+        } else {
+            /* The end of filter chain, break to return result */
+            break;
+        }
+    }
+
+    if (ret < 0)
+        av_packet_unref(out);
+
+    return ret;
+}
+
+static void bsf_list_close(AVBSFContext *bsf)
+{
+    BSFListContext *lst = bsf->priv_data;
+    int i;
+
+    for (i = 0; i < lst->nb_bsfs; ++i)
+        av_bsf_free(&lst->bsfs[i]);
+    av_freep(&lst->bsfs);
+}
+
+static const AVClass bsf_list_class = {
+        .class_name = "bsf_list",
+        .item_name  = av_default_item_name,
+        .version    = LIBAVUTIL_VERSION_INT,
+};
+
+const AVBitStreamFilter ff_list_bsf = {
+        .name           = "bsf_list",
+        .priv_data_size = sizeof(BSFListContext),
+        .priv_class     = &bsf_list_class,
+        .init           = bsf_list_init,
+        .filter         = bsf_list_filter,
+        .close          = bsf_list_close,
+};
+
+struct AVBSFList {
+    AVBSFContext **bsfs;
+    int nb_bsfs;
+};
+
+AVBSFList *av_bsf_list_alloc(void)
+{
+    return av_mallocz(sizeof(AVBSFList));
+}
+
+void av_bsf_list_free(AVBSFList **lst)
+{
+    int i;
+
+    if (*lst)
+        return;
+
+    for (i = 0; i < (*lst)->nb_bsfs; ++i)
+        av_bsf_free(&(*lst)->bsfs[i]);
+    av_free((*lst)->bsfs);
+    av_freep(lst);
+}
+
+int av_bsf_list_append(AVBSFList *lst, AVBSFContext *bsf)
+{
+    return av_dynarray_add_nofree(&lst->bsfs, &lst->nb_bsfs, bsf);
+}
+
+int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** options)
+{
+    int ret;
+    const AVBitStreamFilter *filter;
+    AVBSFContext *bsf;
+
+    filter = av_bsf_get_by_name(bsf_name);
+    if (!filter)
+        return AVERROR_BSF_NOT_FOUND;
+
+    ret = av_bsf_alloc(filter, &bsf);
+    if (ret < 0)
+        return ret;
+
+    if (options) {
+        ret = av_opt_set_dict(bsf, options);
+        if (ret < 0)
+            goto end;
+    }
+
+    ret = av_bsf_list_append(lst, bsf);
+
+end:
+    if (ret < 0)
+        av_bsf_free(&bsf);
+
+    return ret;
+}
+
+int av_bsf_list_finalize(AVBSFList **lst, AVBSFContext **bsf)
+{
+    int ret = 0;
+    BSFListContext *ctx;
+
+    if ((*lst)->nb_bsfs == 1) {
+        *bsf = (*lst)->bsfs[0];
+        av_freep(&(*lst)->bsfs);
+        (*lst)->nb_bsfs = 0;
+        goto end;
+    }
+
+    ret = av_bsf_alloc(&ff_list_bsf, bsf);
+    if (ret < 0)
+        return ret;
+
+    ctx = (*bsf)->priv_data;
+
+    ctx->bsfs = (*lst)->bsfs;
+    ctx->nb_bsfs = (*lst)->nb_bsfs;
+
+end:
+    av_freep(lst);
+    return ret;
+}
+
+static int bsf_parse_single(const char *str, AVBSFList *bsf_lst)
+{
+    char *bsf_name, *bsf_options_str, *buf;
+    AVDictionary *bsf_options = NULL;
+    int ret = 0;
+
+    if (!(buf = av_strdup(str)))
+        return AVERROR(ENOMEM);
+
+    bsf_name = av_strtok(buf, "=", &bsf_options_str);
+    if (!bsf_name) {
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    if (bsf_options_str) {
+        ret = av_dict_parse_string(&bsf_options, bsf_options_str, "=", ":", 0);
+        if (ret < 0)
+            goto end;
+    }
+
+    ret = av_bsf_list_append2(bsf_lst, bsf_name, &bsf_options);
+
+    av_dict_free(&bsf_options);
+end:
+    av_free(buf);
+    return ret;
+}
+
+int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
+{
+    AVBSFList *lst;
+    char *bsf_str, *buf, *dup, *saveptr;
+    int ret;
+
+    if (!str)
+        return av_bsf_get_null_filter(bsf_lst);
+
+    lst = av_bsf_list_alloc();
+    if (!lst)
+        return AVERROR(ENOMEM);
+
+    if (!(dup = buf = av_strdup(str)))
+        return AVERROR(ENOMEM);
+
+    while (1) {
+        bsf_str = av_strtok(buf, ",", &saveptr);
+        if (!bsf_str)
+            break;
+
+        ret = bsf_parse_single(bsf_str, lst);
+        if (ret < 0)
+            goto end;
+
+        buf = NULL;
+    }
+
+    ret = av_bsf_list_finalize(&lst, bsf_lst);
+end:
+    if (ret < 0)
+        av_bsf_list_free(&lst);
+    av_free(dup);
+    return ret;
+}
+
+int av_bsf_get_null_filter(AVBSFContext **bsf)
+{
+    return av_bsf_alloc(&ff_list_bsf, bsf);
 }

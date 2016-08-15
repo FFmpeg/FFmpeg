@@ -5951,6 +5951,91 @@ void av_bsf_free(AVBSFContext **ctx);
  */
 const AVClass *av_bsf_get_class(void);
 
+/**
+ * Structure for chain/list of bitstream filters.
+ * Empty list can be allocated by av_bsf_list_alloc().
+ */
+typedef struct AVBSFList AVBSFList;
+
+/**
+ * Allocate empty list of bitstream filters.
+ * The list must be later freed by av_bsf_list_free()
+ * or finalized by av_bsf_list_finalize().
+ *
+ * @return Pointer to @ref AVBSFList on success, NULL in case of failure
+ */
+AVBSFList *av_bsf_list_alloc(void);
+
+/**
+ * Free list of bitstream filters.
+ *
+ * @param lst Pointer to pointer returned by av_bsf_list_alloc()
+ */
+void av_bsf_list_free(AVBSFList **lst);
+
+/**
+ * Append bitstream filter to the list of bitstream filters.
+ *
+ * @param lst List to append to
+ * @param bsf Filter context to be appended
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_append(AVBSFList *lst, AVBSFContext *bsf);
+
+/**
+ * Construct new bitstream filter context given it's name and options
+ * and append it to the list of bitstream filters.
+ *
+ * @param lst      List to append to
+ * @param bsf_name Name of the bitstream filter
+ * @param options  Options for the bitstream filter, can be set to NULL
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_append2(AVBSFList *lst, const char * bsf_name, AVDictionary **options);
+/**
+ * Finalize list of bitstream filters.
+ *
+ * This function will transform @ref AVBSFList to single @ref AVBSFContext,
+ * so the whole chain of bitstream filters can be treated as single filter
+ * freshly allocated by av_bsf_alloc().
+ * If the call is successfull, @ref AVBSFList structure is freed and lst
+ * will be set to NULL. In case of failure, caller is responsible for
+ * freeing the structure by av_bsf_list_free()
+ *
+ * @param      lst Filter list structure to be transformed
+ * @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+ *                 representing the chain of bitstream filters
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_finalize(AVBSFList **lst, AVBSFContext **bsf);
+
+/**
+ * Parse string describing list of bitstream filters and create single
+ * @ref AVBSFContext describing the whole chain of bitstream filters.
+ * Resulting @ref AVBSFContext can be treated as any other @ref AVBSFContext freshly
+ * allocated by av_bsf_alloc().
+ *
+ * @param      str String describing chain of bitstream filters in format
+ *                 `bsf1[=opt1=val1:opt2=val2][,bsf2]`
+ * @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+ *                 representing the chain of bitstream filters
+ *
+ * @return >=0 on success, negative AVERROR in case of failure
+ */
+int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf);
+
+/**
+ * Get null/pass-through bitstream filter.
+ *
+ * @param[out] bsf Pointer to be set to new instance of pass-through bitstream filter
+ *
+ * @return
+ */
+int av_bsf_get_null_filter(AVBSFContext **bsf);
+
 /* memory */
 
 /**
