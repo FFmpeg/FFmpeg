@@ -99,6 +99,11 @@ Specify or override the wrapper used to run the tests.
 
 @item GEN
 Set to @var{1} to generate the missing or mismatched references.
+
+@item HWACCEL
+Specify which hardware acceleration to use while running regression tests,
+by default none is used.
+
 @end table
 
 @example
