@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-08-15 - xxxxxxx - lavc 57.53.100 - avcodec.h
+  Add trailing_padding to AVCodecContext to match the corresponding
+  field in AVCodecParameters.
+
 2016-08-04 - xxxxxxx - lavf 57.46.100 - avformat.h
   Add av_get_frame_filename2()
 

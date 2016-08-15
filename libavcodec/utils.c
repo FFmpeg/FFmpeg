@@ -3258,6 +3258,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             && enc->bits_per_raw_sample != av_get_bytes_per_sample(enc->sample_fmt) * 8)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%d bit)", enc->bits_per_raw_sample);
+        if (enc->initial_padding || enc->trailing_padding) {
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", delay %d, padding %d", enc->initial_padding, enc->trailing_padding);
+        }
         break;
     case AVMEDIA_TYPE_DATA:
         if (av_log_get_level() >= AV_LOG_DEBUG) {
@@ -4103,14 +4107,15 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         par->video_delay         = codec->has_b_frames;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        par->format          = codec->sample_fmt;
-        par->channel_layout  = codec->channel_layout;
-        par->channels        = codec->channels;
-        par->sample_rate     = codec->sample_rate;
-        par->block_align     = codec->block_align;
-        par->frame_size      = codec->frame_size;
-        par->initial_padding = codec->initial_padding;
-        par->seek_preroll    = codec->seek_preroll;
+        par->format           = codec->sample_fmt;
+        par->channel_layout   = codec->channel_layout;
+        par->channels         = codec->channels;
+        par->sample_rate      = codec->sample_rate;
+        par->block_align      = codec->block_align;
+        par->frame_size       = codec->frame_size;
+        par->initial_padding  = codec->initial_padding;
+        par->trailing_padding = codec->trailing_padding;
+        par->seek_preroll     = codec->seek_preroll;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         par->width  = codec->width;
@@ -4157,15 +4162,16 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         codec->has_b_frames           = par->video_delay;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        codec->sample_fmt      = par->format;
-        codec->channel_layout  = par->channel_layout;
-        codec->channels        = par->channels;
-        codec->sample_rate     = par->sample_rate;
-        codec->block_align     = par->block_align;
-        codec->frame_size      = par->frame_size;
-        codec->delay           =
-        codec->initial_padding = par->initial_padding;
-        codec->seek_preroll    = par->seek_preroll;
+        codec->sample_fmt       = par->format;
+        codec->channel_layout   = par->channel_layout;
+        codec->channels         = par->channels;
+        codec->sample_rate      = par->sample_rate;
+        codec->block_align      = par->block_align;
+        codec->frame_size       = par->frame_size;
+        codec->delay            =
+        codec->initial_padding  = par->initial_padding;
+        codec->trailing_padding = par->trailing_padding;
+        codec->seek_preroll     = par->seek_preroll;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         codec->width  = par->width;
