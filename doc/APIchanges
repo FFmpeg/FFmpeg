@@ -19,6 +19,12 @@ API changes, most recent first:
   Add trailing_padding to AVCodecContext to match the corresponding
   field in AVCodecParameters.
 
+2016-08-15 - b746ed7 - lavc 57.52.100 - avcodec.h
+  Add a new API for chained BSF filters and passthrough (null) BSF --
+  av_bsf_list_alloc(), av_bsf_list_free(), av_bsf_list_append(),
+  av_bsf_list_append2(), av_bsf_list_finalize(), av_bsf_list_parse_str()
+  and av_bsf_get_null_filter().
+
 2016-08-04 - xxxxxxx - lavf 57.46.100 - avformat.h
   Add av_get_frame_filename2()
 
