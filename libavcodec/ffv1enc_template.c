@@ -150,6 +150,10 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[3],
                 g = (v >>  8) & 0xFF;
                 r = (v >> 16) & 0xFF;
                 a =  v >> 24;
+            } else if (sizeof(TYPE) == 4) {
+                g = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
+                b = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
+                r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             } else {
                 b = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
                 g = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));

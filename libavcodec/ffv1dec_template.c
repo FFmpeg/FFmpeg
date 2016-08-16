@@ -150,7 +150,11 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[3], int w, int
 
             if (lbd)
                 *((uint32_t*)(src[0] + x*4 + stride[0]*y)) = b + (g<<8) + (r<<16) + (a<<24);
-            else {
+            else if (sizeof(TYPE) == 4) {
+                *((uint16_t*)(src[0] + x*2 + stride[0]*y)) = g;
+                *((uint16_t*)(src[1] + x*2 + stride[1]*y)) = b;
+                *((uint16_t*)(src[2] + x*2 + stride[2]*y)) = r;
+            } else {
                 *((uint16_t*)(src[0] + x*2 + stride[0]*y)) = b;
                 *((uint16_t*)(src[1] + x*2 + stride[1]*y)) = g;
                 *((uint16_t*)(src[2] + x*2 + stride[2]*y)) = r;
