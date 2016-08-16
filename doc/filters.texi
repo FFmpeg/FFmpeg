@@ -16518,6 +16518,7 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
 @end table
 Default is @code{hanning}.
 
@@ -16665,6 +16666,7 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
 @end table
 
 Default value is @code{hann}.
@@ -16808,6 +16810,7 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
 @end table
 Default value is @code{hann}.
 
