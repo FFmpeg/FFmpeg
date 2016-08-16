@@ -1007,8 +1007,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     int ret;
     RangeCoder c_bak = fs->c;
     const uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
-                                p->data[1] + ps*x + y*p->linesize[1],
-                                p->data[2] + ps*x + y*p->linesize[2]};
+                                p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
+                                p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL};
 
     fs->slice_coding_mode = 0;
     if (f->version > 3) {
