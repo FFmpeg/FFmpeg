@@ -4830,8 +4830,9 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->rap_group);
         av_freep(&sc->display_matrix);
 
-        for (j = 0; j < sc->stsd_count; j++)
-            av_free(sc->extradata[j]);
+        if (sc->extradata)
+            for (j = 0; j < sc->stsd_count; j++)
+                av_free(sc->extradata[j]);
         av_freep(&sc->extradata);
         av_freep(&sc->extradata_size);
 
