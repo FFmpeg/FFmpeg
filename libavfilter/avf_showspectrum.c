@@ -77,6 +77,7 @@ typedef struct {
     float gain;
     int hop_size;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
+    float **color_buffer;       ///< color buffer (3 * h * ch items)
     AVAudioFifo *fifo;
     int64_t pts;
     int single_pic;
@@ -230,12 +231,17 @@ static av_cold void uninit(AVFilterContext *ctx)
         for (i = 0; i < s->nb_display_channels; i++)
             av_fft_end(s->fft[i]);
     }
+    av_freep(&s->fft);
     if (s->fft_data) {
         for (i = 0; i < s->nb_display_channels; i++)
             av_freep(&s->fft_data[i]);
     }
-    av_freep(&s->fft);
     av_freep(&s->fft_data);
+    if (s->color_buffer) {
+        for (i = 0; i < s->nb_display_channels; i++)
+            av_freep(&s->color_buffer[i]);
+    }
+    av_freep(&s->color_buffer);
     av_freep(&s->window_func_lut);
     if (s->magnitudes) {
         for (i = 0; i < s->nb_display_channels; i++)
@@ -363,6 +369,16 @@ static int config_output(AVFilterLink *outlink)
         for (i = 0; i < s->nb_display_channels; i++) {
             s->phases[i] = av_calloc(s->orientation == VERTICAL ? s->h : s->w, sizeof(**s->phases));
             if (!s->phases[i])
+                return AVERROR(ENOMEM);
+        }
+
+        av_freep(&s->color_buffer);
+        s->color_buffer = av_calloc(s->nb_display_channels, sizeof(*s->color_buffer));
+        if (!s->color_buffer)
+            return AVERROR(ENOMEM);
+        for (i = 0; i < s->nb_display_channels; i++) {
+            s->color_buffer[i] = av_malloc_array(s->orientation == VERTICAL ? s->h * 3 : s->w * 3, sizeof(**s->color_buffer));
+            if (!s->color_buffer[i])
                 return AVERROR(ENOMEM);
         }
 
@@ -613,13 +629,13 @@ static void pick_color(ShowSpectrumContext *s,
               + color_table[cm][i].v * lerpfrac;
         }
 
-        out[0] += y * yf;
-        out[1] += u * uf;
-        out[2] += v * vf;
+        out[0] = y * yf;
+        out[1] = u * uf;
+        out[2] = v * vf;
     } else {
-        out[0] += a * yf;
-        out[1] += a * uf;
-        out[2] += a * vf;
+        out[0] = a * yf;
+        out[1] = a * uf;
+        out[2] = a * vf;
     }
 }
 
@@ -650,7 +666,7 @@ static int plot_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     /* draw the channel */
     for (y = 0; y < h; y++) {
         int row = (s->mode == COMBINED) ? y : ch * h + y;
-        float *out = &s->combine_buffer[3 * row];
+        float *out = &s->color_buffer[ch][3 * row];
         float a;
 
         switch (s->data) {
@@ -702,13 +718,20 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = ctx->outputs[0];
     ShowSpectrumContext *s = ctx->priv;
     AVFrame *outpicref = s->outpicref;
-    int ret, plane, x, y;
+    int ret, plane, x, y, z = s->orientation == VERTICAL ? s->h : s->w;
 
     /* fill a new spectrum column */
     /* initialize buffer for combining to black */
-    clear_combine_buffer(s, s->orientation == VERTICAL ? s->h : s->w);
+    clear_combine_buffer(s, z);
 
     ctx->internal->execute(ctx, plot_channel, NULL, NULL, s->nb_display_channels);
+
+    for (y = 0; y < z * 3; y++) {
+        s->combine_buffer[y] += s->color_buffer[0][y];
+        for (x = 1; x < s->nb_display_channels; x++) {
+            s->combine_buffer[y] += s->color_buffer[x][y];
+        }
+    }
 
     av_frame_make_writable(s->outpicref);
     /* copy to output */
