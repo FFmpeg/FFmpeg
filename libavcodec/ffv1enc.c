@@ -598,11 +598,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return AVERROR_INVALIDDATA;
         }
-        if (s->ac == AC_GOLOMB_RICE) {
-            av_log(avctx, AV_LOG_INFO,
-                   "bits_per_raw_sample > 8, forcing range coder\n");
-            s->ac = AC_RANGE_CUSTOM_TAB;
-        }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
@@ -661,11 +656,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
         s->version = FFMAX(s->version, 1);
-        if (s->ac == AC_GOLOMB_RICE) {
-            av_log(avctx, AV_LOG_INFO,
-                   "bits_per_raw_sample > 8, forcing coder 1\n");
-            s->ac = AC_RANGE_CUSTOM_TAB;
-        }
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
@@ -673,6 +663,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     av_assert0(s->bits_per_raw_sample >= 8);
 
+    if (s->bits_per_raw_sample > 8) {
+        if (s->ac == AC_GOLOMB_RICE) {
+            av_log(avctx, AV_LOG_INFO,
+                    "bits_per_raw_sample > 8, forcing range coder\n");
+            s->ac = AC_RANGE_CUSTOM_TAB;
+        }
+    }
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
     }
