@@ -16519,6 +16519,9 @@ It accepts the following values:
 @item gauss
 @item tukey
 @item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 Default is @code{hanning}.
 
@@ -16667,6 +16670,9 @@ It accepts the following values:
 @item gauss
 @item tukey
 @item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 
 Default value is @code{hann}.
@@ -16811,6 +16817,9 @@ It accepts the following values:
 @item gauss
 @item tukey
 @item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 Default value is @code{hann}.
 
