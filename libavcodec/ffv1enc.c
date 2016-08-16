@@ -624,6 +624,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->chroma_planes = 1;
         s->bits_per_raw_sample = 8;
         break;
+    case AV_PIX_FMT_RGB48:
+        s->colorspace = 1;
+        s->chroma_planes = 1;
+        s->bits_per_raw_sample = 16;
+        s->use32bit = 1;
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
+            return AVERROR_INVALIDDATA;
+        }
+        break;
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
         s->chroma_planes = 1;
@@ -1287,7 +1297,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YA8,
-        AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_NONE
 
     },
