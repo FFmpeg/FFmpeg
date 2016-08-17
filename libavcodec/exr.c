@@ -1029,8 +1029,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     uint64_t line_offset, uncompressed_size;
     uint16_t *ptr_x;
     uint8_t *ptr;
-    uint32_t data_size, line, col = 0;
-    uint32_t tileX, tileY, tileLevelX, tileLevelY;
+    uint32_t data_size;
+    uint64_t line, col = 0;
+    uint64_t tileX, tileY, tileLevelX, tileLevelY;
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components; /* nb pixel to add at the right of the datawindow */
     int bxmin = s->xmin * 2 * s->desc->nb_components; /* nb pixel to add at the left of the datawindow */
@@ -1062,8 +1063,17 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_PATCHWELCOME;
         }
 
+        if (s->xmin || s->ymin) {
+            avpriv_report_missing_feature(s->avctx, "Tiles with xmin/ymin");
+            return AVERROR_PATCHWELCOME;
+        }
+
         line = s->tile_attr.ySize * tileY;
         col = s->tile_attr.xSize * tileX;
+
+        if (line < s->ymin || line > s->ymax ||
+            col  < s->xmin || col  > s->xmax)
+            return AVERROR_INVALIDDATA;
 
         td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
         td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
