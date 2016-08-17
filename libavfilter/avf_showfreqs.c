@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
 #include <math.h>
 
 #include "libavcodec/avfft.h"
@@ -53,6 +54,7 @@ typedef struct ShowFreqsContext {
     float **avg_data;
     float *window_func_lut;
     float overlap;
+    float minamp;
     int hop_size;
     int nb_channels;
     int nb_freq;
@@ -122,6 +124,7 @@ static const AVOption showfreqs_options[] = {
     { "cmode", "set channel mode", OFFSET(cmode), AV_OPT_TYPE_INT, {.i64=COMBINED}, 0, NB_CMODES-1, FLAGS, "cmode" },
         { "combined", "show all channels in same window",  0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "cmode" },
         { "separate", "show each channel in own window",   0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "cmode" },
+    { "minamp",  "set minimum amplitude", OFFSET(minamp), AV_OPT_TYPE_FLOAT, {.dbl=1e-6}, FLT_MIN, 1e-6, FLAGS },
     { NULL }
 };
 
@@ -285,6 +288,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
                              AVFrame *out, AVFilterLink *outlink)
 {
     const int w = s->w;
+    const float min = s->minamp;
     const float avg = s->avg_data[ch][f];
     const float bsize = get_bsize(s, f);
     const int sx = get_sx(s, f);
@@ -299,7 +303,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         a = 1.0 - cbrt(a);
         break;
     case AS_LOG:
-        a = log(av_clipd(a, 1e-6, 1)) / log(1e-6);
+        a = log(av_clipd(a, min, 1)) / log(min);
         break;
     case AS_LINEAR:
         a = 1.0 - a;

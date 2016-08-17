@@ -16563,6 +16563,9 @@ It accepts the following values:
 @end table
 Default is @code{combined}.
 
+@item minamp
+Set minimum amplitude used in @code{log} amplitude scaler.
+
 @end table
 
 @anchor{showspectrum}
