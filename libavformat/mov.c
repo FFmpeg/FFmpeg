@@ -1325,38 +1325,16 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             st->codecpar->color_range = AVCOL_RANGE_JPEG;
         else
             st->codecpar->color_range = AVCOL_RANGE_MPEG;
-        /* 14496-12 references JPEG XR specs (rather than the more complete
-         * 23001-8) so some adjusting is required */
-        if (color_primaries >= AVCOL_PRI_FILM)
-            color_primaries = AVCOL_PRI_UNSPECIFIED;
-        if ((color_trc >= AVCOL_TRC_LINEAR &&
-             color_trc <= AVCOL_TRC_LOG_SQRT) ||
-            color_trc >= AVCOL_TRC_BT2020_10)
-            color_trc = AVCOL_TRC_UNSPECIFIED;
-        if (color_matrix >= AVCOL_SPC_BT2020_NCL)
-            color_matrix = AVCOL_SPC_UNSPECIFIED;
-        st->codecpar->color_primaries = color_primaries;
-        st->codecpar->color_trc       = color_trc;
-        st->codecpar->color_space     = color_matrix;
-    } else if (!strncmp(color_parameter_type, "nclc", 4)) {
-        /* color primaries, Table 4-4 */
-        switch (color_primaries) {
-        case 1: st->codecpar->color_primaries = AVCOL_PRI_BT709; break;
-        case 5: st->codecpar->color_primaries = AVCOL_PRI_SMPTE170M; break;
-        case 6: st->codecpar->color_primaries = AVCOL_PRI_SMPTE240M; break;
-        }
-        /* color transfer, Table 4-5 */
-        switch (color_trc) {
-        case 1: st->codecpar->color_trc = AVCOL_TRC_BT709; break;
-        case 7: st->codecpar->color_trc = AVCOL_TRC_SMPTE240M; break;
-        }
-        /* color matrix, Table 4-6 */
-        switch (color_matrix) {
-        case 1: st->codecpar->color_space = AVCOL_SPC_BT709; break;
-        case 6: st->codecpar->color_space = AVCOL_SPC_BT470BG; break;
-        case 7: st->codecpar->color_space = AVCOL_SPC_SMPTE240M; break;
-        }
     }
+    if (color_primaries >= AVCOL_PRI_NB)
+        color_primaries = AVCOL_PRI_UNSPECIFIED;
+    if (color_trc >= AVCOL_TRC_NB)
+        color_trc = AVCOL_TRC_UNSPECIFIED;
+    if (color_matrix >= AVCOL_SPC_NB)
+        color_matrix = AVCOL_SPC_UNSPECIFIED;
+    st->codecpar->color_primaries = color_primaries;
+    st->codecpar->color_trc       = color_trc;
+    st->codecpar->color_space     = color_matrix;
     av_log(c->fc, AV_LOG_TRACE, "\n");
 
     return 0;
