@@ -73,6 +73,9 @@ int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
     for (out = 0; out < nb_out; out++) {
         for (in = 0; in < nb_in; in++)
             s->matrix[out][in] = matrix[in];
+        if (s->int_sample_fmt == AV_SAMPLE_FMT_FLTP)
+            for (in = 0; in < nb_in; in++)
+                s->matrix_flt[out][in] = matrix[in];
         matrix += stride;
     }
     s->rematrix_custom = 1;
@@ -354,6 +357,12 @@ av_cold static int auto_matrix(SwrContext *s)
         }
         av_log(s, AV_LOG_DEBUG, "\n");
     }
+    if (s->int_sample_fmt == AV_SAMPLE_FMT_FLTP) {
+        int i;
+        for (i = 0; i < FF_ARRAY_ELEMS(s->matrix[0])*FF_ARRAY_ELEMS(s->matrix[0]); i++)
+            s->matrix_flt[0][i] = s->matrix[0][i];
+    }
+
     return 0;
 }
 
@@ -513,7 +522,7 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
                     float v=0;
                     for(j=0; j<s->matrix_ch[out_i][0]; j++){
                         in_i= s->matrix_ch[out_i][1+j];
-                        v+= ((float*)in->ch[in_i])[i] * s->matrix[out_i][in_i];
+                        v+= ((float*)in->ch[in_i])[i] * s->matrix_flt[out_i][in_i];
                     }
                     ((float*)out->ch[out_i])[i]= v;
                 }
