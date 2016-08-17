@@ -215,6 +215,8 @@ typedef struct MOVMuxContext {
     uint8_t *encryption_kid;
     int encryption_kid_len;
 
+    int need_rewrite_extradata;
+
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
