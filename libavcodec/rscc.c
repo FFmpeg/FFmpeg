@@ -98,7 +98,7 @@ static av_cold int rscc_init(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_BGR24;
             break;
         case 32:
-            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            avctx->pix_fmt = AV_PIX_FMT_BGR0;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Invalid bits per pixel value (%d)\n",
