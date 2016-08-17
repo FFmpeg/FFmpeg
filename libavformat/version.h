@@ -30,7 +30,7 @@
 #include "libavutil/version.h"
 
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
-// Also please add any ticket numbers that you belive might be affected here
+// Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  57
 #define LIBAVFORMAT_VERSION_MINOR  47
 #define LIBAVFORMAT_VERSION_MICRO 100
