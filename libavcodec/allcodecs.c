@@ -487,6 +487,8 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (PCM_S32BE,         pcm_s32be);
     REGISTER_ENCDEC (PCM_S32LE,         pcm_s32le);
     REGISTER_ENCDEC (PCM_S32LE_PLANAR,  pcm_s32le_planar);
+    REGISTER_ENCDEC (PCM_S64BE,         pcm_s64be);
+    REGISTER_ENCDEC (PCM_S64LE,         pcm_s64le);
     REGISTER_ENCDEC (PCM_U8,            pcm_u8);
     REGISTER_ENCDEC (PCM_U16BE,         pcm_u16be);
     REGISTER_ENCDEC (PCM_U16LE,         pcm_u16le);

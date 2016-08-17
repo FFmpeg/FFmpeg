@@ -2991,6 +2991,8 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags)
                 return be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
             case 4:
                 return be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
+            case 8:
+                return be ? AV_CODEC_ID_PCM_S64BE : AV_CODEC_ID_PCM_S64LE;
             default:
                 return AV_CODEC_ID_NONE;
             }

@@ -145,6 +145,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         ENCODE_PLANAR(uint8_t, byte, dst, n, 0, -128)
         break;
 #if HAVE_BIGENDIAN
+    case AV_CODEC_ID_PCM_S64LE:
     case AV_CODEC_ID_PCM_F64LE:
         ENCODE(int64_t, le64, samples, dst, n, 0, 0)
         break;
@@ -163,9 +164,11 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         break;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F32BE:
+    case AV_CODEC_ID_PCM_S64BE:
     case AV_CODEC_ID_PCM_S32BE:
     case AV_CODEC_ID_PCM_S16BE:
 #else
+    case AV_CODEC_ID_PCM_S64BE:
     case AV_CODEC_ID_PCM_F64BE:
         ENCODE(int64_t, be64, samples, dst, n, 0, 0)
         break;
@@ -181,6 +184,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         break;
     case AV_CODEC_ID_PCM_F64LE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_S64LE:
     case AV_CODEC_ID_PCM_S32LE:
     case AV_CODEC_ID_PCM_S16LE:
 #endif /* HAVE_BIGENDIAN */
@@ -390,6 +394,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
 #if HAVE_BIGENDIAN
+    case AV_CODEC_ID_PCM_S64LE:
     case AV_CODEC_ID_PCM_F64LE:
         DECODE(64, le64, src, samples, n, 0, 0)
         break;
@@ -408,9 +413,11 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F32BE:
+    case AV_CODEC_ID_PCM_S64BE:
     case AV_CODEC_ID_PCM_S32BE:
     case AV_CODEC_ID_PCM_S16BE:
 #else
+    case AV_CODEC_ID_PCM_S64BE:
     case AV_CODEC_ID_PCM_F64BE:
         DECODE(64, be64, src, samples, n, 0, 0)
         break;
@@ -426,6 +433,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_F64LE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_S64LE:
     case AV_CODEC_ID_PCM_S32LE:
     case AV_CODEC_ID_PCM_S16LE:
 #endif /* HAVE_BIGENDIAN */
@@ -568,4 +576,5 @@ PCM_CODEC  (PCM_U24LE,        AV_SAMPLE_FMT_S32, pcm_u24le,        "PCM unsigned
 PCM_CODEC  (PCM_U32BE,        AV_SAMPLE_FMT_S32, pcm_u32be,        "PCM unsigned 32-bit big-endian");
 PCM_CODEC  (PCM_U32LE,        AV_SAMPLE_FMT_S32, pcm_u32le,        "PCM unsigned 32-bit little-endian");
 PCM_DECODER(PCM_ZORK,         AV_SAMPLE_FMT_U8,  pcm_zork,         "PCM Zork");
-
+PCM_CODEC  (PCM_S64BE,        AV_SAMPLE_FMT_S64, pcm_s64be,        "PCM signed 64-bit big-endian");
+PCM_CODEC  (PCM_S64LE,        AV_SAMPLE_FMT_S64, pcm_s64le,        "PCM signed 64-bit little-endian");
