@@ -380,7 +380,7 @@ static int config_output(AVFilterLink *outlink)
         if (!s->color_buffer)
             return AVERROR(ENOMEM);
         for (i = 0; i < s->nb_display_channels; i++) {
-            s->color_buffer[i] = av_malloc_array(s->orientation == VERTICAL ? s->h * 3 : s->w * 3, sizeof(**s->color_buffer));
+            s->color_buffer[i] = av_calloc(s->orientation == VERTICAL ? s->h * 3 : s->w * 3, sizeof(**s->color_buffer));
             if (!s->color_buffer[i])
                 return AVERROR(ENOMEM);
         }
@@ -730,8 +730,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     ctx->internal->execute(ctx, plot_channel, NULL, NULL, s->nb_display_channels);
 
     for (y = 0; y < z * 3; y++) {
-        s->combine_buffer[y] += s->color_buffer[0][y];
-        for (x = 1; x < s->nb_display_channels; x++) {
+        for (x = 0; x < s->nb_display_channels; x++) {
             s->combine_buffer[y] += s->color_buffer[x][y];
         }
     }
