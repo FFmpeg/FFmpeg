@@ -341,7 +341,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             const float *src = (const float *)buf->extended_data[c];
 
             for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 63)));
+                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 31)));
         }
         break;
     case AV_SAMPLE_FMT_FLT: {
@@ -349,7 +349,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
         for (i = 0; i < buf->nb_samples; i++) {
             for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src / (double)INT16_MAX, llrint(*src * (UINT64_C(1) << 63)));
+                update_stat(s, &s->chstats[c], *src, *src, llrint(*src * (UINT64_C(1) << 31)));
         }}
         break;
     case AV_SAMPLE_FMT_S64P:
