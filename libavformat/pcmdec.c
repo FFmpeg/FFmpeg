@@ -111,8 +111,8 @@ AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .flags          = AVFMT_GENERIC_INDEX,                  \
     .extensions     = ext,                                  \
     .raw_codec_id   = codec,                                \
-    __VA_ARGS__                                             \
     .priv_class     = &name_ ## _demuxer_class,             \
+    __VA_ARGS__                                             \
 };
 
 PCMDEF(f64be, "PCM 64-bit floating-point big-endian",
