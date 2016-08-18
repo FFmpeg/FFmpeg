@@ -55,8 +55,6 @@
 
 #define MAX_DELAYED_PIC_COUNT  16
 
-#define MAX_MBPAIR_SIZE (256*1024) // a tighter bound could be calculated if someone cares about a few bytes
-
 /* Compiling in interlaced support reduces the speed
  * of progressive decoding by about 2%. */
 #define ALLOW_INTERLACE
