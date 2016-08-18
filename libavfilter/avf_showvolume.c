@@ -31,8 +31,8 @@
 #include "video.h"
 #include "internal.h"
 
-static const char *const var_names[] = {   "VOLUME",   "CHANNEL",        NULL };
-enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_VARS_NB };
+static const char *const var_names[] = {   "VOLUME",   "CHANNEL",   "PEAK",        NULL };
+enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_PEAK, VAR_VARS_NB };
 
 typedef struct ShowVolumeContext {
     const AVClass *class;
@@ -61,7 +61,7 @@ static const AVOption showvolume_options[] = {
     { "w", "set channel width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=400}, 80, 8192, FLAGS },
     { "h", "set channel height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=20}, 1, 900, FLAGS },
     { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_DOUBLE, {.dbl=0.95}, 0.001, 1, FLAGS },
-    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="if(gte(VOLUME,-6), if(gte(VOLUME,-2), if(gte(VOLUME,-1), if(gt(VOLUME,0), 0xff0000ff, 0xff0066ff), 0xff00ffff),0xff00ff00),0xffff0000)"}, 0, 0, FLAGS },
+    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="PEAK*255+floor((1-PEAK)*255)*256"}, 0, 0, FLAGS },
     { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "v", "display volume value", OFFSET(draw_volume), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "o", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "orientation" },
@@ -228,6 +228,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (i = 0; i < insamples->nb_samples; i++)
                 max = FFMAX(max, src[i]);
 
+            s->values[c * VAR_VARS_NB + VAR_PEAK] = max;
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
             s->values[c * VAR_VARS_NB + VAR_CHANNEL] = c;
@@ -258,6 +259,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             for (i = 0; i < insamples->nb_samples; i++)
                 max = FFMAX(max, src[i]);
 
+            s->values[c * VAR_VARS_NB + VAR_PEAK] = max;
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
             s->values[c * VAR_VARS_NB + VAR_CHANNEL] = c;
