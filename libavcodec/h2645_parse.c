@@ -30,10 +30,11 @@
 #include "h2645_parse.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
-                          H2645NAL *nal)
+                          H2645NAL *nal, int small_padding)
 {
     int i, si, di;
     uint8_t *dst;
+    int64_t padding = small_padding ? AV_INPUT_BUFFER_PADDING_SIZE : MAX_MBPAIR_SIZE;
 
     nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
@@ -81,7 +82,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     }
 #endif /* HAVE_FAST_UNALIGNED */
 
-    if (i >= length - 1) { // no escaped 0
+    if (i >= length - 1 && small_padding) { // no escaped 0
         nal->data     =
         nal->raw_data = src;
         nal->size     =
@@ -90,7 +91,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     }
 
     av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
-                   length + AV_INPUT_BUFFER_PADDING_SIZE);
+                   length + padding);
     if (!nal->rbsp_buffer)
         return AVERROR(ENOMEM);
 
@@ -247,7 +248,7 @@ static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
 
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           void *logctx, int is_nalff, int nal_length_size,
-                          enum AVCodecID codec_id)
+                          enum AVCodecID codec_id, int small_padding)
 {
     int consumed, ret = 0;
     const uint8_t *next_avc = is_nalff ? buf : buf + length;
@@ -322,7 +323,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         }
         nal = &pkt->nals[pkt->nb_nals];
 
-        consumed = ff_h2645_extract_rbsp(buf, extract_length, nal);
+        consumed = ff_h2645_extract_rbsp(buf, extract_length, nal, small_padding);
         if (consumed < 0)
             return consumed;
 
