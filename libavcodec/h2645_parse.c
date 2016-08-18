@@ -34,7 +34,7 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
 {
     int i, si, di;
     uint8_t *dst;
-    int64_t padding = small_padding ? AV_INPUT_BUFFER_PADDING_SIZE : MAX_MBPAIR_SIZE;
+    int64_t padding = small_padding ? 0 : MAX_MBPAIR_SIZE;
 
     nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
@@ -90,8 +90,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
         return length;
     }
 
-    av_fast_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
-                   length + padding);
+    av_fast_padded_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
+                          length + padding);
     if (!nal->rbsp_buffer)
         return AVERROR(ENOMEM);
 
