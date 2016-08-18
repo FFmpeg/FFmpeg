@@ -73,6 +73,7 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
+        AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
         AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
@@ -349,6 +350,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         for (i = 0; i < buf->nb_samples; i++) {
             for (c = 0; c < channels; c++, src++)
                 update_stat(s, &s->chstats[c], *src, *src / (double)INT16_MAX, llrint(*src * (UINT64_C(1) << 63)));
+        }}
+        break;
+    case AV_SAMPLE_FMT_S64P:
+        for (c = 0; c < channels; c++) {
+            ChannelStats *p = &s->chstats[c];
+            const int64_t *src = (const int64_t *)buf->extended_data[c];
+
+            for (i = 0; i < buf->nb_samples; i++, src++)
+                update_stat(s, p, *src, *src / (double)INT64_MAX, *src);
+        }
+        break;
+    case AV_SAMPLE_FMT_S64: {
+        const int64_t *src = (const int64_t *)buf->extended_data[0];
+
+        for (i = 0; i < buf->nb_samples; i++) {
+            for (c = 0; c < channels; c++, src++)
+                update_stat(s, &s->chstats[c], *src, *src / (double)INT64_MAX, *src);
         }}
         break;
     case AV_SAMPLE_FMT_S32P:
