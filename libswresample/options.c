@@ -70,7 +70,7 @@ static const AVOption options[]={
 
 {"dither_scale"         , "set dither scale"            , OFFSET(dither.scale   ), AV_OPT_TYPE_FLOAT, {.dbl=1                     }, 0      , INT_MAX   , PARAM},
 
-{"dither_method"        , "set dither method"           , OFFSET(dither.method  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
+{"dither_method"        , "set dither method"           , OFFSET(user_dither_method),AV_OPT_TYPE_INT, {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
 {"rectangular"          , "select rectangular dither"   , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_RECTANGULAR}, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular"           , "select triangular dither"    , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR }, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular_hp"        , "select triangular dither with high pass" , 0          , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR_HIGHPASS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
