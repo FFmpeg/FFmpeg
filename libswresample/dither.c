@@ -123,15 +123,6 @@ av_cold int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AV
         s->dither.method = SWR_DITHER_TRIANGULAR_HIGHPASS;
     }
 
-    av_assert0(!s->preout.count);
-    s->dither.noise = s->preout;
-    s->dither.temp  = s->preout;
-    if (s->dither.method > SWR_DITHER_NS) {
-        s->dither.noise.bps = 4;
-        s->dither.noise.fmt = AV_SAMPLE_FMT_FLTP;
-        s->dither.noise_scale = 1;
-    }
-
     return 0;
 }
 
