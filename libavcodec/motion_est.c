@@ -897,6 +897,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     case FF_CMP_NSSE:
         return lambda2>>FF_LAMBDA_SHIFT;
     case FF_CMP_BIT:
+    case FF_CMP_MEDIAN_SAD:
         return 1;
     }
 }
