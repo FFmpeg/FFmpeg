@@ -8555,6 +8555,12 @@ Default is @code{linear}.
 @item components
 Set what color components to display.
 Default is @code{7}.
+
+@item fgopacity
+Set foreground opacity. Default is @code{0.7}.
+
+@item bgopacity
+Set background opacity. Default is @code{0.5}.
 @end table
 
 @subsection Examples
