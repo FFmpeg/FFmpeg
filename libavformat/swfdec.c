@@ -395,6 +395,11 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pos = pos;
             pkt->stream_index = st->index;
 
+            if (linesize * height > pkt->size) {
+                res = AVERROR_INVALIDDATA;
+                goto bitmap_end;
+            }
+
             switch (bmp_fmt) {
             case 3:
                 pix_fmt = AV_PIX_FMT_PAL8;
@@ -422,10 +427,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             } else
                 st->codecpar->format = pix_fmt;
 
-            if (linesize * height > pkt->size) {
-                res = AVERROR_INVALIDDATA;
-                goto bitmap_end;
-            }
             memcpy(pkt->data, buf + colormapsize*colormapbpp, linesize * height);
 
             res = pkt->size;
