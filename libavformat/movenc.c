@@ -4923,11 +4923,11 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                 int side_size = 0;
                 uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
                 if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
-                    av_free(par->extradata);
-                    par->extradata = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
-                    if (!par->extradata) {
+                    void *newextra = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                    if (!newextra)
                         return AVERROR(ENOMEM);
-                    }
+                    av_free(par->extradata);
+                    par->extradata = newextra;
                     memcpy(par->extradata, side, side_size);
                     par->extradata_size = side_size;
                     mov->need_rewrite_extradata = 1;
