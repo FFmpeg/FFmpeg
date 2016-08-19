@@ -88,7 +88,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
         nal->size     =
         nal->raw_size = length;
         return length;
-    }
+    } else if (i > length)
+        i = length;
 
     av_fast_padded_malloc(&nal->rbsp_buffer, &nal->rbsp_buffer_size,
                           length + padding);
