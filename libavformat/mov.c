@@ -2322,6 +2322,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     MOVStreamContext *sc;
     int ret;
+    int entries;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2330,20 +2331,30 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
-    sc->stsd_count = avio_rb32(pb); /* entries */
+    entries = avio_rb32(pb); /* entries */
 
+    if (entries <= 0) {
+        av_log(c->fc, AV_LOG_ERROR, "invalid STSD entries %d\n", entries);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (sc->extradata) {
+        av_log(c->fc, AV_LOG_ERROR, "Duplicate STSD\n");
+        return AVERROR_INVALIDDATA;
+    }
     /* Prepare space for hosting multiple extradata. */
-    sc->extradata = av_mallocz_array(sc->stsd_count, sizeof(*sc->extradata));
-    if (!sc->extradata)
-        return AVERROR(ENOMEM);
+    sc->extradata = av_mallocz_array(entries, sizeof(*sc->extradata));
+    sc->extradata_size = av_mallocz_array(entries, sizeof(*sc->extradata_size));
+    if (!sc->extradata_size || !sc->extradata) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
-    sc->extradata_size = av_mallocz_array(sc->stsd_count, sizeof(*sc->extradata_size));
-    if (!sc->extradata_size)
-        return AVERROR(ENOMEM);
-
-    ret = ff_mov_read_stsd_entries(c, pb, sc->stsd_count);
+    ret = ff_mov_read_stsd_entries(c, pb, entries);
     if (ret < 0)
         return ret;
+
+    sc->stsd_count = entries;
 
     /* Restore back the primary extradata. */
     av_freep(&st->codecpar->extradata);
@@ -2356,6 +2367,10 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     return 0;
+fail:
+    av_freep(&sc->extradata);
+    av_freep(&sc->extradata_size);
+    return ret;
 }
 
 static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
