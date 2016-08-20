@@ -1031,6 +1031,13 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         /*[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters() */
         s->lowdelay.num_x     = svq3_get_ue_golomb(gb);
         s->lowdelay.num_y     = svq3_get_ue_golomb(gb);
+        if (s->lowdelay.num_x * s->lowdelay.num_y == 0 ||
+            s->lowdelay.num_x * (uint64_t)s->lowdelay.num_y > INT_MAX) {
+            av_log(s->avctx,AV_LOG_ERROR,"Invalid numx/y\n");
+            s->lowdelay.num_x = s->lowdelay.num_y = 0;
+            return AVERROR_INVALIDDATA;
+        }
+
         s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
 
