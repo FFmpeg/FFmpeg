@@ -803,7 +803,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         if (avctx->bits_per_coded_sample != 4) {
             int samples_per_block = ff_adpcm_ima_block_samples[avctx->bits_per_coded_sample - 2];
             int block_size = ff_adpcm_ima_block_sizes[avctx->bits_per_coded_sample - 2];
-            uint8_t temp[20] = { 0 };
+            uint8_t temp[20 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
             GetBitContext g;
 
             for (n = 0; n < (nb_samples - 1) / samples_per_block; n++) {
