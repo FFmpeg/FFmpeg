@@ -35,15 +35,6 @@ struc Coeffs
     .sizeof:
 endstruc
 
-%macro EMULATE_FMADDPS 5 ; dst, src1, src2, src3, tmp
-%if cpuflag(fma3) || cpuflag(fma4)
-    fmaddps %1, %2, %3, %4
-%else
-    mulps   %5, %2, %3
-    addps   %1, %4, %5
-%endif
-%endmacro ; EMULATE_FMADDPS
-
 %macro CQT_CALC 9
 ; %1 = a_re, %2 = a_im, %3 = b_re, %4 = b_im
 ; %5 = m_re, %6 = m_im, %7 = tmp, %8 = coeffval, %9 = coeffsq_offset
@@ -54,9 +45,9 @@ endstruc
     shufps  m%6, m%5, m%7, q3131
     shufps  m%5, m%5, m%7, q2020
     sub     id, fft_lend
-    EMULATE_FMADDPS m%2, m%6, m%8, m%2, m%6
+    FMULADD_PS m%2, m%6, m%8, m%2, m%6
     neg     id
-    EMULATE_FMADDPS m%1, m%5, m%8, m%1, m%5
+    FMULADD_PS m%1, m%5, m%8, m%1, m%5
     movups  m%5, [srcq + 8 * iq - mmsize + 8]
     movups  m%7, [srcq + 8 * iq - 2*mmsize + 8]
     %if mmsize == 32
@@ -65,8 +56,8 @@ endstruc
     %endif
     shufps  m%6, m%5, m%7, q1313
     shufps  m%5, m%5, m%7, q0202
-    EMULATE_FMADDPS m%4, m%6, m%8, m%4, m%6
-    EMULATE_FMADDPS m%3, m%5, m%8, m%3, m%5
+    FMULADD_PS m%4, m%6, m%8, m%4, m%6
+    FMULADD_PS m%3, m%5, m%8, m%3, m%5
 %endmacro ; CQT_CALC
 
 %macro CQT_SEPARATE 6 ; a_re, a_im, b_re, b_im, tmp, tmp2
