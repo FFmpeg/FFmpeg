@@ -5633,6 +5633,11 @@ This expression is evaluated per-frame.
 If set to 1 will force the output display aspect ratio
 to be the same of the input, by changing the output sample aspect
 ratio. It defaults to 0.
+
+@item exact
+Enable exact cropping. If enabled, subsampled videos will be cropped at exact
+width/height/x/y as specified and will not be rounded to nearest smaller value.
+It defaults to 0.
 @end table
 
 The @var{out_w}, @var{out_h}, @var{x}, @var{y} parameters are
