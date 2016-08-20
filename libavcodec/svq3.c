@@ -1040,7 +1040,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         slice_bits   = slice_length * 8;
         slice_bytes  = slice_length + length - 1;
 
-        if (slice_bytes > get_bits_left(&s->gb)) {
+        if (8LL*slice_bytes > get_bits_left(&s->gb)) {
             av_log(avctx, AV_LOG_ERROR, "slice after bitstream end\n");
             return -1;
         }
