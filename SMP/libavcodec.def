@@ -13,7 +13,14 @@ EXPORTS
     av_bsf_free
     av_bsf_get_by_name
     av_bsf_get_class
+    av_bsf_get_null_filter
     av_bsf_init
+    av_bsf_list_alloc
+    av_bsf_list_append
+    av_bsf_list_append2
+    av_bsf_list_finalize
+    av_bsf_list_free
+    av_bsf_list_parse_str
     av_bsf_next
     av_bsf_receive_packet
     av_bsf_send_packet
