@@ -26,7 +26,7 @@
 #include "libavutil/internal.h"
 
 #include "cabac_functions.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #define LUMA 0
 #define CB 1

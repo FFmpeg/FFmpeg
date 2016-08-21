@@ -36,7 +36,7 @@
 #include "bytestream.h"
 #include "cabac_functions.h"
 #include "golomb.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "profiles.h"
 
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 3 };

@@ -24,7 +24,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 

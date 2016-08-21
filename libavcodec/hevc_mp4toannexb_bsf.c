@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "bsf.h"
 #include "bytestream.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #define MIN_HEVCC_LENGTH 23
 

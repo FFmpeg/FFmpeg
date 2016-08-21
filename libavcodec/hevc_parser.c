@@ -23,7 +23,7 @@
 #include "libavutil/common.h"
 
 #include "golomb.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "h2645_parse.h"
 #include "parser.h"
 
