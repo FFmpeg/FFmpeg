@@ -957,8 +957,6 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
 
-void ff_hevc_pps_free(HEVCPPS **ppps);
-
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
 
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
