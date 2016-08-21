@@ -210,8 +210,7 @@ int qsv_transcode_init(OutputStream *ost)
 
     /* check if the decoder supports QSV and the output only goes to this stream */
     ist = input_streams[ost->source_index];
-    if (ist->nb_filters || ist->hwaccel_id != HWACCEL_QSV ||
-        !ist->dec || !ist->dec->pix_fmts)
+    if (ist->hwaccel_id != HWACCEL_QSV || !ist->dec || !ist->dec->pix_fmts)
         return 0;
     for (pix_fmt = ist->dec->pix_fmts; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++)
         if (*pix_fmt == AV_PIX_FMT_QSV)

@@ -4410,6 +4410,21 @@ The filter accepts the following option:
 Set the minimal luminance value. Default is @code{16}.
 @end table
 
+@section bitplanenoise
+
+Show and measure bit plane noise.
+
+The filter accepts the following options:
+
+@table @option
+@item bitplane
+Set which plane to analyze. Default is @code{1}.
+
+@item filter
+Filter out noisy pixels from @code{bitplane} set above.
+Default is disabled.
+@end table
+
 @section blackdetect
 
 Detect video intervals that are (almost) completely black. Can be
@@ -8540,6 +8555,12 @@ Default is @code{linear}.
 @item components
 Set what color components to display.
 Default is @code{7}.
+
+@item fgopacity
+Set foreground opacity. Default is @code{0.7}.
+
+@item bgopacity
+Set background opacity. Default is @code{0.5}.
 @end table
 
 @subsection Examples
@@ -13973,6 +13994,12 @@ Zoom-in up to 1.5 and pan always at center of picture:
 @example
 zoompan=z='min(zoom+0.0015,1.5)':d=700:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
 @end example
+
+@item
+Same as above but without pausing:
+@example
+zoompan=z='min(max(zoom,pzoom)+0.0015,1.5)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'
+@end example
 @end itemize
 
 @section zscale
@@ -16512,6 +16539,10 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 Default is @code{hanning}.
 
@@ -16537,6 +16568,9 @@ It accepts the following values:
 @item separate
 @end table
 Default is @code{combined}.
+
+@item minamp
+Set minimum amplitude used in @code{log} amplitude scaler.
 
 @end table
 
@@ -16659,6 +16693,10 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 
 Default value is @code{hann}.
@@ -16802,6 +16840,10 @@ It accepts the following values:
 @item lanczos
 @item gauss
 @item tukey
+@item dolph
+@item cauchy
+@item parzen
+@item poisson
 @end table
 Default value is @code{hann}.
 
@@ -16862,6 +16904,9 @@ The expression can use the following variables:
 @table @option
 @item VOLUME
 Current max volume of channel in dB.
+
+@item PEAK
+Current peak.
 
 @item CHANNEL
 Current channel number, starting from 0.

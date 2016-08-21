@@ -2859,7 +2859,6 @@ static int transcode_init(void)
             dec_ctx = ist->dec_ctx;
 
             ost->st->disposition          = ist->st->disposition;
-            enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
             enc_ctx->chroma_sample_location = dec_ctx->chroma_sample_location;
         } else {
             for (j=0; j<oc->nb_streams; j++) {
@@ -2909,6 +2908,7 @@ static int transcode_init(void)
             }
             enc_ctx->extradata_size= dec_ctx->extradata_size;
             enc_ctx->bits_per_coded_sample  = dec_ctx->bits_per_coded_sample;
+            enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
 
             enc_ctx->time_base = ist->st->time_base;
             /*
@@ -3100,6 +3100,9 @@ static int transcode_init(void)
             switch (enc_ctx->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 enc_ctx->sample_fmt     = ost->filter->filter->inputs[0]->format;
+                if (dec_ctx)
+                    enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
+                                                         av_get_bytes_per_sample(enc_ctx->sample_fmt) << 3);
                 enc_ctx->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
                 enc_ctx->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
                 enc_ctx->channels       = avfilter_link_get_channels(ost->filter->filter->inputs[0]);
@@ -3140,6 +3143,9 @@ static int transcode_init(void)
                            "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
                            av_get_pix_fmt_name(ost->filter->filter->inputs[0]->format));
                 enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
+                if (dec_ctx)
+                    enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
+                                                         av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
                 ost->st->avg_frame_rate = ost->frame_rate;
 

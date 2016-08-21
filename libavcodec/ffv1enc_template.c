@@ -129,6 +129,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[3],
     const int ring_size = s->context_model ? 3 : 2;
     TYPE *sample[4][3];
     int lbd    = s->bits_per_raw_sample <= 8;
+    int packed = !src[1];
     int bits   = s->bits_per_raw_sample > 0 ? s->bits_per_raw_sample : 8;
     int offset = 1 << bits;
 
@@ -150,6 +151,15 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[3],
                 g = (v >>  8) & 0xFF;
                 r = (v >> 16) & 0xFF;
                 a =  v >> 24;
+            } else if (packed) {
+                const uint16_t *p = ((const uint16_t*)(src[0] + x*6 + stride[0]*y));
+                r = p[0];
+                g = p[1];
+                b = p[2];
+            } else if (sizeof(TYPE) == 4) {
+                g = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
+                b = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
+                r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             } else {
                 b = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
                 g = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));

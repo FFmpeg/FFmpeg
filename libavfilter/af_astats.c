@@ -31,6 +31,7 @@ typedef struct ChannelStats {
     double sigma_x, sigma_x2;
     double avg_sigma_x2, min_sigma_x2, max_sigma_x2;
     double min, max;
+    double nmin, nmax;
     double min_run, max_run;
     double min_runs, max_runs;
     double min_diff, max_diff;
@@ -50,6 +51,7 @@ typedef struct {
     int metadata;
     int reset_count;
     int nb_frames;
+    int maxbitdepth;
 } AudioStatsContext;
 
 #define OFFSET(x) offsetof(AudioStatsContext, x)
@@ -69,6 +71,10 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     static const enum AVSampleFormat sample_fmts[] = {
+        AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+        AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
+        AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
         AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
@@ -101,8 +107,8 @@ static void reset_stats(AudioStatsContext *s)
     for (c = 0; c < s->nb_channels; c++) {
         ChannelStats *p = &s->chstats[c];
 
-        p->min = p->min_sigma_x2 = DBL_MAX;
-        p->max = p->max_sigma_x2 = DBL_MIN;
+        p->min = p->nmin = p->min_sigma_x2 = DBL_MAX;
+        p->max = p->nmax = p->max_sigma_x2 = DBL_MIN;
         p->min_diff = DBL_MAX;
         p->max_diff = DBL_MIN;
         p->sigma_x = 0;
@@ -134,15 +140,16 @@ static int config_output(AVFilterLink *outlink)
     s->mult = exp((-1 / s->time_constant / outlink->sample_rate));
     s->tc_samples = 5 * s->time_constant * outlink->sample_rate + .5;
     s->nb_frames = 0;
+    s->maxbitdepth = av_get_bytes_per_sample(outlink->format) * 8;
 
     reset_stats(s);
 
     return 0;
 }
 
-static void bit_depth(uint64_t mask, uint64_t imask, AVRational *depth)
+static void bit_depth(AudioStatsContext *s, uint64_t mask, uint64_t imask, AVRational *depth)
 {
-    unsigned result = 64;
+    unsigned result = s->maxbitdepth;
 
     mask = mask & (~imask);
 
@@ -156,10 +163,11 @@ static void bit_depth(uint64_t mask, uint64_t imask, AVRational *depth)
             depth->num++;
 }
 
-static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
+static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, double nd, int64_t i)
 {
     if (d < p->min) {
         p->min = d;
+        p->nmin = nd;
         p->min_run = 1;
         p->min_runs = 0;
         p->min_count = 1;
@@ -172,6 +180,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
 
     if (d > p->max) {
         p->max = d;
+        p->nmax = nd;
         p->max_run = 1;
         p->max_runs = 0;
         p->max_count = 1;
@@ -182,15 +191,15 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
         p->max_runs += p->max_run * p->max_run;
     }
 
-    p->sigma_x += d;
-    p->sigma_x2 += d * d;
-    p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * d * d;
+    p->sigma_x += nd;
+    p->sigma_x2 += nd * nd;
+    p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * nd * nd;
     p->min_diff = FFMIN(p->min_diff, fabs(d - p->last));
     p->max_diff = FFMAX(p->max_diff, fabs(d - p->last));
     p->diff1_sum += fabs(d - p->last);
     p->last = d;
-    p->mask |= llrint(d * (UINT64_C(1) << 63));
-    p->imask &= llrint(d * (UINT64_C(1) << 63));
+    p->mask |= i;
+    p->imask &= i;
 
     if (p->nb_samples >= s->tc_samples) {
         p->max_sigma_x2 = FFMAX(p->max_sigma_x2, p->avg_sigma_x2);
@@ -220,6 +229,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0;
     double min_runs = 0, max_runs = 0,
            min = DBL_MAX, max = DBL_MIN, min_diff = DBL_MAX, max_diff = 0,
+           nmin = DBL_MAX, nmax = DBL_MIN,
            max_sigma_x = 0,
            diff1_sum = 0,
            sigma_x = 0,
@@ -237,6 +247,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 
         min = FFMIN(min, p->min);
         max = FFMAX(max, p->max);
+        nmin = FFMIN(nmin, p->nmin);
+        nmax = FFMAX(nmax, p->nmax);
         min_diff = FFMIN(min_diff, p->min_diff);
         max_diff = FFMAX(max_diff, p->max_diff);
         diff1_sum += p->diff1_sum,
@@ -260,14 +272,14 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, c + 1, "Min_difference", "%f", p->min_diff);
         set_meta(metadata, c + 1, "Max_difference", "%f", p->max_diff);
         set_meta(metadata, c + 1, "Mean_difference", "%f", p->diff1_sum / (p->nb_samples - 1));
-        set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->min, p->max)));
+        set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
         set_meta(metadata, c + 1, "RMS_trough", "%f", LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
         set_meta(metadata, c + 1, "Crest_factor", "%f", p->sigma_x2 ? FFMAX(-p->min, p->max) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
         set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
-        bit_depth(p->mask, p->imask, &depth);
+        bit_depth(s, p->mask, p->imask, &depth);
         set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
         set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
     }
@@ -278,13 +290,13 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     set_meta(metadata, 0, "Overall.Min_difference", "%f", min_diff);
     set_meta(metadata, 0, "Overall.Max_difference", "%f", max_diff);
     set_meta(metadata, 0, "Overall.Mean_difference", "%f", diff1_sum / (nb_samples - s->nb_channels));
-    set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-min, max)));
+    set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
     set_meta(metadata, 0, "Overall.RMS_trough", "%f", LINEAR_TO_DB(sqrt(min_sigma_x2)));
     set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
-    bit_depth(mask, imask, &depth);
+    bit_depth(s, mask, imask, &depth);
     set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
     set_meta(metadata, 0, "Overall.Bit_depth2", "%f", depth.den);
     set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
@@ -295,7 +307,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AudioStatsContext *s = inlink->dst->priv;
     AVDictionary **metadata = avpriv_frame_get_metadatap(buf);
     const int channels = s->nb_channels;
-    const double *src;
     int i, c;
 
     if (s->reset_count > 0) {
@@ -310,19 +321,87 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     case AV_SAMPLE_FMT_DBLP:
         for (c = 0; c < channels; c++) {
             ChannelStats *p = &s->chstats[c];
-            src = (const double *)buf->extended_data[c];
+            const double *src = (const double *)buf->extended_data[c];
 
             for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src);
+                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 63)));
         }
         break;
-    case AV_SAMPLE_FMT_DBL:
-        src = (const double *)buf->extended_data[0];
+    case AV_SAMPLE_FMT_DBL: {
+        const double *src = (const double *)buf->extended_data[0];
 
         for (i = 0; i < buf->nb_samples; i++) {
             for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src);
+                update_stat(s, &s->chstats[c], *src, *src, llrint(*src * (UINT64_C(1) << 63)));
+        }}
+        break;
+    case AV_SAMPLE_FMT_FLTP:
+        for (c = 0; c < channels; c++) {
+            ChannelStats *p = &s->chstats[c];
+            const float *src = (const float *)buf->extended_data[c];
+
+            for (i = 0; i < buf->nb_samples; i++, src++)
+                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 31)));
         }
+        break;
+    case AV_SAMPLE_FMT_FLT: {
+        const float *src = (const float *)buf->extended_data[0];
+
+        for (i = 0; i < buf->nb_samples; i++) {
+            for (c = 0; c < channels; c++, src++)
+                update_stat(s, &s->chstats[c], *src, *src, llrint(*src * (UINT64_C(1) << 31)));
+        }}
+        break;
+    case AV_SAMPLE_FMT_S64P:
+        for (c = 0; c < channels; c++) {
+            ChannelStats *p = &s->chstats[c];
+            const int64_t *src = (const int64_t *)buf->extended_data[c];
+
+            for (i = 0; i < buf->nb_samples; i++, src++)
+                update_stat(s, p, *src, *src / (double)INT64_MAX, *src);
+        }
+        break;
+    case AV_SAMPLE_FMT_S64: {
+        const int64_t *src = (const int64_t *)buf->extended_data[0];
+
+        for (i = 0; i < buf->nb_samples; i++) {
+            for (c = 0; c < channels; c++, src++)
+                update_stat(s, &s->chstats[c], *src, *src / (double)INT64_MAX, *src);
+        }}
+        break;
+    case AV_SAMPLE_FMT_S32P:
+        for (c = 0; c < channels; c++) {
+            ChannelStats *p = &s->chstats[c];
+            const int32_t *src = (const int32_t *)buf->extended_data[c];
+
+            for (i = 0; i < buf->nb_samples; i++, src++)
+                update_stat(s, p, *src, *src / (double)INT32_MAX, *src);
+        }
+        break;
+    case AV_SAMPLE_FMT_S32: {
+        const int32_t *src = (const int32_t *)buf->extended_data[0];
+
+        for (i = 0; i < buf->nb_samples; i++) {
+            for (c = 0; c < channels; c++, src++)
+                update_stat(s, &s->chstats[c], *src, *src / (double)INT32_MAX, *src);
+        }}
+        break;
+    case AV_SAMPLE_FMT_S16P:
+        for (c = 0; c < channels; c++) {
+            ChannelStats *p = &s->chstats[c];
+            const int16_t *src = (const int16_t *)buf->extended_data[c];
+
+            for (i = 0; i < buf->nb_samples; i++, src++)
+                update_stat(s, p, *src, *src / (double)INT16_MAX, *src);
+        }
+        break;
+    case AV_SAMPLE_FMT_S16: {
+        const int16_t *src = (const int16_t *)buf->extended_data[0];
+
+        for (i = 0; i < buf->nb_samples; i++) {
+            for (c = 0; c < channels; c++, src++)
+                update_stat(s, &s->chstats[c], *src, *src / (double)INT16_MAX, *src);
+        }}
         break;
     }
 
@@ -338,6 +417,7 @@ static void print_stats(AVFilterContext *ctx)
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0;
     double min_runs = 0, max_runs = 0,
            min = DBL_MAX, max = DBL_MIN, min_diff = DBL_MAX, max_diff = 0,
+           nmin = DBL_MAX, nmax = DBL_MIN,
            max_sigma_x = 0,
            diff1_sum = 0,
            sigma_x = 0,
@@ -355,6 +435,8 @@ static void print_stats(AVFilterContext *ctx)
 
         min = FFMIN(min, p->min);
         max = FFMAX(max, p->max);
+        nmin = FFMIN(nmin, p->nmin);
+        nmax = FFMAX(nmax, p->nmax);
         min_diff = FFMIN(min_diff, p->min_diff);
         max_diff = FFMAX(max_diff, p->max_diff);
         diff1_sum += p->diff1_sum,
@@ -379,15 +461,15 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", p->min_diff);
         av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", p->max_diff);
         av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", p->diff1_sum / (p->nb_samples - 1));
-        av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->min, p->max)));
+        av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
         if (p->min_sigma_x2 != 1)
             av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n",LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
-        av_log(ctx, AV_LOG_INFO, "Crest factor: %f\n", p->sigma_x2 ? FFMAX(-p->min, p->max) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
+        av_log(ctx, AV_LOG_INFO, "Crest factor: %f\n", p->sigma_x2 ? FFMAX(-p->nmin, p->nmax) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
         av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
-        bit_depth(p->mask, p->imask, &depth);
+        bit_depth(s, p->mask, p->imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
     }
 
@@ -398,14 +480,14 @@ static void print_stats(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", min_diff);
     av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", max_diff);
     av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", diff1_sum / (nb_samples - s->nb_channels));
-    av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-min, max)));
+    av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));
     if (min_sigma_x2 != 1)
         av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n", LINEAR_TO_DB(sqrt(min_sigma_x2)));
     av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     av_log(ctx, AV_LOG_INFO, "Peak count: %f\n", (min_count + max_count) / (double)s->nb_channels);
-    bit_depth(mask, imask, &depth);
+    bit_depth(s, mask, imask, &depth);
     av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
     av_log(ctx, AV_LOG_INFO, "Number of samples: %"PRId64"\n", nb_samples / s->nb_channels);
 }

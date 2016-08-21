@@ -120,6 +120,7 @@ struct SwrContext {
     int64_t user_in_ch_layout;                      ///< User set input channel layout
     int64_t user_out_ch_layout;                     ///< User set output channel layout
     enum AVSampleFormat user_int_sample_fmt;        ///< User set internal sample format
+    int user_dither_method;                         ///< User set dither method
 
     struct DitherContext dither;
 

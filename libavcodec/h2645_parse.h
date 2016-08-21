@@ -26,6 +26,8 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
+#define MAX_MBPAIR_SIZE (256*1024) // a tighter bound could be calculated if someone cares about a few bytes
+
 typedef struct H2645NAL {
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
@@ -74,18 +76,38 @@ typedef struct H2645Packet {
  * Extract the raw (unescaped) bitstream.
  */
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
-                          H2645NAL *nal);
+                          H2645NAL *nal, int small_padding);
 
 /**
  * Split an input packet into NAL units.
  */
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           void *logctx, int is_nalff, int nal_length_size,
-                          enum AVCodecID codec_id);
+                          enum AVCodecID codec_id, int small_padding);
 
 /**
  * Free all the allocated memory in the packet.
  */
 void ff_h2645_packet_uninit(H2645Packet *pkt);
+
+static inline int get_nalsize(int nal_length_size, const uint8_t *buf,
+                              int buf_size, int *buf_index, void *logctx)
+{
+    int i, nalsize = 0;
+
+    if (*buf_index >= buf_size - nal_length_size) {
+        // the end of the buffer is reached, refill it
+        return AVERROR(EAGAIN);
+    }
+
+    for (i = 0; i < nal_length_size; i++)
+        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
+    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
+        av_log(logctx, AV_LOG_ERROR,
+               "Invalid nal size %d\n", nalsize);
+        return AVERROR_INVALIDDATA;
+    }
+    return nalsize;
+}
 
 #endif /* AVCODEC_H2645_PARSE_H */

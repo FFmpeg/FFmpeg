@@ -176,6 +176,8 @@ av_cold int swr_init(struct SwrContext *s){
 
     s->int_sample_fmt= s->user_int_sample_fmt;
 
+    s->dither.method = s->user_dither_method;
+
     if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
         av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
         s->in_ch_layout = 0;
@@ -236,9 +238,10 @@ av_cold int swr_init(struct SwrContext *s){
 
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_S64P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/S64/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
 
@@ -322,6 +325,9 @@ av_assert0(s->out.ch_count);
     s->silence  = s->in;
     s->drop_temp= s->out;
 
+    if ((ret = swri_dither_init(s, s->out_sample_fmt, s->int_sample_fmt)) < 0)
+        goto fail;
+
     if(!s->resample && !s->rematrix && !s->channel_map && !s->dither.method){
         s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
                                                    s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
@@ -362,8 +368,14 @@ av_assert0(s->out.ch_count);
         set_audiodata_fmt(&s->in_buffer, s->int_sample_fmt);
     }
 
-    if ((ret = swri_dither_init(s, s->out_sample_fmt, s->int_sample_fmt)) < 0)
-        goto fail;
+    av_assert0(!s->preout.count);
+    s->dither.noise = s->preout;
+    s->dither.temp  = s->preout;
+    if (s->dither.method > SWR_DITHER_NS) {
+        s->dither.noise.bps = 4;
+        s->dither.noise.fmt = AV_SAMPLE_FMT_FLTP;
+        s->dither.noise_scale = 1;
+    }
 
     if(s->rematrix || s->dither.method) {
         ret = swri_rematrix_init(s);

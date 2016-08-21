@@ -4919,6 +4919,21 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->start_cts = 0;
             }
 
+            if (trk->par->codec_id == AV_CODEC_ID_MP4ALS) {
+                int side_size = 0;
+                uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
+                if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
+                    void *newextra = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                    if (!newextra)
+                        return AVERROR(ENOMEM);
+                    av_free(par->extradata);
+                    par->extradata = newextra;
+                    memcpy(par->extradata, side, side_size);
+                    par->extradata_size = side_size;
+                    mov->need_rewrite_extradata = 1;
+                }
+            }
+
             return 0;             /* Discard 0 sized packets */
         }
 
@@ -5920,6 +5935,22 @@ static int mov_write_trailer(AVFormatContext *s)
     int res = 0;
     int i;
     int64_t moov_pos;
+
+    if (mov->need_rewrite_extradata) {
+        for (i = 0; i < s->nb_streams; i++) {
+            MOVTrack *track = &mov->tracks[i];
+            AVCodecParameters *par = track->par;
+
+            track->vos_len  = par->extradata_size;
+            track->vos_data = av_malloc(track->vos_len);
+            if (!track->vos_data) {
+                AVERROR(ENOMEM);
+                goto error;
+            }
+            memcpy(track->vos_data, par->extradata, track->vos_len);
+        }
+        mov->need_rewrite_extradata = 0;
+    }
 
     /*
      * Before actually writing the trailer, make sure that there are no

@@ -65,7 +65,7 @@ typedef struct IffContext {
     GetByteContext gb;
     uint8_t *video[2];
     unsigned video_size;
-    uint32_t *pal[2];
+    uint32_t *pal;
 } IffContext;
 
 #define LUT8_PART(plane, v)                             \
@@ -243,7 +243,7 @@ static int extract_header(AVCodecContext *const avctx,
                 break;
             } else if (chunk_id == MKTAG('C', 'M', 'A', 'P')) {
                 int count = data_size / 3;
-                uint32_t *pal = s->pal[0];
+                uint32_t *pal = s->pal;
 
                 if (count > 256)
                     return AVERROR_INVALIDDATA;
@@ -373,8 +373,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&s->ham_palbuf);
     av_freep(&s->video[0]);
     av_freep(&s->video[1]);
-    av_freep(&s->pal[0]);
-    av_freep(&s->pal[1]);
+    av_freep(&s->pal);
     return 0;
 }
 
@@ -424,9 +423,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->video_size = FFALIGN(avctx->width, 2) * avctx->height * s->bpp;
         s->video[0] = av_calloc(FFALIGN(avctx->width, 2) * avctx->height, s->bpp);
         s->video[1] = av_calloc(FFALIGN(avctx->width, 2) * avctx->height, s->bpp);
-        s->pal[0] = av_calloc(256, sizeof(*s->pal[0]));
-        s->pal[1] = av_calloc(256, sizeof(*s->pal[1]));
-        if (!s->video[0] || !s->video[1] || !s->pal[0] || !s->pal[1])
+        s->pal = av_calloc(256, sizeof(*s->pal));
+        if (!s->video[0] || !s->video[1] || !s->pal)
             return AVERROR(ENOMEM);
     }
 
@@ -1457,7 +1455,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
-            memcpy(s->pal[0], s->frame->data[1], 256 * 4);
+            memcpy(s->pal, s->frame->data[1], 256 * 4);
     }
 
     switch (s->compression) {
@@ -1689,7 +1687,6 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->compression <= 0xff && (avctx->codec_tag == MKTAG('A', 'N', 'I', 'M'))) {
-        memcpy(s->pal[1], s->pal[0], 256 * 4);
         memcpy(s->video[1], s->video[0], s->video_size);
     }
 
@@ -1704,14 +1701,14 @@ static int decode_frame(AVCodecContext *avctx,
                     buf += s->planesize;
                 }
             }
-            memcpy(frame->data[1], s->pal[0], 256 * 4);
+            memcpy(frame->data[1], s->pal, 256 * 4);
         } else if (s->ham) {
             int i, count = 1 << s->ham;
 
             buf = s->video[0];
             memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof(uint32_t));
             for (i = 0; i < count; i++) {
-                s->ham_palbuf[i*2+1] = s->pal[0][i];
+                s->ham_palbuf[i*2+1] = s->pal[i];
             }
             for (i = 0; i < count; i++) {
                 uint32_t tmp = i << (8 - s->ham);
@@ -1742,7 +1739,6 @@ static int decode_frame(AVCodecContext *avctx,
 
         if (!s->is_brush) {
             FFSWAP(uint8_t *, s->video[0], s->video[1]);
-            FFSWAP(uint32_t *, s->pal[0], s->pal[1]);
         }
     }
 

@@ -228,26 +228,6 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
     return 0;
 }
 
-static inline int get_avc_nalsize(H264ParseContext *p, const uint8_t *buf,
-                                  int buf_size, int *buf_index, void *logctx)
-{
-    int i, nalsize = 0;
-
-    if (*buf_index >= buf_size - p->nal_length_size) {
-        // the end of the buffer is reached, refill it
-        return AVERROR(EAGAIN);
-    }
-
-    for (i = 0; i < p->nal_length_size; i++)
-        nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
-    if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
-        av_log(logctx, AV_LOG_ERROR,
-               "AVC: nal size %d\n", nalsize);
-        return AVERROR_INVALIDDATA;
-    }
-    return nalsize;
-}
-
 /**
  * Parse NAL units of found picture and decode some basic information.
  *
@@ -288,7 +268,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         int src_length, consumed, nalsize = 0;
 
         if (buf_index >= next_avc) {
-            nalsize = get_avc_nalsize(p, buf, buf_size, &buf_index, avctx);
+            nalsize = get_nalsize(p->nal_length_size, buf, buf_size, &buf_index, avctx);
             if (nalsize < 0)
                 break;
             next_avc = buf_index + nalsize;
@@ -318,7 +298,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             break;
         }
-        consumed = ff_h2645_extract_rbsp(buf + buf_index, src_length, &nal);
+        consumed = ff_h2645_extract_rbsp(buf + buf_index, src_length, &nal, 1);
         if (consumed < 0)
             break;
 

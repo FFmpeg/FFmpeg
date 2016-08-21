@@ -598,11 +598,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return AVERROR_INVALIDDATA;
         }
-        if (s->ac == AC_GOLOMB_RICE) {
-            av_log(avctx, AV_LOG_INFO,
-                   "bits_per_raw_sample > 8, forcing range coder\n");
-            s->ac = AC_RANGE_CUSTOM_TAB;
-        }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
@@ -628,6 +623,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->transparency = 1;
         s->chroma_planes = 1;
         s->bits_per_raw_sample = 8;
+        break;
+    case AV_PIX_FMT_RGB48:
+        s->colorspace = 1;
+        s->chroma_planes = 1;
+        s->bits_per_raw_sample = 16;
+        s->use32bit = 1;
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
+            return AVERROR_INVALIDDATA;
+        }
         break;
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
@@ -661,11 +666,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
         s->version = FFMAX(s->version, 1);
-        if (s->ac == AC_GOLOMB_RICE) {
-            av_log(avctx, AV_LOG_INFO,
-                   "bits_per_raw_sample > 8, forcing coder 1\n");
-            s->ac = AC_RANGE_CUSTOM_TAB;
-        }
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
@@ -673,6 +673,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     av_assert0(s->bits_per_raw_sample >= 8);
 
+    if (s->bits_per_raw_sample > 8) {
+        if (s->ac == AC_GOLOMB_RICE) {
+            av_log(avctx, AV_LOG_INFO,
+                    "bits_per_raw_sample > 8, forcing range coder\n");
+            s->ac = AC_RANGE_CUSTOM_TAB;
+        }
+    }
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
     }
@@ -1010,8 +1017,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     int ret;
     RangeCoder c_bak = fs->c;
     const uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
-                                p->data[1] + ps*x + y*p->linesize[1],
-                                p->data[2] + ps*x + y*p->linesize[2]};
+                                p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
+                                p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL};
 
     fs->slice_coding_mode = 0;
     if (f->version > 3) {
@@ -1290,7 +1297,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YA8,
-        AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_NONE
 
     },

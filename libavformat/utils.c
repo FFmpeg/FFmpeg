@@ -90,7 +90,7 @@ static int is_relative(int64_t ts) {
  * @param timestamp the time stamp to wrap
  * @return resulting time stamp
  */
-static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
+static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
 {
     if (st->pts_wrap_behavior != AV_PTS_WRAP_IGNORE &&
         st->pts_wrap_reference != AV_NOPTS_VALUE && timestamp != AV_NOPTS_VALUE) {
@@ -142,7 +142,7 @@ void av_format_inject_global_side_data(AVFormatContext *s)
     }
 }
 
-int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src)
+int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
 {
     av_assert0(!dst->codec_whitelist &&
                !dst->format_whitelist &&
@@ -162,7 +162,7 @@ int ff_copy_whiteblacklists(AVFormatContext *dst, AVFormatContext *src)
     return 0;
 }
 
-static const AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
+static const AVCodec *find_decoder(AVFormatContext *s, const AVStream *st, enum AVCodecID codec_id)
 {
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -2991,6 +2991,8 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags)
                 return be ? AV_CODEC_ID_PCM_S24BE : AV_CODEC_ID_PCM_S24LE;
             case 4:
                 return be ? AV_CODEC_ID_PCM_S32BE : AV_CODEC_ID_PCM_S32LE;
+            case 8:
+                return be ? AV_CODEC_ID_PCM_S64BE : AV_CODEC_ID_PCM_S64LE;
             default:
                 return AV_CODEC_ID_NONE;
             }
@@ -5007,8 +5009,13 @@ int ff_generate_avci_extradata(AVStream *st)
     return 0;
 }
 
-uint8_t *av_stream_get_side_data(AVStream *st, enum AVPacketSideDataType type,
-                                 int *size)
+#if FF_API_NOCONST_GET_SIDE_DATA
+uint8_t *av_stream_get_side_data(AVStream *st,
+                                 enum AVPacketSideDataType type, int *size)
+#else
+uint8_t *av_stream_get_side_data(const AVStream *st,
+                                 enum AVPacketSideDataType type, int *size)
+#endif
 {
     int i;
 
@@ -5212,20 +5219,8 @@ int ff_standardize_creation_time(AVFormatContext *s)
 {
     int64_t timestamp;
     int ret = ff_parse_creation_time_metadata(s, &timestamp, 0);
-    if (ret == 1) {
-        time_t seconds = timestamp / 1000000;
-        struct tm *ptm, tmbuf;
-        ptm = gmtime_r(&seconds, &tmbuf);
-        if (ptm) {
-            char buf[32];
-            if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", ptm))
-                return AVERROR_EXTERNAL;
-            av_strlcatf(buf, sizeof(buf), ".%06dZ", (int)(timestamp % 1000000));
-            av_dict_set(&s->metadata, "creation_time", buf, 0);
-        } else {
-            return AVERROR_EXTERNAL;
-        }
-    }
+    if (ret == 1)
+        return avpriv_dict_set_timestamp(&s->metadata, "creation_time", timestamp);
     return ret;
 }
 

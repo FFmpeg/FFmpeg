@@ -30,9 +30,9 @@
 #include "libavutil/version.h"
 
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
-// Also please add any ticket numbers that you belive might be affected here
+// Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  57
-#define LIBAVFORMAT_VERSION_MINOR  46
+#define LIBAVFORMAT_VERSION_MINOR  47
 #define LIBAVFORMAT_VERSION_MICRO 101
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -78,6 +78,9 @@
 #endif
 #ifndef FF_API_LAVF_AVCTX
 #define FF_API_LAVF_AVCTX               (LIBAVFORMAT_VERSION_MAJOR < 58)
+#endif
+#ifndef FF_API_NOCONST_GET_SIDE_DATA
+#define FF_API_NOCONST_GET_SIDE_DATA    (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
 
 #ifndef FF_API_R_FRAME_RATE

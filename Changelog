@@ -15,6 +15,7 @@ version <next>:
 - True Audio (TTA) muxer
 - crystalizer audio filter
 - acrusher audio filter
+- bitplanenoise video filter
 
 
 version 3.1:

@@ -4212,7 +4212,7 @@ case "$arch" in
     sh4|sh)
         arch="sh4"
     ;;
-    sun4u|sparc*)
+    sun4*|sparc*)
         arch="sparc"
     ;;
     tilegx|tile-gx)

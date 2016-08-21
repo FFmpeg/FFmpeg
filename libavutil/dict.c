@@ -24,6 +24,7 @@
 #include "dict.h"
 #include "internal.h"
 #include "mem.h"
+#include "time_internal.h"
 #include "bprint.h"
 
 struct AVDictionary {
@@ -252,4 +253,20 @@ int av_dict_get_string(const AVDictionary *m, char **buffer,
         av_bprint_escape(&bprint, t->value, special_chars, AV_ESCAPE_MODE_BACKSLASH, 0);
     }
     return av_bprint_finalize(&bprint, buffer);
+}
+
+int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp)
+{
+    time_t seconds = timestamp / 1000000;
+    struct tm *ptm, tmbuf;
+    ptm = gmtime_r(&seconds, &tmbuf);
+    if (ptm) {
+        char buf[32];
+        if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", ptm))
+            return AVERROR_EXTERNAL;
+        av_strlcatf(buf, sizeof(buf), ".%06dZ", (int)(timestamp % 1000000));
+        return av_dict_set(dict, key, buf, 0);
+    } else {
+        return AVERROR_EXTERNAL;
+    }
 }

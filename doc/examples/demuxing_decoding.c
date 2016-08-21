@@ -148,11 +148,10 @@ static int decode_packet(int *got_frame, int cached)
 }
 
 static int open_codec_context(int *stream_idx,
-                              AVFormatContext *fmt_ctx, enum AVMediaType type)
+                              AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type)
 {
     int ret, stream_index;
     AVStream *st;
-    AVCodecContext *dec_ctx = NULL;
     AVCodec *dec = NULL;
     AVDictionary *opts = NULL;
 
@@ -166,17 +165,31 @@ static int open_codec_context(int *stream_idx,
         st = fmt_ctx->streams[stream_index];
 
         /* find decoder for the stream */
-        dec_ctx = st->codec;
-        dec = avcodec_find_decoder(dec_ctx->codec_id);
+        dec = avcodec_find_decoder(st->codecpar->codec_id);
         if (!dec) {
             fprintf(stderr, "Failed to find %s codec\n",
                     av_get_media_type_string(type));
             return AVERROR(EINVAL);
         }
 
+        /* Allocate a codec context for the decoder */
+        *dec_ctx = avcodec_alloc_context3(dec);
+        if (!*dec_ctx) {
+            fprintf(stderr, "Failed to allocate the %s codec context\n",
+                    av_get_media_type_string(type));
+            return AVERROR(ENOMEM);
+        }
+
+        /* Copy codec parameters from input stream to output codec context */
+        if ((ret = avcodec_parameters_to_context(*dec_ctx, st->codecpar)) < 0) {
+            fprintf(stderr, "Failed to copy %s codec parameters to decoder context\n",
+                    av_get_media_type_string(type));
+            return ret;
+        }
+
         /* Init the decoders, with or without reference counting */
         av_dict_set(&opts, "refcounted_frames", refcount ? "1" : "0", 0);
-        if ((ret = avcodec_open2(dec_ctx, dec, &opts)) < 0) {
+        if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
             fprintf(stderr, "Failed to open %s codec\n",
                     av_get_media_type_string(type));
             return ret;
@@ -255,9 +268,8 @@ int main (int argc, char **argv)
         exit(1);
     }
 
-    if (open_codec_context(&video_stream_idx, fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
+    if (open_codec_context(&video_stream_idx, &video_dec_ctx, fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
         video_stream = fmt_ctx->streams[video_stream_idx];
-        video_dec_ctx = video_stream->codec;
 
         video_dst_file = fopen(video_dst_filename, "wb");
         if (!video_dst_file) {
@@ -279,9 +291,8 @@ int main (int argc, char **argv)
         video_dst_bufsize = ret;
     }
 
-    if (open_codec_context(&audio_stream_idx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) {
+    if (open_codec_context(&audio_stream_idx, &audio_dec_ctx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) {
         audio_stream = fmt_ctx->streams[audio_stream_idx];
-        audio_dec_ctx = audio_stream->codec;
         audio_dst_file = fopen(audio_dst_filename, "wb");
         if (!audio_dst_file) {
             fprintf(stderr, "Could not open destination file %s\n", audio_dst_filename);
@@ -369,8 +380,8 @@ int main (int argc, char **argv)
     }
 
 end:
-    avcodec_close(video_dec_ctx);
-    avcodec_close(audio_dec_ctx);
+    avcodec_free_context(&video_dec_ctx);
+    avcodec_free_context(&audio_dec_ctx);
     avformat_close_input(&fmt_ctx);
     if (video_dst_file)
         fclose(video_dst_file);
