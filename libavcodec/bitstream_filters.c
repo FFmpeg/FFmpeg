@@ -27,6 +27,7 @@
 extern const AVBitStreamFilter ff_aac_adtstoasc_bsf;
 extern const AVBitStreamFilter ff_chomp_bsf;
 extern const AVBitStreamFilter ff_dump_extradata_bsf;
+extern const AVBitStreamFilter ff_extract_extradata_bsf;
 extern const AVBitStreamFilter ff_h264_mp4toannexb_bsf;
 extern const AVBitStreamFilter ff_hevc_mp4toannexb_bsf;
 extern const AVBitStreamFilter ff_imx_dump_header_bsf;
