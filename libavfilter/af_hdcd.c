@@ -49,7 +49,8 @@
 #include "internal.h"
 #include "audio.h"
 
-static const uint32_t peaktab[] = {
+#define PEAK_EXT_LEVEL 0x5981 /* + sizeof(peaktab)-1 = 0x8000  */
+static const uint32_t peaktab[0x2680] = {
     0x2cc08300, 0x2cc10600, 0x2cc18900, 0x2cc20c00, 0x2cc28f00, 0x2cc31200, 0x2cc39500, 0x2cc41800, 0x2cc49b00, 0x2cc51e00, 0x2cc5a100, 0x2cc62400, 0x2cc6a700, 0x2cc72a00, 0x2cc7ad00, 0x2cc83000,
     0x2cc8b300, 0x2cc93600, 0x2cc9b900, 0x2cca3c00, 0x2ccabf00, 0x2ccb4200, 0x2ccbc500, 0x2ccc4800, 0x2ccccb00, 0x2ccd4e00, 0x2ccdd100, 0x2cce5400, 0x2cced700, 0x2ccf5a00, 0x2ccfdd00, 0x2cd06000,
     0x2cd0e300, 0x2cd16600, 0x2cd1e900, 0x2cd26c00, 0x2cd2ef00, 0x2cd37200, 0x2cd3f500, 0x2cd47800, 0x2cd4fb00, 0x2cd57e00, 0x2cd60100, 0x2cd68400, 0x2cd70700, 0x2cd78a00, 0x2cd80d00, 0x2cd89000,
@@ -1338,10 +1339,11 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     if (extend) {
         for (i = 0; i < count; i++) {
             int32_t sample = samples[i * stride];
-            int32_t asample = abs(sample) - 0x5981;
-            if (asample >= 0)
+            int32_t asample = abs(sample) - PEAK_EXT_LEVEL;
+            if (asample >= 0) {
+                av_assert0(asample < sizeof(peaktab));
                 sample = sample >= 0 ? peaktab[asample] : -peaktab[asample];
-            else
+            } else
                 sample <<= 15;
 
             samples[i * stride] = sample;
@@ -1548,7 +1550,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
              * used.
              * bit 0: HDCD signal preserved
              * bit 1: Original sample was above PE level */
-            int32_t save = (abs(in_data[n]) - 0x5981 >= 0) ? 2 : 0; /* above PE level */
+            int32_t save = (abs(in_data[n]) - PEAK_EXT_LEVEL >= 0) ? 2 : 0; /* above PE level */
             save |= in_data[n] & 1;                      /* save LSB for HDCD packets */
             out_data[n] = TONEGEN16(s->ana_snb, 277.18, 44100, 0.1);
             out_data[n] = (out_data[n] | 3) ^ ((~save) & 3);
