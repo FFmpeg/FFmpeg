@@ -1,40 +1,46 @@
 /*
-   Copyright (C) 2010, Chris Moeller,
-   All rights reserved.
-   Optimizations by Gumboot
-   Redistribution and use in source and binary forms, with or without modification,
-   are permitted provided that the following conditions are met:
-     1. Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
-     2. Redistributions in binary form must reproduce the above copyright
-        notice, this list of conditions and the following disclaimer in the
-        documentation and/or other materials provided with the distribution.
-     3. The names of its contributors may not be used to endorse or promote
-        products derived from this software without specific prior written
-        permission.
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *  Copyright (C) 2010, Chris Moeller,
+ *  All rights reserved.
+ *  Optimizations by Gumboot
+ *  Additional work by Burt P.
+ *  Original code reverse engineered from HDCD decoder library by Christopher Key,
+ *  which was likely reverse engineered from Windows Media Player.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *    1. Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *    3. The names of its contributors may not be used to endorse or promote
+ *       products derived from this software without specific prior written
+ *       permission.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*
-  Original code reverse engineered from HDCD decoder library by Christopher Key,
-  which was likely reverse engineered from Windows Media Player.
+ * HDCD is High Definition Compatible Digital
+ * http://wiki.hydrogenaud.io/index.php?title=High_Definition_Compatible_Digital
+ *
+ * More information about HDCD-encoded audio CDs:
+ * http://www.audiomisc.co.uk/HFN/HDCD/Enigma.html
+ * http://www.audiomisc.co.uk/HFN/HDCD/Examined.html
  */
 
-/*
-  HDCD is High Definition Compatible Digital
-  More information about HDCD-encoded audio CDs:
-  http://www.audiomisc.co.uk/HFN/HDCD/Enigma.html
-  http://www.audiomisc.co.uk/HFN/HDCD/Examined.html
+/**
+ * @file
+ * HDCD decoding filter
  */
 
 #include "libavutil/opt.h"
@@ -820,34 +826,34 @@ typedef struct {
     uint64_t window;
     unsigned char readahead;
 
-    /* arg is set when a packet prefix is found.
-     * control is the active control code, where
-     * bit 0-3: target_gain, 4-bit (3.1) fixed-point value
-     * bit 4  : peak_extend
-     * bit 5  : transient_filter
-     * bit 6,7: always zero */
-    unsigned char arg, control;
-    unsigned sustain, sustain_reset; /* code detect timer */
+    /** arg is set when a packet prefix is found.
+     *  control is the active control code, where
+     *  bit 0-3: target_gain, 4-bit (3.1) fixed-point value
+     *  bit 4  : peak_extend
+     *  bit 5  : transient_filter
+     *  bit 6,7: always zero */
+    uint8_t arg, control;
+    unsigned int sustain, sustain_reset; /**< code detect timer */
 
-    int running_gain; /* 11-bit (3.8) fixed point, extended from target_gain */
+    int running_gain; /**< 11-bit (3.8) fixed point, extended from target_gain */
 
     /* counters */
-    int code_counterA;            /* 8-bit format packet */
-    int code_counterA_almost;     /* looks like an A code, but a bit expected to be 0 is 1 */
-    int code_counterB;            /* 16-bit format packet, 8-bit code, 8-bit XOR of code */
-    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
-    int code_counterC;            /* packet prefix was found, expect a code */
-    int code_counterC_unmatched;  /* told to look for a code, but didn't find one */
-    int count_peak_extend;        /* valid packets where peak_extend was enabled */
-    int count_transient_filter;   /* valid packets where filter was detected */
-    /* target_gain is a 4-bit (3.1) fixed-point value, always
-     * negative, but stored positive.
-     * The 16 possible values range from -7.5 to 0.0 dB in
-     * steps of 0.5, but no value below -6.0 dB should appear. */
-    int gain_counts[16]; /* for cursiosity, mostly */
+    int code_counterA;            /**< 8-bit format packet */
+    int code_counterA_almost;     /**< looks like an A code, but a bit expected to be 0 is 1 */
+    int code_counterB;            /**< 16-bit format packet, 8-bit code, 8-bit XOR of code */
+    int code_counterB_checkfails; /**< looks like a B code, but doesn't pass the XOR check */
+    int code_counterC;            /**< packet prefix was found, expect a code */
+    int code_counterC_unmatched;  /**< told to look for a code, but didn't find one */
+    int count_peak_extend;        /**< valid packets where peak_extend was enabled */
+    int count_transient_filter;   /**< valid packets where filter was detected */
+    /** target_gain is a 4-bit (3.1) fixed-point value, always
+     *  negative, but stored positive.
+     *  The 16 possible values range from -7.5 to 0.0 dB in
+     *  steps of 0.5, but no value below -6.0 dB should appear. */
+    int gain_counts[16];
     int max_gain;
-    /* occurences of code detect timer expiring without detecting
-     * a code. -1 for timer never set. */
+    /** occurences of code detect timer expiring without detecting
+     *  a code. -1 for timer never set. */
     int count_sustain_expired;
 } hdcd_state_t;
 
@@ -866,8 +872,8 @@ static const char * const pe_str[] = {
 #define HDCD_PROCESS_STEREO_DEFAULT 1
 #define HDCD_MAX_CHANNELS 2
 
-/* convert to float from 4-bit (3.1) fixed-point
- * the always-negative value is stored positive, so make it negative */
+/** convert to float from 4-bit (3.1) fixed-point
+ *  the always-negative value is stored positive, so make it negative */
 #define GAINTOFLOAT(g) (g) ? -(float)(g>>1) - ((g & 1) ? 0.5 : 0.0) : 0.0
 
 #define HDCD_ANA_OFF 0
@@ -894,38 +900,40 @@ typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[HDCD_MAX_CHANNELS];
 
-    /* use hdcd_*_stereo() functions to process both channels together.
-     * -af hdcd=process_stereo=0 for off
-     * -af hdcd=process_stereo=1 for on
-     * default is HDCD_PROCESS_STEREO_DEFAULT */
+    /* AVOption members */
+    /** use hdcd_*_stereo() functions to process both channels together.
+     *  -af hdcd=process_stereo=0 for off
+     *  -af hdcd=process_stereo=1 for on
+     *  default is HDCD_PROCESS_STEREO_DEFAULT */
     int process_stereo;
-    /* always extend peaks above -3dBFS even if PE isn't signaled
-     * -af hdcd=force_pe=0 for off
-     * -af hdcd=force_pe=1 for on
-     * default is off */
+    /** always extend peaks above -3dBFS even if PE isn't signaled
+     *  -af hdcd=force_pe=0 for off
+     *  -af hdcd=force_pe=1 for on
+     *  default is off */
     int force_pe;
 
-    /* analyze mode replaces the audio with a solid tone and adjusts
-     * the amplitude to signal some specific aspect of the decoding
-     * process. See docs or HDCD_ANA_* defines. */
+    /** analyze mode replaces the audio with a solid tone and adjusts
+     *  the amplitude to signal some specific aspect of the decoding
+     *  process. See docs or HDCD_ANA_* defines. */
     int analyze_mode;
-    int ana_snb;            /* used in tone generation */
+    int ana_snb;            /**< used in tone generation */
+    /* end AVOption members */
 
-    /* config_input() and config_output() scan links for any resampling
-     * or format changes. If found, warnings are issued and bad_config
-     * is set. */
+    /** config_input() and config_output() scan links for any resampling
+     *  or format changes. If found, warnings are issued and bad_config
+     *  is set. */
     int bad_config;
 
-    AVFilterContext *fctx; /* filter context for logging errors */
-    int sample_count;      /* used in error logging */
-    int val_target_gain;   /* last matching target_gain in both channels */
+    AVFilterContext *fctx; /**< filter context for logging errors */
+    int sample_count;      /**< used in error logging */
+    int val_target_gain;   /**< last matching target_gain in both channels */
 
     /* User information/stats */
-    int hdcd_detected;
-    int det_errors;            /* detectable errors */
-    hdcd_pe_t peak_extend;
-    int uses_transient_filter; /* detected, but not implemented */
-    float max_gain_adjustment; /* in dB, expected in the range -6.0 to 0.0 */
+    int hdcd_detected;         /**< Valid HDCD coding was detected */
+    int det_errors;            /**< detectable errors */
+    hdcd_pe_t peak_extend;     /**< peak exted used */
+    int uses_transient_filter; /**< transient filter flag detected */
+    float max_gain_adjustment; /**< in dB, expected in the range -7.5 to 0.0 */
 } HDCDContext;
 
 #define OFFSET(x) offsetof(HDCDContext, x)
@@ -976,7 +984,7 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->count_sustain_expired = -1;
 }
 
-/* update the user info/counters */
+/** update the user info/counters */
 static void hdcd_update_info(hdcd_state_t *state)
 {
     if (state->control & 16) state->count_peak_extend++;
@@ -1242,7 +1250,7 @@ static int hdcd_scan_stereo(HDCDContext *ctx, const int32_t *samples, int max)
     return result;
 }
 
-/* encode a value in the given sample by adjusting the amplitude */
+/** encode a value in the given sample by adjusting the amplitude */
 static int32_t hdcd_analyze_gen(int32_t sample, unsigned int v, unsigned int maxv)
 {
     float sflt = sample, vv = v;
@@ -1252,8 +1260,8 @@ static int32_t hdcd_analyze_gen(int32_t sample, unsigned int v, unsigned int max
     return (int32_t)sflt;
 }
 
-/* behaves like hdcd_envelope(), but encodes processing information in
- * a way that is audible (and visible in an audio editor) to aid analysis. */
+/** behaves like hdcd_envelope(), but encodes processing information in
+ *  a way that is audible (and visible in an audio editor) to aid analysis. */
 static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int target_gain, int extend, int mode, int cdt_active, int tg_mismatch)
 {
     static const int maxg = 0xf << 7;
@@ -1313,6 +1321,7 @@ static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int t
     return gain;
 }
 
+/** apply HDCD decoding parameters to a series of samples */
 static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int target_gain, int extend)
 {
     int i;
@@ -1372,7 +1381,7 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     return gain;
 }
 
-/* extract fields from control code */
+/** extract fields from control code */
 static void hdcd_control(HDCDContext *ctx, hdcd_state_t *state, int *peak_extend, int *target_gain)
 {
     *peak_extend = (ctx->force_pe || state->control & 16);
@@ -1500,7 +1509,7 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
     ctx->state[1].running_gain = gain[1];
 }
 
-/* tone generator: sample_number, frequency, sample_rate, amplitude */
+/** tone generator: sample_number, frequency, sample_rate, amplitude */
 #define TONEGEN16(sn, f, sr, a) (int16_t)(sin((6.28318530718 * (sn) * (f)) /(sr)) * (a) * 0x7fff)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
