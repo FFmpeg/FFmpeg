@@ -2656,6 +2656,12 @@ The filter accepts the following options:
 Process the stereo channels together. If target_gain does not match between
 channels, consider it invalid and use the last valid target_gain.
 
+@item disable_autoconvert
+Disable any automatic format conversion or resampling in the filter graph.
+
+@item cdt_ms
+Set the code detect timer period in ms.
+
 @item force_pe
 Always extend peaks above -3dBFS even if PE isn't signaled.
 
@@ -2664,7 +2670,7 @@ Replace audio with a solid tone and adjust the amplitude to signal some
 specific aspect of the decoding process. The output file can be loaded in
 an audio editor alongside the original to aid analysis.
 
-@code{analyze_mode=pe:force_pe=1} can be used to see all samples above the PE level.
+@code{analyze_mode=pe:force_pe=true} can be used to see all samples above the PE level.
 
 Modes are:
 @table @samp
