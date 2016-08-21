@@ -49,6 +49,7 @@ typedef struct ShowVolumeContext {
     int draw_text;
     int draw_volume;
     double *values;
+    uint32_t *color_lut;
 } ShowVolumeContext;
 
 #define OFFSET(x) offsetof(ShowVolumeContext, x)
@@ -61,7 +62,7 @@ static const AVOption showvolume_options[] = {
     { "w", "set channel width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=400}, 80, 8192, FLAGS },
     { "h", "set channel height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=20}, 1, 900, FLAGS },
     { "f", "set fade",           OFFSET(f), AV_OPT_TYPE_DOUBLE, {.dbl=0.95}, 0.001, 1, FLAGS },
-    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="PEAK*255+floor((1-PEAK)*255)*256"}, 0, 0, FLAGS },
+    { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="PEAK*255+floor((1-PEAK)*255)*256+0xff000000"}, 0, 0, FLAGS },
     { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "v", "display volume value", OFFSET(draw_volume), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "o", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "orientation" },
@@ -130,6 +131,11 @@ static int config_input(AVFilterLink *inlink)
     s->values = av_calloc(inlink->channels * VAR_VARS_NB, sizeof(double));
     if (!s->values)
         return AVERROR(ENOMEM);
+
+    s->color_lut = av_calloc(s->w, sizeof(*s->color_lut) * inlink->channels);
+    if (!s->color_lut)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -137,6 +143,7 @@ static int config_output(AVFilterLink *outlink)
 {
     ShowVolumeContext *s = outlink->src->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    int ch;
 
     if (s->orientation) {
         outlink->h = s->w;
@@ -148,6 +155,19 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->frame_rate = s->frame_rate;
+
+    for (ch = 0; ch < inlink->channels; ch++) {
+        int i;
+
+        for (i = 0; i < s->w; i++) {
+            float max = i / (float)(s->w - 1);
+
+            s->values[ch * VAR_VARS_NB + VAR_PEAK] = max;
+            s->values[ch * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
+            s->values[ch * VAR_VARS_NB + VAR_CHANNEL] = ch;
+            s->color_lut[ch * s->w + i] = av_expr_eval(s->c_expr, &s->values[ch * VAR_VARS_NB], NULL);
+        }
+    }
 
     return 0;
 }
@@ -222,28 +242,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     if (s->orientation) {
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
+            uint32_t *lut = s->color_lut + s->w * c;
             float max = 0;
-            uint32_t color;
 
             for (i = 0; i < insamples->nb_samples; i++)
                 max = FFMAX(max, src[i]);
 
-            s->values[c * VAR_VARS_NB + VAR_PEAK] = max;
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
-            s->values[c * VAR_VARS_NB + VAR_CHANNEL] = c;
-            color = av_expr_eval(s->c_expr, &s->values[c * VAR_VARS_NB], NULL);
 
-            for (j = outlink->h - outlink->h * max; j < outlink->h; j++) {
+            for (j = outlink->h - outlink->h * max; j < s->w; j++) {
                 uint8_t *dst = s->out->data[0] + j * s->out->linesize[0] + c * (s->b + s->h) * 4;
                 for (k = 0; k < s->h; k++) {
-                    AV_WN32A(&dst[k * 4], color);
+                    AV_WN32A(&dst[k * 4], lut[s->w - j - 1]);
                     if (j & step)
                         j += step;
                 }
             }
 
-            if (outlink->h > 40 && s->draw_text) {
+            if (s->h >= 8 && s->draw_text) {
                 const char *channel_name = av_get_channel_name(av_channel_layout_extract_channel(insamples->channel_layout, c));
                 if (!channel_name)
                     continue;
@@ -253,23 +270,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     } else {
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
+            uint32_t *lut = s->color_lut + s->w * c;
             float max = 0;
-            uint32_t color;
 
             for (i = 0; i < insamples->nb_samples; i++)
                 max = FFMAX(max, src[i]);
 
-            s->values[c * VAR_VARS_NB + VAR_PEAK] = max;
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
-            s->values[c * VAR_VARS_NB + VAR_CHANNEL] = c;
-            color = av_expr_eval(s->c_expr, &s->values[c * VAR_VARS_NB], NULL);
 
             for (j = 0; j < s->h; j++) {
                 uint8_t *dst = s->out->data[0] + (c * s->h + c * s->b + j) * s->out->linesize[0];
 
                 for (k = 0; k < s->w * max; k++) {
-                    AV_WN32A(dst + k * 4, color);
+                    AV_WN32A(dst + k * 4, lut[k]);
                     if (k & step)
                         k += step;
                 }
@@ -315,6 +329,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->out);
     av_expr_free(s->c_expr);
     av_freep(&s->values);
+    av_freep(&s->color_lut);
 }
 
 static const AVFilterPad showvolume_inputs[] = {
