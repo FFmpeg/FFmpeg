@@ -168,7 +168,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->nal_unit_type == NAL_SEI_PREFIX) {
+    if (s->nal_unit_type == HEVC_NAL_SEI_PREFIX) {
         return decode_nal_sei_prefix(s, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         return decode_nal_sei_suffix(s, payload_type, payload_size);

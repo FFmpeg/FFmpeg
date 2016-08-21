@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "thread.h"
+#include "hevc.h"
 #include "hevcdec.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
@@ -477,9 +478,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == NAL_BLA_W_LP   ||
-        s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP)
+    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
+        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
+        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;

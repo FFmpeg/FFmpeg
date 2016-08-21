@@ -34,6 +34,7 @@
 #include "cabac.h"
 #include "get_bits.h"
 #include "h2645_parse.h"
+#include "hevc.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -41,16 +42,6 @@
 
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
-
-/**
- * 7.4.2.1
- */
-#define MAX_SUB_LAYERS 7
-#define MAX_VPS_COUNT 16
-#define MAX_SPS_COUNT 32
-#define MAX_PPS_COUNT 256
-#define MAX_SHORT_TERM_RPS_COUNT 64
-#define MAX_CU_SIZE 128
 
 //TODO: check if this is really the maximum
 #define MAX_TRANSFORM_DEPTH 5
@@ -80,44 +71,13 @@
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 
-#define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
-#define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
-                   s->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IDR(s) (s->nal_unit_type == HEVC_NAL_IDR_W_RADL || s->nal_unit_type == HEVC_NAL_IDR_N_LP)
+#define IS_BLA(s) (s->nal_unit_type == HEVC_NAL_BLA_W_RADL || s->nal_unit_type == HEVC_NAL_BLA_W_LP || \
+                   s->nal_unit_type == HEVC_NAL_BLA_N_LP)
 #define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
 #define FFUDIV(a,b) (((a) > 0 ? (a) : (a) - (b) + 1) / (b))
 #define FFUMOD(a,b) ((a) - (b) * FFUDIV(a,b))
-
-/**
- * Table 7-3: NAL unit type codes
- */
-enum NALUnitType {
-    NAL_TRAIL_N    = 0,
-    NAL_TRAIL_R    = 1,
-    NAL_TSA_N      = 2,
-    NAL_TSA_R      = 3,
-    NAL_STSA_N     = 4,
-    NAL_STSA_R     = 5,
-    NAL_RADL_N     = 6,
-    NAL_RADL_R     = 7,
-    NAL_RASL_N     = 8,
-    NAL_RASL_R     = 9,
-    NAL_BLA_W_LP   = 16,
-    NAL_BLA_W_RADL = 17,
-    NAL_BLA_N_LP   = 18,
-    NAL_IDR_W_RADL = 19,
-    NAL_IDR_N_LP   = 20,
-    NAL_CRA_NUT    = 21,
-    NAL_VPS        = 32,
-    NAL_SPS        = 33,
-    NAL_PPS        = 34,
-    NAL_AUD        = 35,
-    NAL_EOS_NUT    = 36,
-    NAL_EOB_NUT    = 37,
-    NAL_FD_NUT     = 38,
-    NAL_SEI_PREFIX = 39,
-    NAL_SEI_SUFFIX = 40,
-};
 
 enum RPSType {
     ST_CURR_BEF = 0,
@@ -349,10 +309,10 @@ typedef struct PTLCommon {
 
 typedef struct PTL {
     PTLCommon general_ptl;
-    PTLCommon sub_layer_ptl[MAX_SUB_LAYERS];
+    PTLCommon sub_layer_ptl[HEVC_MAX_SUB_LAYERS];
 
-    uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
-    uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
+    uint8_t sub_layer_profile_present_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_level_present_flag[HEVC_MAX_SUB_LAYERS];
 } PTL;
 
 typedef struct HEVCVPS {
@@ -362,9 +322,9 @@ typedef struct HEVCVPS {
 
     PTL ptl;
     int vps_sub_layer_ordering_info_present_flag;
-    unsigned int vps_max_dec_pic_buffering[MAX_SUB_LAYERS];
-    unsigned int vps_num_reorder_pics[MAX_SUB_LAYERS];
-    unsigned int vps_max_latency_increase[MAX_SUB_LAYERS];
+    unsigned int vps_max_dec_pic_buffering[HEVC_MAX_SUB_LAYERS];
+    unsigned int vps_num_reorder_pics[HEVC_MAX_SUB_LAYERS];
+    unsigned int vps_max_latency_increase[HEVC_MAX_SUB_LAYERS];
     int vps_max_layer_id;
     int vps_num_layer_sets; ///< vps_num_layer_sets_minus1 + 1
     uint8_t vps_timing_info_present_flag;
@@ -405,7 +365,7 @@ typedef struct HEVCSPS {
         int max_dec_pic_buffering;
         int num_reorder_pics;
         int max_latency_increase;
-    } temporal_layer[MAX_SUB_LAYERS];
+    } temporal_layer[HEVC_MAX_SUB_LAYERS];
 
     VUI vui;
     PTL ptl;
@@ -414,7 +374,7 @@ typedef struct HEVCSPS {
     ScalingList scaling_list;
 
     unsigned int nb_st_rps;
-    ShortTermRPS st_rps[MAX_SHORT_TERM_RPS_COUNT];
+    ShortTermRPS st_rps[HEVC_MAX_SHORT_TERM_RPS_COUNT];
 
     uint8_t amp_enabled_flag;
     uint8_t sao_enabled;
@@ -528,9 +488,9 @@ typedef struct HEVCPPS {
 } HEVCPPS;
 
 typedef struct HEVCParamSets {
-    AVBufferRef *vps_list[MAX_VPS_COUNT];
-    AVBufferRef *sps_list[MAX_SPS_COUNT];
-    AVBufferRef *pps_list[MAX_PPS_COUNT];
+    AVBufferRef *vps_list[HEVC_MAX_VPS_COUNT];
+    AVBufferRef *sps_list[HEVC_MAX_SPS_COUNT];
+    AVBufferRef *pps_list[HEVC_MAX_PPS_COUNT];
 
     /* currently active parameter sets */
     const HEVCVPS *vps;
@@ -783,7 +743,7 @@ typedef struct HEVCContext {
     SliceHeader sh;
     SAOParams *sao;
     DBParams *deblock;
-    enum NALUnitType nal_unit_type;
+    enum HEVCNALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *ref;
     HEVCFrame DPB[32];
@@ -832,7 +792,7 @@ typedef struct HEVCContext {
 
     H2645Packet pkt;
     // type of the first VCL NAL of the current frame
-    enum NALUnitType first_nal_type;
+    enum HEVCNALUnitType first_nal_type;
 
     // for checking the frame checksums
     struct AVMD5 *md5_ctx;

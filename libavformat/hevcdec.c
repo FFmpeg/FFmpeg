@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/hevcdec.h"
+#include "libavcodec/hevc.h"
 
 #include "avformat.h"
 #include "rawdec.h"
@@ -43,15 +43,15 @@ static int hevc_probe(AVProbeData *p)
                 return 0;
 
             switch (type) {
-            case NAL_VPS:        vps++;  break;
-            case NAL_SPS:        sps++;  break;
-            case NAL_PPS:        pps++;  break;
-            case NAL_BLA_N_LP:
-            case NAL_BLA_W_LP:
-            case NAL_BLA_W_RADL:
-            case NAL_CRA_NUT:
-            case NAL_IDR_N_LP:
-            case NAL_IDR_W_RADL: irap++; break;
+            case HEVC_NAL_VPS:        vps++;  break;
+            case HEVC_NAL_SPS:        sps++;  break;
+            case HEVC_NAL_PPS:        pps++;  break;
+            case HEVC_NAL_BLA_N_LP:
+            case HEVC_NAL_BLA_W_LP:
+            case HEVC_NAL_BLA_W_RADL:
+            case HEVC_NAL_CRA_NUT:
+            case HEVC_NAL_IDR_N_LP:
+            case HEVC_NAL_IDR_W_RADL: irap++; break;
             }
         }
     }
