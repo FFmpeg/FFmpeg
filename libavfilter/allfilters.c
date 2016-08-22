@@ -224,6 +224,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(LUT3D,          lut3d,          vf);
     REGISTER_FILTER(LUTRGB,         lutrgb,         vf);
     REGISTER_FILTER(LUTYUV,         lutyuv,         vf);
+    REGISTER_FILTER(MASKEDCLAMP,    maskedclamp,    vf);
     REGISTER_FILTER(MASKEDMERGE,    maskedmerge,    vf);
     REGISTER_FILTER(MCDEINT,        mcdeint,        vf);
     REGISTER_FILTER(MERGEPLANES,    mergeplanes,    vf);

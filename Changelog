@@ -18,6 +18,7 @@ version <next>:
 - bitplanenoise video filter
 - floating point support in als decoder
 - fifo muxer
+- maskedclamp filter
 
 
 version 3.1:
