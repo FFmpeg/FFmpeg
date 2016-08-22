@@ -2652,12 +2652,12 @@ ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
 The filter accepts the following options:
 
 @table @option
+@item disable_autoconvert
+Disable any automatic format conversion or resampling in the filter graph.
+
 @item process_stereo
 Process the stereo channels together. If target_gain does not match between
 channels, consider it invalid and use the last valid target_gain.
-
-@item disable_autoconvert
-Disable any automatic format conversion or resampling in the filter graph.
 
 @item cdt_ms
 Set the code detect timer period in ms.
