@@ -96,7 +96,8 @@ fate-vsynth%-dnxhd-edge3-hr:  ENCOPTS    = -s 257x121 -profile:v dnxhr_hq \
 fate-vsynth%-dnxhd-edge3-hr:  DECOPTS    = -sws_flags area+accurate_rnd+bitexact
 fate-vsynth%-dnxhd-edge3-hr:  FMT        = dnxhd
 
-FATE_VCODEC-$(call ENCDEC, DNXHD, MOV)  += dnxhd-1080i dnxhd-1080i-10bit dnxhd-1080i-colr
+FATE_VCODEC-$(call ENCDEC, DNXHD, MOV)  += dnxhd-1080i dnxhd-1080i-10bit dnxhd-1080i-colr \
+                                           dnxhd-hr-lb-mov dnxhd-hr-sq-mov dnxhd-hr-hq-mov
 fate-vsynth%-dnxhd-1080i:        ENCOPTS = -s hd1080 -b 120M -flags +ildct \
                                            -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-1080i:        FMT     = mov
@@ -110,6 +111,21 @@ fate-vsynth%-dnxhd-1080i-colr:   ENCOPTS = -s hd1080 -b 120M -flags +ildct -movf
                                            -pix_fmt yuv422p -frames 5 -qmax 8
 fate-vsynth%-dnxhd-1080i-colr:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
 fate-vsynth%-dnxhd-1080i-colr:   FMT     = mov
+
+fate-vsynth%-dnxhd-hr-lb-mov:   ENCOPTS = -s uhd2160 -profile:v dnxhr_lb \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-hr-lb-mov:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-hr-lb-mov:   FMT     = mov
+
+fate-vsynth%-dnxhd-hr-sq-mov:   ENCOPTS = -s 2kscope -profile:v dnxhr_sq \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-hr-sq-mov:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-hr-sq-mov:   FMT     = mov
+
+fate-vsynth%-dnxhd-hr-hq-mov:   ENCOPTS = -s 2kflat -profile:v dnxhr_hq \
+                                           -pix_fmt yuv422p -frames 5
+fate-vsynth%-dnxhd-hr-hq-mov:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
+fate-vsynth%-dnxhd-hr-hq-mov:   FMT     = mov
 
 FATE_VCODEC-$(call ENCDEC, DVVIDEO, DV) += dv dv-411 dv-50
 fate-vsynth%-dv:                 CODEC   = dvvideo
