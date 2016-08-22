@@ -1530,14 +1530,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     const int16_t *in_data;
     int32_t *out_data;
-    int n, c;
+    int n, c, result;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    av_frame_copy_props(out, in);
+    result = av_frame_copy_props(out, in);
+    if (result) {
+        av_frame_free(&in);
+        return result;
+    }
     out->format = outlink->format;
 
     in_data  = (int16_t*)in->data[0];
