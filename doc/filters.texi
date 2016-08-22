@@ -8766,6 +8766,25 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section hysteresis
+
+Grow first stream into second stream by connecting components.
+This allows to build more robust edge masks.
+
+This filter accepts the following options:
+
+@table @option
+@item planes
+Set which planes will be processed as bitmap, unprocessed planes will be
+copied from first stream.
+By default value 0xf, all planes will be processed.
+
+@item threshold
+Set threshold which is used in filtering. If pixel component value is higher than
+this value filter algorithm for connecting components is activated.
+By default value is 0.
+@end table
+
 @section idet
 
 Detect video interlacing type.

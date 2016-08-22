@@ -19,6 +19,7 @@ version <next>:
 - floating point support in als decoder
 - fifo muxer
 - maskedclamp filter
+- hysteresis filter
 
 
 version 3.1:

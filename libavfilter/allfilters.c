@@ -212,6 +212,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(HWDOWNLOAD,     hwdownload,     vf);
     REGISTER_FILTER(HWUPLOAD,       hwupload,       vf);
     REGISTER_FILTER(HWUPLOAD_CUDA,  hwupload_cuda,  vf);
+    REGISTER_FILTER(HYSTERESIS,     hysteresis,     vf);
     REGISTER_FILTER(IDET,           idet,           vf);
     REGISTER_FILTER(IL,             il,             vf);
     REGISTER_FILTER(INFLATE,        inflate,        vf);
