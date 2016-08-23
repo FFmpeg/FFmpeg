@@ -493,6 +493,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ms_mode = 0, is_mode = 0, tns_mode = 0, pred_mode = 0;
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
+    int k;
 
     if (s->last_frame == 2)
         return 0;
@@ -573,16 +574,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
             apply_window_and_mdct(s, &cpe->ch[ch], overlap);
 
-            if (isnan(cpe->ch[ch].coeffs[    0]) || isinf(cpe->ch[ch].coeffs[    0]) ||
-                isnan(cpe->ch[ch].coeffs[  128]) || isinf(cpe->ch[ch].coeffs[  128]) ||
-                isnan(cpe->ch[ch].coeffs[2*128]) || isinf(cpe->ch[ch].coeffs[2*128]) ||
-                isnan(cpe->ch[ch].coeffs[3*128]) || isinf(cpe->ch[ch].coeffs[3*128]) ||
-                isnan(cpe->ch[ch].coeffs[4*128]) || isinf(cpe->ch[ch].coeffs[4*128]) ||
-                isnan(cpe->ch[ch].coeffs[5*128]) || isinf(cpe->ch[ch].coeffs[5*128]) ||
-                isnan(cpe->ch[ch].coeffs[6*128]) || isinf(cpe->ch[ch].coeffs[6*128]) ||
-                isnan(cpe->ch[ch].coeffs[7*128]) || isinf(cpe->ch[ch].coeffs[7*128])) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
-                return AVERROR(EINVAL);
+            for (k = 0; k < 1024; k++) {
+                if (!(fabs(cpe->ch[ch].coeffs[k]) < 1E16)) { // Ensure headroom for energy calculation
+                    av_log(avctx, AV_LOG_ERROR, "Input contains (near) NaN/+-Inf\n");
+                    return AVERROR(EINVAL);
+                }
             }
             avoid_clipping(s, &cpe->ch[ch]);
         }
