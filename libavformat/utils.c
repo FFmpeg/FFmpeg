@@ -612,6 +612,10 @@ static void force_codec_ids(AVFormatContext *s, AVStream *st)
         if (s->subtitle_codec_id)
             st->codecpar->codec_id = s->subtitle_codec_id;
         break;
+    case AVMEDIA_TYPE_DATA:
+        if (s->data_codec_id)
+            st->codec->codec_id = s->data_codec_id;
+        break;
     }
 }
 
@@ -4601,7 +4605,8 @@ int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
             return !!av_codec_get_tag2(ofmt->codec_tag, codec_id, &codec_tag);
         else if (codec_id == ofmt->video_codec ||
                  codec_id == ofmt->audio_codec ||
-                 codec_id == ofmt->subtitle_codec)
+                 codec_id == ofmt->subtitle_codec ||
+                 codec_id == ofmt->data_codec)
             return 1;
     }
     return AVERROR_PATCHWELCOME;
