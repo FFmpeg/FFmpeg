@@ -622,8 +622,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             }
 
             for (k = 0; k < 1024; k++) {
-                if (!isfinite(cpe->ch[ch].coeffs[k])) {
-                    av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
+                if (!(fabs(cpe->ch[ch].coeffs[k]) < 1E16)) { // Ensure headroom for energy calculation
+                    av_log(avctx, AV_LOG_ERROR, "Input contains (near) NaN/+-Inf\n");
                     return AVERROR(EINVAL);
                 }
             }
