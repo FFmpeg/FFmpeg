@@ -104,9 +104,6 @@ SECTION .text
 
 INIT_MMX mmxext
 cglobal vp3_v_loop_filter, 3, 4
-%if ARCH_X86_64
-    movsxd        r1, r1d
-%endif
     mov           r3, r1
     neg           r1
     movq          m6, [r0+r1*2]
@@ -121,9 +118,6 @@ cglobal vp3_v_loop_filter, 3, 4
     RET
 
 cglobal vp3_h_loop_filter, 3, 4
-%if ARCH_X86_64
-    movsxd        r1, r1d
-%endif
     lea           r3, [r1*3]
 
     movd          m6, [r0     -2]
@@ -525,7 +519,6 @@ cglobal vp3_h_loop_filter, 3, 4
 cglobal vp3_idct_put, 3, 4, 9
     VP3_IDCT      r2
 
-    movsxdifnidn  r1, r1d
     mova          m4, [pb_80]
     lea           r3, [r1*3]
 %assign %%i 0
@@ -582,7 +575,6 @@ cglobal vp3_idct_put, 3, 4, 9
 cglobal vp3_idct_add, 3, 4, 9
     VP3_IDCT      r2
 
-    movsxdifnidn  r1, r1d
     lea           r3, [r1*3]
     pxor          m4, m4
 %if mmsize == 16
@@ -689,9 +681,6 @@ vp3_idct_funcs
 
 INIT_MMX mmxext
 cglobal vp3_idct_dc_add, 3, 4
-%if ARCH_X86_64
-    movsxd        r1, r1d
-%endif
     movsx         r3, word [r2]
     mov    word [r2], 0
     lea           r2, [r1*3]

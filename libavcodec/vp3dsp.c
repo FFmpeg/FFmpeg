@@ -44,7 +44,7 @@
 
 #define M(a, b) (((a) * (b)) >> 16)
 
-static av_always_inline void idct(uint8_t *dst, int stride,
+static av_always_inline void idct(uint8_t *dst, ptrdiff_t stride,
                                   int16_t *input, int type)
 {
     int16_t *ip = input;
@@ -195,21 +195,21 @@ static av_always_inline void idct(uint8_t *dst, int stride,
     }
 }
 
-static void vp3_idct_put_c(uint8_t *dest /* align 8 */, int line_size,
+static void vp3_idct_put_c(uint8_t *dest /* align 8 */, ptrdiff_t stride,
                            int16_t *block /* align 16 */)
 {
-    idct(dest, line_size, block, 1);
+    idct(dest, stride, block, 1);
     memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_add_c(uint8_t *dest /* align 8 */, int line_size,
+static void vp3_idct_add_c(uint8_t *dest /* align 8 */, ptrdiff_t stride,
                            int16_t *block /* align 16 */)
 {
-    idct(dest, line_size, block, 2);
+    idct(dest, stride, block, 2);
     memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_dc_add_c(uint8_t *dest /* align 8 */, int line_size,
+static void vp3_idct_dc_add_c(uint8_t *dest /* align 8 */, ptrdiff_t stride,
                               int16_t *block /* align 16 */)
 {
     int i, dc = (block[0] + 15) >> 5;
@@ -223,17 +223,17 @@ static void vp3_idct_dc_add_c(uint8_t *dest /* align 8 */, int line_size,
         dest[5] = av_clip_uint8(dest[5] + dc);
         dest[6] = av_clip_uint8(dest[6] + dc);
         dest[7] = av_clip_uint8(dest[7] + dc);
-        dest   += line_size;
+        dest   += stride;
     }
     block[0] = 0;
 }
 
-static void vp3_v_loop_filter_c(uint8_t *first_pixel, int stride,
+static void vp3_v_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
                                 int *bounding_values)
 {
     unsigned char *end;
     int filter_value;
-    const int nstride = -stride;
+    const ptrdiff_t nstride = -stride;
 
     for (end = first_pixel + 8; first_pixel < end; first_pixel++) {
         filter_value = (first_pixel[2 * nstride] - first_pixel[stride]) +
@@ -245,7 +245,7 @@ static void vp3_v_loop_filter_c(uint8_t *first_pixel, int stride,
     }
 }
 
-static void vp3_h_loop_filter_c(uint8_t *first_pixel, int stride,
+static void vp3_h_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
                                 int *bounding_values)
 {
     unsigned char *end;
