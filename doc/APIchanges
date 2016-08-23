@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-08-24 - xxxxxxx - lavu 55.21.0 - imgutils.h
+  Add av_image_copy_uc_from(), a version of av_image_copy() for copying
+  from GPU mapped memory.
+
 2016-xx-xx - xxxxxxx - lavc 59.26.0 - vaapi.h
   Deprecate struct vaapi_context and the vaapi.h installed header.
   Callers should set AVCodecContext.hw_frames_ctx instead.
