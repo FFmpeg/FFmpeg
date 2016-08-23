@@ -9434,6 +9434,134 @@ format=rgb24,mergeplanes=0x000102:yuv444p
 @end example
 @end itemize
 
+@section mestimate
+
+Estimate and export motion vectors using block matching algorithms.
+Motion vectors are stored in frame side data to be used by other filters.
+
+This filter accepts the following options:
+@table @option
+@item method
+Specify the motion estimation method. Accepts one of the following values:
+
+@table @samp
+@item esa
+Exhaustive search algorithm.
+@item tss
+Three step search algorithm.
+@item tdls
+Two dimensional logarithmic search algorithm.
+@item ntss
+New three step search algorithm.
+@item fss
+Four step search algorithm.
+@item ds
+Diamond search algorithm.
+@item hexbs
+Hexagon-based search algorithm.
+@item epzs
+Enhanced predictive zonal search algorithm.
+@item umh
+Uneven multi-hexagon search algorithm.
+@end table
+Default value is @samp{esa}.
+
+@item mb_size
+Macroblock size. Default @code{16}.
+
+@item search_param
+Search parameter. Default @code{7}.
+@end table
+
+@section minterpolate
+
+Convert the video to specified frame rate using motion interpolation.
+
+This filter accepts the following options:
+@table @option
+@item fps
+Specify the output frame rate. This can be rational e.g. @code{60000/1001}. Frames are dropped if @var{fps} is lower than source fps. Default @code{60}.
+
+@item mi_mode
+Motion interpolation mode. Following values are accepted:
+@table @samp
+@item dup
+Duplicate previous or next frame for interpolating new ones.
+@item blend
+Blend source frames. Interpolated frame is mean of previous and next frames.
+@item mci
+Motion compensated interpolation. Following options are effective when this mode is selected:
+
+@table @samp
+@item mc_mode
+Motion compensation mode. Following values are accepted:
+@table @samp
+@item obmc
+Overlapped block motion compensation.
+@item aobmc
+Adaptive overlapped block motion compensation. Window weighting coefficients are controlled adaptively according to the reliabilities of the neighboring motion vectors to reduce oversmoothing.
+@end table
+Default mode is @samp{obmc}.
+
+@item me_mode
+Motion estimation mode. Following values are accepted:
+@table @samp
+@item bidir
+Bidirectional motion estimation. Motion vectors are estimated for each source frame in both forward and backward directions.
+@item bilat
+Bilateral motion estimation. Motion vectors are estimated directly for interpolated frame.
+@end table
+Default mode is @samp{bilat}.
+
+@item me
+The algorithm to be used for motion estimation. Following values are accepted:
+@table @samp
+@item esa
+Exhaustive search algorithm.
+@item tss
+Three step search algorithm.
+@item tdls
+Two dimensional logarithmic search algorithm.
+@item ntss
+New three step search algorithm.
+@item fss
+Four step search algorithm.
+@item ds
+Diamond search algorithm.
+@item hexbs
+Hexagon-based search algorithm.
+@item epzs
+Enhanced predictive zonal search algorithm.
+@item umh
+Uneven multi-hexagon search algorithm.
+@end table
+Default algorithm is @samp{epzs}.
+
+@item mb_size
+Macroblock size. Default @code{16}.
+
+@item search_param
+Motion estimation search parameter. Default @code{32}.
+
+@item vsmbc
+Enable variable-size block motion compensation. Motion estimation is applied with smaller block sizes at object boundaries in order to make the them less blur. Default is @code{0} (disabled).
+@end table
+@end table
+
+@item scd
+Scene change detection method. Scene change leads motion vectors to be in random direction. Scene change detection replace interpolated frames by duplicate ones. May not be needed for other modes. Following values are accepted:
+@table @samp
+@item none
+Disable scene change detection.
+@item fdiff
+Frame difference. Corresponding pixel values are compared and if it statisfies @var{scd_threshold} scene change is detected.
+@end table
+Default method is @samp{fdiff}.
+
+@item scd_threshold
+Scene change detection threshold. Default is @code{5.0}.
+@end table
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
