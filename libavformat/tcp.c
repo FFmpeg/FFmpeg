@@ -122,6 +122,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     cur_ai = ai;
 
  restart:
+    // workaround for IOS9 getaddrinfo in IPv6 only network use hardcode IPv4 address can not resolve port number.
+    if (cur_ai->ai_family == AF_INET6){
+        struct sockaddr_in6 * sockaddr_v6 = (struct sockaddr_in6 *)cur_ai->ai_addr;
+        if (!sockaddr_v6->sin6_port){
+            sockaddr_v6->sin6_port = htons(port);
+        }
+    }
+
     fd = ff_socket(cur_ai->ai_family,
                    cur_ai->ai_socktype,
                    cur_ai->ai_protocol);
