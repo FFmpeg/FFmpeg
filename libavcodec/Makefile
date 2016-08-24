@@ -771,7 +771,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 # hardware accelerators
 OBJS-$(CONFIG_D3D11VA)                    += dxva2.o
 OBJS-$(CONFIG_DXVA2)                      += dxva2.o
-OBJS-$(CONFIG_VAAPI)                      += vaapi.o vaapi_decode.o
+OBJS-$(CONFIG_VAAPI)                      += vaapi_decode.o
 OBJS-$(CONFIG_VDA)                        += vda.o videotoolbox.o
 OBJS-$(CONFIG_VIDEOTOOLBOX)               += videotoolbox.o
 OBJS-$(CONFIG_VDPAU)                      += vdpau.o
@@ -1003,8 +1003,7 @@ SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsv_internal.h
 SKIPHEADERS-$(CONFIG_QSVDEC)           += qsvdec.h
 SKIPHEADERS-$(CONFIG_QSVENC)           += qsvenc.h
 SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
-SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_decode.h vaapi_encode.h \
-                                          vaapi_internal.h
+SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_decode.h vaapi_encode.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h vda_vt_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vda_vt_internal.h
