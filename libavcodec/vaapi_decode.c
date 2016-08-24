@@ -425,6 +425,7 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
     ctx->va_config  = VA_INVALID_ID;
     ctx->va_context = VA_INVALID_ID;
 
+#if FF_API_VAAPI_CONTEXT
     if (avctx->hwaccel_context) {
         av_log(avctx, AV_LOG_WARNING, "Using deprecated struct "
                "vaapi_context in decode.\n");
@@ -451,7 +452,9 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
         ctx->hwctx->driver_quirks =
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS;
 
-    } else if (avctx->hw_frames_ctx) {
+    } else
+#endif
+    if (avctx->hw_frames_ctx) {
         // This structure has a shorter lifetime than the enclosing
         // AVCodecContext, so we inherit the references from there
         // and do not need to make separate ones.
@@ -469,6 +472,7 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
         goto fail;
     }
 
+#if FF_API_VAAPI_CONTEXT
     if (ctx->have_old_context) {
         ctx->va_config  = ctx->old_context->config_id;
         ctx->va_context = ctx->old_context->context_id;
@@ -476,26 +480,30 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "Using user-supplied decoder "
                "context: %#x/%#x.\n", ctx->va_config, ctx->va_context);
     } else {
-        err = vaapi_decode_make_config(avctx);
-        if (err)
-            goto fail;
+#endif
 
-        vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
-                              avctx->coded_width, avctx->coded_height,
-                              VA_PROGRESSIVE,
-                              ctx->hwfc->surface_ids,
-                              ctx->hwfc->nb_surfaces,
-                              &ctx->va_context);
-        if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to create decode "
-                   "context: %d (%s).\n", vas, vaErrorStr(vas));
-            err = AVERROR(EIO);
-            goto fail;
-        }
+    err = vaapi_decode_make_config(avctx);
+    if (err)
+        goto fail;
 
-        av_log(avctx, AV_LOG_DEBUG, "Decode context initialised: "
-               "%#x/%#x.\n", ctx->va_config, ctx->va_context);
+    vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
+                          avctx->coded_width, avctx->coded_height,
+                          VA_PROGRESSIVE,
+                          ctx->hwfc->surface_ids,
+                          ctx->hwfc->nb_surfaces,
+                          &ctx->va_context);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create decode "
+               "context: %d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        goto fail;
     }
+
+    av_log(avctx, AV_LOG_DEBUG, "Decode context initialised: "
+           "%#x/%#x.\n", ctx->va_config, ctx->va_context);
+#if FF_API_VAAPI_CONTEXT
+    }
+#endif
 
     return 0;
 
@@ -509,26 +517,32 @@ int ff_vaapi_decode_uninit(AVCodecContext *avctx)
     VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
     VAStatus vas;
 
+#if FF_API_VAAPI_CONTEXT
     if (ctx->have_old_context) {
         av_buffer_unref(&ctx->device_ref);
     } else {
-        if (ctx->va_context != VA_INVALID_ID) {
-            vas = vaDestroyContext(ctx->hwctx->display, ctx->va_context);
-            if (vas != VA_STATUS_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to destroy decode "
-                       "context %#x: %d (%s).\n",
-                       ctx->va_context, vas, vaErrorStr(vas));
-            }
-        }
-        if (ctx->va_config != VA_INVALID_ID) {
-            vas = vaDestroyConfig(ctx->hwctx->display, ctx->va_config);
-            if (vas != VA_STATUS_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to destroy decode "
-                       "configuration %#x: %d (%s).\n",
-                       ctx->va_config, vas, vaErrorStr(vas));
-            }
+#endif
+
+    if (ctx->va_context != VA_INVALID_ID) {
+        vas = vaDestroyContext(ctx->hwctx->display, ctx->va_context);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to destroy decode "
+                   "context %#x: %d (%s).\n",
+                   ctx->va_context, vas, vaErrorStr(vas));
         }
     }
+    if (ctx->va_config != VA_INVALID_ID) {
+        vas = vaDestroyConfig(ctx->hwctx->display, ctx->va_config);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to destroy decode "
+                   "configuration %#x: %d (%s).\n",
+                   ctx->va_config, vas, vaErrorStr(vas));
+        }
+    }
+
+#if FF_API_VAAPI_CONTEXT
+    }
+#endif
 
     return 0;
 }
