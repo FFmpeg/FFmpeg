@@ -222,6 +222,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(LENSCORRECTION, lenscorrection, vf);
     REGISTER_FILTER(LOOP,           loop,           vf);
     REGISTER_FILTER(LUT,            lut,            vf);
+    REGISTER_FILTER(LUT2,           lut2,           vf);
     REGISTER_FILTER(LUT3D,          lut3d,          vf);
     REGISTER_FILTER(LUTRGB,         lutrgb,         vf);
     REGISTER_FILTER(LUTYUV,         lutyuv,         vf);

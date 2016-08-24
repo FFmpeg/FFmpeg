@@ -20,6 +20,7 @@ version <next>:
 - fifo muxer
 - maskedclamp filter
 - hysteresis filter
+- lut2 filter
 
 
 version 3.1:

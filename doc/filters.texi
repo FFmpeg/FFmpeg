@@ -9253,6 +9253,44 @@ lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
 @end example
 @end itemize
 
+@section lut2
+
+Compute and apply a lookup table from two video inputs.
+
+This filter accepts the following parameters:
+@table @option
+@item c0
+set first pixel component expression
+@item c1
+set second pixel component expression
+@item c2
+set third pixel component expression
+@item c3
+set fourth pixel component expression, corresponds to the alpha component
+@end table
+
+Each of them specifies the expression to use for computing the lookup table for
+the corresponding pixel component values.
+
+The exact component associated to each of the @var{c*} options depends on the
+format in inputs.
+
+The expressions can contain the following constants:
+
+@table @option
+@item w
+@item h
+The input width and height.
+
+@item x
+The first input value for the pixel component.
+
+@item y
+The second input value for the pixel component.
+@end table
+
+All expressions default to "x".
+
 @section maskedclamp
 
 Clamp the first input stream with the second input and third input stream.
