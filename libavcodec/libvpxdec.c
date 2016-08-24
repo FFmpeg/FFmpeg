@@ -97,7 +97,7 @@ static int vp8_decode(AVCodecContext *avctx,
         }
         if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
             return ret;
-        av_image_copy(picture->data, picture->linesize, img->planes,
+        av_image_copy(picture->data, picture->linesize, (const uint8_t **) img->planes,
                       img->stride, avctx->pix_fmt, img->d_w, img->d_h);
 #if VPX_IMAGE_ABI_VERSION >= 4
         switch (img->range) {
