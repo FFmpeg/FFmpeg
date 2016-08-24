@@ -13379,6 +13379,53 @@ Force a constant quantization parameter. If not set, the filter will use the QP
 from the video stream (if available).
 @end table
 
+@section vaguedenoiser
+
+Apply a wavelet based denoiser.
+
+It transforms each frame from the video input into the wavelet domain,
+using Cohen-Daubechies-Feauveau 9/7. Then it applies some filtering to
+the obtained coefficients. It does an inverse wavelet transform after.
+Due to wavelet properties, it should give a nice smoothed result, and
+reduced noise, without blurring picture features.
+
+This filter accepts the following options:
+
+@table @option
+@item threshold
+The filtering strength. The higher, the more filtered the video will be.
+Hard thresholding can use a higher threshold than soft thresholding
+before the video looks overfiltered.
+
+@item method
+The filtering method the filter will use.
+
+It accepts the following values:
+@table @samp
+@item hard
+All values under the threshold will be zeroed.
+
+@item soft
+All values under the threshold will be zeroed. All values above will be
+reduced by the threshold.
+
+@item garrote
+Scales or nullifies coefficients - intermediary between (more) soft and
+(less) hard thresholding.
+@end table
+
+@item nsteps
+Number of times, the wavelet will decompose the picture. Picture can't
+be decomposed beyond a particular point (typically, 8 for a 640x480
+frame - as 2^9 = 512 > 480)
+
+@item percent
+Partial of full denoising (limited coefficients shrinking), from 0 to 100.
+
+@item planes
+A list of the planes to process. By default all planes are processed.
+@end table
+
 @section vectorscope
 
 Display 2 color component values in the two dimensional graph (which is called
