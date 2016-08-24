@@ -21,6 +21,7 @@ version <next>:
 - maskedclamp filter
 - hysteresis filter
 - lut2 filter
+- yuvtestsrc filter
 
 
 version 3.1:
