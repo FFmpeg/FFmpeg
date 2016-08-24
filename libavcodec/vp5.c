@@ -270,6 +270,7 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
 
     if ((ret = ff_vp56_init(avctx, 1, 0)) < 0)
         return ret;
+    ff_vp5dsp_init(&s->vp56dsp);
     s->vp56_coord_div = vp5_coord_div;
     s->parse_vector_adjustment = vp5_parse_vector_adjustment;
     s->parse_coeff = vp5_parse_coeff;

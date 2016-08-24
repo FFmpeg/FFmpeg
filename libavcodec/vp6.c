@@ -612,6 +612,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     if ((ret = ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                             avctx->codec->id == AV_CODEC_ID_VP6A)) < 0)
         return ret;
+    ff_vp6dsp_init(&s->vp56dsp);
 
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
