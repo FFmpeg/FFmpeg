@@ -277,8 +277,13 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
                            (uint8_t*)LockedRect.pBits, surf_linesize);
 
     if (download) {
-        av_image_copy(dst->data, dst->linesize, surf_data, surf_linesize,
-                      ctx->sw_format, src->width, src->height);
+        ptrdiff_t src_linesize1[4], dst_linesize1[4];
+        for (i = 0; i < 4; i++) {
+            dst_linesize1[i] = dst->linesize[i];
+            src_linesize1[i] = surf_linesize[i];
+        }
+        av_image_copy_uc_from(dst->data, dst_linesize1, surf_data, src_linesize1,
+                              ctx->sw_format, src->width, src->height);
     } else {
         av_image_copy(surf_data, surf_linesize, src->data, src->linesize,
                       ctx->sw_format, src->width, src->height);
