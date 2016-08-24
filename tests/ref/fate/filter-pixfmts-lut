@@ -2,6 +2,12 @@ abgr                0a932e831efd4ec22f68b25278bac402
 argb                4f575be3cd02799389f581df99c4de38
 bgr24               fa43e3b2abfde8d9e60e157a9acc553d
 bgra                4e2e689897ee7a8e42b16234597bab35
+gbrap               0d1eb2c39e291c53c57302cdc653c2fc
+gbrp                e572d53183f3f2ed3951aa9940d440a1
+gbrp10le            a8fd1ebbc36a477e2b134241fed91687
+gbrp12le            c5a4b89571f7095eb737ad9fd6b1ee08
+gbrp14le            bdfdfd6f36c60497d1cdae791f3cc117
+gbrp9le             a8c4e29f4cb627db81ba053e0853e702
 rgb24               a356171207723a580e7d277078072005
 rgb48le             5c7dd8575836d18c91e09f1915cf9aa9
 rgba                7bc854c2698b78af3e9159a19c2d9d21
