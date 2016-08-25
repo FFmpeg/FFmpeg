@@ -76,12 +76,20 @@
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
+    AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV444P16,
 #if CONFIG_CUDA
     AV_PIX_FMT_CUDA,
 #endif
     AV_PIX_FMT_NONE
 };
+
+#define IS_10BIT(pix_fmt) (pix_fmt == AV_PIX_FMT_P010 ||    \
+                           pix_fmt == AV_PIX_FMT_YUV444P16)
+
+#define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P || \
+                            pix_fmt == AV_PIX_FMT_YUV444P16)
 
 static const struct {
     NVENCSTATUS nverr;
@@ -273,7 +281,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_YUV444_ENCODE);
-    if (ctx->data_pix_fmt == AV_PIX_FMT_YUV444P && ret <= 0) {
+    if (IS_YUV444(ctx->data_pix_fmt) && ret <= 0) {
         av_log(avctx, AV_LOG_VERBOSE, "YUV444P not supported\n");
         return AVERROR(ENOSYS);
     }
@@ -311,6 +319,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_VERBOSE,
                "Interlaced encoding is not supported. Supported level: %d\n",
                ret);
+        return AVERROR(ENOSYS);
+    }
+
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_10BIT_ENCODE);
+    if (IS_10BIT(ctx->data_pix_fmt) && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "10 bit encode not supported\n");
         return AVERROR(ENOSYS);
     }
 
@@ -800,9 +814,26 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->outputPictureTimingSEI   = 1;
     }
 
-    /* No other profile is supported in the current SDK version 5 */
-    cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
-    avctx->profile = FF_PROFILE_HEVC_MAIN;
+    switch(ctx->profile) {
+    case NV_ENC_HEVC_PROFILE_MAIN:
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN;
+        break;
+    case NV_ENC_HEVC_PROFILE_MAIN_10:
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+        break;
+    }
+
+    // force setting profile as main10 if input is 10 bit
+    if (IS_10BIT(ctx->data_pix_fmt)) {
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+    }
+
+    hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
+
+    hevc->pixelBitDepthMinus8 = IS_10BIT(ctx->data_pix_fmt) ? 2 : 0;
 
     hevc->level = ctx->level;
 
@@ -958,8 +989,16 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_NV12_PL;
         break;
 
+    case AV_PIX_FMT_P010:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
+        break;
+
     case AV_PIX_FMT_YUV444P:
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_PL;
+        break;
+
+    case AV_PIX_FMT_YUV444P16:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
         break;
 
     default:
@@ -1238,6 +1277,16 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[1], frame->linesize[1],
             avctx->width, avctx->height >> 1);
+    } else if (frame->format == AV_PIX_FMT_P010) {
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[0], frame->linesize[0],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[1], frame->linesize[1],
+            avctx->width << 1, avctx->height >> 1);
     } else if (frame->format == AV_PIX_FMT_YUV444P) {
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[0], frame->linesize[0],
@@ -1254,6 +1303,22 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[2], frame->linesize[2],
             avctx->width, avctx->height);
+    } else if (frame->format == AV_PIX_FMT_YUV444P16) {
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[0], frame->linesize[0],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[1], frame->linesize[1],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[2], frame->linesize[2],
+            avctx->width << 1, avctx->height);
     } else {
         av_log(avctx, AV_LOG_FATAL, "Invalid pixel format!\n");
         return AVERROR(EINVAL);
