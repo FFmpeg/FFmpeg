@@ -1655,6 +1655,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     result = av_frame_copy_props(out, in);
     if (result) {
+        av_frame_free(&out);
         av_frame_free(&in);
         return result;
     }
