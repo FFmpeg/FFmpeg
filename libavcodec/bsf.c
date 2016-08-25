@@ -432,7 +432,7 @@ int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** op
         return ret;
 
     if (options) {
-        ret = av_opt_set_dict(bsf, options);
+        ret = av_opt_set_dict2(bsf, options, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0)
             goto end;
     }
