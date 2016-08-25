@@ -2801,9 +2801,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
             sc->time_offset = start_time - empty_duration;
             current_dts = -sc->time_offset;
-            if (sc->ctts_count>0 && sc->stts_count>0 &&
-                sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16)
-                st->codecpar->video_delay = 1;
         }
 
         if (!unsupported && st->codecpar->codec_id == AV_CODEC_ID_AAC && start_time > 0)
