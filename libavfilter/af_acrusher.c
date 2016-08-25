@@ -304,7 +304,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ACrusherContext *s = ctx->priv;
-    double rad, sun, smax, sov;
+    double rad, sunder, smax, sover;
 
     s->idc = 1. / s->dc;
     s->coeff = exp2(s->bits) - 1;
@@ -313,11 +313,11 @@ static int config_input(AVFilterLink *inlink)
     s->round = round(s->samples);
     rad = s->lforange / 2.;
     s->smin = FFMAX(s->samples - rad, 1.);
-    sun = s->samples - rad - s->smin;
+    sunder   = s->samples - rad - s->smin;
     smax = FFMIN(s->samples + rad, 250.);
-    sov = s->samples + rad - smax;
-    smax -= sun;
-    s->smin -= sov;
+    sover    = s->samples + rad - smax;
+    smax    -= sunder;
+    s->smin -= sover;
     s->sdiff = smax - s->smin;
 
     s->lfo.freq = s->lforate;
