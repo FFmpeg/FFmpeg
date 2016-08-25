@@ -2802,12 +2802,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             sc->time_offset = start_time - empty_duration;
             current_dts = -sc->time_offset;
             if (sc->ctts_count>0 && sc->stts_count>0 &&
-                sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
-                /* more than 16 frames delay, dts are likely wrong
-                   this happens with files created by iMovie */
-                sc->wrong_dts = 1;
+                sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16)
                 st->codecpar->video_delay = 1;
-            }
         }
 
         if (!unsupported && st->codecpar->codec_id == AV_CODEC_ID_AAC && start_time > 0)
@@ -5352,8 +5348,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->ctts_index++;
             sc->ctts_sample = 0;
         }
-        if (sc->wrong_dts)
-            pkt->dts = AV_NOPTS_VALUE;
     } else {
         int64_t next_dts = (sc->current_sample < st->nb_index_entries) ?
             st->index_entries[sc->current_sample].timestamp : st->duration;
