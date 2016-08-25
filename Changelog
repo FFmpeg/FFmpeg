@@ -60,6 +60,7 @@ version <next>:
 - MagicYUV decoder
 - Duck TrueMotion 2.0 Real Time decoder
 - Intel QSV video scaling and deinterlacing filter
+- Support MOV with multiple sample description tables
 - OpenH264 decoder wrapper
 - Removed the legacy X11 screen grabber, use XCB instead
 - HDCD decoding filter through libhdcd
