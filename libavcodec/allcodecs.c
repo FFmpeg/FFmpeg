@@ -421,6 +421,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (XSUB,              xsub);
 
     /* external libraries */
+    REGISTER_DECODER(LIBAOM_AV1,        libaom_av1);
     REGISTER_DECODER(LIBDCADEC,         libdcadec)
     REGISTER_ENCODER(LIBFAAC,           libfaac);
     REGISTER_ENCDEC (LIBFDK_AAC,        libfdk_aac);

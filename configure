@@ -187,6 +187,7 @@ External library support:
   --enable-bzlib             bzip2 compression [autodetect]
   --enable-frei0r            video filtering plugins
   --enable-gnutls            crypto
+  --enable-libaom            AV1 video encoding/decoding
   --enable-libbs2b           Bauer stereophonic-to-binaural DSP
   --enable-libcdio           audio CD input
   --enable-libdc1394         IEEE 1394/Firewire camera input
@@ -1349,6 +1350,7 @@ EXTERNAL_LIBRARY_LIST="
     avxsynth
     frei0r
     gnutls
+    libaom
     libbs2b
     libdc1394
     libdcadec
@@ -2363,6 +2365,7 @@ avisynth_deps="LoadLibrary"
 avxsynth_deps="libdl"
 avisynth_demuxer_deps_any="avisynth avxsynth"
 avisynth_demuxer_select="riffdec"
+libaom_av1_decoder_deps="libaom"
 libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
@@ -4641,6 +4644,7 @@ enabled cuvid             && require cuvid cuviddec.h cuvidCreateDecoder -lnvcuv
 enabled frei0r            && require_header frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init &&
                              check_lib gmp gmp.h mpz_export -lgmp
+enabled libaom            && require_pkg_config libaom "aom >= 0.1.0" aom/aom_codec.h aom_codec_version
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
