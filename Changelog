@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+
+version 12:
 - aliases and defaults for Ogg subtypes (opus, spx)
 - HEVC/H.265 RTP payload format (draft v6) packetizer and depacketizer
 - avplay now exits by default at the end of playback
