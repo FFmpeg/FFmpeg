@@ -328,6 +328,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_LOOKAHEAD);
+    if (ctx->rc_lookahead > 0 && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "RC lookahead not supported\n");
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
@@ -686,6 +692,11 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
         ctx->encode_config.rcParams.vbvBufferSize = avctx->rc_buffer_size;
     } else if (ctx->encode_config.rcParams.averageBitRate > 0) {
         ctx->encode_config.rcParams.vbvBufferSize = 2 * ctx->encode_config.rcParams.averageBitRate;
+    }
+
+    if (ctx->rc_lookahead > 0) {
+        ctx->encode_config.rcParams.enableLookahead = 1;
+        ctx->encode_config.rcParams.lookaheadDepth = FFMIN(ctx->rc_lookahead, 32);
     }
 }
 

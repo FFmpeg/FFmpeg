@@ -179,6 +179,7 @@ typedef struct NvencContext
     int device;
     int flags;
     int async_depth;
+    int rc_lookahead;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
