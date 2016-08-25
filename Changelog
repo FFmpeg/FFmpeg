@@ -4,6 +4,28 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 
+version 3.1.3:
+- avcodec/exr: Check tile positions
+- avcodec/aacenc: Tighter input checks
+- avformat/wtvdec: Check pointer before use
+- libavcodec/wmalosslessdec: Check the remaining bits
+- avcodec/adpcm: Fix adpcm_ima_wav padding
+- avcodec/svq3: fix slice size check
+- avcodec/diracdec: Check numx/y
+- avcodec/h2645_parse: fix nal size
+- avcodec/h2645_parse: Use get_nalsize() in ff_h2645_packet_split()
+- h2645_parse: only read avc length code at the correct position
+- h2645_parse: don't overread AnnexB NALs within an avc stream
+- avcodec/h264_parser: Factor get_avc_nalsize() out
+- avcodec/cfhd: Increase minimum band dimension to 3
+- avcodec/indeo2: check ctab
+- avformat/swfdec: Fix inflate() error code check
+- avcodec/rawdec: Fix bits_per_coded_sample checks
+- vcodec/h2645_parse: Clear buffer padding
+- avcodec/h2645: Fix NAL unit padding
+- avfilter/drawutils: Fix single plane with alpha
+- cmdutils: check for SetDllDirectory() availability
+
 version 3.1.2:
 - cmdutils: remove the current working directory from the DLL search path on win32
 - avcodec/rawdec: Fix palette handling with changing palettes
