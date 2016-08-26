@@ -157,6 +157,15 @@ Go to @url{https://github.com/dekkers/libilbc} and follow the instructions for
 installing the library. Then pass @code{--enable-libilbc} to configure to
 enable it.
 
+@section libhdcd
+
+Libav can make use of the libhdcd library for High Definition Compatible
+Digital (HDCD) decoding via the @code{hdcd} filter.
+
+Go to @url{https://github.com/bp0/libhdcd} and follow the instructions for
+installing the library. Then pass @code{--enable-libhdcd} to configure to
+enable it.
+
 @section AviSynth
 
 Libav can read AviSynth scripts as input. To enable support you need a

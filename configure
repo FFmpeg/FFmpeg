@@ -197,6 +197,7 @@ External library support:
   --enable-libfontconfig     font configuration and management
   --enable-libfreetype       font rendering
   --enable-libgsm            GSM audio encoding/decoding
+  --enable-libhdcd           HDCD decoding filter
   --enable-libilbc           ILBC audio encoding/decoding
   --enable-libkvazaar        HEVC video encoding
   --enable-libmp3lame        MP3 audio encoding
@@ -1270,6 +1271,7 @@ EXTERNAL_LIBRARY_LIST="
     libfontconfig
     libfreetype
     libgsm
+    libhdcd
     libilbc
     libkvazaar
     libmp3lame
@@ -2426,6 +2428,7 @@ frei0r_filter_deps="frei0r dlopen"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
 frei0r_src_filter_extralibs='$ldl'
+hdcd_filter_deps="libhdcd"
 hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
 ocv_filter_deps="libopencv"
@@ -4606,6 +4609,7 @@ enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYP
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
+enabled libhdcd           && require_pkg_config libhdcd "hdcd/hdcd_simple.h" hdcd_new
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
 enabled libkvazaar        && require_pkg_config "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit

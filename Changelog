@@ -62,6 +62,7 @@ version <next>:
 - Intel QSV video scaling and deinterlacing filter
 - OpenH264 decoder wrapper
 - Removed the legacy X11 screen grabber, use XCB instead
+- HDCD decoding filter through libhdcd
 
 
 version 11:

@@ -647,6 +647,53 @@ avconv -i fl -i fr -i fc -i sl -i sr -i lfe -filter_complex
 out
 @end example
 
+@section hdcd
+
+Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
+embedded HDCD codes is expanded into a 20-bit PCM stream.
+
+The filter supports the Peak Extend and Low-level Gain Adjustment features
+of HDCD, and detects the Transient Filter flag.
+
+@example
+avconv -i HDCD16.flac -af hdcd OUT24.flac
+@end example
+
+When using the filter with WAV, note that the default encoding for WAV is 16-bit,
+so the resulting 20-bit stream will be truncated back to 16-bit. Use something
+like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+@example
+avconv -i HDCD16.wav -af hdcd OUT16.wav
+avconv -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+@end example
+
+The filter accepts the following options:
+
+@table @option
+@item analyze_mode
+Replace audio with a solid tone and adjust the amplitude to signal some
+specific aspect of the decoding process. The output file can be loaded in
+an audio editor alongside the original to aid analysis.
+
+Modes are:
+@table @samp
+@item 0, off
+Disabled
+@item 1, lle
+Gain adjustment level at each sample
+@item 2, pe
+Samples where peak extend occurs
+@item 3, cdt
+Samples where the code detect timer is active
+@item 4, tgm
+Samples where the target gain does not match between channels
+@item 5, pel
+Any samples above peak extend level
+@item 6, ltgm
+Gain adjustment level at each sample, in each channel
+@end table
+@end table
+
 @section resample
 Convert the audio sample format, sample rate and channel layout. It is
 not meant to be used directly; it is inserted automatically by libavfilter

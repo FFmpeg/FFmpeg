@@ -57,6 +57,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(CHANNELMAP,     channelmap,     af);
     REGISTER_FILTER(CHANNELSPLIT,   channelsplit,   af);
     REGISTER_FILTER(COMPAND,        compand,        af);
+    REGISTER_FILTER(HDCD,           hdcd,           af);
     REGISTER_FILTER(JOIN,           join,           af);
     REGISTER_FILTER(RESAMPLE,       resample,       af);
     REGISTER_FILTER(VOLUME,         volume,         af);

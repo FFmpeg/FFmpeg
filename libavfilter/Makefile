@@ -34,6 +34,7 @@ OBJS-$(CONFIG_BS2B_FILTER)                   += af_bs2b.o
 OBJS-$(CONFIG_CHANNELMAP_FILTER)             += af_channelmap.o
 OBJS-$(CONFIG_CHANNELSPLIT_FILTER)           += af_channelsplit.o
 OBJS-$(CONFIG_COMPAND_FILTER)                += af_compand.o
+OBJS-$(CONFIG_HDCD_FILTER)                   += af_hdcd.o
 OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
