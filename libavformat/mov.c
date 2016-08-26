@@ -2306,9 +2306,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         if (sc->time_offset < 0)
             sc->time_offset = av_rescale(sc->time_offset, sc->time_scale, mov->time_scale);
         current_dts = -sc->time_offset;
-        if (sc->ctts_data && sc->stts_data && sc->stts_data[0].duration &&
-            sc->ctts_data[0].duration / sc->stts_data[0].duration > 16)
-            st->internal->avctx->has_b_frames = 1;
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
