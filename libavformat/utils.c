@@ -297,7 +297,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
     int score;
     AVInputFormat *fmt = av_probe_input_format3(pd, 1, &score);
 
-    if (fmt && st->request_probe <= score) {
+    if (fmt) {
         int i;
         av_log(s, AV_LOG_DEBUG,
                "Probe with size=%d, packets=%d detected %s with score=%d\n",
@@ -305,6 +305,9 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
                fmt->name, score);
         for (i = 0; fmt_id_type[i].name; i++) {
             if (!strcmp(fmt->name, fmt_id_type[i].name)) {
+                if (st->request_probe > score &&
+                    st->codec->codec_id != fmt_id_type[i].id)
+                    continue;
                 st->codec->codec_id   = fmt_id_type[i].id;
                 st->codec->codec_type = fmt_id_type[i].type;
                 return score;
