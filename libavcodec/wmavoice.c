@@ -1672,9 +1672,7 @@ static int check_bits_for_superframe(GetBitContext *orig_gb,
     const struct frame_type_desc *frame_desc;
 
     /* initialize a copy */
-    init_get_bits(gb, orig_gb->buffer, orig_gb->size_in_bits);
-    skip_bits_long(gb, get_bits_count(orig_gb));
-    assert(get_bits_left(gb) == get_bits_left(orig_gb));
+    *gb = *orig_gb;
 
     /* superframe header */
     if (get_bits_left(gb) < 14)
