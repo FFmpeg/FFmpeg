@@ -26,12 +26,12 @@
 #define CODE_UNSET          -1
 #define CODE_BIT_INIT       9
 #define DIC_INDEX_INIT      512     // 2^9
-#define DIC_INDEX_MAX       32768l  // 2^15
+#define DIC_INDEX_MAX       32768   // 2^15
 #define FLUSH_CODE          256
 #define FREEZE_CODE         257
 #define FIRST_CODE          258
-#define MAX_CODE            32767l
-#define TABLE_SIZE          35023l  // TABLE_SIZE must be a prime number
+#define MAX_CODE            32767
+#define TABLE_SIZE          35023   // TABLE_SIZE must be a prime number
 
 /** Dictionary structure for mlz decompression
  */
