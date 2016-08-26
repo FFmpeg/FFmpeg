@@ -3258,7 +3258,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             && enc->bits_per_raw_sample != av_get_bytes_per_sample(enc->sample_fmt) * 8)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%d bit)", enc->bits_per_raw_sample);
-        if (enc->initial_padding || enc->trailing_padding) {
+        if (av_log_get_level() >= AV_LOG_VERBOSE &&
+            (enc->initial_padding || enc->trailing_padding)) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", delay %d, padding %d", enc->initial_padding, enc->trailing_padding);
         }
