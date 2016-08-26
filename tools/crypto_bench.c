@@ -287,55 +287,22 @@ DEFINE_GCRYPT_WRAPPER(sha256,    SHA256)
 DEFINE_GCRYPT_WRAPPER(sha512,    SHA512)
 DEFINE_GCRYPT_WRAPPER(ripemd160, RMD160)
 
-static void run_gcrypt_aes128(uint8_t *output,
-                              const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t aes;
-    if (!aes)
-        gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(aes, hardcoded_key, 16);
-    gcry_cipher_encrypt(aes, output, size, input, size);
+#define DEFINE_GCRYPT_CYPHER_WRAPPER(suffix, cypher, sz)                            \
+static void run_gcrypt_ ## suffix(uint8_t *output,                                  \
+                              const uint8_t *input, unsigned size)                  \
+{                                                                                   \
+    static gcry_cipher_hd_t suffix;                                                 \
+    if (!suffix)                                                                    \
+        gcry_cipher_open(&suffix, GCRY_CIPHER_ ## cypher, GCRY_CIPHER_MODE_ECB, 0); \
+    gcry_cipher_setkey(suffix, hardcoded_key, sz);                                  \
+    gcry_cipher_encrypt(suffix, output, size, input, size);                         \
 }
 
-static void run_gcrypt_blowfish(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t blowfish;
-    if (!blowfish)
-        gcry_cipher_open(&blowfish, GCRY_CIPHER_BLOWFISH, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(blowfish, hardcoded_key, 16);
-    gcry_cipher_encrypt(blowfish, output, size, input, size);
-}
-
-static void run_gcrypt_camellia(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t camellia;
-    if (!camellia)
-        gcry_cipher_open(&camellia, GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(camellia, hardcoded_key, 16);
-    gcry_cipher_encrypt(camellia, output, size, input, size);
-}
-
-static void run_gcrypt_cast128(uint8_t *output,
-                              const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t cast;
-    if (!cast)
-        gcry_cipher_open(&cast, GCRY_CIPHER_CAST5, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(cast, hardcoded_key, 16);
-    gcry_cipher_encrypt(cast, output, size, input, size);
-}
-
-static void run_gcrypt_twofish(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t twofish;
-    if (!twofish)
-        gcry_cipher_open(&twofish, GCRY_CIPHER_TWOFISH128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(twofish, hardcoded_key, 16);
-    gcry_cipher_encrypt(twofish, output, size, input, size);
-}
+DEFINE_GCRYPT_CYPHER_WRAPPER(aes128,   AES128,      16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(blowfish, BLOWFISH,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(camellia, CAMELLIA128, 16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(cast128,  CAST5,       16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(twofish,  TWOFISH128,  16)
 
 #define IMPL_USE_gcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
