@@ -1169,7 +1169,7 @@ Each equalizer band is separated by '|'.
 Set channel number to which equalization will be applied.
 If input doesn't have that channel the entry is ignored.
 
-@item cf
+@item f
 Set central frequency for band.
 If input doesn't have that frequency the entry is ignored.
 
@@ -1179,7 +1179,7 @@ Set band width in hertz.
 @item g
 Set band gain in dB.
 
-@item f
+@item t
 Set filter type for band, optional, can be:
 
 @table @samp
