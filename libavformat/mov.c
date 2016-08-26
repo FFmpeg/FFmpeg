@@ -2307,12 +2307,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             sc->time_offset = av_rescale(sc->time_offset, sc->time_scale, mov->time_scale);
         current_dts = -sc->time_offset;
         if (sc->ctts_data && sc->stts_data && sc->stts_data[0].duration &&
-            sc->ctts_data[0].duration / sc->stts_data[0].duration > 16) {
-            /* more than 16 frames delay, dts are likely wrong
-               this happens with files created by iMovie */
-            sc->wrong_dts = 1;
+            sc->ctts_data[0].duration / sc->stts_data[0].duration > 16)
             st->internal->avctx->has_b_frames = 1;
-        }
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
@@ -3670,8 +3666,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->ctts_index++;
             sc->ctts_sample = 0;
         }
-        if (sc->wrong_dts)
-            pkt->dts = AV_NOPTS_VALUE;
     } else {
         int64_t next_dts = (sc->current_sample < st->nb_index_entries) ?
             st->index_entries[sc->current_sample].timestamp : st->duration;
