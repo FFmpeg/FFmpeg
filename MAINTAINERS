@@ -295,6 +295,8 @@ libavfilter
 Generic parts:
   graphdump.c                           Nicolas George
 
+  motion_estimation.c                   Davinder Singh
+
 Filters:
   f_drawgraph.c                         Paul B Mahol
   af_adelay.c                           Paul B Mahol
@@ -336,6 +338,8 @@ Filters:
   vf_il.c                               Paul B Mahol
   vf_lenscorrection.c                   Daniel Oberhoff
   vf_mergeplanes.c                      Paul B Mahol
+  vf_mestimate.c                        Davinder Singh
+  vf_minterpolate.c                     Davinder Singh
   vf_neighbor.c                         Paul B Mahol
   vf_psnr.c                             Paul B Mahol
   vf_random.c                           Paul B Mahol
