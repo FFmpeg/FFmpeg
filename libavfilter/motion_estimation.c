@@ -262,10 +262,10 @@ uint64_t ff_me_search_ds(AVMotionEstContext *me_ctx, int x_mb, int y_mb, int *mv
         x = mv[0];
         y = mv[1];
 
-    #if 1
+#if 1
         for (i = 0; i < 8; i++)
             COST_P_MV(x + dia2[i][0], y + dia2[i][1]);
-    #else
+#else
         /* this version skips previously examined 3 or 5 locations based on prev origin */
         if (dir_x <= 0)
             COST_P_MV(x - 2, y);
@@ -286,7 +286,7 @@ uint64_t ff_me_search_ds(AVMotionEstContext *me_ctx, int x_mb, int y_mb, int *mv
 
         dir_x = mv[0] - x;
         dir_y = mv[1] - y;
-    #endif
+#endif
 
     } while (x != mv[0] || y != mv[1]);
 
