@@ -250,7 +250,7 @@ uint64_t ff_me_search_ds(AVMotionEstContext *me_ctx, int x_mb, int y_mb, int *mv
     int y_max = FFMIN(y_mb + me_ctx->search_param, me_ctx->y_max);
     uint64_t cost, cost_min;
     int i;
-    int dir_x, dir_y;
+    av_unused int dir_x, dir_y;
 
     if (!(cost_min = me_ctx->get_cost(me_ctx, x_mb, y_mb, x_mb, y_mb)))
         return cost_min;
