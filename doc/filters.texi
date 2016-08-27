@@ -4397,6 +4397,9 @@ threshold B is designed to react on continuous changes in the input signal.
 @item s
 Set number of frames filter will use for averaging. Default is 33. Must be odd
 number in range [5, 129].
+
+@item p
+Set what planes of frame filter will use for averaging. Default is all.
 @end table
 
 @section bbox

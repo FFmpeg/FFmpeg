@@ -25,6 +25,7 @@
  * David Bartovčak and Miroslav Vrankić
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -44,6 +45,7 @@ typedef struct ATADenoiseContext {
     float fthra[4], fthrb[4];
     int thra[4], thrb[4];
 
+    int planes;
     int nb_planes;
     int planewidth[4];
     int planeheight[4];
@@ -68,6 +70,7 @@ static const AVOption atadenoise_options[] = {
     { "2a", "set threshold A for 3rd plane", OFFSET(fthra[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, FLAGS },
+    { "p",  "set what planes to filter",     OFFSET(planes),   AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
     { NULL }
 };
 
@@ -141,6 +144,12 @@ static int filter_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         const int *linesize = (const int *)s->linesize[p];
         const uint8_t *srcf[SIZE];
 
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane(dst, out->linesize[p], src, in->linesize[p],
+                                w, slice_end - slice_start);
+            continue;
+        }
+
         for (i = 0; i < size; i++)
             srcf[i] = data[i] + slice_start * linesize[i];
 
@@ -211,6 +220,12 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         const uint8_t **data = (const uint8_t **)s->data[p];
         const int *linesize = (const int *)s->linesize[p];
         const uint16_t *srcf[SIZE];
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p], (uint8_t *)src, in->linesize[p],
+                                w * 2, slice_end - slice_start);
+            continue;
+        }
 
         for (i = 0; i < s->size; i++)
             srcf[i] = (const uint16_t *)(data[i] + slice_start * linesize[i]);
