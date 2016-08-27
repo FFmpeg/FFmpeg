@@ -19,7 +19,7 @@
 #ifndef AVCODEC_NVENC_H
 #define AVCODEC_NVENC_H
 
-#include <nvEncodeAPI.h>
+#include "compat/nvenc/nvEncodeAPI.h"
 
 #include "config.h"
 

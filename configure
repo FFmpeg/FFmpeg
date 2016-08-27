@@ -307,7 +307,7 @@ External library support:
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
   --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
-  --enable-nvenc           enable Nvidia video encoding code [no]
+  --disable-nvenc          disable Nvidia video encoding code [autodetect]
   --enable-omx             enable OpenMAX IL code [no]
   --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
@@ -5777,10 +5777,6 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
 enabled mmal && check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"
 
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
-enabled nvenc             && { check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."; } &&
-                             { check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6" ||
-                               die "ERROR: NVENC API version 5 or older is not supported"; } &&
-                             { [ $target_os != cygwin ] || die "ERROR: NVENC is not supported on Cygwin currently."; }
 enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                                check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
@@ -5995,6 +5991,22 @@ enabled vdpau &&
 enabled vdpau && enabled xlib &&
     check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     enable vdpau_x11
+
+case $target_os in
+    mingw32*|mingw64*|win32|win64|linux|cygwin*)
+        disabled nvenc || enable nvenc
+        ;;
+    *)
+        disable nvenc
+        ;;
+esac
+
+if enabled nvenc; then
+    {
+        echo '#include "compat/nvenc/nvEncodeAPI.h"'
+        echo 'int main(void) { return 0; }'
+    } | check_cc -I$source_path || disable nvenc
+fi
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
