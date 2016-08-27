@@ -35,6 +35,8 @@ typedef struct ConvolutionContext {
     float rdiv[4];
     float bias[4];
 
+    int size[4];
+    int depth;
     int bstride;
     uint8_t *buffer;
     int nb_planes;
@@ -81,39 +83,27 @@ static const int same5x5[25] = {0, 0, 0, 0, 0,
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
-        AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-}
-
-static int config_input(AVFilterLink *inlink)
-{
-    ConvolutionContext *s = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int ret;
-
-    if ((ret = av_image_fill_linesizes(s->planewidth, inlink->format, inlink->w)) < 0)
-        return ret;
-
-    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->planeheight[0] = s->planeheight[3] = inlink->h;
-
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-
-    s->bstride = s->planewidth[0] + 32;
-    s->buffer = av_malloc(5 * s->bstride);
-    if (!s->buffer)
-        return AVERROR(ENOMEM);
-
-    return 0;
 }
 
 static inline void line_copy8(uint8_t *line, const uint8_t *srcp, int width, int mergin)
@@ -125,6 +115,122 @@ static inline void line_copy8(uint8_t *line, const uint8_t *srcp, int width, int
     for (i = mergin; i > 0; i--) {
         line[-i] = line[i];
         line[width - 1 + i] = line[width - 1 - i];
+    }
+}
+
+static inline void line_copy16(uint16_t *line, const uint16_t *srcp, int width, int mergin)
+{
+    int i;
+
+    memcpy(line, srcp, width * 2);
+
+    for (i = mergin; i > 0; i--) {
+        line[-i] = line[i];
+        line[width - 1 + i] = line[width - 1 - i];
+    }
+}
+
+static void filter16_3x3(ConvolutionContext *s, AVFrame *in, AVFrame *out, int plane)
+{
+    const uint16_t *src = (const uint16_t *)in->data[plane];
+    uint16_t *dst = (uint16_t *)out->data[plane];
+    const int peak = (1 << s->depth) - 1;
+    const int stride = in->linesize[plane] / 2;
+    const int bstride = s->bstride;
+    const int height = s->planeheight[plane];
+    const int width  = s->planewidth[plane];
+    uint16_t *p0 = (uint16_t *)s->buffer + 16;
+    uint16_t *p1 = p0 + bstride;
+    uint16_t *p2 = p1 + bstride;
+    uint16_t *orig = p0, *end = p2;
+    const int *matrix = s->matrix[plane];
+    const float rdiv = s->rdiv[plane];
+    const float bias = s->bias[plane];
+    int y, x;
+
+    line_copy16(p0, src + stride, width, 1);
+    line_copy16(p1, src, width, 1);
+
+    for (y = 0; y < height; y++) {
+        src += stride * (y < height - 1 ? 1 : -1);
+        line_copy16(p2, src, width, 1);
+
+        for (x = 0; x < width; x++) {
+            int sum = p0[x - 1] * matrix[0] +
+                      p0[x] *     matrix[1] +
+                      p0[x + 1] * matrix[2] +
+                      p1[x - 1] * matrix[3] +
+                      p1[x] *     matrix[4] +
+                      p1[x + 1] * matrix[5] +
+                      p2[x - 1] * matrix[6] +
+                      p2[x] *     matrix[7] +
+                      p2[x + 1] * matrix[8];
+            sum = (int)(sum * rdiv + bias + 0.5f);
+            dst[x] = av_clip(sum, 0, peak);
+        }
+
+        p0 = p1;
+        p1 = p2;
+        p2 = (p2 == end) ? orig: p2 + bstride;
+        dst += out->linesize[plane] / 2;
+    }
+}
+
+static void filter16_5x5(ConvolutionContext *s, AVFrame *in, AVFrame *out, int plane)
+{
+    const uint16_t *src = (const uint16_t *)in->data[plane];
+    uint16_t *dst = (uint16_t *)out->data[plane];
+    const int peak = (1 << s->depth) - 1;
+    const int stride = in->linesize[plane] / 2;
+    const int bstride = s->bstride;
+    const int height = s->planeheight[plane];
+    const int width  = s->planewidth[plane];
+    uint16_t *p0 = (uint16_t *)s->buffer + 16;
+    uint16_t *p1 = p0 + bstride;
+    uint16_t *p2 = p1 + bstride;
+    uint16_t *p3 = p2 + bstride;
+    uint16_t *p4 = p3 + bstride;
+    uint16_t *orig = p0, *end = p4;
+    const int *matrix = s->matrix[plane];
+    float rdiv = s->rdiv[plane];
+    float bias = s->bias[plane];
+    int y, x, i;
+
+    line_copy16(p0, src + 2 * stride, width, 2);
+    line_copy16(p1, src + stride, width, 2);
+    line_copy16(p2, src, width, 2);
+    src += stride;
+    line_copy16(p3, src, width, 2);
+
+
+    for (y = 0; y < height; y++) {
+        uint16_t *array[] = {
+            p0 - 2, p0 - 1, p0, p0 + 1, p0 + 2,
+            p1 - 2, p1 - 1, p1, p1 + 1, p1 + 2,
+            p2 - 2, p2 - 1, p2, p2 + 1, p2 + 2,
+            p3 - 2, p3 - 1, p3, p3 + 1, p3 + 2,
+            p4 - 2, p4 - 1, p4, p4 + 1, p4 + 2
+        };
+
+        src += stride * (y < height - 2 ? 1 : -1);
+        line_copy16(p4, src, width, 2);
+
+        for (x = 0; x < width; x++) {
+            int sum = 0;
+
+            for (i = 0; i < 25; i++) {
+                sum += *(array[i] + x) * matrix[i];
+            }
+            sum = (int)(sum * rdiv + bias + 0.5f);
+            dst[x] = av_clip(sum, 0, peak);
+        }
+
+        p0 = p1;
+        p1 = p2;
+        p2 = p3;
+        p3 = p4;
+        p4 = (p4 == end) ? orig: p4 + bstride;
+        dst += out->linesize[plane] / 2;
     }
 }
 
@@ -230,6 +336,38 @@ static void filter_5x5(ConvolutionContext *s, AVFrame *in, AVFrame *out, int pla
     }
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    ConvolutionContext *s = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int ret, p;
+
+    s->depth = desc->comp[0].depth;
+    if ((ret = av_image_fill_linesizes(s->planewidth, inlink->format, inlink->w)) < 0)
+        return ret;
+
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    s->bstride = s->planewidth[0] + 32;
+    s->buffer = av_malloc_array(5 * s->bstride, (s->depth + 7) / 8);
+    if (!s->buffer)
+        return AVERROR(ENOMEM);
+
+    if (s->depth > 8) {
+        for (p = 0; p < s->nb_planes; p++) {
+            if (s->size[p] == 3)
+                s->filter[p] = filter16_3x3;
+            else if (s->size[p] == 5)
+                s->filter[p] = filter16_5x5;
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     ConvolutionContext *s = inlink->dst->priv;
@@ -280,11 +418,13 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         if (s->matrix_length[i] == 9) {
+            s->size[i] = 3;
             if (!memcmp(matrix, same3x3, sizeof(same3x3)))
                 s->copy[i] = 1;
             else
                 s->filter[i] = filter_3x3;
         } else if (s->matrix_length[i] == 25) {
+            s->size[i] = 5;
             if (!memcmp(matrix, same5x5, sizeof(same5x5)))
                 s->copy[i] = 1;
             else
