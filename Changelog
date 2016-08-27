@@ -23,6 +23,7 @@ version <next>:
 - lut2 filter
 - yuvtestsrc filter
 - vaguedenoiser filter
+- added threads option per filter instance
 
 
 version 3.1:

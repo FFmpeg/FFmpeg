@@ -531,7 +531,7 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

@@ -174,7 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     td.in = in, td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

@@ -278,7 +278,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         td.h     = h;
         td.plane = i;
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
     if (!bwdif->inter_field) {
         bwdif->inter_field = 1;
