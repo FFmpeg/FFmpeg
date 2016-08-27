@@ -85,6 +85,7 @@ typedef struct HLSContext {
     AVFormatContext *vtt_avf;
 
     float time;            // Set by a private option.
+    float init_time;       // Set by a private option.
     int max_nb_segments;   // Set by a private option.
     int  wrap;             // Set by a private option.
     uint32_t flags;        // enum HLSFlags
@@ -706,7 +707,7 @@ static int hls_write_header(AVFormatContext *s)
     int vtt_basename_size;
 
     hls->sequence       = hls->start_sequence;
-    hls->recording_time = hls->time * AV_TIME_BASE;
+    hls->recording_time = (hls->init_time ? hls->init_time : hls->time) * AV_TIME_BASE;
     hls->start_pts      = AV_NOPTS_VALUE;
 
     if (hls->format_options_str) {
@@ -863,6 +864,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, can_split = 1;
     int stream_index = 0;
 
+    if (hls->sequence - hls->nb_entries > hls->start_sequence && hls->init_time > 0) {
+        /* reset end_pts, hls->recording_time at end of the init hls list */
+        int init_list_dur = hls->init_time * hls->nb_entries * AV_TIME_BASE;
+        int after_init_list_dur = (hls->sequence - hls->nb_entries ) * hls->time * AV_TIME_BASE;
+        hls->recording_time = hls->time * AV_TIME_BASE;
+        end_pts = init_list_dur + after_init_list_dur ;
+    }
+
     if( st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE ) {
         oc = hls->vtt_avf;
         stream_index = 0;
@@ -972,6 +981,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 static const AVOption options[] = {
     {"start_number",  "set first number in the sequence",        OFFSET(start_sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     0, INT64_MAX, E},
     {"hls_time",      "set segment length in seconds",           OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
+    {"hls_init_time", "set segment length in seconds at init list",           OFFSET(init_time),    AV_OPT_TYPE_FLOAT,  {.dbl = 0},     0, FLT_MAX, E},
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
