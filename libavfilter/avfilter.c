@@ -783,6 +783,13 @@ void avfilter_free(AVFilterContext *filter)
     av_free(filter);
 }
 
+int ff_filter_get_nb_threads(AVFilterContext *ctx)
+{
+     if (ctx->nb_threads > 0)
+         return FFMIN(ctx->nb_threads, ctx->graph->nb_threads);
+     return ctx->graph->nb_threads;
+}
+
 static int process_options(AVFilterContext *ctx, AVDictionary **options,
                            const char *args)
 {
