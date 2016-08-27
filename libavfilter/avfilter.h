@@ -361,6 +361,13 @@ struct AVFilterContext {
      * hardware context information.
      */
     AVBufferRef *hw_device_ctx;
+
+    /**
+     * Max number of threads allowed in this filter instance.
+     * If <= 0, its value is ignored.
+     * Overrides global number of threads set per filter graph.
+     */
+    int nb_threads;
 };
 
 /**
