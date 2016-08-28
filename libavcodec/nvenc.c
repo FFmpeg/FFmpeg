@@ -21,24 +21,26 @@
 
 #include "config.h"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+# define CUDA_LIBNAME "nvcuda.dll"
+# if ARCH_X86_64
+#  define NVENC_LIBNAME "nvEncodeAPI64.dll"
+# else
+#  define NVENC_LIBNAME "nvEncodeAPI.dll"
+# endif
+#else
+# define CUDA_LIBNAME "libcuda.so"
+# define NVENC_LIBNAME "libnvidia-encode.so"
+#endif
+
 #if defined(_WIN32)
 #include <windows.h>
 
-#define CUDA_LIBNAME TEXT("nvcuda.dll")
-#if ARCH_X86_64
-#define NVENC_LIBNAME TEXT("nvEncodeAPI64.dll")
-#else
-#define NVENC_LIBNAME TEXT("nvEncodeAPI.dll")
-#endif
-
-#define dlopen(filename, flags) LoadLibrary((filename))
+#define dlopen(filename, flags) LoadLibrary(TEXT(filename))
 #define dlsym(handle, symbol)   GetProcAddress(handle, symbol)
 #define dlclose(handle)         FreeLibrary(handle)
 #else
 #include <dlfcn.h>
-
-#define CUDA_LIBNAME "libcuda.so"
-#define NVENC_LIBNAME "libnvidia-encode.so"
 #endif
 
 #include "libavutil/hwcontext.h"
