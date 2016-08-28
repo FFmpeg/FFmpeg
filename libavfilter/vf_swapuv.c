@@ -23,12 +23,23 @@
  * swap UV filter
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/version.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+typedef struct SwapUVContext {
+    const AVClass *class;
+} SwapUVContext;
+
+static const AVOption swapuv_options[] = {
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(swapuv);
 
 static void do_swap(AVFrame *frame)
 {
@@ -110,6 +121,9 @@ AVFilter ff_vf_swapuv = {
     .name          = "swapuv",
     .description   = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .query_formats = query_formats,
+    .priv_size     = sizeof(SwapUVContext),
+    .priv_class    = &swapuv_class,
     .inputs        = swapuv_inputs,
     .outputs       = swapuv_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
