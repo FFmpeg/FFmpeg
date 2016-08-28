@@ -29,8 +29,8 @@
 #  define NVENC_LIBNAME "nvEncodeAPI.dll"
 # endif
 #else
-# define CUDA_LIBNAME "libcuda.so"
-# define NVENC_LIBNAME "libnvidia-encode.so"
+# define CUDA_LIBNAME "libcuda.so.1"
+# define NVENC_LIBNAME "libnvidia-encode.so.1"
 #endif
 
 #if defined(_WIN32)
