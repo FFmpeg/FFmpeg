@@ -1,6 +1,6 @@
 /*
- * H.264 hardware encoding using nvidia nvenc
- * Copyright (c) 2014 Timo Rothenpieler <timo@rothenpieler.org>
+ * H.264/HEVC hardware encoding using nvidia nvenc
+ * Copyright (c) 2016 Timo Rothenpieler <timo@rothenpieler.org>
  *
  * This file is part of FFmpeg.
  *
