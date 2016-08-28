@@ -110,6 +110,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = NULL;
     int ret;
+    int i;
 
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
@@ -135,6 +136,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     ff_format_io_close(s, &oc->pb);
+    for (i = 0; i < s->nb_streams; i++) {
+        // ms precision is the de-facto standard timescale for mkv files.
+        avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
+    }
     return 0;
 }
 

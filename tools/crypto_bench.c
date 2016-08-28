@@ -78,6 +78,7 @@ struct hash_impl {
 #include "libavutil/blowfish.h"
 #include "libavutil/camellia.h"
 #include "libavutil/cast5.h"
+#include "libavutil/des.h"
 #include "libavutil/twofish.h"
 #include "libavutil/rc4.h"
 #include "libavutil/xtea.h"
@@ -148,6 +149,16 @@ static void run_lavu_cast128(uint8_t *output,
     av_cast5_crypt(cast, output, input, size >> 3, 0);
 }
 
+static void run_lavu_des(uint8_t *output,
+                              const uint8_t *input, unsigned size)
+{
+    static struct AVDES *des;
+    if (!des && !(des = av_des_alloc()))
+        fatal_error("out of memory");
+    av_des_init(des, hardcoded_key, 64, 0);
+    av_des_crypt(des, output, input, size >> 3, NULL, 0);
+}
+
 static void run_lavu_twofish(uint8_t *output,
                               const uint8_t *input, unsigned size)
 {
@@ -184,6 +195,7 @@ static void run_lavu_xtea(uint8_t *output,
 
 #if (USE_EXT_LIBS) & USE_crypto
 
+#define OPENSSL_DISABLE_OLD_DES_SUPPORT
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
@@ -191,6 +203,7 @@ static void run_lavu_xtea(uint8_t *output,
 #include <openssl/blowfish.h>
 #include <openssl/camellia.h>
 #include <openssl/cast.h>
+#include <openssl/des.h>
 #include <openssl/rc4.h>
 
 #define DEFINE_CRYPTO_WRAPPER(suffix, function)                              \
@@ -252,6 +265,17 @@ static void run_crypto_cast128(uint8_t *output,
         CAST_ecb_encrypt(input + i, output + i, &cast, 1);
 }
 
+static void run_crypto_des(uint8_t *output,
+                           const uint8_t *input, unsigned size)
+{
+    DES_key_schedule des;
+    unsigned i;
+
+    DES_set_key(hardcoded_key, &des);
+    for (i = 0; i < size; i += 8)
+        DES_ecb_encrypt(input + i, output + i, &des, 1);
+}
+
 static void run_crypto_rc4(uint8_t *output,
                                 const uint8_t *input, unsigned size)
 {
@@ -287,55 +311,23 @@ DEFINE_GCRYPT_WRAPPER(sha256,    SHA256)
 DEFINE_GCRYPT_WRAPPER(sha512,    SHA512)
 DEFINE_GCRYPT_WRAPPER(ripemd160, RMD160)
 
-static void run_gcrypt_aes128(uint8_t *output,
-                              const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t aes;
-    if (!aes)
-        gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(aes, hardcoded_key, 16);
-    gcry_cipher_encrypt(aes, output, size, input, size);
+#define DEFINE_GCRYPT_CYPHER_WRAPPER(suffix, cypher, sz)                            \
+static void run_gcrypt_ ## suffix(uint8_t *output,                                  \
+                              const uint8_t *input, unsigned size)                  \
+{                                                                                   \
+    static gcry_cipher_hd_t suffix;                                                 \
+    if (!suffix)                                                                    \
+        gcry_cipher_open(&suffix, GCRY_CIPHER_ ## cypher, GCRY_CIPHER_MODE_ECB, 0); \
+    gcry_cipher_setkey(suffix, hardcoded_key, sz);                                  \
+    gcry_cipher_encrypt(suffix, output, size, input, size);                         \
 }
 
-static void run_gcrypt_blowfish(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t blowfish;
-    if (!blowfish)
-        gcry_cipher_open(&blowfish, GCRY_CIPHER_BLOWFISH, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(blowfish, hardcoded_key, 16);
-    gcry_cipher_encrypt(blowfish, output, size, input, size);
-}
-
-static void run_gcrypt_camellia(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t camellia;
-    if (!camellia)
-        gcry_cipher_open(&camellia, GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(camellia, hardcoded_key, 16);
-    gcry_cipher_encrypt(camellia, output, size, input, size);
-}
-
-static void run_gcrypt_cast128(uint8_t *output,
-                              const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t cast;
-    if (!cast)
-        gcry_cipher_open(&cast, GCRY_CIPHER_CAST5, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(cast, hardcoded_key, 16);
-    gcry_cipher_encrypt(cast, output, size, input, size);
-}
-
-static void run_gcrypt_twofish(uint8_t *output,
-                                const uint8_t *input, unsigned size)
-{
-    static gcry_cipher_hd_t twofish;
-    if (!twofish)
-        gcry_cipher_open(&twofish, GCRY_CIPHER_TWOFISH128, GCRY_CIPHER_MODE_ECB, 0);
-    gcry_cipher_setkey(twofish, hardcoded_key, 16);
-    gcry_cipher_encrypt(twofish, output, size, input, size);
-}
+DEFINE_GCRYPT_CYPHER_WRAPPER(aes128,   AES128,      16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(blowfish, BLOWFISH,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(camellia, CAMELLIA128, 16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(cast128,  CAST5,       16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(des,      DES,         8)
+DEFINE_GCRYPT_CYPHER_WRAPPER(twofish,  TWOFISH128,  16)
 
 #define IMPL_USE_gcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
@@ -411,6 +403,17 @@ static void run_tomcrypt_cast128(uint8_t *output,
     cast5_setup(hardcoded_key, 16, 0, &cast);
     for (i = 0; i < size; i += 8)
         cast5_ecb_encrypt(input + i, output + i, &cast);
+}
+
+static void run_tomcrypt_des(uint8_t *output,
+                             const uint8_t *input, unsigned size)
+{
+    symmetric_key des;
+    unsigned i;
+
+    des_setup(hardcoded_key, 8, 0, &des);
+    for (i = 0; i < size; i += 8)
+        des_ecb_encrypt(input + i, output + i, &des);
 }
 
 static void run_tomcrypt_twofish(uint8_t *output,
@@ -524,6 +527,7 @@ struct hash_impl implementations[] = {
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
     IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
     IMPL_ALL("BLOWFISH",   blowfish,  "crc:33e8aa74")
+    IMPL_ALL("DES",        des,       "crc:31291e0b")
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")

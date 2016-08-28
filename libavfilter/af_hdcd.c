@@ -1,40 +1,46 @@
 /*
-   Copyright (C) 2010, Chris Moeller,
-   All rights reserved.
-   Optimizations by Gumboot
-   Redistribution and use in source and binary forms, with or without modification,
-   are permitted provided that the following conditions are met:
-     1. Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
-     2. Redistributions in binary form must reproduce the above copyright
-        notice, this list of conditions and the following disclaimer in the
-        documentation and/or other materials provided with the distribution.
-     3. The names of its contributors may not be used to endorse or promote
-        products derived from this software without specific prior written
-        permission.
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *  Copyright (C) 2010, Chris Moeller,
+ *  All rights reserved.
+ *  Optimizations by Gumboot
+ *  Additional work by Burt P.
+ *  Original code reverse engineered from HDCD decoder library by Christopher Key,
+ *  which was likely reverse engineered from Windows Media Player.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *    1. Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *    3. The names of its contributors may not be used to endorse or promote
+ *       products derived from this software without specific prior written
+ *       permission.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*
-  Original code reverse engineered from HDCD decoder library by Christopher Key,
-  which was likely reverse engineered from Windows Media Player.
+ * HDCD is High Definition Compatible Digital
+ * http://wiki.hydrogenaud.io/index.php?title=High_Definition_Compatible_Digital
+ *
+ * More information about HDCD-encoded audio CDs:
+ * http://www.audiomisc.co.uk/HFN/HDCD/Enigma.html
+ * http://www.audiomisc.co.uk/HFN/HDCD/Examined.html
  */
 
-/*
-  HDCD is High Definition Compatible Digital
-  More information about HDCD-encoded audio CDs:
-  http://www.audiomisc.co.uk/HFN/HDCD/Enigma.html
-  http://www.audiomisc.co.uk/HFN/HDCD/Examined.html
+/**
+ * @file
+ * HDCD decoding filter
  */
 
 #include "libavutil/opt.h"
@@ -43,7 +49,8 @@
 #include "internal.h"
 #include "audio.h"
 
-static const uint32_t peaktab[] = {
+#define PEAK_EXT_LEVEL 0x5981 /* + sizeof(peaktab)-1 = 0x8000  */
+static const uint32_t peaktab[0x2680] = {
     0x2cc08300, 0x2cc10600, 0x2cc18900, 0x2cc20c00, 0x2cc28f00, 0x2cc31200, 0x2cc39500, 0x2cc41800, 0x2cc49b00, 0x2cc51e00, 0x2cc5a100, 0x2cc62400, 0x2cc6a700, 0x2cc72a00, 0x2cc7ad00, 0x2cc83000,
     0x2cc8b300, 0x2cc93600, 0x2cc9b900, 0x2cca3c00, 0x2ccabf00, 0x2ccb4200, 0x2ccbc500, 0x2ccc4800, 0x2ccccb00, 0x2ccd4e00, 0x2ccdd100, 0x2cce5400, 0x2cced700, 0x2ccf5a00, 0x2ccfdd00, 0x2cd06000,
     0x2cd0e300, 0x2cd16600, 0x2cd1e900, 0x2cd26c00, 0x2cd2ef00, 0x2cd37200, 0x2cd3f500, 0x2cd47800, 0x2cd4fb00, 0x2cd57e00, 0x2cd60100, 0x2cd68400, 0x2cd70700, 0x2cd78a00, 0x2cd80d00, 0x2cd89000,
@@ -816,45 +823,61 @@ static const int32_t gaintab[] = {
     0x35fa26
 };
 
+#define HDCD_PROCESS_STEREO_DEFAULT 1
+#define HDCD_MAX_CHANNELS 2
+
+/** convert to float from 4-bit (3.1) fixed-point
+ *  the always-negative value is stored positive, so make it negative */
+#define GAINTOFLOAT(g) (g) ? -(float)(g>>1) - ((g & 1) ? 0.5 : 0.0) : 0.0
+
+/** apply gain, 11-bit (3.8) fixed point,
+ *  always negative but stored positive. */
+#define APPLY_GAIN(s,g) do{int64_t s64 = s; s64 *= gaintab[g]; s = (int32_t)(s64 >> 23); }while(0);
+
+/** tone generator: sample_number, frequency, sample_rate, amplitude */
+#define TONEGEN16(sn, f, sr, a) (int16_t)(sin((6.28318530718 * (sn) * (f)) /(sr)) * (a) * 0x7fff)
+
 typedef struct {
     uint64_t window;
     unsigned char readahead;
 
-    /* arg is set when a packet prefix is found.
-     * control is the active control code, where
-     * bit 0-3: target_gain, 4-bit (3.1) fixed-point value
-     * bit 4  : peak_extend
-     * bit 5  : transient_filter
-     * bit 6,7: always zero */
-    unsigned char arg, control;
-    unsigned sustain, sustain_reset; /* code detect timer */
+    /** arg is set when a packet prefix is found.
+     *  control is the active control code, where
+     *  bit 0-3: target_gain, 4-bit (3.1) fixed-point value
+     *  bit 4  : peak_extend
+     *  bit 5  : transient_filter
+     *  bit 6,7: always zero */
+    uint8_t arg, control;
+    unsigned int sustain, sustain_reset; /**< code detect timer */
 
-    int running_gain; /* 11-bit (3.8) fixed point, extended from target_gain */
+    int running_gain; /**< 11-bit (3.8) fixed point, extended from target_gain */
 
     /* counters */
-    int code_counterA;            /* 8-bit format packet */
-    int code_counterA_almost;     /* looks like an A code, but a bit expected to be 0 is 1 */
-    int code_counterB;            /* 16-bit format packet, 8-bit code, 8-bit XOR of code */
-    int code_counterB_checkfails; /* looks like a B code, but doesn't pass the XOR check */
-    int code_counterC;            /* packet prefix was found, expect a code */
-    int code_counterC_unmatched;  /* told to look for a code, but didn't find one */
-    int count_peak_extend;        /* valid packets where peak_extend was enabled */
-    int count_transient_filter;   /* valid packets where filter was detected */
-    /* target_gain is a 4-bit (3.1) fixed-point value, always
-     * negative, but stored positive.
-     * The 16 possible values range from -7.5 to 0.0 dB in
-     * steps of 0.5, but no value below -6.0 dB should appear. */
-    int gain_counts[16]; /* for cursiosity, mostly */
+    int code_counterA;            /**< 8-bit format packet */
+    int code_counterA_almost;     /**< looks like an A code, but a bit expected to be 0 is 1 */
+    int code_counterB;            /**< 16-bit format packet, 8-bit code, 8-bit XOR of code */
+    int code_counterB_checkfails; /**< looks like a B code, but doesn't pass the XOR check */
+    int code_counterC;            /**< packet prefix was found, expect a code */
+    int code_counterC_unmatched;  /**< told to look for a code, but didn't find one */
+    int count_peak_extend;        /**< valid packets where peak_extend was enabled */
+    int count_transient_filter;   /**< valid packets where filter was detected */
+    /** target_gain is a 4-bit (3.1) fixed-point value, always
+     *  negative, but stored positive.
+     *  The 16 possible values range from -7.5 to 0.0 dB in
+     *  steps of 0.5, but no value below -6.0 dB should appear. */
+    int gain_counts[16];
     int max_gain;
-    /* occurences of code detect timer expiring without detecting
-     * a code. -1 for timer never set. */
+    /** occurences of code detect timer expiring without detecting
+     *  a code. -1 for timer never set. */
     int count_sustain_expired;
+
+    int _ana_snb;               /**< used in the analyze mode tone generator */
 } hdcd_state_t;
 
 typedef enum {
-    HDCD_PE_NEVER        = 0,
-    HDCD_PE_INTERMITTENT = 1,
-    HDCD_PE_PERMANENT    = 2,
+    HDCD_PE_NEVER        = 0, /**< All valid packets have PE set to off */
+    HDCD_PE_INTERMITTENT = 1, /**< Some valid packets have PE set to on */
+    HDCD_PE_PERMANENT    = 2, /**< All valid packets have PE set to on  */
 } hdcd_pe_t;
 
 static const char * const pe_str[] = {
@@ -863,25 +886,51 @@ static const char * const pe_str[] = {
     "enabled permanently"
 };
 
-#define HDCD_PROCESS_STEREO_DEFAULT 1
-#define HDCD_MAX_CHANNELS 2
+typedef enum {
+    HDCD_NONE            = 0,  /**< HDCD packets do not (yet) appear  */
+    HDCD_NO_EFFECT       = 1,  /**< HDCD packets appear, but all control codes are NOP */
+    HDCD_EFFECTUAL       = 2,  /**< HDCD packets appear, and change the output in some way */
+} hdcd_detection_t;
 
-/* convert to float from 4-bit (3.1) fixed-point
- * the always-negative value is stored positive, so make it negative */
-#define GAINTOFLOAT(g) (g) ? -(float)(g>>1) - ((g & 1) ? 0.5 : 0.0) : 0.0
+typedef enum {
+    HDCD_PVER_NONE       = 0, /**< No packets (yet) discovered */
+    HDCD_PVER_A          = 1, /**< Packets of type A (8-bit control) discovered */
+    HDCD_PVER_B          = 2, /**< Packets of type B (8-bit control, 8-bit XOR) discovered */
+    HDCD_PVER_MIX        = 3, /**< Packets of type A and B discovered, most likely an encoding error */
+} hdcd_pf_t;
 
-#define HDCD_ANA_OFF 0
+static const char * const pf_str[] = {
+    "?", "A", "B", "A+B"
+};
+
+typedef struct {
+    hdcd_detection_t hdcd_detected;
+    hdcd_pf_t packet_type;
+    int total_packets;         /**< valid packets */
+    int errors;                /**< detectable errors */
+    hdcd_pe_t peak_extend;
+    int uses_transient_filter;
+    float max_gain_adjustment; /**< in dB, expected in the range -7.5 to 0.0 */
+    int cdt_expirations;       /**< -1 for never set, 0 for set but never expired */
+
+    int _active_count;         /**< used internally */
+} hdcd_detection_data_t;
+
+typedef enum {
+    HDCD_ANA_OFF    = 0,
+    HDCD_ANA_LLE    = 1,
+    HDCD_ANA_PE     = 2,
+    HDCD_ANA_CDT    = 3,
+    HDCD_ANA_TGM    = 4,
+    HDCD_ANA_TOP    = 5, /**< used in max value of AVOption */
+} hdcd_ana_mode_t;
+
+/** analyze mode descriptions: macro for AVOption definitions, array of const char for mapping mode to string */
 #define HDCD_ANA_OFF_DESC "disabled"
-#define HDCD_ANA_LLE 1
 #define HDCD_ANA_LLE_DESC "gain adjustment level at each sample"
-#define HDCD_ANA_PE  2
 #define HDCD_ANA_PE_DESC  "samples where peak extend occurs"
-#define HDCD_ANA_CDT 3
 #define HDCD_ANA_CDT_DESC "samples where the code detect timer is active"
-#define HDCD_ANA_TGM 4
 #define HDCD_ANA_TGM_DESC "samples where the target gain does not match between channels"
-#define HDCD_ANA_TOP 5 /* used in max value of AVOption */
-
 static const char * const ana_mode_str[] = {
     HDCD_ANA_OFF_DESC,
     HDCD_ANA_LLE_DESC,
@@ -894,45 +943,50 @@ typedef struct HDCDContext {
     const AVClass *class;
     hdcd_state_t state[HDCD_MAX_CHANNELS];
 
-    /* use hdcd_*_stereo() functions to process both channels together.
-     * -af hdcd=process_stereo=0 for off
-     * -af hdcd=process_stereo=1 for on
-     * default is HDCD_PROCESS_STEREO_DEFAULT */
+    /* AVOption members */
+    /** use hdcd_*_stereo() functions to process both channels together.
+     *  -af hdcd=process_stereo=0 for off
+     *  -af hdcd=process_stereo=1 for on
+     *  default is HDCD_PROCESS_STEREO_DEFAULT */
     int process_stereo;
-    /* always extend peaks above -3dBFS even if PE isn't signaled
-     * -af hdcd=force_pe=0 for off
-     * -af hdcd=force_pe=1 for on
-     * default is off */
+    /** always extend peaks above -3dBFS even if PE isn't signaled
+     *  -af hdcd=force_pe=0 for off
+     *  -af hdcd=force_pe=1 for on
+     *  default is off */
     int force_pe;
 
-    /* analyze mode replaces the audio with a solid tone and adjusts
-     * the amplitude to signal some specific aspect of the decoding
-     * process. See docs or HDCD_ANA_* defines. */
+    /** analyze mode replaces the audio with a solid tone and adjusts
+     *  the amplitude to signal some specific aspect of the decoding
+     *  process. See docs or HDCD_ANA_* defines. */
     int analyze_mode;
-    int ana_snb;            /* used in tone generation */
 
-    /* config_input() and config_output() scan links for any resampling
-     * or format changes. If found, warnings are issued and bad_config
-     * is set. */
+    int cdt_ms;               /**< code detect timer period in ms */
+
+    int disable_autoconvert;  /**< disable any format conversion or resampling in the filter graph */
+    /* end AVOption members */
+
+    /** config_input() and config_output() scan links for any resampling
+     *  or format changes. If found, warnings are issued and bad_config
+     *  is set. */
     int bad_config;
 
-    AVFilterContext *fctx; /* filter context for logging errors */
-    int sample_count;      /* used in error logging */
-    int val_target_gain;   /* last matching target_gain in both channels */
+    AVFilterContext *fctx; /**< filter context for logging errors */
+    int sample_count;      /**< used in error logging */
+    int val_target_gain;   /**< last matching target_gain in both channels */
 
     /* User information/stats */
-    int hdcd_detected;
-    int det_errors;            /* detectable errors */
-    hdcd_pe_t peak_extend;
-    int uses_transient_filter; /* detected, but not implemented */
-    float max_gain_adjustment; /* in dB, expected in the range -6.0 to 0.0 */
+    hdcd_detection_data_t detect;
 } HDCDContext;
 
 #define OFFSET(x) offsetof(HDCDContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hdcd_options[] = {
+    { "disable_autoconvert", "Disable any format conversion or resampling in the filter graph.",
+        OFFSET(disable_autoconvert), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, A },
     { "process_stereo", "Process stereo channels together. Only apply target_gain when both channels match.",
         OFFSET(process_stereo), AV_OPT_TYPE_BOOL, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, A },
+    { "cdt_ms", "Code detect timer period in ms.",
+        OFFSET(cdt_ms), AV_OPT_TYPE_INT, { .i64 = 2000 }, 100, 60000, A },
     { "force_pe", "Always extend peaks above -3dBFS even when PE is not signaled.",
         OFFSET(force_pe), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, A },
     { "analyze_mode",  "Replace audio with solid tone and signal some processing aspect in the amplitude.",
@@ -947,9 +1001,7 @@ static const AVOption hdcd_options[] = {
 
 AVFILTER_DEFINE_CLASS(hdcd);
 
-#define APPLY_GAIN(s,g) do{int64_t s64 = s; s64 *= gaintab[g]; s = (int32_t)(s64 >> 23); }while(0);
-
-static void hdcd_reset(hdcd_state_t *state, unsigned rate)
+static void hdcd_reset(hdcd_state_t *state, unsigned rate, unsigned cdt_ms)
 {
     int i;
 
@@ -961,7 +1013,7 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     state->running_gain = 0;
 
     state->sustain = 0;
-    state->sustain_reset = rate * 10;
+    state->sustain_reset = cdt_ms*rate/1000;
 
     state->code_counterA = 0;
     state->code_counterA_almost = 0;
@@ -974,9 +1026,11 @@ static void hdcd_reset(hdcd_state_t *state, unsigned rate)
     for(i = 0; i < 16; i++) state->gain_counts[i] = 0;
     state->max_gain = 0;
     state->count_sustain_expired = -1;
+
+    state->_ana_snb = 0;
 }
 
-/* update the user info/counters */
+/** update the user info/counters */
 static void hdcd_update_info(hdcd_state_t *state)
 {
     if (state->control & 16) state->count_peak_extend++;
@@ -1242,7 +1296,24 @@ static int hdcd_scan_stereo(HDCDContext *ctx, const int32_t *samples, int max)
     return result;
 }
 
-/* encode a value in the given sample by adjusting the amplitude */
+/** replace audio with solid tone, but save LSBs */
+static void hdcd_analyze_prepare(hdcd_state_t *state, int32_t *samples, int count, int stride) {
+    int n;
+    for (n = 0; n < count * stride; n += stride) {
+        /* in analyze mode, the audio is replaced by a solid tone, and
+         * amplitude is changed to signal when the specified feature is
+         * used.
+         * bit 0: HDCD signal preserved
+         * bit 1: Original sample was above PE level */
+        int32_t save = (abs(samples[n]) - PEAK_EXT_LEVEL >= 0) ? 2 : 0; /* above PE level */
+        save |= samples[n] & 1;                      /* save LSB for HDCD packets */
+        samples[n] = TONEGEN16(state->_ana_snb, 277.18, 44100, 0.1);
+        samples[n] = (samples[n] | 3) ^ ((~save) & 3);
+        if (++state->_ana_snb > 0x3fffffff) state->_ana_snb = 0;
+    }
+}
+
+/** encode a value in the given sample by adjusting the amplitude */
 static int32_t hdcd_analyze_gen(int32_t sample, unsigned int v, unsigned int maxv)
 {
     float sflt = sample, vv = v;
@@ -1252,8 +1323,8 @@ static int32_t hdcd_analyze_gen(int32_t sample, unsigned int v, unsigned int max
     return (int32_t)sflt;
 }
 
-/* behaves like hdcd_envelope(), but encodes processing information in
- * a way that is audible (and visible in an audio editor) to aid analysis. */
+/** behaves like hdcd_envelope(), but encodes processing information in
+ *  a way that is audible (and visible in an audio editor) to aid analysis. */
 static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int target_gain, int extend, int mode, int cdt_active, int tg_mismatch)
 {
     static const int maxg = 0xf << 7;
@@ -1313,6 +1384,7 @@ static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int t
     return gain;
 }
 
+/** apply HDCD decoding parameters to a series of samples */
 static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int target_gain, int extend)
 {
     int i;
@@ -1321,10 +1393,11 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     if (extend) {
         for (i = 0; i < count; i++) {
             int32_t sample = samples[i * stride];
-            int32_t asample = abs(sample) - 0x5981;
-            if (asample >= 0)
+            int32_t asample = abs(sample) - PEAK_EXT_LEVEL;
+            if (asample >= 0) {
+                av_assert0(asample < sizeof(peaktab));
                 sample = sample >= 0 ? peaktab[asample] : -peaktab[asample];
-            else
+            } else
                 sample <<= 15;
 
             samples[i * stride] = sample;
@@ -1372,7 +1445,7 @@ static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int 
     return gain;
 }
 
-/* extract fields from control code */
+/** extract fields from control code */
 static void hdcd_control(HDCDContext *ctx, hdcd_state_t *state, int *peak_extend, int *target_gain)
 {
     *peak_extend = (ctx->force_pe || state->control & 16);
@@ -1409,6 +1482,9 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state_t *state, int32_t *samples
     int gain = state->running_gain;
     int peak_extend, target_gain;
     int lead = 0;
+
+    if (ctx->analyze_mode)
+        hdcd_analyze_prepare(state, samples, count, stride);
 
     hdcd_control(ctx, state, &peak_extend, &target_gain);
     while (count > lead) {
@@ -1448,8 +1524,14 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
     int gain[2] = {ctx->state[0].running_gain, ctx->state[1].running_gain};
     int peak_extend[2];
     int lead = 0;
+    int ctlret;
 
-    int ctlret = hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
+    if (ctx->analyze_mode) {
+        hdcd_analyze_prepare(&ctx->state[0], samples, count, stride);
+        hdcd_analyze_prepare(&ctx->state[1], samples + 1, count, stride);
+    }
+
+    ctlret = hdcd_control_stereo(ctx, &peak_extend[0], &peak_extend[1]);
     while (count > lead) {
         int envelope_run, run;
 
@@ -1500,8 +1582,61 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
     ctx->state[1].running_gain = gain[1];
 }
 
-/* tone generator: sample_number, frequency, sample_rate, amplitude */
-#define TONEGEN16(sn, f, sr, a) (int16_t)(sin((6.28318530718 * (sn) * (f)) /(sr)) * (a) * 0x7fff)
+static void hdcd_detect_reset(hdcd_detection_data_t *detect) {
+    detect->hdcd_detected = HDCD_NONE;
+    detect->packet_type = HDCD_PVER_NONE;
+    detect->total_packets = 0;
+    detect->errors = 0;
+    detect->peak_extend = HDCD_PE_NEVER;
+    detect->uses_transient_filter = 0;
+    detect->max_gain_adjustment = 0.0;
+    detect->cdt_expirations = -1;
+    detect->_active_count = 0;
+}
+
+static void hdcd_detect_start(hdcd_detection_data_t *detect) {
+    detect->errors = 0;          /* re-sum every pass */
+    detect->total_packets = 0;
+    detect->_active_count = 0;   /* will need to match channels at hdcd_detect_end() */
+    detect->cdt_expirations = -1;
+}
+
+static void hdcd_detect_onech(hdcd_state_t *state, hdcd_detection_data_t *detect) {
+    hdcd_pe_t pe = HDCD_PE_NEVER;
+    detect->uses_transient_filter |= !!(state->count_transient_filter);
+    detect->total_packets += state->code_counterA + state->code_counterB;
+    if (state->code_counterA) detect->packet_type |= HDCD_PVER_A;
+    if (state->code_counterB) detect->packet_type |= HDCD_PVER_B;
+    if (state->count_peak_extend) {
+        /* if every valid packet has used PE, call it permanent */
+        if (state->count_peak_extend == state->code_counterA + state->code_counterB)
+            pe = HDCD_PE_PERMANENT;
+        else
+            pe = HDCD_PE_INTERMITTENT;
+        if (detect->peak_extend != HDCD_PE_INTERMITTENT)
+            detect->peak_extend = pe;
+    }
+    detect->max_gain_adjustment = FFMIN(detect->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
+    detect->errors += state->code_counterA_almost
+        + state->code_counterB_checkfails
+        + state->code_counterC_unmatched;
+    if (state->sustain) detect->_active_count++;
+    if (state->count_sustain_expired >= 0) {
+        if (detect->cdt_expirations == -1) detect->cdt_expirations = 0;
+        detect->cdt_expirations += state->count_sustain_expired;
+    }
+}
+
+static void hdcd_detect_end(hdcd_detection_data_t *detect, int channels) {
+    /* HDCD is detected if a valid packet is active in all
+     * channels at the same time. */
+    if (detect->_active_count == channels) {
+        if (detect->max_gain_adjustment || detect->peak_extend)
+            detect->hdcd_detected = HDCD_EFFECTUAL;
+        else
+            detect->hdcd_detected = HDCD_NO_EFFECT;
+    }
+}
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -1511,89 +1646,41 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     const int16_t *in_data;
     int32_t *out_data;
-    int n, c;
+    int n, c, result;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    av_frame_copy_props(out, in);
-    out->format = outlink->format;
+    result = av_frame_copy_props(out, in);
+    if (result) {
+        av_frame_free(&out);
+        av_frame_free(&in);
+        return result;
+    }
+    out->format = outlink->format; // is this needed?
 
     in_data  = (int16_t*)in->data[0];
     out_data = (int32_t*)out->data[0];
-    for (c = n = 0; n < in->nb_samples * in->channels; n++) {
+    for (c = n = 0; n < in->nb_samples * in->channels; n++)
         out_data[n] = in_data[n];
-        if (s->analyze_mode) {
-            /* in analyze mode, the audio is replaced by a solid tone, and
-             * amplitude is changed to signal when the specified feature is
-             * used.
-             * bit 0: HDCD signal preserved
-             * bit 1: Original sample was above PE level */
-            int32_t save = (abs(in_data[n]) - 0x5981 >= 0) ? 2 : 0; /* above PE level */
-            save |= in_data[n] & 1;                      /* save LSB for HDCD packets */
-            out_data[n] = TONEGEN16(s->ana_snb, 277.18, 44100, 0.1);
-            out_data[n] = (out_data[n] | 3) ^ ((~save) & 3);
-            if (++c == in->channels) { s->ana_snb++; c = 0; }
-            if (s->ana_snb > 0x3fffffff) s->ana_snb = 0;
+
+    if (s->process_stereo) {
+        hdcd_detect_start(&s->detect);
+        hdcd_process_stereo(s, out_data, in->nb_samples);
+        hdcd_detect_onech(&s->state[0], &s->detect);
+        hdcd_detect_onech(&s->state[1], &s->detect);
+        hdcd_detect_end(&s->detect, 2);
+    } else {
+        hdcd_detect_start(&s->detect);
+        for (c = 0; c < in->channels; c++) {
+            hdcd_process(s, &s->state[c], out_data + c, in->nb_samples, in->channels);
+            hdcd_detect_onech(&s->state[c], &s->detect);
         }
+        hdcd_detect_end(&s->detect, in->channels);
     }
 
-    s->det_errors = 0; /* re-sum every pass */
-    if (s->process_stereo && inlink->channels == 2) {
-        float mga = 0.0;
-        hdcd_process_stereo(s, out_data, in->nb_samples);
-        /* HDCD is detected if a valid packet is active in both
-         * channels at the same time. */
-        if (s->state[0].sustain && s->state[1].sustain) s->hdcd_detected = 1;
-        if (s->state[0].count_peak_extend || s->state[1].count_peak_extend) {
-            int packets = s->state[0].code_counterA
-                + s->state[0].code_counterB
-                + s->state[1].code_counterA
-                + s->state[1].code_counterB;
-            /* if every valid packet has used PE, call it permanent */
-            if (packets == s->state[0].count_peak_extend + s->state[1].count_peak_extend)
-                s->peak_extend = HDCD_PE_PERMANENT;
-            else
-                s->peak_extend = HDCD_PE_INTERMITTENT;
-        } else s->peak_extend = HDCD_PE_NEVER;
-        s->uses_transient_filter = (s->state[0].count_transient_filter || s->state[1].count_transient_filter);
-        mga = FFMIN(GAINTOFLOAT(s->state[0].max_gain), GAINTOFLOAT(s->state[1].max_gain));
-        s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, mga);
-        s->det_errors += s->state[0].code_counterA_almost
-            + s->state[0].code_counterB_checkfails
-            + s->state[0].code_counterC_unmatched
-            + s->state[1].code_counterA_almost
-            + s->state[1].code_counterB_checkfails
-            + s->state[1].code_counterC_unmatched;
-    } else {
-        int detect=0;
-        int packets=0;
-        int pe_packets=0;
-        for (c = 0; c < inlink->channels; c++) {
-            hdcd_state_t *state = &s->state[c];
-            hdcd_process(s, state, out_data + c, in->nb_samples, out->channels);
-            if (state->sustain) detect++;
-            packets += state->code_counterA + state->code_counterB;
-            pe_packets += state->count_peak_extend;
-            s->uses_transient_filter |= !!(state->count_transient_filter);
-            s->max_gain_adjustment = FFMIN(s->max_gain_adjustment, GAINTOFLOAT(state->max_gain));
-            s->det_errors += state->code_counterA_almost
-                + state->code_counterB_checkfails
-                + state->code_counterC_unmatched;
-        }
-        if (pe_packets) {
-            /* if every valid packet has used PE, call it permanent */
-            if (packets == pe_packets)
-                s->peak_extend = HDCD_PE_PERMANENT;
-            else
-                s->peak_extend = HDCD_PE_INTERMITTENT;
-        } else s->peak_extend = HDCD_PE_NEVER;
-        /* HDCD is detected if a valid packet is active in all
-         * channels at the same time. */
-        if (detect == inlink->channels) s->hdcd_detected = 1;
-    }
     s->sample_count += in->nb_samples * in->channels;
 
     av_frame_free(&in);
@@ -1667,15 +1754,18 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_VERBOSE, "Channel %d: tg %0.1f: %d\n", i, GAINTOFLOAT(j), state->gain_counts[j]);
         }
     }
+    av_log(ctx, AV_LOG_VERBOSE, "Packets: type: %s, total: %d\n",
+        pf_str[s->detect.packet_type],
+        s->detect.total_packets);
 
     /* log the HDCD decode information */
-    if (s->hdcd_detected)
+    if (s->detect.hdcd_detected)
         av_log(ctx, AV_LOG_INFO,
             "HDCD detected: yes, peak_extend: %s, max_gain_adj: %0.1f dB, transient_filter: %s, detectable errors: %d%s%s\n",
-            pe_str[s->peak_extend],
-            s->max_gain_adjustment,
-            (s->uses_transient_filter) ? "detected" : "not detected",
-            s->det_errors, (s->det_errors) ? " (try -v verbose)" : "",
+            pe_str[s->detect.peak_extend],
+            s->detect.max_gain_adjustment,
+            (s->detect.uses_transient_filter) ? "detected" : "not detected",
+            s->detect.errors, (s->detect.errors) ? " (try -v verbose)" : "",
             (s->bad_config) ? " (bad_config)" : ""
             );
     else
@@ -1690,20 +1780,28 @@ static av_cold int init(AVFilterContext *ctx)
     HDCDContext *s = ctx->priv;
     int c;
 
-    s->max_gain_adjustment = 0.0;
     s->sample_count = 0;
     s->fctx = ctx;
     s->bad_config = 0;
 
+    hdcd_detect_reset(&s->detect);
     for (c = 0; c < HDCD_MAX_CHANNELS; c++) {
-        hdcd_reset(&s->state[c], 44100);
+        hdcd_reset(&s->state[c], 44100, s->cdt_ms);
     }
 
+    av_log(ctx, AV_LOG_VERBOSE, "CDT period: %dms (%d samples @44100Hz)\n",
+        s->cdt_ms, s->cdt_ms*44100/1000 );
     av_log(ctx, AV_LOG_VERBOSE, "Process mode: %s\n",
         (s->process_stereo) ? "process stereo channels together" : "process each channel separately");
     av_log(ctx, AV_LOG_VERBOSE, "Force PE: %s\n",
         (s->force_pe) ? "on" : "off");
-    av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n", s->analyze_mode, ana_mode_str[s->analyze_mode] );
+    av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n",
+        s->analyze_mode, ana_mode_str[s->analyze_mode] );
+    if (s->disable_autoconvert)
+        avfilter_graph_set_auto_convert(ctx->graph, AVFILTER_AUTO_CONVERT_NONE);
+    av_log(ctx, AV_LOG_VERBOSE, "Auto-convert: %s (requested: %s)\n",
+        (ctx->graph->disable_auto_convert) ? "disabled" : "enabled",
+        (s->disable_autoconvert) ? "disable" : "do not disable" );
 
     return 0;
 }
@@ -1711,7 +1809,14 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink) {
     AVFilterContext *ctx = inlink->dst;
     HDCDContext *s = ctx->priv;
-    AVFilterLink *lk = inlink;
+    AVFilterLink *lk;
+
+    if (inlink->channels != 2 && s->process_stereo) {
+        av_log(ctx, AV_LOG_WARNING, "process_stereo disabled (channels = %d)", inlink->channels);
+        s->process_stereo = 0;
+    }
+
+    lk = inlink;
     while(lk != NULL) {
         AVFilterContext *nextf = lk->src;
         if (lk->type == AVMEDIA_TYPE_AUDIO) {

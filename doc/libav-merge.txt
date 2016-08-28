@@ -103,6 +103,10 @@ It has two modes: merge, and noop. The noop mode creates a merge with no change
 to the HEAD. You can pass a hash as extra argument to reference a justification
 (it is common that we already have the change done in FFmpeg).
 
+Also see tools/murge, you can copy and paste a 3 way conflict into its stdin
+and it will display colored diffs. Any arguments to murge (like ones to suppress
+whitespace differences) are passed into colordiff.
+
 TODO/FIXME/UNMERGED
 ===================
 

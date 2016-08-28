@@ -76,6 +76,7 @@ typedef struct MECmpContext {
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     me_cmp_func pix_abs[2][4];
+    me_cmp_func median_sad[2];
 } MECmpContext;
 
 void ff_me_cmp_init_static(void);

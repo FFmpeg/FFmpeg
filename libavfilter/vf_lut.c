@@ -66,6 +66,7 @@ typedef struct LutContext {
     int hsub, vsub;
     double var_values[VAR_VARS_NB];
     int is_rgb, is_yuv;
+    int is_planar;
     int is_16bit;
     int step;
     int negate_alpha; /* only used by negate */
@@ -126,7 +127,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,         \
     AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,         \
     AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,        \
-    AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE
+    AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE,     \
+    AV_PIX_FMT_GBRP,         AV_PIX_FMT_GBRAP,        \
+    AV_PIX_FMT_GBRP9,        AV_PIX_FMT_GBRP10,       \
+    AV_PIX_FMT_GBRP12,       AV_PIX_FMT_GBRP14,       \
+    AV_PIX_FMT_GBRP16,       AV_PIX_FMT_GBRAP12,      \
+    AV_PIX_FMT_GBRAP16
 
 static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
@@ -268,10 +274,11 @@ static int config_props(AVFilterLink *inlink)
         break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
-        max[0] = max[1] = max[2] = max[3] = 255;
+        max[0] = max[1] = max[2] = max[3] = 255 * (1 << (desc->comp[0].depth - 8));
     }
 
     s->is_yuv = s->is_rgb = 0;
+    s->is_planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
     if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) s->is_yuv = 1;
     else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) s->is_rgb = 1;
 
@@ -345,7 +352,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    if (s->is_rgb && s->is_16bit) {
+    if (s->is_rgb && s->is_16bit && !s->is_planar) {
         /* packed, 16-bit */
         uint16_t *inrow, *outrow, *inrow0, *outrow0;
         const int w = inlink->w;
@@ -382,7 +389,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             inrow0  += in_linesize;
             outrow0 += out_linesize;
         }
-    } else if (s->is_rgb) {
+    } else if (s->is_rgb && !s->is_planar) {
         /* packed */
         uint8_t *inrow, *outrow, *inrow0, *outrow0;
         const int w = inlink->w;
@@ -412,7 +419,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             outrow0 += out_linesize;
         }
     } else if (s->is_16bit) {
-        // planar yuv >8 bit depth
+        // planar >8 bit depth
         uint16_t *inrow, *outrow;
 
         for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {

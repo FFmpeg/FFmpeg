@@ -248,6 +248,7 @@ typedef struct BSFListContext {
     unsigned idx;           // index of currently processed BSF
     unsigned flushed_idx;   // index of BSF being flushed
 
+    char * item_name;
 } BSFListContext;
 
 
@@ -345,11 +346,37 @@ static void bsf_list_close(AVBSFContext *bsf)
     for (i = 0; i < lst->nb_bsfs; ++i)
         av_bsf_free(&lst->bsfs[i]);
     av_freep(&lst->bsfs);
+    av_freep(&lst->item_name);
+}
+
+static const char *bsf_list_item_name(void *ctx)
+{
+    static const char *null_filter_name = "null";
+    AVBSFContext *bsf_ctx = ctx;
+    BSFListContext *lst = bsf_ctx->priv_data;
+
+    if (!lst->nb_bsfs)
+        return null_filter_name;
+
+    if (!lst->item_name) {
+        int i;
+        AVBPrint bp;
+        av_bprint_init(&bp, 16, 128);
+
+        av_bprintf(&bp, "bsf_list(");
+        for (i = 0; i < lst->nb_bsfs; i++)
+            av_bprintf(&bp, i ? ",%s" : "%s", lst->bsfs[i]->filter->name);
+        av_bprintf(&bp, ")");
+
+        av_bprint_finalize(&bp, &lst->item_name);
+    }
+
+    return lst->item_name;
 }
 
 static const AVClass bsf_list_class = {
         .class_name = "bsf_list",
-        .item_name  = av_default_item_name,
+        .item_name  = bsf_list_item_name,
         .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -405,7 +432,7 @@ int av_bsf_list_append2(AVBSFList *lst, const char *bsf_name, AVDictionary ** op
         return ret;
 
     if (options) {
-        ret = av_opt_set_dict(bsf, options);
+        ret = av_opt_set_dict2(bsf, options, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0)
             goto end;
     }

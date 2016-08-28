@@ -5944,7 +5944,7 @@ static int mov_write_trailer(AVFormatContext *s)
             track->vos_len  = par->extradata_size;
             track->vos_data = av_malloc(track->vos_len);
             if (!track->vos_data) {
-                AVERROR(ENOMEM);
+                res = AVERROR(ENOMEM);
                 goto error;
             }
             memcpy(track->vos_data, par->extradata, track->vos_len);

@@ -861,7 +861,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    av_frame_copy_props(out, in);
+    res = av_frame_copy_props(out, in);
+    if (res < 0) {
+        av_frame_free(&in);
+        return res;
+    }
 
     out->color_primaries = s->user_prm == AVCOL_PRI_UNSPECIFIED ?
                            default_prm[FFMIN(s->user_all, CS_NB)] : s->user_prm;
@@ -956,6 +960,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUVJ420P,  AV_PIX_FMT_YUVJ422P,  AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_NONE
     };
     int res;

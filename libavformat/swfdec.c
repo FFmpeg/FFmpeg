@@ -397,6 +397,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             if (linesize * height > pkt->size) {
                 res = AVERROR_INVALIDDATA;
+                av_packet_unref(pkt);
                 goto bitmap_end;
             }
 

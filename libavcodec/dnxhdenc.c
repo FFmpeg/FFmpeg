@@ -324,7 +324,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (ctx->profile == FF_PROFILE_DNXHR_HQX ||
+    if (ctx->profile == FF_PROFILE_DNXHR_444 ||
         ctx->profile == FF_PROFILE_DNXHR_HQX) {
         avpriv_report_missing_feature(avctx,
                "dnxhr_444 or dnxhr_hqx profile");

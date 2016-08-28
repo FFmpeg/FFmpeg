@@ -1070,6 +1070,182 @@ AVFilter ff_vsrc_rgbtestsrc = {
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
 
+#if CONFIG_YUVTESTSRC_FILTER
+
+#define yuvtestsrc_options options
+AVFILTER_DEFINE_CLASS(yuvtestsrc);
+
+static void yuvtest_fill_picture8(AVFilterContext *ctx, AVFrame *frame)
+{
+    int x, y, w = frame->width, h = frame->height / 3;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const int factor = 1 << desc->comp[0].depth;
+    const int mid = 1 << (desc->comp[0].depth - 1);
+    uint8_t *ydst = frame->data[0];
+    uint8_t *udst = frame->data[1];
+    uint8_t *vdst = frame->data[2];
+    int ylinesize = frame->linesize[0];
+    int ulinesize = frame->linesize[1];
+    int vlinesize = frame->linesize[2];
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = c;
+            udst[x] = mid;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    h += h;
+    for (; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = c;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    for (; y < frame->height; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = mid;
+            vdst[x] = c;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+}
+
+static void yuvtest_fill_picture16(AVFilterContext *ctx, AVFrame *frame)
+{
+    int x, y, w = frame->width, h = frame->height / 3;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const int factor = 1 << desc->comp[0].depth;
+    const int mid = 1 << (desc->comp[0].depth - 1);
+    uint16_t *ydst = (uint16_t *)frame->data[0];
+    uint16_t *udst = (uint16_t *)frame->data[1];
+    uint16_t *vdst = (uint16_t *)frame->data[2];
+    int ylinesize = frame->linesize[0] / 2;
+    int ulinesize = frame->linesize[1] / 2;
+    int vlinesize = frame->linesize[2] / 2;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = c;
+            udst[x] = mid;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    h += h;
+    for (; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = c;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    for (; y < frame->height; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = mid;
+            vdst[x] = c;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+}
+
+static av_cold int yuvtest_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->draw_once = 1;
+    return init(ctx);
+}
+
+static int yuvtest_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static int yuvtest_config_props(AVFilterLink *outlink)
+{
+    TestSourceContext *test = outlink->src->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
+
+    test->fill_picture_fn = desc->comp[0].depth > 8 ? yuvtest_fill_picture16 : yuvtest_fill_picture8;
+    return config_props(outlink);
+}
+
+static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = yuvtest_config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_yuvtestsrc = {
+    .name          = "yuvtestsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &yuvtestsrc_class,
+    .init          = yuvtest_init,
+    .uninit        = uninit,
+    .query_formats = yuvtest_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_yuvtestsrc_outputs,
+};
+
+#endif /* CONFIG_YUVTESTSRC_FILTER */
+
 #if CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER
 
 static const uint8_t rainbow[7][4] = {

@@ -657,6 +657,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, did_split;
+    int64_t pts_backup, dts_backup;
+
+    pts_backup = pkt->pts;
+    dts_backup = pkt->dts;
 
     if (s->output_ts_offset) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -742,6 +746,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 fail:
     if (did_split)
         av_packet_merge_side_data(pkt);
+
+    if (ret < 0) {
+        pkt->pts = pts_backup;
+        pkt->dts = dts_backup;
+    }
 
     return ret;
 }
