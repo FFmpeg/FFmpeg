@@ -302,6 +302,7 @@
     <ClCompile Include="..\libavcodec\aliaspixenc.c" />
     <ClCompile Include="..\libavcodec\alsdec.c" />
     <ClCompile Include="..\libavcodec\bgmc.c" />
+    <ClCompile Include="..\libavcodec\mlz.c" />
     <ClCompile Include="..\libavcodec\amrnbdec.c" />
     <ClCompile Include="..\libavcodec\celp_filters.c" />
     <ClCompile Include="..\libavcodec\celp_math.c" />

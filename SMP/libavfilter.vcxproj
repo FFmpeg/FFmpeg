@@ -243,12 +243,18 @@
     <ClCompile Include="..\libavfilter\vf_hue.c" />
     <ClCompile Include="..\libavfilter\vf_hwdownload.c" />
     <ClCompile Include="..\libavfilter\vf_hwupload.c" />
+    <ClCompile Include="..\libavfilter\vf_hysteresis.c" />
     <ClCompile Include="..\libavfilter\vf_il.c" />
     <ClCompile Include="..\libavfilter\vf_kerndeint.c" />
     <ClCompile Include="..\libavfilter\vf_lenscorrection.c" />
     <ClCompile Include="..\libavfilter\vf_lut.c" />
+    <ClCompile Include="..\libavfilter\vf_lut2.c" />
+    <ClCompile Include="..\libavfilter\vf_maskedclamp.c" />
     <ClCompile Include="..\libavfilter\vf_mcdeint.c" />
     <ClCompile Include="..\libavfilter\vf_mergeplanes.c" />
+    <ClCompile Include="..\libavfilter\vf_mestimate.c" />
+    <ClCompile Include="..\libavfilter\motion_estimation.c" />
+    <ClCompile Include="..\libavfilter\vf_minterpolate.c" />
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c" />
     <ClCompile Include="..\libavfilter\vf_nnedi.c" />
     <ClCompile Include="..\libavfilter\vf_noise.c" />
@@ -293,6 +299,7 @@
     <ClCompile Include="..\libavfilter\vf_transpose.c" />
     <ClCompile Include="..\libavfilter\vf_unsharp.c" />
     <ClCompile Include="..\libavfilter\vf_uspp.c" />
+    <ClCompile Include="..\libavfilter\vf_vaguedenoiser.c" />
     <ClCompile Include="..\libavfilter\vf_vectorscope.c" />
     <ClCompile Include="..\libavfilter\vf_vflip.c" />
     <ClCompile Include="..\libavfilter\vf_vignette.c" />

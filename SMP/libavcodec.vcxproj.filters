@@ -726,6 +726,9 @@
     <ClCompile Include="..\libavcodec\bgmc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mlz.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\amrnbdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
