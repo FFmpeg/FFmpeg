@@ -1536,7 +1536,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
 
     uint32_t slice_mode_data;
-    uint32_t *slice_offsets;
+    uint32_t *slice_offsets = NULL;
     NV_ENC_LOCK_BITSTREAM lock_params = { 0 };
     NVENCSTATUS nv_status;
     int res = 0;
