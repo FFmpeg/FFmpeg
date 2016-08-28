@@ -155,8 +155,10 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
+    PNVENCODEAPIGETMAXSUPPORTEDVERSION nvenc_get_max_ver;
     PNVENCODEAPICREATEINSTANCE nvenc_create_instance;
     NVENCSTATUS err;
+    uint32_t nvenc_max_ver;
 
 #if CONFIG_CUDA
     dl_fn->cu_init                      = cuInit;
@@ -183,8 +185,24 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 
     LOAD_LIBRARY(dl_fn->nvenc, NVENC_LIBNAME);
 
+    LOAD_SYMBOL(nvenc_get_max_ver, dl_fn->nvenc,
+                "NvEncodeAPIGetMaxSupportedVersion");
     LOAD_SYMBOL(nvenc_create_instance, dl_fn->nvenc,
                 "NvEncodeAPICreateInstance");
+
+    err = nvenc_get_max_ver(&nvenc_max_ver);
+    if (err != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, err, "Failed to query nvenc max version");
+
+    av_log(avctx, AV_LOG_VERBOSE, "Loaded Nvenc version %d.%d\n", nvenc_max_ver >> 4, nvenc_max_ver & 0xf);
+
+    if ((NVENCAPI_MAJOR_VERSION << 4 | NVENCAPI_MINOR_VERSION) > nvenc_max_ver) {
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support the required nvenc API version. "
+               "Required: %d.%d Found: %d.%d\n",
+               NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION,
+               nvenc_max_ver >> 4, nvenc_max_ver & 0xf);
+        return AVERROR(ENOSYS);
+    }
 
     dl_fn->nvenc_funcs.version = NV_ENCODE_API_FUNCTION_LIST_VER;
 
