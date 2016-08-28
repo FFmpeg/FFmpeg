@@ -997,7 +997,7 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_log(c->fc, AV_LOG_INFO, "[aax] file checksum == "); // required by external tools
     for (i = 0; i < 20; i++)
-        av_log(sha, AV_LOG_INFO, "%02x", file_checksum[i]);
+        av_log(c->fc, AV_LOG_INFO, "%02x", file_checksum[i]);
     av_log(c->fc, AV_LOG_INFO, "\n");
 
     /* verify activation data */
