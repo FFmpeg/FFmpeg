@@ -61,6 +61,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+#if HAVE_SETDLLDIRECTORY
+#include <windows.h>
+#endif
 
 static int init_report(const char *env);
 
