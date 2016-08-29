@@ -61,6 +61,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 static int init_report(const char *env);
 
