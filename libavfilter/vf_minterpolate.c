@@ -936,8 +936,8 @@ static void set_frame_data(MIContext *mi_ctx, int alpha, AVFrame *avf_out)
                 for (i = 0; i < pixel->nb; i++) {
                     Frame *frame = &mi_ctx->frames[pixel->refs[i]];
                     if (chroma) {
-                        x_mv = (x >> mi_ctx->chroma_h_shift) + (pixel->mvs[i][0] >> mi_ctx->chroma_h_shift);
-                        y_mv = (y >> mi_ctx->chroma_v_shift) + (pixel->mvs[i][1] >> mi_ctx->chroma_v_shift);
+                        x_mv = (x >> mi_ctx->chroma_h_shift) + (pixel->mvs[i][0] / (1 << mi_ctx->chroma_h_shift));
+                        y_mv = (y >> mi_ctx->chroma_v_shift) + (pixel->mvs[i][1] / (1 << mi_ctx->chroma_v_shift));
                     } else {
                         x_mv = x + pixel->mvs[i][0];
                         y_mv = y + pixel->mvs[i][1];
