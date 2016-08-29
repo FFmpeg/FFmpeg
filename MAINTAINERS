@@ -136,7 +136,7 @@ Codecs:
   8svx.c                                Jaikrishnan Menon
   aacenc*, aaccoder.c                   Rostislav Pehlivanov
   alacenc.c                             Jaikrishnan Menon
-  alsdec.c                              Thilo Borgmann
+  alsdec.c                              Thilo Borgmann, Umair Khan
   ass*                                  Aurelien Jacobs
   asv*                                  Michael Niedermayer
   atrac3plus*                           Maxim Poliakovski
