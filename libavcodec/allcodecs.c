@@ -425,7 +425,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MACE3,             mace3);
     REGISTER_DECODER(MACE6,             mace6);
     REGISTER_DECODER(METASOUND,         metasound);
-    REGISTER_DECODER(MLP,               mlp);
+    REGISTER_ENCDEC (MLP,               mlp);
     REGISTER_DECODER(MP1,               mp1);
     REGISTER_DECODER(MP1FLOAT,          mp1float);
     REGISTER_ENCDEC (MP2,               mp2);
@@ -454,7 +454,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (SONIC,             sonic);
     REGISTER_ENCODER(SONIC_LS,          sonic_ls);
     REGISTER_DECODER(TAK,               tak);
-    REGISTER_DECODER(TRUEHD,            truehd);
+    REGISTER_ENCDEC (TRUEHD,            truehd);
     REGISTER_DECODER(TRUESPEECH,        truespeech);
     REGISTER_ENCDEC (TTA,               tta);
     REGISTER_DECODER(TWINVQ,            twinvq);
