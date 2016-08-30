@@ -184,10 +184,8 @@ typedef struct MIContext {
     double prev_mafd;
     double scd_threshold;
 
-    int chroma_height;
-    int chroma_width;
-    int chroma_h_shift;
-    int chroma_v_shift;
+    int log2_chroma_w;
+    int log2_chroma_h;
     int nb_planes;
 } MIContext;
 
@@ -335,10 +333,8 @@ static int config_input(AVFilterLink *inlink)
     const int width  = inlink->w;
     int i;
 
-    mi_ctx->chroma_height = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    mi_ctx->chroma_width = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-
-    avcodec_get_chroma_sub_sample(inlink->format, &mi_ctx->chroma_h_shift, &mi_ctx->chroma_v_shift);
+    mi_ctx->log2_chroma_h = desc->log2_chroma_h;
+    mi_ctx->log2_chroma_w = desc->log2_chroma_w;
 
     mi_ctx->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
@@ -936,8 +932,8 @@ static void set_frame_data(MIContext *mi_ctx, int alpha, AVFrame *avf_out)
                 for (i = 0; i < pixel->nb; i++) {
                     Frame *frame = &mi_ctx->frames[pixel->refs[i]];
                     if (chroma) {
-                        x_mv = (x >> mi_ctx->chroma_h_shift) + (pixel->mvs[i][0] / (1 << mi_ctx->chroma_h_shift));
-                        y_mv = (y >> mi_ctx->chroma_v_shift) + (pixel->mvs[i][1] / (1 << mi_ctx->chroma_v_shift));
+                        x_mv = (x >> mi_ctx->log2_chroma_w) + pixel->mvs[i][0] / (1 << mi_ctx->log2_chroma_w);
+                        y_mv = (y >> mi_ctx->log2_chroma_h) + pixel->mvs[i][1] / (1 << mi_ctx->log2_chroma_h);
                     } else {
                         x_mv = x + pixel->mvs[i][0];
                         y_mv = y + pixel->mvs[i][1];
@@ -949,7 +945,7 @@ static void set_frame_data(MIContext *mi_ctx, int alpha, AVFrame *avf_out)
                 val = ROUNDED_DIV(val, weight_sum);
 
                 if (chroma)
-                    avf_out->data[plane][(x >> mi_ctx->chroma_h_shift) + (y >> mi_ctx->chroma_v_shift) * avf_out->linesize[plane]] = val;
+                    avf_out->data[plane][(x >> mi_ctx->log2_chroma_w) + (y >> mi_ctx->log2_chroma_h) * avf_out->linesize[plane]] = val;
                 else
                     avf_out->data[plane][x + y * avf_out->linesize[plane]] = val;
             }
@@ -1092,8 +1088,8 @@ static void interpolate(AVFilterLink *inlink, AVFrame *avf_out)
                 int height = avf_out->height;
 
                 if (plane == 1 || plane == 2) {
-                    width = mi_ctx->chroma_width;
-                    height = mi_ctx->chroma_height;
+                    width = AV_CEIL_RSHIFT(width, mi_ctx->log2_chroma_w);
+                    height = AV_CEIL_RSHIFT(height, mi_ctx->log2_chroma_h);
                 }
 
                 for (y = 0; y < height; y++) {
