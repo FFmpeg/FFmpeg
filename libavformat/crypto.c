@@ -26,7 +26,8 @@
 #include "internal.h"
 #include "url.h"
 
-#define MAX_BUFFER_BLOCKS 150
+// encourage reads of 4096 bytes - 1 block is always retained.
+#define MAX_BUFFER_BLOCKS 257
 #define BLOCKSIZE 16
 
 typedef struct CryptoContext {
