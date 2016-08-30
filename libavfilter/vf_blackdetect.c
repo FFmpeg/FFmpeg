@@ -155,7 +155,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 
     av_log(ctx, AV_LOG_DEBUG,
            "frame:%"PRId64" picture_black_ratio:%f pts:%s t:%s type:%c\n",
-           inlink->frame_count, picture_black_ratio,
+           inlink->frame_count_out, picture_black_ratio,
            av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
            av_get_picture_type_char(picref->pict_type));
 

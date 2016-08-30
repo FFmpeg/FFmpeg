@@ -889,7 +889,7 @@ static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
     }
     memcpy(out->data[1], s->palette, AVPALETTE_SIZE);
     if (s->calc_mean_err)
-        debug_mean_error(s, in, out, inlink->frame_count);
+        debug_mean_error(s, in, out, inlink->frame_count_out);
     av_frame_free(&in);
     return out;
 }

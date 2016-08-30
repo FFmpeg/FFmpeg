@@ -303,7 +303,7 @@ static int request_frame(AVFilterLink *outlink)
     AVFrame *picref;
     int w = WIDTH, h = HEIGHT,
         cw = AV_CEIL_RSHIFT(w, test->hsub), ch = AV_CEIL_RSHIFT(h, test->vsub);
-    unsigned int frame = outlink->frame_count;
+    unsigned int frame = outlink->frame_count_in;
     enum test_type tt = test->test;
     int i;
 

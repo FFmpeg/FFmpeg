@@ -326,12 +326,12 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
 
     switch (s->avg) {
     case 0:
-        y = s->avg_data[ch][f] = !outlink->frame_count ? y : FFMIN(avg, y);
+        y = s->avg_data[ch][f] = !outlink->frame_count_in ? y : FFMIN(avg, y);
         break;
     case 1:
         break;
     default:
-        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count + 1, s->avg) * y);
+        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count_in + 1, s->avg) * y);
         y = s->avg_data[ch][f];
         break;
     }

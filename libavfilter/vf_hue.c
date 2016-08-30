@@ -318,7 +318,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
         av_frame_copy_props(outpic, inpic);
     }
 
-    hue->var_values[VAR_N]   = inlink->frame_count;
+    hue->var_values[VAR_N]   = inlink->frame_count_out;
     hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
     hue->var_values[VAR_PTS] = TS2D(inpic->pts);
 

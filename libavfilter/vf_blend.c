@@ -352,7 +352,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     uint8_t *dst    = td->dst->data[td->plane];
     double values[VAR_VARS_NB];
 
-    values[VAR_N]  = td->inlink->frame_count;
+    values[VAR_N]  = td->inlink->frame_count_out;
     values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
     values[VAR_W]  = td->w;
     values[VAR_H]  = td->h;

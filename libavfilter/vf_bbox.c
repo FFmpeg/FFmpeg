@@ -80,7 +80,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count,
+           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
