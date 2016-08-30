@@ -812,6 +812,12 @@ static int hls_write_header(AVFormatContext *s)
 
     if (hls->flags & HLS_APPEND_LIST) {
         parse_playlist(s, s->filename);
+        if (hls->init_time > 0) {
+            av_log(s, AV_LOG_WARNING, "append_list mode does not support hls_init_time,"
+                   " hls_init_time value will have no effect\n");
+            hls->init_time = 0;
+            hls->recording_time = hls->time * AV_TIME_BASE;
+        }
     }
 
     if ((ret = hls_start(s)) < 0)
