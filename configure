@@ -3205,7 +3205,7 @@ enable audiotoolbox
 enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
 enable xlib
 
-enable vda_framework videotoolbox videotoolbox_encoder
+enable nvenc vda_framework videotoolbox videotoolbox_encoder
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
@@ -5992,21 +5992,25 @@ enabled vdpau && enabled xlib &&
     check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     enable vdpau_x11
 
-case $target_os in
-    mingw32*|mingw64*|win32|win64|linux|cygwin*)
-        disabled nvenc || enable nvenc
-        ;;
-    *)
-        disable nvenc
-        ;;
-esac
-
-if enabled nvenc; then
-    {
-        echo '#include "compat/nvenc/nvEncodeAPI.h"'
-        echo 'int main(void) { return 0; }'
-    } | check_cc -I$source_path || disable nvenc
+if enabled x86; then
+    case $target_os in
+        mingw32*|mingw64*|win32|win64|linux|cygwin*)
+            ;;
+        *)
+            disable nvenc
+            ;;
+    esac
+else
+    disable nvenc
 fi
+
+enabled nvenc &&
+    check_cc -I$source_path <<EOF || disable nvenc
+#include "compat/nvenc/nvEncodeAPI.h"
+NV_ENCODE_API_FUNCTION_LIST flist;
+void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_PRESET_HQ_GUID } }; }
+int main(void) { return 0; }
+EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
