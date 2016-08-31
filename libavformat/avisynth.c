@@ -690,8 +690,10 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
 #ifdef USING_AVISYNTH
         /* Flip Planar RGB video. */
         if (avsplus && (avs_library.avs_is_planar_rgb(avs->vi) ||
-                        avs_library.avs_is_planar_rgba(avs->vi)))
+                        avs_library.avs_is_planar_rgba(avs->vi))) {
+            src_p = src_p + (planeheight - 1) * pitch;
             pitch = -pitch;
+        }
 #endif
 
         avs_library.avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
