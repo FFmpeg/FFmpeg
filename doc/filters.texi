@@ -10832,6 +10832,12 @@ standard output.
 Specifies which version of the stats file format to use. Details of
 each format are written below.
 Default value is 1.
+
+@item stats_add_max
+Determines whether the max value is output to the stats log.
+Default value is 0.
+Requires stats_version >= 2. If this is set and stats_version < 2,
+the filter will return an error.
 @end table
 
 The file printed if @var{stats_file} is selected, contains a sequence of
@@ -10868,6 +10874,10 @@ frames for the component specified by the suffix.
 @item psnr_y, psnr_u, psnr_v, psnr_r, psnr_g, psnr_b, psnr_a
 Peak Signal to Noise ratio of the compared frames for the component
 specified by the suffix.
+
+@item max_avg, max_y, max_u, max_v
+Maximum allowed value for each channel, and average over all
+channels.
 @end table
 
 For example:

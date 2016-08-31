@@ -45,6 +45,7 @@ typedef struct PSNRContext {
     char *stats_file_str;
     int stats_version;
     int stats_header_written;
+    int stats_add_max;
     int max[4], average_max;
     int is_rgb;
     uint8_t rgba_map[4];
@@ -63,6 +64,7 @@ static const AVOption psnr_options[] = {
     {"stats_file", "Set file where to store per-frame difference information", OFFSET(stats_file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     {"f",          "Set file where to store per-frame difference information", OFFSET(stats_file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     {"stats_version", "Set the format version for the stats file.",               OFFSET(stats_version),  AV_OPT_TYPE_INT,    {.i64=1},    1, 2, FLAGS },
+    {"output_max",  "Add raw stats (max values) to the output log.",            OFFSET(stats_add_max), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -182,6 +184,12 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
             for (j = 0; j < s->nb_components; j++) {
                 fprintf(s->stats_file, ",psnr_%c", s->comps[j]);
             }
+            if (s->stats_add_max) {
+                fprintf(s->stats_file, ",max_avg");
+                for (j = 0; j < s->nb_components; j++) {
+                    fprintf(s->stats_file, ",max_%c", s->comps[j]);
+                }
+            }
             fprintf(s->stats_file, "\n");
             s->stats_header_written = 1;
         }
@@ -195,6 +203,13 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
             c = s->is_rgb ? s->rgba_map[j] : j;
             fprintf(s->stats_file, "psnr_%c:%0.2f ", s->comps[j],
                     get_psnr(comp_mse[c], 1, s->max[c]));
+        }
+        if (s->stats_version == 2 && s->stats_add_max) {
+            fprintf(s->stats_file, "max_avg:%d ", s->average_max);
+            for (j = 0; j < s->nb_components; j++) {
+                c = s->is_rgb ? s->rgba_map[j] : j;
+                fprintf(s->stats_file, "max_%c:%d ", s->comps[j], s->max[c]);
+            }
         }
         fprintf(s->stats_file, "\n");
     }
@@ -210,6 +225,11 @@ static av_cold int init(AVFilterContext *ctx)
     s->max_mse = -INFINITY;
 
     if (s->stats_file_str) {
+        if (s->stats_version < 2 && s->stats_add_max) {
+            av_log(ctx, AV_LOG_ERROR,
+                "stats_add_max was specified but stats_version < 2.\n" );
+            return AVERROR(EINVAL);
+        }
         if (!strcmp(s->stats_file_str, "-")) {
             s->stats_file = stdout;
         } else {
