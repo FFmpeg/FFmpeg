@@ -2676,6 +2676,7 @@ vaapi_encode_deps="vaapi"
 hwupload_cuda_filter_deps="cuda"
 scale_npp_filter_deps="cuda libnpp"
 
+nvenc_deps_any="dlopen LoadLibrary"
 nvenc_encoder_deps="nvenc"
 h264_cuvid_decoder_deps="cuda cuvid CUVIDH264PICPARAMS"
 h264_cuvid_decoder_select="h264_mp4toannexb_bsf h264_cuvid_hwaccel"
@@ -5388,7 +5389,7 @@ decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
-nvenc_encoder_extralibs='$ldl'
+nvenc_extralibs='$ldl'
 coreimage_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
 coreimagesrc_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
 
