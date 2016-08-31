@@ -253,7 +253,8 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
 #define EXPAND(compn) \
         if (desc->comp[compn].depth > 8) \
             color->comp[desc->comp[compn].plane].u16[desc->comp[compn].offset] = \
-            color->comp[desc->comp[compn].plane].u8[desc->comp[compn].offset] << (draw->desc->comp[compn].depth - 8)
+            color->comp[desc->comp[compn].plane].u8[desc->comp[compn].offset] << \
+                (draw->desc->comp[compn].depth + draw->desc->comp[compn].shift - 8)
         EXPAND(3);
         EXPAND(2);
         EXPAND(1);
