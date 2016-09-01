@@ -1921,6 +1921,7 @@ SYSTEM_FUNCS="
     isatty
     jack_port_get_latency_range
     kbhit
+    LoadLibrary
     localtime_r
     lstat
     lzo1x_999_compress
@@ -5493,6 +5494,7 @@ check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
+check_func_headers windows.h LoadLibrary
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h PeekNamedPipe
 check_func_headers windows.h SetConsoleTextAttribute
