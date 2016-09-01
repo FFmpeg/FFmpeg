@@ -5339,7 +5339,7 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
         }
     }
 
-    if (enc_ctx->codec_tag == AV_RL32("tmcd")
+    if ((enc_ctx->codec_tag == AV_RL32("tmcd") || ost->codecpar->codec_tag == AV_RL32("tmcd"))
         && dec_ctx->time_base.num < dec_ctx->time_base.den
         && dec_ctx->time_base.num > 0
         && 121LL*dec_ctx->time_base.num > dec_ctx->time_base.den) {

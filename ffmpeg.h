@@ -418,6 +418,7 @@ typedef struct OutputStream {
     int64_t last_mux_dts;
     AVBitStreamFilterContext *bitstream_filters;
     AVCodecContext *enc_ctx;
+    AVCodecParameters *ref_par; /* associated input codec parameters with encoders options applied */
     AVCodec *enc;
     int64_t max_frames;
     AVFrame *filtered_frame;
