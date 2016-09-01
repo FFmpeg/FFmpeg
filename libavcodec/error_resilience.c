@@ -41,7 +41,7 @@
  * @param stride the number of MVs to get to the next row
  * @param mv_step the number of MVs per row or column in a macroblock
  */
-static void set_mv_strides(ERContext *s, int *mv_step, int *stride)
+static void set_mv_strides(ERContext *s, ptrdiff_t *mv_step, ptrdiff_t *stride)
 {
     if (s->avctx->codec_id == AV_CODEC_ID_H264) {
         assert(s->quarter_sample);
@@ -92,7 +92,7 @@ static void put_dc(ERContext *s, uint8_t *dest_y, uint8_t *dest_cb,
     }
 }
 
-static void filter181(int16_t *data, int width, int height, int stride)
+static void filter181(int16_t *data, int width, int height, ptrdiff_t stride)
 {
     int x, y;
 
@@ -134,7 +134,7 @@ static void filter181(int16_t *data, int width, int height, int stride)
  * @param h     height in 8 pixel blocks
  */
 static void guess_dc(ERContext *s, int16_t *dc, int w,
-                     int h, int stride, int is_luma)
+                     int h, ptrdiff_t stride, int is_luma)
 {
     int b_x, b_y;
 
@@ -220,9 +220,10 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
  * @param h     height in 8 pixel blocks
  */
 static void h_block_filter(ERContext *s, uint8_t *dst, int w,
-                           int h, int stride, int is_luma)
+                           int h, ptrdiff_t stride, int is_luma)
 {
-    int b_x, b_y, mvx_stride, mvy_stride;
+    int b_x, b_y;
+    ptrdiff_t mvx_stride, mvy_stride;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
@@ -288,9 +289,10 @@ static void h_block_filter(ERContext *s, uint8_t *dst, int w,
  * @param h     height in 8 pixel blocks
  */
 static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
-                           int stride, int is_luma)
+                           ptrdiff_t stride, int is_luma)
 {
-    int b_x, b_y, mvx_stride, mvy_stride;
+    int b_x, b_y;
+    ptrdiff_t mvx_stride, mvy_stride;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
@@ -359,11 +361,12 @@ static void guess_mv(ERContext *s)
 #define MV_FROZEN    3
 #define MV_CHANGED   2
 #define MV_UNCHANGED 1
-    const int mb_stride = s->mb_stride;
+    const ptrdiff_t mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
     const int mb_height = s->mb_height;
     int i, depth, num_avail;
-    int mb_x, mb_y, mot_step, mot_stride;
+    int mb_x, mb_y;
+    ptrdiff_t mot_step, mot_stride;
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
