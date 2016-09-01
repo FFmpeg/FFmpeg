@@ -105,8 +105,8 @@ static void check_unweighted_pred(HEVCDSPContext *h, uint8_t *dst0, uint8_t *dst
 
     for (i = 0; i < FF_ARRAY_ELEMS(pred_widths); i++) {
         const int width = pred_widths[i];
-        const int srcstride = FFALIGN(width, 16) * sizeof(*src0);
-        const int dststride = FFALIGN(width, 16) * PIXEL_SIZE(bit_depth);
+        const ptrdiff_t srcstride = FFALIGN(width, 16) * sizeof(*src0);
+        const ptrdiff_t dststride = FFALIGN(width, 16) * PIXEL_SIZE(bit_depth);
 
         {
             declare_func(void, uint8_t *dst, ptrdiff_t dststride, int16_t *src, ptrdiff_t srcstride, int height);
@@ -177,8 +177,8 @@ static void check_weighted_pred(HEVCDSPContext *h, uint8_t *dst0, uint8_t *dst1,
 
     for (i = 0; i < FF_ARRAY_ELEMS(pred_widths); i++) {
         const int width = pred_widths[i];
-        const int srcstride = FFALIGN(width, 16) * sizeof(*src0);
-        const int dststride = FFALIGN(width, 16) * PIXEL_SIZE(bit_depth);
+        const ptrdiff_t srcstride = FFALIGN(width, 16) * sizeof(*src0);
+        const ptrdiff_t dststride = FFALIGN(width, 16) * PIXEL_SIZE(bit_depth);
 
         {
             declare_func(void, uint8_t denom, int16_t weight, int16_t offset,
@@ -216,8 +216,8 @@ static void check_epel(HEVCDSPContext *h, int16_t *dst0, int16_t *dst1,
         for (j = 0; j < 2; j++) {
             for (k = 0; k < FF_ARRAY_ELEMS(h->put_hevc_epel[i][j]); k++) {
                 int width = pred_widths[k] / 2;
-                int dststride = FFALIGN(width, 16) * sizeof(*dst0);
-                int srcstride = FFALIGN(width + 3, 8) * PIXEL_SIZE(bit_depth);
+                ptrdiff_t dststride = FFALIGN(width, 16) * sizeof(*dst0);
+                ptrdiff_t srcstride = FFALIGN(width + 3, 8) * PIXEL_SIZE(bit_depth);
 
                 if (!check_func(h->put_hevc_epel[i][j][k], "epel_%s_%d_%d", interp_names[i][j], width, bit_depth))
                     continue;
@@ -261,8 +261,8 @@ static void check_qpel(HEVCDSPContext *h, int16_t *dst0, int16_t *dst1,
         for (j = 0; j < 2; j++) {
             for (k = 0; k < FF_ARRAY_ELEMS(h->put_hevc_qpel[i][j]); k++) {
                 int width = pred_widths[k];
-                int dststride = FFALIGN(width, 16) * sizeof(*dst0);
-                int srcstride = FFALIGN(width + 7, 8) * PIXEL_SIZE(bit_depth);
+                ptrdiff_t dststride = FFALIGN(width, 16) * sizeof(*dst0);
+                ptrdiff_t srcstride = FFALIGN(width + 7, 8) * PIXEL_SIZE(bit_depth);
 
                 if (!check_func(h->put_hevc_qpel[i][j][k], "qpel_%s_%d_%d", interp_names[i][j], width, bit_depth))
                     continue;

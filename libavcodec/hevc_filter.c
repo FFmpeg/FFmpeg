@@ -172,7 +172,7 @@ static int get_qPy(HEVCContext *s, int xC, int yC)
 }
 
 static void copy_CTB(uint8_t *dst, uint8_t *src,
-                     int width, int height, int stride)
+                     int width, int height, ptrdiff_t stride)
 {
     int i;
 
@@ -273,7 +273,7 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
         int chroma = c_idx ? 1 : 0;
         int x0 = x >> chroma;
         int y0 = y >> chroma;
-        int stride = s->frame->linesize[c_idx];
+        ptrdiff_t stride = s->frame->linesize[c_idx];
         int ctb_size = (1 << (s->ps.sps->log2_ctb_size)) >> s->ps.sps->hshift[c_idx];
         int width = FFMIN(ctb_size,
                           (s->ps.sps->width >> s->ps.sps->hshift[c_idx]) - x0);

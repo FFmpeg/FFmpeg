@@ -1437,11 +1437,11 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     HEVCLocalContext *lc = &s->HEVClc;
     GetBitContext gb;
     int cb_size   = 1 << log2_cb_size;
-    int stride0   = s->frame->linesize[0];
+    ptrdiff_t stride0 = s->frame->linesize[0];
+    ptrdiff_t stride1 = s->frame->linesize[1];
+    ptrdiff_t stride2 = s->frame->linesize[2];
     uint8_t *dst0 = &s->frame->data[0][y0 * stride0 + (x0 << s->ps.sps->pixel_shift)];
-    int   stride1 = s->frame->linesize[1];
     uint8_t *dst1 = &s->frame->data[1][(y0 >> s->ps.sps->vshift[1]) * stride1 + ((x0 >> s->ps.sps->hshift[1]) << s->ps.sps->pixel_shift)];
-    int   stride2 = s->frame->linesize[2];
     uint8_t *dst2 = &s->frame->data[2][(y0 >> s->ps.sps->vshift[2]) * stride2 + ((x0 >> s->ps.sps->hshift[2]) << s->ps.sps->pixel_shift)];
 
     int length         = cb_size * cb_size * s->ps.sps->pcm.bit_depth + ((cb_size * cb_size) >> 1) * s->ps.sps->pcm.bit_depth_chroma;
@@ -1520,7 +1520,7 @@ static void luma_mc(HEVCContext *s, int16_t *dst, ptrdiff_t dststride,
     if (x_off < extra_left || y_off < extra_top ||
         x_off >= pic_width - block_w - ff_hevc_qpel_extra_after[mx] ||
         y_off >= pic_height - block_h - ff_hevc_qpel_extra_after[my]) {
-        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->ps.sps->pixel_shift;
+        const ptrdiff_t edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->ps.sps->pixel_shift;
         int offset = extra_top * srcstride + (extra_left << s->ps.sps->pixel_shift);
         int buf_offset = extra_top *
                          edge_emu_stride + (extra_left << s->ps.sps->pixel_shift);
@@ -1575,7 +1575,7 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2,
     if (x_off < EPEL_EXTRA_BEFORE || y_off < EPEL_EXTRA_AFTER ||
         x_off >= pic_width - block_w - EPEL_EXTRA_AFTER ||
         y_off >= pic_height - block_h - EPEL_EXTRA_AFTER) {
-        const int edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->ps.sps->pixel_shift;
+        const ptrdiff_t edge_emu_stride = EDGE_EMU_BUFFER_STRIDE << s->ps.sps->pixel_shift;
         int offset1 = EPEL_EXTRA_BEFORE * (src1stride + (1 << s->ps.sps->pixel_shift));
         int buf_offset1 = EPEL_EXTRA_BEFORE *
                           (edge_emu_stride + (1 << s->ps.sps->pixel_shift));
@@ -1687,7 +1687,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     RefPicList  *refPicList = s->ref->refPicList;
     HEVCFrame *ref0, *ref1;
 
-    int tmpstride = MAX_PB_SIZE * sizeof(int16_t);
+    ptrdiff_t tmpstride = MAX_PB_SIZE * sizeof(int16_t);
 
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);

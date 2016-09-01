@@ -396,7 +396,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
             int offset_val = sao_offset_val[0];
-            int y_stride   = 0;
+            ptrdiff_t y_stride   = 0;
             for (y = 0; y < height; y++) {
                 dst[y_stride] = av_clip_pixel(src[y_stride] + offset_val);
                 y_stride     += stride;
@@ -405,7 +405,7 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[2]) {
             int offset_val = sao_offset_val[0];
-            int x_stride   = width - 1;
+            ptrdiff_t x_stride = width - 1;
             for (x = 0; x < height; x++) {
                 dst[x_stride] = av_clip_pixel(src[x_stride] + offset_val);
                 x_stride     += stride;
@@ -422,21 +422,21 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val = sao_offset_val[0];
-            int y_stride   = stride * (height - 1);
+            ptrdiff_t y_stride = stride * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
             height--;
         }
     }
     {
-        int y_stride = init_y * stride;
+        ptrdiff_t y_stride = init_y * stride;
         int pos_0_0  = pos[sao_eo_class][0][0];
         int pos_0_1  = pos[sao_eo_class][0][1];
         int pos_1_0  = pos[sao_eo_class][1][0];
         int pos_1_1  = pos[sao_eo_class][1][1];
 
-        int y_stride_0_1 = (init_y + pos_0_1) * stride;
-        int y_stride_1_1 = (init_y + pos_1_1) * stride;
+        ptrdiff_t y_stride_0_1 = (init_y + pos_0_1) * stride;
+        ptrdiff_t y_stride_1_1 = (init_y + pos_1_1) * stride;
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width; x++) {
                 int diff0         = CMP(src[x + y_stride], src[x + pos_0_0 + y_stride_0_1]);
@@ -503,7 +503,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     if (sao_eo_class != SAO_EO_VERT) {
         if (borders[0]) {
             int offset_val = sao_offset_val[0];
-            int y_stride   = 0;
+            ptrdiff_t y_stride = 0;
             for (y = 0; y < height; y++) {
                 dst[y_stride] = av_clip_pixel(src[y_stride] + offset_val);
                 y_stride     += stride;
@@ -512,7 +512,7 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[2]) {
             int offset_val = sao_offset_val[0];
-            int x_stride   = width - 1;
+            ptrdiff_t x_stride = width - 1;
             for (x = 0; x < height; x++) {
                 dst[x_stride] = av_clip_pixel(src[x_stride] + offset_val);
                 x_stride     += stride;
@@ -521,14 +521,14 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
         }
     }
     {
-        int y_stride = init_y * stride;
+        ptrdiff_t y_stride = init_y * stride;
         int pos_0_0  = pos[sao_eo_class][0][0];
         int pos_0_1  = pos[sao_eo_class][0][1];
         int pos_1_0  = pos[sao_eo_class][1][0];
         int pos_1_1  = pos[sao_eo_class][1][1];
 
-        int y_stride_0_1 = (init_y + pos_0_1) * stride;
-        int y_stride_1_1 = (init_y + pos_1_1) * stride;
+        ptrdiff_t y_stride_0_1 = (init_y + pos_0_1) * stride;
+        ptrdiff_t y_stride_1_1 = (init_y + pos_1_1) * stride;
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width; x++) {
                 int diff0         = CMP(src[x + y_stride], src[x + pos_0_0 + y_stride_0_1]);
@@ -601,21 +601,21 @@ static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val = sao_offset_val[0];
-            int y_stride   = stride * (height - 1);
+            ptrdiff_t y_stride = stride * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
             height--;
         }
     }
     {
-        int y_stride = init_y * stride;
+        ptrdiff_t y_stride = init_y * stride;
         int pos_0_0  = pos[sao_eo_class][0][0];
         int pos_0_1  = pos[sao_eo_class][0][1];
         int pos_1_0  = pos[sao_eo_class][1][0];
         int pos_1_1  = pos[sao_eo_class][1][1];
 
-        int y_stride_0_1 = (init_y + pos_0_1) * stride;
-        int y_stride_1_1 = (init_y + pos_1_1) * stride;
+        ptrdiff_t y_stride_0_1 = (init_y + pos_0_1) * stride;
+        ptrdiff_t y_stride_1_1 = (init_y + pos_1_1) * stride;
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width; x++) {
                 int diff0         = CMP(src[x + y_stride], src[x + pos_0_0 + y_stride_0_1]);
@@ -681,14 +681,14 @@ static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
     init_y = init_x = 0;
 
     {
-        int y_stride = init_y * stride;
+        ptrdiff_t y_stride = init_y * stride;
         int pos_0_0  = pos[sao_eo_class][0][0];
         int pos_0_1  = pos[sao_eo_class][0][1];
         int pos_1_0  = pos[sao_eo_class][1][0];
         int pos_1_1  = pos[sao_eo_class][1][1];
 
-        int y_stride_0_1 = (init_y + pos_0_1) * stride;
-        int y_stride_1_1 = (init_y + pos_1_1) * stride;
+        ptrdiff_t y_stride_0_1 = (init_y + pos_0_1) * stride;
+        ptrdiff_t y_stride_1_1 = (init_y + pos_1_1) * stride;
 
         for (y = init_y; y < height; y++) {
             for (x = init_x; x < width; x++) {
