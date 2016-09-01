@@ -197,6 +197,45 @@ static int nv12ToPlanarWrapper(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
+static int planarToP010Wrapper(SwsContext *c, const uint8_t *src8[],
+                               int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t *dstParam8[],
+                               int dstStride[])
+{
+    const uint16_t **src = (const uint16_t**)src8;
+    uint16_t *dstY = (uint16_t*)(dstParam8[0] + dstStride[0] * srcSliceY);
+    uint16_t *dstUV = (uint16_t*)(dstParam8[1] + dstStride[1] * srcSliceY / 2);
+    int x, y;
+
+    av_assert0(!(srcStride[0] % 2 || srcStride[1] % 2 || srcStride[2] % 2 ||
+                 dstStride[0] % 2 || dstStride[1] % 2));
+
+    for (y = 0; y < srcSliceH; y++) {
+        uint16_t *tdstY = dstY;
+        const uint16_t *tsrc0 = src[0];
+        for (x = c->srcW; x > 0; x--) {
+            *tdstY++ = *tsrc0++ << 6;
+        }
+        src[0] += srcStride[0] / 2;
+        dstY += dstStride[0] / 2;
+
+        if (!(y & 1)) {
+            uint16_t *tdstUV = dstUV;
+            const uint16_t *tsrc1 = src[1];
+            const uint16_t *tsrc2 = src[2];
+            for (x = c->srcW / 2; x > 0; x--) {
+                *tdstUV++ = *tsrc1++ << 6;
+                *tdstUV++ = *tsrc2++ << 6;
+            }
+            src[1] += srcStride[1] / 2;
+            src[2] += srcStride[2] / 2;
+            dstUV += dstStride[1] / 2;
+        }
+    }
+
+    return srcSliceH;
+}
+
 static int planarToYuy2Wrapper(SwsContext *c, const uint8_t *src[],
                                int srcStride[], int srcSliceY, int srcSliceH,
                                uint8_t *dstParam[], int dstStride[])
@@ -1600,6 +1639,11 @@ void ff_get_unscaled_swscale(SwsContext *c)
          srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
         !(flags & SWS_ACCURATE_RND) && (c->dither == SWS_DITHER_BAYER || c->dither == SWS_DITHER_AUTO) && !(dstH & 1)) {
         c->swscale = ff_yuv2rgb_get_func_ptr(c);
+    }
+    /* yuv420p10_to_p010 */
+    if ((srcFormat == AV_PIX_FMT_YUV420P10 || srcFormat == AV_PIX_FMT_YUVA420P10) &&
+        dstFormat == AV_PIX_FMT_P010) {
+        c->swscale = planarToP010Wrapper;
     }
 
     if (srcFormat == AV_PIX_FMT_YUV410P && !(dstH & 3) &&
