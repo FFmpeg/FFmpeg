@@ -71,15 +71,15 @@ static void avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
 #endif /* HAVE_YASM */
 
 void ff_put_vc1_chroma_mc8_nornd_mmx  (uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_mmxext(uint8_t *dst, uint8_t *src,
-                                        int stride, int h, int x, int y);
+                                        ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_3dnow(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 
 
 av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)

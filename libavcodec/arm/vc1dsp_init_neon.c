@@ -72,14 +72,14 @@ void ff_put_vc1_mspel_mc32_neon(uint8_t *dst, const uint8_t *src,
 void ff_put_vc1_mspel_mc33_neon(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride, int rnd);
 
-void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
+void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
 
 av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
 {
