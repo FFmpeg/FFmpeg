@@ -328,7 +328,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     channels = avctx->extradata ? extradata[9] : (avctx->channels == 1) ? 1 : 2;
     if (!channels) {
-        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extadata\n");
+        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extradata\n");
         return AVERROR_INVALIDDATA;
     }
 
