@@ -5379,9 +5379,9 @@ check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
 
-if check_func dlopen; then
+if check_func dlopen && check_func dlsym; then
     ldl=
-elif check_func dlopen -ldl; then
+elif check_func dlopen -ldl && check_func dlsym -ldl; then
     ldl=-ldl
 fi
 
