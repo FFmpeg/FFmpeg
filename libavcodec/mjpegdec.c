@@ -2104,6 +2104,9 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             /* Comment */
         else if (start_code == COM)
             mjpeg_decode_com(s);
+        else if (start_code == DQT) {
+            ff_mjpeg_decode_dqt(s);
+        }
 
         ret = -1;
 
@@ -2134,9 +2137,6 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             s->restart_interval = 0;
             s->restart_count    = 0;
             /* nothing to do on SOI */
-            break;
-        case DQT:
-            ff_mjpeg_decode_dqt(s);
             break;
         case DHT:
             if ((ret = ff_mjpeg_decode_dht(s)) < 0) {
