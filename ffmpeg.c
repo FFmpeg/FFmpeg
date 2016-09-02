@@ -718,29 +718,28 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                      - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
                      - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
         }
-     if(
-        (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
-        pkt->dts != AV_NOPTS_VALUE &&
-        !(avctx->codec_id == AV_CODEC_ID_VP9 && ost->stream_copy) &&
-        ost->last_mux_dts != AV_NOPTS_VALUE) {
-      int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
-      if (pkt->dts < max) {
-        int loglevel = max - pkt->dts > 2 || avctx->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
-        av_log(s, loglevel, "Non-monotonous DTS in output stream "
-               "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
-               ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
-        if (exit_on_error) {
-            av_log(NULL, AV_LOG_FATAL, "aborting.\n");
-            exit_program(1);
+        if ((avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
+            pkt->dts != AV_NOPTS_VALUE &&
+            !(avctx->codec_id == AV_CODEC_ID_VP9 && ost->stream_copy) &&
+            ost->last_mux_dts != AV_NOPTS_VALUE) {
+            int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
+            if (pkt->dts < max) {
+                int loglevel = max - pkt->dts > 2 || avctx->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
+                av_log(s, loglevel, "Non-monotonous DTS in output stream "
+                       "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
+                       ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
+                if (exit_on_error) {
+                    av_log(NULL, AV_LOG_FATAL, "aborting.\n");
+                    exit_program(1);
+                }
+                av_log(s, loglevel, "changing to %"PRId64". This may result "
+                       "in incorrect timestamps in the output file.\n",
+                       max);
+                if (pkt->pts >= pkt->dts)
+                    pkt->pts = FFMAX(pkt->pts, max);
+                pkt->dts = max;
+            }
         }
-        av_log(s, loglevel, "changing to %"PRId64". This may result "
-               "in incorrect timestamps in the output file.\n",
-               max);
-        if(pkt->pts >= pkt->dts)
-            pkt->pts = FFMAX(pkt->pts, max);
-        pkt->dts = max;
-      }
-     }
     }
     ost->last_mux_dts = pkt->dts;
 
