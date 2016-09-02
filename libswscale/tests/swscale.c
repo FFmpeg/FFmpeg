@@ -25,6 +25,7 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
+#include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
@@ -382,6 +383,14 @@ int main(int argc, char **argv)
                 fprintf(stderr, "could not open '%s'\n", argv[i + 1]);
                 goto error;
             }
+        } else if (!strcmp(argv[i], "-cpuflags")) {
+            unsigned flags = av_get_cpu_flags();
+            int ret = av_parse_cpu_caps(&flags, argv[i + 1]);
+            if (ret < 0) {
+                fprintf(stderr, "invalid cpu flags %s\n", argv[i + 1]);
+                return ret;
+            }
+            av_force_cpu_flags(flags);
         } else if (!strcmp(argv[i], "-src")) {
             srcFormat = av_get_pix_fmt(argv[i + 1]);
             if (srcFormat == AV_PIX_FMT_NONE) {
