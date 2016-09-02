@@ -968,14 +968,14 @@ static int hls_write_trailer(struct AVFormatContext *s)
     av_freep(&hls->basename);
     avformat_free_context(oc);
 
+    hls->avf = NULL;
+    hls_window(s, 1);
+
     if (vtt_oc) {
         av_freep(&hls->vtt_basename);
         av_freep(&hls->vtt_m3u8_name);
         avformat_free_context(vtt_oc);
     }
-
-    hls->avf = NULL;
-    hls_window(s, 1);
 
     hls_free_segments(hls->segments);
     hls_free_segments(hls->old_segments);
