@@ -11824,6 +11824,7 @@ selectivecolor=psfile=MySelectiveColorPresets/Misty.asv
 @end example
 @end itemize
 
+@anchor{separatefields}
 @section separatefields
 
 The @code{separatefields} takes a frame-based video input and splits
@@ -14125,6 +14126,16 @@ Set the frame as bottom-field-first.
 @end table
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Interlace video using @code{select} and @code{separatefields} filter:
+@example
+separatefields,select=eq(mod(n,4),0)+eq(mod(n,4),3),weave
+@end example
+@end itemize
+
 @section xbr
 Apply the xBR high-quality magnification filter which is designed for pixel
 art. It follows a set of edge-detection rules, see
@@ -16009,6 +16020,7 @@ Time limit for the pauses. Any pause longer than that will be considered
 a timestamp discontinuity and reset the timer. Default is 2 seconds.
 @end table
 
+@anchor{select}
 @section select, aselect
 
 Select frames to pass in output.
