@@ -181,6 +181,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     cuinfo.ulNumDecodeSurfaces = MAX_FRAME_COUNT;
     cuinfo.ulNumOutputSurfaces = 1;
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
+    cuinfo.bitDepthMinus8 = format->bit_depth_luma_minus8;
 
     if (format->progressive_sequence) {
         ctx->deint_mode = cuinfo.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave;
@@ -573,6 +574,7 @@ static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cu
     cuinfo.ulNumDecodeSurfaces = MAX_FRAME_COUNT;
     cuinfo.ulNumOutputSurfaces = 1;
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
+    cuinfo.bitDepthMinus8 = 0;
 
     cuinfo.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave;
 
