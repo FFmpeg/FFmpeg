@@ -23,7 +23,9 @@
 #include <limits.h>
 #include <math.h>
 #include "lfg.h"
+#include "crc.h"
 #include "md5.h"
+#include "error.h"
 #include "intreadwrite.h"
 #include "attributes.h"
 
@@ -57,4 +59,29 @@ void av_bmg_get(AVLFG *lfg, double out[2])
     w = sqrt((-2.0 * log(w)) / w);
     out[0] = x1 * w;
     out[1] = x2 * w;
+}
+
+int av_lfg_init_from_data(AVLFG *c, const uint8_t *data, unsigned int length) {
+    unsigned int beg, end, segm;
+    const AVCRC *avcrc;
+    uint32_t crc = 1;
+
+    /* avoid integer overflow in the loop below. */
+    if (length > (UINT_MAX / 128U)) return AVERROR(EINVAL);
+
+    c->index = 0;
+    avcrc = av_crc_get_table(AV_CRC_32_IEEE); /* This can't fail. It's a well-defined table in crc.c */
+
+    /* across 64 segments of the incoming data,
+     * do a running crc of each segment and store the crc as the state for that slot.
+     * this works even if the length of the segment is 0 bytes. */
+    beg = 0;
+    for (segm = 0;segm < 64;segm++) {
+        end = (((segm + 1) * length) / 64);
+        crc = av_crc(avcrc, crc, data + beg, end - beg);
+        c->state[segm] = (unsigned int)crc;
+        beg = end;
+    }
+
+    return 0;
 }
