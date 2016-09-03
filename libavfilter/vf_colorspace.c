@@ -128,11 +128,11 @@ typedef struct ColorSpaceContext {
 
     ColorSpaceDSPContext dsp;
 
-    enum Colorspace user_all;
-    enum AVColorSpace in_csp, out_csp, user_csp;
-    enum AVColorRange in_rng, out_rng, user_rng;
-    enum AVColorTransferCharacteristic in_trc, out_trc, user_trc;
-    enum AVColorPrimaries in_prm, out_prm, user_prm;
+    enum Colorspace user_all, user_iall;
+    enum AVColorSpace in_csp, out_csp, user_csp, user_icsp;
+    enum AVColorRange in_rng, out_rng, user_rng, user_irng;
+    enum AVColorTransferCharacteristic in_trc, out_trc, user_trc, user_itrc;
+    enum AVColorPrimaries in_prm, out_prm, user_prm, user_iprm;
     enum AVPixelFormat in_format, user_format;
     int fast_mode;
     enum DitherMode dither;
@@ -581,6 +581,10 @@ static int create_filtergraph(AVFilterContext *ctx,
 
     if (!s->out_primaries || !s->in_primaries) {
         s->in_prm = in->color_primaries;
+        if (s->user_iall != CS_UNSPECIFIED)
+            s->in_prm = default_prm[FFMIN(s->user_iall, CS_NB)];
+        if (s->user_iprm != AVCOL_PRI_UNSPECIFIED)
+            s->in_prm = s->user_iprm;
         s->in_primaries = get_color_primaries(s->in_prm);
         if (!s->in_primaries) {
             av_log(ctx, AV_LOG_ERROR,
@@ -638,6 +642,10 @@ static int create_filtergraph(AVFilterContext *ctx,
     if (!s->in_txchr) {
         av_freep(&s->lin_lut);
         s->in_trc = in->color_trc;
+        if (s->user_iall != CS_UNSPECIFIED)
+            s->in_trc = default_trc[FFMIN(s->user_iall, CS_NB)];
+        if (s->user_itrc != AVCOL_TRC_UNSPECIFIED)
+            s->in_trc = s->user_itrc;
         s->in_txchr = get_transfer_characteristics(s->in_trc);
         if (!s->in_txchr) {
             av_log(ctx, AV_LOG_ERROR,
@@ -680,7 +688,13 @@ static int create_filtergraph(AVFilterContext *ctx,
 
     if (!s->in_lumacoef) {
         s->in_csp = in->colorspace;
+        if (s->user_iall != CS_UNSPECIFIED)
+            s->in_csp = default_csp[FFMIN(s->user_iall, CS_NB)];
+        if (s->user_icsp != AVCOL_SPC_UNSPECIFIED)
+            s->in_csp = s->user_icsp;
         s->in_rng = in->color_range;
+        if (s->user_irng != AVCOL_RANGE_UNSPECIFIED)
+            s->in_rng = s->user_irng;
         s->in_lumacoef = get_luma_coefficients(s->in_csp);
         if (!s->in_lumacoef) {
             av_log(ctx, AV_LOG_ERROR,
@@ -1077,6 +1091,22 @@ static const AVOption colorspace_options[] = {
     ENUM("bradford", WP_ADAPT_BRADFORD, "wpadapt"),
     ENUM("vonkries", WP_ADAPT_VON_KRIES, "wpadapt"),
     ENUM("identity", WP_ADAPT_IDENTITY, "wpadapt"),
+
+    { "iall",       "Set all input color properties together",
+      OFFSET(user_iall),   AV_OPT_TYPE_INT, { .i64 = CS_UNSPECIFIED },
+      CS_UNSPECIFIED, CS_NB - 1, FLAGS, "all" },
+    { "ispace",     "Input colorspace",
+      OFFSET(user_icsp),  AV_OPT_TYPE_INT, { .i64 = AVCOL_SPC_UNSPECIFIED },
+      AVCOL_PRI_RESERVED0, AVCOL_PRI_NB - 1, FLAGS, "csp" },
+    { "irange",     "Input color range",
+      OFFSET(user_irng),  AV_OPT_TYPE_INT, { .i64 = AVCOL_RANGE_UNSPECIFIED },
+      AVCOL_RANGE_UNSPECIFIED, AVCOL_RANGE_NB - 1, FLAGS, "rng" },
+    { "iprimaries", "Input color primaries",
+      OFFSET(user_iprm),  AV_OPT_TYPE_INT, { .i64 = AVCOL_PRI_UNSPECIFIED },
+      AVCOL_PRI_RESERVED0, AVCOL_PRI_NB - 1, FLAGS, "prm" },
+    { "itrc",       "Input transfer characteristics",
+      OFFSET(user_itrc),  AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },
+      AVCOL_TRC_RESERVED0, AVCOL_TRC_NB - 1, FLAGS, "trc" },
 
     { NULL }
 };

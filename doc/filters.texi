@@ -5235,6 +5235,7 @@ Convert colorspace, transfer characteristics or color primaries.
 The filter accepts the following options:
 
 @table @option
+@anchor{all}
 @item all
 Specify all color properties at once.
 
@@ -5266,6 +5267,7 @@ BT.2020
 
 @end table
 
+@anchor{space}
 @item space
 Specify output colorspace.
 
@@ -5291,6 +5293,7 @@ BT.2020 with non-constant luminance
 
 @end table
 
+@anchor{trc}
 @item trc
 Specify output transfer characteristics.
 
@@ -5319,6 +5322,7 @@ BT.2020 for 12-bits content
 
 @end table
 
+@anchor{primaries}
 @item primaries
 Specify output color primaries.
 
@@ -5344,6 +5348,7 @@ BT.2020
 
 @end table
 
+@anchor{range}
 @item range
 Specify output color range.
 
@@ -5422,6 +5427,21 @@ von Kries whitepoint adaptation
 @item identity
 identity whitepoint adaptation (i.e. no whitepoint adaptation)
 @end table
+
+@item iall
+Override all input properties at once. Same accepted values as @ref{all}.
+
+@item ispace
+Override input colorspace. Same accepted values as @ref{space}.
+
+@item iprimaries
+Override input color primaries. Same accepted values as @ref{primaries}.
+
+@item itrc
+Override input transfer characteristics. Same accepted values as @ref{trc}.
+
+@item irange
+Override input color range. Same accepted values as @ref{range}.
 
 @end table
 
