@@ -1080,7 +1080,7 @@ static int rgbToPlanarRgbWrapper(SwsContext *c, const uint8_t *src[],
 static int bayer_to_rgb24_wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                   int srcSliceH, uint8_t* dst[], int dstStride[])
 {
-    uint8_t *dstPtr= dst[0];
+    uint8_t *dstPtr= dst[0] + srcSliceY * dstStride[0];
     const uint8_t *srcPtr= src[0];
     int i;
     void (*copy)       (const uint8_t *src, int src_stride, uint8_t *dst, int dst_stride, int width);
@@ -1130,9 +1130,9 @@ static int bayer_to_yv12_wrapper(SwsContext *c, const uint8_t* src[], int srcStr
                                  int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     const uint8_t *srcPtr= src[0];
-    uint8_t *dstY= dst[0];
-    uint8_t *dstU= dst[1];
-    uint8_t *dstV= dst[2];
+    uint8_t *dstY= dst[0] + srcSliceY * dstStride[0];
+    uint8_t *dstU= dst[1] + srcSliceY * dstStride[1] / 2;
+    uint8_t *dstV= dst[2] + srcSliceY * dstStride[2] / 2;
     int i;
     void (*copy)       (const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv);
     void (*interpolate)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv);
