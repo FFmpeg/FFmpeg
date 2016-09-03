@@ -1426,6 +1426,13 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                             (const uint16_t *) buf, cnt);
     } else
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
+
+    /* if consistent noise generation is enabled, seed the linear feedback generator
+     * with the contents of the AC-3 frame so that the noise is identical across
+     * decodes given the same AC-3 frame data, for use with non-linear edititing software. */
+    if (s->consistent_noise_generation)
+        av_lfg_init_from_data(&s->dith_state, s->input_buffer, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
+
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)

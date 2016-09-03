@@ -32,6 +32,7 @@
 #include "ac3dec.c"
 
 static const AVOption options[] = {
+    { "cons_noisegen", "enable consistent noise generation", OFFSET(consistent_noise_generation), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
     { "heavy_compr", "enable heavy dynamic range compression", OFFSET(heavy_compression), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { "target_level", "target level in -dBFS (0 not applied)", OFFSET(target_level), AV_OPT_TYPE_INT, {.i64 = 0 }, -31, 0, PAR },
