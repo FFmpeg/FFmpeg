@@ -1690,6 +1690,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
                    s->avctx->sample_aspect_ratio.num,
                    s->avctx->sample_aspect_ratio.den);
 
+        len -= 8;
+        if (len >= 2) {
         t_w = get_bits(&s->gb, 8);
         t_h = get_bits(&s->gb, 8);
         if (t_w && t_h) {
@@ -1697,7 +1699,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             if (len -10 - (t_w * t_h * 3) > 0)
                 len -= t_w * t_h * 3;
         }
-        len -= 10;
+        len -= 2;
+        }
         goto out;
     }
 
