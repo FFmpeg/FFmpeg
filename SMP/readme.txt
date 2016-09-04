@@ -57,12 +57,6 @@ However the following is a list of extra dependency options that require externa
     1) opengl (requires glext)
 		a) Download glext.h and wglext.h from opengl.org.
 		b) Save the header files into OutputDir/include/gl/*.
-    2) nvenc (requires NVIDIA Video Codec SDK, recommended to also enable cuda)
-        a) Enable cuda as above.
-		b) Download the "NVIDIA Video Codec SDK" from the NVIDIA website.
-		c) Copy 'nvEncodeAPI.h' from the "NVIDIA Video Codec SDK" into the installed %CUDA%/include folder 
-			(where %CUDA% is the location that the CUDA SDK was installed) or into OutputDir/include if CUDA
-            is not available.
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
 The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expected 

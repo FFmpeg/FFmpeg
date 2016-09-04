@@ -484,6 +484,9 @@
     <ClCompile Include="..\libavformat\ffmetaenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\fifo.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\filmstripdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

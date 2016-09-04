@@ -221,6 +221,7 @@
     <ClCompile Include="..\libavformat\ffmenc.c" />
     <ClCompile Include="..\libavformat\ffmetadec.c" />
     <ClCompile Include="..\libavformat\ffmetaenc.c" />
+    <ClCompile Include="..\libavformat\fifo.c" />
     <ClCompile Include="..\libavformat\filmstripdec.c" />
     <ClCompile Include="..\libavformat\filmstripenc.c" />
     <ClCompile Include="..\libavformat\flacdec.c" />

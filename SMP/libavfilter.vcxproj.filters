@@ -732,6 +732,9 @@
     <ClCompile Include="..\libavfilter\vf_waveform.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_weave.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_xbr.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
