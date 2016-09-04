@@ -20,6 +20,6 @@
 #define AVCODEC_X86_AUDIODSP_H
 
 void ff_vector_clipf_sse(float *dst, const float *src,
-                         float min, float max, int len);
+                         int len, float min, float max);
 
 #endif /* AVCODEC_X86_AUDIODSP_H */

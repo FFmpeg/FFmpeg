@@ -23,7 +23,7 @@
 #if HAVE_INLINE_ASM
 
 void ff_vector_clipf_sse(float *dst, const float *src,
-                         float min, float max, int len)
+                         int len, float min, float max)
 {
     x86_reg i = (len - 16) * 4;
     __asm__ volatile (
