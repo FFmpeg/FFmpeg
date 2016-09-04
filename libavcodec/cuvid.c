@@ -557,6 +557,11 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     cuparseinfo.pExtVideoInfo = &cuparse_ext;
 
     switch (avctx->codec->id) {
+#if CONFIG_H263_CUVID_DECODER
+    case AV_CODEC_ID_H263:
+        cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
+        break;
+#endif
 #if CONFIG_H264_CUVID_DECODER
     case AV_CODEC_ID_H264:
         cuparseinfo.CodecType = cudaVideoCodec_H264;
@@ -565,6 +570,26 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
 #if CONFIG_HEVC_CUVID_DECODER
     case AV_CODEC_ID_HEVC:
         cuparseinfo.CodecType = cudaVideoCodec_HEVC;
+        break;
+#endif
+#if CONFIG_MJPEG_CUVID_DECODER
+    case AV_CODEC_ID_MJPEG:
+        cuparseinfo.CodecType = cudaVideoCodec_JPEG;
+        break;
+#endif
+#if CONFIG_MPEG1_CUVID_DECODER
+    case AV_CODEC_ID_MPEG1VIDEO:
+        cuparseinfo.CodecType = cudaVideoCodec_MPEG1;
+        break;
+#endif
+#if CONFIG_MPEG2_CUVID_DECODER
+    case AV_CODEC_ID_MPEG2VIDEO:
+        cuparseinfo.CodecType = cudaVideoCodec_MPEG2;
+        break;
+#endif
+#if CONFIG_MPEG4_CUVID_DECODER
+    case AV_CODEC_ID_MPEG4:
+        cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
         break;
 #endif
 #if CONFIG_VP8_CUVID_DECODER
@@ -681,8 +706,28 @@ error:
 DEFINE_CUVID_CODEC(hevc, HEVC)
 #endif
 
+#if CONFIG_H263_CUVID_DECODER
+DEFINE_CUVID_CODEC(h263, H263)
+#endif
+
 #if CONFIG_H264_CUVID_DECODER
 DEFINE_CUVID_CODEC(h264, H264)
+#endif
+
+#if CONFIG_MJPEG_CUVID_DECODER
+DEFINE_CUVID_CODEC(mjpeg, MJPEG)
+#endif
+
+#if CONFIG_MPEG1_CUVID_DECODER
+DEFINE_CUVID_CODEC(mpeg1, MPEG1VIDEO)
+#endif
+
+#if CONFIG_MPEG2_CUVID_DECODER
+DEFINE_CUVID_CODEC(mpeg2, MPEG2VIDEO)
+#endif
+
+#if CONFIG_MPEG4_CUVID_DECODER
+DEFINE_CUVID_CODEC(mpeg4, MPEG4)
 #endif
 
 #if CONFIG_VP8_CUVID_DECODER
