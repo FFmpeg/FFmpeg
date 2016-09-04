@@ -96,11 +96,6 @@ before_build:
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/glext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\glext.h")
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/wglext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\wglext.h")
 
-# Download nvenc header file
-- ps: (New-Object Net.WebClient).DownloadFile('http://developer.nvidia.com/video-sdk-601', "$pwd\nvesdk.zip")
-- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\nvesdk.zip", "$pwd\TempNVESDKUnpack")
-- ps: Move-Item -Force "TempNVESDKUnpack\nvidia_video_sdk_6.0.1\Samples\common\inc\nvEncodeAPI.h" "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include"
-
 build:
   project: build.vcxproj
   parallel: true
