@@ -94,6 +94,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
     REGISTER_HWACCEL(VC1_VDPAU,         vc1_vdpau);
     REGISTER_HWACCEL(VC1_MMAL,          vc1_mmal);
+    REGISTER_HWACCEL(VP8_VAAPI,         vp8_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);

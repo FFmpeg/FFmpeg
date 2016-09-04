@@ -2185,6 +2185,8 @@ vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
+vp8_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferVP8"
+vp8_vaapi_hwaccel_select="vp8_decoder"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
@@ -4544,6 +4546,7 @@ check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMIL
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
+check_type "va/va.h va/va_dec_vp8.h" "VAPictureParameterBufferVP8"
 check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
 check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
