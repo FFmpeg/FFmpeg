@@ -8259,13 +8259,17 @@ The filter accepts the following options:
 
 @table @option
 @item sigma
-Set sigma, standard deviation of Gaussian blur. Default is @code{0.5}.
+Set horizontal sigma, standard deviation of Gaussian blur. Default is @code{0.5}.
 
 @item steps
 Set number of steps for Gaussian approximation. Defauls is @code{1}.
 
 @item planes
 Set which planes to filter. By default all planes are filtered.
+
+@item sigmaV
+Set vertical sigma, if negative it will be same as @code{sigma}.
+Default is @code{-1}.
 @end table
 
 @section geq

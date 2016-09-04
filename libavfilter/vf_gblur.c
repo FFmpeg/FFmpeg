@@ -37,6 +37,7 @@ typedef struct GBlurContext {
     const AVClass *class;
 
     float sigma;
+    float sigmaV;
     int steps;
     int planes;
 
@@ -45,8 +46,11 @@ typedef struct GBlurContext {
     int planeheight[4];
     float *buffer;
     float boundaryscale;
+    float boundaryscaleV;
     float postscale;
+    float postscaleV;
     float nu;
+    float nuV;
     int nb_planes;
 } GBlurContext;
 
@@ -57,6 +61,7 @@ static const AVOption gblur_options[] = {
     { "sigma",  "set sigma",            OFFSET(sigma),  AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0.0, 1024, FLAGS },
     { "steps",  "set number of steps",  OFFSET(steps),  AV_OPT_TYPE_INT,   {.i64=1},     1,    6, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=0xF},   0,  0xF, FLAGS },
+    { "sigmaV", "set vertical sigma",   OFFSET(sigmaV), AV_OPT_TYPE_FLOAT, {.dbl=-1},   -1, 1024, FLAGS },
     { NULL }
 };
 
@@ -111,10 +116,10 @@ static int filter_vertically(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int width = td->width;
     const int slice_start = (width *  jobnr   ) / nb_jobs;
     const int slice_end   = (width * (jobnr+1)) / nb_jobs;
-    const float boundaryscale = s->boundaryscale;
+    const float boundaryscale = s->boundaryscaleV;
     const int numpixels = width * height;
     const int steps = s->steps;
-    const float nu = s->nu;
+    const float nu = s->nuV;
     float *buffer = s->buffer;
     int i, x, step;
     float *ptr;
@@ -150,7 +155,7 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int64_t numpixels = width * height;
     const int slice_start = (numpixels *  jobnr   ) / nb_jobs;
     const int slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
-    const float postscale = s->postscale;
+    const float postscale = s->postscale * s->postscaleV;
     float *buffer = s->buffer;
     int i;
 
@@ -220,7 +225,23 @@ static int config_input(AVFilterLink *inlink)
     s->buffer = av_malloc_array(inlink->w, inlink->h * sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
+
+    if (s->sigmaV < 0) {
+        s->sigmaV = s->sigma;
+    }
+
     return 0;
+}
+
+static void set_params(float sigma, int steps, float *postscale, float *boundaryscale, float *nu)
+{
+    double dnu, lambda;
+
+    lambda = (sigma * sigma) / (2.0 * steps);
+    dnu = (1.0 + 2.0 * lambda - sqrt(1.0 + 4.0 * lambda)) / (2.0 * lambda);
+    *postscale = pow(dnu / lambda, steps);
+    *boundaryscale = 1.0 / (1.0 - dnu);
+    *nu = (float)dnu;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -228,17 +249,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     GBlurContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    double dnu, lambda;
-    float sigma = s->sigma;
-    int steps = s->steps;
     AVFrame *out;
     int plane;
 
-    lambda = (sigma * sigma) / (2.0 * steps);
-    dnu = (1.0 + 2.0 * lambda - sqrt(1.0 + 4.0 * lambda)) / (2.0 * lambda);
-    s->postscale = pow(dnu / lambda, 2 * steps);
-    s->boundaryscale = 1.0 / (1.0 - dnu);
-    s->nu = (float)dnu;
+    set_params(s->sigma,  s->steps, &s->postscale,  &s->boundaryscale,  &s->nu);
+    set_params(s->sigmaV, s->steps, &s->postscaleV, &s->boundaryscaleV, &s->nuV);
 
     if (av_frame_is_writable(in)) {
         out = in;
