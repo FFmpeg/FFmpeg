@@ -26,6 +26,7 @@
 
 #include <string.h>
 
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -36,10 +37,17 @@
 #include "libavutil/imgutils.h"
 
 typedef struct FlipContext {
+    const AVClass *class;
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
     int planewidth[4];  ///< width of each plane
     int planeheight[4]; ///< height of each plane
 } FlipContext;
+
+static const AVOption hflip_options[] = {
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(hflip);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -166,7 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     td.in = in, td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -194,8 +202,9 @@ AVFilter ff_vf_hflip = {
     .name          = "hflip",
     .description   = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
     .priv_size     = sizeof(FlipContext),
+    .priv_class    = &hflip_class,
     .query_formats = query_formats,
     .inputs        = avfilter_vf_hflip_inputs,
     .outputs       = avfilter_vf_hflip_outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

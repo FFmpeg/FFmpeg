@@ -185,7 +185,7 @@ static int config_props(AVFilterLink *outlink)
     s->fs = inlink->w * inlink->h;
     s->cfs = s->chromaw * s->chromah;
 
-    s->nb_jobs   = FFMAX(1, FFMIN(inlink->h, ctx->graph->nb_threads));
+    s->nb_jobs   = FFMAX(1, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
     s->jobs_rets = av_malloc_array(s->nb_jobs, sizeof(*s->jobs_rets));
     if (!s->jobs_rets)
         return AVERROR(ENOMEM);
@@ -602,7 +602,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     }
 
     ctx->internal->execute(ctx, compute_sat_hue_metrics8, &td_huesat,
-                           NULL, FFMIN(s->chromah, ctx->graph->nb_threads));
+                           NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
 
     // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
@@ -820,7 +820,7 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     }
 
     ctx->internal->execute(ctx, compute_sat_hue_metrics16, &td_huesat,
-                           NULL, FFMIN(s->chromah, ctx->graph->nb_threads));
+                           NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
 
     // Calculate luma histogram and difference with previous frame or field.
     memset(s->histy, 0, (1 << s->depth) * sizeof(*s->histy));

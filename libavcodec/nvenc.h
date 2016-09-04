@@ -19,7 +19,7 @@
 #ifndef AVCODEC_NVENC_H
 #define AVCODEC_NVENC_H
 
-#include <nvEncodeAPI.h>
+#include "compat/nvenc/nvEncodeAPI.h"
 
 #include "config.h"
 
@@ -72,6 +72,7 @@ typedef CUresult(CUDAAPI *PCUCTXCREATE)(CUcontext *pctx, unsigned int flags, CUd
 typedef CUresult(CUDAAPI *PCUCTXPOPCURRENT)(CUcontext *pctx);
 typedef CUresult(CUDAAPI *PCUCTXDESTROY)(CUcontext ctx);
 
+typedef NVENCSTATUS (NVENCAPI *PNVENCODEAPIGETMAXSUPPORTEDVERSION)(uint32_t* version);
 typedef NVENCSTATUS (NVENCAPI *PNVENCODEAPICREATEINSTANCE)(NV_ENCODE_API_FUNCTION_LIST *functionList);
 
 typedef struct NvencDynLoadFunctions
@@ -114,6 +115,11 @@ enum {
     NV_ENC_H264_PROFILE_MAIN,
     NV_ENC_H264_PROFILE_HIGH,
     NV_ENC_H264_PROFILE_HIGH_444P,
+};
+
+enum {
+    NV_ENC_HEVC_PROFILE_MAIN,
+    NV_ENC_HEVC_PROFILE_MAIN_10,
 };
 
 enum {
@@ -174,6 +180,7 @@ typedef struct NvencContext
     int device;
     int flags;
     int async_depth;
+    int rc_lookahead;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

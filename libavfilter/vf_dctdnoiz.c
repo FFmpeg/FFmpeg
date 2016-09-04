@@ -507,9 +507,9 @@ static int config_input(AVFilterLink *inlink)
                inlink->h - s->pr_height);
 
     max_slice_h = s->pr_height / ((s->bsize - 1) * 2);
-    s->nb_threads = FFMIN3(MAX_THREADS, ctx->graph->nb_threads, max_slice_h);
+    s->nb_threads = FFMIN3(MAX_THREADS, ff_filter_get_nb_threads(ctx), max_slice_h);
     av_log(ctx, AV_LOG_DEBUG, "threads: [max=%d hmax=%d user=%d] => %d\n",
-           MAX_THREADS, max_slice_h, ctx->graph->nb_threads, s->nb_threads);
+           MAX_THREADS, max_slice_h, ff_filter_get_nb_threads(ctx), s->nb_threads);
 
     s->p_linesize = linesize = FFALIGN(s->pr_width, 32);
     for (i = 0; i < 2; i++) {

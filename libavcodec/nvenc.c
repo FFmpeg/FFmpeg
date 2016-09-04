@@ -1,6 +1,6 @@
 /*
- * H.264 hardware encoding using nvidia nvenc
- * Copyright (c) 2014 Timo Rothenpieler <timo@rothenpieler.org>
+ * H.264/HEVC hardware encoding using nvidia nvenc
+ * Copyright (c) 2016 Timo Rothenpieler <timo@rothenpieler.org>
  *
  * This file is part of FFmpeg.
  *
@@ -21,24 +21,26 @@
 
 #include "config.h"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+# define CUDA_LIBNAME "nvcuda.dll"
+# if ARCH_X86_64
+#  define NVENC_LIBNAME "nvEncodeAPI64.dll"
+# else
+#  define NVENC_LIBNAME "nvEncodeAPI.dll"
+# endif
+#else
+# define CUDA_LIBNAME "libcuda.so.1"
+# define NVENC_LIBNAME "libnvidia-encode.so.1"
+#endif
+
 #if defined(_WIN32)
 #include <windows.h>
 
-#define CUDA_LIBNAME TEXT("nvcuda.dll")
-#if ARCH_X86_64
-#define NVENC_LIBNAME TEXT("nvEncodeAPI64.dll")
-#else
-#define NVENC_LIBNAME TEXT("nvEncodeAPI.dll")
-#endif
-
-#define dlopen(filename, flags) LoadLibrary((filename))
+#define dlopen(filename, flags) LoadLibrary(TEXT(filename))
 #define dlsym(handle, symbol)   GetProcAddress(handle, symbol)
 #define dlclose(handle)         FreeLibrary(handle)
 #else
 #include <dlfcn.h>
-
-#define CUDA_LIBNAME "libcuda.so"
-#define NVENC_LIBNAME "libnvidia-encode.so"
 #endif
 
 #include "libavutil/hwcontext.h"
@@ -76,12 +78,20 @@
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NV12,
+    AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV444P16,
 #if CONFIG_CUDA
     AV_PIX_FMT_CUDA,
 #endif
     AV_PIX_FMT_NONE
 };
+
+#define IS_10BIT(pix_fmt) (pix_fmt == AV_PIX_FMT_P010 ||    \
+                           pix_fmt == AV_PIX_FMT_YUV444P16)
+
+#define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P || \
+                            pix_fmt == AV_PIX_FMT_YUV444P16)
 
 static const struct {
     NVENCSTATUS nverr;
@@ -145,8 +155,10 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
+    PNVENCODEAPIGETMAXSUPPORTEDVERSION nvenc_get_max_ver;
     PNVENCODEAPICREATEINSTANCE nvenc_create_instance;
     NVENCSTATUS err;
+    uint32_t nvenc_max_ver;
 
 #if CONFIG_CUDA
     dl_fn->cu_init                      = cuInit;
@@ -173,8 +185,24 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 
     LOAD_LIBRARY(dl_fn->nvenc, NVENC_LIBNAME);
 
+    LOAD_SYMBOL(nvenc_get_max_ver, dl_fn->nvenc,
+                "NvEncodeAPIGetMaxSupportedVersion");
     LOAD_SYMBOL(nvenc_create_instance, dl_fn->nvenc,
                 "NvEncodeAPICreateInstance");
+
+    err = nvenc_get_max_ver(&nvenc_max_ver);
+    if (err != NV_ENC_SUCCESS)
+        return nvenc_print_error(avctx, err, "Failed to query nvenc max version");
+
+    av_log(avctx, AV_LOG_VERBOSE, "Loaded Nvenc version %d.%d\n", nvenc_max_ver >> 4, nvenc_max_ver & 0xf);
+
+    if ((NVENCAPI_MAJOR_VERSION << 4 | NVENCAPI_MINOR_VERSION) > nvenc_max_ver) {
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support the required nvenc API version. "
+               "Required: %d.%d Found: %d.%d\n",
+               NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION,
+               nvenc_max_ver >> 4, nvenc_max_ver & 0xf);
+        return AVERROR(ENOSYS);
+    }
 
     dl_fn->nvenc_funcs.version = NV_ENCODE_API_FUNCTION_LIST_VER;
 
@@ -273,7 +301,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_YUV444_ENCODE);
-    if (ctx->data_pix_fmt == AV_PIX_FMT_YUV444P && ret <= 0) {
+    if (IS_YUV444(ctx->data_pix_fmt) && ret <= 0) {
         av_log(avctx, AV_LOG_VERBOSE, "YUV444P not supported\n");
         return AVERROR(ENOSYS);
     }
@@ -311,6 +339,18 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_VERBOSE,
                "Interlaced encoding is not supported. Supported level: %d\n",
                ret);
+        return AVERROR(ENOSYS);
+    }
+
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_10BIT_ENCODE);
+    if (IS_10BIT(ctx->data_pix_fmt) && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "10 bit encode not supported\n");
+        return AVERROR(ENOSYS);
+    }
+
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_LOOKAHEAD);
+    if (ctx->rc_lookahead > 0 && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "RC lookahead not supported\n");
         return AVERROR(ENOSYS);
     }
 
@@ -673,6 +713,11 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
     } else if (ctx->encode_config.rcParams.averageBitRate > 0) {
         ctx->encode_config.rcParams.vbvBufferSize = 2 * ctx->encode_config.rcParams.averageBitRate;
     }
+
+    if (ctx->rc_lookahead > 0) {
+        ctx->encode_config.rcParams.enableLookahead = 1;
+        ctx->encode_config.rcParams.lookaheadDepth = FFMIN(ctx->rc_lookahead, 32);
+    }
 }
 
 static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
@@ -800,9 +845,26 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->outputPictureTimingSEI   = 1;
     }
 
-    /* No other profile is supported in the current SDK version 5 */
-    cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
-    avctx->profile = FF_PROFILE_HEVC_MAIN;
+    switch(ctx->profile) {
+    case NV_ENC_HEVC_PROFILE_MAIN:
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN;
+        break;
+    case NV_ENC_HEVC_PROFILE_MAIN_10:
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+        break;
+    }
+
+    // force setting profile as main10 if input is 10 bit
+    if (IS_10BIT(ctx->data_pix_fmt)) {
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
+        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+    }
+
+    hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
+
+    hevc->pixelBitDepthMinus8 = IS_10BIT(ctx->data_pix_fmt) ? 2 : 0;
 
     hevc->level = ctx->level;
 
@@ -958,8 +1020,16 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_NV12_PL;
         break;
 
+    case AV_PIX_FMT_P010:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
+        break;
+
     case AV_PIX_FMT_YUV444P:
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_PL;
+        break;
+
+    case AV_PIX_FMT_YUV444P16:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
         break;
 
     default:
@@ -1238,6 +1308,16 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[1], frame->linesize[1],
             avctx->width, avctx->height >> 1);
+    } else if (frame->format == AV_PIX_FMT_P010) {
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[0], frame->linesize[0],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[1], frame->linesize[1],
+            avctx->width << 1, avctx->height >> 1);
     } else if (frame->format == AV_PIX_FMT_YUV444P) {
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[0], frame->linesize[0],
@@ -1254,6 +1334,22 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
         av_image_copy_plane(buf, lockBufferParams->pitch,
             frame->data[2], frame->linesize[2],
             avctx->width, avctx->height);
+    } else if (frame->format == AV_PIX_FMT_YUV444P16) {
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[0], frame->linesize[0],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[1], frame->linesize[1],
+            avctx->width << 1, avctx->height);
+
+        buf += off;
+
+        av_image_copy_plane(buf, lockBufferParams->pitch,
+            frame->data[2], frame->linesize[2],
+            avctx->width << 1, avctx->height);
     } else {
         av_log(avctx, AV_LOG_FATAL, "Invalid pixel format!\n");
         return AVERROR(EINVAL);
@@ -1458,7 +1554,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
 
     uint32_t slice_mode_data;
-    uint32_t *slice_offsets;
+    uint32_t *slice_offsets = NULL;
     NV_ENC_LOCK_BITSTREAM lock_params = { 0 };
     NVENCSTATUS nv_status;
     int res = 0;

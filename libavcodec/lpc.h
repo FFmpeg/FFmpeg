@@ -95,7 +95,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
                       enum FFLPCType lpc_type, int lpc_passes,
-                      int omethod, int max_shift, int zero_shift);
+                      int omethod, int min_shift, int max_shift, int zero_shift);
 
 int ff_lpc_calc_ref_coefs(LPCContext *s,
                           const int32_t *samples, int order, double *ref);

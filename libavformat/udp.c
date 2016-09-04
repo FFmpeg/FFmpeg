@@ -42,6 +42,10 @@
 #include "os_support.h"
 #include "url.h"
 
+#ifdef __APPLE__
+#include "TargetConditionals.h"
+#endif
+
 #if HAVE_UDPLITE_H
 #include "udplite.h"
 #else
@@ -278,7 +282,7 @@ static int udp_set_multicast_sources(URLContext *h,
                                      int addr_len, char **sources,
                                      int nb_sources, int include)
 {
-#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32)
+#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32) && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
     /* These ones are available in the microsoft SDK, but don't seem to work
      * as on linux, so just prefer the v4-only approach there for now. */
     int i;

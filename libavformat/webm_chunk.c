@@ -92,6 +92,7 @@ static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
     }
     if (is_header) {
         if (!wc->header_filename) {
+            av_log(oc, AV_LOG_ERROR, "No header filename provided\n");
             return AVERROR(EINVAL);
         }
         av_strlcpy(filename, wc->header_filename, strlen(wc->header_filename) + 1);

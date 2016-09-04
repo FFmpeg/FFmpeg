@@ -471,7 +471,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
     ctx->internal->execute(ctx, funcs[s->is_16bit][direct][s->correction_method],
-                           &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
+                           &td, NULL, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (!direct)
         av_frame_free(&in);

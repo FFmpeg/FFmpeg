@@ -357,6 +357,12 @@ segmentation.
 This muxer supports the following options:
 
 @table @option
+@item hls_init_time @var{seconds}
+Set the initial target segment length in seconds. Default value is @var{0}.
+Segment will be cut on the next key frame after this time has passed on the first m3u8 list.
+After the initial playlist is filled @command{ffmpeg} will cut segments
+at duration equal to @code{hls_time}
+
 @item hls_time @var{seconds}
 Set the target segment length in seconds. Default value is 2.
 Segment will be cut on the next key frame after this time has passed.

@@ -35,6 +35,21 @@
  * Useful to check and match library version in order to maintain
  * backward compatibility.
  *
+ * The FFmpeg libraries follow a versioning sheme very similar to
+ * Semantic Versioning (http://semver.org/)
+ * The difference is that the component called PATCH is called MICRO in FFmpeg
+ * and its value is reset to 100 instead of 0 to keep it above or equal to 100.
+ * Also we do not increase MICRO for every bugfix or change in git master.
+ *
+ * Prior to FFmpeg 3.2 point releases did not change any lib version number to
+ * avoid aliassing different git master checkouts.
+ * Starting with FFmpeg 3.2, the released library versions will occupy
+ * a separate MAJOR.MINOR that is not used on the master development branch.
+ * That is if we branch a release of master 55.10.123 we will bump to 55.11.100
+ * for the release and master will continue at 55.12.100 after it. Each new
+ * point release will then bump the MICRO improving the usefulness of the lib
+ * versions.
+ *
  * @{
  */
 

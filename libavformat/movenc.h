@@ -217,6 +217,8 @@ typedef struct MOVMuxContext {
 
     int need_rewrite_extradata;
 
+    int use_stream_ids_as_track_ids;
+    int track_ids_ok;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)

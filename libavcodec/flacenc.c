@@ -44,6 +44,7 @@
 #define MAX_PARTITION_ORDER 8
 #define MAX_PARTITIONS     (1 << MAX_PARTITION_ORDER)
 #define MAX_LPC_PRECISION  15
+#define MIN_LPC_SHIFT       0
 #define MAX_LPC_SHIFT      15
 
 enum CodingMode {
@@ -884,7 +885,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     opt_order = ff_lpc_calc_coefs(&s->lpc_ctx, smp, n, min_order, max_order,
                                   s->options.lpc_coeff_precision, coefs, shift, s->options.lpc_type,
                                   s->options.lpc_passes, omethod,
-                                  MAX_LPC_SHIFT, 0);
+                                  MIN_LPC_SHIFT, MAX_LPC_SHIFT, 0);
 
     if (omethod == ORDER_METHOD_2LEVEL ||
         omethod == ORDER_METHOD_4LEVEL ||

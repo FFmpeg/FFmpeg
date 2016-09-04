@@ -89,6 +89,7 @@ static const AVOption options[] = {
     { "encryption_scheme",    "Configures the encryption scheme, allowed values are none, cenc-aes-ctr", offsetof(MOVMuxContext, encryption_scheme_str),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_key", "The media encryption key (hex)", offsetof(MOVMuxContext, encryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
+    { "use_stream_ids_as_track_ids", "use stream ids as track ids", offsetof(MOVMuxContext, use_stream_ids_as_track_ids), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -3435,6 +3436,52 @@ static void build_chunks(MOVTrack *trk)
     }
 }
 
+/**
+ * Assign track ids. If option "use_stream_ids_as_track_ids" is set,
+ * the stream ids are used as track ids.
+ *
+ * This assumes mov->tracks and s->streams are in the same order and
+ * there are no gaps in either of them (so mov->tracks[n] refers to
+ * s->streams[n]).
+ *
+ * As an exception, there can be more entries in
+ * s->streams than in mov->tracks, in which case new track ids are
+ * generated (starting after the largest found stream id).
+ */
+static int mov_setup_track_ids(MOVMuxContext *mov, AVFormatContext *s)
+{
+    int i;
+
+    if (mov->track_ids_ok)
+        return 0;
+
+    if (mov->use_stream_ids_as_track_ids) {
+        int next_generated_track_id = 0;
+        for (i = 0; i < s->nb_streams; i++) {
+            if (s->streams[i]->id > next_generated_track_id)
+                next_generated_track_id = s->streams[i]->id;
+        }
+
+        for (i = 0; i < mov->nb_streams; i++) {
+            if (mov->tracks[i].entry <= 0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT))
+                continue;
+
+            mov->tracks[i].track_id = i >= s->nb_streams ? ++next_generated_track_id : s->streams[i]->id;
+        }
+    } else {
+        for (i = 0; i < mov->nb_streams; i++) {
+            if (mov->tracks[i].entry <= 0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT))
+                continue;
+
+            mov->tracks[i].track_id = i + 1;
+        }
+    }
+
+    mov->track_ids_ok = 1;
+
+    return 0;
+}
+
 static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
@@ -3443,12 +3490,13 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size placeholder*/
     ffio_wfourcc(pb, "moov");
 
+    mov_setup_track_ids(mov, s);
+
     for (i = 0; i < mov->nb_streams; i++) {
         if (mov->tracks[i].entry <= 0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT))
             continue;
 
         mov->tracks[i].time     = mov->time;
-        mov->tracks[i].track_id = i + 1;
 
         if (mov->tracks[i].entry)
             build_chunks(&mov->tracks[i]);
@@ -3529,7 +3577,7 @@ static void param_write_hex(AVIOContext *pb, const char *name, const uint8_t *va
     avio_printf(pb, "<param name=\"%s\" value=\"%s\" valuetype=\"data\"/>\n", name, buf);
 }
 
-static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
+static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s)
 {
     int64_t pos = avio_tell(pb);
     int i;
@@ -3552,12 +3600,13 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
     avio_printf(pb, "</head>\n");
     avio_printf(pb, "<body>\n");
     avio_printf(pb, "<switch>\n");
+
+    mov_setup_track_ids(mov, s);
+
     for (i = 0; i < mov->nb_streams; i++) {
         MOVTrack *track = &mov->tracks[i];
         const char *type;
-        /* track->track_id is initialized in write_moov, and thus isn't known
-         * here yet */
-        int track_id = i + 1;
+        int track_id = track->track_id;
 
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             type = "video";
@@ -5773,7 +5822,7 @@ static int mov_write_header(AVFormatContext *s)
     avio_flush(pb);
 
     if (mov->flags & FF_MOV_FLAG_ISML)
-        mov_write_isml_manifest(pb, mov);
+        mov_write_isml_manifest(pb, mov, s);
 
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV &&
         !(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {

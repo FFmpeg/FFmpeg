@@ -184,6 +184,8 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         return AVERROR(EINVAL);
     if (desc->flags & ~(AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_PSEUDOPAL | AV_PIX_FMT_FLAG_ALPHA))
         return AVERROR(ENOSYS);
+    if (format == AV_PIX_FMT_P010LE || format == AV_PIX_FMT_P010BE)
+        return AVERROR(ENOSYS);
     for (i = 0; i < desc->nb_components; i++) {
         c = &desc->comp[i];
         /* for now, only 8-16 bits formats */
@@ -251,7 +253,8 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
 #define EXPAND(compn) \
         if (desc->comp[compn].depth > 8) \
             color->comp[desc->comp[compn].plane].u16[desc->comp[compn].offset] = \
-            color->comp[desc->comp[compn].plane].u8[desc->comp[compn].offset] << (draw->desc->comp[compn].depth - 8)
+            color->comp[desc->comp[compn].plane].u8[desc->comp[compn].offset] << \
+                (draw->desc->comp[compn].depth + draw->desc->comp[compn].shift - 8)
         EXPAND(3);
         EXPAND(2);
         EXPAND(1);

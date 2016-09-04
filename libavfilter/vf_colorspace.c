@@ -947,7 +947,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             return res;
     } else {
         ctx->internal->execute(ctx, convert, &td, NULL,
-                               FFMIN((in->height + 1) >> 1, ctx->graph->nb_threads));
+                               FFMIN((in->height + 1) >> 1, ff_filter_get_nb_threads(ctx)));
     }
     av_frame_free(&in);
 

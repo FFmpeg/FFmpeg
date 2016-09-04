@@ -1690,14 +1690,17 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
                    s->avctx->sample_aspect_ratio.num,
                    s->avctx->sample_aspect_ratio.den);
 
-        t_w = get_bits(&s->gb, 8);
-        t_h = get_bits(&s->gb, 8);
-        if (t_w && t_h) {
-            /* skip thumbnail */
-            if (len -10 - (t_w * t_h * 3) > 0)
-                len -= t_w * t_h * 3;
+        len -= 8;
+        if (len >= 2) {
+            t_w = get_bits(&s->gb, 8);
+            t_h = get_bits(&s->gb, 8);
+            if (t_w && t_h) {
+                /* skip thumbnail */
+                if (len -10 - (t_w * t_h * 3) > 0)
+                    len -= t_w * t_h * 3;
+            }
+            len -= 2;
         }
-        len -= 10;
         goto out;
     }
 
@@ -2119,6 +2122,8 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             ret = mjpeg_decode_com(s);
             if (ret < 0)
                 return ret;
+        } else if (start_code == DQT) {
+            ff_mjpeg_decode_dqt(s);
         }
 
         ret = -1;
@@ -2150,9 +2155,6 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             s->restart_interval = 0;
             s->restart_count    = 0;
             /* nothing to do on SOI */
-            break;
-        case DQT:
-            ff_mjpeg_decode_dqt(s);
             break;
         case DHT:
             if ((ret = ff_mjpeg_decode_dht(s)) < 0) {

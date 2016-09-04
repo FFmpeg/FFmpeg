@@ -328,7 +328,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     channels = avctx->extradata ? extradata[9] : (avctx->channels == 1) ? 1 : 2;
     if (!channels) {
-        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extadata\n");
+        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extradata\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -347,7 +347,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         streams        = 1;
         stereo_streams = channels - 1;
         channel_map    = default_channel_map;
-    } else if (map_type == 1 || map_type == 255) {
+    } else if (map_type == 1 || map_type == 2 || map_type == 255) {
         if (extradata_size < 21 + channels) {
             av_log(avctx, AV_LOG_ERROR, "Invalid extradata size: %d\n",
                    extradata_size);
@@ -371,6 +371,15 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             }
             layout = ff_vorbis_channel_layouts[channels - 1];
             channel_reorder = channel_reorder_vorbis;
+        } else if (map_type == 2) {
+            int ambisonic_order = ff_sqrt(channels) - 1;
+            if (channels != (ambisonic_order + 1) * (ambisonic_order + 1)) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Channel mapping 2 is only specified for channel counts"
+                       " which can be written as (n + 1)^2 for nonnegative integer n\n");
+                return AVERROR_INVALIDDATA;
+            }
+            layout = 0;
         } else
             layout = 0;
 

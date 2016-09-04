@@ -129,10 +129,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,        \
     AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE,     \
     AV_PIX_FMT_GBRP,         AV_PIX_FMT_GBRAP,        \
-    AV_PIX_FMT_GBRP9,        AV_PIX_FMT_GBRP10,       \
-    AV_PIX_FMT_GBRP12,       AV_PIX_FMT_GBRP14,       \
-    AV_PIX_FMT_GBRP16,       AV_PIX_FMT_GBRAP12,      \
-    AV_PIX_FMT_GBRAP16
+    AV_PIX_FMT_GBRP9LE,      AV_PIX_FMT_GBRP10LE,     \
+    AV_PIX_FMT_GBRP12LE,     AV_PIX_FMT_GBRP14LE,     \
+    AV_PIX_FMT_GBRP16LE,     AV_PIX_FMT_GBRAP12LE,    \
+    AV_PIX_FMT_GBRAP16LE
 
 static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };

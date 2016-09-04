@@ -357,7 +357,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         ctx->internal->execute(ctx, s->filter_slice, &td, NULL,
                                FFMIN3(s->planeheight[1],
                                       s->planeheight[2],
-                                      ctx->graph->nb_threads));
+                                      ff_filter_get_nb_threads(ctx)));
         av_frame_copy_props(out, in);
     } else {
         out = av_frame_clone(in);
