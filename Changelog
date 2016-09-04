@@ -2,6 +2,19 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.3:
+- avformat/avidec: Fix infinite loop in avi_read_nikon()
+- avcodec/aacenc: Tighter input checks
+- avformat/wtvdec: Check pointer before use
+- libavcodec/wmalosslessdec: Check the remaining bits
+- avcodec/diracdec: Check numx/y
+- avcodec/cfhd: Increase minimum band dimension to 3
+- avcodec/indeo2: check ctab
+- avformat/swfdec: Fix inflate() error code check
+- avcodec/rawdec: Fix bits_per_coded_sample checks
+- lavc/mjpegdec: Do not skip reading quantization tables.
+- cmdutils: fix implicit declaration of SetDllDirectory function
+- cmdutils: check for SetDllDirectory() availability
+- avcodec/h264: Put context_count check back
 - cmdutils: remove the current working directory from the DLL search path on win32
 - avcodec/raw: Fix decoding of ilacetest.mov
 - avcodec/ffv1enc: Fix assertion failure with non zero bits per sample
