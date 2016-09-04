@@ -1004,16 +1004,15 @@ AVFILTER_DEFINE_CLASS(hdcd);
 static void hdcd_reset(hdcd_state *state, unsigned rate, unsigned cdt_ms)
 {
     int i;
+    uint64_t sustain_reset = (uint64_t)cdt_ms * rate / 1000;
 
     state->window = 0;
     state->readahead = 32;
     state->arg = 0;
     state->control = 0;
-
     state->running_gain = 0;
-
+    state->sustain_reset = sustain_reset;
     state->sustain = 0;
-    state->sustain_reset = cdt_ms*rate/1000;
 
     state->code_counterA = 0;
     state->code_counterA_almost = 0;
@@ -1789,8 +1788,8 @@ static av_cold int init(AVFilterContext *ctx)
         hdcd_reset(&s->state[c], 44100, s->cdt_ms);
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "CDT period: %dms (%d samples @44100Hz)\n",
-        s->cdt_ms, s->cdt_ms*44100/1000 );
+    av_log(ctx, AV_LOG_VERBOSE, "CDT period: %dms (%u samples @44100Hz)\n",
+        s->cdt_ms, s->state[0].sustain_reset );
     av_log(ctx, AV_LOG_VERBOSE, "Process mode: %s\n",
         (s->process_stereo) ? "process stereo channels together" : "process each channel separately");
     av_log(ctx, AV_LOG_VERBOSE, "Force PE: %s\n",
