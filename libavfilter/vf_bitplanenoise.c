@@ -187,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         stats[plane] /= s->planewidth[plane] * s->planeheight[plane];
         snprintf(key, sizeof(key), "lavfi.bitplanenoise.%d.%d", plane, s->bitplane);
-        snprintf(metabuf, sizeof(metabuf), "%f", 1. - 2.* fabsf((stats[plane] - 0.5)));
+        snprintf(metabuf, sizeof(metabuf), "%f", 1. - 2.* fabs((stats[plane] - 0.5)));
         av_dict_set(&out->metadata, key, metabuf, 0);
     }
 
