@@ -14150,7 +14150,7 @@ Set the frame as bottom-field-first.
 
 @itemize
 @item
-Interlace video using @code{select} and @code{separatefields} filter:
+Interlace video using @ref{select} and @ref{separatefields} filter:
 @example
 separatefields,select=eq(mod(n,4),0)+eq(mod(n,4),3),weave
 @end example
