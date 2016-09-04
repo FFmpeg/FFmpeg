@@ -46,9 +46,13 @@ typedef struct CuvidContext
     AVFifoBuffer *frame_queue;
 
     int internal_error;
+    int ever_flushed;
 
     cudaVideoCodec codec_type;
     cudaVideoChromaFormat chroma_format;
+
+    CUVIDPARSERPARAMS cuparseinfo;
+    CUVIDEOFORMATEX cuparse_ext;
 } CuvidContext;
 
 static int check_cu(AVCodecContext *avctx, CUresult err, const char *func)
@@ -127,7 +131,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 0;
     }
 
-    if (hwframe_ctx->pool) {
+    if (hwframe_ctx->pool && !ctx->ever_flushed) {
         av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized\n");
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
@@ -164,14 +168,16 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (ctx->internal_error < 0)
         return 0;
 
-    hwframe_ctx->format = AV_PIX_FMT_CUDA;
-    hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-    hwframe_ctx->width = FFALIGN(avctx->coded_width, 32);
-    hwframe_ctx->height = FFALIGN(avctx->coded_height, 32);
+    if (!hwframe_ctx->pool) {
+        hwframe_ctx->format = AV_PIX_FMT_CUDA;
+        hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
+        hwframe_ctx->width = FFALIGN(avctx->coded_width, 32);
+        hwframe_ctx->height = FFALIGN(avctx->coded_height, 32);
 
-    if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
-        return 0;
+        if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
+            return 0;
+        }
     }
 
     return 1;
@@ -461,8 +467,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     AVCUDADeviceContext *device_hwctx;
     AVHWDeviceContext *device_ctx;
     AVHWFramesContext *hwframe_ctx;
-    CUVIDPARSERPARAMS cuparseinfo;
-    CUVIDEOFORMATEX cuparse_ext;
     CUVIDSOURCEDATAPACKET seq_pkt;
     CUdevice device;
     CUcontext cuda_ctx = NULL;
@@ -550,61 +554,61 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         }
     }
 
-    memset(&cuparseinfo, 0, sizeof(cuparseinfo));
-    memset(&cuparse_ext, 0, sizeof(cuparse_ext));
+    memset(&ctx->cuparseinfo, 0, sizeof(ctx->cuparseinfo));
+    memset(&ctx->cuparse_ext, 0, sizeof(ctx->cuparse_ext));
     memset(&seq_pkt, 0, sizeof(seq_pkt));
 
-    cuparseinfo.pExtVideoInfo = &cuparse_ext;
+    ctx->cuparseinfo.pExtVideoInfo = &ctx->cuparse_ext;
 
     switch (avctx->codec->id) {
 #if CONFIG_H263_CUVID_DECODER
     case AV_CODEC_ID_H263:
-        cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
         break;
 #endif
 #if CONFIG_H264_CUVID_DECODER
     case AV_CODEC_ID_H264:
-        cuparseinfo.CodecType = cudaVideoCodec_H264;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_H264;
         break;
 #endif
 #if CONFIG_HEVC_CUVID_DECODER
     case AV_CODEC_ID_HEVC:
-        cuparseinfo.CodecType = cudaVideoCodec_HEVC;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_HEVC;
         break;
 #endif
 #if CONFIG_MJPEG_CUVID_DECODER
     case AV_CODEC_ID_MJPEG:
-        cuparseinfo.CodecType = cudaVideoCodec_JPEG;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_JPEG;
         break;
 #endif
 #if CONFIG_MPEG1_CUVID_DECODER
     case AV_CODEC_ID_MPEG1VIDEO:
-        cuparseinfo.CodecType = cudaVideoCodec_MPEG1;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_MPEG1;
         break;
 #endif
 #if CONFIG_MPEG2_CUVID_DECODER
     case AV_CODEC_ID_MPEG2VIDEO:
-        cuparseinfo.CodecType = cudaVideoCodec_MPEG2;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_MPEG2;
         break;
 #endif
 #if CONFIG_MPEG4_CUVID_DECODER
     case AV_CODEC_ID_MPEG4:
-        cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
         break;
 #endif
 #if CONFIG_VP8_CUVID_DECODER
     case AV_CODEC_ID_VP8:
-        cuparseinfo.CodecType = cudaVideoCodec_VP8;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_VP8;
         break;
 #endif
 #if CONFIG_VP9_CUVID_DECODER
     case AV_CODEC_ID_VP9:
-        cuparseinfo.CodecType = cudaVideoCodec_VP9;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_VP9;
         break;
 #endif
 #if CONFIG_VC1_CUVID_DECODER
     case AV_CODEC_ID_VC1:
-        cuparseinfo.CodecType = cudaVideoCodec_VC1;
+        ctx->cuparseinfo.CodecType = cudaVideoCodec_VC1;
         break;
 #endif
     default:
@@ -630,38 +634,38 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             goto error;
         }
 
-        cuparse_ext.format.seqhdr_data_length = ctx->bsf->par_out->extradata_size;
-        memcpy(cuparse_ext.raw_seqhdr_data,
+        ctx->cuparse_ext.format.seqhdr_data_length = ctx->bsf->par_out->extradata_size;
+        memcpy(ctx->cuparse_ext.raw_seqhdr_data,
                ctx->bsf->par_out->extradata,
-               FFMIN(sizeof(cuparse_ext.raw_seqhdr_data), ctx->bsf->par_out->extradata_size));
+               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), ctx->bsf->par_out->extradata_size));
     } else if (avctx->extradata_size > 0) {
-        cuparse_ext.format.seqhdr_data_length = avctx->extradata_size;
-        memcpy(cuparse_ext.raw_seqhdr_data,
+        ctx->cuparse_ext.format.seqhdr_data_length = avctx->extradata_size;
+        memcpy(ctx->cuparse_ext.raw_seqhdr_data,
                avctx->extradata,
-               FFMIN(sizeof(cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
+               FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
     }
 
-    cuparseinfo.ulMaxNumDecodeSurfaces = MAX_FRAME_COUNT;
-    cuparseinfo.ulMaxDisplayDelay = 4;
-    cuparseinfo.pUserData = avctx;
-    cuparseinfo.pfnSequenceCallback = cuvid_handle_video_sequence;
-    cuparseinfo.pfnDecodePicture = cuvid_handle_picture_decode;
-    cuparseinfo.pfnDisplayPicture = cuvid_handle_picture_display;
+    ctx->cuparseinfo.ulMaxNumDecodeSurfaces = MAX_FRAME_COUNT;
+    ctx->cuparseinfo.ulMaxDisplayDelay = 4;
+    ctx->cuparseinfo.pUserData = avctx;
+    ctx->cuparseinfo.pfnSequenceCallback = cuvid_handle_video_sequence;
+    ctx->cuparseinfo.pfnDecodePicture = cuvid_handle_picture_decode;
+    ctx->cuparseinfo.pfnDisplayPicture = cuvid_handle_picture_display;
 
     ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         goto error;
 
-    ret = cuvid_test_dummy_decoder(avctx, &cuparseinfo);
+    ret = cuvid_test_dummy_decoder(avctx, &ctx->cuparseinfo);
     if (ret < 0)
         goto error;
 
-    ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &cuparseinfo));
+    ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
     if (ret < 0)
         goto error;
 
-    seq_pkt.payload = cuparse_ext.raw_seqhdr_data;
-    seq_pkt.payload_size = cuparse_ext.format.seqhdr_data_length;
+    seq_pkt.payload = ctx->cuparse_ext.raw_seqhdr_data;
+    seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
 
     if (seq_pkt.payload && seq_pkt.payload_size) {
         ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &seq_pkt));
@@ -673,11 +677,58 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
+    ctx->ever_flushed = 0;
+
     return 0;
 
 error:
     cuvid_decode_end(avctx);
     return ret;
+}
+
+static void cuvid_flush(AVCodecContext *avctx)
+{
+    CuvidContext *ctx = avctx->priv_data;
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
+    AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
+    CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    int ret;
+
+    ctx->ever_flushed = 1;
+
+    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    if (ret < 0)
+        goto error;
+
+    av_fifo_freep(&ctx->frame_queue);
+
+    ctx->frame_queue = av_fifo_alloc(MAX_FRAME_COUNT * sizeof(CUVIDPARSERDISPINFO));
+    if (!ctx->frame_queue) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to recreate frame queue on flush\n");
+        return;
+    }
+
+    if (ctx->cudecoder) {
+        cuvidDestroyDecoder(ctx->cudecoder);
+        ctx->cudecoder = NULL;
+    }
+
+    if (ctx->cuparser) {
+        cuvidDestroyVideoParser(ctx->cuparser);
+        ctx->cuparser = NULL;
+    }
+
+    ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
+    if (ret < 0)
+        goto error;
+
+    ret = CHECK_CU(cuCtxPopCurrent(&dummy));
+    if (ret < 0)
+        goto error;
+
+    return;
+ error:
+    av_log(avctx, AV_LOG_ERROR, "CUDA reinit on flush failed\n");
 }
 
 #define DEFINE_CUVID_CODEC(x, X) \
@@ -696,6 +747,7 @@ error:
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
         .decode         = cuvid_decode_frame, \
+        .flush          = cuvid_flush, \
         .capabilities   = AV_CODEC_CAP_DELAY, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
