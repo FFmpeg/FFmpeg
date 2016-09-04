@@ -104,6 +104,14 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
             avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         original_format  = UTVIDEO_422;
         break;
+    case AV_PIX_FMT_YUV444P:
+        c->planes        = 3;
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '4');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '4');
+        original_format  = UTVIDEO_444;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown pixel format: %d\n",
                avctx->pix_fmt);
@@ -579,6 +587,17 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
         }
         break;
+    case AV_PIX_FMT_YUV444P:
+        for (i = 0; i < c->planes; i++) {
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
+                               pic->linesize[i], i, width, height, &pb);
+
+            if (ret) {
+                av_log(avctx, AV_LOG_ERROR, "Error encoding plane %d.\n", i);
+                return ret;
+            }
+        }
+        break;
     case AV_PIX_FMT_YUV422P:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
@@ -668,6 +687,6 @@ AVCodec ff_utvideo_encoder = {
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
-                          AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
+                          AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
                       },
 };

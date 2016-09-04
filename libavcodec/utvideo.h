@@ -56,6 +56,7 @@ enum {
     UTVIDEO_RGBA = MKTAG(0x00, 0x00, 0x02, 0x18),
     UTVIDEO_420  = MKTAG('Y', 'V', '1', '2'),
     UTVIDEO_422  = MKTAG('Y', 'U', 'Y', '2'),
+    UTVIDEO_444  = MKTAG('Y', 'V', '2', '4'),
 };
 
 /* Mapping of libavcodec prediction modes to Ut Video's */
