@@ -320,7 +320,8 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         int profile_match = 0;
         if (avctx->codec_id != vaapi_profile_map[i].codec_id)
             continue;
-        if (avctx->profile == vaapi_profile_map[i].codec_profile)
+        if (avctx->profile == vaapi_profile_map[i].codec_profile ||
+            vaapi_profile_map[i].codec_profile == FF_PROFILE_UNKNOWN)
             profile_match = 1;
         profile = vaapi_profile_map[i].va_profile;
         for (j = 0; j < profile_count; j++) {
