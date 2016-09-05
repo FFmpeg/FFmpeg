@@ -260,7 +260,6 @@ static int send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
     int frame_nb_samples, ret;
     AVRational rate_tb = { 1, ctx->inputs[in_no]->sample_rate };
     AVFrame *buf;
-    int nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
 
     if (!rate_tb.den)
         return AVERROR_BUG;
@@ -273,7 +272,7 @@ static int send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
         if (!buf)
             return AVERROR(ENOMEM);
         av_samples_set_silence(buf->extended_data, 0, frame_nb_samples,
-                               nb_channels, outlink->format);
+                               outlink->channels, outlink->format);
         buf->pts = base_pts + av_rescale_q(sent, rate_tb, outlink->time_base);
         ret = ff_filter_frame(outlink, buf);
         if (ret < 0)
