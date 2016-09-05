@@ -4402,6 +4402,24 @@ number in range [5, 129].
 Set what planes of frame filter will use for averaging. Default is all.
 @end table
 
+@section avgblur
+
+Apply average blur filter.
+
+The filter accepts the following options:
+
+@table @option
+@item sizeX
+Set horizontal kernel size.
+
+@item planes
+Set which planes to filter. By default all planes are filtered.
+
+@item sizeY
+Set vertical kernel size, if zero it will be same as @code{sizeX}.
+Default is @code{0}.
+@end table
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame
