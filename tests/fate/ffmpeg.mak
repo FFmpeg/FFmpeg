@@ -51,6 +51,11 @@ fate-unknown_layout-ac3: CMD = md5 \
   -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
 
+FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-copy-trac236
+fate-copy-trac236: $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
+fate-copy-trac236: CMD = transcode mov $(TARGET_SAMPLES)/mov/fcp_export8-236.mov\
+                     mov "-codec copy -map 0"
+
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
 fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg
