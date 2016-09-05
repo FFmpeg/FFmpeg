@@ -104,7 +104,7 @@ static void queue_pop(FifoContext *s)
 static void buffer_offset(AVFilterLink *link, AVFrame *frame,
                           int offset)
 {
-    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+    int nb_channels = link->channels;
     int planar = av_sample_fmt_is_planar(link->format);
     int planes = planar ? nb_channels : 1;
     int block_align = av_get_bytes_per_sample(link->format) * (planar ? 1 : nb_channels);
@@ -129,7 +129,7 @@ static void buffer_offset(AVFilterLink *link, AVFrame *frame,
 static int calc_ptr_alignment(AVFrame *frame)
 {
     int planes = av_sample_fmt_is_planar(frame->format) ?
-                 av_get_channel_layout_nb_channels(frame->channel_layout) : 1;
+                 av_frame_get_channels(frame) : 1;
     int min_align = 128;
     int p;
 
@@ -170,7 +170,7 @@ static int return_audio_frame(AVFilterContext *ctx)
             buffer_offset(link, head, link->request_samples);
         }
     } else {
-        int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+        int nb_channels = link->channels;
 
         if (!s->out) {
             s->out = ff_get_audio_buffer(link, link->request_samples);
