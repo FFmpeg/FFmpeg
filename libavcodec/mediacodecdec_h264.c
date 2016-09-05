@@ -129,6 +129,8 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     int is_avc = 0;
     int nal_length_size = 0;
 
+    const AVBitStreamFilter *bsf = NULL;
+
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
 
@@ -205,7 +207,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    const AVBitStreamFilter *bsf = av_bsf_get_by_name("h264_mp4toannexb");
+    bsf = av_bsf_get_by_name("h264_mp4toannexb");
     if(!bsf) {
         ret = AVERROR_BSF_NOT_FOUND;
         goto done;
