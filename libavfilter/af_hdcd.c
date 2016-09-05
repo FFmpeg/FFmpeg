@@ -871,6 +871,7 @@ typedef struct {
      *  a code. -1 for timer never set. */
     int count_sustain_expired;
 
+    int rate;                   /**< sampling rate */
     int _ana_snb;               /**< used in the analyze mode tone generator */
 } hdcd_state;
 
@@ -1026,6 +1027,7 @@ static void hdcd_reset(hdcd_state *state, unsigned rate, unsigned cdt_ms)
     state->max_gain = 0;
     state->count_sustain_expired = -1;
 
+    state->rate = rate;
     state->_ana_snb = 0;
 }
 
@@ -1297,7 +1299,8 @@ static int hdcd_scan_stereo(HDCDContext *ctx, const int32_t *samples, int max)
 
 /** replace audio with solid tone, but save LSBs */
 static void hdcd_analyze_prepare(hdcd_state *state, int32_t *samples, int count, int stride) {
-    int n;
+    int n, f = 300;
+    int so = state->rate / f;
     for (n = 0; n < count * stride; n += stride) {
         /* in analyze mode, the audio is replaced by a solid tone, and
          * amplitude is changed to signal when the specified feature is
@@ -1306,9 +1309,9 @@ static void hdcd_analyze_prepare(hdcd_state *state, int32_t *samples, int count,
          * bit 1: Original sample was above PE level */
         int32_t save = (abs(samples[n]) - PEAK_EXT_LEVEL >= 0) ? 2 : 0; /* above PE level */
         save |= samples[n] & 1;                      /* save LSB for HDCD packets */
-        samples[n] = TONEGEN16(state->_ana_snb, 277.18, 44100, 0.1);
+        samples[n] = TONEGEN16(state->_ana_snb, f, state->rate, 0.1);
         samples[n] = (samples[n] | 3) ^ ((~save) & 3);
-        if (++state->_ana_snb > 0x3fffffff) state->_ana_snb = 0;
+        if (++state->_ana_snb > so) state->_ana_snb = 0;
     }
 }
 

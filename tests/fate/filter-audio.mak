@@ -242,7 +242,7 @@ FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM
 fate-filter-hdcd-analyze: SRC = $(TARGET_SAMPLES)/filter/hdcd.flac
 fate-filter-hdcd-analyze: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=pe -f s24le
 fate-filter-hdcd-analyze: CMP = oneline
-fate-filter-hdcd-analyze: REF = 81a4f00f85a585bc0198e9a0670a8cde
+fate-filter-hdcd-analyze: REF = 6e39dc4629c1e84321c0d8bc069b42f6
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-false-positive
 fate-filter-hdcd-false-positive: SRC = $(TARGET_SAMPLES)/filter/hdcd-false-positive.flac
