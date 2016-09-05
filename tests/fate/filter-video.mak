@@ -117,7 +117,7 @@ fate-filter-vflip_vflip: CMD = video_filter "vflip,vflip"
 
 
 tests/pixfmts.mak: TAG = GEN
-tests/pixfmts.mak: avconv$(EXESUF)
+tests/pixfmts.mak: avconv$(EXESUF) | tests
 	$(M)printf "PIXFMTS = " > $@
 	$(Q)$(TARGET_EXEC) $(TARGET_PATH)/$< -pix_fmts list 2> /dev/null | awk 'NR > 8 && /^IO/ { printf $$2 " " }' >> $@
 	$(Q)printf "\n" >> $@
