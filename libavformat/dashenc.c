@@ -498,18 +498,15 @@ static int write_manifest(AVFormatContext *s, int final)
         OutputStream *os = &c->streams[0];
         int start_index = FFMAX(os->nb_segments - c->window_size, 0);
         int64_t start_time = av_rescale_q(os->segments[start_index]->time, s->streams[0]->time_base, AV_TIME_BASE_Q);
-        avio_printf(out, "\t<Period start=\"");
+        avio_printf(out, "\t<Period%s start=\"",final?"":" id=\"0\"");
         write_time(out, start_time);
         avio_printf(out, "\">\n");
     } else {
-        avio_printf(out, "\t<Period start=\"PT0.0S\">\n");
+        avio_printf(out, "\t<Period%s start=\"PT0.0S\">\n",final?"":" id=\"0\"");
     }
 
     if (c->has_video) {
-        avio_printf(out, "\t\t<AdaptationSet contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"");
-        if (c->max_frame_rate.num && !c->ambiguous_frame_rate)
-            avio_printf(out, " %s=\"%d/%d\"", (av_cmp_q(c->min_frame_rate, c->max_frame_rate) < 0) ? "maxFrameRate" : "frameRate", c->max_frame_rate.num, c->max_frame_rate.den);
-        avio_printf(out, ">\n");
+        avio_printf(out, "\t\t<AdaptationSet contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
 
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -598,11 +595,15 @@ static int dash_write_header(AVFormatContext *s)
         AVDictionary *opts = NULL;
         char filename[1024];
 
-        os->bit_rate = s->streams[i]->codecpar->bit_rate;
+        os->bit_rate = s->streams[i]->codecpar->bit_rate ? s->streams[i]->codecpar->bit_rate :  s->bit_rate;
+
         if (os->bit_rate) {
             snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
                      " bandwidth=\"%d\"", os->bit_rate);
         } else {
+            snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
+                     " bandwidth=\"%d\"", 0);
+
             int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
                         AV_LOG_ERROR : AV_LOG_WARNING;
             av_log(s, level, "No bit rate set for stream %d\n", i);
@@ -858,6 +859,10 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             if (ret < 0)
                 break;
         }
+
+        os->bit_rate = (int)( (float)range_length*8 / ((float)(os->max_pts - os->start_pts) / 10000) );
+        snprintf(os->bandwidth_str, sizeof(os->bandwidth_str)," bandwidth=\"%i\"", os->bit_rate);
+
         add_segment(os, filename, os->start_pts, os->max_pts - os->start_pts, start_pos, range_length, index_length);
         av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, full_path);
     }
@@ -883,7 +888,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     }
 
     if (ret >= 0)
-        ret = write_manifest(s, final);
+      ret = write_manifest(s, final);
     return ret;
 }
 
