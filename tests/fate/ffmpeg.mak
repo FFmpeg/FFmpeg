@@ -56,6 +56,11 @@ fate-copy-trac236: $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
 fate-copy-trac236: CMD = transcode mov $(TARGET_SAMPLES)/mov/fcp_export8-236.mov\
                      mov "-codec copy -map 0"
 
+FATE_SAMPLES_FFMPEG-$(call ALLYES, MPEGTS_DEMUXER MXF_MUXER PCM_S16LE_ENCODER) += fate-copy-trac4914
+fate-copy-trac4914: $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
+fate-copy-trac4914: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
+                      mxf "-c:a pcm_s16le -c:v copy"
+
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
 fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg
