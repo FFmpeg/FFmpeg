@@ -988,14 +988,6 @@ EOF
 
 check_lib(){
     log check_lib "$@"
-    header="$1"
-    func="$2"
-    shift 2
-    check_header $header && check_func $func "$@" && add_extralibs "$@"
-}
-
-check_lib2(){
-    log check_lib2 "$@"
     headers="$1"
     funcs="$2"
     shift 2
@@ -1092,18 +1084,10 @@ check_compile_assert(){
 
 require(){
     name="$1"
-    header="$2"
-    func="$3"
-    shift 3
-    check_lib $header $func "$@" || die "ERROR: $name not found"
-}
-
-require2(){
-    name="$1"
     headers="$2"
     func="$3"
     shift 3
-    check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+    check_lib "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
 require_pkg_config(){
@@ -4475,7 +4459,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
     check_func_headers time.h clock_gettime ||
-        { check_lib2 time.h clock_gettime -lrt && LIBRT="-lrt"; }
+        { check_lib time.h clock_gettime -lrt && LIBRT="-lrt"; }
 
 check_func  fcntl
 check_func  fork
@@ -4536,9 +4520,9 @@ check_header VideoDecodeAcceleration/VDADecoder.h
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 
-check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
-check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
-check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+check_lib "windows.h shellapi.h" CommandLineToArgvW   -lshell32
+check_lib "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
+check_lib "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
@@ -4581,8 +4565,8 @@ fi
 enabled pthreads &&
     check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
-disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
-disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+disabled  zlib || check_lib  zlib.h      zlibVersion -lz   || disable  zlib
+disabled bzlib || check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 check_lib math.h sin -lm && LIBM="-lm"
 
@@ -4595,15 +4579,15 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth          && { check_lib2 "avisynth/avisynth_c.h windows.h" LoadLibrary ||
-                               check_lib2 "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl   ||
+enabled avisynth          && { check_lib "avisynth/avisynth_c.h windows.h" LoadLibrary ||
+                               check_lib "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl   ||
                                die "ERROR: LoadLibrary/dlopen not found, or avisynth header not found"; }
 enabled cuda              && check_lib cuda.h cuInit -lcuda
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
-enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && require_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
 enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
@@ -4620,7 +4604,7 @@ enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { check_lib2 openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
+enabled libopenjpeg       && { check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
                                require_pkg_config libopenjpeg1 openjpeg.h opj_version -DOPJ_STATIC; }
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
 enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
@@ -4688,7 +4672,7 @@ enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_librar
                                die "ERROR: openssl not found"; }
 
 if enabled gnutls; then
-    { check_lib2 gmp.h mpz_export -lgmp && enable gmp; } ||
+    { check_lib gmp.h mpz_export -lgmp && enable gmp; } ||
     { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
 fi
 
@@ -4746,16 +4730,16 @@ check_header sys/soundcard.h
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
-    check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack &&
+enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
+enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio
 
 if enabled libcdio; then
-    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
-    check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
@@ -4788,10 +4772,10 @@ enabled vaapi &&
 
 if enabled vaapi ; then
     enabled xlib &&
-    check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
+    check_lib "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
     enable vaapi_x11
 
-    check_lib2 "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
+    check_lib "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
     enable vaapi_drm
 fi
 
@@ -4800,7 +4784,7 @@ enabled vdpau &&
     disable vdpau
 
 enabled vdpau && enabled xlib &&
-    check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
+    check_lib "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     enable vdpau_x11
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
