@@ -1,5 +1,5 @@
 /*
- * Android MediaCodec H.264 decoder
+ * Android MediaCodec H.264 / H.265 decoders
  *
  * Copyright (c) 2015-2016 Matthieu Bouron <matthieu.bouron stupeflix.com>
  *
@@ -33,11 +33,10 @@
 
 #include "avcodec.h"
 #include "h264_parse.h"
+#include "hevc_parse.h"
 #include "internal.h"
 #include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
-
-#define CODEC_MIME "video/avc"
 
 typedef struct MediaCodecH264DecContext {
 
@@ -66,7 +65,7 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int h264_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
+static int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
 {
     int i;
     int ret = 0;
@@ -118,7 +117,8 @@ done:
     return ret;
 }
 
-static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
+#if CONFIG_H264_MEDIACODEC_DECODER
+static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
     int i;
     int ret;
@@ -129,23 +129,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     int is_avc = 0;
     int nal_length_size = 0;
 
-    const AVBitStreamFilter *bsf = NULL;
-
-    FFAMediaFormat *format = NULL;
-    MediaCodecH264DecContext *s = avctx->priv_data;
-
     memset(&ps, 0, sizeof(ps));
-
-    format = ff_AMediaFormat_new();
-    if (!format) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create media format\n");
-        ret = AVERROR_EXTERNAL;
-        goto done;
-    }
-
-    ff_AMediaFormat_setString(format, "mime", CODEC_MIME);
-    ff_AMediaFormat_setInt32(format, "width", avctx->width);
-    ff_AMediaFormat_setInt32(format, "height", avctx->height);
 
     ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
                                    &ps, &is_avc, &nal_length_size, 0, avctx);
@@ -170,13 +154,13 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         uint8_t *data = NULL;
         size_t data_size = 0;
 
-        if ((ret = h264_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
+        if ((ret = h2645_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
             goto done;
         }
         ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, data_size);
         av_freep(&data);
 
-        if ((ret = h264_ps_to_nalu(pps->data, pps->data_size, &data, &data_size)) < 0) {
+        if ((ret = h2645_ps_to_nalu(pps->data, pps->data_size, &data, &data_size)) < 0) {
             goto done;
         }
         ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, data_size);
@@ -184,8 +168,149 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     } else {
         av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
         ret = AVERROR_INVALIDDATA;
+    }
+
+done:
+    ff_h264_ps_uninit(&ps);
+
+    return ret;
+}
+#endif
+
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
+{
+    int i;
+    int ret;
+
+    HEVCParamSets ps;
+
+    const HEVCVPS *vps = NULL;
+    const HEVCPPS *pps = NULL;
+    const HEVCSPS *sps = NULL;
+    int is_nalff = 0;
+    int nal_length_size = 0;
+
+    uint8_t *vps_data = NULL;
+    uint8_t *sps_data = NULL;
+    uint8_t *pps_data = NULL;
+    int vps_data_size = 0;
+    int sps_data_size = 0;
+    int pps_data_size = 0;
+
+    memset(&ps, 0, sizeof(ps));
+
+    ret = ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                &ps, &is_nalff, &nal_length_size, 0, avctx);
+    if (ret < 0) {
         goto done;
     }
+
+    for (i = 0; i < MAX_VPS_COUNT; i++) {
+        if (ps.vps_list[i]) {
+            vps = (const HEVCVPS*)ps.vps_list[i]->data;
+            break;
+        }
+    }
+
+    for (i = 0; i < MAX_PPS_COUNT; i++) {
+        if (ps.pps_list[i]) {
+            pps = (const HEVCPPS*)ps.pps_list[i]->data;
+            break;
+        }
+    }
+
+    if (pps) {
+        if (ps.sps_list[pps->sps_id]) {
+            sps = (const HEVCSPS*)ps.sps_list[pps->sps_id]->data;
+        }
+    }
+
+    if (vps && pps && sps) {
+        uint8_t *data;
+        int data_size;
+
+        if ((ret = h2645_ps_to_nalu(vps->data, vps->data_size, &vps_data, &vps_data_size)) < 0 ||
+            (ret = h2645_ps_to_nalu(sps->data, sps->data_size, &sps_data, &sps_data_size)) < 0 ||
+            (ret = h2645_ps_to_nalu(pps->data, pps->data_size, &pps_data, &pps_data_size)) < 0) {
+            goto done;
+        }
+
+        data_size = vps_data_size + sps_data_size + pps_data_size;
+        data = av_mallocz(data_size);
+        if (!data) {
+            ret = AVERROR(ENOMEM);
+            goto done;
+        }
+
+        memcpy(data                                , vps_data, vps_data_size);
+        memcpy(data + vps_data_size                , sps_data, sps_data_size);
+        memcpy(data + vps_data_size + sps_data_size, pps_data, pps_data_size);
+
+        ff_AMediaFormat_setBuffer(format, "csd-0", data, data_size);
+
+        av_freep(&data);
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Could not extract VPS/PPS/SPS from extradata");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+done:
+    av_freep(&vps_data);
+    av_freep(&sps_data);
+    av_freep(&pps_data);
+
+    return ret;
+}
+#endif
+
+static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
+{
+    int ret;
+
+    const char *codec_mime = NULL;
+
+    const char *bsf_name = NULL;
+    const AVBitStreamFilter *bsf = NULL;
+
+    FFAMediaFormat *format = NULL;
+    MediaCodecH264DecContext *s = avctx->priv_data;
+
+    format = ff_AMediaFormat_new();
+    if (!format) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create media format\n");
+        ret = AVERROR_EXTERNAL;
+        goto done;
+    }
+
+    switch (avctx->codec_id) {
+#if CONFIG_H264_MEDIACODEC_DECODER
+    case AV_CODEC_ID_H264:
+        codec_mime = "video/avc";
+        bsf_name = "h264_mp4toannexb";
+
+        ret = h264_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+    case AV_CODEC_ID_HEVC:
+        codec_mime = "video/hevc";
+        bsf_name = "hevc_mp4toannexb";
+
+        ret = hevc_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+    default:
+        av_assert0(0);
+    }
+
+    ff_AMediaFormat_setString(format, "mime", codec_mime);
+    ff_AMediaFormat_setInt32(format, "width", avctx->width);
+    ff_AMediaFormat_setInt32(format, "height", avctx->height);
 
     s->ctx = av_mallocz(sizeof(*s->ctx));
     if (!s->ctx) {
@@ -194,7 +319,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, CODEC_MIME, format)) < 0) {
+    if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, codec_mime, format)) < 0) {
         s->ctx = NULL;
         goto done;
     }
@@ -207,7 +332,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    bsf = av_bsf_get_by_name("h264_mp4toannexb");
+    bsf = av_bsf_get_by_name(bsf_name);
     if(!bsf) {
         ret = AVERROR_BSF_NOT_FOUND;
         goto done;
@@ -232,8 +357,6 @@ done:
     if (ret < 0) {
         mediacodec_decode_close(avctx);
     }
-
-    ff_h264_ps_uninit(&ps);
 
     return ret;
 }
@@ -323,7 +446,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
                 goto done;
             }
 
-            /* h264_mp4toannexb is used here and does not requires flushing */
+            /* {h264,hevc}_mp4toannexb are used here and do not require flushing */
             av_assert0(ret != AVERROR_EOF);
 
             if (ret < 0) {
@@ -358,6 +481,7 @@ static void mediacodec_decode_flush(AVCodecContext *avctx)
     ff_mediacodec_dec_flush(avctx, s->ctx);
 }
 
+#if CONFIG_H264_MEDIACODEC_DECODER
 AVCodec ff_h264_mediacodec_decoder = {
     .name           = "h264_mediacodec",
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 Android MediaCodec decoder"),
@@ -371,3 +495,20 @@ AVCodec ff_h264_mediacodec_decoder = {
     .capabilities   = CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
+#endif
+
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+AVCodec ff_hevc_mediacodec_decoder = {
+    .name           = "hevc_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.265 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif

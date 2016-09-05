@@ -62,6 +62,10 @@ struct JNIAMediaCodecListFields {
     jfieldID avc_profile_high422_id;
     jfieldID avc_profile_high444_id;
 
+    jfieldID hevc_profile_main_id;
+    jfieldID hevc_profile_main10_id;
+    jfieldID hevc_profile_main10_hdr10_id;
+
 } JNIAMediaCodecListFields;
 
 static const struct FFJniField jni_amediacodeclist_mapping[] = {
@@ -93,6 +97,10 @@ static const struct FFJniField jni_amediacodeclist_mapping[] = {
         { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh10", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high10_id), 1 },
         { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh422", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high422_id), 1 },
         { "android/media/MediaCodecInfo$CodecProfileLevel", "AVCProfileHigh444", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, avc_profile_high444_id), 1 },
+
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "HEVCProfileMain", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, hevc_profile_main_id), 0 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "HEVCProfileMain10", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, hevc_profile_main10_id), 0 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "HEVCProfileMain10HDR10", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecListFields, hevc_profile_main10_hdr10_id), 0 },
 
     { NULL }
 };
@@ -303,6 +311,7 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
 
     JNIEnv *env = NULL;
     struct JNIAMediaCodecListFields jfields = { 0 };
+    jfieldID field_id = 0;
 
     JNI_GET_ENV_OR_RETURN(env, avctx, -1);
 
@@ -311,8 +320,6 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
     }
 
     if (avctx->codec_id == AV_CODEC_ID_H264) {
-        jfieldID field_id = 0;
-
         switch(avctx->profile) {
         case FF_PROFILE_H264_BASELINE:
         case FF_PROFILE_H264_CONSTRAINED_BASELINE:
@@ -341,6 +348,17 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
             field_id = jfields.avc_profile_high444_id;
             break;
         }
+    } else if (avctx->codec_id == AV_CODEC_ID_HEVC) {
+        switch (avctx->profile) {
+        case FF_PROFILE_HEVC_MAIN:
+        case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
+            field_id = jfields.hevc_profile_main_id;
+            break;
+        case FF_PROFILE_HEVC_MAIN_10:
+            field_id = jfields.hevc_profile_main10_id;
+            break;
+        }
+    }
 
         if (field_id) {
             ret = (*env)->GetStaticIntField(env, jfields.codec_profile_level_class, field_id);
@@ -349,7 +367,6 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
                 goto done;
             }
         }
-    }
 
 done:
     ff_jni_reset_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, avctx);
