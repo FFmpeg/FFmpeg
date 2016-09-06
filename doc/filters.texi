@@ -16980,10 +16980,10 @@ It accepts the following values:
 the samples start again on the left when they reach the right
 @item scroll
 the samples scroll from right to left
-@item rscroll
-the samples scroll from left to right
 @item fullframe
 frames are only produced when the samples reach the right
+@item rscroll
+the samples scroll from left to right
 @end table
 
 Default value is @code{replace}.
@@ -17039,12 +17039,12 @@ linear
 square root, default
 @item cbrt
 cubic root
+@item log
+logarithmic
 @item 4thrt
 4th root
 @item 5thrt
 5th root
-@item log
-logarithmic
 @end table
 
 Default value is @samp{sqrt}.
@@ -17187,12 +17187,12 @@ linear
 square root, default
 @item cbrt
 cubic root
+@item log
+logarithmic
 @item 4thrt
 4th root
 @item 5thrt
 5th root
-@item log
-logarithmic
 @end table
 Default value is @samp{log}.
 
