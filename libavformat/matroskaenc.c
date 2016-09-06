@@ -1308,6 +1308,16 @@ static int mkv_write_tag_targets(AVFormatContext *s,
     return 0;
 }
 
+static int mkv_check_tag_name(const char *name, unsigned int elementid)
+{
+    return av_strcasecmp(name, "title") &&
+           av_strcasecmp(name, "stereo_mode") &&
+           av_strcasecmp(name, "creation_time") &&
+           av_strcasecmp(name, "encoding_tool") &&
+           (elementid != MATROSKA_ID_TAGTARGETS_TRACKUID ||
+            av_strcasecmp(name, "language"));
+}
+
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
                          unsigned int uid, ebml_master *tags)
 {
@@ -1320,12 +1330,7 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
         return ret;
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
-        if (av_strcasecmp(t->key, "title") &&
-            av_strcasecmp(t->key, "stereo_mode") &&
-            av_strcasecmp(t->key, "creation_time") &&
-            av_strcasecmp(t->key, "encoding_tool") &&
-            (elementid != MATROSKA_ID_TAGTARGETS_TRACKUID ||
-             av_strcasecmp(t->key, "language"))) {
+        if (mkv_check_tag_name(t->key, elementid)) {
             ret = mkv_write_simpletag(s->pb, t);
             if (ret < 0)
                 return ret;
