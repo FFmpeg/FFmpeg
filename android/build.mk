@@ -80,16 +80,14 @@ endif
 
 LOCAL_CFLAGS += \
 	-O3 -std=c99 -fno-math-errno -fno-signed-zeros -fomit-frame-pointer \
-	-Wdisabled-optimization -Wpointer-arith \
-	-Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes \
 	-Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses \
-	-Wno-switch -Wno-format-zero-length -Wno-pointer-sign \
+	-Wno-switch -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-parameter \
+	-Wno-unknown-attributes -Wno-missing-field-initializers -Wno-sign-compare \
 	-Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes \
 	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized -fPIC
 
 LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
 
-LOCAL_CLANG_CFLAGS += -Rpass=loop-vectorize
 LOCAL_CLANG_ASFLAGS += -no-integrated-as
 
 LOCAL_SHARED_LIBRARIES := $(sort $(FFLIBS-yes:%=lib%) $(FFLIBS:%=lib%))
