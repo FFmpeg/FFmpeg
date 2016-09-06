@@ -104,9 +104,9 @@ static int h264_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int 
             }
             *out = p = new;
 
-            i = i + 3;
-            memmove(p + i, p + i - 1, *out_size - i);
-            p[i - 1] = 0x03;
+            i = i + 2;
+            memmove(p + i + 1, p + i, *out_size - (i + 1));
+            p[i] = 0x03;
         }
     }
 done:
