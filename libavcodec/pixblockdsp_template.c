@@ -19,7 +19,7 @@
 #include "bit_depth_template.c"
 
 static void FUNCC(get_pixels)(int16_t *restrict block, const uint8_t *_pixels,
-                              int line_size)
+                              ptrdiff_t stride)
 {
     const pixel *pixels = (const pixel *) _pixels;
     int i;
@@ -34,7 +34,7 @@ static void FUNCC(get_pixels)(int16_t *restrict block, const uint8_t *_pixels,
         block[5] = pixels[5];
         block[6] = pixels[6];
         block[7] = pixels[7];
-        pixels  += line_size / sizeof(pixel);
+        pixels  += stride / sizeof(pixel);
         block   += 8;
     }
 }

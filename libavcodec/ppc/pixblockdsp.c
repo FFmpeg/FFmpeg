@@ -36,7 +36,7 @@
 #if HAVE_ALTIVEC && HAVE_BIGENDIAN
 
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t stride)
 {
     int i;
     vec_u8 perm = vec_lvsl(0, pixels);
@@ -56,12 +56,12 @@ static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
         // Save the data to the block, we assume the block is 16-byte aligned.
         vec_st(shorts, i * 16, (vec_s16 *)block);
 
-        pixels += line_size;
+        pixels += stride;
     }
 }
 
 static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
-                                const uint8_t *s2, int stride)
+                                const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
     vec_u8 perm1 = vec_lvsl(0, s1);
@@ -135,7 +135,7 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 
 #if HAVE_VSX
 static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
-                           int line_size)
+                           ptrdiff_t stride)
 {
     int i;
     for (i = 0; i < 8; i++) {
@@ -143,12 +143,12 @@ static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
 
         vec_vsx_st(shorts, i * 16, block);
 
-        pixels += line_size;
+        pixels += stride;
     }
 }
 
 static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
-                            const uint8_t *s2, int stride)
+                            const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
     vec_s16 shorts1, shorts2;

@@ -31,7 +31,7 @@
 #include "pixblockdsp_template.c"
 
 static void diff_pixels_c(int16_t *restrict block, const uint8_t *s1,
-                          const uint8_t *s2, int stride)
+                          const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
 
