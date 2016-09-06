@@ -1314,6 +1314,7 @@ static int mkv_check_tag_name(const char *name, unsigned int elementid)
            av_strcasecmp(name, "stereo_mode") &&
            av_strcasecmp(name, "creation_time") &&
            av_strcasecmp(name, "encoding_tool") &&
+           av_strcasecmp(name, "duration") &&
            (elementid != MATROSKA_ID_TAGTARGETS_TRACKUID ||
             av_strcasecmp(name, "language"));
 }
