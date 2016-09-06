@@ -979,11 +979,11 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
 
     if (c->dstXYZ && !(c->srcXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
         int dstY = c->dstY ? c->dstY : srcSliceY + srcSliceH;
+        uint16_t *dst16 = (uint16_t*)(dst2[0] + (dstY - ret) * dstStride2[0]);
         av_assert0(dstY >= ret);
         av_assert0(ret >= 0);
         av_assert0(c->dstH >= dstY);
 
-        uint16_t *dst16 = (uint16_t*)(dst2[0] + (dstY - ret) * dstStride2[0]);
         /* replace on the same data */
         rgb48Toxyz12(c, dst16, dst16, dstStride2[0]/2, ret);
     }
