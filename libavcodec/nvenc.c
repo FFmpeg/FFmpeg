@@ -81,6 +81,8 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_0RGB32,
+    AV_PIX_FMT_0BGR32,
 #if CONFIG_CUDA
     AV_PIX_FMT_CUDA,
 #endif
@@ -1030,6 +1032,14 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     case AV_PIX_FMT_YUV444P16:
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
+        break;
+
+    case AV_PIX_FMT_0RGB32:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ARGB;
+        break;
+
+    case AV_PIX_FMT_0BGR32:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ABGR;
         break;
 
     default:
