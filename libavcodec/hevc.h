@@ -387,6 +387,9 @@ typedef struct HEVCVPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -483,6 +486,9 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCSPS;
 
 typedef struct HEVCPPS {
@@ -557,6 +563,9 @@ typedef struct HEVCPPS {
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCPPS;
 
 typedef struct HEVCParamSets {
