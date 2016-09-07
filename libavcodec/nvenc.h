@@ -56,6 +56,7 @@ typedef struct NvencSurface
     int reg_idx;
     int width;
     int height;
+    int pitch;
 
     NV_ENC_OUTPUT_PTR output_surface;
     NV_ENC_BUFFER_FORMAT format;

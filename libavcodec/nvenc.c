@@ -1403,6 +1403,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
         ctx->registered_frames[reg_idx].mapped = 1;
         nvenc_frame->reg_idx                   = reg_idx;
         nvenc_frame->input_surface             = nvenc_frame->in_map.mappedResource;
+        nvenc_frame->pitch                     = frame->linesize[0];
         return 0;
     } else {
         NV_ENC_LOCK_INPUT_BUFFER lockBufferParams = { 0 };
@@ -1415,6 +1416,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
             return nvenc_print_error(avctx, nv_status, "Failed locking nvenc input buffer");
         }
 
+        nvenc_frame->pitch = lockBufferParams.pitch;
         res = nvenc_copy_frame(avctx, nvenc_frame, &lockBufferParams, frame);
 
         nv_status = p_nvenc->nvEncUnlockInputBuffer(ctx->nvencoder, nvenc_frame->input_surface);
@@ -1655,6 +1657,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.bufferFmt = inSurf->format;
         pic_params.inputWidth = avctx->width;
         pic_params.inputHeight = avctx->height;
+        pic_params.inputPitch = inSurf->pitch;
         pic_params.outputBitstream = inSurf->output_surface;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
