@@ -1276,84 +1276,32 @@ static NvencSurface *get_free_frame(NvencContext *ctx)
     return NULL;
 }
 
-static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
-            NV_ENC_LOCK_INPUT_BUFFER *lockBufferParams, const AVFrame *frame)
+static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *nv_surface,
+            NV_ENC_LOCK_INPUT_BUFFER *lock_buffer_params, const AVFrame *frame)
 {
-    uint8_t *buf = lockBufferParams->bufferDataPtr;
-    int off = inSurf->height * lockBufferParams->pitch;
+    int dst_linesize[4] = {
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch
+    };
+    uint8_t *dst_data[4];
+    int ret;
 
-    if (frame->format == AV_PIX_FMT_YUV420P) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
+    if (frame->format == AV_PIX_FMT_YUV420P)
+        dst_linesize[1] = dst_linesize[2] >>= 1;
 
-        buf += off;
+    ret = av_image_fill_pointers(dst_data, frame->format, nv_surface->height,
+                                 lock_buffer_params->bufferDataPtr, dst_linesize);
+    if (ret < 0)
+        return ret;
 
-        av_image_copy_plane(buf, lockBufferParams->pitch >> 1,
-            frame->data[2], frame->linesize[2],
-            avctx->width >> 1, avctx->height >> 1);
+    if (frame->format == AV_PIX_FMT_YUV420P)
+        FFSWAP(uint8_t*, dst_data[1], dst_data[2]);
 
-        buf += off >> 2;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch >> 1,
-            frame->data[1], frame->linesize[1],
-            avctx->width >> 1, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_NV12) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_P010) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width << 1, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_YUV444P) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[2], frame->linesize[2],
-            avctx->width, avctx->height);
-    } else if (frame->format == AV_PIX_FMT_YUV444P16) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[2], frame->linesize[2],
-            avctx->width << 1, avctx->height);
-    } else {
-        av_log(avctx, AV_LOG_FATAL, "Invalid pixel format!\n");
-        return AVERROR(EINVAL);
-    }
+    av_image_copy(dst_data, dst_linesize,
+                  (const uint8_t**)frame->data, frame->linesize, frame->format,
+                  nv_surface->width, nv_surface->height);
 
     return 0;
 }
