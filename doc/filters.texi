@@ -14162,6 +14162,9 @@ Set scale used for displaying graticule.
 @item ire
 @end table
 Default is digital.
+
+@item bgopacity, b
+Set background opacity.
 @end table
 
 @section weave

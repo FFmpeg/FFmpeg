@@ -66,9 +66,10 @@ typedef struct WaveformContext {
     const AVClass *class;
     int            mode;
     int            acomp;
+    int            dcomp;
     int            ncomp;
     int            pcomp;
-    const uint8_t  *bg_color;
+    uint8_t        bg_color[4];
     float          fintensity;
     int            intensity;
     int            mirror;
@@ -76,6 +77,7 @@ typedef struct WaveformContext {
     int            envelope;
     int            graticule;
     float          opacity;
+    float          bgopacity;
     int            estart[4];
     int            eend[4];
     int            *emax[4][4];
@@ -97,6 +99,7 @@ typedef struct WaveformContext {
                      int column, int mirror);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
     const AVPixFmtDescriptor *desc;
+    const AVPixFmtDescriptor *odesc;
 } WaveformContext;
 
 #define OFFSET(x) offsetof(WaveformContext, x)
@@ -147,6 +150,8 @@ static const AVOption waveform_options[] = {
         { "digital",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=DIGITAL},    0, 0, FLAGS, "scale" },
         { "millivolts", NULL, 0, AV_OPT_TYPE_CONST, {.i64=MILLIVOLTS}, 0, 0, FLAGS, "scale" },
         { "ire",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=IRE},        0, 0, FLAGS, "scale" },
+    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
+    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -2650,12 +2655,14 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
-        s->bg_color = black_gbrp_color;
+        memcpy(s->bg_color, black_gbrp_color, sizeof(s->bg_color));
         s->graticulef = graticule_none;
         break;
     default:
-        s->bg_color = black_yuva_color;
+        memcpy(s->bg_color, black_yuva_color, sizeof(s->bg_color));
     }
+
+    s->bg_color[3] *= s->bgopacity;
 
     return 0;
 }
@@ -2672,6 +2679,8 @@ static int config_output(AVFilterLink *outlink)
             comp++;
     }
     s->acomp = comp;
+    s->odesc = av_pix_fmt_desc_get(outlink->format);
+    s->dcomp = s->odesc->nb_components;
 
     av_freep(&s->peak);
 
@@ -2733,20 +2742,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->pts = in->pts;
     av_frame_set_color_range(out, AVCOL_RANGE_JPEG);
 
-    for (k = 0; k < s->ncomp; k++) {
+    for (k = 0; k < s->dcomp; k++) {
         if (s->bits <= 8) {
             for (i = 0; i < outlink->h ; i++)
-                memset(out->data[s->desc->comp[k].plane] +
-                       i * out->linesize[s->desc->comp[k].plane],
+                memset(out->data[s->odesc->comp[k].plane] +
+                       i * out->linesize[s->odesc->comp[k].plane],
                        s->bg_color[k], outlink->w);
         } else {
             const int mult = s->max / 256;
-            uint16_t *dst = (uint16_t *)out->data[s->desc->comp[k].plane];
+            uint16_t *dst = (uint16_t *)out->data[s->odesc->comp[k].plane];
 
             for (i = 0; i < outlink->h ; i++) {
                 for (j = 0; j < outlink->w; j++)
                     dst[j] = s->bg_color[k] * mult;
-                dst += out->linesize[s->desc->comp[k].plane] / 2;
+                dst += out->linesize[s->odesc->comp[k].plane] / 2;
             }
         }
     }
