@@ -522,6 +522,9 @@ behavior on some players when the time between keyframes is inconsistent,
 but may make things worse on others, and can cause some oddities during
 seeking. This flag should be used with the @code{hls_time} option.
 
+@item hls_flags program_date_time
+Generate @code{EXT-X-PROGRAM-DATE-TIME} tags.
+
 @item hls_playlist_type event
 Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
 @option{hls_list_size} to 0; the playlist can only be appended to.
