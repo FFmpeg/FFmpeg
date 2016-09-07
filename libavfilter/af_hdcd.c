@@ -1693,9 +1693,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static int query_formats(AVFilterContext *ctx)
 {
+    static const int sample_rates[] = {
+        44100, 48000,
+        88200, 96000,
+        176400, 192000,
+        -1
+    };
     AVFilterFormats *in_formats;
     AVFilterFormats *out_formats;
-    AVFilterFormats *sample_rates = NULL;
     AVFilterChannelLayouts *layouts = NULL;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
@@ -1733,11 +1738,8 @@ static int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    ret = ff_add_format(&sample_rates, 44100);
-    if (ret < 0)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_samplerates(ctx, sample_rates);
+    return
+        ff_set_common_samplerates(ctx, ff_make_format_list(sample_rates) );
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
