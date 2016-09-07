@@ -31,7 +31,7 @@
 #if HAVE_INLINE_ASM
 
 void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t line_size)
 {
     const int16_t *p;
     uint8_t *pix;
@@ -107,7 +107,7 @@ void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
     "movq               %%mm4, (%0, %1)     \n\t"
 
 void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                                      int line_size)
+                                      ptrdiff_t line_size)
 {
     x86_reg line_skip = line_size;
     x86_reg line_skip3;
@@ -124,7 +124,7 @@ void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
 }
 
 void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
-                               int line_size)
+                               ptrdiff_t line_size)
 {
     const int16_t *p;
     uint8_t *pix;

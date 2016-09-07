@@ -253,7 +253,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
 DECLARE_ALIGNED(8, static uint8_t, img_dest)[64];
 DECLARE_ALIGNED(8, static uint8_t, img_dest1)[64];
 
-static void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
+static void idct248_ref(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     static int init;
     static double c8[8][8];
@@ -334,7 +334,8 @@ static void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
 }
 
 static void idct248_error(const char *name,
-                          void (*idct248_put)(uint8_t *dest, int line_size,
+                          void (*idct248_put)(uint8_t *dest,
+                                              ptrdiff_t line_size,
                                               int16_t *block),
                           int speed)
 {

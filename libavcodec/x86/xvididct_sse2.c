@@ -390,13 +390,13 @@ inline void ff_xvid_idct_sse2(short *block)
           "%eax", "%ecx", "%edx", "%esi", "memory");
 }
 
-void ff_xvid_idct_sse2_put(uint8_t *dest, int line_size, short *block)
+void ff_xvid_idct_sse2_put(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_sse2(block);
     ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
-void ff_xvid_idct_sse2_add(uint8_t *dest, int line_size, short *block)
+void ff_xvid_idct_sse2_add(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_sse2(block);
     ff_add_pixels_clamped_mmx(block, dest, line_size);

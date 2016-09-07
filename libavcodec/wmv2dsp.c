@@ -93,7 +93,7 @@ static void wmv2_idct_col(short * b)
     b[8 * 7] = (a0 + a2 - a1 - a5 + (1 << 13)) >> 14;
 }
 
-static void wmv2_idct_add_c(uint8_t *dest, int line_size, int16_t *block)
+static void wmv2_idct_add_c(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     int i;
 
@@ -116,7 +116,7 @@ static void wmv2_idct_add_c(uint8_t *dest, int line_size, int16_t *block)
     }
 }
 
-static void wmv2_idct_put_c(uint8_t *dest, int line_size, int16_t *block)
+static void wmv2_idct_put_c(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     int i;
 

@@ -222,7 +222,7 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
         }                                               \
     } while (0)
 
-static inline void FUNC(idctSparseColPut)(pixel *dest, int line_size,
+static inline void FUNC(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
                                           int16_t *col)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
@@ -246,7 +246,7 @@ static inline void FUNC(idctSparseColPut)(pixel *dest, int line_size,
     dest[0] = av_clip_pixel((a0 - b0) >> COL_SHIFT);
 }
 
-static inline void FUNC(idctSparseColAdd)(pixel *dest, int line_size,
+static inline void FUNC(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
                                           int16_t *col)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
@@ -286,7 +286,7 @@ static inline void FUNC(idctSparseCol)(int16_t *col)
     col[56] = ((a0 - b0) >> COL_SHIFT);
 }
 
-void FUNC(ff_simple_idct_put)(uint8_t *dest_, int line_size, int16_t *block)
+void FUNC(ff_simple_idct_put)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
 {
     pixel *dest = (pixel *)dest_;
     int i;
@@ -300,7 +300,7 @@ void FUNC(ff_simple_idct_put)(uint8_t *dest_, int line_size, int16_t *block)
         FUNC(idctSparseColPut)(dest + i, line_size, block + i);
 }
 
-void FUNC(ff_simple_idct_add)(uint8_t *dest_, int line_size, int16_t *block)
+void FUNC(ff_simple_idct_add)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
 {
     pixel *dest = (pixel *)dest_;
     int i;

@@ -494,13 +494,13 @@ void ff_xvid_idct_mmx(short *block)
         :: "r" (block), "r" (rounder_0), "r" (tab_i_04_mmx), "r" (tg_1_16));
 }
 
-void ff_xvid_idct_mmx_put(uint8_t *dest, int line_size, int16_t *block)
+void ff_xvid_idct_mmx_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmx(block);
     ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
-void ff_xvid_idct_mmx_add(uint8_t *dest, int line_size, int16_t *block)
+void ff_xvid_idct_mmx_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmx(block);
     ff_add_pixels_clamped_mmx(block, dest, line_size);
@@ -533,13 +533,13 @@ void ff_xvid_idct_mmxext(short *block)
         :: "r" (block), "r" (rounder_0), "r" (tab_i_04_xmm), "r" (tg_1_16));
 }
 
-void ff_xvid_idct_mmxext_put(uint8_t *dest, int line_size, int16_t *block)
+void ff_xvid_idct_mmxext_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmxext(block);
     ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
-void ff_xvid_idct_mmxext_add(uint8_t *dest, int line_size, int16_t *block)
+void ff_xvid_idct_mmxext_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct_mmxext(block);
     ff_add_pixels_clamped_mmx(block, dest, line_size);
