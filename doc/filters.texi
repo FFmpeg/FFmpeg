@@ -6035,6 +6035,9 @@ the text color is picked in such way so its always visible.
 
 @item axis
 Draw rows and columns numbers on left and top of video.
+
+@item opacity
+Set background opacity.
 @end table
 
 @section dctdnoiz

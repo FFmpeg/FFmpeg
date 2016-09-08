@@ -36,6 +36,7 @@ typedef struct DatascopeContext {
     int x, y;
     int mode;
     int axis;
+    float opacity;
 
     int nb_planes;
     int nb_comps;
@@ -62,6 +63,7 @@ static const AVOption datascope_options[] = {
     {   "color",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
     {   "color2", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mode" },
     { "axis",    "draw column/row numbers", OFFSET(axis), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "opacity", "set background opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -135,7 +137,6 @@ static void reverse_color(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *
             reverse->comp[p].u8[0] = color->comp[p].u8[0] > 127 ? 0 : 255;
             reverse->comp[p].u8[1] = color->comp[p].u8[1] > 127 ? 0 : 255;
             reverse->comp[p].u8[2] = color->comp[p].u8[2] > 127 ? 0 : 255;
-            reverse->comp[p].u8[3] = color->comp[p].u8[3] > 127 ? 0 : 255;
         } else {
             const unsigned max = (1 << draw->desc->comp[p].depth) - 1;
             const unsigned mid = (max + 1) / 2;
@@ -143,7 +144,6 @@ static void reverse_color(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *
             reverse->comp[p].u16[0] = color->comp[p].u16[0] > mid ? 0 : max;
             reverse->comp[p].u16[1] = color->comp[p].u16[1] > mid ? 0 : max;
             reverse->comp[p].u16[2] = color->comp[p].u16[2] > mid ? 0 : max;
-            reverse->comp[p].u16[3] = color->comp[p].u16[3] > mid ? 0 : max;
         }
     }
 }
@@ -337,11 +337,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int config_input(AVFilterLink *inlink)
 {
     DatascopeContext *s = inlink->dst->priv;
+    uint8_t alpha = s->opacity * 255;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     ff_draw_init(&s->draw, inlink->format, 0);
     ff_draw_color(&s->draw, &s->white,  (uint8_t[]){ 255, 255, 255, 255} );
-    ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, 0} );
+    ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, alpha} );
     ff_draw_color(&s->draw, &s->yellow, (uint8_t[]){ 255, 255, 0, 255} );
     ff_draw_color(&s->draw, &s->gray,   (uint8_t[]){ 77, 77, 77, 255} );
     s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2;
