@@ -1912,7 +1912,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&ctx->chan_data_buffer);
     av_freep(&ctx->reverted_channels);
     av_freep(&ctx->crc_buffer);
-    av_freep(&ctx->mlz);
+    if (ctx->mlz) {
+        av_freep(&ctx->mlz->dict);
+        av_freep(&ctx->mlz);
+    }
     av_freep(&ctx->acf);
     av_freep(&ctx->last_acf_mantissa);
     av_freep(&ctx->shift_value);
@@ -2065,7 +2068,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         ctx->larray = av_malloc_array(ctx->cur_frame_length * 4, sizeof(*ctx->larray));
         ctx->nbits  = av_malloc_array(ctx->cur_frame_length, sizeof(*ctx->nbits));
-        ctx->mlz    = av_malloc(sizeof(*ctx->mlz));
+        ctx->mlz    = av_mallocz(sizeof(*ctx->mlz));
 
         if (!ctx->mlz || !ctx->acf || !ctx->shift_value || !ctx->last_shift_value
             || !ctx->last_acf_mantissa || !ctx->raw_mantissa) {
