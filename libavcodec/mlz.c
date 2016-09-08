@@ -81,6 +81,10 @@ static int decode_string(MLZ* mlz, unsigned char *buff, int string_code, int *fi
             } else {
                 offset  = dict[current_code].match_len - 1;
                 tmp_code = dict[current_code].char_code;
+                if (offset >= bufsize) {
+                    av_log(mlz->context, AV_LOG_ERROR, "MLZ offset error.\n");
+                    return count;
+                }
                 buff[offset] = tmp_code;
                 count++;
             }
