@@ -277,6 +277,11 @@ fate-filter-shuffleplanes-swapuv: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf shuff
 
 FATE_FILTER_VSYNTH-$(CONFIG_SHUFFLEPLANES_FILTER) += $(FATE_SHUFFLEPLANES)
 
+FATE_SWAPRECT += fate-filter-swaprect
+fate-filter-swaprect: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf swaprect
+
+FATE_FILTER_VSYNTH-$(CONFIG_SWAPRECT_FILTER) += $(FATE_SWAPRECT)
+
 FATE_FILTER_VSYNTH-$(CONFIG_TBLEND_FILTER) += fate-filter-tblend
 fate-filter-tblend: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf tblend=all_mode=difference128
 
