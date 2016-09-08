@@ -22,6 +22,7 @@
 #ifndef AVCODEC_MSS34DSP_H
 #define AVCODEC_MSS34DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -40,6 +41,6 @@ void ff_mss34_gen_quant_mat(uint16_t *qmat, int quality, int luma);
  * @param stride  output plane stride
  * @param block   block to transform and output
  */
-void ff_mss34_dct_put(uint8_t *dst, int stride, int *block);
+void ff_mss34_dct_put(uint8_t *dst, ptrdiff_t stride, int *block);
 
 #endif /* AVCODEC_MSS34DSP_H */

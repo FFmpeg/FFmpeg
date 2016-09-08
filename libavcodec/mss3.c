@@ -91,7 +91,7 @@ typedef struct ImageBlockCoder {
 
 typedef struct DCTBlockCoder {
     int      *prev_dc;
-    int      prev_dc_stride;
+    ptrdiff_t prev_dc_stride;
     int      prev_dc_height;
     int      quality;
     uint16_t qmat[64];
@@ -450,7 +450,7 @@ static int decode_coeff(RangeCoder *c, Model *m)
 }
 
 static void decode_fill_block(RangeCoder *c, FillBlockCoder *fc,
-                              uint8_t *dst, int stride, int block_size)
+                              uint8_t *dst, ptrdiff_t stride, int block_size)
 {
     int i;
 
@@ -461,7 +461,7 @@ static void decode_fill_block(RangeCoder *c, FillBlockCoder *fc,
 }
 
 static void decode_image_block(RangeCoder *c, ImageBlockCoder *ic,
-                               uint8_t *dst, int stride, int block_size)
+                               uint8_t *dst, ptrdiff_t stride, int block_size)
 {
     int i, j;
     int vec_size;
@@ -557,7 +557,7 @@ static int decode_dct(RangeCoder *c, DCTBlockCoder *bc, int *block,
 }
 
 static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
-                             uint8_t *dst, int stride, int block_size,
+                             uint8_t *dst, ptrdiff_t stride, int block_size,
                              int *block, int mb_x, int mb_y)
 {
     int i, j;
@@ -580,8 +580,8 @@ static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
 }
 
 static void decode_haar_block(RangeCoder *c, HaarBlockCoder *hc,
-                              uint8_t *dst, int stride, int block_size,
-                              int *block)
+                              uint8_t *dst, ptrdiff_t stride,
+                              int block_size, int *block)
 {
     const int hsize = block_size >> 1;
     int A, B, C, D, t1, t2, t3, t4;
