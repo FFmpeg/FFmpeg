@@ -32,6 +32,8 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 #include <pthread.h>
+#include "h264.h"
+#include "h264_sei.h"
 
 #if !CONFIG_VT_BT2020
 # define kCVImageBufferColorPrimaries_ITU_R_2020   CFSTR("ITU_R_2020")
@@ -55,8 +57,14 @@ typedef enum VTH264Entropy{
 
 static const uint8_t start_code[] = { 0, 0, 0, 1 };
 
+typedef struct ExtraSEI {
+  void *data;
+  size_t size;
+} ExtraSEI;
+
 typedef struct BufNode {
     CMSampleBufferRef cm_buffer;
+    ExtraSEI *sei;
     struct BufNode* next;
     int error;
 } BufNode;
@@ -94,6 +102,7 @@ typedef struct VTEncContext {
     bool flushing;
     bool has_b_frames;
     bool warned_color_range;
+    bool a53_cc;
 } VTEncContext;
 
 static int vtenc_populate_extradata(AVCodecContext   *avctx,
@@ -136,7 +145,7 @@ static void set_async_error(VTEncContext *vtctx, int err)
     pthread_mutex_unlock(&vtctx->lock);
 }
 
-static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf)
+static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI **sei)
 {
     BufNode *info;
 
@@ -173,6 +182,12 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf)
     pthread_mutex_unlock(&vtctx->lock);
 
     *buf = info->cm_buffer;
+    if (sei && *buf) {
+        *sei = info->sei;
+    } else if (info->sei) {
+        if (info->sei->data) av_free(info->sei->data);
+        av_free(info->sei);
+    }
     av_free(info);
 
     vtctx->frame_ct_out++;
@@ -180,7 +195,7 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf)
     return 0;
 }
 
-static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer)
+static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer, ExtraSEI *sei)
 {
     BufNode *info = av_malloc(sizeof(BufNode));
     if (!info) {
@@ -190,6 +205,7 @@ static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer)
 
     CFRetain(buffer);
     info->cm_buffer = buffer;
+    info->sei = sei;
     info->next = NULL;
 
     pthread_mutex_lock(&vtctx->lock);
@@ -420,6 +436,7 @@ static void vtenc_output_callback(
 {
     AVCodecContext *avctx = ctx;
     VTEncContext   *vtctx = avctx->priv_data;
+    ExtraSEI *sei = sourceFrameCtx;
 
     if (vtctx->async_error) {
         if(sample_buffer) CFRelease(sample_buffer);
@@ -440,7 +457,7 @@ static void vtenc_output_callback(
         }
     }
 
-    vtenc_q_push(vtctx, sample_buffer);
+    vtenc_q_push(vtctx, sample_buffer, sei);
 }
 
 static int get_length_code_size(
@@ -1258,7 +1275,8 @@ static int copy_replace_length_codes(
 static int vtenc_cm_to_avpacket(
     AVCodecContext    *avctx,
     CMSampleBufferRef sample_buffer,
-    AVPacket          *pkt)
+    AVPacket          *pkt,
+    ExtraSEI          *sei)
 {
     VTEncContext *vtctx = avctx->priv_data;
 
@@ -1269,6 +1287,7 @@ static int vtenc_cm_to_avpacket(
     size_t  header_size = 0;
     size_t  in_buf_size;
     size_t  out_buf_size;
+    size_t  sei_nalu_size = 0;
     int64_t dts_delta;
     int64_t time_base_num;
     int nalu_count;
@@ -1298,9 +1317,14 @@ static int vtenc_cm_to_avpacket(
     if(status)
         return status;
 
+    if (sei) {
+        sei_nalu_size = sizeof(start_code) + 3 + sei->size + 1;
+    }
+
     in_buf_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
     out_buf_size = header_size +
                    in_buf_size +
+                   sei_nalu_size +
                    nalu_count * ((int)sizeof(start_code) - (int)length_code_size);
 
     status = ff_alloc_packet2(avctx, pkt, out_buf_size, out_buf_size);
@@ -1317,12 +1341,25 @@ static int vtenc_cm_to_avpacket(
         length_code_size,
         sample_buffer,
         pkt->data + header_size,
-        pkt->size - header_size
+        pkt->size - header_size - sei_nalu_size
     );
 
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d", status);
         return status;
+    }
+
+    if (sei_nalu_size > 0) {
+        uint8_t *sei_nalu = pkt->data + pkt->size - sei_nalu_size;
+        memcpy(sei_nalu, start_code, sizeof(start_code));
+        sei_nalu += sizeof(start_code);
+        sei_nalu[0] = H264_NAL_SEI;
+        sei_nalu[1] = SEI_TYPE_USER_DATA_REGISTERED;
+        sei_nalu[2] = sei->size;
+        sei_nalu += 3;
+        memcpy(sei_nalu, sei->data, sei->size);
+        sei_nalu += sei->size;
+        sei_nalu[0] = 1; // RBSP
     }
 
     if (is_key_frame) {
@@ -1707,6 +1744,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     CMTime time;
     CFDictionaryRef frame_dict;
     CVPixelBufferRef cv_img = NULL;
+    ExtraSEI *sei = NULL;
     int status = create_cv_pixel_buffer(avctx, frame, &cv_img);
 
     if (status) return status;
@@ -1717,6 +1755,20 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         return status;
     }
 
+    if (vtctx->a53_cc) {
+        sei = av_mallocz(sizeof(*sei));
+        if (!sei) {
+            av_log(avctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+        } else {
+            int ret = ff_alloc_a53_sei(frame, 0, &sei->data, &sei->size);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
+                av_free(sei);
+                sei = NULL;
+            }
+        }
+    }
+
     time = CMTimeMake(frame->pts * avctx->time_base.num, avctx->time_base.den);
     status = VTCompressionSessionEncodeFrame(
         vtctx->session,
@@ -1724,7 +1776,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         time,
         kCMTimeInvalid,
         frame_dict,
-        NULL,
+        sei,
         NULL
     );
 
@@ -1749,6 +1801,7 @@ static av_cold int vtenc_frame(
     bool get_frame;
     int status;
     CMSampleBufferRef buf = NULL;
+    ExtraSEI *sei = NULL;
 
     if (frame) {
         status = vtenc_send_frame(avctx, vtctx, frame);
@@ -1785,11 +1838,15 @@ static av_cold int vtenc_frame(
         goto end_nopkt;
     }
 
-    status = vtenc_q_pop(vtctx, !frame, &buf);
+    status = vtenc_q_pop(vtctx, !frame, &buf, &sei);
     if (status) goto end_nopkt;
     if (!buf)   goto end_nopkt;
 
-    status = vtenc_cm_to_avpacket(avctx, buf, pkt);
+    status = vtenc_cm_to_avpacket(avctx, buf, pkt, sei);
+    if (sei) {
+        if (sei->data) av_free(sei->data);
+        av_free(sei);
+    }
     CFRelease(buf);
     if (status) goto end_nopkt;
 
@@ -1878,7 +1935,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     if (status)
         goto pe_cleanup;
 
-    status = vtenc_q_pop(vtctx, 0, &buf);
+    status = vtenc_q_pop(vtctx, 0, &buf, NULL);
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "popping: %d\n", status);
         goto pe_cleanup;
@@ -1975,6 +2032,8 @@ static const AVOption options[] = {
         OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.",
         OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+
+    { "a53cc", "Use A53 Closed Captions (if available)", OFFSET(a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VE },
 
     { NULL },
 };
