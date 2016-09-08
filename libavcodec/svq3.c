@@ -102,6 +102,7 @@ typedef struct SVQ3Context {
     int prev_frame_num;
 
     enum AVPictureType pict_type;
+    enum AVPictureType slice_type;
     int low_delay;
 
     int mb_x, mb_y;
@@ -1057,7 +1058,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         return -1;
     }
 
-    s->pict_type = ff_h264_golomb_to_pict_type[slice_id];
+    s->slice_type = ff_h264_golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
         i = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
@@ -1426,6 +1427,8 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     if (svq3_decode_slice_header(avctx))
         return -1;
 
+    s->pict_type = s->slice_type;
+
     if (s->pict_type != AV_PICTURE_TYPE_B)
         FFSWAP(H264Picture*, s->next_pic, s->last_pic);
 
@@ -1538,6 +1541,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 
                     if (svq3_decode_slice_header(avctx))
                         return -1;
+                }
+                if (s->slice_type != s->pict_type) {
+                    avpriv_request_sample(avctx, "non constant slice type\n");
                 }
                 /* TODO: support s->mb_skip_run */
             }
