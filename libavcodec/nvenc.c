@@ -1311,7 +1311,7 @@ static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *nv_surface,
 
     av_image_copy(dst_data, dst_linesize,
                   (const uint8_t**)frame->data, frame->linesize, frame->format,
-                  nv_surface->width, nv_surface->height);
+                  avctx->width, avctx->height);
 
     return 0;
 }
