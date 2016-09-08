@@ -366,7 +366,7 @@ static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 void term_init(void)
 {
 #if HAVE_TERMIOS_H
-    if(!run_as_daemon){
+    if (!run_as_daemon && stdin_interaction) {
         struct termios tty;
         if (tcgetattr (0, &tty) == 0) {
             oldtty = tty;
@@ -4492,8 +4492,6 @@ int main(int argc, char **argv)
     avformat_network_init();
 
     show_banner(argc, argv, options);
-
-    term_init();
 
     /* parse options and open all input/output files */
     ret = ffmpeg_parse_options(argc, argv);

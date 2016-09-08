@@ -3160,6 +3160,9 @@ int ffmpeg_parse_options(int argc, char **argv)
         goto fail;
     }
 
+    /* configure terminal and setup signal handlers */
+    term_init();
+
     /* open input files */
     ret = open_files(&octx.groups[GROUP_INFILE], "input", open_input_file);
     if (ret < 0) {
