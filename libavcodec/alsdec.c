@@ -1887,6 +1887,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     ALSDecContext *ctx = avctx->priv_data;
+    int i;
 
     av_freep(&ctx->sconf.chan_pos);
 
@@ -1920,7 +1921,12 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&ctx->last_acf_mantissa);
     av_freep(&ctx->shift_value);
     av_freep(&ctx->last_shift_value);
-    av_freep(&ctx->raw_mantissa);
+    if (ctx->raw_mantissa) {
+        for (i = 0; i < avctx->channels; i++) {
+            av_freep(&ctx->raw_mantissa[i]);
+        }
+        av_freep(&ctx->raw_mantissa);
+    }
     av_freep(&ctx->larray);
     av_freep(&ctx->nbits);
 
@@ -2064,7 +2070,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->shift_value       = av_malloc_array(avctx->channels, sizeof(*ctx->shift_value));
         ctx->last_shift_value  = av_malloc_array(avctx->channels, sizeof(*ctx->last_shift_value));
         ctx->last_acf_mantissa = av_malloc_array(avctx->channels, sizeof(*ctx->last_acf_mantissa));
-        ctx->raw_mantissa      = av_malloc_array(avctx->channels, sizeof(*ctx->raw_mantissa));
+        ctx->raw_mantissa      = av_mallocz_array(avctx->channels, sizeof(*ctx->raw_mantissa));
 
         ctx->larray = av_malloc_array(ctx->cur_frame_length * 4, sizeof(*ctx->larray));
         ctx->nbits  = av_malloc_array(ctx->cur_frame_length, sizeof(*ctx->nbits));
