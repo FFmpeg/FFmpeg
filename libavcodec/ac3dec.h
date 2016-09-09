@@ -260,4 +260,8 @@ static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
  */
 static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
 
+#if (!USE_FIXED)
+extern float ff_ac3_heavy_dynamic_range_tab[256];
+#endif
+
 #endif /* AVCODEC_AC3DEC_H */

@@ -63,9 +63,11 @@ static const uint8_t quantization_tab[16] = {
     5, 6, 7, 8, 9, 10, 11, 12, 14, 16
 };
 
+#if (!USE_FIXED)
 /** dynamic range table. converts codes to scale factors. */
 static float dynamic_range_tab[256];
-static float heavy_dynamic_range_tab[256];
+float ff_ac3_heavy_dynamic_range_tab[256];
+#endif
 
 /** Adjustments in dB gain */
 static const float gain_levels[9] = {
@@ -159,6 +161,7 @@ static av_cold void ac3_tables_init(void)
         b5_mantissas[i] = symmetric_dequant(i, 15);
     }
 
+#if (!USE_FIXED)
     /* generate dynamic range table
        reference: Section 7.7.1 Dynamic Range Control */
     for (i = 0; i < 256; i++) {
@@ -170,9 +173,9 @@ static av_cold void ac3_tables_init(void)
        reference: Section 7.7.2 Heavy Compression */
     for (i = 0; i < 256; i++) {
         int v = (i >> 4) - ((i >> 7) << 4) - 4;
-        heavy_dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0xF) | 0x10);
+        ff_ac3_heavy_dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0xF) | 0x10);
     }
-
+#endif
 }
 
 /**
