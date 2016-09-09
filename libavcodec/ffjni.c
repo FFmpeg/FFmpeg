@@ -352,6 +352,8 @@ int ff_jni_init_jfields(JNIEnv *env, void *jfields, const struct FFJniField *jfi
                 ret = AVERROR(EINVAL);
                 goto done;
             }
+
+            ret = 0;
         }
     }
 
