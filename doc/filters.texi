@@ -10419,6 +10419,8 @@ Compute full frame histograms.
 Compute histograms only for the part that differs from previous frame. This
 might be relevant to give more importance to the moving part of your input if
 the background is static.
+@item single
+Compute new histogram for each frame.
 @end table
 
 Default value is @var{full}.
@@ -10490,6 +10492,9 @@ much, and as a result less moving noise and better GIF compression).
 @end table
 
 Default is @var{none}.
+
+@item new
+Take new palette for each output frame.
 @end table
 
 @subsection Examples
