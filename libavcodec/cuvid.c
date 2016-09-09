@@ -258,7 +258,7 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         if (avpkt->pts != AV_NOPTS_VALUE) {
             cupkt.flags = CUVID_PKT_TIMESTAMP;
-            cupkt.timestamp = av_rescale_q(avpkt->pts, avctx->time_base, (AVRational){1, 10000000});
+            cupkt.timestamp = av_rescale_q(avpkt->pts, avctx->pkt_timebase, (AVRational){1, 10000000});
         }
     } else {
         cupkt.flags = CUVID_PKT_ENDOFSTREAM;
@@ -363,7 +363,7 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         frame->width = avctx->width;
         frame->height = avctx->height;
-        frame->pts = av_rescale_q(dispinfo.timestamp, (AVRational){1, 10000000}, avctx->time_base);
+        frame->pts = av_rescale_q(dispinfo.timestamp, (AVRational){1, 10000000}, avctx->pkt_timebase);
 
         /* CUVIDs opaque reordering breaks the internal pkt logic.
          * So set pkt_pts and clear all the other pkt_ fields.
