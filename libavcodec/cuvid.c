@@ -258,7 +258,10 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         if (avpkt->pts != AV_NOPTS_VALUE) {
             cupkt.flags = CUVID_PKT_TIMESTAMP;
-            cupkt.timestamp = av_rescale_q(avpkt->pts, avctx->pkt_timebase, (AVRational){1, 10000000});
+            if (avctx->pkt_timebase.num && avctx->pkt_timebase.den)
+                cupkt.timestamp = av_rescale_q(avpkt->pts, avctx->pkt_timebase, (AVRational){1, 10000000});
+            else
+                cupkt.timestamp = avpkt->pts;
         }
     } else {
         cupkt.flags = CUVID_PKT_ENDOFSTREAM;
@@ -363,7 +366,10 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         frame->width = avctx->width;
         frame->height = avctx->height;
-        frame->pts = av_rescale_q(dispinfo.timestamp, (AVRational){1, 10000000}, avctx->pkt_timebase);
+        if (avctx->pkt_timebase.num && avctx->pkt_timebase.den)
+            frame->pts = av_rescale_q(dispinfo.timestamp, (AVRational){1, 10000000}, avctx->pkt_timebase);
+        else
+            frame->pts = dispinfo.timestamp;
 
         /* CUVIDs opaque reordering breaks the internal pkt logic.
          * So set pkt_pts and clear all the other pkt_ fields.
@@ -678,6 +684,9 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
 
     ctx->ever_flushed = 0;
+
+    if (!avctx->pkt_timebase.num || !avctx->pkt_timebase.den)
+        av_log(avctx, AV_LOG_WARNING, "Invalid pkt_timebase, passing timestamps as-is.\n");
 
     return 0;
 
