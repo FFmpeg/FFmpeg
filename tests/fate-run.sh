@@ -205,6 +205,8 @@ transcode(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
+    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS \
+        -f framecrc - || return
 }
 
 lavffatetest(){
