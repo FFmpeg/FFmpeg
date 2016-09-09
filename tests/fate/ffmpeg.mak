@@ -66,6 +66,11 @@ fate-copy-trac4914-avi: $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
 fate-copy-trac4914-avi: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
                           avi "-c:a copy -c:v copy"
 
+FATE_STREAMCOPY-$(call ALLYES, H264_DEMUXER AVI_MUXER) += fate-copy-trac2211-avi
+fate-copy-trac2211-avi: $(TARGET_SAMPLES)/h264/bbc2.sample.h264
+fate-copy-trac2211-avi: CMD = transcode "h264 -r 14" $(TARGET_SAMPLES)/h264/bbc2.sample.h264\
+                          avi "-c:a copy -c:v copy"
+
 FATE_STREAMCOPY-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
 fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg
