@@ -2895,6 +2895,29 @@ int av_apply_bitstream_filters(AVCodecContext *codec, AVPacket *pkt,
                                AVBitStreamFilterContext *bsfc);
 #endif
 
+enum AVTimebaseSource {
+    AVFMT_TBCF_AUTO = -1,
+    AVFMT_TBCF_DECODER,
+    AVFMT_TBCF_DEMUXER,
+#if FF_API_R_FRAME_RATE
+    AVFMT_TBCF_R_FRAMERATE,
+#endif
+};
+
+/**
+ * Transfer internal timing information from one stream to another.
+ *
+ * This function is useful when doing stream copy.
+ *
+ * @param ofmt     target output format for ost
+ * @param ost      output stream which needs timings copy and adjustments
+ * @param ist      reference input stream to copy timings from
+ * @param copy_tb  define from where the stream codec timebase needs to be imported
+ */
+int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
+                                                  AVStream *ost, const AVStream *ist,
+                                                  enum AVTimebaseSource copy_tb);
+
 /**
  * @}
  */
