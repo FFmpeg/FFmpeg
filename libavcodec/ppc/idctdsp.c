@@ -225,7 +225,7 @@ static void idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
     ADD(dest, vx7, perm1);
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
@@ -242,5 +242,5 @@ av_cold void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
             c->perm_type = FF_IDCT_PERM_TRANSPOSE;
         }
     }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

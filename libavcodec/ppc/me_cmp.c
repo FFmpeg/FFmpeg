@@ -742,7 +742,7 @@ static int hadamard8_diff16_altivec(MpegEncContext *s, uint8_t *dst,
     }
     return score;
 }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -763,5 +763,5 @@ av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
 
     c->hadamard8_diff[0] = hadamard8_diff16_altivec;
     c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

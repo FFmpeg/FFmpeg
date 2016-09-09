@@ -175,7 +175,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, ptrdiff_t stride, int16_t block[6
     memset(block, 0, sizeof(*block) * 64);
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 {
@@ -185,5 +185,5 @@ av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 
     c->idct_put = vp3_idct_put_altivec;
     c->idct_add = vp3_idct_add_altivec;
-#endif
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

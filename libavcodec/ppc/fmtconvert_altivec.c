@@ -52,7 +52,7 @@ static void int32_to_float_fmul_scalar_altivec(float *dst, const int32_t *src,
     }
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_fmt_convert_init_ppc(FmtConvertContext *c,
                                      AVCodecContext *avctx)
@@ -62,5 +62,5 @@ av_cold void ff_fmt_convert_init_ppc(FmtConvertContext *c,
         return;
 
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

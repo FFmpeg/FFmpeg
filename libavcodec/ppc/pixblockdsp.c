@@ -131,7 +131,7 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
     }
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 #if HAVE_VSX
 static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
@@ -180,7 +180,7 @@ av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
     if (!high_bit_depth) {
         c->get_pixels = get_pixels_altivec;
     }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 #if HAVE_VSX
     if (!PPC_VSX(av_get_cpu_flags()))

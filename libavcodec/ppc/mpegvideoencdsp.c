@@ -88,7 +88,7 @@ static int pix_sum_altivec(uint8_t *pix, int line_size)
     return s;
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
                                          AVCodecContext *avctx)
@@ -99,5 +99,5 @@ av_cold void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
 
     c->pix_norm1 = pix_norm1_altivec;
     c->pix_sum   = pix_sum_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

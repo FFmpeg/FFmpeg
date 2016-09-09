@@ -746,7 +746,7 @@ static void biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src, in
 
 H264_WEIGHT(16)
 H264_WEIGHT( 8)
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
                                  const int chroma_format_idc)
@@ -773,5 +773,5 @@ av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
         c->biweight_h264_pixels_tab[0] = biweight_h264_pixels16_altivec;
         c->biweight_h264_pixels_tab[1] = biweight_h264_pixels8_altivec;
     }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

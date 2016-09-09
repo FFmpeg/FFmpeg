@@ -59,7 +59,7 @@ static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
     return ires;
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 #if HAVE_VSX
 

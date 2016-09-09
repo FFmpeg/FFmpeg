@@ -460,7 +460,7 @@ void ff_fdct_altivec(int16_t *block)
     /* }}} */
 }
 
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
                                  unsigned high_bit_depth)
@@ -475,5 +475,5 @@ av_cold void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
             c->fdct = ff_fdct_altivec;
         }
     }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

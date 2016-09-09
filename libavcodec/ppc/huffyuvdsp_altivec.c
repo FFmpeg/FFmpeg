@@ -49,7 +49,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w)
     for (; i < w; i++)
         dst[i] = src[i];
 }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c)
 {
@@ -58,5 +58,5 @@ av_cold void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c)
         return;
 
     c->add_bytes = add_bytes_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

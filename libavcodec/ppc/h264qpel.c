@@ -282,7 +282,7 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
 
 H264_MC(put_, 16, altivec)
 H264_MC(avg_, 16, altivec)
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth)
 {
@@ -315,5 +315,5 @@ av_cold void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth)
         dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
     }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

@@ -445,7 +445,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
         pixels += line_size;
     }
 }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags)
 {
@@ -464,5 +464,5 @@ av_cold void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_altivec;
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

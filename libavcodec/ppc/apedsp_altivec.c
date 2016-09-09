@@ -69,7 +69,7 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1,
 
     return ires;
 }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_apedsp_init_ppc(APEDSPContext *c)
 {
@@ -78,5 +78,5 @@ av_cold void ff_apedsp_init_ppc(APEDSPContext *c)
         return;
 
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }

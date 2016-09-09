@@ -72,7 +72,7 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
 
     return u.score[3];
 }
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 
 av_cold void ff_svq1enc_init_ppc(SVQ1EncContext *c)
 {
@@ -81,5 +81,5 @@ av_cold void ff_svq1enc_init_ppc(SVQ1EncContext *c)
         return;
 
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_altivec;
-#endif /* HAVE_ALTIVEC */
+#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
 }
