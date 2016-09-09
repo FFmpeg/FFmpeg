@@ -247,7 +247,8 @@ typedef struct CCaptionSubContext {
     int64_t last_real_time;
     char prev_cmd[2];
     /* buffer to store pkt data */
-    AVBufferRef *pktbuf;
+    uint8_t *pktbuf;
+    int pktbuf_size;
     int readorder;
 } CCaptionSubContext;
 
@@ -274,11 +275,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     if (ret < 0) {
         return ret;
     }
-    /* allocate pkt buffer */
-    ctx->pktbuf = av_buffer_alloc(128);
-    if (!ctx->pktbuf) {
-        ret = AVERROR(ENOMEM);
-    }
+
     return ret;
 }
 
@@ -286,7 +283,8 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
     av_bprint_finalize(&ctx->buffer, NULL);
-    av_buffer_unref(&ctx->pktbuf);
+    av_freep(&ctx->pktbuf);
+    ctx->pktbuf_size = 0;
     return 0;
 }
 
@@ -759,16 +757,13 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     int ret = 0;
     int i;
 
-    if (ctx->pktbuf->size < len) {
-        ret = av_buffer_realloc(&ctx->pktbuf, len);
-         if (ret < 0) {
-            av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n", len, ctx->pktbuf->size);
-            len = ctx->pktbuf->size;
-            ret = 0;
-        }
+    av_fast_padded_malloc(&ctx->pktbuf, &ctx->pktbuf_size, len);
+    if (!ctx->pktbuf) {
+        av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n", len, ctx->pktbuf_size);
+        return AVERROR(ENOMEM);
     }
-    memcpy(ctx->pktbuf->data, avpkt->data, len);
-    bptr = ctx->pktbuf->data;
+    memcpy(ctx->pktbuf, avpkt->data, len);
+    bptr = ctx->pktbuf;
 
     for (i  = 0; i < len; i += 3) {
         uint8_t cc_type = *(bptr + i) & 3;
