@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <va/va.h>
+#include <va/va_dec_vp8.h>
+
 #include "vaapi_decode.h"
 #include "vp8.h"
 
