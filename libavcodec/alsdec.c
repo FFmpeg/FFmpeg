@@ -1527,7 +1527,7 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
             if (!get_bits1(gb)) { //uncompressed
                 for (i = 0; i < frame_length; ++i) {
                     if (ctx->raw_samples[c][i] != 0) {
-                        raw_mantissa[c][i] = nbits[i] ? get_bits(gb, nbits[i]) : 0;
+                        raw_mantissa[c][i] = get_bitsz(gb, nbits[i]);
                     }
                 }
             } else { //compressed
