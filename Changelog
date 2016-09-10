@@ -27,6 +27,7 @@ version <next>:
 - weave filter
 - gblur filter
 - avgblur filter
+- sobel and prewitt filter
 
 
 version 3.1:
