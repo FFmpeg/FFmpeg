@@ -462,119 +462,158 @@ static void blend_image_packed_rgb(AVFilterContext *ctx,
     }
 }
 
-static void blend_image_yuv(AVFilterContext *ctx,
-                            AVFrame *dst, const AVFrame *src,
-                            int x, int y)
+static av_always_inline void blend_plane(AVFilterContext *ctx,
+                                         AVFrame *dst, const AVFrame *src,
+                                         int src_w, int src_h,
+                                         int dst_w, int dst_h,
+                                         int i, int hsub, int vsub,
+                                         int x, int y,
+                                         int main_has_alpha)
 {
-    OverlayContext *s = ctx->priv;
-    int i, imax, j, jmax, k, kmax;
+    int src_wp = AV_CEIL_RSHIFT(src_w, hsub);
+    int src_hp = AV_CEIL_RSHIFT(src_h, vsub);
+    int dst_wp = AV_CEIL_RSHIFT(dst_w, hsub);
+    int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);
+    int yp = y>>vsub;
+    int xp = x>>hsub;
+    uint8_t *s, *sp, *d, *dp, *a, *ap;
+    int jmax, j, k, kmax;
+
+    j = FFMAX(-yp, 0);
+    sp = src->data[i] + j         * src->linesize[i];
+    dp = dst->data[i] + (yp+j)    * dst->linesize[i];
+    ap = src->data[3] + (j<<vsub) * src->linesize[3];
+
+    for (jmax = FFMIN(-yp + dst_hp, src_hp); j < jmax; j++) {
+        k = FFMAX(-xp, 0);
+        d = dp + xp+k;
+        s = sp + k;
+        a = ap + (k<<hsub);
+
+        for (kmax = FFMIN(-xp + dst_wp, src_wp); k < kmax; k++) {
+            int alpha_v, alpha_h, alpha;
+
+            // average alpha for color components, improve quality
+            if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {
+                alpha = (a[0] + a[src->linesize[3]] +
+                         a[1] + a[src->linesize[3]+1]) >> 2;
+            } else if (hsub || vsub) {
+                alpha_h = hsub && k+1 < src_wp ?
+                    (a[0] + a[1]) >> 1 : a[0];
+                alpha_v = vsub && j+1 < src_hp ?
+                    (a[0] + a[src->linesize[3]]) >> 1 : a[0];
+                alpha = (alpha_v + alpha_h) >> 1;
+            } else
+                alpha = a[0];
+            // if the main channel has an alpha channel, alpha has to be calculated
+            // to create an un-premultiplied (straight) alpha value
+            if (main_has_alpha && alpha != 0 && alpha != 255) {
+                // average alpha for color components, improve quality
+                uint8_t alpha_d;
+                if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {
+                    alpha_d = (d[0] + d[src->linesize[3]] +
+                               d[1] + d[src->linesize[3]+1]) >> 2;
+                } else if (hsub || vsub) {
+                    alpha_h = hsub && k+1 < src_wp ?
+                        (d[0] + d[1]) >> 1 : d[0];
+                    alpha_v = vsub && j+1 < src_hp ?
+                        (d[0] + d[src->linesize[3]]) >> 1 : d[0];
+                    alpha_d = (alpha_v + alpha_h) >> 1;
+                } else
+                    alpha_d = d[0];
+                alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+            }
+            *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
+            s++;
+            d++;
+            a += 1 << hsub;
+        }
+        dp += dst->linesize[i];
+        sp += src->linesize[i];
+        ap += (1 << vsub) * src->linesize[3];
+    }
+}
+
+static inline void alpha_composite(const AVFrame *src, const AVFrame *dst,
+                                   int src_w, int src_h,
+                                   int dst_w, int dst_h,
+                                   int x, int y)
+{
+    uint8_t alpha;          ///< the amount of overlay to blend on to main
+    uint8_t *s, *sa, *d, *da;
+    int i, imax, j, jmax;
+
+    i = FFMAX(-y, 0);
+    sa = src->data[3] + i     * src->linesize[3];
+    da = dst->data[3] + (y+i) * dst->linesize[3];
+
+    for (imax = FFMIN(-y + dst_h, src_h); i < imax; i++) {
+        j = FFMAX(-x, 0);
+        s = sa + j;
+        d = da + x+j;
+
+        for (jmax = FFMIN(-x + dst_w, src_w); j < jmax; j++) {
+            alpha = *s;
+            if (alpha != 0 && alpha != 255) {
+                uint8_t alpha_d = *d;
+                alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+            }
+            switch (alpha) {
+            case 0:
+                break;
+            case 255:
+                *d = *s;
+                break;
+            default:
+                // apply alpha compositing: main_alpha += (1-main_alpha) * overlay_alpha
+                *d += FAST_DIV255((255 - *d) * *s);
+            }
+            d += 1;
+            s += 1;
+        }
+        da += dst->linesize[3];
+        sa += src->linesize[3];
+    }
+}
+
+static av_always_inline void blend_image_yuv(AVFilterContext *ctx,
+                                             AVFrame *dst, const AVFrame *src,
+                                             int hsub, int vsub,
+                                             int main_has_alpha,
+                                             int x, int y)
+{
     const int src_w = src->width;
     const int src_h = src->height;
     const int dst_w = dst->width;
     const int dst_h = dst->height;
-    const int main_has_alpha = s->main_has_alpha;
 
-    if (main_has_alpha) {
-        uint8_t alpha;          ///< the amount of overlay to blend on to main
-        uint8_t *s, *sa, *d, *da;
+    if (main_has_alpha)
+        alpha_composite(src, dst, src_w, src_h, dst_w, dst_h, x, y);
 
-        i = FFMAX(-y, 0);
-        sa = src->data[3] + i     * src->linesize[3];
-        da = dst->data[3] + (y+i) * dst->linesize[3];
+    blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,       0, x, y, main_has_alpha);
+    blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_has_alpha);
+    blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_has_alpha);
+}
 
-        for (imax = FFMIN(-y + dst_h, src_h); i < imax; i++) {
-            j = FFMAX(-x, 0);
-            s = sa + j;
-            d = da + x+j;
+static void blend_image_yuv420(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
+{
+    OverlayContext *s = ctx->priv;
 
-            for (jmax = FFMIN(-x + dst_w, src_w); j < jmax; j++) {
-                alpha = *s;
-                if (alpha != 0 && alpha != 255) {
-                    uint8_t alpha_d = *d;
-                    alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
-                }
-                switch (alpha) {
-                case 0:
-                    break;
-                case 255:
-                    *d = *s;
-                    break;
-                default:
-                    // apply alpha compositing: main_alpha += (1-main_alpha) * overlay_alpha
-                    *d += FAST_DIV255((255 - *d) * *s);
-                }
-                d += 1;
-                s += 1;
-            }
-            da += dst->linesize[3];
-            sa += src->linesize[3];
-        }
-    }
-    for (i = 0; i < 3; i++) {
-        int hsub = i ? s->hsub : 0;
-        int vsub = i ? s->vsub : 0;
-        int src_wp = AV_CEIL_RSHIFT(src_w, hsub);
-        int src_hp = AV_CEIL_RSHIFT(src_h, vsub);
-        int dst_wp = AV_CEIL_RSHIFT(dst_w, hsub);
-        int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);
-        int yp = y>>vsub;
-        int xp = x>>hsub;
-        uint8_t *s, *sp, *d, *dp, *a, *ap;
+    blend_image_yuv(ctx, dst, src, 1, 1, s->main_has_alpha, x, y);
+}
 
-        j = FFMAX(-yp, 0);
-        sp = src->data[i] + j         * src->linesize[i];
-        dp = dst->data[i] + (yp+j)    * dst->linesize[i];
-        ap = src->data[3] + (j<<vsub) * src->linesize[3];
+static void blend_image_yuv422(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
+{
+    OverlayContext *s = ctx->priv;
 
-        for (jmax = FFMIN(-yp + dst_hp, src_hp); j < jmax; j++) {
-            k = FFMAX(-xp, 0);
-            d = dp + xp+k;
-            s = sp + k;
-            a = ap + (k<<hsub);
+    blend_image_yuv(ctx, dst, src, 1, 0, s->main_has_alpha, x, y);
+}
 
-            for (kmax = FFMIN(-xp + dst_wp, src_wp); k < kmax; k++) {
-                int alpha_v, alpha_h, alpha;
+static void blend_image_yuv444(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
+{
+    OverlayContext *s = ctx->priv;
 
-                // average alpha for color components, improve quality
-                if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {
-                    alpha = (a[0] + a[src->linesize[3]] +
-                             a[1] + a[src->linesize[3]+1]) >> 2;
-                } else if (hsub || vsub) {
-                    alpha_h = hsub && k+1 < src_wp ?
-                        (a[0] + a[1]) >> 1 : a[0];
-                    alpha_v = vsub && j+1 < src_hp ?
-                        (a[0] + a[src->linesize[3]]) >> 1 : a[0];
-                    alpha = (alpha_v + alpha_h) >> 1;
-                } else
-                    alpha = a[0];
-                // if the main channel has an alpha channel, alpha has to be calculated
-                // to create an un-premultiplied (straight) alpha value
-                if (main_has_alpha && alpha != 0 && alpha != 255) {
-                    // average alpha for color components, improve quality
-                    uint8_t alpha_d;
-                    if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {
-                        alpha_d = (d[0] + d[src->linesize[3]] +
-                                   d[1] + d[src->linesize[3]+1]) >> 2;
-                    } else if (hsub || vsub) {
-                        alpha_h = hsub && k+1 < src_wp ?
-                            (d[0] + d[1]) >> 1 : d[0];
-                        alpha_v = vsub && j+1 < src_hp ?
-                            (d[0] + d[src->linesize[3]]) >> 1 : d[0];
-                        alpha_d = (alpha_v + alpha_h) >> 1;
-                    } else
-                        alpha_d = d[0];
-                    alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
-                }
-                *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
-                s++;
-                d++;
-                a += 1 << hsub;
-            }
-            dp += dst->linesize[i];
-            sp += src->linesize[i];
-            ap += (1 << vsub) * src->linesize[3];
-        }
-    }
+    blend_image_yuv(ctx, dst, src, 0, 0, s->main_has_alpha, x, y);
 }
 
 static int config_input_main(AVFilterLink *inlink)
@@ -592,9 +631,13 @@ static int config_input_main(AVFilterLink *inlink)
     s->main_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
     switch (s->format) {
     case OVERLAY_FORMAT_YUV420:
+        s->blend_image = blend_image_yuv420;
+        break;
     case OVERLAY_FORMAT_YUV422:
+        s->blend_image = blend_image_yuv422;
+        break;
     case OVERLAY_FORMAT_YUV444:
-        s->blend_image = blend_image_yuv;
+        s->blend_image = blend_image_yuv444;
         break;
     case OVERLAY_FORMAT_RGB:
         s->blend_image = blend_image_packed_rgb;
