@@ -272,8 +272,13 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     av_packet_unref(&filtered_packet);
 
     if (ret < 0) {
-        if (ctx->internal_error)
-            ret = ctx->internal_error;
+        goto error;
+    }
+
+    // cuvidParseVideoData doesn't return an error just because stuff failed...
+    if (ctx->internal_error) {
+        av_log(avctx, AV_LOG_ERROR, "cuvid decode callback error\n");
+        ret = ctx->internal_error;
         goto error;
     }
 
