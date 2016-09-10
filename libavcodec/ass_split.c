@@ -276,23 +276,23 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
         if (section->format_header && !order) {
             len = strlen(section->format_header);
             if (buf[len] == ':' && !strncmp(buf, section->format_header, len)) {
-            buf += len + 1;
-            while (!is_eol(*buf)) {
-                buf = skip_space(buf);
-                len = strcspn(buf, ", \r\n");
-                if (!(tmp = av_realloc_array(order, (*number + 1), sizeof(*order))))
-                    return NULL;
-                order = tmp;
-                order[*number] = -1;
-                for (i=0; section->fields[i].name; i++)
-                    if (!strncmp(buf, section->fields[i].name, len)) {
-                        order[*number] = i;
-                        break;
-                    }
-                (*number)++;
-                buf = skip_space(buf + len + (buf[len] == ','));
-            }
-            ctx->field_order[ctx->current_section] = order;
+                buf += len + 1;
+                while (!is_eol(*buf)) {
+                    buf = skip_space(buf);
+                    len = strcspn(buf, ", \r\n");
+                    if (!(tmp = av_realloc_array(order, (*number + 1), sizeof(*order))))
+                        return NULL;
+                    order = tmp;
+                    order[*number] = -1;
+                    for (i=0; section->fields[i].name; i++)
+                        if (!strncmp(buf, section->fields[i].name, len)) {
+                            order[*number] = i;
+                            break;
+                        }
+                    (*number)++;
+                    buf = skip_space(buf + len + (buf[len] == ','));
+                }
+                ctx->field_order[ctx->current_section] = order;
                 goto next_line;
             }
         }
