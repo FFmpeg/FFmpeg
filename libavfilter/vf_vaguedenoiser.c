@@ -52,10 +52,10 @@ typedef struct VagueDenoiserContext {
     float *out;
     float *tmp;
 
-    int hlowsize[32];
-    int hhighsize[32];
-    int vlowsize[32];
-    int vhighsize[32];
+    int hlowsize[4][32];
+    int hhighsize[4][32];
+    int vlowsize[4][32];
+    int vhighsize[4][32];
 
     void (*thresholding)(float *block, const int width, const int height,
                          const int stride, const float threshold,
@@ -132,7 +132,7 @@ static int config_input(AVFilterLink *inlink)
 {
     VagueDenoiserContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int nsteps_width, nsteps_height, nsteps_max;
+    int p, i, nsteps_width, nsteps_height, nsteps_max;
 
     s->depth = desc->comp[0].depth;
     s->nb_planes = desc->nb_components;
@@ -162,6 +162,20 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->nsteps = FFMIN(s->nsteps, nsteps_max - 2);
+
+    for (p = 0; p < 4; p++) {
+        s->hlowsize[p][0]  = (s->planewidth[p] + 1) >> 1;
+        s->hhighsize[p][0] =  s->planewidth[p] >> 1;
+        s->vlowsize[p][0]  = (s->planeheight[p] + 1) >> 1;
+        s->vhighsize[p][0] =  s->planeheight[p] >> 1;
+
+        for (i = 1; i < s->nsteps; i++) {
+            s->hlowsize[p][i]  = (s->hlowsize[p][i - 1] + 1) >> 1;
+            s->hhighsize[p][i] =  s->hlowsize[p][i - 1] >> 1;
+            s->vlowsize[p][i]  = (s->vlowsize[p][i - 1] + 1) >> 1;
+            s->vhighsize[p][i] =  s->vlowsize[p][i - 1] >> 1;
+        }
+    }
 
     return 0;
 }
@@ -441,21 +455,9 @@ static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
 
         s->thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
 
-        s->hlowsize[0]  = (width + 1) >> 1;
-        s->hhighsize[0] = width >> 1;
-        s->vlowsize[0]  = (height + 1) >> 1;
-        s->vhighsize[0] = height >> 1;
-
-        for (i = 1; i < s->nsteps; i++) {
-            s->hlowsize[i]  = (s->hlowsize[i - 1] + 1) >> 1;
-            s->hhighsize[i] = s->hlowsize[i - 1] >> 1;
-            s->vlowsize[i]  = (s->vlowsize[i - 1] + 1) >> 1;
-            s->vhighsize[i] = s->vlowsize[i - 1] >> 1;
-        }
-
         while (nsteps_invert--) {
-            const int idx = s->vlowsize[nsteps_invert] + s->vhighsize[nsteps_invert];
-            const int idx2 = s->hlowsize[nsteps_invert] + s->hhighsize[nsteps_invert];
+            const int idx = s->vlowsize[p][nsteps_invert]  + s->vhighsize[p][nsteps_invert];
+            const int idx2 = s->hlowsize[p][nsteps_invert] + s->hhighsize[p][nsteps_invert];
             float * idx3 = s->block;
             for (i = 0; i < idx2; i++) {
                 copyv(idx3, width, s->in + NPAD, idx);
