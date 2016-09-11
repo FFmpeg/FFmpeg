@@ -56,6 +56,10 @@ typedef struct VagueDenoiserContext {
     int hhighsize[32];
     int vlowsize[32];
     int vhighsize[32];
+
+    void (*thresholding)(float *block, const int width, const int height,
+                         const int stride, const float threshold,
+                         const float percent, const int nsteps);
 } VagueDenoiserContext;
 
 #define OFFSET(x) offsetof(VagueDenoiserContext, x)
@@ -308,7 +312,7 @@ static void invert_step(const float *input, float *output, float *temp, const in
 
 static void hard_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent)
+                              const float percent, const int unused)
 {
     const float frac = 1.f - percent * 0.01f;
     int y, x;
@@ -351,7 +355,7 @@ static void soft_thresholding(float *block, const int width, const int height, c
 
 static void qian_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent)
+                              const float percent, const int unused)
 {
     const float percent01 = percent * 0.01f;
     const float tr2 = threshold * threshold * percent01;
@@ -435,12 +439,7 @@ static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
             v_low_size0 = (v_low_size0 + 1) >> 1;
         }
 
-        if (s->method == 0)
-            hard_thresholding(s->block, width, height, width, s->threshold, s->percent);
-        else if (s->method == 1)
-            soft_thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
-        else
-            qian_thresholding(s->block, width, height, width, s->threshold, s->percent);
+        s->thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
 
         s->hlowsize[0]  = (width + 1) >> 1;
         s->hhighsize[0] = width >> 1;
@@ -520,6 +519,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static av_cold int init(AVFilterContext *ctx)
+{
+    VagueDenoiserContext *s = ctx->priv;
+
+    switch (s->method) {
+    case 0:
+        s->thresholding = hard_thresholding;
+        break;
+    case 1:
+        s->thresholding = soft_thresholding;
+        break;
+    case 2:
+        s->thresholding = qian_thresholding;
+        break;
+    }
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     VagueDenoiserContext *s = ctx->priv;
@@ -554,6 +572,7 @@ AVFilter ff_vf_vaguedenoiser = {
     .description   = NULL_IF_CONFIG_SMALL("Apply a Wavelet based Denoiser."),
     .priv_size     = sizeof(VagueDenoiserContext),
     .priv_class    = &vaguedenoiser_class,
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = vaguedenoiser_inputs,
