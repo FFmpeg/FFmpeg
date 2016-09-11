@@ -192,6 +192,23 @@ enc_dec(){
     tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
 }
 
+transcode(){
+    src_fmt=$1
+    srcfile=$2
+    enc_fmt=$3
+    enc_opt=$4
+    encfile="${outdir}/${test}.${enc_fmt}"
+    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    tsrcfile=$(target_path $srcfile)
+    tencfile=$(target_path $encfile)
+    ffmpeg -f $src_fmt $DEC_OPTS -i $tsrcfile $ENC_OPTS $enc_opt $FLAGS \
+        -f $enc_fmt -y $tencfile || return
+    do_md5sum $encfile
+    echo $(wc -c $encfile)
+    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS \
+        -f framecrc - || return
+}
+
 lavffatetest(){
     t="${test#lavf-fate-}"
     ref=${base}/ref/lavf-fate/$t

@@ -33,6 +33,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avconfig.h"
 
 DECLARE_ALIGNED(8, static const uint8_t, dithers)[8][8][8]={
 {
@@ -235,6 +236,57 @@ static int planarToP010Wrapper(SwsContext *c, const uint8_t *src8[],
 
     return srcSliceH;
 }
+
+#if AV_HAVE_BIGENDIAN
+#define output_pixel(p, v) do { \
+        uint16_t *pp = (p); \
+        AV_WL16(pp, (v)); \
+    } while(0)
+#else
+#define output_pixel(p, v) (*p) = (v)
+#endif
+
+static int planar8ToP01xleWrapper(SwsContext *c, const uint8_t *src[],
+                                  int srcStride[], int srcSliceY,
+                                  int srcSliceH, uint8_t *dstParam8[],
+                                  int dstStride[])
+{
+    uint16_t *dstY = (uint16_t*)(dstParam8[0] + dstStride[0] * srcSliceY);
+    uint16_t *dstUV = (uint16_t*)(dstParam8[1] + dstStride[1] * srcSliceY / 2);
+    int x, y, t;
+
+    av_assert0(!(dstStride[0] % 2 || dstStride[1] % 2));
+
+    for (y = 0; y < srcSliceH; y++) {
+        uint16_t *tdstY = dstY;
+        const uint8_t *tsrc0 = src[0];
+        for (x = c->srcW; x > 0; x--) {
+            t = *tsrc0++;
+            output_pixel(tdstY++, t | (t << 8));
+        }
+        src[0] += srcStride[0];
+        dstY += dstStride[0] / 2;
+
+        if (!(y & 1)) {
+            uint16_t *tdstUV = dstUV;
+            const uint8_t *tsrc1 = src[1];
+            const uint8_t *tsrc2 = src[2];
+            for (x = c->srcW / 2; x > 0; x--) {
+                t = *tsrc1++;
+                output_pixel(tdstUV++, t | (t << 8));
+                t = *tsrc2++;
+                output_pixel(tdstUV++, t | (t << 8));
+            }
+            src[1] += srcStride[1];
+            src[2] += srcStride[2];
+            dstUV += dstStride[1] / 2;
+        }
+    }
+
+    return srcSliceH;
+}
+
+#undef output_pixel
 
 static int planarToYuy2Wrapper(SwsContext *c, const uint8_t *src[],
                                int srcStride[], int srcSliceY, int srcSliceH,
@@ -1652,6 +1704,11 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if ((srcFormat == AV_PIX_FMT_YUV420P10 || srcFormat == AV_PIX_FMT_YUVA420P10) &&
         dstFormat == AV_PIX_FMT_P010) {
         c->swscale = planarToP010Wrapper;
+    }
+    /* yuv420p_to_p010le */
+    if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) &&
+        dstFormat == AV_PIX_FMT_P010LE) {
+        c->swscale = planar8ToP01xleWrapper;
     }
 
     if (srcFormat == AV_PIX_FMT_YUV410P && !(dstH & 3) &&

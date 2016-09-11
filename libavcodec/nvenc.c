@@ -81,6 +81,8 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_0RGB32,
+    AV_PIX_FMT_0BGR32,
 #if CONFIG_CUDA
     AV_PIX_FMT_CUDA,
 #endif
@@ -1032,6 +1034,14 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
         ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
         break;
 
+    case AV_PIX_FMT_0RGB32:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ARGB;
+        break;
+
+    case AV_PIX_FMT_0BGR32:
+        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ABGR;
+        break;
+
     default:
         av_log(avctx, AV_LOG_FATAL, "Invalid input pixel format\n");
         return AVERROR(EINVAL);
@@ -1276,84 +1286,32 @@ static NvencSurface *get_free_frame(NvencContext *ctx)
     return NULL;
 }
 
-static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *inSurf,
-            NV_ENC_LOCK_INPUT_BUFFER *lockBufferParams, const AVFrame *frame)
+static int nvenc_copy_frame(AVCodecContext *avctx, NvencSurface *nv_surface,
+            NV_ENC_LOCK_INPUT_BUFFER *lock_buffer_params, const AVFrame *frame)
 {
-    uint8_t *buf = lockBufferParams->bufferDataPtr;
-    int off = inSurf->height * lockBufferParams->pitch;
+    int dst_linesize[4] = {
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch,
+        lock_buffer_params->pitch
+    };
+    uint8_t *dst_data[4];
+    int ret;
 
-    if (frame->format == AV_PIX_FMT_YUV420P) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
+    if (frame->format == AV_PIX_FMT_YUV420P)
+        dst_linesize[1] = dst_linesize[2] >>= 1;
 
-        buf += off;
+    ret = av_image_fill_pointers(dst_data, frame->format, nv_surface->height,
+                                 lock_buffer_params->bufferDataPtr, dst_linesize);
+    if (ret < 0)
+        return ret;
 
-        av_image_copy_plane(buf, lockBufferParams->pitch >> 1,
-            frame->data[2], frame->linesize[2],
-            avctx->width >> 1, avctx->height >> 1);
+    if (frame->format == AV_PIX_FMT_YUV420P)
+        FFSWAP(uint8_t*, dst_data[1], dst_data[2]);
 
-        buf += off >> 2;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch >> 1,
-            frame->data[1], frame->linesize[1],
-            avctx->width >> 1, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_NV12) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_P010) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width << 1, avctx->height >> 1);
-    } else if (frame->format == AV_PIX_FMT_YUV444P) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[2], frame->linesize[2],
-            avctx->width, avctx->height);
-    } else if (frame->format == AV_PIX_FMT_YUV444P16) {
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[0], frame->linesize[0],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[1], frame->linesize[1],
-            avctx->width << 1, avctx->height);
-
-        buf += off;
-
-        av_image_copy_plane(buf, lockBufferParams->pitch,
-            frame->data[2], frame->linesize[2],
-            avctx->width << 1, avctx->height);
-    } else {
-        av_log(avctx, AV_LOG_FATAL, "Invalid pixel format!\n");
-        return AVERROR(EINVAL);
-    }
+    av_image_copy(dst_data, dst_linesize,
+                  (const uint8_t**)frame->data, frame->linesize, frame->format,
+                  avctx->width, avctx->height);
 
     return 0;
 }
@@ -1455,6 +1413,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
         ctx->registered_frames[reg_idx].mapped = 1;
         nvenc_frame->reg_idx                   = reg_idx;
         nvenc_frame->input_surface             = nvenc_frame->in_map.mappedResource;
+        nvenc_frame->pitch                     = frame->linesize[0];
         return 0;
     } else {
         NV_ENC_LOCK_INPUT_BUFFER lockBufferParams = { 0 };
@@ -1467,6 +1426,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
             return nvenc_print_error(avctx, nv_status, "Failed locking nvenc input buffer");
         }
 
+        nvenc_frame->pitch = lockBufferParams.pitch;
         res = nvenc_copy_frame(avctx, nvenc_frame, &lockBufferParams, frame);
 
         nv_status = p_nvenc->nvEncUnlockInputBuffer(ctx->nvencoder, nvenc_frame->input_surface);
@@ -1707,6 +1667,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.bufferFmt = inSurf->format;
         pic_params.inputWidth = avctx->width;
         pic_params.inputHeight = avctx->height;
+        pic_params.inputPitch = inSurf->pitch;
         pic_params.outputBitstream = inSurf->output_surface;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {

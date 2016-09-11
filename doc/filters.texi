@@ -4402,6 +4402,24 @@ number in range [5, 129].
 Set what planes of frame filter will use for averaging. Default is all.
 @end table
 
+@section avgblur
+
+Apply average blur filter.
+
+The filter accepts the following options:
+
+@table @option
+@item sizeX
+Set horizontal kernel size.
+
+@item planes
+Set which planes to filter. By default all planes are filtered.
+
+@item sizeY
+Set vertical kernel size, if zero it will be same as @code{sizeX}.
+Default is @code{0}.
+@end table
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame
@@ -5235,6 +5253,7 @@ Convert colorspace, transfer characteristics or color primaries.
 The filter accepts the following options:
 
 @table @option
+@anchor{all}
 @item all
 Specify all color properties at once.
 
@@ -5266,6 +5285,7 @@ BT.2020
 
 @end table
 
+@anchor{space}
 @item space
 Specify output colorspace.
 
@@ -5291,6 +5311,7 @@ BT.2020 with non-constant luminance
 
 @end table
 
+@anchor{trc}
 @item trc
 Specify output transfer characteristics.
 
@@ -5319,6 +5340,7 @@ BT.2020 for 12-bits content
 
 @end table
 
+@anchor{primaries}
 @item primaries
 Specify output color primaries.
 
@@ -5344,6 +5366,7 @@ BT.2020
 
 @end table
 
+@anchor{range}
 @item range
 Specify output color range.
 
@@ -5422,6 +5445,21 @@ von Kries whitepoint adaptation
 @item identity
 identity whitepoint adaptation (i.e. no whitepoint adaptation)
 @end table
+
+@item iall
+Override all input properties at once. Same accepted values as @ref{all}.
+
+@item ispace
+Override input colorspace. Same accepted values as @ref{space}.
+
+@item iprimaries
+Override input color primaries. Same accepted values as @ref{primaries}.
+
+@item itrc
+Override input transfer characteristics. Same accepted values as @ref{trc}.
+
+@item irange
+Override input color range. Same accepted values as @ref{range}.
 
 @end table
 
@@ -5997,6 +6035,9 @@ the text color is picked in such way so its always visible.
 
 @item axis
 Draw rows and columns numbers on left and top of video.
+
+@item opacity
+Set background opacity.
 @end table
 
 @section dctdnoiz
@@ -8231,6 +8272,27 @@ option may cause flicker since the B-Frames have often larger QP. Default is
 
 @end table
 
+@section gblur
+
+Apply Gaussian blur filter.
+
+The filter accepts the following options:
+
+@table @option
+@item sigma
+Set horizontal sigma, standard deviation of Gaussian blur. Default is @code{0.5}.
+
+@item steps
+Set number of steps for Gaussian approximation. Defauls is @code{1}.
+
+@item planes
+Set which planes to filter. By default all planes are filtered.
+
+@item sigmaV
+Set vertical sigma, if negative it will be same as @code{sigma}.
+Default is @code{-1}.
+@end table
+
 @section geq
 
 The filter accepts the following options:
@@ -10357,6 +10419,8 @@ Compute full frame histograms.
 Compute histograms only for the part that differs from previous frame. This
 might be relevant to give more importance to the moving part of your input if
 the background is static.
+@item single
+Compute new histogram for each frame.
 @end table
 
 Default value is @var{full}.
@@ -10428,6 +10492,9 @@ much, and as a result less moving noise and better GIF compression).
 @end table
 
 Default is @var{none}.
+
+@item new
+Take new palette for each output frame.
 @end table
 
 @subsection Examples
@@ -12054,10 +12121,21 @@ frames. Number of indexes also sets maximal value that each index may have.
 
 The first frame has the index 0. The default is to keep the input unchanged.
 
+@subsection Examples
+
+@itemize
+@item
 Swap second and third frame of every three frames of the input:
 @example
 ffmpeg -i INPUT -vf "shuffleframes=0 2 1" OUTPUT
 @end example
+
+@item
+Swap 10th and 1st frame of every ten frames of the input:
+@example
+ffmpeg -i INPUT -vf "shuffleframes=9 1 2 3 4 5 6 7 8 0" OUTPUT
+@end example
+@end itemize
 
 @section shuffleplanes
 
@@ -12083,10 +12161,15 @@ The index of the input plane to be used as the fourth output plane.
 
 The first plane has the index 0. The default is to keep the input unchanged.
 
+@subsection Examples
+
+@itemize
+@item
 Swap the second and third planes of the input:
 @example
 ffmpeg -i INPUT -vf shuffleplanes=0:2:1:3 OUTPUT
 @end example
+@end itemize
 
 @anchor{signalstats}
 @section signalstats
@@ -14103,6 +14186,9 @@ Set scale used for displaying graticule.
 @item ire
 @end table
 Default is digital.
+
+@item bgopacity, b
+Set background opacity.
 @end table
 
 @section weave
@@ -14130,7 +14216,7 @@ Set the frame as bottom-field-first.
 
 @itemize
 @item
-Interlace video using @code{select} and @code{separatefields} filter:
+Interlace video using @ref{select} and @ref{separatefields} filter:
 @example
 separatefields,select=eq(mod(n,4),0)+eq(mod(n,4),3),weave
 @end example
@@ -16939,10 +17025,10 @@ It accepts the following values:
 the samples start again on the left when they reach the right
 @item scroll
 the samples scroll from right to left
-@item rscroll
-the samples scroll from left to right
 @item fullframe
 frames are only produced when the samples reach the right
+@item rscroll
+the samples scroll from left to right
 @end table
 
 Default value is @code{replace}.
@@ -16998,12 +17084,12 @@ linear
 square root, default
 @item cbrt
 cubic root
+@item log
+logarithmic
 @item 4thrt
 4th root
 @item 5thrt
 5th root
-@item log
-logarithmic
 @end table
 
 Default value is @samp{sqrt}.
@@ -17146,12 +17232,12 @@ linear
 square root, default
 @item cbrt
 cubic root
+@item log
+logarithmic
 @item 4thrt
 4th root
 @item 5thrt
 5th root
-@item log
-logarithmic
 @end table
 Default value is @samp{log}.
 

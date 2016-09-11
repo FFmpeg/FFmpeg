@@ -35,6 +35,7 @@ typedef struct HistogramContext {
     int            histogram_size;
     int            mult;
     int            ncomp;
+    int            dncomp;
     uint8_t        bg_color[4];
     uint8_t        fg_color[4];
     int            level_height;
@@ -236,6 +237,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = (h->level_height + h->scale_height) * FFMAX(ncomp * h->display_mode, 1);
 
     h->odesc = av_pix_fmt_desc_get(outlink->format);
+    h->dncomp = h->odesc->nb_components;
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
     return 0;
@@ -319,7 +321,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             if (h->histogram_size <= 256) {
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
-                        for (l = 0; l < h->ncomp; l++)
+                        for (l = 0; l < h->dncomp; l++)
                             out->data[l][(j + start) * out->linesize[l] + i] = h->fg_color[l];
                     } else {
                         out->data[p][(j + start) * out->linesize[p] + i] = 255;
@@ -332,7 +334,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
-                        for (l = 0; l < h->ncomp; l++)
+                        for (l = 0; l < h->dncomp; l++)
                             AV_WN16(out->data[l] + (j + start) * out->linesize[l] + i * 2, h->fg_color[l] * mult);
                     } else {
                         AV_WN16(out->data[p] + (j + start) * out->linesize[p] + i * 2, 255 * mult);

@@ -32,7 +32,7 @@
 #include "libavutil/atomic.h"
 
 #include "avcodec.h"
-#include "h264dec.h"
+#include "h264_parse.h"
 #include "internal.h"
 #include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
@@ -104,9 +104,9 @@ static int h264_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int 
             }
             *out = p = new;
 
-            i = i + 3;
-            memmove(p + i, p + i - 1, *out_size - i);
-            p[i - 1] = 0x03;
+            i = i + 2;
+            memmove(p + i + 1, p + i, *out_size - (i + 1));
+            p[i] = 0x03;
         }
     }
 done:
@@ -128,6 +128,8 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     const SPS *sps = NULL;
     int is_avc = 0;
     int nal_length_size = 0;
+
+    const AVBitStreamFilter *bsf = NULL;
 
     FFAMediaFormat *format = NULL;
     MediaCodecH264DecContext *s = avctx->priv_data;
@@ -205,7 +207,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    const AVBitStreamFilter *bsf = av_bsf_get_by_name("h264_mp4toannexb");
+    bsf = av_bsf_get_by_name("h264_mp4toannexb");
     if(!bsf) {
         ret = AVERROR_BSF_NOT_FOUND;
         goto done;

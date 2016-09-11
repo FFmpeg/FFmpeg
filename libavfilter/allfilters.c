@@ -141,6 +141,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ALPHAMERGE,     alphamerge,     vf);
     REGISTER_FILTER(ASS,            ass,            vf);
     REGISTER_FILTER(ATADENOISE,     atadenoise,     vf);
+    REGISTER_FILTER(AVGBLUR,        avgblur,        vf);
     REGISTER_FILTER(BBOX,           bbox,           vf);
     REGISTER_FILTER(BENCH,          bench,          vf);
     REGISTER_FILTER(BITPLANENOISE,  bitplanenoise,  vf);
@@ -199,6 +200,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(FRAMESTEP,      framestep,      vf);
     REGISTER_FILTER(FREI0R,         frei0r,         vf);
     REGISTER_FILTER(FSPP,           fspp,           vf);
+    REGISTER_FILTER(GBLUR,          gblur,          vf);
     REGISTER_FILTER(GEQ,            geq,            vf);
     REGISTER_FILTER(GRADFUN,        gradfun,        vf);
     REGISTER_FILTER(HALDCLUT,       haldclut,       vf);

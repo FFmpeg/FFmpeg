@@ -982,6 +982,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     err = avformat_open_input(&ic, filename, file_iformat, &o->g->format_opts);
     if (err < 0) {
         print_error(filename, err);
+        if (err == AVERROR_PROTOCOL_NOT_FOUND)
+            av_log(NULL, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
         exit_program(1);
     }
     if (scan_all_pmts_set)

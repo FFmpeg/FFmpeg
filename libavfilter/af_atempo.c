@@ -1044,9 +1044,8 @@ static int config_props(AVFilterLink *inlink)
 
     enum AVSampleFormat format = inlink->format;
     int sample_rate = (int)inlink->sample_rate;
-    int channels = av_get_channel_layout_nb_channels(inlink->channel_layout);
 
-    return yae_reset(atempo, format, sample_rate, channels);
+    return yae_reset(atempo, format, sample_rate, inlink->channels);
 }
 
 static int push_samples(ATempoContext *atempo,

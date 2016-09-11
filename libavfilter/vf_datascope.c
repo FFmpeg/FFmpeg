@@ -36,6 +36,7 @@ typedef struct DatascopeContext {
     int x, y;
     int mode;
     int axis;
+    float opacity;
 
     int nb_planes;
     int nb_comps;
@@ -46,6 +47,8 @@ typedef struct DatascopeContext {
     FFDrawColor black;
     FFDrawColor gray;
 
+    void (*pick_color)(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value);
+    void (*reverse_color)(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *reverse);
     int (*filter)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } DatascopeContext;
 
@@ -62,6 +65,7 @@ static const AVOption datascope_options[] = {
     {   "color",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
     {   "color2", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mode" },
     { "axis",    "draw column/row numbers", OFFSET(axis), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "opacity", "set background opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -95,56 +99,66 @@ static void draw_text(DatascopeContext *s, AVFrame *frame, FFDrawColor *color,
     }
 }
 
-static void pick_color(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value)
+static void pick_color8(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value)
 {
     int p, i;
 
     color->rgba[3] = 255;
     for (p = 0; p < draw->nb_planes; p++) {
-        if (draw->desc->comp[p].depth == 8) {
-            if (draw->nb_planes == 1) {
-                for (i = 0; i < 4; i++) {
-                    value[i] = in->data[0][y * in->linesize[0] + x * draw->pixelstep[0] + i];
-                    color->comp[0].u8[i] = value[i];
-                }
-            } else {
-                value[p] = in->data[p][(y >> draw->vsub[p]) * in->linesize[p] + (x >> draw->hsub[p])];
-                color->comp[p].u8[0] = value[p];
+        if (draw->nb_planes == 1) {
+            for (i = 0; i < 4; i++) {
+                value[i] = in->data[0][y * in->linesize[0] + x * draw->pixelstep[0] + i];
+                color->comp[0].u8[i] = value[i];
             }
         } else {
-            if (draw->nb_planes == 1) {
-                for (i = 0; i < 4; i++) {
-                    value[i] = AV_RL16(in->data[0] + y * in->linesize[0] + x * draw->pixelstep[0] + i * 2);
-                    color->comp[0].u16[i] = value[i];
-                }
-            } else {
-                value[p] = AV_RL16(in->data[p] + (y >> draw->vsub[p]) * in->linesize[p] + (x >> draw->hsub[p]) * 2);
-                color->comp[p].u16[0] = value[p];
-            }
+            value[p] = in->data[p][(y >> draw->vsub[p]) * in->linesize[p] + (x >> draw->hsub[p])];
+            color->comp[p].u8[0] = value[p];
         }
     }
 }
 
-static void reverse_color(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *reverse)
+static void pick_color16(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value)
+{
+    int p, i;
+
+    color->rgba[3] = 255;
+    for (p = 0; p < draw->nb_planes; p++) {
+        if (draw->nb_planes == 1) {
+            for (i = 0; i < 4; i++) {
+                value[i] = AV_RL16(in->data[0] + y * in->linesize[0] + x * draw->pixelstep[0] + i * 2);
+                color->comp[0].u16[i] = value[i];
+            }
+        } else {
+            value[p] = AV_RL16(in->data[p] + (y >> draw->vsub[p]) * in->linesize[p] + (x >> draw->hsub[p]) * 2);
+            color->comp[p].u16[0] = value[p];
+        }
+    }
+}
+
+static void reverse_color8(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *reverse)
 {
     int p;
 
     reverse->rgba[3] = 255;
     for (p = 0; p < draw->nb_planes; p++) {
-        if (draw->desc->comp[p].depth == 8) {
-            reverse->comp[p].u8[0] = color->comp[p].u8[0] > 127 ? 0 : 255;
-            reverse->comp[p].u8[1] = color->comp[p].u8[1] > 127 ? 0 : 255;
-            reverse->comp[p].u8[2] = color->comp[p].u8[2] > 127 ? 0 : 255;
-            reverse->comp[p].u8[3] = color->comp[p].u8[3] > 127 ? 0 : 255;
-        } else {
-            const unsigned max = (1 << draw->desc->comp[p].depth) - 1;
-            const unsigned mid = (max + 1) / 2;
+        reverse->comp[p].u8[0] = color->comp[p].u8[0] > 127 ? 0 : 255;
+        reverse->comp[p].u8[1] = color->comp[p].u8[1] > 127 ? 0 : 255;
+        reverse->comp[p].u8[2] = color->comp[p].u8[2] > 127 ? 0 : 255;
+    }
+}
 
-            reverse->comp[p].u16[0] = color->comp[p].u16[0] > mid ? 0 : max;
-            reverse->comp[p].u16[1] = color->comp[p].u16[1] > mid ? 0 : max;
-            reverse->comp[p].u16[2] = color->comp[p].u16[2] > mid ? 0 : max;
-            reverse->comp[p].u16[3] = color->comp[p].u16[3] > mid ? 0 : max;
-        }
+static void reverse_color16(FFDrawContext *draw, FFDrawColor *color, FFDrawColor *reverse)
+{
+    int p;
+
+    reverse->rgba[3] = 255;
+    for (p = 0; p < draw->nb_planes; p++) {
+        const unsigned max = (1 << draw->desc->comp[p].depth) - 1;
+        const unsigned mid = (max + 1) / 2;
+
+        reverse->comp[p].u16[0] = color->comp[p].u16[0] > mid ? 0 : max;
+        reverse->comp[p].u16[1] = color->comp[p].u16[1] > mid ? 0 : max;
+        reverse->comp[p].u16[2] = color->comp[p].u16[2] > mid ? 0 : max;
     }
 }
 
@@ -178,8 +192,8 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             FFDrawColor reverse = { { 0 } };
             int value[4] = { 0 };
 
-            pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
-            reverse_color(&s->draw, &color, &reverse);
+            s->pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
+            s->reverse_color(&s->draw, &color, &reverse);
             ff_fill_rectangle(&s->draw, &color, out->data, out->linesize,
                               xoff + x * C * 10, yoff + y * P * 12, C * 10, P * 12);
 
@@ -219,7 +233,7 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             FFDrawColor color = { { 0 } };
             int value[4] = { 0 };
 
-            pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
+            s->pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
 
             for (p = 0; p < P; p++) {
                 char text[256];
@@ -257,7 +271,7 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             FFDrawColor color = { { 0 } };
             int value[4] = { 0 };
 
-            pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
+            s->pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
             for (p = 0; p < P; p++) {
                 char text[256];
 
@@ -337,11 +351,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int config_input(AVFilterLink *inlink)
 {
     DatascopeContext *s = inlink->dst->priv;
+    uint8_t alpha = s->opacity * 255;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     ff_draw_init(&s->draw, inlink->format, 0);
     ff_draw_color(&s->draw, &s->white,  (uint8_t[]){ 255, 255, 255, 255} );
-    ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, 0} );
+    ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, alpha} );
     ff_draw_color(&s->draw, &s->yellow, (uint8_t[]){ 255, 255, 0, 255} );
     ff_draw_color(&s->draw, &s->gray,   (uint8_t[]){ 77, 77, 77, 255} );
     s->chars = (s->draw.desc->comp[0].depth + 7) / 8 * 2;
@@ -351,6 +366,14 @@ static int config_input(AVFilterLink *inlink)
     case 0: s->filter = filter_mono;   break;
     case 1: s->filter = filter_color;  break;
     case 2: s->filter = filter_color2; break;
+    }
+
+    if (s->draw.desc->comp[0].depth <= 8) {
+        s->pick_color = pick_color8;
+        s->reverse_color = reverse_color8;
+    } else {
+        s->pick_color = pick_color16;
+        s->reverse_color = reverse_color16;
     }
 
     return 0;

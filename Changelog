@@ -25,6 +25,8 @@ version <next>:
 - vaguedenoiser filter
 - added threads option per filter instance
 - weave filter
+- gblur filter
+- avgblur filter
 
 
 version 3.1:

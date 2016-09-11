@@ -51,8 +51,32 @@ fate-unknown_layout-ac3: CMD = md5 \
   -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(TARGET_PATH)/$(AREF) \
   -f ac3 -flags +bitexact -c ac3_fixed
 
-FATE_SAMPLES_FFMPEG-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
+FATE_STREAMCOPY-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-copy-trac236
+fate-copy-trac236: $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
+fate-copy-trac236: CMD = transcode mov $(TARGET_SAMPLES)/mov/fcp_export8-236.mov\
+                     mov "-codec copy -map 0"
+
+FATE_STREAMCOPY-$(call ALLYES, MPEGTS_DEMUXER MXF_MUXER PCM_S16LE_ENCODER) += fate-copy-trac4914
+fate-copy-trac4914: $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
+fate-copy-trac4914: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
+                      mxf "-c:a pcm_s16le -c:v copy"
+
+FATE_STREAMCOPY-$(call ALLYES, MPEGTS_DEMUXER AVI_MUXER) += fate-copy-trac4914-avi
+fate-copy-trac4914-avi: $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts
+fate-copy-trac4914-avi: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
+                          avi "-c:a copy -c:v copy"
+
+FATE_STREAMCOPY-$(call ALLYES, H264_DEMUXER AVI_MUXER) += fate-copy-trac2211-avi
+fate-copy-trac2211-avi: $(TARGET_SAMPLES)/h264/bbc2.sample.h264
+fate-copy-trac2211-avi: CMD = transcode "h264 -r 14" $(TARGET_SAMPLES)/h264/bbc2.sample.h264\
+                          avi "-c:a copy -c:v copy"
+
+FATE_STREAMCOPY-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
 fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg
 fate-limited_input_seek-copyts: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek-copyts: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -copyts -fflags +bitexact -f ogg
+
+fate-streamcopy: $(FATE_STREAMCOPY-yes)
+
+FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)

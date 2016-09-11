@@ -97,6 +97,12 @@ static int ivf_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
     return ret;
 }
 
+static const AVCodecTag codec_ivf_tags[] = {
+    { AV_CODEC_ID_VP8,  MKTAG('V', 'P', '8', '0') },
+    { AV_CODEC_ID_VP9,  MKTAG('V', 'P', '9', '0') },
+    { AV_CODEC_ID_NONE, 0 }
+};
+
 AVOutputFormat ff_ivf_muxer = {
     .priv_data_size = sizeof(IVFEncContext),
     .name         = "ivf",
@@ -108,4 +114,5 @@ AVOutputFormat ff_ivf_muxer = {
     .write_packet = ivf_write_packet,
     .write_trailer = ivf_write_trailer,
     .check_bitstream = ivf_check_bitstream,
+    .codec_tag    = (const AVCodecTag* const []){ codec_ivf_tags, 0 },
 };

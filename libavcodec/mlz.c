@@ -21,7 +21,7 @@
 #include "mlz.h"
 
 av_cold void ff_mlz_init_dict(void* context, MLZ *mlz) {
-    mlz->dict = av_malloc_array(TABLE_SIZE, sizeof(*mlz->dict));
+    mlz->dict = av_mallocz_array(TABLE_SIZE, sizeof(*mlz->dict));
 
     mlz->flush_code            = FLUSH_CODE;
     mlz->current_dic_index_max = DIC_INDEX_INIT;
@@ -81,6 +81,10 @@ static int decode_string(MLZ* mlz, unsigned char *buff, int string_code, int *fi
             } else {
                 offset  = dict[current_code].match_len - 1;
                 tmp_code = dict[current_code].char_code;
+                if (offset >= bufsize) {
+                    av_log(mlz->context, AV_LOG_ERROR, "MLZ offset error.\n");
+                    return count;
+                }
                 buff[offset] = tmp_code;
                 count++;
             }

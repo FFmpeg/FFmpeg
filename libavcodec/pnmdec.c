@@ -124,7 +124,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     do_read:
         ptr      = p->data[0];
         linesize = p->linesize[0];
-        if (s->bytestream + n * avctx->height > s->bytestream_end)
+        if (n * avctx->height > s->bytestream_end - s->bytestream)
             return AVERROR_INVALIDDATA;
         if(s->type < 4 || (is_mono && s->type==7)){
             for (i=0; i<avctx->height; i++) {
@@ -188,7 +188,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             linesize = p->linesize[0];
             if (s->maxval >= 256)
                 n *= 2;
-            if (s->bytestream + n * avctx->height * 3 / 2 > s->bytestream_end)
+            if (n * avctx->height * 3 / 2 > s->bytestream_end - s->bytestream)
                 return AVERROR_INVALIDDATA;
             for (i = 0; i < avctx->height; i++) {
                 samplecpy(ptr, s->bytestream, n, s->maxval);
@@ -218,7 +218,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             n        = avctx->width * 2;
             ptr      = p->data[0];
             linesize = p->linesize[0];
-            if (s->bytestream + n * avctx->height * 3 / 2 > s->bytestream_end)
+            if (n * avctx->height * 3 / 2 > s->bytestream_end - s->bytestream)
                 return AVERROR_INVALIDDATA;
             for (i = 0; i < avctx->height; i++) {
                 for (j = 0; j < n / 2; j++) {

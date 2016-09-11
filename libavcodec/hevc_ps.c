@@ -399,6 +399,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
 {
     int i,j;
     int vps_id = 0;
+    ptrdiff_t nal_size;
     HEVCVPS *vps;
     AVBufferRef *vps_buf = av_buffer_allocz(sizeof(*vps));
 
@@ -407,6 +408,17 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
     vps = (HEVCVPS*)vps_buf->data;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding VPS\n");
+
+    nal_size = gb->buffer_end - gb->buffer;
+    if (nal_size > sizeof(vps->data)) {
+        av_log(avctx, AV_LOG_WARNING, "Truncating likely oversized VPS "
+               "(%"PTRDIFF_SPECIFIER" > %"SIZE_SPECIFIER")\n",
+               nal_size, sizeof(vps->data));
+        vps->data_size = sizeof(vps->data);
+    } else {
+        vps->data_size = nal_size;
+    }
+    memcpy(vps->data, gb->buffer, vps->data_size);
 
     vps_id = get_bits(gb, 4);
     if (vps_id >= MAX_VPS_COUNT) {
@@ -1177,12 +1189,24 @@ int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
     AVBufferRef *sps_buf = av_buffer_allocz(sizeof(*sps));
     unsigned int sps_id;
     int ret;
+    ptrdiff_t nal_size;
 
     if (!sps_buf)
         return AVERROR(ENOMEM);
     sps = (HEVCSPS*)sps_buf->data;
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding SPS\n");
+
+    nal_size = gb->buffer_end - gb->buffer;
+    if (nal_size > sizeof(sps->data)) {
+        av_log(avctx, AV_LOG_WARNING, "Truncating likely oversized SPS "
+               "(%"PTRDIFF_SPECIFIER" > %"SIZE_SPECIFIER")\n",
+               nal_size, sizeof(sps->data));
+        sps->data_size = sizeof(sps->data);
+    } else {
+        sps->data_size = nal_size;
+    }
+    memcpy(sps->data, gb->buffer, sps->data_size);
 
     ret = ff_hevc_parse_sps(sps, gb, &sps_id,
                             apply_defdispwin,
@@ -1407,6 +1431,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     HEVCSPS      *sps = NULL;
     int i, ret = 0;
     unsigned int pps_id = 0;
+    ptrdiff_t nal_size;
 
     AVBufferRef *pps_buf;
     HEVCPPS *pps = av_mallocz(sizeof(*pps));
@@ -1422,6 +1447,17 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding PPS\n");
+
+    nal_size = gb->buffer_end - gb->buffer;
+    if (nal_size > sizeof(pps->data)) {
+        av_log(avctx, AV_LOG_WARNING, "Truncating likely oversized PPS "
+               "(%"PTRDIFF_SPECIFIER" > %"SIZE_SPECIFIER")\n",
+               nal_size, sizeof(pps->data));
+        pps->data_size = sizeof(pps->data);
+    } else {
+        pps->data_size = nal_size;
+    }
+    memcpy(pps->data, gb->buffer, pps->data_size);
 
     // Default values
     pps->loop_filter_across_tiles_enabled_flag = 1;

@@ -115,6 +115,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    WeaveContext *s = ctx->priv;
+
+    av_frame_free(&s->prev);
+}
+
 static const AVFilterPad weave_inputs[] = {
     {
         .name             = "default",
@@ -138,6 +145,7 @@ AVFilter ff_vf_weave = {
     .description   = NULL_IF_CONFIG_SMALL("Weave input video fields into frames."),
     .priv_size     = sizeof(WeaveContext),
     .priv_class    = &weave_class,
+    .uninit        = uninit,
     .inputs        = weave_inputs,
     .outputs       = weave_outputs,
 };
