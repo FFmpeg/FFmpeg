@@ -378,8 +378,28 @@ static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
     memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
 
     AVRational time_base = lavfi->video_time_base;
+
+    av_log(avctx,  AV_LOG_ERROR, "time_base num: %d den: %d", time_base.num, time_base.den);
+
     double adjust_factor = time_base.den / (90000.0 * time_base.num);
+
+    av_log(avctx,  AV_LOG_ERROR, "adjust_factor %f", adjust_factor);
+    av_log(avctx,  AV_LOG_ERROR, "framepts %d", frame->pts);
     double pts = frame->pts / adjust_factor;
+
+    av_log(avctx,  AV_LOG_ERROR, "calculated pts %f", pts);
+    av_log(avctx,  AV_LOG_ERROR, "calculated pts as int %d", (int)pts);
+
+
+    double adjust_factor2 = (90000.0 * time_base.num) / time_base.den;
+
+    av_log(avctx,  AV_LOG_ERROR, "adjust_factor2 %f", adjust_factor2);
+    double pts2 = frame->pts * adjust_factor;
+
+    av_log(avctx,  AV_LOG_ERROR, "calculated pts2 %f", pts2);
+    av_log(avctx,  AV_LOG_ERROR, "calculated pts2 as int %d", (int)pts2);
+
+
 
     lavfi->subcc_packet.stream_index = stream_idx;
     lavfi->subcc_packet.pts = (int)pts;
