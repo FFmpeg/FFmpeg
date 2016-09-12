@@ -522,7 +522,7 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
         err = OMX_GetParameter(s->handle, OMX_IndexParamVideoAvc, &avc);
         CHECK(err);
         avc.nBFrames = 0;
-        avc.nPFrames = avctx->gop_size - 1;
+        avc.nPFrames = avctx->gop_size;
         err = OMX_SetParameter(s->handle, OMX_IndexParamVideoAvc, &avc);
         CHECK(err);
     }
