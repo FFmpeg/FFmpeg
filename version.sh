@@ -18,7 +18,7 @@ if [ -z "$2" ]; then
 fi
 
 NEW_REVISION="#define LIBAV_VERSION \"$version\""
-OLD_REVISION=$(cat version.h 2> /dev/null)
+OLD_REVISION=$(cat "$2" 2> /dev/null)
 
 # Update version.h only on revision changes to avoid spurious rebuilds
 if test "$NEW_REVISION" != "$OLD_REVISION"; then
