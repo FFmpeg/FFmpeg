@@ -1,7 +1,8 @@
 ALLMANPAGES = $(AVBASENAMES:%=%.1)
 MANPAGES    = $(AVPROGS-yes:%=doc/%.1)
 PODPAGES    = $(AVPROGS-yes:%=doc/%.pod)
-HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html)                               \
+PROGSHTML   = $(AVPROGS-yes:%=doc/%.html)
+HTMLPAGES   = $(PROGSHTML)                                              \
               doc/developer.html                                        \
               doc/faq.html                                              \
               doc/fate.html                                             \
@@ -39,22 +40,24 @@ TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 GENTEXI  = format codec
 GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
 
+$(MANPAGES) $(PODPAGES) $(PROGSHTML): $(GENTEXI)
+
 $(GENTEXI): TAG = GENTEXI
 $(GENTEXI): doc/avoptions_%.texi: doc/print_options$(HOSTEXESUF)
 	$(M)doc/print_options $* > $@
 
 doc/%.html: TAG = HTML
-doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
+doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
 	$(Q)$(TEXIDEP)
 	$(M)texi2html -I doc -monolithic --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
 
 doc/%.pod: TAG = POD
-doc/%.pod: doc/%.texi $(SRC_PATH)/doc/texi2pod.pl $(GENTEXI)
+doc/%.pod: doc/%.texi $(SRC_PATH)/doc/texi2pod.pl
 	$(Q)$(TEXIDEP)
 	$(M)$(SRC_PATH)/doc/texi2pod.pl -Idoc $< $@
 
 doc/%.1: TAG = MAN
-doc/%.1: doc/%.pod $(GENTEXI)
+doc/%.1: doc/%.pod
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
