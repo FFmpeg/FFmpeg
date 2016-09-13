@@ -211,10 +211,11 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     draw->desc      = desc;
     draw->format    = format;
     draw->nb_planes = nb_planes;
+    draw->flags     = flags;
     memcpy(draw->pixelstep, pixelstep, sizeof(draw->pixelstep));
     draw->hsub[1] = draw->hsub[2] = draw->hsub_max = desc->log2_chroma_w;
     draw->vsub[1] = draw->vsub[2] = draw->vsub_max = desc->log2_chroma_h;
-    for (i = 0; i < (desc->nb_components - !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA)); i++)
+    for (i = 0; i < (desc->nb_components - !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA && !(flags & FF_DRAW_PROCESS_ALPHA))); i++)
         draw->comp_mask[desc->comp[i].plane] |=
             1 << desc->comp[i].offset;
     return 0;
@@ -452,7 +453,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
         /* 0x101 * alpha is in the [ 2 ; 0x1001] range */
         alpha = 0x101 * color->rgba[3] + 0x2;
     }
-    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA && !(draw->flags & FF_DRAW_PROCESS_ALPHA));
     nb_planes += !nb_planes;
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];
@@ -630,7 +631,7 @@ void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
     } else {
         alpha = (0x101 * color->rgba[3] + 0x2) >> 8;
     }
-    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    nb_planes = draw->nb_planes - !!(draw->desc->flags & AV_PIX_FMT_FLAG_ALPHA && !(draw->flags & FF_DRAW_PROCESS_ALPHA));
     nb_planes += !nb_planes;
     for (plane = 0; plane < nb_planes; plane++) {
         nb_comp = draw->pixelstep[plane];

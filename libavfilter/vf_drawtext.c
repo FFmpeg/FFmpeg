@@ -730,7 +730,7 @@ static int config_input(AVFilterLink *inlink)
     DrawTextContext *s = ctx->priv;
     int ret;
 
-    ff_draw_init(&s->dc, inlink->format, 0);
+    ff_draw_init(&s->dc, inlink->format, FF_DRAW_PROCESS_ALPHA);
     ff_draw_color(&s->dc, &s->fontcolor,   s->fontcolor.rgba);
     ff_draw_color(&s->dc, &s->shadowcolor, s->shadowcolor.rgba);
     ff_draw_color(&s->dc, &s->bordercolor, s->bordercolor.rgba);
