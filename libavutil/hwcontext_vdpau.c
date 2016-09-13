@@ -305,7 +305,7 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 
     for (i = 0; i< FF_ARRAY_ELEMS(data) && dst->data[i]; i++) {
         data[i] = dst->data[i];
-        if (dst->linesize[i] < 0 || (uint64_t)dst->linesize > UINT32_MAX) {
+        if (dst->linesize[i] < 0 || dst->linesize[i] > UINT32_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "The linesize %d cannot be represented as uint32\n",
                    dst->linesize[i]);
@@ -356,7 +356,7 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     for (i = 0; i< FF_ARRAY_ELEMS(data) && src->data[i]; i++) {
         data[i] = src->data[i];
-        if (src->linesize[i] < 0 || (uint64_t)src->linesize > UINT32_MAX) {
+        if (src->linesize[i] < 0 || src->linesize[i] > UINT32_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "The linesize %d cannot be represented as uint32\n",
                    src->linesize[i]);
