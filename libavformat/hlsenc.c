@@ -545,7 +545,8 @@ static int hls_window(AVFormatContext *s, int last)
             milli = av_clip(lrint(1000*(prog_date_time - tt)), 0, 999);
             tm = localtime_r(&tt, &tmpbuf);
             strftime(buf0, sizeof(buf0), "%Y-%m-%dT%H:%M:%S", tm);
-            strftime(buf1, sizeof(buf1), "%z", tm);
+            if (!strftime(buf1, sizeof(buf1), "%z", tm))
+                av_strlcpy(buf1, "Z", sizeof(buf1));
             avio_printf(out, "#EXT-X-PROGRAM-DATE-TIME:%s.%03d%s\n", buf0, milli, buf1);
             prog_date_time += en->duration;
         }
