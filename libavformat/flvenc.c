@@ -61,6 +61,10 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     { AV_CODEC_ID_NONE,       0 }
 };
 
+typedef enum {
+    FLV_AAC_SEQ_HEADER_DETECT = (1 << 0),
+} FLVFlags;
+
 typedef struct FLVContext {
     AVClass *av_class;
     int     reserved;
@@ -364,7 +368,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par) {
             avio_w8(pb, get_audio_flags(s, par));
             avio_w8(pb, 0); // AAC sequence header
 
-            if (!par->extradata_size && flv->flags & 1) {
+            if (!par->extradata_size && flv->flags & FLV_AAC_SEQ_HEADER_DETECT) {
                 PutBitContext pbc;
                 int samplerate_index;
                 int channels = flv->audio_par->channels
@@ -718,7 +722,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static const AVOption options[] = {
     { "flvflags", "FLV muxer flags", offsetof(FLVContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
-    { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_AAC_SEQ_HEADER_DETECT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { NULL },
 };
 
