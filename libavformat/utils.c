@@ -5318,9 +5318,7 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
             enc_ctx->ticks_per_frame = 2;
         }
     } else if (!(ofmt->flags & AVFMT_VARIABLE_FPS)
-               && strcmp(ofmt->name, "mov") && strcmp(ofmt->name, "mp4") && strcmp(ofmt->name, "3gp")
-               && strcmp(ofmt->name, "3g2") && strcmp(ofmt->name, "psp") && strcmp(ofmt->name, "ipod")
-               && strcmp(ofmt->name, "f4v")) {
+               && !av_match_name(ofmt->name, "mov,mp4,3gp,3g2,psp,ipod,f4v")) {
         if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->time_base.den
             && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > av_q2d(ist->time_base)
             && av_q2d(ist->time_base) < 1.0/500
