@@ -368,7 +368,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par) {
             avio_w8(pb, get_audio_flags(s, par));
             avio_w8(pb, 0); // AAC sequence header
 
-            if (!par->extradata_size && flv->flags & FLV_AAC_SEQ_HEADER_DETECT) {
+            if (!par->extradata_size && (flv->flags & FLV_AAC_SEQ_HEADER_DETECT)) {
                 PutBitContext pbc;
                 int samplerate_index;
                 int channels = flv->audio_par->channels
