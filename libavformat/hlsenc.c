@@ -537,7 +537,7 @@ static int hls_window(AVFormatContext *s, int last)
              avio_printf(out, "#EXT-X-BYTERANGE:%"PRIi64"@%"PRIi64"\n",
                          en->size, en->pos);
         if (hls->flags & HLS_PROGRAM_DATE_TIME) {
-            time_t tt;
+            time_t tt, wrongsecs;
             int milli;
             struct tm *tm, tmpbuf;
             char buf0[128], buf1[128];
@@ -545,8 +545,18 @@ static int hls_window(AVFormatContext *s, int last)
             milli = av_clip(lrint(1000*(prog_date_time - tt)), 0, 999);
             tm = localtime_r(&tt, &tmpbuf);
             strftime(buf0, sizeof(buf0), "%Y-%m-%dT%H:%M:%S", tm);
-            if (!strftime(buf1, sizeof(buf1), "%z", tm))
-                av_strlcpy(buf1, "Z", sizeof(buf1));
+            if (!strftime(buf1, sizeof(buf1), "%z", tm) || buf1[1]<'0' ||buf1[1]>'2') {
+                int tz_min, dst = tm->tm_isdst;
+                tm = gmtime_r(&tt, &tmpbuf);
+                tm->tm_isdst = dst;
+                wrongsecs = mktime(tm);
+                tz_min = (abs(wrongsecs - tt) + 30) / 60;
+                snprintf(buf1, sizeof(buf1),
+                         "%c%02d%02d",
+                         wrongsecs <= tt ? '+' : '-',
+                         tz_min / 60,
+                         tz_min % 60);
+            }
             avio_printf(out, "#EXT-X-PROGRAM-DATE-TIME:%s.%03d%s\n", buf0, milli, buf1);
             prog_date_time += en->duration;
         }
