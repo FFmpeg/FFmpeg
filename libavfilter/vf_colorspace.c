@@ -1038,7 +1038,9 @@ static const AVOption colorspace_options[] = {
     { "range",      "Output color range",
       OFFSET(user_rng),   AV_OPT_TYPE_INT, { .i64 = AVCOL_RANGE_UNSPECIFIED },
       AVCOL_RANGE_UNSPECIFIED, AVCOL_RANGE_NB - 1, FLAGS, "rng" },
+    ENUM("tv",          AVCOL_RANGE_MPEG,      "rng"),
     ENUM("mpeg",        AVCOL_RANGE_MPEG,      "rng"),
+    ENUM("pc",          AVCOL_RANGE_JPEG,      "rng"),
     ENUM("jpeg",        AVCOL_RANGE_JPEG,      "rng"),
 
     { "primaries",  "Output color primaries",
