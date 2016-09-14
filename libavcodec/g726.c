@@ -206,7 +206,7 @@ static int16_t g726_decode(G726Context* c, int I)
 
     if (I_sig)  /* get the sign */
         dq = -dq;
-    re_signal = c->se + dq;
+    re_signal = (int16_t)(c->se + dq);
 
     /* Update second order predictor coefficient A2 and A1 */
     pk0 = (c->sez + dq) ? sgn(c->sez + dq) : 0;
