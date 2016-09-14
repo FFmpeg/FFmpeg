@@ -600,9 +600,9 @@ static int h264_parse(AVCodecParserContext *s,
     }
 
     if (s->dts_sync_point >= 0) {
-        int64_t den = avctx->time_base.den * avctx->pkt_timebase.num;
+        int64_t den = avctx->time_base.den * (int64_t)avctx->pkt_timebase.num;
         if (den > 0) {
-            int64_t num = avctx->time_base.num * avctx->pkt_timebase.den;
+            int64_t num = avctx->time_base.num * (int64_t)avctx->pkt_timebase.den;
             if (s->dts != AV_NOPTS_VALUE) {
                 // got DTS from the stream, update reference timestamp
                 p->reference_dts = s->dts - av_rescale(s->dts_ref_dts_delta, num, den);
