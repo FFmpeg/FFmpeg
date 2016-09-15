@@ -909,8 +909,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_MTAF:
         for (channel = 0; channel < avctx->channels; channel+=2) {
             bytestream2_skipu(&gb, 4);
-            c->status[channel    ].step      = bytestream2_get_le16u(&gb);
-            c->status[channel + 1].step      = bytestream2_get_le16u(&gb);
+            c->status[channel    ].step      = bytestream2_get_le16u(&gb) & 0x1f;
+            c->status[channel + 1].step      = bytestream2_get_le16u(&gb) & 0x1f;
             c->status[channel    ].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
             bytestream2_skipu(&gb, 2);
             c->status[channel + 1].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
