@@ -4662,15 +4662,10 @@ static int mov_auto_flush_fragment(AVFormatContext *s, int force)
     return ret;
 }
 
-int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int check_pkt(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
-    AVIOContext *pb = s->pb;
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
-    AVCodecParameters *par = trk->par;
-    unsigned int samples_in_chunk = 0;
-    int size = pkt->size, ret = 0;
-    uint8_t *reformatted_data = NULL;
 
     if (trk->entry) {
         int64_t duration = pkt->dts - trk->cluster[trk->entry - 1].dts;
@@ -4694,6 +4689,23 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" is invalid\n", pkt->duration);
         return AVERROR(EINVAL);
     }
+    return 0;
+}
+
+int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MOVMuxContext *mov = s->priv_data;
+    AVIOContext *pb = s->pb;
+    MOVTrack *trk = &mov->tracks[pkt->stream_index];
+    AVCodecParameters *par = trk->par;
+    unsigned int samples_in_chunk = 0;
+    int size = pkt->size, ret = 0;
+    uint8_t *reformatted_data = NULL;
+
+    ret = check_pkt(s, pkt);
+    if (ret < 0)
+        return ret;
+
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         int ret;
         if (mov->moov_written || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
