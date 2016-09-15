@@ -4567,9 +4567,14 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
         AVCodecContext *enc = trk->enc;
         int64_t frag_duration = 0;
         int size = pkt->size;
+        int ret;
 
         if (!pkt->size)
             return 0;             /* Discard 0 sized packets */
+
+        ret = check_pkt(s, pkt);
+        if (ret < 0)
+            return ret;
 
         if (mov->flags & FF_MOV_FLAG_FRAG_DISCONT) {
             int i;
