@@ -706,6 +706,7 @@ static void cuvid_flush(AVCodecContext *avctx)
     AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
     AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    CUVIDSOURCEDATAPACKET seq_pkt = { 0 };
     int ret;
 
     ctx->ever_flushed = 1;
@@ -735,6 +736,15 @@ static void cuvid_flush(AVCodecContext *avctx)
     ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
     if (ret < 0)
         goto error;
+
+    seq_pkt.payload = ctx->cuparse_ext.raw_seqhdr_data;
+    seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
+
+    if (seq_pkt.payload && seq_pkt.payload_size) {
+        ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &seq_pkt));
+        if (ret < 0)
+            goto error;
+    }
 
     ret = CHECK_CU(cuCtxPopCurrent(&dummy));
     if (ret < 0)
