@@ -137,6 +137,12 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 0;
     }
 
+    if (format->chroma_format != cudaVideoChromaFormat_420) {
+        av_log(avctx, AV_LOG_ERROR, "Chroma formats other than 420 are not supported\n");
+        ctx->internal_error = AVERROR(EINVAL);
+        return 0;
+    }
+
     avctx->coded_width = format->coded_width;
     avctx->coded_height = format->coded_height;
 
