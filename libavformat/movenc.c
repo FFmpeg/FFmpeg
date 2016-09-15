@@ -4901,6 +4901,10 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
         int64_t frag_duration = 0;
         int size = pkt->size;
 
+        int ret = check_pkt(s, pkt);
+        if (ret < 0)
+            return ret;
+
         if (mov->flags & FF_MOV_FLAG_FRAG_DISCONT) {
             int i;
             for (i = 0; i < s->nb_streams; i++)
