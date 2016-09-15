@@ -784,6 +784,12 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
             }
         }
         add_metadata_from_side_data(pkt, frame);
+
+        if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+            frame->flags |= AV_FRAME_FLAG_DISCARD;
+        } else {
+            frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
+        }
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
@@ -2247,7 +2253,9 @@ fail:
             if(ret == tmp.size)
                 ret = avpkt->size;
         }
-
+        if (picture->flags & AV_FRAME_FLAG_DISCARD) {
+            *got_picture_ptr = 0;
+        }
         if (*got_picture_ptr) {
             if (!avctx->refcounted_frames) {
                 int err = unrefcount_frame(avci, picture);
@@ -2341,6 +2349,11 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 av_frame_set_channels(frame, avctx->channels);
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
+        }
+
+
+        if (frame->flags & AV_FRAME_FLAG_DISCARD) {
+            *got_frame_ptr = 0;
         }
 
         side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
