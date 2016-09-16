@@ -9352,6 +9352,12 @@ The first input value for the pixel component.
 
 @item y
 The second input value for the pixel component.
+
+@item bdx
+The first input video bit depth.
+
+@item bdy
+The second input video bit depth.
 @end table
 
 All expressions default to "x".

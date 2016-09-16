@@ -35,6 +35,8 @@ static const char *const var_names[] = {
     "h",        ///< height of the input video
     "x",        ///< input value for the pixel from input #1
     "y",        ///< input value for the pixel from input #2
+    "bdx",      ///< input #1 video bitdepth
+    "bdy",      ///< input #2 video bitdepth
     NULL
 };
 
@@ -43,6 +45,8 @@ enum var_name {
     VAR_H,
     VAR_X,
     VAR_Y,
+    VAR_BITDEPTHX,
+    VAR_BITDEPTHY,
     VAR_VARS_NB
 };
 
@@ -127,6 +131,7 @@ static int config_inputx(AVFilterLink *inlink)
     s->var_values[VAR_W] = inlink->w;
     s->var_values[VAR_H] = inlink->h;
     s->depthx = desc->comp[0].depth;
+    s->var_values[VAR_BITDEPTHX] = s->depthx;
 
     return 0;
 }
@@ -138,6 +143,7 @@ static int config_inputy(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->depthy = desc->comp[0].depth;
+    s->var_values[VAR_BITDEPTHY] = s->depthy;
 
     return 0;
 }
