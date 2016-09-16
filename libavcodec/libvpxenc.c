@@ -631,6 +631,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ctx->tune >= 0)
         codecctl_int(avctx, VP8E_SET_TUNING,           ctx->tune);
 
+    if (ctx->auto_alt_ref && ctx->is_alpha && avctx->codec_id == AV_CODEC_ID_VP8) {
+        av_log(avctx, AV_LOG_ERROR, "Transparency encoding with auto_alt_ref does not work\n");
+        return AVERROR(EINVAL);
+    }
+
     if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8) {
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
