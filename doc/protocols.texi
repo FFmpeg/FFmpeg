@@ -291,10 +291,12 @@ Use persistent connections if set to 1, default is 0.
 @item post_data
 Set custom HTTP post data.
 
-@item user-agent
 @item user_agent
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
+
+@item user-agent
+This is a deprecated option, you can use user_agent instead it.
 
 @item timeout
 Set timeout in microseconds of socket I/O operations used by the underlying low level
