@@ -35,7 +35,6 @@ INIT_MMX mmxext
 %define OP mova
 %endif
 cglobal %1_pixels%2, 4,5
-    movsxdifnidn r2, r2d
     lea          r4, [r2*3]
 .loop:
     OP           m0, [r1]
