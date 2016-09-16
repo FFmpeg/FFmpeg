@@ -129,6 +129,27 @@ and the input video converted to MPEG-2 video, use the command:
 ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 @end example
 
+@section flv
+
+Adobe Flash Video Format muxer.
+
+This muxer accepts the following options:
+
+@table @option
+
+@item flvflags @var{flags}
+Possible values:
+
+@table @samp
+
+@item aac_seq_header_detect
+Place AAC sequence header based on audio stream data.
+
+@item no_sequence_end
+Disable sequence end tag.
+@end table
+@end table
+
 @anchor{framecrc}
 @section framecrc
 
