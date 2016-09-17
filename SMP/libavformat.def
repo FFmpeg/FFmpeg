@@ -100,6 +100,7 @@ EXPORTS
     avformat_query_codec
     avformat_queue_attached_pictures
     avformat_seek_file
+    avformat_transfer_internal_stream_timing_info
     avformat_version
     avformat_write_header
     avio_accept
