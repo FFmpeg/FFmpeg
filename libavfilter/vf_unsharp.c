@@ -141,6 +141,10 @@ static av_cold int init(AVFilterContext *ctx)
     set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
     set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
 
+    if (s->luma.scalebits >= 26 || s->chroma.scalebits >= 26) {
+        av_log(ctx, AV_LOG_ERROR, "luma or chroma matrix size too big\n");
+        return AVERROR(EINVAL);
+    }
     s->apply_unsharp = apply_unsharp_c;
     if (!CONFIG_OPENCL && s->opencl) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
