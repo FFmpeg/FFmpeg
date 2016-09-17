@@ -47,6 +47,7 @@ typedef struct CuvidContext
 
     int internal_error;
     int ever_flushed;
+    int decoder_flushing;
 
     cudaVideoCodec codec_type;
     cudaVideoChromaFormat chroma_format;
@@ -217,20 +218,26 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     return 1;
 }
 
-static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
+static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     CuvidContext *ctx = avctx->priv_data;
     AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
     AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
-    AVFrame *frame = data;
     CUVIDSOURCEDATAPACKET cupkt;
     AVPacket filter_packet = { 0 };
     AVPacket filtered_packet = { 0 };
-    CUdeviceptr mapped_frame = 0;
-    int ret = 0, eret = 0;
+    int ret = 0, eret = 0, is_flush = ctx->decoder_flushing;
 
-    if (ctx->bsf && avpkt->size) {
+    av_log(avctx, AV_LOG_TRACE, "cuvid_decode_packet\n");
+
+    if (is_flush && avpkt && avpkt->size)
+        return AVERROR_EOF;
+
+    if (av_fifo_size(ctx->frame_queue) / sizeof(CUVIDPARSERDISPINFO) > MAX_FRAME_COUNT - 2 && avpkt && avpkt->size)
+        return AVERROR(EAGAIN);
+
+    if (ctx->bsf && avpkt && avpkt->size) {
         if ((ret = av_packet_ref(&filter_packet, avpkt)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "av_packet_ref failed\n");
             return ret;
@@ -258,7 +265,7 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     memset(&cupkt, 0, sizeof(cupkt));
 
-    if (avpkt->size) {
+    if (avpkt && avpkt->size) {
         cupkt.payload_size = avpkt->size;
         cupkt.payload = avpkt->data;
 
@@ -271,15 +278,15 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     } else {
         cupkt.flags = CUVID_PKT_ENDOFSTREAM;
+        ctx->decoder_flushing = 1;
     }
 
     ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &cupkt));
 
     av_packet_unref(&filtered_packet);
 
-    if (ret < 0) {
+    if (ret < 0)
         goto error;
-    }
 
     // cuvidParseVideoData doesn't return an error just because stuff failed...
     if (ctx->internal_error) {
@@ -287,6 +294,40 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ret = ctx->internal_error;
         goto error;
     }
+
+error:
+    eret = CHECK_CU(cuCtxPopCurrent(&dummy));
+
+    if (eret < 0)
+        return eret;
+    else if (ret < 0)
+        return ret;
+    else if (is_flush)
+        return AVERROR_EOF;
+    else
+        return 0;
+}
+
+static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    CuvidContext *ctx = avctx->priv_data;
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
+    AVCUDADeviceContext *device_hwctx = device_ctx->hwctx;
+    CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    CUdeviceptr mapped_frame = 0;
+    int ret = 0, eret = 0;
+
+    av_log(avctx, AV_LOG_TRACE, "cuvid_output_frame\n");
+
+    if (ctx->decoder_flushing) {
+        ret = cuvid_decode_packet(avctx, NULL);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+    }
+
+    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    if (ret < 0)
+        return ret;
 
     if (av_fifo_size(ctx->frame_queue)) {
         CUVIDPARSERDISPINFO dispinfo;
@@ -394,10 +435,10 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
         if (!dispinfo.progressive_frame)
             frame->top_field_first = dispinfo.top_field_first;
-
-        *got_frame = 1;
+    } else if (ctx->decoder_flushing) {
+        ret = AVERROR_EOF;
     } else {
-        *got_frame = 0;
+        ret = AVERROR(EAGAIN);
     }
 
 error:
@@ -410,6 +451,32 @@ error:
         return eret;
     else
         return ret;
+}
+
+static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
+{
+    CuvidContext *ctx = avctx->priv_data;
+    AVFrame *frame = data;
+    int ret = 0;
+
+    av_log(avctx, AV_LOG_TRACE, "cuvid_decode_frame\n");
+
+    if (!ctx->decoder_flushing) {
+        ret = cuvid_decode_packet(avctx, avpkt);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = cuvid_output_frame(avctx, frame);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        *got_frame = 0;
+    } else if (ret < 0) {
+        return ret;
+    } else {
+        *got_frame = 1;
+    }
+
+    return 0;
 }
 
 static av_cold int cuvid_decode_end(AVCodecContext *avctx)
@@ -756,6 +823,9 @@ static void cuvid_flush(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
+    ctx->prev_pts = INT64_MIN;
+    ctx->decoder_flushing = 0;
+
     return;
  error:
     av_log(avctx, AV_LOG_ERROR, "CUDA reinit on flush failed\n");
@@ -777,6 +847,8 @@ static void cuvid_flush(AVCodecContext *avctx)
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
         .decode         = cuvid_decode_frame, \
+        .send_packet    = cuvid_decode_packet, \
+        .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
         .capabilities   = AV_CODEC_CAP_DELAY, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
