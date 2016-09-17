@@ -229,7 +229,7 @@ static inline const char *skip_space(const char *buf)
     return buf;
 }
 
-static int *get_default_field_orders(const ASSSection *section)
+static int *get_default_field_orders(const ASSSection *section, int *number)
 {
     int i;
     int *order = av_malloc_array(FF_ARRAY_ELEMS(section->fields), sizeof(*order));
@@ -238,8 +238,9 @@ static int *get_default_field_orders(const ASSSection *section)
         return NULL;
     for (i = 0; section->fields[i].name; i++)
         order[i] = i;
+    *number = i;
     while (i < FF_ARRAY_ELEMS(section->fields))
-        order[i] = -1;
+        order[i++] = -1;
     return order;
 }
 
@@ -255,30 +256,47 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
             ctx->current_section = -1;
             break;
         }
-        if (buf[0] == ';' || (buf[0] == '!' && buf[1] == ':')) {
-            /* skip comments */
-        } else if (section->format_header && !order) {
-            len = strlen(section->format_header);
-            if (strncmp(buf, section->format_header, len) || buf[len] != ':')
-                goto next_line;
-            buf += len + 1;
-            while (!is_eol(*buf)) {
-                buf = skip_space(buf);
-                len = strcspn(buf, ", \r\n");
-                if (!(tmp = av_realloc_array(order, (*number + 1), sizeof(*order))))
-                    return NULL;
-                order = tmp;
-                order[*number] = -1;
-                for (i=0; section->fields[i].name; i++)
-                    if (!strncmp(buf, section->fields[i].name, len)) {
-                        order[*number] = i;
-                        break;
-                    }
-                (*number)++;
-                buf = skip_space(buf + len + (buf[len] == ','));
+        if (buf[0] == ';' || (buf[0] == '!' && buf[1] == ':'))
+            goto next_line; // skip comments
+
+        len = strcspn(buf, ":\r\n");
+        if (buf[len] == ':' &&
+            (!section->fields_header || strncmp(buf, section->fields_header, len))) {
+            for (i = 0; i < FF_ARRAY_ELEMS(ass_sections); i++) {
+                if (ass_sections[i].fields_header &&
+                    !strncmp(buf, ass_sections[i].fields_header, len)) {
+                    ctx->current_section = i;
+                    section = &ass_sections[ctx->current_section];
+                    number = &ctx->field_number[ctx->current_section];
+                    order = ctx->field_order[ctx->current_section];
+                    break;
+                }
             }
-            ctx->field_order[ctx->current_section] = order;
-        } else if (section->fields_header) {
+        }
+        if (section->format_header && !order) {
+            len = strlen(section->format_header);
+            if (buf[len] == ':' && !strncmp(buf, section->format_header, len)) {
+                buf += len + 1;
+                while (!is_eol(*buf)) {
+                    buf = skip_space(buf);
+                    len = strcspn(buf, ", \r\n");
+                    if (!(tmp = av_realloc_array(order, (*number + 1), sizeof(*order))))
+                        return NULL;
+                    order = tmp;
+                    order[*number] = -1;
+                    for (i=0; section->fields[i].name; i++)
+                        if (!strncmp(buf, section->fields[i].name, len)) {
+                            order[*number] = i;
+                            break;
+                        }
+                    (*number)++;
+                    buf = skip_space(buf + len + (buf[len] == ','));
+                }
+                ctx->field_order[ctx->current_section] = order;
+                goto next_line;
+            }
+        }
+        if (section->fields_header) {
             len = strlen(section->fields_header);
             if (!strncmp(buf, section->fields_header, len) && buf[len] == ':') {
                 uint8_t *ptr, *struct_ptr = realloc_section_array(ctx);
@@ -286,7 +304,7 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
 
                 /* No format header line found so far, assume default */
                 if (!order) {
-                    order = get_default_field_orders(section);
+                    order = get_default_field_orders(section, number);
                     if (!order)
                         return NULL;
                     ctx->field_order[ctx->current_section] = order;

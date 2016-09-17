@@ -370,7 +370,7 @@ int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl)
                 break;
             }
             default:
-                av_assert1(0);
+                av_assert0(0);
             }
 
             if (i < 0) {

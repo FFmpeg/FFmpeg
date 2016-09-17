@@ -2909,57 +2909,13 @@ static int transcode_init(void)
             enc_ctx->bits_per_coded_sample  = dec_ctx->bits_per_coded_sample;
             enc_ctx->bits_per_raw_sample    = dec_ctx->bits_per_raw_sample;
 
-            enc_ctx->time_base = ist->st->time_base;
-            /*
-             * Avi is a special case here because it supports variable fps but
-             * having the fps and timebase differe significantly adds quite some
-             * overhead
-             */
-            if(!strcmp(oc->oformat->name, "avi")) {
-                if ( copy_tb<0 && ist->st->r_frame_rate.num
-                               && av_q2d(ist->st->r_frame_rate) >= av_q2d(ist->st->avg_frame_rate)
-                               && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(ist->st->time_base)
-                               && 0.5/av_q2d(ist->st->r_frame_rate) > av_q2d(dec_ctx->time_base)
-                               && av_q2d(ist->st->time_base) < 1.0/500 && av_q2d(dec_ctx->time_base) < 1.0/500
-                     || copy_tb==2){
-                    enc_ctx->time_base.num = ist->st->r_frame_rate.den;
-                    enc_ctx->time_base.den = 2*ist->st->r_frame_rate.num;
-                    enc_ctx->ticks_per_frame = 2;
-                } else if (   copy_tb<0 && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > 2*av_q2d(ist->st->time_base)
-                                 && av_q2d(ist->st->time_base) < 1.0/500
-                    || copy_tb==0){
-                    enc_ctx->time_base = dec_ctx->time_base;
-                    enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
-                    enc_ctx->time_base.den *= 2;
-                    enc_ctx->ticks_per_frame = 2;
-                }
-            } else if(!(oc->oformat->flags & AVFMT_VARIABLE_FPS)
-                      && strcmp(oc->oformat->name, "mov") && strcmp(oc->oformat->name, "mp4") && strcmp(oc->oformat->name, "3gp")
-                      && strcmp(oc->oformat->name, "3g2") && strcmp(oc->oformat->name, "psp") && strcmp(oc->oformat->name, "ipod")
-                      && strcmp(oc->oformat->name, "f4v")
-            ) {
-                if(   copy_tb<0 && dec_ctx->time_base.den
-                                && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > av_q2d(ist->st->time_base)
-                                && av_q2d(ist->st->time_base) < 1.0/500
-                   || copy_tb==0){
-                    enc_ctx->time_base = dec_ctx->time_base;
-                    enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
-                }
-            }
-            if (   enc_ctx->codec_tag == AV_RL32("tmcd")
-                && dec_ctx->time_base.num < dec_ctx->time_base.den
-                && dec_ctx->time_base.num > 0
-                && 121LL*dec_ctx->time_base.num > dec_ctx->time_base.den) {
-                enc_ctx->time_base = dec_ctx->time_base;
-            }
-
             if (!ost->frame_rate.num)
                 ost->frame_rate = ist->framerate;
-            if(ost->frame_rate.num)
-                enc_ctx->time_base = av_inv_q(ost->frame_rate);
+            ost->st->avg_frame_rate = ost->frame_rate;
 
-            av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
-                        enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
+            ret = avformat_transfer_internal_stream_timing_info(oc->oformat, ost->st, ist->st, copy_tb);
+            if (ret < 0)
+                return ret;
 
             if (ist->st->nb_side_data) {
                 ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
@@ -3000,6 +2956,7 @@ static int transcode_init(void)
                 enc_ctx->audio_service_type = dec_ctx->audio_service_type;
                 enc_ctx->block_align        = dec_ctx->block_align;
                 enc_ctx->initial_padding    = dec_ctx->delay;
+                enc_ctx->trailing_padding   = dec_ctx->trailing_padding;
                 enc_ctx->profile            = dec_ctx->profile;
 #if FF_API_AUDIOENC_DELAY
                 enc_ctx->delay              = dec_ctx->delay;

@@ -758,3 +758,10 @@ AVHWAccel ff_h264_mediacodec_hwaccel = {
     .id      = AV_CODEC_ID_H264,
     .pix_fmt = AV_PIX_FMT_MEDIACODEC,
 };
+
+AVHWAccel ff_hevc_mediacodec_hwaccel = {
+    .name    = "mediacodec",
+    .type    = AVMEDIA_TYPE_VIDEO,
+    .id      = AV_CODEC_ID_HEVC,
+    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+};

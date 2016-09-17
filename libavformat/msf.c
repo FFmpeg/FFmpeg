@@ -44,6 +44,7 @@ static int msf_read_header(AVFormatContext *s)
 {
     unsigned codec, align, size;
     AVStream *st;
+    int ret;
 
     avio_skip(s->pb, 4);
 
@@ -68,6 +69,17 @@ static int msf_read_header(AVFormatContext *s)
     case 0: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE; break;
     case 3: st->codecpar->block_align = 16 * st->codecpar->channels;
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX; break;
+    case 4:
+    case 5:
+    case 6: st->codecpar->block_align = (codec == 4 ? 96 : codec == 5 ? 152 : 192) * st->codecpar->channels;
+            ret = ff_alloc_extradata(st->codecpar, 14);
+            if (ret < 0)
+                return ret;
+            memset(st->codecpar->extradata, 0, st->codecpar->extradata_size);
+            AV_WL16(st->codecpar->extradata, 1);
+            AV_WL16(st->codecpar->extradata+4, 4096);
+            AV_WL16(st->codecpar->extradata+10, 1);
+            st->codecpar->codec_id = AV_CODEC_ID_ATRAC3;    break;
     case 7: st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
             st->codecpar->codec_id = AV_CODEC_ID_MP3;       break;
     default:

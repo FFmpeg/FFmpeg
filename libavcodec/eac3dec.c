@@ -339,9 +339,17 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
 
     /* volume control params */
     for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc)) {
-            skip_bits(gbc, 8); // skip compression gain word
+        s->dialog_normalization[i] = -get_bits(gbc, 5);
+        if (s->dialog_normalization[i] == 0) {
+            s->dialog_normalization[i] = -31;
+        }
+        if (s->target_level != 0) {
+            s->level_gain[i] = powf(2.0f,
+                (float)(s->target_level - s->dialog_normalization[i])/6.0f);
+        }
+        s->compression_exists[i] = get_bits1(gbc);
+        if (s->compression_exists[i]) {
+            s->heavy_dynamic_range[i] = AC3_HEAVY_RANGE(get_bits(gbc, 8));
         }
     }
 

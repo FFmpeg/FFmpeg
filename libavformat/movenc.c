@@ -4662,6 +4662,37 @@ static int mov_auto_flush_fragment(AVFormatContext *s, int force)
     return ret;
 }
 
+static int check_pkt(AVFormatContext *s, AVPacket *pkt)
+{
+    MOVMuxContext *mov = s->priv_data;
+    MOVTrack *trk = &mov->tracks[pkt->stream_index];
+    int64_t ref;
+    uint64_t duration;
+
+    if (trk->entry) {
+        ref = trk->cluster[trk->entry - 1].dts;
+    } else if (trk->start_dts != AV_NOPTS_VALUE) {
+        ref = trk->start_dts + trk->track_duration;
+    } else
+        ref = pkt->dts; // Skip tests for the first packet
+
+    duration = pkt->dts - ref;
+    if (pkt->dts < ref || duration >= INT_MAX) {
+        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" / timestamp: %"PRId64" is out of range for mov/mp4 format\n",
+            duration, pkt->dts
+        );
+
+        pkt->dts = ref + 1;
+        pkt->pts = AV_NOPTS_VALUE;
+    }
+
+    if (pkt->duration < 0 || pkt->duration > INT_MAX) {
+        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" is invalid\n", pkt->duration);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -4672,28 +4703,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size = pkt->size, ret = 0;
     uint8_t *reformatted_data = NULL;
 
-    if (trk->entry) {
-        int64_t duration = pkt->dts - trk->cluster[trk->entry - 1].dts;
-        if (duration < 0 || duration > INT_MAX) {
-            av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" / timestamp: %"PRId64" is out of range for mov/mp4 format\n",
-                duration, pkt->dts
-            );
+    ret = check_pkt(s, pkt);
+    if (ret < 0)
+        return ret;
 
-            pkt->dts = trk->cluster[trk->entry - 1].dts + 1;
-            pkt->pts = AV_NOPTS_VALUE;
-        }
-    } else if (pkt->dts <= INT_MIN || pkt->dts >= INT_MAX) {
-            av_log(s, AV_LOG_ERROR, "Application provided initial timestamp: %"PRId64" is out of range for mov/mp4 format\n",
-                pkt->dts
-            );
-
-            pkt->dts = 0;
-            pkt->pts = AV_NOPTS_VALUE;
-    }
-    if (pkt->duration < 0 || pkt->duration > INT_MAX) {
-        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" is invalid\n", pkt->duration);
-        return AVERROR(EINVAL);
-    }
     if (mov->flags & FF_MOV_FLAG_FRAGMENT) {
         int ret;
         if (mov->moov_written || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
@@ -4958,6 +4971,10 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
         AVCodecParameters *par = trk->par;
         int64_t frag_duration = 0;
         int size = pkt->size;
+
+        int ret = check_pkt(s, pkt);
+        if (ret < 0)
+            return ret;
 
         if (mov->flags & FF_MOV_FLAG_FRAG_DISCONT) {
             int i;

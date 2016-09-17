@@ -61,6 +61,11 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     { AV_CODEC_ID_NONE,       0 }
 };
 
+typedef enum {
+    FLV_AAC_SEQ_HEADER_DETECT = (1 << 0),
+    FLV_NO_SEQUENCE_END = (1 << 1),
+} FLVFlags;
+
 typedef struct FLVContext {
     AVClass *av_class;
     int     reserved;
@@ -364,7 +369,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par) {
             avio_w8(pb, get_audio_flags(s, par));
             avio_w8(pb, 0); // AAC sequence header
 
-            if (!par->extradata_size && flv->flags & 1) {
+            if (!par->extradata_size && (flv->flags & FLV_AAC_SEQ_HEADER_DETECT)) {
                 PutBitContext pbc;
                 int samplerate_index;
                 int channels = flv->audio_par->channels
@@ -523,13 +528,17 @@ static int flv_write_trailer(AVFormatContext *s)
     FLVContext *flv = s->priv_data;
     int i;
 
-    /* Add EOS tag */
-    for (i = 0; i < s->nb_streams; i++) {
-        AVCodecParameters *par = s->streams[i]->codecpar;
-        FLVStreamContext *sc = s->streams[i]->priv_data;
-        if (par->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_MPEG4))
-            put_avc_eos_tag(pb, sc->last_ts);
+    if (flv->flags & FLV_NO_SEQUENCE_END) {
+        av_log(s, AV_LOG_DEBUG, "FLV no sequence end mode open\n");
+    } else {
+        /* Add EOS tag */
+        for (i = 0; i < s->nb_streams; i++) {
+            AVCodecParameters *par = s->streams[i]->codecpar;
+            FLVStreamContext *sc = s->streams[i]->priv_data;
+            if (par->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_MPEG4))
+                put_avc_eos_tag(pb, sc->last_ts);
+        }
     }
 
     file_size = avio_tell(pb);
@@ -718,7 +727,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static const AVOption options[] = {
     { "flvflags", "FLV muxer flags", offsetof(FLVContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
-    { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_AAC_SEQ_HEADER_DETECT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "no_sequence_end", "disable sequence end for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_SEQUENCE_END}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { NULL },
 };
 

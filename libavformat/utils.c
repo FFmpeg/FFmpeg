@@ -2418,6 +2418,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
             max_ts = av_rescale_rnd(max_ts, time_base.den,
                                     time_base.num * (int64_t)AV_TIME_BASE,
                                     AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
+            stream_index = 0;
         }
 
         ret = s->iformat->read_seek2(s, stream_index, min_ts,
@@ -5279,5 +5280,67 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
      * extradata is copied, it is also padded with AV_INPUT_BUFFER_PADDING_SIZE
      * zeros. */
     par->extradata_size = buf->len;
+    return 0;
+}
+
+int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
+                                                  AVStream *ost, const AVStream *ist,
+                                                  enum AVTimebaseSource copy_tb)
+{
+    //TODO: use [io]st->internal->avctx
+    const AVCodecContext *dec_ctx = ist->codec;
+    AVCodecContext       *enc_ctx = ost->codec;
+
+    enc_ctx->time_base = ist->time_base;
+    /*
+     * Avi is a special case here because it supports variable fps but
+     * having the fps and timebase differe significantly adds quite some
+     * overhead
+     */
+    if (!strcmp(ofmt->name, "avi")) {
+#if FF_API_R_FRAME_RATE
+        if (copy_tb == AVFMT_TBCF_AUTO && ist->r_frame_rate.num
+            && av_q2d(ist->r_frame_rate) >= av_q2d(ist->avg_frame_rate)
+            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(ist->time_base)
+            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(dec_ctx->time_base)
+            && av_q2d(ist->time_base) < 1.0/500 && av_q2d(dec_ctx->time_base) < 1.0/500
+            || copy_tb == AVFMT_TBCF_R_FRAMERATE) {
+            enc_ctx->time_base.num = ist->r_frame_rate.den;
+            enc_ctx->time_base.den = 2*ist->r_frame_rate.num;
+            enc_ctx->ticks_per_frame = 2;
+        } else
+#endif
+            if (copy_tb == AVFMT_TBCF_AUTO && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > 2*av_q2d(ist->time_base)
+                   && av_q2d(ist->time_base) < 1.0/500
+                   || copy_tb == AVFMT_TBCF_DECODER) {
+            enc_ctx->time_base = dec_ctx->time_base;
+            enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
+            enc_ctx->time_base.den *= 2;
+            enc_ctx->ticks_per_frame = 2;
+        }
+    } else if (!(ofmt->flags & AVFMT_VARIABLE_FPS)
+               && !av_match_name(ofmt->name, "mov,mp4,3gp,3g2,psp,ipod,ismv,f4v")) {
+        if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->time_base.den
+            && av_q2d(dec_ctx->time_base)*dec_ctx->ticks_per_frame > av_q2d(ist->time_base)
+            && av_q2d(ist->time_base) < 1.0/500
+            || copy_tb == AVFMT_TBCF_DECODER) {
+            enc_ctx->time_base = dec_ctx->time_base;
+            enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
+        }
+    }
+
+    if (enc_ctx->codec_tag == AV_RL32("tmcd")
+        && dec_ctx->time_base.num < dec_ctx->time_base.den
+        && dec_ctx->time_base.num > 0
+        && 121LL*dec_ctx->time_base.num > dec_ctx->time_base.den) {
+        enc_ctx->time_base = dec_ctx->time_base;
+    }
+
+    if (ost->avg_frame_rate.num)
+        enc_ctx->time_base = av_inv_q(ost->avg_frame_rate);
+
+    av_reduce(&enc_ctx->time_base.num, &enc_ctx->time_base.den,
+              enc_ctx->time_base.num, enc_ctx->time_base.den, INT_MAX);
+
     return 0;
 }

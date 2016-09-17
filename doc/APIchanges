@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-09-xx - xxxxxxx - lavf 57.49.100 - avformat.h
+  Add avformat_transfer_internal_stream_timing_info helper to help with stream
+  copy.
+
 2016-08-29 - 4493390 - lavfi 6.58.100 - avfilter.h
   Add AVFilterContext.nb_threads.
 

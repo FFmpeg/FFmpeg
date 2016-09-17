@@ -50,6 +50,7 @@ typedef struct WebMChunkContext {
     char *header_filename;
     int chunk_duration;
     int chunk_index;
+    char *http_method;
     uint64_t duration_written;
     int prev_pts;
     AVOutputFormat *oformat;
@@ -112,6 +113,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     AVFormatContext *oc = NULL;
     int ret;
     int i;
+    AVDictionary *options = NULL;
 
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
@@ -128,7 +130,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = get_chunk_filename(s, 1, oc->filename);
     if (ret < 0)
         return ret;
-    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options);
+    av_dict_free(&options);
     if (ret < 0)
         return ret;
 
@@ -166,6 +171,7 @@ static int chunk_end(AVFormatContext *s)
     uint8_t *buffer;
     AVIOContext *pb;
     char filename[MAX_FILENAME_SIZE];
+    AVDictionary *options = NULL;
 
     if (wc->chunk_start_index == wc->chunk_index)
         return 0;
@@ -175,13 +181,16 @@ static int chunk_end(AVFormatContext *s)
     ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
         goto fail;
-    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, NULL);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, &options);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
     ff_format_io_close(s, &pb);
     oc->pb = NULL;
 fail:
+    av_dict_free(&options);
     av_free(buffer);
     return (ret < 0) ? ret : 0;
 }
@@ -243,6 +252,7 @@ static const AVOption options[] = {
     { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_start_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "header", "filename of the header where the initialization data will be written", OFFSET(header_filename), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "audio_chunk_duration", "duration of each chunk in milliseconds", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 5000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "method", "set the HTTP method", OFFSET(http_method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

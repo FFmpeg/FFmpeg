@@ -440,7 +440,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             firstPosY = FFMAX(firstLumSrcY, posY);
             lastPosY = FFMIN(firstLumSrcY + hout_slice->plane[0].available_lines - 1, srcSliceY + srcSliceH - 1);
         } else {
-            firstPosY = lastInLumBuf + 1;
+            firstPosY = posY;
             lastPosY = lastLumSrcY;
         }
 
@@ -449,7 +449,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
             firstCPosY = FFMAX(firstChrSrcY, cPosY);
             lastCPosY = FFMIN(firstChrSrcY + hout_slice->plane[1].available_lines - 1, AV_CEIL_RSHIFT(srcSliceY + srcSliceH, c->chrSrcVSubSample) - 1);
         } else {
-            firstCPosY = lastInChrBuf + 1;
+            firstCPosY = cPosY;
             lastCPosY = lastChrSrcY;
         }
 

@@ -52,10 +52,14 @@ typedef struct VagueDenoiserContext {
     float *out;
     float *tmp;
 
-    int hlowsize[32];
-    int hhighsize[32];
-    int vlowsize[32];
-    int vhighsize[32];
+    int hlowsize[4][32];
+    int hhighsize[4][32];
+    int vlowsize[4][32];
+    int vhighsize[4][32];
+
+    void (*thresholding)(float *block, const int width, const int height,
+                         const int stride, const float threshold,
+                         const float percent, const int nsteps);
 } VagueDenoiserContext;
 
 #define OFFSET(x) offsetof(VagueDenoiserContext, x)
@@ -128,7 +132,7 @@ static int config_input(AVFilterLink *inlink)
 {
     VagueDenoiserContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int nsteps_width, nsteps_height, nsteps_max;
+    int p, i, nsteps_width, nsteps_height, nsteps_max;
 
     s->depth = desc->comp[0].depth;
     s->nb_planes = desc->nb_components;
@@ -158,6 +162,20 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->nsteps = FFMIN(s->nsteps, nsteps_max - 2);
+
+    for (p = 0; p < 4; p++) {
+        s->hlowsize[p][0]  = (s->planewidth[p] + 1) >> 1;
+        s->hhighsize[p][0] =  s->planewidth[p] >> 1;
+        s->vlowsize[p][0]  = (s->planeheight[p] + 1) >> 1;
+        s->vhighsize[p][0] =  s->planeheight[p] >> 1;
+
+        for (i = 1; i < s->nsteps; i++) {
+            s->hlowsize[p][i]  = (s->hlowsize[p][i - 1] + 1) >> 1;
+            s->hhighsize[p][i] =  s->hlowsize[p][i - 1] >> 1;
+            s->vlowsize[p][i]  = (s->vlowsize[p][i - 1] + 1) >> 1;
+            s->vhighsize[p][i] =  s->vlowsize[p][i - 1] >> 1;
+        }
+    }
 
     return 0;
 }
@@ -308,7 +326,7 @@ static void invert_step(const float *input, float *output, float *temp, const in
 
 static void hard_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent)
+                              const float percent, const int unused)
 {
     const float frac = 1.f - percent * 0.01f;
     int y, x;
@@ -351,7 +369,7 @@ static void soft_thresholding(float *block, const int width, const int height, c
 
 static void qian_thresholding(float *block, const int width, const int height,
                               const int stride, const float threshold,
-                              const float percent)
+                              const float percent, const int unused)
 {
     const float percent01 = percent * 0.01f;
     const float tr2 = threshold * threshold * percent01;
@@ -435,28 +453,11 @@ static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
             v_low_size0 = (v_low_size0 + 1) >> 1;
         }
 
-        if (s->method == 0)
-            hard_thresholding(s->block, width, height, width, s->threshold, s->percent);
-        else if (s->method == 1)
-            soft_thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
-        else
-            qian_thresholding(s->block, width, height, width, s->threshold, s->percent);
-
-        s->hlowsize[0]  = (width + 1) >> 1;
-        s->hhighsize[0] = width >> 1;
-        s->vlowsize[0]  = (height + 1) >> 1;
-        s->vhighsize[0] = height >> 1;
-
-        for (i = 1; i < s->nsteps; i++) {
-            s->hlowsize[i]  = (s->hlowsize[i - 1] + 1) >> 1;
-            s->hhighsize[i] = s->hlowsize[i - 1] >> 1;
-            s->vlowsize[i]  = (s->vlowsize[i - 1] + 1) >> 1;
-            s->vhighsize[i] = s->vlowsize[i - 1] >> 1;
-        }
+        s->thresholding(s->block, width, height, width, s->threshold, s->percent, s->nsteps);
 
         while (nsteps_invert--) {
-            const int idx = s->vlowsize[nsteps_invert] + s->vhighsize[nsteps_invert];
-            const int idx2 = s->hlowsize[nsteps_invert] + s->hhighsize[nsteps_invert];
+            const int idx = s->vlowsize[p][nsteps_invert]  + s->vhighsize[p][nsteps_invert];
+            const int idx2 = s->hlowsize[p][nsteps_invert] + s->hhighsize[p][nsteps_invert];
             float * idx3 = s->block;
             for (i = 0; i < idx2; i++) {
                 copyv(idx3, width, s->in + NPAD, idx);
@@ -520,6 +521,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static av_cold int init(AVFilterContext *ctx)
+{
+    VagueDenoiserContext *s = ctx->priv;
+
+    switch (s->method) {
+    case 0:
+        s->thresholding = hard_thresholding;
+        break;
+    case 1:
+        s->thresholding = soft_thresholding;
+        break;
+    case 2:
+        s->thresholding = qian_thresholding;
+        break;
+    }
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     VagueDenoiserContext *s = ctx->priv;
@@ -554,6 +574,7 @@ AVFilter ff_vf_vaguedenoiser = {
     .description   = NULL_IF_CONFIG_SMALL("Apply a Wavelet based Denoiser."),
     .priv_size     = sizeof(VagueDenoiserContext),
     .priv_class    = &vaguedenoiser_class,
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = vaguedenoiser_inputs,

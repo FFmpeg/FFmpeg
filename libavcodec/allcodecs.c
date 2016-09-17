@@ -84,6 +84,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(HEVC_CUVID,        hevc_cuvid);
     REGISTER_HWACCEL(HEVC_D3D11VA,      hevc_d3d11va);
     REGISTER_HWACCEL(HEVC_DXVA2,        hevc_dxva2);
+    REGISTER_HWACCEL(HEVC_MEDIACODEC,   hevc_mediacodec);
     REGISTER_HWACCEL(HEVC_QSV,          hevc_qsv);
     REGISTER_HWACCEL(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_HWACCEL(HEVC_VDPAU,        hevc_vdpau);
@@ -644,6 +645,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
 #endif
     REGISTER_DECODER(HEVC_CUVID,        hevc_cuvid);
+    REGISTER_DECODER(HEVC_MEDIACODEC,   hevc_mediacodec);
     REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
