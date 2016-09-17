@@ -71,7 +71,7 @@ typedef struct HTTPContext {
     char *headers;
     char *mime_type;
     char *user_agent;
-#ifdef FF_API_HTTP_USER_AGENT
+#if FF_API_HTTP_USER_AGENT
     char *user_agent_deprecated;
 #endif
     char *content_type;
@@ -134,7 +134,7 @@ static const AVOption options[] = {
     { "headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "content_type", "set a specific content type for the POST messages", OFFSET(content_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
-#ifdef FF_API_HTTP_USER_AGENT
+#if FF_API_HTTP_USER_AGENT
     { "user-agent", "override User-Agent header", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
 #endif
     { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
@@ -1042,7 +1042,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
             send_expect_100 = 1;
     }
 
-#ifdef FF_API_HTTP_USER_AGENT
+#if FF_API_HTTP_USER_AGENT
     if (strcmp(s->user_agent_deprecated, DEFAULT_USER_AGENT)) {
         av_log(s, AV_LOG_WARNING, "the user-agent option is deprecated, please use user_agent option\n");
         s->user_agent = av_strdup(s->user_agent_deprecated);
