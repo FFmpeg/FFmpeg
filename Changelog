@@ -2,6 +2,22 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.8
+- avformat/movenc: Check packet in mov_write_single_packet() too
+- avformat/movenc: Factor check_pkt() out
+- avformat/utils: fix timebase error in avformat_seek_file()
+- avcodec/g726: Add missing ADDB output mask
+- avcodec/avpacket: clear side_data_elems
+- avcodec/ccaption_dec: Use simple array instead of AVBuffer
+- swscale/swscale_unscaled: Try to fix Rgb16ToPlanarRgb16Wrapper() with slices
+- swscale/swscale_unscaled: Fix packed_16bpc_bswap() with slices
+- avformat/avidec: Fix infinite loop in avi_read_nikon()
+- cmdutils: fix implicit declaration of SetDllDirectory function
+- cmdutils: check for SetDllDirectory() availability
+- avcodec/aacenc: Tighter input checks
+- libavcodec/wmalosslessdec: Check the remaining bits
+- avcodec/diracdec: Check numx/y
+- avcodec/indeo2: check ctab
+- avformat/swfdec: Fix inflate() error code check
 - avcodec/h264: Put context_count check back
 - cmdutils: remove the current working directory from the DLL search path on win32
 - avcodec/raw: Fix decoding of ilacetest.mov
