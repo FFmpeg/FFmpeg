@@ -101,6 +101,9 @@ typedef struct VAAPIEncodeContext {
     unsigned int    va_rt_format;
     // Rate control mode.
     unsigned int    va_rc_mode;
+    // Supported packed headers (initially the desired set, modified
+    // later to what is actually supported).
+    unsigned int    va_packed_headers;
 
     // The required size of surfaces.  This is probably the input
     // size (AVCodecContext.width|height) aligned up to whatever

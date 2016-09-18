@@ -345,6 +345,17 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    // Hack: the implementation calls the JPEG image header (which we
+    // will use in the same way as a slice header) generic "raw data".
+    // Therefore, if after the packed header capability check we have
+    // PACKED_HEADER_RAW_DATA available, rewrite it as
+    // PACKED_HEADER_SLICE so that the header-writing code can do the
+    // right thing.
+    if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_RAW_DATA) {
+        ctx->va_packed_headers &= ~VA_ENC_PACKED_HEADER_RAW_DATA;
+        ctx->va_packed_headers |=  VA_ENC_PACKED_HEADER_SLICE;
+    }
+
     vaapi_encode_mjpeg_init_tables(avctx);
 
     return 0;
@@ -379,6 +390,10 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
     ctx->va_rt_format = VA_RT_FORMAT_YUV420;
 
     ctx->va_rc_mode = VA_RC_CQP;
+
+    // The JPEG image header - see note above.
+    ctx->va_packed_headers =
+        VA_ENC_PACKED_HEADER_RAW_DATA;
 
     ctx->surface_width  = FFALIGN(avctx->width,  8);
     ctx->surface_height = FFALIGN(avctx->height, 8);

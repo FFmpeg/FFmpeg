@@ -237,7 +237,8 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     }
 
     if (pic->type == PICTURE_TYPE_IDR) {
-        if (ctx->codec->write_sequence_header) {
+        if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_SEQUENCE &&
+            ctx->codec->write_sequence_header) {
             bit_len = 8 * sizeof(data);
             err = ctx->codec->write_sequence_header(avctx, data, &bit_len);
             if (err < 0) {
@@ -253,7 +254,8 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    if (ctx->codec->write_picture_header) {
+    if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_PICTURE &&
+        ctx->codec->write_picture_header) {
         bit_len = 8 * sizeof(data);
         err = ctx->codec->write_picture_header(avctx, pic, data, &bit_len);
         if (err < 0) {
@@ -289,7 +291,8 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    if (ctx->codec->write_extra_header) {
+    if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_MISC &&
+        ctx->codec->write_extra_header) {
         for (i = 0;; i++) {
             int type;
             bit_len = 8 * sizeof(data);
@@ -336,7 +339,8 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
             }
         }
 
-        if (ctx->codec->write_slice_header) {
+        if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_SLICE &&
+            ctx->codec->write_slice_header) {
             bit_len = 8 * sizeof(data);
             err = ctx->codec->write_slice_header(avctx, pic, slice,
                                                  data, &bit_len);
@@ -930,9 +934,10 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
     VAProfile    *profiles    = NULL;
     VAEntrypoint *entrypoints = NULL;
     VAConfigAttrib attr[] = {
-        { VAConfigAttribRTFormat        },
-        { VAConfigAttribRateControl     },
-        { VAConfigAttribEncMaxRefFrames },
+        { VAConfigAttribRTFormat         },
+        { VAConfigAttribRateControl      },
+        { VAConfigAttribEncMaxRefFrames  },
+        { VAConfigAttribEncPackedHeaders },
     };
 
     n = vaMaxNumProfiles(ctx->hwctx->display);
@@ -1049,6 +1054,23 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             }
         }
         break;
+        case VAConfigAttribEncPackedHeaders:
+            if (ctx->va_packed_headers & ~attr[i].value) {
+                // This isn't fatal, but packed headers are always
+                // preferable because they are under our control.
+                // When absent, the driver is generating them and some
+                // features may not work (e.g. VUI or SEI in H.264).
+                av_log(avctx, AV_LOG_WARNING, "Warning: some packed "
+                       "headers are not supported (want %#x, got %#x).\n",
+                       ctx->va_packed_headers, attr[i].value);
+                ctx->va_packed_headers &= attr[i].value;
+            }
+            ctx->config_attributes[ctx->nb_config_attributes++] =
+                (VAConfigAttrib) {
+                .type  = VAConfigAttribEncPackedHeaders,
+                .value = ctx->va_packed_headers,
+            };
+            break;
         default:
             av_assert0(0 && "Unexpected config attribute.");
         }
