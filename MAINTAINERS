@@ -196,7 +196,7 @@ Codecs:
   mdec.c                                Michael Niedermayer
   mimic.c                               Ramiro Polla
   mjpeg*.c                              Michael Niedermayer
-  mlp*                                  Ramiro Polla
+  mlp*                                  Ramiro Polla, Jai Luthra
   mmvideo.c                             Peter Ross
   mpeg12.c, mpeg12data.h                Michael Niedermayer
   mpegvideo.c, mpegvideo.h              Michael Niedermayer
