@@ -131,7 +131,7 @@ typedef struct {
     uint8_t *orig_extradata;
     uint32_t orig_extradata_size;
 
-    AVBitStreamFilterContext *bsfc;
+    AVBSFContext *bsfc;
     AVCodecParserContext *parser;
 
     uint8_t is_70012;
@@ -359,7 +359,7 @@ static av_cold int uninit(AVCodecContext *avctx)
 
     av_parser_close(priv->parser);
     if (priv->bsfc) {
-        av_bitstream_filter_close(priv->bsfc);
+        av_bsf_free(&priv->bsfc);
     }
 
     av_freep(&priv->sps_pps_buf);
@@ -418,30 +418,46 @@ static av_cold int init(AVCodecContext *avctx)
     switch (subtype) {
     case BC_MSUBTYPE_AVC1:
         {
-            uint8_t *dummy_p;
-            int dummy_int;
+            const AVBitStreamFilter *bsf;
+            int avret;
 
-            /* Back up the extradata so it can be restored at close time. */
-            priv->orig_extradata = av_malloc(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!priv->orig_extradata) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Failed to allocate copy of extradata\n");
-                return AVERROR(ENOMEM);
-            }
-            priv->orig_extradata_size = avctx->extradata_size;
-            memcpy(priv->orig_extradata, avctx->extradata, avctx->extradata_size);
-
-            priv->bsfc = av_bitstream_filter_init("h264_mp4toannexb");
-            if (!priv->bsfc) {
+            bsf = av_bsf_get_by_name("h264_mp4toannexb");
+            if (!bsf) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Cannot open the h264_mp4toannexb BSF!\n");
                 return AVERROR_BSF_NOT_FOUND;
             }
-            av_bitstream_filter_filter(priv->bsfc, avctx, NULL, &dummy_p,
-                                       &dummy_int, NULL, 0, 0);
+            avret = av_bsf_alloc(bsf, &priv->bsfc);
+            if (avret != 0) {
+                return AVERROR(ENOMEM);
+            }
+            avret = avcodec_parameters_from_context(priv->bsfc->par_in, avctx);
+            if (avret != 0) {
+                return AVERROR(ENOMEM);
+            }
+            avret = av_bsf_init(priv->bsfc);
+            if (avret != 0) {
+                return AVERROR(ENOMEM);
+            }
+
+            format.metaDataSz = priv->bsfc->par_out->extradata_size;
+            format.pMetaData = av_malloc(format.metaDataSz + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!format.pMetaData) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Failed to allocate copy of extradata\n");
+                return AVERROR(ENOMEM);
+            }
+            memcpy(format.pMetaData, priv->bsfc->par_out->extradata, format.metaDataSz);
+
+            /* Back up the extradata so it can be restored at close time. */
+            priv->orig_extradata = avctx->extradata;
+            priv->orig_extradata_size = avctx->extradata_size;
+            avctx->extradata = format.pMetaData;
+            avctx->extradata_size = format.metaDataSz;
         }
         subtype = BC_MSUBTYPE_H264;
-        // Fall-through
+        format.startCodeSz = 4;
+        break;
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
         // Fall-through
@@ -901,14 +917,41 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
     if (len) {
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
 
+        if (priv->bsfc) {
+            int ret = 0;
+            AVPacket filter_packet = { 0 };
+            AVPacket filtered_packet = { 0 };
+
+            ret = av_packet_ref(&filter_packet, avpkt);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
+                       "failed to ref input packet\n");
+                return ret;
+            }
+
+              ret = av_bsf_send_packet(priv->bsfc, &filter_packet);
+              if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
+                       "failed to send input packet\n");
+                return ret;
+            }
+
+            ret = av_bsf_receive_packet(priv->bsfc, &filtered_packet);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
+                       "failed to receive output packet\n");
+                return ret;
+            }
+
+            in_data = filtered_packet.data;
+            len = filtered_packet.size;
+
+            av_packet_unref(&filter_packet);
+        }
+
         if (priv->parser) {
             int ret = 0;
 
-            if (priv->bsfc) {
-                ret = av_bitstream_filter_filter(priv->bsfc, avctx, NULL,
-                                                 &in_data, &len,
-                                                 avpkt->data, len, 0);
-            }
             free_data = ret > 0;
 
             if (ret >= 0) {
