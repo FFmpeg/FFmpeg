@@ -109,10 +109,10 @@ static int vaapi_encode_wait(AVCodecContext *avctx,
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Sync to pic %"PRId64"/%"PRId64" "
-           "(recon surface %#x).\n", pic->display_order,
-           pic->encode_order, pic->recon_surface);
+           "(input surface %#x).\n", pic->display_order,
+           pic->encode_order, pic->input_surface);
 
-    vas = vaSyncSurface(ctx->hwctx->display, pic->recon_surface);
+    vas = vaSyncSurface(ctx->hwctx->display, pic->input_surface);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to sync to picture completion: "
                "%d (%s).\n", vas, vaErrorStr(vas));
