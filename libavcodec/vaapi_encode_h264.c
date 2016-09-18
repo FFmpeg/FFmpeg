@@ -1221,6 +1221,10 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
     else
         ctx->va_rc_mode = VA_RC_CQP;
 
+    ctx->va_packed_headers =
+        VA_ENC_PACKED_HEADER_SEQUENCE | // SPS and PPS.
+        VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
+        VA_ENC_PACKED_HEADER_MISC;      // SEI.
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);
