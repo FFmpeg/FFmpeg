@@ -707,12 +707,17 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     if (interlaced)
         priv->pic->top_field_first = !bottom_first;
 
-    priv->pic->pts = pkt_pts;
+    if (pkt_pts != AV_NOPTS_VALUE) {
+        priv->pic->pts = pkt_pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-    priv->pic->pkt_pts = pkt_pts;
+        priv->pic->pkt_pts = pkt_pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    }
+    av_frame_set_pkt_pos(priv->pic, -1);
+    av_frame_set_pkt_duration(priv->pic, 0);
+    av_frame_set_pkt_size(priv->pic, -1);
 
     if (!priv->need_second_field) {
         *got_frame       = 1;
@@ -966,8 +971,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
                 H264Context *h = priv->parser->priv_data;
 
                 index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
-                                         in_data, len, avctx->internal->pkt->pts,
-                                         avctx->internal->pkt->dts, 0);
+                                         in_data, len, avpkt->pts,
+                                         avpkt->dts, 0);
                 if (index < 0) {
                     av_log(avctx, AV_LOG_WARNING,
                            "CrystalHD: Failed to parse h.264 packet to "
@@ -1001,7 +1006,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
              * avoiding mangling so we need to build a mapping to values
              * we know will not be mangled.
              */
-            uint64_t pts = opaque_list_push(priv, avctx->internal->pkt->pts, pic_type);
+            int64_t safe_pts = avpkt->pts == AV_NOPTS_VALUE ? 0 : avpkt->pts;
+            uint64_t pts = opaque_list_push(priv, safe_pts, pic_type);
             if (!pts) {
                 if (free_data) {
                     av_freep(&in_data);
