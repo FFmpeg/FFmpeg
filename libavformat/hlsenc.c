@@ -104,6 +104,7 @@ typedef struct HLSContext {
     double duration;      // last segment duration computed so far, in seconds
     int64_t start_pos;    // last segment starting position
     int64_t size;         // last segment size
+    int64_t max_seg_size; // every segment file max size
     int nb_entries;
     int discontinuity_set;
 
@@ -396,6 +397,9 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     } else
         hls->nb_entries++;
 
+    if (hls->max_seg_size > 0) {
+        return 0;
+    }
     hls->sequence++;
 
     return 0;
@@ -476,7 +480,7 @@ static int hls_window(AVFormatContext *s, int last)
     AVIOContext *sub_out = NULL;
     char temp_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, hls->sequence - hls->nb_entries);
-    int version = hls->flags & HLS_SINGLE_FILE ? 4 : 3;
+    int version = 3;
     const char *proto = avio_find_protocol_name(s->filename);
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned warned_non_file;
@@ -484,6 +488,12 @@ static int hls_window(AVFormatContext *s, int last)
     char *iv_string = NULL;
     AVDictionary *options = NULL;
     double prog_date_time = hls->initial_prog_date_time;
+    int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+
+    if (byterange_mode) {
+        version = 4;
+        sequence = 0;
+    }
 
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporarly partial files\n");
@@ -533,7 +543,7 @@ static int hls_window(AVFormatContext *s, int last)
             avio_printf(out, "#EXTINF:%ld,\n",  lrint(en->duration));
         else
             avio_printf(out, "#EXTINF:%f,\n", en->duration);
-        if (hls->flags & HLS_SINGLE_FILE)
+        if (byterange_mode)
              avio_printf(out, "#EXT-X-BYTERANGE:%"PRIi64"@%"PRIi64"\n",
                          en->size, en->pos);
         if (hls->flags & HLS_PROGRAM_DATE_TIME) {
@@ -584,7 +594,7 @@ static int hls_window(AVFormatContext *s, int last)
 
         for (en = hls->segments; en; en = en->next) {
             avio_printf(sub_out, "#EXTINF:%f,\n", en->duration);
-            if (hls->flags & HLS_SINGLE_FILE)
+            if (byterange_mode)
                  avio_printf(sub_out, "#EXT-X-BYTERANGE:%"PRIi64"@%"PRIi64"\n",
                          en->size, en->pos);
             if (hls->baseurl)
@@ -621,6 +631,13 @@ static int hls_start(AVFormatContext *s)
         if (c->vtt_basename)
             av_strlcpy(vtt_oc->filename, c->vtt_basename,
                   sizeof(vtt_oc->filename));
+    } else if (c->max_seg_size > 0) {
+        if (av_get_frame_filename2(oc->filename, sizeof(oc->filename),
+            c->basename, c->wrap ? c->sequence % c->wrap : c->sequence,
+            AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", c->basename);
+                return AVERROR(EINVAL);
+        }
     } else {
         if (c->use_localtime) {
             time_t now0;
@@ -867,6 +884,16 @@ static int hls_write_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *inner_st;
         AVStream *outer_st = s->streams[i];
+
+        if (hls->max_seg_size > 0) {
+            if ((outer_st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
+                (outer_st->codecpar->bit_rate > hls->max_seg_size)) {
+                av_log(s, AV_LOG_WARNING, "Your video bitrate is bigger than hls_segment_size, "
+                       "(%"PRId64 " > %"PRId64 "), the result maybe not be what you want.",
+                       outer_st->codecpar->bit_rate, hls->max_seg_size);
+            }
+        }
+
         if (outer_st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
             inner_st = hls->avf->streams[i];
         else if (hls->vtt_avf)
@@ -954,6 +981,21 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (hls->avf->oformat->priv_class && hls->avf->priv_data)
                 av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
             hls->number++;
+        } else if (hls->max_seg_size > 0) {
+            if (hls->avf->oformat->priv_class && hls->avf->priv_data)
+                av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
+            if (hls->start_pos >= hls->max_seg_size) {
+                hls->sequence++;
+                ff_format_io_close(s, &oc->pb);
+                if (hls->vtt_avf)
+                    ff_format_io_close(s, &hls->vtt_avf->pb);
+                ret = hls_start(s);
+                hls->start_pos = 0;
+                /* When split segment by byte, the duration is short than hls_time,
+                 * so it is not enough one segment duration as hls_time, */
+                hls->number--;
+            }
+            hls->number++;
         } else {
             ff_format_io_close(s, &oc->pb);
             if (hls->vtt_avf)
@@ -1028,6 +1070,7 @@ static const AVOption options[] = {
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
+    {"hls_segment_size", "maximum size per segment file, (in bytes)",  OFFSET(max_seg_size),    AV_OPT_TYPE_INT,    {.i64 = 0},               0,       INT_MAX,   E},
     {"hls_key_info_file",    "file with key URI and key file path", OFFSET(key_info_file),      AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
     {"hls_subtitle_path",     "set path of hls subtitles", OFFSET(subtitle_filename), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
