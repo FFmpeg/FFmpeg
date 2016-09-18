@@ -2879,6 +2879,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p = data;
     GetBitContext gb;
     unsigned format;
+    char format_str[16];
     int ret;
 
     if (avpkt->size <= 20)
@@ -2890,6 +2891,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->alt = 0;
     format = AV_RL32(avpkt->data + 16);
+    av_get_codec_tag_string(format_str, sizeof(format_str), format);
+    av_log(avctx, AV_LOG_DEBUG, "format: %s\n", format_str);
     switch (format) {
     case MKTAG(' ', 'R', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
