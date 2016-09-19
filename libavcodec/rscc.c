@@ -31,7 +31,7 @@
  * and it can be deflated or not. Similarly, pixel data comes after the header
  * and a variable size value, and it can be deflated or just raw.
  *
- * Supports: BGRA, BGR24, RGB555, RGB8
+ * Supports: PAL8, BGRA, BGR24, RGB555, RGB8
  */
 
 #include <stdint.h>
@@ -58,6 +58,8 @@ typedef struct RsccContext {
     Tile *tiles;
     unsigned int tiles_size;
     int component_size;
+
+    uint8_t palette[AVPALETTE_SIZE];
 
     /* zlib interaction */
     uint8_t *inflated_buf;
@@ -89,8 +91,8 @@ static av_cold int rscc_init(AVCodecContext *avctx)
         ctx->component_size = avctx->bits_per_coded_sample / 8;
         switch (avctx->bits_per_coded_sample) {
         case 8:
-            avpriv_report_missing_feature(avctx, "8 bits per pixel");
-            return AVERROR_PATCHWELCOME;
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            break;
         case 16:
             avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
             break;
@@ -291,6 +293,19 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         frame->pict_type = AV_PICTURE_TYPE_P;
     }
+
+    /* Palette handling */
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        const uint8_t *palette = av_packet_get_side_data(avpkt,
+                                                         AV_PKT_DATA_PALETTE,
+                                                         NULL);
+        if (palette) {
+            frame->palette_has_changed = 1;
+            memcpy(ctx->palette, palette, AVPALETTE_SIZE);
+        }
+        memcpy(frame->data[1], ctx->palette, AVPALETTE_SIZE);
+    }
+
     *got_frame = 1;
 
 end:
