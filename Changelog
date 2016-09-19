@@ -8,6 +8,7 @@ version <next>:
 - VAAPI-accelerated deinterlacing
 - config.log and other configuration files moved into avbuild/ directory
 - VAAPI-accelerated MPEG-2 and VP8 encoding
+- Apple Pixlet decoder
 
 
 version 12:

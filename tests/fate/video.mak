@@ -246,6 +246,9 @@ fate-nuv: $(FATE_NUV)
 FATE_SAMPLES_AVCONV-$(call DEMDEC, PAF, PAF_VIDEO) += fate-paf-video
 fate-paf-video: CMD = framecrc -i $(TARGET_SAMPLES)/paf/hod1-partial.paf -pix_fmt rgb24 -an
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, PIXLET) += fate-pixlet
+fate-pixlet: CMD = framecrc -i $(TARGET_SAMPLES)/pxlt/pixlet.mov -an
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, QPEG) += fate-qpeg
 fate-qpeg: CMD = framecrc -i $(TARGET_SAMPLES)/qpeg/Clock.avi -an -pix_fmt rgb24
 
