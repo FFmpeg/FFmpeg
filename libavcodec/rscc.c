@@ -31,7 +31,7 @@
  * and it can be deflated or not. Similarly, pixel data comes after the header
  * and a variable size value, and it can be deflated or just raw.
  *
- * Supports: BGRA, BGR24, RGB555, RGB8
+ * Supports: GRAY8, BGRA, BGR24, RGB555, RGB8
  */
 
 #include <stdint.h>
@@ -89,8 +89,8 @@ static av_cold int rscc_init(AVCodecContext *avctx)
         ctx->component_size = avctx->bits_per_coded_sample / 8;
         switch (avctx->bits_per_coded_sample) {
         case 8:
-            avpriv_report_missing_feature(avctx, "8 bits per pixel");
-            return AVERROR_PATCHWELCOME;
+            avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+            break;
         case 16:
             avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
             break;
