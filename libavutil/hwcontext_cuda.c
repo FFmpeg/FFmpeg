@@ -32,7 +32,9 @@ typedef struct CUDAFramesContext {
 static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV444P16,
 };
 
 static void cuda_buffer_free(void *opaque, uint8_t *data)
@@ -105,8 +107,14 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         case AV_PIX_FMT_YUV420P:
             size = ctx->width * ctx->height * 3 / 2;
             break;
+        case AV_PIX_FMT_P010:
+            size = ctx->width * ctx->height * 3;
+            break;
         case AV_PIX_FMT_YUV444P:
             size = ctx->width * ctx->height * 3;
+            break;
+        case AV_PIX_FMT_YUV444P16:
+            size = ctx->width * ctx->height * 6;
             break;
         }
 
@@ -139,6 +147,12 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
         frame->linesize[1] = ctx->width / 2;
         frame->linesize[2] = ctx->width / 2;
         break;
+    case AV_PIX_FMT_P010:
+        frame->data[0]     = frame->buf[0]->data;
+        frame->data[1]     = frame->data[0] + 2 * ctx->width * ctx->height;
+        frame->linesize[0] = 2 * ctx->width;
+        frame->linesize[1] = 2 * ctx->width;
+        break;
     case AV_PIX_FMT_YUV444P:
         frame->data[0]     = frame->buf[0]->data;
         frame->data[1]     = frame->data[0] + ctx->width * ctx->height;
@@ -146,6 +160,14 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
         frame->linesize[0] = ctx->width;
         frame->linesize[1] = ctx->width;
         frame->linesize[2] = ctx->width;
+        break;
+    case AV_PIX_FMT_YUV444P16:
+        frame->data[0]     = frame->buf[0]->data;
+        frame->data[1]     = frame->data[0] + 2 * ctx->width * ctx->height;
+        frame->data[2]     = frame->data[1] + 2 * ctx->width * ctx->height;
+        frame->linesize[0] = 2 * ctx->width;
+        frame->linesize[1] = 2 * ctx->width;
+        frame->linesize[2] = 2 * ctx->width;
         break;
     default:
         av_frame_unref(frame);
