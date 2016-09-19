@@ -188,7 +188,6 @@ static void cavs_filter_ch_c(uint8_t *d, int stride, int alpha, int beta, int tc
 static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, int stride) {
     int i;
     int16_t (*src)[8] = (int16_t(*)[8])block;
-    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     src[0][0] += 8;
 
@@ -243,14 +242,14 @@ static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, int stride) {
         const int b2 = a5 - a7;
         const int b3 = a4 - a6;
 
-        dst[i + 0*stride] = cm[ dst[i + 0*stride] + ((b0 + b4) >> 7)];
-        dst[i + 1*stride] = cm[ dst[i + 1*stride] + ((b1 + b5) >> 7)];
-        dst[i + 2*stride] = cm[ dst[i + 2*stride] + ((b2 + b6) >> 7)];
-        dst[i + 3*stride] = cm[ dst[i + 3*stride] + ((b3 + b7) >> 7)];
-        dst[i + 4*stride] = cm[ dst[i + 4*stride] + ((b3 - b7) >> 7)];
-        dst[i + 5*stride] = cm[ dst[i + 5*stride] + ((b2 - b6) >> 7)];
-        dst[i + 6*stride] = cm[ dst[i + 6*stride] + ((b1 - b5) >> 7)];
-        dst[i + 7*stride] = cm[ dst[i + 7*stride] + ((b0 - b4) >> 7)];
+        dst[i + 0*stride] = av_clip_uint8( dst[i + 0*stride] + ((b0 + b4) >> 7));
+        dst[i + 1*stride] = av_clip_uint8( dst[i + 1*stride] + ((b1 + b5) >> 7));
+        dst[i + 2*stride] = av_clip_uint8( dst[i + 2*stride] + ((b2 + b6) >> 7));
+        dst[i + 3*stride] = av_clip_uint8( dst[i + 3*stride] + ((b3 + b7) >> 7));
+        dst[i + 4*stride] = av_clip_uint8( dst[i + 4*stride] + ((b3 - b7) >> 7));
+        dst[i + 5*stride] = av_clip_uint8( dst[i + 5*stride] + ((b2 - b6) >> 7));
+        dst[i + 6*stride] = av_clip_uint8( dst[i + 6*stride] + ((b1 - b5) >> 7));
+        dst[i + 7*stride] = av_clip_uint8( dst[i + 7*stride] + ((b0 - b4) >> 7));
     }
 }
 
