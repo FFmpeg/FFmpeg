@@ -477,6 +477,8 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (PCM_ALAW,          pcm_alaw);
     REGISTER_DECODER(PCM_BLURAY,        pcm_bluray);
     REGISTER_DECODER(PCM_DVD,           pcm_dvd);
+    REGISTER_DECODER(PCM_F16LE,         pcm_f16le);
+    REGISTER_DECODER(PCM_F24LE,         pcm_f24le);
     REGISTER_ENCDEC (PCM_F32BE,         pcm_f32be);
     REGISTER_ENCDEC (PCM_F32LE,         pcm_f32le);
     REGISTER_ENCDEC (PCM_F64BE,         pcm_f64be);

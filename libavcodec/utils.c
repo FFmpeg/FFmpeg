@@ -3500,6 +3500,8 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
     case AV_CODEC_ID_PCM_U32LE:
     case AV_CODEC_ID_PCM_F32BE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F24LE:
+    case AV_CODEC_ID_PCM_F16LE:
         return 32;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F64LE:
