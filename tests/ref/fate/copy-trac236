@@ -1,5 +1,5 @@
-9b95afdb39b426a33bc962889f820aed *tests/data/fate/copy-trac236.mov
-630802 tests/data/fate/copy-trac236.mov
+d6e3d97b522ce881ed29c5da74cc7e63 *tests/data/fate/copy-trac236.mov
+630810 tests/data/fate/copy-trac236.mov
 #tb 0: 100/2997
 #media_type 0: video
 #codec_id 0: rawvideo

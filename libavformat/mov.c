@@ -34,6 +34,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/display.h"
@@ -2756,6 +2757,348 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return pb->eof_reached ? AVERROR_EOF : 0;
 }
 
+/**
+ * Get ith edit list entry (media time, duration).
+ */
+static int get_edit_list_entry(const MOVStreamContext *msc,
+                               unsigned int edit_list_index,
+                               int64_t *edit_list_media_time,
+                               int64_t *edit_list_duration,
+                               int64_t global_timescale)
+{
+    if (edit_list_index == msc->elst_count) {
+        return 0;
+    }
+    *edit_list_media_time = msc->elst_data[edit_list_index].time;
+    *edit_list_duration = msc->elst_data[edit_list_index].duration;
+
+    /* duration is in global timescale units;convert to msc timescale */
+    if (global_timescale == 0) {
+      avpriv_request_sample(msc, "Support for mvhd.timescale = 0 with editlists");
+      return 0;
+    }
+    *edit_list_duration = av_rescale(*edit_list_duration, msc->time_scale,
+                                     global_timescale);
+    return 1;
+}
+
+/**
+ * Find the closest previous keyframe to the timestamp, in e_old index
+ * entries.
+ * Returns the index of the entry in st->index_entries if successful,
+ * else returns -1.
+ */
+static int64_t find_prev_closest_keyframe_index(AVStream *st,
+                                                AVIndexEntry *e_old,
+                                                int nb_old,
+                                                int64_t timestamp,
+                                                int flag)
+{
+    AVIndexEntry *e_keep = st->index_entries;
+    int nb_keep = st->nb_index_entries;
+    int64_t found = -1;
+
+    st->index_entries = e_old;
+    st->nb_index_entries = nb_old;
+    found = av_index_search_timestamp(st, timestamp, flag | AVSEEK_FLAG_BACKWARD);
+
+    /* restore AVStream state*/
+    st->index_entries = e_keep;
+    st->nb_index_entries = nb_keep;
+    return found;
+}
+
+/**
+ * Add index entry with the given values, to the end of st->index_entries.
+ * Returns the new size st->index_entries if successful, else returns -1.
+ *
+ * This function is similar to ff_add_index_entry in libavformat/utils.c
+ * except that here we are always unconditionally adding an index entry to
+ * the end, instead of searching the entries list and skipping the add if
+ * there is an existing entry with the same timestamp.
+ * This is needed because the mov_fix_index calls this func with the same
+ * unincremented timestamp for successive discarded frames.
+ */
+static int64_t add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
+                               int size, int distance, int flags)
+{
+    AVIndexEntry *entries, *ie;
+    int64_t index = -1;
+    const size_t min_size_needed = (st->nb_index_entries + 1) * sizeof(AVIndexEntry);
+
+    // Double the allocation each time, to lower memory fragmentation.
+    // Another difference from ff_add_index_entry function.
+    const size_t requested_size =
+        min_size_needed > st->index_entries_allocated_size ?
+        FFMAX(min_size_needed, 2 * st->index_entries_allocated_size) :
+        min_size_needed;
+
+    if((unsigned)st->nb_index_entries + 1 >= UINT_MAX / sizeof(AVIndexEntry))
+        return -1;
+
+    entries = av_fast_realloc(st->index_entries,
+                              &st->index_entries_allocated_size,
+                              requested_size);
+    if(!entries)
+        return -1;
+
+    st->index_entries= entries;
+
+    index= st->nb_index_entries++;
+    ie= &entries[index];
+
+    ie->pos = pos;
+    ie->timestamp = timestamp;
+    ie->min_distance= distance;
+    ie->size= size;
+    ie->flags = flags;
+    return index;
+}
+
+/**
+ * Append a new ctts entry to ctts_data.
+ * Returns the new ctts_count if successful, else returns -1.
+ */
+static int64_t add_ctts_entry(MOVStts** ctts_data, unsigned int* ctts_count, unsigned int* allocated_size,
+                              int count, int duration)
+{
+    MOVStts *ctts_buf_new;
+    const size_t min_size_needed = (*ctts_count + 1) * sizeof(MOVStts);
+    const size_t requested_size =
+        min_size_needed > *allocated_size ?
+        FFMAX(min_size_needed, 2 * (*allocated_size)) :
+        min_size_needed;
+
+    if((unsigned)(*ctts_count) + 1 >= UINT_MAX / sizeof(MOVStts))
+        return -1;
+
+    ctts_buf_new = av_fast_realloc(*ctts_data, allocated_size, requested_size);
+
+    if(!ctts_buf_new)
+        return -1;
+
+    *ctts_data = ctts_buf_new;
+
+    ctts_buf_new[*ctts_count].count = count;
+    ctts_buf_new[*ctts_count].duration = duration;
+
+    *ctts_count = (*ctts_count) + 1;
+    return *ctts_count;
+}
+
+/**
+ * Fix st->index_entries, so that it contains only the entries (and the entries
+ * which are needed to decode them) that fall in the edit list time ranges.
+ * Also fixes the timestamps of the index entries to match the timeline
+ * specified the edit lists.
+ */
+static void mov_fix_index(MOVContext *mov, AVStream *st)
+{
+    MOVStreamContext *msc = st->priv_data;
+    AVIndexEntry *e_old = st->index_entries;
+    int nb_old = st->nb_index_entries;
+    const AVIndexEntry *e_old_end = e_old + nb_old;
+    const AVIndexEntry *current = NULL;
+    MOVStts *ctts_data_old = msc->ctts_data;
+    int64_t ctts_index_old = 0;
+    int64_t ctts_sample_old = 0;
+    int64_t ctts_count_old = msc->ctts_count;
+    int64_t edit_list_media_time = 0;
+    int64_t edit_list_duration = 0;
+    int64_t frame_duration = 0;
+    int64_t edit_list_dts_counter = 0;
+    int64_t edit_list_dts_entry_end = 0;
+    int64_t edit_list_start_ctts_sample = 0;
+    int64_t curr_cts;
+    int64_t edit_list_index = 0;
+    int64_t index;
+    int64_t index_ctts_count;
+    int flags;
+    unsigned int ctts_allocated_size = 0;
+    int64_t start_dts = 0;
+    int64_t edit_list_media_time_dts = 0;
+    int64_t edit_list_start_encountered = 0;
+    int64_t search_timestamp = 0;
+
+
+    if (!msc->elst_data || msc->elst_count <= 0) {
+        return;
+    }
+    // Clean AVStream from traces of old index
+    st->index_entries = NULL;
+    st->index_entries_allocated_size = 0;
+    st->nb_index_entries = 0;
+
+    // Clean ctts fields of MOVStreamContext
+    msc->ctts_data = NULL;
+    msc->ctts_count = 0;
+    msc->ctts_index = 0;
+    msc->ctts_sample = 0;
+
+    // If the dts_shift is positive (in case of negative ctts values in mov),
+    // then negate the DTS by dts_shift
+    if (msc->dts_shift > 0)
+        edit_list_dts_entry_end -= msc->dts_shift;
+
+    // Offset the DTS by ctts[0] to make the PTS of the first frame 0
+    if (ctts_data_old && ctts_count_old > 0) {
+        edit_list_dts_entry_end -= ctts_data_old[0].duration;
+        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by ctts[%d].duration: %d\n", 0, ctts_data_old[0].duration);
+    }
+
+    start_dts = edit_list_dts_entry_end;
+
+    while (get_edit_list_entry(msc, edit_list_index, &edit_list_media_time,
+                               &edit_list_duration, mov->time_scale)) {
+        av_log(mov->fc, AV_LOG_DEBUG, "Processing st: %d, edit list %"PRId64" - media time: %"PRId64", duration: %"PRId64"\n",
+               st->index, edit_list_index, edit_list_media_time, edit_list_duration);
+        edit_list_index++;
+        edit_list_dts_counter = edit_list_dts_entry_end;
+        edit_list_dts_entry_end += edit_list_duration;
+        if (edit_list_media_time == -1) {
+            continue;
+        }
+
+        // If we encounter a non-negative edit list reset the skip_samples/start_pad fields and set them
+        // according to the edit list below.
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            st->skip_samples = msc->start_pad = 0;
+        }
+
+        //find closest previous key frame
+        edit_list_media_time_dts = edit_list_media_time;
+        if (msc->dts_shift > 0) {
+            edit_list_media_time_dts -= msc->dts_shift;
+        }
+
+        // While reordering frame index according to edit list we must handle properly
+        // the scenario when edit list entry starts from none key frame.
+        // We find closest previous key frame and preserve it and consequent frames in index.
+        // All frames which are outside edit list entry time boundaries will be dropped after decoding.
+        search_timestamp = edit_list_media_time_dts;
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            // Audio decoders like AAC need need a decoder delay samples previous to the current sample,
+            // to correctly decode this frame. Hence for audio we seek to a frame 1 sec. before the
+            // edit_list_media_time to cover the decoder delay.
+            search_timestamp = FFMAX(search_timestamp - mov->time_scale, e_old[0].timestamp);
+        }
+
+        index = find_prev_closest_keyframe_index(st, e_old, nb_old, search_timestamp, 0);
+        if (index == -1) {
+            av_log(mov->fc, AV_LOG_ERROR, "Missing key frame while reordering index according to edit list\n");
+            continue;
+        }
+        current = e_old + index;
+
+        ctts_index_old = 0;
+        ctts_sample_old = 0;
+
+        // set ctts_index properly for the found key frame
+        for (index_ctts_count = 0; index_ctts_count < index; index_ctts_count++) {
+            if (ctts_data_old && ctts_index_old < ctts_count_old) {
+                ctts_sample_old++;
+                if (ctts_data_old[ctts_index_old].count == ctts_sample_old) {
+                    ctts_index_old++;
+                    ctts_sample_old = 0;
+                }
+            }
+        }
+
+        edit_list_start_ctts_sample = ctts_sample_old;
+
+        // Iterate over index and arrange it according to edit list
+        edit_list_start_encountered = 0;
+        for (; current < e_old_end; current++, index++) {
+            // check  if frame outside edit list mark it for discard
+            frame_duration = (current + 1 <  e_old_end) ?
+                             ((current + 1)->timestamp - current->timestamp) : edit_list_duration;
+
+            flags = current->flags;
+
+            // frames (pts) before or after edit list
+            curr_cts = current->timestamp + msc->dts_shift;
+
+            if (ctts_data_old && ctts_index_old < ctts_count_old) {
+                av_log(mov->fc, AV_LOG_DEBUG, "shifted frame pts, curr_cts: %"PRId64" @ %"PRId64", ctts: %d, ctts_count: %"PRId64"\n",
+                       curr_cts, ctts_index_old, ctts_data_old[ctts_index_old].duration, ctts_count_old);
+                curr_cts += ctts_data_old[ctts_index_old].duration;
+                ctts_sample_old++;
+                if (ctts_sample_old == ctts_data_old[ctts_index_old].count) {
+                    if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
+                                       &ctts_allocated_size,
+                                       ctts_data_old[ctts_index_old].count - edit_list_start_ctts_sample,
+                                       ctts_data_old[ctts_index_old].duration) == -1) {
+                        av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
+                               ctts_index_old,
+                               ctts_data_old[ctts_index_old].count - edit_list_start_ctts_sample,
+                               ctts_data_old[ctts_index_old].duration);
+                        break;
+                    }
+                    ctts_index_old++;
+                    ctts_sample_old = 0;
+                    edit_list_start_ctts_sample = 0;
+                }
+            }
+
+            if (curr_cts < edit_list_media_time || curr_cts >= (edit_list_duration + edit_list_media_time)) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && curr_cts < edit_list_media_time &&
+                    curr_cts + frame_duration > edit_list_media_time &&
+                    st->skip_samples == 0 && msc->start_pad == 0) {
+                    st->skip_samples = msc->start_pad = edit_list_media_time - curr_cts;
+
+                    // Shift the index entry timestamp by skip_samples to be correct.
+                    edit_list_dts_counter -= st->skip_samples;
+                    if (edit_list_start_encountered == 0)  {
+                      edit_list_start_encountered = 1;
+                    }
+
+                    av_log(mov->fc, AV_LOG_DEBUG, "skip %d audio samples from curr_cts: %"PRId64"\n", st->skip_samples, curr_cts);
+                } else {
+                    flags |= AVINDEX_DISCARD_FRAME;
+                    av_log(mov->fc, AV_LOG_DEBUG, "drop a frame at curr_cts: %"PRId64" @ %"PRId64"\n", curr_cts, index);
+                }
+            } else if (edit_list_start_encountered == 0) {
+                edit_list_start_encountered = 1;
+            }
+
+            if (add_index_entry(st, current->pos, edit_list_dts_counter, current->size,
+                                current->min_distance, flags) == -1) {
+                av_log(mov->fc, AV_LOG_ERROR, "Cannot add index entry\n");
+                break;
+            }
+
+            // Only start incrementing DTS in frame_duration amounts, when we encounter a frame in edit list.
+            if (edit_list_start_encountered > 0) {
+                edit_list_dts_counter = edit_list_dts_counter + frame_duration;
+            }
+
+            // Break when found first key frame after edit entry completion
+            if (((curr_cts + frame_duration) >= (edit_list_duration + edit_list_media_time)) &&
+                ((flags & AVINDEX_KEYFRAME) || ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)))) {
+
+                if (ctts_data_old && ctts_sample_old != 0) {
+                    if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
+                                       &ctts_allocated_size,
+                                       ctts_sample_old - edit_list_start_ctts_sample,
+                                       ctts_data_old[ctts_index_old].duration) == -1) {
+                        av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
+                               ctts_index_old, ctts_sample_old - edit_list_start_ctts_sample,
+                               ctts_data_old[ctts_index_old].duration);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    // Update av stream length
+    st->duration = edit_list_dts_entry_end - start_dts;
+
+    // Free the old index and the old CTTS structures
+    av_free(e_old);
+    av_free(ctts_data_old);
+}
+
 static void mov_build_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
@@ -2769,7 +3112,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
 
     if (sc->elst_count) {
-        int i, edit_start_index = 0, unsupported = 0;
+        int i, edit_start_index = 0;
         int64_t empty_duration = 0; // empty duration of the first edit list entry
         int64_t start_time = 0; // start time of the media
 
@@ -2782,23 +3125,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 edit_start_index = 1;
             } else if (i == edit_start_index && e->time >= 0) {
                 start_time = e->time;
-            } else
-                unsupported = 1;
+            }
         }
-        if (unsupported)
-            av_log(mov->fc, AV_LOG_WARNING, "multiple edit list entries, "
-                   "a/v desync might occur, patch welcome\n");
 
         /* adjust first dts according to edit list */
         if ((empty_duration || start_time) && mov->time_scale > 0) {
             if (empty_duration)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
             sc->time_offset = start_time - empty_duration;
-            current_dts = -sc->time_offset;
         }
-
-        if (!unsupported && st->codecpar->codec_id == AV_CODEC_ID_AAC && start_time > 0)
-            sc->start_pad = start_time;
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
@@ -3031,6 +3366,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             }
         }
     }
+
+    // Fix index according to edit lists.
+    mov_fix_index(mov, st);
 }
 
 static int test_same_origin(const char *src, const char *ref) {
@@ -5330,6 +5668,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
+    if (sample->flags & AVINDEX_DISCARD_FRAME) {
+        pkt->flags |= AV_PKT_FLAG_DISCARD;
+    }
     if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
         pkt->pts = pkt->dts + sc->dts_shift + sc->ctts_data[sc->ctts_index].duration;
         /* update ctts context */
