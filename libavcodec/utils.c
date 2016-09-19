@@ -2320,6 +2320,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint32_t discard_padding = 0;
         uint8_t skip_reason = 0;
         uint8_t discard_reason = 0;
+        int demuxer_skip_samples = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2327,6 +2328,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         if (ret < 0)
             goto fail;
 
+        demuxer_skip_samples = avctx->internal->skip_samples;
         avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
@@ -2353,6 +2355,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 
 
         if (frame->flags & AV_FRAME_FLAG_DISCARD) {
+            // If using discard frame flag, ignore skip_samples set by the decoder.
+            avctx->internal->skip_samples = demuxer_skip_samples;
             *got_frame_ptr = 0;
         }
 
