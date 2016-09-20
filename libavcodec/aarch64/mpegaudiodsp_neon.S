@@ -34,7 +34,6 @@ endconst
 .macro   apply_window   type, st
 function ff_mpadsp_apply_window_\type\()_neon, export=1
         mov             x7,  x0
-        sxtw            x4,  w4  // incr
         add             x8,  x0,  #512<<2
         ld1             {v0.4s,v1.4s,v2.4s,v3.4s},  [x7],  #64
         ld1             {v4.4s,v5.4s,v6.4s,v7.4s},  [x7],  #64

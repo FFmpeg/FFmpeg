@@ -120,7 +120,7 @@ DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
 
 void RENAME(ff_mpadsp_apply_window)(MPA_INT *synth_buf, MPA_INT *window,
                                   int *dither_state, OUT_INT *samples,
-                                  int incr)
+                                  ptrdiff_t incr)
 {
     register const MPA_INT *w, *w2, *p;
     int j;
@@ -176,7 +176,7 @@ void RENAME(ff_mpadsp_apply_window)(MPA_INT *synth_buf, MPA_INT *window,
 void RENAME(ff_mpa_synth_filter)(MPADSPContext *s, MPA_INT *synth_buf_ptr,
                                  int *synth_buf_offset,
                                  MPA_INT *window, int *dither_state,
-                                 OUT_INT *samples, int incr,
+                                 OUT_INT *samples, ptrdiff_t incr,
                                  MPA_INT *sb_samples)
 {
     MPA_INT *synth_buf;
