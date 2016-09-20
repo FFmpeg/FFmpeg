@@ -28,7 +28,7 @@
 typedef struct {
     AVCodecContext *mjpeg_avctx;
     int is_mjpeg;
-    int interlace; //FIXME use frame.interlaced_frame
+    int interlace;
     int tff;
 } AVRnContext;
 
