@@ -84,5 +84,10 @@ fate-rgb24-mkv: $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov
 fate-rgb24-mkv: CMD = transcode "mov" $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov\
                       matroska "-vcodec rawvideo -pix_fmt rgb24 -allow_raw_vfw 1 -vframes 1"
 
+FATE_SAMPLES_FFMPEG-$(call ALLYES, AAC_DEMUXER MOV_MUXER) += fate-adtstoasc_ticket3715
+fate-adtstoasc_ticket3715: $(TARGET_SAMPLES)/aac/foo.aac
+fate-adtstoasc_ticket3715: CMD = transcode "aac" $(TARGET_SAMPLES)/aac/foo.aac\
+                      mov "-c copy -bsf:a aac_adtstoasc" "-codec copy"
+
 
 FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)

@@ -197,6 +197,7 @@ transcode(){
     srcfile=$2
     enc_fmt=$3
     enc_opt=$4
+    final_decode=$5
     encfile="${outdir}/${test}.${enc_fmt}"
     test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
     tsrcfile=$(target_path $srcfile)
@@ -205,7 +206,7 @@ transcode(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS \
+    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
 }
 
