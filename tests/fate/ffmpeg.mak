@@ -79,4 +79,10 @@ fate-limited_input_seek-copyts: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vo
 
 fate-streamcopy: $(FATE_STREAMCOPY-yes)
 
+FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER MATROSKA_MUXER) += fate-rgb24-mkv
+fate-rgb24-mkv: $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov
+fate-rgb24-mkv: CMD = transcode "mov" $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov\
+                      matroska "-vcodec rawvideo -pix_fmt rgb24 -allow_raw_vfw 1 -vframes 1"
+
+
 FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
