@@ -35,9 +35,9 @@
 #if !defined(__CUDA_VIDEO_H__)
 #define __CUDA_VIDEO_H__
 
-#ifndef __dynlink_cuda_h__
-#include "dynlink_cuda.h"
-#endif // __dynlink_cuda_h__
+#ifndef __cuda_cuda_h__
+#include <cuda.h>
+#endif // __cuda_cuda_h__
 
 #if defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
 #if (CUDA_VERSION >= 3020) && (!defined(CUDA_FORCE_API_VERSION) || (CUDA_FORCE_API_VERSION >= 3020))
@@ -715,19 +715,19 @@ typedef struct _CUVIDPROCPARAMS
  * \fn CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci)
  * Create the decoder object
  */
-typedef CUresult CUDAAPI tcuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci);
+CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci);
 
 /**
  * \fn CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder)
  * Destroy the decoder object
  */
-typedef CUresult CUDAAPI tcuvidDestroyDecoder(CUvideodecoder hDecoder);
+CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder);
 
 /**
  * \fn CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams)
  * Decode a single picture (field or frame)
  */
-typedef CUresult CUDAAPI tcuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams);
+CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams);
 
 
 #if !defined(__CUVID_DEVPTR64) || defined(__CUVID_INTERNAL)
@@ -735,7 +735,7 @@ typedef CUresult CUDAAPI tcuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPA
  * \fn CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx, unsigned int *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
  * Post-process and map a video frame for use in cuda
  */
-typedef CUresult CUDAAPI tcuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx,
+CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx,
                                            unsigned int *pDevPtr, unsigned int *pPitch,
                                            CUVIDPROCPARAMS *pVPP);
 
@@ -743,7 +743,7 @@ typedef CUresult CUDAAPI tcuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicId
  * \fn CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr)
  * Unmap a previously mapped video frame
  */
-typedef CUresult CUDAAPI tcuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr);
+CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr);
 #endif
 
 #if defined(WIN64) || defined(_WIN64) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
@@ -751,18 +751,18 @@ typedef CUresult CUDAAPI tcuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned
  * \fn CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
  * map a video frame
  */
-typedef CUresult CUDAAPI tcuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
+CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
                                              unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
 
 /**
  * \fn CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
  * Unmap a previously mapped video frame
  */
-typedef CUresult CUDAAPI tcuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
+CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
 
 #if defined(__CUVID_DEVPTR64) && !defined(__CUVID_INTERNAL)
-#define tcuvidMapVideoFrame      tcuvidMapVideoFrame64
-#define tcuvidUnmapVideoFrame    tcuvidUnmapVideoFrame64
+#define cuvidMapVideoFrame      cuvidMapVideoFrame64
+#define cuvidUnmapVideoFrame    cuvidUnmapVideoFrame64
 #endif
 #endif
 
@@ -787,25 +787,27 @@ typedef CUresult CUDAAPI tcuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsign
 /**
  * \fn CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx)
  */
-typedef CUresult CUDAAPI tcuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
+CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck)
  */
-typedef CUresult CUDAAPI tcuvidCtxLockDestroy(CUvideoctxlock lck);
+CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags)
  */
-typedef CUresult CUDAAPI tcuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags);
+CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
  */
-typedef CUresult CUDAAPI tcuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags);
+CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags);
 
 /** @} */  /* End VIDEO_DECODER */
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__cplusplus)
 
 // Auto-lock helper for C++ applications
 class CCtxAutoLock
@@ -817,25 +819,6 @@ public:
     ~CCtxAutoLock();
 };
 
-extern tcuvidCreateDecoder        *cuvidCreateDecoder;
-extern tcuvidDestroyDecoder       *cuvidDestroyDecoder;
-extern tcuvidDecodePicture        *cuvidDecodePicture;
-extern tcuvidMapVideoFrame        *cuvidMapVideoFrame;
-extern tcuvidUnmapVideoFrame      *cuvidUnmapVideoFrame;
-
-#if defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
-extern tcuvidMapVideoFrame64      *cuvidMapVideoFrame64;
-extern tcuvidUnmapVideoFrame64    *cuvidUnmapVideoFrame64;
-#endif
-
-//extern tcuvidGetVideoFrameSurface *cuvidGetVideoFrameSurface;
-
-extern tcuvidCtxLockCreate        *cuvidCtxLockCreate;
-extern tcuvidCtxLockDestroy       *cuvidCtxLockDestroy;
-extern tcuvidCtxLock              *cuvidCtxLock;
-extern tcuvidCtxUnlock            *cuvidCtxUnlock;
-
-#if defined(__cplusplus)
 }
 
 #endif /* __cplusplus */

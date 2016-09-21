@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include "internal.h"
 
-#include <nvcuvid.h>
+#include "compat/cuda/nvcuvid.h"
 
 #define MAX_FRAME_COUNT 25
 
