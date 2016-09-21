@@ -1491,6 +1491,14 @@ static int mxf_compute_index_tables(MXFContext *mxf)
 {
     int i, j, k, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
+    AVStream *st = NULL;
+
+    for (i = 0; i < mxf->fc->nb_streams; i++) {
+        if (mxf->fc->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            continue;
+        st = mxf->fc->streams[i];
+        break;
+    }
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
         nb_sorted_segments <= 0) {
@@ -1560,7 +1568,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
                 av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment %i has zero IndexDuration and there's more than one segment\n",
                        t->index_sid, k);
 
-            if (mxf->fc->nb_streams <= 0) {
+            if (!st) {
                 av_log(mxf->fc, AV_LOG_WARNING, "no streams?\n");
                 break;
             }
@@ -1568,7 +1576,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
             /* assume the first stream's duration is reasonable
              * leave index_duration = 0 on further segments in case we have any (unlikely)
              */
-            t->segments[k]->index_duration = mxf->fc->streams[0]->duration;
+            t->segments[k]->index_duration = st->duration;
             break;
         }
     }
@@ -2617,6 +2625,19 @@ static int is_pcm(enum AVCodecID codec_id)
     return codec_id >= AV_CODEC_ID_PCM_S16LE && codec_id < AV_CODEC_ID_PCM_S24DAUD;
 }
 
+static AVStream* mxf_get_opatom_stream(MXFContext *mxf)
+{
+    if (mxf->op != OPAtom)
+        return NULL;
+
+    for (int i = 0; i < mxf->fc->nb_streams; i++) {
+        if (mxf->fc->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            continue;
+        return mxf->fc->streams[i];
+    }
+    return NULL;
+}
+
 /**
  * Deal with the case where for some audio atoms EditUnitByteCount is
  * very small (2, 4..). In those cases we should read more than one
@@ -2628,13 +2649,13 @@ static void mxf_handle_small_eubc(AVFormatContext *s)
 
     /* assuming non-OPAtom == frame wrapped
      * no sane writer would wrap 2 byte PCM packets with 20 byte headers.. */
-    if (mxf->op != OPAtom)
+    AVStream *st = mxf_get_opatom_stream(mxf);
+    if (!st)
         return;
 
     /* expect PCM with exactly one index table segment and a small (< 32) EUBC */
-    if (s->nb_streams != 1                                     ||
-        s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO ||
-        !is_pcm(s->streams[0]->codecpar->codec_id)                ||
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO         ||
+        !is_pcm(st->codecpar->codec_id)                        ||
         mxf->nb_index_tables != 1                              ||
         mxf->index_tables[0].nb_segments != 1                  ||
         mxf->index_tables[0].segments[0]->edit_unit_byte_count >= 32)
@@ -2659,11 +2680,12 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf)
     int essence_partition_count = 0;
     int i, ret;
 
-    if (mxf->op != OPAtom)
+    st = mxf_get_opatom_stream(mxf);
+    if (!st)
         return 0;
 
     /* TODO: support raw video without an index if they exist */
-    if (s->nb_streams != 1 || s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO || !is_pcm(s->streams[0]->codecpar->codec_id))
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO || !is_pcm(st->codecpar->codec_id))
         return 0;
 
     /* check if file already has a IndexTableSegment */
@@ -2694,7 +2716,6 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf)
         return ret;
     }
 
-    st = s->streams[0];
     segment->type = IndexTableSegment;
     /* stream will be treated as small EditUnitByteCount */
     segment->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->channels) >> 3;
@@ -3105,12 +3126,12 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return mxf_read_packet_old(s, pkt);
 
     // If we have no streams then we basically are at EOF
-    if (s->nb_streams < 1)
+    st = mxf_get_opatom_stream(mxf);
+    if (!st)
         return AVERROR_EOF;
 
     /* OPAtom - clip wrapped demuxing */
     /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
-    st = s->streams[0];
     t = &mxf->index_tables[0];
 
     if (mxf->current_edit_unit >= st->duration)
@@ -3140,7 +3161,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((size = av_get_packet(s->pb, pkt, size)) < 0)
         return size;
 
-    pkt->stream_index = 0;
+    pkt->stream_index = st->index;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && t->ptses &&
         mxf->current_edit_unit >= 0 && mxf->current_edit_unit < t->nb_ptses) {
@@ -3224,6 +3245,9 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int i, ret;
     MXFIndexTable *t;
     MXFTrack *source_track = st->priv_data;
+
+    if(st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+        return 0;
 
     /* if audio then truncate sample_time to EditRate */
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
