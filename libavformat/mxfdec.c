@@ -102,6 +102,7 @@ typedef struct MXFCryptoContext {
 typedef struct MXFStructuralComponent {
     UID uid;
     enum MXFMetadataSetType type;
+    UID source_package_ul;
     UID source_package_uid;
     UID data_definition_ul;
     int64_t duration;
@@ -771,7 +772,7 @@ static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, U
         break;
     case 0x1101:
         /* UMID, only get last 16 bytes */
-        avio_skip(pb, 16);
+        avio_read(pb, source_clip->source_package_ul, 16);
         avio_read(pb, source_clip->source_package_uid, 16);
         break;
     case 0x1102:
@@ -1854,6 +1855,43 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
     return 0;
 }
 
+static int mxf_add_metadata_stream(MXFContext *mxf, MXFTrack *track)
+{
+    MXFStructuralComponent *component = NULL;
+    const MXFCodecUL *codec_ul = NULL;
+    MXFPackage tmp_package;
+    AVStream *st;
+
+    for (int j = 0; j < track->sequence->structural_components_count; j++) {
+        component = mxf_resolve_sourceclip(mxf, &track->sequence->structural_components_refs[j]);
+        if (!component)
+            continue;
+        break;
+    }
+    if (!component)
+        return 0;
+
+    st = avformat_new_stream(mxf->fc, NULL);
+    if (!st) {
+        av_log(mxf->fc, AV_LOG_ERROR, "could not allocate metadata stream\n");
+        return AVERROR(ENOMEM);
+    }
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+    st->codecpar->codec_id = AV_CODEC_ID_NONE;
+    st->id = track->track_id;
+
+    memcpy(&tmp_package.package_ul, component->source_package_ul, 16);
+    memcpy(&tmp_package.package_uid, component->source_package_uid, 16);
+    mxf_add_umid_metadata(&st->metadata, "file_package_umid", &tmp_package);
+    if (track->name && track->name[0])
+        av_dict_set(&st->metadata, "track_name", track->name, 0);
+
+    codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &track->sequence->data_definition_ul);
+    av_dict_set(&st->metadata, "data_type", av_get_media_type_string(codec_ul->id), 0);
+    return 0;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -1955,8 +1993,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if(source_track && component)
                 break;
         }
-        if (!source_track || !component || !source_package)
+        if (!source_track || !component || !source_package) {
+            if((ret = mxf_add_metadata_stream(mxf, material_track)))
+                goto fail_and_free;
             continue;
+        }
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
@@ -1977,7 +2018,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             ret = AVERROR(ENOMEM);
             goto fail_and_free;
         }
-        st->id = source_track->track_id;
+        st->id = material_track->track_id;
         st->priv_data = source_track;
 
         source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
