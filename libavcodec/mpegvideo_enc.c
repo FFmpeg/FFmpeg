@@ -1245,30 +1245,38 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
 static int encode_frame(AVCodecContext *c, AVFrame *frame)
 {
     AVPacket pkt = { 0 };
-    int ret, got_output;
+    int ret;
+    int size = 0;
 
     av_init_packet(&pkt);
-    ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+
+    ret = avcodec_send_frame(c, frame);
     if (ret < 0)
         return ret;
 
-    ret = pkt.size;
-    av_packet_unref(&pkt);
-    return ret;
+    do {
+        ret = avcodec_receive_packet(c, &pkt);
+        if (ret >= 0) {
+            size += pkt.size;
+            av_packet_unref(&pkt);
+        } else if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+            return ret;
+    } while (ret >= 0);
+
+    return size;
 }
 
 static int estimate_best_b_count(MpegEncContext *s)
 {
     const AVCodec *codec = avcodec_find_encoder(s->avctx->codec_id);
-    AVCodecContext *c = avcodec_alloc_context3(NULL);
     const int scale = s->brd_scale;
+    int width  = s->width  >> scale;
+    int height = s->height >> scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
     int ret = 0;
 
-    if (!c)
-        return AVERROR(ENOMEM);
     assert(scale >= 0 && scale <= 3);
 
     //emms_c();
@@ -1280,21 +1288,6 @@ static int estimate_best_b_count(MpegEncContext *s)
         b_lambda = p_lambda;
     lambda2  = (b_lambda * b_lambda + (1 << FF_LAMBDA_SHIFT) / 2) >>
                FF_LAMBDA_SHIFT;
-
-    c->width        = s->width  >> scale;
-    c->height       = s->height >> scale;
-    c->flags        = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_PSNR;
-    c->flags       |= s->avctx->flags & AV_CODEC_FLAG_QPEL;
-    c->mb_decision  = s->avctx->mb_decision;
-    c->me_cmp       = s->avctx->me_cmp;
-    c->mb_cmp       = s->avctx->mb_cmp;
-    c->me_sub_cmp   = s->avctx->me_sub_cmp;
-    c->pix_fmt      = AV_PIX_FMT_YUV420P;
-    c->time_base    = s->avctx->time_base;
-    c->max_b_frames = s->max_b_frames;
-
-    if (avcodec_open2(c, codec, NULL) < 0)
-        return -1;
 
     for (i = 0; i < s->max_b_frames + 2; i++) {
         Picture pre_input, *pre_input_ptr = i ? s->input_picture[i - 1] :
@@ -1313,27 +1306,46 @@ static int estimate_best_b_count(MpegEncContext *s)
                                        s->tmp_frames[i]->linesize[0],
                                        pre_input.f->data[0],
                                        pre_input.f->linesize[0],
-                                       c->width, c->height);
+                                       width, height);
             s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[1],
                                        s->tmp_frames[i]->linesize[1],
                                        pre_input.f->data[1],
                                        pre_input.f->linesize[1],
-                                       c->width >> 1, c->height >> 1);
+                                       width >> 1, height >> 1);
             s->mpvencdsp.shrink[scale](s->tmp_frames[i]->data[2],
                                        s->tmp_frames[i]->linesize[2],
                                        pre_input.f->data[2],
                                        pre_input.f->linesize[2],
-                                       c->width >> 1, c->height >> 1);
+                                       width >> 1, height >> 1);
         }
     }
 
     for (j = 0; j < s->max_b_frames + 1; j++) {
+        AVCodecContext *c;
         int64_t rd = 0;
 
         if (!s->input_picture[j])
             break;
 
-        c->error[0] = c->error[1] = c->error[2] = 0;
+        c = avcodec_alloc_context3(NULL);
+        if (!c)
+            return AVERROR(ENOMEM);
+
+        c->width        = width;
+        c->height       = height;
+        c->flags        = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_PSNR;
+        c->flags       |= s->avctx->flags & AV_CODEC_FLAG_QPEL;
+        c->mb_decision  = s->avctx->mb_decision;
+        c->me_cmp       = s->avctx->me_cmp;
+        c->mb_cmp       = s->avctx->mb_cmp;
+        c->me_sub_cmp   = s->avctx->me_sub_cmp;
+        c->pix_fmt      = AV_PIX_FMT_YUV420P;
+        c->time_base    = s->avctx->time_base;
+        c->max_b_frames = s->max_b_frames;
+
+        ret = avcodec_open2(c, codec, NULL);
+        if (ret < 0)
+            goto fail;
 
         s->tmp_frames[0]->pict_type = AV_PICTURE_TYPE_I;
         s->tmp_frames[0]->quality   = 1 * FF_QP2LAMBDA;
@@ -1363,14 +1375,12 @@ static int estimate_best_b_count(MpegEncContext *s)
         }
 
         /* get the delayed frames */
-        while (out_size) {
-            out_size = encode_frame(c, NULL);
-            if (out_size < 0) {
-                ret = out_size;
-                goto fail;
-            }
-            rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
+        out_size = encode_frame(c, NULL);
+        if (out_size < 0) {
+            ret = out_size;
+            goto fail;
         }
+        rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
 
         rd += c->error[0] + c->error[1] + c->error[2];
 
@@ -1378,14 +1388,14 @@ static int estimate_best_b_count(MpegEncContext *s)
             best_rd = rd;
             best_b_count = j;
         }
+
+fail:
+        avcodec_free_context(&c);
+        if (ret < 0)
+            return ret;
     }
 
-    avcodec_free_context(&c);
-
     return best_b_count;
-fail:
-    avcodec_free_context(&c);
-    return ret;
 }
 
 static int select_input_picture(MpegEncContext *s)
