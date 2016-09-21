@@ -4831,6 +4831,10 @@ enabled neon_clobber_test &&
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,avcodec_send_packet        \
+                  -Wl,--wrap,avcodec_receive_packet     \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,avresample_convert ||
     disable neon_clobber_test
 
@@ -4842,6 +4846,10 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,avcodec_send_packet        \
+                  -Wl,--wrap,avcodec_receive_packet     \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,avresample_convert         \
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
