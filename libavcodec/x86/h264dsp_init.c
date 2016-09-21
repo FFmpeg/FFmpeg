@@ -157,13 +157,13 @@ LF_IFUNC(v, luma_intra, 10, mmxext)
 /* weighted prediction */
 
 #define H264_WEIGHT(W, OPT)                                             \
-void ff_h264_weight_ ## W ## _ ## OPT(uint8_t *dst, int stride,         \
+void ff_h264_weight_ ## W ## _ ## OPT(uint8_t *dst, ptrdiff_t stride,   \
                                       int height, int log2_denom,       \
                                       int weight, int offset);
 
 #define H264_BIWEIGHT(W, OPT)                                           \
 void ff_h264_biweight_ ## W ## _ ## OPT(uint8_t *dst, uint8_t *src,     \
-                                        int stride, int height,         \
+                                        ptrdiff_t stride, int height,   \
                                         int log2_denom, int weightd,    \
                                         int weights, int offset);
 
@@ -183,7 +183,7 @@ H264_BIWEIGHT_MMX(4)
 
 #define H264_WEIGHT_10(W, DEPTH, OPT)                                   \
 void ff_h264_weight_ ## W ## _ ## DEPTH ## _ ## OPT(uint8_t *dst,       \
-                                                    int stride,         \
+                                                    ptrdiff_t stride,   \
                                                     int height,         \
                                                     int log2_denom,     \
                                                     int weight,         \
@@ -192,7 +192,7 @@ void ff_h264_weight_ ## W ## _ ## DEPTH ## _ ## OPT(uint8_t *dst,       \
 #define H264_BIWEIGHT_10(W, DEPTH, OPT)                                 \
 void ff_h264_biweight_ ## W ## _ ## DEPTH ## _ ## OPT(uint8_t *dst,     \
                                                       uint8_t *src,     \
-                                                      int stride,       \
+                                                      ptrdiff_t stride, \
                                                       int height,       \
                                                       int log2_denom,   \
                                                       int weightd,      \
