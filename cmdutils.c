@@ -1579,10 +1579,11 @@ int show_encoders(void *optctx, const char *opt, const char *arg)
 
 int show_bsfs(void *optctx, const char *opt, const char *arg)
 {
-    AVBitStreamFilter *bsf = NULL;
+    const AVBitStreamFilter *bsf = NULL;
+    void *opaque = NULL;
 
     printf("Bitstream filters:\n");
-    while ((bsf = av_bitstream_filter_next(bsf)))
+    while ((bsf = av_bsf_next(&opaque)))
         printf("%s\n", bsf->name);
     printf("\n");
     return 0;

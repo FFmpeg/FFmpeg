@@ -1,5 +1,5 @@
-f52716e8110147553567ee617bfe6af8 *tests/data/fate/h264_mp4toannexb_ticket2991.h264
-1999668 tests/data/fate/h264_mp4toannexb_ticket2991.h264
+05d66e60ab22ee004720e0051af0fe74 *tests/data/fate/h264_mp4toannexb_ticket2991.h264
+1985815 tests/data/fate/h264_mp4toannexb_ticket2991.h264
 #extradata 0:       79, 0x1ec61105
 #tb 0: 1/1200000
 #media_type 0: video
@@ -124,4 +124,4 @@ f52716e8110147553567ee617bfe6af8 *tests/data/fate/h264_mp4toannexb_ticket2991.h2
 0,    4612606,    4612606,    40040,    11198, 0x6a9de1fb, F=0x0
 0,    4652646,    4652646,    40040,    15572, 0xd6cb6c4b, F=0x0
 0,    4692686,    4692686,    40040,    12072, 0x8928b77f, F=0x0
-0,    4732727,    4732727,    40040,    33025, 0x79359fc1, F=0x0
+0,    4732727,    4732727,    40040,    19172, 0x549b6b87, F=0x0
