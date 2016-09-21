@@ -155,6 +155,7 @@ typedef struct {
     MXFSequence *sequence; /* mandatory, and only one */
     UID sequence_ref;
     int track_id;
+    char *name;
     uint8_t track_number[4];
     AVRational edit_rate;
     int intra_only;
@@ -327,6 +328,9 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     case TaggedValue:
         av_freep(&((MXFTaggedValue *)*ctx)->name);
         av_freep(&((MXFTaggedValue *)*ctx)->value);
+        break;
+    case Track:
+        av_freep(&((MXFTrack *)*ctx)->name);
         break;
     case IndexTableSegment:
         seg = (MXFIndexTableSegment *)*ctx;
@@ -707,6 +711,41 @@ static int mxf_read_strong_ref_array(AVIOContext *pb, UID **refs, int *count)
     return 0;
 }
 
+static inline int mxf_read_utf16_string(AVIOContext *pb, int size, char** str, int be)
+{
+    int ret;
+    size_t buf_size;
+
+    if (size < 0)
+        return AVERROR(EINVAL);
+
+    buf_size = size + size / 2 + 1;
+    *str = av_malloc(buf_size);
+    if (!*str)
+        return AVERROR(ENOMEM);
+
+    if (be)
+        ret = avio_get_str16be(pb, size, *str, buf_size);
+    else
+        ret = avio_get_str16le(pb, size, *str, buf_size);
+
+    if (ret < 0) {
+        av_freep(str);
+        return ret;
+    }
+
+    return ret;
+}
+
+#define READ_STR16(type, big_endian)                                               \
+static int mxf_read_utf16 ## type ##_string(AVIOContext *pb, int size, char** str) \
+{                                                                                  \
+return mxf_read_utf16_string(pb, size, str, big_endian);                           \
+}
+READ_STR16(be, 1)
+READ_STR16(le, 0)
+#undef READ_STR16
+
 static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
@@ -780,6 +819,9 @@ static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid
     case 0x4804:
         avio_read(pb, track->track_number, 4);
         break;
+    case 0x4802:
+        mxf_read_utf16be_string(pb, size, &track->name);
+        break;
     case 0x4b01:
         track->edit_rate.num = avio_rb32(pb);
         track->edit_rate.den = avio_rb32(pb);
@@ -824,41 +866,6 @@ static int mxf_read_essence_group(void *arg, AVIOContext *pb, int tag, int size,
     }
     return 0;
 }
-
-static inline int mxf_read_utf16_string(AVIOContext *pb, int size, char** str, int be)
-{
-    int ret;
-    size_t buf_size;
-
-    if (size < 0)
-        return AVERROR(EINVAL);
-
-    buf_size = size + size / 2 + 1;
-    *str = av_malloc(buf_size);
-    if (!*str)
-        return AVERROR(ENOMEM);
-
-    if (be)
-        ret = avio_get_str16be(pb, size, *str, buf_size);
-    else
-        ret = avio_get_str16le(pb, size, *str, buf_size);
-
-    if (ret < 0) {
-        av_freep(str);
-        return ret;
-    }
-
-    return ret;
-}
-
-#define READ_STR16(type, big_endian)                                               \
-static int mxf_read_utf16 ## type ##_string(AVIOContext *pb, int size, char** str) \
-{                                                                                  \
-return mxf_read_utf16_string(pb, size, str, big_endian);                           \
-}
-READ_STR16(be, 1)
-READ_STR16(le, 0)
-#undef READ_STR16
 
 static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
@@ -2038,6 +2045,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         mxf_add_umid_metadata(&st->metadata, "file_package_umid", source_package);
         if (source_package->name && source_package->name[0])
             av_dict_set(&st->metadata, "file_package_name", source_package->name, 0);
+        if (material_track->name && material_track->name[0])
+            av_dict_set(&st->metadata, "track_name", material_track->name, 0);
 
         mxf_parse_physical_source_package(mxf, source_track, st);
 
