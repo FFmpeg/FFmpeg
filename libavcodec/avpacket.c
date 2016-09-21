@@ -139,7 +139,8 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
         pkt->buf = av_buffer_alloc(new_size);
         if (!pkt->buf)
             return AVERROR(ENOMEM);
-        memcpy(pkt->buf->data, pkt->data, pkt->size);
+        if (pkt->size > 0)
+            memcpy(pkt->buf->data, pkt->data, pkt->size);
         pkt->data = pkt->buf->data;
     }
     pkt->size += grow_by;
