@@ -186,6 +186,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return avcodec_find_decoder(codec_id);
 }
 
+static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st, enum AVCodecID codec_id)
+{
+#if CONFIG_H264_DECODER
+    /* Other parts of the code assume this decoder to be used for h264,
+     * so force it if possible. */
+    if (codec_id == AV_CODEC_ID_H264)
+        return avcodec_find_decoder_by_name("h264");
+#endif
+
+    return find_decoder(s, st, codec_id);
+}
+
 int av_format_get_probe_score(const AVFormatContext *s)
 {
     return s->probe_score;
@@ -2882,7 +2894,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         (st->codecpar->codec_id != -st->info->found_decoder || !st->codecpar->codec_id)) {
         AVDictionary *thread_opt = NULL;
 
-        codec = find_decoder(s, st, st->codecpar->codec_id);
+        codec = find_probe_decoder(s, st, st->codecpar->codec_id);
 
         if (!codec) {
             st->info->found_decoder = -st->codecpar->codec_id;
@@ -3379,7 +3391,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (st->request_probe <= 0)
             st->internal->avctx_inited = 1;
 
-        codec = find_decoder(ic, st, st->codecpar->codec_id);
+        codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
 
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
@@ -3639,7 +3651,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st = ic->streams[stream_index];
             avctx = st->internal->avctx;
             if (!has_codec_parameters(st, NULL)) {
-                const AVCodec *codec = find_decoder(ic, st, st->codecpar->codec_id);
+                const AVCodec *codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
                 if (codec && !avctx->codec) {
                     if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
                         av_log(ic, AV_LOG_WARNING,
