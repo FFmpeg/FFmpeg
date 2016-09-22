@@ -188,6 +188,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st, enum AVCodecID codec_id)
 {
+    const AVCodec *codec;
+
 #if CONFIG_H264_DECODER
     /* Other parts of the code assume this decoder to be used for h264,
      * so force it if possible. */
@@ -195,7 +197,22 @@ static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st,
         return avcodec_find_decoder_by_name("h264");
 #endif
 
-    return find_decoder(s, st, codec_id);
+    codec = find_decoder(s, st, codec_id);
+    if (!codec)
+        return NULL;
+
+    if (codec->capabilities & AV_CODEC_CAP_AVOID_PROBING) {
+        const AVCodec *probe_codec = NULL;
+        while (probe_codec = av_codec_next(probe_codec)) {
+            if (probe_codec->id == codec_id &&
+                    av_codec_is_decoder(probe_codec) &&
+                    !(probe_codec->capabilities & (AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_EXPERIMENTAL))) {
+                return probe_codec;
+            }
+        }
+    }
+
+    return codec;
 }
 
 int av_format_get_probe_score(const AVFormatContext *s)
