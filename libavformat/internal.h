@@ -113,6 +113,15 @@ struct AVStreamInternal {
 
     enum AVCodecID orig_codec_id;
 
+    /* the context for extracting extradata in find_stream_info()
+     * inited=1/bsf=NULL signals that extracting is not possible (codec not
+     * supported) */
+    struct {
+        AVBSFContext *bsf;
+        AVPacket     *pkt;
+        int inited;
+    } extract_extradata;
+
 #if FF_API_LAVF_AVCTX
     // whether the deprecated stream codec context needs
     // to be filled from the codec parameters
