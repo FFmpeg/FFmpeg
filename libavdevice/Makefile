@@ -40,7 +40,6 @@ OBJS-$(CONFIG_PULSE_INDEV)               += pulse_audio_dec.o \
 OBJS-$(CONFIG_PULSE_OUTDEV)              += pulse_audio_enc.o \
                                             pulse_audio_common.o
 OBJS-$(CONFIG_QTKIT_INDEV)               += qtkit.o
-OBJS-$(CONFIG_SDL_OUTDEV)                += sdl.o
 OBJS-$(CONFIG_SDL2_OUTDEV)               += sdl2.o
 OBJS-$(CONFIG_SNDIO_INDEV)               += sndio_dec.o sndio.o
 OBJS-$(CONFIG_SNDIO_OUTDEV)              += sndio_enc.o sndio.o

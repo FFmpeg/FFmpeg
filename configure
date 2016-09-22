@@ -291,7 +291,6 @@ External library support:
                            if gnutls is not used [no]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
-  --disable-sdl            disable sdl [autodetect]
   --disable-sdl2           disable sdl2 [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
@@ -1548,7 +1547,6 @@ EXTERNAL_LIBRARY_LIST="
     opengl
     openssl
     schannel
-    sdl
     sdl2
     securetransport
     videotoolbox
@@ -2023,7 +2021,6 @@ HAVE_LIST="
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    sdl
     sdl2
     section_data_rel_ro
     texi2html
@@ -2950,7 +2947,6 @@ pulse_indev_deps="libpulse"
 pulse_outdev_deps="libpulse"
 qtkit_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
 qtkit_indev_select="qtkit"
-sdl_outdev_deps="sdl"
 sdl2_outdev_deps="sdl2"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
@@ -5850,7 +5846,7 @@ if enabled gcrypt; then
     fi
 fi
 
-if ! disabled sdl2 && ! enabled sdl; then
+if ! disabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
@@ -5870,32 +5866,6 @@ if ! disabled sdl2 && ! enabled sdl; then
     fi
 fi
 enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
-
-if ! disabled sdl && ! enabled sdl2; then
-    SDL_CONFIG="${cross_prefix}sdl-config"
-    if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-        enable sdl
-    else
-        if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-            sdl_cflags=$("${SDL_CONFIG}" --cflags)
-            sdl_libs=$("${SDL_CONFIG}" --libs)
-            check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-            enable sdl
-        elif enabled sdl ; then
-            die "ERROR: SDL not found"
-        else
-            disable sdl
-        fi
-    fi
-    if test $target_os = "mingw32"; then
-        sdl_libs="$sdl_libs -mconsole"
-    fi
-fi
-enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -6500,7 +6470,6 @@ echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
-echo "SDL support               ${sdl-no}"
 echo "SDL2 support              ${sdl2-no}"
 echo "opencl enabled            ${opencl-no}"
 echo "JNI support               ${jni-no}"
