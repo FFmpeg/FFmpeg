@@ -1036,6 +1036,16 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_VARIABLE_FRAME_SIZE (1 << 16)
 /**
+ * Decoder is not a preferred choice for probing.
+ * This indicates that the decoder is not a good choice for probing.
+ * It could for example be an expensive to spin up hardware decoder,
+ * or it could simply not provide a lot of useful information about
+ * the stream.
+ * A decoder marked with this flag should only be used as last resort
+ * choice for probing.
+ */
+#define AV_CODEC_CAP_AVOID_PROBING       (1 << 17)
+/**
  * Codec is intra only.
  */
 #define AV_CODEC_CAP_INTRA_ONLY       0x40000000
