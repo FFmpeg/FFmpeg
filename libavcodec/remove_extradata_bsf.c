@@ -95,7 +95,7 @@ static void remove_extradata_close(AVBSFContext *ctx)
 
 #define OFFSET(x) offsetof(RemoveExtradataContext, x)
 static const AVOption options[] = {
-    { "freq", NULL, OFFSET(freq), AV_OPT_TYPE_INT, { .i64 = REMOVE_FREQ_KEYFRAME }, REMOVE_FREQ_KEYFRAME, REMOVE_FREQ_ALL, 0, "freq" },
+    { "freq", NULL, OFFSET(freq), AV_OPT_TYPE_INT, { .i64 = REMOVE_FREQ_KEYFRAME }, REMOVE_FREQ_KEYFRAME, REMOVE_FREQ_NONKEYFRAME, 0, "freq" },
         { "k",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_NONKEYFRAME }, .unit = "freq" },
         { "keyframe", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_KEYFRAME }, .unit = "freq" },
         { "e",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE_FREQ_ALL      }, .unit = "freq" },
