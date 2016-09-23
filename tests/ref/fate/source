@@ -24,6 +24,8 @@ compat/avisynth/avs/types.h
 compat/avisynth/avxsynth_c.h
 compat/avisynth/windowsPorts/basicDataTypeConversions.h
 compat/avisynth/windowsPorts/windows2linux.h
+compat/cuda/cuviddec.h
+compat/cuda/nvcuvid.h
 compat/float/float.h
 compat/float/limits.h
 compat/nvenc/nvEncodeAPI.h
