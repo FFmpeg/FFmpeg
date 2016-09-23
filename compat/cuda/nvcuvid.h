@@ -45,7 +45,7 @@ extern "C" {
 ** Initialization
 *********************************/
 CUresult  CUDAAPI cuvidInit(unsigned int Flags);
-    
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // High-level helper APIs for video sources
