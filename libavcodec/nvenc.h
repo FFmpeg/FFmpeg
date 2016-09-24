@@ -171,6 +171,16 @@ typedef struct NVENCContext {
     int device;
     int flags;
     int async_depth;
+    int rc_lookahead;
+    int aq;
+    int no_scenecut;
+    int b_adapt;
+    int temporal_aq;
+    int zerolatency;
+    int nonref_p;
+    int strict_gop;
+    int aq_strength;
+    int quality;
 } NVENCContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
