@@ -1270,6 +1270,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
     },
+    [AV_PIX_FMT_YUV422P12LE] = {
+        .name = "yuv422p12le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 12, 1, 11, 1 },        /* Y */
+            { 1, 2, 0, 0, 12, 1, 11, 1 },        /* U */
+            { 2, 2, 0, 0, 12, 1, 11, 1 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV422P12BE] = {
+        .name = "yuv422p12be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 12, 1, 11, 1 },        /* Y */
+            { 1, 2, 0, 0, 12, 1, 11, 1 },        /* U */
+            { 2, 2, 0, 0, 12, 1, 11, 1 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
+    },
     [AV_PIX_FMT_YUV422P16LE] = {
         .name = "yuv422p16le",
         .nb_components = 3,
@@ -1867,6 +1891,7 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
     PIX_FMT_SWAP_ENDIANNESS(YUV422P10);
     PIX_FMT_SWAP_ENDIANNESS(YUV444P10);
     PIX_FMT_SWAP_ENDIANNESS(YUV420P12);
+    PIX_FMT_SWAP_ENDIANNESS(YUV422P12);
     PIX_FMT_SWAP_ENDIANNESS(YUV420P16);
     PIX_FMT_SWAP_ENDIANNESS(YUV422P16);
     PIX_FMT_SWAP_ENDIANNESS(YUV444P16);

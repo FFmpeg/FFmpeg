@@ -52,6 +52,8 @@ yuv420p9le          8248d1c10aa86ef8e4b212a2d9fca937
 yuv422p             5a58e1fe687b71e28f52aeb11b999e46
 yuv422p10be         adaf99408661a1dc3c667cad992c08d7
 yuv422p10le         bc071b965f5a1b3c7349b71bd2b4247c
+yuv422p12be         e1ab3898be486cd95e6332fa81570f63
+yuv422p12le         343a7281c6d30c09ed7b8be86bd6d42f
 yuv422p16be         1ec214fba454c456d83de5220c867ede
 yuv422p16le         9f9316d40597c9fb917d921bfbcd8421
 yuv422p9be          98e7cefa912845b488f85508a7be7e04
