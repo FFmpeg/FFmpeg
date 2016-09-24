@@ -513,6 +513,7 @@ static void ffmpeg_cleanup(int ret)
 
         av_frame_free(&ost->filtered_frame);
         av_frame_free(&ost->last_frame);
+        av_dict_free(&ost->encoder_opts);
 
         av_parser_close(ost->parser);
 
