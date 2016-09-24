@@ -62,8 +62,6 @@ int main(void)
 
     for (yoff = -e; yoff <= e; yoff++) {
         for (xoff = -e; xoff <= e; xoff++) {
-            int x, y;
-
             printf("xoff=%d yoff=%d\n", xoff, yoff);
 
             compute_ssd_integral_image(ii_start, ii_lz_32,
