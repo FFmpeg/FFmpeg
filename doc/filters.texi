@@ -4534,7 +4534,7 @@ Blend two video frames into each other.
 
 The @code{blend} filter takes two input streams and outputs one
 stream, the first input is the "top" layer and second input is
-"bottom" layer.  Output terminates when shortest input terminates.
+"bottom" layer.  By default, the output terminates when the longest input terminates.
 
 The @code{tblend} (time blend) filter takes two consecutive frames
 from one single stream, and outputs the result obtained by blending
