@@ -459,8 +459,10 @@ typedef struct GUIDTuple {
     int flags;
 } GUIDTuple;
 
-#define PRESET(name, ...) \
-    [PRESET_ ## name] = { NV_ENC_PRESET_ ## name ## _GUID, __VA_ARGS__ }
+#define PRESET_ALIAS(alias, name, ...) \
+    [PRESET_ ## alias] = { NV_ENC_PRESET_ ## name ## _GUID, __VA_ARGS__ }
+
+#define PRESET(name, ...) PRESET_ALIAS(name, name, __VA_ARGS__)
 
 static int nvec_map_preset(NVENCContext *ctx)
 {
@@ -474,6 +476,9 @@ static int nvec_map_preset(NVENCContext *ctx)
         PRESET(LOW_LATENCY_HQ,      NVENC_LOWLATENCY),
         PRESET(LOSSLESS_DEFAULT,    NVENC_LOSSLESS),
         PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
+        PRESET_ALIAS(SLOW, HQ,      NVENC_TWO_PASSES),
+        PRESET_ALIAS(MEDIUM, HQ,    NVENC_ONE_PASS),
+        PRESET_ALIAS(FAST, HP,      NVENC_ONE_PASS),
         { { 0 } }
     };
 
@@ -486,6 +491,7 @@ static int nvec_map_preset(NVENCContext *ctx)
 }
 
 #undef PRESET
+#undef PRESET_ALIAS
 
 static void set_constqp(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
 {
