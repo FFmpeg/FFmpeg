@@ -48,10 +48,6 @@ typedef struct {
     SDL_Rect texture_rect;
 
     int inited;
-    SDL_Thread *event_thread;
-    SDL_mutex *mutex;
-    SDL_cond *init_cond;
-    int quit;
 } SDLContext;
 
 static const struct sdl_texture_format_entry {
@@ -140,20 +136,9 @@ static int sdl2_write_trailer(AVFormatContext *s)
 {
     SDLContext *sdl = s->priv_data;
 
-    sdl->quit = 1;
-
     if (sdl->texture)
         SDL_DestroyTexture(sdl->texture);
     sdl->texture = NULL;
-    if (sdl->event_thread)
-        SDL_WaitThread(sdl->event_thread, NULL);
-    sdl->event_thread = NULL;
-    if (sdl->mutex)
-        SDL_DestroyMutex(sdl->mutex);
-    sdl->mutex = NULL;
-    if (sdl->init_cond)
-        SDL_DestroyCond(sdl->init_cond);
-    sdl->init_cond = NULL;
 
     if (sdl->renderer)
         SDL_DestroyRenderer(sdl->renderer);
@@ -204,7 +189,7 @@ static int sdl2_write_header(AVFormatContext *s)
 
     if (!sdl->texture_fmt) {
         av_log(s, AV_LOG_ERROR,
-               "Unsupported pixel format '%s', choose one of yuv420p, yuyv422, uyvy422, BGRA\n",
+               "Unsupported pixel format '%s'.\n",
                av_get_pix_fmt_name(codecpar->format));
         goto fail;
     }
@@ -255,7 +240,7 @@ fail:
 
 static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret = 0;
+    int ret, quit = 0;
     SDLContext *sdl = s->priv_data;
     AVCodecParameters *codecpar = s->streams[0]->codecpar;
     uint8_t *data[4];
@@ -268,14 +253,14 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
             switch (event.key.keysym.sym) {
             case SDLK_ESCAPE:
             case SDLK_q:
-                sdl->quit = 1;
+                quit = 1;
                 break;
             default:
                 break;
             }
             break;
         case SDL_QUIT:
-            sdl->quit = 1;
+            quit = 1;
             break;
         case SDL_WINDOWEVENT:
             switch(event.window.event){
@@ -294,13 +279,12 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (sdl->quit) {
+    if (quit) {
         sdl2_write_trailer(s);
         return AVERROR(EIO);
     }
 
     av_image_fill_arrays(data, linesize, pkt->data, codecpar->format, codecpar->width, codecpar->height, 1);
-    SDL_LockMutex(sdl->mutex);
     switch (sdl->texture_fmt) {
     /* case SDL_PIXELFORMAT_ARGB4444:
      * case SDL_PIXELFORMAT_RGBA4444:
@@ -346,7 +330,6 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
     SDL_RenderClear(sdl->renderer);
     SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, &sdl->texture_rect);
     SDL_RenderPresent(sdl->renderer);
-    SDL_UnlockMutex(sdl->mutex);
     return ret;
 }
 
