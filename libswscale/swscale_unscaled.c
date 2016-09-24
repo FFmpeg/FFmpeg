@@ -1157,8 +1157,10 @@ void ff_get_unscaled_swscale(SwsContext *c)
          c->chrDstVSubSample == c->chrSrcVSubSample &&
          dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
          dstFormat != AV_PIX_FMT_P010LE && dstFormat != AV_PIX_FMT_P010BE &&
+         dstFormat != AV_PIX_FMT_YUV420P12LE && dstFormat != AV_PIX_FMT_YUV420P12BE &&
          srcFormat != AV_PIX_FMT_NV12 && srcFormat != AV_PIX_FMT_NV21 &&
-         srcFormat != AV_PIX_FMT_P010LE && srcFormat != AV_PIX_FMT_P010BE))
+         srcFormat != AV_PIX_FMT_P010LE && srcFormat != AV_PIX_FMT_P010BE &&
+         srcFormat != AV_PIX_FMT_YUV420P12LE && srcFormat != AV_PIX_FMT_YUV420P12BE))
     {
         if (isPacked(c->srcFormat))
             c->swscale = packedCopyWrapper;

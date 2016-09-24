@@ -43,6 +43,8 @@ yuv411p             091777fdfffa2dccbfd75769d1a402c7
 yuv420p             4f0105b3f2008bff284de251fe61ce06
 yuv420p10be         caaee5d071cccf50cc51c70f7a233024
 yuv420p10le         06c47286459599c62b25466e2ee3c91d
+yuv420p12be         b549289c041b852f0fec07d2cca5fb16
+yuv420p12le         df151f2b0a8bb7062d35b515cdffca3b
 yuv420p16be         10ba255f3901b5d47d3ac803fb787bcf
 yuv420p16le         38c42f658cad8546bfc465b72f6312ab
 yuv420p9be          17cd0ca2d12fd972045271e06a14b711
