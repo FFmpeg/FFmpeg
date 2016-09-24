@@ -417,10 +417,10 @@ static struct segment *new_init_section(struct playlist *pls,
     }
 
     if (info->byterange[0]) {
-        sec->size = atoi(info->byterange);
+        sec->size = strtoll(info->byterange, NULL, 10);
         ptr = strchr(info->byterange, '@');
         if (ptr)
-            sec->url_offset = atoi(ptr+1);
+            sec->url_offset = strtoll(ptr+1, NULL, 10);
     } else {
         /* the entire file is the init section */
         sec->size = -1;
@@ -732,7 +732,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             ret = ensure_playlist(c, &pls, url);
             if (ret < 0)
                 goto fail;
-            pls->target_duration = atoi(ptr) * AV_TIME_BASE;
+            pls->target_duration = strtoll(ptr, NULL, 10) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             ret = ensure_playlist(c, &pls, url);
             if (ret < 0)
@@ -761,10 +761,10 @@ static int parse_playlist(HLSContext *c, const char *url,
             is_segment = 1;
             duration   = atof(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-BYTERANGE:", &ptr)) {
-            seg_size = atoi(ptr);
+            seg_size = strtoll(ptr, NULL, 10);
             ptr = strchr(ptr, '@');
             if (ptr)
-                seg_offset = atoi(ptr+1);
+                seg_offset = strtoll(ptr+1, NULL, 10);
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
