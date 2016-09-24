@@ -459,18 +459,21 @@ typedef struct GUIDTuple {
     int flags;
 } GUIDTuple;
 
+#define PRESET(name, ...) \
+    [PRESET_ ## name] = { NV_ENC_PRESET_ ## name ## _GUID, __VA_ARGS__ }
+
 static int nvec_map_preset(NVENCContext *ctx)
 {
     GUIDTuple presets[] = {
-        { NV_ENC_PRESET_DEFAULT_GUID },
-        { NV_ENC_PRESET_HP_GUID },
-        { NV_ENC_PRESET_HQ_GUID },
-        { NV_ENC_PRESET_BD_GUID },
-        { NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID, NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HP_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID,    NVENC_LOSSLESS },
-        { NV_ENC_PRESET_LOSSLESS_HP_GUID,         NVENC_LOSSLESS },
+        PRESET(DEFAULT),
+        PRESET(HP),
+        PRESET(HQ),
+        PRESET(BD),
+        PRESET(LOW_LATENCY_DEFAULT, NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HP,      NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HQ,      NVENC_LOWLATENCY),
+        PRESET(LOSSLESS_DEFAULT,    NVENC_LOSSLESS),
+        PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
         { { 0 } }
     };
 
@@ -481,6 +484,8 @@ static int nvec_map_preset(NVENCContext *ctx)
 
     return AVERROR(EINVAL);
 }
+
+#undef PRESET
 
 static void set_constqp(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
 {
