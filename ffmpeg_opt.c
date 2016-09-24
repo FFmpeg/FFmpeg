@@ -1349,22 +1349,22 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
             exit_program(1);
         }
 
+        ost->nb_bitstream_filters++;
+
         if (bsf_options_str && filter->priv_class) {
-            const AVOption *opt = av_opt_next(ost->bsf_ctx[ost->nb_bitstream_filters]->priv_data, NULL);
+            const AVOption *opt = av_opt_next(ost->bsf_ctx[ost->nb_bitstream_filters-1]->priv_data, NULL);
             const char * shorthand[2] = {NULL};
 
             if (opt)
                 shorthand[0] = opt->name;
 
-            ret = av_opt_set_from_string(ost->bsf_ctx[ost->nb_bitstream_filters]->priv_data, bsf_options_str, shorthand, "=", ":");
+            ret = av_opt_set_from_string(ost->bsf_ctx[ost->nb_bitstream_filters-1]->priv_data, bsf_options_str, shorthand, "=", ":");
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error parsing options for bitstream filter %s\n", bsf_name);
                 exit_program(1);
             }
         }
         av_freep(&bsf);
-
-        ost->nb_bitstream_filters++;
 
         if (*bsfs)
             bsfs++;
