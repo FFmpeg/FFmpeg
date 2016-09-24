@@ -113,6 +113,12 @@ enum {
 };
 
 enum {
+    NV_ENC_HEVC_PROFILE_MAIN,
+    NV_ENC_HEVC_PROFILE_MAIN_10,
+    NV_ENC_HEVC_PROFILE_REXT,
+};
+
+enum {
     NVENC_LOWLATENCY = 1,
     NVENC_LOSSLESS   = 2,
     NVENC_ONE_PASS   = 4,
