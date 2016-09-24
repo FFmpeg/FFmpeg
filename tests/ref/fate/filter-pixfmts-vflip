@@ -62,6 +62,8 @@ yuv440p             fade395d957e1e3b117ac11c09404964
 yuv444p             a3c2a074c3609226bf1a0bc4de5c0e51
 yuv444p10be         b02fac8bc5a564a755567a86dc3ceae0
 yuv444p10le         88860297f729c90526b157b6bf1e2fcf
+yuv444p12be         d8af56e4b09130e14a9449c84a03cab0
+yuv444p12le         0ccfbd671b8000c0f950b9dfae8ea879
 yuv444p16be         26fbffad3c28aa1a6c47f2be6d146173
 yuv444p16le         3d13dcea82caec9eb563a1d7a2e4b339
 yuv444p9be          df39c0778e5b13f306e9928c5b0ddbb2
