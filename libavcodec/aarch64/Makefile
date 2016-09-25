@@ -14,7 +14,7 @@ OBJS-$(CONFIG_VIDEODSP)                 += aarch64/videodsp_init.o
 # decoders/encoders
 OBJS-$(CONFIG_DCA_DECODER)              += aarch64/synth_filter_init.o
 OBJS-$(CONFIG_RV40_DECODER)             += aarch64/rv40dsp_init_aarch64.o
-OBJS-$(CONFIG_VC1_DECODER)              += aarch64/vc1dsp_init_aarch64.o
+OBJS-$(CONFIG_VC1DSP)                   += aarch64/vc1dsp_init_aarch64.o
 OBJS-$(CONFIG_VORBIS_DECODER)           += aarch64/vorbisdsp_init.o
 
 # ARMv8 optimizations
