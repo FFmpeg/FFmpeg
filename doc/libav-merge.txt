@@ -111,4 +111,3 @@ TODO/FIXME/UNMERGED
 ===================
 
 - HEVC DSP and x86 MC SIMD improvements from Libav (see http://comments.gmane.org/gmane.comp.video.ffmpeg.devel/204917)
-- Porting ffmpeg*.c to codecpar (see bbf5ef9dac9475d8ed22da23acc2eb63a2640784)
