@@ -84,4 +84,4 @@ whitespace differences) are passed into colordiff.
 TODO/FIXME/UNMERGED
 ===================
 
-- HEVC DSP and x86 MC SIMD improvements from Libav (see http://comments.gmane.org/gmane.comp.video.ffmpeg.devel/204917)
+- HEVC DSP and x86 MC SIMD improvements from Libav (see https://ffmpeg.org/pipermail/ffmpeg-devel/2015-December/184777.html)
