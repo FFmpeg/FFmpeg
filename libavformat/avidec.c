@@ -605,9 +605,13 @@ static int avi_read_header(AVFormatContext *s)
                 ast = s->streams[0]->priv_data;
                 av_freep(&s->streams[0]->codecpar->extradata);
                 av_freep(&s->streams[0]->codecpar);
+                av_freep(&s->streams[0]->codec);
                 if (s->streams[0]->info)
                     av_freep(&s->streams[0]->info->duration_error);
                 av_freep(&s->streams[0]->info);
+                if (s->streams[0]->internal)
+                    av_freep(&s->streams[0]->internal->avctx);
+                av_freep(&s->streams[0]->internal);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
                 if (CONFIG_DV_DEMUXER) {
