@@ -352,7 +352,7 @@ static const AVClass sdl2_class = {
 };
 
 AVOutputFormat ff_sdl2_muxer = {
-    .name           = "sdl2",
+    .name           = "sdl,sdl2",
     .long_name      = NULL_IF_CONFIG_SMALL("SDL2 output device"),
     .priv_data_size = sizeof(SDLContext),
     .audio_codec    = AV_CODEC_ID_NONE,

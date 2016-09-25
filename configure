@@ -1547,6 +1547,7 @@ EXTERNAL_LIBRARY_LIST="
     opengl
     openssl
     schannel
+    sdl
     sdl2
     securetransport
     videotoolbox
@@ -5846,6 +5847,7 @@ if enabled gcrypt; then
     fi
 fi
 
+disabled sdl && disable sdl2
 if ! disabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
