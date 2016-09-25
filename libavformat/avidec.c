@@ -652,12 +652,8 @@ static int avi_read_header(AVFormatContext *s)
                         pal_size = FFMIN(pal_size, st->codecpar->extradata_size);
                         pal_src  = st->codecpar->extradata +
                                    st->codecpar->extradata_size - pal_size;
-#if HAVE_BIGENDIAN
                         for (i = 0; i < pal_size / 4; i++)
-                            ast->pal[i] = av_bswap32(((uint32_t *)pal_src)[i]);
-#else
-                        memcpy(ast->pal, pal_src, pal_size);
-#endif
+                            ast->pal[i] = AV_RL32(pal_src + 4 * i);
                         ast->has_pal = 1;
                     }
 
