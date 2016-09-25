@@ -1345,7 +1345,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
         ret = av_bsf_alloc(filter, &ost->bsf_ctx[ost->nb_bitstream_filters]);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error allocating a bistream filter context\n");
+            av_log(NULL, AV_LOG_ERROR, "Error allocating a bitstream filter context\n");
             exit_program(1);
         }
 

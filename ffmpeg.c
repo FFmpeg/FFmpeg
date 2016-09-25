@@ -2648,7 +2648,7 @@ static int init_output_bsfs(OutputStream *ost)
 
         ret = av_bsf_init(ctx);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error initializing bistream filter: %s\n",
+            av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
                    ost->bsf_ctx[i]->filter->name);
             return ret;
         }
