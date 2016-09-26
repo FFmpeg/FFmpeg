@@ -884,6 +884,9 @@ the new default-base-is-moof flag instead. This flag is new from
 14496-12:2012. This may make the fragments easier to parse in certain
 circumstances (avoiding basing track fragment location calculations
 on the implicit end of the previous track fragment).
+@item -write_tmcd
+Specify @code{on} to force writing a timecode track, @code{off} to disable it
+and @code{auto} to write a timecode track only for mov and mp4 output (default).
 @end table
 
 @subsection Example
