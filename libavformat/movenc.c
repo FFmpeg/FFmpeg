@@ -3611,6 +3611,9 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
         const char *type;
         int track_id = track->track_id;
 
+        AVStream *st = track->st;
+        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
+
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             type = "video";
         } else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -3631,6 +3634,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
                     manifest_bit_rate);
         param_write_int(pb, "systemBitrate", manifest_bit_rate);
         param_write_int(pb, "trackID", track_id);
+        param_write_string(pb, "systemLanguage", lang ? lang->value : "und");
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->par->codec_id == AV_CODEC_ID_H264) {
                 uint8_t *ptr;
