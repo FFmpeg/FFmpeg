@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavf 57.08.0 - avio.h
+  Add AVIO_SEEKABLE_TIME flag.
+
 2016-xx-xx - xxxxxxx - lavu 55.22.0 - pixfmt.h
   Add AV_PIX_FMT_YUV(420,422,444)P12.
 
