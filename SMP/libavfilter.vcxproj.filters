@@ -594,6 +594,9 @@
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_nlmeans.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_nnedi.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

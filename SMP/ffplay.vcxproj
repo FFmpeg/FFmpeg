@@ -192,7 +192,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;libavutild.lib;libsdld.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;libavutild.lib;libsdl2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x86\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
@@ -251,7 +251,7 @@ echo            These errors are the result of dead code elimination not being p
     <Link>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;libavutild.lib;libsdld.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;libavutild.lib;libsdl2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x64\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
@@ -309,7 +309,7 @@ echo            These errors are the result of dead code elimination not being p
     <Link>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;avdeviced.lib;avfilterd.lib;avformatd.lib;avcodecd.lib;postprocd.lib;swresampled.lib;swscaled.lib;avutild.lib;sdld.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;avdeviced.lib;avfilterd.lib;avformatd.lib;avcodecd.lib;postprocd.lib;swresampled.lib;swscaled.lib;avutild.lib;sdl2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x86\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
@@ -368,7 +368,7 @@ echo            These errors are the result of dead code elimination not being p
     <Link>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;avdeviced.lib;avfilterd.lib;avformatd.lib;avcodecd.lib;postprocd.lib;swresampled.lib;swscaled.lib;avutild.lib;sdld.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;avdeviced.lib;avfilterd.lib;avformatd.lib;avcodecd.lib;postprocd.lib;swresampled.lib;swscaled.lib;avutild.lib;sdl2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x64\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
@@ -435,7 +435,7 @@ echo            These errors are the result of dead code elimination not being p
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;libavdevice.lib;libavfilter.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswresample.lib;libswscale.lib;libavutil.lib;libsdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libavdevice.lib;libavfilter.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswresample.lib;libswscale.lib;libavutil.lib;libsdl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x86\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
@@ -495,7 +495,7 @@ del ..\libavutil\ffversion.h
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;libavdevice.lib;libavfilter.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswresample.lib;libswscale.lib;libavutil.lib;libsdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libavdevice.lib;libavfilter.lib;libavformat.lib;libavcodec.lib;libpostproc.lib;libswresample.lib;libswscale.lib;libavutil.lib;libsdl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x64\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
@@ -554,7 +554,7 @@ del ..\libavutil\ffversion.h
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;avdevice.lib;avfilter.lib;avformat.lib;avcodec.lib;postproc.lib;swresample.lib;swscale.lib;avutil.lib;sdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;avdevice.lib;avfilter.lib;avformat.lib;avcodec.lib;postproc.lib;swresample.lib;swscale.lib;avutil.lib;sdl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x86\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
@@ -614,7 +614,7 @@ del ..\libavutil\ffversion.h
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>Psapi.lib;avdevice.lib;avfilter.lib;avformat.lib;avcodec.lib;postproc.lib;swresample.lib;swscale.lib;avutil.lib;sdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;avdevice.lib;avfilter.lib;avformat.lib;avcodec.lib;postproc.lib;swresample.lib;swscale.lib;avutil.lib;sdl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\bin\x64\$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>

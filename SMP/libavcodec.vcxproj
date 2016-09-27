@@ -555,6 +555,8 @@
     <ClCompile Include="..\libavcodec\mimic.c" />
     <ClCompile Include="..\libavcodec\mjpegbdec.c" />
     <ClCompile Include="..\libavcodec\mlpdec.c" />
+    <ClCompile Include="..\libavcodec\mlpenc.c" />
+    <ClCompile Include="..\libavcodec\mlp.c" />
     <ClCompile Include="..\libavcodec\mmvideo.c" />
     <ClCompile Include="..\libavcodec\motionpixels.c" />
     <ClCompile Include="..\libavcodec\movtextdec.c" />
@@ -840,7 +842,6 @@
     <ClCompile Include="..\libavcodec\hevc_parser.c" />
     <ClCompile Include="..\libavcodec\mjpeg_parser.c" />
     <ClCompile Include="..\libavcodec\mlp_parser.c" />
-    <ClCompile Include="..\libavcodec\mlp.c" />
     <ClCompile Include="..\libavcodec\mpeg4video_parser.c" />
     <ClCompile Include="..\libavcodec\png_parser.c" />
     <ClCompile Include="..\libavcodec\mpegaudio_parser.c" />

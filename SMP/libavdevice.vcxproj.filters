@@ -70,7 +70,7 @@
     <ClCompile Include="..\libavdevice\opengl_enc.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavdevice\sdl.c">
+    <ClCompile Include="..\libavdevice\sdl2.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
     <ClCompile Include="..\libavdevice\vfwcap.c">

@@ -1485,6 +1485,12 @@
     <ClCompile Include="..\libavcodec\mlpdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mlpenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\mlp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\mmvideo.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2338,9 +2344,6 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mlp_parser.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\mlp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\mpeg4video_parser.c">

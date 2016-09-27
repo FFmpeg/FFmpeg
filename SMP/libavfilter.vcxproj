@@ -258,6 +258,7 @@
     <ClCompile Include="..\libavfilter\motion_estimation.c" />
     <ClCompile Include="..\libavfilter\vf_minterpolate.c" />
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c" />
+    <ClCompile Include="..\libavfilter\vf_nlmeans.c" />
     <ClCompile Include="..\libavfilter\vf_nnedi.c" />
     <ClCompile Include="..\libavfilter\vf_noise.c" />
     <ClCompile Include="..\libavfilter\vf_null.c" />
