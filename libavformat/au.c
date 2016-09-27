@@ -192,7 +192,7 @@ static int au_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t file_size;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* update file size */
         file_size = avio_tell(pb);
         avio_seek(pb, 8, SEEK_SET);

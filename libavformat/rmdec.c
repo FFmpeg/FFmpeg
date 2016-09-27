@@ -519,7 +519,8 @@ static int rm_read_header(AVFormatContext *s)
 
     if (!data_off)
         data_off = avio_tell(pb) - 18;
-    if (indx_off && pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+    if (indx_off && (pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+        !(s->flags & AVFMT_FLAG_IGNIDX) &&
         avio_seek(pb, indx_off, SEEK_SET) >= 0) {
         rm_read_index(s);
         avio_seek(pb, data_off + 18, SEEK_SET);

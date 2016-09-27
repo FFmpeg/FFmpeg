@@ -1827,7 +1827,7 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
          !strcmp(ic->iformat->name, "mpegts")) &&
-        file_size && ic->pb->seekable) {
+        file_size && (ic->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         /* get accurate estimate from the PTSes */
         estimate_timings_from_pts(ic, old_offset);
     } else if (has_duration(ic)) {

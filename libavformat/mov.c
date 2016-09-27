@@ -3270,9 +3270,9 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (err < 0)
                 return err;
             if (c->found_moov && c->found_mdat &&
-                ((!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX) ||
+                ((!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX) ||
                  start_pos + a.size == avio_size(pb))) {
-                if (!pb->seekable || c->fc->flags & AVFMT_FLAG_IGNIDX)
+                if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX)
                     c->next_root_atom = start_pos + a.size;
                 return 0;
             }
@@ -3463,7 +3463,7 @@ static int mov_read_header(AVFormatContext *s)
 
     mov->fc = s;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
-    if (pb->seekable)
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL)
         atom.size = avio_size(pb);
     else
         atom.size = INT64_MAX;
@@ -3481,7 +3481,7 @@ static int mov_read_header(AVFormatContext *s)
     }
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
-    if (pb->seekable && mov->chapter_track > 0)
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mov->chapter_track > 0)
         mov_read_chapters(s);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -3558,8 +3558,8 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             av_log(s, AV_LOG_TRACE, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
-            if (!sample || (!s->pb->seekable && current_sample->pos < sample->pos) ||
-                (s->pb->seekable &&
+            if (!sample || (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && current_sample->pos < sample->pos) ||
+                ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
                  ((msc->pb != s->pb && dts < best_dts) || (msc->pb == s->pb &&
                  ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
                   (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {

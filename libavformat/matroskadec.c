@@ -1394,7 +1394,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     int i;
 
     // we should not do any seeking in the streaming case
-    if (!matroska->ctx->pb->seekable ||
+    if (!(matroska->ctx->pb->seekable & AVIO_SEEKABLE_NORMAL) ||
         (matroska->ctx->flags & AVFMT_FLAG_IGNIDX))
         return;
 

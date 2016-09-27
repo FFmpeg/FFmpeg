@@ -141,7 +141,7 @@ static void mp3_write_xing(AVFormatContext *s)
     int ver = 0;
     int lsf, bytes_needed;
 
-    if (!s->pb->seekable || !mp3->write_xing)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) || !mp3->write_xing)
         return;
 
     for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {

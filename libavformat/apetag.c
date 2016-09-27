@@ -182,7 +182,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     int64_t start, end;
     int size, count = 0;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
 
     start = avio_tell(s->pb);

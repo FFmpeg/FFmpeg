@@ -509,7 +509,7 @@ static int ogg_get_length(AVFormatContext *s)
     int i, ret;
     int64_t size, end;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
 
 // already set

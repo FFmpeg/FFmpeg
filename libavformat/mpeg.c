@@ -378,7 +378,7 @@ redo:
         int i;
         for (i = 0; i < s->nb_streams; i++) {
             if (startcode == s->streams[i]->id &&
-                s->pb->seekable /* index useless on streams anyway */) {
+                (s->pb->seekable & AVIO_SEEKABLE_NORMAL) /* index useless on streams anyway */) {
                 ff_reduce_index(s, i);
                 av_add_index_entry(s->streams[i], *ppos, dts, 0, 0,
                                    AVINDEX_KEYFRAME /* FIXME keyframe? */);

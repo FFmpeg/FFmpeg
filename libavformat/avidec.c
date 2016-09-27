@@ -761,7 +761,8 @@ static int avi_read_header(AVFormatContext *s)
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             pos = avio_tell(pb);
-            if (pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+            if ((pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+                !(s->flags & AVFMT_FLAG_IGNIDX) &&
                 read_braindead_odml_indx(s, 0) < 0 &&
                 (s->error_recognition & AV_EF_EXPLODE))
                 goto fail;
@@ -828,7 +829,7 @@ fail:
         return AVERROR_INVALIDDATA;
     }
 
-    if (!avi->index_loaded && pb->seekable)
+    if (!avi->index_loaded && (pb->seekable & AVIO_SEEKABLE_NORMAL))
         avi_load_index(s);
     avi->index_loaded     = 1;
 

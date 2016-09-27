@@ -129,7 +129,7 @@ static int aiff_write_trailer(AVFormatContext *s)
         end_size++;
     }
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* File length */
         avio_seek(pb, aiff->form, SEEK_SET);
         avio_wb32(pb, file_size - aiff->form - 4);

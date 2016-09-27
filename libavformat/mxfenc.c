@@ -1805,7 +1805,7 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf_write_klv_fill(s);
     mxf_write_random_index_pack(s);
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         avio_seek(pb, 0, SEEK_SET);
         if (mxf->edit_unit_byte_count) {
             if ((err = mxf_write_partition(s, 1, 2, header_closed_partition_key, 1)) < 0)

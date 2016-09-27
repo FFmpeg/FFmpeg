@@ -189,7 +189,7 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl32(pb, 0);
     avio_wl32(pb, bitrate / 8); /* XXX: not quite exact */
     avio_wl32(pb, 0); /* padding */
-    if (!pb->seekable)
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
         avio_wl32(pb, AVIF_TRUSTCKTYPE | AVIF_ISINTERLEAVED);  /* flags */
     else
         avio_wl32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED);  /* flags */
@@ -261,7 +261,7 @@ static int avi_write_header(AVFormatContext *s)
         avio_wl32(pb, 0); /* start */
         /* remember this offset to fill later */
         avist->frames_hdr_strm = avio_tell(pb);
-        if (!pb->seekable)
+        if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
             /* FIXME: this may be broken, but who cares */
             avio_wl32(pb, AVI_MAX_RIFF_SIZE);
         else
@@ -306,7 +306,7 @@ static int avi_write_header(AVFormatContext *s)
             }
         }
 
-        if (pb->seekable) {
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
             unsigned char tag[5];
             int j;
 
@@ -366,7 +366,7 @@ static int avi_write_header(AVFormatContext *s)
         ff_end_tag(pb, list2);
     }
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* AVI could become an OpenDML one, if it grows beyond 2Gb range */
         avi->odml_list = ff_start_tag(pb, "JUNK");
         ffio_wfourcc(pb, "odml");
@@ -403,7 +403,7 @@ static int avi_write_ix(AVFormatContext *s)
     char ix_tag[] = "ix00";
     int i, j;
 
-    assert(pb->seekable);
+    assert(pb->seekable & AVIO_SEEKABLE_NORMAL);
 
     if (avi->riff_id > AVI_MASTER_INDEX_SIZE)
         return -1;
@@ -461,7 +461,7 @@ static int avi_write_idx1(AVFormatContext *s)
     int i;
     char tag[5];
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         AVIStream *avist;
         AVIIentry *ie = 0, *tie;
         int empty, stream_id = -1;
@@ -528,7 +528,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     avist->packet_count++;
 
     // Make sure to put an OpenDML chunk when the file size exceeds the limits
-    if (pb->seekable &&
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         (avio_tell(pb) - avi->riff_start > AVI_MAX_RIFF_SIZE)) {
         avi_write_ix(s);
         ff_end_tag(pb, avi->movi_list);
@@ -546,7 +546,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (par->codec_type == AVMEDIA_TYPE_AUDIO)
         avist->audio_strm_length += size;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int err;
         AVIIndex *idx = &avist->indexes;
         int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
@@ -588,7 +588,7 @@ static int avi_write_trailer(AVFormatContext *s)
     int i, j, n, nb_frames;
     int64_t file_size;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (avi->riff_id == 1) {
             ff_end_tag(pb, avi->movi_list);
             res = avi_write_idx1(s);

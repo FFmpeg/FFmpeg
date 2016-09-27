@@ -370,7 +370,7 @@ static int ape_read_header(AVFormatContext * s)
     }
 
     /* try to read APE tags */
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ff_ape_parse_tag(s);
         avio_seek(pb, 0, SEEK_SET);
     }

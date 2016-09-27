@@ -123,7 +123,7 @@ static int rv10_write_header(AVFormatContext *ctx,
     avio_wb32(s, 0);           /* data offset : will be patched after */
     avio_wb16(s, ctx->nb_streams);    /* num streams */
     flags = 1 | 2; /* save allowed & perfect play */
-    if (!s->seekable)
+    if (!(s->seekable & AVIO_SEEKABLE_NORMAL))
         flags |= 4; /* live broadcast */
     avio_wb16(s, flags);
 
@@ -175,7 +175,7 @@ static int rv10_write_header(AVFormatContext *ctx,
         avio_wb32(s, 0);           /* start time */
         avio_wb32(s, BUFFER_DURATION);           /* preroll */
         /* duration */
-        if (!s->seekable || !stream->total_frames)
+        if (!(s->seekable & AVIO_SEEKABLE_NORMAL) || !stream->total_frames)
             avio_wb32(s, (int)(3600 * 1000));
         else
             avio_wb32(s, (int)(stream->total_frames * 1000 / stream->frame_rate));
@@ -433,7 +433,7 @@ static int rm_write_trailer(AVFormatContext *s)
     int data_size, index_pos, i;
     AVIOContext *pb = s->pb;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* end of file: finish to write header */
         index_pos = avio_tell(pb);
         data_size = index_pos - rm->data_pos;

@@ -118,7 +118,7 @@ static int wav_write_header(AVFormatContext *s)
     ff_end_tag(pb, fmt);
 
     if (s->streams[0]->codecpar->codec_tag != 0x01 /* hence for all other than PCM */
-        && s->pb->seekable) {
+        && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         wav->fact_pos = ff_start_tag(pb, "fact");
         avio_wl32(pb, 0);
         ff_end_tag(pb, wav->fact_pos);
@@ -164,7 +164,7 @@ static int wav_write_trailer(AVFormatContext *s)
 
     avio_flush(pb);
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ff_end_tag(pb, wav->data);
 
         /* update file size */

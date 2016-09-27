@@ -37,7 +37,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
             return AVERROR(EIO);
         voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
-            if (!s->pb->seekable)
+            if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
                 return AVERROR(EIO);
             voc->remaining_size = avio_size(pb) - avio_tell(pb);
         }

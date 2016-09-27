@@ -73,7 +73,7 @@ static int vc1test_write_trailer(AVFormatContext *s)
     RCVContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         avio_seek(pb, 0, SEEK_SET);
         avio_wl24(pb, ctx->frames);
         avio_flush(pb);

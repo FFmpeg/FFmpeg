@@ -4037,7 +4037,7 @@ static int mov_write_header(AVFormatContext *s)
 
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */
-    if (!s->pb->seekable &&
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         (!(mov->flags & FF_MOV_FLAG_FRAGMENT) || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return AVERROR(EINVAL);

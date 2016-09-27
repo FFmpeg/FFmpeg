@@ -289,7 +289,7 @@ static int wav_read_header(AVFormatContext *s)
             /* don't look for footer metadata if we can't seek or if we don't
              * know where the data tag ends
              */
-            if (!pb->seekable || (!rf64 && !size))
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!rf64 && !size))
                 goto break_loop;
             break;
         case MKTAG('f', 'a', 'c', 't'):

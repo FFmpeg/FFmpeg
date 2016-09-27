@@ -837,7 +837,8 @@ skip:
 
     // if not streamed and no duration from metadata then seek to end to find
     // the duration from the timestamps
-    if (s->pb->seekable && (!s->duration || s->duration == AV_NOPTS_VALUE) &&
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+        (!s->duration || s->duration == AV_NOPTS_VALUE) &&
         !flv->searched_for_end) {
         int size;
         const int64_t pos   = avio_tell(s->pb);

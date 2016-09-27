@@ -1252,14 +1252,14 @@ static int mkv_write_header(AVFormatContext *s)
             return ret;
     }
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         mkv_write_seekhead(pb, mkv->main_seekhead);
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
     if (!mkv->cues)
         return AVERROR(ENOMEM);
 
-    if (pb->seekable && mkv->reserve_cues_space) {
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
         mkv->cues_pos = avio_tell(pb);
         put_ebml_void(pb, mkv->reserve_cues_space);
     }
@@ -1271,7 +1271,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (mkv->cluster_time_limit < 0)
             mkv->cluster_time_limit = 5000;
         if (mkv->cluster_size_limit < 0)
@@ -1547,7 +1547,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
     ts += mkv->tracks[pkt->stream_index].ts_offset;
 
-    if (!s->pb->seekable) {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         if (!mkv->dyn_bc) {
             ret = avio_open_dyn_buf(&mkv->dyn_bc);
             if (ret < 0)
@@ -1613,7 +1613,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         pb = s->pb;
         cluster_size = avio_tell(pb) - mkv->cluster_pos;
     } else {
@@ -1666,7 +1666,7 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb;
-    if (s->pb->seekable)
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         pb = s->pb;
     else
         pb = mkv->dyn_bc;
@@ -1717,7 +1717,7 @@ static int mkv_write_trailer(AVFormatContext *s)
             return ret;
     }
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (mkv->cues->num_entries) {
             if (mkv->reserve_cues_space) {
                 int64_t cues_end;

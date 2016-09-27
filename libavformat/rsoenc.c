@@ -38,7 +38,7 @@ static int rso_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!s->pb->seekable) {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
