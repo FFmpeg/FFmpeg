@@ -2612,10 +2612,7 @@ static int open_input_file(InputFile *ifile, const char *filename)
                 exit(1);
 
             av_codec_set_pkt_timebase(ist->dec_ctx, stream->time_base);
-#if FF_API_LAVF_AVCTX
-            ist->dec_ctx->time_base = stream->codec->time_base;
-            ist->dec_ctx->framerate = stream->codec->framerate;
-#endif
+            ist->dec_ctx->framerate = stream->avg_frame_rate;
 
             if (avcodec_open2(ist->dec_ctx, codec, &opts) < 0) {
                 av_log(NULL, AV_LOG_WARNING, "Could not open codec for input stream %d\n",
