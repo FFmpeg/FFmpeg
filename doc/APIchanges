@@ -16,7 +16,7 @@ API changes, most recent first:
 2016-xx-xx - xxxxxxx - lavu 55.22.0 - pixfmt.h
   Add AV_PIX_FMT_YUV(420,422,444)P12.
 
-2016-xx-xx - xxxxxxx - lavc 59.27.0 - avcodec.h
+2016-xx-xx - xxxxxxx - lavc 57.27.0 - avcodec.h
   Add FF_PROFILE_HEVC_REXT, the extended pixel format profile for HEVC.
 
 2016-08-24 - xxxxxxx - lavu 55.21.0 - imgutils.h
