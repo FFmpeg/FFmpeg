@@ -1810,9 +1810,11 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
 
     if (track->video.color.matrix_coefficients != AVCOL_SPC_RESERVED)
         st->codecpar->color_space = track->video.color.matrix_coefficients;
-    if (track->video.color.primaries != AVCOL_PRI_RESERVED)
+    if (track->video.color.primaries != AVCOL_PRI_RESERVED &&
+        track->video.color.primaries != AVCOL_PRI_RESERVED0)
         st->codecpar->color_primaries = track->video.color.primaries;
-    if (track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED)
+    if (track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED &&
+        track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED0)
         st->codecpar->color_trc = track->video.color.transfer_characteristics;
     if (track->video.color.range != AVCOL_RANGE_UNSPECIFIED &&
         track->video.color.range <= AVCOL_RANGE_JPEG)
