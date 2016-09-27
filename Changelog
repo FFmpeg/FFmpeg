@@ -3,6 +3,28 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+version 3.1.4:
+- avformat/avidec: Fix memleak with dv in avi
+- lavc/movtextdec.c: Avoid infinite loop on invalid data.
+- avcodec/ansi: Check dimensions
+- avcodec/cavsdsp: use av_clip_uint8() for idct
+- avformat/movenc: Check packet in mov_write_single_packet() too
+- avformat/movenc: Factor check_pkt() out
+- avformat/utils: fix timebase error in avformat_seek_file()
+- avcodec/g726: Add missing ADDB output mask
+- avcodec/avpacket: clear side_data_elems
+- avformat/movenc: Check first DTS similar to dts difference
+- avcodec/ccaption_dec: Use simple array instead of AVBuffer
+- avcodec/svq3: Reintroduce slice_type
+- avformat/mov: Fix potential integer overflow in mov_read_keys
+- swscale/swscale_unscaled: Try to fix Rgb16ToPlanarRgb16Wrapper() with slices
+- swscale/swscale_unscaled: Fix packed_16bpc_bswap() with slices
+- avformat/avidec: Fix infinite loop in avi_read_nikon()
+- lavf/utils: Avoid an overflow for huge negative durations.
+- avformat/hls: Fix handling of EXT-X-BYTERANGE streams over 2GB
+- lavc/avpacket: Fix undefined behaviour, do not pass a null pointer to memcpy().
+- lavc/mjpegdec: Do not skip reading quantization tables.
+- cmdutils: fix implicit declaration of SetDllDirectory function
 
 version 3.1.3:
 - examples/demuxing_decoding: convert to codecpar
