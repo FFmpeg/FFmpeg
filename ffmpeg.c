@@ -516,6 +516,7 @@ static void ffmpeg_cleanup(int ret)
         av_dict_free(&ost->encoder_opts);
 
         av_parser_close(ost->parser);
+        avcodec_free_context(&ost->parser_avctx);
 
         av_freep(&ost->forced_keyframes);
         av_expr_free(ost->forced_keyframes_pexpr);
@@ -1899,7 +1900,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
        && ost->st->codecpar->codec_id != AV_CODEC_ID_MPEG2VIDEO
        && ost->st->codecpar->codec_id != AV_CODEC_ID_VC1
        ) {
-        int ret = av_parser_change(ost->parser, ost->st->codec,
+        int ret = av_parser_change(ost->parser, ost->parser_avctx,
                              &opkt.data, &opkt.size,
                              pkt->data, pkt->size,
                              pkt->flags & AV_PKT_FLAG_KEY);
@@ -2723,9 +2724,7 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             exit_program(1);
         }
         /*
-         * FIXME: this is only so that the bitstream filters and parsers (that still
-         * work with a codec context) get the parameter values.
-         * This should go away with the new BSF/parser API.
+         * FIXME: ost->st->codec should't be needed here anymore.
          */
         ret = avcodec_copy_context(ost->st->codec, ost->enc_ctx);
         if (ret < 0)
@@ -2757,15 +2756,11 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
         ost->st->codec->codec= ost->enc_ctx->codec;
     } else if (ost->stream_copy) {
-        // copy timebase while removing common factors
-        ost->st->time_base = av_add_q(ost->st->codec->time_base, (AVRational){0, 1});
-
         /*
-         * FIXME: this is only so that the bitstream filters and parsers (that still
-         * work with a codec context) get the parameter values.
-         * This should go away with the new BSF/parser API.
+         * FIXME: will the codec context used by the parser during streamcopy
+         * This should go away with the new parser API.
          */
-        ret = avcodec_parameters_to_context(ost->st->codec, ost->st->codecpar);
+        ret = avcodec_parameters_to_context(ost->parser_avctx, ost->st->codecpar);
         if (ret < 0)
             return ret;
     }
@@ -3007,11 +3002,12 @@ static int transcode_init(void)
                 ost->frame_rate = ist->framerate;
             ost->st->avg_frame_rate = ost->frame_rate;
 
-            ost->st->time_base = ist->st->time_base;
-
             ret = avformat_transfer_internal_stream_timing_info(oc->oformat, ost->st, ist->st, copy_tb);
             if (ret < 0)
                 return ret;
+
+            // copy timebase while removing common factors
+            ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
 
             if (ist->st->nb_side_data) {
                 ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
@@ -3038,6 +3034,9 @@ static int transcode_init(void)
             }
 
             ost->parser = av_parser_init(par_dst->codec_id);
+            ost->parser_avctx = avcodec_alloc_context3(NULL);
+            if (!ost->parser_avctx)
+                return AVERROR(ENOMEM);
 
             switch (par_dst->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
