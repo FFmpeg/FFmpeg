@@ -5383,3 +5383,15 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
 
     return 0;
 }
+
+AVRational av_stream_get_codec_timebase(const AVStream *st)
+{
+    // See avformat_transfer_internal_stream_timing_info() TODO.
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+    return st->codec->time_base;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+    return st->internal->avctx->time_base;
+#endif
+}
