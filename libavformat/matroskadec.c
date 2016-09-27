@@ -2281,6 +2281,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
             if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
                 st->codecpar->field_order = mkv_field_order(track->video.field_order);
+            else if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE)
+                st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
 
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
