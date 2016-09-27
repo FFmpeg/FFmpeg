@@ -2611,7 +2611,7 @@ static int open_input_file(InputFile *ifile, const char *filename)
             if (err < 0)
                 exit(1);
 
-            ist->dec_ctx->pkt_timebase = stream->time_base;
+            av_codec_set_pkt_timebase(ist->dec_ctx, stream->time_base);
 #if FF_API_LAVF_AVCTX
             ist->dec_ctx->time_base = stream->codec->time_base;
             ist->dec_ctx->framerate = stream->codec->framerate;
