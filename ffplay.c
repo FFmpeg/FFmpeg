@@ -105,6 +105,8 @@ const int program_birth_year = 2003;
 
 #define CURSOR_HIDE_DELAY 1000000
 
+#define USE_ONEPASS_SUBTITLE_RENDER 1
+
 static unsigned sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
@@ -152,17 +154,17 @@ typedef struct Clock {
 typedef struct Frame {
     AVFrame *frame;
     AVSubtitle sub;
-    AVSubtitleRect **subrects;  /* rescaled subtitle rectangles in yuva */
     int serial;
     double pts;           /* presentation timestamp for the frame */
     double duration;      /* estimated duration of the frame */
     int64_t pos;          /* byte position of the frame in the input file */
-    SDL_Overlay *bmp;
+    SDL_Texture *bmp;
     int allocated;
-    int reallocate;
     int width;
     int height;
+    int format;
     AVRational sar;
+    int uploaded;
 } Frame;
 
 typedef struct FrameQueue {
@@ -272,6 +274,8 @@ typedef struct VideoState {
     FFTSample *rdft_data;
     int xpos;
     double last_vis_time;
+    SDL_Texture *vis_texture;
+    SDL_Texture *sub_texture;
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -284,11 +288,8 @@ typedef struct VideoState {
     AVStream *video_st;
     PacketQueue videoq;
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
-#if !CONFIG_AVFILTER
     struct SwsContext *img_convert_ctx;
-#endif
     struct SwsContext *sub_convert_ctx;
-    SDL_Rect last_display_rect;
     int eof;
 
     char *filename;
@@ -313,8 +314,6 @@ typedef struct VideoState {
 static AVInputFormat *file_iformat;
 static const char *input_filename;
 static const char *window_title;
-static int fs_screen_width;
-static int fs_screen_height;
 static int default_width  = 640;
 static int default_height = 480;
 static int screen_width  = 0;
@@ -362,7 +361,8 @@ static AVPacket flush_pkt;
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
-static SDL_Surface *screen;
+static SDL_Window *window;
+static SDL_Renderer *renderer;
 
 #if CONFIG_AVFILTER
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
@@ -650,12 +650,6 @@ static void decoder_destroy(Decoder *d) {
 
 static void frame_queue_unref_item(Frame *vp)
 {
-    int i;
-    for (i = 0; i < vp->sub.num_rects; i++) {
-        av_freep(&vp->subrects[i]->data[0]);
-        av_freep(&vp->subrects[i]);
-    }
-    av_freep(&vp->subrects);
     av_frame_unref(vp->frame);
     avsubtitle_free(&vp->sub);
 }
@@ -798,111 +792,45 @@ static void decoder_abort(Decoder *d, FrameQueue *fq)
     packet_queue_flush(d->queue);
 }
 
-static inline void fill_rectangle(SDL_Surface *screen,
-                                  int x, int y, int w, int h, int color, int update)
+static inline void fill_rectangle(int x, int y, int w, int h)
 {
     SDL_Rect rect;
     rect.x = x;
     rect.y = y;
     rect.w = w;
     rect.h = h;
-    SDL_FillRect(screen, &rect, color);
-    if (update && w > 0 && h > 0)
-        SDL_UpdateRect(screen, x, y, w, h);
-}
-
-/* draw only the border of a rectangle */
-static void fill_border(int xleft, int ytop, int width, int height, int x, int y, int w, int h, int color, int update)
-{
-    int w1, w2, h1, h2;
-
-    /* fill the background */
-    w1 = x;
-    if (w1 < 0)
-        w1 = 0;
-    w2 = width - (x + w);
-    if (w2 < 0)
-        w2 = 0;
-    h1 = y;
-    if (h1 < 0)
-        h1 = 0;
-    h2 = height - (y + h);
-    if (h2 < 0)
-        h2 = 0;
-    fill_rectangle(screen,
-                   xleft, ytop,
-                   w1, height,
-                   color, update);
-    fill_rectangle(screen,
-                   xleft + width - w2, ytop,
-                   w2, height,
-                   color, update);
-    fill_rectangle(screen,
-                   xleft + w1, ytop,
-                   width - w1 - w2, h1,
-                   color, update);
-    fill_rectangle(screen,
-                   xleft + w1, ytop + height - h2,
-                   width - w1 - w2, h2,
-                   color, update);
-}
-
-#define ALPHA_BLEND(a, oldp, newp, s)\
-((((oldp << s) * (255 - (a))) + (newp * (a))) / (255 << s))
-
-
-
-#define BPP 1
-
-static void blend_subrect(uint8_t **data, int *linesize, const AVSubtitleRect *rect, int imgw, int imgh)
-{
-    int x, y, Y, U, V, A;
-    uint8_t *lum, *cb, *cr;
-    int dstx, dsty, dstw, dsth;
-    const AVSubtitleRect *src = rect;
-
-    dstw = av_clip(rect->w, 0, imgw);
-    dsth = av_clip(rect->h, 0, imgh);
-    dstx = av_clip(rect->x, 0, imgw - dstw);
-    dsty = av_clip(rect->y, 0, imgh - dsth);
-    lum = data[0] + dstx + dsty * linesize[0];
-    cb  = data[1] + dstx/2 + (dsty >> 1) * linesize[1];
-    cr  = data[2] + dstx/2 + (dsty >> 1) * linesize[2];
-
-    for (y = 0; y<dsth; y++) {
-        for (x = 0; x<dstw; x++) {
-            Y = src->data[0][x + y*src->linesize[0]];
-            A = src->data[3][x + y*src->linesize[3]];
-            lum[0] = ALPHA_BLEND(A, lum[0], Y, 0);
-            lum++;
-        }
-        lum += linesize[0] - dstw;
-    }
-
-    for (y = 0; y<dsth/2; y++) {
-        for (x = 0; x<dstw/2; x++) {
-            U = src->data[1][x + y*src->linesize[1]];
-            V = src->data[2][x + y*src->linesize[2]];
-            A = src->data[3][2*x     +  2*y   *src->linesize[3]]
-              + src->data[3][2*x + 1 +  2*y   *src->linesize[3]]
-              + src->data[3][2*x + 1 + (2*y+1)*src->linesize[3]]
-              + src->data[3][2*x     + (2*y+1)*src->linesize[3]];
-            cb[0] = ALPHA_BLEND(A>>2, cb[0], U, 0);
-            cr[0] = ALPHA_BLEND(A>>2, cr[0], V, 0);
-            cb++;
-            cr++;
-        }
-        cb += linesize[1] - dstw/2;
-        cr += linesize[2] - dstw/2;
-    }
+    if (w && h)
+        SDL_RenderFillRect(renderer, &rect);
 }
 
 static void free_picture(Frame *vp)
 {
      if (vp->bmp) {
-         SDL_FreeYUVOverlay(vp->bmp);
+         SDL_DestroyTexture(vp->bmp);
          vp->bmp = NULL;
      }
+}
+
+static int realloc_texture(SDL_Texture **texture, Uint32 new_format, int new_width, int new_height, SDL_BlendMode blendmode, int init_texture)
+{
+    Uint32 format;
+    int access, w, h;
+    if (SDL_QueryTexture(*texture, &format, &access, &w, &h) < 0 || new_width != w || new_height != h || new_format != format) {
+        void *pixels;
+        int pitch;
+        SDL_DestroyTexture(*texture);
+        if (!(*texture = SDL_CreateTexture(renderer, new_format, SDL_TEXTUREACCESS_STREAMING, new_width, new_height)))
+            return -1;
+        if (SDL_SetTextureBlendMode(*texture, blendmode) < 0)
+            return -1;
+        if (init_texture) {
+            if (SDL_LockTexture(*texture, NULL, &pixels, &pitch) < 0)
+                return -1;
+            memset(pixels, 0, pitch * new_height);
+            SDL_UnlockTexture(*texture);
+        }
+    }
+    return 0;
 }
 
 static void calculate_display_rect(SDL_Rect *rect,
@@ -936,12 +864,44 @@ static void calculate_display_rect(SDL_Rect *rect,
     rect->h = FFMAX(height, 1);
 }
 
+static int upload_texture(SDL_Texture *tex, AVFrame *frame, struct SwsContext **img_convert_ctx) {
+    int ret = 0;
+    switch (frame->format) {
+        case AV_PIX_FMT_YUV420P:
+            ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
+                                                  frame->data[1], frame->linesize[1],
+                                                  frame->data[2], frame->linesize[2]);
+            break;
+        case AV_PIX_FMT_BGRA:
+            ret = SDL_UpdateTexture(tex, NULL, frame->data[0], frame->linesize[0]);
+            break;
+        default:
+            /* This should only happen if we are not using avfilter... */
+            *img_convert_ctx = sws_getCachedContext(*img_convert_ctx,
+                frame->width, frame->height, frame->format, frame->width, frame->height,
+                AV_PIX_FMT_BGRA, sws_flags, NULL, NULL, NULL);
+            if (*img_convert_ctx != NULL) {
+                uint8_t *pixels;
+                int pitch;
+                if (!SDL_LockTexture(tex, NULL, (void **)&pixels, &pitch)) {
+                    sws_scale(*img_convert_ctx, (const uint8_t * const *)frame->data, frame->linesize,
+                              0, frame->height, &pixels, &pitch);
+                    SDL_UnlockTexture(tex);
+                }
+            } else {
+                av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
+                ret = -1;
+            }
+            break;
+    }
+    return ret;
+}
+
 static void video_image_display(VideoState *is)
 {
     Frame *vp;
-    Frame *sp;
+    Frame *sp = NULL;
     SDL_Rect rect;
-    int i;
 
     vp = frame_queue_peek_last(&is->pictq);
     if (vp->bmp) {
@@ -950,36 +910,71 @@ static void video_image_display(VideoState *is)
                 sp = frame_queue_peek(&is->subpq);
 
                 if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
-                    uint8_t *data[4];
-                    int linesize[4];
+                    if (!sp->uploaded) {
+                        uint8_t *pixels;
+                        int pitch;
+                        int i;
+                        if (!sp->width || !sp->height) {
+                            sp->width = vp->width;
+                            sp->height = vp->height;
+                        }
+                        if (realloc_texture(&is->sub_texture, SDL_PIXELFORMAT_ARGB8888, sp->width, sp->height, SDL_BLENDMODE_BLEND, 1) < 0)
+                            return;
 
-                    SDL_LockYUVOverlay (vp->bmp);
+                        for (i = 0; i < sp->sub.num_rects; i++) {
+                            AVSubtitleRect *sub_rect = sp->sub.rects[i];
 
-                    data[0] = vp->bmp->pixels[0];
-                    data[1] = vp->bmp->pixels[2];
-                    data[2] = vp->bmp->pixels[1];
+                            sub_rect->x = av_clip(sub_rect->x, 0, sp->width );
+                            sub_rect->y = av_clip(sub_rect->y, 0, sp->height);
+                            sub_rect->w = av_clip(sub_rect->w, 0, sp->width  - sub_rect->x);
+                            sub_rect->h = av_clip(sub_rect->h, 0, sp->height - sub_rect->y);
 
-                    linesize[0] = vp->bmp->pitches[0];
-                    linesize[1] = vp->bmp->pitches[2];
-                    linesize[2] = vp->bmp->pitches[1];
-
-                    for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(data, linesize, sp->subrects[i],
-                                      vp->bmp->w, vp->bmp->h);
-
-                    SDL_UnlockYUVOverlay (vp->bmp);
-                }
+                            is->sub_convert_ctx = sws_getCachedContext(is->sub_convert_ctx,
+                                sub_rect->w, sub_rect->h, AV_PIX_FMT_PAL8,
+                                sub_rect->w, sub_rect->h, AV_PIX_FMT_BGRA,
+                                0, NULL, NULL, NULL);
+                            if (!is->sub_convert_ctx) {
+                                av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
+                                return;
+                            }
+                            if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)&pixels, &pitch)) {
+                                sws_scale(is->sub_convert_ctx, (const uint8_t * const *)sub_rect->data, sub_rect->linesize,
+                                          0, sub_rect->h, &pixels, &pitch);
+                                SDL_UnlockTexture(is->sub_texture);
+                            }
+                        }
+                        sp->uploaded = 1;
+                    }
+                } else
+                    sp = NULL;
             }
         }
 
         calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
 
-        SDL_DisplayYUVOverlay(vp->bmp, &rect);
+        if (!vp->uploaded) {
+            if (upload_texture(vp->bmp, vp->frame, &is->img_convert_ctx) < 0)
+                return;
+            vp->uploaded = 1;
+        }
 
-        if (rect.x != is->last_display_rect.x || rect.y != is->last_display_rect.y || rect.w != is->last_display_rect.w || rect.h != is->last_display_rect.h || is->force_refresh) {
-            int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-            fill_border(is->xleft, is->ytop, is->width, is->height, rect.x, rect.y, rect.w, rect.h, bgcolor, 1);
-            is->last_display_rect = rect;
+        SDL_RenderCopy(renderer, vp->bmp, NULL, &rect);
+        if (sp) {
+#if USE_ONEPASS_SUBTITLE_RENDER
+            SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
+#else
+            int i;
+            double xratio = (double)rect.w / (double)sp->width;
+            double yratio = (double)rect.h / (double)sp->height;
+            for (i = 0; i < sp->sub.num_rects; i++) {
+                SDL_Rect *sub_rect = (SDL_Rect*)sp->sub.rects[i];
+                SDL_Rect target = {.x = rect.x + sub_rect->x * xratio,
+                                   .y = rect.y + sub_rect->y * yratio,
+                                   .w = sub_rect->w * xratio,
+                                   .h = sub_rect->h * yratio};
+                SDL_RenderCopy(renderer, is->sub_texture, sub_rect, &target);
+            }
+#endif
         }
     }
 }
@@ -992,7 +987,7 @@ static inline int compute_mod(int a, int b)
 static void video_audio_display(VideoState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
-    int ch, channels, h, h2, bgcolor, fgcolor;
+    int ch, channels, h, h2;
     int64_t time_diff;
     int rdft_bits, nb_freq;
 
@@ -1042,13 +1037,8 @@ static void video_audio_display(VideoState *s)
         i_start = s->last_i_start;
     }
 
-    bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
     if (s->show_mode == SHOW_MODE_WAVES) {
-        fill_rectangle(screen,
-                       s->xleft, s->ytop, s->width, s->height,
-                       bgcolor, 0);
-
-        fgcolor = SDL_MapRGB(screen->format, 0xff, 0xff, 0xff);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
         /* total height for one channel */
         h = s->height / nb_display_channels;
@@ -1065,25 +1055,23 @@ static void video_audio_display(VideoState *s)
                 } else {
                     ys = y1;
                 }
-                fill_rectangle(screen,
-                               s->xleft + x, ys, 1, y,
-                               fgcolor, 0);
+                fill_rectangle(s->xleft + x, ys, 1, y);
                 i += channels;
                 if (i >= SAMPLE_ARRAY_SIZE)
                     i -= SAMPLE_ARRAY_SIZE;
             }
         }
 
-        fgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0xff);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
 
         for (ch = 1; ch < nb_display_channels; ch++) {
             y = s->ytop + ch * h;
-            fill_rectangle(screen,
-                           s->xleft, y, s->width, 1,
-                           fgcolor, 0);
+            fill_rectangle(s->xleft, y, s->width, 1);
         }
-        SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
     } else {
+        if (realloc_texture(&s->vis_texture, SDL_PIXELFORMAT_ARGB8888, s->width, s->height, SDL_BLENDMODE_NONE, 1) < 0)
+            return;
+
         nb_display_channels= FFMIN(nb_display_channels, 2);
         if (rdft_bits != s->rdft_bits) {
             av_rdft_end(s->rdft);
@@ -1097,6 +1085,9 @@ static void video_audio_display(VideoState *s)
             s->show_mode = SHOW_MODE_WAVES;
         } else {
             FFTSample *data[2];
+            SDL_Rect rect = {.x = s->xpos, .y = 0, .w = 1, .h = s->height};
+            uint32_t *pixels;
+            int pitch;
             for (ch = 0; ch < nb_display_channels; ch++) {
                 data[ch] = s->rdft_data + 2 * nb_freq * ch;
                 i = i_start + ch;
@@ -1111,21 +1102,23 @@ static void video_audio_display(VideoState *s)
             }
             /* Least efficient way to do this, we should of course
              * directly access it but it is more than fast enough. */
-            for (y = 0; y < s->height; y++) {
-                double w = 1 / sqrt(nb_freq);
-                int a = sqrt(w * hypot(data[0][2 * y + 0], data[0][2 * y + 1]));
-                int b = (nb_display_channels == 2 ) ? sqrt(w * hypot(data[1][2 * y + 0], data[1][2 * y + 1]))
-                                                    : a;
-                a = FFMIN(a, 255);
-                b = FFMIN(b, 255);
-                fgcolor = SDL_MapRGB(screen->format, a, b, (a + b) / 2);
-
-                fill_rectangle(screen,
-                            s->xpos, s->height-y, 1, 1,
-                            fgcolor, 0);
+            if (!SDL_LockTexture(s->vis_texture, &rect, (void **)&pixels, &pitch)) {
+                pitch >>= 2;
+                pixels += pitch * s->height;
+                for (y = 0; y < s->height; y++) {
+                    double w = 1 / sqrt(nb_freq);
+                    int a = sqrt(w * sqrt(data[0][2 * y + 0] * data[0][2 * y + 0] + data[0][2 * y + 1] * data[0][2 * y + 1]));
+                    int b = (nb_display_channels == 2 ) ? sqrt(w * hypot(data[1][2 * y + 0], data[1][2 * y + 1]))
+                                                        : a;
+                    a = FFMIN(a, 255);
+                    b = FFMIN(b, 255);
+                    pixels -= pitch;
+                    *pixels = (a << 16) + (b << 8) + ((a+b) >> 1);
+                }
+                SDL_UnlockTexture(s->vis_texture);
             }
+            SDL_RenderCopy(renderer, s->vis_texture, NULL, NULL);
         }
-        SDL_UpdateRect(screen, s->xpos, s->ytop, 1, s->height);
         if (!s->paused)
             s->xpos++;
         if (s->xpos >= s->width)
@@ -1215,11 +1208,13 @@ static void stream_close(VideoState *is)
     frame_queue_destory(&is->sampq);
     frame_queue_destory(&is->subpq);
     SDL_DestroyCond(is->continue_read_thread);
-#if !CONFIG_AVFILTER
     sws_freeContext(is->img_convert_ctx);
-#endif
     sws_freeContext(is->sub_convert_ctx);
     av_free(is->filename);
+    if (is->vis_texture)
+        SDL_DestroyTexture(is->vis_texture);
+    if (is->sub_texture)
+        SDL_DestroyTexture(is->sub_texture);
     av_free(is);
 }
 
@@ -1228,6 +1223,10 @@ static void do_exit(VideoState *is)
     if (is) {
         stream_close(is);
     }
+    if (renderer)
+        SDL_DestroyRenderer(renderer);
+    if (window)
+        SDL_DestroyWindow(window);
     av_lockmgr_register(NULL);
     uninit_opts();
 #if CONFIG_AVFILTER
@@ -1254,42 +1253,48 @@ static void set_default_window_size(int width, int height, AVRational sar)
     default_height = rect.h;
 }
 
-static int video_open(VideoState *is, int force_set_video_mode, Frame *vp)
+static int video_open(VideoState *is, Frame *vp)
 {
-    int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
-
-    if (is_full_screen) flags |= SDL_FULLSCREEN;
-    else                flags |= SDL_RESIZABLE;
 
     if (vp && vp->width)
         set_default_window_size(vp->width, vp->height, vp->sar);
 
-    if (is_full_screen && fs_screen_width) {
-        w = fs_screen_width;
-        h = fs_screen_height;
-    } else if (!is_full_screen && screen_width) {
+    if (screen_width) {
         w = screen_width;
         h = screen_height;
     } else {
         w = default_width;
         h = default_height;
     }
-    w = FFMIN(16383, w);
-    if (screen && is->width == screen->w && screen->w == w
-       && is->height== screen->h && screen->h == h && !force_set_video_mode)
-        return 0;
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-    if (!screen) {
+
+    if (!window) {
+        int flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+        if (!window_title)
+            window_title = input_filename;
+        if (is_full_screen)
+            flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+        if (window) {
+            SDL_RendererInfo info;
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            if (renderer) {
+                if (!SDL_GetRendererInfo(renderer, &info))
+                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", info.name);
+            }
+        }
+    } else {
+        SDL_SetWindowSize(window, w, h);
+    }
+
+    if (!window || !renderer) {
         av_log(NULL, AV_LOG_FATAL, "SDL: could not set video mode - exiting\n");
         do_exit(is);
     }
-    if (!window_title)
-        window_title = input_filename;
-    SDL_WM_SetCaption(window_title, window_title);
 
-    is->width  = screen->w;
-    is->height = screen->h;
+    is->width  = w;
+    is->height = h;
 
     return 0;
 }
@@ -1297,12 +1302,16 @@ static int video_open(VideoState *is, int force_set_video_mode, Frame *vp)
 /* display the current picture, if any */
 static void video_display(VideoState *is)
 {
-    if (!screen)
-        video_open(is, 0, NULL);
+    if (!window)
+        video_open(is, NULL);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
     else if (is->video_st)
         video_image_display(is);
+    SDL_RenderPresent(renderer);
 }
 
 static double get_clock(Clock *c)
@@ -1587,6 +1596,20 @@ retry:
                                 || (is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
                                 || (sp2 && is->vidclk.pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
                         {
+                            if (sp->uploaded) {
+                                int i;
+                                for (i = 0; i < sp->sub.num_rects; i++) {
+                                    AVSubtitleRect *sub_rect = sp->sub.rects[i];
+                                    uint8_t *pixels;
+                                    int pitch, j;
+
+                                    if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)&pixels, &pitch)) {
+                                        for (j = 0; j < sub_rect->h; j++, pixels += pitch)
+                                            memset(pixels, 0, sub_rect->w << 2);
+                                        SDL_UnlockTexture(is->sub_texture);
+                                    }
+                                }
+                            }
                             frame_queue_next(&is->subpq);
                         } else {
                             break;
@@ -1652,19 +1675,18 @@ display:
 static void alloc_picture(VideoState *is)
 {
     Frame *vp;
-    int64_t bufferdiff;
+    int sdl_format;
 
     vp = &is->pictq.queue[is->pictq.windex];
 
-    free_picture(vp);
+    video_open(is, vp);
 
-    video_open(is, 0, vp);
+    if (vp->format == AV_PIX_FMT_YUV420P)
+        sdl_format = SDL_PIXELFORMAT_YV12;
+    else
+        sdl_format = SDL_PIXELFORMAT_ARGB8888;
 
-    vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
-                                   SDL_YV12_OVERLAY,
-                                   screen);
-    bufferdiff = vp->bmp ? FFMAX(vp->bmp->pixels[0], vp->bmp->pixels[1]) - FFMIN(vp->bmp->pixels[0], vp->bmp->pixels[1]) : 0;
-    if (!vp->bmp || vp->bmp->pitches[0] < vp->width || bufferdiff < (int64_t)vp->height * vp->bmp->pitches[0]) {
+    if (realloc_texture(&vp->bmp, sdl_format, vp->width, vp->height, SDL_BLENDMODE_NONE, 0) < 0) {
         /* SDL allocates a buffer smaller than requested if the video
          * overlay hardware is unable to support the requested size. */
         av_log(NULL, AV_LOG_FATAL,
@@ -1680,24 +1702,6 @@ static void alloc_picture(VideoState *is)
     SDL_UnlockMutex(is->pictq.mutex);
 }
 
-static void duplicate_right_border_pixels(SDL_Overlay *bmp) {
-    int i, width, height;
-    Uint8 *p, *maxp;
-    for (i = 0; i < 3; i++) {
-        width  = bmp->w;
-        height = bmp->h;
-        if (i > 0) {
-            width  >>= 1;
-            height >>= 1;
-        }
-        if (bmp->pitches[i] > width) {
-            maxp = bmp->pixels[i] + bmp->pitches[i] * height - 1;
-            for (p = bmp->pixels[i] + width - 1; p < maxp; p += bmp->pitches[i])
-                *(p+1) = *p;
-        }
-    }
-}
-
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double duration, int64_t pos, int serial)
 {
     Frame *vp;
@@ -1711,17 +1715,19 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
         return -1;
 
     vp->sar = src_frame->sample_aspect_ratio;
+    vp->uploaded = 0;
 
     /* alloc or resize hardware picture buffer */
-    if (!vp->bmp || vp->reallocate || !vp->allocated ||
+    if (!vp->bmp || !vp->allocated ||
         vp->width  != src_frame->width ||
-        vp->height != src_frame->height) {
+        vp->height != src_frame->height ||
+        vp->format != src_frame->format) {
         SDL_Event event;
 
-        vp->allocated  = 0;
-        vp->reallocate = 0;
+        vp->allocated = 0;
         vp->width = src_frame->width;
         vp->height = src_frame->height;
+        vp->format = src_frame->format;
 
         /* the allocation must be done in the main thread to avoid
            locking problems. */
@@ -1735,7 +1741,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
             SDL_CondWait(is->pictq.cond, is->pictq.mutex);
         }
         /* if the queue is aborted, we have to pop the pending ALLOC event or wait for the allocation to complete */
-        if (is->videoq.abort_request && SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENTMASK(FF_ALLOC_EVENT)) != 1) {
+        if (is->videoq.abort_request && SDL_PeepEvents(&event, 1, SDL_GETEVENT, FF_ALLOC_EVENT, FF_ALLOC_EVENT) != 1) {
             while (!vp->allocated && !is->abort_request) {
                 SDL_CondWait(is->pictq.cond, is->pictq.mutex);
             }
@@ -1748,58 +1754,12 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
 
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
-        uint8_t *data[4];
-        int linesize[4];
-
-        /* get a pointer on the bitmap */
-        SDL_LockYUVOverlay (vp->bmp);
-
-        data[0] = vp->bmp->pixels[0];
-        data[1] = vp->bmp->pixels[2];
-        data[2] = vp->bmp->pixels[1];
-
-        linesize[0] = vp->bmp->pitches[0];
-        linesize[1] = vp->bmp->pitches[2];
-        linesize[2] = vp->bmp->pitches[1];
-
-#if CONFIG_AVFILTER
-        // FIXME use direct rendering
-        av_image_copy(data, linesize, (const uint8_t **)src_frame->data, src_frame->linesize,
-                        src_frame->format, vp->width, vp->height);
-#else
-        {
-            AVDictionaryEntry *e = av_dict_get(sws_dict, "sws_flags", NULL, 0);
-            if (e) {
-                const AVClass *class = sws_get_class();
-                const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
-                                                   AV_OPT_SEARCH_FAKE_OBJ);
-                int ret = av_opt_eval_flags(&class, o, e->value, &sws_flags);
-                if (ret < 0)
-                    exit(1);
-            }
-        }
-
-        is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
-            vp->width, vp->height, src_frame->format, vp->width, vp->height,
-            AV_PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
-        if (!is->img_convert_ctx) {
-            av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
-            exit(1);
-        }
-        sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
-                  0, vp->height, data, linesize);
-#endif
-        /* workaround SDL PITCH_WORKAROUND */
-        duplicate_right_border_pixels(vp->bmp);
-        /* update the bitmap content */
-        SDL_UnlockYUVOverlay(vp->bmp);
-
         vp->pts = pts;
         vp->duration = duration;
         vp->pos = pos;
         vp->serial = serial;
 
-        /* now we can update the picture count */
+        av_frame_move_ref(vp->frame, src_frame);
         frame_queue_push(&is->pictq);
     }
     return 0;
@@ -1887,7 +1847,7 @@ fail:
 
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters, AVFrame *frame)
 {
-    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE };
     char sws_flags_str[512] = "";
     char buffersrc_args[256];
     int ret;
@@ -1949,10 +1909,6 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                                                              \
     last_filter = filt_ctx;                                                  \
 } while (0)
-
-    /* SDL YUV code is not handling odd width/height for some driver
-     * combinations, therefore we crop the picture to an even width/height. */
-    INSERT_FILT("crop", "floor(in_w/2)*2:floor(in_h/2)*2");
 
     if (autorotate) {
         double theta  = get_rotation(is->video_st);
@@ -2148,7 +2104,7 @@ static int audio_thread(void *arg)
 static int decoder_start(Decoder *d, int (*fn)(void *), void *arg)
 {
     packet_queue_start(d->queue);
-    d->decoder_tid = SDL_CreateThread(fn, arg);
+    d->decoder_tid = SDL_CreateThread(fn, "decoder", arg);
     if (!d->decoder_tid) {
         av_log(NULL, AV_LOG_ERROR, "SDL_CreateThread(): %s\n", SDL_GetError());
         return AVERROR(ENOMEM);
@@ -2268,10 +2224,10 @@ static int video_thread(void *arg)
 static int subtitle_thread(void *arg)
 {
     VideoState *is = arg;
+    AVCodecParameters *codecpar = is->subtitle_st->codecpar;
     Frame *sp;
     int got_subtitle;
     double pts;
-    int i;
 
     for (;;) {
         if (!(sp = frame_queue_peek_writable(&is->subpq)))
@@ -2287,42 +2243,9 @@ static int subtitle_thread(void *arg)
                 pts = sp->sub.pts / (double)AV_TIME_BASE;
             sp->pts = pts;
             sp->serial = is->subdec.pkt_serial;
-            if (!(sp->subrects = av_mallocz_array(sp->sub.num_rects, sizeof(AVSubtitleRect*)))) {
-                av_log(NULL, AV_LOG_FATAL, "Cannot allocate subrects\n");
-                exit(1);
-            }
-
-            for (i = 0; i < sp->sub.num_rects; i++)
-            {
-                int in_w = sp->sub.rects[i]->w;
-                int in_h = sp->sub.rects[i]->h;
-                int subw = is->subdec.avctx->width  ? is->subdec.avctx->width  : is->viddec_width;
-                int subh = is->subdec.avctx->height ? is->subdec.avctx->height : is->viddec_height;
-                int out_w = is->viddec_width  ? in_w * is->viddec_width  / subw : in_w;
-                int out_h = is->viddec_height ? in_h * is->viddec_height / subh : in_h;
-
-                if (!(sp->subrects[i] = av_mallocz(sizeof(AVSubtitleRect))) ||
-                    av_image_alloc(sp->subrects[i]->data, sp->subrects[i]->linesize, out_w, out_h, AV_PIX_FMT_YUVA420P, 16) < 0) {
-                    av_log(NULL, AV_LOG_FATAL, "Cannot allocate subtitle data\n");
-                    exit(1);
-                }
-
-                is->sub_convert_ctx = sws_getCachedContext(is->sub_convert_ctx,
-                    in_w, in_h, AV_PIX_FMT_PAL8, out_w, out_h,
-                    AV_PIX_FMT_YUVA420P, sws_flags, NULL, NULL, NULL);
-                if (!is->sub_convert_ctx) {
-                    av_log(NULL, AV_LOG_FATAL, "Cannot initialize the sub conversion context\n");
-                    exit(1);
-                }
-                sws_scale(is->sub_convert_ctx,
-                          (void*)sp->sub.rects[i]->data, sp->sub.rects[i]->linesize,
-                          0, in_h, sp->subrects[i]->data, sp->subrects[i]->linesize);
-
-                sp->subrects[i]->w = out_w;
-                sp->subrects[i]->h = out_h;
-                sp->subrects[i]->x = sp->sub.rects[i]->x * out_w / in_w;
-                sp->subrects[i]->y = sp->sub.rects[i]->y * out_h / in_h;
-            }
+            sp->width = codecpar->width;
+            sp->height = codecpar->height;
+            sp->uploaded = 0;
 
             /* now we can update the picture count */
             frame_queue_push(&is->subpq);
@@ -3185,7 +3108,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->audio_volume = SDL_MIX_MAXVOLUME;
     is->muted = 0;
     is->av_sync_type = av_sync_type;
-    is->read_tid     = SDL_CreateThread(read_thread, is);
+    is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
     if (!is->read_tid) {
         av_log(NULL, AV_LOG_FATAL, "SDL_CreateThread(): %s\n", SDL_GetError());
 fail:
@@ -3276,27 +3199,17 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 
 static void toggle_full_screen(VideoState *is)
 {
-#if defined(__APPLE__) && SDL_VERSION_ATLEAST(1, 2, 14)
-    /* OS X needs to reallocate the SDL overlays */
-    int i;
-    for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++)
-        is->pictq.queue[i].reallocate = 1;
-#endif
     is_full_screen = !is_full_screen;
-    video_open(is, 1, NULL);
+    SDL_SetWindowFullscreen(window, is_full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
 
 static void toggle_audio_display(VideoState *is)
 {
-    int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
     int next = is->show_mode;
     do {
         next = (next + 1) % SHOW_MODE_NB;
     } while (next != is->show_mode && (next == SHOW_MODE_VIDEO && !is->video_st || next != SHOW_MODE_VIDEO && !is->audio_st));
     if (is->show_mode != next) {
-        fill_rectangle(screen,
-                    is->xleft, is->ytop, is->width, is->height,
-                    bgcolor, 1);
         is->force_refresh = 1;
         is->show_mode = next;
     }
@@ -3305,7 +3218,7 @@ static void toggle_audio_display(VideoState *is)
 static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     double remaining_time = 0.0;
     SDL_PumpEvents();
-    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_ALLEVENTS)) {
+    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
         if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
             SDL_ShowCursor(0);
             cursor_hidden = 1;
@@ -3469,9 +3382,6 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
             break;
-        case SDL_VIDEOEXPOSE:
-            cur_stream->force_refresh = 1;
-            break;
         case SDL_MOUSEBUTTONDOWN:
             if (exit_on_mousedown) {
                 do_exit(cur_stream);
@@ -3527,16 +3437,18 @@ static void event_loop(VideoState *cur_stream)
                     stream_seek(cur_stream, ts, 0, 0);
                 }
             break;
-        case SDL_VIDEORESIZE:
-                screen = SDL_SetVideoMode(FFMIN(16383, event.resize.w), event.resize.h, 0,
-                                          SDL_HWSURFACE|(is_full_screen?SDL_FULLSCREEN:SDL_RESIZABLE)|SDL_ASYNCBLIT|SDL_HWACCEL);
-                if (!screen) {
-                    av_log(NULL, AV_LOG_FATAL, "Failed to set video mode\n");
-                    do_exit(cur_stream);
-                }
-                screen_width  = cur_stream->width  = screen->w;
-                screen_height = cur_stream->height = screen->h;
-                cur_stream->force_refresh = 1;
+        case SDL_WINDOWEVENT:
+            switch (event.window.event) {
+                case SDL_WINDOWEVENT_RESIZED:
+                    screen_width  = cur_stream->width  = event.window.data1;
+                    screen_height = cur_stream->height = event.window.data2;
+                    if (cur_stream->vis_texture) {
+                        SDL_DestroyTexture(cur_stream->vis_texture);
+                        cur_stream->vis_texture = NULL;
+                    }
+                case SDL_WINDOWEVENT_EXPOSED:
+                    cur_stream->force_refresh = 1;
+            }
             break;
         case SDL_QUIT:
         case FF_QUIT_EVENT:
@@ -3773,8 +3685,6 @@ int main(int argc, char **argv)
 {
     int flags;
     VideoState *is;
-    char dummy_videodriver[] = "SDL_VIDEODRIVER=dummy";
-    char alsa_bufsize[] = "SDL_AUDIO_ALSA_SET_BUFFER_SIZE=1";
 
     init_dynload();
 
@@ -3818,30 +3728,18 @@ int main(int argc, char **argv)
         /* Try to work around an occasional ALSA buffer underflow issue when the
          * period size is NPOT due to ALSA resampling by forcing the buffer size. */
         if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
-            SDL_putenv(alsa_bufsize);
+            SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE","1", 1);
     }
     if (display_disable)
-        SDL_putenv(dummy_videodriver); /* For the event queue, we always need a video driver. */
-#if !defined(_WIN32) && !defined(__APPLE__)
-    flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
-#endif
+        flags &= ~SDL_INIT_VIDEO;
     if (SDL_Init (flags)) {
         av_log(NULL, AV_LOG_FATAL, "Could not initialize SDL - %s\n", SDL_GetError());
         av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
 
-    if (!display_disable) {
-        const SDL_VideoInfo *vi = SDL_GetVideoInfo();
-        fs_screen_width = vi->current_w;
-        fs_screen_height = vi->current_h;
-    }
-
-    SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
-
-    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
     if (av_lockmgr_register(lockmgr)) {
         av_log(NULL, AV_LOG_FATAL, "Could not initialize lock manager!\n");

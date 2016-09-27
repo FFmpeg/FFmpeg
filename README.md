@@ -45,5 +45,4 @@ GPL. Please refer to the LICENSE file for detailed information.
 
 Patches should be submitted to the ffmpeg-devel mailing list using
 `git format-patch` or `git send-email`. Github pull requests should be
-avoided because they are not part of our review process. Few developers
-follow pull requests so they will likely be ignored.
+avoided because they are not part of our review process and will be ignored.

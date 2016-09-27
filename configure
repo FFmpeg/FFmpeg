@@ -291,7 +291,7 @@ External library support:
                            if gnutls is not used [no]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
-  --disable-sdl            disable sdl [autodetect]
+  --disable-sdl2           disable sdl2 [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
   --enable-x11grab         enable X11 grabbing (legacy) [no]
@@ -1548,6 +1548,7 @@ EXTERNAL_LIBRARY_LIST="
     openssl
     schannel
     sdl
+    sdl2
     securetransport
     videotoolbox
     x11grab
@@ -2021,7 +2022,7 @@ HAVE_LIST="
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    sdl
+    sdl2
     section_data_rel_ro
     texi2html
     threads
@@ -2549,13 +2550,13 @@ videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
 
-h263_cuvid_hwaccel_deps="cuda cuvid CUVIDMPEG4PICPARAMS"
+h263_cuvid_hwaccel_deps="cuda cuvid"
 h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_videotoolbox_hwaccel_deps="videotoolbox"
 h263_videotoolbox_hwaccel_select="h263_decoder"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
-h264_cuvid_hwaccel_deps="cuda cuvid CUVIDH264PICPARAMS"
+h264_cuvid_hwaccel_deps="cuda cuvid"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
@@ -2582,7 +2583,7 @@ h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
 h264_videotoolbox_hwaccel_select="h264_decoder"
-hevc_cuvid_hwaccel_deps="cuda cuvid CUVIDHEVCPICPARAMS"
+hevc_cuvid_hwaccel_deps="cuda cuvid"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_mediacodec_decoder_deps="mediacodec"
@@ -2595,12 +2596,12 @@ hevc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferHEVC"
 hevc_vaapi_hwaccel_select="hevc_decoder"
 hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
-mjpeg_cuvid_hwaccel_deps="cuda cuvid CUVIDJPEGPICPARAMS"
+mjpeg_cuvid_hwaccel_deps="cuda cuvid"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
 mpeg_xvmc_hwaccel_select="mpeg2video_decoder"
-mpeg1_cuvid_hwaccel_deps="cuda cuvid CUVIDMPEG2PICPARAMS"
+mpeg1_cuvid_hwaccel_deps="cuda cuvid"
 mpeg1_vdpau_decoder_deps="vdpau"
 mpeg1_vdpau_decoder_select="mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
@@ -2610,7 +2611,7 @@ mpeg1_videotoolbox_hwaccel_select="mpeg1video_decoder"
 mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
 mpeg2_crystalhd_decoder_select="crystalhd"
-mpeg2_cuvid_hwaccel_deps="cuda cuvid CUVIDMPEG2PICPARAMS"
+mpeg2_cuvid_hwaccel_deps="cuda cuvid"
 mpeg2_d3d11va_hwaccel_deps="d3d11va"
 mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
@@ -2629,7 +2630,7 @@ mpeg2_videotoolbox_hwaccel_select="mpeg2video_decoder"
 mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
-mpeg4_cuvid_hwaccel_deps="cuda cuvid CUVIDMPEG4PICPARAMS"
+mpeg4_cuvid_hwaccel_deps="cuda cuvid"
 mpeg4_mmal_decoder_deps="mmal"
 mpeg4_mmal_decoder_select="mmal"
 mpeg4_mmal_hwaccel_deps="mmal"
@@ -2644,7 +2645,7 @@ mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 vc1_crystalhd_decoder_select="crystalhd"
-vc1_cuvid_hwaccel_deps="cuda cuvid CUVIDVC1PICPARAMS"
+vc1_cuvid_hwaccel_deps="cuda cuvid"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
@@ -2660,8 +2661,8 @@ vc1_vdpau_decoder_deps="vdpau"
 vc1_vdpau_decoder_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
-vp8_cuvid_hwaccel_deps="cuda cuvid CUVIDVP9PICPARAMS"
-vp9_cuvid_hwaccel_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp8_cuvid_hwaccel_deps="cuda cuvid"
+vp9_cuvid_hwaccel_deps="cuda cuvid"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
@@ -2687,9 +2688,9 @@ scale_npp_filter_deps="cuda libnpp"
 
 nvenc_deps_any="dlopen LoadLibrary"
 nvenc_encoder_deps="nvenc"
-h263_cuvid_decoder_deps="cuda cuvid CUVIDMPEG4PICPARAMS"
+h263_cuvid_decoder_deps="cuda cuvid"
 h263_cuvid_decoder_select="h263_cuvid_hwaccel"
-h264_cuvid_decoder_deps="cuda cuvid CUVIDH264PICPARAMS"
+h264_cuvid_decoder_deps="cuda cuvid"
 h264_cuvid_decoder_select="h264_mp4toannexb_bsf h264_cuvid_hwaccel"
 h264_nvenc_encoder_deps="nvenc"
 h264_qsv_decoder_deps="libmfx"
@@ -2699,7 +2700,7 @@ h264_qsv_encoder_select="qsvenc"
 h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="vaapi_encode golomb"
 
-hevc_cuvid_decoder_deps="cuda cuvid CUVIDHEVCPICPARAMS"
+hevc_cuvid_decoder_deps="cuda cuvid"
 hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf hevc_cuvid_hwaccel"
 hevc_nvenc_encoder_deps="nvenc"
 hevc_qsv_decoder_deps="libmfx"
@@ -2708,26 +2709,26 @@ hevc_qsv_encoder_deps="libmfx"
 hevc_qsv_encoder_select="qsvenc"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="vaapi_encode golomb"
-mjpeg_cuvid_decoder_deps="cuda cuvid CUVIDJPEGPICPARAMS"
+mjpeg_cuvid_decoder_deps="cuda cuvid"
 mjpeg_cuvid_decoder_select="mjpeg_cuvid_hwaccel"
-mpeg1_cuvid_decoder_deps="cuda cuvid CUVIDMPEG2PICPARAMS"
+mpeg1_cuvid_decoder_deps="cuda cuvid"
 mpeg1_cuvid_decoder_select="mpeg1_cuvid_hwaccel"
-mpeg2_cuvid_decoder_deps="cuda cuvid CUVIDMPEG2PICPARAMS"
+mpeg2_cuvid_decoder_deps="cuda cuvid"
 mpeg2_cuvid_decoder_select="mpeg2_cuvid_hwaccel"
 mpeg2_qsv_decoder_deps="libmfx"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
 mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
-mpeg4_cuvid_decoder_deps="cuda cuvid CUVIDMPEG4PICPARAMS"
+mpeg4_cuvid_decoder_deps="cuda cuvid"
 mpeg4_cuvid_decoder_select="mpeg4_cuvid_hwaccel"
 nvenc_h264_encoder_deps="nvenc"
 nvenc_hevc_encoder_deps="nvenc"
 
-vc1_cuvid_decoder_deps="cuda cuvid CUVIDVC1PICPARAMS"
+vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_cuvid_decoder_select="vc1_cuvid_hwaccel"
-vp8_cuvid_decoder_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp8_cuvid_decoder_deps="cuda cuvid"
 vp8_cuvid_decoder_select="vp8_cuvid_hwaccel"
-vp9_cuvid_decoder_deps="cuda cuvid CUVIDVP9PICPARAMS"
+vp9_cuvid_decoder_deps="cuda cuvid"
 vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
 # parsers
@@ -2947,7 +2948,7 @@ pulse_indev_deps="libpulse"
 pulse_outdev_deps="libpulse"
 qtkit_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
 qtkit_indev_select="qtkit"
-sdl_outdev_deps="sdl"
+sdl2_outdev_deps="sdl2"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
 v4l_indev_deps="linux_videodev_h"
@@ -3137,8 +3138,8 @@ ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                setpts_filter trim_filter"
-ffplay_deps="avcodec avformat swscale swresample sdl"
-ffplay_libs='$sdl_libs'
+ffplay_deps="avcodec avformat swscale swresample sdl2"
+ffplay_libs='$sdl2_libs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat fork sarestart"
@@ -5578,14 +5579,6 @@ check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
-check_type "cuviddec.h" "CUVIDH264PICPARAMS"
-check_type "cuviddec.h" "CUVIDHEVCPICPARAMS"
-check_type "cuviddec.h" "CUVIDJPEGPICPARAMS"
-check_type "cuviddec.h" "CUVIDMPEG2PICPARAMS"
-check_type "cuviddec.h" "CUVIDMPEG4PICPARAMS"
-check_type "cuviddec.h" "CUVIDVC1PICPARAMS"
-check_type "cuviddec.h" "CUVIDVP9PICPARAMS"
-
 check_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
 
 if ! disabled w32threads && ! enabled pthreads; then
@@ -5663,7 +5656,8 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
                                die "ERROR: CUDA not found"; }
-enabled cuvid             && { check_lib cuviddec.h cuvidCreateDecoder -lnvcuvid ||
+enabled cuvid             && { add_cflags -I$source_path;
+                               check_lib "compat/cuda/cuviddec.h" cuvidCreateDecoder -lnvcuvid ||
                                die "ERROR: CUVID not found"; } &&
                              { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
@@ -5853,31 +5847,27 @@ if enabled gcrypt; then
     fi
 fi
 
-if ! disabled sdl; then
-    SDL_CONFIG="${cross_prefix}sdl-config"
-    if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-        enable sdl
+disabled sdl && disable sdl2
+if ! disabled sdl2; then
+    SDL2_CONFIG="${cross_prefix}sdl2-config"
+    if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
+        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
     else
-        if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-            sdl_cflags=$("${SDL_CONFIG}" --cflags)
-            sdl_libs=$("${SDL_CONFIG}" --libs)
-            check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-            check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
-            enable sdl
-        elif enabled sdl ; then
-            die "ERROR: SDL not found"
-        else
-            disable sdl
-        fi
+      if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
+        sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
+        sdl2_libs=$("${SDL2_CONFIG}" --libs)
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
+        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+      fi
     fi
     if test $target_os = "mingw32"; then
-        sdl_libs="$sdl_libs -mconsole"
+        sdl2_libs="$sdl2_libs -mconsole"
     fi
 fi
-enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
+enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -6482,7 +6472,7 @@ echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
-echo "SDL support               ${sdl-no}"
+echo "SDL2 support              ${sdl2-no}"
 echo "opencl enabled            ${opencl-no}"
 echo "JNI support               ${jni-no}"
 echo "texi2html enabled         ${texi2html-no}"
@@ -6642,7 +6632,7 @@ HOSTLD_O=$HOSTLD_O
 TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
-CFLAGS-ffplay=$sdl_cflags
+CFLAGS-ffplay=${sdl2_cflags}
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs

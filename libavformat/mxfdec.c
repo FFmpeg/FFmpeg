@@ -1888,7 +1888,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
 
-        /* TODO: handle multiple source clips */
+        /* TODO: handle multiple source clips, only finds first valid source clip */
+        if(material_track->sequence->structural_components_count > 1)
+            av_log(mxf->fc, AV_LOG_WARNING, "material track %d: has %d components\n",
+                       material_track->track_id, material_track->sequence->structural_components_count);
+
         for (j = 0; j < material_track->sequence->structural_components_count; j++) {
             component = mxf_resolve_sourceclip(mxf, &material_track->sequence->structural_components_refs[j]);
             if (!component)
@@ -1914,6 +1918,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 av_log(mxf->fc, AV_LOG_ERROR, "material track %d: no corresponding source track found\n", material_track->track_id);
                 break;
             }
+            if(source_track && component)
+                break;
         }
         if (!source_track || !component || !source_package)
             continue;

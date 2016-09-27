@@ -61,8 +61,9 @@ Two loop searching (TLS) method.
 
 This method first sets quantizers depending on band thresholds and then tries
 to find an optimal combination by adding or subtracting a specific value from
-all quantizers and adjusting some individual quantizer a little.
-Will tune itself based on whether aac_is/aac_ms/aac_pns are enabled.
+all quantizers and adjusting some individual quantizer a little.  Will tune
+itself based on whether @option{aac_is}, @option{aac_ms} and @option{aac_pns}
+are enabled.
 This is the default choice for a coder.
 
 @item anmr
@@ -84,7 +85,7 @@ Not recommended.
 @end table
 
 @item aac_ms
-Sets mid/side coding mode. The default value of auto will automatically use
+Sets mid/side coding mode. The default value of "auto" will automatically use
 M/S with bands which will benefit from such coding. Can be forced for all bands
 using the value "enable", which is mainly useful for debugging or disabled using
 "disable".
@@ -130,19 +131,19 @@ The default, AAC "Low-complexity" profile. Is the most compatible and produces
 decent quality.
 
 @item mpeg2_aac_low
-Equivalent to -profile:a aac_low -aac_pns 0. PNS was introduced with the MPEG4
-specifications.
+Equivalent to @code{-profile:a aac_low -aac_pns 0}. PNS was introduced with the
+MPEG4 specifications.
 
 @item aac_ltp
-Long term prediction profile, is enabled by and will enable the aac_ltp option.
-Introduced in MPEG4.
+Long term prediction profile, is enabled by and will enable the @option{aac_ltp}
+option. Introduced in MPEG4.
 
 @item aac_main
-Main-type prediction profile, is enabled by and will enable the aac_pred option.
-Introduced in MPEG2.
+Main-type prediction profile, is enabled by and will enable the @option{aac_pred}
+option. Introduced in MPEG2.
 
-If this option is unspecified it is set to @samp{aac_low}.
 @end table
+If this option is unspecified it is set to @samp{aac_low}.
 @end table
 
 @section ac3 and ac3_fixed

@@ -30,7 +30,7 @@
 #define op_scale1(x)  block[x] = av_clip_pixel( (block[x]*weight + offset) >> log2_denom )
 #define op_scale2(x)  dst[x] = av_clip_pixel( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W) \
-static void FUNCC(weight_h264_pixels ## W)(uint8_t *_block, int stride, int height, \
+static void FUNCC(weight_h264_pixels ## W)(uint8_t *_block, ptrdiff_t stride, int height, \
                                            int log2_denom, int weight, int offset) \
 { \
     int y; \
@@ -60,7 +60,7 @@ static void FUNCC(weight_h264_pixels ## W)(uint8_t *_block, int stride, int heig
         op_scale1(15); \
     } \
 } \
-static void FUNCC(biweight_h264_pixels ## W)(uint8_t *_dst, uint8_t *_src, int stride, int height, \
+static void FUNCC(biweight_h264_pixels ## W)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride, int height, \
                                              int log2_denom, int weightd, int weights, int offset) \
 { \
     int y; \

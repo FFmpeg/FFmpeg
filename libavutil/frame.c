@@ -114,6 +114,7 @@ static void get_frame_defaults(AVFrame *frame)
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
+    frame->flags               = 0;
 }
 
 static void free_side_data(AVFrameSideData **ptr_sd)

@@ -94,19 +94,19 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
     if (codec && codec->sample_fmts) {
         const enum AVSampleFormat *p = codec->sample_fmts;
         for (; *p != -1; p++) {
-            if (*p == st->codec->sample_fmt)
+            if (*p == st->codecpar->format)
                 break;
         }
         if (*p == -1) {
-            if((codec->capabilities & AV_CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
+            if((codec->capabilities & AV_CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codecpar->format) > av_get_sample_fmt_name(codec->sample_fmts[0]))
                 av_log(NULL, AV_LOG_ERROR, "Conversion will not be lossless.\n");
-            if(av_get_sample_fmt_name(st->codec->sample_fmt))
+            if(av_get_sample_fmt_name(st->codecpar->format))
             av_log(NULL, AV_LOG_WARNING,
                    "Incompatible sample format '%s' for codec '%s', auto-selecting format '%s'\n",
-                   av_get_sample_fmt_name(st->codec->sample_fmt),
+                   av_get_sample_fmt_name(st->codecpar->format),
                    codec->name,
                    av_get_sample_fmt_name(codec->sample_fmts[0]));
-            st->codec->sample_fmt = codec->sample_fmts[0];
+            st->codecpar->format = codec->sample_fmts[0];
         }
     }
 }
@@ -251,7 +251,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         s = input_files[file_idx]->ctx;
 
         for (i = 0; i < s->nb_streams; i++) {
-            enum AVMediaType stream_type = s->streams[i]->codec->codec_type;
+            enum AVMediaType stream_type = s->streams[i]->codecpar->codec_type;
             if (stream_type != type &&
                 !(stream_type == AVMEDIA_TYPE_SUBTITLE &&
                   type == AVMEDIA_TYPE_VIDEO /* sub2video hack */))
@@ -611,7 +611,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         int i;
 
         for (i=0; i<of->ctx->nb_streams; i++)
-            if (of->ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            if (of->ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
                 break;
 
         if (i<of->ctx->nb_streams) {
@@ -673,15 +673,15 @@ static int sub2video_prepare(InputStream *ist)
     int i, w, h;
 
     /* Compute the size of the canvas for the subtitles stream.
-       If the subtitles codec has set a size, use it. Otherwise use the
+       If the subtitles codecpar has set a size, use it. Otherwise use the
        maximum dimensions of the video streams in the same file. */
     w = ist->dec_ctx->width;
     h = ist->dec_ctx->height;
     if (!(w && h)) {
         for (i = 0; i < avf->nb_streams; i++) {
-            if (avf->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-                w = FFMAX(w, avf->streams[i]->codec->width);
-                h = FFMAX(h, avf->streams[i]->codec->height);
+            if (avf->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                w = FFMAX(w, avf->streams[i]->codecpar->width);
+                h = FFMAX(h, avf->streams[i]->codecpar->height);
             }
         }
         if (!(w && h)) {
@@ -1081,7 +1081,7 @@ int configure_filtergraph(FilterGraph *fg)
             /* identical to the same check in ffmpeg.c, needed because
                complex filter graphs are initialized earlier */
             av_log(NULL, AV_LOG_ERROR, "Encoder (codec %s) not found for output stream #%d:%d\n",
-                     avcodec_get_name(ost->st->codec->codec_id), ost->file_index, ost->index);
+                     avcodec_get_name(ost->st->codecpar->codec_id), ost->file_index, ost->index);
             return AVERROR(EINVAL);
         }
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&

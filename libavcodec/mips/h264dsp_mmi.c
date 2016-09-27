@@ -1152,7 +1152,7 @@ void ff_h264_chroma_dc_dequant_idct_8_mmi(int16_t *block, int qmul)
     block[48]= ((d-b)*qmul) >> 7;
 }
 
-void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels16_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset)
 {
     int y;
@@ -1205,7 +1205,7 @@ void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
     }
 }
 
-void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int height, int log2_denom, int weightd, int weights, int offset)
 {
     int y;
@@ -1273,7 +1273,7 @@ void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src, int stride,
     }
 }
 
-void ff_h264_weight_pixels8_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels8_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset)
 {
     int y;
@@ -1313,7 +1313,7 @@ void ff_h264_weight_pixels8_8_mmi(uint8_t *block, int stride, int height,
     }
 }
 
-void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int height, int log2_denom, int weightd, int weights, int offset)
 {
     int y;
@@ -1362,7 +1362,7 @@ void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src, int stride,
     }
 }
 
-void ff_h264_weight_pixels4_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels4_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset)
 {
     int y;
@@ -1402,7 +1402,7 @@ void ff_h264_weight_pixels4_8_mmi(uint8_t *block, int stride, int height,
     }
 }
 
-void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int height, int log2_denom, int weightd, int weights, int offset)
 {
     int y;

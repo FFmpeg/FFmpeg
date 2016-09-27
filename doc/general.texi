@@ -997,7 +997,7 @@ following image formats are supported:
 @item Interplay ACM            @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
-@item MLP (Meridian Lossless Packing)  @tab     @tab  X
+@item MLP (Meridian Lossless Packing)  @tab  X  @tab  X
     @tab Used in DVD-Audio discs.
 @item Monkey's Audio         @tab     @tab  X
 @item MP1 (MPEG audio layer 1)  @tab     @tab IX
@@ -1064,7 +1064,7 @@ following image formats are supported:
     @tab supported through external library libspeex
 @item TAK (Tom's lossless Audio Kompressor)  @tab     @tab  X
 @item True Audio (TTA)       @tab  X  @tab  X
-@item TrueHD                 @tab     @tab  X
+@item TrueHD                 @tab  X  @tab  X
     @tab Used in HD-DVD and Blu-Ray discs.
 @item TwinVQ (VQF flavor)    @tab     @tab  X
 @item VIMA                   @tab     @tab  X

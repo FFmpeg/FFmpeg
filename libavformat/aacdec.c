@@ -70,7 +70,7 @@ static int adts_aac_probe(AVProbeData *p)
         return AVPROBE_SCORE_EXTENSION;
     else if (max_frames >= 3)
         return AVPROBE_SCORE_EXTENSION / 2;
-    else if (max_frames >= 1)
+    else if (first_frames >= 1)
         return 1;
     else
         return 0;

@@ -518,10 +518,14 @@ static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
     return 0;
 }
 
-static int get_range_off(int *off, int *y_rng, int *uv_rng,
+static int get_range_off(AVFilterContext *ctx, int *off,
+                         int *y_rng, int *uv_rng,
                          enum AVColorRange rng, int depth)
 {
     switch (rng) {
+    case AVCOL_RANGE_UNSPECIFIED:
+        av_log(ctx, AV_LOG_WARNING, "Input range not set, assuming tv/mpeg\n");
+        // fall-through
     case AVCOL_RANGE_MPEG:
         *off = 16 << (depth - 8);
         *y_rng = 219 << (depth - 8);
@@ -740,7 +744,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             double rgb2yuv[3][3], (*yuv2rgb)[3] = s->yuv2rgb_dbl_coeffs;
             int off, bits, in_rng;
 
-            res = get_range_off(&off, &s->in_y_rng, &s->in_uv_rng,
+            res = get_range_off(ctx, &off, &s->in_y_rng, &s->in_uv_rng,
                                 s->in_rng, in_desc->comp[0].depth);
             if (res < 0) {
                 av_log(ctx, AV_LOG_ERROR,
@@ -773,7 +777,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             double (*rgb2yuv)[3] = s->rgb2yuv_dbl_coeffs;
             int off, out_rng, bits;
 
-            res = get_range_off(&off, &s->out_y_rng, &s->out_uv_rng,
+            res = get_range_off(ctx, &off, &s->out_y_rng, &s->out_uv_rng,
                                 s->out_rng, out_desc->comp[0].depth);
             if (res < 0) {
                 av_log(ctx, AV_LOG_ERROR,

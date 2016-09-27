@@ -1036,6 +1036,16 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_VARIABLE_FRAME_SIZE (1 << 16)
 /**
+ * Decoder is not a preferred choice for probing.
+ * This indicates that the decoder is not a good choice for probing.
+ * It could for example be an expensive to spin up hardware decoder,
+ * or it could simply not provide a lot of useful information about
+ * the stream.
+ * A decoder marked with this flag should only be used as last resort
+ * choice for probing.
+ */
+#define AV_CODEC_CAP_AVOID_PROBING       (1 << 17)
+/**
  * Codec is intra only.
  */
 #define AV_CODEC_CAP_INTRA_ONLY       0x40000000
@@ -1621,6 +1631,12 @@ typedef struct AVPacket {
 } AVPacket;
 #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
 #define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
+/**
+ * Flag is used to discard packets which are required to maintain valid
+ * decoder state but are not required for output and should be dropped
+ * after decoding.
+ **/
+#define AV_PKT_FLAG_DISCARD   0x0004
 
 enum AVSideDataParamChangeFlags {
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,

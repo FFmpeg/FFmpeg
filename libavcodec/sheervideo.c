@@ -31,6 +31,7 @@
 
 typedef struct SheerVideoContext {
     unsigned format;
+    int alt;
     VLC vlc[2];
     void (*decode_frame)(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb);
 } SheerVideoContext;
@@ -2038,7 +2039,7 @@ static void decode_ybri(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, -128, -128, -128 };
+        int pred[4] = { s->alt ? 125 : -146, -128, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int y, u, v;
@@ -2106,7 +2107,7 @@ static void decode_ybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, -128, -128, -128 };
+        int pred[4] = { s->alt ? 125 : -146, -128, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int y, u, v;
@@ -2878,6 +2879,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p = data;
     GetBitContext gb;
     unsigned format;
+    char format_str[16];
     int ret;
 
     if (avpkt->size <= 20)
@@ -2887,7 +2889,10 @@ static int decode_frame(AVCodecContext *avctx,
         AV_RL32(avpkt->data) != MKTAG('Z','w','a','k'))
         return AVERROR_INVALIDDATA;
 
+    s->alt = 0;
     format = AV_RL32(avpkt->data + 16);
+    av_get_codec_tag_string(format_str, sizeof(format_str), format);
+    av_log(avctx, AV_LOG_DEBUG, "format: %s\n", format_str);
     switch (format) {
     case MKTAG(' ', 'R', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
@@ -2972,6 +2977,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG(' ', 'Y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG(' ', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybr;
@@ -2981,6 +2987,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG(' ', 'y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG(' ', 'y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         s->decode_frame = decode_ybri;

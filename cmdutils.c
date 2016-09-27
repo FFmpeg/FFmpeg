@@ -1579,10 +1579,11 @@ int show_encoders(void *optctx, const char *opt, const char *arg)
 
 int show_bsfs(void *optctx, const char *opt, const char *arg)
 {
-    AVBitStreamFilter *bsf = NULL;
+    const AVBitStreamFilter *bsf = NULL;
+    void *opaque = NULL;
 
     printf("Bitstream filters:\n");
-    while ((bsf = av_bitstream_filter_next(bsf)))
+    while ((bsf = av_bsf_next(&opaque)))
         printf("%s\n", bsf->name);
     printf("\n");
     return 0;
@@ -1993,7 +1994,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
         codec            = s->oformat ? avcodec_find_encoder(codec_id)
                                       : avcodec_find_decoder(codec_id);
 
-    switch (st->codec->codec_type) {
+    switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         prefix  = 'v';
         flags  |= AV_OPT_FLAG_VIDEO_PARAM;
@@ -2051,7 +2052,7 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
         return NULL;
     }
     for (i = 0; i < s->nb_streams; i++)
-        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id,
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
                                     s, s->streams[i], NULL);
     return opts;
 }

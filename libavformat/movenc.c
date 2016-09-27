@@ -90,6 +90,7 @@ static const AVOption options[] = {
     { "encryption_key", "The media encryption key (hex)", offsetof(MOVMuxContext, encryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "use_stream_ids_as_track_ids", "use stream ids as track ids", offsetof(MOVMuxContext, use_stream_ids_as_track_ids), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "write_tmcd", "force or disable writing tmcd", offsetof(MOVMuxContext, write_tmcd), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -1837,8 +1838,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
     }
 
-    if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num &&
-        track->par->sample_aspect_ratio.den != track->par->sample_aspect_ratio.num) {
+    if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num) {
         mov_write_pasp_tag(pb, track);
     }
 
@@ -2313,7 +2313,7 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
     } else if (track->tag == MKTAG('t','m','c','d')) {
-        if (track->mode == MODE_MP4)
+        if (track->mode != MODE_MOV)
             mov_write_nmhd_tag(pb);
         else
             mov_write_gmhd_tag(pb, track);
@@ -5540,7 +5540,8 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    if (mov->mode == MODE_MOV || mov->mode == MODE_MP4) {
+    if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
+        || mov->write_tmcd == 1) {
         tmcd_track = mov->nb_streams;
 
         /* +1 tmcd track for each video stream with a timecode */

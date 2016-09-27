@@ -1815,7 +1815,8 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
     print_val("size",             pkt->size, unit_byte_str);
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
-    print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
+    print_fmt("flags", "%c%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_',
+              pkt->flags & AV_PKT_FLAG_DISCARD ? 'D' : '_');
 
     if (pkt->side_data_elems) {
         int size;
@@ -2610,7 +2611,7 @@ static int open_input_file(InputFile *ifile, const char *filename)
             if (err < 0)
                 exit(1);
 
-            ist->dec_ctx->pkt_timebase = stream->time_base;
+            av_codec_set_pkt_timebase(ist->dec_ctx, stream->time_base);
 #if FF_API_LAVF_AVCTX
             ist->dec_ctx->time_base = stream->codec->time_base;
             ist->dec_ctx->framerate = stream->codec->framerate;

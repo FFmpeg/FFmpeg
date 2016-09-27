@@ -71,37 +71,11 @@ a different merge conflict style:
 
     $ git config --global merge.conflictstyle diff3
 
-Here is a script to help merging the next commit in the queue:
-
-    #!/bin/sh
-
-    if [ "$1" != "merge" -a "$1" != "noop" ]; then
-       printf "Usage: $0 <merge|noop [REF_HASH]>\n"
-       exit 0
-    fi
-
-    [ "$1" = "noop" ] && merge_opts="-s ours"
-
-    nextrev=$(git rev-list libav/master --not master --no-merges | tail -n1)
-    if [ -z "$nextrev" ]; then
-        printf "Nothing to merge..\n"
-        exit 0
-    fi
-    printf "Merging $(git log -n 1 --oneline $nextrev)\n"
-    git merge --no-commit $merge_opts --no-ff --log $nextrev
-
-    if [ "$1" = "noop" -a -n "$2" ]; then
-       printf "\nThis commit is a noop, see $2\n" >> .git/MERGE_MSG
-    fi
-
-    printf "\nMerged-by: $(git config --get user.name) <$(git config --get user.email)>\n" >> .git/MERGE_MSG
-
-
-The script assumes a remote named libav.
-
-It has two modes: merge, and noop. The noop mode creates a merge with no change
-to the HEAD. You can pass a hash as extra argument to reference a justification
-(it is common that we already have the change done in FFmpeg).
+tools/libav-merge-next-commit is a script to help merging the next commit in
+the queue. It assumes a remote named libav. It has two modes: merge, and noop.
+The noop mode creates a merge with no change to the HEAD. You can pass a hash
+as extra argument to reference a justification (it is common that we already
+have the change done in FFmpeg).
 
 Also see tools/murge, you can copy and paste a 3 way conflict into its stdin
 and it will display colored diffs. Any arguments to murge (like ones to suppress
@@ -110,5 +84,4 @@ whitespace differences) are passed into colordiff.
 TODO/FIXME/UNMERGED
 ===================
 
-- HEVC DSP and x86 MC SIMD improvements from Libav (see http://comments.gmane.org/gmane.comp.video.ffmpeg.devel/204917)
-- Porting ffmpeg*.c to codecpar (see bbf5ef9dac9475d8ed22da23acc2eb63a2640784)
+- HEVC DSP and x86 MC SIMD improvements from Libav (see https://ffmpeg.org/pipermail/ffmpeg-devel/2015-December/184777.html)

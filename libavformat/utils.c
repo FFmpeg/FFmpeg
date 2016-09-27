@@ -186,6 +186,35 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return avcodec_find_decoder(codec_id);
 }
 
+static const AVCodec *find_probe_decoder(AVFormatContext *s, const AVStream *st, enum AVCodecID codec_id)
+{
+    const AVCodec *codec;
+
+#if CONFIG_H264_DECODER
+    /* Other parts of the code assume this decoder to be used for h264,
+     * so force it if possible. */
+    if (codec_id == AV_CODEC_ID_H264)
+        return avcodec_find_decoder_by_name("h264");
+#endif
+
+    codec = find_decoder(s, st, codec_id);
+    if (!codec)
+        return NULL;
+
+    if (codec->capabilities & AV_CODEC_CAP_AVOID_PROBING) {
+        const AVCodec *probe_codec = NULL;
+        while (probe_codec = av_codec_next(probe_codec)) {
+            if (probe_codec->id == codec_id &&
+                    av_codec_is_decoder(probe_codec) &&
+                    !(probe_codec->capabilities & (AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_EXPERIMENTAL))) {
+                return probe_codec;
+            }
+        }
+    }
+
+    return codec;
+}
+
 int av_format_get_probe_score(const AVFormatContext *s)
 {
     return s->probe_score;
@@ -1937,6 +1966,16 @@ int ff_index_search_timestamp(const AVIndexEntry *entries, int nb_entries,
 
     while (b - a > 1) {
         m         = (a + b) >> 1;
+
+        // Search for the next non-discarded packet.
+        while ((entries[m].flags & AVINDEX_DISCARD_FRAME) && m < b) {
+            m++;
+            if (m == b && entries[m].timestamp >= wanted_timestamp) {
+                m = b - 1;
+                break;
+            }
+        }
+
         timestamp = entries[m].timestamp;
         if (timestamp >= wanted_timestamp)
             b = m;
@@ -2508,7 +2547,7 @@ static void update_stream_timings(AVFormatContext *ic)
             end_time1 = av_rescale_q_rnd(st->duration, st->time_base,
                                          AV_TIME_BASE_Q,
                                          AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
-            if (end_time1 != AV_NOPTS_VALUE && start_time1 <= INT64_MAX - end_time1) {
+            if (end_time1 != AV_NOPTS_VALUE && (end_time1 > 0 ? start_time1 <= INT64_MAX - end_time1 : start_time1 >= INT64_MIN - end_time1)) {
                 end_time1 += start_time1;
                 end_time = FFMAX(end_time, end_time1);
             }
@@ -2872,7 +2911,7 @@ static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
         (st->codecpar->codec_id != -st->info->found_decoder || !st->codecpar->codec_id)) {
         AVDictionary *thread_opt = NULL;
 
-        codec = find_decoder(s, st, st->codecpar->codec_id);
+        codec = find_probe_decoder(s, st, st->codecpar->codec_id);
 
         if (!codec) {
             st->info->found_decoder = -st->codecpar->codec_id;
@@ -3369,7 +3408,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (st->request_probe <= 0)
             st->internal->avctx_inited = 1;
 
-        codec = find_decoder(ic, st, st->codecpar->codec_id);
+        codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
 
         /* Force thread count to 1 since the H.264 decoder will not extract
          * SPS and PPS to extradata during multi-threaded decoding. */
@@ -3629,7 +3668,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st = ic->streams[stream_index];
             avctx = st->internal->avctx;
             if (!has_codec_parameters(st, NULL)) {
-                const AVCodec *codec = find_decoder(ic, st, st->codecpar->codec_id);
+                const AVCodec *codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
                 if (codec && !avctx->codec) {
                     if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
                         av_log(ic, AV_LOG_WARNING,
@@ -5329,7 +5368,7 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
         }
     }
 
-    if (enc_ctx->codec_tag == AV_RL32("tmcd")
+    if ((enc_ctx->codec_tag == AV_RL32("tmcd") || ost->codecpar->codec_tag == AV_RL32("tmcd"))
         && dec_ctx->time_base.num < dec_ctx->time_base.den
         && dec_ctx->time_base.num > 0
         && 121LL*dec_ctx->time_base.num > dec_ctx->time_base.den) {

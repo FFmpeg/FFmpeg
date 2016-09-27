@@ -9362,6 +9362,22 @@ The second input video bit depth.
 
 All expressions default to "x".
 
+@subsection Examples
+
+@itemize
+@item
+Highlight differences between two RGB video streams:
+@example
+lut2='ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,0,pow(2,bdx)-1)'
+@end example
+
+@item
+Highlight differences between two YUV video streams:
+@example
+lut2='ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,pow(2,bdx-1),pow(2,bdx)-1):ifnot(x-y,pow(2,bdx-1),pow(2,bdx)-1)'
+@end example
+@end itemize
+
 @section maskedclamp
 
 Clamp the first input stream with the second input and third input stream.
@@ -9678,6 +9694,41 @@ Negate input video.
 
 It accepts an integer in input; if non-zero it negates the
 alpha component (if available). The default value in input is 0.
+
+@section nlmeans
+
+Denoise frames using Non-Local Means algorithm.
+
+Each pixel is adjusted by looking for other pixels with similar contexts. This
+context similarity is defined by comparing their surrounding patches of size
+@option{p}x@option{p}. Patches are searched in an area of @option{r}x@option{r}
+around the pixel.
+
+Note that the research area defines centers for patches, which means some
+patches will be made of pixels outside that research area.
+
+The filter accepts the following options.
+
+@table @option
+@item s
+Set denoising strength.
+
+@item p
+Set patch size.
+
+@item pc
+Same as @option{p} but for chroma planes.
+
+The default value is @var{0} and means automatic.
+
+@item r
+Set research size.
+
+@item rc
+Same as @option{r} but for chroma planes.
+
+The default value is @var{0} and means automatic.
+@end table
 
 @section nnedi
 
@@ -13434,11 +13485,11 @@ It accepts the following parameters:
 @table @option
 @item luma_msize_x, lx
 Set the luma matrix horizontal size. It must be an odd integer between
-3 and 63. The default value is 5.
+3 and 23. The default value is 5.
 
 @item luma_msize_y, ly
 Set the luma matrix vertical size. It must be an odd integer between 3
-and 63. The default value is 5.
+and 23. The default value is 5.
 
 @item luma_amount, la
 Set the luma effect strength. It must be a floating point number, reasonable
@@ -13451,11 +13502,11 @@ Default value is 1.0.
 
 @item chroma_msize_x, cx
 Set the chroma matrix horizontal size. It must be an odd integer
-between 3 and 63. The default value is 5.
+between 3 and 23. The default value is 5.
 
 @item chroma_msize_y, cy
 Set the chroma matrix vertical size. It must be an odd integer
-between 3 and 63. The default value is 5.
+between 3 and 23. The default value is 5.
 
 @item chroma_amount, ca
 Set the chroma effect strength. It must be a floating point number, reasonable

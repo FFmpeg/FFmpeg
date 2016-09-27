@@ -237,6 +237,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(MINTERPOLATE,   minterpolate,   vf);
     REGISTER_FILTER(MPDECIMATE,     mpdecimate,     vf);
     REGISTER_FILTER(NEGATE,         negate,         vf);
+    REGISTER_FILTER(NLMEANS,        nlmeans,        vf);
     REGISTER_FILTER(NNEDI,          nnedi,          vf);
     REGISTER_FILTER(NOFORMAT,       noformat,       vf);
     REGISTER_FILTER(NOISE,          noise,          vf);

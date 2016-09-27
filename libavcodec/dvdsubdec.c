@@ -368,7 +368,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             h = y2 - y1 + 1;
             if (h < 0)
                 h = 0;
-            if (w > 0 && h > 0) {
+            if (w > 0 && h > 1) {
                 reset_rects(sub_header);
 
                 sub_header->rects = av_mallocz(sizeof(*sub_header->rects));

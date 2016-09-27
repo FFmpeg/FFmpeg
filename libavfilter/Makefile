@@ -220,6 +220,7 @@ OBJS-$(CONFIG_METADATA_FILTER)               += f_metadata.o
 OBJS-$(CONFIG_MINTERPOLATE_FILTER)           += vf_minterpolate.o motion_estimation.o
 OBJS-$(CONFIG_MPDECIMATE_FILTER)             += vf_mpdecimate.o
 OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
+OBJS-$(CONFIG_NLMEANS_FILTER)                += vf_nlmeans.o
 OBJS-$(CONFIG_NNEDI_FILTER)                  += vf_nnedi.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NOISE_FILTER)                  += vf_noise.o
@@ -354,7 +355,7 @@ SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_opencl
 OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 
 TOOLS     = graph2dot
-TESTPROGS = drawutils filtfmts formats
+TESTPROGS = drawutils filtfmts formats integral
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 

@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-09-xx - xxxxxxx - lavc 57.58.100 - avcodec.h
+  Add AV_CODEC_CAP_AVOID_PROBING codec capability flag.
+
 2016-09-xx - xxxxxxx - lavf 57.49.100 - avformat.h
   Add avformat_transfer_internal_stream_timing_info helper to help with stream
   copy.

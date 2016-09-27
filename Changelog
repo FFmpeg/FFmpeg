@@ -29,6 +29,12 @@ version <next>:
 - avgblur filter
 - sobel and prewitt filter
 - MediaCodec HEVC decoding
+- TrueHD encoder
+- Meridian Lossless Packing (MLP) encoder
+- Non-Local Means (nlmeans) denoising filter
+- sdl2 output device
+- sdl2 support for ffplay
+- sdl1 output device and sdl1 support removed
 
 
 version 3.1:
