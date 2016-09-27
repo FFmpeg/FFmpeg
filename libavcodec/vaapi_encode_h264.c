@@ -778,7 +778,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
         vseq->level_idc = avctx->level;
 
-        vseq->max_num_ref_frames = 2;
+        vseq->max_num_ref_frames = 1 + (avctx->max_b_frames > 0);
 
         vseq->picture_width_in_mbs  = priv->mb_width;
         vseq->picture_height_in_mbs = priv->mb_height;
