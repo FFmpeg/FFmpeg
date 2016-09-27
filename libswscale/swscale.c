@@ -386,7 +386,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
     const int chrSrcSliceY           =                srcSliceY >> c->chrSrcVSubSample;
     const int chrSrcSliceH           = AV_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
-    int should_dither                = is9_OR_10BPS(c->srcFormat) ||
+    int should_dither                = is9_15BPS(c->srcFormat) ||
                                        is16BPS(c->srcFormat);
     int lastDstY;
 
@@ -696,7 +696,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         if (is16BPS(c->dstFormat))
             length *= 2;
 
-        if (is9_OR_10BPS(dstFormat)) {
+        if (is9_15BPS(dstFormat)) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
             fill_plane9or10(dst[3], dstStride[3], length, height, lastDstY,
                             255, desc->comp[3].depth, isBE(dstFormat));

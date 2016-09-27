@@ -1564,7 +1564,7 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
 {
     enum AVPixelFormat dstFormat = c->dstFormat;
 
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
+    if (!is16BPS(dstFormat) && !is9_15BPS(dstFormat) &&
         dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21) {
         if (!(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {

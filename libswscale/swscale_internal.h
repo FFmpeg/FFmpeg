@@ -565,7 +565,7 @@ static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
     return desc->comp[0].depth == 16;
 }
 
-static av_always_inline int is9_OR_10BPS(enum AVPixelFormat pix_fmt)
+static av_always_inline int is9_15BPS(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);

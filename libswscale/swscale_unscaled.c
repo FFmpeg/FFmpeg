@@ -813,7 +813,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             int val = (plane == 3) ? 255 : 128;
             if (is16BPS(c->dstFormat))
                 length *= 2;
-            if (is9_OR_10BPS(c->dstFormat)) {
+            if (is9_15BPS(c->dstFormat)) {
                 fill_plane9or10(dst[plane], dstStride[plane],
                                 length, height, y, val,
                                 desc_dst->comp[plane].depth,
@@ -822,7 +822,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                 fillPlane(dst[plane], dstStride[plane], length, height, y,
                           val);
         } else {
-            if (is9_OR_10BPS(c->srcFormat)) {
+            if (is9_15BPS(c->srcFormat)) {
                 const int src_depth = desc_src->comp[plane].depth;
                 const int dst_depth = desc_dst->comp[plane].depth;
                 const uint16_t *srcPtr2 = (const uint16_t *) srcPtr;
@@ -862,7 +862,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                             COPY9_OR_10TO16(AV_RL16, AV_WL16);
                         }
                     }
-                } else if (is9_OR_10BPS(c->dstFormat)) {
+                } else if (is9_15BPS(c->dstFormat)) {
                     uint16_t *dstPtr2 = (uint16_t *) dstPtr;
 #define COPY9_OR_10TO9_OR_10(loop) \
                     for (i = 0; i < height; i++) { \
@@ -914,7 +914,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                         COPY9_OR_10TO8(AV_RL16);
                     }
                 }
-            } else if (is9_OR_10BPS(c->dstFormat)) {
+            } else if (is9_15BPS(c->dstFormat)) {
                 const int dst_depth = desc_dst->comp[plane].depth;
                 uint16_t *dstPtr2 = (uint16_t *) dstPtr;
 
