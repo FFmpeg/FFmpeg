@@ -525,21 +525,26 @@ typedef struct GUIDTuple {
     int flags;
 } GUIDTuple;
 
+#define PRESET_ALIAS(alias, name, ...) \
+    [PRESET_ ## alias] = { NV_ENC_PRESET_ ## name ## _GUID, __VA_ARGS__ }
+
+#define PRESET(name, ...) PRESET_ALIAS(name, name, __VA_ARGS__)
+
 static void nvenc_map_preset(NvencContext *ctx)
 {
     GUIDTuple presets[] = {
-        { NV_ENC_PRESET_DEFAULT_GUID },
-        { NV_ENC_PRESET_HQ_GUID,                  NVENC_TWO_PASSES }, /* slow */
-        { NV_ENC_PRESET_HQ_GUID,                  NVENC_ONE_PASS }, /* medium */
-        { NV_ENC_PRESET_HP_GUID,                  NVENC_ONE_PASS }, /* fast */
-        { NV_ENC_PRESET_HP_GUID },
-        { NV_ENC_PRESET_HQ_GUID },
-        { NV_ENC_PRESET_BD_GUID },
-        { NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID, NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HP_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID,    NVENC_LOSSLESS },
-        { NV_ENC_PRESET_LOSSLESS_HP_GUID,         NVENC_LOSSLESS },
+        PRESET(DEFAULT),
+        PRESET(HP),
+        PRESET(HQ),
+        PRESET(BD),
+        PRESET_ALIAS(SLOW,   HQ,    NVENC_TWO_PASSES),
+        PRESET_ALIAS(MEDIUM, HQ,    NVENC_ONE_PASS),
+        PRESET_ALIAS(FAST,   HP,    NVENC_ONE_PASS),
+        PRESET(LOW_LATENCY_DEFAULT, NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HP,      NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HQ,      NVENC_LOWLATENCY),
+        PRESET(LOSSLESS_DEFAULT,    NVENC_LOSSLESS),
+        PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
     };
 
     GUIDTuple *t = &presets[ctx->preset];
@@ -547,6 +552,9 @@ static void nvenc_map_preset(NvencContext *ctx)
     ctx->init_encode_params.presetGUID = t->guid;
     ctx->flags = t->flags;
 }
+
+#undef PRESET
+#undef PRESET_ALIAS
 
 static av_cold void set_constqp(AVCodecContext *avctx)
 {
