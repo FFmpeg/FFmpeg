@@ -49,8 +49,27 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format)
     }
 }
 
+static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session)
+{
+    if (!session) {
+        if (!q->internal_qs.session) {
+           int ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
+                                                  q->load_plugins);
+            if (ret < 0)
+                return ret;
+        }
+
+        q->session = q->internal_qs.session;
+    } else {
+        q->session = session;
+    }
+
+   return 0;
+}
+
 static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt)
 {
+    mfxSession session = NULL;
     mfxVideoParam param = { { 0 } };
     mfxBitstream bs   = { { { 0 } } };
     int ret;
@@ -68,20 +87,16 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt
     if (avctx->hwaccel_context) {
         AVQSVContext *qsv = avctx->hwaccel_context;
 
-        q->session        = qsv->session;
+        session           = qsv->session;
         q->iopattern      = qsv->iopattern;
         q->ext_buffers    = qsv->ext_buffers;
         q->nb_ext_buffers = qsv->nb_ext_buffers;
     }
-    if (!q->session) {
-        if (!q->internal_qs.session) {
-            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
-                                               q->load_plugins);
-            if (ret < 0)
-                return ret;
-        }
 
-        q->session = q->internal_qs.session;
+    ret = qsv_init_session(avctx, q, session);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing an MFX session\n");
+        return ret;
     }
 
     if (avpkt->size) {
