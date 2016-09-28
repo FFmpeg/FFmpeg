@@ -3,6 +3,7 @@
 #codec_id 0: pcm_s16le
 #sample_rate 0: 44100
 #channel_layout 0: 4
+#channel_layout_name 0: mono
 0,          0,          0,     1152,     2304, 0x907cb7fa
 0,       1152,       1152,     1152,     2304, 0xb8dc7525
 0,       2304,       2304,     1152,     2304, 0x3e7d6905

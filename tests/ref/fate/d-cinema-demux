@@ -3,6 +3,7 @@
 #codec_id 0: pcm_s24daud
 #sample_rate 0: 96000
 #channel_layout 0: 60f
+#channel_layout_name 0: 5.1(side)
 0,          0,          0,     1875,    36000, 0xd592781d
 0,       1875,       1875,     1875,    36000, 0xd592781d
 0,       3750,       3750,     1875,    36000, 0xd592781d

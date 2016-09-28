@@ -4,6 +4,7 @@
 #codec_id 0: aac
 #sample_rate 0: 16000
 #channel_layout 0: 4
+#channel_layout_name 0: mono
 0,          0,          0,       64,      153, 0xbb6e432f
 0,         64,         64,       64,      185, 0xa01f4ff3
 0,        128,        128,       64,      126, 0x85503ce6

@@ -9,6 +9,7 @@
 #codec_id 1: mp3
 #sample_rate 1: 44100
 #channel_layout 1: 3
+#channel_layout_name 1: stereo
 0,          0,          0,        1,    12288, 0xc2258ebc
 1,          0,          0,     1152,      417, 0xae1cc66a
 1,       1152,       1152,     1152,      418, 0xdc3ec850
