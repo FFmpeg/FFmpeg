@@ -4,6 +4,9 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 version 3.1.4:
+- avfilter/vf_colorspace: fix range for output colorspace option
+- lavc/mediacodecdec_h264: fix SODB escaping
+- avcodec/nvenc: fix const options for hevc gpu setting
 - avformat/avidec: Fix memleak with dv in avi
 - lavc/movtextdec.c: Avoid infinite loop on invalid data.
 - avcodec/ansi: Check dimensions
