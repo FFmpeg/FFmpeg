@@ -1031,7 +1031,7 @@ static const AVOption colorspace_options[] = {
 
     { "space",      "Output colorspace",
       OFFSET(user_csp),   AV_OPT_TYPE_INT, { .i64 = AVCOL_SPC_UNSPECIFIED },
-      AVCOL_PRI_RESERVED0, AVCOL_PRI_NB - 1, FLAGS, "csp" },
+      AVCOL_SPC_RGB, AVCOL_SPC_NB - 1, FLAGS,  "csp"},
     ENUM("bt709",       AVCOL_SPC_BT709,       "csp"),
     ENUM("fcc",         AVCOL_SPC_FCC,         "csp"),
     ENUM("bt470bg",     AVCOL_SPC_BT470BG,     "csp"),
