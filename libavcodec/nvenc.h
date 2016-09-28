@@ -121,6 +121,7 @@ enum {
 enum {
     NV_ENC_HEVC_PROFILE_MAIN,
     NV_ENC_HEVC_PROFILE_MAIN_10,
+    NV_ENC_HEVC_PROFILE_REXT,
 };
 
 enum {
