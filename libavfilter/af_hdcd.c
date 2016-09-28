@@ -1031,267 +1031,134 @@ static void hdcd_reset(hdcd_state *state, unsigned rate, unsigned cdt_ms)
     state->_ana_snb = 0;
 }
 
-/** update the user info/counters */
-static void hdcd_update_info(hdcd_state *state)
+static int hdcd_integrate(HDCDContext *ctx, hdcd_state *states, int channels, int *flag, const int32_t *samples, int count, int stride)
 {
-    if (state->control & 16) state->count_peak_extend++;
-    if (state->control & 32) state->count_transient_filter++;
-    state->gain_counts[state->control & 15]++;
-    state->max_gain = FFMAX(state->max_gain, (state->control & 15));
-}
-
-typedef enum {
-    HDCD_CODE_NONE=0,
-    HDCD_CODE_A,
-    HDCD_CODE_A_ALMOST,
-    HDCD_CODE_B,
-    HDCD_CODE_B_CHECKFAIL,
-    HDCD_CODE_EXPECT_A,
-    HDCD_CODE_EXPECT_B,
-} hdcd_code_result;
-
-static hdcd_code_result hdcd_code(const uint32_t bits, unsigned char *code)
-{
-    if ((bits & 0x0fa00500) == 0x0fa00500) {
-        /* A: 8-bit code  0x7e0fa005[..] */
-        if ((bits & 0xc8) == 0) {
-            /*                   [..pt gggg]
-             * 0x0fa005[..] -> 0b[00.. 0...], gain part doubled */
-            *code = (bits & 255) + (bits & 7);
-            return HDCD_CODE_A;
-        } else
-            return HDCD_CODE_A_ALMOST; /* one of bits 3, 6, or 7 was not 0 */
-    } else if ((bits & 0xa0060000) == 0xa0060000) {
-        /* B: 8-bit code, 8-bit XOR check, 0x7e0fa006[....] */
-        if (((bits ^ (~bits >> 8 & 255)) & 0xffff00ff) == 0xa0060000) {
-            /*          check:   [..pt gggg ~(..pt gggg)]
-             * 0xa006[....] -> 0b[.... ....   .... .... ] */
-            *code = bits >> 8 & 255;
-            return HDCD_CODE_B;
-        } else
-            return HDCD_CODE_B_CHECKFAIL;  /* XOR check failed */
-    }
-    if (bits == 0x7e0fa005)
-        return HDCD_CODE_EXPECT_A;
-    else if (bits == 0x7e0fa006)
-        return HDCD_CODE_EXPECT_B;
-
-    return HDCD_CODE_NONE;
-}
-
-static int hdcd_integrate(HDCDContext *ctx, hdcd_state *state, int *flag, const int32_t *samples, int count, int stride)
-{
-    uint32_t bits = 0;
-    int result = FFMIN(state->readahead, count);
-    int i;
+    uint32_t bits[HDCD_MAX_CHANNELS];
+    int result = count;
+    int i, j, f;
     *flag = 0;
 
-    for (i = result - 1; i >= 0; i--) {
-        bits |= (*samples & 1) << i; /* might be better as a conditional? */
-        samples += stride;
+    memset(bits, 0, sizeof(bits));
+    if (stride < channels) stride = channels;
+
+    for (i = 0; i < channels; i++)
+        result = FFMIN(states[i].readahead, result);
+
+    for (j = result - 1; j >= 0; j--) {
+        for (i = 0; i < channels; i++)
+            bits[i] |= (*(samples++) & 1) << j;
+        samples += stride - channels;
     }
 
-    state->window = (state->window << result) | bits;
-    state->readahead -= result;
-    if (state->readahead > 0)
-        return result;
+    for (i = 0; i < channels; i++) {
+        states[i].window = (states[i].window << result) | bits[i];
+        states[i].readahead -= result;
 
-    bits = (state->window ^ state->window >> 5 ^ state->window >> 23);
-
-    if (state->arg) {
-        switch (hdcd_code(bits, &state->control)) {
-            case HDCD_CODE_A:
-                *flag = 1;
-                state->code_counterA++;
-                break;
-            case HDCD_CODE_B:
-                *flag = 1;
-                state->code_counterB++;
-                break;
-            case HDCD_CODE_A_ALMOST:
-                state->code_counterA_almost++;
-                av_log(ctx->fctx, AV_LOG_VERBOSE,
-                    "hdcd error: Control A almost: 0x%02x near %d\n", bits & 0xff, ctx->sample_count);
-                break;
-            case HDCD_CODE_B_CHECKFAIL:
-                state->code_counterB_checkfails++;
-                av_log(ctx->fctx, AV_LOG_VERBOSE,
-                    "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", bits & 0xffff, (bits & 0xff00) >> 8, ~bits & 0xff, ctx->sample_count);
-                break;
-            case HDCD_CODE_NONE:
-                state->code_counterC_unmatched++;
-                av_log(ctx->fctx, AV_LOG_VERBOSE,
-                    "hdcd error: Unmatched code: 0x%08x near %d\n", bits, ctx->sample_count);
-            default:
-                av_log(ctx->fctx, AV_LOG_INFO,
-                    "hdcd error: Unexpected return value from hdcd_code()\n");
-                av_assert0(0); /* die */
-        }
-        if (*flag) hdcd_update_info(state);
-        state->arg = 0;
-    }
-    if (bits == 0x7e0fa005 || bits == 0x7e0fa006) {
-        /* 0x7e0fa00[.]-> [0b0101 or 0b0110] */
-        state->readahead = (bits & 3) * 8;
-        state->arg = 1;
-        state->code_counterC++;
-    } else {
-        if (bits)
-            state->readahead = readaheadtab[bits & 0xff];
-        else
-            state->readahead = 31; /* ffwd over digisilence */
-    }
-    return result;
-}
-
-static int hdcd_integrate_stereo(HDCDContext *ctx, int *flag, const int32_t *samples, int count)
-{
-    uint32_t bits[2] = {0, 0};
-    int result;
-    int i;
-    *flag = 0;
-
-    /* result = min(count, s0ra, s1ra) */
-    result = FFMIN(ctx->state[0].readahead, count);
-    result = FFMIN(ctx->state[1].readahead, result);
-
-    for (i = result - 1; i >= 0; i--) {
-        bits[0] |= (*(samples++) & 1) << i;
-        bits[1] |= (*(samples++) & 1) << i;
-    }
-
-    for (i = 0; i < 2; i++) {
-        ctx->state[i].window = (ctx->state[i].window << result) | bits[i];
-        ctx->state[i].readahead -= result;
-
-        if (ctx->state[i].readahead == 0) {
-            uint32_t wbits = (ctx->state[i].window ^ ctx->state[i].window >> 5 ^ ctx->state[i].window >> 23);
-            if (ctx->state[i].arg) {
-                switch (hdcd_code(wbits, &ctx->state[i].control)) {
-                    case HDCD_CODE_A:
-                        *flag |= i+1;
-                        ctx->state[i].code_counterA++;
-                        break;
-                    case HDCD_CODE_B:
-                        *flag |= i+1;
-                        ctx->state[i].code_counterB++;
-                        break;
-                    case HDCD_CODE_A_ALMOST:
-                        ctx->state[i].code_counterA_almost++;
+        if (states[i].readahead == 0) {
+            uint32_t wbits = (uint32_t)(states[i].window ^ states[i].window >> 5 ^ states[i].window >> 23);
+            if (states[i].arg) {
+                f = 0;
+                if ((wbits & 0x0fa00500) == 0x0fa00500) {
+                    /* A: 8-bit code  0x7e0fa005[..] */
+                    if ((wbits & 0xc8) == 0) {
+                        /*                   [..pt gggg]
+                         * 0x0fa005[..] -> 0b[00.. 0...], gain part doubled (shifted left 1) */
+                        states[i].control = (wbits & 255) + (wbits & 7);
+                        f = 1;
+                        states[i].code_counterA++;
+                    } else {
+                        /* one of bits 3, 6, or 7 was not 0 */
+                        states[i].code_counterA_almost++;
                         av_log(ctx->fctx, AV_LOG_VERBOSE,
                             "hdcd error: Control A almost: 0x%02x near %d\n", wbits & 0xff, ctx->sample_count);
-                        break;
-                    case HDCD_CODE_B_CHECKFAIL:
-                        ctx->state[i].code_counterB_checkfails++;
+                    }
+                } else if ((wbits & 0xa0060000) == 0xa0060000) {
+                    /* B: 8-bit code, 8-bit XOR check, 0x7e0fa006[....] */
+                    if (((wbits ^ (~wbits >> 8 & 255)) & 0xffff00ff) == 0xa0060000) {
+                        /*          check:   [..pt gggg ~(..pt gggg)]
+                         * 0xa006[....] -> 0b[.... ....   .... .... ] */
+                        states[i].control = wbits >> 8 & 255;
+                        f = 1;
+                        states[i].code_counterB++;
+                    } else {
+                        /* XOR check failed */
+                        states[i].code_counterB_checkfails++;
                         av_log(ctx->fctx, AV_LOG_VERBOSE,
                             "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", wbits & 0xffff, (wbits & 0xff00) >> 8, ~wbits & 0xff, ctx->sample_count);
-                        break;
-                    case HDCD_CODE_NONE:
-                        ctx->state[i].code_counterC_unmatched++;
-                        av_log(ctx->fctx, AV_LOG_VERBOSE,
-                            "hdcd error: Unmatched code: 0x%08x near %d\n", wbits, ctx->sample_count);
-                    default:
-                        av_log(ctx->fctx, AV_LOG_INFO,
-                            "hdcd error: Unexpected return value from hdcd_code()\n");
-                        av_assert0(0); /* die */
+                    }
                 }
-                if (*flag&(i+1)) hdcd_update_info(&ctx->state[i]);
-                ctx->state[i].arg = 0;
+                if (f) {
+                    *flag |= (1<<i);
+                    /* update counters */
+                    if (states[i].control & 16) states[i].count_peak_extend++;
+                    if (states[i].control & 32) states[i].count_transient_filter++;
+                    states[i].gain_counts[states[i].control & 15]++;
+                    states[i].max_gain = FFMAX(states[i].max_gain, (states[i].control & 15));
+                }
+                states[i].arg = 0;
             }
             if (wbits == 0x7e0fa005 || wbits == 0x7e0fa006) {
                 /* 0x7e0fa00[.]-> [0b0101 or 0b0110] */
-                ctx->state[i].readahead = (wbits & 3) * 8;
-                ctx->state[i].arg = 1;
-                ctx->state[i].code_counterC++;
+                states[i].readahead = (wbits & 3) * 8;
+                states[i].arg = 1;
+                states[i].code_counterC++;
             } else {
                 if (wbits)
-                    ctx->state[i].readahead = readaheadtab[wbits & 0xff];
+                    states[i].readahead = readaheadtab[wbits & 0xff];
                 else
-                    ctx->state[i].readahead = 31; /* ffwd over digisilence */
+                    states[i].readahead = 31; /* ffwd over digisilence */
             }
         }
     }
     return result;
 }
 
-static void hdcd_sustain_reset(hdcd_state *state)
-{
-    state->sustain = state->sustain_reset;
-    /* if this is the first reset then change
-     * from never set, to never expired */
-    if (state->count_sustain_expired == -1)
-        state->count_sustain_expired = 0;
-}
-
-static int hdcd_scan(HDCDContext *ctx, hdcd_state *state, const int32_t *samples, int max, int stride)
+static int hdcd_scan(HDCDContext *ctx, hdcd_state *states, int channels, const int32_t *samples, int max, int stride)
 {
     int result;
-    int cdt_active = 0;
-    /* code detect timer */
-    if (state->sustain > 0) {
-        cdt_active = 1;
-        if (state->sustain <= max) {
-            state->control = 0;
-            max = state->sustain;
+    int i;
+    int cdt_active[HDCD_MAX_CHANNELS];
+    memset(cdt_active, 0, sizeof(cdt_active));
+
+    if (stride < channels) stride = channels;
+
+    /* code detect timers for each channel */
+    for(i = 0; i < channels; i++) {
+        if (states[i].sustain > 0) {
+            cdt_active[i] = 1;
+            if (states[i].sustain <=  (unsigned)max) {
+                states[i].control = 0;
+                max = states[i].sustain;
+            }
+            states[i].sustain -= max;
         }
-        state->sustain -= max;
     }
 
     result = 0;
     while (result < max) {
         int flag;
-        int consumed = hdcd_integrate(ctx, state, &flag, samples, max - result, stride);
+        int consumed = hdcd_integrate(ctx, states, channels, &flag, samples, max - result, stride);
         result += consumed;
-        if (flag > 0) {
-            /* reset timer if code detected in channel */
-            hdcd_sustain_reset(state);
+        if (flag) {
+            /* reset timer if code detected in a channel */
+            for(i = 0; i < channels; i++) {
+                if (flag & (1<<i)) {
+                    states[i].sustain = states[i].sustain_reset;
+                    /* if this is the first reset then change
+                     * from never set, to never expired */
+                    if (states[i].count_sustain_expired == -1)
+                        states[i].count_sustain_expired = 0;
+                }
+            }
             break;
         }
         samples += consumed * stride;
     }
-    /* code detect timer expired */
-    if (cdt_active && state->sustain == 0)
-        state->count_sustain_expired++;
 
-    return result;
-}
-
-static int hdcd_scan_stereo(HDCDContext *ctx, const int32_t *samples, int max)
-{
-    int result;
-    int i;
-    int cdt_active[2] = {0, 0};
-
-    /* code detect timers for each channel */
-    for(i=0; i<2; i++) {
-        if (ctx->state[i].sustain > 0) {
-            cdt_active[i] = 1;
-            if (ctx->state[i].sustain <= max) {
-                ctx->state[i].control = 0;
-                max = ctx->state[i].sustain;
-            }
-            ctx->state[i].sustain -= max;
-        }
-    }
-
-    result = 0;
-    while (result < max) {
-        int flag;
-        int consumed = hdcd_integrate_stereo(ctx, &flag, samples, max - result);
-        result += consumed;
-        if (flag) {
-            /* reset timer if code detected in a channel */
-            if (flag & 1) hdcd_sustain_reset(&ctx->state[0]);
-            if (flag & 2) hdcd_sustain_reset(&ctx->state[1]);
-            break;
-        }
-        samples += consumed * 2;
-    }
-
-    for(i=0; i<2; i++) {
+    for(i = 0; i < channels; i++) {
         /* code detect timer expired */
-        if (cdt_active[i] && ctx->state[i].sustain == 0)
-            ctx->state[i].count_sustain_expired++;
+        if (cdt_active[i] && states[i].sustain == 0)
+            states[i].count_sustain_expired++;
     }
 
     return result;
@@ -1496,7 +1363,7 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state *state, int32_t *samples, 
         int run;
 
         av_assert0(samples + lead * stride + stride * (count - lead) <= samples_end);
-        run = hdcd_scan(ctx, state, samples + lead * stride, count - lead, stride) + lead;
+        run = hdcd_scan(ctx, state, 1, samples + lead * stride, count - lead, 0) + lead;
         envelope_run = run - 1;
 
         av_assert0(samples + envelope_run * stride <= samples_end);
@@ -1540,7 +1407,7 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
         int envelope_run, run;
 
         av_assert0(samples + lead * stride + stride * (count - lead) <= samples_end);
-        run = hdcd_scan_stereo(ctx, samples + lead * stride, count - lead) + lead;
+        run = hdcd_scan(ctx, ctx->state, 2, samples + lead * stride, count - lead, 0) + lead;
         envelope_run = run - 1;
 
         av_assert0(samples + envelope_run * stride <= samples_end);
