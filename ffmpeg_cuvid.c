@@ -22,7 +22,6 @@
 #include "ffmpeg.h"
 
 #include <cuda.h>
-#include <nvcuvid.h>
 
 typedef struct CUVIDContext {
     AVBufferRef *hw_frames_ctx;
