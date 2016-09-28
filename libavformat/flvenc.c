@@ -107,6 +107,14 @@ static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
         return FLV_CODECID_SPEEX | FLV_SAMPLERATE_11025HZ | FLV_SAMPLESSIZE_16BIT;
     } else {
         switch (par->sample_rate) {
+        case 48000:
+            // 48khz mp3 is stored with 44k1 samplerate identifer
+            if (par->codec_id == AV_CODEC_ID_MP3) {
+                flags |= FLV_SAMPLERATE_44100HZ;
+                break;
+            } else {
+                goto error;
+            }
         case 44100:
             flags |= FLV_SAMPLERATE_44100HZ;
             break;
@@ -124,6 +132,7 @@ static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
                 break;
             }
         default:
+error:
             av_log(s, AV_LOG_ERROR,
                    "FLV does not support sample rate %d, "
                    "choose from (44100, 22050, 11025)\n", par->sample_rate);
