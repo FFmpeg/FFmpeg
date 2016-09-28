@@ -1710,6 +1710,9 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
+    ret = ff_add_channel_layout(&layouts, AV_CH_LAYOUT_MONO);
+    if (ret < 0)
+        return ret;
     ret = ff_add_channel_layout(&layouts, AV_CH_LAYOUT_STEREO);
     if (ret < 0)
         return ret;
@@ -1811,7 +1814,7 @@ static int config_input(AVFilterLink *inlink) {
         s->cdt_ms, s->state[0].sustain_reset );
 
     if (inlink->channels != 2 && s->process_stereo) {
-        av_log(ctx, AV_LOG_WARNING, "process_stereo disabled (channels = %d)", inlink->channels);
+        av_log(ctx, AV_LOG_WARNING, "process_stereo disabled (channels = %d)\n", inlink->channels);
         s->process_stereo = 0;
     }
     av_log(ctx, AV_LOG_VERBOSE, "Process mode: %s\n",
