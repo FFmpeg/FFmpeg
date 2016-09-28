@@ -426,7 +426,7 @@ specified.
 Set the segment filename. Unless @code{hls_flags single_file} is set,
 @var{filename} is used as a string format with the segment number:
 @example
-ffmpeg in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
+ffmpeg -i in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
@@ -435,7 +435,7 @@ This example will produce the playlist, @file{out.m3u8}, and segment files:
 Use strftime on @var{filename} to expand the segment filename with localtime.
 The segment number (%d) is not available in this mode.
 @example
-ffmpeg in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
@@ -444,7 +444,7 @@ This example will produce the playlist, @file{out.m3u8}, and segment files:
 Used together with -use_localtime, it will create up to one subdirectory which
 is expanded in @var{filename}.
 @example
-ffmpeg in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will create a directory 201560215 (if it does not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
