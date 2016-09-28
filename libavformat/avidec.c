@@ -1090,6 +1090,8 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
             goto error;
 
         if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {
+            if (ast->sub_ctx->nb_streams != 1)
+                goto error;
             ff_read_packet(ast->sub_ctx, &ast->sub_pkt);
             *st->codec = *ast->sub_ctx->streams[0]->codec;
             ast->sub_ctx->streams[0]->codec->extradata = NULL;
