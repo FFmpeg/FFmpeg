@@ -1665,10 +1665,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     out->format = outlink->format; // is this needed?
 
-    in_data  = (int16_t*)in->data[0];
     out_data = (int32_t*)out->data[0];
-    for (c = n = 0; n < in->nb_samples * in->channels; n++)
-        out_data[n] = in_data[n];
+    if (inlink->format == AV_SAMPLE_FMT_S16P) {
+        for (n = 0; n < in->nb_samples; n++)
+            for (c = 0; c < in->channels; c++) {
+                in_data = (int16_t*)in->extended_data[c];
+                out_data[(n * in->channels) + c] = in_data[n];
+            }
+    } else {
+        in_data  = (int16_t*)in->data[0];
+        for (n = 0; n < in->nb_samples * in->channels; n++)
+            out_data[n] = in_data[n];
+    }
 
     if (s->process_stereo) {
         hdcd_detect_start(&s->detect);
@@ -1707,6 +1715,7 @@ static int query_formats(AVFilterContext *ctx)
 
     static const enum AVSampleFormat sample_fmts_in[] = {
         AV_SAMPLE_FMT_S16,
+        AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE
     };
     static const enum AVSampleFormat sample_fmts_out[] = {
