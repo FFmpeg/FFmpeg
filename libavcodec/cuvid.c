@@ -199,8 +199,8 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (!hwframe_ctx->pool) {
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
         hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-        hwframe_ctx->width = FFALIGN(avctx->coded_width, 32);
-        hwframe_ctx->height = FFALIGN(avctx->coded_height, 32);
+        hwframe_ctx->width = FFALIGN(avctx->width, 32);
+        hwframe_ctx->height = FFALIGN(avctx->height, 32);
 
         if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
@@ -397,7 +397,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                     .dstPitch      = frame->linesize[i],
                     .srcY          = offset,
                     .WidthInBytes  = FFMIN(pitch, frame->linesize[i]),
-                    .Height        = avctx->coded_height >> (i ? 1 : 0),
+                    .Height        = avctx->height >> (i ? 1 : 0),
                 };
 
                 ret = CHECK_CU(cuMemcpy2D(&cpy));
