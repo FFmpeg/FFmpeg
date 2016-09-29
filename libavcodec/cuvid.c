@@ -52,7 +52,6 @@ typedef struct CuvidContext
     int64_t prev_pts;
 
     int internal_error;
-    int ever_flushed;
     int decoder_flushing;
 
     cudaVideoCodec codec_type;
@@ -145,8 +144,12 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 0;
     }
 
-    if (hwframe_ctx->pool && !ctx->ever_flushed) {
-        av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized\n");
+    if (hwframe_ctx->pool && (
+            hwframe_ctx->width < avctx->width ||
+            hwframe_ctx->height < avctx->height ||
+            hwframe_ctx->format != AV_PIX_FMT_CUDA ||
+            hwframe_ctx->sw_format != AV_PIX_FMT_NV12)) {
+        av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized with incompatible parameters\n");
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
     }
@@ -805,8 +808,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    ctx->ever_flushed = 0;
-
     ctx->prev_pts = INT64_MIN;
 
     if (!avctx->pkt_timebase.num || !avctx->pkt_timebase.den)
@@ -827,8 +828,6 @@ static void cuvid_flush(AVCodecContext *avctx)
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
     CUVIDSOURCEDATAPACKET seq_pkt = { 0 };
     int ret;
-
-    ctx->ever_flushed = 1;
 
     ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
