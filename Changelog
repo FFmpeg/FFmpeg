@@ -35,6 +35,7 @@ version <next>:
 - sdl2 output device
 - sdl2 support for ffplay
 - sdl1 output device and sdl1 support removed
+- extended mov edit list support
 
 
 version 3.1:
