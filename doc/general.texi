@@ -887,7 +887,7 @@ following image formats are supported:
 @item 8SVX exponential       @tab     @tab  X
 @item 8SVX fibonacci         @tab     @tab  X
 @item AAC                    @tab EX  @tab  X
-    @tab encoding supported through internal encoder and external libraries libfaac and libfdk-aac
+    @tab encoding supported through internal encoder and external library libfdk-aac
 @item AAC+                   @tab  E  @tab  IX
     @tab encoding supported through external library libfdk-aac
 @item AC-3                   @tab IX  @tab  IX

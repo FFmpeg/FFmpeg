@@ -1437,9 +1437,9 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_fr
 
 @item
 Convert the @file{in.mkv} to TS segments using the @code{libx264}
-and @code{libfaac} encoders:
+and @code{aac} encoders:
 @example
-ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a libfaac -f ssegment -segment_list out.list out%03d.ts
+ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a aac -f ssegment -segment_list out.list out%03d.ts
 @end example
 
 @item

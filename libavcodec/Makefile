@@ -862,7 +862,6 @@ OBJS-$(CONFIG_ILBC_AT_ENCODER)            += audiotoolboxenc.o
 OBJS-$(CONFIG_PCM_ALAW_AT_ENCODER)        += audiotoolboxenc.o
 OBJS-$(CONFIG_PCM_MULAW_AT_ENCODER)       += audiotoolboxenc.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
-OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
 OBJS-$(CONFIG_LIBFDK_AAC_DECODER)         += libfdk-aacdec.o
 OBJS-$(CONFIG_LIBFDK_AAC_ENCODER)         += libfdk-aacenc.o
 OBJS-$(CONFIG_LIBGSM_DECODER)             += libgsmdec.o
