@@ -1487,7 +1487,8 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (cid == 0xd4d || cid == 0xd4e)
                 par->width = 1440;
             return 0;
-        } else if (par->codec_tag == MKTAG('A', 'V', 'd', '1') &&
+        } else if ((par->codec_tag == MKTAG('A', 'V', 'd', '1') ||
+                    par->codec_tag == MKTAG('A', 'V', 'd', 'n')) &&
                    atom.size >= 24) {
             int num, den;
             avio_skip(pb, 12);
