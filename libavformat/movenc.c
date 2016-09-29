@@ -1071,6 +1071,7 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     int i;
     int interlaced;
     int cid;
+    int display_width = track->par->width;
 
     if (track->vos_data && track->vos_len > 0x29) {
         if (ff_dnxhd_parse_header_prefix(track->vos_data) != 0) {
@@ -1122,7 +1123,10 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "0001");
     avio_wb32(pb, cid); /* dnxhd cid, some id ? */
-    avio_wb32(pb, track->par->width);
+    if (   track->par->sample_aspect_ratio.num > 0
+        && track->par->sample_aspect_ratio.den > 0)
+        display_width = display_width * track->par->sample_aspect_ratio.num / track->par->sample_aspect_ratio.den;
+    avio_wb32(pb, display_width);
     /* values below are based on samples created with quicktime and avid codecs */
     if (interlaced) {
         avio_wb32(pb, track->par->height / 2);
