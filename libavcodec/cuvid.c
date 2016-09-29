@@ -41,6 +41,8 @@ typedef struct CuvidContext
     CUvideodecoder cudecoder;
     CUvideoparser cuparser;
 
+    char *cu_gpu;
+
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
 
@@ -546,12 +548,6 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static void cuvid_ctx_free(AVHWDeviceContext *ctx)
-{
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
-    cuCtxDestroy(hwctx->cuda_ctx);
-}
-
 static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cuparseinfo)
 {
     CUVIDDECODECREATEINFO cuinfo;
@@ -599,7 +595,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     AVHWDeviceContext *device_ctx;
     AVHWFramesContext *hwframe_ctx;
     CUVIDSOURCEDATAPACKET seq_pkt;
-    CUdevice device;
     CUcontext cuda_ctx = NULL;
     CUcontext dummy;
     const AVBitStreamFilter *bsf;
@@ -637,45 +632,10 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             ret = AVERROR(ENOMEM);
             goto error;
         }
-
-        device_ctx = hwframe_ctx->device_ctx;
-        device_hwctx = device_ctx->hwctx;
-        cuda_ctx = device_hwctx->cuda_ctx;
     } else {
-        ctx->hwdevice = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_CUDA);
-        if (!ctx->hwdevice) {
-            av_log(avctx, AV_LOG_ERROR, "Error allocating hwdevice\n");
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
-
-        ret = CHECK_CU(cuInit(0));
+        ret = av_hwdevice_ctx_create(&ctx->hwdevice, AV_HWDEVICE_TYPE_CUDA, ctx->cu_gpu, NULL, 0);
         if (ret < 0)
             goto error;
-
-        ret = CHECK_CU(cuDeviceGet(&device, 0));
-        if (ret < 0)
-            goto error;
-
-        ret = CHECK_CU(cuCtxCreate(&cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, device));
-        if (ret < 0)
-            goto error;
-
-        device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
-        device_ctx->free = cuvid_ctx_free;
-
-        device_hwctx = device_ctx->hwctx;
-        device_hwctx->cuda_ctx = cuda_ctx;
-
-        ret = CHECK_CU(cuCtxPopCurrent(&dummy));
-        if (ret < 0)
-            goto error;
-
-        ret = av_hwdevice_ctx_init(ctx->hwdevice);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "av_hwdevice_ctx_init failed\n");
-            goto error;
-        }
 
         ctx->hwframe = av_hwframe_ctx_alloc(ctx->hwdevice);
         if (!ctx->hwframe) {
@@ -683,7 +643,13 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             ret = AVERROR(ENOMEM);
             goto error;
         }
+
+        hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
     }
+
+    device_ctx = hwframe_ctx->device_ctx;
+    device_hwctx = device_ctx->hwctx;
+    cuda_ctx = device_hwctx->cuda_ctx;
 
     memset(&ctx->cuparseinfo, 0, sizeof(ctx->cuparseinfo));
     memset(&ctx->cuparse_ext, 0, sizeof(ctx->cuparse_ext));
@@ -883,6 +849,7 @@ static const AVOption options[] = {
     { "weave",    "Weave deinterlacing (do nothing)",        0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Weave    }, 0, 0, VD, "deint" },
     { "bob",      "Bob deinterlacing",                       0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Bob      }, 0, 0, VD, "deint" },
     { "adaptive", "Adaptive deinterlacing",                  0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Adaptive }, 0, 0, VD, "deint" },
+    { "gpu",      "GPU to be used for decoding", OFFSET(cu_gpu), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
     { NULL }
 };
 
