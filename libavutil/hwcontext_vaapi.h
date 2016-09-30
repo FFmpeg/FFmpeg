@@ -45,6 +45,12 @@ enum {
      * separately afterwards.
      */
     AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS = (1 << 1),
+
+    /**
+     * The driver does not support the VASurfaceAttribMemoryType attribute,
+     * so the surface allocation code will not try to use it.
+     */
+    AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE = (1 << 2),
 };
 
 /**

@@ -275,6 +275,11 @@ static const struct {
         "i965",
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS,
     },
+    {
+        "Intel iHD",
+        "ubit",
+        AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE,
+    },
 };
 
 static int vaapi_device_init(AVHWDeviceContext *hwdev)
@@ -449,7 +454,8 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
     }
 
     if (!hwfc->pool) {
-        int need_memory_type = 1, need_pixel_format = 1;
+        int need_memory_type = !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE);
+        int need_pixel_format = 1;
         for (i = 0; i < avfc->nb_attributes; i++) {
             if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
                 need_memory_type  = 0;
