@@ -2819,6 +2819,9 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avctx->internal->draining)
         return AVERROR_EOF;
 
+    if (avpkt && !avpkt->size && avpkt->data)
+        return AVERROR(EINVAL);
+
     if (!avpkt || !avpkt->size) {
         avctx->internal->draining = 1;
         avpkt = NULL;
