@@ -897,12 +897,12 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         mseq->log2_max_pic_order_cnt_lsb_minus4 = 8;
         mseq->vps_sub_layer_ordering_info_present_flag = 0;
-        mseq->vps_max_dec_pic_buffering_minus1[0] = 1;
-        mseq->vps_max_num_reorder_pics[0]         = ctx->b_per_p;
+        mseq->vps_max_dec_pic_buffering_minus1[0] = (avctx->max_b_frames > 0) + 1;
+        mseq->vps_max_num_reorder_pics[0]         = (avctx->max_b_frames > 0);
         mseq->vps_max_latency_increase_plus1[0]   = 0;
         mseq->sps_sub_layer_ordering_info_present_flag = 0;
-        mseq->sps_max_dec_pic_buffering_minus1[0] = 1;
-        mseq->sps_max_num_reorder_pics[0]         = ctx->b_per_p;
+        mseq->sps_max_dec_pic_buffering_minus1[0] = (avctx->max_b_frames > 0) + 1;
+        mseq->sps_max_num_reorder_pics[0]         = (avctx->max_b_frames > 0);
         mseq->sps_max_latency_increase_plus1[0]   = 0;
 
         mseq->vps_timing_info_present_flag = 1;
