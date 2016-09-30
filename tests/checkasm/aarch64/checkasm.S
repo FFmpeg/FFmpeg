@@ -52,7 +52,7 @@ endconst
 // max number of args used by any asm function.
 #define MAX_ARGS 15
 
-#define ARG_STACK ((8*(MAX_ARGS - 7) + 15) & ~15)
+#define ARG_STACK ((8*(MAX_ARGS - 8) + 15) & ~15)
 
 function checkasm_checked_call, export=1
     stp         x29, x30, [sp, #-16]!
@@ -81,7 +81,7 @@ function checkasm_checked_call, export=1
     sub         sp,  sp,  #ARG_STACK
 .equ pos, 0
 // the first stacked arg is copied to x7
-.rept MAX_ARGS-7
+.rept MAX_ARGS-8
     ldr         x9, [x29, #16 + 8 + pos]
     str         x9, [sp, #pos]
 .equ pos, pos + 8
