@@ -97,11 +97,11 @@ end:
 
 int main(int argc, char **argv)
 {
-    av_log_set_level(AV_LOG_TRACE);
     AVDictionary *options = NULL;
     AVIOContext *client = NULL, *server = NULL;
     const char *in_uri, *out_uri;
     int ret, pid;
+    av_log_set_level(AV_LOG_TRACE);
     if (argc < 3) {
         printf("usage: %s input http://hostname[:port]\n"
                "API example program to serve http to multiple clients.\n"
