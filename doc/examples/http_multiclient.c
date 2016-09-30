@@ -33,7 +33,7 @@
 #include <libavutil/opt.h>
 #include <unistd.h>
 
-void process_client(AVIOContext *client, const char *in_uri)
+static void process_client(AVIOContext *client, const char *in_uri)
 {
     AVIOContext *input = NULL;
     uint8_t buf[1024];
