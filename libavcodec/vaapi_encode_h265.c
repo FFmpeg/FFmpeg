@@ -616,77 +616,77 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
             if (mseq->long_term_ref_pics_present_flag) {
                 av_assert0(0);
             }
+        }
 
-            if (vseq->seq_fields.bits.sps_temporal_mvp_enabled_flag) {
-                u(1, vslice_field(slice_temporal_mvp_enabled_flag));
+        if (vseq->seq_fields.bits.sps_temporal_mvp_enabled_flag) {
+            u(1, vslice_field(slice_temporal_mvp_enabled_flag));
+        }
+
+        if (vseq->seq_fields.bits.sample_adaptive_offset_enabled_flag) {
+            u(1, vslice_field(slice_sao_luma_flag));
+            if (!vseq->seq_fields.bits.separate_colour_plane_flag &&
+                vseq->seq_fields.bits.chroma_format_idc != 0) {
+                u(1, vslice_field(slice_sao_chroma_flag));
             }
+        }
 
-            if (vseq->seq_fields.bits.sample_adaptive_offset_enabled_flag) {
-                u(1, vslice_field(slice_sao_luma_flag));
-                if (!vseq->seq_fields.bits.separate_colour_plane_flag &&
-                   vseq->seq_fields.bits.chroma_format_idc != 0) {
-                    u(1, vslice_field(slice_sao_chroma_flag));
-                }
-            }
-
-            if (vslice->slice_type == P_SLICE || vslice->slice_type == B_SLICE) {
-                u(1, vslice_field(num_ref_idx_active_override_flag));
-                if (vslice->slice_fields.bits.num_ref_idx_active_override_flag) {
-                    ue(vslice_var(num_ref_idx_l0_active_minus1));
-                    if (vslice->slice_type == B_SLICE) {
-                        ue(vslice_var(num_ref_idx_l1_active_minus1));
-                    }
-                }
-
-                if (mseq->lists_modification_present_flag) {
-                    av_assert0(0);
-                    // ref_pic_lists_modification()
-                }
+        if (vslice->slice_type == P_SLICE || vslice->slice_type == B_SLICE) {
+            u(1, vslice_field(num_ref_idx_active_override_flag));
+            if (vslice->slice_fields.bits.num_ref_idx_active_override_flag) {
+                ue(vslice_var(num_ref_idx_l0_active_minus1));
                 if (vslice->slice_type == B_SLICE) {
-                    u(1, vslice_field(mvd_l1_zero_flag));
+                    ue(vslice_var(num_ref_idx_l1_active_minus1));
                 }
-                if (mseq->cabac_init_present_flag) {
-                    u(1, vslice_field(cabac_init_flag));
-                }
-                if (vslice->slice_fields.bits.slice_temporal_mvp_enabled_flag) {
-                    if (vslice->slice_type == B_SLICE)
-                        u(1, vslice_field(collocated_from_l0_flag));
-                    ue(vpic->collocated_ref_pic_index, collocated_ref_idx);
-                }
-                if ((vpic->pic_fields.bits.weighted_pred_flag &&
-                     vslice->slice_type == P_SLICE) ||
-                    (vpic->pic_fields.bits.weighted_bipred_flag &&
-                     vslice->slice_type == B_SLICE)) {
-                    av_assert0(0);
-                    // pred_weight_table()
-                }
-                ue(5 - vslice->max_num_merge_cand, five_minus_max_num_merge_cand);
             }
 
-            se(vslice_var(slice_qp_delta));
-            if (mseq->pps_slice_chroma_qp_offsets_present_flag) {
-                se(vslice_var(slice_cb_qp_offset));
-                se(vslice_var(slice_cr_qp_offset));
+            if (mseq->lists_modification_present_flag) {
+                av_assert0(0);
+                // ref_pic_lists_modification()
             }
-            if (mseq->pps_slice_chroma_offset_list_enabled_flag) {
-                u(1, 0, cu_chroma_qp_offset_enabled_flag);
+            if (vslice->slice_type == B_SLICE) {
+                u(1, vslice_field(mvd_l1_zero_flag));
             }
-            if (mseq->deblocking_filter_override_enabled_flag) {
-                u(1, mslice_var(deblocking_filter_override_flag));
+            if (mseq->cabac_init_present_flag) {
+                u(1, vslice_field(cabac_init_flag));
             }
-            if (mslice->deblocking_filter_override_flag) {
-                u(1, vslice_field(slice_deblocking_filter_disabled_flag));
-                if (!vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag) {
-                    se(vslice_var(slice_beta_offset_div2));
-                    se(vslice_var(slice_tc_offset_div2));
-                }
+            if (vslice->slice_fields.bits.slice_temporal_mvp_enabled_flag) {
+                if (vslice->slice_type == B_SLICE)
+                    u(1, vslice_field(collocated_from_l0_flag));
+                ue(vpic->collocated_ref_pic_index, collocated_ref_idx);
             }
-            if (vpic->pic_fields.bits.pps_loop_filter_across_slices_enabled_flag &&
-                (vslice->slice_fields.bits.slice_sao_luma_flag ||
-                 vslice->slice_fields.bits.slice_sao_chroma_flag ||
-                 vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag)) {
-                u(1, vslice_field(slice_loop_filter_across_slices_enabled_flag));
+            if ((vpic->pic_fields.bits.weighted_pred_flag &&
+                 vslice->slice_type == P_SLICE) ||
+                (vpic->pic_fields.bits.weighted_bipred_flag &&
+                 vslice->slice_type == B_SLICE)) {
+                av_assert0(0);
+                // pred_weight_table()
             }
+            ue(5 - vslice->max_num_merge_cand, five_minus_max_num_merge_cand);
+        }
+
+        se(vslice_var(slice_qp_delta));
+        if (mseq->pps_slice_chroma_qp_offsets_present_flag) {
+            se(vslice_var(slice_cb_qp_offset));
+            se(vslice_var(slice_cr_qp_offset));
+        }
+        if (mseq->pps_slice_chroma_offset_list_enabled_flag) {
+            u(1, 0, cu_chroma_qp_offset_enabled_flag);
+        }
+        if (mseq->deblocking_filter_override_enabled_flag) {
+            u(1, mslice_var(deblocking_filter_override_flag));
+        }
+        if (mslice->deblocking_filter_override_flag) {
+            u(1, vslice_field(slice_deblocking_filter_disabled_flag));
+            if (!vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag) {
+                se(vslice_var(slice_beta_offset_div2));
+                se(vslice_var(slice_tc_offset_div2));
+            }
+        }
+        if (vpic->pic_fields.bits.pps_loop_filter_across_slices_enabled_flag &&
+            (vslice->slice_fields.bits.slice_sao_luma_flag ||
+             vslice->slice_fields.bits.slice_sao_chroma_flag ||
+             vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag)) {
+            u(1, vslice_field(slice_loop_filter_across_slices_enabled_flag));
         }
 
         if (vpic->pic_fields.bits.tiles_enabled_flag ||
