@@ -3106,8 +3106,8 @@ scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
 avcodec_example_deps="avcodec avutil"
-avio_dir_cmd="avformat avutil"
-avio_reading="avformat avcodec avutil"
+avio_dir_cmd_deps="avformat avutil"
+avio_reading_deps="avformat avcodec avutil"
 decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
