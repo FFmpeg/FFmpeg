@@ -1448,8 +1448,8 @@ COMPONENT_LIST="
 "
 
 EXAMPLE_LIST="
-    avio_reading_example
     avio_dir_cmd_example
+    avio_reading_example
     decoding_encoding_example
     demuxing_decoding_example
     extract_mvs_example
