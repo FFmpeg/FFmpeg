@@ -1369,6 +1369,12 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->decode_delay = 1;
     ctx->output_order = - ctx->output_delay - 1;
 
+    // Currently we never generate I frames, only IDR.
+    ctx->i_per_idr = 0;
+    ctx->p_per_i = ((avctx->gop_size + avctx->max_b_frames) /
+                    (avctx->max_b_frames + 1));
+    ctx->b_per_p = avctx->max_b_frames;
+
     if (ctx->codec->sequence_params_size > 0) {
         ctx->codec_sequence_params =
             av_mallocz(ctx->codec->sequence_params_size);
@@ -1394,12 +1400,6 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             goto fail;
         }
     }
-
-    // All I are IDR for now.
-    ctx->i_per_idr = 0;
-    ctx->p_per_i = ((avctx->gop_size + avctx->max_b_frames) /
-                    (avctx->max_b_frames + 1));
-    ctx->b_per_p = avctx->max_b_frames;
 
     // This should be configurable somehow.  (Needs testing on a machine
     // where it actually overlaps properly, though.)
