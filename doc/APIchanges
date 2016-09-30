@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.23.0 - hwcontext_vaapi.h
+  Add AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE.
+
 2016-xx-xx - xxxxxxx - lavf 57.08.0 - avio.h
   Add AVIO_SEEKABLE_TIME flag.
 
