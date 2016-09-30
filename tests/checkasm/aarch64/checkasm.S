@@ -52,6 +52,19 @@ endconst
 // max number of args used by any asm function.
 #define MAX_ARGS 15
 
+#define CLOBBER_STACK ((8*MAX_ARGS + 15) & ~15)
+
+function checkasm_stack_clobber, export=1
+    mov         x29, sp
+    mov         x2,  #CLOBBER_STACK
+1:
+    stp         x0,  x1,  [sp, #-16]!
+    subs        x2,  x2,  #16
+    b.gt        1b
+    mov         sp,  x29
+    ret
+endfunc
+
 #define ARG_STACK ((8*(MAX_ARGS - 8) + 15) & ~15)
 
 function checkasm_checked_call, export=1
