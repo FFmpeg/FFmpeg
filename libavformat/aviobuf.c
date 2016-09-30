@@ -1156,7 +1156,8 @@ int avio_read_to_bprint(AVIOContext *h, AVBPrint *pb, size_t max_size)
 int avio_accept(AVIOContext *s, AVIOContext **c)
 {
     int ret;
-    URLContext *sc = s->opaque;
+    AVIOInternal *internal = s->opaque;
+    URLContext *sc = internal->h;
     URLContext *cc = NULL;
     ret = ffurl_accept(sc, &cc);
     if (ret < 0)
@@ -1166,7 +1167,8 @@ int avio_accept(AVIOContext *s, AVIOContext **c)
 
 int avio_handshake(AVIOContext *c)
 {
-    URLContext *cc = c->opaque;
+    AVIOInternal *internal = c->opaque;
+    URLContext *cc = internal->h;
     return ffurl_handshake(cc);
 }
 
