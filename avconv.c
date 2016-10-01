@@ -1978,6 +1978,8 @@ static int init_output_stream_encode(OutputStream *ost)
             ost->filter->filter->inputs[0]->sample_aspect_ratio;
         enc_ctx->pix_fmt = ost->filter->filter->inputs[0]->format;
 
+        enc_ctx->framerate = ost->frame_rate;
+
         ost->st->avg_frame_rate = ost->frame_rate;
 
         if (dec_ctx &&
