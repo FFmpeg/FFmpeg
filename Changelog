@@ -4,6 +4,8 @@ releases are sorted from youngest to oldest.
 version <next>:
 
 version 3.1.4:
+- avformat/avidec: Check nb_streams in read_gab2_sub()
+- avformat/avidec: Remove ancient assert
 - avfilter/vf_colorspace: fix range for output colorspace option
 - lavc/mediacodecdec_h264: fix SODB escaping
 - avcodec/nvenc: fix const options for hevc gpu setting
