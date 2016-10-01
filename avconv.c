@@ -1326,7 +1326,8 @@ int guess_input_channel_layout(InputStream *ist)
     return 1;
 }
 
-static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
+static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
+                        int *decode_failed)
 {
     AVFrame *decoded_frame, *f;
     AVCodecContext *avctx = ist->dec_ctx;
@@ -1339,6 +1340,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     decoded_frame = ist->decoded_frame;
 
     ret = decode(avctx, decoded_frame, got_output, pkt);
+    if (ret < 0)
+        *decode_failed = 1;
     if (!*got_output || ret < 0)
         return ret;
 
@@ -1377,7 +1380,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     return err < 0 ? err : ret;
 }
 
-static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
+static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output,
+                        int *decode_failed)
 {
     AVFrame *decoded_frame, *f;
     int i, ret = 0, err = 0;
@@ -1389,6 +1393,8 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     decoded_frame = ist->decoded_frame;
 
     ret = decode(ist->dec_ctx, decoded_frame, got_output, pkt);
+    if (ret < 0)
+        *decode_failed = 1;
     if (!*got_output || ret < 0)
         return ret;
 
@@ -1429,13 +1435,16 @@ fail:
     return err < 0 ? err : ret;
 }
 
-static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
+static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
+                               int *decode_failed)
 {
     AVSubtitle subtitle;
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
-    if (ret < 0)
+    if (ret < 0) {
+        *decode_failed = 1;
         return ret;
+    }
     if (!*got_output)
         return ret;
 
@@ -1491,16 +1500,19 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
     while (ist->decoding_needed && (!pkt || avpkt.size > 0)) {
         int ret = 0;
         int got_output = 0;
+        int decode_failed = 0;
 
         if (!repeating)
             ist->last_dts = ist->next_dts;
 
         switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            ret = decode_audio    (ist, repeating ? NULL : &avpkt, &got_output);
+            ret = decode_audio    (ist, repeating ? NULL : &avpkt, &got_output,
+                                   &decode_failed);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = decode_video    (ist, repeating ? NULL : &avpkt, &got_output);
+            ret = decode_video    (ist, repeating ? NULL : &avpkt, &got_output,
+                                   &decode_failed);
             if (repeating && !got_output)
                 ;
             else if (pkt && pkt->duration)
@@ -1517,16 +1529,21 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
         case AVMEDIA_TYPE_SUBTITLE:
             if (repeating)
                 break;
-            ret = transcode_subtitles(ist, &avpkt, &got_output);
+            ret = transcode_subtitles(ist, &avpkt, &got_output, &decode_failed);
             break;
         default:
             return;
         }
 
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
-                   ist->file_index, ist->st->index);
-            if (exit_on_error)
+            if (decode_failed) {
+                av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
+                       ist->file_index, ist->st->index);
+            } else {
+                av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
+                       "data for stream #%d:%d\n", ist->file_index, ist->st->index);
+            }
+            if (!decode_failed || exit_on_error)
                 exit_program(1);
             break;
         }
