@@ -84,7 +84,12 @@ typedef struct VAAPIEncodeH264MiscSequenceParams {
     char vcl_hrd_parameters_present_flag;
     char low_delay_hrd_flag;
     char pic_struct_present_flag;
-    char bitstream_restriction_flag;
+
+    char motion_vectors_over_pic_boundaries_flag;
+    unsigned int max_bytes_per_pic_denom;
+    unsigned int max_bits_per_mb_denom;
+    unsigned int max_num_reorder_frames;
+    unsigned int max_dec_pic_buffering;
 
     unsigned int cpb_cnt_minus1;
     unsigned int bit_rate_scale;
@@ -263,7 +268,13 @@ static void vaapi_encode_h264_write_vui(PutBitContext *pbc,
 
     u(1, vvui_field(bitstream_restriction_flag));
     if (vseq->vui_fields.bits.bitstream_restriction_flag) {
-        av_assert0(0 && "bitstream restrictions not supported");
+        u(1, mseq_var(motion_vectors_over_pic_boundaries_flag));
+        ue(mseq_var(max_bytes_per_pic_denom));
+        ue(mseq_var(max_bits_per_mb_denom));
+        ue(vvui_field(log2_max_mv_length_horizontal));
+        ue(vvui_field(log2_max_mv_length_vertical));
+        ue(mseq_var(max_num_reorder_frames));
+        ue(mseq_var(max_dec_pic_buffering));
     }
 }
 
@@ -830,6 +841,16 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             mseq->transfer_characteristics = avctx->color_trc;
             mseq->matrix_coefficients      = avctx->colorspace;
         }
+
+        vseq->vui_fields.bits.bitstream_restriction_flag = 1;
+        mseq->motion_vectors_over_pic_boundaries_flag = 1;
+        mseq->max_bytes_per_pic_denom = 0;
+        mseq->max_bits_per_mb_denom   = 0;
+        vseq->vui_fields.bits.log2_max_mv_length_horizontal = 16;
+        vseq->vui_fields.bits.log2_max_mv_length_vertical   = 16;
+
+        mseq->max_num_reorder_frames = (avctx->max_b_frames > 0);
+        mseq->max_dec_pic_buffering  = vseq->max_num_ref_frames;
 
         vseq->bits_per_second = avctx->bit_rate;
 
