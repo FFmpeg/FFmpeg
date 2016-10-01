@@ -77,6 +77,11 @@ fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/mo
 fate-limited_input_seek-copyts: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek-copyts: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -copyts -fflags +bitexact -f ogg
 
+FATE_STREAMCOPY-$(call ALLYES, MOV_DEMUXER MOV_MUXER) += fate-copy-psp
+fate-copy-psp: $(TARGET_SAMPLES)/h264/wwwq_cut.mp4
+fate-copy-psp: CMD = transcode "mov" $(TARGET_SAMPLES)/h264/wwwq_cut.mp4\
+                      psp "-c copy" "-codec copy"
+
 fate-streamcopy: $(FATE_STREAMCOPY-yes)
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER MATROSKA_MUXER) += fate-rgb24-mkv
