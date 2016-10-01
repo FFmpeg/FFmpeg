@@ -25,6 +25,8 @@
 #include "pixdesc.h"
 #include "pixfmt.h"
 
+#define CUDA_FRAME_ALIGNMENT 256
+
 typedef struct CUDAFramesContext {
     int shift_width, shift_height;
 } CUDAFramesContext;
@@ -83,6 +85,7 @@ fail:
 static int cuda_frames_init(AVHWFramesContext *ctx)
 {
     CUDAFramesContext *priv = ctx->internal->priv;
+    int aligned_width = FFALIGN(ctx->width, CUDA_FRAME_ALIGNMENT);
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++) {
@@ -103,10 +106,10 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         switch (ctx->sw_format) {
         case AV_PIX_FMT_NV12:
         case AV_PIX_FMT_YUV420P:
-            size = ctx->width * ctx->height * 3 / 2;
+            size = aligned_width * ctx->height * 3 / 2;
             break;
         case AV_PIX_FMT_YUV444P:
-            size = ctx->width * ctx->height * 3;
+            size = aligned_width * ctx->height * 3;
             break;
         }
 
@@ -120,6 +123,8 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
 
 static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
 {
+    int aligned_width = FFALIGN(ctx->width, CUDA_FRAME_ALIGNMENT);
+
     frame->buf[0] = av_buffer_pool_get(ctx->pool);
     if (!frame->buf[0])
         return AVERROR(ENOMEM);
@@ -127,25 +132,25 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
     switch (ctx->sw_format) {
     case AV_PIX_FMT_NV12:
         frame->data[0]     = frame->buf[0]->data;
-        frame->data[1]     = frame->data[0] + ctx->width * ctx->height;
-        frame->linesize[0] = ctx->width;
-        frame->linesize[1] = ctx->width;
+        frame->data[1]     = frame->data[0] + aligned_width * ctx->height;
+        frame->linesize[0] = aligned_width;
+        frame->linesize[1] = aligned_width;
         break;
     case AV_PIX_FMT_YUV420P:
         frame->data[0]     = frame->buf[0]->data;
-        frame->data[2]     = frame->data[0] + ctx->width * ctx->height;
-        frame->data[1]     = frame->data[2] + ctx->width * ctx->height / 4;
-        frame->linesize[0] = ctx->width;
-        frame->linesize[1] = ctx->width / 2;
-        frame->linesize[2] = ctx->width / 2;
+        frame->data[2]     = frame->data[0] + aligned_width * ctx->height;
+        frame->data[1]     = frame->data[2] + aligned_width * ctx->height / 4;
+        frame->linesize[0] = aligned_width;
+        frame->linesize[1] = aligned_width / 2;
+        frame->linesize[2] = aligned_width / 2;
         break;
     case AV_PIX_FMT_YUV444P:
         frame->data[0]     = frame->buf[0]->data;
-        frame->data[1]     = frame->data[0] + ctx->width * ctx->height;
-        frame->data[2]     = frame->data[1] + ctx->width * ctx->height;
-        frame->linesize[0] = ctx->width;
-        frame->linesize[1] = ctx->width;
-        frame->linesize[2] = ctx->width;
+        frame->data[1]     = frame->data[0] + aligned_width * ctx->height;
+        frame->data[2]     = frame->data[1] + aligned_width * ctx->height;
+        frame->linesize[0] = aligned_width;
+        frame->linesize[1] = aligned_width;
+        frame->linesize[2] = aligned_width;
         break;
     default:
         av_frame_unref(frame);
