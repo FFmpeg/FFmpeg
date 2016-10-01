@@ -88,6 +88,7 @@ Stuff that didn't reach the codebase:
 -------------------------------------
 
 - HEVC DSP and x86 MC SIMD improvements from Libav (see https://ffmpeg.org/pipermail/ffmpeg-devel/2015-December/184777.html)
+- QSV HWContext integration (04b17ff and 130e1f1), QSV scaling filter (62c58c5)
 
 Collateral damage that needs work locally:
 ------------------------------------------
