@@ -230,9 +230,6 @@ typedef struct VideoState {
     Decoder viddec;
     Decoder subdec;
 
-    int viddec_width;
-    int viddec_height;
-
     int audio_stream;
 
     int av_sync_type;
@@ -1780,9 +1777,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame)
 
         frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
 
-        is->viddec_width  = frame->width;
-        is->viddec_height = frame->height;
-
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             if (frame->pts != AV_NOPTS_VALUE) {
                 double diff = dpts - get_master_clock(is);
@@ -2686,9 +2680,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
-
-        is->viddec_width  = avctx->width;
-        is->viddec_height = avctx->height;
 
         decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread);
         if ((ret = decoder_start(&is->viddec, video_thread, is)) < 0)
