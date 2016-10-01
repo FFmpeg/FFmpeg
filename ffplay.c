@@ -2224,7 +2224,6 @@ static int video_thread(void *arg)
 static int subtitle_thread(void *arg)
 {
     VideoState *is = arg;
-    AVCodecParameters *codecpar = is->subtitle_st->codecpar;
     Frame *sp;
     int got_subtitle;
     double pts;
@@ -2243,8 +2242,8 @@ static int subtitle_thread(void *arg)
                 pts = sp->sub.pts / (double)AV_TIME_BASE;
             sp->pts = pts;
             sp->serial = is->subdec.pkt_serial;
-            sp->width = codecpar->width;
-            sp->height = codecpar->height;
+            sp->width = is->subdec.avctx->width;
+            sp->height = is->subdec.avctx->height;
             sp->uploaded = 0;
 
             /* now we can update the picture count */
