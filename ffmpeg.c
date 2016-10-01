@@ -3314,6 +3314,8 @@ static int init_output_stream_encode(OutputStream *ost)
             enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
                                                  av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
+        enc_ctx->framerate = ost->frame_rate;
+
         ost->st->avg_frame_rate = ost->frame_rate;
 
         if (!dec_ctx ||
