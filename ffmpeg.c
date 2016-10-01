@@ -2026,12 +2026,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             }
     }
 
-    /* if the decoder provides a pts, use it instead of the last packet pts.
-       the decoder could be delaying output by a packet or more. */
-    if (decoded_frame->pts != AV_NOPTS_VALUE) {
-        ist->dts = ist->next_dts = ist->pts = ist->next_pts = av_rescale_q(decoded_frame->pts, avctx->time_base, AV_TIME_BASE_Q);
-        decoded_frame_tb   = avctx->time_base;
-    } else if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
+    if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = decoded_frame->pkt_pts;
         decoded_frame_tb   = ist->st->time_base;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
