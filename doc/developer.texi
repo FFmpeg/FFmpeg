@@ -246,8 +246,8 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 
 @section Development Policy
 
-@enumerate
-@item Licenses for patches must be compatible with FFmpeg.
+@subsection Patches/Committing
+@subheading Licenses for patches must be compatible with FFmpeg.
 Contributions should be licensed under the
 @uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
 including an "or any later version" clause, or, if you prefer
@@ -260,7 +260,7 @@ preferred.
 If you add a new file, give it a proper license header. Do not copy and
 paste it from a random place, use an existing file as template.
 
-@item You must not commit code which breaks FFmpeg!
+@subheading You must not commit code which breaks FFmpeg!
 This means unfinished code which is enabled and breaks compilation,
 or compiles but does not work/breaks the regression tests. Code which
 is unfinished but disabled may be permitted under-circumstances, like
@@ -268,7 +268,7 @@ missing samples or an implementation with a small subset of features.
 Always check the mailing list for any reviewers with issues and test
 FATE before you push.
 
-@item Keep the main commit message short with an extended description below.
+@subheading Keep the main commit message short with an extended description below.
 The commit message should have a short first line in the form of
 a @samp{topic: short description} as a header, separated by a newline
 from the body consisting of an explanation of why the change is necessary.
@@ -276,14 +276,14 @@ If the commit fixes a known bug on the bug tracker, the commit message
 should include its bug ID. Referring to the issue on the bug tracker does
 not exempt you from writing an excerpt of the bug in the commit message.
 
-@item Testing must be adequate but not excessive.
+@subheading Testing must be adequate but not excessive.
 If it works for you, others, and passes FATE then it should be OK to commit
 it, provided it fits the other committing criteria. You should not worry about
 over-testing things. If your code has problems (portability, triggers
 compiler bugs, unusual environment etc) they will be reported and eventually
 fixed.
 
-@item Do not commit unrelated changes together.
+@subheading Do not commit unrelated changes together.
 They should be split them into self-contained pieces. Also do not forget
 that if part B depends on part A, but A does not depend on B, then A can
 and should be committed first and separate from B. Keeping changes well
@@ -321,7 +321,7 @@ NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
 then either do NOT change the indentation of the inner part within (do not
 move it to the right)! or do so in a separate commit
 
-@item Commit messages should always be filled out properly.
+@subheading Commit messages should always be filled out properly.
 Always fill out the commit log message. Describe in a few lines what you
 changed and why. You can refer to mailing list postings if you fix a
 particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
@@ -333,44 +333,39 @@ area changed: Short 1 line description
 details describing what and why and giving references.
 @end example
 
-@item Credit the author of the patch.
+@subheading Credit the author of the patch.
 Make sure the author of the commit is set correctly. (see git commit --author)
 If you apply a patch, send an
 answer to ffmpeg-devel (or wherever you got the patch from) saying that
 you applied the patch.
 
-@item Complex patches should refer to discussion surrounding them.
+@subheading Complex patches should refer to discussion surrounding them.
 When applying patches that have been discussed (at length) on the mailing
 list, reference the thread in the log message.
 
-@item Always wait long enough before pushing changes
+@subheading Always wait long enough before pushing changes
 Do NOT commit to code actively maintained by others without permission.
 Send a patch to ffmpeg-devel. If no one answers within a reasonable
 time-frame (12h for build failures and security fixes, 3 days small changes,
 1 week for big patches) then commit your patch if you think it is OK.
 Also note, the maintainer can simply ask for more time to review!
 
-@item Subscribe to the ffmpeg-cvslog mailing list.
-It is important to do this as the diffs of all commits are sent there and
-reviewed by all the other developers. Bugs and possible improvements or
-general questions regarding commits are discussed there. We expect you to
-react if problems with your code are uncovered.
+@subsection Code
+@subheading API/ABI changes should be discussed before they are made.
+Do not change behavior of the programs (renaming options etc) or public
+API or ABI without first discussing it on the ffmpeg-devel mailing list.
+Do not remove widely used functionality or features (redundant code can be removed).
 
-@item Keep the documentation up to date.
-Update the documentation if you change behavior or add features. If you are
-unsure how best to do this, send a patch to ffmpeg-devel, the documentation
-maintainer(s) will review and commit your stuff.
+@subheading Ask before you change the build system (configure, etc).
+Do not commit changes to the build system (Makefiles, configure script)
+which change behavior, defaults etc, without asking first. The same
+applies to compiler warning fixes, trivial looking fixes and to code
+maintained by other developers. We usually have a reason for doing things
+the way we do. Send your changes as patches to the ffmpeg-devel mailing
+list, and if the code maintainers say OK, you may commit. This does not
+apply to files you wrote and/or maintain.
 
-@item Important discussions should be accessible to all.
-Try to keep important discussions and requests (also) on the public
-developer mailing list, so that all developers can benefit from them.
-
-@item
-Never write to unallocated memory, never write over the end of arrays,
-always check values read from some untrusted source before using them
-as array index or other risky things.
-
-@item Remember to check if you need to bump versions for libav*.
+@subheading Remember to check if you need to bump versions for libav*.
 Depending on the change, you may need to change the version integer.
 Incrementing the first component means no backward compatibility to
 previous versions (e.g. removal of a function from the public API).
@@ -381,7 +376,7 @@ Incrementing the third component means a noteworthy binary compatible
 change (e.g. encoder bug fix that matters for the decoder). The third
 component always starts at 100 to distinguish FFmpeg from Libav.
 
-@item Warnings for correct code may be disabled if there is no other option.
+@subheading Warnings for correct code may be disabled if there is no other option.
 Compiler warnings indicate potential bugs or code with bad style. If a type of
 warning always points to correct and clean code, that warning should
 be disabled, not the code changed.
@@ -390,13 +385,33 @@ If it is a bug, the bug has to be fixed. If it is not, the code should
 be changed to not generate a warning unless that causes a slowdown
 or obfuscates the code.
 
-@item Check your entries in MAINTAINERS.
+@subheading Check untrusted input properly.
+Never write to unallocated memory, never write over the end of arrays,
+always check values read from some untrusted source before using them
+as array index or other risky things.
+
+@subsection Documentation/Other
+@subheading Subscribe to the ffmpeg-cvslog mailing list.
+It is important to do this as the diffs of all commits are sent there and
+reviewed by all the other developers. Bugs and possible improvements or
+general questions regarding commits are discussed there. We expect you to
+react if problems with your code are uncovered.
+
+@subheading Keep the documentation up to date.
+Update the documentation if you change behavior or add features. If you are
+unsure how best to do this, send a patch to ffmpeg-devel, the documentation
+maintainer(s) will review and commit your stuff.
+
+@subheading Important discussions should be accessible to all.
+Try to keep important discussions and requests (also) on the public
+developer mailing list, so that all developers can benefit from them.
+
+@subheading Check your entries in MAINTAINERS.
 Make sure that no parts of the codebase that you maintain are missing from the
 @file{MAINTAINERS} file. If something that you want to maintain is missing add it with
 your name after it.
 If at some point you no longer want to maintain some code, then please help in
 finding a new maintainer and also don't forget to update the @file{MAINTAINERS} file.
-@end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
 
