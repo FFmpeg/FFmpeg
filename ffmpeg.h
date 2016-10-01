@@ -287,7 +287,6 @@ typedef struct InputStream {
 
     double ts_scale;
     int saw_first_ts;
-    int showed_multi_packet_warning;
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;

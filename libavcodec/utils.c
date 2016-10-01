@@ -2461,6 +2461,12 @@ fail:
 
     av_assert0(ret <= avpkt->size);
 
+    if (!avci->showed_multi_packet_warning &&
+        ret >= 0 && ret != avpkt->size && !(avctx->codec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
+            av_log(avctx, AV_LOG_WARNING, "Multiple frames in a packet.\n");
+        avci->showed_multi_packet_warning = 1;
+    }
+
     return ret;
 }
 
