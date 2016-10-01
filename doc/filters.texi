@@ -16059,7 +16059,8 @@ Modify value of already present key.
 
 @item delete
 If @code{value} is set, delete only keys that have such value.
-Otherwise, delete key.
+Otherwise, delete key. If @code{key} is not set, delete all metadata values in
+the frame.
 
 @item print
 Print key and its value if metadata was found. If @code{key} is not set print all
@@ -16067,7 +16068,7 @@ metadata values available in frame.
 @end table
 
 @item key
-Set key used with all modes. Must be set for all modes except @code{print}.
+Set key used with all modes. Must be set for all modes except @code{print} and @code{delete}.
 
 @item value
 Set metadata value which will be used. This option is mandatory for

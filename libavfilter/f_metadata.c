@@ -194,7 +194,7 @@ static av_cold int init(AVFilterContext *ctx)
     MetadataContext *s = ctx->priv;
     int ret;
 
-    if (!s->key && s->mode != METADATA_PRINT) {
+    if (!s->key && s->mode != METADATA_PRINT && s->mode != METADATA_DELETE) {
         av_log(ctx, AV_LOG_WARNING, "Metadata key must be set\n");
         return AVERROR(EINVAL);
     }
@@ -328,7 +328,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return ff_filter_frame(outlink, frame);
         break;
     case METADATA_DELETE:
-        if (e && e->value && s->value && s->compare(s, e->value, s->value)) {
+        if (!s->key) {
+            av_dict_free(metadata);
+        } else if (e && e->value && s->value && s->compare(s, e->value, s->value)) {
             av_dict_set(metadata, s->key, NULL, 0);
         } else if (e && e->value) {
             av_dict_set(metadata, s->key, NULL, 0);
