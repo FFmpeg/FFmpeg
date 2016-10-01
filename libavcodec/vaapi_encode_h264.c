@@ -835,8 +835,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
         vseq->vui_fields.bits.timing_info_present_flag = 1;
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-            vseq->num_units_in_tick = avctx->framerate.num;
-            vseq->time_scale        = 2 * avctx->framerate.den;
+            vseq->num_units_in_tick = avctx->framerate.den;
+            vseq->time_scale        = 2 * avctx->framerate.num;
             mseq->fixed_frame_rate_flag = 1;
         } else {
             vseq->num_units_in_tick = avctx->time_base.num;
