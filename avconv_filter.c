@@ -709,7 +709,7 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
-        return ret;
+        goto fail;
 
     if (hw_device_ctx) {
         for (i = 0; i < fg->graph->nb_filters; i++) {
@@ -720,12 +720,13 @@ int configure_filtergraph(FilterGraph *fg)
     if (simple && (!inputs || inputs->next || !outputs || outputs->next)) {
         av_log(NULL, AV_LOG_ERROR, "Simple filtergraph '%s' does not have "
                "exactly one input and output.\n", graph_desc);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     for (cur = inputs, i = 0; cur; cur = cur->next, i++)
         if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0)
-            return ret;
+            goto fail;
     avfilter_inout_free(&inputs);
 
     for (cur = outputs, i = 0; cur; cur = cur->next, i++) {
@@ -737,7 +738,7 @@ int configure_filtergraph(FilterGraph *fg)
     avfilter_inout_free(&outputs);
 
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
-        return ret;
+        goto fail;
 
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */
@@ -761,7 +762,7 @@ int configure_filtergraph(FilterGraph *fg)
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
             av_frame_free(&tmp);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
     }
 
@@ -770,11 +771,14 @@ int configure_filtergraph(FilterGraph *fg)
         if (fg->inputs[i]->eof) {
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, NULL);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
     }
 
     return 0;
+fail:
+    avfilter_graph_free(&fg->graph);
+    return ret;
 }
 
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
