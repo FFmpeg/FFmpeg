@@ -348,6 +348,9 @@ typedef struct InputStream {
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;
     uint64_t samples_decoded;
+
+    int64_t *dts_buffer;
+    int nb_dts_buffer;
 } InputStream;
 
 typedef struct InputFile {
