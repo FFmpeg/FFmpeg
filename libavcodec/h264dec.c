@@ -530,7 +530,24 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Error splitting the input into NAL units.\n");
-        return ret;
+
+        /* There are samples in the wild with mp4-style extradata, but Annex B
+         * data in the packets. If we fail parsing the packet as mp4, try it again
+         * as Annex B. */
+        if (h->is_avc && !(avctx->err_recognition & AV_EF_EXPLODE)) {
+            int err = ff_h2645_packet_split(&h->pkt, buf, buf_size, avctx, 0, 0,
+                                            avctx->codec_id);
+            if (err >= 0) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "The stream seems to contain AVCC extradata with Annex B "
+                       "formatted data, which is invalid.");
+                h->is_avc = 0;
+                ret       = 0;
+            }
+        }
+
+        if (ret < 0)
+            return ret;
     }
 
     if (avctx->active_thread_type & FF_THREAD_FRAME)
