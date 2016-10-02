@@ -74,7 +74,7 @@ static int probe(AVProbeData *p)
             AV_RL32(b+24) > 0 && AV_RL32(b+24) <= BINK_MAX_HEIGHT &&
             AV_RL32(b+28) > 0 && AV_RL32(b+32) > 0)  // fps num,den
             return AVPROBE_SCORE_MAX;
-            b += SMUSH_BLOCK_SIZE;
+        b += SMUSH_BLOCK_SIZE;
     } while (smush && b < p->buf + p->buf_size - 32);
     return 0;
 }
