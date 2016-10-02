@@ -235,6 +235,8 @@ typedef struct VAAPIEncodeType {
     int slice_header_type;
 
     // Write the packed header data to the provided buffer.
+    // The sequence header is also used to fill the codec extradata
+    // when the encoder is starting.
     int (*write_sequence_header)(AVCodecContext *avctx,
                                  char *data, size_t *data_len);
     int  (*write_picture_header)(AVCodecContext *avctx,
