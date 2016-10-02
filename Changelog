@@ -4,7 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - Support for spherical videos
 - Intel QSV-accelerated VP8 and VC-1 decoding
-- VAAPI-accelerated VP8 decoding
+- VAAPI-accelerated VP8 and HEVC decoding
 - VAAPI-accelerated deinterlacing
 
 

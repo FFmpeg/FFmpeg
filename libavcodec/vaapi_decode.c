@@ -250,6 +250,7 @@ static const struct {
     MAP(H264,        H264_HIGH,       H264High    ),
 #if VA_CHECK_VERSION(0, 37, 0)
     MAP(HEVC,        HEVC_MAIN,       HEVCMain    ),
+    MAP(HEVC,        HEVC_MAIN_10,    HEVCMain10  ),
 #endif
     MAP(WMV3,        VC1_SIMPLE,      VC1Simple   ),
     MAP(WMV3,        VC1_MAIN,        VC1Main     ),
