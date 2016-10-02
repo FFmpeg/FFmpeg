@@ -66,6 +66,7 @@ EXPORTS
     av_register_output_format
     av_sdp_create
     av_seek_frame
+    av_stream_get_codec_timebase
     av_stream_get_end_pts
     av_stream_get_parser
     av_stream_get_r_frame_rate

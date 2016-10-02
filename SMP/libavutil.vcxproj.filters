@@ -240,6 +240,9 @@
     <ClCompile Include="..\libavutil\hwcontext_dxva2.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\hwcontext_qsv.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\lzo.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -378,6 +381,9 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_dxva2.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_qsv.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_vaapi.h">
