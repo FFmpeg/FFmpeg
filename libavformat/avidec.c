@@ -653,7 +653,7 @@ static int avi_read_header(AVFormatContext *s)
                         pal_src  = st->codecpar->extradata +
                                    st->codecpar->extradata_size - pal_size;
                         for (i = 0; i < pal_size / 4; i++)
-                            ast->pal[i] = AV_RL32(pal_src + 4 * i);
+                            ast->pal[i] = (0xFFu << 24) | AV_RL32(pal_src + 4 * i);
                         ast->has_pal = 1;
                     }
 
