@@ -5643,7 +5643,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
-check_type "va/va.h" "VAPictureParameterBufferHEVC"
+check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
 check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
 check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
