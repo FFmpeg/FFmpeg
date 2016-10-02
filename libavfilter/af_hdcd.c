@@ -964,6 +964,8 @@ typedef struct HDCDContext {
     int cdt_ms;               /**< code detect timer period in ms */
 
     int disable_autoconvert;  /**< disable any format conversion or resampling in the filter graph */
+
+    int bits_per_sample;      /**< bits per sample 16, 20, or 24 */
     /* end AVOption members */
 
     /** config_input() and config_output() scan links for any resampling
@@ -997,6 +999,11 @@ static const AVOption hdcd_options[] = {
         { "pe",  HDCD_ANA_PE_DESC,  0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_PE},  0, 0, A, "analyze_mode" },
         { "cdt", HDCD_ANA_CDT_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_CDT}, 0, 0, A, "analyze_mode" },
         { "tgm", HDCD_ANA_TGM_DESC, 0, AV_OPT_TYPE_CONST, {.i64=HDCD_ANA_TGM}, 0, 0, A, "analyze_mode" },
+    { "bits_per_sample",  "Valid bits per sample (location of the true LSB).",
+        OFFSET(bits_per_sample), AV_OPT_TYPE_INT, { .i64=16 }, 16, 24, A, "bits_per_sample"},
+        { "16", "16-bit (in s32 or s16)", 0, AV_OPT_TYPE_CONST, {.i64=16}, 0, 0, A, "bits_per_sample" },
+        { "20", "20-bit (in s32)", 0, AV_OPT_TYPE_CONST, {.i64=20}, 0, 0, A, "bits_per_sample" },
+        { "24", "24-bit (in s32)", 0, AV_OPT_TYPE_CONST, {.i64=24},  0, 0, A, "bits_per_sample" },
     {NULL}
 };
 
@@ -1253,29 +1260,34 @@ static int hdcd_analyze(int32_t *samples, int count, int stride, int gain, int t
 }
 
 /** apply HDCD decoding parameters to a series of samples */
-static int hdcd_envelope(int32_t *samples, int count, int stride, int gain, int target_gain, int extend)
+static int hdcd_envelope(int32_t *samples, int count, int stride, int vbits, int gain, int target_gain, int extend)
 {
     static const int max_asample = sizeof(peaktab) / sizeof(peaktab[0]) - 1;
     int32_t *samples_end = samples + stride * count;
     int i;
 
+    int pe_level = PEAK_EXT_LEVEL, shft = 15;
+    if (vbits != 16) {
+        pe_level = (1 << (vbits - 1)) - (0x8000 - PEAK_EXT_LEVEL);
+        shft = 32 - vbits - 1;
+    }
     av_assert0(PEAK_EXT_LEVEL + max_asample == 0x8000);
 
     if (extend) {
         for (i = 0; i < count; i++) {
             int32_t sample = samples[i * stride];
-            int32_t asample = abs(sample) - PEAK_EXT_LEVEL;
+            int32_t asample = abs(sample) - pe_level;
             if (asample >= 0) {
                 av_assert0(asample <= max_asample);
                 sample = sample >= 0 ? peaktab[asample] : -peaktab[asample];
             } else
-                sample <<= 15;
+                sample <<= shft;
 
             samples[i * stride] = sample;
         }
     } else {
         for (i = 0; i < count; i++)
-            samples[i * stride] <<= 15;
+            samples[i * stride] <<= shft;
     }
 
     if (gain <= target_gain) {
@@ -1370,7 +1382,7 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state *state, int32_t *samples, 
         if (ctx->analyze_mode)
             gain = hdcd_analyze(samples, envelope_run, stride, gain, target_gain, peak_extend, ctx->analyze_mode, state->sustain, -1);
         else
-            gain = hdcd_envelope(samples, envelope_run, stride, gain, target_gain, peak_extend);
+            gain = hdcd_envelope(samples, envelope_run, stride, ctx->bits_per_sample, gain, target_gain, peak_extend);
 
         samples += envelope_run * stride;
         count -= envelope_run;
@@ -1382,7 +1394,7 @@ static void hdcd_process(HDCDContext *ctx, hdcd_state *state, int32_t *samples, 
         if (ctx->analyze_mode)
             gain = hdcd_analyze(samples, lead, stride, gain, target_gain, peak_extend, ctx->analyze_mode, state->sustain, -1);
         else
-            gain = hdcd_envelope(samples, lead, stride, gain, target_gain, peak_extend);
+            gain = hdcd_envelope(samples, lead, stride, ctx->bits_per_sample, gain, target_gain, peak_extend);
     }
 
     state->running_gain = gain;
@@ -1422,8 +1434,8 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
                 ctx->state[1].sustain,
                 (ctlret == HDCD_TG_MISMATCH) );
         } else {
-            gain[0] = hdcd_envelope(samples, envelope_run, stride, gain[0], ctx->val_target_gain, peak_extend[0]);
-            gain[1] = hdcd_envelope(samples + 1, envelope_run, stride, gain[1], ctx->val_target_gain, peak_extend[1]);
+            gain[0] = hdcd_envelope(samples, envelope_run, stride, ctx->bits_per_sample, gain[0], ctx->val_target_gain, peak_extend[0]);
+            gain[1] = hdcd_envelope(samples + 1, envelope_run, stride, ctx->bits_per_sample, gain[1], ctx->val_target_gain, peak_extend[1]);
         }
 
         samples += envelope_run * stride;
@@ -1444,8 +1456,8 @@ static void hdcd_process_stereo(HDCDContext *ctx, int32_t *samples, int count)
                 ctx->state[1].sustain,
                 (ctlret == HDCD_TG_MISMATCH) );
         } else {
-            gain[0] = hdcd_envelope(samples, lead, stride, gain[0], ctx->val_target_gain, peak_extend[0]);
-            gain[1] = hdcd_envelope(samples + 1, lead, stride, gain[1], ctx->val_target_gain, peak_extend[1]);
+            gain[0] = hdcd_envelope(samples, lead, stride, ctx->bits_per_sample, gain[0], ctx->val_target_gain, peak_extend[0]);
+            gain[1] = hdcd_envelope(samples + 1, lead, stride, ctx->bits_per_sample, gain[1], ctx->val_target_gain, peak_extend[1]);
         }
     }
 
@@ -1516,8 +1528,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     const int16_t *in_data;
+    const int32_t *in_data32;
     int32_t *out_data;
     int n, c, result;
+    int a = 32 - s->bits_per_sample;
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
@@ -1533,16 +1547,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->format = outlink->format; // is this needed?
 
     out_data = (int32_t*)out->data[0];
-    if (inlink->format == AV_SAMPLE_FMT_S16P) {
-        for (n = 0; n < in->nb_samples; n++)
-            for (c = 0; c < in->channels; c++) {
-                in_data = (int16_t*)in->extended_data[c];
-                out_data[(n * in->channels) + c] = in_data[n];
-            }
-    } else {
-        in_data  = (int16_t*)in->data[0];
-        for (n = 0; n < in->nb_samples * in->channels; n++)
-            out_data[n] = in_data[n];
+    switch (inlink->format) {
+        case AV_SAMPLE_FMT_S16P:
+            for (n = 0; n < in->nb_samples; n++)
+                for (c = 0; c < in->channels; c++) {
+                    in_data = (int16_t*)in->extended_data[c];
+                    out_data[(n * in->channels) + c] = in_data[n];
+                }
+            break;
+        case AV_SAMPLE_FMT_S16:
+            in_data  = (int16_t*)in->data[0];
+            for (n = 0; n < in->nb_samples * in->channels; n++)
+                out_data[n] = in_data[n];
+            break;
+
+        case AV_SAMPLE_FMT_S32P:
+            for (n = 0; n < in->nb_samples; n++)
+                for (c = 0; c < in->channels; c++) {
+                    in_data32 = (int32_t*)in->extended_data[c];
+                    out_data[(n * in->channels) + c] = in_data32[n] >> a;
+                }
+            break;
+        case AV_SAMPLE_FMT_S32:
+            in_data32  = (int32_t*)in->data[0];
+            for (n = 0; n < in->nb_samples * in->channels; n++)
+                out_data[n] = in_data32[n] >> a;
+            break;
     }
 
     if (s->process_stereo) {
@@ -1583,6 +1613,8 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVSampleFormat sample_fmts_in[] = {
         AV_SAMPLE_FMT_S16,
         AV_SAMPLE_FMT_S16P,
+        AV_SAMPLE_FMT_S32,
+        AV_SAMPLE_FMT_S32P,
         AV_SAMPLE_FMT_NONE
     };
     static const enum AVSampleFormat sample_fmts_out[] = {
@@ -1683,6 +1715,22 @@ static int config_input(AVFilterLink *inlink) {
 
     av_log(ctx, AV_LOG_VERBOSE, "Auto-convert: %s\n",
         (ctx->graph->disable_auto_convert) ? "disabled" : "enabled");
+
+    if ((inlink->format == AV_SAMPLE_FMT_S16 ||
+         inlink->format == AV_SAMPLE_FMT_S16P) &&
+         s->bits_per_sample != 16) {
+            av_log(ctx, AV_LOG_WARNING, "bits_per_sample %d does not fit into sample format %s, falling back to 16\n",
+                s->bits_per_sample, av_get_sample_fmt_name(inlink->format) );
+        s->bits_per_sample = 16;
+    } else {
+        av_log(ctx, AV_LOG_VERBOSE, "Looking for %d-bit HDCD in sample format %s\n",
+            s->bits_per_sample, av_get_sample_fmt_name(inlink->format) );
+    }
+
+    if (s->bits_per_sample != 16)
+        av_log(ctx, AV_LOG_WARNING, "20 and 24-bit HDCD decoding is experimental\n");
+    if (inlink->sample_rate != 44100)
+        av_log(ctx, AV_LOG_WARNING, "HDCD decoding for sample rates other than 44100 is experimental\n");
 
     hdcd_detect_reset(&s->detect);
     for (c = 0; c < HDCD_MAX_CHANNELS; c++) {
