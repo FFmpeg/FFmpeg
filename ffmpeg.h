@@ -287,7 +287,6 @@ typedef struct InputStream {
 
     double ts_scale;
     int saw_first_ts;
-    int showed_multi_packet_warning;
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;
@@ -349,6 +348,9 @@ typedef struct InputStream {
     // number of frames/samples retrieved from the decoder
     uint64_t frames_decoded;
     uint64_t samples_decoded;
+
+    int64_t *dts_buffer;
+    int nb_dts_buffer;
 } InputStream;
 
 typedef struct InputFile {
@@ -477,6 +479,7 @@ typedef struct OutputStream {
     int keep_pix_fmt;
 
     AVCodecParserContext *parser;
+    AVCodecContext       *parser_avctx;
 
     /* stats */
     // combined size of all the packets written

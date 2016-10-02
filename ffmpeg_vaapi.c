@@ -302,7 +302,7 @@ static int vaapi_build_decoder_config(VAAPIDecoderContext *ctx,
     if (ctx->output_format != AV_PIX_FMT_NONE &&
         ctx->output_format != AV_PIX_FMT_VAAPI) {
         for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
-            if (constraints->valid_sw_formats[i] == ctx->decode_format) {
+            if (constraints->valid_sw_formats[i] == ctx->output_format) {
                 ctx->decode_format = ctx->output_format;
                 av_log(ctx, AV_LOG_DEBUG, "Using decode format %s (output "
                        "format).\n", av_get_pix_fmt_name(ctx->decode_format));

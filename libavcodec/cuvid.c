@@ -41,6 +41,8 @@ typedef struct CuvidContext
     CUvideodecoder cudecoder;
     CUvideoparser cuparser;
 
+    char *cu_gpu;
+
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
 
@@ -52,7 +54,6 @@ typedef struct CuvidContext
     int64_t prev_pts;
 
     int internal_error;
-    int ever_flushed;
     int decoder_flushing;
 
     cudaVideoCodec codec_type;
@@ -145,8 +146,12 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 0;
     }
 
-    if (hwframe_ctx->pool && !ctx->ever_flushed) {
-        av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized\n");
+    if (hwframe_ctx->pool && (
+            hwframe_ctx->width < avctx->width ||
+            hwframe_ctx->height < avctx->height ||
+            hwframe_ctx->format != AV_PIX_FMT_CUDA ||
+            hwframe_ctx->sw_format != AV_PIX_FMT_NV12)) {
+        av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized with incompatible parameters\n");
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
     }
@@ -199,8 +204,8 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (!hwframe_ctx->pool) {
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
         hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-        hwframe_ctx->width = FFALIGN(avctx->coded_width, 32);
-        hwframe_ctx->height = FFALIGN(avctx->coded_height, 32);
+        hwframe_ctx->width = FFALIGN(avctx->width, 32);
+        hwframe_ctx->height = FFALIGN(avctx->height, 32);
 
         if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
@@ -397,7 +402,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                     .dstPitch      = frame->linesize[i],
                     .srcY          = offset,
                     .WidthInBytes  = FFMIN(pitch, frame->linesize[i]),
-                    .Height        = avctx->coded_height >> (i ? 1 : 0),
+                    .Height        = avctx->height >> (i ? 1 : 0),
                 };
 
                 ret = CHECK_CU(cuMemcpy2D(&cpy));
@@ -543,12 +548,6 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static void cuvid_ctx_free(AVHWDeviceContext *ctx)
-{
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
-    cuCtxDestroy(hwctx->cuda_ctx);
-}
-
 static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cuparseinfo)
 {
     CUVIDDECODECREATEINFO cuinfo;
@@ -596,7 +595,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     AVHWDeviceContext *device_ctx;
     AVHWFramesContext *hwframe_ctx;
     CUVIDSOURCEDATAPACKET seq_pkt;
-    CUdevice device;
     CUcontext cuda_ctx = NULL;
     CUcontext dummy;
     const AVBitStreamFilter *bsf;
@@ -634,45 +632,10 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             ret = AVERROR(ENOMEM);
             goto error;
         }
-
-        device_ctx = hwframe_ctx->device_ctx;
-        device_hwctx = device_ctx->hwctx;
-        cuda_ctx = device_hwctx->cuda_ctx;
     } else {
-        ctx->hwdevice = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_CUDA);
-        if (!ctx->hwdevice) {
-            av_log(avctx, AV_LOG_ERROR, "Error allocating hwdevice\n");
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
-
-        ret = CHECK_CU(cuInit(0));
+        ret = av_hwdevice_ctx_create(&ctx->hwdevice, AV_HWDEVICE_TYPE_CUDA, ctx->cu_gpu, NULL, 0);
         if (ret < 0)
             goto error;
-
-        ret = CHECK_CU(cuDeviceGet(&device, 0));
-        if (ret < 0)
-            goto error;
-
-        ret = CHECK_CU(cuCtxCreate(&cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, device));
-        if (ret < 0)
-            goto error;
-
-        device_ctx = (AVHWDeviceContext*)ctx->hwdevice->data;
-        device_ctx->free = cuvid_ctx_free;
-
-        device_hwctx = device_ctx->hwctx;
-        device_hwctx->cuda_ctx = cuda_ctx;
-
-        ret = CHECK_CU(cuCtxPopCurrent(&dummy));
-        if (ret < 0)
-            goto error;
-
-        ret = av_hwdevice_ctx_init(ctx->hwdevice);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "av_hwdevice_ctx_init failed\n");
-            goto error;
-        }
 
         ctx->hwframe = av_hwframe_ctx_alloc(ctx->hwdevice);
         if (!ctx->hwframe) {
@@ -680,7 +643,13 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             ret = AVERROR(ENOMEM);
             goto error;
         }
+
+        hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
     }
+
+    device_ctx = hwframe_ctx->device_ctx;
+    device_hwctx = device_ctx->hwctx;
+    cuda_ctx = device_hwctx->cuda_ctx;
 
     memset(&ctx->cuparseinfo, 0, sizeof(ctx->cuparseinfo));
     memset(&ctx->cuparse_ext, 0, sizeof(ctx->cuparse_ext));
@@ -805,8 +774,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    ctx->ever_flushed = 0;
-
     ctx->prev_pts = INT64_MIN;
 
     if (!avctx->pkt_timebase.num || !avctx->pkt_timebase.den)
@@ -827,8 +794,6 @@ static void cuvid_flush(AVCodecContext *avctx)
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
     CUVIDSOURCEDATAPACKET seq_pkt = { 0 };
     int ret;
-
-    ctx->ever_flushed = 1;
 
     ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
@@ -884,6 +849,7 @@ static const AVOption options[] = {
     { "weave",    "Weave deinterlacing (do nothing)",        0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Weave    }, 0, 0, VD, "deint" },
     { "bob",      "Bob deinterlacing",                       0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Bob      }, 0, 0, VD, "deint" },
     { "adaptive", "Adaptive deinterlacing",                  0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Adaptive }, 0, 0, VD, "deint" },
+    { "gpu",      "GPU to be used for decoding", OFFSET(cu_gpu), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
     { NULL }
 };
 

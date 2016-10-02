@@ -1843,7 +1843,7 @@ static const AVOption options[] = {
       { .i64 = 0x1000 }, 0x0010, 0x1f00, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_start_pid", "Set the first pid.",
       offsetof(MpegTSWrite, start_pid), AV_OPT_TYPE_INT,
-      { .i64 = 0x0100 }, 0x0020, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = 0x0100 }, 0x0010, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_m2ts_mode", "Enable m2ts mode.",
       offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_BOOL,
       { .i64 = -1 }, -1, 1, AV_OPT_FLAG_ENCODING_PARAM },

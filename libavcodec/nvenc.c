@@ -525,21 +525,26 @@ typedef struct GUIDTuple {
     int flags;
 } GUIDTuple;
 
+#define PRESET_ALIAS(alias, name, ...) \
+    [PRESET_ ## alias] = { NV_ENC_PRESET_ ## name ## _GUID, __VA_ARGS__ }
+
+#define PRESET(name, ...) PRESET_ALIAS(name, name, __VA_ARGS__)
+
 static void nvenc_map_preset(NvencContext *ctx)
 {
     GUIDTuple presets[] = {
-        { NV_ENC_PRESET_DEFAULT_GUID },
-        { NV_ENC_PRESET_HQ_GUID,                  NVENC_TWO_PASSES }, /* slow */
-        { NV_ENC_PRESET_HQ_GUID,                  NVENC_ONE_PASS }, /* medium */
-        { NV_ENC_PRESET_HP_GUID,                  NVENC_ONE_PASS }, /* fast */
-        { NV_ENC_PRESET_HP_GUID },
-        { NV_ENC_PRESET_HQ_GUID },
-        { NV_ENC_PRESET_BD_GUID },
-        { NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID, NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOW_LATENCY_HP_GUID,      NVENC_LOWLATENCY },
-        { NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID,    NVENC_LOSSLESS },
-        { NV_ENC_PRESET_LOSSLESS_HP_GUID,         NVENC_LOSSLESS },
+        PRESET(DEFAULT),
+        PRESET(HP),
+        PRESET(HQ),
+        PRESET(BD),
+        PRESET_ALIAS(SLOW,   HQ,    NVENC_TWO_PASSES),
+        PRESET_ALIAS(MEDIUM, HQ,    NVENC_ONE_PASS),
+        PRESET_ALIAS(FAST,   HP,    NVENC_ONE_PASS),
+        PRESET(LOW_LATENCY_DEFAULT, NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HP,      NVENC_LOWLATENCY),
+        PRESET(LOW_LATENCY_HQ,      NVENC_LOWLATENCY),
+        PRESET(LOSSLESS_DEFAULT,    NVENC_LOSSLESS),
+        PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
     };
 
     GUIDTuple *t = &presets[ctx->preset];
@@ -547,6 +552,9 @@ static void nvenc_map_preset(NvencContext *ctx)
     ctx->init_encode_params.presetGUID = t->guid;
     ctx->flags = t->flags;
 }
+
+#undef PRESET
+#undef PRESET_ALIAS
 
 static av_cold void set_constqp(AVCodecContext *avctx)
 {
@@ -716,10 +724,50 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
         ctx->encode_config.rcParams.vbvBufferSize = 2 * ctx->encode_config.rcParams.averageBitRate;
     }
 
-    if (ctx->rc_lookahead > 0) {
-        ctx->encode_config.rcParams.enableLookahead = 1;
-        ctx->encode_config.rcParams.lookaheadDepth = FFMIN(ctx->rc_lookahead, 32);
+    if (ctx->aq) {
+        ctx->encode_config.rcParams.enableAQ   = 1;
+        ctx->encode_config.rcParams.aqStrength = ctx->aq_strength;
+        av_log(avctx, AV_LOG_VERBOSE, "AQ enabled.\n");
     }
+
+    if (ctx->temporal_aq) {
+        ctx->encode_config.rcParams.enableTemporalAQ = 1;
+        av_log(avctx, AV_LOG_VERBOSE, "Temporal AQ enabled.\n");
+    }
+
+    if (ctx->rc_lookahead) {
+        int lkd_bound = FFMIN(ctx->nb_surfaces, ctx->async_depth) -
+                        ctx->encode_config.frameIntervalP - 4;
+
+        if (lkd_bound < 0) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Lookahead not enabled. Increase buffer delay (-delay).\n");
+        } else {
+            ctx->encode_config.rcParams.enableLookahead = 1;
+            ctx->encode_config.rcParams.lookaheadDepth  = av_clip(ctx->rc_lookahead, 0, lkd_bound);
+            ctx->encode_config.rcParams.disableIadapt   = ctx->no_scenecut;
+            ctx->encode_config.rcParams.disableBadapt   = !ctx->b_adapt;
+            av_log(avctx, AV_LOG_VERBOSE,
+                   "Lookahead enabled: depth %d, scenecut %s, B-adapt %s.\n",
+                   ctx->encode_config.rcParams.lookaheadDepth,
+                   ctx->encode_config.rcParams.disableIadapt ? "disabled" : "enabled",
+                   ctx->encode_config.rcParams.disableBadapt ? "disabled" : "enabled");
+        }
+    }
+
+    if (ctx->strict_gop) {
+        ctx->encode_config.rcParams.strictGOPTarget = 1;
+        av_log(avctx, AV_LOG_VERBOSE, "Strict GOP target enabled.\n");
+    }
+
+    if (ctx->nonref_p)
+        ctx->encode_config.rcParams.enableNonRefP = 1;
+
+    if (ctx->zerolatency)
+        ctx->encode_config.rcParams.zeroReorderDelay = 1;
+
+    if (ctx->quality)
+        ctx->encode_config.rcParams.targetQuality = ctx->quality;
 }
 
 static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
@@ -856,12 +904,22 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
         avctx->profile = FF_PROFILE_HEVC_MAIN_10;
         break;
+    case NV_ENC_HEVC_PROFILE_REXT:
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_FREXT_GUID;
+        avctx->profile = FF_PROFILE_HEVC_REXT;
+        break;
     }
 
     // force setting profile as main10 if input is 10 bit
     if (IS_10BIT(ctx->data_pix_fmt)) {
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
         avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+    }
+
+    // force setting profile as rext if input is yuv444
+    if (IS_YUV444(ctx->data_pix_fmt)) {
+        cc->profileGUID = NV_ENC_HEVC_PROFILE_FREXT_GUID;
+        avctx->profile = FF_PROFILE_HEVC_REXT;
     }
 
     hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;

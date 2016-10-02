@@ -2922,6 +2922,13 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
                                                   enum AVTimebaseSource copy_tb);
 
 /**
+ * Get the internal codec timebase from a stream.
+ *
+ * @param st  input stream to extract the timebase from
+ */
+AVRational av_stream_get_codec_timebase(const AVStream *st);
+
+/**
  * @}
  */
 

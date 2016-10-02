@@ -1071,6 +1071,7 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     int i;
     int interlaced;
     int cid;
+    int display_width = track->par->width;
 
     if (track->vos_data && track->vos_len > 0x29) {
         if (ff_dnxhd_parse_header_prefix(track->vos_data) != 0) {
@@ -1122,7 +1123,10 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "0001");
     avio_wb32(pb, cid); /* dnxhd cid, some id ? */
-    avio_wb32(pb, track->par->width);
+    if (   track->par->sample_aspect_ratio.num > 0
+        && track->par->sample_aspect_ratio.den > 0)
+        display_width = display_width * track->par->sample_aspect_ratio.num / track->par->sample_aspect_ratio.den;
+    avio_wb32(pb, display_width);
     /* values below are based on samples created with quicktime and avid codecs */
     if (interlaced) {
         avio_wb32(pb, track->par->height / 2);
@@ -3581,6 +3585,9 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
 {
     int64_t pos = avio_tell(pb);
     int i;
+    int64_t manifest_bit_rate = 0;
+    AVCPBProperties *props = NULL;
+
     static const uint8_t uuid[] = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
@@ -3608,6 +3615,9 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
         const char *type;
         int track_id = track->track_id;
 
+        AVStream *st = track->st;
+        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
+
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             type = "video";
         } else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -3615,10 +3625,20 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
         } else {
             continue;
         }
+
+        props = (AVCPBProperties*)av_stream_get_side_data(track->st, AV_PKT_DATA_CPB_PROPERTIES, NULL);
+
+        if (track->par->bit_rate) {
+            manifest_bit_rate = track->par->bit_rate;
+        } else if (props) {
+            manifest_bit_rate = props->max_bitrate;
+        }
+
         avio_printf(pb, "<%s systemBitrate=\"%"PRId64"\">\n", type,
-                    (int64_t)track->par->bit_rate);
-        param_write_int(pb, "systemBitrate", track->par->bit_rate);
+                    manifest_bit_rate);
+        param_write_int(pb, "systemBitrate", manifest_bit_rate);
         param_write_int(pb, "trackID", track_id);
+        param_write_string(pb, "systemLanguage", lang ? lang->value : "und");
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->par->codec_id == AV_CODEC_ID_H264) {
                 uint8_t *ptr;

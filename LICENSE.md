@@ -115,8 +115,6 @@ The Fraunhofer FDK AAC and OpenSSL libraries are under licenses which are
 incompatible with the GPLv2 and v3. To the best of our knowledge, they are
 compatible with the LGPL.
 
-The FAAC library is incompatible with all versions of GPL and LGPL.
-
 The NVENC library, while its header file is licensed under the compatible MIT
 license, requires a proprietary binary blob at run time, and is deemed to be
 incompatible with the GPL. We are not certain if it is compatible with the

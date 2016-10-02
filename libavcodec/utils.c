@@ -724,6 +724,9 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 {
     int ret;
 
+    if (avctx->hw_frames_ctx)
+        return av_hwframe_get_buffer(avctx->hw_frames_ctx, frame, 0);
+
     if ((ret = update_frame_pool(avctx, frame)) < 0)
         return ret;
 
@@ -1119,6 +1122,8 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         av_freep(&avctx->internal->hwaccel_priv_data);
         avctx->hwaccel = NULL;
 
+        av_buffer_unref(&avctx->hw_frames_ctx);
+
         ret = avctx->get_format(avctx, choices);
 
         desc = av_pix_fmt_desc_get(ret);
@@ -1133,6 +1138,16 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         if (avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU)
             break;
 #endif
+
+        if (avctx->hw_frames_ctx) {
+            AVHWFramesContext *hw_frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            if (hw_frames_ctx->format != ret) {
+                av_log(avctx, AV_LOG_ERROR, "Format returned from get_buffer() "
+                       "does not match the format of provided AVHWFramesContext\n");
+                ret = AV_PIX_FMT_NONE;
+                break;
+            }
+        }
 
         if (!setup_hwaccel(avctx, ret, desc->name))
             break;
@@ -2320,7 +2335,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint32_t discard_padding = 0;
         uint8_t skip_reason = 0;
         uint8_t discard_reason = 0;
-        int demuxer_skip_samples = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2328,7 +2342,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         if (ret < 0)
             goto fail;
 
-        demuxer_skip_samples = avctx->internal->skip_samples;
         avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
@@ -2353,13 +2366,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->sample_rate = avctx->sample_rate;
         }
 
-
-        if (frame->flags & AV_FRAME_FLAG_DISCARD) {
-            // If using discard frame flag, ignore skip_samples set by the decoder.
-            avctx->internal->skip_samples = demuxer_skip_samples;
-            *got_frame_ptr = 0;
-        }
-
         side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side);
@@ -2369,6 +2375,13 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             skip_reason = AV_RL8(side + 8);
             discard_reason = AV_RL8(side + 9);
         }
+
+        if ((frame->flags & AV_FRAME_FLAG_DISCARD) && *got_frame_ptr &&
+            !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+            avctx->internal->skip_samples -= frame->nb_samples;
+            *got_frame_ptr = 0;
+        }
+
         if (avctx->internal->skip_samples > 0 && *got_frame_ptr &&
             !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
@@ -2447,6 +2460,12 @@ fail:
     }
 
     av_assert0(ret <= avpkt->size);
+
+    if (!avci->showed_multi_packet_warning &&
+        ret >= 0 && ret != avpkt->size && !(avctx->codec->capabilities & AV_CODEC_CAP_SUBFRAMES)) {
+            av_log(avctx, AV_LOG_WARNING, "Multiple frames in a packet.\n");
+        avci->showed_multi_packet_warning = 1;
+    }
 
     return ret;
 }

@@ -738,13 +738,16 @@ static int matroska_read_close(AVFormatContext *s);
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {
     AVIOContext *pb = matroska->ctx->pb;
+    int64_t ret;
     uint32_t id;
     matroska->current_id = 0;
     matroska->num_levels = 0;
 
     /* seek to next position to resync from */
-    if (avio_seek(pb, last_pos + 1, SEEK_SET) < 0)
-        goto eof;
+    if ((ret = avio_seek(pb, last_pos + 1, SEEK_SET)) < 0) {
+        matroska->done = 1;
+        return ret;
+    }
 
     id = avio_rb32(pb);
 
@@ -760,7 +763,6 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
         id = (id << 8) | avio_r8(pb);
     }
 
-eof:
     matroska->done = 1;
     return AVERROR_EOF;
 }
@@ -2279,6 +2281,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
             if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
                 st->codecpar->field_order = mkv_field_order(track->video.field_order);
+            else if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE)
+                st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
 
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
@@ -3317,16 +3321,17 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
 static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
+    int ret = 0;
 
     while (matroska_deliver_packet(matroska, pkt)) {
         int64_t pos = avio_tell(matroska->ctx->pb);
         if (matroska->done)
-            return AVERROR_EOF;
+            return (ret < 0) ? ret : AVERROR_EOF;
         if (matroska_parse_cluster(matroska) < 0)
-            matroska_resync(matroska, pos);
+            ret = matroska_resync(matroska, pos);
     }
 
-    return 0;
+    return ret;
 }
 
 static int matroska_read_seek(AVFormatContext *s, int stream_index,

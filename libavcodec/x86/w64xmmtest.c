@@ -87,3 +87,13 @@ wrap(avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame))
 {
     testxmmclobbers(avcodec_receive_frame, avctx, frame);
 }
+
+wrap(avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame))
+{
+    testxmmclobbers(avcodec_send_frame, avctx, frame);
+}
+
+wrap(avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt))
+{
+    testxmmclobbers(avcodec_receive_packet, avctx, avpkt);
+}

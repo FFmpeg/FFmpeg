@@ -15,6 +15,19 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-09-xx - xxxxxxx - lavu 55.32.100 / 55.16.0 - hwcontext.h hwcontext_qsv.h
+  Add AV_HWDEVICE_TYPE_QSV and a new installed header with QSV-specific
+  hwcontext definitions.
+
+2016-09-xx - xxxxxxx - lavc 57.59.100/ 57.23.0 - avcodec.h
+  AVCodecContext.hw_frames_ctx now may be used by decoders.
+
+2016-09-27 - xxxxxxx - lavf 57.51.100 - avformat.h
+  Add av_stream_get_codec_timebase()
+
+2016-09-27 - 23c0779 - lswr 2.2.100 - swresample.h
+  Add swr_build_matrix().
+
 2016-09-xx - xxxxxxx - lavc 57.58.100 - avcodec.h
   Add AV_CODEC_CAP_AVOID_PROBING codec capability flag.
 

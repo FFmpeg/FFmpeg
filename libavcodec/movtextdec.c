@@ -471,6 +471,10 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             tsmb_type = AV_RB32(tsmb);
             tsmb += 4;
 
+            if (tsmb_size == 0) {
+              return AVERROR_INVALIDDATA;
+            }
+
             if (tsmb_size == 1) {
                 if (m->tracksize + 16 > avpkt->size)
                     break;

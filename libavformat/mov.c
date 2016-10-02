@@ -1487,7 +1487,8 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (cid == 0xd4d || cid == 0xd4e)
                 par->width = 1440;
             return 0;
-        } else if (par->codec_tag == MKTAG('A', 'V', 'd', '1') &&
+        } else if ((par->codec_tag == MKTAG('A', 'V', 'd', '1') ||
+                    par->codec_tag == MKTAG('A', 'V', 'd', 'n')) &&
                    atom.size >= 24) {
             int num, den;
             avio_skip(pb, 12);
@@ -2856,6 +2857,21 @@ static int64_t add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
 }
 
 /**
+ * Rewrite timestamps of index entries in the range [end_index - frame_duration_buffer_size, end_index)
+ * by subtracting end_ts successively by the amounts given in frame_duration_buffer.
+ */
+static void fix_index_entry_timestamps(AVStream* st, int end_index, int64_t end_ts,
+                                       int64_t* frame_duration_buffer,
+                                       int frame_duration_buffer_size) {
+    int i = 0;
+    av_assert0(end_index >= 0 && end_index <= st->nb_index_entries);
+    for (i = 0; i < frame_duration_buffer_size; i++) {
+        end_ts -= frame_duration_buffer[frame_duration_buffer_size - 1 - i];
+        st->index_entries[end_index - 1 - i].timestamp = end_ts;
+    }
+}
+
+/**
  * Append a new ctts entry to ctts_data.
  * Returns the new ctts_count if successful, else returns -1.
  */
@@ -2919,7 +2935,10 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int64_t edit_list_media_time_dts = 0;
     int64_t edit_list_start_encountered = 0;
     int64_t search_timestamp = 0;
-
+    int64_t* frame_duration_buffer = NULL;
+    int num_discarded_begin = 0;
+    int first_non_zero_audio_edit = -1;
+    int packet_skip_samples = 0;
 
     if (!msc->elst_data || msc->elst_count <= 0) {
         return;
@@ -2955,6 +2974,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         edit_list_index++;
         edit_list_dts_counter = edit_list_dts_entry_end;
         edit_list_dts_entry_end += edit_list_duration;
+        num_discarded_begin = 0;
         if (edit_list_media_time == -1) {
             continue;
         }
@@ -2962,7 +2982,14 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         // If we encounter a non-negative edit list reset the skip_samples/start_pad fields and set them
         // according to the edit list below.
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            st->skip_samples = msc->start_pad = 0;
+            if (first_non_zero_audio_edit < 0) {
+                first_non_zero_audio_edit = 1;
+            } else {
+                first_non_zero_audio_edit = 0;
+            }
+
+            if (first_non_zero_audio_edit > 0)
+                st->skip_samples = msc->start_pad = 0;
         }
 
         //find closest previous key frame
@@ -3041,24 +3068,56 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
 
             if (curr_cts < edit_list_media_time || curr_cts >= (edit_list_duration + edit_list_media_time)) {
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && curr_cts < edit_list_media_time &&
-                    curr_cts + frame_duration > edit_list_media_time &&
-                    st->skip_samples == 0 && msc->start_pad == 0) {
-                    st->skip_samples = msc->start_pad = edit_list_media_time - curr_cts;
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->codec_id != AV_CODEC_ID_VORBIS &&
+                    curr_cts < edit_list_media_time && curr_cts + frame_duration > edit_list_media_time &&
+                    first_non_zero_audio_edit > 0) {
+                    packet_skip_samples = edit_list_media_time - curr_cts;
+                    st->skip_samples += packet_skip_samples;
 
-                    // Shift the index entry timestamp by skip_samples to be correct.
-                    edit_list_dts_counter -= st->skip_samples;
+                    // Shift the index entry timestamp by packet_skip_samples to be correct.
+                    edit_list_dts_counter -= packet_skip_samples;
                     if (edit_list_start_encountered == 0)  {
-                      edit_list_start_encountered = 1;
+                        edit_list_start_encountered = 1;
+                        // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
+                        // discarded packets.
+                        if (frame_duration_buffer) {
+                            fix_index_entry_timestamps(st, st->nb_index_entries, edit_list_dts_counter,
+                                                       frame_duration_buffer, num_discarded_begin);
+                            av_freep(&frame_duration_buffer);
+                        }
                     }
 
-                    av_log(mov->fc, AV_LOG_DEBUG, "skip %d audio samples from curr_cts: %"PRId64"\n", st->skip_samples, curr_cts);
+                    av_log(mov->fc, AV_LOG_DEBUG, "skip %d audio samples from curr_cts: %"PRId64"\n", packet_skip_samples, curr_cts);
                 } else {
                     flags |= AVINDEX_DISCARD_FRAME;
                     av_log(mov->fc, AV_LOG_DEBUG, "drop a frame at curr_cts: %"PRId64" @ %"PRId64"\n", curr_cts, index);
+
+                    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && edit_list_start_encountered == 0) {
+                        num_discarded_begin++;
+                        frame_duration_buffer = av_realloc(frame_duration_buffer,
+                                                           num_discarded_begin * sizeof(int64_t));
+                        if (!frame_duration_buffer) {
+                            av_log(mov->fc, AV_LOG_ERROR, "Cannot reallocate frame duration buffer\n");
+                            break;
+                        }
+                        frame_duration_buffer[num_discarded_begin - 1] = frame_duration;
+
+                        // Increment skip_samples for the first non-zero audio edit list
+                        if (first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
+                            st->skip_samples += frame_duration;
+                            msc->start_pad = st->skip_samples;
+                        }
+                    }
                 }
             } else if (edit_list_start_encountered == 0) {
                 edit_list_start_encountered = 1;
+                // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
+                // discarded packets.
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && frame_duration_buffer) {
+                    fix_index_entry_timestamps(st, st->nb_index_entries, edit_list_dts_counter,
+                                               frame_duration_buffer, num_discarded_begin);
+                    av_freep(&frame_duration_buffer);
+                }
             }
 
             if (add_index_entry(st, current->pos, edit_list_dts_counter, current->size,

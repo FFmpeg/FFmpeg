@@ -225,7 +225,6 @@ External library support:
                            and libraw1394 [no]
   --enable-libebur128      enable libebur128 for EBU R128 measurement,
                            needed for loudnorm filter [no]
-  --enable-libfaac         enable AAC encoding via libfaac [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfontconfig   enable libfontconfig, useful for drawtext filter [no]
@@ -1448,14 +1447,15 @@ COMPONENT_LIST="
 "
 
 EXAMPLE_LIST="
-    avio_reading_example
     avio_dir_cmd_example
+    avio_reading_example
     decoding_encoding_example
     demuxing_decoding_example
     extract_mvs_example
     filter_audio_example
     filtering_audio_example
     filtering_video_example
+    http_multiclient_example
     metadata_example
     muxing_example
     qsvdec_example
@@ -1487,7 +1487,6 @@ EXTERNAL_LIBRARY_LIST="
     libcelt
     libdc1394
     libebur128
-    libfaac
     libfdk_aac
     libflite
     libfontconfig
@@ -2772,8 +2771,6 @@ pcm_mulaw_at_encoder_select="audio_frame_queue"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="videotoolbox_encoder pthreads"
 libcelt_decoder_deps="libcelt"
-libfaac_encoder_deps="libfaac"
-libfaac_encoder_select="audio_frame_queue"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
@@ -3105,15 +3102,15 @@ zscale_filter_deps="libzimg"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
-avcodec_example_deps="avcodec avutil"
-avio_dir_cmd="avformat avutil"
-avio_reading="avformat avcodec avutil"
+avio_dir_cmd_deps="avformat avutil"
+avio_reading_deps="avformat avcodec avutil"
 decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 extract_mvs_example_deps="avcodec avformat avutil"
 filter_audio_example_deps="avfilter avutil"
 filtering_audio_example_deps="avfilter avcodec avformat avutil"
 filtering_video_example_deps="avfilter avcodec avformat avutil"
+http_multiclient_example_deps="avformat avutil"
 metadata_example_deps="avformat avutil"
 muxing_example_deps="avcodec avformat avutil swscale"
 qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder vaapi_x11"
@@ -5071,7 +5068,6 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree cuda
 die_license_disabled nonfree cuvid
-die_license_disabled nonfree libfaac
 die_license_disabled nonfree libnpp
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
@@ -5681,7 +5677,6 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
 enabled libebur128        && require ebur128 ebur128.h ebur128_relative_threshold -lebur128
-enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
@@ -6078,6 +6073,8 @@ enabled neon_clobber_test &&
                   -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_send_packet        \
                   -Wl,--wrap,avcodec_receive_frame      \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_packet     \
                   -Wl,--wrap,avcodec_encode_subtitle    \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert ||
@@ -6093,6 +6090,8 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_encode_subtitle    \
                   -Wl,--wrap,avcodec_send_packet        \
                   -Wl,--wrap,avcodec_receive_frame      \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_packet     \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert         \
                   -Wl,--wrap,sws_scale ||

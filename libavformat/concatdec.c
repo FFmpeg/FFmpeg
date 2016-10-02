@@ -689,7 +689,7 @@ static int try_seek(AVFormatContext *avf, int stream,
 }
 
 static int real_seek(AVFormatContext *avf, int stream,
-                     int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+                     int64_t min_ts, int64_t ts, int64_t max_ts, int flags, AVFormatContext *cur_avf)
 {
     ConcatContext *cat = avf->priv_data;
     int ret, left, right;
@@ -711,13 +711,19 @@ static int real_seek(AVFormatContext *avf, int stream,
             left  = mid;
     }
 
-    if ((ret = open_file(avf, left)) < 0)
-        return ret;
+    if (cat->cur_file != &cat->files[left]) {
+        if ((ret = open_file(avf, left)) < 0)
+            return ret;
+    } else {
+        cat->avf = cur_avf;
+    }
 
     ret = try_seek(avf, stream, min_ts, ts, max_ts, flags);
     if (ret < 0 &&
         left < cat->nb_files - 1 &&
         cat->files[left + 1].start_time < max_ts) {
+        if (cat->cur_file == &cat->files[left])
+            cat->avf = NULL;
         if ((ret = open_file(avf, left + 1)) < 0)
             return ret;
         ret = try_seek(avf, stream, min_ts, ts, max_ts, flags);
@@ -738,13 +744,17 @@ static int concat_seek(AVFormatContext *avf, int stream,
     if (flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))
         return AVERROR(ENOSYS);
     cat->avf = NULL;
-    if ((ret = real_seek(avf, stream, min_ts, ts, max_ts, flags)) < 0) {
-        if (cat->avf)
-            avformat_close_input(&cat->avf);
+    if ((ret = real_seek(avf, stream, min_ts, ts, max_ts, flags, cur_avf_saved)) < 0) {
+        if (cat->cur_file != cur_file_saved) {
+            if (cat->avf)
+                avformat_close_input(&cat->avf);
+        }
         cat->avf      = cur_avf_saved;
         cat->cur_file = cur_file_saved;
     } else {
-        avformat_close_input(&cur_avf_saved);
+        if (cat->cur_file != cur_file_saved) {
+            avformat_close_input(&cur_avf_saved);
+        }
         cat->eof = 0;
     }
     return ret;

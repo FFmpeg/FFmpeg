@@ -2300,6 +2300,7 @@ loop_end:
         avio_read(pb, attachment, len);
 
         ost = new_attachment_stream(o, oc, -1);
+        ost->stream_copy               = 0;
         ost->attachment_filename       = o->attachments[i];
         ost->st->codecpar->extradata      = attachment;
         ost->st->codecpar->extradata_size = len;
@@ -2309,6 +2310,7 @@ loop_end:
         avio_closep(&pb);
     }
 
+#if FF_API_LAVF_AVCTX
     for (i = nb_output_streams - oc->nb_streams; i < nb_output_streams; i++) { //for all streams of this output file
         AVDictionaryEntry *e;
         ost = output_streams[i];
@@ -2319,6 +2321,7 @@ loop_end:
             if (av_opt_set(ost->st->codec, "flags", e->value, 0) < 0)
                 exit_program(1);
     }
+#endif
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
         av_dump_format(oc, nb_output_files - 1, oc->filename, 1);

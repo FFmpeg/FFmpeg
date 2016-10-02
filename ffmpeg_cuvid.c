@@ -17,12 +17,8 @@
  */
 
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
 
 #include "ffmpeg.h"
-
-#include <cuda.h>
-#include <nvcuvid.h>
 
 typedef struct CUVIDContext {
     AVBufferRef *hw_frames_ctx;
@@ -61,24 +57,13 @@ int cuvid_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void cuvid_ctx_free(AVHWDeviceContext *ctx)
-{
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
-    cuCtxDestroy(hwctx->cuda_ctx);
-}
-
 int cuvid_transcode_init(OutputStream *ost)
 {
     InputStream *ist;
     const enum AVPixelFormat *pix_fmt;
-    AVCUDADeviceContext *device_hwctx;
-    AVHWDeviceContext *device_ctx;
     AVHWFramesContext *hwframe_ctx;
+    AVBufferRef *device_ref = NULL;
     CUVIDContext *ctx = NULL;
-    CUdevice device;
-    CUcontext cuda_ctx = NULL;
-    CUcontext dummy;
-    CUresult err;
     int ret = 0;
 
     av_log(NULL, AV_LOG_TRACE, "Initializing cuvid transcoding\n");
@@ -118,113 +103,46 @@ int cuvid_transcode_init(OutputStream *ost)
         }
     }
 
-    if (!hw_device_ctx) {
-        hw_device_ctx = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_CUDA);
-        if (!hw_device_ctx) {
-            av_log(NULL, AV_LOG_ERROR, "av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_CUDA) failed\n");
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
-
-        err = cuInit(0);
-        if (err != CUDA_SUCCESS) {
-            av_log(NULL, AV_LOG_ERROR, "Could not initialize the CUDA driver API\n");
-            ret = AVERROR_UNKNOWN;
-            goto error;
-        }
-
-        err = cuDeviceGet(&device, 0); ///TODO: Make device index configurable
-        if (err != CUDA_SUCCESS) {
-            av_log(NULL, AV_LOG_ERROR, "Could not get the device number %d\n", 0);
-            ret = AVERROR_UNKNOWN;
-            goto error;
-        }
-
-        err = cuCtxCreate(&cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, device);
-        if (err != CUDA_SUCCESS) {
-            av_log(NULL, AV_LOG_ERROR, "Error creating a CUDA context\n");
-            ret = AVERROR_UNKNOWN;
-            goto error;
-        }
-
-        device_ctx = (AVHWDeviceContext*)hw_device_ctx->data;
-        device_ctx->free = cuvid_ctx_free;
-
-        device_hwctx = device_ctx->hwctx;
-        device_hwctx->cuda_ctx = cuda_ctx;
-
-        err = cuCtxPopCurrent(&dummy);
-        if (err != CUDA_SUCCESS) {
-            av_log(NULL, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
-            ret = AVERROR_UNKNOWN;
-            goto error;
-        }
-
-        ret = av_hwdevice_ctx_init(hw_device_ctx);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "av_hwdevice_ctx_init failed\n");
-            goto error;
-        }
-    } else {
-        device_ctx = (AVHWDeviceContext*)hw_device_ctx->data;
-        device_hwctx = device_ctx->hwctx;
-        cuda_ctx = device_hwctx->cuda_ctx;
-    }
-
-    if (device_ctx->type != AV_HWDEVICE_TYPE_CUDA) {
-        av_log(NULL, AV_LOG_ERROR, "Hardware device context is already initialized for a diffrent hwaccel.\n");
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
     if (!ctx->hw_frames_ctx) {
-        ctx->hw_frames_ctx = av_hwframe_ctx_alloc(hw_device_ctx);
+        ret = av_hwdevice_ctx_create(&device_ref, AV_HWDEVICE_TYPE_CUDA,
+                                     ist->hwaccel_device, NULL, 0);
+        if (ret < 0)
+            goto error;
+
+        ctx->hw_frames_ctx = av_hwframe_ctx_alloc(device_ref);
         if (!ctx->hw_frames_ctx) {
             av_log(NULL, AV_LOG_ERROR, "av_hwframe_ctx_alloc failed\n");
             ret = AVERROR(ENOMEM);
             goto error;
         }
-    }
+        av_buffer_unref(&device_ref);
 
-    /* This is a bit hacky, av_hwframe_ctx_init is called by the cuvid decoder
-     * once it has probed the neccesary format information. But as filters/nvenc
-     * need to know the format/sw_format, set them here so they are happy.
-     * This is fine as long as CUVID doesn't add another supported pix_fmt.
-     */
-    hwframe_ctx = (AVHWFramesContext*)ctx->hw_frames_ctx->data;
-    hwframe_ctx->format = AV_PIX_FMT_CUDA;
-    hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-
-    ost->hwaccel_ctx = ctx;
-    ost->enc_ctx->hw_frames_ctx = av_buffer_ref(ctx->hw_frames_ctx);
-    ost->enc_ctx->pix_fmt = AV_PIX_FMT_CUDA;
-
-    if (!ost->enc_ctx->hw_frames_ctx) {
-        av_log(NULL, AV_LOG_ERROR, "av_buffer_ref failed\n");
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
-
-    if (!ist->hwaccel_ctx) {
-        ist->hwaccel_ctx = ctx;
         ist->hw_frames_ctx = av_buffer_ref(ctx->hw_frames_ctx);
-        ist->dec_ctx->hw_frames_ctx = av_buffer_ref(ctx->hw_frames_ctx);
-        ist->dec_ctx->pix_fmt = AV_PIX_FMT_CUDA;
-        ist->resample_pix_fmt = AV_PIX_FMT_CUDA;
-
-        ist->hwaccel_uninit = cuvid_uninit;
-
-        if (!ist->hw_frames_ctx || !ist->dec_ctx->hw_frames_ctx) {
+        if (!ist->hw_frames_ctx) {
             av_log(NULL, AV_LOG_ERROR, "av_buffer_ref failed\n");
             ret = AVERROR(ENOMEM);
             goto error;
         }
+
+        ist->hwaccel_ctx = ctx;
+        ist->resample_pix_fmt = AV_PIX_FMT_CUDA;
+        ist->hwaccel_uninit = cuvid_uninit;
+
+        /* This is a bit hacky, av_hwframe_ctx_init is called by the cuvid decoder
+         * once it has probed the neccesary format information. But as filters/nvenc
+         * need to know the format/sw_format, set them here so they are happy.
+         * This is fine as long as CUVID doesn't add another supported pix_fmt.
+         */
+        hwframe_ctx = (AVHWFramesContext*)ctx->hw_frames_ctx->data;
+        hwframe_ctx->format = AV_PIX_FMT_CUDA;
+        hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
     }
 
     return 0;
 
 error:
     av_freep(&ctx);
+    av_buffer_unref(&device_ref);
     return ret;
 
 cancel:

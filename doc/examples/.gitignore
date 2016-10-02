@@ -6,9 +6,11 @@
 /filter_audio
 /filtering_audio
 /filtering_video
+/http_multiclient
 /metadata
 /muxing
 /pc-uninstalled
+/qsvdec
 /remuxing
 /resampling_audio
 /scaling_video

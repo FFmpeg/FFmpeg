@@ -223,7 +223,7 @@ with the highest resolution, for audio, it is the stream with the most channels,
 subtitles, it is the first subtitle stream. In the case where several streams of
 the same type rate equally, the stream with the lowest index is chosen.
 
-You can disable some of those defaults by using the @code{-vn/-an/-sn} options. For
+You can disable some of those defaults by using the @code{-vn/-an/-sn/-dn} options. For
 full manual control, use the @code{-map} option, which disables the defaults just
 described.
 

@@ -283,7 +283,7 @@ static int cuda_device_create(AVHWDeviceContext *ctx, const char *device,
         return AVERROR_UNKNOWN;
     }
 
-    err = cuCtxCreate(&hwctx->cuda_ctx, 0, cu_device);
+    err = cuCtxCreate(&hwctx->cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, cu_device);
     if (err != CUDA_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Error creating a CUDA context\n");
         return AVERROR_UNKNOWN;
