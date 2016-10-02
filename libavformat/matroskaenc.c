@@ -1377,7 +1377,7 @@ static int mkv_write_tags(AVFormatContext *s)
         if (ret < 0) return ret;
     }
 
-    if (!mkv->is_live) {
+    if (s->pb->seekable && !mkv->is_live) {
         for (i = 0; i < s->nb_streams; i++) {
             ebml_master tag_target;
             ebml_master tag;
