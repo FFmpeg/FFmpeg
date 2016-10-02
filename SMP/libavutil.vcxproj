@@ -138,6 +138,7 @@
     <ClCompile Include="..\libavutil\xtea.c" />
     <ClCompile Include="..\libavutil\tea.c" />
     <ClCompile Include="..\libavutil\hwcontext_dxva2.c" />
+    <ClCompile Include="..\libavutil\hwcontext_qsv.c" />
     <ClCompile Include="..\libavutil\lzo.c" />
     <ClCompile Include="..\compat\msvcrt\snprintf.c" />
     <ClCompile Include="..\compat\strtod.c" />
@@ -196,6 +197,7 @@
     <ClInclude Include="..\libavutil\hwcontext.h" />
     <ClInclude Include="..\libavutil\hwcontext_cuda.h" />
     <ClInclude Include="..\libavutil\hwcontext_dxva2.h" />
+    <ClInclude Include="..\libavutil\hwcontext_qsv.h" />
     <ClInclude Include="..\libavutil\hwcontext_vaapi.h" />
     <ClInclude Include="..\libavutil\hwcontext_vdpau.h" />
     <ClInclude Include="..\libavutil\imgutils.h" />
@@ -502,7 +504,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -542,6 +544,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -642,7 +645,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -682,6 +685,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -785,7 +789,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -828,6 +832,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -936,7 +941,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -978,6 +983,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1086,7 +1092,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1129,6 +1135,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1237,7 +1244,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -1279,6 +1286,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1390,7 +1398,7 @@ echo            These errors are the result of dead code elimination not being p
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1430,6 +1438,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1536,7 +1545,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1576,6 +1585,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1687,7 +1697,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1729,6 +1739,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1840,7 +1851,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1881,6 +1892,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -1992,7 +2004,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -2034,6 +2046,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -2145,7 +2158,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavutil.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -2186,6 +2199,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -2292,7 +2306,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2332,6 +2346,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
@@ -2438,7 +2453,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2478,6 +2493,7 @@ copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vdpau.h $(OutDir)\include\libavutil
 copy ..\libavutil\imgutils.h $(OutDir)\include\libavutil
