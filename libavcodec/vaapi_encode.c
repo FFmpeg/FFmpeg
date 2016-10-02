@@ -1405,6 +1405,28 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     // where it actually overlaps properly, though.)
     ctx->issue_mode = ISSUE_MODE_MAXIMISE_THROUGHPUT;
 
+    if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_SEQUENCE &&
+        ctx->codec->write_sequence_header) {
+        char data[MAX_PARAM_BUFFER_SIZE];
+        size_t bit_len = 8 * sizeof(data);
+
+        err = ctx->codec->write_sequence_header(avctx, data, &bit_len);
+        if (err < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to write sequence header "
+                   "for extradata: %d.\n", err);
+            goto fail;
+        } else {
+            avctx->extradata_size = (bit_len + 7) / 8;
+            avctx->extradata = av_mallocz(avctx->extradata_size +
+                                          AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!avctx->extradata) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+            memcpy(avctx->extradata, data, avctx->extradata_size);
+        }
+    }
+
     return 0;
 
 fail:
