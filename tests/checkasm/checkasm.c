@@ -93,6 +93,9 @@ static const struct {
     { "hevc_mc", checkasm_check_hevc_mc },
     { "hevc_idct", checkasm_check_hevc_idct },
 #endif
+#if CONFIG_HUFFYUVDSP
+    { "huffyuvdsp", checkasm_check_huffyuvdsp },
+#endif
 #if CONFIG_V210_ENCODER
     { "v210enc", checkasm_check_v210enc },
 #endif
