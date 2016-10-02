@@ -380,24 +380,10 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
                   num, den, 1 << 30);
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps)
+static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL + CONFIG_HEVC_D3D11VA_HWACCEL + CONFIG_HEVC_VDPAU_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
-    int ret;
-
-    pic_arrays_free(s);
-    s->ps.sps = NULL;
-    s->ps.vps = NULL;
-
-    if (!sps)
-        return 0;
-
-    ret = pic_arrays_init(s, sps);
-    if (ret < 0)
-        goto fail;
-
-    export_stream_params(s->avctx, &s->ps, sps);
 
     if (sps->pix_fmt == AV_PIX_FMT_YUV420P || sps->pix_fmt == AV_PIX_FMT_YUVJ420P ||
         sps->pix_fmt == AV_PIX_FMT_YUV420P10) {
@@ -417,10 +403,28 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     *fmt++ = sps->pix_fmt;
     *fmt = AV_PIX_FMT_NONE;
 
-    ret = ff_get_format(s->avctx, pix_fmts);
+    return ff_get_format(s->avctx, pix_fmts);
+}
+
+static int set_sps(HEVCContext *s, const HEVCSPS *sps,
+                   enum AVPixelFormat pix_fmt)
+{
+    int ret;
+
+    pic_arrays_free(s);
+    s->ps.sps = NULL;
+    s->ps.vps = NULL;
+
+    if (!sps)
+        return 0;
+
+    ret = pic_arrays_init(s, sps);
     if (ret < 0)
         goto fail;
-    s->avctx->pix_fmt = ret;
+
+    export_stream_params(s->avctx, &s->ps, sps);
+
+    s->avctx->pix_fmt = pix_fmt;
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
@@ -475,10 +479,17 @@ static int hls_slice_header(HEVCContext *s)
     s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data;
 
     if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
+        enum AVPixelFormat pix_fmt;
+
         s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
 
         ff_hevc_clear_refs(s);
-        ret = set_sps(s, s->ps.sps);
+
+        pix_fmt = get_format(s, s->ps.sps);
+        if (pix_fmt < 0)
+            return pix_fmt;
+
+        ret = set_sps(s, s->ps.sps, pix_fmt);
         if (ret < 0)
             return ret;
 
@@ -2985,7 +2996,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     }
 
     if (s->ps.sps != s0->ps.sps)
-        ret = set_sps(s, s0->ps.sps);
+        ret = set_sps(s, s0->ps.sps, src->pix_fmt);
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
