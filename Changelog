@@ -8,10 +8,9 @@ version <next>:
 - Alias muxer for Ogg Video (.ogv)
 - VP8 in Ogg muxing
 - curves filter doesn't automatically insert points at x=0 and x=1 anymore
-- 16-bit support in curves filter
-- 16-bit support in selectivecolor filter
+- 16-bit support in curves filter and selectivecolor filter
 - OpenH264 decoder wrapper
-- MediaCodec hwaccel
+- MediaCodec H.264 and HEVC hwaccel
 - True Audio (TTA) muxer
 - crystalizer audio filter
 - acrusher audio filter
@@ -29,11 +28,9 @@ version <next>:
 - avgblur filter
 - sobel and prewitt filter
 - MediaCodec HEVC decoding
-- TrueHD encoder
-- Meridian Lossless Packing (MLP) encoder
+- Meridian Lossless Packing (MLP) / TrueHD encoder
 - Non-Local Means (nlmeans) denoising filter
-- sdl2 output device
-- sdl2 support for ffplay
+- sdl2 output device and ffplay support
 - sdl1 output device and sdl1 support removed
 - extended mov edit list support
 - libfaac encoder removed
