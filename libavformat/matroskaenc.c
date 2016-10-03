@@ -391,9 +391,9 @@ static mkv_seekhead *mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset,
     if (numelements > 0) {
         new_seekhead->filepos = avio_tell(pb);
         // 21 bytes max for a seek entry, 10 bytes max for the SeekHead ID
-        // and size, and 3 bytes to guarantee that an EBML void element
-        // will fit afterwards
-        new_seekhead->reserved_size = numelements * MAX_SEEKENTRY_SIZE + 13;
+        // and size, 6 bytes for a CRC32 element, and 3 bytes to guarantee
+        // that an EBML void element will fit afterwards
+        new_seekhead->reserved_size = numelements * MAX_SEEKENTRY_SIZE + 19;
         new_seekhead->max_entries   = numelements;
         put_ebml_void(pb, new_seekhead->reserved_size);
     }
@@ -430,6 +430,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
  */
 static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
 {
+    AVIOContext *dyn_cp;
     mkv_seekhead *seekhead = mkv->main_seekhead;
     ebml_master metaseek, seekentry;
     int64_t currentpos;
@@ -444,20 +445,25 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
         }
     }
 
-    metaseek = start_ebml_master(pb, MATROSKA_ID_SEEKHEAD, seekhead->reserved_size);
+    if (start_ebml_master_crc32(pb, &dyn_cp, &metaseek, MATROSKA_ID_SEEKHEAD,
+                                seekhead->reserved_size) < 0) {
+        currentpos = -1;
+        goto fail;
+    }
+
     for (i = 0; i < seekhead->num_entries; i++) {
         mkv_seekhead_entry *entry = &seekhead->entries[i];
 
-        seekentry = start_ebml_master(pb, MATROSKA_ID_SEEKENTRY, MAX_SEEKENTRY_SIZE);
+        seekentry = start_ebml_master(dyn_cp, MATROSKA_ID_SEEKENTRY, MAX_SEEKENTRY_SIZE);
 
-        put_ebml_id(pb, MATROSKA_ID_SEEKID);
-        put_ebml_num(pb, ebml_id_size(entry->elementid), 0);
-        put_ebml_id(pb, entry->elementid);
+        put_ebml_id(dyn_cp, MATROSKA_ID_SEEKID);
+        put_ebml_num(dyn_cp, ebml_id_size(entry->elementid), 0);
+        put_ebml_id(dyn_cp, entry->elementid);
 
-        put_ebml_uint(pb, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
-        end_ebml_master(pb, seekentry);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
+        end_ebml_master(dyn_cp, seekentry);
     }
-    end_ebml_master(pb, metaseek);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv, metaseek);
 
     if (seekhead->reserved_size > 0) {
         uint64_t remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
