@@ -10,6 +10,7 @@ version <next>:
 - Raw AMR-NB and AMR-WB demuxers
 - TiVo ty/ty+ demuxer
 - Intel QSV-accelerated MJPEG encoding
+- PCE support for extended channel layouts in the AAC encoder
 
 
 version 3.4:
