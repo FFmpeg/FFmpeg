@@ -1483,7 +1483,7 @@ static int mkv_write_tags(AVFormatContext *s)
 static int mkv_write_attachments(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = s->pb;
+    AVIOContext *dyn_cp, *pb = s->pb;
     ebml_master attachments;
     AVLFG c;
     int i, ret;
@@ -1496,7 +1496,8 @@ static int mkv_write_attachments(AVFormatContext *s)
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
     if (ret < 0) return ret;
 
-    attachments = start_ebml_master(pb, MATROSKA_ID_ATTACHMENTS, 0);
+    ret = start_ebml_master_crc32(pb, &dyn_cp, &attachments, MATROSKA_ID_ATTACHMENTS, 0);
+    if (ret < 0) return ret;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1508,15 +1509,15 @@ static int mkv_write_attachments(AVFormatContext *s)
         if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             continue;
 
-        attached_file = start_ebml_master(pb, MATROSKA_ID_ATTACHEDFILE, 0);
+        attached_file = start_ebml_master(dyn_cp, MATROSKA_ID_ATTACHEDFILE, 0);
 
         if (t = av_dict_get(st->metadata, "title", NULL, 0))
-            put_ebml_string(pb, MATROSKA_ID_FILEDESC, t->value);
+            put_ebml_string(dyn_cp, MATROSKA_ID_FILEDESC, t->value);
         if (!(t = av_dict_get(st->metadata, "filename", NULL, 0))) {
             av_log(s, AV_LOG_ERROR, "Attachment stream %d has no filename tag.\n", i);
             return AVERROR(EINVAL);
         }
-        put_ebml_string(pb, MATROSKA_ID_FILENAME, t->value);
+        put_ebml_string(dyn_cp, MATROSKA_ID_FILENAME, t->value);
         if (t = av_dict_get(st->metadata, "mimetype", NULL, 0))
             mimetype = t->value;
         else if (st->codecpar->codec_id != AV_CODEC_ID_NONE ) {
@@ -1554,12 +1555,12 @@ static int mkv_write_attachments(AVFormatContext *s)
         av_log(s, AV_LOG_VERBOSE, "Using %.16"PRIx64" for attachment %d\n",
                fileuid, i);
 
-        put_ebml_string(pb, MATROSKA_ID_FILEMIMETYPE, mimetype);
-        put_ebml_binary(pb, MATROSKA_ID_FILEDATA, st->codecpar->extradata, st->codecpar->extradata_size);
-        put_ebml_uint(pb, MATROSKA_ID_FILEUID, fileuid);
-        end_ebml_master(pb, attached_file);
+        put_ebml_string(dyn_cp, MATROSKA_ID_FILEMIMETYPE, mimetype);
+        put_ebml_binary(dyn_cp, MATROSKA_ID_FILEDATA, st->codecpar->extradata, st->codecpar->extradata_size);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_FILEUID, fileuid);
+        end_ebml_master(dyn_cp, attached_file);
     }
-    end_ebml_master(pb, attachments);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv, attachments);
 
     return 0;
 }
