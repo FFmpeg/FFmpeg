@@ -37,6 +37,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/crc.h"
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -303,6 +304,45 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
         return;
     put_ebml_num(pb, pos - master.pos, master.sizebytes);
     avio_seek(pb, pos, SEEK_SET);
+}
+
+static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, ebml_master *master,
+                                   unsigned int elementid, uint64_t expectedsize)
+{
+    int ret;
+
+    if (ret = avio_open_dyn_buf(dyn_cp) < 0)
+        return ret;
+
+    if (pb->seekable)
+        *master = start_ebml_master(pb, elementid, expectedsize);
+    else
+        *master = start_ebml_master(*dyn_cp, elementid, expectedsize);
+
+    return 0;
+}
+
+static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
+                                  ebml_master master)
+{
+    uint8_t *buf, crc[4];
+    int size;
+
+    if (pb->seekable) {
+        size = avio_close_dyn_buf(*dyn_cp, &buf);
+        if (mkv->mode != MODE_WEBM) {
+            AV_WL32(crc, av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, buf, size) ^ UINT32_MAX);
+            put_ebml_binary(pb, EBML_ID_CRC32, crc, sizeof(crc));
+        }
+        avio_write(pb, buf, size);
+        end_ebml_master(pb, master);
+    } else {
+        end_ebml_master(*dyn_cp, master);
+        size = avio_close_dyn_buf(*dyn_cp, &buf);
+        avio_write(pb, buf, size);
+    }
+    av_free(buf);
+    *dyn_cp = NULL;
 }
 
 static void put_xiph_size(AVIOContext *pb, int size)
@@ -1924,26 +1964,12 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
     return pkt->duration;
 }
 
-static void mkv_flush_dynbuf(AVFormatContext *s)
-{
-    MatroskaMuxContext *mkv = s->priv_data;
-    int bufsize;
-    uint8_t *dyn_buf;
-
-    bufsize = avio_close_dyn_buf(mkv->dyn_bc, &dyn_buf);
-    avio_write(s->pb, dyn_buf, bufsize);
-    av_free(dyn_buf);
-    mkv->dyn_bc = NULL;
-}
-
 static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = mkv->dyn_bc;
 
-    end_ebml_master(pb, mkv->cluster);
+    end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
     mkv->cluster_pos = -1;
-    mkv_flush_dynbuf(s);
     if (s->pb->seekable)
         av_log(s, AV_LOG_DEBUG,
                "Starting new cluster at offset %" PRIu64 " bytes, "
@@ -1982,23 +2008,17 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
         }
     }
 
-    if (!mkv->dyn_bc) {
-        ret = avio_open_dyn_buf(&mkv->dyn_bc);
-        if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "Failed to open dynamic buffer\n");
+    if (mkv->cluster_pos == -1) {
+        mkv->cluster_pos = avio_tell(s->pb);
+        ret = start_ebml_master_crc32(s->pb, &mkv->dyn_bc, &mkv->cluster, MATROSKA_ID_CLUSTER, 0);
+        if (ret < 0)
             return ret;
-        }
+        put_ebml_uint(mkv->dyn_bc, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
+        mkv->cluster_pts = FFMAX(0, ts);
     }
     pb = mkv->dyn_bc;
 
-    if (mkv->cluster_pos == -1) {
-        mkv->cluster_pos = avio_tell(s->pb);
-        mkv->cluster     = start_ebml_master(pb, MATROSKA_ID_CLUSTER, 0);
-        put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
-        mkv->cluster_pts = FFMAX(0, ts);
-    }
-
-    relative_packet_pos = avio_tell(pb) - mkv->cluster.pos;
+    relative_packet_pos = avio_tell(s->pb) - mkv->cluster.pos + avio_tell(pb);
 
     if (par->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe);
@@ -2118,12 +2138,11 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = mkv->dyn_bc;
+
     if (!pkt) {
         if (mkv->cluster_pos != -1) {
-            end_ebml_master(pb, mkv->cluster);
+            end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
             mkv->cluster_pos = -1;
-            mkv_flush_dynbuf(s);
             if (s->pb->seekable)
                 av_log(s, AV_LOG_DEBUG,
                        "Flushing cluster at offset %" PRIu64 " bytes\n",
@@ -2156,8 +2175,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     }
 
     if (mkv->dyn_bc) {
-        end_ebml_master(mkv->dyn_bc, mkv->cluster);
-        mkv_flush_dynbuf(s);
+        end_ebml_master_crc32(pb, &mkv->dyn_bc, mkv, mkv->cluster);
     }
 
     if (mkv->mode != MODE_WEBM) {
