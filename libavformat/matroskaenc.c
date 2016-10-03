@@ -109,6 +109,8 @@ typedef struct MatroskaMuxContext {
     AVIOContext   *dyn_bc;
     AVIOContext     *tags_bc;
     ebml_master     tags;
+    AVIOContext     *info_bc;
+    ebml_master     info;
     ebml_master     segment;
     int64_t         segment_offset;
     ebml_master     cluster;
@@ -1603,7 +1605,7 @@ static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
-    ebml_master ebml_header, segment_info;
+    ebml_master ebml_header;
     AVDictionaryEntry *tag;
     int ret, i, version = 2;
     int64_t creation_time;
@@ -1668,7 +1670,11 @@ static int mkv_write_header(AVFormatContext *s)
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, avio_tell(pb));
     if (ret < 0) goto fail;
 
-    segment_info = start_ebml_master(pb, MATROSKA_ID_INFO, 0);
+    ret = start_ebml_master_crc32(pb, &mkv->info_bc, &mkv->info, MATROSKA_ID_INFO, 0);
+    if (ret < 0)
+        return ret;
+    pb = mkv->info_bc;
+
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
     if ((tag = av_dict_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
@@ -1722,7 +1728,11 @@ static int mkv_write_header(AVFormatContext *s)
             put_ebml_void(pb, 11);              // assumes double-precision float to be written
         }
     }
-    end_ebml_master(pb, segment_info);
+    if (s->pb->seekable)
+        put_ebml_void(s->pb, avio_tell(pb) + ((mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
+    else
+        end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, mkv->info);
+    pb = s->pb;
 
     // initialize stream_duration fields
     mkv->stream_durations = av_mallocz(s->nb_streams * sizeof(int64_t));
@@ -2247,8 +2257,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         // update the duration
         av_log(s, AV_LOG_DEBUG, "end duration = %" PRIu64 "\n", mkv->duration);
         currentpos = avio_tell(pb);
-        avio_seek(pb, mkv->duration_offset, SEEK_SET);
-        put_ebml_float(pb, MATROSKA_ID_DURATION, mkv->duration);
+        avio_seek(mkv->info_bc, mkv->duration_offset, SEEK_SET);
+        put_ebml_float(mkv->info_bc, MATROSKA_ID_DURATION, mkv->duration);
+        avio_seek(pb, mkv->info.pos, SEEK_SET);
+        end_ebml_master_crc32(pb, &mkv->info_bc, mkv, mkv->info);
 
         // update stream durations
         if (mkv->stream_durations) {
