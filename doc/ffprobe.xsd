@@ -201,6 +201,7 @@
       <xsd:attribute name="color_transfer"       type="xsd:string"/>
       <xsd:attribute name="color_primaries"      type="xsd:string"/>
       <xsd:attribute name="chroma_location"      type="xsd:string"/>
+      <xsd:attribute name="field_order"          type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
       <xsd:attribute name="refs"                 type="xsd:int"/>
 
