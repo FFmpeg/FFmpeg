@@ -791,7 +791,7 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
     return 0;
 }
 
-static void mkv_write_field_order(AVIOContext *pb,
+static void mkv_write_field_order(AVIOContext *pb, int mode,
                                   enum AVFieldOrder field_order)
 {
     switch (field_order) {
@@ -809,23 +809,25 @@ static void mkv_write_field_order(AVIOContext *pb,
     case AV_FIELD_BT:
         put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
                       MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED);
-        switch (field_order) {
-        case AV_FIELD_TT:
-            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                          MATROSKA_VIDEO_FIELDORDER_TT);
-            break;
-        case AV_FIELD_BB:
-             put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                          MATROSKA_VIDEO_FIELDORDER_BB);
-            break;
-        case AV_FIELD_TB:
-            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                          MATROSKA_VIDEO_FIELDORDER_TB);
-            break;
-        case AV_FIELD_BT:
-            put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
-                          MATROSKA_VIDEO_FIELDORDER_BT);
-            break;
+        if (mode != MODE_WEBM) {
+            switch (field_order) {
+            case AV_FIELD_TT:
+                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                              MATROSKA_VIDEO_FIELDORDER_TT);
+                break;
+            case AV_FIELD_BB:
+                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                              MATROSKA_VIDEO_FIELDORDER_BB);
+                break;
+            case AV_FIELD_TB:
+                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                              MATROSKA_VIDEO_FIELDORDER_TB);
+                break;
+            case AV_FIELD_BT:
+                put_ebml_uint(pb, MATROSKA_ID_VIDEOFIELDORDER,
+                              MATROSKA_VIDEO_FIELDORDER_BT);
+                break;
+            }
         }
     }
 }
@@ -1088,8 +1090,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , par->width);
         put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, par->height);
 
-        if (mkv->mode != MODE_WEBM)
-            mkv_write_field_order(pb, par->field_order);
+        mkv_write_field_order(pb, mkv->mode, par->field_order);
 
         // check both side data and metadata for stereo information,
         // write the result to the bitstream if any is found
