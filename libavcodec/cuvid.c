@@ -204,8 +204,8 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (!hwframe_ctx->pool) {
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
         hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-        hwframe_ctx->width = FFALIGN(avctx->width, 32);
-        hwframe_ctx->height = FFALIGN(avctx->height, 32);
+        hwframe_ctx->width = avctx->width;
+        hwframe_ctx->height = avctx->height;
 
         if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
