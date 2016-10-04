@@ -61,6 +61,7 @@ typedef struct H264ParseContext {
     int parse_history_count;
     int parse_last_mb;
     int64_t reference_dts;
+    int last_frame_num, last_picture_structure;
 } H264ParseContext;
 
 
@@ -528,7 +529,19 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                     s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;
                 else
                     s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
-                s->field_order = AV_FIELD_UNKNOWN;
+                if (p->poc.frame_num == p->last_frame_num &&
+                    p->last_picture_structure != AV_PICTURE_STRUCTURE_UNKNOWN &&
+                    p->last_picture_structure != AV_PICTURE_STRUCTURE_FRAME &&
+                    p->last_picture_structure != s->picture_structure) {
+                    if (p->last_picture_structure == AV_PICTURE_STRUCTURE_TOP_FIELD)
+                        s->field_order = AV_FIELD_TT;
+                    else
+                        s->field_order = AV_FIELD_BB;
+                } else {
+                    s->field_order = AV_FIELD_UNKNOWN;
+                }
+                p->last_picture_structure = s->picture_structure;
+                p->last_frame_num = p->poc.frame_num;
             }
 
             av_freep(&nal.rbsp_buffer);
@@ -677,6 +690,7 @@ static av_cold int init(AVCodecParserContext *s)
     H264ParseContext *p = s->priv_data;
 
     p->reference_dts = AV_NOPTS_VALUE;
+    p->last_frame_num = INT_MAX;
     ff_h264dsp_init(&p->h264dsp, 8, 1);
     return 0;
 }
