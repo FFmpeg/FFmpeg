@@ -766,3 +766,17 @@ AVHWAccel ff_hevc_mediacodec_hwaccel = {
     .id      = AV_CODEC_ID_HEVC,
     .pix_fmt = AV_PIX_FMT_MEDIACODEC,
 };
+
+AVHWAccel ff_vp8_mediacodec_hwaccel = {
+    .name    = "mediacodec",
+    .type    = AVMEDIA_TYPE_VIDEO,
+    .id      = AV_CODEC_ID_VP8,
+    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+};
+
+AVHWAccel ff_vp9_mediacodec_hwaccel = {
+    .name    = "mediacodec",
+    .type    = AVMEDIA_TYPE_VIDEO,
+    .id      = AV_CODEC_ID_VP9,
+    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+};

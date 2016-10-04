@@ -1,5 +1,5 @@
 /*
- * Android MediaCodec H.264 / H.265 decoders
+ * Android MediaCodec H.264 / H.265 / VP8 / VP9 decoders
  *
  * Copyright (c) 2015-2016 Matthieu Bouron <matthieu.bouron stupeflix.com>
  *
@@ -65,6 +65,7 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_H264_MEDIACODEC_DECODER || CONFIG_HEVC_MEDIACODEC_DECODER
 static int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
 {
     int i;
@@ -116,6 +117,7 @@ done:
 
     return ret;
 }
+#endif
 
 #if CONFIG_H264_MEDIACODEC_DECODER
 static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
@@ -264,6 +266,19 @@ done:
 }
 #endif
 
+#if CONFIG_VP8_MEDIACODEC_DECODER || CONFIG_VP9_MEDIACODEC_DECODER
+static int vpx_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
+{
+    int ret = 0;
+
+    if (avctx->extradata) {
+        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
+    }
+
+    return ret;
+}
+#endif
+
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
     int ret;
@@ -304,6 +319,24 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
             goto done;
         break;
 #endif
+#if CONFIG_VP8_MEDIACODEC_DECODER
+    case AV_CODEC_ID_VP8:
+        codec_mime = "video/x-vnd.on2.vp8";
+
+        ret = vpx_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_VP9_MEDIACODEC_DECODER
+    case AV_CODEC_ID_VP9:
+        codec_mime = "video/x-vnd.on2.vp9";
+
+        ret = vpx_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
     default:
         av_assert0(0);
     }
@@ -332,6 +365,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
+    if (bsf_name) {
     bsf = av_bsf_get_by_name(bsf_name);
     if(!bsf) {
         ret = AVERROR_BSF_NOT_FOUND;
@@ -345,6 +379,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     if (((ret = avcodec_parameters_from_context(s->bsf->par_in, avctx)) < 0) ||
         ((ret = av_bsf_init(s->bsf)) < 0)) {
           goto done;
+    }
     }
 
     av_init_packet(&s->filtered_pkt);
@@ -436,6 +471,7 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
 
             av_fifo_generic_read(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
 
+            if (s->bsf) {
             ret = av_bsf_send_packet(s->bsf, &input_pkt);
             if (ret < 0) {
                 return ret;
@@ -444,6 +480,9 @@ static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
             ret = av_bsf_receive_packet(s->bsf, &s->filtered_pkt);
             if (ret == AVERROR(EAGAIN)) {
                 goto done;
+            }
+            } else {
+                av_packet_move_ref(&s->filtered_pkt, &input_pkt);
             }
 
             /* {h264,hevc}_mp4toannexb are used here and do not require flushing */
@@ -503,6 +542,38 @@ AVCodec ff_hevc_mediacodec_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("H.265 Android MediaCodec decoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_VP8_MEDIACODEC_DECODER
+AVCodec ff_vp8_mediacodec_decoder = {
+    .name           = "vp8_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("VP8 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP8,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_VP9_MEDIACODEC_DECODER
+AVCodec ff_vp9_mediacodec_decoder = {
+    .name           = "vp9_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("VP9 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP9,
     .priv_data_size = sizeof(MediaCodecH264DecContext),
     .init           = mediacodec_decode_init,
     .decode         = mediacodec_decode_frame,
