@@ -293,12 +293,7 @@ later on.
 Also if you have doubts about splitting or not splitting, do not hesitate to
 ask/discuss it on the developer mailing list.
 
-@item API/ABI changes should be discussed before they are made.
-Do not change behavior of the programs (renaming options etc) or public
-API or ABI without first discussing it on the ffmpeg-devel mailing list.
-Do not remove widely used functionality or features (redundant code can be removed).
-
-@item Ask before you change the build system (configure, etc).
+@subheading Ask before you change the build system (configure, etc).
 Do not commit changes to the build system (Makefiles, configure script)
 which change behavior, defaults etc, without asking first. The same
 applies to compiler warning fixes, trivial looking fixes and to code
@@ -307,7 +302,7 @@ the way we do. Send your changes as patches to the ffmpeg-devel mailing
 list, and if the code maintainers say OK, you may commit. This does not
 apply to files you wrote and/or maintain.
 
-@item Cosmetic changes should be kept in separate patches.
+@subheading Cosmetic changes should be kept in separate patches.
 We refuse source indentation and other cosmetic changes if they are mixed
 with functional changes, such commits will be rejected and removed. Every
 developer has his own indentation style, you should not change it. Of course
@@ -355,15 +350,6 @@ Also note, the maintainer can simply ask for more time to review!
 Do not change behavior of the programs (renaming options etc) or public
 API or ABI without first discussing it on the ffmpeg-devel mailing list.
 Do not remove widely used functionality or features (redundant code can be removed).
-
-@subheading Ask before you change the build system (configure, etc).
-Do not commit changes to the build system (Makefiles, configure script)
-which change behavior, defaults etc, without asking first. The same
-applies to compiler warning fixes, trivial looking fixes and to code
-maintained by other developers. We usually have a reason for doing things
-the way we do. Send your changes as patches to the ffmpeg-devel mailing
-list, and if the code maintainers say OK, you may commit. This does not
-apply to files you wrote and/or maintain.
 
 @subheading Remember to check if you need to bump versions for libav*.
 Depending on the change, you may need to change the version integer.
