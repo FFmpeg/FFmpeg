@@ -3254,6 +3254,20 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                                 av_get_colorspace_name(enc->colorspace));
             }
 
+            if (enc->field_order != AV_FIELD_UNKNOWN) {
+                const char *field_order = "progressive";
+                if (enc->field_order == AV_FIELD_TT)
+                    field_order = "top first";
+                else if (enc->field_order == AV_FIELD_BB)
+                    field_order = "bottom first";
+                else if (enc->field_order == AV_FIELD_TB)
+                    field_order = "top coded first (swapped)";
+                else if (enc->field_order == AV_FIELD_BT)
+                    field_order = "bottom coded first (swapped)";
+
+                av_strlcatf(detail, sizeof(detail), "%s, ", field_order);
+            }
+
             if (av_log_get_level() >= AV_LOG_VERBOSE &&
                 enc->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
                 av_strlcatf(detail, sizeof(detail), "%s, ",
