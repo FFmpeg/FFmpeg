@@ -17568,6 +17568,36 @@ ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.pn
 @end example
 @end itemize
 
+@section sidedata, asidedata
+
+Delete frame side data, or select frames based on it.
+
+This filter accepts the following options:
+
+@table @option
+@item mode
+Set mode of operation of the filter.
+
+Can be one of the following:
+
+@table @samp
+@item select
+Select every frame with side data of @code{type}.
+
+@item delete
+Delete side data of @code{type}. If @code{type} is not set, delete all side
+data in the frame.
+
+@end table
+
+@item type
+Set side data type used with all modes. Must be set for @code{select} mode. For
+the list of frame side data types, refer to the @code{AVFrameSideDataType} enum
+in @file{libavutil/frame.h}. For example, to choose
+@code{AV_FRAME_DATA_PANSCAN} side data, you must specify @code{PANSCAN}.
+
+@end table
+
 @section spectrumsynth
 
 Sythesize audio from 2 input video spectrums, first input stream represents
