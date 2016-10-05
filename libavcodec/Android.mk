@@ -27,9 +27,6 @@ ifneq ($(ARCH_ARM_HAVE_NEON),)
   LOCAL_SRC_FILES += neon/mpegvideo.c
 endif
 
-# It's strange wmalosslessdec.c can't be compiled by -O3 for armv7-a-neon. A gcc bug?
-$(intermediates)/wmalosslessdec.o: PRIVATE_CFLAGS += $(if $(filter arm,$(TARGET_ARCH)),-Os)
-
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)
 
@@ -50,8 +47,8 @@ ifneq ($(ARCH_ARM_HAVE_NEON),)
   LOCAL_SRC_FILES += neon/mpegvideo.c
 endif
 
-# It's strange wmalosslessdec.c can't be compiled by -O3 for armv7-a-neon. A gcc bug?
-$(intermediates)/wmalosslessdec.o: PRIVATE_CFLAGS += $(if $(filter arm,$(TARGET_ARCH)),-Os)
+# This file crashes SDCLANG at -O2 or -O3
+$(intermediates)/vp9dsp_8bpp.o: PRIVATE_CFLAGS += $(if $(filter arm64,$(TARGET_ARCH)),-O1)
 
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)
