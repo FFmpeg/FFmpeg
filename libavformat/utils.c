@@ -2582,7 +2582,7 @@ static void update_stream_timings(AVFormatContext *ic)
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
         if (end_time != INT64_MIN) {
-            if (ic->nb_programs) {
+            if (ic->nb_programs > 1) {
                 for (i = 0; i < ic->nb_programs; i++) {
                     p = ic->programs[i];
                     if (p->start_time != AV_NOPTS_VALUE && p->end_time > p->start_time)
