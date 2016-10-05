@@ -861,6 +861,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_COMPR:
         s->compr     = value;
+        av_log(s->avctx, AV_LOG_DEBUG, "compression: %d\n", s->compr);
         s->predictor = 0;
         switch (s->compr) {
         case TIFF_RAW:
