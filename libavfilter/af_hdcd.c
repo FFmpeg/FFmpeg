@@ -985,7 +985,7 @@ typedef struct HDCDContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hdcd_options[] = {
     { "disable_autoconvert", "Disable any format conversion or resampling in the filter graph.",
-        OFFSET(disable_autoconvert), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, A },
+        OFFSET(disable_autoconvert), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, A },
     { "process_stereo", "Process stereo channels together. Only apply target_gain when both channels match.",
         OFFSET(process_stereo), AV_OPT_TYPE_BOOL, { .i64 = HDCD_PROCESS_STEREO_DEFAULT }, 0, 1, A },
     { "cdt_ms", "Code detect timer period in ms.",
@@ -1710,7 +1710,6 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink) {
     AVFilterContext *ctx = inlink->dst;
     HDCDContext *s = ctx->priv;
-    AVFilterLink *lk;
     int c;
 
     av_log(ctx, AV_LOG_VERBOSE, "Auto-convert: %s\n",
@@ -1751,24 +1750,6 @@ static int config_input(AVFilterLink *inlink) {
     av_log(ctx, AV_LOG_VERBOSE, "Analyze mode: [%d] %s\n",
         s->analyze_mode, ana_mode_str[s->analyze_mode] );
 
-    lk = inlink;
-    while(lk != NULL) {
-        AVFilterContext *nextf = lk->src;
-        if (lk->type == AVMEDIA_TYPE_AUDIO) {
-            int sfok = (lk->format == AV_SAMPLE_FMT_S16 ||
-                        lk->format == AV_SAMPLE_FMT_S16P);
-            if ( !sfok || lk->sample_rate != 44100) {
-                av_log(ctx, AV_LOG_WARNING, "An input format is %s@%dHz at %s. It will truncated/resampled to s16@44100Hz.\n",
-                    av_get_sample_fmt_name(lk->format), lk->sample_rate,
-                    (nextf->name) ? nextf->name : "<unknown>"
-                    );
-                s->bad_config = 1;
-                break;
-            }
-        }
-        lk = (nextf->inputs) ? nextf->inputs[0] : NULL;
-    }
-    /* more warning will appear after config_output() */
     return 0;
 }
 
@@ -1782,36 +1763,10 @@ static const AVFilterPad avfilter_af_hdcd_inputs[] = {
     { NULL }
 };
 
-static int config_output(AVFilterLink *outlink) {
-    static const char hdcd_baduse[] =
-        "The HDCD filter is unlikely to produce a desirable result in this context.";
-    AVFilterContext *ctx = outlink->src;
-    HDCDContext *s = ctx->priv;
-    AVFilterLink *lk = outlink;
-    while(lk != NULL) {
-        AVFilterContext *nextf = lk->dst;
-        if (lk->type == AVMEDIA_TYPE_AUDIO) {
-            if (lk->format == AV_SAMPLE_FMT_S16 || lk->format == AV_SAMPLE_FMT_U8) {
-                av_log(ctx, AV_LOG_WARNING, "s24 output is being truncated to %s at %s.\n",
-                    av_get_sample_fmt_name(lk->format),
-                    (nextf->name) ? nextf->name : "<unknown>"
-                    );
-                s->bad_config = 1;
-                break;
-            }
-        }
-        lk = (nextf->outputs) ? nextf->outputs[0] : NULL;
-    }
-    if (s->bad_config)
-        av_log(ctx, AV_LOG_WARNING, "%s\n", hdcd_baduse);
-    return 0;
-}
-
 static const AVFilterPad avfilter_af_hdcd_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
-        .config_props = config_output,
     },
     { NULL }
 };
