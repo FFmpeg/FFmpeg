@@ -21,6 +21,7 @@ version <next>:
 - hysteresis filter
 - lut2 filter
 - yuvtestsrc filter
+- CUDA CUVID H.263/VP8/VP9/10 bit HEVC (Dithered) Decoding
 - vaguedenoiser filter
 - added threads option per filter instance
 - weave filter
