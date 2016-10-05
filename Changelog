@@ -1,6 +1,43 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.9
+- avformat/mpeg: Adjust vid probe threshold to correct mis-detection
+- avcodec/rv40: Test remaining space in loop of get_dimension()
+- avcodec/ituh263dec: Avoid spending a long time in slice sync
+- avcodec/movtextdec: Add error message for tsmb_size check
+- avcodec/movtextdec: Fix tsmb_size check==0 check
+- avcodec/movtextdec: Fix potential integer overflow
+- avcodec/sunrast: Fix input buffer pointer check
+- avcodec/tscc:  Check side data size before use
+- avcodec/rawdec: Check side data size before use
+- avcodec/msvideo1: Check side data size before use
+- avcodec/qpeg:  Check side data size before use
+- avcodec/qtrle:  Check side data size before use
+- avcodec/msrle:  Check side data size before use
+- avcodec/kmvc:  Check side data size before use
+- avcodec/idcinvideo: Check side data size before use
+- avcodec/cinepak: Check side data size before use
+- avcodec/8bps: Check side data size before use
+- avcodec/dvdsubdec: Fix off by 1 error
+- avcodec/dvdsubdec: Fix buf_size check
+- vp9: change order of operations in adapt_prob().
+- avcodec/interplayvideo: Check side data size before use
+- avformat/mxfdec: Check size to avoid integer overflow in mxf_read_utf16_string()
+- avcodec/mpegvideo_enc: Clear mmx state in ff_mpv_reallocate_putbitbuffer()
+- avcodec/utils: Clear MMX state before returning from avcodec_default_execute*()
+- cmdutils: fix typos
+- lavfi: fix typos
+- lavc: fix typos
+- tools: fix grammar error
+- avutil/mips/generic_macros_msa: rename macro variable which causes segfault for mips r6
+- videodsp: fix 1-byte overread in top/bottom READ_NUM_BYTES iterations.
+- avformat/avidec: Check nb_streams in read_gab2_sub()
+- avformat/avidec: Remove ancient assert
+- lavc/movtextdec.c: Avoid infinite loop on invalid data.
+- avcodec/ansi: Check dimensions
+- avcodec/cavsdsp: use av_clip_uint8() for idct
+
 version 2.8.8
 - avformat/movenc: Check packet in mov_write_single_packet() too
 - avformat/movenc: Factor check_pkt() out
