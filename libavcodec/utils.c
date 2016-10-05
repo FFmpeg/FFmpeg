@@ -2870,7 +2870,14 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
     if (avctx->codec->receive_frame) {
         if (avctx->internal->draining && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
             return AVERROR_EOF;
-        return avctx->codec->receive_frame(avctx, frame);
+        ret = avctx->codec->receive_frame(avctx, frame);
+        if (ret >= 0) {
+            if (av_frame_get_best_effort_timestamp(frame) == AV_NOPTS_VALUE) {
+                av_frame_set_best_effort_timestamp(frame,
+                    guess_correct_pts(avctx, frame->pkt_pts, frame->pkt_dts));
+            }
+        }
+        return ret;
     }
 
     // Emulation via old API.
