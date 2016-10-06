@@ -437,7 +437,7 @@ static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContex
     FFAMediaCodec *codec = s->codec;
     int status;
 
-    s->dequeued_buffer_nb = 0;
+    s->output_buffer_count = 0;
 
     s->draining = 0;
     s->flushing = 0;
@@ -630,7 +630,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         /* If the codec is flushing or need to be flushed, block for a fair
          * amount of time to ensure we got a frame */
         output_dequeue_timeout_us = OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US;
-    } else if (s->dequeued_buffer_nb == 0) {
+    } else if (s->output_buffer_count == 0) {
         /* If the codec hasn't produced any frames, do not block so we
          * can push data to it as fast as possible, and get the first
          * frame */
@@ -670,7 +670,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
             }
 
             *got_frame = 1;
-            s->dequeued_buffer_nb++;
+            s->output_buffer_count++;
         } else {
             status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
             if (status < 0) {
