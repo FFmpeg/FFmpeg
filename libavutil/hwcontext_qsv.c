@@ -559,6 +559,42 @@ static int qsv_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
+static int qsv_map_from(AVHWFramesContext *ctx,
+                        AVFrame *dst, const AVFrame *src, int flags)
+{
+    QSVFramesContext *s = ctx->internal->priv;
+    mfxFrameSurface1 *surf = (mfxFrameSurface1*)src->data[3];
+    AVHWFramesContext *child_frames_ctx;
+
+    AVFrame *dummy;
+    int ret = 0;
+
+    if (!s->child_frames_ref)
+        return AVERROR(ENOSYS);
+    child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+
+    dummy = av_frame_alloc();
+    if (!dummy)
+        return AVERROR(ENOMEM);
+
+    dummy->buf[0]        = av_buffer_ref(src->buf[0]);
+    dummy->hw_frames_ctx = av_buffer_ref(s->child_frames_ref);
+    if (!dummy->buf[0] || !dummy->hw_frames_ctx)
+        goto fail;
+
+    dummy->format        = child_frames_ctx->format;
+    dummy->width         = src->width;
+    dummy->height        = src->height;
+    dummy->data[3]       = surf->Data.MemId;
+
+    ret = av_hwframe_map(dst, dummy, flags);
+
+fail:
+    av_frame_free(&dummy);
+
+    return ret;
+}
+
 static int qsv_transfer_data_child(AVHWFramesContext *ctx, AVFrame *dst,
                                    const AVFrame *src)
 {
@@ -840,6 +876,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .transfer_get_formats   = qsv_transfer_get_formats,
     .transfer_data_to       = qsv_transfer_data_to,
     .transfer_data_from     = qsv_transfer_data_from,
+    .map_from               = qsv_map_from,
 
     .pix_fmts = (const enum AVPixelFormat[]){ AV_PIX_FMT_QSV, AV_PIX_FMT_NONE },
 };
