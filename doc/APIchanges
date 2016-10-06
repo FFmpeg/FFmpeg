@@ -20,7 +20,7 @@ API changes, most recent first:
   Add AVIO_SEEKABLE_TIME flag.
 
 2016-xx-xx - xxxxxxx - lavu 55.22.0 - pixfmt.h
-  Add AV_PIX_FMT_YUV(420,422,444)P12.
+  Add AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, and AV_PIX_FMT_YUV444P12.
 
 2016-xx-xx - xxxxxxx - lavc 57.27.0 - avcodec.h
   Add FF_PROFILE_HEVC_REXT, the extended pixel format profile for HEVC.
