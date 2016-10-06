@@ -134,6 +134,7 @@ typedef struct MatroskaMuxContext {
     int is_dash;
     int dash_track_number;
     int is_live;
+    int write_crc;
 
     uint32_t chapter_id_offset;
     int wrote_chapters;
@@ -334,7 +335,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 
     if (pb->seekable) {
         size = avio_close_dyn_buf(*dyn_cp, &buf);
-        if (mkv->mode != MODE_WEBM) {
+        if (mkv->write_crc && mkv->mode != MODE_WEBM) {
             AV_WL32(crc, av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, buf, size) ^ UINT32_MAX);
             put_ebml_binary(pb, EBML_ID_CRC32, crc, sizeof(crc));
         }
@@ -1485,7 +1486,7 @@ static int mkv_write_tags(AVFormatContext *s)
 
     if (mkv->tags.pos) {
         if (s->pb->seekable && !mkv->is_live)
-            put_ebml_void(s->pb, avio_tell(mkv->tags_bc) + ((mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
+            put_ebml_void(s->pb, avio_tell(mkv->tags_bc) + ((mkv->write_crc && mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
         else
             end_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, mkv->tags);
     }
@@ -1729,7 +1730,7 @@ static int mkv_write_header(AVFormatContext *s)
         }
     }
     if (s->pb->seekable)
-        put_ebml_void(s->pb, avio_tell(pb) + ((mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
+        put_ebml_void(s->pb, avio_tell(pb) + ((mkv->write_crc && mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
     else
         end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, mkv->info);
     pb = s->pb;
@@ -2390,6 +2391,7 @@ static const AVOption options[] = {
     { "dash_track_number", "Track number for the DASH stream", OFFSET(dash_track_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 127, FLAGS },
     { "live", "Write files assuming it is a live stream.", OFFSET(is_live), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "allow_raw_vfw", "allow RAW VFW mode", OFFSET(allow_raw_vfw), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "write_crc32", "write a CRC32 element inside every Level 1 element", OFFSET(write_crc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { NULL },
 };
 

@@ -35,6 +35,7 @@ version <next>:
 - sdl1 output device and sdl1 support removed
 - extended mov edit list support
 - libfaac encoder removed
+- Matroska muxer now writes CRC32 elements by default in all Level 1 elements
 
 
 version 3.1:
