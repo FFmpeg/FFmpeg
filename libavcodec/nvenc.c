@@ -928,7 +928,7 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ret = nv->nvEncInitializeEncoder(ctx->nvenc_ctx, &ctx->params);
     if (ret != NV_ENC_SUCCESS)
-        return nvenc_print_error(avctx, ret, "Cannot initialize the decoder");
+        return nvenc_print_error(avctx, ret, "InitializeEncoder failed");
 
     cpb_props = ff_add_cpb_side_data(avctx);
     if (!cpb_props)
