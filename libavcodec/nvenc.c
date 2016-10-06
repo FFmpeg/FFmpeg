@@ -723,6 +723,11 @@ static int nvenc_setup_h264_config(AVCodecContext *avctx)
         break;
     }
 
+    if (ctx->data_pix_fmt == AV_PIX_FMT_YUV444P) {
+        cc->profileGUID = NV_ENC_H264_PROFILE_HIGH_444_GUID;
+        avctx->profile = FF_PROFILE_H264_HIGH_444_PREDICTIVE;
+    }
+
     h264->level = ctx->level;
 
     return 0;
