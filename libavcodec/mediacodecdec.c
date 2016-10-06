@@ -565,7 +565,6 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
     }
 
     while (offset < pkt->size || (need_draining && !s->draining)) {
-        int size;
 
         index = ff_AMediaCodec_dequeueInputBuffer(codec, input_dequeue_timeout_us);
         if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
