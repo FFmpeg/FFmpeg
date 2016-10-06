@@ -449,9 +449,6 @@ static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContex
         return AVERROR_EXTERNAL;
     }
 
-    s->first_buffer = 0;
-    s->first_buffer_at = av_gettime();
-
     return 0;
 }
 
@@ -468,7 +465,6 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
         AV_PIX_FMT_NONE,
     };
 
-    s->first_buffer_at = av_gettime();
     s->refcount = 1;
 
     pix_fmt = ff_get_format(avctx, pix_fmts);
@@ -644,10 +640,6 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
     index = ff_AMediaCodec_dequeueOutputBuffer(codec, &info, output_dequeue_timeout_us);
     if (index >= 0) {
         int ret;
-
-        if (!s->first_buffer++) {
-            av_log(avctx, AV_LOG_DEBUG, "Got first buffer after %fms\n", (av_gettime() - s->first_buffer_at) / 1000);
-        }
 
         av_log(avctx, AV_LOG_DEBUG, "Got output buffer %zd"
                 " offset=%" PRIi32 " size=%" PRIi32 " ts=%" PRIi64

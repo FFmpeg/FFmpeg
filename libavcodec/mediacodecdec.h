@@ -61,9 +61,6 @@ typedef struct MediaCodecDecContext {
 
     uint64_t dequeued_buffer_nb;
 
-    int first_buffer;
-    double first_buffer_at;
-
 } MediaCodecDecContext;
 
 int ff_mediacodec_dec_init(AVCodecContext *avctx,
