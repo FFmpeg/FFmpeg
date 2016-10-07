@@ -2264,17 +2264,19 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master_crc32(pb, &mkv->info_bc, mkv, mkv->info);
 
         // update stream durations
-        if (mkv->stream_durations) {
+        if (!mkv->is_live && mkv->stream_durations) {
             int i;
+            int64_t curr = avio_tell(mkv->tags_bc);
             for (i = 0; i < s->nb_streams; ++i) {
                 AVStream *st = s->streams[i];
-                double duration_sec = mkv->stream_durations[i] * av_q2d(st->time_base);
-                char duration_string[20] = "";
 
-                av_log(s, AV_LOG_DEBUG, "stream %d end duration = %" PRIu64 "\n", i,
-                       mkv->stream_durations[i]);
+                if (mkv->stream_duration_offsets[i] > 0) {
+                    double duration_sec = mkv->stream_durations[i] * av_q2d(st->time_base);
+                    char duration_string[20] = "";
 
-                if (!mkv->is_live && mkv->stream_duration_offsets[i] > 0) {
+                    av_log(s, AV_LOG_DEBUG, "stream %d end duration = %" PRIu64 "\n", i,
+                           mkv->stream_durations[i]);
+
                     avio_seek(mkv->tags_bc, mkv->stream_duration_offsets[i], SEEK_SET);
 
                     snprintf(duration_string, 20, "%02d:%02d:%012.9f",
@@ -2284,6 +2286,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                     put_ebml_binary(mkv->tags_bc, MATROSKA_ID_TAGSTRING, duration_string, 20);
                 }
             }
+            avio_seek(mkv->tags_bc, curr, SEEK_SET);
         }
         if (mkv->tags.pos && !mkv->is_live) {
             avio_seek(pb, mkv->tags.pos, SEEK_SET);
