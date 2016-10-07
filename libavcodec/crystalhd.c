@@ -707,7 +707,12 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     if (interlaced)
         priv->pic->top_field_first = !bottom_first;
 
+    priv->pic->pts = pkt_pts;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     priv->pic->pkt_pts = pkt_pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (!priv->need_second_field) {
         *got_frame       = 1;

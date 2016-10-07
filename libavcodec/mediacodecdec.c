@@ -202,12 +202,17 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
     frame->format = avctx->pix_fmt;
 
     if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
-        frame->pkt_pts = av_rescale_q(info->presentationTimeUs,
+        frame->pts = av_rescale_q(info->presentationTimeUs,
                                       av_make_q(1, 1000000),
                                       avctx->pkt_timebase);
     } else {
-        frame->pkt_pts = info->presentationTimeUs;
+        frame->pts = info->presentationTimeUs;
     }
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
+    frame->pkt_pts = frame->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     frame->pkt_dts = AV_NOPTS_VALUE;
 
     buffer = av_mallocz(sizeof(AVMediaCodecBuffer));
@@ -278,7 +283,12 @@ static int mediacodec_wrap_sw_buffer(AVCodecContext *avctx,
      * on the last avpacket received which is not in sync with the frame:
      *   * N avpackets can be pushed before 1 frame is actually returned
      *   * 0-sized avpackets are pushed to flush remaining frames at EOS */
+    frame->pts = info->presentationTimeUs;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pts = info->presentationTimeUs;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     frame->pkt_dts = AV_NOPTS_VALUE;
 
     av_log(avctx, AV_LOG_DEBUG,

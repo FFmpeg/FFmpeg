@@ -768,7 +768,12 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     };
 
     if (pkt) {
+        frame->pts = pkt->pts;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = pkt->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_frame_set_pkt_pos     (frame, pkt->pos);
         av_frame_set_pkt_duration(frame, pkt->duration);
         av_frame_set_pkt_size    (frame, pkt->size);
@@ -794,7 +799,12 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
             frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
         }
     } else {
+        frame->pts = AV_NOPTS_VALUE;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = AV_NOPTS_VALUE;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_frame_set_pkt_pos     (frame, -1);
         av_frame_set_pkt_duration(frame, 0);
         av_frame_set_pkt_size    (frame, -1);
@@ -2043,7 +2053,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
  * which case the output will as well.
  *
  * @param pts the pts field of the decoded AVPacket, as passed through
- * AVFrame.pkt_pts
+ * AVFrame.pts
  * @param dts the dts field of the decoded AVPacket
  * @return one of the input values, may be AV_NOPTS_VALUE
  */
@@ -2281,7 +2291,7 @@ fail:
             avctx->frame_number++;
             av_frame_set_best_effort_timestamp(picture,
                                                guess_correct_pts(avctx,
-                                                                 picture->pkt_pts,
+                                                                 picture->pts,
                                                                  picture->pkt_dts));
         } else
             av_frame_unref(picture);
@@ -2354,7 +2364,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             avctx->frame_number++;
             av_frame_set_best_effort_timestamp(frame,
                                                guess_correct_pts(avctx,
-                                                                 frame->pkt_pts,
+                                                                 frame->pts,
                                                                  frame->pkt_dts));
             if (frame->format == AV_SAMPLE_FMT_NONE)
                 frame->format = avctx->sample_fmt;
@@ -2396,8 +2406,14 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                     int64_t diff_ts = av_rescale_q(avctx->internal->skip_samples,
                                                    (AVRational){1, avctx->sample_rate},
                                                    avctx->pkt_timebase);
+                    if(frame->pts!=AV_NOPTS_VALUE)
+                        frame->pts += diff_ts;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
                     if(frame->pkt_pts!=AV_NOPTS_VALUE)
                         frame->pkt_pts += diff_ts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += diff_ts;
                     if (av_frame_get_pkt_duration(frame) >= diff_ts)
@@ -2874,7 +2890,7 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
         if (ret >= 0) {
             if (av_frame_get_best_effort_timestamp(frame) == AV_NOPTS_VALUE) {
                 av_frame_set_best_effort_timestamp(frame,
-                    guess_correct_pts(avctx, frame->pkt_pts, frame->pkt_dts));
+                    guess_correct_pts(avctx, frame->pts, frame->pkt_dts));
             }
         }
         return ret;

@@ -469,7 +469,11 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
         /* CUVIDs opaque reordering breaks the internal pkt logic.
          * So set pkt_pts and clear all the other pkt_ fields.
          */
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = frame->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_frame_set_pkt_pos(frame, -1);
         av_frame_set_pkt_duration(frame, 0);
         av_frame_set_pkt_size(frame, -1);

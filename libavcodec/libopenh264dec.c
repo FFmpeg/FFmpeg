@@ -221,7 +221,11 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
 
         avframe->pts     = s->pkt_filtered.pts;
         avframe->pkt_dts = s->pkt_filtered.dts;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         avframe->pkt_pts = s->pkt_filtered.pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         *got_frame = 1;
     }

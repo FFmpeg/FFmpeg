@@ -99,8 +99,12 @@ static void get_frame_defaults(AVFrame *frame)
     memset(frame, 0, sizeof(*frame));
 
     frame->pts                   =
-    frame->pkt_dts               =
+    frame->pkt_dts               = AV_NOPTS_VALUE;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pts               = AV_NOPTS_VALUE;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     frame->best_effort_timestamp = AV_NOPTS_VALUE;
     frame->pkt_duration        = 0;
     frame->pkt_pos             = -1;
@@ -295,7 +299,11 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->palette_has_changed    = src->palette_has_changed;
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_pts                = src->pkt_pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     dst->pkt_dts                = src->pkt_dts;
     dst->pkt_pos                = src->pkt_pos;
     dst->pkt_size               = src->pkt_size;
