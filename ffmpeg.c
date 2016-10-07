@@ -129,6 +129,8 @@ static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int64_t decode_error_stat[2];
 
+static int want_sdp = 1;
+
 static int current_time;
 AVIOContext *progress_avio = NULL;
 
@@ -2557,8 +2559,14 @@ static void print_sdp(void)
     int i;
     int j;
     AVIOContext *sdp_pb;
-    AVFormatContext **avc = av_malloc_array(nb_output_files, sizeof(*avc));
+    AVFormatContext **avc;
 
+    for (i = 0; i < nb_output_files; i++) {
+        if (!output_files[i]->header_written)
+            return;
+    }
+
+    avc = av_malloc_array(nb_output_files, sizeof(*avc));
     if (!avc)
         exit_program(1);
     for (i = 0, j = 0; i < nb_output_files; i++) {
@@ -2717,6 +2725,38 @@ static InputStream *get_input_stream(OutputStream *ost)
 static int compare_int64(const void *a, const void *b)
 {
     return FFDIFFSIGN(*(const int64_t *)a, *(const int64_t *)b);
+}
+
+/* open the muxer when all the streams are initialized */
+static int check_init_output_file(OutputFile *of, int file_index)
+{
+    int ret, i;
+
+    for (i = 0; i < of->ctx->nb_streams; i++) {
+        OutputStream *ost = output_streams[of->ost_index + i];
+        if (!ost->initialized)
+            return 0;
+    }
+
+    of->ctx->interrupt_callback = int_cb;
+
+    ret = avformat_write_header(of->ctx, &of->opts);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Could not write header for output file #%d "
+               "(incorrect codec parameters ?): %s",
+               file_index, av_err2str(ret));
+        return ret;
+    }
+    //assert_avoptions(of->opts);
+    of->header_written = 1;
+
+    av_dump_format(of->ctx, file_index, of->ctx->filename, 1);
+
+    if (sdp_filename || want_sdp)
+        print_sdp();
+
+    return 0;
 }
 
 static int init_output_bsfs(OutputStream *ost)
@@ -3018,6 +3058,12 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
     if (ret < 0)
         return ret;
 
+    ost->initialized = 1;
+
+    ret = check_init_output_file(output_files[ost->file_index], ost->file_index);
+    if (ret < 0)
+        return ret;
+
     return ret;
 }
 
@@ -3147,7 +3193,6 @@ static int transcode_init(void)
     OutputStream *ost;
     InputStream *ist;
     char error[1024] = {0};
-    int want_sdp = 1;
 
     for (i = 0; i < nb_filtergraphs; i++) {
         FilterGraph *fg = filtergraphs[i];
@@ -3415,31 +3460,7 @@ static int transcode_init(void)
         }
     }
 
-    /* open files and write file headers */
-    for (i = 0; i < nb_output_files; i++) {
-        oc = output_files[i]->ctx;
-        oc->interrupt_callback = int_cb;
-        if ((ret = avformat_write_header(oc, &output_files[i]->opts)) < 0) {
-            snprintf(error, sizeof(error),
-                     "Could not write header for output file #%d "
-                     "(incorrect codec parameters ?): %s",
-                     i, av_err2str(ret));
-            ret = AVERROR(EINVAL);
-            goto dump_format;
-        }
-//         assert_avoptions(output_files[i]->opts);
-        if (strcmp(oc->oformat->name, "rtp")) {
-            want_sdp = 0;
-        }
-    }
-
  dump_format:
-    /* dump the file output parameters - cannot be done before in case
-       of stream copy */
-    for (i = 0; i < nb_output_files; i++) {
-        av_dump_format(output_files[i]->ctx, i, output_files[i]->ctx->filename, 1);
-    }
-
     /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (i = 0; i < nb_input_streams; i++) {
@@ -3526,10 +3547,6 @@ static int transcode_init(void)
     if (ret) {
         av_log(NULL, AV_LOG_ERROR, "%s\n", error);
         return ret;
-    }
-
-    if (sdp_filename || want_sdp) {
-        print_sdp();
     }
 
     transcode_init_done = 1;
@@ -4347,6 +4364,13 @@ static int transcode(void)
     /* write the trailer if needed and close file */
     for (i = 0; i < nb_output_files; i++) {
         os = output_files[i]->ctx;
+        if (!output_files[i]->header_written) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Nothing was written into output file %d (%s), because "
+                   "at least one of its streams received no packets.\n",
+                   i, os->filename);
+            continue;
+        }
         if ((ret = av_write_trailer(os)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s", os->filename, av_err2str(ret));
             if (exit_on_error)
@@ -4458,7 +4482,7 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 
 int main(int argc, char **argv)
 {
-    int ret;
+    int i, ret;
     int64_t ti;
 
     init_dynload();
@@ -4508,6 +4532,11 @@ int main(int argc, char **argv)
 //         av_log(NULL, AV_LOG_FATAL, "At least one input file must be specified\n");
 //         exit_program(1);
 //     }
+
+    for (i = 0; i < nb_output_files; i++) {
+        if (strcmp(output_files[i]->ctx->oformat->name, "rtp"))
+            want_sdp = 0;
+    }
 
     current_time = ti = getutime();
     if (transcode() < 0)
