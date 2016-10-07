@@ -3460,6 +3460,16 @@ static int transcode_init(void)
         }
     }
 
+    /* write headers for files with no streams */
+    for (i = 0; i < nb_output_files; i++) {
+        oc = output_files[i]->ctx;
+        if (oc->oformat->flags & AVFMT_NOSTREAMS && oc->nb_streams == 0) {
+            ret = check_init_output_file(output_files[i], i);
+            if (ret < 0)
+                goto dump_format;
+        }
+    }
+
  dump_format:
     /* dump the stream mapping */
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
