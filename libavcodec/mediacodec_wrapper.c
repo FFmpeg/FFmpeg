@@ -480,6 +480,9 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
                 }
 
                 profile_count = (*env)->GetArrayLength(env, profile_levels);
+                if (!profile_count) {
+                    found_codec = 1;
+                }
                 for (k = 0; k < profile_count; k++) {
                     int supported_profile = 0;
 
