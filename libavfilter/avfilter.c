@@ -316,14 +316,6 @@ int avfilter_config_links(AVFilterContext *filter)
                     link->time_base = (AVRational) {1, link->sample_rate};
             }
 
-            if ((config_link = link->dstpad->config_props))
-                if ((ret = config_link(link)) < 0) {
-                    av_log(link->dst, AV_LOG_ERROR,
-                           "Failed to configure input pad on %s\n",
-                           link->dst->name);
-                    return ret;
-                }
-
             if (link->src->nb_inputs && link->src->inputs[0]->hw_frames_ctx &&
                 !link->hw_frames_ctx) {
                 AVHWFramesContext *input_ctx = (AVHWFramesContext*)link->src->inputs[0]->hw_frames_ctx->data;
@@ -334,6 +326,14 @@ int avfilter_config_links(AVFilterContext *filter)
                         return AVERROR(ENOMEM);
                 }
             }
+
+            if ((config_link = link->dstpad->config_props))
+                if ((ret = config_link(link)) < 0) {
+                    av_log(link->dst, AV_LOG_ERROR,
+                           "Failed to configure input pad on %s\n",
+                           link->dst->name);
+                    return ret;
+                }
 
             link->init_state = AVLINK_INIT;
         }
