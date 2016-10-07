@@ -473,7 +473,7 @@ typedef struct OutputStream {
     int stream_copy;
 
     // init_output_stream() has been called for this stream
-    // The encoder and the bistream filters have been initialized and the stream
+    // The encoder and the bitstream filters have been initialized and the stream
     // parameters are set in the AVStream.
     int initialized;
 
