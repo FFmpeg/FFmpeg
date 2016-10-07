@@ -2108,8 +2108,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             }
     }
 
-    if (decoded_frame->pkt_pts != AV_NOPTS_VALUE) {
-        decoded_frame->pts = decoded_frame->pkt_pts;
+    if (decoded_frame->pts != AV_NOPTS_VALUE) {
         decoded_frame_tb   = ist->st->time_base;
     } else if (pkt && pkt->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = pkt->pts;

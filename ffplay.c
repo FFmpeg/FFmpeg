@@ -588,9 +588,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 if (got_frame) {
                     if (decoder_reorder_pts == -1) {
                         frame->pts = av_frame_get_best_effort_timestamp(frame);
-                    } else if (decoder_reorder_pts) {
-                        frame->pts = frame->pkt_pts;
-                    } else {
+                    } else if (!decoder_reorder_pts) {
                         frame->pts = frame->pkt_dts;
                     }
                 }
@@ -600,9 +598,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                 if (got_frame) {
                     AVRational tb = (AVRational){1, frame->sample_rate};
                     if (frame->pts != AV_NOPTS_VALUE)
-                        frame->pts = av_rescale_q(frame->pts, d->avctx->time_base, tb);
-                    else if (frame->pkt_pts != AV_NOPTS_VALUE)
-                        frame->pts = av_rescale_q(frame->pkt_pts, av_codec_get_pkt_timebase(d->avctx), tb);
+                        frame->pts = av_rescale_q(frame->pts, av_codec_get_pkt_timebase(d->avctx), tb);
                     else if (d->next_pts != AV_NOPTS_VALUE)
                         frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
                     if (frame->pts != AV_NOPTS_VALUE) {
