@@ -316,7 +316,7 @@ static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, ebml_m
 {
     int ret;
 
-    if (ret = avio_open_dyn_buf(dyn_cp) < 0)
+    if ((ret = avio_open_dyn_buf(dyn_cp)) < 0)
         return ret;
 
     if (pb->seekable)
