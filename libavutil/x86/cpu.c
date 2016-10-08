@@ -28,7 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define cpuid(index, eax, ebx, ecx, edx)        \
     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
@@ -66,7 +66,7 @@
 
 #define cpuid_test() 1
 
-#elif HAVE_YASM
+#elif HAVE_X86ASM
 
 #define cpuid_test ff_cpu_cpuid_test
 

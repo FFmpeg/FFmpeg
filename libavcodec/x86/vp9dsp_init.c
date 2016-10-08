@@ -27,7 +27,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vp9.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define fpel_func(avg, sz, opt)                                                 \
 void ff_vp9_ ## avg ## sz ## _ ## opt(uint8_t *dst, ptrdiff_t dst_stride,       \
@@ -241,11 +241,11 @@ lpf_funcs(88, 16, avx);
 
 #undef lpf_funcs
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
 #define init_fpel(idx1, idx2, sz, type, opt)                            \
@@ -345,5 +345,5 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
 #undef init_subpel2
 #undef init_subpel3
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

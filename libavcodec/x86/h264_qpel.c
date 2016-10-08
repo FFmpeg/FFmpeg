@@ -28,7 +28,7 @@
 #include "libavcodec/pixels.h"
 #include "fpel.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 void ff_put_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int h);
 void ff_avg_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -503,7 +503,7 @@ QPEL16_OP(mc33, MMX)
 QPEL16(mmxext)
 #endif
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
     do {                                                                     \
@@ -543,7 +543,7 @@ QPEL16(mmxext)
 
 av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int high_bit_depth = bit_depth > 8;
     int cpu_flags = av_get_cpu_flags();
 

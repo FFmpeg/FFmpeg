@@ -40,7 +40,7 @@ void ff_gradfun_blur_line_movdqu_sse2(intptr_t x, uint16_t *buf,
                                       uint16_t *buf1, uint16_t *dc,
                                       uint8_t *src1, uint8_t *src2);
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 static void gradfun_filter_line(uint8_t *dst, uint8_t *src, uint16_t *dc,
                                 int width, int thresh, const uint16_t *dithers,
                                 int alignment)
@@ -84,11 +84,11 @@ static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1,
                                          dc + width, src + width * 2,
                                          src + width * 2 + src_linesize);
 }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags))
@@ -98,5 +98,5 @@ av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 
     if (EXTERNAL_SSE2(cpu_flags))
         gf->blur_line = gradfun_blur_line_sse2;
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

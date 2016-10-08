@@ -11,8 +11,8 @@ vpath %.texi $(SRC_PATH)
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC HOSTCC HOSTLD AS YASM AR LD
-SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM STRIP
+BRIEF  = CC HOSTCC HOSTLD AS X86ASM AR LD
+SILENT = DEPCC DEPHOSTCC DEPAS DEPX86ASM RANLIB RM STRIP
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
@@ -30,7 +30,7 @@ CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
 OBJCFLAGS  += $(EOBJCFLAGS)
 OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
-YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
+X86ASMFLAGS += $(IFLAGS:%=%/) -Pconfig.asm
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
 
@@ -57,8 +57,8 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_HOSTC)
 
 %.o: %.asm
-	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
-	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
+	$(DEPX86ASM) $(X86ASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
+	$(X86ASM) $(X86ASMFLAGS) -I $(<D)/ -o $@ $<
 	-$(STRIP) $(STRIPFLAGS) $@
 
 %.i: %.c
@@ -113,7 +113,7 @@ avbuild/.config: $(CONFIGURABLE_COMPONENTS)
 SUBDIR_VARS := CLEANFILES FFLIBS HOSTPROGS TESTPROGS TOOLS               \
                HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
                ARMV5TE-OBJS ARMV6-OBJS ARMV8-OBJS VFP-OBJS NEON-OBJS     \
-               ALTIVEC-OBJS VSX-OBJS MMX-OBJS YASM-OBJS                  \
+               ALTIVEC-OBJS VSX-OBJS MMX-OBJS X86ASM-OBJS                \
                OBJS HOSTOBJS TESTOBJS
 
 define RESET

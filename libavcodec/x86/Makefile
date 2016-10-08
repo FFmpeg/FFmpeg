@@ -71,60 +71,60 @@ MMX-OBJS-$(CONFIG_MPEG4_DECODER)       += x86/xvididct_mmx.o            \
                                           x86/xvididct_sse2.o
 
 # subsystems
-YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o                  \
+X86ASM-OBJS-$(CONFIG_AC3DSP)           += x86/ac3dsp.o                  \
                                           x86/ac3dsp_downmix.o
-YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
-YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
-YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
-YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
-YASM-OBJS-$(CONFIG_FMTCONVERT)         += x86/fmtconvert.o
-YASM-OBJS-$(CONFIG_H263DSP)            += x86/h263_loopfilter.o
-YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
+X86ASM-OBJS-$(CONFIG_AUDIODSP)         += x86/audiodsp.o
+X86ASM-OBJS-$(CONFIG_BSWAPDSP)         += x86/bswapdsp.o
+X86ASM-OBJS-$(CONFIG_DCT)              += x86/dct32.o
+X86ASM-OBJS-$(CONFIG_FFT)              += x86/fft.o
+X86ASM-OBJS-$(CONFIG_FMTCONVERT)       += x86/fmtconvert.o
+X86ASM-OBJS-$(CONFIG_H263DSP)          += x86/h263_loopfilter.o
+X86ASM-OBJS-$(CONFIG_H264CHROMA)       += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o
-YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
+X86ASM-OBJS-$(CONFIG_H264DSP)          += x86/h264_deblock.o            \
                                           x86/h264_deblock_10bit.o      \
                                           x86/h264_idct.o               \
                                           x86/h264_idct_10bit.o         \
                                           x86/h264_weight.o             \
                                           x86/h264_weight_10bit.o
-YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o          \
+X86ASM-OBJS-$(CONFIG_H264PRED)         += x86/h264_intrapred.o          \
                                           x86/h264_intrapred_10bit.o
-YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
+X86ASM-OBJS-$(CONFIG_H264QPEL)         += x86/h264_qpel_8bit.o          \
                                           x86/h264_qpel_10bit.o         \
                                           x86/fpel.o                    \
                                           x86/qpel.o
-YASM-OBJS-$(CONFIG_HPELDSP)            += x86/fpel.o                    \
+X86ASM-OBJS-$(CONFIG_HPELDSP)          += x86/fpel.o                    \
                                           x86/hpeldsp.o
-YASM-OBJS-$(CONFIG_HUFFYUVDSP)         += x86/huffyuvdsp.o
-YASM-OBJS-$(CONFIG_ME_CMP)             += x86/me_cmp.o
-YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
-YASM-OBJS-$(CONFIG_MPEGVIDEOENC)       += x86/mpegvideoencdsp.o
-YASM-OBJS-$(CONFIG_PIXBLOCKDSP)        += x86/pixblockdsp.o
-YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
+X86ASM-OBJS-$(CONFIG_HUFFYUVDSP)       += x86/huffyuvdsp.o
+X86ASM-OBJS-$(CONFIG_ME_CMP)           += x86/me_cmp.o
+X86ASM-OBJS-$(CONFIG_MPEGAUDIODSP)     += x86/imdct36.o
+X86ASM-OBJS-$(CONFIG_MPEGVIDEOENC)     += x86/mpegvideoencdsp.o
+X86ASM-OBJS-$(CONFIG_PIXBLOCKDSP)      += x86/pixblockdsp.o
+X86ASM-OBJS-$(CONFIG_QPELDSP)          += x86/qpeldsp.o                 \
                                           x86/fpel.o                    \
                                           x86/qpel.o
-YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
-YASM-OBJS-$(CONFIG_VC1DSP)             += x86/vc1dsp.o
-YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
-YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
-YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
+X86ASM-OBJS-$(CONFIG_RV34DSP)          += x86/rv34dsp.o
+X86ASM-OBJS-$(CONFIG_VC1DSP)           += x86/vc1dsp.o
+X86ASM-OBJS-$(CONFIG_VIDEODSP)         += x86/videodsp.o
+X86ASM-OBJS-$(CONFIG_VP3DSP)           += x86/vp3dsp.o
+X86ASM-OBJS-$(CONFIG_VP8DSP)           += x86/vp8dsp.o                  \
                                           x86/vp8dsp_loopfilter.o
 
 # decoders/encoders
-YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
-YASM-OBJS-$(CONFIG_APE_DECODER)        += x86/apedsp.o
-YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o
-YASM-OBJS-$(CONFIG_DNXHD_ENCODER)      += x86/dnxhdenc.o
-YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_add_res.o            \
+X86ASM-OBJS-$(CONFIG_AAC_DECODER)      += x86/sbrdsp.o
+X86ASM-OBJS-$(CONFIG_APE_DECODER)      += x86/apedsp.o
+X86ASM-OBJS-$(CONFIG_DCA_DECODER)      += x86/dcadsp.o
+X86ASM-OBJS-$(CONFIG_DNXHD_ENCODER)    += x86/dnxhdenc.o
+X86ASM-OBJS-$(CONFIG_HEVC_DECODER)     += x86/hevc_add_res.o            \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
                                           x86/hevc_mc.o
-YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
-YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
-YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv40dsp.o
-YASM-OBJS-$(CONFIG_V210_ENCODER)       += x86/v210enc.o
-YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
-YASM-OBJS-$(CONFIG_VP3_DECODER)        += x86/hpeldsp_vp3.o
-YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
-YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9mc.o                   \
+X86ASM-OBJS-$(CONFIG_PNG_DECODER)      += x86/pngdsp.o
+X86ASM-OBJS-$(CONFIG_PRORES_DECODER)   += x86/proresdsp.o
+X86ASM-OBJS-$(CONFIG_RV40_DECODER)     += x86/rv40dsp.o
+X86ASM-OBJS-$(CONFIG_V210_ENCODER)     += x86/v210enc.o
+X86ASM-OBJS-$(CONFIG_VORBIS_DECODER)   += x86/vorbisdsp.o
+X86ASM-OBJS-$(CONFIG_VP3_DECODER)      += x86/hpeldsp_vp3.o
+X86ASM-OBJS-$(CONFIG_VP6_DECODER)      += x86/vp6dsp.o
+X86ASM-OBJS-$(CONFIG_VP9_DECODER)      += x86/vp9mc.o                   \
                                           x86/vp9lpf.o

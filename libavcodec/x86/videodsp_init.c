@@ -27,7 +27,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/videodsp.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 typedef void emu_edge_vfix_func(uint8_t *dst, const uint8_t *src,
                                 x86_reg dst_stride, x86_reg src_stride,
                                 x86_reg start_y, x86_reg end_y, x86_reg bh);
@@ -235,14 +235,14 @@ static av_noinline void emulated_edge_mc_sse2(uint8_t *buf, const uint8_t *src,
                      src_y, w, h, vfixtbl_sse, &ff_emu_edge_vvar_sse,
                      hfixtbl_sse2, &ff_emu_edge_hvar_sse2);
 }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 void ff_prefetch_mmxext(uint8_t *buf, ptrdiff_t stride, int h);
 void ff_prefetch_3dnow(uint8_t *buf, ptrdiff_t stride, int h);
 
 av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
@@ -264,5 +264,5 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
     if (EXTERNAL_SSE2(cpu_flags) && bpc <= 8) {
         ctx->emulated_edge_mc = emulated_edge_mc_sse2;
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

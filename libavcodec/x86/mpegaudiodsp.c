@@ -184,7 +184,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 
 #endif /* HAVE_SSE2_INLINE */
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 #define DECL_IMDCT_BLOCKS(CPU1, CPU2)                                       \
 static void imdct36_blocks_ ## CPU1(float *out, float *buf, float *in,      \
                                int count, int switch_point, int block_type) \
@@ -222,7 +222,7 @@ DECL_IMDCT_BLOCKS(sse2,sse)
 DECL_IMDCT_BLOCKS(sse3,sse)
 DECL_IMDCT_BLOCKS(ssse3,sse)
 DECL_IMDCT_BLOCKS(avx,avx)
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 {
@@ -248,7 +248,7 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
     }
 #endif /* HAVE_SSE2_INLINE */
 
-#if HAVE_YASM
+#if HAVE_X86ASM
     if (EXTERNAL_SSE(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse;
     }
@@ -264,5 +264,5 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
     if (EXTERNAL_AVX(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }
