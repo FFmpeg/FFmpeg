@@ -56,6 +56,11 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %_host.o: %.c
 	$(COMPILE_HOSTC)
 
+%.o: %.asm
+	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
+	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
+	-$(STRIP) $(STRIPFLAGS) $@
+
 %.i: %.c
 	$(CC) $(CCFLAGS) $(CC_E) $<
 
