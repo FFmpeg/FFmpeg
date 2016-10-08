@@ -148,7 +148,7 @@ CALL_2X_PIXELS_EXPORT(ff_put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
 #endif /* HAVE_INLINE_ASM */
 
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define HPELDSP_AVG_PIXELS16(CPUEXT)                      \
     CALL_2X_PIXELS(put_no_rnd_pixels16_x2 ## CPUEXT, ff_put_no_rnd_pixels8_x2 ## CPUEXT, 8) \
@@ -163,7 +163,7 @@ CALL_2X_PIXELS_EXPORT(ff_put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
 HPELDSP_AVG_PIXELS16(_3dnow)
 HPELDSP_AVG_PIXELS16(_mmxext)
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 #define SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                             \
     if (HAVE_MMX_EXTERNAL)                                                  \

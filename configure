@@ -330,7 +330,7 @@ Toolchain options:
   --ln_s=LN_S              use symbolic link tool LN_S [$ln_s_default]
   --strip=STRIP            use strip tool STRIP [$strip_default]
   --windres=WINDRES        use windows resource compiler WINDRES [$windres_default]
-  --yasmexe=EXE            use yasm-compatible assembler EXE [$yasmexe_default]
+  --x86asmexe=EXE          use nasm-compatible assembler EXE [$x86asmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
@@ -401,7 +401,7 @@ Optimization options (experts only):
   --disable-vfp            disable VFP optimizations
   --disable-neon           disable NEON optimizations
   --disable-inline-asm     disable use of inline assembly
-  --disable-yasm           disable use of nasm/yasm assembly
+  --disable-x86asm         disable use of standalone x86 assembly
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
@@ -979,12 +979,12 @@ check_insn(){
     echo "$2" | check_as && enable ${1}_external || disable ${1}_external
 }
 
-check_yasm(){
-    log check_yasm "$@"
+check_x86asm(){
+    log check_x86asm "$@"
     echo "$1" > $TMPS
     log_file $TMPS
     shift 1
-    check_cmd $yasmexe $YASMFLAGS -Werror "$@" -o $TMPO $TMPS
+    check_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" -o $TMPO $TMPS
 }
 
 ld_o(){
@@ -1833,7 +1833,7 @@ BUILTIN_LIST="
 HAVE_LIST_CMDLINE="
     inline_asm
     symver
-    yasm
+    x86asm
 "
 
 HAVE_LIST_PUB="
@@ -2237,7 +2237,7 @@ CMDLINE_SET="
     tempprefix
     toolchain
     valgrind
-    yasmexe
+    x86asmexe
 "
 
 CMDLINE_APPEND="
@@ -2305,7 +2305,7 @@ fma3_deps="avx"
 fma4_deps="avx"
 avx2_deps="avx"
 
-mmx_external_deps="yasm"
+mmx_external_deps="x86asm"
 mmx_inline_deps="inline_asm"
 mmx_suggest="mmx_external mmx_inline"
 
@@ -3259,7 +3259,7 @@ pkg_config_default=pkg-config
 ranlib_default="ranlib"
 strip_default="strip"
 version_script='--version-script'
-yasmexe_default="yasm"
+x86asmexe_default="yasm"
 windres_default="windres"
 nvcc_default="nvcc"
 nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
@@ -3508,6 +3508,16 @@ for opt do
             [ "$list" = "" ] && warn "Option $opt did not match anything"
             $action $list
         ;;
+        --enable-yasm|--disable-yasm)
+            warn "The ${opt} option is only provided for compatibility and will be\n"\
+                 "removed in the future. Use --enable-x86asm / --disable-x86asm instead."
+            test $opt = --enable-yasm && x86asm=yes || x86asm=no
+        ;;
+        --yasmexe=*)
+            warn "The --yasmexe option is only provided for compatibility and will be\n"\
+                 "removed in the future. Use --x86asmexe instead."
+            x86asmexe="$optval"
+        ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
             if is_in $option $COMPONENT_LIST; then
@@ -3726,7 +3736,7 @@ windres_default="${cross_prefix}${windres_default}"
 sysinclude_default="${sysroot}/usr/include"
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec target_os yasmexe nvcc
+    target_exec target_os x86asmexe nvcc
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -5477,13 +5487,13 @@ EOF
     enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
     enabled mmxext && check_inline_asm mmxext_inline '"pmaxub %mm0, %mm1"'
 
-    if ! disabled_any asm mmx yasm; then
-        if check_cmd $yasmexe --version; then
-            enabled x86_64 && yasm_extra="-m amd64"
-            yasm_debug="-g dwarf2"
+    if ! disabled_any asm mmx x86asm; then
+        if check_cmd $x86asmexe --version; then
+            enabled x86_64 && x86asm_extra="-m amd64"
+            x86asm_debug="-g dwarf2"
         elif check_cmd nasm -v; then
-            yasmexe=nasm
-            yasm_debug="-g -F dwarf"
+            x86asmexe=nasm
+            x86asm_debug="-g -F dwarf"
             if enabled x86_64; then
                 case "$objformat" in
                     elf)   objformat=elf64 ;;
@@ -5492,19 +5502,19 @@ EOF
             fi
         fi
 
-        YASMFLAGS="-f $objformat $yasm_extra"
-        enabled pic               && append YASMFLAGS "-DPIC"
-        test -n "$extern_prefix"  && append YASMFLAGS "-DPREFIX"
+        X86ASMFLAGS="-f $objformat $x86asm_extra"
+        enabled pic               && append X86ASMFLAGS "-DPIC"
+        test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
         case "$objformat" in
-            elf*) enabled debug && append YASMFLAGS $yasm_debug ;;
+            elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        check_yasm "movbe ecx, [5]" && enable yasm ||
-            die "yasm/nasm not found or too old. Use --disable-yasm for a crippled build."
-        check_yasm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
-        check_yasm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
-        check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        check_yasm "CPU amdnop" || disable cpunop
+        check_x86asm "movbe ecx, [5]" && enable x86asm ||
+            die "yasm/nasm not found or too old. Use --disable-x86asm for a crippled build."
+        check_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
+        check_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
+        check_x86asm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
+        check_x86asm "CPU amdnop" || disable cpunop
     fi
 
     case "$cpu" in
@@ -6591,7 +6601,7 @@ fi
 echo "big-endian                ${bigendian-no}"
 echo "runtime cpu detection     ${runtime_cpudetect-no}"
 if enabled x86; then
-    echo "${yasmexe}                      ${yasm-no}"
+    echo "standalone assembly       ${x86asm-no}"
     echo "MMX enabled               ${mmx-no}"
     echo "MMXEXT enabled            ${mmxext-no}"
     echo "3DNow! enabled            ${amd3dnow-no}"
@@ -6727,8 +6737,8 @@ DEPCC=$dep_cc
 DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
 DEPAS=$as
 DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
-YASM=$yasmexe
-DEPYASM=$yasmexe
+X86ASM=$x86asmexe
+DEPX86ASM=$x86asmexe
 AR=$ar
 ARFLAGS=$arflags
 AR_O=$ar_o
@@ -6767,7 +6777,7 @@ LDEXEFLAGS=$LDEXEFLAGS
 LDLIBFLAGS=$LDLIBFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
-YASMFLAGS=$YASMFLAGS
+X86ASMFLAGS=$X86ASMFLAGS
 BUILDSUF=$build_suffix
 PROGSSUF=$progs_suffix
 FULLNAME=$FULLNAME
@@ -6861,7 +6871,7 @@ test -n "$assert_level" &&
 test -n "$malloc_prefix" &&
     echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
 
-if enabled yasm; then
+if enabled x86asm; then
     append config_files $TMPASM
     printf '' >$TMPASM
 fi
@@ -6887,7 +6897,7 @@ echo "endif # FFMPEG_CONFIG_MAK" >> ffbuild/config.mak
 cp_if_changed $TMPH config.h
 touch ffbuild/.config
 
-enabled yasm && cp_if_changed $TMPASM config.asm
+enabled x86asm && cp_if_changed $TMPASM config.asm
 
 cat > $TMPH <<EOF
 /* Generated by ffconf */

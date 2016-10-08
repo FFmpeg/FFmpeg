@@ -31,7 +31,7 @@ void ff_tta_filter_process_sse4(int32_t *qm, int32_t *dx, int32_t *dl,
 
 av_cold void ff_ttadsp_init_x86(TTADSPContext *c)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSSE3(cpu_flags))

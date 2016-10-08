@@ -89,7 +89,7 @@ hadamard_func(mmxext)
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 static int nsse16_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
                       ptrdiff_t stride, int h)
 {
@@ -121,7 +121,7 @@ static int nsse8_mmx(MpegEncContext *c, uint8_t *pix1, uint8_t *pix2,
         return score1 + FFABS(score2) * 8;
 }
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 #if HAVE_INLINE_ASM
 
@@ -586,7 +586,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_mmx;
         c->sse[0]            = ff_sse16_mmx;
         c->sse[1]            = ff_sse8_mmx;
-#if HAVE_YASM
+#if HAVE_X86ASM
         c->nsse[0]           = nsse16_mmx;
         c->nsse[1]           = nsse8_mmx;
 #endif
