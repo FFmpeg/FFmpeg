@@ -911,14 +911,14 @@ A gate is mainly used to reduce lower parts of a signal. This kind of signal
 processing reduces disturbing noise between useful signals.
 
 Gating is done by detecting the volume below a chosen level @var{threshold}
-and divide it by the factor set with @var{ratio}. The bottom of the noise
+and dividing it by the factor set with @var{ratio}. The bottom of the noise
 floor is set via @var{range}. Because an exact manipulation of the signal
 would cause distortion of the waveform the reduction can be levelled over
 time. This is done by setting @var{attack} and @var{release}.
 
 @var{attack} determines how long the signal has to fall below the threshold
 before any reduction will occur and @var{release} sets the time the signal
-has to raise above the threshold to reduce the reduction again.
+has to rise above the threshold to reduce the reduction again.
 Shorter signals than the chosen attack time will be left untouched.
 
 @table @option
@@ -935,7 +935,7 @@ If a signal rises above this level the gain reduction is released.
 Default is 0.125. Allowed range is from 0 to 1.
 
 @item ratio
-Set a ratio about which the signal is reduced.
+Set a ratio by which the signal is reduced.
 Default is 2. Allowed range is from 1 to 9000.
 
 @item attack
@@ -958,19 +958,19 @@ Default is 2.828427125. Allowed range is from 1 to 8.
 
 @item detection
 Choose if exact signal should be taken for detection or an RMS like one.
-Default is rms. Can be peak or rms.
+Default is @code{rms}. Can be @code{peak} or @code{rms}.
 
 @item link
 Choose if the average level between all channels or the louder channel affects
 the reduction.
-Default is average. Can be average or maximum.
+Default is @code{average}. Can be @code{average} or @code{maximum}.
 @end table
 
 @section alimiter
 
-The limiter prevents input signal from raising over a desired threshold.
+The limiter prevents an input signal from rising over a desired threshold.
 This limiter uses lookahead technology to prevent your signal from distorting.
-It means that there is a small delay after signal is processed. Keep in mind
+It means that there is a small delay after the signal is processed. Keep in mind
 that the delay it produces is the attack time you set.
 
 The filter accepts the following options:
@@ -1453,7 +1453,7 @@ Set the number of samples per each output audio frame.
 
 The last output packet may contain a different number of samples, as
 the filter will flush all the remaining samples when the input audio
-signal its end.
+signals its end.
 
 The filter accepts the following options:
 
@@ -2559,7 +2559,7 @@ filtering with large delay. Default is disabled.
 Enable multichannels evaluation on gain. Default is disabled.
 
 @item zero_phase
-Enable zero phase mode by substracting timestamp to compensate delay.
+Enable zero phase mode by subtracting timestamp to compensate delay.
 Default is disabled.
 @end table
 
@@ -3388,7 +3388,7 @@ Can be specified in dB (in case "dB" is appended to the specified value)
 or amplitude ratio. Default value is @code{0}.
 
 @item leave_silence
-This indicate that @var{stop_duration} length of audio should be left intact
+This indicates that @var{stop_duration} length of audio should be left intact
 at the beginning of each period of silence.
 For example, if you want to remove long pauses between words but do not want
 to remove the pauses completely. Default value is @code{0}.
@@ -6721,10 +6721,10 @@ This option does not exist, please see the timeline system
 
 @item alpha
 Draw the text applying alpha blending. The value can
-be either a number between 0.0 and 1.0
-The expression accepts the same variables @var{x, y} do.
+be a number between 0.0 and 1.0.
+The expression accepts the same variables @var{x, y} as well.
 The default value is 1.
-Please see fontcolor_expr
+Please see @var{fontcolor_expr}.
 
 @item fontsize
 The font size to be used for drawing text.
@@ -6907,7 +6907,7 @@ the following expansion mechanism is used.
 The backslash character @samp{\}, followed by any character, always expands to
 the second character.
 
-Sequence of the form @code{%@{...@}} are expanded. The text between the
+Sequences of the form @code{%@{...@}} are expanded. The text between the
 braces is a function name, possibly followed by arguments separated by ':'.
 If the arguments contain special characters or delimiters (':' or '@}'),
 they should be escaped.
@@ -8854,8 +8854,8 @@ By default value is 0.
 
 Detect video interlacing type.
 
-This filter tries to detect if the input frames as interlaced, progressive,
-top or bottom field first. It will also try and detect fields that are
+This filter tries to detect if the input frames are interlaced, progressive,
+top or bottom field first. It will also try to detect fields that are
 repeated between adjacent frames (a sign of telecine).
 
 Single frame detection considers only immediately adjacent frames when classifying each frame.
@@ -8922,7 +8922,7 @@ Set progressive threshold.
 Threshold for repeated field detection.
 @item half_life
 Number of frames after which a given frame's contribution to the
-statistics is halved (i.e., it contributes only 0.5 to it's
+statistics is halved (i.e., it contributes only 0.5 to its
 classification). The default of 0 means that all frames seen are given
 full weight of 1.0 forever.
 @item analyze_interlaced_flag
@@ -14822,7 +14822,7 @@ syntax is deprecated:
 Create a pattern generated by an elementary cellular automaton.
 
 The initial state of the cellular automaton can be defined through the
-@option{filename}, and @option{pattern} options. If such options are
+@option{filename} and @option{pattern} options. If such options are
 not specified an initial state is created randomly.
 
 At each new frame a new row in the video is filled with the result of
@@ -15993,7 +15993,7 @@ Temporally interleave frames from several inputs.
 These filters read frames from several inputs and send the oldest
 queued frame to the output.
 
-Input streams must have a well defined, monotonically increasing frame
+Input streams must have well defined, monotonically increasing frame
 timestamp values.
 
 In order to submit one frame to output, these filters need to enqueue
@@ -16001,9 +16001,9 @@ at least one frame for each input, so they cannot work in case one
 input is not yet terminated and will not receive incoming frames.
 
 For example consider the case when one input is a @code{select} filter
-which always drop input frames. The @code{interleave} filter will keep
+which always drops input frames. The @code{interleave} filter will keep
 reading from that input, but it will never be able to send new frames
-to output until the input will send an end-of-stream signal.
+to output until the input sends an end-of-stream signal.
 
 Also, depending on inputs synchronization, the filters will drop
 frames in case one input receives more frames than the other ones, and

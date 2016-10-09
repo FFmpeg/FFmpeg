@@ -678,7 +678,7 @@ is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
 @item dvguid
-Select the capture device by specifying it's GUID. Capturing will only
+Select the capture device by specifying its GUID. Capturing will only
 be performed from the specified device and fails if no device with the
 given GUID is found. This is useful to select the input if multiple
 devices are connected at the same time.
@@ -1341,7 +1341,7 @@ ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 
 @table @option
 @item draw_mouse
-Specify whether to draw the mouse pointer. A value of @code{0} specify
+Specify whether to draw the mouse pointer. A value of @code{0} specifies
 not to draw the pointer. Default value is @code{1}.
 
 @item follow_mouse
