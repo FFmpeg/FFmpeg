@@ -43,7 +43,7 @@ echov(){
 
 . $(dirname $0)/md5.sh
 
-AVCONV_OPTS="-nostats -y -cpuflags $cpuflags"
+AVCONV_OPTS="-nostdin -nostats -y -cpuflags $cpuflags"
 COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
 DEC_OPTS="$COMMON_OPTS -threads $threads"
 ENC_OPTS="$COMMON_OPTS -threads $threads -dct fastint"

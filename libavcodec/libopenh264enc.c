@@ -163,8 +163,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.sSpatialLayers[0].iSpatialBitrate     = param.iTargetBitrate;
     param.sSpatialLayers[0].iMaxSpatialBitrate  = param.iMaxBitrate;
 
-    if ((avctx->slices > 1) && (s->max_nal_size)){
-        av_log(avctx,AV_LOG_ERROR,"Invalid combination -slices %d and -max_nal_size %d.\n",avctx->slices,s->max_nal_size);
+    if ((avctx->slices > 1) && (s->max_nal_size)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid combination -slices %d and -max_nal_size %d.\n",
+               avctx->slices, s->max_nal_size);
         goto fail;
     }
 

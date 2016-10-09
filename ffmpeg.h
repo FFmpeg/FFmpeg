@@ -212,6 +212,8 @@ typedef struct OptionsContext {
     int        nb_pass;
     SpecifierOpt *passlogfiles;
     int        nb_passlogfiles;
+    SpecifierOpt *max_muxing_queue_size;
+    int        nb_max_muxing_queue_size;
     SpecifierOpt *guess_layout_max;
     int        nb_guess_layout_max;
     SpecifierOpt *apad;
@@ -471,6 +473,12 @@ typedef struct OutputStream {
     OSTFinished finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */
     int stream_copy;
+
+    // init_output_stream() has been called for this stream
+    // The encoder and the bitstream filters have been initialized and the stream
+    // parameters are set in the AVStream.
+    int initialized;
+
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
     int copy_prior_start;
@@ -493,6 +501,11 @@ typedef struct OutputStream {
     /* packet quality factor */
     int quality;
 
+    int max_muxing_queue_size;
+
+    /* the packets are buffered here until the muxer is ready to be initialized */
+    AVFifoBuffer *muxing_queue;
+
     /* packet picture type */
     int pict_type;
 
@@ -509,6 +522,8 @@ typedef struct OutputFile {
     uint64_t limit_filesize; /* filesize limit expressed in bytes */
 
     int shortest;
+
+    int header_written;
 } OutputFile;
 
 extern InputStream **input_streams;

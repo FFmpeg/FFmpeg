@@ -187,9 +187,16 @@ static int read_packet(AVFormatContext* ctx, AVPacket *pkt)
     const char *error_msg;
     ALCint nb_samples;
 
-    /* Get number of samples available */
-    alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
-    if (error = al_get_error(ad->device, &error_msg)) goto fail;
+    for (;;) {
+        /* Get number of samples available */
+        alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
+        if (error = al_get_error(ad->device, &error_msg)) goto fail;
+        if (nb_samples > 0)
+            break;
+        if (ctx->flags & AVFMT_FLAG_NONBLOCK)
+            return AVERROR(EAGAIN);
+        av_usleep(1000);
+    }
 
     /* Create a packet of appropriate size */
     if ((error = av_new_packet(pkt, nb_samples*ad->sample_step)) < 0)

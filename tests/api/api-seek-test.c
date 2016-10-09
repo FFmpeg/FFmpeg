@@ -129,23 +129,23 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
                     av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
                     return number_of_written_bytes;
                 }
-                if ((fr->pkt_pts > ts_end) && (!no_seeking))
+                if ((fr->pts > ts_end) && (!no_seeking))
                     break;
                 crc = av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes);
-                printf("%10"PRId64", 0x%08lx\n", fr->pkt_pts, crc);
+                printf("%10"PRId64", 0x%08lx\n", fr->pts, crc);
                 if (no_seeking) {
-                    if (add_crc_to_array(crc, fr->pkt_pts) < 0)
+                    if (add_crc_to_array(crc, fr->pts) < 0)
                         return -1;
                 }
                 else {
-                    if (compare_crc_in_array(crc, fr->pkt_pts) < 0)
+                    if (compare_crc_in_array(crc, fr->pts) < 0)
                         return -1;
                 }
             }
         }
         av_packet_unref(&pkt);
         av_init_packet(&pkt);
-    } while ((!end_of_stream || got_frame) && (no_seeking || (fr->pkt_pts + av_frame_get_pkt_duration(fr) <= ts_end)));
+    } while ((!end_of_stream || got_frame) && (no_seeking || (fr->pts + av_frame_get_pkt_duration(fr) <= ts_end)));
 
     av_packet_unref(&pkt);
     av_freep(&byte_buffer);

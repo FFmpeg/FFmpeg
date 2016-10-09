@@ -204,8 +204,8 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (!hwframe_ctx->pool) {
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
         hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
-        hwframe_ctx->width = FFALIGN(avctx->width, 32);
-        hwframe_ctx->height = FFALIGN(avctx->height, 32);
+        hwframe_ctx->width = avctx->width;
+        hwframe_ctx->height = avctx->height;
 
         if ((ctx->internal_error = av_hwframe_ctx_init(ctx->hwframe)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
@@ -469,7 +469,11 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
         /* CUVIDs opaque reordering breaks the internal pkt logic.
          * So set pkt_pts and clear all the other pkt_ fields.
          */
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = frame->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_frame_set_pkt_pos(frame, -1);
         av_frame_set_pkt_duration(frame, 0);
         av_frame_set_pkt_size(frame, -1);

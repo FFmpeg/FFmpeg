@@ -364,8 +364,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                               int64_t pos, int64_t size)
 {
     HLSSegment *en = av_malloc(sizeof(*en));
-    char *tmp, *p;
-    const char *pl_dir, *filename;
+    const char  *filename;
     int ret;
 
     if (!en)
@@ -374,19 +373,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     filename = av_basename(hls->avf->filename);
 
     if (hls->use_localtime_mkdir) {
-        /* Possibly prefix with mkdir'ed subdir, if playlist share same
-         * base path. */
-        tmp = av_strdup(s->filename);
-        if (!tmp) {
-            av_free(en);
-            return AVERROR(ENOMEM);
-        }
-
-        pl_dir = av_dirname(tmp);
-        p = hls->avf->filename;
-        if (strstr(p, pl_dir) == p)
-            filename = hls->avf->filename + strlen(pl_dir) + 1;
-        av_free(tmp);
+        filename = hls->avf->filename;
     }
     av_strlcpy(en->filename, filename, sizeof(en->filename));
 

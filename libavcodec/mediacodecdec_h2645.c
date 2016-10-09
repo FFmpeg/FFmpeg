@@ -152,7 +152,7 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 
     if (pps && sps) {
         uint8_t *data = NULL;
-        size_t data_size = 0;
+        int data_size = 0;
 
         if ((ret = h2645_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
             goto done;

@@ -1279,6 +1279,15 @@ No packets were passed to the muxer, the output is empty.
 @item -xerror (@emph{global})
 Stop and exit on error
 
+@item -max_muxing_queue_size @var{packets} (@emph{output,per-stream})
+When transcoding audio and/or video streams, ffmpeg will not begin writing into
+the output until it has one packet for each such stream. While waiting for that
+to happen, packets for other streams are buffered. This option sets the size of
+this buffer, in packets, for the matching output stream.
+
+The default value of this option should be high enough for most uses, so only
+touch this option if you are sure that you need it.
+
 @end table
 
 As a special exception, you can use a bitmap subtitle stream as input: it
