@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _SMP_MATH_H
-#define _SMP_MATH_H
+#ifndef SMP_MATH_H
+#define SMP_MATH_H
 
 #ifdef __INTEL_COMPILER
     // Use the Intel Math library. This provides Intel processor optimized functions.

@@ -21,8 +21,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _SMP_UNISTD_H_
-#define _SMP_UNISTD_H_
+#ifndef SMP_UNISTD_H
+#define SMP_UNISTD_H
 
 #ifndef _MSC_VER
 #   include_next <unistd.h>

@@ -19,8 +19,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef FFMPEG_CONFIG_H
-#define FFMPEG_CONFIG_H
+#ifndef SMP_CONFIG_H
+#define SMP_CONFIG_H
 #define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "GPL version 3 or later"
 #define CONFIG_THIS_YEAR 2016
@@ -2309,4 +2309,4 @@
 #define CONFIG_LIBRTMPTE_PROTOCOL 0
 #define CONFIG_LIBSSH_PROTOCOL 1
 #define CONFIG_LIBSMBCLIENT_PROTOCOL 0
-#endif /* FFMPEG_CONFIG_H */
+#endif /* SMP_CONFIG_H */
