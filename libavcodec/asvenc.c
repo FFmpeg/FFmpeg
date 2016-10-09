@@ -61,7 +61,7 @@ static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
     } else {
         put_bits(pb, ff_asv2_level_tab[31][1], ff_asv2_level_tab[31][0]);
         if (level < -128 || level > 127) {
-            av_log(a->avctx, AV_LOG_WARNING, "Cliping level %d, increase qscale\n", level);
+            av_log(a->avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
         }
         asv2_put_bits(pb, 8, level & 0xFF);
