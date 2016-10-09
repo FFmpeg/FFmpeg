@@ -4689,7 +4689,8 @@ enabled omx               && { check_header OMX_Core.h ||
                                     add_cflags -isystem/opt/vc/include/IL ; }
                                 check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
-enabled openssl           && { check_pkg_config openssl openssl/ssl.h SSL_library_init && {
+enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
+                                 check_pkg_config openssl openssl/ssl.h SSL_library_init; } && {
                                add_cflags $openssl_cflags && add_extralibs $openssl_libs; }||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
