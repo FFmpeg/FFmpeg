@@ -450,13 +450,13 @@ int show_devices(void *optctx, const char *opt, const char *arg);
 
 #if CONFIG_AVDEVICE
 /**
- * Print a listing containing audodetected sinks of the output device.
+ * Print a listing containing autodetected sinks of the output device.
  * Device name with options may be passed as an argument to limit results.
  */
 int show_sinks(void *optctx, const char *opt, const char *arg);
 
 /**
- * Print a listing containing audodetected sources of the input device.
+ * Print a listing containing autodetected sources of the input device.
  * Device name with options may be passed as an argument to limit results.
  */
 int show_sources(void *optctx, const char *opt, const char *arg);
