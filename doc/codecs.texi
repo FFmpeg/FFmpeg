@@ -1173,7 +1173,7 @@ Set to 1 to disable processing alpha (transparency). This works like the
 instead of alpha. Default is 0.
 
 @item codec_whitelist @var{list} (@emph{input})
-"," separated List of allowed decoders. By default all are allowed.
+"," separated list of allowed decoders. By default all are allowed.
 
 @item dump_separator @var{string} (@emph{input})
 Separator used to separate the fields printed on the command line about the

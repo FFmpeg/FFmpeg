@@ -274,14 +274,14 @@ the loops:
 ffmpeg -i INPUT -loop 10 -final_delay 500 out.gif
 @end example
 
-Note 1: if you wish to extract the frames in separate GIF files, you need to
+Note 1: if you wish to extract the frames into separate GIF files, you need to
 force the @ref{image2} muxer:
 @example
 ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 @end example
 
-Note 2: the GIF format has a very small time base: the delay between two frames
-can not be smaller than one centi second.
+Note 2: the GIF format has a very large time base: the delay between two frames
+can therefore not be smaller than one centi second.
 
 @anchor{hash}
 @section hash

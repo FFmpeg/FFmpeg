@@ -1008,7 +1008,7 @@ Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
 @item -re (@emph{input})
-Read input at native frame rate. Mainly used to simulate a grab device.
+Read input at native frame rate. Mainly used to simulate a grab device,
 or live input stream (e.g. when reading from a file). Should not be used
 with actual grab devices or live input streams (where it can cause packet
 loss).

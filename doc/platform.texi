@@ -173,7 +173,7 @@ earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
 and @code{INCLUDE} environment variables to include the @strong{Windows-style}
-paths to these directories. Alternatively, you can try and use the
+paths to these directories. Alternatively, you can try to use the
 @code{--extra-cflags}/@code{--extra-ldflags} configure options. If using MSVC
 2012 or earlier, place @code{inttypes.h} somewhere the compiler can see too.
 
