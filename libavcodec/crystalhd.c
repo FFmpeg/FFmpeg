@@ -150,7 +150,6 @@ typedef struct {
 
     /* Options */
     uint32_t sWidth;
-    uint8_t bframe_bug;
 } CHDContext;
 
 static const AVOption options[] = {
@@ -379,9 +378,59 @@ static av_cold int uninit(AVCodecContext *avctx)
 }
 
 
+static av_cold int init_bsf(AVCodecContext *avctx, const char *bsf_name)
+{
+    CHDContext *priv = avctx->priv_data;
+    const AVBitStreamFilter *bsf;
+    int avret;
+    void *extradata = NULL;
+    size_t size = 0;
+
+    bsf = av_bsf_get_by_name(bsf_name);
+    if (!bsf) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Cannot open the %s BSF!\n", bsf_name);
+        return AVERROR_BSF_NOT_FOUND;
+    }
+
+    avret = av_bsf_alloc(bsf, &priv->bsfc);
+    if (avret != 0) {
+        return avret;
+    }
+
+    avret = avcodec_parameters_from_context(priv->bsfc->par_in, avctx);
+    if (avret != 0) {
+        return avret;
+    }
+
+    avret = av_bsf_init(priv->bsfc);
+    if (avret != 0) {
+        return avret;
+    }
+
+    /* Back up the extradata so it can be restored at close time. */
+    priv->orig_extradata = avctx->extradata;
+    priv->orig_extradata_size = avctx->extradata_size;
+
+    size = priv->bsfc->par_out->extradata_size;
+    extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!extradata) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to allocate copy of extradata\n");
+        return AVERROR(ENOMEM);
+    }
+    memcpy(extradata, priv->bsfc->par_out->extradata, size);
+
+    avctx->extradata = extradata;
+    avctx->extradata_size = size;
+
+    return 0;
+}
+
 static av_cold int init(AVCodecContext *avctx)
 {
     CHDContext* priv;
+    int avret;
     BC_STATUS ret;
     BC_INFO_CRYSTAL version;
     BC_INPUT_FORMAT format = {
@@ -417,46 +466,22 @@ static av_cold int init(AVCodecContext *avctx)
     subtype = id2subtype(priv, avctx->codec->id);
     switch (subtype) {
     case BC_MSUBTYPE_AVC1:
-        {
-            const AVBitStreamFilter *bsf;
-            int avret;
-
-            bsf = av_bsf_get_by_name("h264_mp4toannexb");
-            if (!bsf) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Cannot open the h264_mp4toannexb BSF!\n");
-                return AVERROR_BSF_NOT_FOUND;
-            }
-            avret = av_bsf_alloc(bsf, &priv->bsfc);
-            if (avret != 0) {
-                return AVERROR(ENOMEM);
-            }
-            avret = avcodec_parameters_from_context(priv->bsfc->par_in, avctx);
-            if (avret != 0) {
-                return AVERROR(ENOMEM);
-            }
-            avret = av_bsf_init(priv->bsfc);
-            if (avret != 0) {
-                return AVERROR(ENOMEM);
-            }
-
-            format.metaDataSz = priv->bsfc->par_out->extradata_size;
-            format.pMetaData = av_malloc(format.metaDataSz + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!format.pMetaData) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Failed to allocate copy of extradata\n");
-                return AVERROR(ENOMEM);
-            }
-            memcpy(format.pMetaData, priv->bsfc->par_out->extradata, format.metaDataSz);
-
-            /* Back up the extradata so it can be restored at close time. */
-            priv->orig_extradata = avctx->extradata;
-            priv->orig_extradata_size = avctx->extradata_size;
-            avctx->extradata = format.pMetaData;
-            avctx->extradata_size = format.metaDataSz;
+        avret = init_bsf(avctx, "h264_mp4toannexb");
+        if (avret != 0) {
+            return avret;
         }
         subtype = BC_MSUBTYPE_H264;
         format.startCodeSz = 4;
+        format.pMetaData  = avctx->extradata;
+        format.metaDataSz = avctx->extradata_size;
+        break;
+    case BC_MSUBTYPE_DIVX:
+        avret = init_bsf(avctx, "mpeg4_unpack_bframes");
+        if (avret != 0) {
+            return avret;
+        }
+        format.pMetaData  = avctx->extradata;
+        format.metaDataSz = avctx->extradata_size;
         break;
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
@@ -466,7 +491,6 @@ static av_cold int init(AVCodecContext *avctx)
     case BC_MSUBTYPE_WMV3:
     case BC_MSUBTYPE_WMVA:
     case BC_MSUBTYPE_MPEG2VIDEO:
-    case BC_MSUBTYPE_DIVX:
     case BC_MSUBTYPE_DIVX311:
         format.pMetaData  = avctx->extradata;
         format.metaDataSz = avctx->extradata_size;
@@ -839,15 +863,6 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                 priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
-            if (avctx->codec->id == AV_CODEC_ID_MPEG4 &&
-                output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
-                av_log(avctx, AV_LOG_VERBOSE,
-                       "CrystalHD: Not returning packed frame twice.\n");
-                priv->last_picture++;
-                DtsReleaseOutputBuffs(dev, NULL, FALSE);
-                return RET_COPY_AGAIN;
-            }
-
             print_frame_info(priv, &output);
 
             if (priv->last_picture + 1 < output.PicInfo.picture_number) {
@@ -907,22 +922,6 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
     uint8_t pic_type   = 0;
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_frame\n");
-
-    if (avpkt->size == 7 && !priv->bframe_bug) {
-        /*
-         * The use of a drop frame triggers the bug
-         */
-        av_log(avctx, AV_LOG_INFO,
-               "CrystalHD: Enabling work-around for packed b-frame bug\n");
-        priv->bframe_bug = 1;
-    } else if (avpkt->size == 8 && priv->bframe_bug) {
-        /*
-         * Delay frames don't trigger the bug
-         */
-        av_log(avctx, AV_LOG_INFO,
-               "CrystalHD: Disabling work-around for packed b-frame bug\n");
-        priv->bframe_bug = 0;
-    }
 
     if (len) {
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
