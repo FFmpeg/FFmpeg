@@ -369,7 +369,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                 win = 0.53836 + 0.46164 * cos(u);
                 break;
             case WFUNC_BLACKMAN:
-                win = 0.48 + 0.5 * cos(u) + 0.02 * cos(2*u);
+                win = 0.42 + 0.5 * cos(u) + 0.08 * cos(2*u);
                 break;
             case WFUNC_NUTTALL3:
                 win = 0.40897 + 0.5 * cos(u) + 0.09103 * cos(2*u);
