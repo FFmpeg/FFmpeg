@@ -375,7 +375,7 @@ static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
                                                      track->duration -
                                                      track->offsets[track->chunks - 1].time;
     }
-    // Now try and read the actual durations from the trun sample data.
+    // Now try to read the actual durations from the trun sample data.
     for (i = 0; i < track->chunks; i++) {
         int64_t duration = read_moof_duration(f, track->offsets[i].offset);
         if (duration > 0 && llabs(duration - track->offsets[i].duration) > 3) {
