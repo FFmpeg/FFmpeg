@@ -322,7 +322,7 @@ static int config_props(AVFilterLink *link)
                 continue;
             t = 0;
             for (j = 0; j < link->channels; j++)
-                t += pan->gain[i][j];
+                t += fabs(pan->gain[i][j]);
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
                 if (t)
