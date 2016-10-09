@@ -518,7 +518,7 @@ bitmap_end_skip:
         }
     skip:
         if(len<0)
-            av_log(s, AV_LOG_WARNING, "Cliping len %d\n", len);
+            av_log(s, AV_LOG_WARNING, "Clipping len %d\n", len);
         len = FFMAX(0, len);
         avio_skip(pb, len);
     }
