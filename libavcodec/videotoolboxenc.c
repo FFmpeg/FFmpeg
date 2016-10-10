@@ -1183,14 +1183,194 @@ static void vtenc_get_frame_info(CMSampleBufferRef buffer, bool *is_key_frame)
     }
 }
 
+static int is_post_sei_nal_type(int nal_type){
+    return nal_type != H264_NAL_SEI &&
+           nal_type != H264_NAL_SPS &&
+           nal_type != H264_NAL_PPS &&
+           nal_type != H264_NAL_AUD;
+}
+
+/*
+ * Finds the sei message start/size of type find_sei_type.
+ * If more than one of that type exists, the last one is returned.
+ */
+static int find_sei_end(AVCodecContext *avctx,
+                        uint8_t        *nal_data,
+                        size_t          nal_size,
+                        uint8_t       **sei_end)
+{
+    int nal_type;
+    size_t sei_payload_size = 0;
+    int sei_payload_type = 0;
+    *sei_end = NULL;
+    uint8_t *nal_start = nal_data;
+
+    if (!nal_size)
+        return 0;
+
+    nal_type = *nal_data & 0x1F;
+    if (nal_type != H264_NAL_SEI)
+        return 0;
+
+    nal_data++;
+    nal_size--;
+
+    if (nal_data[nal_size - 1] == 0x80)
+        nal_size--;
+
+    while (nal_size > 0 && *nal_data > 0) {
+        do{
+            sei_payload_type += *nal_data;
+            nal_data++;
+            nal_size--;
+        } while (nal_size > 0 && *nal_data == 0xFF);
+
+        if (!nal_size) {
+            av_log(avctx, AV_LOG_ERROR, "Unexpected end of SEI NAL Unit parsing type.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        do{
+            sei_payload_size += *nal_data;
+            nal_data++;
+            nal_size--;
+        } while (nal_size > 0 && *nal_data == 0xFF);
+
+        if (nal_size < sei_payload_size) {
+            av_log(avctx, AV_LOG_ERROR, "Unexpected end of SEI NAL Unit parsing size.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        nal_data += sei_payload_size;
+        nal_size -= sei_payload_size;
+    }
+
+    *sei_end = nal_data;
+
+    return nal_data - nal_start + 1;
+}
+
+/**
+ * Copies the data inserting emulation prevention bytes as needed.
+ * Existing data in the destination can be taken into account by providing
+ * dst with a dst_offset > 0.
+ *
+ * @return The number of bytes copied on success. On failure, the negative of
+ *         the number of bytes needed to copy src is returned.
+ */
+static int copy_emulation_prev(const uint8_t *src,
+                               size_t         src_size,
+                               uint8_t       *dst,
+                               ssize_t        dst_offset,
+                               size_t         dst_size)
+{
+    int zeros = 0;
+    int wrote_bytes;
+    uint8_t* dst_start;
+    uint8_t* dst_end = dst + dst_size;
+    const uint8_t* src_end = src + src_size;
+    int start_at = dst_offset > 2 ? dst_offset - 2 : 0;
+    int i;
+    for (i = start_at; i < dst_offset && i < dst_size; i++) {
+        if (!dst[i])
+            zeros++;
+        else
+            zeros = 0;
+    }
+
+    dst += dst_offset;
+    dst_start = dst;
+    for (; src < src_end; src++, dst++) {
+        if (zeros == 2) {
+            int insert_ep3_byte = *src <= 3;
+            if (insert_ep3_byte) {
+                if (dst < dst_end)
+                    *dst = 3;
+                dst++;
+            }
+
+            zeros = 0;
+        }
+
+        if (dst < dst_end)
+            *dst = *src;
+
+        if (!*src)
+            zeros++;
+        else
+            zeros = 0;
+    }
+
+    wrote_bytes = dst - dst_start;
+
+    if (dst > dst_end)
+        return -wrote_bytes;
+
+    return wrote_bytes;
+}
+
+static int write_sei(const ExtraSEI *sei,
+                     int             sei_type,
+                     uint8_t        *dst,
+                     size_t          dst_size)
+{
+    uint8_t *sei_start = dst;
+    size_t remaining_sei_size = sei->size;
+    size_t remaining_dst_size = dst_size;
+    int header_bytes;
+    int bytes_written;
+    ssize_t offset;
+
+    if (!remaining_dst_size)
+        return AVERROR_BUFFER_TOO_SMALL;
+
+    while (sei_type && remaining_dst_size != 0) {
+        int sei_byte = sei_type > 255 ? 255 : sei_type;
+        *dst = sei_byte;
+
+        sei_type -= sei_byte;
+        dst++;
+        remaining_dst_size--;
+    }
+
+    if (!dst_size)
+        return AVERROR_BUFFER_TOO_SMALL;
+
+    while (remaining_sei_size && remaining_dst_size != 0) {
+        int size_byte = remaining_sei_size > 255 ? 255 : remaining_sei_size;
+        *dst = size_byte;
+
+        remaining_sei_size -= size_byte;
+        dst++;
+        remaining_dst_size--;
+    }
+
+    if (remaining_dst_size < sei->size)
+        return AVERROR_BUFFER_TOO_SMALL;
+
+    header_bytes = dst - sei_start;
+
+    offset = header_bytes;
+    bytes_written = copy_emulation_prev(sei->data,
+                                        sei->size,
+                                        sei_start,
+                                        offset,
+                                        dst_size);
+    if (bytes_written < 0)
+        return AVERROR_BUFFER_TOO_SMALL;
+
+    bytes_written += header_bytes;
+    return bytes_written;
+}
+
 /**
  * Copies NAL units and replaces length codes with
  * H.264 Annex B start codes. On failure, the contents of
  * dst_data may have been modified.
  *
  * @param length_code_size Byte length of each length code
- * @param src_data NAL units prefixed with length codes.
- * @param src_size Length of buffer, excluding any padding.
+ * @param sample_buffer NAL units prefixed with length codes.
+ * @param sei Optional A53 closed captions SEI data.
  * @param dst_data Must be zeroed before calling this function.
  *                 Contains the copied NAL units prefixed with
  *                 start codes when the function returns
@@ -1206,6 +1386,7 @@ static int copy_replace_length_codes(
     AVCodecContext *avctx,
     size_t        length_code_size,
     CMSampleBufferRef sample_buffer,
+    ExtraSEI      *sei,
     uint8_t       *dst_data,
     size_t        dst_size)
 {
@@ -1213,8 +1394,10 @@ static int copy_replace_length_codes(
     size_t remaining_src_size = src_size;
     size_t remaining_dst_size = dst_size;
     size_t src_offset = 0;
+    int wrote_sei = 0;
     int status;
     uint8_t size_buf[4];
+    uint8_t nal_type;
     CMBlockBufferRef block = CMSampleBufferGetDataBuffer(sample_buffer);
 
     if (length_code_size > 4) {
@@ -1238,9 +1421,55 @@ static int copy_replace_length_codes(
             return AVERROR_EXTERNAL;
         }
 
+        status = CMBlockBufferCopyDataBytes(block,
+                                            src_offset + length_code_size,
+                                            1,
+                                            &nal_type);
+
+        if (status) {
+            av_log(avctx, AV_LOG_ERROR, "Cannot copy type: %d\n", status);
+            return AVERROR_EXTERNAL;
+        }
+
+        nal_type &= 0x1F;
+
         for (i = 0; i < length_code_size; i++) {
             box_len <<= 8;
             box_len |= size_buf[i];
+        }
+
+        if (sei && !wrote_sei && is_post_sei_nal_type(nal_type)) {
+            //No SEI NAL unit - insert.
+            int wrote_bytes;
+
+            memcpy(dst_data, start_code, sizeof(start_code));
+            dst_data += sizeof(start_code);
+            remaining_dst_size -= sizeof(start_code);
+
+            *dst_data = H264_NAL_SEI;
+            dst_data++;
+            remaining_dst_size--;
+
+            wrote_bytes = write_sei(sei,
+                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    dst_data,
+                                    remaining_dst_size);
+
+            if (wrote_bytes < 0)
+                return wrote_bytes;
+
+            remaining_dst_size -= wrote_bytes;
+            dst_data += wrote_bytes;
+
+            if (remaining_dst_size <= 0)
+                return AVERROR_BUFFER_TOO_SMALL;
+
+            *dst_data = 0x80;
+
+            dst_data++;
+            remaining_dst_size--;
+
+            wrote_sei = 1;
         }
 
         curr_src_len = box_len + length_code_size;
@@ -1267,6 +1496,35 @@ static int copy_replace_length_codes(
             return AVERROR_EXTERNAL;
         }
 
+        if (sei && !wrote_sei && nal_type == H264_NAL_SEI) {
+            //Found SEI NAL unit - append.
+            int wrote_bytes;
+            int old_sei_length;
+            int extra_bytes;
+            uint8_t *new_sei;
+            old_sei_length = find_sei_end(avctx, dst_box, box_len, &new_sei);
+            if (old_sei_length < 0)
+                return status;
+
+            wrote_bytes = write_sei(sei,
+                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    new_sei,
+                                    remaining_dst_size - old_sei_length);
+            if (wrote_bytes < 0)
+                return wrote_bytes;
+
+            if (new_sei + wrote_bytes >= dst_data + remaining_dst_size)
+                return AVERROR_BUFFER_TOO_SMALL;
+
+            new_sei[wrote_bytes++] = 0x80;
+            extra_bytes = wrote_bytes - (dst_box + box_len - new_sei);
+
+            dst_data += extra_bytes;
+            remaining_dst_size -= extra_bytes;
+
+            wrote_sei = 1;
+        }
+
         src_offset += curr_src_len;
         dst_data += curr_dst_len;
 
@@ -1275,6 +1533,27 @@ static int copy_replace_length_codes(
     }
 
     return 0;
+}
+
+/**
+ * Returns a sufficient number of bytes to contain the sei data.
+ * It may be greater than the minimum required.
+ */
+static int get_sei_msg_bytes(const ExtraSEI* sei, int type){
+    int copied_size;
+    if (sei->size == 0)
+        return 0;
+
+    copied_size = -copy_emulation_prev(sei->data,
+                                       sei->size,
+                                       NULL,
+                                       0,
+                                       0);
+
+    if ((sei->size % 255) == 0) //may result in an extra byte
+        copied_size++;
+
+    return copied_size + sei->size / 255 + 1 + type / 255 + 1;
 }
 
 static int vtenc_cm_to_avpacket(
@@ -1323,7 +1602,10 @@ static int vtenc_cm_to_avpacket(
         return status;
 
     if (sei) {
-        sei_nalu_size = sizeof(start_code) + 3 + sei->size + 1;
+        size_t msg_size = get_sei_msg_bytes(sei,
+                                            SEI_TYPE_USER_DATA_REGISTERED);
+
+        sei_nalu_size = sizeof(start_code) + 1 + msg_size + 1;
     }
 
     in_buf_size = CMSampleBufferGetTotalSampleSize(sample_buffer);
@@ -1345,26 +1627,14 @@ static int vtenc_cm_to_avpacket(
         avctx,
         length_code_size,
         sample_buffer,
+        sei,
         pkt->data + header_size,
-        pkt->size - header_size - sei_nalu_size
+        pkt->size - header_size
     );
 
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d", status);
         return status;
-    }
-
-    if (sei_nalu_size > 0) {
-        uint8_t *sei_nalu = pkt->data + pkt->size - sei_nalu_size;
-        memcpy(sei_nalu, start_code, sizeof(start_code));
-        sei_nalu += sizeof(start_code);
-        sei_nalu[0] = H264_NAL_SEI;
-        sei_nalu[1] = SEI_TYPE_USER_DATA_REGISTERED;
-        sei_nalu[2] = sei->size;
-        sei_nalu += 3;
-        memcpy(sei_nalu, sei->data, sei->size);
-        sei_nalu += sei->size;
-        sei_nalu[0] = 1; // RBSP
     }
 
     if (is_key_frame) {
