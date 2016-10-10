@@ -16,6 +16,8 @@ gbrap               57cb1a02d6f015a4329fe367f3bdfe49
 gbrp                d5f73b5d3ba7f6cadbc9b4ecbc161005
 gbrp10be            eb19bda60ab7f893198364dff21342d6
 gbrp10le            546146efb36ad2605e9f74ee5e4c2a36
+gbrp12be            3a7dd35686a7ca85cc58c44d0c5c4e96
+gbrp12le            654861b1837d312569395f598da1a2a1
 gbrp9be             cbe1bf8ead497a92362a749bd4b0a57e
 gbrp9le             f88c68df5d699a4a7f1b0152df9f25fe
 gray                8c941e9bbf6da5336384c57f15a4a454
