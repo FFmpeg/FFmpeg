@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,23 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_WMV2DSP_H
-#define AVCODEC_WMV2DSP_H
+#ifndef AVCODEC_MIPS_WMV2DSP_MIPS_H
+#define AVCODEC_MIPS_WMV2DSP_MIPS_H
 
-#include <stdint.h>
+#include "libavcodec/wmv2dsp.h"
 
-#include "qpeldsp.h"
+void ff_wmv2_idct_add_mmi(uint8_t *dest, int line_size, int16_t *block);
+void ff_wmv2_idct_put_mmi(uint8_t *dest, int line_size, int16_t *block);
 
-typedef struct WMV2DSPContext {
-    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
-    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
-
-    qpel_mc_func put_mspel_pixels_tab[8];
-
-    int idct_perm;
-} WMV2DSPContext;
-
-void ff_wmv2dsp_init(WMV2DSPContext *c);
-void ff_wmv2dsp_init_mips(WMV2DSPContext *c);
-
-#endif /* AVCODEC_WMV2DSP_H */
+#endif /* AVCODEC_MIPS_WMV2DSP_MIPS_H */

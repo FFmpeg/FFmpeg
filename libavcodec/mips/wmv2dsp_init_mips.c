@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,23 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_WMV2DSP_H
-#define AVCODEC_WMV2DSP_H
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "wmv2dsp_mips.h"
 
-#include <stdint.h>
+#if HAVE_MMI
+static av_cold void wmv2dsp_init_mmi(WMV2DSPContext *c)
+{
+    c->idct_add  = ff_wmv2_idct_add_mmi;
+    c->idct_put  = ff_wmv2_idct_put_mmi;
+}
+#endif /* HAVE_MMI */
 
-#include "qpeldsp.h"
-
-typedef struct WMV2DSPContext {
-    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
-    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
-
-    qpel_mc_func put_mspel_pixels_tab[8];
-
-    int idct_perm;
-} WMV2DSPContext;
-
-void ff_wmv2dsp_init(WMV2DSPContext *c);
-void ff_wmv2dsp_init_mips(WMV2DSPContext *c);
-
-#endif /* AVCODEC_WMV2DSP_H */
+av_cold void ff_wmv2dsp_init_mips(WMV2DSPContext *c)
+{
+#if HAVE_MMI
+    wmv2dsp_init_mmi(c);
+#endif /* HAVE_MMI */
+}

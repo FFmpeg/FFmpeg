@@ -262,4 +262,7 @@ av_cold void ff_wmv2dsp_init(WMV2DSPContext *c)
     c->put_mspel_pixels_tab[5] = put_mspel8_mc12_c;
     c->put_mspel_pixels_tab[6] = put_mspel8_mc22_c;
     c->put_mspel_pixels_tab[7] = put_mspel8_mc32_c;
+
+    if (ARCH_MIPS)
+        ff_wmv2dsp_init_mips(c);
 }
