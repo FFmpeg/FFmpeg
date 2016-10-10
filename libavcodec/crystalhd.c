@@ -561,7 +561,6 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
-    uint8_t trust_interlaced;
     uint8_t interlaced;
 
     CHDContext *priv = avctx->priv_data;
@@ -611,29 +610,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     }
 
     /*
-     * For most content, we can trust the interlaced flag returned
-     * by the hardware, but sometimes we can't. These are the
-     * conditions under which we can trust the flag:
-     *
-     * 1) It's not h.264 content
-     * 2) The UNKNOWN_SRC flag is not set
-     * 3) We know we're expecting a second field
-     * 4) The hardware reports this picture and the next picture
-     *    have the same picture number.
-     *
-     * Note that there can still be interlaced content that will
-     * fail this check, if the hardware hasn't decoded the next
-     * picture or if there is a corruption in the stream. (In either
-     * case a 0 will be returned for the next picture number)
-     */
-    trust_interlaced = avctx->codec->id != AV_CODEC_ID_H264 ||
-                       !(output->PicInfo.flags & VDEC_FLAG_UNKNOWN_SRC) ||
-                       priv->need_second_field ||
-                       (decoder_status.picNumFlags & ~0x40000000) ==
-                       output->PicInfo.picture_number;
-
-    /*
-     * If we got a false negative for trust_interlaced on the first field,
+     * If we got a false negative for interlaced on the first field,
      * we will realise our mistake here when we see that the picture number is that
      * of the previous picture. We cannot recover the frame and should discard the
      * second field to keep the correct number of output frames.
@@ -645,16 +622,10 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         return RET_OK;
     }
 
-    interlaced = (output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC) &&
-                 trust_interlaced;
+    interlaced = output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC;
 
-    if (!trust_interlaced && (decoder_status.picNumFlags & ~0x40000000) == 0) {
-        av_log(avctx, AV_LOG_VERBOSE,
-               "Next picture number unknown. Assuming progressive frame.\n");
-    }
-
-    av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | trust_interlaced %d\n",
-           interlaced, trust_interlaced);
+    av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d\n",
+           interlaced);
 
     if (priv->pic->data[0] && !priv->need_second_field)
         av_frame_unref(priv->pic);
