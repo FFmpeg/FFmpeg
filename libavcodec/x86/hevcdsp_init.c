@@ -66,17 +66,30 @@ idct_dc_proto(32,10,   avx);
 idct_dc_proto(16,10,  avx2);
 idct_dc_proto(32,10,  avx2);
 
-#define IDCT_FUNCS(W, opt) \
+#define IDCT_DC_FUNCS(W, opt) \
 void ff_hevc_idct_ ## W ## _dc_8_ ## opt(int16_t *coeffs); \
 void ff_hevc_idct_ ## W ## _dc_10_ ## opt(int16_t *coeffs)
 
-IDCT_FUNCS(4x4,   mmxext);
-IDCT_FUNCS(8x8,   mmxext);
-IDCT_FUNCS(8x8,   sse2);
-IDCT_FUNCS(16x16, sse2);
-IDCT_FUNCS(32x32, sse2);
-IDCT_FUNCS(16x16, avx2);
-IDCT_FUNCS(32x32, avx2);
+IDCT_DC_FUNCS(4x4,   mmxext);
+IDCT_DC_FUNCS(8x8,   mmxext);
+IDCT_DC_FUNCS(8x8,   sse2);
+IDCT_DC_FUNCS(16x16, sse2);
+IDCT_DC_FUNCS(32x32, sse2);
+IDCT_DC_FUNCS(16x16, avx2);
+IDCT_DC_FUNCS(32x32, avx2);
+
+#define IDCT_FUNCS(opt)                                             \
+void ff_hevc_idct_4x4_8_    ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_4x4_10_   ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_8x8_8_    ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_8x8_10_   ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_16x16_8_  ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_16x16_10_ ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_32x32_8_  ## opt(int16_t *coeffs, int col_limit); \
+void ff_hevc_idct_32x32_10_ ## opt(int16_t *coeffs, int col_limit);
+
+IDCT_FUNCS(sse2)
+IDCT_FUNCS(avx)
 
 #define GET_PIXELS(width, depth, cf)                                                                      \
 void ff_hevc_get_pixels_ ## width ## _ ## depth ## _ ## cf(int16_t *dst, ptrdiff_t dststride,             \
@@ -273,6 +286,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_sse2;
+
+            c->idct[0]    = ff_hevc_idct_4x4_8_sse2;
+            c->idct[1]    = ff_hevc_idct_8x8_8_sse2;
             SET_QPEL_FUNCS(0, 0, 8, sse2, ff_hevc_get_pixels);
             SET_EPEL_FUNCS(0, 0, 8, sse2, ff_hevc_get_pixels);
 
@@ -288,6 +304,10 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SET_EPEL_FUNCS(1, 0, 8, ssse3, ff_hevc_epel_v);
 
         }
+        if (EXTERNAL_AVX(cpu_flags)) {
+            c->idct[0] = ff_hevc_idct_4x4_8_avx;
+            c->idct[1] = ff_hevc_idct_8x8_8_avx;
+        }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->idct_dc[0] = ff_hevc_idct_4x4_dc_10_mmxext;
@@ -301,6 +321,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_10_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_10_sse2;
 
+            c->idct[0]    = ff_hevc_idct_4x4_10_sse2;
+            c->idct[1]    = ff_hevc_idct_8x8_10_sse2;
             SET_QPEL_FUNCS(0, 0, 10, sse2, ff_hevc_get_pixels);
             SET_EPEL_FUNCS(0, 0, 10, sse2, ff_hevc_get_pixels);
 
@@ -309,10 +331,18 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SET_CHROMA_FUNCS(put_unweighted_pred_chroma,     ff_hevc_put_unweighted_pred,     10, sse2);
             SET_CHROMA_FUNCS(put_unweighted_pred_avg_chroma, ff_hevc_put_unweighted_pred_avg, 10, sse2);
         }
+        if (EXTERNAL_AVX(cpu_flags)) {
+            c->idct[0] = ff_hevc_idct_4x4_10_avx;
+            c->idct[1] = ff_hevc_idct_8x8_10_avx;
+        }
     }
 
 #if ARCH_X86_64
     if (bit_depth == 8) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
+            c->idct[2] = ff_hevc_idct_16x16_8_sse2;
+            c->idct[3] = ff_hevc_idct_32x32_8_sse2;
+        }
         if (EXTERNAL_SSSE3(cpu_flags)) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
@@ -330,12 +360,18 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SET_QPEL_FUNCS(1, 1, 8, avx, hevc_qpel_hv);
             SET_EPEL_FUNCS(1, 1, 8, avx, hevc_epel_hv);
 #endif /* HAVE_AVX_EXTERNAL */
+            c->idct[2] = ff_hevc_idct_16x16_8_avx;
+            c->idct[3] = ff_hevc_idct_32x32_8_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_avx2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_avx2;
         }
     } else if (bit_depth == 10) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
+            c->idct[2] = ff_hevc_idct_16x16_10_sse2;
+            c->idct[3] = ff_hevc_idct_32x32_10_sse2;
+        }
         if (EXTERNAL_SSSE3(cpu_flags)) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
@@ -355,6 +391,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SET_EPEL_FUNCS(1, 0, 10, avx, ff_hevc_epel_v);
             SET_EPEL_FUNCS(1, 1, 10, avx, hevc_epel_hv);
 #endif /* HAVE_AVX_EXTERNAL */
+            c->idct[2] = ff_hevc_idct_16x16_10_avx;
+            c->idct[3] = ff_hevc_idct_32x32_10_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_10_avx2;
