@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- CrystalHD decoder moved to new decode API
 
 version 3.2:
 - libopenmpt demuxer
