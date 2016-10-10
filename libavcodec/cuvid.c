@@ -19,18 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "compat/cuda/dynlink_loader.h"
+
 #include "libavutil/buffer.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
+#include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
-
-#include "compat/cuda/nvcuvid.h"
 
 #define MAX_FRAME_COUNT 25
 
@@ -61,6 +61,9 @@ typedef struct CuvidContext
 
     CUVIDPARSERPARAMS cuparseinfo;
     CUVIDEOFORMATEX cuparse_ext;
+
+    CudaFunctions *cudl;
+    CuvidFunctions *cvdl;
 } CuvidContext;
 
 typedef struct CuvidParsedFrame
@@ -72,6 +75,7 @@ typedef struct CuvidParsedFrame
 
 static int check_cu(AVCodecContext *avctx, CUresult err, const char *func)
 {
+    CuvidContext *ctx = avctx->priv_data;
     const char *err_name;
     const char *err_string;
 
@@ -80,8 +84,8 @@ static int check_cu(AVCodecContext *avctx, CUresult err, const char *func)
     if (err == CUDA_SUCCESS)
         return 0;
 
-    cuGetErrorName(err, &err_name);
-    cuGetErrorString(err, &err_string);
+    ctx->cudl->cuGetErrorName(err, &err_name);
+    ctx->cudl->cuGetErrorString(err, &err_string);
 
     av_log(avctx, AV_LOG_ERROR, "%s failed", func);
     if (err_name && err_string)
@@ -142,7 +146,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     if (ctx->cudecoder) {
         av_log(avctx, AV_LOG_TRACE, "Re-initializing decoder\n");
-        ctx->internal_error = CHECK_CU(cuvidDestroyDecoder(ctx->cudecoder));
+        ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder));
         if (ctx->internal_error < 0)
             return 0;
         ctx->cudecoder = NULL;
@@ -199,7 +203,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave)
         avctx->framerate = av_mul_q(avctx->framerate, (AVRational){2, 1});
 
-    ctx->internal_error = CHECK_CU(cuvidCreateDecoder(&ctx->cudecoder, &cuinfo));
+    ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidCreateDecoder(&ctx->cudecoder, &cuinfo));
     if (ctx->internal_error < 0)
         return 0;
 
@@ -225,7 +229,7 @@ static int CUDAAPI cuvid_handle_picture_decode(void *opaque, CUVIDPICPARAMS* pic
 
     av_log(avctx, AV_LOG_TRACE, "pfnDecodePicture\n");
 
-    ctx->internal_error = CHECK_CU(cuvidDecodePicture(ctx->cudecoder, picparams));
+    ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidDecodePicture(ctx->cudecoder, picparams));
     if (ctx->internal_error < 0)
         return 0;
 
@@ -291,7 +295,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
         avpkt = &filtered_packet;
     }
 
-    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    ret = CHECK_CU(ctx->cudl->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0) {
         av_packet_unref(&filtered_packet);
         return ret;
@@ -315,7 +319,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
         ctx->decoder_flushing = 1;
     }
 
-    ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &cupkt));
+    ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &cupkt));
 
     av_packet_unref(&filtered_packet);
 
@@ -330,7 +334,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     }
 
 error:
-    eret = CHECK_CU(cuCtxPopCurrent(&dummy));
+    eret = CHECK_CU(ctx->cudl->cuCtxPopCurrent(&dummy));
 
     if (eret < 0)
         return eret;
@@ -359,7 +363,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
             return ret;
     }
 
-    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    ret = CHECK_CU(ctx->cudl->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         return ret;
 
@@ -377,7 +381,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
         params.second_field = parsed_frame.second_field;
         params.top_field_first = parsed_frame.dispinfo.top_field_first;
 
-        ret = CHECK_CU(cuvidMapVideoFrame(ctx->cudecoder, parsed_frame.dispinfo.picture_index, &mapped_frame, &pitch, &params));
+        ret = CHECK_CU(ctx->cvdl->cuvidMapVideoFrame(ctx->cudecoder, parsed_frame.dispinfo.picture_index, &mapped_frame, &pitch, &params));
         if (ret < 0)
             goto error;
 
@@ -407,7 +411,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                     .Height        = avctx->height >> (i ? 1 : 0),
                 };
 
-                ret = CHECK_CU(cuMemcpy2D(&cpy));
+                ret = CHECK_CU(ctx->cudl->cuMemcpy2D(&cpy));
                 if (ret < 0)
                     goto error;
 
@@ -492,9 +496,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 error:
     if (mapped_frame)
-        eret = CHECK_CU(cuvidUnmapVideoFrame(ctx->cudecoder, mapped_frame));
+        eret = CHECK_CU(ctx->cvdl->cuvidUnmapVideoFrame(ctx->cudecoder, mapped_frame));
 
-    eret = CHECK_CU(cuCtxPopCurrent(&dummy));
+    eret = CHECK_CU(ctx->cudl->cuCtxPopCurrent(&dummy));
 
     if (eret < 0)
         return eret;
@@ -543,19 +547,24 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
         av_bsf_free(&ctx->bsf);
 
     if (ctx->cuparser)
-        cuvidDestroyVideoParser(ctx->cuparser);
+        ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
 
     if (ctx->cudecoder)
-        cuvidDestroyDecoder(ctx->cudecoder);
+        ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
+
+    ctx->cudl = NULL;
 
     av_buffer_unref(&ctx->hwframe);
     av_buffer_unref(&ctx->hwdevice);
+
+    cuvid_free_functions(&ctx->cvdl);
 
     return 0;
 }
 
 static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cuparseinfo)
 {
+    CuvidContext *ctx = avctx->priv_data;
     CUVIDDECODECREATEINFO cuinfo;
     CUvideodecoder cudec = 0;
     int ret = 0;
@@ -583,11 +592,11 @@ static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cu
 
     cuinfo.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave;
 
-    ret = CHECK_CU(cuvidCreateDecoder(&cudec, &cuinfo));
+    ret = CHECK_CU(ctx->cvdl->cuvidCreateDecoder(&cudec, &cuinfo));
     if (ret < 0)
         return ret;
 
-    ret = CHECK_CU(cuvidDestroyDecoder(cudec));
+    ret = CHECK_CU(ctx->cvdl->cuvidDestroyDecoder(cudec));
     if (ret < 0)
         return ret;
 
@@ -615,14 +624,19 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "ff_get_format failed: %d\n", ret);
         return ret;
     }
+    avctx->pix_fmt = ret;
+
+    ret = cuvid_load_functions(&ctx->cvdl);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
+        goto error;
+    }
 
     ctx->frame_queue = av_fifo_alloc(MAX_FRAME_COUNT * sizeof(CuvidParsedFrame));
     if (!ctx->frame_queue) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
-
-    avctx->pix_fmt = ret;
 
     if (avctx->hw_frames_ctx) {
         ctx->hwframe = av_buffer_ref(avctx->hw_frames_ctx);
@@ -655,7 +669,9 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
 
     device_ctx = hwframe_ctx->device_ctx;
     device_hwctx = device_ctx->hwctx;
+
     cuda_ctx = device_hwctx->cuda_ctx;
+    ctx->cudl = device_hwctx->internal->cuda_dl;
 
     memset(&ctx->cuparseinfo, 0, sizeof(ctx->cuparseinfo));
     memset(&ctx->cuparse_ext, 0, sizeof(ctx->cuparse_ext));
@@ -750,7 +766,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     ctx->cuparseinfo.pfnDecodePicture = cuvid_handle_picture_decode;
     ctx->cuparseinfo.pfnDisplayPicture = cuvid_handle_picture_display;
 
-    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    ret = CHECK_CU(ctx->cudl->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         goto error;
 
@@ -758,7 +774,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
+    ret = CHECK_CU(ctx->cvdl->cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
     if (ret < 0)
         goto error;
 
@@ -766,12 +782,12 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
 
     if (seq_pkt.payload && seq_pkt.payload_size) {
-        ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &seq_pkt));
+        ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &seq_pkt));
         if (ret < 0)
             goto error;
     }
 
-    ret = CHECK_CU(cuCtxPopCurrent(&dummy));
+    ret = CHECK_CU(ctx->cudl->cuCtxPopCurrent(&dummy));
     if (ret < 0)
         goto error;
 
@@ -796,7 +812,7 @@ static void cuvid_flush(AVCodecContext *avctx)
     CUVIDSOURCEDATAPACKET seq_pkt = { 0 };
     int ret;
 
-    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    ret = CHECK_CU(ctx->cudl->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         goto error;
 
@@ -809,16 +825,16 @@ static void cuvid_flush(AVCodecContext *avctx)
     }
 
     if (ctx->cudecoder) {
-        cuvidDestroyDecoder(ctx->cudecoder);
+        ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
         ctx->cudecoder = NULL;
     }
 
     if (ctx->cuparser) {
-        cuvidDestroyVideoParser(ctx->cuparser);
+        ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
         ctx->cuparser = NULL;
     }
 
-    ret = CHECK_CU(cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
+    ret = CHECK_CU(ctx->cvdl->cuvidCreateVideoParser(&ctx->cuparser, &ctx->cuparseinfo));
     if (ret < 0)
         goto error;
 
@@ -826,12 +842,12 @@ static void cuvid_flush(AVCodecContext *avctx)
     seq_pkt.payload_size = ctx->cuparse_ext.format.seqhdr_data_length;
 
     if (seq_pkt.payload && seq_pkt.payload_size) {
-        ret = CHECK_CU(cuvidParseVideoData(ctx->cuparser, &seq_pkt));
+        ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &seq_pkt));
         if (ret < 0)
             goto error;
     }
 
-    ret = CHECK_CU(cuCtxPopCurrent(&dummy));
+    ret = CHECK_CU(ctx->cudl->cuCtxPopCurrent(&dummy));
     if (ret < 0)
         goto error;
 
