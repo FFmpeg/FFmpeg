@@ -1633,7 +1633,7 @@ static int vtenc_cm_to_avpacket(
     );
 
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d", status);
+        av_log(avctx, AV_LOG_ERROR, "Error copying packet data: %d\n", status);
         return status;
     }
 
