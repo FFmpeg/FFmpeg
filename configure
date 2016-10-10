@@ -296,8 +296,8 @@ External library support:
 
   The following libraries provide various hardware acceleration features:
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
-  --enable-cuda            enable dynamically linked Nvidia CUDA code [no]
-  --enable-cuvid           enable Nvidia CUVID support [autodetect]
+  --disable-cuda           disable dynamically linked Nvidia CUDA code [autodetect]
+  --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
@@ -3230,7 +3230,7 @@ enable audiotoolbox
 enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
 enable xlib
 
-enable nvenc vda_framework videotoolbox videotoolbox_encoder
+enable cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
@@ -5081,8 +5081,6 @@ die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
-die_license_disabled nonfree cuda
-die_license_disabled nonfree cuvid
 die_license_disabled nonfree libnpp
 enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
 enabled gpl && die_license_disabled_gpl nonfree openssl
@@ -5655,21 +5653,11 @@ for func in $COMPLEX_FUNCS; do
     eval check_complexfunc $func \${${func}_args:-1}
 done
 
-# Enable CUVID by default if CUDA is enabled
-if enabled cuda && ! disabled cuvid; then
-    enable cuvid
-fi
-
 # these are off by default, so fail if requested and not available
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
-enabled cuda              && { check_lib2 cuda.h cuInit -lcuda ||
-                               die "ERROR: CUDA not found"; }
-enabled cuvid             && { add_cflags -I$source_path;
-                               check_lib2 "compat/cuda/cuviddec.h" cuvidCreateDecoder -lnvcuvid ||
-                               die "ERROR: CUVID not found"; } &&
-                             { enabled cuda ||
+enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
@@ -6021,11 +6009,11 @@ if enabled x86; then
         mingw32*|mingw64*|win32|win64|linux|cygwin*)
             ;;
         *)
-            disable nvenc
+            disable cuda cuvid nvenc
             ;;
     esac
 else
-    disable nvenc
+    disable cuda cuvid nvenc
 fi
 
 enabled nvenc &&
