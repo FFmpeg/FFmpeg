@@ -145,6 +145,11 @@ static void set_async_error(VTEncContext *vtctx, int err)
     pthread_mutex_unlock(&vtctx->lock);
 }
 
+static void clear_frame_queue(VTEncContext *vtctx)
+{
+    set_async_error(vtctx, 0);
+}
+
 static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI **sei)
 {
     BufNode *info;
@@ -1966,6 +1971,9 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
 
     if(!vtctx->session) return 0;
 
+    VTCompressionSessionCompleteFrames(vtctx->session,
+                                       kCMTimeIndefinite);
+    clear_frame_queue(vtctx);
     pthread_cond_destroy(&vtctx->cv_sample_sent);
     pthread_mutex_destroy(&vtctx->lock);
     CFRelease(vtctx->session);
