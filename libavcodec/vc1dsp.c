@@ -1034,4 +1034,6 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
         ff_vc1dsp_init_ppc(dsp);
     if (ARCH_X86)
         ff_vc1dsp_init_x86(dsp);
+    if (ARCH_MIPS)
+        ff_vc1dsp_init_mips(dsp);
 }
