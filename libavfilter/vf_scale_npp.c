@@ -29,7 +29,7 @@
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
+#include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -591,7 +591,7 @@ static int nppscale_filter_frame(AVFilterLink *link, AVFrame *in)
               (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
-    err = cuCtxPushCurrent(device_hwctx->cuda_ctx);
+    err = device_hwctx->internal->cuda_dl->cuCtxPushCurrent(device_hwctx->cuda_ctx);
     if (err != CUDA_SUCCESS) {
         ret = AVERROR_UNKNOWN;
         goto fail;
@@ -599,7 +599,7 @@ static int nppscale_filter_frame(AVFilterLink *link, AVFrame *in)
 
     ret = nppscale_scale(ctx, out, in);
 
-    cuCtxPopCurrent(&dummy);
+    device_hwctx->internal->cuda_dl->cuCtxPopCurrent(&dummy);
     if (ret < 0)
         goto fail;
 
