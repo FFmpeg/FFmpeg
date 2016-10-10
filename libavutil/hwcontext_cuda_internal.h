@@ -17,35 +17,21 @@
  */
 
 
-#ifndef AVUTIL_HWCONTEXT_CUDA_H
-#define AVUTIL_HWCONTEXT_CUDA_H
+#ifndef AVUTIL_HWCONTEXT_CUDA_INTERNAL_H
+#define AVUTIL_HWCONTEXT_CUDA_INTERNAL_H
 
-#ifndef CUDA_VERSION
-#include <cuda.h>
-#endif
-
-#include "pixfmt.h"
+#include "compat/cuda/dynlink_loader.h"
+#include "hwcontext_cuda.h"
 
 /**
  * @file
- * An API-specific header for AV_HWDEVICE_TYPE_CUDA.
- *
- * This API supports dynamic frame pools. AVHWFramesContext.pool must return
- * AVBufferRefs whose data pointer is a CUdeviceptr.
+ * FFmpeg internal API for CUDA.
  */
 
-typedef struct AVCUDADeviceContextInternal AVCUDADeviceContextInternal;
+struct AVCUDADeviceContextInternal {
+    CudaFunctions *cuda_dl;
+    int is_allocated;
+};
 
-/**
- * This struct is allocated as AVHWDeviceContext.hwctx
- */
-typedef struct AVCUDADeviceContext {
-    CUcontext cuda_ctx;
-    AVCUDADeviceContextInternal *internal;
-} AVCUDADeviceContext;
+#endif /* AVUTIL_HWCONTEXT_CUDA_INTERNAL_H */
 
-/**
- * AVHWFramesContext.hwctx is currently not used
- */
-
-#endif /* AVUTIL_HWCONTEXT_CUDA_H */
