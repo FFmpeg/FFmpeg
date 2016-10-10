@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
+ * Copyright (c) 2016 Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
  *
  * This file is part of FFmpeg.
  *
@@ -20,6 +21,11 @@
 
 #ifndef AVCODEC_MIPS_VP8DSP_MIPS_H
 #define AVCODEC_MIPS_VP8DSP_MIPS_H
+
+#include "libavutil/mem.h"
+#include "libavcodec/vp8dsp.h"
+#include "libavcodec/mathops.h"
+#include "constants.h"
 
 void ff_put_vp8_pixels4_msa(uint8_t *dst, ptrdiff_t dststride,
                             uint8_t *src, ptrdiff_t srcstride,
@@ -168,5 +174,116 @@ void ff_vp8_idct_dc_add4uv_msa(uint8_t *dst, int16_t block[4][16],
                                ptrdiff_t stride);
 void ff_vp8_idct_dc_add4y_msa(uint8_t *dst, int16_t block[4][16],
                               ptrdiff_t stride);
+
+void ff_vp8_luma_dc_wht_mmi(int16_t block[4][4][16], int16_t dc[16]);
+void ff_vp8_luma_dc_wht_dc_mmi(int16_t block[4][4][16], int16_t dc[16]);
+void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add4y_mmi(uint8_t *dst, int16_t block[4][16],
+        ptrdiff_t stride);
+void ff_vp8_idct_dc_add4uv_mmi(uint8_t *dst, int16_t block[4][16],
+        ptrdiff_t stride);
+
+void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int x, int y);
+void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int x, int y);
+void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int x, int y);
+
+void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+        ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel16_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel8_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_epel4_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear16_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear8_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+void ff_put_vp8_bilinear4_hv_mmi(uint8_t *dst, ptrdiff_t dststride,
+        uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my);
+
+// loop filter applied to edges between macroblocks
+void ff_vp8_v_loop_filter16_mmi(uint8_t *dst, ptrdiff_t stride, int flim_E,
+        int flim_I, int hev_thresh);
+void ff_vp8_h_loop_filter16_mmi(uint8_t *dst, ptrdiff_t stride, int flim_E,
+        int flim_I, int hev_thresh);
+void ff_vp8_v_loop_filter8uv_mmi(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,
+        int flim_E, int flim_I, int hev_thresh);
+void ff_vp8_h_loop_filter8uv_mmi(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,
+        int flim_E, int flim_I, int hev_thresh);
+
+// loop filter applied to inner macroblock edges
+void ff_vp8_v_loop_filter16_inner_mmi(uint8_t *dst, ptrdiff_t stride,
+        int flim_E, int flim_I, int hev_thresh);
+void ff_vp8_h_loop_filter16_inner_mmi(uint8_t *dst, ptrdiff_t stride,
+        int flim_E, int flim_I, int hev_thresh);
+void ff_vp8_v_loop_filter8uv_inner_mmi(uint8_t *dstU, uint8_t *dstV,
+        ptrdiff_t stride, int flim_E, int flim_I, int hev_thresh);
+void ff_vp8_h_loop_filter8uv_inner_mmi(uint8_t *dstU, uint8_t *dstV,
+        ptrdiff_t stride, int flim_E, int flim_I, int hev_thresh);
+
+void ff_vp8_v_loop_filter_simple_mmi(uint8_t *dst, ptrdiff_t stride, int flim);
+void ff_vp8_h_loop_filter_simple_mmi(uint8_t *dst, ptrdiff_t stride, int flim);
 
 #endif  // #ifndef AVCODEC_MIPS_VP8DSP_MIPS_H

@@ -28,6 +28,7 @@ DECLARE_ALIGNED(8, const uint64_t, ff_pw_2) =       {0x0002000200020002ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_3) =       {0x0003000300030003ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_4) =       {0x0004000400040004ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_5) =       {0x0005000500050005ULL};
+DECLARE_ALIGNED(8, const uint64_t, ff_pw_6) =       {0x0006000600060006ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_8) =       {0x0008000800080008ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_9) =       {0x0009000900090009ULL};
 DECLARE_ALIGNED(8, const uint64_t, ff_pw_10) =      {0x000A000A000A000AULL};

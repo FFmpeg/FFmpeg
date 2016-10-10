@@ -77,4 +77,5 @@ MMI-OBJS-$(CONFIG_MPEG4_DECODER)          += mips/xvid_idct_mmi.o
 MMI-OBJS-$(CONFIG_BLOCKDSP)               += mips/blockdsp_mmi.o
 MMI-OBJS-$(CONFIG_PIXBLOCKDSP)            += mips/pixblockdsp_mmi.o
 MMI-OBJS-$(CONFIG_H264QPEL)               += mips/h264qpel_mmi.o
+MMI-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8dsp_mmi.o
 MMI-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_mmi.o

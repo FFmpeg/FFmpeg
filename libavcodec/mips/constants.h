@@ -29,6 +29,7 @@ extern const uint64_t ff_pw_2;
 extern const uint64_t ff_pw_3;
 extern const uint64_t ff_pw_4;
 extern const uint64_t ff_pw_5;
+extern const uint64_t ff_pw_6;
 extern const uint64_t ff_pw_8;
 extern const uint64_t ff_pw_9;
 extern const uint64_t ff_pw_10;
