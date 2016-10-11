@@ -876,8 +876,6 @@ static void mkv_write_field_order(AVIOContext *pb, int mode,
 {
     switch (field_order) {
     case AV_FIELD_UNKNOWN:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
-                      MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED);
         break;
     case AV_FIELD_PROGRESSIVE:
         put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
