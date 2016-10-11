@@ -12,7 +12,7 @@ AVCODECOBJS-$(CONFIG_VP8DSP)            += vp8dsp.o
 
 # decoders/encoders
 AVCODECOBJS-$(CONFIG_DCA_DECODER)       += dcadsp.o synth_filter.o
-AVCODECOBJS-$(CONFIG_HEVC_DECODER)      += hevc_mc.o hevc_idct.o
+AVCODECOBJS-$(CONFIG_HEVC_DECODER)      += hevc_add_res.o hevc_idct.o hevc_mc.o
 AVCODECOBJS-$(CONFIG_V210_ENCODER)      += v210enc.o
 AVCODECOBJS-$(CONFIG_VP9_DECODER)       += vp9dsp.o
 
