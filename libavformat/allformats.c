@@ -183,6 +183,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (MGSTS,            mgsts);
     REGISTER_MUXDEMUX(MICRODVD,         microdvd);
     REGISTER_MUXDEMUX(MJPEG,            mjpeg);
+    REGISTER_DEMUXER (MJPEG_2000,       mjpeg_2000);
     REGISTER_MUXDEMUX(MLP,              mlp);
     REGISTER_DEMUXER (MLV,              mlv);
     REGISTER_DEMUXER (MM,               mm);

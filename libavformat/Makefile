@@ -274,6 +274,7 @@ OBJS-$(CONFIG_MD5_MUXER)                 += hashenc.o
 OBJS-$(CONFIG_MGSTS_DEMUXER)             += mgsts.o
 OBJS-$(CONFIG_MICRODVD_DEMUXER)          += microdvddec.o subtitles.o
 OBJS-$(CONFIG_MICRODVD_MUXER)            += microdvdenc.o
+OBJS-$(CONFIG_MJPEG_2000_DEMUXER)        += rawdec.o mj2kdec.o
 OBJS-$(CONFIG_MJPEG_DEMUXER)             += rawdec.o
 OBJS-$(CONFIG_MJPEG_MUXER)               += rawenc.o
 OBJS-$(CONFIG_MLP_DEMUXER)               += rawdec.o mlpdec.o
