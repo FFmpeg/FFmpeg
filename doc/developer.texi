@@ -464,7 +464,11 @@ Patches should be posted to the
 mailing list. Use @code{git send-email} when possible since it will properly
 send patches without requiring extra care. If you cannot, then send patches
 as base64-encoded attachments, so your patch is not trashed during
-transmission.
+transmission. Also ensure the correct mime type is used
+(text/x-diff or text/x-patch or at least text/plain) and that only one
+patch is inline or attached per mail.
+You can check @url{https://patchwork.ffmpeg.org}, if your patch does not show up, its mime type
+likely was wrong.
 
 Your patch will be reviewed on the mailing list. You will likely be asked
 to make some changes and are expected to send in an improved version that
