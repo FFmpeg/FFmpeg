@@ -24,8 +24,6 @@
  * JPEG 2000 encoder using libopenjpeg
  */
 
-#define  OPJ_STATIC
-
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
