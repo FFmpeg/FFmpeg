@@ -185,7 +185,8 @@ static int aiff_write_header(AVFormatContext *s)
         avio_wb16(pb, 0);
     }
 
-    if (par->codec_tag == MKTAG('Q','D','M','2') && par->extradata_size) {
+    if (  (par->codec_tag == MKTAG('Q','D','M','2')
+        || par->codec_tag == MKTAG('Q','c','l','p')) && par->extradata_size) {
         ffio_wfourcc(pb, "wave");
         avio_wb32(pb, par->extradata_size);
         avio_write(pb, par->extradata, par->extradata_size);
