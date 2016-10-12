@@ -105,6 +105,7 @@
 typedef enum {
     RET_ERROR           = -1,
     RET_OK              = 0,
+    RET_COPY_AGAIN      = 1,
 } CopyRet;
 
 typedef struct OpaqueList {
@@ -129,6 +130,7 @@ typedef struct {
     uint32_t sps_pps_size;
     uint8_t is_nal;
     uint8_t need_second_field;
+    uint8_t draining;
 
     OpaqueList *head;
     OpaqueList *tail;
@@ -304,6 +306,7 @@ static void flush(AVCodecContext *avctx)
     CHDContext *priv = avctx->priv_data;
 
     priv->need_second_field = 0;
+    priv->draining          = 0;
 
     av_frame_unref (priv->pic);
 
@@ -438,6 +441,7 @@ static av_cold int init(AVCodecContext *avctx)
     priv->avctx        = avctx;
     priv->is_nal       = avctx->extradata_size > 0 && *(avctx->extradata) == 1;
     priv->pic          = av_frame_alloc();
+    priv->draining     = 0;
 
     subtype = id2subtype(priv, avctx->codec->id);
     switch (subtype) {
@@ -670,6 +674,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if ((ret = av_frame_ref(data, priv->pic)) < 0) {
             return ret;
         }
+    } else {
+        return RET_COPY_AGAIN;
     }
 
     return RET_OK;
@@ -745,7 +751,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
             avctx->sample_aspect_ratio = (AVRational) {221,  1};
             break;
         }
-        return RET_OK;
+        return RET_COPY_AGAIN;
     } else if (ret == BC_STS_SUCCESS) {
         int copy_ret = -1;
         if (output.PoutFlags & BC_POUT_FLAGS_PIB_VALID) {
@@ -768,13 +774,13 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
              */
             av_log(avctx, AV_LOG_ERROR, "CrystalHD: ProcOutput succeeded with "
                                         "invalid PIB\n");
-            copy_ret = RET_OK;
+            copy_ret = RET_COPY_AGAIN;
         }
         DtsReleaseOutputBuffs(dev, NULL, FALSE);
 
         return copy_ret;
     } else if (ret == BC_STS_BUSY) {
-        return RET_OK;
+        return RET_COPY_AGAIN;
     } else {
         av_log(avctx, AV_LOG_ERROR, "CrystalHD: ProcOutput failed %d\n", ret);
         return RET_ERROR;
@@ -874,6 +880,7 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
         }
     } else {
         av_log(avctx, AV_LOG_INFO, "CrystalHD: No more input data\n");
+        priv->draining = 1;
         ret = AVERROR_EOF;
         goto exit;
     }
@@ -893,22 +900,27 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: receive_frame\n");
 
-    bc_ret = DtsGetDriverStatus(dev, &decoder_status);
-    if (bc_ret != BC_STS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "CrystalHD: GetDriverStatus failed\n");
-        return -1;
-    }
+    do {
+        bc_ret = DtsGetDriverStatus(dev, &decoder_status);
+        if (bc_ret != BC_STS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "CrystalHD: GetDriverStatus failed\n");
+            return -1;
+        }
 
-    if (decoder_status.ReadyListCount == 0) {
-        av_log(avctx, AV_LOG_INFO, "CrystalHD: Insufficient frames ready. Returning\n");
-        return AVERROR(EAGAIN);
-    }
+        if (decoder_status.ReadyListCount == 0) {
+            av_log(avctx, AV_LOG_INFO, "CrystalHD: Insufficient frames ready. Returning\n");
+            got_frame = 0;
+            rec_ret = RET_OK;
+            break;
+        }
 
-    rec_ret = receive_frame(avctx, frame, &got_frame);
+        rec_ret = receive_frame(avctx, frame, &got_frame);
+    } while (rec_ret == RET_COPY_AGAIN);
+
     if (rec_ret == RET_ERROR) {
         return -1;
     } else if (got_frame == 0) {
-        return AVERROR(EAGAIN);
+        return priv->draining ? AVERROR_EOF : AVERROR(EAGAIN);
     } else {
         return 0;
     }
