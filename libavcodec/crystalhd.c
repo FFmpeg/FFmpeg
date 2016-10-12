@@ -83,7 +83,6 @@
 #include <libcrystalhd/libcrystalhd_if.h>
 
 #include "avcodec.h"
-#include "h264dec.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -112,7 +111,6 @@ typedef struct OpaqueList {
     struct OpaqueList *next;
     uint64_t fake_timestamp;
     uint64_t reordered_opaque;
-    uint8_t pic_type;
 } OpaqueList;
 
 typedef struct {
@@ -125,7 +123,6 @@ typedef struct {
     uint32_t orig_extradata_size;
 
     AVBSFContext *bsfc;
-    AVCodecParserContext *parser;
 
     uint8_t is_70012;
     uint8_t *sps_pps_buf;
@@ -221,8 +218,7 @@ static inline void print_frame_info(CHDContext *priv, BC_DTS_PROC_OUT *output)
  * OpaqueList functions
  ****************************************************************************/
 
-static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque,
-                                 uint8_t pic_type)
+static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque)
 {
     OpaqueList *newNode = av_mallocz(sizeof (OpaqueList));
     if (!newNode) {
@@ -239,7 +235,6 @@ static uint64_t opaque_list_push(CHDContext *priv, uint64_t reordered_opaque,
     }
     priv->tail = newNode;
     newNode->reordered_opaque = reordered_opaque;
-    newNode->pic_type = pic_type;
 
     return newNode->fake_timestamp;
 }
@@ -340,7 +335,6 @@ static av_cold int uninit(AVCodecContext *avctx)
         priv->orig_extradata_size = 0;
     }
 
-    av_parser_close(priv->parser);
     if (priv->bsfc) {
         av_bsf_free(&priv->bsfc);
     }
@@ -533,14 +527,6 @@ static av_cold int init(AVCodecContext *avctx)
         goto fail;
     }
 
-    if (avctx->codec->id == AV_CODEC_ID_H264) {
-        priv->parser = av_parser_init(avctx->codec->id);
-        if (!priv->parser)
-            av_log(avctx, AV_LOG_WARNING,
-                   "Cannot open the h.264 parser! Interlaced h.264 content "
-                   "will not be detected reliably.\n");
-        priv->parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
-    }
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Init complete.\n");
 
     return 0;
@@ -561,7 +547,6 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
     CHDContext *priv = avctx->priv_data;
     int64_t pkt_pts  = AV_NOPTS_VALUE;
-    uint8_t pic_type = 0;
 
     uint8_t bottom_field = (output->PicInfo.flags & VDEC_FLAG_BOTTOMFIELD) ==
                            VDEC_FLAG_BOTTOMFIELD;
@@ -579,23 +564,18 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         OpaqueList *node = opaque_list_pop(priv, output->PicInfo.timeStamp);
         if (node) {
             pkt_pts = node->reordered_opaque;
-            pic_type = node->pic_type;
             av_free(node);
         } else {
             /*
              * We will encounter a situation where a timestamp cannot be
              * popped if a second field is being returned. In this case,
              * each field has the same timestamp and the first one will
-             * cause it to be popped. To keep subsequent calculations
-             * simple, pic_type should be set a FIELD value - doesn't
-             * matter which, but I chose BOTTOM.
+             * cause it to be popped. We'll avoid overwriting the valid
+             * timestamp below.
              */
-            pic_type = PICT_BOTTOM_FIELD;
         }
         av_log(avctx, AV_LOG_VERBOSE, "output \"pts\": %"PRIu64"\n",
                output->PicInfo.timeStamp);
-        av_log(avctx, AV_LOG_VERBOSE, "output picture type %d\n",
-               pic_type);
     }
 
     ret = DtsGetDriverStatus(priv->dev, &decoder_status);
@@ -806,7 +786,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     BC_STATUS bc_ret;
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
-    uint8_t pic_type   = 0;
     AVPacket filtered_packet = { 0 };
     int ret = 0;
 
@@ -859,32 +838,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
             av_packet_unref(&filter_packet);
         }
 
-        if (priv->parser) {
-            uint8_t *pout;
-            int psize;
-            int index;
-            H264Context *h = priv->parser->priv_data;
-
-            index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
-                                     avpkt->data, avpkt->size, avpkt->pts,
-                                     avpkt->dts, 0);
-            if (index < 0) {
-                av_log(avctx, AV_LOG_WARNING,
-                       "CrystalHD: Failed to parse h.264 packet to "
-                       "detect interlacing.\n");
-            } else if (index != avpkt->size) {
-                av_log(avctx, AV_LOG_WARNING,
-                       "CrystalHD: Failed to parse h.264 packet "
-                       "completely. Interlaced frames may be "
-                       "incorrectly detected.\n");
-            } else {
-                av_log(avctx, AV_LOG_VERBOSE,
-                       "CrystalHD: parser picture type %d\n",
-                       h->picture_structure);
-                pic_type = h->picture_structure;
-            }
-        }
-
         if (avpkt->size < tx_free) {
             /*
              * Despite being notionally opaque, either libcrystalhd or
@@ -896,7 +849,7 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
              * we know will not be mangled.
              */
             int64_t safe_pts = avpkt->pts == AV_NOPTS_VALUE ? 0 : avpkt->pts;
-            uint64_t pts = opaque_list_push(priv, safe_pts, pic_type);
+            uint64_t pts = opaque_list_push(priv, safe_pts);
             if (!pts) {
                 ret = AVERROR(ENOMEM);
                 goto exit;
