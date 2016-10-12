@@ -1737,7 +1737,13 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             pic_params.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
         }
 
-        pic_params.encodePicFlags = 0;
+        if (ctx->forced_idr >= 0 && frame->pict_type == AV_PICTURE_TYPE_I) {
+            pic_params.encodePicFlags =
+                ctx->forced_idr ? NV_ENC_PIC_FLAG_FORCEIDR : NV_ENC_PIC_FLAG_FORCEINTRA;
+        } else {
+            pic_params.encodePicFlags = 0;
+        }
+
         pic_params.inputTimeStamp = frame->pts;
 
         nvenc_codec_specific_pic_params(avctx, &pic_params);

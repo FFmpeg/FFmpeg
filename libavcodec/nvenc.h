@@ -185,6 +185,7 @@ typedef struct NvencContext
     int rc_lookahead;
     int aq;
     int no_scenecut;
+    int forced_idr;
     int b_adapt;
     int temporal_aq;
     int zerolatency;
