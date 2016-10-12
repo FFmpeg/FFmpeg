@@ -83,6 +83,14 @@ static const AVOption showcqt_options[] = {
     { "axisfile",     "set axis image", OFFSET(axisfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
     { "axis",              "draw axis", OFFSET(axis),        AV_OPT_TYPE_BOOL, { .i64 = 1 },                0, 1,        FLAGS },
     { "text",              "draw axis", OFFSET(axis),        AV_OPT_TYPE_BOOL, { .i64 = 1 },                0, 1,        FLAGS },
+    { "csp",         "set color space", OFFSET(csp),          AV_OPT_TYPE_INT, { .i64 = AVCOL_SPC_UNSPECIFIED }, 0, INT_MAX, FLAGS, "csp" },
+        { "unspecified", "unspecified", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_UNSPECIFIED }, 0, 0, FLAGS, "csp" },
+        { "bt709",             "bt709", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT709 },       0, 0, FLAGS, "csp" },
+        { "fcc",                 "fcc", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_FCC },         0, 0, FLAGS, "csp" },
+        { "bt470bg",         "bt470bg", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT470BG },     0, 0, FLAGS, "csp" },
+        { "smpte170m",     "smpte170m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE170M },   0, 0, FLAGS, "csp" },
+        { "smpte240m",     "smpte240m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE240M },   0, 0, FLAGS, "csp" },
+        { "bt2020ncl",     "bt2020ncl", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT2020_NCL },  0, 0, FLAGS, "csp" },
     { NULL }
 };
 
@@ -656,7 +664,7 @@ static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len)
     }
 }
 
-static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len)
+static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len, float cm[3][3])
 {
     int x;
     for (x = 0; x < len; x++) {
@@ -664,9 +672,9 @@ static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int le
         r = calculate_gamma(FFMIN(1.0f, v[x].re), gamma);
         g = calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), gamma);
         b = calculate_gamma(FFMIN(1.0f, v[x].im), gamma);
-        c[x].yuv.y = 65.481f * r + 128.553f * g + 24.966f * b;
-        c[x].yuv.u = -37.797f * r - 74.203f * g + 112.0f * b;
-        c[x].yuv.v = 112.0f * r - 93.786f * g - 18.214 * b;
+        c[x].yuv.y = cm[0][0] * r + cm[0][1] * g + cm[0][2] * b;
+        c[x].yuv.u = cm[1][0] * r + cm[1][1] * g + cm[1][2] * b;
+        c[x].yuv.v = cm[2][0] * r + cm[2][1] * g + cm[2][2] * b;
     }
 }
 
@@ -1036,7 +1044,7 @@ static void process_cqt(ShowCQTContext *s)
     if (s->format == AV_PIX_FMT_RGB24)
         rgb_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
     else
-        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
+        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cmatrix);
 }
 
 static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
@@ -1075,6 +1083,7 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
             return AVERROR(ENOMEM);
         out->sample_aspect_ratio = av_make_q(1, 1);
         av_frame_set_color_range(out, AVCOL_RANGE_MPEG);
+        av_frame_set_colorspace(out, s->csp);
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {
@@ -1098,6 +1107,41 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     if (s->sono_h)
         s->sono_idx = (s->sono_idx + s->sono_h - 1) % s->sono_h;
     return 0;
+}
+
+static void init_colormatrix(ShowCQTContext *s)
+{
+    double kr, kg, kb;
+
+    /* from vf_colorspace.c */
+    switch (s->csp) {
+    default:
+        av_log(s->ctx, AV_LOG_WARNING, "unsupported colorspace, setting it to unspecified.\n");
+        s->csp = AVCOL_SPC_UNSPECIFIED;
+    case AVCOL_SPC_UNSPECIFIED:
+    case AVCOL_SPC_BT470BG:
+    case AVCOL_SPC_SMPTE170M:
+        kr = 0.299; kb = 0.114; break;
+    case AVCOL_SPC_BT709:
+        kr = 0.2126; kb = 0.0722; break;
+    case AVCOL_SPC_FCC:
+        kr = 0.30; kb = 0.11; break;
+    case AVCOL_SPC_SMPTE240M:
+        kr = 0.212; kb = 0.087; break;
+    case AVCOL_SPC_BT2020_NCL:
+        kr = 0.2627; kb = 0.0593; break;
+    }
+
+    kg = 1.0 - kr - kb;
+    s->cmatrix[0][0] = 219.0 * kr;
+    s->cmatrix[0][1] = 219.0 * kg;
+    s->cmatrix[0][2] = 219.0 * kb;
+    s->cmatrix[1][0] = -112.0 * kr / (1.0 - kb);
+    s->cmatrix[1][1] = -112.0 * kg / (1.0 - kb);
+    s->cmatrix[1][2] = 112.0;
+    s->cmatrix[2][0] = 112.0;
+    s->cmatrix[2][1] = -112.0 * kg / (1.0 - kr);
+    s->cmatrix[2][2] = -112.0 * kb / (1.0 - kr);
 }
 
 /* main filter control */
@@ -1152,6 +1196,8 @@ static av_cold int init(AVFilterContext *ctx)
             s->fcount++;
         } while(s->fcount * s->width < 1920 && s->fcount < 10);
     }
+
+    init_colormatrix(s);
 
     return 0;
 }

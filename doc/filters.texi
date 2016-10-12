@@ -16884,6 +16884,32 @@ Enable/disable drawing text to the axis. If it is set to @code{0}, drawing to
 the axis is disabled, ignoring @var{fontfile} and @var{axisfile} option.
 Default value is @code{1}.
 
+@item csp
+Set colorspace. The accepted values are:
+@table @samp
+@item unspecified
+Unspecified (default)
+
+@item bt709
+BT.709
+
+@item fcc
+FCC
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item bt2020ncl
+BT.2020 with non-constant luminance
+
+@end table
+
 @end table
 
 @subsection Examples
