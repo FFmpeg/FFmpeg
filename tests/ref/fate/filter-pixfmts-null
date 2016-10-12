@@ -19,6 +19,8 @@ bgra                3934fb81a602dfa7d29420b1a66f0fd8
 bgra64be            c8d3217bf58d34f080ac88c0b0012c77
 bgra64le            b71d75a928aac14cb768403e6f6a9910
 gbrap               98d30987407c51e5620921e11d40a4ff
+gbrap12be           0c4c1f8af361571265ca259d5f70f026
+gbrap12le           5f1d8c663d4c28863e687192433b34a4
 gbrp                5fbc319e30110d19d539f5b274eddb6d
 gbrp10be            703a17591a2a5c236675c5101c349bcc
 gbrp10le            ee014153f55c011918df5b2394815780
