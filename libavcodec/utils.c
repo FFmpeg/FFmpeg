@@ -1567,7 +1567,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (   avctx->codec->init && (!(avctx->active_thread_type&FF_THREAD_FRAME)
         || avctx->internal->frame_thread_encoder)) {
-        ret = avctx->codec->init(avctx);
+        ret = avctx->codec->init(avctx); /* codec init: ff_mjpeg_decode_init  */
         if (ret < 0) {
             goto free_and_end;
         }
@@ -2221,7 +2221,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                                          &tmp);
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
-                                       &tmp);
+                                       &tmp); /* codec decode: ff_mjpeg_decode_frame */
             if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
                 picture->pkt_dts = avpkt->dts;
 
