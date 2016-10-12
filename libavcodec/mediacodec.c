@@ -35,7 +35,8 @@
 #include "libavutil/mem.h"
 
 #include "ffjni.h"
-#include "mediacodecdec.h"
+#include "mediacodecdec_common.h"
+#include "version.h"
 
 AVMediaCodecContext *av_mediacodec_alloc_context(void)
 {
