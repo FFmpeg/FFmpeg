@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 
+#include "hevc_data.h"
 #include "hevcdec.h"
 
 // The headers above may include w32threads.h, which uses the original

@@ -966,9 +966,4 @@ extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
 extern const uint8_t ff_hevc_qpel_extra[4];
 
-extern const uint8_t ff_hevc_diag_scan4x4_x[16];
-extern const uint8_t ff_hevc_diag_scan4x4_y[16];
-extern const uint8_t ff_hevc_diag_scan8x8_x[64];
-extern const uint8_t ff_hevc_diag_scan8x8_y[64];
-
 #endif /* AVCODEC_HEVCDEC_H */
