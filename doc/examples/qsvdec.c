@@ -92,41 +92,43 @@ static int decode_packet(DecodeContext *decode, AVCodecContext *decoder_ctx,
                          AVPacket *pkt, AVIOContext *output_ctx)
 {
     int ret = 0;
-    int got_frame = 1;
 
-    while (pkt->size > 0 || (!pkt->data && got_frame)) {
-        ret = avcodec_decode_video2(decoder_ctx, frame, &got_frame, pkt);
-        if (ret < 0) {
+    ret = avcodec_send_packet(decoder_ctx, pkt);
+    if (ret < 0) {
+        fprintf(stderr, "Error during decoding\n");
+        return ret;
+    }
+
+    while (ret >= 0) {
+        int i, j;
+
+        ret = avcodec_receive_frame(decoder_ctx, frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            break;
+        else if (ret < 0) {
             fprintf(stderr, "Error during decoding\n");
             return ret;
         }
 
-        pkt->data += ret;
-        pkt->size -= ret;
-
         /* A real program would do something useful with the decoded frame here.
          * We just retrieve the raw data and write it to a file, which is rather
          * useless but pedagogic. */
-        if (got_frame) {
-            int i, j;
+        ret = av_hwframe_transfer_data(sw_frame, frame, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Error transferring the data to system memory\n");
+            goto fail;
+        }
 
-            ret = av_hwframe_transfer_data(sw_frame, frame, 0);
-            if (ret < 0) {
-                fprintf(stderr, "Error transferring the data to system memory\n");
-                goto fail;
-            }
-
-            for (i = 0; i < FF_ARRAY_ELEMS(sw_frame->data) && sw_frame->data[i]; i++)
-                for (j = 0; j < (sw_frame->height >> (i > 0)); j++)
-                    avio_write(output_ctx, sw_frame->data[i] + j * sw_frame->linesize[i], sw_frame->width);
+        for (i = 0; i < FF_ARRAY_ELEMS(sw_frame->data) && sw_frame->data[i]; i++)
+            for (j = 0; j < (sw_frame->height >> (i > 0)); j++)
+                avio_write(output_ctx, sw_frame->data[i] + j * sw_frame->linesize[i], sw_frame->width);
 
 fail:
-            av_frame_unref(sw_frame);
-            av_frame_unref(frame);
+        av_frame_unref(sw_frame);
+        av_frame_unref(frame);
 
-            if (ret < 0)
-                return ret;
-        }
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
