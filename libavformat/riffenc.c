@@ -71,6 +71,8 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     frame_size = av_get_audio_frame_duration2(par, par->block_align);
 
     waveformatextensible = (par->channels > 2 && par->channel_layout) ||
+                           par->channels == 1 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_MONO ||
+                           par->channels == 2 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_STEREO ||
                            par->sample_rate > 48000 ||
                            par->codec_id == AV_CODEC_ID_EAC3 ||
                            av_get_bits_per_sample(par->codec_id) > 16;
