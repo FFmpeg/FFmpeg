@@ -156,6 +156,8 @@ static const uint8_t rtmp_server_key[] = {
 };
 
 static int handle_chunk_size(URLContext *s, RTMPPacket *pkt);
+static int handle_server_bw(URLContext *s, RTMPPacket *pkt);
+static int handle_client_bw(URLContext *s, RTMPPacket *pkt);
 
 static int add_tracked_method(RTMPContext *rt, const char *name, int id)
 {
@@ -399,6 +401,9 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     return rtmp_send_packet(rt, &pkt, 1);
 }
 
+
+#define RTMP_CTRL_ABORT_MESSAGE  (2)
+
 static int read_connect(URLContext *s, RTMPContext *rt)
 {
     RTMPPacket pkt = { 0 };
@@ -411,18 +416,42 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     uint8_t tmpstr[256];
     GetByteContext gbc;
 
-    if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
-                                   &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
-        return ret;
-
-    if (pkt.type == RTMP_PT_CHUNK_SIZE) {
-        if ((ret = handle_chunk_size(s, &pkt)) < 0)
-            return ret;
-
-        ff_rtmp_packet_destroy(&pkt);
+    // handle RTMP Protocol Control Messages
+    for (;;) {
         if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
                                        &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
             return ret;
+#ifdef DEBUG
+        ff_rtmp_packet_dump(s, &pkt);
+#endif
+        if (pkt.type == RTMP_PT_CHUNK_SIZE) {
+            if ((ret = handle_chunk_size(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_CTRL_ABORT_MESSAGE) {
+            av_log(s, AV_LOG_ERROR, "received abort message\n");
+            ff_rtmp_packet_destroy(&pkt);
+            return AVERROR_UNKNOWN;
+        } else if (pkt.type == RTMP_PT_BYTES_READ) {
+            av_log(s, AV_LOG_TRACE, "received acknowledgement\n");
+        } else if (pkt.type == RTMP_PT_SERVER_BW) {
+            if ((ret = handle_server_bw(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_PT_CLIENT_BW) {
+            if ((ret = handle_client_bw(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_PT_INVOKE) {
+            // received RTMP Command Message
+            break;
+        } else {
+            av_log(s, AV_LOG_ERROR, "Unknown control message type (%d)\n", pkt.type);
+        }
+        ff_rtmp_packet_destroy(&pkt);
     }
 
     cp = pkt.data;
