@@ -2454,7 +2454,7 @@ encode_video_example_deps="avcodec avutil"
 filter_audio_example_deps="avfilter avutil"
 metadata_example_deps="avformat avutil"
 output_example_deps="avcodec avformat avutil swscale"
-qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder vaapi_x11"
+qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder"
 transcode_aac_example_deps="avcodec avformat avresample"
 
 # libraries, in linking order
