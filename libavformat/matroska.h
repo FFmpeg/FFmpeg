@@ -286,8 +286,8 @@ typedef enum {
     MATROSKA_VIDEO_FIELDORDER_UNDETERMINED = 2,
     MATROSKA_VIDEO_FIELDORDER_TT           = 1,
     MATROSKA_VIDEO_FIELDORDER_BB           = 6,
-    MATROSKA_VIDEO_FIELDORDER_BT           = 9,
-    MATROSKA_VIDEO_FIELDORDER_TB           = 14,
+    MATROSKA_VIDEO_FIELDORDER_TB           = 9,
+    MATROSKA_VIDEO_FIELDORDER_BT           = 14,
 } MatroskaVideoFieldOrder;
 
 typedef enum {
