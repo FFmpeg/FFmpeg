@@ -93,6 +93,7 @@ static const AVOption options[] = {
     { "forced-idr",   "If forcing keyframes, force them as IDR frames.",
                                                             OFFSET(forced_idr),   AV_OPT_TYPE_BOOL,  { .i64 = -1 }, -1, 1, VE },
     { "spatial_aq",   "set to 1 to enable Spatial AQ",      OFFSET(aq),           AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+    { "temporal_aq",  "set to 1 to enable Temporal AQ",     OFFSET(temporal_aq),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "zerolatency",  "Set 1 to indicate zero latency operation (no reordering delay)",
                                                             OFFSET(zerolatency),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
     { "nonref_p",     "Set this to 1 to enable automatic insertion of non-reference P-frames",
