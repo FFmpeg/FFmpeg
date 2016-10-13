@@ -2563,7 +2563,7 @@ shlibdir_default="$libdir_default"
 ar_default="ar"
 cc_default="gcc"
 host_cc_default="gcc"
-x86asmexe_default="yasm"
+x86asmexe_default="nasm"
 ln_s="ln -s -f"
 nm_default="nm -g"
 pkg_config_default=pkg-config
@@ -4493,7 +4493,7 @@ EOF
     }
 
     if ! disabled_any asm mmx x86asm; then
-        for program in $x86asmexe yasm nasm; do
+        for program in $x86asmexe nasm yasm; do
             probe_x86asm $program
             test -n "$x86asm_type" && break
         done
@@ -4505,7 +4505,7 @@ EOF
         esac
 
         check_x86asm "movbe ecx, [5]" && enable x86asm ||
-            die "yasm/nasm not found or too old. Use --disable-x86asm for a crippled build."
+            die "nasm/yasm not found or too old. Use --disable-x86asm for a crippled build."
         check_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
         check_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
         check_x86asm "vfmadd132ps ymm0, ymm1, ymm2"    || disable fma3_external

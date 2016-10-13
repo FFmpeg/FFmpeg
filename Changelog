@@ -9,6 +9,8 @@ version <next>:
 - config.log and other configuration files moved into avbuild/ directory
 - VAAPI-accelerated MPEG-2 and VP8 encoding
 - Apple Pixlet decoder
+- The x86 assembler default switched from yasm to nasm, pass
+  --x86asmexe=yasm to configure to restore the old behavior.
 
 
 version 12:

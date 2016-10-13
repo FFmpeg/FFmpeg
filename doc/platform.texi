@@ -69,9 +69,9 @@ OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 assembly functions. Put the Perl script somewhere
 in your PATH, Libav's configure will pick it up automatically.
 
-OS X on AMD64 and x86 requires @command{yasm} to build most of the
+OS X on AMD64 and x86 requires @command{nasm} to build most of the
 optimized assembly functions @url{http://mxcl.github.com/homebrew/, Homebrew},
-@url{http://www.gentoo.org/proj/en/gentoo-alt/prefix/bootstrap-macos.xml, Gentoo Prefix}
+@url{https://wiki.gentoo.org/wiki/Project:Prefix, Gentoo Prefix}
 or @url{http://www.macports.org, MacPorts} can easily provide it.
 
 
@@ -134,7 +134,7 @@ them under @command{MinGW-w64 Win64 Shell} and @command{MinGW-w64 Win32 Shell}.
 pacman -S make pkgconf diffutils
 
 # mingw-w64 packages and toolchains
-pacman -S mingw-w64-x86_64-yasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL
+pacman -S mingw-w64-x86_64-nasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL
 @end example
 
 To target 32 bits replace @code{x86_64} with @code{i686} in the command above.
@@ -152,14 +152,14 @@ You will need the following prerequisites:
 @item @uref{http://code.google.com/p/msinttypes/, msinttypes}
 (if using MSVC 2012 or earlier)
 @item @uref{http://msys2.github.io/, MSYS2}
-@item @uref{http://yasm.tortall.net/, YASM}
+@item @uref{http://www.nasm.us/, NASM}
 (Also available via MSYS2's package manager.)
 @end itemize
 
 To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
 the Visual Studio or Intel Compiler command prompt.
 
-Place @code{yasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
+Place @code{nasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
 earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
 @code{PATH} as well.
 
@@ -307,7 +307,7 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libfaac-devel, libgsm-devel, libmp3lame-devel,
+nasm, libSDL-devel, libfaac-devel, libgsm-devel, libmp3lame-devel,
 libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 
