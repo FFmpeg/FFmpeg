@@ -1752,8 +1752,15 @@ static int matroska_parse_flac(AVFormatContext *s,
     return 0;
 }
 
-static int mkv_field_order(int64_t field_order)
+static int mkv_field_order(MatroskaDemuxContext *matroska, int64_t field_order)
 {
+    int major, minor, micro, bttb = 0;
+
+    /* workaround a bug in our Matroska muxer, introduced in version 57.36 alongside
+     * this function, and fixed in 57.52 */
+    if (sscanf(matroska->muxingapp, "Lavf%d.%d.%d", &major, &minor, &micro) == 3)
+        bttb = (major == 57 && minor >= 36 && minor <= 51 && micro >= 100);
+
     switch (field_order) {
     case MATROSKA_VIDEO_FIELDORDER_PROGRESSIVE:
         return AV_FIELD_PROGRESSIVE;
@@ -1764,9 +1771,9 @@ static int mkv_field_order(int64_t field_order)
     case MATROSKA_VIDEO_FIELDORDER_BB:
         return AV_FIELD_BB;
     case MATROSKA_VIDEO_FIELDORDER_BT:
-        return AV_FIELD_BT;
+        return bttb ? AV_FIELD_TB : AV_FIELD_BT;
     case MATROSKA_VIDEO_FIELDORDER_TB:
-        return AV_FIELD_TB;
+        return bttb ? AV_FIELD_BT : AV_FIELD_TB;
     default:
         return AV_FIELD_UNKNOWN;
     }
@@ -2282,7 +2289,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codecpar->height     = track->video.pixel_height;
 
             if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_INTERLACED)
-                st->codecpar->field_order = mkv_field_order(track->video.field_order);
+                st->codecpar->field_order = mkv_field_order(matroska, track->video.field_order);
             else if (track->video.interlaced == MATROSKA_VIDEO_INTERLACE_FLAG_PROGRESSIVE)
                 st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
 
