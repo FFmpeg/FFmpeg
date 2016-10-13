@@ -1891,7 +1891,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     double seqnum;
-    char filename[64];
+    char filename[128];
     char command[64];
     int stringlen;
     char *pchar;
