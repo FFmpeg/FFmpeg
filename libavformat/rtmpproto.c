@@ -492,7 +492,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
         return ret;
 
     // Chunk size
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
                                      RTMP_PT_CHUNK_SIZE, 0, 4)) < 0)
         return ret;
 
