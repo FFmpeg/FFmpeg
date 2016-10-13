@@ -22,6 +22,8 @@ version <next>:
 - headphone audio filter
 - superequalizer audio filter
 - roberts video filter
+- The x86 assembler default switched from yasm to nasm, pass
+  --x86asmexe=yasm to configure to restore the old behavior.
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
