@@ -310,17 +310,17 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
 
         if (videoFrame->GetFlags() & bmdFrameHasNoInputSource) {
             if (ctx->draw_bars && videoFrame->GetPixelFormat() == bmdFormat8BitYUV) {
-            unsigned bars[8] = {
-                0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
-                0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
-            int width  = videoFrame->GetWidth();
-            int height = videoFrame->GetHeight();
-            unsigned *p = (unsigned *)frameBytes;
+                unsigned bars[8] = {
+                    0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
+                    0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
+                int width  = videoFrame->GetWidth();
+                int height = videoFrame->GetHeight();
+                unsigned *p = (unsigned *)frameBytes;
 
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x += 2)
-                    *p++ = bars[(x * 8) / width];
-            }
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x += 2)
+                        *p++ = bars[(x * 8) / width];
+                }
             }
 
             if (!no_video) {
