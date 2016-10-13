@@ -1918,6 +1918,13 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         !strcmp(command, "publish")) {
         ret = ff_amf_read_string(&gbc, filename,
                                  sizeof(filename), &stringlen);
+        if (ret) {
+            if (ret == AVERROR(EINVAL))
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name - name too long?\n");
+            else
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name\n");
+            return ret;
+        }
         // check with url
         if (s->filename) {
             pchar = strrchr(s->filename, '/');
