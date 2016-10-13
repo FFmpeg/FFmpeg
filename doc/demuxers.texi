@@ -254,46 +254,6 @@ This demuxer is used to demux FLV files and RTMP network streams.
 Allocate the streams according to the onMetaData array content.
 @end table
 
-@section libgme
-
-The Game Music Emu library is a collection of video game music file emulators.
-
-See @url{http://code.google.com/p/game-music-emu/} for more information.
-
-Some files have multiple tracks. The demuxer will pick the first track by
-default. The @option{track_index} option can be used to select a different
-track. Track indexes start at 0. The demuxer exports the number of tracks as
-@var{tracks} meta data entry.
-
-For very large files, the @option{max_size} option may have to be adjusted.
-
-@section libopenmpt
-
-libopenmpt based module demuxer
-
-See @url{https://lib.openmpt.org/libopenmpt/} for more information.
-
-Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
-option.
-
-It accepts the following options:
-
-@table @option
-@item subsong
-Set the subsong index. This can be either  'all', 'auto', or the index of the
-subsong. Subsong indexes start at 0. The default is 'auto'.
-
-The default value is to let libopenmpt choose.
-
-@item layout
-Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
-The default value is STEREO.
-
-@item sample_rate
-Set the sample rate for libopenmpt to output.
-Range is from 1000 to INT_MAX. The value default is 48000.
-@end table
-
 @section gif
 
 Animated GIF demuxer.
@@ -467,6 +427,46 @@ terminating with the ".png" suffix:
 ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
+
+@section libgme
+
+The Game Music Emu library is a collection of video game music file emulators.
+
+See @url{http://code.google.com/p/game-music-emu/} for more information.
+
+Some files have multiple tracks. The demuxer will pick the first track by
+default. The @option{track_index} option can be used to select a different
+track. Track indexes start at 0. The demuxer exports the number of tracks as
+@var{tracks} meta data entry.
+
+For very large files, the @option{max_size} option may have to be adjusted.
+
+@section libopenmpt
+
+libopenmpt based module demuxer
+
+See @url{https://lib.openmpt.org/libopenmpt/} for more information.
+
+Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
+option.
+
+It accepts the following options:
+
+@table @option
+@item subsong
+Set the subsong index. This can be either  'all', 'auto', or the index of the
+subsong. Subsong indexes start at 0. The default is 'auto'.
+
+The default value is to let libopenmpt choose.
+
+@item layout
+Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
+The default value is STEREO.
+
+@item sample_rate
+Set the sample rate for libopenmpt to output.
+Range is from 1000 to INT_MAX. The value default is 48000.
+@end table
 
 @section mov/mp4/3gp/QuickTime
 
