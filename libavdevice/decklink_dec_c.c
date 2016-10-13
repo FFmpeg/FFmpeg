@@ -62,6 +62,7 @@ static const AVOption options[] = {
     { "video",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_VIDEO    }, 0, 0, DEC, "pts_source"},
     { "reference",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_REFERENCE}, 0, 0, DEC, "pts_source"},
     { "wallclock",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_WALLCLOCK}, 0, 0, DEC, "pts_source"},
+    { "draw_bars",     "draw bars on signal loss" , OFFSET(draw_bars),    AV_OPT_TYPE_BOOL,  { .i64 = 1}, 0, 1, DEC },
     { NULL },
 };
 

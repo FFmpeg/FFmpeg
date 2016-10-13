@@ -84,6 +84,7 @@ struct decklink_ctx {
     int duplex_mode;
     DecklinkPtsSource audio_pts_source;
     DecklinkPtsSource video_pts_source;
+    int draw_bars;
 
     int frames_preroll;
     int frames_buffer;
