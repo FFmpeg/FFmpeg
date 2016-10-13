@@ -37,7 +37,7 @@ OBJCFLAGS  += $(EOBJCFLAGS)
 OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   := $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS)
-X86ASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
+X86ASMFLAGS += $(IFLAGS:%=%/) -I$(<D)/ -Pconfig.asm
 NVCCFLAGS  += -ptx
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
@@ -52,6 +52,7 @@ COMPILE_C = $(call COMPILE,CC)
 COMPILE_CXX = $(call COMPILE,CXX)
 COMPILE_S = $(call COMPILE,AS)
 COMPILE_M = $(call COMPILE,OBJCC)
+COMPILE_X86ASM = $(call COMPILE,X86ASM)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 COMPILE_NVCC = $(call COMPILE,NVCC)
 
@@ -74,12 +75,11 @@ COMPILE_NVCC = $(call COMPILE,NVCC)
 	$(COMPILE_HOSTC)
 
 %$(DEFAULT_X86ASMD).asm: %.asm
-	$(DEPX86ASM) $(X86ASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.asm=.d)
-	$(X86ASM) $(X86ASMFLAGS) -I $(<D)/ -e $< | sed '/^%/d;/^$$/d;' > $@
+	$(DEPX86ASM) $(X86ASMFLAGS) -M -o $@ $< > $(@:.asm=.d)
+	$(X86ASM) $(X86ASMFLAGS) -e $< | sed '/^%/d;/^$$/d;' > $@
 
 %.o: %.asm
-	$(DEPX86ASM) $(X86ASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
-	$(X86ASM) $(X86ASMFLAGS) -I $(<D)/ -o $@ $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
+	$(COMPILE_X86ASM)
 	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %.o: %.rc

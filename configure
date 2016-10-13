@@ -3329,6 +3329,7 @@ CXX_O='-o $@'
 OBJCC_C='-c'
 OBJCC_E='-E -o $@'
 OBJCC_O='-o $@'
+X86ASM_O='-o $@'
 LD_O='-o $@'
 LD_LIB='-l%'
 LD_PATH='-L'
@@ -5491,9 +5492,11 @@ EOF
         if check_cmd $x86asmexe --version; then
             enabled x86_64 && x86asm_extra="-m amd64"
             x86asm_debug="-g dwarf2"
+            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
         elif check_cmd nasm -v; then
             x86asmexe=nasm
             x86asm_debug="-g -F dwarf"
+            X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
             if enabled x86_64; then
                 case "$objformat" in
                     elf)   objformat=elf64 ;;
@@ -6739,6 +6742,7 @@ DEPAS=$as
 DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
 X86ASM=$x86asmexe
 DEPX86ASM=$x86asmexe
+DEPX86ASMFLAGS=\$(X86ASMFLAGS)
 AR=$ar
 ARFLAGS=$arflags
 AR_O=$ar_o
@@ -6766,6 +6770,7 @@ CXX_O=$CXX_O
 NVCC_C=$NVCC_C
 NVCC_O=$NVCC_O
 LD_O=$LD_O
+X86ASM_O=$X86ASM_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
@@ -6793,8 +6798,11 @@ CXXDEP=$CXXDEP
 CCDEP_FLAGS=$CCDEP_FLAGS
 ASDEP=$ASDEP
 ASDEP_FLAGS=$ASDEP_FLAGS
+X86ASMDEP=$X86ASMDEP
+X86ASMDEP_FLAGS=$X86ASMDEP_FLAGS
 CC_DEPFLAGS=$CC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS
+X86ASM_DEPFLAGS=$X86ASM_DEPFLAGS
 HOSTCC=$host_cc
 HOSTLD=$host_ld
 HOSTCFLAGS=$host_cflags
