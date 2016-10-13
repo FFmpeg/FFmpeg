@@ -1773,7 +1773,7 @@ Enable CAVLC and disable CABAC. It generates the same effect as
 @end table
 
 @item cmp
-Set full pixel motion estimation comparation algorithm. Possible values:
+Set full pixel motion estimation comparison algorithm. Possible values:
 
 @table @samp
 @item chroma

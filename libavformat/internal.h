@@ -650,7 +650,7 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
  * The packet is not removed from the interleaving queue, but only
  * a pointer to it is returned.
  *
- * @param ts_offset the ts difference between packet in the que and the muxer.
+ * @param ts_offset the ts difference between packet in the queue and the muxer.
  *
  * @return a pointer to the next packet, or NULL if no packet is queued
  *         for this stream.

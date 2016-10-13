@@ -224,7 +224,7 @@ int ff_jni_exception_get_summary(JNIEnv *env, jthrowable exception, char **error
     } else if (!name && message) {
         av_bprintf(&bp, "Exception: %s", message);
     } else {
-        av_log(log_ctx, AV_LOG_WARNING, "Could not retreive exception name and message\n");
+        av_log(log_ctx, AV_LOG_WARNING, "Could not retrieve exception name and message\n");
         av_bprintf(&bp, "Exception occurred");
     }
 

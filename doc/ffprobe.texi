@@ -245,7 +245,7 @@ continue reading from that.
 Each interval is specified by two optional parts, separated by "%".
 
 The first part specifies the interval start position. It is
-interpreted as an abolute position, or as a relative offset from the
+interpreted as an absolute position, or as a relative offset from the
 current position if it is preceded by the "+" character. If this first
 part is not specified, no seeking will be performed when reading this
 interval.

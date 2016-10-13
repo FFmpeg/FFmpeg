@@ -78,7 +78,7 @@ SECTION .text
 %endif
 %endmacro
 
-; calulate p or q portion of flat8out
+; calculate p or q portion of flat8out
 %macro FLAT8OUT_HALF 0
     psubw               m4, m0                      ; q4-q0
     psubw               m5, m0                      ; q5-q0

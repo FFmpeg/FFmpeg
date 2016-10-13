@@ -449,7 +449,7 @@ This filter is bit crusher with enhanced functionality. A bit crusher
 is used to audibly reduce number of bits an audio signal is sampled
 with. This doesn't change the bit depth at all, it just produces the
 effect. Material reduced in bit depth sounds more harsh and "digital".
-This filter is able to even round to continous values instead of discrete
+This filter is able to even round to continuous values instead of discrete
 bit depths.
 Additionally it has a D/C offset which results in different crushing of
 the lower and the upper half of the signal.
@@ -475,7 +475,7 @@ Set level out.
 Set bit reduction.
 
 @item mix
-Set mixing ammount.
+Set mixing amount.
 
 @item mode
 Can be linear: @code{lin} or logarithmic: @code{log}.
@@ -1203,7 +1203,7 @@ Set video stream size. Only useful if curves option is activated.
 
 @item mgain
 Set max gain that will be displayed. Only useful if curves option is activated.
-Setting this to reasonable value allows to display gain which is derived from
+Setting this to a reasonable value makes it possible to display gain which is derived from
 neighbour bands which are too close to each other and thus produce higher gain
 when both are activated.
 
@@ -8858,7 +8858,7 @@ value.
 @section hysteresis
 
 Grow first stream into second stream by connecting components.
-This allows to build more robust edge masks.
+This makes it possible to build more robust edge masks.
 
 This filter accepts the following options:
 
@@ -17670,7 +17670,7 @@ magnitude across time and second represents phase across time.
 The filter will transform from frequency domain as displayed in videos back
 to time domain as presented in audio output.
 
-This filter is primarly created for reversing processed @ref{showspectrum}
+This filter is primarily created for reversing processed @ref{showspectrum}
 filter outputs, but can synthesize sound from other spectrograms too.
 But in such case results are going to be poor if the phase data is not
 available, because in such cases phase data need to be recreated, usually

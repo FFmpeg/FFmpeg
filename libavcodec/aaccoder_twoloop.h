@@ -87,7 +87,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
      * will keep iterating until it fails to lower it or it reaches
      * ulimit * rdlambda. Keeping it low increases quality on difficult
      * signals, but lower it too much, and bits will be taken from weak
-     * signals, creating "holes". A balance is necesary.
+     * signals, creating "holes". A balance is necessary.
      * rdmax and rdmin specify the relative deviation from rdlambda
      * allowed for tonality compensation
      */
