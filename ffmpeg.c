@@ -538,7 +538,7 @@ static void ffmpeg_cleanup(int ret)
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
             av_packet_unref(&pkt);
         }
-        av_fifo_free(ost->muxing_queue);
+        av_fifo_freep(&ost->muxing_queue);
 
         av_freep(&output_streams[i]);
     }
