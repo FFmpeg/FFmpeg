@@ -3705,11 +3705,10 @@ static av_always_inline void adapt_prob(uint8_t *p, unsigned ct0, unsigned ct1,
     if (!ct)
         return;
 
+    update_factor = FASTDIV(update_factor * FFMIN(ct, max_count), max_count);
     p1 = *p;
-    p2 = ((ct0 << 8) + (ct >> 1)) / ct;
+    p2 = ((((int64_t) ct0) << 8) + (ct >> 1)) / ct;
     p2 = av_clip(p2, 1, 255);
-    ct = FFMIN(ct, max_count);
-    update_factor = FASTDIV(update_factor * ct, max_count);
 
     // (p1 * (256 - update_factor) + p2 * update_factor + 128) >> 8
     *p = p1 + (((p2 - p1) * update_factor + 128) >> 8);
