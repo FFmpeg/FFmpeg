@@ -1198,10 +1198,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     uint8_t tosend    [RTMP_HANDSHAKE_PACKET_SIZE+1] = {
         3,                // unencrypted data
         0, 0, 0, 0,       // client uptime
-        RTMP_CLIENT_VER1,
-        RTMP_CLIENT_VER2,
-        RTMP_CLIENT_VER3,
-        RTMP_CLIENT_VER4,
+        0, 0, 0, 0,       // zeros
     };
     uint8_t clientdata[RTMP_HANDSHAKE_PACKET_SIZE];
     uint8_t serverdata[RTMP_HANDSHAKE_PACKET_SIZE+1];
