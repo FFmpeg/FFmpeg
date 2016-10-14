@@ -533,7 +533,7 @@ static void ffmpeg_cleanup(int ret)
         avcodec_free_context(&ost->enc_ctx);
         avcodec_parameters_free(&ost->ref_par);
 
-        while (av_fifo_size(ost->muxing_queue)) {
+        while (ost->muxing_queue && av_fifo_size(ost->muxing_queue)) {
             AVPacket pkt;
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
             av_packet_unref(&pkt);
