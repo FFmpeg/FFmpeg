@@ -356,6 +356,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ);
+    if (ctx->temporal_aq > 0 && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "Temporal AQ not supported\n");
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
