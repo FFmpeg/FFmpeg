@@ -30,8 +30,7 @@
 #define RDFT_BITS_MAX 16
 
 enum WindowFunc {
-    WFUNC_MIN,
-    WFUNC_RECTANGULAR = WFUNC_MIN,
+    WFUNC_RECTANGULAR,
     WFUNC_HANN,
     WFUNC_HAMMING,
     WFUNC_BLACKMAN,
@@ -40,7 +39,7 @@ enum WindowFunc {
     WFUNC_NUTTALL,
     WFUNC_BNUTTALL,
     WFUNC_BHARRIS,
-    WFUNC_MAX = WFUNC_BHARRIS
+    NB_WFUNC
 };
 
 #define NB_GAIN_ENTRY_MAX 4096
@@ -98,7 +97,7 @@ static const AVOption firequalizer_options[] = {
     { "gain_entry", "set gain entry", OFFSET(gain_entry), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { "delay", "set delay", OFFSET(delay), AV_OPT_TYPE_DOUBLE, { .dbl = 0.01 }, 0.0, 1e10, FLAGS },
     { "accuracy", "set accuracy", OFFSET(accuracy), AV_OPT_TYPE_DOUBLE, { .dbl = 5.0 }, 0.0, 1e10, FLAGS },
-    { "wfunc", "set window function", OFFSET(wfunc), AV_OPT_TYPE_INT, { .i64 = WFUNC_HANN }, WFUNC_MIN, WFUNC_MAX, FLAGS, "wfunc" },
+    { "wfunc", "set window function", OFFSET(wfunc), AV_OPT_TYPE_INT, { .i64 = WFUNC_HANN }, 0, NB_WFUNC-1, FLAGS, "wfunc" },
         { "rectangular", "rectangular window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_RECTANGULAR }, 0, 0, FLAGS, "wfunc" },
         { "hann", "hann window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_HANN }, 0, 0, FLAGS, "wfunc" },
         { "hamming", "hamming window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_HAMMING }, 0, 0, FLAGS, "wfunc" },
