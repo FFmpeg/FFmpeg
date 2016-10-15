@@ -39,6 +39,7 @@ enum WindowFunc {
     WFUNC_NUTTALL,
     WFUNC_BNUTTALL,
     WFUNC_BHARRIS,
+    WFUNC_TUKEY,
     NB_WFUNC
 };
 
@@ -107,6 +108,7 @@ static const AVOption firequalizer_options[] = {
         { "nuttall", "nuttall window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_NUTTALL }, 0, 0, FLAGS, "wfunc" },
         { "bnuttall", "blackman-nuttall window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_BNUTTALL }, 0, 0, FLAGS, "wfunc" },
         { "bharris", "blackman-harris window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_BHARRIS }, 0, 0, FLAGS, "wfunc" },
+        { "tukey", "tukey window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_TUKEY }, 0, 0, FLAGS, "wfunc" },
     { "fixed", "set fixed frame samples", OFFSET(fixed), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "multi", "set multi channels mode", OFFSET(multi), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "zero_phase", "set zero phase mode", OFFSET(zero_phase), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
@@ -384,6 +386,9 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                 break;
             case WFUNC_BHARRIS:
                 win = 0.35875 + 0.48829 * cos(u) + 0.14128 * cos(2*u) + 0.01168 * cos(3*u);
+                break;
+            case WFUNC_TUKEY:
+                win = (u <= 0.5 * M_PI) ? 1.0 : (0.5 + 0.5 * cos(2*u - M_PI));
                 break;
             default:
                 av_assert0(0);
