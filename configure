@@ -5387,8 +5387,6 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
-test -n "$WARNINGS" && printf "\n$WARNINGS"
-
 # generate the lists of enabled components
 print_enabled_components(){
     file=$1
@@ -5405,6 +5403,8 @@ print_enabled_components(){
 
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
+
+test -n "$WARNINGS" && printf "\n$WARNINGS"
 
 # build pkg-config files
 
