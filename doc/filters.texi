@@ -2549,6 +2549,8 @@ minimum 3-terms discontinuous nuttall window
 minimum 4-terms discontinuous nuttall (blackman-nuttall) window
 @item bharris
 blackman-harris window
+@item tukey
+tukey window
 @end table
 
 @item fixed
