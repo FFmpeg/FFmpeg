@@ -848,8 +848,7 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
              * avoiding mangling so we need to build a mapping to values
              * we know will not be mangled.
              */
-            int64_t safe_pts = avpkt->pts == AV_NOPTS_VALUE ? 0 : avpkt->pts;
-            uint64_t pts = opaque_list_push(priv, safe_pts);
+            uint64_t pts = opaque_list_push(priv, avpkt->pts);
             if (!pts) {
                 ret = AVERROR(ENOMEM);
                 goto exit;
