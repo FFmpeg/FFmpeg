@@ -706,6 +706,15 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
     av_log(priv->avctx, AV_LOG_VERBOSE, "CrystalHD: Copying out frame\n");
 
+    /*
+     * The hardware doesn't return the first sample of a picture.
+     * Ignoring why it behaves this way, it's better to copy the sample from
+     * the second line, rather than the next sample across because the chroma
+     * values should be correct (assuming the decoded video was 4:2:0, which
+     * it was).
+     */
+    *((uint32_t *)src) = *((uint32_t *)(src + sStride));
+
     if (interlaced) {
         int dY = 0;
         int sY = 0;
