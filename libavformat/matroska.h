@@ -309,6 +309,14 @@ typedef enum {
   MATROSKA_VIDEO_STEREOMODE_TYPE_NB,
 } MatroskaVideoStereoModeType;
 
+typedef enum {
+  MATROSKA_VIDEO_DISPLAYUNIT_PIXELS      = 0,
+  MATROSKA_VIDEO_DISPLAYUNIT_CENTIMETERS = 1,
+  MATROSKA_VIDEO_DISPLAYUNIT_INCHES      = 2,
+  MATROSKA_VIDEO_DISPLAYUNIT_DAR         = 3,
+  MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN     = 4,
+} MatroskaVideoDisplayUnit;
+
 /*
  * Matroska Codec IDs, strings
  */

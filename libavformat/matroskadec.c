@@ -168,6 +168,7 @@ typedef struct MatroskaTrackVideo {
     uint64_t pixel_width;
     uint64_t pixel_height;
     EbmlBin color_space;
+    uint64_t display_unit;
     uint64_t interlaced;
     uint64_t field_order;
     uint64_t stereo_mode;
@@ -436,7 +437,7 @@ static const EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPL,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPR,     EBML_NONE },
-    { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_NONE },
+    { MATROSKA_ID_VIDEODISPLAYUNIT,    EBML_UINT,  0, offsetof(MatroskaTrackVideo, display_unit), { .u= MATROSKA_VIDEO_DISPLAYUNIT_PIXELS } },
     { MATROSKA_ID_VIDEOFLAGINTERLACED, EBML_UINT,  0, offsetof(MatroskaTrackVideo, interlaced),  { .u = MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED } },
     { MATROSKA_ID_VIDEOFIELDORDER,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, field_order), { .u = MATROSKA_VIDEO_FIELDORDER_UNDETERMINED } },
     { MATROSKA_ID_VIDEOSTEREOMODE,     EBML_UINT,  0, offsetof(MatroskaTrackVideo, stereo_mode), { .u = MATROSKA_VIDEO_STEREOMODE_TYPE_NB } },
@@ -2296,11 +2297,13 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
 
-            av_reduce(&st->sample_aspect_ratio.num,
-                      &st->sample_aspect_ratio.den,
-                      st->codecpar->height * track->video.display_width  * display_width_mul,
-                      st->codecpar->width  * track->video.display_height * display_height_mul,
-                      255);
+            if (track->video.display_unit == MATROSKA_VIDEO_DISPLAYUNIT_PIXELS) {
+                av_reduce(&st->sample_aspect_ratio.num,
+                          &st->sample_aspect_ratio.den,
+                          st->codecpar->height * track->video.display_width  * display_width_mul,
+                          st->codecpar->width  * track->video.display_height * display_height_mul,
+                          255);
+            }
             if (st->codecpar->codec_id != AV_CODEC_ID_HEVC)
                 st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
