@@ -140,6 +140,7 @@ typedef struct {
 
     /* Options */
     uint32_t sWidth;
+    uint8_t bframe_bug;
 } CHDContext;
 
 static const AVOption options[] = {
@@ -460,14 +461,6 @@ static av_cold int init(AVCodecContext *avctx)
         format.pMetaData  = avctx->extradata;
         format.metaDataSz = avctx->extradata_size;
         break;
-    case BC_MSUBTYPE_DIVX:
-        avret = init_bsf(avctx, "mpeg4_unpack_bframes");
-        if (avret != 0) {
-            return avret;
-        }
-        format.pMetaData  = avctx->extradata;
-        format.metaDataSz = avctx->extradata_size;
-        break;
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
         // Fall-through
@@ -476,6 +469,7 @@ static av_cold int init(AVCodecContext *avctx)
     case BC_MSUBTYPE_WMV3:
     case BC_MSUBTYPE_WMVA:
     case BC_MSUBTYPE_MPEG2VIDEO:
+    case BC_MSUBTYPE_DIVX:
     case BC_MSUBTYPE_DIVX311:
         format.pMetaData  = avctx->extradata;
         format.metaDataSz = avctx->extradata_size;
@@ -829,6 +823,17 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                 priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
+            if (avctx->codec->id == AV_CODEC_ID_MPEG4 &&
+                output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
+                if (!priv->bframe_bug) {
+                    av_log(avctx, AV_LOG_VERBOSE,
+                           "CrystalHD: Not returning packed frame twice.\n");
+                }
+                priv->last_picture++;
+                DtsReleaseOutputBuffs(dev, NULL, FALSE);
+                return RET_COPY_AGAIN;
+            }
+
             print_frame_info(priv, &output);
 
             if (priv->last_picture + 1 < output.PicInfo.picture_number) {
@@ -878,6 +883,22 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 
     if (avpkt && avpkt->size) {
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
+
+        if (!priv->bframe_bug && (avpkt->size == 6 || avpkt->size == 7)) {
+            /*
+             * Drop frames trigger the bug
+             */
+            av_log(avctx, AV_LOG_WARNING,
+                   "CrystalHD: Enabling work-around for packed b-frame bug\n");
+            priv->bframe_bug = 1;
+        } else if (priv->bframe_bug && avpkt->size == 8) {
+            /*
+             * Delay frames don't trigger the bug
+             */
+            av_log(avctx, AV_LOG_WARNING,
+                   "CrystalHD: Disabling work-around for packed b-frame bug\n");
+            priv->bframe_bug = 0;
+        }
 
         if (priv->bsfc) {
             AVPacket filter_packet = { 0 };
