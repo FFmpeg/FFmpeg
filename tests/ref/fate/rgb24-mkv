@@ -1,8 +1,8 @@
-5f43d628c76d97e30791bf30674ee485 *tests/data/fate/rgb24-mkv.matroska
-58357 tests/data/fate/rgb24-mkv.matroska
+7b8662e001bfb32a4bf709f4fe620138 *tests/data/fate/rgb24-mkv.matroska
+58361 tests/data/fate/rgb24-mkv.matroska
 #tb 0: 1/10
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 160x120
-#sar 0: 1/1
+#sar 0: 0/1
 0,          0,          0,        1,    57600, 0x3718ad00
