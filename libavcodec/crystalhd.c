@@ -133,8 +133,6 @@ typedef struct {
     uint8_t is_nal;
     uint8_t need_second_field;
 
-    uint64_t last_picture;
-
     OpaqueList *head;
     OpaqueList *tail;
 
@@ -310,7 +308,6 @@ static void flush(AVCodecContext *avctx)
 {
     CHDContext *priv = avctx->priv_data;
 
-    priv->last_picture      = -1;
     priv->need_second_field = 0;
 
     av_frame_unref (priv->pic);
@@ -446,7 +443,6 @@ static av_cold int init(AVCodecContext *avctx)
     priv               = avctx->priv_data;
     priv->avctx        = avctx;
     priv->is_nal       = avctx->extradata_size > 0 && *(avctx->extradata) == 1;
-    priv->last_picture = -1;
     priv->pic          = av_frame_alloc();
 
     subtype = id2subtype(priv, avctx->codec->id);
@@ -607,19 +603,6 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR,
                "CrystalHD: GetDriverStatus failed: %u\n", ret);
        return RET_ERROR;
-    }
-
-    /*
-     * If we got a false negative for interlaced on the first field,
-     * we will realise our mistake here when we see that the picture number is that
-     * of the previous picture. We cannot recover the frame and should discard the
-     * second field to keep the correct number of output frames.
-     */
-    if (output->PicInfo.picture_number == priv->last_picture && !priv->need_second_field) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Incorrectly guessed progressive frame. Discarding second field\n");
-        /* Returning without providing a picture. */
-        return RET_OK;
     }
 
     interlaced = output->PicInfo.flags & VDEC_FLAG_INTERLACED_SRC;
@@ -786,42 +769,19 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
     } else if (ret == BC_STS_SUCCESS) {
         int copy_ret = -1;
         if (output.PoutFlags & BC_POUT_FLAGS_PIB_VALID) {
-            if (priv->last_picture == -1) {
-                /*
-                 * Init to one less, so that the incrementing code doesn't
-                 * need to be special-cased.
-                 */
-                priv->last_picture = output.PicInfo.picture_number - 1;
-            }
-
             if (avctx->codec->id == AV_CODEC_ID_MPEG4 &&
                 output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
                 if (!priv->bframe_bug) {
                     av_log(avctx, AV_LOG_VERBOSE,
                            "CrystalHD: Not returning packed frame twice.\n");
                 }
-                priv->last_picture++;
                 DtsReleaseOutputBuffs(dev, NULL, FALSE);
                 return RET_COPY_AGAIN;
             }
 
             print_frame_info(priv, &output);
 
-            if (priv->last_picture + 1 < output.PicInfo.picture_number) {
-                av_log(avctx, AV_LOG_WARNING,
-                       "CrystalHD: Picture Number discontinuity\n");
-                /*
-                 * XXX: I have no idea what the semantics of this situation
-                 * are so I don't even know if we've lost frames or which
-                 * ones.
-                 */
-               priv->last_picture = output.PicInfo.picture_number - 1;
-            }
-
             copy_ret = copy_frame(avctx, &output, data, got_frame);
-            if (*got_frame > 0) {
-                priv->last_picture++;
-            }
         } else {
             /*
              * An invalid frame has been consumed.
