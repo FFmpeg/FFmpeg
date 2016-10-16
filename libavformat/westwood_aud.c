@@ -164,6 +164,12 @@ static int wsaud_read_packet(AVFormatContext *s,
         if (ret != chunk_size)
             return AVERROR(EIO);
 
+        if (st->codecpar->channels <= 0) {
+            av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n",
+                   st->codecpar->channels);
+            return AVERROR_INVALIDDATA;
+        }
+
         /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
         pkt->duration = (chunk_size * 2) / st->codecpar->channels;
     }
