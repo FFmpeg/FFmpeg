@@ -144,6 +144,7 @@
     <ClCompile Include="..\libavfilter\af_asetrate.c" />
     <ClCompile Include="..\libavfilter\settb.c" />
     <ClCompile Include="..\libavfilter\af_ashowinfo.c" />
+    <ClCompile Include="..\libavfilter\f_sidedata.c" />
     <ClCompile Include="..\libavfilter\split.c" />
     <ClCompile Include="..\libavfilter\af_astats.c" />
     <ClCompile Include="..\libavfilter\f_streamselect.c" />

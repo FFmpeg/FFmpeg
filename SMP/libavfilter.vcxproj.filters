@@ -252,6 +252,9 @@
     <ClCompile Include="..\libavfilter\af_ashowinfo.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\f_sidedata.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\split.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
