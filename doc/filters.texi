@@ -2563,6 +2563,19 @@ Enable multichannels evaluation on gain. Default is disabled.
 @item zero_phase
 Enable zero phase mode by subtracting timestamp to compensate delay.
 Default is disabled.
+
+@item scale
+Set scale used by gain. Acceptable values are:
+@table @option
+@item linlin
+linear frequency, linear gain
+@item linlog
+linear frequency, logarithmic (in dB) gain (default)
+@item loglin
+logarithmic (in octave scale where 20 Hz is 0) frequency, linear gain
+@item loglog
+logarithmic frequency, logarithmic gain
+@end table
 @end table
 
 @subsection Examples

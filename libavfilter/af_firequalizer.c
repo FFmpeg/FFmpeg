@@ -43,6 +43,14 @@ enum WindowFunc {
     NB_WFUNC
 };
 
+enum Scale {
+    SCALE_LINLIN,
+    SCALE_LINLOG,
+    SCALE_LOGLIN,
+    SCALE_LOGLOG,
+    NB_SCALE
+};
+
 #define NB_GAIN_ENTRY_MAX 4096
 typedef struct {
     double  freq;
@@ -84,6 +92,7 @@ typedef struct {
     int           fixed;
     int           multi;
     int           zero_phase;
+    int           scale;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -112,6 +121,11 @@ static const AVOption firequalizer_options[] = {
     { "fixed", "set fixed frame samples", OFFSET(fixed), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "multi", "set multi channels mode", OFFSET(multi), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "zero_phase", "set zero phase mode", OFFSET(zero_phase), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "scale", "set gain scale", OFFSET(scale), AV_OPT_TYPE_INT, { .i64 = SCALE_LINLOG }, 0, NB_SCALE-1, FLAGS, "scale" },
+        { "linlin", "linear-freq linear-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LINLIN }, 0, 0, FLAGS, "scale" },
+        { "linlog", "linear-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LINLOG }, 0, 0, FLAGS, "scale" },
+        { "loglin", "logarithmic-freq linear-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLIN }, 0, 0, FLAGS, "scale" },
+        { "loglog", "logarithmic-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLOG }, 0, 0, FLAGS, "scale" },
     { NULL }
 };
 
@@ -316,6 +330,8 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     double vars[VAR_NB];
     AVExpr *gain_expr;
     int ret, k, center, ch;
+    int xlog = s->scale == SCALE_LOGLIN || s->scale == SCALE_LOGLOG;
+    int ylog = s->scale == SCALE_LINLOG || s->scale == SCALE_LOGLOG;
 
     s->nb_gain_entry = 0;
     s->gain_entry_err = 0;
@@ -340,16 +356,27 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     vars[VAR_CHLAYOUT] = inlink->channel_layout;
     vars[VAR_SR] = inlink->sample_rate;
     for (ch = 0; ch < inlink->channels; ch++) {
+        double result;
         vars[VAR_CH] = ch;
         vars[VAR_CHID] = av_channel_layout_extract_channel(inlink->channel_layout, ch);
         vars[VAR_F] = 0.0;
-        s->analysis_buf[0] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+        if (xlog)
+            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+        result = av_expr_eval(gain_expr, vars, ctx);
+        s->analysis_buf[0] = ylog ? pow(10.0, 0.05 * result) : result;
+
         vars[VAR_F] = 0.5 * inlink->sample_rate;
-        s->analysis_buf[1] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+        if (xlog)
+            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+        result = av_expr_eval(gain_expr, vars, ctx);
+        s->analysis_buf[1] = ylog ? pow(10.0, 0.05 * result) : result;
 
         for (k = 1; k < s->analysis_rdft_len/2; k++) {
             vars[VAR_F] = k * ((double)inlink->sample_rate /(double)s->analysis_rdft_len);
-            s->analysis_buf[2*k] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+            if (xlog)
+                vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+            result = av_expr_eval(gain_expr, vars, ctx);
+            s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : result;
             s->analysis_buf[2*k+1] = 0.0;
         }
 
