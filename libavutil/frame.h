@@ -130,7 +130,7 @@ enum AVActiveFormatDescription {
     AV_AFD_14_9         = 11,
     AV_AFD_4_3_SP_14_9  = 13,
     AV_AFD_16_9_SP_14_9 = 14,
-    AV_AFD_SP_4_3       = 15,
+    AV_AFD_SP_4_3       = 15
 };
 
 

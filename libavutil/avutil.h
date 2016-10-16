@@ -271,7 +271,7 @@ enum AVPictureType {
     AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG-4
     AV_PICTURE_TYPE_SI,    ///< Switching Intra
     AV_PICTURE_TYPE_SP,    ///< Switching Predicted
-    AV_PICTURE_TYPE_BI,    ///< BI type
+    AV_PICTURE_TYPE_BI     ///< BI type
 };
 
 /**
