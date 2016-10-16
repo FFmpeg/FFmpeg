@@ -117,7 +117,6 @@ typedef struct OpaqueList {
 typedef struct {
     AVClass *av_class;
     AVCodecContext *avctx;
-    AVFrame *pic;
     HANDLE dev;
 
     uint8_t *orig_extradata;
@@ -308,8 +307,6 @@ static void flush(AVCodecContext *avctx)
     priv->need_second_field = 0;
     priv->draining          = 0;
 
-    av_frame_unref (priv->pic);
-
     /* Flush mode 4 flushes all software and hardware buffers. */
     DtsFlushInput(priv->dev, 4);
 }
@@ -343,8 +340,6 @@ static av_cold int uninit(AVCodecContext *avctx)
     }
 
     av_freep(&priv->sps_pps_buf);
-
-    av_frame_free (&priv->pic);
 
     if (priv->head) {
        OpaqueList *node = priv->head;
@@ -440,7 +435,6 @@ static av_cold int init(AVCodecContext *avctx)
     priv               = avctx->priv_data;
     priv->avctx        = avctx;
     priv->is_nal       = avctx->extradata_size > 0 && *(avctx->extradata) == 1;
-    priv->pic          = av_frame_alloc();
     priv->draining     = 0;
 
     subtype = id2subtype(priv, avctx->codec->id);
@@ -543,7 +537,7 @@ static av_cold int init(AVCodecContext *avctx)
 
 static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  BC_DTS_PROC_OUT *output,
-                                 void *data, int *got_frame)
+                                 AVFrame *frame, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
@@ -594,13 +588,10 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d\n",
            interlaced);
 
-    if (priv->pic->data[0] && !priv->need_second_field)
-        av_frame_unref(priv->pic);
-
     priv->need_second_field = interlaced && !priv->need_second_field;
 
-    if (!priv->pic->data[0]) {
-        if (ff_get_buffer(avctx, priv->pic, AV_GET_BUFFER_FLAG_REF) < 0)
+    if (!frame->data[0]) {
+        if (ff_get_buffer(avctx, frame, 0) < 0)
             return RET_ERROR;
     }
 
@@ -618,8 +609,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         sStride = bwidth;
     }
 
-    dStride = priv->pic->linesize[0];
-    dst     = priv->pic->data[0];
+    dStride = frame->linesize[0];
+    dst     = frame->data[0];
 
     av_log(priv->avctx, AV_LOG_VERBOSE, "CrystalHD: Copying out frame\n");
 
@@ -653,27 +644,24 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         av_image_copy_plane(dst, dStride, src, sStride, bwidth, height);
     }
 
-    priv->pic->interlaced_frame = interlaced;
+    frame->interlaced_frame = interlaced;
     if (interlaced)
-        priv->pic->top_field_first = !bottom_first;
+        frame->top_field_first = !bottom_first;
 
     if (pkt_pts != AV_NOPTS_VALUE) {
-        priv->pic->pts = pkt_pts;
+        frame->pts = pkt_pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-        priv->pic->pkt_pts = pkt_pts;
+        frame->pkt_pts = pkt_pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
-    av_frame_set_pkt_pos(priv->pic, -1);
-    av_frame_set_pkt_duration(priv->pic, 0);
-    av_frame_set_pkt_size(priv->pic, -1);
+    av_frame_set_pkt_pos(frame, -1);
+    av_frame_set_pkt_duration(frame, 0);
+    av_frame_set_pkt_size(frame, -1);
 
     if (!priv->need_second_field) {
         *got_frame       = 1;
-        if ((ret = av_frame_ref(data, priv->pic)) < 0) {
-            return ret;
-        }
     } else {
         return RET_COPY_AGAIN;
     }
@@ -683,7 +671,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 
 static inline CopyRet receive_frame(AVCodecContext *avctx,
-                                    void *data, int *got_frame)
+                                    AVFrame *frame, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_PROC_OUT output = {
@@ -767,7 +755,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
 
             print_frame_info(priv, &output);
 
-            copy_ret = copy_frame(avctx, &output, data, got_frame);
+            copy_ret = copy_frame(avctx, &output, frame, got_frame);
         } else {
             /*
              * An invalid frame has been consumed.
@@ -945,7 +933,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .send_packet    = crystalhd_decode_packet, \
         .receive_frame  = crystalhd_receive_frame, \
         .flush          = flush, \
-        .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
         .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE}, \
     };
 
