@@ -199,7 +199,7 @@ delayed bt the time duration specified in @var{offset}. Default value
 is @code{0} (meaning that no offset is applied).
 
 @item format_whitelist @var{list} (@emph{input})
-"," separated List of allowed demuxers. By default all are allowed.
+"," separated list of allowed demuxers. By default all are allowed.
 
 @item dump_separator @var{string} (@emph{input})
 Separator used to separate the fields printed on the command line about the

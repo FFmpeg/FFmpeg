@@ -30,8 +30,7 @@
 #define RDFT_BITS_MAX 16
 
 enum WindowFunc {
-    WFUNC_MIN,
-    WFUNC_RECTANGULAR = WFUNC_MIN,
+    WFUNC_RECTANGULAR,
     WFUNC_HANN,
     WFUNC_HAMMING,
     WFUNC_BLACKMAN,
@@ -40,7 +39,16 @@ enum WindowFunc {
     WFUNC_NUTTALL,
     WFUNC_BNUTTALL,
     WFUNC_BHARRIS,
-    WFUNC_MAX = WFUNC_BHARRIS
+    WFUNC_TUKEY,
+    NB_WFUNC
+};
+
+enum Scale {
+    SCALE_LINLIN,
+    SCALE_LINLOG,
+    SCALE_LOGLIN,
+    SCALE_LOGLOG,
+    NB_SCALE
 };
 
 #define NB_GAIN_ENTRY_MAX 4096
@@ -84,6 +92,7 @@ typedef struct {
     int           fixed;
     int           multi;
     int           zero_phase;
+    int           scale;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -98,7 +107,7 @@ static const AVOption firequalizer_options[] = {
     { "gain_entry", "set gain entry", OFFSET(gain_entry), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { "delay", "set delay", OFFSET(delay), AV_OPT_TYPE_DOUBLE, { .dbl = 0.01 }, 0.0, 1e10, FLAGS },
     { "accuracy", "set accuracy", OFFSET(accuracy), AV_OPT_TYPE_DOUBLE, { .dbl = 5.0 }, 0.0, 1e10, FLAGS },
-    { "wfunc", "set window function", OFFSET(wfunc), AV_OPT_TYPE_INT, { .i64 = WFUNC_HANN }, WFUNC_MIN, WFUNC_MAX, FLAGS, "wfunc" },
+    { "wfunc", "set window function", OFFSET(wfunc), AV_OPT_TYPE_INT, { .i64 = WFUNC_HANN }, 0, NB_WFUNC-1, FLAGS, "wfunc" },
         { "rectangular", "rectangular window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_RECTANGULAR }, 0, 0, FLAGS, "wfunc" },
         { "hann", "hann window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_HANN }, 0, 0, FLAGS, "wfunc" },
         { "hamming", "hamming window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_HAMMING }, 0, 0, FLAGS, "wfunc" },
@@ -108,9 +117,15 @@ static const AVOption firequalizer_options[] = {
         { "nuttall", "nuttall window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_NUTTALL }, 0, 0, FLAGS, "wfunc" },
         { "bnuttall", "blackman-nuttall window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_BNUTTALL }, 0, 0, FLAGS, "wfunc" },
         { "bharris", "blackman-harris window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_BHARRIS }, 0, 0, FLAGS, "wfunc" },
+        { "tukey", "tukey window", 0, AV_OPT_TYPE_CONST, { .i64 = WFUNC_TUKEY }, 0, 0, FLAGS, "wfunc" },
     { "fixed", "set fixed frame samples", OFFSET(fixed), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "multi", "set multi channels mode", OFFSET(multi), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "zero_phase", "set zero phase mode", OFFSET(zero_phase), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "scale", "set gain scale", OFFSET(scale), AV_OPT_TYPE_INT, { .i64 = SCALE_LINLOG }, 0, NB_SCALE-1, FLAGS, "scale" },
+        { "linlin", "linear-freq linear-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LINLIN }, 0, 0, FLAGS, "scale" },
+        { "linlog", "linear-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LINLOG }, 0, 0, FLAGS, "scale" },
+        { "loglin", "logarithmic-freq linear-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLIN }, 0, 0, FLAGS, "scale" },
+        { "loglog", "logarithmic-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLOG }, 0, 0, FLAGS, "scale" },
     { NULL }
 };
 
@@ -315,6 +330,8 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     double vars[VAR_NB];
     AVExpr *gain_expr;
     int ret, k, center, ch;
+    int xlog = s->scale == SCALE_LOGLIN || s->scale == SCALE_LOGLOG;
+    int ylog = s->scale == SCALE_LINLOG || s->scale == SCALE_LOGLOG;
 
     s->nb_gain_entry = 0;
     s->gain_entry_err = 0;
@@ -339,16 +356,27 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     vars[VAR_CHLAYOUT] = inlink->channel_layout;
     vars[VAR_SR] = inlink->sample_rate;
     for (ch = 0; ch < inlink->channels; ch++) {
+        double result;
         vars[VAR_CH] = ch;
         vars[VAR_CHID] = av_channel_layout_extract_channel(inlink->channel_layout, ch);
         vars[VAR_F] = 0.0;
-        s->analysis_buf[0] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+        if (xlog)
+            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+        result = av_expr_eval(gain_expr, vars, ctx);
+        s->analysis_buf[0] = ylog ? pow(10.0, 0.05 * result) : result;
+
         vars[VAR_F] = 0.5 * inlink->sample_rate;
-        s->analysis_buf[1] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+        if (xlog)
+            vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+        result = av_expr_eval(gain_expr, vars, ctx);
+        s->analysis_buf[1] = ylog ? pow(10.0, 0.05 * result) : result;
 
         for (k = 1; k < s->analysis_rdft_len/2; k++) {
             vars[VAR_F] = k * ((double)inlink->sample_rate /(double)s->analysis_rdft_len);
-            s->analysis_buf[2*k] = pow(10.0, 0.05 * av_expr_eval(gain_expr, vars, ctx));
+            if (xlog)
+                vars[VAR_F] = log2(0.05 * vars[VAR_F]);
+            result = av_expr_eval(gain_expr, vars, ctx);
+            s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : result;
             s->analysis_buf[2*k+1] = 0.0;
         }
 
@@ -369,7 +397,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                 win = 0.53836 + 0.46164 * cos(u);
                 break;
             case WFUNC_BLACKMAN:
-                win = 0.48 + 0.5 * cos(u) + 0.02 * cos(2*u);
+                win = 0.42 + 0.5 * cos(u) + 0.08 * cos(2*u);
                 break;
             case WFUNC_NUTTALL3:
                 win = 0.40897 + 0.5 * cos(u) + 0.09103 * cos(2*u);
@@ -385,6 +413,9 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                 break;
             case WFUNC_BHARRIS:
                 win = 0.35875 + 0.48829 * cos(u) + 0.14128 * cos(2*u) + 0.01168 * cos(3*u);
+                break;
+            case WFUNC_TUKEY:
+                win = (u <= 0.5 * M_PI) ? 1.0 : (0.5 + 0.5 * cos(2*u - M_PI));
                 break;
             default:
                 av_assert0(0);

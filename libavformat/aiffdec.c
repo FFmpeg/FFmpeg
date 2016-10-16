@@ -337,7 +337,10 @@ static int aiff_read_header(AVFormatContext *s)
     }
 
 got_sound:
-    if (!st->codecpar->block_align) {
+    if (!st->codecpar->block_align && st->codecpar->codec_id == AV_CODEC_ID_QCELP) {
+        av_log(s, AV_LOG_WARNING, "qcelp without wave chunk, assuming full rate\n");
+        st->codecpar->block_align = 35;
+    } else if (!st->codecpar->block_align) {
         av_log(s, AV_LOG_ERROR, "could not find COMM tag or invalid block_align value\n");
         return -1;
     }

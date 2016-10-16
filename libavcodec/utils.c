@@ -3251,7 +3251,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                                 av_get_colorspace_name(enc->colorspace));
             }
 
-            if (av_log_get_level() >= AV_LOG_DEBUG &&
+            if (av_log_get_level() >= AV_LOG_VERBOSE &&
                 enc->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED)
                 av_strlcatf(detail, sizeof(detail), "%s, ",
                             av_chroma_location_name(enc->chroma_sample_location));

@@ -330,9 +330,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     case METADATA_DELETE:
         if (!s->key) {
             av_dict_free(metadata);
-        } else if (e && e->value && s->value && s->compare(s, e->value, s->value)) {
-            av_dict_set(metadata, s->key, NULL, 0);
-        } else if (e && e->value) {
+        } else if (e && e->value && (!s->value || s->compare(s, e->value, s->value))) {
             av_dict_set(metadata, s->key, NULL, 0);
         }
         return ff_filter_frame(outlink, frame);

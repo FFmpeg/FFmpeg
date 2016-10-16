@@ -357,7 +357,7 @@ autodetection in the future.
 If set to 1 enables experimental HTTP server. This can be used to send data when
 used as an output option, or read data from a client with HTTP POST when used as
 an input option.
-If set to 2 enables experimental mutli-client HTTP server. This is not yet implemented
+If set to 2 enables experimental multi-client HTTP server. This is not yet implemented
 in ffmpeg.c or ffserver.c and thus must not be used as a command line option.
 @example
 # Server side (sending):

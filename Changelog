@@ -36,6 +36,7 @@ version <next>:
 - extended mov edit list support
 - libfaac encoder removed
 - Matroska muxer now writes CRC32 elements by default in all Level 1 elements
+- sidedata video and asidedata audio filter
 
 
 version 3.1:

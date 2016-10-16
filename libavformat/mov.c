@@ -298,6 +298,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 'e','g','i','d'): key = "episode_uid";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'F','I','R','M'): key = "firmware"; raw = 1; break;
     case MKTAG( 'g','n','r','e'): key = "genre";
         parse = mov_metadata_gnre; break;
     case MKTAG( 'h','d','v','d'): key = "hd_video";

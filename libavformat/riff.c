@@ -56,6 +56,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_H263I,        MKTAG('I', '2', '6', '3') }, /* Intel H.263 */
     { AV_CODEC_ID_H261,         MKTAG('H', '2', '6', '1') },
     { AV_CODEC_ID_H263,         MKTAG('U', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('V', 'S', 'M', '4') },
     { AV_CODEC_ID_MPEG4,        MKTAG('F', 'M', 'P', '4') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'V', 'X') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'X', '5', '0') },

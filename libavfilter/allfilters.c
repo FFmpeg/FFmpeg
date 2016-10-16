@@ -80,6 +80,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ASETRATE,       asetrate,       af);
     REGISTER_FILTER(ASETTB,         asettb,         af);
     REGISTER_FILTER(ASHOWINFO,      ashowinfo,      af);
+    REGISTER_FILTER(ASIDEDATA,      asidedata,      af);
     REGISTER_FILTER(ASPLIT,         asplit,         af);
     REGISTER_FILTER(ASTATS,         astats,         af);
     REGISTER_FILTER(ASTREAMSELECT,  astreamselect,  af);
@@ -286,6 +287,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(SHOWPALETTE,    showpalette,    vf);
     REGISTER_FILTER(SHUFFLEFRAMES,  shuffleframes,  vf);
     REGISTER_FILTER(SHUFFLEPLANES,  shuffleplanes,  vf);
+    REGISTER_FILTER(SIDEDATA,       sidedata,       vf);
     REGISTER_FILTER(SIGNALSTATS,    signalstats,    vf);
     REGISTER_FILTER(SMARTBLUR,      smartblur,      vf);
     REGISTER_FILTER(SOBEL,          sobel,          vf);

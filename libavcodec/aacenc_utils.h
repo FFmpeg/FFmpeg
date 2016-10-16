@@ -252,6 +252,19 @@ static inline int ff_sfdelta_can_replace(const SingleChannelElement *sce,
         && sce->sf_idx[nextband[band]] <= (new_sf + SCALE_MAX_DIFF);
 }
 
+/**
+ * linear congruential pseudorandom number generator
+ *
+ * @param   previous_val    pointer to the current state of the generator
+ *
+ * @return  Returns a 32-bit pseudorandom integer
+ */
+static av_always_inline int lcg_random(unsigned previous_val)
+{
+    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
+    return v.s;
+}
+
 #define ERROR_IF(cond, ...) \
     if (cond) { \
         av_log(avctx, AV_LOG_ERROR, __VA_ARGS__); \

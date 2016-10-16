@@ -160,6 +160,7 @@ do {                                                                            
 
     return 0;
 }
+#undef GET_CALLBACK
 
 static void vdpau_device_uninit(AVHWDeviceContext *ctx)
 {

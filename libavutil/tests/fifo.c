@@ -17,14 +17,14 @@
  */
 
 #include <stdio.h>
-
+#include <stdlib.h>
 #include "libavutil/fifo.h"
 
 int main(void)
 {
     /* create a FIFO buffer */
     AVFifoBuffer *fifo = av_fifo_alloc(13 * sizeof(int));
-    int i, j, n;
+    int i, j, n, *p;
 
     /* fill data */
     for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
@@ -45,6 +45,24 @@ int main(void)
         printf("%d: %d\n", i, j);
     }
     printf("\n");
+
+    /* generic peek at FIFO */
+
+    n = av_fifo_size(fifo);
+    p = malloc(n);
+    if (p == NULL) {
+        fprintf(stderr, "failed to allocate memory.\n");
+        exit(1);
+    }
+
+    (void) av_fifo_generic_peek(fifo, p, n, NULL);
+
+    /* read data at p */
+    n /= sizeof(int);
+    for(i = 0; i < n; ++i)
+        printf("%d: %d\n", i, p[i]);
+
+    putchar('\n');
 
     /* read data */
     for (i = 0; av_fifo_size(fifo) >= sizeof(int); i++) {
@@ -67,8 +85,25 @@ int main(void)
         av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
         printf("%d: %d\n", i, j);
     }
+    putchar('\n');
+
+    /* test fifo_grow */
+    (void) av_fifo_grow(fifo, 15 * sizeof(int));
+
+    /* fill data */
+    n = av_fifo_size(fifo) / sizeof(int);
+    for (i = n; av_fifo_space(fifo) >= sizeof(int); ++i)
+        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
+
+    /* peek_at at FIFO */
+    n = av_fifo_size(fifo) / sizeof(int);
+    for (i = 0; i < n; i++) {
+        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
+        printf("%d: %d\n", i, j);
+    }
 
     av_fifo_free(fifo);
+    free(p);
 
     return 0;
 }

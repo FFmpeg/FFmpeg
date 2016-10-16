@@ -109,7 +109,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!pan->args) {
         av_log(ctx, AV_LOG_ERROR,
                "pan filter needs a channel layout and a set "
-               "of channels definitions as parameter\n");
+               "of channel definitions as parameter\n");
         return AVERROR(EINVAL);
     }
     if (!args)
@@ -276,7 +276,7 @@ static int config_props(AVFilterLink *link)
     if (link->channels > MAX_CHANNELS ||
         pan->nb_output_channels > MAX_CHANNELS) {
         av_log(ctx, AV_LOG_ERROR,
-               "af_pan support a maximum of %d channels. "
+               "af_pan supports a maximum of %d channels. "
                "Feel free to ask for a higher limit.\n", MAX_CHANNELS);
         return AVERROR_PATCHWELCOME;
     }
@@ -322,7 +322,7 @@ static int config_props(AVFilterLink *link)
                 continue;
             t = 0;
             for (j = 0; j < link->channels; j++)
-                t += pan->gain[i][j];
+                t += fabs(pan->gain[i][j]);
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
                 if (t)

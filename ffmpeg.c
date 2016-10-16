@@ -533,12 +533,12 @@ static void ffmpeg_cleanup(int ret)
         avcodec_free_context(&ost->enc_ctx);
         avcodec_parameters_free(&ost->ref_par);
 
-        while (av_fifo_size(ost->muxing_queue)) {
+        while (ost->muxing_queue && av_fifo_size(ost->muxing_queue)) {
             AVPacket pkt;
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
             av_packet_unref(&pkt);
         }
-        av_fifo_free(ost->muxing_queue);
+        av_fifo_freep(&ost->muxing_queue);
 
         av_freep(&output_streams[i]);
     }
@@ -918,7 +918,6 @@ error:
 
 static void do_subtitle_out(OutputFile *of,
                             OutputStream *ost,
-                            InputStream *ist,
                             AVSubtitle *sub)
 {
     int subtitle_out_max_size = 1024 * 1024;
@@ -2396,7 +2395,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
             || ost->enc->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
-        do_subtitle_out(output_files[ost->file_index], ost, ist, &subtitle);
+        do_subtitle_out(output_files[ost->file_index], ost, &subtitle);
     }
 
 out:

@@ -59,10 +59,7 @@ typedef struct MediaCodecDecContext {
     int crop_left;
     int crop_right;
 
-    uint64_t dequeued_buffer_nb;
-
-    int first_buffer;
-    double first_buffer_at;
+    uint64_t output_buffer_count;
 
 } MediaCodecDecContext;
 

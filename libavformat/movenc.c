@@ -4261,16 +4261,20 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
     return update_size(pb, pos);
 }
 
-static void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
+static int mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
 {
     AVStream       *video_st    = s->streams[0];
     AVCodecParameters *video_par = s->streams[0]->codecpar;
     AVCodecParameters *audio_par = s->streams[1]->codecpar;
     int audio_rate = audio_par->sample_rate;
-    // TODO: should be avg_frame_rate
-    int frame_rate = ((video_st->time_base.den) * (0x10000)) / (video_st->time_base.num);
+    int64_t frame_rate = (video_st->avg_frame_rate.num * 0x10000LL) / video_st->avg_frame_rate.den;
     int audio_kbitrate = audio_par->bit_rate / 1000;
     int video_kbitrate = FFMIN(video_par->bit_rate / 1000, 800 - audio_kbitrate);
+
+    if (frame_rate < 0 || frame_rate > INT32_MAX) {
+        av_log(s, AV_LOG_ERROR, "Frame rate %f outside supported range\n", frame_rate / (double)0x10000);
+        return AVERROR(EINVAL);
+    }
 
     avio_wb32(pb, 0x94); /* size */
     ffio_wfourcc(pb, "uuid");
@@ -4322,6 +4326,8 @@ static void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
     avio_wb16(pb, video_par->width);
     avio_wb16(pb, video_par->height);
     avio_wb32(pb, 0x010001); /* ? */
+
+    return 0;
 }
 
 static int mov_write_identification(AVIOContext *pb, AVFormatContext *s)
@@ -4346,7 +4352,7 @@ static int mov_write_identification(AVIOContext *pb, AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
             return AVERROR(EINVAL);
         }
-        mov_write_uuidprof_tag(pb, s);
+        return mov_write_uuidprof_tag(pb, s);
     }
     return 0;
 }

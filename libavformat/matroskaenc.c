@@ -96,6 +96,16 @@ typedef struct mkv_track {
     int64_t         ts_offset;
 } mkv_track;
 
+typedef struct mkv_attachment {
+    int             stream_idx;
+    uint32_t        fileuid;
+} mkv_attachment;
+
+typedef struct mkv_attachments {
+    mkv_attachment  *entries;
+    int             num_entries;
+} mkv_attachments;
+
 #define MODE_MATROSKAv2 0x01
 #define MODE_WEBM       0x02
 
@@ -121,6 +131,7 @@ typedef struct MatroskaMuxContext {
     mkv_seekhead    *main_seekhead;
     mkv_cues        *cues;
     mkv_track       *tracks;
+    mkv_attachments *attachments;
 
     AVPacket        cur_audio_pkt;
 
@@ -367,6 +378,10 @@ static void mkv_free(MatroskaMuxContext *mkv) {
     if (mkv->cues) {
         av_freep(&mkv->cues->entries);
         av_freep(&mkv->cues);
+    }
+    if (mkv->attachments) {
+        av_freep(&mkv->attachments->entries);
+        av_freep(&mkv->attachments);
     }
     av_freep(&mkv->tracks);
     av_freep(&mkv->stream_durations);
@@ -737,9 +752,8 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
             if (!par->codec_tag)
                 par->codec_tag = ff_codec_get_tag(ff_codec_movvideo_tags,
                                                     par->codec_id);
-            if (par->extradata_size) {
                 if (   ff_codec_get_id(ff_codec_movvideo_tags, par->codec_tag) == par->codec_id
-                    && ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(par->extradata + 4)) != par->codec_id
+                    && (!par->extradata_size || ff_codec_get_id(ff_codec_movvideo_tags, AV_RL32(par->extradata + 4)) != par->codec_id)
                 ) {
                     int i;
                     avio_wb32(dyn_cp, 0x5a + par->extradata_size);
@@ -748,7 +762,6 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
                         avio_w8(dyn_cp, 0);
                 }
                 avio_write(dyn_cp, par->extradata, par->extradata_size);
-            }
         } else {
             if (!ff_codec_get_tag(ff_codec_bmp_tags, par->codec_id))
                 av_log(s, AV_LOG_WARNING, "codec %s is not supported by this format\n",
@@ -863,8 +876,6 @@ static void mkv_write_field_order(AVIOContext *pb, int mode,
 {
     switch (field_order) {
     case AV_FIELD_UNKNOWN:
-        put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
-                      MATROSKA_VIDEO_INTERLACE_FLAG_UNDETERMINED);
         break;
     case AV_FIELD_PROGRESSIVE:
         put_ebml_uint(pb, MATROSKA_ID_VIDEOFLAGINTERLACED,
@@ -1186,7 +1197,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         } else if (display_width_div != 1 || display_height_div != 1) {
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
-        }
+        } else
+            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYUNIT, MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN);
 
         if (par->codec_id == AV_CODEC_ID_RAWVIDEO) {
             uint32_t color_space = av_le2ne32(par->codec_tag);
@@ -1393,7 +1405,10 @@ static int mkv_check_tag_name(const char *name, unsigned int elementid)
            av_strcasecmp(name, "encoding_tool") &&
            av_strcasecmp(name, "duration") &&
            (elementid != MATROSKA_ID_TAGTARGETS_TRACKUID ||
-            av_strcasecmp(name, "language"));
+            av_strcasecmp(name, "language")) &&
+           (elementid != MATROSKA_ID_TAGTARGETS_ATTACHUID ||
+            (av_strcasecmp(name, "filename") &&
+             av_strcasecmp(name, "mimetype")));
 }
 
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
@@ -1446,6 +1461,9 @@ static int mkv_write_tags(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
 
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
+            continue;
+
         if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
             continue;
 
@@ -1456,8 +1474,12 @@ static int mkv_write_tags(AVFormatContext *s)
     if (s->pb->seekable && !mkv->is_live) {
         for (i = 0; i < s->nb_streams; i++) {
             AVIOContext *pb;
+            AVStream *st = s->streams[i];
             ebml_master tag_target;
             ebml_master tag;
+
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
+                continue;
 
             mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &mkv->tags, &tag_target);
             pb = mkv->tags_bc;
@@ -1484,6 +1506,20 @@ static int mkv_write_tags(AVFormatContext *s)
         if (ret < 0) return ret;
     }
 
+    if (mkv->have_attachments) {
+        for (i = 0; i < mkv->attachments->num_entries; i++) {
+            mkv_attachment *attachment = &mkv->attachments->entries[i];
+            AVStream *st = s->streams[attachment->stream_idx];
+
+            if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID))
+                continue;
+
+            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID, attachment->fileuid, &mkv->tags);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
     if (mkv->tags.pos) {
         if (s->pb->seekable && !mkv->is_live)
             put_ebml_void(s->pb, avio_tell(mkv->tags_bc) + ((mkv->write_crc && mkv->mode != MODE_WEBM) ? 2 /* ebml id + data size */ + 4 /* CRC32 */ : 0));
@@ -1504,6 +1540,10 @@ static int mkv_write_attachments(AVFormatContext *s)
     if (!mkv->have_attachments)
         return 0;
 
+    mkv->attachments = av_mallocz(sizeof(*mkv->attachments));
+    if (!mkv->attachments)
+        return ret;
+
     av_lfg_init(&c, av_get_random_seed());
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
@@ -1515,12 +1555,18 @@ static int mkv_write_attachments(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         ebml_master attached_file;
+        mkv_attachment *attachment = mkv->attachments->entries;
         AVDictionaryEntry *t;
         const char *mimetype = NULL;
-        uint64_t fileuid;
+        uint32_t fileuid;
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             continue;
+
+        attachment = av_realloc_array(attachment, mkv->attachments->num_entries + 1, sizeof(mkv_attachment));
+        if (!attachment)
+            return AVERROR(ENOMEM);
+        mkv->attachments->entries = attachment;
 
         attached_file = start_ebml_master(dyn_cp, MATROSKA_ID_ATTACHEDFILE, 0);
 
@@ -1561,17 +1607,20 @@ static int mkv_write_attachments(AVFormatContext *s)
             av_sha_update(sha, st->codecpar->extradata, st->codecpar->extradata_size);
             av_sha_final(sha, digest);
             av_free(sha);
-            fileuid = AV_RL64(digest);
+            fileuid = AV_RL32(digest);
         } else {
             fileuid = av_lfg_get(&c);
         }
-        av_log(s, AV_LOG_VERBOSE, "Using %.16"PRIx64" for attachment %d\n",
-               fileuid, i);
+        av_log(s, AV_LOG_VERBOSE, "Using %.8"PRIx32" for attachment %d\n",
+               fileuid, mkv->attachments->num_entries);
 
         put_ebml_string(dyn_cp, MATROSKA_ID_FILEMIMETYPE, mimetype);
         put_ebml_binary(dyn_cp, MATROSKA_ID_FILEDATA, st->codecpar->extradata, st->codecpar->extradata_size);
         put_ebml_uint(dyn_cp, MATROSKA_ID_FILEUID, fileuid);
         end_ebml_master(dyn_cp, attached_file);
+
+        mkv->attachments->entries[mkv->attachments->num_entries].stream_idx = i;
+        mkv->attachments->entries[mkv->attachments->num_entries++].fileuid  = fileuid;
     }
     end_ebml_master_crc32(pb, &dyn_cp, mkv, attachments);
 
@@ -1751,11 +1800,11 @@ static int mkv_write_header(AVFormatContext *s)
         if (ret < 0)
             goto fail;
 
-        ret = mkv_write_tags(s);
+        ret = mkv_write_attachments(s);
         if (ret < 0)
             goto fail;
 
-        ret = mkv_write_attachments(s);
+        ret = mkv_write_tags(s);
         if (ret < 0)
             goto fail;
     }

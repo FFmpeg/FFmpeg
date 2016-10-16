@@ -114,6 +114,15 @@ fate-filter-extrastereo: tests/data/asynth-44100-2.wav
 fate-filter-extrastereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-extrastereo: CMD = framecrc -i $(SRC) -aframes 20 -af extrastereo=m=2
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, FIREQUALIZER ATRIM VOLUME, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-firequalizer
+fate-filter-firequalizer: tests/data/asynth-44100-2.wav
+fate-filter-firequalizer: tests/data/filtergraphs/firequalizer
+fate-filter-firequalizer: REF = tests/data/asynth-44100-2.wav
+fate-filter-firequalizer: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -filter_script $(TARGET_PATH)/tests/data/filtergraphs/firequalizer -f wav -acodec pcm_s16le -
+fate-filter-firequalizer: CMP = oneoff
+fate-filter-firequalizer: CMP_UNIT = s16
+fate-filter-firequalizer: SIZE_TOLERANCE = 1058400 - 1097208
+
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, SILENCEREMOVE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-silenceremove
 fate-filter-silenceremove: SRC = $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav
 fate-filter-silenceremove: CMD = framecrc -i $(SRC) -aframes 30 -af silenceremove=0:0:0:-1:0:-90dB
