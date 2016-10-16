@@ -1759,7 +1759,7 @@ static int mkv_field_order(MatroskaDemuxContext *matroska, int64_t field_order)
 
     /* workaround a bug in our Matroska muxer, introduced in version 57.36 alongside
      * this function, and fixed in 57.52 */
-    if (sscanf(matroska->muxingapp, "Lavf%d.%d.%d", &major, &minor, &micro) == 3)
+    if (matroska->muxingapp && sscanf(matroska->muxingapp, "Lavf%d.%d.%d", &major, &minor, &micro) == 3)
         bttb = (major == 57 && minor >= 36 && minor <= 51 && micro >= 100);
 
     switch (field_order) {
