@@ -34,39 +34,11 @@
  * is not just a function of time, but also one of the dependency on additional
  * frames being fed into the decoder to satisfy the b-frame dependencies.
  *
- * As such, a pipeline will build up that is roughly equivalent to the required
- * DPB for the file being played. If that was all it took, things would still
- * be simple - so, of course, it isn't.
- *
- * The hardware has a way of indicating that a picture is ready to be copied out,
- * but this is unreliable - and sometimes the attempt will still fail so, based
- * on testing, the code will wait until 3 pictures are ready before starting
- * to copy out - and this has the effect of extending the pipeline.
- *
- * Finally, while it is tempting to say that once the decoder starts outputting
- * frames, the software should never fail to return a frame from a decode(),
- * this is a hard assertion to make, because the stream may switch between
- * differently encoded content (number of b-frames, interlacing, etc) which
- * might require a longer pipeline than before. If that happened, you could
- * deadlock trying to retrieve a frame that can't be decoded without feeding
- * in additional packets.
- *
- * As such, the code will return in the event that a picture cannot be copied
- * out, leading to an increase in the length of the pipeline. This in turn,
- * means we have to be sensitive to the time it takes to decode a picture;
- * We do not want to give up just because the hardware needed a little more
- * time to prepare the picture! For this reason, there are delays included
- * in the decode() path that ensure that, under normal conditions, the hardware
- * will only fail to return a frame if it really needs additional packets to
- * complete the decoding.
- *
- * Finally, to be explicit, we do not want the pipeline to grow without bound
- * for two reasons: 1) The hardware can only buffer a finite number of packets,
- * and 2) The client application may not be able to cope with arbitrarily long
- * delays in the video path relative to the audio path. For example. MPlayer
- * can only handle a 20 picture delay (although this is arbitrary, and needs
- * to be extended to fully support the CrystalHD where the delay could be up
- * to 32 pictures - consider PAFF H.264 content with 16 b-frames).
+ * As such, the hardware can only be used effectively with a decode API that
+ * doesn't assume a 1:1 relationship between input packets and output frames.
+ * The new avcodec decode API is such an API (an m:n API) while the old one is
+ * 1:1. Consequently, we no longer support the old API, which allows us to avoid
+ * the vicious hacks that are required to approximate 1:1 operation.
  */
 
 /*****************************************************************************
