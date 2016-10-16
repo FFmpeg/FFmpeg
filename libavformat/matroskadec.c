@@ -2297,7 +2297,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREOMODE_TYPE_NB)
                 mkv_stereo_mode_display_mul(track->video.stereo_mode, &display_width_mul, &display_height_mul);
 
-            if (track->video.display_unit == MATROSKA_VIDEO_DISPLAYUNIT_PIXELS) {
+            if (track->video.display_unit < MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN) {
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
                           st->codecpar->height * track->video.display_width  * display_width_mul,
