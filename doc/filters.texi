@@ -16870,6 +16870,10 @@ use embedded font. Note that drawing with font file or embedded font is not
 implemented with custom @var{basefreq} and @var{endfreq}, use @var{axisfile}
 option instead.
 
+@item font
+Specify fontconfig pattern. This has lower priority than @var{fontfile}.
+The : in the pattern may be replaced by | to avoid unnecessary escaping.
+
 @item fontcolor
 Specify font color expression. This is arithmetic expression that should return
 integer value 0xRRGGBB. It can contain variables:
@@ -16990,6 +16994,12 @@ tc=0.33:tlength='st(0,0.17); 384*tc / (384 / ld(0) + tc*f /(1-ld(0))) + 384*tc /
 Custom fontcolor and fontfile, C-note is colored green, others are colored blue:
 @example
 fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))':fontfile=myfont.ttf
+@end example
+
+@item
+Custom font using fontconfig:
+@example
+font='Courier New,Monospace,mono|bold'
 @end example
 
 @item

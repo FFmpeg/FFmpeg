@@ -36,6 +36,10 @@
 #include FT_FREETYPE_H
 #endif
 
+#if CONFIG_LIBFONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
+
 #include "avf_showcqt.h"
 
 #define BASEFREQ        20.01523126408007475
@@ -78,7 +82,8 @@ static const AVOption showcqt_options[] = {
     { "tlength",         "set tlength", OFFSET(tlength),   AV_OPT_TYPE_STRING, { .str = TLENGTH },   CHAR_MIN, CHAR_MAX, FLAGS },
     { "count",   "set transform count", OFFSET(count),        AV_OPT_TYPE_INT, { .i64 = 6 },                1, 30,       FLAGS },
     { "fcount",  "set frequency count", OFFSET(fcount),       AV_OPT_TYPE_INT, { .i64 = 0 },                0, 10,       FLAGS },
-    { "fontfile",      "set axis font", OFFSET(fontfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fontfile", "set axis font file", OFFSET(fontfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
+    { "font",          "set axis font", OFFSET(font),      AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
     { "fontcolor",    "set font color", OFFSET(fontcolor), AV_OPT_TYPE_STRING, { .str = FONTCOLOR }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "axisfile",     "set axis image", OFFSET(axisfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
     { "axis",              "draw axis", OFFSET(axis),        AV_OPT_TYPE_BOOL, { .i64 = 1 },                0, 1,        FLAGS },
@@ -492,7 +497,7 @@ static int init_axis_color(ShowCQTContext *s, AVFrame *tmp, int half)
     return 0;
 }
 
-static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
+static int render_freetype(ShowCQTContext *s, AVFrame *tmp, char *fontfile)
 {
 #if CONFIG_LIBFREETYPE
     const char *str = "EF G A BC D ";
@@ -506,13 +511,13 @@ static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
     int non_monospace_warning = 0;
     int x;
 
-    if (!s->fontfile)
+    if (!fontfile)
         return AVERROR(EINVAL);
 
     if (FT_Init_FreeType(&lib))
         goto fail;
 
-    if (FT_New_Face(lib, s->fontfile, 0, &face))
+    if (FT_New_Face(lib, fontfile, 0, &face))
         goto fail;
 
     if (FT_Set_Char_Size(face, 16*64, 0, 0, 0))
@@ -565,13 +570,77 @@ static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
     return 0;
 
 fail:
-    av_log(s->ctx, AV_LOG_WARNING, "error while loading freetype font, using default font instead.\n");
+    av_log(s->ctx, AV_LOG_WARNING, "error while loading freetype font.\n");
     FT_Done_Face(face);
     FT_Done_FreeType(lib);
     return AVERROR(EINVAL);
 #else
-    if (s->fontfile)
+    if (fontfile)
         av_log(s->ctx, AV_LOG_WARNING, "freetype is not available, ignoring fontfile option.\n");
+    return AVERROR(EINVAL);
+#endif
+}
+
+static int render_fontconfig(ShowCQTContext *s, AVFrame *tmp, char* font)
+{
+#if CONFIG_LIBFONTCONFIG
+    FcConfig *fontconfig;
+    FcPattern *pat, *best;
+    FcResult result = FcResultMatch;
+    char *filename;
+    int i, ret;
+
+    if (!font)
+        return AVERROR(EINVAL);
+
+    for (i = 0; font[i]; i++) {
+        if (font[i] == '|')
+            font[i] = ':';
+    }
+
+    if (!(fontconfig = FcInitLoadConfigAndFonts())) {
+        av_log(s->ctx, AV_LOG_ERROR, "impossible to init fontconfig.\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    if (!(pat = FcNameParse((uint8_t *)font))) {
+        av_log(s->ctx, AV_LOG_ERROR, "could not parse fontconfig pat.\n");
+        FcConfigDestroy(fontconfig);
+        return AVERROR(EINVAL);
+    }
+
+    FcDefaultSubstitute(pat);
+
+    if (!FcConfigSubstitute(fontconfig, pat, FcMatchPattern)) {
+        av_log(s->ctx, AV_LOG_ERROR, "could not substitue fontconfig options.\n");
+        FcPatternDestroy(pat);
+        FcConfigDestroy(fontconfig);
+        return AVERROR(ENOMEM);
+    }
+
+    best = FcFontMatch(fontconfig, pat, &result);
+    FcPatternDestroy(pat);
+
+    ret = AVERROR(EINVAL);
+    if (!best || result != FcResultMatch) {
+        av_log(s->ctx, AV_LOG_ERROR, "cannot find a valid font for %s.\n", font);
+        goto fail;
+    }
+
+    if (FcPatternGetString(best, FC_FILE, 0, (FcChar8 **)&filename) != FcResultMatch) {
+        av_log(s->ctx, AV_LOG_ERROR, "no file path for %s\n", font);
+        goto fail;
+    }
+
+    ret = render_freetype(s, tmp, filename);
+
+fail:
+    FcPatternDestroy(best);
+    FcConfigDestroy(fontconfig);
+    return ret;
+#else
+    if (font)
+        av_log(s->ctx, AV_LOG_WARNING, "fontconfig is not available, ignoring font option.\n");
     return AVERROR(EINVAL);
 #endif
 }
@@ -615,7 +684,9 @@ static int init_axis_from_font(ShowCQTContext *s)
     if (!(s->axis_frame = av_frame_alloc()))
         goto fail;
 
-    if (render_freetype(s, tmp) < 0 && (default_font = 1, ret = render_default_font(tmp)) < 0)
+    if (render_freetype(s, tmp, s->fontfile) < 0 &&
+        render_fontconfig(s, tmp, s->font) < 0 &&
+        (default_font = 1, ret = render_default_font(tmp)) < 0)
         goto fail;
 
     if (default_font)

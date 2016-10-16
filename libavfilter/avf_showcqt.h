@@ -109,6 +109,7 @@ typedef struct {
     int                 count;
     int                 fcount;
     char                *fontfile;
+    char                *font;
     char                *fontcolor;
     char                *axisfile;
     int                 axis;
