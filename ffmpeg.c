@@ -918,7 +918,6 @@ error:
 
 static void do_subtitle_out(OutputFile *of,
                             OutputStream *ost,
-                            InputStream *ist,
                             AVSubtitle *sub)
 {
     int subtitle_out_max_size = 1024 * 1024;
@@ -2396,7 +2395,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
             || ost->enc->type != AVMEDIA_TYPE_SUBTITLE)
             continue;
 
-        do_subtitle_out(output_files[ost->file_index], ost, ist, &subtitle);
+        do_subtitle_out(output_files[ost->file_index], ost, &subtitle);
     }
 
 out:
