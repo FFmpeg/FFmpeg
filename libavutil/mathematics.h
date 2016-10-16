@@ -105,7 +105,7 @@ enum AVRounding {
      * //     => AV_NOPTS_VALUE
      * @endcode
      */
-    AV_ROUND_PASS_MINMAX = 8192,
+    AV_ROUND_PASS_MINMAX = 8192
 };
 
 /**
