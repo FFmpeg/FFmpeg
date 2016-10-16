@@ -453,6 +453,9 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     return 0;
 }
 
+#define SELECT_GAIN(s) (s->gain_cmd ? s->gain_cmd : s->gain)
+#define SELECT_GAIN_ENTRY(s) (s->gain_entry_cmd ? s->gain_entry_cmd : s->gain_entry)
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -510,8 +513,7 @@ static int config_input(AVFilterLink *inlink)
     if (s->fixed)
         inlink->min_samples = inlink->max_samples = inlink->partial_buf_size = s->nsamples_max;
 
-    return generate_kernel(ctx, s->gain_cmd ? s->gain_cmd : s->gain,
-                           s->gain_entry_cmd ? s->gain_entry_cmd : s->gain_entry);
+    return generate_kernel(ctx, SELECT_GAIN(s), SELECT_GAIN_ENTRY(s));
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -567,11 +569,16 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     if (!strcmp(cmd, "gain")) {
         char *gain_cmd;
 
+        if (SELECT_GAIN(s) && !strcmp(SELECT_GAIN(s), args)) {
+            av_log(ctx, AV_LOG_DEBUG, "equal gain, do not rebuild.\n");
+            return 0;
+        }
+
         gain_cmd = av_strdup(args);
         if (!gain_cmd)
             return AVERROR(ENOMEM);
 
-        ret = generate_kernel(ctx, gain_cmd, s->gain_entry_cmd ? s->gain_entry_cmd : s->gain_entry);
+        ret = generate_kernel(ctx, gain_cmd, SELECT_GAIN_ENTRY(s));
         if (ret >= 0) {
             av_freep(&s->gain_cmd);
             s->gain_cmd = gain_cmd;
@@ -581,11 +588,16 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     } else if (!strcmp(cmd, "gain_entry")) {
         char *gain_entry_cmd;
 
+        if (SELECT_GAIN_ENTRY(s) && !strcmp(SELECT_GAIN_ENTRY(s), args)) {
+            av_log(ctx, AV_LOG_DEBUG, "equal gain_entry, do not rebuild.\n");
+            return 0;
+        }
+
         gain_entry_cmd = av_strdup(args);
         if (!gain_entry_cmd)
             return AVERROR(ENOMEM);
 
-        ret = generate_kernel(ctx, s->gain_cmd ? s->gain_cmd : s->gain, gain_entry_cmd);
+        ret = generate_kernel(ctx, SELECT_GAIN(s), gain_entry_cmd);
         if (ret >= 0) {
             av_freep(&s->gain_entry_cmd);
             s->gain_entry_cmd = gain_entry_cmd;
