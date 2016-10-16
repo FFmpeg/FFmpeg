@@ -180,6 +180,7 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
 .version: M=@
 
+cmdutils.o libavutil/utils.o: avversion.h
 avversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) avversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
