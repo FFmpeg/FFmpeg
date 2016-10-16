@@ -24,6 +24,8 @@
 
 #include "libavutil/error.h"
 
+#include "mediacodec.h"
+
 #if CONFIG_H264_MEDIACODEC_HWACCEL
 
 #include <jni.h>
@@ -33,7 +35,6 @@
 #include "libavutil/mem.h"
 
 #include "ffjni.h"
-#include "mediacodec.h"
 #include "mediacodecdec.h"
 
 AVMediaCodecContext *av_mediacodec_alloc_context(void)
@@ -100,8 +101,6 @@ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
 #else
 
 #include <stdlib.h>
-
-#include "mediacodec.h"
 
 AVMediaCodecContext *av_mediacodec_alloc_context(void)
 {
