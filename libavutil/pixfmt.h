@@ -306,7 +306,7 @@ enum AVPixelFormat {
 
     AV_PIX_FMT_MEDIACODEC, ///< hardware decoding through MediaCodec
 
-    AV_PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
+    AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
 #if AV_HAVE_BIGENDIAN
@@ -401,7 +401,7 @@ enum AVColorPrimaries {
     AVCOL_PRI_SMPTEST428_1 = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
     AVCOL_PRI_SMPTE431    = 11, ///< SMPTE ST 431-2 (2011)
     AVCOL_PRI_SMPTE432    = 12, ///< SMPTE ST 432-1 D65 (2010)
-    AVCOL_PRI_NB,               ///< Not part of ABI
+    AVCOL_PRI_NB                ///< Not part of ABI
 };
 
 /**
@@ -427,7 +427,7 @@ enum AVColorTransferCharacteristic {
     AVCOL_TRC_SMPTEST2084  = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
     AVCOL_TRC_SMPTEST428_1 = 17, ///< SMPTE ST 428-1
     AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
-    AVCOL_TRC_NB,                ///< Not part of ABI
+    AVCOL_TRC_NB                 ///< Not part of ABI
 };
 
 /**
@@ -446,7 +446,7 @@ enum AVColorSpace {
     AVCOL_SPC_BT2020_NCL  = 9,  ///< ITU-R BT2020 non-constant luminance system
     AVCOL_SPC_BT2020_CL   = 10, ///< ITU-R BT2020 constant luminance system
     AVCOL_SPC_SMPTE2085   = 11, ///< SMPTE 2085, Y'D'zD'x
-    AVCOL_SPC_NB,               ///< Not part of ABI
+    AVCOL_SPC_NB                ///< Not part of ABI
 };
 #define AVCOL_SPC_YCGCO AVCOL_SPC_YCOCG
 
@@ -458,7 +458,7 @@ enum AVColorRange {
     AVCOL_RANGE_UNSPECIFIED = 0,
     AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
     AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
-    AVCOL_RANGE_NB,              ///< Not part of ABI
+    AVCOL_RANGE_NB               ///< Not part of ABI
 };
 
 /**
@@ -484,7 +484,7 @@ enum AVChromaLocation {
     AVCHROMA_LOC_TOP         = 4,
     AVCHROMA_LOC_BOTTOMLEFT  = 5,
     AVCHROMA_LOC_BOTTOM      = 6,
-    AVCHROMA_LOC_NB,              ///< Not part of ABI
+    AVCHROMA_LOC_NB               ///< Not part of ABI
 };
 
 #endif /* AVUTIL_PIXFMT_H */
