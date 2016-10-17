@@ -65,6 +65,7 @@ typedef struct {
 typedef struct {
     const AVClass *class;
 
+    RDFTContext   *analysis_rdft;
     RDFTContext   *analysis_irdft;
     RDFTContext   *rdft;
     RDFTContext   *irdft;
@@ -72,6 +73,7 @@ typedef struct {
     int           rdft_len;
 
     float         *analysis_buf;
+    float         *dump_buf;
     float         *kernel_tmp_buf;
     float         *kernel_buf;
     float         *conv_buf;
@@ -93,6 +95,8 @@ typedef struct {
     int           multi;
     int           zero_phase;
     int           scale;
+    char          *dumpfile;
+    int           dumpscale;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -126,6 +130,8 @@ static const AVOption firequalizer_options[] = {
         { "linlog", "linear-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LINLOG }, 0, 0, FLAGS, "scale" },
         { "loglin", "logarithmic-freq linear-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLIN }, 0, 0, FLAGS, "scale" },
         { "loglog", "logarithmic-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLOG }, 0, 0, FLAGS, "scale" },
+    { "dumpfile", "set dump file", OFFSET(dumpfile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
+    { "dumpscale", "set dump scale", OFFSET(dumpscale), AV_OPT_TYPE_INT, { .i64 = SCALE_LINLOG }, 0, NB_SCALE-1, FLAGS, "scale" },
     { NULL }
 };
 
@@ -133,12 +139,14 @@ AVFILTER_DEFINE_CLASS(firequalizer);
 
 static void common_uninit(FIREqualizerContext *s)
 {
+    av_rdft_end(s->analysis_rdft);
     av_rdft_end(s->analysis_irdft);
     av_rdft_end(s->rdft);
     av_rdft_end(s->irdft);
-    s->analysis_irdft = s->rdft = s->irdft = NULL;
+    s->analysis_rdft = s->analysis_irdft = s->rdft = s->irdft = NULL;
 
     av_freep(&s->analysis_buf);
+    av_freep(&s->dump_buf);
     av_freep(&s->kernel_tmp_buf);
     av_freep(&s->kernel_buf);
     av_freep(&s->conv_buf);
@@ -220,6 +228,53 @@ static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, floa
         }
         fast_convolute(s, kernel_buf, conv_buf, idx, data, nsamples/2);
         fast_convolute(s, kernel_buf, conv_buf, idx, data + nsamples/2, nsamples - nsamples/2);
+    }
+}
+
+static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
+{
+    FIREqualizerContext *s = ctx->priv;
+    int rate = ctx->inputs[0]->sample_rate;
+    int xlog = s->dumpscale == SCALE_LOGLIN || s->dumpscale == SCALE_LOGLOG;
+    int ylog = s->dumpscale == SCALE_LINLOG || s->dumpscale == SCALE_LOGLOG;
+    int x;
+    int center = s->fir_len / 2;
+    double delay = s->zero_phase ? 0.0 : (double) center / rate;
+    double vx, ya, yb;
+
+    s->analysis_buf[0] *= s->rdft_len/2;
+    for (x = 1; x <= center; x++) {
+        s->analysis_buf[x] *= s->rdft_len/2;
+        s->analysis_buf[s->analysis_rdft_len - x] *= s->rdft_len/2;
+    }
+
+    if (ch)
+        fprintf(fp, "\n\n");
+
+    fprintf(fp, "# time[%d] (time amplitude)\n", ch);
+
+    for (x = center; x > 0; x--)
+        fprintf(fp, "%15.10f %15.10f\n", delay - (double) x / rate, (double) s->analysis_buf[s->analysis_rdft_len - x]);
+
+    for (x = 0; x <= center; x++)
+        fprintf(fp, "%15.10f %15.10f\n", delay + (double)x / rate , (double) s->analysis_buf[x]);
+
+    av_rdft_calc(s->analysis_rdft, s->analysis_buf);
+
+    fprintf(fp, "\n\n# freq[%d] (frequency desired_gain actual_gain)\n", ch);
+
+    for (x = 0; x <= s->analysis_rdft_len/2; x++) {
+        int i = (x == s->analysis_rdft_len/2) ? 1 : 2 * x;
+        vx = (double)x * rate / s->analysis_rdft_len;
+        if (xlog)
+            vx = log2(0.05*vx);
+        ya = s->dump_buf[i];
+        yb = s->analysis_buf[i];
+        if (ylog) {
+            ya = 20.0 * log10(fabs(ya));
+            yb = 20.0 * log10(fabs(yb));
+        }
+        fprintf(fp, "%17.10f %17.10f %17.10f\n", vx, ya, yb);
     }
 }
 
@@ -332,6 +387,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     int ret, k, center, ch;
     int xlog = s->scale == SCALE_LOGLIN || s->scale == SCALE_LOGLOG;
     int ylog = s->scale == SCALE_LINLOG || s->scale == SCALE_LOGLOG;
+    FILE *dump_fp = NULL;
 
     s->nb_gain_entry = 0;
     s->gain_entry_err = 0;
@@ -352,10 +408,14 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     if (ret < 0)
         return ret;
 
+    if (s->dumpfile && (!s->dump_buf || !s->analysis_rdft || !(dump_fp = fopen(s->dumpfile, "w"))))
+        av_log(ctx, AV_LOG_WARNING, "dumping failed.\n");
+
     vars[VAR_CHS] = inlink->channels;
     vars[VAR_CHLAYOUT] = inlink->channel_layout;
     vars[VAR_SR] = inlink->sample_rate;
     for (ch = 0; ch < inlink->channels; ch++) {
+        float *rdft_buf = s->kernel_tmp_buf + ch * s->rdft_len;
         double result;
         vars[VAR_CH] = ch;
         vars[VAR_CHID] = av_channel_layout_extract_channel(inlink->channel_layout, ch);
@@ -379,6 +439,9 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
             s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : result;
             s->analysis_buf[2*k+1] = 0.0;
         }
+
+        if (s->dump_buf)
+            memcpy(s->dump_buf, s->analysis_buf, s->analysis_rdft_len * sizeof(*s->analysis_buf));
 
         av_rdft_calc(s->analysis_irdft, s->analysis_buf);
         center = s->fir_len / 2;
@@ -421,35 +484,36 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
                 av_assert0(0);
             }
             s->analysis_buf[k] *= (2.0/s->analysis_rdft_len) * (2.0/s->rdft_len) * win;
+            if (k)
+                s->analysis_buf[s->analysis_rdft_len - k] = s->analysis_buf[k];
         }
 
-        for (k = 0; k < center - k; k++) {
-            float tmp = s->analysis_buf[k];
-            s->analysis_buf[k] = s->analysis_buf[center - k];
-            s->analysis_buf[center - k] = tmp;
-        }
-
-        for (k = 1; k <= center; k++)
-            s->analysis_buf[center + k] = s->analysis_buf[center - k];
-
-        memset(s->analysis_buf + s->fir_len, 0, (s->rdft_len - s->fir_len) * sizeof(*s->analysis_buf));
-        av_rdft_calc(s->rdft, s->analysis_buf);
+        memset(s->analysis_buf + center + 1, 0, (s->analysis_rdft_len - s->fir_len) * sizeof(*s->analysis_buf));
+        memcpy(rdft_buf, s->analysis_buf + s->analysis_rdft_len - center, center * sizeof(*s->analysis_buf));
+        memcpy(rdft_buf + center, s->analysis_buf, (s->rdft_len - center) * sizeof(*s->analysis_buf));
+        av_rdft_calc(s->rdft, rdft_buf);
 
         for (k = 0; k < s->rdft_len; k++) {
-            if (isnan(s->analysis_buf[k]) || isinf(s->analysis_buf[k])) {
+            if (isnan(rdft_buf[k]) || isinf(rdft_buf[k])) {
                 av_log(ctx, AV_LOG_ERROR, "filter kernel contains nan or infinity.\n");
                 av_expr_free(gain_expr);
+                if (dump_fp)
+                    fclose(dump_fp);
                 return AVERROR(EINVAL);
             }
         }
 
-        memcpy(s->kernel_tmp_buf + ch * s->rdft_len, s->analysis_buf, s->rdft_len * sizeof(*s->analysis_buf));
+        if (dump_fp)
+            dump_fir(ctx, dump_fp, ch);
+
         if (!s->multi)
             break;
     }
 
     memcpy(s->kernel_buf, s->kernel_tmp_buf, (s->multi ? inlink->channels : 1) * s->rdft_len * sizeof(*s->kernel_buf));
     av_expr_free(gain_expr);
+    if (dump_fp)
+        fclose(dump_fp);
     return 0;
 }
 
@@ -498,6 +562,11 @@ static int config_input(AVFilterLink *inlink)
 
     if (!(s->analysis_irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
         return AVERROR(ENOMEM);
+
+    if (s->dumpfile) {
+        s->analysis_rdft = av_rdft_init(rdft_bits, DFT_R2C);
+        s->dump_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->dump_buf));
+    }
 
     s->analysis_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->analysis_buf));
     s->kernel_tmp_buf = av_malloc_array(s->rdft_len * (s->multi ? inlink->channels : 1), sizeof(*s->kernel_tmp_buf));

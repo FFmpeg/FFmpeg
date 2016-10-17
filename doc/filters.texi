@@ -2576,6 +2576,13 @@ logarithmic (in octave scale where 20 Hz is 0) frequency, linear gain
 @item loglog
 logarithmic frequency, logarithmic gain
 @end table
+
+@item dumpfile
+Set file for dumping, suitable for gnuplot.
+
+@item dumpscale
+Set scale for dumpfile. Acceptable values are same with scale option.
+Default is linlog.
 @end table
 
 @subsection Examples
