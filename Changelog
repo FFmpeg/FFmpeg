@@ -1,7 +1,16 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 3.1.5:
+- doc: fix various typos and grammar errors
+- avformat/utils: Update codec_id before using it in the parser init
+- cmdutils: fix typos
+- lavfi: fix typos
+- lavc: fix typos
+- tools: fix grammar error
+- ffmpeg: remove unused and errorneous AVFrame timestamp check
+- Support for MIPS cpu P6600
+- avutil/mips/generic_macros_msa: rename macro variable which causes segfault for mips r6
 
 version 3.1.4:
 - avformat/avidec: Check nb_streams in read_gab2_sub()
