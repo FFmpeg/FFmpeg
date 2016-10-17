@@ -1192,8 +1192,10 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
                 return AVERROR(EINVAL);
             }
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
-            put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+            if (d_width != par->width || display_width_div != 1 || display_height_div != 1) {
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
+                put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
+            }
         } else if (display_width_div != 1 || display_height_div != 1) {
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , par->width / display_width_div);
             put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, par->height / display_height_div);
