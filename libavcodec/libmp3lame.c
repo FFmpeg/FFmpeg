@@ -50,6 +50,7 @@ typedef struct LAMEContext {
     int reservoir;
     int joint_stereo;
     int abr;
+    int delay_sent;
     float *samples_flt[2];
     AudioFrameQueue afq;
     AVFloatDSPContext *fdsp;
@@ -185,7 +186,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     LAMEContext *s = avctx->priv_data;
     MPADecodeHeader hdr;
-    int len, ret, ch;
+    int len, ret, ch, discard_padding;
     int lame_result;
     uint32_t h;
 
@@ -268,6 +269,30 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         /* Get the next frame pts/duration */
         ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                            &avpkt->duration);
+
+        discard_padding = avctx->frame_size - avpkt->duration;
+        // Check if subtraction resulted in an overflow
+        if ((discard_padding < avctx->frame_size) != (avpkt->duration > 0)) {
+            av_log(avctx, AV_LOG_ERROR, "discard padding overflow\n");
+            av_packet_unref(avpkt);
+            av_free(avpkt);
+            return AVERROR(EINVAL);
+        }
+        if ((!s->delay_sent && avctx->initial_padding > 0) || discard_padding > 0) {
+            uint8_t* side_data = av_packet_new_side_data(avpkt,
+                                                         AV_PKT_DATA_SKIP_SAMPLES,
+                                                         10);
+            if(!side_data) {
+                av_packet_unref(avpkt);
+                av_free(avpkt);
+                return AVERROR(ENOMEM);
+            }
+            if (!s->delay_sent) {
+                AV_WL32(side_data, avctx->initial_padding);
+                s->delay_sent = 1;
+            }
+            AV_WL32(side_data + 4, discard_padding);
+        }
 
         avpkt->size = len;
         *got_packet_ptr = 1;
