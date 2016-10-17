@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.1.5:
+- libopenjpegenc: fix out-of-bounds reads when filling the edges
+- libopenjpegenc: stop reusing image data buffer for openjpeg 2
+- configure: fix detection of libopenjpeg
 - doc: fix various typos and grammar errors
 - avformat/utils: Update codec_id before using it in the parser init
 - cmdutils: fix typos
