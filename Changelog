@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.4:
+- cmdutils: fix typos
+- lavfi: fix typos
+- lavc: fix typos
+- tools: fix grammar error
+- ffmpeg: remove unused and errorneous AVFrame timestamp check
+- Support for MIPS cpu P6600
+- avutil/mips/generic_macros_msa: rename macro variable which causes segfault for mips r
 - avformat/avidec: Check nb_streams in read_gab2_sub()
 - avformat/avidec: Remove ancient assert
 - avformat/avidec: Fix memleak with dv in avi
