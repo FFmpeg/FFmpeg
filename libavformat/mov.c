@@ -2762,7 +2762,8 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 /**
  * Get ith edit list entry (media time, duration).
  */
-static int get_edit_list_entry(const MOVStreamContext *msc,
+static int get_edit_list_entry(MOVContext *mov,
+                               const MOVStreamContext *msc,
                                unsigned int edit_list_index,
                                int64_t *edit_list_media_time,
                                int64_t *edit_list_duration,
@@ -2776,7 +2777,7 @@ static int get_edit_list_entry(const MOVStreamContext *msc,
 
     /* duration is in global timescale units;convert to msc timescale */
     if (global_timescale == 0) {
-      avpriv_request_sample(msc, "Support for mvhd.timescale = 0 with editlists");
+      avpriv_request_sample(mov->fc, "Support for mvhd.timescale = 0 with editlists");
       return 0;
     }
     *edit_list_duration = av_rescale(*edit_list_duration, msc->time_scale,
@@ -2968,7 +2969,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     start_dts = edit_list_dts_entry_end;
 
-    while (get_edit_list_entry(msc, edit_list_index, &edit_list_media_time,
+    while (get_edit_list_entry(mov, msc, edit_list_index, &edit_list_media_time,
                                &edit_list_duration, mov->time_scale)) {
         av_log(mov->fc, AV_LOG_DEBUG, "Processing st: %d, edit list %"PRId64" - media time: %"PRId64", duration: %"PRId64"\n",
                st->index, edit_list_index, edit_list_media_time, edit_list_duration);
