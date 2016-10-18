@@ -231,6 +231,7 @@ static const struct TransferCharacteristics transfer_characteristics[AVCOL_TRC_N
     [AVCOL_TRC_GAMMA28]   = { 1.0,    0.0,    1.0 / 2.8, 0.0 },
     [AVCOL_TRC_SMPTE170M] = { 1.099,  0.018,  0.45, 4.5 },
     [AVCOL_TRC_SMPTE240M] = { 1.1115, 0.0228, 0.45, 4.0 },
+    [AVCOL_TRC_IEC61966_2_1] = { 1.055, 0.0031308, 1.0 / 2.4, 12.92 },
     [AVCOL_TRC_BT2020_10] = { 1.099,  0.018,  0.45, 4.5 },
     [AVCOL_TRC_BT2020_12] = { 1.0993, 0.0181, 0.45, 4.5 },
 };
@@ -1075,6 +1076,8 @@ static const AVOption colorspace_options[] = {
     ENUM("gamma28",      AVCOL_TRC_GAMMA28,      "trc"),
     ENUM("smpte170m",    AVCOL_TRC_SMPTE170M,    "trc"),
     ENUM("smpte240m",    AVCOL_TRC_SMPTE240M,    "trc"),
+    ENUM("srgb",         AVCOL_TRC_IEC61966_2_1, "trc"),
+    ENUM("iec61966-2-1", AVCOL_TRC_IEC61966_2_1, "trc"),
     ENUM("bt2020-10",    AVCOL_TRC_BT2020_10,    "trc"),
     ENUM("bt2020-12",    AVCOL_TRC_BT2020_12,    "trc"),
 
