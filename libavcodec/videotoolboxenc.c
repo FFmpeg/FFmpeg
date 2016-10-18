@@ -2019,6 +2019,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     CMTime time;
     CFDictionaryRef frame_dict;
     CVPixelBufferRef cv_img = NULL;
+    AVFrameSideData *side_data = NULL;
     ExtraSEI *sei = NULL;
     int status = create_cv_pixel_buffer(avctx, frame, &cv_img);
 
@@ -2030,7 +2031,8 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         return status;
     }
 
-    if (vtctx->a53_cc) {
+    side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
+    if (vtctx->a53_cc && side_data && side_data->size) {
         sei = av_mallocz(sizeof(*sei));
         if (!sei) {
             av_log(avctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
