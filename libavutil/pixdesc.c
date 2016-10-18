@@ -1763,6 +1763,7 @@ static const char *color_primaries_names[] = {
     [AVCOL_PRI_SMPTE428] = "smpte428",
     [AVCOL_PRI_SMPTE431] = "smpte431",
     [AVCOL_PRI_SMPTE432] = "smpte432",
+    [AVCOL_PRI_JEDEC_P22] = "jedec-p22",
 };
 
 static const char *color_transfer_names[] = {
