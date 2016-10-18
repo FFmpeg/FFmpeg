@@ -36,6 +36,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavcodec/ac3tab.h"
 #include "avformat.h"
 #include "internal.h"
@@ -1083,16 +1084,14 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             st->codecpar->color_range = AVCOL_RANGE_JPEG;
         else
             st->codecpar->color_range = AVCOL_RANGE_MPEG;
-        /* 14496-12 references JPEG XR specs (rather than the more complete
-         * 23001-8) so some adjusting is required */
-        if (color_primaries >= AVCOL_PRI_FILM)
+
+        if (!av_color_primaries_name(color_primaries))
             color_primaries = AVCOL_PRI_UNSPECIFIED;
-        if ((color_trc >= AVCOL_TRC_LINEAR &&
-             color_trc <= AVCOL_TRC_LOG_SQRT) ||
-            color_trc >= AVCOL_TRC_BT2020_10)
+        if (!av_color_transfer_name(color_trc))
             color_trc = AVCOL_TRC_UNSPECIFIED;
-        if (color_matrix >= AVCOL_SPC_BT2020_NCL)
+        if (!av_color_space_name(color_matrix))
             color_matrix = AVCOL_SPC_UNSPECIFIED;
+
         st->codecpar->color_primaries = color_primaries;
         st->codecpar->color_trc       = color_trc;
         st->codecpar->color_space     = color_matrix;
@@ -1102,17 +1101,22 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         case 1: st->codecpar->color_primaries = AVCOL_PRI_BT709; break;
         case 5: st->codecpar->color_primaries = AVCOL_PRI_SMPTE170M; break;
         case 6: st->codecpar->color_primaries = AVCOL_PRI_SMPTE240M; break;
+        case 9: st->codecpar->color_primaries = AVCOL_PRI_BT2020; break;
+        case 10: st->codecpar->color_primaries = AVCOL_PRI_SMPTE431; break;
+        case 11: st->codecpar->color_primaries = AVCOL_PRI_SMPTE432; break;
         }
         /* color transfer, Table 4-5 */
         switch (color_trc) {
         case 1: st->codecpar->color_trc = AVCOL_TRC_BT709; break;
         case 7: st->codecpar->color_trc = AVCOL_TRC_SMPTE240M; break;
+        case 17: st->codecpar->color_trc = AVCOL_TRC_SMPTE428; break;
         }
         /* color matrix, Table 4-6 */
         switch (color_matrix) {
         case 1: st->codecpar->color_space = AVCOL_SPC_BT709; break;
         case 6: st->codecpar->color_space = AVCOL_SPC_BT470BG; break;
         case 7: st->codecpar->color_space = AVCOL_SPC_SMPTE240M; break;
+        case 9: st->codecpar->color_space = AVCOL_SPC_BT2020_NCL; break;
         }
     }
     av_log(c->fc, AV_LOG_TRACE, "\n");
