@@ -1827,6 +1827,14 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     if (track->video.color.range != AVCOL_RANGE_UNSPECIFIED &&
         track->video.color.range <= AVCOL_RANGE_JPEG)
         st->codecpar->color_range = track->video.color.range;
+    if (track->video.color.chroma_siting_horz != MATROSKA_COLOUR_CHROMASITINGHORZ_UNDETERMINED &&
+        track->video.color.chroma_siting_vert != MATROSKA_COLOUR_CHROMASITINGVERT_UNDETERMINED &&
+        track->video.color.chroma_siting_horz  < MATROSKA_COLOUR_CHROMASITINGHORZ_NB &&
+        track->video.color.chroma_siting_vert  < MATROSKA_COLOUR_CHROMASITINGVERT_NB) {
+        st->codecpar->chroma_location =
+            avcodec_chroma_pos_to_enum((track->video.color.chroma_siting_horz - 1) << 7,
+                                       (track->video.color.chroma_siting_vert - 1) << 7);
+    }
 
     if (has_mastering_primaries || has_mastering_luminance) {
         // Use similar rationals as other standards.
