@@ -354,6 +354,51 @@ static double gain_interpolate_func(void *p, double freq)
     return res[0].gain;
 }
 
+static double cubic_interpolate_func(void *p, double freq)
+{
+    AVFilterContext *ctx = p;
+    FIREqualizerContext *s = ctx->priv;
+    GainEntry *res;
+    double x, x2, x3;
+    double a, b, c, d;
+    double m0, m1, m2, msum, unit;
+
+    if (!s->nb_gain_entry)
+        return 0;
+
+    if (freq <= s->gain_entry_tbl[0].freq)
+        return s->gain_entry_tbl[0].gain;
+
+    if (freq >= s->gain_entry_tbl[s->nb_gain_entry-1].freq)
+        return s->gain_entry_tbl[s->nb_gain_entry-1].gain;
+
+    res = bsearch(&freq, &s->gain_entry_tbl, s->nb_gain_entry - 1, sizeof(*res), gain_entry_compare);
+    av_assert0(res);
+
+    unit = res[1].freq - res[0].freq;
+    m0 = res != s->gain_entry_tbl ?
+         unit * (res[0].gain - res[-1].gain) / (res[0].freq - res[-1].freq) : 0;
+    m1 = res[1].gain - res[0].gain;
+    m2 = res != s->gain_entry_tbl + s->nb_gain_entry - 2 ?
+         unit * (res[2].gain - res[1].gain) / (res[2].freq - res[1].freq) : 0;
+
+    msum = fabs(m0) + fabs(m1);
+    m0 = msum > 0 ? (fabs(m0) * m1 + fabs(m1) * m0) / msum : 0;
+    msum = fabs(m1) + fabs(m2);
+    m1 = msum > 0 ? (fabs(m1) * m2 + fabs(m2) * m1) / msum : 0;
+
+    d = res[0].gain;
+    c = m0;
+    b = 3 * res[1].gain - m1 - 2 * c - 3 * d;
+    a = res[1].gain - b - c - d;
+
+    x = (freq - res[0].freq) / unit;
+    x2 = x * x;
+    x3 = x2 * x;
+
+    return a * x3 + b * x2 + c * x + d;
+}
+
 static const char *const var_names[] = {
     "f",
     "sr",
@@ -379,9 +424,9 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
     FIREqualizerContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const char *gain_entry_func_names[] = { "entry", NULL };
-    const char *gain_func_names[] = { "gain_interpolate", NULL };
+    const char *gain_func_names[] = { "gain_interpolate", "cubic_interpolate", NULL };
     double (*gain_entry_funcs[])(void *, double, double) = { entry_func, NULL };
-    double (*gain_funcs[])(void *, double) = { gain_interpolate_func, NULL };
+    double (*gain_funcs[])(void *, double) = { gain_interpolate_func, cubic_interpolate_func, NULL };
     double vars[VAR_NB];
     AVExpr *gain_expr;
     int ret, k, center, ch;

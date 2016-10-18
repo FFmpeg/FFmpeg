@@ -2508,6 +2508,8 @@ and functions:
 @table @option
 @item gain_interpolate(f)
 interpolate gain on frequency f based on gain_entry
+@item cubic_interpolate(f)
+same as gain_interpolate, but smoother
 @end table
 This option is also available as command. Default is @code{gain_interpolate(f)}.
 
