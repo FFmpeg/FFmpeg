@@ -1684,6 +1684,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     struct MvField current_mv = {{{ 0 }}};
 
     int min_pu_width = s->ps.sps->min_pu_width;
+    int weighted_pred = (s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+                        (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag);
 
     MvField *tab_mvf = s->ref->tab_mvf;
     RefPicList  *refPicList = s->ref->refPicList;
@@ -1746,8 +1748,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred[pred_idx](s->sh.luma_log2_weight_denom,
                                                s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                                s->sh.luma_offset_l0[current_mv.ref_idx[0]],
@@ -1759,8 +1760,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
                   &current_mv.mv[0], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                       s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                                       s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0],
@@ -1782,8 +1782,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp, tmpstride, ref1->frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred[pred_idx](s->sh.luma_log2_weight_denom,
                                                s->sh.luma_weight_l1[current_mv.ref_idx[1]],
                                                s->sh.luma_offset_l1[current_mv.ref_idx[1]],
@@ -1796,8 +1795,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp, tmp2, tmpstride, ref1->frame,
                   &current_mv.mv[1], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                       s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
                                                       s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0],
@@ -1821,8 +1819,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp2, tmpstride, ref1->frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred_avg[pred_idx](s->sh.luma_log2_weight_denom,
                                                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
@@ -1840,8 +1837,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp3, tmp4, tmpstride, ref1->frame,
                   &current_mv.mv[1], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
+        if (weighted_pred) {
             s->hevcdsp.weighted_pred_avg_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                           s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                                           s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
