@@ -52,6 +52,12 @@ enum HEVCNALUnitType {
     HEVC_NAL_SEI_SUFFIX = 40,
 };
 
+enum HEVCSliceType {
+    HEVC_SLICE_B = 0,
+    HEVC_SLICE_P = 1,
+    HEVC_SLICE_I = 2,
+};
+
 /**
  * 7.4.2.1
  */

@@ -249,7 +249,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 {
     SliceHeader *sh = &s->sh;
 
-    uint8_t nb_list = sh->slice_type == B_SLICE ? 2 : 1;
+    uint8_t nb_list = sh->slice_type == HEVC_SLICE_B ? 2 : 1;
     uint8_t list_idx;
     int i, j, ret;
 

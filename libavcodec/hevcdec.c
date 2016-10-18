@@ -243,7 +243,7 @@ static void pred_weight_table(HEVCContext *s, GetBitContext *gb)
             s->sh.chroma_offset_l0[i][1] = 0;
         }
     }
-    if (s->sh.slice_type == B_SLICE) {
+    if (s->sh.slice_type == HEVC_SLICE_B) {
         for (i = 0; i < s->sh.nb_refs[L1]; i++) {
             luma_weight_l1_flag[i] = get_bits1(gb);
             if (!luma_weight_l1_flag[i]) {
@@ -520,14 +520,14 @@ static int hls_slice_header(HEVCContext *s)
             skip_bits(gb, 1);  // slice_reserved_undetermined_flag[]
 
         sh->slice_type = get_ue_golomb_long(gb);
-        if (!(sh->slice_type == I_SLICE ||
-              sh->slice_type == P_SLICE ||
-              sh->slice_type == B_SLICE)) {
+        if (!(sh->slice_type == HEVC_SLICE_I ||
+              sh->slice_type == HEVC_SLICE_P ||
+              sh->slice_type == HEVC_SLICE_B)) {
             av_log(s->avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",
                    sh->slice_type);
             return AVERROR_INVALIDDATA;
         }
-        if (IS_IRAP(s) && sh->slice_type != I_SLICE) {
+        if (IS_IRAP(s) && sh->slice_type != HEVC_SLICE_I) {
             av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -616,16 +616,16 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         sh->nb_refs[L0] = sh->nb_refs[L1] = 0;
-        if (sh->slice_type == P_SLICE || sh->slice_type == B_SLICE) {
+        if (sh->slice_type == HEVC_SLICE_P || sh->slice_type == HEVC_SLICE_B) {
             int nb_refs;
 
             sh->nb_refs[L0] = s->ps.pps->num_ref_idx_l0_default_active;
-            if (sh->slice_type == B_SLICE)
+            if (sh->slice_type == HEVC_SLICE_B)
                 sh->nb_refs[L1] = s->ps.pps->num_ref_idx_l1_default_active;
 
             if (get_bits1(gb)) { // num_ref_idx_active_override_flag
                 sh->nb_refs[L0] = get_ue_golomb_long(gb) + 1;
-                if (sh->slice_type == B_SLICE)
+                if (sh->slice_type == HEVC_SLICE_B)
                     sh->nb_refs[L1] = get_ue_golomb_long(gb) + 1;
             }
             if (sh->nb_refs[L0] > HEVC_MAX_REFS || sh->nb_refs[L1] > HEVC_MAX_REFS) {
@@ -649,7 +649,7 @@ static int hls_slice_header(HEVCContext *s)
                         sh->list_entry_lx[0][i] = get_bits(gb, av_ceil_log2(nb_refs));
                 }
 
-                if (sh->slice_type == B_SLICE) {
+                if (sh->slice_type == HEVC_SLICE_B) {
                     sh->rpl_modification_flag[1] = get_bits1(gb);
                     if (sh->rpl_modification_flag[1] == 1)
                         for (i = 0; i < sh->nb_refs[L1]; i++)
@@ -657,7 +657,7 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
 
-            if (sh->slice_type == B_SLICE)
+            if (sh->slice_type == HEVC_SLICE_B)
                 sh->mvd_l1_zero_flag = get_bits1(gb);
 
             if (s->ps.pps->cabac_init_present_flag)
@@ -668,7 +668,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->collocated_ref_idx = 0;
             if (sh->slice_temporal_mvp_enabled_flag) {
                 sh->collocated_list = L0;
-                if (sh->slice_type == B_SLICE)
+                if (sh->slice_type == HEVC_SLICE_B)
                     sh->collocated_list = !get_bits1(gb);
 
                 if (sh->nb_refs[sh->collocated_list] > 1) {
@@ -682,8 +682,8 @@ static int hls_slice_header(HEVCContext *s)
                 }
             }
 
-            if ((s->ps.pps->weighted_pred_flag   && sh->slice_type == P_SLICE) ||
-                (s->ps.pps->weighted_bipred_flag && sh->slice_type == B_SLICE)) {
+            if ((s->ps.pps->weighted_pred_flag   && sh->slice_type == HEVC_SLICE_P) ||
+                (s->ps.pps->weighted_bipred_flag && sh->slice_type == HEVC_SLICE_B)) {
                 pred_weight_table(s, gb);
             }
 
@@ -1632,7 +1632,7 @@ static void hevc_luma_mv_mpv_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int mvp_flag;
 
     ff_hevc_set_neighbour_available(s, x0, y0, nPbW, nPbH);
-    if (s->sh.slice_type == B_SLICE)
+    if (s->sh.slice_type == HEVC_SLICE_B)
         inter_pred_idc = ff_hevc_inter_pred_idc_decode(s, nPbW, nPbH);
 
     if (inter_pred_idc != PRED_L1) {
@@ -1746,8 +1746,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred[pred_idx](s->sh.luma_log2_weight_denom,
                                                s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                                s->sh.luma_offset_l0[current_mv.ref_idx[0]],
@@ -1759,8 +1759,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp, tmp2, tmpstride, ref0->frame,
                   &current_mv.mv[0], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                       s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                                       s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0],
@@ -1782,8 +1782,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp, tmpstride, ref1->frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred[pred_idx](s->sh.luma_log2_weight_denom,
                                                s->sh.luma_weight_l1[current_mv.ref_idx[1]],
                                                s->sh.luma_offset_l1[current_mv.ref_idx[1]],
@@ -1796,8 +1796,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp, tmp2, tmpstride, ref1->frame,
                   &current_mv.mv[1], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                       s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
                                                       s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0],
@@ -1821,8 +1821,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         luma_mc(s, tmp2, tmpstride, ref1->frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred_avg[pred_idx](s->sh.luma_log2_weight_denom,
                                                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                                                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
@@ -1840,8 +1840,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         chroma_mc(s, tmp3, tmp4, tmpstride, ref1->frame,
                   &current_mv.mv[1], x0 / 2, y0 / 2, nPbW / 2, nPbH / 2, pred_idx);
 
-        if ((s->sh.slice_type == P_SLICE && s->ps.pps->weighted_pred_flag) ||
-            (s->sh.slice_type == B_SLICE && s->ps.pps->weighted_bipred_flag)) {
+        if ((s->sh.slice_type == HEVC_SLICE_P && s->ps.pps->weighted_pred_flag) ||
+            (s->sh.slice_type == HEVC_SLICE_B && s->ps.pps->weighted_bipred_flag)) {
             s->hevcdsp.weighted_pred_avg_chroma[pred_idx](s->sh.chroma_log2_weight_denom,
                                                           s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0],
                                                           s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0],
@@ -2056,7 +2056,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     } else
         lc->cu.cu_transquant_bypass_flag = 0;
 
-    if (s->sh.slice_type != I_SLICE) {
+    if (s->sh.slice_type != HEVC_SLICE_I) {
         uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x0, y0, x_cb, y_cb);
 
         x = y_cb * min_cb_width + x_cb;
@@ -2076,7 +2076,7 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     } else {
         int pcm_flag = 0;
 
-        if (s->sh.slice_type != I_SLICE)
+        if (s->sh.slice_type != HEVC_SLICE_I)
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(s);
         if (lc->cu.pred_mode != MODE_INTRA ||
             log2_cb_size == s->ps.sps->log2_min_cb_size) {
@@ -2534,7 +2534,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
         if (!s->sh.dependent_slice_segment_flag &&
-            s->sh.slice_type != I_SLICE) {
+            s->sh.slice_type != HEVC_SLICE_I) {
             ret = ff_hevc_slice_rpl(s);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING,

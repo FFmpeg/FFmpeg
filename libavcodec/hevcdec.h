@@ -85,12 +85,6 @@ enum RPSType {
     NB_RPS_TYPE,
 };
 
-enum SliceType {
-    B_SLICE = 0,
-    P_SLICE = 1,
-    I_SLICE = 2,
-};
-
 enum SyntaxElement {
     SAO_MERGE_FLAG = 0,
     SAO_TYPE_IDX,
@@ -242,7 +236,7 @@ typedef struct SliceHeader {
     ///< address (in raster order) of the first block in the current slice
     unsigned int   slice_addr;
 
-    enum SliceType slice_type;
+    enum HEVCSliceType slice_type;
 
     int pic_order_cnt_lsb;
 
