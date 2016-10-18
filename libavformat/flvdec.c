@@ -1163,6 +1163,7 @@ retry_duration:
     pkt->dts          = dts;
     pkt->pts          = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
+    pkt->pos          = pos;
     if (flv->new_extradata[stream_type]) {
         uint8_t *side = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                                 flv->new_extradata_size[stream_type]);
