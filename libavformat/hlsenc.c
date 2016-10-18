@@ -391,12 +391,12 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     else
         en->sub_filename[0] = '\0';
 
-    en->duration = duration;
-    en->pos      = pos;
-    en->event    = event;
-    en->size     = size;
+    en->duration   = duration;
+    en->pos        = pos;
+    en->event      = event;
+    en->size       = size;
     en->start_pts  = start_pts;
-    en->next     = NULL;
+    en->next       = NULL;
 
     if (hls->scte_iface) {
         if (hls->scte_iface->event_state == EVENT_OUT_CONT)
