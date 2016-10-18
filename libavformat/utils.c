@@ -2099,6 +2099,16 @@ static int extract_extradata_init(AVStream *st)
     if (!f)
         goto finish;
 
+    /* check that the codec id is supported */
+    if (f->codec_ids) {
+        const enum AVCodecID *ids;
+        for (ids = f->codec_ids; *ids != AV_CODEC_ID_NONE; ids++)
+            if (*ids == st->codecpar->codec_id)
+                break;
+        if (*ids == AV_CODEC_ID_NONE)
+            goto finish;
+    }
+
     i->extract_extradata.pkt = av_packet_alloc();
     if (!i->extract_extradata.pkt)
         return AVERROR(ENOMEM);
