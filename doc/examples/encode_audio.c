@@ -89,14 +89,42 @@ static int select_channel_layout(const AVCodec *codec)
     return best_ch_layout;
 }
 
+static void encode(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
+                   FILE *output)
+{
+    int ret;
+
+    /* send the frame for encoding */
+    ret = avcodec_send_frame(ctx, frame);
+    if (ret < 0) {
+        fprintf(stderr, "error sending the frame to the encoder\n");
+        exit(1);
+    }
+
+    /* read all the available output packets (in general there may be any
+     * number of them */
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return;
+        else if (ret < 0) {
+            fprintf(stderr, "error encoding audio frame\n");
+            exit(1);
+        }
+
+        fwrite(pkt->data, 1, pkt->size, output);
+        av_packet_unref(pkt);
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *filename;
     const AVCodec *codec;
     AVCodecContext *c= NULL;
     AVFrame *frame;
-    AVPacket pkt;
-    int i, j, k, ret, got_output;
+    AVPacket *pkt;
+    int i, j, k, ret;
     FILE *f;
     uint16_t *samples;
     float t, tincr;
@@ -147,6 +175,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    /* packet for holding encoded output */
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        fprintf(stderr, "could not allocate the packet\n");
+        exit(1);
+    }
+
     /* frame containing input raw audio */
     frame = av_frame_alloc();
     if (!frame) {
@@ -169,10 +204,6 @@ int main(int argc, char **argv)
     t = 0;
     tincr = 2 * M_PI * 440.0 / c->sample_rate;
     for(i=0;i<200;i++) {
-        av_init_packet(&pkt);
-        pkt.data = NULL; // packet data will be allocated by the encoder
-        pkt.size = 0;
-
         /* make sure the frame is writable -- makes a copy if the encoder
          * kept a reference internally */
         ret = av_frame_make_writable(frame);
@@ -187,19 +218,15 @@ int main(int argc, char **argv)
                 samples[2*j + k] = samples[2*j];
             t += tincr;
         }
-        /* encode the samples */
-        ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
-        if (ret < 0) {
-            fprintf(stderr, "error encoding audio frame\n");
-            exit(1);
-        }
-        if (got_output) {
-            fwrite(pkt.data, 1, pkt.size, f);
-            av_packet_unref(&pkt);
-        }
+        encode(c, frame, pkt, f);
     }
+
+    /* flush the encoder */
+    encode(c, NULL, pkt, f);
+
     fclose(f);
 
     av_frame_free(&frame);
+    av_packet_free(&pkt);
     avcodec_free_context(&c);
 }
