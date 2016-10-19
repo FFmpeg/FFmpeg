@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/frame.h"
 #include "libavutil/mem.h"
 
@@ -40,7 +41,8 @@
 static void decode(AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame,
                    FILE *outfile)
 {
-    int ret, data_size;
+    int16_t *interleave_buf;
+    int ret, data_size, i;
 
     /* send the packet with the compressed data to the decoder */
     ret = avcodec_send_packet(dec_ctx, pkt);
@@ -59,10 +61,28 @@ static void decode(AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame,
             exit(1);
         }
 
-        data_size = av_samples_get_buffer_size(NULL, dec_ctx->channels,
-                                               frame->nb_samples,
-                                               dec_ctx->sample_fmt, 1);
-        fwrite(frame->data[0], 1, data_size, outfile);
+        /* the stream parameters may change at any time, check that they are
+         * what we expect */
+        if (av_get_channel_layout_nb_channels(frame->channel_layout) != 2 ||
+            frame->format != AV_SAMPLE_FMT_S16P) {
+            fprintf(stderr, "Unsupported frame parameters\n");
+            exit(1);
+        }
+
+        /* The decoded data is signed 16-bit planar -- each channel in its own
+         * buffer. We interleave the two channels manually here, but using
+         * libavresample is recommended instead. */
+        data_size = sizeof(*interleave_buf) * 2 * frame->nb_samples;
+        interleave_buf = av_malloc(data_size);
+        if (!interleave_buf)
+            exit(1);
+
+        for (i = 0; i < frame->nb_samples; i++) {
+            interleave_buf[2 * i]     = ((int16_t*)frame->data[0])[i];
+            interleave_buf[2 * i + 1] = ((int16_t*)frame->data[1])[i];
+        }
+        fwrite(interleave_buf, 1, data_size, outfile);
+        av_freep(&interleave_buf);
     }
 }
 
