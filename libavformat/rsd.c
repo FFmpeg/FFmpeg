@@ -84,8 +84,10 @@ static int rsd_read_header(AVFormatContext *s)
     }
 
     codec->channels = avio_rl32(pb);
-    if (!codec->channels)
+    if (codec->channels <= 0 || codec->channels > INT_MAX / 36) {
+        av_log(s, AV_LOG_ERROR, "Invalid number of channels: %d\n", codec->channels);
         return AVERROR_INVALIDDATA;
+    }
 
     avio_skip(pb, 4); // Bit depth
     codec->sample_rate = avio_rl32(pb);
