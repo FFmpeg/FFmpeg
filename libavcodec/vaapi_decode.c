@@ -201,6 +201,7 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
         ff_vaapi_decode_destroy_buffers(avctx, pic);
 
+    pic->nb_param_buffers = 0;
     pic->nb_slices        = 0;
     pic->slices_allocated = 0;
     av_freep(&pic->slice_buffers);
