@@ -16938,6 +16938,11 @@ BT.2020 with non-constant luminance
 
 @end table
 
+@item cscheme
+Set spectrogram color scheme. This is list of floating point values with format
+@code{left_r|left_g|left_b|right_r|right_g|right_b}.
+The default is @code{1|0.5|0|0|0.5|1}.
+
 @end table
 
 @subsection Examples

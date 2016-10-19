@@ -50,6 +50,7 @@
 #define FONTCOLOR       "st(0, (midi(f)-59.5)/12);" \
     "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
     "r(1-ld(1)) + b(ld(1))"
+#define CSCHEME         "1|0.5|0|0|0.5|1"
 #define PTS_STEP 10
 #define PTS_TOLERANCE 1
 
@@ -96,6 +97,7 @@ static const AVOption showcqt_options[] = {
         { "smpte170m",     "smpte170m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE170M },   0, 0, FLAGS, "csp" },
         { "smpte240m",     "smpte240m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE240M },   0, 0, FLAGS, "csp" },
         { "bt2020ncl",     "bt2020ncl", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT2020_NCL },  0, 0, FLAGS, "csp" },
+    { "cscheme",    "set color scheme", OFFSET(cscheme),   AV_OPT_TYPE_STRING, { .str = CSCHEME },   CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -725,24 +727,24 @@ static float calculate_gamma(float v, float g)
     return expf(logf(v) / g);
 }
 
-static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len)
+static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len, float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
-        c[x].rgb.r = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].re), g);
-        c[x].rgb.g = 255.0f * calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), g);
-        c[x].rgb.b = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].im), g);
+        c[x].rgb.r = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[0] * v[x].re + cscheme[3] * v[x].im), g);
+        c[x].rgb.g = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[1] * v[x].re + cscheme[4] * v[x].im), g);
+        c[x].rgb.b = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[2] * v[x].re + cscheme[5] * v[x].im), g);
     }
 }
 
-static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len, float cm[3][3])
+static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len, float cm[3][3], float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
         float r, g, b;
-        r = calculate_gamma(FFMIN(1.0f, v[x].re), gamma);
-        g = calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), gamma);
-        b = calculate_gamma(FFMIN(1.0f, v[x].im), gamma);
+        r = calculate_gamma(FFMIN(1.0f, cscheme[0] * v[x].re + cscheme[3] * v[x].im), gamma);
+        g = calculate_gamma(FFMIN(1.0f, cscheme[1] * v[x].re + cscheme[4] * v[x].im), gamma);
+        b = calculate_gamma(FFMIN(1.0f, cscheme[2] * v[x].re + cscheme[5] * v[x].im), gamma);
         c[x].yuv.y = cm[0][0] * r + cm[0][1] * g + cm[0][2] * b;
         c[x].yuv.u = cm[1][0] * r + cm[1][1] * g + cm[1][2] * b;
         c[x].yuv.v = cm[2][0] * r + cm[2][1] * g + cm[2][2] * b;
@@ -1113,9 +1115,9 @@ static void process_cqt(ShowCQTContext *s)
     }
 
     if (s->format == AV_PIX_FMT_RGB24)
-        rgb_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
+        rgb_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cscheme_v);
     else
-        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cmatrix);
+        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cmatrix, s->cscheme_v);
 }
 
 static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
@@ -1215,6 +1217,27 @@ static void init_colormatrix(ShowCQTContext *s)
     s->cmatrix[2][2] = -112.0 * kb / (1.0 - kr);
 }
 
+static int init_cscheme(ShowCQTContext *s)
+{
+    char tail[2];
+    int k;
+
+    if (sscanf(s->cscheme, " %f | %f | %f | %f | %f | %f %1s", &s->cscheme_v[0],
+        &s->cscheme_v[1], &s->cscheme_v[2], &s->cscheme_v[3], &s->cscheme_v[4],
+        &s->cscheme_v[5], tail) != 6)
+        goto fail;
+
+    for (k = 0; k < 6; k++)
+        if (isnan(s->cscheme_v[k]) || s->cscheme_v[k] < 0.0f || s->cscheme_v[k] > 1.0f)
+            goto fail;
+
+    return 0;
+
+fail:
+    av_log(s->ctx, AV_LOG_ERROR, "invalid cscheme.\n");
+    return AVERROR(EINVAL);
+}
+
 /* main filter control */
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -1270,7 +1293,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     init_colormatrix(s);
 
-    return 0;
+    return init_cscheme(s);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
