@@ -1210,6 +1210,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     avcodec_example
+    encode_audio_example
     filter_audio_example
     metadata_example
     output_example
@@ -2435,6 +2436,7 @@ scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
 avcodec_example_deps="avcodec avutil"
+encode_audio_example_deps="avcodec avutil"
 filter_audio_example_deps="avfilter avutil"
 metadata_example_deps="avformat avutil"
 output_example_deps="avcodec avformat avutil swscale"
