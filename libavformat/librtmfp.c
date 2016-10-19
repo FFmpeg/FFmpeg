@@ -36,18 +36,20 @@
 #include <librtmfp/librtmfp.h>
 
 typedef struct LibRTMFPContext {
-    const AVClass *class;
-    unsigned int id;
-    int audioUnbuffered;
-    int videoUnbuffered;
-    int p2pPublishing;
-    char* peerId;
-    char* publication;
+    const AVClass*      class;
+    RTMFPConfig         rtmfp;
+    unsigned int        id;
+    int                 audioUnbuffered;
+    int                 videoUnbuffered;
+    int                 p2pPublishing;
+    char*               peerId;
+    char*               publication;
 
-    // NetGroup
-    char* netgroup;
-    double updatePeriod;
-    unsigned int windowDuration;
+    // NetGroup members
+    RTMFPGroupConfig    group;
+    char*               netgroup;
+    double              updatePeriod;
+    unsigned int        windowDuration;
 } LibRTMFPContext;
 
 static void rtmfp_log(unsigned int threadID, int level, const char* fileName, long line, const char* message)
@@ -124,6 +126,11 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         case AV_LOG_VERBOSE: level = 8; break;
         case AV_LOG_TRACE:   level = 8; break;
     }
+    RTMFP_Init(&ctx->rtmfp, &ctx->group);
+    ctx->rtmfp.pOnSocketError = onSocketError;
+    ctx->rtmfp.pOnStatusEvent = onStatusEvent;
+    ctx->rtmfp.isBlocking = 1;
+
     RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
     RTMFP_ActiveDump();
@@ -132,15 +139,20 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 
     RTMFP_GetPublicationAndUrlFromUri(url, &ctx->publication);
 
-    if ((ctx->id = RTMFP_Connect(url, onSocketError, onStatusEvent, NULL, 1)) == 0)
+    if ((ctx->id = RTMFP_Connect(url, &ctx->rtmfp)) == 0)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
 
     av_log(NULL, AV_LOG_INFO, " group : %s", ctx->netgroup);
-    if (ctx->netgroup)
-        res = RTMFP_Connect2Group(ctx->id, ctx->netgroup, ctx->publication, (flags & AVIO_FLAG_WRITE) > 1, ctx->updatePeriod, ctx->windowDuration, 1);
-    else if (ctx->peerId)
+    if (ctx->netgroup) {
+        ctx->group.netGroup = ctx->netgroup;
+        ctx->group.availabilityUpdatePeriod = ctx->updatePeriod;
+        ctx->group.windowDuration = ctx->windowDuration;
+        ctx->group.isPublisher = (flags & AVIO_FLAG_WRITE) > 1;
+        ctx->group.isBlocking = 1;
+        res = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group);
+    } else if (ctx->peerId)
         res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
     else if (ctx->p2pPublishing)
         res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
@@ -226,9 +238,9 @@ static const AVOption options[] = {
     {"rtmfp_peerId", "Connect to a peer for playing", OFFSET(peerId), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmfp_p2pPublishing", "Publish the stream in p2p mode (default to false)", OFFSET(p2pPublishing), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"netgroup", "Publish/Play the stream into a NetGroup", OFFSET(netgroup), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
-    {"rtmfp_updatePeriod", "Specifies the interval in seconds between messages sent to peers informating them that the local node has new p2p multicast media fragments available",
-        OFFSET(updatePeriod), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0.1, 10.0, DEC|ENC},
-    {"rtmfp_windowDuration", "Specifies the duration in seconds of the p2p multicast reassembly window", OFFSET(windowDuration), AV_OPT_TYPE_INT, {.i64 = 8 }, 1, 60, DEC|ENC},
+    {"rtmfp_updatePeriod", "Specifies the interval in milliseconds between messages sent to peers informating them that the local node has new p2p multicast media fragments available",
+        OFFSET(updatePeriod), AV_OPT_TYPE_INT, {.i64 = 100 }, 100, 10000, DEC|ENC},
+    {"rtmfp_windowDuration", "Specifies the duration in milliseconds of the p2p multicast reassembly window", OFFSET(windowDuration), AV_OPT_TYPE_INT, {.i64 = 8000 }, 1000, 60000, DEC|ENC},
     { NULL },
 };
 
