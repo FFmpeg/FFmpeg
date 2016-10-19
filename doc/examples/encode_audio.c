@@ -37,7 +37,7 @@
 #include "libavutil/samplefmt.h"
 
 /* check that a given sample format is supported by the encoder */
-static int check_sample_fmt(AVCodec *codec, enum AVSampleFormat sample_fmt)
+static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt)
 {
     const enum AVSampleFormat *p = codec->sample_fmts;
 
@@ -50,7 +50,7 @@ static int check_sample_fmt(AVCodec *codec, enum AVSampleFormat sample_fmt)
 }
 
 /* just pick the highest supported samplerate */
-static int select_sample_rate(AVCodec *codec)
+static int select_sample_rate(const AVCodec *codec)
 {
     const int *p;
     int best_samplerate = 0;
@@ -67,7 +67,7 @@ static int select_sample_rate(AVCodec *codec)
 }
 
 /* select layout with the highest channel count */
-static int select_channel_layout(AVCodec *codec)
+static int select_channel_layout(const AVCodec *codec)
 {
     const uint64_t *p;
     uint64_t best_ch_layout = 0;
@@ -92,7 +92,7 @@ static int select_channel_layout(AVCodec *codec)
 int main(int argc, char **argv)
 {
     const char *filename;
-    AVCodec *codec;
+    const AVCodec *codec;
     AVCodecContext *c= NULL;
     AVFrame *frame;
     AVPacket pkt;
