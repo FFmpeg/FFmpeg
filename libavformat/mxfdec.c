@@ -173,8 +173,10 @@ typedef struct MXFDescriptor {
     int width;
     int height; /* Field height, not frame height */
     int frame_layout; /* See MXFFrameLayout enum */
-#define MXF_TFF 1
-#define MXF_BFF 2
+    int video_line_map[2];
+#define MXF_FIELD_DOMINANCE_DEFAULT 0
+#define MXF_FIELD_DOMINANCE_FF 1 /* coded first, displayed first */
+#define MXF_FIELD_DOMINANCE_FL 2 /* coded first, displayed last */
     int field_dominance;
     int channels;
     int bits_per_sample;
@@ -968,6 +970,8 @@ static void mxf_read_pixel_layout(AVIOContext *pb, MXFDescriptor *descriptor)
 static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFDescriptor *descriptor = arg;
+    int entry_count, entry_size;
+
     switch(tag) {
     case 0x3F01:
         return mxf_read_strong_ref_array(pb, &descriptor->sub_descriptors_refs,
@@ -995,6 +999,21 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         break;
     case 0x320C:
         descriptor->frame_layout = avio_r8(pb);
+        break;
+    case 0x320D:
+        entry_count = avio_rb32(pb);
+        entry_size = avio_rb32(pb);
+        if (entry_size == 4) {
+            if (entry_count > 0)
+                descriptor->video_line_map[0] = avio_rb32(pb);
+            else
+                descriptor->video_line_map[0] = 0;
+            if (entry_count > 1)
+                descriptor->video_line_map[1] = avio_rb32(pb);
+            else
+                descriptor->video_line_map[1] = 0;
+        } else
+            av_log(NULL, AV_LOG_WARNING, "VideoLineMap element size %d currently not supported\n", entry_size);
         break;
     case 0x320E:
         descriptor->aspect_ratio.num = avio_rb32(pb);
@@ -2044,19 +2063,45 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 case SegmentedFrame:
                     st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
                 case SeparateFields:
-                    switch (descriptor->field_dominance) {
-                    case MXF_TFF:
-                        st->codecpar->field_order = AV_FIELD_TT;
-                        break;
-                    case MXF_BFF:
-                        st->codecpar->field_order = AV_FIELD_BB;
-                        break;
-                    default:
-                        avpriv_request_sample(mxf->fc,
-                                              "Field dominance %d support",
-                                              descriptor->field_dominance);
-                    case 0: // we already have many samples with field_dominance == unknown
-                        break;
+                    av_log(mxf->fc, AV_LOG_DEBUG, "video_line_map: (%d, %d), field_dominance: %d\n",
+                           descriptor->video_line_map[0], descriptor->video_line_map[1],
+                           descriptor->field_dominance);
+                    if ((descriptor->video_line_map[0] > 0) && (descriptor->video_line_map[1] > 0)) {
+                        /* Detect coded field order from VideoLineMap:
+                         *  (even, even) => bottom field coded first
+                         *  (even, odd)  => top field coded first
+                         *  (odd, even)  => top field coded first
+                         *  (odd, odd)   => bottom field coded first
+                         */
+                        if ((descriptor->video_line_map[0] + descriptor->video_line_map[1]) % 2) {
+                            switch (descriptor->field_dominance) {
+                                case MXF_FIELD_DOMINANCE_DEFAULT:
+                                case MXF_FIELD_DOMINANCE_FF:
+                                    st->codecpar->field_order = AV_FIELD_TT;
+                                    break;
+                                case MXF_FIELD_DOMINANCE_FL:
+                                    st->codecpar->field_order = AV_FIELD_TB;
+                                    break;
+                                default:
+                                    avpriv_request_sample(mxf->fc,
+                                                          "Field dominance %d support",
+                                                          descriptor->field_dominance);
+                            }
+                        } else {
+                            switch (descriptor->field_dominance) {
+                                case MXF_FIELD_DOMINANCE_DEFAULT:
+                                case MXF_FIELD_DOMINANCE_FF:
+                                    st->codecpar->field_order = AV_FIELD_BB;
+                                    break;
+                                case MXF_FIELD_DOMINANCE_FL:
+                                    st->codecpar->field_order = AV_FIELD_BT;
+                                    break;
+                                default:
+                                    avpriv_request_sample(mxf->fc,
+                                                          "Field dominance %d support",
+                                                          descriptor->field_dominance);
+                            }
+                        }
                     }
                     /* Turn field height into frame height. */
                     st->codecpar->height *= 2;
