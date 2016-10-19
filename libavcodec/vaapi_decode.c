@@ -150,13 +150,10 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
 {
     VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
     VAStatus vas;
-    int err, i;
+    int err;
 
     av_log(avctx, AV_LOG_DEBUG, "Decode to surface %#x.\n",
            pic->output_surface);
-
-    for (i = 0; i < pic->nb_param_buffers; i++)
-        vaUnmapBuffer(ctx->hwctx->display, pic->param_buffers[i]);
 
     vas = vaBeginPicture(ctx->hwctx->display, ctx->va_context,
                          pic->output_surface);
