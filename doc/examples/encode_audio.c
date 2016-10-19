@@ -97,7 +97,6 @@ int main(int argc, char **argv)
     AVFrame *frame;
     AVPacket pkt;
     int i, j, k, ret, got_output;
-    int buffer_size;
     FILE *f;
     uint16_t *samples;
     float t, tincr;
@@ -159,21 +158,10 @@ int main(int argc, char **argv)
     frame->format         = c->sample_fmt;
     frame->channel_layout = c->channel_layout;
 
-    /* the codec gives us the frame size, in samples,
-     * we calculate the size of the samples buffer in bytes */
-    buffer_size = av_samples_get_buffer_size(NULL, c->channels, c->frame_size,
-                                             c->sample_fmt, 0);
-    samples = av_malloc(buffer_size);
-    if (!samples) {
-        fprintf(stderr, "could not allocate %d bytes for samples buffer\n",
-                buffer_size);
-        exit(1);
-    }
-    /* setup the data pointers in the AVFrame */
-    ret = avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
-                                   (const uint8_t*)samples, buffer_size, 0);
+    /* allocate the data buffers */
+    ret = av_frame_get_buffer(frame, 0);
     if (ret < 0) {
-        fprintf(stderr, "could not setup audio frame\n");
+        fprintf(stderr, "could not allocate audio data buffers\n");
         exit(1);
     }
 
@@ -184,6 +172,13 @@ int main(int argc, char **argv)
         av_init_packet(&pkt);
         pkt.data = NULL; // packet data will be allocated by the encoder
         pkt.size = 0;
+
+        /* make sure the frame is writable -- makes a copy if the encoder
+         * kept a reference internally */
+        ret = av_frame_make_writable(frame);
+        if (ret < 0)
+            exit(1);
+        samples = (uint16_t*)frame->data[0];
 
         for (j = 0; j < c->frame_size; j++) {
             samples[2*j] = (int)(sin(t) * 10000);
@@ -205,7 +200,6 @@ int main(int argc, char **argv)
     }
     fclose(f);
 
-    av_freep(&samples);
     av_frame_free(&frame);
     avcodec_free_context(&c);
 }
