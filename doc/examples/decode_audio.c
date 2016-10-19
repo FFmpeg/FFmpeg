@@ -179,6 +179,11 @@ int main(int argc, char **argv)
         }
     }
 
+    /* flush the decoder */
+    pkt->data = NULL;
+    pkt->size = 0;
+    decode(c, pkt, decoded_frame, outfile);
+
     fclose(outfile);
     fclose(f);
 
