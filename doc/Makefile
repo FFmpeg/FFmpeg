@@ -16,16 +16,22 @@ DOCS-$(CONFIG_POD2MAN)                          += $(MANPAGES) $(PODPAGES)
 DOCS-$(CONFIG_TEXI2HTML)                        += $(HTMLPAGES)
 DOCS = $(DOCS-yes)
 
-DOC_EXAMPLES-$(CONFIG_AVCODEC_EXAMPLE)          += avcodec
 DOC_EXAMPLES-$(CONFIG_DECODE_AUDIO_EXAMPLE)     += decode_audio
+DOC_EXAMPLES-$(CONFIG_DECODE_VIDEO_EXAMPLE)     += decode_video
 DOC_EXAMPLES-$(CONFIG_ENCODE_AUDIO_EXAMPLE)     += encode_audio
+DOC_EXAMPLES-$(CONFIG_ENCODE_VIDEO_EXAMPLE)     += encode_video
 DOC_EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)     += filter_audio
 DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)         += metadata
 DOC_EXAMPLES-$(CONFIG_OUTPUT_EXAMPLE)           += output
 DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)           += qsvdec
 DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
-ALL_DOC_EXAMPLES = avcodec decode_audio encode_audio filter_audio metadata \
-                   output transcode_aac
+ALL_DOC_EXAMPLES = decode_audio                                         \
+                   decode_video                                         \
+                   encode_audio                                         \
+                   encode_video                                         \
+                   filter_audio                                         \
+                   metadata output                                      \
+                   transcode_aac                                        \
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
 ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(EXESUF))
