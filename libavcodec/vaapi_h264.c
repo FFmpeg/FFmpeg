@@ -162,7 +162,8 @@ static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],
     unsigned int i, n = 0;
     for (i = 0; i < ref_count; i++)
         if (ref_list[i].reference)
-            fill_vaapi_pic(&RefPicList[n++], ref_list[i].parent, 0);
+            fill_vaapi_pic(&RefPicList[n++], ref_list[i].parent,
+                           ref_list[i].reference);
 
     for (; n < 32; n++)
         init_vaapi_pic(&RefPicList[n]);
