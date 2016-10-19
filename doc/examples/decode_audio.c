@@ -40,23 +40,29 @@
 static void decode(AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame,
                    FILE *outfile)
 {
-    int len, got_frame;
+    int ret, data_size;
 
-    while (pkt->size > 0) {
-        len = avcodec_decode_audio4(dec_ctx, frame, &got_frame, pkt);
-        if (len < 0) {
-            fprintf(stderr, "Error while decoding\n");
+    /* send the packet with the compressed data to the decoder */
+    ret = avcodec_send_packet(dec_ctx, pkt);
+    if (ret < 0) {
+        fprintf(stderr, "Error submitting the packet to the decoder\n");
+        exit(1);
+    }
+
+    /* read all the output frames (in general there may be any number of them */
+    while (ret >= 0) {
+        ret = avcodec_receive_frame(dec_ctx, frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return;
+        else if (ret < 0) {
+            fprintf(stderr, "Error during decoding\n");
             exit(1);
         }
-        if (got_frame) {
-            /* if a frame has been decoded, output it */
-            int data_size = av_samples_get_buffer_size(NULL, dec_ctx->channels,
-                                                       frame->nb_samples,
-                                                       dec_ctx->sample_fmt, 1);
-            fwrite(frame->data[0], 1, data_size, outfile);
-        }
-        pkt->size -= len;
-        pkt->data += len;
+
+        data_size = av_samples_get_buffer_size(NULL, dec_ctx->channels,
+                                               frame->nb_samples,
+                                               dec_ctx->sample_fmt, 1);
+        fwrite(frame->data[0], 1, data_size, outfile);
     }
 }
 
