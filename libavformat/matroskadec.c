@@ -407,17 +407,17 @@ static const EbmlSyntax matroska_mastering_meta[] = {
 };
 
 static const EbmlSyntax matroska_track_video_color[] = {
-    { MATROSKA_ID_VIDEOCOLORMATRIXCOEFF,      EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, matrix_coefficients), { .u=2 } },
+    { MATROSKA_ID_VIDEOCOLORMATRIXCOEFF,      EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, matrix_coefficients), { .u = AVCOL_SPC_UNSPECIFIED } },
     { MATROSKA_ID_VIDEOCOLORBITSPERCHANNEL,   EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, bits_per_channel), { .u=8 } },
     { MATROSKA_ID_VIDEOCOLORCHROMASUBHORZ,    EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_sub_horz), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORCHROMASUBVERT,    EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_sub_vert), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORCBSUBHORZ,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, cb_sub_horz), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORCBSUBVERT,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, cb_sub_vert), { .u=0 } },
-    { MATROSKA_ID_VIDEOCOLORCHROMASITINGHORZ, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_horz), { .u=0 } },
-    { MATROSKA_ID_VIDEOCOLORCHROMASITINGVERT, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_vert), { .u=0 } },
-    { MATROSKA_ID_VIDEOCOLORRANGE,            EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, range), { .u=0 } },
-    { MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, transfer_characteristics), { .u=2 } },
-    { MATROSKA_ID_VIDEOCOLORPRIMARIES,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, primaries), { .u=2 } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASITINGHORZ, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_horz), { .u = MATROSKA_COLOUR_CHROMASITINGHORZ_UNDETERMINED } },
+    { MATROSKA_ID_VIDEOCOLORCHROMASITINGVERT, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_siting_vert), { .u = MATROSKA_COLOUR_CHROMASITINGVERT_UNDETERMINED } },
+    { MATROSKA_ID_VIDEOCOLORRANGE,            EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, range), { .u = AVCOL_RANGE_UNSPECIFIED } },
+    { MATROSKA_ID_VIDEOCOLORTRANSFERCHARACTERISTICS, EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, transfer_characteristics), { .u = AVCOL_TRC_UNSPECIFIED } },
+    { MATROSKA_ID_VIDEOCOLORPRIMARIES,        EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, primaries), { .u = AVCOL_PRI_UNSPECIFIED } },
     { MATROSKA_ID_VIDEOCOLORMAXCLL,           EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, max_cll), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORMAXFALL,          EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, max_fall), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORMASTERINGMETA,    EBML_NEST, 0, offsetof(MatroskaTrackVideoColor, mastering_meta), { .n = matroska_mastering_meta } },
