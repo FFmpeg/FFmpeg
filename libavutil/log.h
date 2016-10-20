@@ -44,7 +44,7 @@ typedef enum {
     AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
     AV_CLASS_CATEGORY_DEVICE_OUTPUT,
     AV_CLASS_CATEGORY_DEVICE_INPUT,
-    AV_CLASS_CATEGORY_NB, ///< not part of ABI/API
+    AV_CLASS_CATEGORY_NB  ///< not part of ABI/API
 }AVClassCategory;
 
 #define AV_IS_INPUT_DEVICE(category) \
