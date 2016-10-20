@@ -88,15 +88,15 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    ret = av_image_alloc(picture->data, picture->linesize, c->width, c->height,
-                         c->pix_fmt, 32);
-    if (ret < 0) {
-        fprintf(stderr, "could not alloc raw picture buffer\n");
-        exit(1);
-    }
     picture->format = c->pix_fmt;
     picture->width  = c->width;
     picture->height = c->height;
+
+    ret = av_frame_get_buffer(picture, 32);
+    if (ret < 0) {
+        fprintf(stderr, "could not alloc the frame data\n");
+        exit(1);
+    }
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
@@ -105,6 +105,12 @@ int main(int argc, char **argv)
         pkt.size = 0;
 
         fflush(stdout);
+
+        /* make sure the frame data is writable */
+        ret = av_frame_make_writable(picture);
+        if (ret < 0)
+            exit(1);
+
         /* prepare a dummy image */
         /* Y */
         for(y=0;y<c->height;y++) {
@@ -159,7 +165,6 @@ int main(int argc, char **argv)
     fclose(f);
 
     avcodec_free_context(&c);
-    av_freep(&picture->data[0]);
     av_frame_free(&picture);
 
     return 0;
