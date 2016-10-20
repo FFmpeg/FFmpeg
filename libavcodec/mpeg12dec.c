@@ -2808,6 +2808,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, void *data,
                             avctx->extradata, avctx->extradata_size);
         if (*got_output) {
             av_log(avctx, AV_LOG_ERROR, "picture in extradata\n");
+            av_frame_unref(picture);
             *got_output = 0;
         }
         s->extradata_decoded = 1;
