@@ -69,7 +69,9 @@ int main(int argc, char **argv)
     c->width = 352;
     c->height = 288;
     /* frames per second */
-    c->time_base= (AVRational){1,25};
+    c->time_base = (AVRational){1, 25};
+    c->framerate = (AVRational){25, 1};
+
     c->gop_size = 10; /* emit one intra frame every ten frames */
     c->max_b_frames=1;
     c->pix_fmt = AV_PIX_FMT_YUV420P;
