@@ -37,7 +37,7 @@
 int main(int argc, char **argv)
 {
     const char *filename;
-    AVCodec *codec;
+    const AVCodec *codec;
     AVCodecContext *c= NULL;
     int i, ret, x, y, got_output;
     FILE *f;
