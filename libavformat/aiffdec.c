@@ -371,6 +371,11 @@ static int aiff_read_packet(AVFormatContext *s,
     if (max_size <= 0)
         return AVERROR_EOF;
 
+    if (!st->codecpar->block_align) {
+        av_log(s, AV_LOG_ERROR, "block_align not set\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* Now for that packet */
     switch (st->codecpar->codec_id) {
     case AV_CODEC_ID_ADPCM_IMA_QT:
