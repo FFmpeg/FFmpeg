@@ -53,7 +53,7 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
 int main(int argc, char **argv)
 {
     const char *filename, *outfilename;
-    AVCodec *codec;
+    const AVCodec *codec;
     AVCodecContext *c= NULL;
     int frame, got_picture, len;
     FILE *f;
