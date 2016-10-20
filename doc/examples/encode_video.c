@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     int i, ret, x, y;
     FILE *f;
     AVFrame *picture;
-    AVPacket pkt;
+    AVPacket *pkt;
     uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 
     if (argc <= 1) {
@@ -89,6 +89,10 @@ int main(int argc, char **argv)
 
     c = avcodec_alloc_context3(codec);
     picture = av_frame_alloc();
+
+    pkt = av_packet_alloc();
+    if (!pkt)
+        exit(1);
 
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -127,10 +131,6 @@ int main(int argc, char **argv)
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
-        av_init_packet(&pkt);
-        pkt.data = NULL;    // packet data will be allocated by the encoder
-        pkt.size = 0;
-
         fflush(stdout);
 
         /* make sure the frame data is writable */
@@ -157,11 +157,11 @@ int main(int argc, char **argv)
         picture->pts = i;
 
         /* encode the image */
-        encode(c, picture, &pkt, f);
+        encode(c, picture, pkt, f);
     }
 
     /* flush the encoder */
-    encode(c, NULL, &pkt, f);
+    encode(c, NULL, pkt, f);
 
     /* add sequence end code to have a real MPEG file */
     fwrite(endcode, 1, sizeof(endcode), f);
@@ -169,6 +169,7 @@ int main(int argc, char **argv)
 
     avcodec_free_context(&c);
     av_frame_free(&picture);
+    av_packet_free(&pkt);
 
     return 0;
 }
