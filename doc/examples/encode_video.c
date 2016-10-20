@@ -34,12 +34,39 @@
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 
+static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
+                   FILE *outfile)
+{
+    int ret;
+
+    /* send the frame to the encoder */
+    ret = avcodec_send_frame(enc_ctx, frame);
+    if (ret < 0) {
+        fprintf(stderr, "error sending a frame for encoding\n");
+        exit(1);
+    }
+
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(enc_ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return;
+        else if (ret < 0) {
+            fprintf(stderr, "error during encoding\n");
+            exit(1);
+        }
+
+        printf("encoded frame %3"PRId64" (size=%5d)\n", pkt->pts, pkt->size);
+        fwrite(pkt->data, 1, pkt->size, outfile);
+        av_packet_unref(pkt);
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *filename;
     const AVCodec *codec;
     AVCodecContext *c= NULL;
-    int i, ret, x, y, got_output;
+    int i, ret, x, y;
     FILE *f;
     AVFrame *picture;
     AVPacket pkt;
@@ -130,35 +157,11 @@ int main(int argc, char **argv)
         picture->pts = i;
 
         /* encode the image */
-        ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
-        if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
-            exit(1);
-        }
-
-        if (got_output) {
-            printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
-            fwrite(pkt.data, 1, pkt.size, f);
-            av_packet_unref(&pkt);
-        }
+        encode(c, picture, &pkt, f);
     }
 
-    /* get the delayed frames */
-    for (got_output = 1; got_output; i++) {
-        fflush(stdout);
-
-        ret = avcodec_encode_video2(c, &pkt, NULL, &got_output);
-        if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
-            exit(1);
-        }
-
-        if (got_output) {
-            printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
-            fwrite(pkt.data, 1, pkt.size, f);
-            av_packet_unref(&pkt);
-        }
-    }
+    /* flush the encoder */
+    encode(c, NULL, &pkt, f);
 
     /* add sequence end code to have a real MPEG file */
     fwrite(endcode, 1, sizeof(endcode), f);
