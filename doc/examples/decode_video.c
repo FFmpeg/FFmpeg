@@ -99,8 +99,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* the codec gives us the frame size, in samples */
-
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
