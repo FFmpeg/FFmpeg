@@ -621,7 +621,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ctx->flags & VP8F_AUTO_ALT_REF)
         ctx->auto_alt_ref = 1;
     if (ctx->auto_alt_ref >= 0)
-        codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF, ctx->auto_alt_ref);
+        codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF,
+                     avctx->codec_id == AV_CODEC_ID_VP8 ? !!ctx->auto_alt_ref : ctx->auto_alt_ref);
     if (ctx->arnr_max_frames >= 0)
         codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,   ctx->arnr_max_frames);
     if (ctx->arnr_strength >= 0)
@@ -1025,7 +1026,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 
 #define COMMON_OPTIONS \
     { "auto-alt-ref",    "Enable use of alternate reference " \
-                         "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_BOOL, {.i64 = -1},     -1,      1,       VE}, \
+                         "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1},      -1,      2,       VE}, \
     { "lag-in-frames",   "Number of frames to look ahead for " \
                          "alternate reference frame selection",    OFFSET(lag_in_frames),   AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE}, \
     { "arnr-maxframes",  "altref noise reduction max frame count", OFFSET(arnr_max_frames), AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE}, \
