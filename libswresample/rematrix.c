@@ -68,14 +68,12 @@ int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
     if (!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
     memset(s->matrix, 0, sizeof(s->matrix));
+    memset(s->matrix_flt, 0, sizeof(s->matrix_flt));
     nb_in  = av_get_channel_layout_nb_channels(s->user_in_ch_layout);
     nb_out = av_get_channel_layout_nb_channels(s->user_out_ch_layout);
     for (out = 0; out < nb_out; out++) {
         for (in = 0; in < nb_in; in++)
-            s->matrix[out][in] = matrix[in];
-        if (s->int_sample_fmt == AV_SAMPLE_FMT_FLTP)
-            for (in = 0; in < nb_in; in++)
-                s->matrix_flt[out][in] = matrix[in];
+            s->matrix_flt[out][in] = s->matrix[out][in] = matrix[in];
         matrix += stride;
     }
     s->rematrix_custom = 1;
