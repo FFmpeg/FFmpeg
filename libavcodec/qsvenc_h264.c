@@ -111,8 +111,7 @@ static const AVOption options[] = {
     { "look_ahead",       "Use VBR algorithm with look ahead",    OFFSET(qsv.look_ahead),       AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "look_ahead_depth", "Depth of look ahead in number frames", OFFSET(qsv.look_ahead_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 100, VE },
 #endif
-
-#if QSV_VERSION_ATLEAST(1,8)
+#if QSV_HAVE_LA_DS
     { "look_ahead_downsampling", NULL, OFFSET(qsv.look_ahead_downsampling), AV_OPT_TYPE_INT, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, MFX_LOOKAHEAD_DS_UNKNOWN, MFX_LOOKAHEAD_DS_2x, VE, "look_ahead_downsampling" },
     { "unknown"                , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
     { "off"                    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_OFF     }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },

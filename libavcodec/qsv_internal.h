@@ -21,21 +21,6 @@
 #ifndef AVCODEC_QSV_INTERNAL_H
 #define AVCODEC_QSV_INTERNAL_H
 
-#if CONFIG_VAAPI
-#define AVCODEC_QSV_LINUX_SESSION_HANDLE
-#endif //CONFIG_VAAPI
-
-#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
-#include <stdio.h>
-#include <string.h>
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <fcntl.h>
-#include <va/va.h>
-#include <va/va_drm.h>
-#endif
-
 #include <mfx/mfxvideo.h>
 
 #include "libavutil/frame.h"
@@ -43,7 +28,7 @@
 #include "avcodec.h"
 
 #define QSV_VERSION_MAJOR 1
-#define QSV_VERSION_MINOR 9
+#define QSV_VERSION_MINOR 1
 
 #define ASYNC_DEPTH_DEFAULT 4       // internal parallelism
 
@@ -65,23 +50,26 @@ typedef struct QSVFrame {
     struct QSVFrame *next;
 } QSVFrame;
 
-typedef struct QSVSession {
-    mfxSession session;
-#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
-    int        fd_display;
-    VADisplay  va_display;
-#endif
-} QSVSession;
+typedef struct QSVFramesContext {
+    AVBufferRef *hw_frames_ctx;
+    mfxFrameInfo info;
+    mfxMemId *mids;
+    int    nb_mids;
+} QSVFramesContext;
 
 /**
- * Convert a libmfx error code into a ffmpeg error code.
+ * Convert a libmfx error code into an ffmpeg error code.
  */
 int ff_qsv_error(int mfx_err);
 
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
+int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile);
 
-int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
+int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                                  const char *load_plugins);
-int ff_qsv_close_internal_session(QSVSession *qs);
+
+int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *session,
+                                  QSVFramesContext *qsv_frames_ctx,
+                                  const char *load_plugins, int opaque);
 
 #endif /* AVCODEC_QSV_INTERNAL_H */

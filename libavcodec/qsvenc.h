@@ -42,6 +42,7 @@
 #define QSV_HAVE_BREF_TYPE      QSV_VERSION_ATLEAST(1, 8)
 
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
+#define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
 #define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_VCM    QSV_VERSION_ATLEAST(1, 8)
@@ -79,11 +80,10 @@ typedef struct QSVEncContext {
     QSVFrame *work_frames;
 
     mfxSession session;
-    QSVSession internal_qs;
+    mfxSession internal_session;
 
     int packet_size;
     int width_align;
-    int height_align;
 
     mfxVideoParam param;
     mfxFrameAllocRequest req;
@@ -103,6 +103,8 @@ typedef struct QSVEncContext {
     mfxExtBuffer **extparam;
 
     AVFifoBuffer *async_fifo;
+
+    QSVFramesContext frames_ctx;
 
     // options set by the caller
     int async_depth;
