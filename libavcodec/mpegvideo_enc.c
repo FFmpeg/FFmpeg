@@ -1320,6 +1320,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                                                 EDGE_BOTTOM);
                     }
                 }
+                emms_c();
             }
         }
         ret = av_frame_copy_props(pic->f, pic_arg);
