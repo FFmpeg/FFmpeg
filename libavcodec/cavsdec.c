@@ -1104,6 +1104,7 @@ static int decode_pic(AVSContext *h)
             }
         } while (ff_cavs_next_mb(h));
     }
+    emms_c();
     if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         av_frame_unref(h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
