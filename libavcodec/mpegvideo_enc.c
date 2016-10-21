@@ -2912,6 +2912,8 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
             return AVERROR(ENOMEM);
         }
 
+        emms_c();
+
         av_fast_padded_malloc(&new_buffer, &new_buffer_size,
                               s->avctx->internal->byte_buffer_size + size_increase);
         if (!new_buffer)
