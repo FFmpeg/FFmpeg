@@ -104,7 +104,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     long ioctl_frequency;
     char *arg;
     int c;
-    struct sigaction act = { 0 }, old;
+    struct sigaction act, old;
     int ret;
     char errbuf[128];
 
@@ -135,6 +135,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
             frequency = 0.0;
     }
 
+    memset(&act, 0, sizeof(act));
     sigemptyset(&act.sa_mask);
     act.sa_handler = catchsignal;
     sigaction(SIGUSR1, &act, &old);
