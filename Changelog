@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.1.5:
+- avformat/mxfdec: Check size to avoid integer overflow in mxf_read_utf16_string()
+- avcodec/mpegvideo_enc: Clear mmx state in ff_mpv_reallocate_putbitbuffer()
+- avcodec/utils: Clear MMX state before returning from avcodec_default_execute*()
+- doc/examples/demuxing_decoding: Drop AVFrame->pts use
 - libopenjpegenc: fix out-of-bounds reads when filling the edges
 - libopenjpegenc: stop reusing image data buffer for openjpeg 2
 - configure: fix detection of libopenjpeg
