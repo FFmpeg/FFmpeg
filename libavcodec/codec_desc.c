@@ -2964,6 +2964,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("binary data"),
         .mime_types= MT("application/octet-stream"),
     },
+    {
+        .id        = AV_CODEC_ID_SCTE_35,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "scte_35",
+        .long_name = NULL_IF_CONFIG_SMALL("SCTE 35 Message Queue"),
+    },
 
     /* deprecated codec ids */
 };
