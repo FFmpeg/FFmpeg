@@ -1861,8 +1861,9 @@ static int mxf_add_metadata_stream(MXFContext *mxf, MXFTrack *track)
     const MXFCodecUL *codec_ul = NULL;
     MXFPackage tmp_package;
     AVStream *st;
+    int j;
 
-    for (int j = 0; j < track->sequence->structural_components_count; j++) {
+    for (j = 0; j < track->sequence->structural_components_count; j++) {
         component = mxf_resolve_sourceclip(mxf, &track->sequence->structural_components_refs[j]);
         if (!component)
             continue;
@@ -2668,10 +2669,12 @@ static int is_pcm(enum AVCodecID codec_id)
 
 static AVStream* mxf_get_opatom_stream(MXFContext *mxf)
 {
+    int i;
+
     if (mxf->op != OPAtom)
         return NULL;
 
-    for (int i = 0; i < mxf->fc->nb_streams; i++) {
+    for (i = 0; i < mxf->fc->nb_streams; i++) {
         if (mxf->fc->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
             continue;
         return mxf->fc->streams[i];
