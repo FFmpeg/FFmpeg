@@ -1994,6 +1994,8 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
     av_assert0(ret <= 0);
 
+    emms_c();
+
     if (avpkt->data && avpkt->data == avctx->internal->byte_buffer) {
         needs_realloc = 0;
         if (user_pkt.data) {
@@ -2031,7 +2033,6 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if (ret < 0 || !*got_packet_ptr)
         av_packet_unref(avpkt);
 
-    emms_c();
     return ret;
 }
 
