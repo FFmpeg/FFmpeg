@@ -827,7 +827,7 @@ static inline int mxf_read_utf16_string(AVIOContext *pb, int size, char** str, i
     int ret;
     size_t buf_size;
 
-    if (size < 0)
+    if (size < 0 || size > INT_MAX/2)
         return AVERROR(EINVAL);
 
     buf_size = size + size / 2 + 1;
