@@ -125,3 +125,16 @@ AVRational av_get_time_base_q(void)
 {
     return (AVRational){1, AV_TIME_BASE};
 }
+
+void av_assert0_fpu(void) {
+#if HAVE_MMX_INLINE
+    uint16_t state[14];
+     __asm volatile (
+        "fstenv %0 \n\t"
+        : "+m" (state)
+        :
+        : "memory"
+    );
+    av_assert0((state[4] & 3) == 3);
+#endif
+}
