@@ -288,9 +288,12 @@ static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
 {
     FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_rc, (ctx->m.avctx->qmax + 1),
                           ctx->m.mb_num * sizeof(RCEntry), fail);
-    if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD)
+    if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD) {
         FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_cmp,
                           ctx->m.mb_num, sizeof(RCCMPEntry), fail);
+        FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->mb_cmp_tmp,
+                          ctx->m.mb_num, sizeof(RCCMPEntry), fail);
+    }
     ctx->frame_bits = (ctx->coding_unit_size -
                        ctx->data_offset - 4 - ctx->min_padding) * 8;
     ctx->qscale = 1;
@@ -1072,10 +1075,9 @@ static void radix_sort_pass(RCCMPEntry *dst, const RCCMPEntry *data,
     }
 }
 
-static void radix_sort(RCCMPEntry *data, int size)
+static void radix_sort(RCCMPEntry *data, RCCMPEntry *tmp, int size)
 {
     int buckets[RADIX_PASSES][NBUCKETS];
-    RCCMPEntry *tmp = av_malloc_array(size, sizeof(*tmp));
     radix_count(data, size, buckets);
     radix_sort_pass(tmp, data, size, buckets[0], 0);
     radix_sort_pass(data, tmp, size, buckets[1], 1);
@@ -1083,7 +1085,6 @@ static void radix_sort(RCCMPEntry *data, int size)
         radix_sort_pass(tmp, data, size, buckets[2], 2);
         radix_sort_pass(data, tmp, size, buckets[3], 3);
     }
-    av_free(tmp);
 }
 
 static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
@@ -1117,7 +1118,7 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
         if (RC_VARIANCE)
             avctx->execute2(avctx, dnxhd_mb_var_thread,
                             NULL, NULL, ctx->m.mb_height);
-        radix_sort(ctx->mb_cmp, ctx->m.mb_num);
+        radix_sort(ctx->mb_cmp, ctx->mb_cmp_tmp, ctx->m.mb_num);
         for (x = 0; x < ctx->m.mb_num && max_bits > ctx->frame_bits; x++) {
             int mb = ctx->mb_cmp[x].mb;
             int rc = (ctx->qscale * ctx->m.mb_num ) + mb;
@@ -1234,6 +1235,7 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
     av_freep(&ctx->mb_qscale);
     av_freep(&ctx->mb_rc);
     av_freep(&ctx->mb_cmp);
+    av_freep(&ctx->mb_cmp_tmp);
     av_freep(&ctx->slice_size);
     av_freep(&ctx->slice_offs);
 
