@@ -37,6 +37,7 @@ version <next>:
 - libfaac encoder removed
 - Matroska muxer now writes CRC32 elements by default in all Level 1 elements
 - sidedata video and asidedata audio filter
+- Changed mapping of rtp MIME type G726 to codec g726le.
 
 
 version 3.1:
