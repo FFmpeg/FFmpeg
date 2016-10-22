@@ -141,9 +141,11 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 1;
 
     if (ctx->cudecoder) {
-        av_log(avctx, AV_LOG_ERROR, "re-initializing decoder is not supported\n");
-        ctx->internal_error = AVERROR(EINVAL);
-        return 0;
+        av_log(avctx, AV_LOG_TRACE, "Re-initializing decoder\n");
+        ctx->internal_error = CHECK_CU(cuvidDestroyDecoder(ctx->cudecoder));
+        if (ctx->internal_error < 0)
+            return 0;
+        ctx->cudecoder = NULL;
     }
 
     if (hwframe_ctx->pool && (
