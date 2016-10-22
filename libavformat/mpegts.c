@@ -1610,14 +1610,15 @@ static void scte_data_cb(MpegTSFilter *filter, const uint8_t *section,
     MpegTSContext *ts = filter->u.section_filter.opaque;
 
     int idx = ff_find_stream_index(ts->stream, filter->pid);
+    if (idx < 0)
+        return;
+
     new_data_packet(section, section_len, ts->pkt);
-    if (idx >= 0) {
-        ts->pkt->stream_index = idx;
-    }
+    ts->pkt->stream_index = idx;
     prg = av_find_program_from_stream(ts->stream, NULL, idx);
     if (prg && prg->pcr_pid != -1 && prg->discard != AVDISCARD_ALL) {
         MpegTSFilter *f = ts->pids[prg->pcr_pid];
-        if (f)
+        if (f && f->last_pcr != -1)
             ts->pkt->pts = ts->pkt->dts = f->last_pcr/300;
     }
     ts->stop_parse = 1;
