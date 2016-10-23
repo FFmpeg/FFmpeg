@@ -109,6 +109,11 @@ static int adx_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (par->sample_rate <= 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", par->sample_rate);
+        return AVERROR_INVALIDDATA;
+    }
+
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = s->iformat->raw_codec_id;
     par->bit_rate    = par->sample_rate * par->channels * BLOCK_SIZE * 8LL / BLOCK_SAMPLES;
