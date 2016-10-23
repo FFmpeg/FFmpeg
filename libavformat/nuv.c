@@ -66,7 +66,7 @@ static int nuv_probe(AVProbeData *p)
  * @param myth set if this is a MythTVVideo format file
  * @return 0 or AVERROR code
  */
-static int get_codec_data(AVIOContext *pb, AVStream *vst,
+static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth)
 {
     nuv_frametype frametype;
@@ -114,6 +114,10 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
 
                 ast->codecpar->codec_tag             = avio_rl32(pb);
                 ast->codecpar->sample_rate           = avio_rl32(pb);
+                if (ast->codecpar->sample_rate <= 0) {
+                    av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", ast->codecpar->sample_rate);
+                    return AVERROR_INVALIDDATA;
+                }
                 ast->codecpar->bits_per_coded_sample = avio_rl32(pb);
                 ast->codecpar->channels              = avio_rl32(pb);
                 ast->codecpar->channel_layout        = 0;
@@ -232,7 +236,7 @@ static int nuv_header(AVFormatContext *s)
     } else
         ctx->a_id = -1;
 
-    if ((ret = get_codec_data(pb, vst, ast, is_mythtv)) < 0)
+    if ((ret = get_codec_data(s, pb, vst, ast, is_mythtv)) < 0)
         return ret;
 
     ctx->rtjpg_video = vst && vst->codecpar->codec_id == AV_CODEC_ID_NUV;
