@@ -4247,6 +4247,11 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     timescale = av_make_q(1, avio_rb32(pb));
 
+    if (timescale.den <= 0) {
+        av_log(c->fc, AV_LOG_ERROR, "Invalid sidx timescale 1/%d\n", timescale.den);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (version == 0) {
         pts = avio_rb32(pb);
         offset += avio_rb32(pb);
