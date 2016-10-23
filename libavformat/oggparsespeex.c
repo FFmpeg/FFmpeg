@@ -68,6 +68,10 @@ static int speex_header(AVFormatContext *s, int idx) {
         }
 
         st->codecpar->sample_rate = AV_RL32(p + 36);
+        if (st->codecpar->sample_rate <= 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
+            return AVERROR_INVALIDDATA;
+        }
         st->codecpar->channels = AV_RL32(p + 48);
         if (st->codecpar->channels < 1 || st->codecpar->channels > 2) {
             av_log(s, AV_LOG_ERROR, "invalid channel count. Speex must be mono or stereo.\n");
