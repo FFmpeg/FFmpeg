@@ -432,6 +432,11 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             }
             codec->sample_rate = avio_rb32(pb);
+            if (codec->sample_rate <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", codec->sample_rate);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             codec->channels = avio_rl16(pb);
             codec->frame_size = avio_rl16(pb);
             break;
@@ -628,6 +633,10 @@ static int ffm_read_header(AVFormatContext *s)
             break;
         case AVMEDIA_TYPE_AUDIO:
             codec->sample_rate = avio_rb32(pb);
+            if (codec->sample_rate <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", codec->sample_rate);
+                goto fail;
+            }
             codec->channels = avio_rl16(pb);
             codec->frame_size = avio_rl16(pb);
             break;
