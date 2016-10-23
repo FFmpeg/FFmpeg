@@ -16,6 +16,7 @@ EXPORTS
     av_aes_init
     av_append_path_component
     av_asprintf
+    av_assert0_fpu
     av_audio_fifo_alloc
     av_audio_fifo_drain
     av_audio_fifo_free
