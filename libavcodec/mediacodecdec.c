@@ -1,5 +1,5 @@
 /*
- * Android MediaCodec decoder
+ * Android MediaCodec H.264 / H.265 / MPEG-4 / VP8 / VP9 decoders
  *
  * Copyright (c) 2015-2016 Matthieu Bouron <matthieu.bouron stupeflix.com>
  *
@@ -20,749 +20,604 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
 
-#include "libavutil/atomic.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
-#include "libavutil/mem.h"
-#include "libavutil/log.h"
+#include "libavutil/fifo.h"
+#include "libavutil/opt.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/time.h"
-#include "libavutil/timestamp.h"
+#include "libavutil/atomic.h"
 
 #include "avcodec.h"
+#include "h264_parse.h"
+#include "hevc_parse.h"
 #include "internal.h"
-
-#include "mediacodec.h"
-#include "mediacodec_surface.h"
-#include "mediacodec_sw_buffer.h"
 #include "mediacodec_wrapper.h"
-#include "mediacodecdec.h"
+#include "mediacodecdec_common.h"
 
-/**
- * OMX.k3.video.decoder.avc, OMX.NVIDIA.* OMX.SEC.avc.dec and OMX.google
- * codec workarounds used in various place are taken from the Gstreamer
- * project.
- *
- * Gstreamer references:
- * https://cgit.freedesktop.org/gstreamer/gst-plugins-bad/tree/sys/androidmedia/
- *
- * Gstreamer copyright notice:
- *
- * Copyright (C) 2012, Collabora Ltd.
- *   Author: Sebastian Dröge <sebastian.droege@collabora.co.uk>
- *
- * Copyright (C) 2012, Rafaël Carré <funman@videolanorg>
- *
- * Copyright (C) 2015, Sebastian Dröge <sebastian@centricular.com>
- *
- * Copyright (C) 2014-2015, Collabora Ltd.
- *   Author: Matthieu Bouron <matthieu.bouron@gcollabora.com>
- *
- * Copyright (C) 2015, Edward Hervey
- *   Author: Edward Hervey <bilboed@gmail.com>
- *
- * Copyright (C) 2015, Matthew Waters <matthew@centricular.com>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation
- * version 2.1 of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
- *
- */
+typedef struct MediaCodecH264DecContext {
 
-#define INPUT_DEQUEUE_TIMEOUT_US 8000
-#define OUTPUT_DEQUEUE_TIMEOUT_US 8000
-#define OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US 1000000
+    MediaCodecDecContext *ctx;
 
-enum {
-    COLOR_FormatYUV420Planar                              = 0x13,
-    COLOR_FormatYUV420SemiPlanar                          = 0x15,
-    COLOR_FormatYCbYCr                                    = 0x19,
-    COLOR_FormatAndroidOpaque                             = 0x7F000789,
-    COLOR_QCOM_FormatYUV420SemiPlanar                     = 0x7fa30c00,
-    COLOR_QCOM_FormatYUV420SemiPlanar32m                  = 0x7fa30c04,
-    COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka = 0x7fa30c03,
-    COLOR_TI_FormatYUV420PackedSemiPlanar                 = 0x7f000100,
-    COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced       = 0x7f000001,
-};
+    AVBSFContext *bsf;
 
-static const struct {
+    AVFifoBuffer *fifo;
 
-    int color_format;
-    enum AVPixelFormat pix_fmt;
+    AVPacket filtered_pkt;
 
-} color_formats[] = {
+} MediaCodecH264DecContext;
 
-    { COLOR_FormatYUV420Planar,                              AV_PIX_FMT_YUV420P },
-    { COLOR_FormatYUV420SemiPlanar,                          AV_PIX_FMT_NV12    },
-    { COLOR_QCOM_FormatYUV420SemiPlanar,                     AV_PIX_FMT_NV12    },
-    { COLOR_QCOM_FormatYUV420SemiPlanar32m,                  AV_PIX_FMT_NV12    },
-    { COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka, AV_PIX_FMT_NV12    },
-    { COLOR_TI_FormatYUV420PackedSemiPlanar,                 AV_PIX_FMT_NV12    },
-    { COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced,       AV_PIX_FMT_NV12    },
-    { 0 }
-};
+static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
+{
+    MediaCodecH264DecContext *s = avctx->priv_data;
 
-static enum AVPixelFormat mcdec_map_color_format(AVCodecContext *avctx,
-                                                 MediaCodecDecContext *s,
-                                                 int color_format)
+    ff_mediacodec_dec_close(avctx, s->ctx);
+    s->ctx = NULL;
+
+    av_fifo_free(s->fifo);
+
+    av_bsf_free(&s->bsf);
+    av_packet_unref(&s->filtered_pkt);
+
+    return 0;
+}
+
+#if CONFIG_H264_MEDIACODEC_DECODER || CONFIG_HEVC_MEDIACODEC_DECODER
+static int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int *out_size)
 {
     int i;
-    enum AVPixelFormat ret = AV_PIX_FMT_NONE;
-
-    if (s->surface) {
-        return AV_PIX_FMT_MEDIACODEC;
-    }
-
-    if (!strcmp(s->codec_name, "OMX.k3.video.decoder.avc") && color_format == COLOR_FormatYCbYCr) {
-        s->color_format = color_format = COLOR_TI_FormatYUV420PackedSemiPlanar;
-    }
-
-    for (i = 0; i < FF_ARRAY_ELEMS(color_formats); i++) {
-        if (color_formats[i].color_format == color_format) {
-            return color_formats[i].pix_fmt;
-        }
-    }
-
-    av_log(avctx, AV_LOG_ERROR, "Output color format 0x%x (value=%d) is not supported\n",
-        color_format, color_format);
-
-    return ret;
-}
-
-static void ff_mediacodec_dec_ref(MediaCodecDecContext *s)
-{
-    avpriv_atomic_int_add_and_fetch(&s->refcount, 1);
-}
-
-static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
-{
-    if (!s)
-        return;
-
-    if (!avpriv_atomic_int_add_and_fetch(&s->refcount, -1)) {
-        if (s->codec) {
-            ff_AMediaCodec_delete(s->codec);
-            s->codec = NULL;
-        }
-
-        if (s->format) {
-            ff_AMediaFormat_delete(s->format);
-            s->format = NULL;
-        }
-
-        if (s->surface) {
-            ff_mediacodec_surface_unref(s->surface, NULL);
-            s->surface = NULL;
-        }
-
-        av_freep(&s->codec_name);
-        av_freep(&s);
-    }
-}
-
-static void mediacodec_buffer_release(void *opaque, uint8_t *data)
-{
-    AVMediaCodecBuffer *buffer = opaque;
-    MediaCodecDecContext *ctx = buffer->ctx;
-    int released = avpriv_atomic_int_get(&buffer->released);
-
-    if (!released) {
-        ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
-    }
-
-    ff_mediacodec_dec_unref(ctx);
-    av_freep(&buffer);
-}
-
-static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
-                                  MediaCodecDecContext *s,
-                                  ssize_t index,
-                                  FFAMediaCodecBufferInfo *info,
-                                  AVFrame *frame)
-{
     int ret = 0;
-    int status = 0;
-    AVMediaCodecBuffer *buffer = NULL;
+    uint8_t *p = NULL;
+    static const uint8_t nalu_header[] = { 0x00, 0x00, 0x00, 0x01 };
 
-    frame->buf[0] = NULL;
-    frame->width = avctx->width;
-    frame->height = avctx->height;
-    frame->format = avctx->pix_fmt;
-
-    if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
-        frame->pts = av_rescale_q(info->presentationTimeUs,
-                                      av_make_q(1, 1000000),
-                                      avctx->pkt_timebase);
-    } else {
-        frame->pts = info->presentationTimeUs;
-    }
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = frame->pts;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    frame->pkt_dts = AV_NOPTS_VALUE;
-
-    buffer = av_mallocz(sizeof(AVMediaCodecBuffer));
-    if (!buffer) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+    if (!out || !out_size) {
+        return AVERROR(EINVAL);
     }
 
-    buffer->released = 0;
-
-    frame->buf[0] = av_buffer_create(NULL,
-                                     0,
-                                     mediacodec_buffer_release,
-                                     buffer,
-                                     AV_BUFFER_FLAG_READONLY);
-
-    if (!frame->buf[0]) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-
+    p = av_malloc(sizeof(nalu_header) + src_size);
+    if (!p) {
+        return AVERROR(ENOMEM);
     }
 
-    buffer->ctx = s;
-    ff_mediacodec_dec_ref(s);
+    *out = p;
+    *out_size = sizeof(nalu_header) + src_size;
 
-    buffer->index = index;
-    buffer->pts = info->presentationTimeUs;
+    memcpy(p, nalu_header, sizeof(nalu_header));
+    memcpy(p + sizeof(nalu_header), src, src_size);
 
-    frame->data[3] = (uint8_t *)buffer;
+    /* Escape 0x00, 0x00, 0x0{0-3} pattern */
+    for (i = 4; i < *out_size; i++) {
+        if (i < *out_size - 3 &&
+            p[i + 0] == 0 &&
+            p[i + 1] == 0 &&
+            p[i + 2] <= 3) {
+            uint8_t *new;
 
-    return 0;
-fail:
-    av_freep(buffer);
-    av_buffer_unref(&frame->buf[0]);
-    status = ff_AMediaCodec_releaseOutputBuffer(s->codec, index, 0);
-    if (status < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
-        ret = AVERROR_EXTERNAL;
+            *out_size += 1;
+            new = av_realloc(*out, *out_size);
+            if (!new) {
+                ret = AVERROR(ENOMEM);
+                goto done;
+            }
+            *out = p = new;
+
+            i = i + 2;
+            memmove(p + i + 1, p + i, *out_size - (i + 1));
+            p[i] = 0x03;
+        }
     }
-
-    return ret;
-}
-
-static int mediacodec_wrap_sw_buffer(AVCodecContext *avctx,
-                                  MediaCodecDecContext *s,
-                                  uint8_t *data,
-                                  size_t size,
-                                  ssize_t index,
-                                  FFAMediaCodecBufferInfo *info,
-                                  AVFrame *frame)
-{
-    int ret = 0;
-    int status = 0;
-
-    frame->width = avctx->width;
-    frame->height = avctx->height;
-    frame->format = avctx->pix_fmt;
-
-    /* MediaCodec buffers needs to be copied to our own refcounted buffers
-     * because the flush command invalidates all input and output buffers.
-     */
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer\n");
-        goto done;
-    }
-
-    /* Override frame->pkt_pts as ff_get_buffer will override its value based
-     * on the last avpacket received which is not in sync with the frame:
-     *   * N avpackets can be pushed before 1 frame is actually returned
-     *   * 0-sized avpackets are pushed to flush remaining frames at EOS */
-    frame->pts = info->presentationTimeUs;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = info->presentationTimeUs;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    frame->pkt_dts = AV_NOPTS_VALUE;
-
-    av_log(avctx, AV_LOG_DEBUG,
-            "Frame: width=%d stride=%d height=%d slice-height=%d "
-            "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s\n"
-            "destination linesizes=%d,%d,%d\n" ,
-            avctx->width, s->stride, avctx->height, s->slice_height,
-            s->crop_top, s->crop_bottom, s->crop_left, s->crop_right, s->codec_name,
-            frame->linesize[0], frame->linesize[1], frame->linesize[2]);
-
-    switch (s->color_format) {
-    case COLOR_FormatYUV420Planar:
-        ff_mediacodec_sw_buffer_copy_yuv420_planar(avctx, s, data, size, info, frame);
-        break;
-    case COLOR_FormatYUV420SemiPlanar:
-    case COLOR_QCOM_FormatYUV420SemiPlanar:
-    case COLOR_QCOM_FormatYUV420SemiPlanar32m:
-        ff_mediacodec_sw_buffer_copy_yuv420_semi_planar(avctx, s, data, size, info, frame);
-        break;
-    case COLOR_TI_FormatYUV420PackedSemiPlanar:
-    case COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced:
-        ff_mediacodec_sw_buffer_copy_yuv420_packed_semi_planar(avctx, s, data, size, info, frame);
-        break;
-    case COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka:
-        ff_mediacodec_sw_buffer_copy_yuv420_packed_semi_planar_64x32Tile2m8ka(avctx, s, data, size, info, frame);
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported color format 0x%x (value=%d)\n",
-            s->color_format, s->color_format);
-        ret = AVERROR(EINVAL);
-        goto done;
-    }
-
-    ret = 0;
 done:
-    status = ff_AMediaCodec_releaseOutputBuffer(s->codec, index, 0);
-    if (status < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
-        ret = AVERROR_EXTERNAL;
+    if (ret < 0) {
+        av_freep(out);
+        *out_size = 0;
     }
 
     return ret;
 }
+#endif
 
-static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecContext *s)
+#if CONFIG_H264_MEDIACODEC_DECODER
+static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
-    int width = 0;
-    int height = 0;
-    int32_t value = 0;
-    char *format = NULL;
+    int i;
+    int ret;
 
-    if (!s->format) {
-        av_log(avctx, AV_LOG_ERROR, "Output MediaFormat is not set\n");
-        return AVERROR(EINVAL);
+    H264ParamSets ps;
+    const PPS *pps = NULL;
+    const SPS *sps = NULL;
+    int is_avc = 0;
+    int nal_length_size = 0;
+
+    memset(&ps, 0, sizeof(ps));
+
+    ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                   &ps, &is_avc, &nal_length_size, 0, avctx);
+    if (ret < 0) {
+        goto done;
     }
 
-    format = ff_AMediaFormat_toString(s->format);
-    if (!format) {
-        return AVERROR_EXTERNAL;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Parsing MediaFormat %s\n", format);
-    av_freep(&format);
-
-    /* Mandatory fields */
-    if (!ff_AMediaFormat_getInt32(s->format, "width", &value)) {
-        format = ff_AMediaFormat_toString(s->format);
-        av_log(avctx, AV_LOG_ERROR, "Could not get %s from format %s\n", "width", format);
-        av_freep(&format);
-        return AVERROR_EXTERNAL;
-    }
-    s->width = value;
-
-    if (!ff_AMediaFormat_getInt32(s->format, "height", &value)) {
-        format = ff_AMediaFormat_toString(s->format);
-        av_log(avctx, AV_LOG_ERROR, "Could not get %s from format %s\n", "height", format);
-        av_freep(&format);
-        return AVERROR_EXTERNAL;
-    }
-    s->height = value;
-
-    if (!ff_AMediaFormat_getInt32(s->format, "stride", &value)) {
-        format = ff_AMediaFormat_toString(s->format);
-        av_log(avctx, AV_LOG_ERROR, "Could not get %s from format %s\n", "stride", format);
-        av_freep(&format);
-        return AVERROR_EXTERNAL;
-    }
-    s->stride = value > 0 ? value : s->width;
-
-    if (!ff_AMediaFormat_getInt32(s->format, "slice-height", &value)) {
-        format = ff_AMediaFormat_toString(s->format);
-        av_log(avctx, AV_LOG_ERROR, "Could not get %s from format %s\n", "slice-height", format);
-        av_freep(&format);
-        return AVERROR_EXTERNAL;
-    }
-    s->slice_height = value > 0 ? value : s->height;
-
-    if (strstr(s->codec_name, "OMX.Nvidia.")) {
-        s->slice_height = FFALIGN(s->height, 16);
-    } else if (strstr(s->codec_name, "OMX.SEC.avc.dec")) {
-        s->slice_height = avctx->height;
-        s->stride = avctx->width;
+    for (i = 0; i < MAX_PPS_COUNT; i++) {
+        if (ps.pps_list[i]) {
+            pps = (const PPS*)ps.pps_list[i]->data;
+            break;
+        }
     }
 
-    if (!ff_AMediaFormat_getInt32(s->format, "color-format", &value)) {
-        format = ff_AMediaFormat_toString(s->format);
-        av_log(avctx, AV_LOG_ERROR, "Could not get %s from format %s\n", "color-format", format);
-        av_freep(&format);
-        return AVERROR_EXTERNAL;
-    }
-    s->color_format = value;
-
-    s->pix_fmt = avctx->pix_fmt = mcdec_map_color_format(avctx, s, value);
-    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Output color format is not supported\n");
-        return AVERROR(EINVAL);
+    if (pps) {
+        if (ps.sps_list[pps->sps_id]) {
+            sps = (const SPS*)ps.sps_list[pps->sps_id]->data;
+        }
     }
 
-    /* Optional fields */
-    if (ff_AMediaFormat_getInt32(s->format, "crop-top", &value))
-        s->crop_top = value;
+    if (pps && sps) {
+        uint8_t *data = NULL;
+        int data_size = 0;
 
-    if (ff_AMediaFormat_getInt32(s->format, "crop-bottom", &value))
-        s->crop_bottom = value;
+        if ((ret = h2645_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
+            goto done;
+        }
+        ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, data_size);
+        av_freep(&data);
 
-    if (ff_AMediaFormat_getInt32(s->format, "crop-left", &value))
-        s->crop_left = value;
+        if ((ret = h2645_ps_to_nalu(pps->data, pps->data_size, &data, &data_size)) < 0) {
+            goto done;
+        }
+        ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, data_size);
+        av_freep(&data);
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Could not extract PPS/SPS from extradata");
+        ret = AVERROR_INVALIDDATA;
+    }
 
-    if (ff_AMediaFormat_getInt32(s->format, "crop-right", &value))
-        s->crop_right = value;
+done:
+    ff_h264_ps_uninit(&ps);
 
-    width = s->crop_right + 1 - s->crop_left;
-    height = s->crop_bottom + 1 - s->crop_top;
-
-    av_log(avctx, AV_LOG_INFO,
-        "Output crop parameters top=%d bottom=%d left=%d right=%d, "
-        "resulting dimensions width=%d height=%d\n",
-        s->crop_top, s->crop_bottom, s->crop_left, s->crop_right,
-        width, height);
-
-    return ff_set_dimensions(avctx, width, height);
+    return ret;
 }
+#endif
 
-
-static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContext *s)
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
-    FFAMediaCodec *codec = s->codec;
-    int status;
+    int i;
+    int ret;
 
-    s->output_buffer_count = 0;
+    HEVCParamSets ps;
 
-    s->draining = 0;
-    s->flushing = 0;
-    s->eos = 0;
+    const HEVCVPS *vps = NULL;
+    const HEVCPPS *pps = NULL;
+    const HEVCSPS *sps = NULL;
+    int is_nalff = 0;
+    int nal_length_size = 0;
 
-    status = ff_AMediaCodec_flush(codec);
-    if (status < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to flush codec\n");
-        return AVERROR_EXTERNAL;
+    uint8_t *vps_data = NULL;
+    uint8_t *sps_data = NULL;
+    uint8_t *pps_data = NULL;
+    int vps_data_size = 0;
+    int sps_data_size = 0;
+    int pps_data_size = 0;
+
+    memset(&ps, 0, sizeof(ps));
+
+    ret = ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                &ps, &is_nalff, &nal_length_size, 0, avctx);
+    if (ret < 0) {
+        goto done;
     }
 
-    return 0;
-}
+    for (i = 0; i < MAX_VPS_COUNT; i++) {
+        if (ps.vps_list[i]) {
+            vps = (const HEVCVPS*)ps.vps_list[i]->data;
+            break;
+        }
+    }
 
-int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
-                           const char *mime, FFAMediaFormat *format)
+    for (i = 0; i < MAX_PPS_COUNT; i++) {
+        if (ps.pps_list[i]) {
+            pps = (const HEVCPPS*)ps.pps_list[i]->data;
+            break;
+        }
+    }
+
+    if (pps) {
+        if (ps.sps_list[pps->sps_id]) {
+            sps = (const HEVCSPS*)ps.sps_list[pps->sps_id]->data;
+        }
+    }
+
+    if (vps && pps && sps) {
+        uint8_t *data;
+        int data_size;
+
+        if ((ret = h2645_ps_to_nalu(vps->data, vps->data_size, &vps_data, &vps_data_size)) < 0 ||
+            (ret = h2645_ps_to_nalu(sps->data, sps->data_size, &sps_data, &sps_data_size)) < 0 ||
+            (ret = h2645_ps_to_nalu(pps->data, pps->data_size, &pps_data, &pps_data_size)) < 0) {
+            goto done;
+        }
+
+        data_size = vps_data_size + sps_data_size + pps_data_size;
+        data = av_mallocz(data_size);
+        if (!data) {
+            ret = AVERROR(ENOMEM);
+            goto done;
+        }
+
+        memcpy(data                                , vps_data, vps_data_size);
+        memcpy(data + vps_data_size                , sps_data, sps_data_size);
+        memcpy(data + vps_data_size + sps_data_size, pps_data, pps_data_size);
+
+        ff_AMediaFormat_setBuffer(format, "csd-0", data, data_size);
+
+        av_freep(&data);
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Could not extract VPS/PPS/SPS from extradata");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+done:
+    av_freep(&vps_data);
+    av_freep(&sps_data);
+    av_freep(&pps_data);
+
+    return ret;
+}
+#endif
+
+#if CONFIG_MPEG4_MEDIACODEC_DECODER
+static int mpeg4_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
     int ret = 0;
-    int status;
-    int profile;
 
-    enum AVPixelFormat pix_fmt;
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_MEDIACODEC,
-        AV_PIX_FMT_NONE,
-    };
-
-    s->refcount = 1;
-
-    pix_fmt = ff_get_format(avctx, pix_fmts);
-    if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {
-        AVMediaCodecContext *user_ctx = avctx->hwaccel_context;
-
-        if (user_ctx && user_ctx->surface) {
-            s->surface = ff_mediacodec_surface_ref(user_ctx->surface, avctx);
-            av_log(avctx, AV_LOG_INFO, "Using surface %p\n", s->surface);
-        }
+    if (avctx->extradata) {
+        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
     }
 
-    profile = ff_AMediaCodecProfile_getProfileFromAVCodecContext(avctx);
-    if (profile < 0) {
-        av_log(avctx, AV_LOG_WARNING, "Unsupported or unknown profile");
-    }
-
-    s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, profile, 0, avctx);
-    if (!s->codec_name) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    av_log(avctx, AV_LOG_DEBUG, "Found decoder %s\n", s->codec_name);
-    s->codec = ff_AMediaCodec_createCodecByName(s->codec_name);
-    if (!s->codec) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create media decoder for type %s and name %s\n", mime, s->codec_name);
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    status = ff_AMediaCodec_configure(s->codec, format, s->surface, NULL, 0);
-    if (status < 0) {
-        char *desc = ff_AMediaFormat_toString(format);
-        av_log(avctx, AV_LOG_ERROR,
-            "Failed to configure codec (status = %d) with format %s\n",
-            status, desc);
-        av_freep(&desc);
-
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    status = ff_AMediaCodec_start(s->codec);
-    if (status < 0) {
-        char *desc = ff_AMediaFormat_toString(format);
-        av_log(avctx, AV_LOG_ERROR,
-            "Failed to start codec (status = %d) with format %s\n",
-            status, desc);
-        av_freep(&desc);
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    s->format = ff_AMediaCodec_getOutputFormat(s->codec);
-    if (s->format) {
-        if ((ret = mediacodec_dec_parse_format(avctx, s)) < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                "Failed to configure context\n");
-            goto fail;
-        }
-    }
-
-    av_log(avctx, AV_LOG_DEBUG, "MediaCodec %p started successfully\n", s->codec);
-
-    return 0;
-
-fail:
-    av_log(avctx, AV_LOG_ERROR, "MediaCodec %p failed to start\n", s->codec);
-    ff_mediacodec_dec_close(avctx, s);
     return ret;
 }
+#endif
 
-int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
-                             AVFrame *frame, int *got_frame,
-                             AVPacket *pkt)
+#if CONFIG_VP8_MEDIACODEC_DECODER || CONFIG_VP9_MEDIACODEC_DECODER
+static int vpx_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
+{
+    int ret = 0;
+
+    if (avctx->extradata) {
+        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
+    }
+
+    return ret;
+}
+#endif
+
+static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
     int ret;
-    int offset = 0;
-    int need_draining = 0;
-    uint8_t *data;
-    ssize_t index;
-    size_t size;
-    FFAMediaCodec *codec = s->codec;
-    FFAMediaCodecBufferInfo info = { 0 };
 
-    int status;
+    const char *codec_mime = NULL;
 
-    int64_t input_dequeue_timeout_us = INPUT_DEQUEUE_TIMEOUT_US;
-    int64_t output_dequeue_timeout_us = OUTPUT_DEQUEUE_TIMEOUT_US;
+    const char *bsf_name = NULL;
+    const AVBitStreamFilter *bsf = NULL;
 
-    if (s->flushing) {
-        av_log(avctx, AV_LOG_ERROR, "Decoder is flushing and cannot accept new buffer "
-                                    "until all output buffers have been released\n");
-        return AVERROR_EXTERNAL;
+    FFAMediaFormat *format = NULL;
+    MediaCodecH264DecContext *s = avctx->priv_data;
+
+    format = ff_AMediaFormat_new();
+    if (!format) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create media format\n");
+        ret = AVERROR_EXTERNAL;
+        goto done;
     }
 
-    if (pkt->size == 0) {
-        need_draining = 1;
+    switch (avctx->codec_id) {
+#if CONFIG_H264_MEDIACODEC_DECODER
+    case AV_CODEC_ID_H264:
+        codec_mime = "video/avc";
+        bsf_name = "h264_mp4toannexb";
+
+        ret = h264_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+    case AV_CODEC_ID_HEVC:
+        codec_mime = "video/hevc";
+        bsf_name = "hevc_mp4toannexb";
+
+        ret = hevc_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_MPEG4_MEDIACODEC_DECODER
+    case AV_CODEC_ID_MPEG4:
+        codec_mime = "video/mp4v-es",
+
+        ret = mpeg4_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_VP8_MEDIACODEC_DECODER
+    case AV_CODEC_ID_VP8:
+        codec_mime = "video/x-vnd.on2.vp8";
+
+        ret = vpx_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_VP9_MEDIACODEC_DECODER
+    case AV_CODEC_ID_VP9:
+        codec_mime = "video/x-vnd.on2.vp9";
+
+        ret = vpx_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+    default:
+        av_assert0(0);
     }
 
-    if (s->draining && s->eos) {
-        return 0;
+    ff_AMediaFormat_setString(format, "mime", codec_mime);
+    ff_AMediaFormat_setInt32(format, "width", avctx->width);
+    ff_AMediaFormat_setInt32(format, "height", avctx->height);
+
+    s->ctx = av_mallocz(sizeof(*s->ctx));
+    if (!s->ctx) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to allocate MediaCodecDecContext\n");
+        ret = AVERROR(ENOMEM);
+        goto done;
     }
 
-    while (offset < pkt->size || (need_draining && !s->draining)) {
+    if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, codec_mime, format)) < 0) {
+        s->ctx = NULL;
+        goto done;
+    }
 
-        index = ff_AMediaCodec_dequeueInputBuffer(codec, input_dequeue_timeout_us);
-        if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
-            break;
+    av_log(avctx, AV_LOG_INFO, "MediaCodec started successfully, ret = %d\n", ret);
+
+    s->fifo = av_fifo_alloc(sizeof(AVPacket));
+    if (!s->fifo) {
+        ret = AVERROR(ENOMEM);
+        goto done;
+    }
+
+    if (bsf_name) {
+    bsf = av_bsf_get_by_name(bsf_name);
+    if(!bsf) {
+        ret = AVERROR_BSF_NOT_FOUND;
+        goto done;
+    }
+
+    if ((ret = av_bsf_alloc(bsf, &s->bsf))) {
+        goto done;
+    }
+
+    if (((ret = avcodec_parameters_from_context(s->bsf->par_in, avctx)) < 0) ||
+        ((ret = av_bsf_init(s->bsf)) < 0)) {
+          goto done;
+    }
+    }
+
+    av_init_packet(&s->filtered_pkt);
+
+done:
+    if (format) {
+        ff_AMediaFormat_delete(format);
+    }
+
+    if (ret < 0) {
+        mediacodec_decode_close(avctx);
+    }
+
+    return ret;
+}
+
+
+static int mediacodec_process_data(AVCodecContext *avctx, AVFrame *frame,
+                                   int *got_frame, AVPacket *pkt)
+{
+    MediaCodecH264DecContext *s = avctx->priv_data;
+
+    return ff_mediacodec_dec_decode(avctx, s->ctx, frame, got_frame, pkt);
+}
+
+static int mediacodec_decode_frame(AVCodecContext *avctx, void *data,
+                                   int *got_frame, AVPacket *avpkt)
+{
+    MediaCodecH264DecContext *s = avctx->priv_data;
+    AVFrame *frame    = data;
+    int ret;
+
+    /* buffer the input packet */
+    if (avpkt->size) {
+        AVPacket input_pkt = { 0 };
+
+        if (av_fifo_space(s->fifo) < sizeof(input_pkt)) {
+            ret = av_fifo_realloc2(s->fifo,
+                                   av_fifo_size(s->fifo) + sizeof(input_pkt));
+            if (ret < 0)
+                return ret;
         }
 
-        if (index < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to dequeue input buffer (status=%zd)\n", index);
-            return AVERROR_EXTERNAL;
+        ret = av_packet_ref(&input_pkt, avpkt);
+        if (ret < 0)
+            return ret;
+        av_fifo_generic_write(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
+    }
+
+    /*
+     * MediaCodec.flush() discards both input and output buffers, thus we
+     * need to delay the call to this function until the user has released or
+     * renderered the frames he retains.
+     *
+     * After we have buffered an input packet, check if the codec is in the
+     * flushing state. If it is, we need to call ff_mediacodec_dec_flush.
+     *
+     * ff_mediacodec_dec_flush returns 0 if the flush cannot be performed on
+     * the codec (because the user retains frames). The codec stays in the
+     * flushing state.
+     *
+     * ff_mediacodec_dec_flush returns 1 if the flush can actually be
+     * performed on the codec. The codec leaves the flushing state and can
+     * process again packets.
+     *
+     * ff_mediacodec_dec_flush returns a negative value if an error has
+     * occurred.
+     *
+     */
+    if (ff_mediacodec_dec_is_flushing(avctx, s->ctx)) {
+        if (!ff_mediacodec_dec_flush(avctx, s->ctx)) {
+            return avpkt->size;
         }
+    }
 
-        data = ff_AMediaCodec_getInputBuffer(codec, index, &size);
-        if (!data) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get input buffer\n");
-            return AVERROR_EXTERNAL;
-        }
+    /* process buffered data */
+    while (!*got_frame) {
+        /* prepare the input data -- convert to Annex B if needed */
+        if (s->filtered_pkt.size <= 0) {
+            AVPacket input_pkt = { 0 };
 
-        if (need_draining) {
-            int64_t pts = pkt->pts;
-            uint32_t flags = ff_AMediaCodec_getBufferFlagEndOfStream(codec);
+            av_packet_unref(&s->filtered_pkt);
 
-            if (s->surface) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, av_make_q(1, 1000000));
+            /* no more data */
+            if (av_fifo_size(s->fifo) < sizeof(AVPacket)) {
+                return avpkt->size ? avpkt->size :
+                    ff_mediacodec_dec_decode(avctx, s->ctx, frame, got_frame, avpkt);
             }
 
-            av_log(avctx, AV_LOG_DEBUG, "Sending End Of Stream signal\n");
+            av_fifo_generic_read(s->fifo, &input_pkt, sizeof(input_pkt), NULL);
 
-            status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, 0, pts, flags);
-            if (status < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to queue input empty buffer (status = %d)\n", status);
-                return AVERROR_EXTERNAL;
+            if (s->bsf) {
+            ret = av_bsf_send_packet(s->bsf, &input_pkt);
+            if (ret < 0) {
+                return ret;
             }
 
-            s->draining = 1;
-            break;
-        } else {
-            int64_t pts = pkt->pts;
-
-            size = FFMIN(pkt->size - offset, size);
-
-            memcpy(data, pkt->data + offset, size);
-            offset += size;
-
-            if (s->surface && avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, av_make_q(1, 1000000));
+            ret = av_bsf_receive_packet(s->bsf, &s->filtered_pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                goto done;
             }
-
-            status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, size, pts, 0);
-            if (status < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to queue input buffer (status = %d)\n", status);
-                return AVERROR_EXTERNAL;
-            }
-        }
-    }
-
-    if (need_draining || s->draining) {
-        /* If the codec is flushing or need to be flushed, block for a fair
-         * amount of time to ensure we got a frame */
-        output_dequeue_timeout_us = OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US;
-    } else if (s->output_buffer_count == 0) {
-        /* If the codec hasn't produced any frames, do not block so we
-         * can push data to it as fast as possible, and get the first
-         * frame */
-        output_dequeue_timeout_us = 0;
-    }
-
-    index = ff_AMediaCodec_dequeueOutputBuffer(codec, &info, output_dequeue_timeout_us);
-    if (index >= 0) {
-        int ret;
-
-        av_log(avctx, AV_LOG_DEBUG, "Got output buffer %zd"
-                " offset=%" PRIi32 " size=%" PRIi32 " ts=%" PRIi64
-                " flags=%" PRIu32 "\n", index, info.offset, info.size,
-                info.presentationTimeUs, info.flags);
-
-        if (info.flags & ff_AMediaCodec_getBufferFlagEndOfStream(codec)) {
-            s->eos = 1;
-        }
-
-        if (info.size) {
-            if (s->surface) {
-                if ((ret = mediacodec_wrap_hw_buffer(avctx, s, index, &info, frame)) < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Failed to wrap MediaCodec buffer\n");
-                    return ret;
-                }
             } else {
-                data = ff_AMediaCodec_getOutputBuffer(codec, index, &size);
-                if (!data) {
-                    av_log(avctx, AV_LOG_ERROR, "Failed to get output buffer\n");
-                    return AVERROR_EXTERNAL;
-                }
-
-                if ((ret = mediacodec_wrap_sw_buffer(avctx, s, data, size, index, &info, frame)) < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Failed to wrap MediaCodec buffer\n");
-                    return ret;
-                }
+                av_packet_move_ref(&s->filtered_pkt, &input_pkt);
             }
 
-            *got_frame = 1;
-            s->output_buffer_count++;
-        } else {
-            status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
-            if (status < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to release output buffer\n");
+            /* {h264,hevc}_mp4toannexb are used here and do not require flushing */
+            av_assert0(ret != AVERROR_EOF);
+
+            if (ret < 0) {
+                return ret;
             }
         }
 
-    } else if (ff_AMediaCodec_infoOutputFormatChanged(codec, index)) {
-        char *format = NULL;
-
-        if (s->format) {
-            status = ff_AMediaFormat_delete(s->format);
-            if (status < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to delete MediaFormat %p\n", s->format);
-            }
-        }
-
-        s->format = ff_AMediaCodec_getOutputFormat(codec);
-        if (!s->format) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get output format\n");
-            return AVERROR_EXTERNAL;
-        }
-
-        format = ff_AMediaFormat_toString(s->format);
-        if (!format) {
-            return AVERROR_EXTERNAL;
-        }
-        av_log(avctx, AV_LOG_INFO, "Output MediaFormat changed to %s\n", format);
-        av_freep(&format);
-
-        if ((ret = mediacodec_dec_parse_format(avctx, s)) < 0) {
+        ret = mediacodec_process_data(avctx, frame, got_frame, &s->filtered_pkt);
+        if (ret < 0)
             return ret;
-        }
 
-    } else if (ff_AMediaCodec_infoOutputBuffersChanged(codec, index)) {
-        ff_AMediaCodec_cleanOutputBuffers(codec);
-    } else if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
-        if (s->draining) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to dequeue output buffer within %" PRIi64 "ms "
-                                        "while draining remaining frames, output will probably lack frames\n",
-                                        output_dequeue_timeout_us / 1000);
-        } else {
-            av_log(avctx, AV_LOG_DEBUG, "No output buffer available, try again later\n");
-        }
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "Failed to dequeue output buffer (status=%zd)\n", index);
-        return AVERROR_EXTERNAL;
+        s->filtered_pkt.size -= ret;
+        s->filtered_pkt.data += ret;
     }
-
-    return offset;
+done:
+    return avpkt->size;
 }
 
-int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
+static void mediacodec_decode_flush(AVCodecContext *avctx)
 {
-    if (!s->surface || avpriv_atomic_int_get(&s->refcount) == 1) {
-        int ret;
+    MediaCodecH264DecContext *s = avctx->priv_data;
 
-        /* No frames (holding a reference to the codec) are retained by the
-         * user, thus we can flush the codec and returns accordingly */
-        if ((ret = mediacodec_dec_flush_codec(avctx, s)) < 0) {
-            return ret;
-        }
-
-        return 1;
+    while (av_fifo_size(s->fifo)) {
+        AVPacket pkt;
+        av_fifo_generic_read(s->fifo, &pkt, sizeof(pkt), NULL);
+        av_packet_unref(&pkt);
     }
+    av_fifo_reset(s->fifo);
 
-    s->flushing = 1;
-    return 0;
+    av_packet_unref(&s->filtered_pkt);
+
+    ff_mediacodec_dec_flush(avctx, s->ctx);
 }
 
-int ff_mediacodec_dec_close(AVCodecContext *avctx, MediaCodecDecContext *s)
-{
-    ff_mediacodec_dec_unref(s);
-
-    return 0;
-}
-
-int ff_mediacodec_dec_is_flushing(AVCodecContext *avctx, MediaCodecDecContext *s)
-{
-    return s->flushing;
-}
-
-AVHWAccel ff_h264_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_H264,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+#if CONFIG_H264_MEDIACODEC_DECODER
+AVCodec ff_h264_mediacodec_decoder = {
+    .name           = "h264_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.264 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_H264,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
+#endif
 
-AVHWAccel ff_hevc_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_HEVC,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+#if CONFIG_HEVC_MEDIACODEC_DECODER
+AVCodec ff_hevc_mediacodec_decoder = {
+    .name           = "hevc_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.265 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
+#endif
+
+#if CONFIG_MPEG4_MEDIACODEC_DECODER
+AVCodec ff_mpeg4_mediacodec_decoder = {
+    .name           = "mpeg4_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_MPEG4,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_VP8_MEDIACODEC_DECODER
+AVCodec ff_vp8_mediacodec_decoder = {
+    .name           = "vp8_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("VP8 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP8,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_VP9_MEDIACODEC_DECODER
+AVCodec ff_vp9_mediacodec_decoder = {
+    .name           = "vp9_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("VP9 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP9,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif

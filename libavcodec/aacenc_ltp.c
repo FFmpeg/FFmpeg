@@ -190,8 +190,8 @@ void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 for (i = 0; i < sce->ics.swb_sizes[g]; i++)
                     PCD[i] = sce->coeffs[start+(w+w2)*128+i] - sce->lcoeffs[start+(w+w2)*128+i];
-                abs_pow34_v(C34,  &sce->coeffs[start+(w+w2)*128],  sce->ics.swb_sizes[g]);
-                abs_pow34_v(PCD34, PCD, sce->ics.swb_sizes[g]);
+                s->abs_pow34(C34,  &sce->coeffs[start+(w+w2)*128],  sce->ics.swb_sizes[g]);
+                s->abs_pow34(PCD34, PCD, sce->ics.swb_sizes[g]);
                 dist1 += quantize_band_cost(s, &sce->coeffs[start+(w+w2)*128], C34, sce->ics.swb_sizes[g],
                                             sce->sf_idx[(w+w2)*16+g], sce->band_type[(w+w2)*16+g],
                                             s->lambda/band->threshold, INFINITY, &bits_tmp1, NULL, 0);

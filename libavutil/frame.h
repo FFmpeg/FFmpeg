@@ -178,7 +178,7 @@ typedef struct AVFrameSideData {
  * without breaking compatibility with each other.
  *
  * Fields can be accessed through AVOptions, the name string used, matches the
- * C structure field name for fields accessable through AVOptions. The AVClass
+ * C structure field name for fields accessible through AVOptions. The AVClass
  * for AVFrame can be obtained from avcodec_get_frame_class()
  */
 typedef struct AVFrame {

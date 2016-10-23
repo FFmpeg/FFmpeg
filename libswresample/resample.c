@@ -149,6 +149,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
     double *sin_lut = av_malloc_array(ph_nb, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
+    int ret = AVERROR(ENOMEM);
 
     if (!tab || !sin_lut)
         goto fail;
@@ -292,10 +293,11 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     }
 #endif
 
+    ret = 0;
 fail:
     av_free(tab);
     av_free(sin_lut);
-    return 0;
+    return ret;
 }
 
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,

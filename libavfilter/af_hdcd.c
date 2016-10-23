@@ -867,7 +867,7 @@ typedef struct {
      *  steps of 0.5, but no value below -6.0 dB should appear. */
     int gain_counts[16];
     int max_gain;
-    /** occurences of code detect timer expiring without detecting
+    /** occurrences of code detect timer expiring without detecting
      *  a code. -1 for timer never set. */
     int count_sustain_expired;
 

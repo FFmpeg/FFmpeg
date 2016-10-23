@@ -42,6 +42,7 @@ OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)             += x86/aacpsdsp_init.o          \
                                           x86/sbrdsp_init.o
+OBJS-$(CONFIG_AAC_ENCODER)             += x86/aacencdsp_init.o
 OBJS-$(CONFIG_ADPCM_G722_DECODER)      += x86/g722dsp_init.o
 OBJS-$(CONFIG_ADPCM_G722_ENCODER)      += x86/g722dsp_init.o
 OBJS-$(CONFIG_ALAC_DECODER)            += x86/alacdsp_init.o
@@ -132,6 +133,7 @@ YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
 # decoders/encoders
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/aacpsdsp.o                \
                                           x86/sbrdsp.o
+YASM-OBJS-$(CONFIG_AAC_ENCODER)        += x86/aacencdsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_DECODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o

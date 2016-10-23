@@ -725,6 +725,12 @@ static const StreamType HDMV_types[] = {
     { 0 },
 };
 
+/* SCTE types */
+static const StreamType SCTE_types[] = {
+    { 0x86, AVMEDIA_TYPE_DATA,  AV_CODEC_ID_SCTE_35    },
+    { 0 },
+};
+
 /* ATSC ? */
 static const StreamType MISC_types[] = {
     { 0x81, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AC3 },
@@ -870,6 +876,13 @@ static void reset_pes_packet_state(PESContext *pes)
     pes->data_index = 0;
     pes->flags      = 0;
     av_buffer_unref(&pes->buffer);
+}
+
+static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
+{
+    av_init_packet(pkt);
+    pkt->data = buffer;
+    pkt->size = len;
 }
 
 static int new_pes_packet(PESContext *pes, AVPacket *pkt)
@@ -1590,6 +1603,28 @@ static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section,
         av_free(mp4_descr[i].dec_config_descr);
 }
 
+static void scte_data_cb(MpegTSFilter *filter, const uint8_t *section,
+                    int section_len)
+{
+    AVProgram *prg = NULL;
+    MpegTSContext *ts = filter->u.section_filter.opaque;
+
+    int idx = ff_find_stream_index(ts->stream, filter->pid);
+    if (idx < 0)
+        return;
+
+    new_data_packet(section, section_len, ts->pkt);
+    ts->pkt->stream_index = idx;
+    prg = av_find_program_from_stream(ts->stream, NULL, idx);
+    if (prg && prg->pcr_pid != -1 && prg->discard != AVDISCARD_ALL) {
+        MpegTSFilter *f = ts->pids[prg->pcr_pid];
+        if (f && f->last_pcr != -1)
+            ts->pkt->pts = ts->pkt->dts = f->last_pcr/300;
+    }
+    ts->stop_parse = 1;
+
+}
+
 static const uint8_t opus_coupled_stream_cnt[9] = {
     1, 0, 1, 1, 2, 2, 2, 3, 3
 };
@@ -1868,6 +1903,12 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     return 0;
 }
 
+static int is_pes_stream(int stream_type, uint32_t prog_reg_desc)
+{
+    return !(stream_type == 0x13 ||
+             (stream_type == 0x86 && prog_reg_desc == AV_RL32("CUEI")) );
+}
+
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
@@ -1975,7 +2016,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 pes->st->id = pes->pid;
             }
             st = pes->st;
-        } else if (stream_type != 0x13) {
+        } else if (is_pes_stream(stream_type, prog_reg_desc)) {
             if (ts->pids[pid])
                 mpegts_close_filter(ts, ts->pids[pid]); // wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
@@ -1995,6 +2036,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                     goto out;
                 st->id = pid;
                 st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+                if (stream_type == 0x86 && prog_reg_desc == AV_RL32("CUEI")) {
+                    mpegts_find_stream_type(st, stream_type, SCTE_types);
+                    mpegts_open_section_filter(ts, pid, scte_data_cb, ts, 1);
+                }
             }
         }
 
@@ -2309,7 +2354,8 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
                 int types = 0;
                 for (i = 0; i < ts->stream->nb_streams; i++) {
                     AVStream *st = ts->stream->streams[i];
-                    types |= 1<<st->codecpar->codec_type;
+                    if (st->codecpar->codec_type >= 0)
+                        types |= 1<<st->codecpar->codec_type;
                 }
                 if ((types & (1<<AVMEDIA_TYPE_AUDIO) && types & (1<<AVMEDIA_TYPE_VIDEO)) || pos > 100000) {
                     av_log(ts->stream, AV_LOG_DEBUG, "All programs have pmt, headers found\n");

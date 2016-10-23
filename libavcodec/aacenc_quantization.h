@@ -74,10 +74,10 @@ static av_always_inline float quantize_and_encode_band_cost_template(
         return cost * lambda;
     }
     if (!scaled) {
-        abs_pow34_v(s->scoefs, in, size);
+        s->abs_pow34(s->scoefs, in, size);
         scaled = s->scoefs;
     }
-    quantize_bands(s->qcoefs, in, scaled, size, Q34, !BT_UNSIGNED, aac_cb_maxval[cb], ROUNDING);
+    s->quant_bands(s->qcoefs, in, scaled, size, !BT_UNSIGNED, aac_cb_maxval[cb], Q34, ROUNDING);
     if (BT_UNSIGNED) {
         off = 0;
     } else {

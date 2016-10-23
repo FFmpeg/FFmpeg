@@ -449,7 +449,7 @@ This filter is bit crusher with enhanced functionality. A bit crusher
 is used to audibly reduce number of bits an audio signal is sampled
 with. This doesn't change the bit depth at all, it just produces the
 effect. Material reduced in bit depth sounds more harsh and "digital".
-This filter is able to even round to continous values instead of discrete
+This filter is able to even round to continuous values instead of discrete
 bit depths.
 Additionally it has a D/C offset which results in different crushing of
 the lower and the upper half of the signal.
@@ -475,7 +475,7 @@ Set level out.
 Set bit reduction.
 
 @item mix
-Set mixing ammount.
+Set mixing amount.
 
 @item mode
 Can be linear: @code{lin} or logarithmic: @code{log}.
@@ -1203,7 +1203,7 @@ Set video stream size. Only useful if curves option is activated.
 
 @item mgain
 Set max gain that will be displayed. Only useful if curves option is activated.
-Setting this to reasonable value allows to display gain which is derived from
+Setting this to a reasonable value makes it possible to display gain which is derived from
 neighbour bands which are too close to each other and thus produce higher gain
 when both are activated.
 
@@ -2508,6 +2508,8 @@ and functions:
 @table @option
 @item gain_interpolate(f)
 interpolate gain on frequency f based on gain_entry
+@item cubic_interpolate(f)
+same as gain_interpolate, but smoother
 @end table
 This option is also available as command. Default is @code{gain_interpolate(f)}.
 
@@ -2576,6 +2578,13 @@ logarithmic (in octave scale where 20 Hz is 0) frequency, linear gain
 @item loglog
 logarithmic frequency, logarithmic gain
 @end table
+
+@item dumpfile
+Set file for dumping, suitable for gnuplot.
+
+@item dumpscale
+Set scale for dumpfile. Acceptable values are same with scale option.
+Default is linlog.
 @end table
 
 @subsection Examples
@@ -8849,7 +8858,7 @@ value.
 @section hysteresis
 
 Grow first stream into second stream by connecting components.
-This allows to build more robust edge masks.
+This makes it possible to build more robust edge masks.
 
 This filter accepts the following options:
 
@@ -16870,6 +16879,10 @@ use embedded font. Note that drawing with font file or embedded font is not
 implemented with custom @var{basefreq} and @var{endfreq}, use @var{axisfile}
 option instead.
 
+@item font
+Specify fontconfig pattern. This has lower priority than @var{fontfile}.
+The : in the pattern may be replaced by | to avoid unnecessary escaping.
+
 @item fontcolor
 Specify font color expression. This is arithmetic expression that should return
 integer value 0xRRGGBB. It can contain variables:
@@ -16924,6 +16937,11 @@ SMPTE-240M
 BT.2020 with non-constant luminance
 
 @end table
+
+@item cscheme
+Set spectrogram color scheme. This is list of floating point values with format
+@code{left_r|left_g|left_b|right_r|right_g|right_b}.
+The default is @code{1|0.5|0|0|0.5|1}.
 
 @end table
 
@@ -16990,6 +17008,12 @@ tc=0.33:tlength='st(0,0.17); 384*tc / (384 / ld(0) + tc*f /(1-ld(0))) + 384*tc /
 Custom fontcolor and fontfile, C-note is colored green, others are colored blue:
 @example
 fontcolor='if(mod(floor(midi(f)+0.5),12), 0x0000FF, g(1))':fontfile=myfont.ttf
+@end example
+
+@item
+Custom font using fontconfig:
+@example
+font='Courier New,Monospace,mono|bold'
 @end example
 
 @item
@@ -17646,7 +17670,7 @@ magnitude across time and second represents phase across time.
 The filter will transform from frequency domain as displayed in videos back
 to time domain as presented in audio output.
 
-This filter is primarly created for reversing processed @ref{showspectrum}
+This filter is primarily created for reversing processed @ref{showspectrum}
 filter outputs, but can synthesize sound from other spectrograms too.
 But in such case results are going to be poor if the phase data is not
 available, because in such cases phase data need to be recreated, usually

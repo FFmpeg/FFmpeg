@@ -103,6 +103,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
     REGISTER_HWACCEL(MPEG2_VIDEOTOOLBOX, mpeg2_videotoolbox);
     REGISTER_HWACCEL(MPEG4_CUVID,       mpeg4_cuvid);
+    REGISTER_HWACCEL(MPEG4_MEDIACODEC,  mpeg4_mediacodec);
     REGISTER_HWACCEL(MPEG4_MMAL,        mpeg4_mmal);
     REGISTER_HWACCEL(MPEG4_VAAPI,       mpeg4_vaapi);
     REGISTER_HWACCEL(MPEG4_VDPAU,       mpeg4_vdpau);
@@ -115,9 +116,11 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(VC1_MMAL,          vc1_mmal);
     REGISTER_HWACCEL(VC1_QSV,           vc1_qsv);
     REGISTER_HWACCEL(VP8_CUVID,         vp8_cuvid);
+    REGISTER_HWACCEL(VP8_MEDIACODEC,    vp8_mediacodec);
     REGISTER_HWACCEL(VP9_CUVID,         vp9_cuvid);
     REGISTER_HWACCEL(VP9_D3D11VA,       vp9_d3d11va);
     REGISTER_HWACCEL(VP9_DXVA2,         vp9_dxva2);
+    REGISTER_HWACCEL(VP9_MEDIACODEC,    vp9_mediacodec);
     REGISTER_HWACCEL(VP9_VAAPI,         vp9_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
@@ -655,9 +658,12 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MPEG2_CUVID,       mpeg2_cuvid);
     REGISTER_ENCODER(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_DECODER(MPEG4_CUVID,       mpeg4_cuvid);
+    REGISTER_DECODER(MPEG4_MEDIACODEC,  mpeg4_mediacodec);
     REGISTER_DECODER(VC1_CUVID,         vc1_cuvid);
     REGISTER_DECODER(VP8_CUVID,         vp8_cuvid);
+    REGISTER_DECODER(VP8_MEDIACODEC,    vp8_mediacodec);
     REGISTER_DECODER(VP9_CUVID,         vp9_cuvid);
+    REGISTER_DECODER(VP9_MEDIACODEC,    vp9_mediacodec);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);

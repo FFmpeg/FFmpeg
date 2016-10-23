@@ -2879,7 +2879,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p = data;
     GetBitContext gb;
     unsigned format;
-    char format_str[16];
+    char format_str[32];
     int ret;
 
     if (avpkt->size <= 20)

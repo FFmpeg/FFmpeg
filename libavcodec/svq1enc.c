@@ -641,15 +641,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
     svq1_write_header(s, s->pict_type);
-    for (i = 0; i < 3; i++)
-        if (svq1_encode_plane(s, i,
+    for (i = 0; i < 3; i++) {
+        int ret = svq1_encode_plane(s, i,
                               pict->data[i],
                               s->last_picture->data[i],
                               s->current_picture->data[i],
                               s->frame_width  / (i ? 4 : 1),
                               s->frame_height / (i ? 4 : 1),
                               pict->linesize[i],
-                              s->current_picture->linesize[i]) < 0) {
+                              s->current_picture->linesize[i]);
+        emms_c();
+        if (ret < 0) {
             int j;
             for (j = 0; j < i; j++) {
                 av_freep(&s->motion_val8[j]);
@@ -658,6 +660,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_freep(&s->scratchbuf);
             return -1;
         }
+    }
 
     // avpriv_align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)

@@ -268,6 +268,23 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     return av_dict_set(&c->fc->metadata, key, buf, 0);
 }
 
+static int mov_metadata_hmmt(MOVContext *c, AVIOContext *pb, unsigned len)
+{
+    int i, n_hmmt;
+
+    if (len < 2)
+        return 0;
+    if (c->ignore_chapters)
+        return 0;
+
+    n_hmmt = avio_rb32(pb);
+    for (i = 0; i < n_hmmt && !pb->eof_reached; i++) {
+        int moment_time = avio_rb32(pb);
+        avpriv_new_chapter(c->fc, i, av_make_q(1, 1000), moment_time, AV_NOPTS_VALUE, NULL);
+    }
+    return 0;
+}
+
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     char tmp_key[5];
@@ -303,6 +320,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         parse = mov_metadata_gnre; break;
     case MKTAG( 'h','d','v','d'): key = "hd_video";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'H','M','M','T'):
+        return mov_metadata_hmmt(c, pb, atom.size);
     case MKTAG( 'k','e','y','w'): key = "keywords";  break;
     case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
     case MKTAG( 'l','o','c','i'):
@@ -2289,7 +2308,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     if (pb->eof_reached)
         return AVERROR_EOF;
 
-    return mov_finalize_stsd_codec(c, pb, st, sc);
+    return 0;
 }
 
 static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
@@ -2341,7 +2360,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         memcpy(st->codecpar->extradata, sc->extradata[0], sc->extradata_size[0]);
     }
 
-    return 0;
+    return mov_finalize_stsd_codec(c, pb, st, sc);
 fail:
     av_freep(&sc->extradata);
     av_freep(&sc->extradata_size);
@@ -2762,7 +2781,8 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 /**
  * Get ith edit list entry (media time, duration).
  */
-static int get_edit_list_entry(const MOVStreamContext *msc,
+static int get_edit_list_entry(MOVContext *mov,
+                               const MOVStreamContext *msc,
                                unsigned int edit_list_index,
                                int64_t *edit_list_media_time,
                                int64_t *edit_list_duration,
@@ -2776,7 +2796,7 @@ static int get_edit_list_entry(const MOVStreamContext *msc,
 
     /* duration is in global timescale units;convert to msc timescale */
     if (global_timescale == 0) {
-      avpriv_request_sample(msc, "Support for mvhd.timescale = 0 with editlists");
+      avpriv_request_sample(mov->fc, "Support for mvhd.timescale = 0 with editlists");
       return 0;
     }
     *edit_list_duration = av_rescale(*edit_list_duration, msc->time_scale,
@@ -2968,7 +2988,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     start_dts = edit_list_dts_entry_end;
 
-    while (get_edit_list_entry(msc, edit_list_index, &edit_list_media_time,
+    while (get_edit_list_entry(mov, msc, edit_list_index, &edit_list_media_time,
                                &edit_list_duration, mov->time_scale)) {
         av_log(mov->fc, AV_LOG_DEBUG, "Processing st: %d, edit list %"PRId64" - media time: %"PRId64", duration: %"PRId64"\n",
                st->index, edit_list_index, edit_list_media_time, edit_list_duration);

@@ -182,7 +182,7 @@ int ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
 #if CABAC_BITS == 16
     c->low =  (*c->bytestream++)<<18;
     c->low+=  (*c->bytestream++)<<10;
-    // Keep our fetches on a 2-byte boundry as this should avoid ever having to
+    // Keep our fetches on a 2-byte boundary as this should avoid ever having to
     // do unaligned loads if the compiler (or asm) optimises the double byte
     // load into a single instruction
     if(((uintptr_t)c->bytestream & 1) == 0) {

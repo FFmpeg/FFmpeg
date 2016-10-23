@@ -709,7 +709,7 @@ static int seg_init(AVFormatContext *s)
             if ((ret = segment_list_open(s)) < 0)
                 goto fail;
         } else {
-            const char *proto = avio_find_protocol_name(s->filename);
+            const char *proto = avio_find_protocol_name(seg->list);
             seg->use_rename = proto && !strcmp(proto, "file");
         }
     }

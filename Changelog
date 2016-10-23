@@ -10,7 +10,7 @@ version <next>:
 - curves filter doesn't automatically insert points at x=0 and x=1 anymore
 - 16-bit support in curves filter and selectivecolor filter
 - OpenH264 decoder wrapper
-- MediaCodec H.264 and HEVC hwaccel
+- MediaCodec H.264/HEVC/MPEG-4/VP8/VP9 hwaccel
 - True Audio (TTA) muxer
 - crystalizer audio filter
 - acrusher audio filter
@@ -28,7 +28,7 @@ version <next>:
 - gblur filter
 - avgblur filter
 - sobel and prewitt filter
-- MediaCodec HEVC decoding
+- MediaCodec HEVC/MPEG-4/VP8/VP9 decoding
 - Meridian Lossless Packing (MLP) / TrueHD encoder
 - Non-Local Means (nlmeans) denoising filter
 - sdl2 output device and ffplay support
@@ -37,6 +37,7 @@ version <next>:
 - libfaac encoder removed
 - Matroska muxer now writes CRC32 elements by default in all Level 1 elements
 - sidedata video and asidedata audio filter
+- Changed mapping of rtp MIME type G726 to codec g726le.
 
 
 version 3.1:

@@ -73,6 +73,11 @@ int av_vda_default_init(AVCodecContext *avctx)
     return AVERROR(ENOSYS);
 }
 
+int av_vda_default_init2(AVCodecContext *avctx, AVVDAContext *vdactx)
+{
+    return AVERROR(ENOSYS);
+}
+
 void av_vda_default_free(AVCodecContext *ctx)
 {
 }

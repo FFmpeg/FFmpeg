@@ -127,11 +127,17 @@ typedef struct AACEncContext {
     uint16_t quantize_band_cost_cache_generation;
     AACQuantizeBandCostCacheEntry quantize_band_cost_cache[256][128]; ///< memoization area for quantize_band_cost
 
+    void (*abs_pow34)(float *out, const float *in, const int size);
+    void (*quant_bands)(int *out, const float *in, const float *scaled,
+                        int size, int is_signed, int maxval, const float Q34,
+                        const float rounding);
+
     struct {
         float *samples;
     } buffer;
 } AACEncContext;
 
+void ff_aac_dsp_init_x86(AACEncContext *s);
 void ff_aac_coder_init_mips(AACEncContext *c);
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s);
 

@@ -4697,7 +4697,8 @@ static int check_pkt(AVFormatContext *s, AVPacket *pkt)
 
     if (trk->entry) {
         ref = trk->cluster[trk->entry - 1].dts;
-    } else if (trk->start_dts != AV_NOPTS_VALUE) {
+    } else if (   trk->start_dts != AV_NOPTS_VALUE
+               && !trk->frag_discont) {
         ref = trk->start_dts + trk->track_duration;
     } else
         ref = pkt->dts; // Skip tests for the first packet

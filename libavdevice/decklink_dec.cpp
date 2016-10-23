@@ -309,18 +309,18 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                                   ctx->video_st->time_base.den);
 
         if (videoFrame->GetFlags() & bmdFrameHasNoInputSource) {
-            if (videoFrame->GetPixelFormat() == bmdFormat8BitYUV) {
-            unsigned bars[8] = {
-                0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
-                0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
-            int width  = videoFrame->GetWidth();
-            int height = videoFrame->GetHeight();
-            unsigned *p = (unsigned *)frameBytes;
+            if (ctx->draw_bars && videoFrame->GetPixelFormat() == bmdFormat8BitYUV) {
+                unsigned bars[8] = {
+                    0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
+                    0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
+                int width  = videoFrame->GetWidth();
+                int height = videoFrame->GetHeight();
+                unsigned *p = (unsigned *)frameBytes;
 
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x += 2)
-                    *p++ = bars[(x * 8) / width];
-            }
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x += 2)
+                        *p++ = bars[(x * 8) / width];
+                }
             }
 
             if (!no_video) {
@@ -485,6 +485,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         ctx->audio_input = decklink_audio_connection_map[cctx->audio_input];
     ctx->audio_pts_source = cctx->audio_pts_source;
     ctx->video_pts_source = cctx->video_pts_source;
+    ctx->draw_bars = cctx->draw_bars;
     cctx->ctx = ctx;
 
 #if !CONFIG_LIBZVBI

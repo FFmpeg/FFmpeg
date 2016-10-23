@@ -141,7 +141,7 @@ typedef struct {
     int loglevel;                   ///< log level for frame logging
     int metadata;                   ///< whether or not to inject loudness results in frames
     int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
-    double pan_law;                 ///< pan law value used to calulate dual-mono measurements
+    double pan_law;                 ///< pan law value used to calculate dual-mono measurements
 } EBUR128Context;
 
 enum {

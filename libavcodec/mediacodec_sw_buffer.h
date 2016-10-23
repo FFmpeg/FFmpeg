@@ -28,8 +28,8 @@
 #include "libavutil/frame.h"
 
 #include "avcodec.h"
-#include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
+#include "mediacodecdec_common.h"
 
 void ff_mediacodec_sw_buffer_copy_yuv420_planar(AVCodecContext *avctx,
                                                 MediaCodecDecContext *s,

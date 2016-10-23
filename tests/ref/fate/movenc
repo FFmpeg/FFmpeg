@@ -108,6 +108,11 @@ c3681590a292cb9ca19a5a982e530166 1219 delay-moov-elst-signal-init-discont
 write_data len 996, time 966667, type sync atom sidx
 aa5462cc0d2144f72154d9c309edb57d 996 delay-moov-elst-signal-second-frag-discont
 write_data len 110, time nopts, type trailer atom -
+write_data len 1243, time nopts, type header atom ftyp
+dac14c8795d5cbd91ae770c6e2880c62 1243 delay-moov-elst-signal-init-discont-largets
+write_data len 996, time 279621233333, type sync atom sidx
+41cac4c3df656a87bb38363fdcd745e6 996 delay-moov-elst-signal-second-frag-discont-largets
+write_data len 110, time nopts, type trailer atom -
 write_data len 1219, time nopts, type header atom ftyp
 write_data len 2572, time -333333, type sync atom sidx
 write_data len 996, time 5166667, type sync atom sidx

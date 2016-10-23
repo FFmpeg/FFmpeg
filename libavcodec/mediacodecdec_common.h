@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MEDIACODECDEC_H
-#define AVCODEC_MEDIACODECDEC_H
+#ifndef AVCODEC_MEDIACODECDEC_COMMON_H
+#define AVCODEC_MEDIACODECDEC_COMMON_H
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -92,4 +92,4 @@ typedef struct MediaCodecBuffer {
 
 } MediaCodecBuffer;
 
-#endif /* AVCODEC_MEDIACODECDEC_H */
+#endif /* AVCODEC_MEDIACODECDEC_COMMON_H */

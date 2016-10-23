@@ -2630,6 +2630,8 @@ mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_hwaccel_deps="cuda cuvid"
+mpeg4_mediacodec_decoder_deps="mediacodec"
+mpeg4_mediacodec_hwaccel_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
 mpeg4_mmal_decoder_select="mmal"
 mpeg4_mmal_hwaccel_deps="mmal"
@@ -2662,10 +2664,14 @@ vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
 vp8_cuvid_hwaccel_deps="cuda cuvid"
 vp9_cuvid_hwaccel_deps="cuda cuvid"
+vp8_mediacodec_decoder_deps="mediacodec"
+vp8_mediacodec_hwaccel_deps="mediacodec"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
+vp9_mediacodec_decoder_deps="mediacodec"
+vp9_mediacodec_hwaccel_deps="mediacodec"
 vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9"
 vp9_vaapi_hwaccel_select="vp9_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
@@ -5822,7 +5828,8 @@ enabled omx               && { check_header OMX_Core.h ||
                                     add_cflags -isystem/opt/vc/include/IL ; }
                                 check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
-enabled openssl           && { use_pkg_config openssl openssl/ssl.h SSL_library_init ||
+enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
+                               use_pkg_config openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||

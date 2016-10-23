@@ -984,15 +984,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         default:
             if (size > 1000000) {
+                char tag_buf[32];
+                av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag);
                 av_log(s, AV_LOG_ERROR,
                        "Something went wrong during header parsing, "
-                       "I will ignore it and try to continue anyway.\n");
+                       "tag %s has size %u, "
+                       "I will ignore it and try to continue anyway.\n",
+                       tag_buf, size);
                 if (s->error_recognition & AV_EF_EXPLODE)
                     goto fail;
                 avi->movi_list = avio_tell(pb) - 4;
                 avi->movi_end  = avi->fsize;
                 goto end_of_header;
             }
+        /* Do not fail for very large idx1 tags */
+        case MKTAG('i', 'd', 'x', '1'):
             /* skip tag */
             size += (size & 1);
             avio_skip(pb, size);

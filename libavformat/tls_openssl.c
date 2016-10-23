@@ -43,6 +43,9 @@ typedef struct TLSContext {
     TLSShared tls_shared;
     SSL_CTX *ctx;
     SSL *ssl;
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    BIO_METHOD* url_bio_method;
+#endif
 } TLSContext;
 
 #if HAVE_THREADS
@@ -61,6 +64,87 @@ static unsigned long openssl_thread_id(void)
     return (intptr_t) pthread_self();
 }
 #endif
+#endif
+
+static int url_bio_create(BIO *b)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    BIO_set_init(b, 1);
+    BIO_set_data(b, NULL);
+    BIO_set_flags(b, 0);
+#else
+    b->init = 1;
+    b->ptr = NULL;
+    b->flags = 0;
+#endif
+    return 1;
+}
+
+static int url_bio_destroy(BIO *b)
+{
+    return 1;
+}
+
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#define GET_BIO_DATA(x) BIO_get_data(x);
+#else
+#define GET_BIO_DATA(x) (x)->ptr;
+#endif
+
+static int url_bio_bread(BIO *b, char *buf, int len)
+{
+    URLContext *h;
+    int ret;
+    h = GET_BIO_DATA(b);
+    ret = ffurl_read(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static int url_bio_bwrite(BIO *b, const char *buf, int len)
+{
+    URLContext *h;
+    int ret;
+    h = GET_BIO_DATA(b);
+    ret = ffurl_write(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static long url_bio_ctrl(BIO *b, int cmd, long num, void *ptr)
+{
+    if (cmd == BIO_CTRL_FLUSH) {
+        BIO_clear_retry_flags(b);
+        return 1;
+    }
+    return 0;
+}
+
+static int url_bio_bputs(BIO *b, const char *str)
+{
+    return url_bio_bwrite(b, str, strlen(str));
+}
+
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+static BIO_METHOD url_bio_method = {
+    .type = BIO_TYPE_SOURCE_SINK,
+    .name = "urlprotocol bio",
+    .bwrite = url_bio_bwrite,
+    .bread = url_bio_bread,
+    .bputs = url_bio_bputs,
+    .bgets = NULL,
+    .ctrl = url_bio_ctrl,
+    .create = url_bio_create,
+    .destroy = url_bio_destroy,
+};
 #endif
 
 int ff_openssl_init(void)
@@ -128,72 +212,13 @@ static int tls_close(URLContext *h)
         SSL_CTX_free(c->ctx);
     if (c->tls_shared.tcp)
         ffurl_close(c->tls_shared.tcp);
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    if (c->url_bio_method)
+        BIO_meth_free(c->url_bio_method);
+#endif
     ff_openssl_deinit();
     return 0;
 }
-
-static int url_bio_create(BIO *b)
-{
-    b->init = 1;
-    b->ptr = NULL;
-    b->flags = 0;
-    return 1;
-}
-
-static int url_bio_destroy(BIO *b)
-{
-    return 1;
-}
-
-static int url_bio_bread(BIO *b, char *buf, int len)
-{
-    URLContext *h = b->ptr;
-    int ret = ffurl_read(h, buf, len);
-    if (ret >= 0)
-        return ret;
-    BIO_clear_retry_flags(b);
-    if (ret == AVERROR_EXIT)
-        return 0;
-    return -1;
-}
-
-static int url_bio_bwrite(BIO *b, const char *buf, int len)
-{
-    URLContext *h = b->ptr;
-    int ret = ffurl_write(h, buf, len);
-    if (ret >= 0)
-        return ret;
-    BIO_clear_retry_flags(b);
-    if (ret == AVERROR_EXIT)
-        return 0;
-    return -1;
-}
-
-static long url_bio_ctrl(BIO *b, int cmd, long num, void *ptr)
-{
-    if (cmd == BIO_CTRL_FLUSH) {
-        BIO_clear_retry_flags(b);
-        return 1;
-    }
-    return 0;
-}
-
-static int url_bio_bputs(BIO *b, const char *str)
-{
-    return url_bio_bwrite(b, str, strlen(str));
-}
-
-static BIO_METHOD url_bio_method = {
-    .type = BIO_TYPE_SOURCE_SINK,
-    .name = "urlprotocol bio",
-    .bwrite = url_bio_bwrite,
-    .bread = url_bio_bread,
-    .bputs = url_bio_bputs,
-    .bgets = NULL,
-    .ctrl = url_bio_ctrl,
-    .create = url_bio_create,
-    .destroy = url_bio_destroy,
-};
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
@@ -240,8 +265,20 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         ret = AVERROR(EIO);
         goto fail;
     }
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    p->url_bio_method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
+    BIO_meth_set_write(p->url_bio_method, url_bio_bwrite);
+    BIO_meth_set_read(p->url_bio_method, url_bio_bread);
+    BIO_meth_set_puts(p->url_bio_method, url_bio_bputs);
+    BIO_meth_set_ctrl(p->url_bio_method, url_bio_ctrl);
+    BIO_meth_set_create(p->url_bio_method, url_bio_create);
+    BIO_meth_set_destroy(p->url_bio_method, url_bio_destroy);
+    bio = BIO_new(p->url_bio_method);
+    BIO_set_data(bio, c->tcp);
+#else
     bio = BIO_new(&url_bio_method);
     bio->ptr = c->tcp;
+#endif
     SSL_set_bio(p->ssl, bio, bio);
     if (!c->listen && !c->numerichost)
         SSL_set_tlsext_host_name(p->ssl, c->host);

@@ -1513,14 +1513,14 @@ as a list of @var{key}=@var{value} pairs separated by ':'.
 
 @item drop_pkts_on_overflow @var{bool}
 If set to 1 (true), in case the fifo queue fills up, packets will be dropped
-rather than blocking the encoder. This allows to continue streaming without
-delaying the input, at the cost of ommiting part of the stream. By default
+rather than blocking the encoder. This makes it possible to continue streaming without
+delaying the input, at the cost of omitting part of the stream. By default
 this option is set to 0 (false), so in such cases the encoder will be blocked
 until the muxer processes some of the packets and none of them is lost.
 
 @item attempt_recovery @var{bool}
 If failure occurs, attempt to recover the output. This is especially useful
-when used with network output, allows to restart streaming transparently.
+when used with network output, since it makes it possible to restart streaming transparently.
 By default this option is set to 0 (false).
 
 @item max_recovery_attempts

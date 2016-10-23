@@ -1,6 +1,6 @@
 /*
- * Blackmagic DeckLink common code
- * Copyright (c) 2013-2014 Ramiro Polla
+ * AAC encoder assembly optimizations
+ * Copyright (C) 2016 Rostislav Pehlivanov <atomnuker@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -19,34 +19,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVDEVICE_DECKLINK_COMMON_C_H
-#define AVDEVICE_DECKLINK_COMMON_C_H
+#include "config.h"
 
-typedef enum DecklinkPtsSource {
-    PTS_SRC_AUDIO     = 1,
-    PTS_SRC_VIDEO     = 2,
-    PTS_SRC_REFERENCE = 3,
-    PTS_SRC_WALLCLOCK = 4,
-} DecklinkPtsSource;
+#include "libavutil/float_dsp.h"
+#include "libavutil/x86/cpu.h"
+#include "libavcodec/aacenc.h"
 
-struct decklink_cctx {
-    const AVClass *cclass;
+void ff_abs_pow34_sse(float *out, const float *in, const int size);
 
-    void *ctx;
+void ff_aac_quantize_bands_sse2(int *out, const float *in, const float *scaled,
+                                int size, int is_signed, int maxval, const float Q34,
+                                const float rounding);
 
-    /* Options */
-    int list_devices;
-    int list_formats;
-    int64_t teletext_lines;
-    double preroll;
-    int v210;
-    int audio_channels;
-    int duplex_mode;
-    DecklinkPtsSource audio_pts_source;
-    DecklinkPtsSource video_pts_source;
-    int audio_input;
-    int video_input;
-    int draw_bars;
-};
+av_cold void ff_aac_dsp_init_x86(AACEncContext *s)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-#endif /* AVDEVICE_DECKLINK_COMMON_C_H */
+    if (EXTERNAL_SSE(cpu_flags))
+        s->abs_pow34   = ff_abs_pow34_sse;
+
+    if (EXTERNAL_SSE2(cpu_flags))
+        s->quant_bands = ff_aac_quantize_bands_sse2;
+}

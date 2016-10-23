@@ -93,10 +93,9 @@ static int decode_packet(int *got_frame, int cached)
                 return -1;
             }
 
-            printf("video_frame%s n:%d coded_n:%d pts:%s\n",
+            printf("video_frame%s n:%d coded_n:%d\n",
                    cached ? "(cached)" : "",
-                   video_frame_count++, frame->coded_picture_number,
-                   av_ts2timestr(frame->pts, &video_dec_ctx->time_base));
+                   video_frame_count++, frame->coded_picture_number);
 
             /* copy decoded frame to destination buffer:
              * this is required since rawvideo expects non aligned data */

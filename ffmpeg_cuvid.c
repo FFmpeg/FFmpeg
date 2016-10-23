@@ -129,7 +129,7 @@ int cuvid_transcode_init(OutputStream *ost)
         ist->hwaccel_uninit = cuvid_uninit;
 
         /* This is a bit hacky, av_hwframe_ctx_init is called by the cuvid decoder
-         * once it has probed the neccesary format information. But as filters/nvenc
+         * once it has probed the necessary format information. But as filters/nvenc
          * need to know the format/sw_format, set them here so they are happy.
          * This is fine as long as CUVID doesn't add another supported pix_fmt.
          */
@@ -147,7 +147,7 @@ error:
 
 cancel:
     if (ist->hwaccel_id == HWACCEL_CUVID) {
-        av_log(NULL, AV_LOG_ERROR, "CUVID hwaccel requested, but impossible to achive.\n");
+        av_log(NULL, AV_LOG_ERROR, "CUVID hwaccel requested, but impossible to achieve.\n");
         return AVERROR(EINVAL);
     }
 

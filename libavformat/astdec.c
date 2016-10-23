@@ -90,7 +90,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     pos  = avio_tell(s->pb);
     type = avio_rl32(s->pb);
     size = avio_rb32(s->pb);
-    if (size > INT_MAX / s->streams[0]->codecpar->channels)
+    if (!s->streams[0]->codecpar->channels || size > INT_MAX / s->streams[0]->codecpar->channels)
         return AVERROR_INVALIDDATA;
 
     size *= s->streams[0]->codecpar->channels;

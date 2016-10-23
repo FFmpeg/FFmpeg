@@ -1640,6 +1640,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
                                     EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
         }
+        emms_c();
     }
 
     ff_snow_frame_start(s);
@@ -1856,6 +1857,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
     }
+    emms_c();
 
     update_last_header_values(s);
 

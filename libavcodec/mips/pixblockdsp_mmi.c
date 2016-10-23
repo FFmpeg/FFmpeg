@@ -23,34 +23,73 @@
 
 #include "pixblockdsp_mips.h"
 #include "libavutil/mips/asmdefs.h"
+#include "libavutil/mips/mmiutils.h"
 
 void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         ptrdiff_t line_size)
 {
-    double ftmp[6];
-    mips_reg tmp[2];
+    double ftmp[7];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
-        "li         %[tmp1],    0x08                                    \n\t"
-        "move       %[tmp0],    $0                                      \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "1:                                                             \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[pixels])                         \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[pixels])                         \n\t"
-        "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]                \n\t"
-        "punpckhbh  %[ftmp5],   %[ftmp1],       %[ftmp0]                \n\t"
-        "gssdxc1    %[ftmp2],   0x00(%[block],  %[tmp0])                \n\t"
-        "gssdxc1    %[ftmp5],   0x08(%[block],  %[tmp0])                \n\t"
-        PTR_ADDI   "%[tmp1],    %[tmp1],       -0x01                    \n\t"
-        PTR_ADDIU  "%[tmp0],    %[tmp0],        0x10                    \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
-        "bnez       %[tmp1],    1b                                      \n\t"
+
+        MMI_LDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]                \n\t"
+        MMI_SDC1(%[ftmp3], %[block], 0x00)
+        MMI_SDC1(%[ftmp4], %[block], 0x08)
+        MMI_SDC1(%[ftmp5], %[block], 0x10)
+        MMI_SDC1(%[ftmp6], %[block], 0x18)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+
+        MMI_LDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]                \n\t"
+        MMI_SDC1(%[ftmp3], %[block], 0x20)
+        MMI_SDC1(%[ftmp4], %[block], 0x28)
+        MMI_SDC1(%[ftmp5], %[block], 0x30)
+        MMI_SDC1(%[ftmp6], %[block], 0x38)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+
+        MMI_LDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]                \n\t"
+        MMI_SDC1(%[ftmp3], %[block], 0x40)
+        MMI_SDC1(%[ftmp4], %[block], 0x48)
+        MMI_SDC1(%[ftmp5], %[block], 0x50)
+        MMI_SDC1(%[ftmp6], %[block], 0x58)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+
+        MMI_LDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
+        "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]                \n\t"
+        MMI_SDC1(%[ftmp3], %[block], 0x60)
+        MMI_SDC1(%[ftmp4], %[block], 0x68)
+        MMI_SDC1(%[ftmp5], %[block], 0x70)
+        MMI_SDC1(%[ftmp6], %[block], 0x78)
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
-          [tmp0]"=&r"(tmp[0]),              [tmp1]"=&r"(tmp[1]),
+          [ftmp6]"=&f"(ftmp[6]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [pixels]"+&r"(pixels)
-        : [block]"r"((mips_reg)block),      [line_size]"r"((mips_reg)line_size)
+        : [block]"r"((mips_reg)block),      [line_size]"r"((mips_reg)line_size),
+          [line_size_x2]"r"((mips_reg)(line_size<<1))
         : "memory"
     );
 }
@@ -60,16 +99,15 @@ void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
 {
     double ftmp[5];
     mips_reg tmp[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
         "li         %[tmp0],    0x08                                    \n\t"
         "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
+        MMI_LDC1(%[ftmp0], %[src1], 0x00)
         "or         %[ftmp1],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
+        MMI_LDC1(%[ftmp2], %[src2], 0x00)
         "or         %[ftmp3],   %[ftmp2],       %[ftmp2]                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "punpckhbh  %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
@@ -77,10 +115,8 @@ void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
         "punpckhbh  %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
         "psubh      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "psubh      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[block])                          \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdlc1    %[ftmp1],   0x0f(%[block])                          \n\t"
-        "gssdrc1    %[ftmp1],   0x08(%[block])                          \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDC1(%[ftmp1], %[block], 0x08)
         PTR_ADDI   "%[tmp0],    %[tmp0], -0x01                          \n\t"
         PTR_ADDIU  "%[block],   %[block], 0x10                          \n\t"
         PTR_ADDU   "%[src1],    %[src1],        %[stride]               \n\t"
@@ -90,6 +126,7 @@ void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [block]"+&r"(block),              [src1]"+&r"(src1),
           [src2]"+&r"(src2)
         : [stride]"r"((mips_reg)stride)

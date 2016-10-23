@@ -63,7 +63,7 @@ static inline int quant(float coef, const float Q, const float rounding)
 }
 
 static inline void quantize_bands(int *out, const float *in, const float *scaled,
-                                  int size, float Q34, int is_signed, int maxval,
+                                  int size, int is_signed, int maxval, const float Q34,
                                   const float rounding)
 {
     int i;

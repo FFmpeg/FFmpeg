@@ -3771,7 +3771,7 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "+      increase verbosity\n"
                         "-      decrease verbosity\n"
                         "c      Send command to first matching filter supporting it\n"
-                        "C      Send/Que command to all matching filters\n"
+                        "C      Send/Queue command to all matching filters\n"
                         "D      cycle through available debug modes\n"
                         "h      dump packets/hex press to cycle through the 3 states\n"
                         "q      quit\n"

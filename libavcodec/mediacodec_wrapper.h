@@ -44,7 +44,7 @@
  * implementation.
  *
  * The API around MediaCodecList is not part of the NDK (and is lacking as
- * we still need to retreive the codec name to work around faulty decoders
+ * we still need to retrieve the codec name to work around faulty decoders
  * and encoders).
  *
  * For documentation, please refers to NdkMediaCodec.h NdkMediaFormat.h and

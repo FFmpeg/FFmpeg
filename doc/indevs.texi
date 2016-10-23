@@ -273,6 +273,10 @@ Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
 Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
 @samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
 
+@item draw_bars
+If set to @samp{true}, color bars are drawn in the event of a signal loss.
+Defaults to @samp{true}.
+
 @end table
 
 @subsection Examples
