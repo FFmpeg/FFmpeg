@@ -163,6 +163,8 @@ typedef struct ColorSpaceContext {
     yuv2yuv_fn yuv2yuv;
     double yuv2rgb_dbl_coeffs[3][3], rgb2yuv_dbl_coeffs[3][3];
     int in_y_rng, in_uv_rng, out_y_rng, out_uv_rng;
+
+    int did_warn_range;
 } ColorSpaceContext;
 
 // FIXME deal with odd width/heights (or just forbid it)
@@ -523,8 +525,14 @@ static int get_range_off(AVFilterContext *ctx, int *off,
                          enum AVColorRange rng, int depth)
 {
     switch (rng) {
-    case AVCOL_RANGE_UNSPECIFIED:
-        av_log(ctx, AV_LOG_WARNING, "Input range not set, assuming tv/mpeg\n");
+    case AVCOL_RANGE_UNSPECIFIED: {
+        ColorSpaceContext *s = ctx->priv;
+
+        if (!s->did_warn_range) {
+            av_log(ctx, AV_LOG_WARNING, "Input range not set, assuming tv/mpeg\n");
+            s->did_warn_range = 1;
+        }
+    }
         // fall-through
     case AVCOL_RANGE_MPEG:
         *off = 16 << (depth - 8);
