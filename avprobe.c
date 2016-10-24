@@ -54,6 +54,11 @@ static AVDictionary *fmt_entries_to_show = NULL;
 static int nb_fmt_entries_to_show;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
+static AVDictionary *stream_entries_to_show = NULL;
+static int nb_stream_entries_to_show;
+
+/* key used to print when probe_{int,str}(NULL, ..) is invoked */
+static const char *header_key;
 
 static int show_value_unit              = 0;
 static int use_value_prefix             = 0;
@@ -78,6 +83,7 @@ static const char unit_bit_per_second_str[] = "bit/s";
 static void avprobe_cleanup(int ret)
 {
     av_dict_free(&fmt_entries_to_show);
+    av_dict_free(&stream_entries_to_show);
 }
 
 /*
@@ -397,6 +403,37 @@ static void show_format_entry_string(const char *key, const char *value)
 {
     if (key && av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
         if (nb_fmt_entries_to_show > 1)
+            avio_printf(probe_out, "%s=", key);
+        avio_printf(probe_out, "%s\n", value);
+    }
+}
+
+static void show_stream_entry_header(const char *key, int value)
+{
+    header_key = key;
+}
+
+static void show_stream_entry_footer(const char *key, int value)
+{
+    header_key = NULL;
+}
+
+static void show_stream_entry_integer(const char *key, int64_t value)
+{
+    if (!key)
+        key = header_key;
+
+    if (key && av_dict_get(stream_entries_to_show, key, NULL, 0)) {
+        if (nb_stream_entries_to_show > 1)
+            avio_printf(probe_out, "%s=", key);
+        avio_printf(probe_out, "%"PRId64"\n", value);
+    }
+}
+
+static void show_stream_entry_string(const char *key, const char *value)
+{
+    if (key && av_dict_get(stream_entries_to_show, key, NULL, 0)) {
+        if (nb_stream_entries_to_show > 1)
             avio_printf(probe_out, "%s=", key);
         avio_printf(probe_out, "%s\n", value);
     }
@@ -973,6 +1010,23 @@ static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_show_stream_entry(void *optctx, const char *opt, const char *arg)
+{
+    do_show_streams = 1;
+    nb_stream_entries_to_show++;
+    octx.print_header        = NULL;
+    octx.print_footer        = NULL;
+    octx.print_array_header  = show_stream_entry_header;
+    octx.print_array_footer  = show_stream_entry_footer;
+    octx.print_object_header = NULL;
+    octx.print_object_footer = NULL;
+
+    octx.print_integer = show_stream_entry_integer;
+    octx.print_string  = show_stream_entry_string;
+    av_dict_set(&stream_entries_to_show, arg, "", 0);
+    return 0;
+}
+
 static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
@@ -1023,6 +1077,8 @@ static const OptionDef real_options[] = {
       "show a particular entry from the format/container info", "entry" },
     { "show_packets", OPT_BOOL, {&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {&do_show_streams}, "show streams info" },
+    { "show_stream_entry", HAS_ARG, {.func_arg = opt_show_stream_entry},
+      "show a particular entry from all streams", "entry" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default},
       "generic catch all option", "" },
     { NULL, },
