@@ -167,6 +167,8 @@ typedef struct MOVContext {
     int export_all;
     int export_xmp;
     int enable_drefs;
+
+    int32_t movie_display_matrix[3][3]; ///< display matrix from mvhd
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
