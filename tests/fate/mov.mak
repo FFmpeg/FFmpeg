@@ -4,7 +4,8 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-1elist-noctts \
            fate-mov-elist-starts-ctts-2ndsample \
            fate-mov-1elist-ends-last-bframe \
-           fate-mov-2elist-elist1-ends-bframe
+           fate-mov-2elist-elist1-ends-bframe \
+           fate-mov-aac-2048-priming
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 
@@ -26,3 +27,6 @@ fate-mov-1elist-ends-last-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1e
 
 # Makes sure that we handle timestamps of packets in case of multiple edit lists with one of them ending on a B-frame correctly.
 fate-mov-2elist-elist1-ends-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-2elist-elist1-ends-bframe.mov
+
+fate-mov-aac-2048-priming: ffprobe$(PROGSSUF)$(EXESUF)
+fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
