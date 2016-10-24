@@ -33,18 +33,18 @@
 
     <streams>
         <stream index="0" codec_name="pcm_s16le" codec_type="audio" codec_time_base="1/44100" codec_tag_string="PSD[16]" codec_tag="0x10445350" sample_fmt="s16" sample_rate="44100" channels="1" bits_per_sample="16" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/44100" start_pts="0" start_time="0.000000" bit_rate="705600" nb_read_frames="6" nb_read_packets="6">
-            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0"/>
             <tag key="E" value="mc²"/>
             <tag key="encoder" value="Lavc pcm_s16le"/>
         </stream>
         <stream index="1" codec_name="rawvideo" codec_type="video" codec_time_base="1/25" codec_tag_string="RGB[24]" codec_tag="0x18424752" width="320" height="240" coded_width="320" coded_height="240" has_b_frames="0" sample_aspect_ratio="1:1" display_aspect_ratio="4:3" pix_fmt="rgb24" level="-99" refs="1" r_frame_rate="25/1" avg_frame_rate="25/1" time_base="1/51200" start_pts="0" start_time="0.000000" nb_read_frames="4" nb_read_packets="4">
-            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0"/>
             <tag key="title" value="foobar"/>
             <tag key="duration_ts" value="field-and-tags-conflict-attempt"/>
             <tag key="encoder" value="Lavc rawvideo"/>
         </stream>
         <stream index="2" codec_name="rawvideo" codec_type="video" codec_time_base="1/25" codec_tag_string="RGB[24]" codec_tag="0x18424752" width="100" height="100" coded_width="100" coded_height="100" has_b_frames="0" sample_aspect_ratio="1:1" display_aspect_ratio="1:1" pix_fmt="rgb24" level="-99" refs="1" r_frame_rate="25/1" avg_frame_rate="25/1" time_base="1/51200" start_pts="0" start_time="0.000000" nb_read_frames="4" nb_read_packets="4">
-            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0" timed_thumbnails="0"/>
             <tag key="encoder" value="Lavc rawvideo"/>
         </stream>
     </streams>

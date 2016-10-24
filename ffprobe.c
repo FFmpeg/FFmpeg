@@ -2383,6 +2383,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     PRINT_DISPOSITION(VISUAL_IMPAIRED,  "visual_impaired");
     PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
     PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
+    PRINT_DISPOSITION(TIMED_THUMBNAILS, "timed_thumbnails");
     writer_print_section_footer(w);
     }
 

@@ -842,11 +842,17 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_CLEAN_EFFECTS     0x0200  /**< stream without voice */
 /**
  * The stream is stored in the file as an attached picture/"cover art" (e.g.
- * APIC frame in ID3v2). The single packet associated with it will be returned
- * among the first few packets read from the file unless seeking takes place.
- * It can also be accessed at any time in AVStream.attached_pic.
+ * APIC frame in ID3v2). The first (usually only) packet associated with it
+ * will be returned among the first few packets read from the file unless
+ * seeking takes place. It can also be accessed at any time in
+ * AVStream.attached_pic.
  */
 #define AV_DISPOSITION_ATTACHED_PIC      0x0400
+/**
+ * The stream is sparse, and contains thumbnail images, often corresponding
+ * to chapter markers. Only ever used with AV_DISPOSITION_ATTACHED_PIC.
+ */
+#define AV_DISPOSITION_TIMED_THUMBNAILS  0x0800
 
 typedef struct AVStreamInternal AVStreamInternal;
 

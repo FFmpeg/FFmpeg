@@ -560,6 +560,7 @@ DISPOSITION:hearing_impaired=0
 DISPOSITION:visual_impaired=0
 DISPOSITION:clean_effects=0
 DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
 TAG:E=mc²
 TAG:encoder=Lavc pcm_s16le
 [/STREAM]
@@ -613,6 +614,7 @@ DISPOSITION:hearing_impaired=0
 DISPOSITION:visual_impaired=0
 DISPOSITION:clean_effects=0
 DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
 TAG:title=foobar
 TAG:duration_ts=field-and-tags-conflict-attempt
 TAG:encoder=Lavc rawvideo
@@ -667,6 +669,7 @@ DISPOSITION:hearing_impaired=0
 DISPOSITION:visual_impaired=0
 DISPOSITION:clean_effects=0
 DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
 TAG:encoder=Lavc rawvideo
 [/STREAM]
 [FORMAT]
