@@ -2065,9 +2065,35 @@ static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacke
     return 0;
 }
 
+static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
+{
+    int i, ret;
+    AVFrame *f;
+
+    for (i = 0; i < ist->nb_filters; i++) {
+        if (i < ist->nb_filters - 1) {
+            f = ist->filter_frame;
+            ret = av_frame_ref(f, decoded_frame);
+            if (ret < 0)
+                break;
+        } else
+            f = decoded_frame;
+        ret = av_buffersrc_add_frame_flags(ist->filters[i]->filter, f,
+                                           AV_BUFFERSRC_FLAG_PUSH);
+        if (ret == AVERROR_EOF)
+            ret = 0; /* ignore */
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Failed to inject frame into filter network: %s\n", av_err2str(ret));
+            break;
+        }
+    }
+    return ret;
+}
+
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
-    AVFrame *decoded_frame, *f;
+    AVFrame *decoded_frame;
     AVCodecContext *avctx = ist->dec_ctx;
     int i, ret, err = 0, resample_changed;
     AVRational decoded_frame_tb;
@@ -2172,21 +2198,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
                                               (AVRational){1, avctx->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
                                               (AVRational){1, avctx->sample_rate});
     ist->nb_samples = decoded_frame->nb_samples;
-    for (i = 0; i < ist->nb_filters; i++) {
-        if (i < ist->nb_filters - 1) {
-            f = ist->filter_frame;
-            err = av_frame_ref(f, decoded_frame);
-            if (err < 0)
-                break;
-        } else
-            f = decoded_frame;
-        err = av_buffersrc_add_frame_flags(ist->filters[i]->filter, f,
-                                     AV_BUFFERSRC_FLAG_PUSH);
-        if (err == AVERROR_EOF)
-            err = 0; /* ignore */
-        if (err < 0)
-            break;
-    }
+    err = send_frame_to_filters(ist, decoded_frame);
     decoded_frame->pts = AV_NOPTS_VALUE;
 
 fail:
@@ -2197,7 +2209,7 @@ fail:
 
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eof)
 {
-    AVFrame *decoded_frame, *f;
+    AVFrame *decoded_frame;
     int i, ret = 0, err = 0, resample_changed;
     int64_t best_effort_timestamp;
     int64_t dts = AV_NOPTS_VALUE;
@@ -2346,23 +2358,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eo
         }
     }
 
-    for (i = 0; i < ist->nb_filters; i++) {
-        if (i < ist->nb_filters - 1) {
-            f = ist->filter_frame;
-            err = av_frame_ref(f, decoded_frame);
-            if (err < 0)
-                break;
-        } else
-            f = decoded_frame;
-        err = av_buffersrc_add_frame_flags(ist->filters[i]->filter, f, AV_BUFFERSRC_FLAG_PUSH);
-        if (err == AVERROR_EOF) {
-            err = 0; /* ignore */
-        } else if (err < 0) {
-            av_log(NULL, AV_LOG_FATAL,
-                   "Failed to inject frame into filter network: %s\n", av_err2str(err));
-            exit_program(1);
-        }
-    }
+    err = send_frame_to_filters(ist, decoded_frame);
 
 fail:
     av_frame_unref(ist->filter_frame);
