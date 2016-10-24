@@ -629,6 +629,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->chroma_planes = 1;
         s->bits_per_raw_sample = 16;
         s->use32bit = 1;
+        s->version = FFMAX(s->version, 1);
         if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
             return AVERROR_INVALIDDATA;
