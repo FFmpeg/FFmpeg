@@ -79,7 +79,7 @@ Help options:
 Standard options:
   --logfile=FILE           log tests and output to FILE [config.log]
   --disable-logging        do not log configure debug information
-  --prefix=PREFIX          install in PREFIX [$prefix]
+  --prefix=PREFIX          install in PREFIX [$prefix_default]
   --bindir=DIR             install binaries in DIR [PREFIX/bin]
   --datadir=DIR            install data files in DIR [PREFIX/share/avconv]
   --docdir=DIR             install documentation in DIR [PREFIX/share/doc/libav]
@@ -87,7 +87,7 @@ Standard options:
   --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]
   --incdir=DIR             install includes in DIR [PREFIX/include]
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
-  --enable-rpath           use rpath when linking programs [USE WITH CARE]
+  --enable-rpath           use rpath when linking programs (USE WITH CARE)
 
 Licensing options:
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -100,7 +100,7 @@ Configuration options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
   --enable-small           optimize for size instead of speed
-  --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
+  --enable-runtime-cpudetect detect CPU capabilities at runtime (bigger binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
@@ -5174,7 +5174,6 @@ echo "optimize for size         ${small-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
-echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
@@ -5214,7 +5213,7 @@ fi
 
 echo "License: $license"
 
-echo "Creating config.mak and config.h..."
+echo "Creating configuration files ..."
 
 fi # test "$quiet" != "yes"
 
