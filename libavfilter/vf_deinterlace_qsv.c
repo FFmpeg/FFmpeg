@@ -575,4 +575,6 @@ AVFilter ff_vf_deinterlace_qsv = {
 
     .inputs    = qsvdeint_inputs,
     .outputs   = qsvdeint_outputs,
+
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

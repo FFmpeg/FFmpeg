@@ -626,4 +626,6 @@ AVFilter ff_vf_scale_qsv = {
 
     .inputs    = qsvscale_inputs,
     .outputs   = qsvscale_outputs,
+
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

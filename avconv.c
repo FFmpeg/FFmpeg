@@ -38,6 +38,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -2035,7 +2036,9 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         if (!av_dict_get(ost->encoder_opts, "threads", NULL, 0))
             av_dict_set(&ost->encoder_opts, "threads", "auto", 0);
 
-        if (ost->filter && ost->filter->filter->inputs[0]->hw_frames_ctx) {
+        if (ost->filter && ost->filter->filter->inputs[0]->hw_frames_ctx &&
+            ((AVHWFramesContext*)ost->filter->filter->inputs[0]->hw_frames_ctx->data)->format ==
+            ost->filter->filter->inputs[0]->format) {
             ost->enc_ctx->hw_frames_ctx = av_buffer_ref(ost->filter->filter->inputs[0]->hw_frames_ctx);
             if (!ost->enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);

@@ -230,4 +230,6 @@ AVFilter ff_vf_hwupload_cuda = {
 
     .inputs    = cudaupload_inputs,
     .outputs   = cudaupload_outputs,
+
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

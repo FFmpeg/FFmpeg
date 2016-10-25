@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/buffer.h"
 #include "libavutil/channel_layout.h"
@@ -212,14 +213,12 @@ int avfilter_config_links(AVFilterContext *filter)
             }
 
             if (link->src->nb_inputs && link->src->inputs[0]->hw_frames_ctx &&
-                !link->hw_frames_ctx) {
-                AVHWFramesContext *input_ctx = (AVHWFramesContext*)link->src->inputs[0]->hw_frames_ctx->data;
-
-                if (input_ctx->format == link->format) {
-                    link->hw_frames_ctx = av_buffer_ref(link->src->inputs[0]->hw_frames_ctx);
-                    if (!link->hw_frames_ctx)
-                        return AVERROR(ENOMEM);
-                }
+                !(link->src->filter->flags_internal & FF_FILTER_FLAG_HWFRAME_AWARE)) {
+                av_assert0(!link->hw_frames_ctx &&
+                           "should not be set by non-hwframe-aware filter");
+                link->hw_frames_ctx = av_buffer_ref(link->src->inputs[0]->hw_frames_ctx);
+                if (!link->hw_frames_ctx)
+                    return AVERROR(ENOMEM);
             }
 
             if ((config_link = link->dstpad->config_props))
