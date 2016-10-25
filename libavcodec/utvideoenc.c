@@ -77,6 +77,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         c->planes        = 4;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'A');
         original_format  = UTVIDEO_RGBA;
+        avctx->bits_per_coded_sample = 32;
         break;
     case AV_PIX_FMT_YUV420P:
         if (avctx->width & 1 || avctx->height & 1) {
