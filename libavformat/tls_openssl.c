@@ -152,9 +152,9 @@ static int url_bio_destroy(BIO *b)
 }
 
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-#define GET_BIO_DATA(x) BIO_get_data(x);
+#define GET_BIO_DATA(x) BIO_get_data(x)
 #else
-#define GET_BIO_DATA(x) (x)->ptr;
+#define GET_BIO_DATA(x) (x)->ptr
 #endif
 
 static int url_bio_bread(BIO *b, char *buf, int len)
