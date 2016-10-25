@@ -434,4 +434,91 @@ AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
  */
 void av_hwframe_constraints_free(AVHWFramesConstraints **constraints);
 
+
+/**
+ * Flags to apply to frame mappings.
+ */
+enum {
+    /**
+     * The mapping must be readable.
+     */
+    AV_HWFRAME_MAP_READ      = 1 << 0,
+    /**
+     * The mapping must be writeable.
+     */
+    AV_HWFRAME_MAP_WRITE     = 1 << 1,
+    /**
+     * The mapped frame will be overwritten completely in subsequent
+     * operations, so the current frame data need not be loaded.  Any values
+     * which are not overwritten are unspecified.
+     */
+    AV_HWFRAME_MAP_OVERWRITE = 1 << 2,
+    /**
+     * The mapping must be direct.  That is, there must not be any copying in
+     * the map or unmap steps.  Note that performance of direct mappings may
+     * be much lower than normal memory.
+     */
+    AV_HWFRAME_MAP_DIRECT    = 1 << 3,
+};
+
+/**
+ * Map a hardware frame.
+ *
+ * This has a number of different possible effects, depending on the format
+ * and origin of the src and dst frames.  On input, src should be a usable
+ * frame with valid buffers and dst should be blank (typically as just created
+ * by av_frame_alloc()).  src should have an associated hwframe context, and
+ * dst may optionally have a format and associated hwframe context.
+ *
+ * If src was created by mapping a frame from the hwframe context of dst,
+ * then this function undoes the mapping - dst is replaced by a reference to
+ * the frame that src was originally mapped from.
+ *
+ * If both src and dst have an associated hwframe context, then this function
+ * attempts to map the src frame from its hardware context to that of dst and
+ * then fill dst with appropriate data to be usable there.  This will only be
+ * possible if the hwframe contexts and associated devices are compatible -
+ * given compatible devices, av_hwframe_ctx_create_derived() can be used to
+ * create a hwframe context for dst in which mapping should be possible.
+ *
+ * If src has a hwframe context but dst does not, then the src frame is
+ * mapped to normal memory and should thereafter be usable as a normal frame.
+ * If the format is set on dst, then the mapping will attempt to create dst
+ * with that format and fail if it is not possible.  If format is unset (is
+ * AV_PIX_FMT_NONE) then dst will be mapped with whatever the most appropriate
+ * format to use is (probably the sw_format of the src hwframe context).
+ *
+ * A return value of AVERROR(ENOSYS) indicates that the mapping is not
+ * possible with the given arguments and hwframe setup, while other return
+ * values indicate that it failed somehow.
+ *
+ * @param dst Destination frame, to contain the mapping.
+ * @param src Source frame, to be mapped.
+ * @param flags Some combination of AV_HWFRAME_MAP_* flags.
+ * @return Zero on success, negative AVERROR code on failure.
+ */
+int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags);
+
+
+/**
+ * Create and initialise an AVHWFramesContext as a mapping of another existing
+ * AVHWFramesContext on a different device.
+ *
+ * av_hwframe_ctx_init() should not be called after this.
+ *
+ * @param derived_frame_ctx  On success, a reference to the newly created
+ *                           AVHWFramesContext.
+ * @param derived_device_ctx A reference to the device to create the new
+ *                           AVHWFramesContext on.
+ * @param source_frame_ctx   A reference to an existing AVHWFramesContext
+ *                           which will be mapped to the derived context.
+ * @param flags  Currently unused; should be set to zero.
+ * @return       Zero on success, negative AVERROR code on failure.
+ */
+int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
+                                  enum AVPixelFormat format,
+                                  AVBufferRef *derived_device_ctx,
+                                  AVBufferRef *source_frame_ctx,
+                                  int flags);
+
 #endif /* AVUTIL_HWCONTEXT_H */

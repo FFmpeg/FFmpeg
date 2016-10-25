@@ -157,14 +157,19 @@ static void hwframe_ctx_free(void *opaque, uint8_t *data)
 {
     AVHWFramesContext *ctx = (AVHWFramesContext*)data;
 
-    if (ctx->internal->pool_internal)
-        av_buffer_pool_uninit(&ctx->internal->pool_internal);
+    if (ctx->internal->source_frames) {
+        av_buffer_unref(&ctx->internal->source_frames);
 
-    if (ctx->internal->hw_type->frames_uninit)
-        ctx->internal->hw_type->frames_uninit(ctx);
+    } else {
+        if (ctx->internal->pool_internal)
+            av_buffer_pool_uninit(&ctx->internal->pool_internal);
 
-    if (ctx->free)
-        ctx->free(ctx);
+        if (ctx->internal->hw_type->frames_uninit)
+            ctx->internal->hw_type->frames_uninit(ctx);
+
+        if (ctx->free)
+            ctx->free(ctx);
+    }
 
     av_buffer_unref(&ctx->device_ref);
 
@@ -265,6 +270,11 @@ int av_hwframe_ctx_init(AVBufferRef *ref)
     AVHWFramesContext *ctx = (AVHWFramesContext*)ref->data;
     const enum AVPixelFormat *pix_fmt;
     int ret;
+
+    if (ctx->internal->source_frames) {
+        /* A derived frame context is already initialised. */
+        return 0;
+    }
 
     /* validate the pixel format */
     for (pix_fmt = ctx->internal->hw_type->pix_fmts; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++) {
@@ -396,6 +406,35 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
     AVHWFramesContext *ctx = (AVHWFramesContext*)hwframe_ref->data;
     int ret;
 
+    if (ctx->internal->source_frames) {
+        // This is a derived frame context, so we allocate in the source
+        // and map the frame immediately.
+        AVFrame *src_frame;
+
+        src_frame = av_frame_alloc();
+        if (!src_frame)
+            return AVERROR(ENOMEM);
+
+        ret = av_hwframe_get_buffer(ctx->internal->source_frames,
+                                    src_frame, 0);
+        if (ret < 0)
+            return ret;
+
+        ret = av_hwframe_map(frame, src_frame, 0);
+        if (ret) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to map frame into derived "
+                   "frame context: %d.\n", ret);
+            av_frame_free(&src_frame);
+            return ret;
+        }
+
+        // Free the source frame immediately - the mapped frame still
+        // contains a reference to it.
+        av_frame_free(&src_frame);
+
+        return 0;
+    }
+
     if (!ctx->internal->hw_type->frames_get_buffer)
         return AVERROR(ENOSYS);
 
@@ -493,5 +532,193 @@ int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
 fail:
     av_buffer_unref(&device_ref);
     *pdevice_ref = NULL;
+    return ret;
+}
+
+static void ff_hwframe_unmap(void *opaque, uint8_t *data)
+{
+    HWMapDescriptor *hwmap = (HWMapDescriptor*)data;
+    AVHWFramesContext *ctx = opaque;
+
+    if (hwmap->unmap)
+        hwmap->unmap(ctx, hwmap);
+
+    av_frame_free(&hwmap->source);
+
+    av_buffer_unref(&hwmap->hw_frames_ctx);
+
+    av_free(hwmap);
+}
+
+int ff_hwframe_map_create(AVBufferRef *hwframe_ref,
+                          AVFrame *dst, const AVFrame *src,
+                          void (*unmap)(AVHWFramesContext *ctx,
+                                        HWMapDescriptor *hwmap),
+                          void *priv)
+{
+    AVHWFramesContext *ctx = (AVHWFramesContext*)hwframe_ref->data;
+    HWMapDescriptor *hwmap;
+    int ret;
+
+    hwmap = av_mallocz(sizeof(*hwmap));
+    if (!hwmap) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    hwmap->source = av_frame_alloc();
+    if (!hwmap->source) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    ret = av_frame_ref(hwmap->source, src);
+    if (ret < 0)
+        goto fail;
+
+    hwmap->hw_frames_ctx = av_buffer_ref(hwframe_ref);
+    if (!hwmap->hw_frames_ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    hwmap->unmap = unmap;
+    hwmap->priv  = priv;
+
+    dst->buf[0] = av_buffer_create((uint8_t*)hwmap, sizeof(*hwmap),
+                                   &ff_hwframe_unmap, ctx, 0);
+    if (!dst->buf[0]) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    return 0;
+
+fail:
+    if (hwmap) {
+        av_buffer_unref(&hwmap->hw_frames_ctx);
+        av_frame_free(&hwmap->source);
+    }
+    av_free(hwmap);
+    return ret;
+}
+
+int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags)
+{
+    AVHWFramesContext *src_frames, *dst_frames;
+    HWMapDescriptor *hwmap;
+    int ret;
+
+    if (src->hw_frames_ctx && dst->hw_frames_ctx) {
+        src_frames = (AVHWFramesContext*)src->hw_frames_ctx->data;
+        dst_frames = (AVHWFramesContext*)dst->hw_frames_ctx->data;
+
+        if ((src_frames == dst_frames &&
+             src->format == dst_frames->sw_format &&
+             dst->format == dst_frames->format) ||
+            (src_frames->internal->source_frames &&
+             src_frames->internal->source_frames->data ==
+             (uint8_t*)dst_frames)) {
+            // This is an unmap operation.  We don't need to directly
+            // do anything here other than fill in the original frame,
+            // because the real unmap will be invoked when the last
+            // reference to the mapped frame disappears.
+            if (!src->buf[0]) {
+                av_log(src_frames, AV_LOG_ERROR, "Invalid mapping "
+                       "found when attempting unmap.\n");
+                return AVERROR(EINVAL);
+            }
+            hwmap = (HWMapDescriptor*)src->buf[0]->data;
+            av_frame_unref(dst);
+            return av_frame_ref(dst, hwmap->source);
+        }
+    }
+
+    if (src->hw_frames_ctx) {
+        src_frames = (AVHWFramesContext*)src->hw_frames_ctx->data;
+
+        if (src_frames->format == src->format &&
+            src_frames->internal->hw_type->map_from) {
+            ret = src_frames->internal->hw_type->map_from(src_frames,
+                                                          dst, src, flags);
+            if (ret != AVERROR(ENOSYS))
+                return ret;
+        }
+    }
+
+    if (dst->hw_frames_ctx) {
+        dst_frames = (AVHWFramesContext*)dst->hw_frames_ctx->data;
+
+        if (dst_frames->format == dst->format &&
+            dst_frames->internal->hw_type->map_to) {
+            ret = dst_frames->internal->hw_type->map_to(dst_frames,
+                                                        dst, src, flags);
+            if (ret != AVERROR(ENOSYS))
+                return ret;
+        }
+    }
+
+    return AVERROR(ENOSYS);
+}
+
+int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
+                                  enum AVPixelFormat format,
+                                  AVBufferRef *derived_device_ctx,
+                                  AVBufferRef *source_frame_ctx,
+                                  int flags)
+{
+    AVBufferRef   *dst_ref = NULL;
+    AVHWFramesContext *dst = NULL;
+    AVHWFramesContext *src = (AVHWFramesContext*)source_frame_ctx->data;
+    int ret;
+
+    if (src->internal->source_frames) {
+        AVHWFramesContext *src_src =
+            (AVHWFramesContext*)src->internal->source_frames->data;
+        AVHWDeviceContext *dst_dev =
+            (AVHWDeviceContext*)derived_device_ctx->data;
+
+        if (src_src->device_ctx == dst_dev) {
+            // This is actually an unmapping, so we just return a
+            // reference to the source frame context.
+            *derived_frame_ctx =
+                av_buffer_ref(src->internal->source_frames);
+            if (!*derived_frame_ctx) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            return 0;
+        }
+    }
+
+    dst_ref = av_hwframe_ctx_alloc(derived_device_ctx);
+    if (!dst_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    dst = (AVHWFramesContext*)dst_ref->data;
+
+    dst->format    = format;
+    dst->sw_format = src->sw_format;
+    dst->width     = src->width;
+    dst->height    = src->height;
+
+    dst->internal->source_frames = av_buffer_ref(source_frame_ctx);
+    if (!dst->internal->source_frames) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = av_hwframe_ctx_init(dst_ref);
+    if (ret)
+        goto fail;
+
+    *derived_frame_ctx = dst_ref;
+    return 0;
+
+fail:
+    if (dst)
+        av_buffer_unref(&dst->internal->source_frames);
+    av_buffer_unref(&dst_ref);
     return ret;
 }
