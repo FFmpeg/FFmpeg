@@ -125,6 +125,7 @@ typedef struct OverlayContext {
     int main_pix_step[4];       ///< steps per pixel for each plane of the main output
     int overlay_pix_step[4];    ///< steps per pixel for each plane of the overlay
     int hsub, vsub;             ///< chroma subsampling values
+    const AVPixFmtDescriptor *main_desc; ///< format descriptor for main input
 
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
@@ -215,7 +216,9 @@ static int query_formats(AVFilterContext *ctx)
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
     static const enum AVPixelFormat main_pix_fmts_yuv420[] = {
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_NV12, AV_PIX_FMT_NV21,
+        AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat overlay_pix_fmts_yuv420[] = {
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE
@@ -470,6 +473,7 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
                                          int x, int y,
                                          int main_has_alpha)
 {
+    OverlayContext *ol = ctx->priv;
     int src_wp = AV_CEIL_RSHIFT(src_w, hsub);
     int src_hp = AV_CEIL_RSHIFT(src_h, vsub);
     int dst_wp = AV_CEIL_RSHIFT(dst_w, hsub);
@@ -479,14 +483,20 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
     uint8_t *s, *sp, *d, *dp, *a, *ap;
     int jmax, j, k, kmax;
 
+    int dst_plane  = ol->main_desc->comp[i].plane;
+    int dst_offset = ol->main_desc->comp[i].offset;
+    int dst_step   = ol->main_desc->comp[i].step;
+
     j = FFMAX(-yp, 0);
     sp = src->data[i] + j         * src->linesize[i];
-    dp = dst->data[i] + (yp+j)    * dst->linesize[i];
+    dp = dst->data[dst_plane]
+                      + (yp+j)    * dst->linesize[dst_plane]
+                      + dst_offset;
     ap = src->data[3] + (j<<vsub) * src->linesize[3];
 
     for (jmax = FFMIN(-yp + dst_hp, src_hp); j < jmax; j++) {
         k = FFMAX(-xp, 0);
-        d = dp + xp+k;
+        d = dp + (xp+k) * dst_step;
         s = sp + k;
         a = ap + (k<<hsub);
 
@@ -525,10 +535,10 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
             }
             *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
             s++;
-            d++;
+            d += dst_step;
             a += 1 << hsub;
         }
-        dp += dst->linesize[i];
+        dp += dst->linesize[dst_plane];
         sp += src->linesize[i];
         ap += (1 << vsub) * src->linesize[3];
     }
@@ -625,6 +635,8 @@ static int config_input_main(AVFilterLink *inlink)
 
     s->hsub = pix_desc->log2_chroma_w;
     s->vsub = pix_desc->log2_chroma_h;
+
+    s->main_desc = pix_desc;
 
     s->main_is_packed_rgb =
         ff_fill_rgba_map(s->main_rgba_map, inlink->format) >= 0;
