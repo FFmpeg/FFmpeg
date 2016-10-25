@@ -185,7 +185,7 @@ static void guess_palette(DVDSubContext* ctx,
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0) {
             if (!color_used[colormap[i]])  {
-                level = level_map[nb_opaque_colors][j];
+                level = level_map[nb_opaque_colors - 1][j];
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
