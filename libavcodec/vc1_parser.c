@@ -108,6 +108,14 @@ static void vc1_extract_header(AVCodecParserContext *s, AVCodecContext *avctx,
 
         break;
     }
+    s->format = vpc->v.chromaformat == 1 ? AV_PIX_FMT_YUV420P
+                                         : AV_PIX_FMT_NONE;
+    if (avctx->width && avctx->height) {
+        s->width        = avctx->width;
+        s->height       = avctx->height;
+        s->coded_width  = FFALIGN(avctx->coded_width,  16);
+        s->coded_height = FFALIGN(avctx->coded_height, 16);
+    }
 }
 
 static int vc1_parse(AVCodecParserContext *s,
