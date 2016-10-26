@@ -144,8 +144,8 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return ret;
 
     param.mfx.CodecId      = ret;
-    param.mfx.CodecProfile = avctx->profile;
-    param.mfx.CodecLevel   = avctx->level;
+    param.mfx.CodecProfile = ff_qsv_profile_to_mfx(avctx->codec_id, avctx->profile);
+    param.mfx.CodecLevel   = avctx->level == FF_LEVEL_UNKNOWN ? MFX_LEVEL_UNKNOWN : avctx->level;
 
     param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
     param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
