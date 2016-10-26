@@ -3217,20 +3217,22 @@ typedef struct AVCodec {
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size, AVPacket *avpkt);
     int (*close)(AVCodecContext *);
     /**
-     * Decode/encode API with decoupled packet/frame dataflow. The API is the
+     * Encode API with decoupled packet/frame dataflow. The API is the
      * same as the avcodec_ prefixed APIs (avcodec_send_frame() etc.), except
      * that:
      * - never called if the codec is closed or the wrong type,
-     * - AVPacket parameter change side data is applied right before calling
-     *   AVCodec->send_packet,
-     * - if AV_CODEC_CAP_DELAY is not set, drain packets or frames are never sent,
-     * - only one drain packet is ever passed down (until the next flush()),
-     * - a drain AVPacket is always NULL (no need to check for avpkt->size).
+     * - if AV_CODEC_CAP_DELAY is not set, drain frames are never sent,
+     * - only one drain frame is ever passed down,
      */
     int (*send_frame)(AVCodecContext *avctx, const AVFrame *frame);
-    int (*send_packet)(AVCodecContext *avctx, const AVPacket *avpkt);
-    int (*receive_frame)(AVCodecContext *avctx, AVFrame *frame);
     int (*receive_packet)(AVCodecContext *avctx, AVPacket *avpkt);
+
+    /**
+     * Decode API with decoupled packet/frame dataflow. This function is called
+     * to get one output frame. It should call ff_decode_get_packet() to obtain
+     * input data.
+     */
+    int (*receive_frame)(AVCodecContext *avctx, AVFrame *frame);
     /**
      * Flush buffers.
      * Will be called when seeking
