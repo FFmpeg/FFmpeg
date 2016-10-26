@@ -25,6 +25,7 @@ OBJS = allcodecs.o                                                      \
        d3d11va.o                                                        \
        dirac.o                                                          \
        dv_profile.o                                                     \
+       encode.o                                                         \
        imgconvert.o                                                     \
        log2_tab.o                                                       \
        mathtables.o                                                     \
