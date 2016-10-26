@@ -4202,7 +4202,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint8_t version;
     unsigned i, track_id;
     AVStream *st = NULL;
-    MOVStreamContext *sc;
+    AVStream *ref_st;
+    MOVStreamContext *sc, *ref_sc;
     MOVFragmentIndex *index = NULL;
     MOVFragmentIndex **tmp;
     AVRational timescale;
@@ -4284,9 +4285,26 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     c->fragment_index_data = tmp;
     c->fragment_index_data[c->fragment_index_count++] = index;
+    sc->has_sidx = 1;
 
-    if (offset == avio_size(pb))
+    if (offset == avio_size(pb)) {
+        for (i = 0; i < c->fc->nb_streams; i++) {
+            if (c->fc->streams[i]->id == c->fragment_index_data[0]->track_id) {
+                ref_st = c->fc->streams[i];
+                ref_sc = ref_st->priv_data;
+                break;
+            }
+        }
+        for (i = 0; i < c->fc->nb_streams; i++) {
+            st = c->fc->streams[i];
+            sc = st->priv_data;
+            if (!sc->has_sidx) {
+                st->duration = sc->track_end = av_rescale(ref_st->duration, sc->time_scale, ref_sc->time_scale);
+            }
+        }
+
         c->fragment_index_complete = 1;
+    }
 
     return 0;
 }
@@ -5847,13 +5865,14 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp)
 {
     MOVContext *mov = s->priv_data;
+    MOVStreamContext *sc = st->priv_data;
     int i, j;
 
     if (!mov->fragment_index_complete)
         return 0;
 
     for (i = 0; i < mov->fragment_index_count; i++) {
-        if (mov->fragment_index_data[i]->track_id == st->id) {
+        if (mov->fragment_index_data[i]->track_id == st->id || !sc->has_sidx) {
             MOVFragmentIndex *index = mov->fragment_index_data[i];
             for (j = index->item_count - 1; j >= 0; j--) {
                 if (index->items[j].time <= timestamp) {
