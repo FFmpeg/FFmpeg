@@ -548,7 +548,8 @@ static int append_to_cached_buf(AVCodecContext *avctx,
 {
     DVDSubContext *ctx = avctx->priv_data;
 
-    if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
+    av_assert0(buf_size >= 0 && ctx->buf_size <= sizeof(ctx->buf));
+    if (buf_size >= sizeof(ctx->buf) - ctx->buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
         ctx->buf_size = 0;
