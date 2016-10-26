@@ -155,6 +155,21 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.mfx.FrameInfo.Height         = frame_height;
     param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
 
+    switch (avctx->field_order) {
+    case AV_FIELD_PROGRESSIVE:
+        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
+        break;
+    case AV_FIELD_TT:
+        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_TFF;
+        break;
+    case AV_FIELD_BB:
+        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_BFF;
+        break;
+    default:
+        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_UNKNOWN;
+        break;
+    }
+
     param.IOPattern   = q->iopattern;
     param.AsyncDepth  = q->async_depth;
     param.ExtParam    = q->ext_buffers;
@@ -485,6 +500,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         avctx->height       = q->parser->height;
         avctx->coded_width  = q->parser->coded_width;
         avctx->coded_height = q->parser->coded_height;
+        avctx->field_order  = q->parser->field_order;
         avctx->level        = q->avctx_internal->level;
         avctx->profile      = q->avctx_internal->profile;
 
