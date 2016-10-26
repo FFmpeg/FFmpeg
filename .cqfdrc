@@ -1,0 +1,8 @@
+[project]
+org='radiocanada'
+name='ffmpeg-contrib'
+
+[build]
+command='./build-ffmpeg.sh'
+files='ffmpeg .cqfd/docker/build-ffmpeg-dependencies.sh .cqfd/docker/Dockerfile'
+archive='ffmpeg-%Gh.tar.xz'
