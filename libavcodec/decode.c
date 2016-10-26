@@ -99,6 +99,14 @@ fail2:
     return 0;
 }
 
+static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
+{
+    av_packet_unref(avci->last_pkt_props);
+    if (pkt)
+        return av_packet_copy_props(avci->last_pkt_props, pkt);
+    return 0;
+}
+
 static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
 {
     int ret;
@@ -304,7 +312,10 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         return AVERROR(ENOSYS);
     }
 
-    avctx->internal->pkt = avpkt;
+    ret = extract_packet_props(avci, avpkt);
+    if (ret < 0)
+        return ret;
+
     ret = apply_param_change(avctx, avpkt);
     if (ret < 0)
         return ret;
@@ -368,7 +379,9 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         return AVERROR(ENOSYS);
     }
 
-    avctx->internal->pkt = avpkt;
+    ret = extract_packet_props(avci, avpkt);
+    if (ret < 0)
+        return ret;
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -408,7 +421,10 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 {
     int ret;
 
-    avctx->internal->pkt = avpkt;
+    ret = extract_packet_props(avctx->internal, avpkt);
+    if (ret < 0)
+        return ret;
+
     *got_sub_ptr = 0;
     ret = avctx->codec->decode(avctx, sub, got_sub_ptr, avpkt);
     if (*got_sub_ptr)
@@ -739,7 +755,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
-    AVPacket *pkt = avctx->internal->pkt;
+    AVPacket *pkt = avctx->internal->last_pkt_props;
     int i;
     struct {
         enum AVPacketSideDataType packet;
@@ -759,15 +775,6 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     frame->chroma_location = avctx->chroma_sample_location;
 
     frame->reordered_opaque = avctx->reordered_opaque;
-    if (!pkt) {
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pts = AV_NOPTS_VALUE;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        frame->pts     = AV_NOPTS_VALUE;
-        return 0;
-    }
 
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS

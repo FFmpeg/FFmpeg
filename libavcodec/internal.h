@@ -131,10 +131,10 @@ typedef struct AVCodecInternal {
     void *thread_ctx;
 
     /**
-     * Current packet as passed into the decoder, to avoid having to pass the
-     * packet into every function.
+     * Properties (timestamps+side data) extracted from the last packet passed
+     * for decoding.
      */
-    AVPacket *pkt;
+    AVPacket *last_pkt_props;
 
     /**
      * hwaccel-specific private data
