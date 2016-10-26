@@ -168,8 +168,10 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
     if (pix_fmt != AV_PIX_FMT_NONE) {
         s->format = pix_fmt;
-        s->width  = s->coded_width  = pc->width;
-        s->height = s->coded_height = pc->height;
+        s->width  = pc->width;
+        s->height = pc->height;
+        s->coded_width  = FFALIGN(pc->width,  16);
+        s->coded_height = FFALIGN(pc->height, 16);
     }
 
 #if FF_API_AVCTX_TIMEBASE
