@@ -15,6 +15,8 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+-------- 8< --------- FFmpeg 3.2 was cut here -------- 8< ---------
+
 2016-10-24 - 73ead47 - lavf 57.55.100 - avformat.h
   Add AV_DISPOSITION_TIMED_THUMBNAILS
 
