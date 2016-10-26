@@ -1489,6 +1489,11 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     st->duration = (version == 1) ? avio_rb64(pb) : avio_rb32(pb); /* duration */
 
+    if ((version == 1 && st->duration == UINT64_MAX) ||
+        (version != 1 && st->duration == UINT32_MAX)) {
+        st->duration = 0;
+    }
+
     lang = avio_rb16(pb); /* language */
     if (ff_mov_lang_to_iso639(lang, language))
         av_dict_set(&st->metadata, "language", language, 0);
