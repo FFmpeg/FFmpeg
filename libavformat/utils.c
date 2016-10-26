@@ -833,12 +833,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
-        if (   (pkt->dts != AV_NOPTS_VALUE && (pkt->dts <= INT64_MIN/2 || pkt->dts >= INT64_MAX/2))
-            || (pkt->pts != AV_NOPTS_VALUE && (pkt->pts <= INT64_MIN/2 || pkt->pts >= INT64_MAX/2))) {
-            av_log(s, AV_LOG_WARNING, "Ignoring huge timestamps %"PRId64" %"PRId64"\n", pkt->dts, pkt->pts);
-            pkt->dts = pkt->pts = AV_NOPTS_VALUE;
-        }
-
         st = s->streams[pkt->stream_index];
 
         if (update_wrap_reference(s, st, pkt->stream_index, pkt) && st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
