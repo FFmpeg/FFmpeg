@@ -15,39 +15,39 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2016-10-24 - xxxxxxx - lavf 57.55.100 - avformat.h
+2016-10-24 - 73ead47 - lavf 57.55.100 - avformat.h
   Add AV_DISPOSITION_TIMED_THUMBNAILS
 
-2016-10-24 - xxxxxxx - lavf 57.54.100 - avformat.h
+2016-10-24 - a246fef - lavf 57.54.100 - avformat.h
   Add avformat_init_output() and AVSTREAM_INIT_IN_ macros
 
-2016-10-22 - xxxxxxx - lavu 55.33.100 - avassert.h
+2016-10-22 - f5495c9 - lavu 55.33.100 - avassert.h
   Add av_assert0_fpu() / av_assert2_fpu()
 
-2016-xx-xx - xxxxxxx - lavc 57.61.100 / lavc 57.24.0 - avcodec.h
+2016-10-07 - 3f9137c / 32c8359 - lavc 57.61.100 / 57.24.0 - avcodec.h
   Decoders now export the frame timestamp as AVFrame.pts. It was
   previously exported as AVFrame.pkt_pts, which is now deprecated.
 
   Note: When decoding, AVFrame.pts uses the stream/packet timebase,
   and not the codec timebase.
 
-2016-09-xx - xxxxxxx - lavu 55.32.100 / 55.16.0 - hwcontext.h hwcontext_qsv.h
+2016-09-28 - eba0414 - lavu 55.32.100 / 55.16.0 - hwcontext.h hwcontext_qsv.h
   Add AV_HWDEVICE_TYPE_QSV and a new installed header with QSV-specific
   hwcontext definitions.
 
-2016-09-xx - xxxxxxx - lavc 57.59.100/ 57.23.0 - avcodec.h
+2016-09-26 - 32c25f0 - lavc 57.59.100 / 57.23.0 - avcodec.h
   AVCodecContext.hw_frames_ctx now may be used by decoders.
 
-2016-09-27 - xxxxxxx - lavf 57.51.100 - avformat.h
+2016-09-27 - f0b6f72 - lavf 57.51.100 - avformat.h
   Add av_stream_get_codec_timebase()
 
 2016-09-27 - 23c0779 - lswr 2.2.100 - swresample.h
   Add swr_build_matrix().
 
-2016-09-xx - xxxxxxx - lavc 57.58.100 - avcodec.h
+2016-09-23 - 30d3e36 - lavc 57.58.100 - avcodec.h
   Add AV_CODEC_CAP_AVOID_PROBING codec capability flag.
 
-2016-09-xx - xxxxxxx - lavf 57.49.100 - avformat.h
+2016-09-14 - ae1dd0c - lavf 57.49.100 - avformat.h
   Add avformat_transfer_internal_stream_timing_info helper to help with stream
   copy.
 
