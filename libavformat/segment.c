@@ -798,9 +798,26 @@ static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret;
+    int ret, i;
 
     if (!seg->header_written) {
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = oc->streams[i];
+            AVCodecParameters *ipar, *opar;
+
+            ipar = s->streams[i]->codecpar;
+            opar = oc->streams[i]->codecpar;
+            avcodec_parameters_copy(opar, ipar);
+            if (!oc->oformat->codec_tag ||
+                av_codec_get_id (oc->oformat->codec_tag, ipar->codec_tag) == opar->codec_id ||
+                av_codec_get_tag(oc->oformat->codec_tag, ipar->codec_id) <= 0) {
+                opar->codec_tag = ipar->codec_tag;
+            } else {
+                opar->codec_tag = 0;
+            }
+            st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+            st->time_base = s->streams[i]->time_base;
+        }
         ret = avformat_write_header(oc, NULL);
         if (ret < 0)
             return ret;
@@ -978,6 +995,25 @@ fail:
     return ret;
 }
 
+static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
+    if (oc->oformat->check_bitstream) {
+        int ret = oc->oformat->check_bitstream(oc, pkt);
+        if (ret == 1) {
+            AVStream *st = s->streams[pkt->stream_index];
+            AVStream *ost = oc->streams[pkt->stream_index];
+            st->internal->bsfcs = ost->internal->bsfcs;
+            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
+            ost->internal->bsfcs = NULL;
+            ost->internal->nb_bsfcs = 0;
+        }
+        return ret;
+    }
+    return 1;
+}
+
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1041,6 +1077,7 @@ AVOutputFormat ff_segment_muxer = {
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
     .deinit         = seg_free,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &seg_class,
 };
 
@@ -1061,5 +1098,6 @@ AVOutputFormat ff_stream_segment_muxer = {
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
     .deinit         = seg_free,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &sseg_class,
 };
