@@ -1783,7 +1783,7 @@ static int mkv_write_header(AVFormatContext *s)
             put_ebml_void(pb, 11);              // assumes double-precision float to be written
         }
     }
-    if (s->pb->seekable)
+    if (s->pb->seekable && !mkv->is_live)
         put_ebml_void(s->pb, avio_tell(pb));
     else
         end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, mkv->info);
@@ -2274,7 +2274,7 @@ static int mkv_write_trailer(AVFormatContext *s)
             return ret;
     }
 
-    if (pb->seekable) {
+    if (pb->seekable && !mkv->is_live) {
         if (mkv->cues->num_entries) {
             if (mkv->reserve_cues_space) {
                 int64_t cues_end;
