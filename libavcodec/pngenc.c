@@ -68,6 +68,9 @@ typedef struct PNGEncContext {
     // APNG
     uint32_t palette_checksum;   // Used to ensure a single unique palette
     uint32_t sequence_number;
+    int extra_data_updated;
+    uint8_t *extra_data;
+    int extra_data_size;
 
     AVFrame *prev_frame;
     AVFrame *last_frame;
@@ -870,15 +873,15 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         if (!pict)
             return AVERROR(EINVAL);
 
-        s->bytestream = avctx->extradata = av_malloc(FF_MIN_BUFFER_SIZE);
-        if (!avctx->extradata)
+        s->bytestream = s->extra_data = av_malloc(FF_MIN_BUFFER_SIZE);
+        if (!s->extra_data)
             return AVERROR(ENOMEM);
 
         ret = encode_headers(avctx, pict);
         if (ret < 0)
             return ret;
 
-        avctx->extradata_size = s->bytestream - avctx->extradata;
+        s->extra_data_size = s->bytestream - s->extra_data;
 
         s->last_frame_packet = av_malloc(max_packet_size);
         if (!s->last_frame_packet)
@@ -917,6 +920,13 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
     if (s->last_frame) {
         uint8_t* last_fctl_chunk_start = pkt->data;
         uint8_t buf[26];
+        if (!s->extra_data_updated) {
+            uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, s->extra_data_size);
+            if (!side_data)
+                return AVERROR(ENOMEM);
+            memcpy(side_data, s->extra_data, s->extra_data_size);
+            s->extra_data_updated = 1;
+        }
 
         AV_WB32(buf + 0, s->last_frame_fctl.sequence_number);
         AV_WB32(buf + 4, s->last_frame_fctl.width);
@@ -1093,6 +1103,8 @@ static av_cold int png_enc_close(AVCodecContext *avctx)
     av_frame_free(&s->last_frame);
     av_frame_free(&s->prev_frame);
     av_freep(&s->last_frame_packet);
+    av_freep(&s->extra_data);
+    s->extra_data_size = 0;
     return 0;
 }
 
