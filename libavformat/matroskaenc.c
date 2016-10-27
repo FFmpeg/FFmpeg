@@ -1547,7 +1547,7 @@ static int mkv_write_attachments(AVFormatContext *s)
 
     mkv->attachments = av_mallocz(sizeof(*mkv->attachments));
     if (!mkv->attachments)
-        return ret;
+        return AVERROR(ENOMEM);
 
     av_lfg_init(&c, av_get_random_seed());
 
