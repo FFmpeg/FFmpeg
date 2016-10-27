@@ -212,6 +212,15 @@ do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -q
 do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
 fi
 
+if [ -n "$do_apng" ] ; then
+file=${outfile}lavf.apng
+do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -pix_fmt rgb24
+do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
+file=${outfile}lavf.png
+do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -pix_fmt rgb24 -frames:v 1 -f apng
+do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
+fi
+
 if [ -n "$do_yuv4mpeg" ] ; then
 file=${outfile}lavf.y4m
 do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10
