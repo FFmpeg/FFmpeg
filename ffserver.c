@@ -33,15 +33,10 @@
 #include "libavformat/avformat.h"
 /* FIXME: those are internal headers, ffserver _really_ shouldn't use them */
 #include "libavformat/ffm.h"
-#include "libavformat/network.h"
-#include "libavformat/os_support.h"
-#include "libavformat/rtpdec.h"
 #include "libavformat/rtpproto.h"
 #include "libavformat/rtsp.h"
-#include "libavformat/rtspcodes.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
-#include "libavformat/url.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
