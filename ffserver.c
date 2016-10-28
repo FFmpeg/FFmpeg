@@ -1686,7 +1686,7 @@ static int http_parse_request(HTTPContext *c)
                                 memcpy(q, sdp_data, sdp_data_size);
                                 q += sdp_data_size;
                                 *q = '\0';
-                                av_free(sdp_data);
+                                av_freep(&sdp_data);
                             }
                         }
                         break;
