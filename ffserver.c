@@ -1273,6 +1273,8 @@ static void get_word(char *buf, int buf_size, const char **pp)
     const char *p;
     char *q;
 
+#define SPACE_CHARS " \t\r\n"
+
     p = *pp;
     p += strspn(p, SPACE_CHARS);
     q = buf;
