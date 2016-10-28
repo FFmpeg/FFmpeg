@@ -75,6 +75,7 @@ static const AVOption showcqt_options[] = {
     { "gamma",    "set sonogram gamma", OFFSET(sono_g),     AV_OPT_TYPE_FLOAT, { .dbl = 3.0 },            1.0, 7.0,      FLAGS },
     { "bar_g",    "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
     { "gamma2",   "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
+    { "bar_t",  "set bar transparency", OFFSET(bar_t),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            0.0, 1.0,      FLAGS },
     { "timeclamp",     "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
     { "tc",            "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
     { "basefreq", "set base frequency", OFFSET(basefreq),  AV_OPT_TYPE_DOUBLE, { .dbl = BASEFREQ },      10.0, 100000.0, FLAGS },
@@ -752,10 +753,10 @@ static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int le
 }
 
 static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
-                         const ColorFloat *c, int bar_h)
+                         const ColorFloat *c, int bar_h, float bar_t)
 {
     int x, y, w = out->width;
-    float mul, ht, rcp_bar_h = 1.0f / bar_h;
+    float mul, ht, rcp_bar_h = 1.0f / bar_h, rcp_bar_t = 1.0f / bar_t;
     uint8_t *v = out->data[0], *lp;
     int ls = out->linesize[0];
 
@@ -769,6 +770,7 @@ static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
                 *lp++ = 0;
             } else {
                 mul = (h[x] - ht) * rcp_h[x];
+                mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f;
                 *lp++ = lrintf(mul * c[x].rgb.r);
                 *lp++ = lrintf(mul * c[x].rgb.g);
                 *lp++ = lrintf(mul * c[x].rgb.b);
@@ -785,6 +787,7 @@ do { \
         *lpv++ = 128; \
     } else { \
         mul = (h[x] - ht) * rcp_h[x]; \
+        mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f; \
         *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
         *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f); \
         *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f); \
@@ -797,15 +800,16 @@ do { \
         *lpy++ = 16; \
     } else { \
         mul = (h[x] - ht) * rcp_h[x]; \
+        mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f; \
         *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
     } \
 } while (0)
 
 static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
-                         const ColorFloat *c, int bar_h)
+                         const ColorFloat *c, int bar_h, float bar_t)
 {
     int x, y, yh, w = out->width;
-    float mul, ht, rcp_bar_h = 1.0f / bar_h;
+    float mul, ht, rcp_bar_h = 1.0f / bar_h, rcp_bar_t = 1.0f / bar_t;
     uint8_t *vy = out->data[0], *vu = out->data[1], *vv = out->data[2];
     uint8_t *lpy, *lpu, *lpv;
     int lsy = out->linesize[0], lsu = out->linesize[1], lsv = out->linesize[2];
@@ -1160,7 +1164,7 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {
-            s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h);
+            s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h, s->bar_t);
             UPDATE_TIME(s->bar_time);
         }
 
