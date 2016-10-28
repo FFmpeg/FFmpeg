@@ -25,9 +25,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
-// FIXME those are internal headers, ffserver _really_ shouldn't use them
-#include "libavformat/ffm.h"
-
 #include "cmdutils.h"
 #include "ffserver_config.h"
 

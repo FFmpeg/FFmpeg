@@ -21,6 +21,8 @@
 #ifndef FFSERVER_CONFIG_H
 #define FFSERVER_CONFIG_H
 
+#define FFM_PACKET_SIZE 4096
+
 #include "libavutil/dict.h"
 #include "libavformat/avformat.h"
 #include "libavformat/network.h"
