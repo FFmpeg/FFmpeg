@@ -6816,7 +6816,7 @@ EOF
 mkdir -p doc/examples/pc-uninstalled
 includedir=${source_path}
 [ "$includedir" = . ] && includedir="\${pcfiledir}/../../.."
-    cat <<EOF > doc/examples/pc-uninstalled/$name.pc
+    cat <<EOF > doc/examples/pc-uninstalled/${name}-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}/../../../$name
