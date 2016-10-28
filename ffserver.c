@@ -2993,10 +2993,11 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
         avcodec_parameters_from_context(stream->streams[i]->codecpar, stream->streams[i]->codec);
         avc->streams[i]->codecpar = stream->streams[i]->codecpar;
     }
-    *pbuffer = av_mallocz(2048);
+#define PBUFFER_SIZE 2048
+    *pbuffer = av_mallocz(PBUFFER_SIZE);
     if (!*pbuffer)
         goto sdp_done;
-    av_sdp_create(&avc, 1, *pbuffer, 2048);
+    av_sdp_create(&avc, 1, *pbuffer, PBUFFER_SIZE);
 
  sdp_done:
     av_freep(&avc->streams);
