@@ -9665,7 +9665,7 @@ Scene change detection method. Scene change leads motion vectors to be in random
 @item none
 Disable scene change detection.
 @item fdiff
-Frame difference. Corresponding pixel values are compared and if it statisfies @var{scd_threshold} scene change is detected.
+Frame difference. Corresponding pixel values are compared and if it satisfies @var{scd_threshold} scene change is detected.
 @end table
 Default method is @samp{fdiff}.
 
