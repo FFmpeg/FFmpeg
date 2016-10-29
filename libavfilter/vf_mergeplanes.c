@@ -122,6 +122,7 @@ static int query_formats(AVFilterContext *ctx)
     for (i = 0; av_pix_fmt_desc_get(i); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if (desc->comp[0].depth == s->outdesc->comp[0].depth &&
+            (desc->comp[0].depth <= 8 || (desc->flags & AV_PIX_FMT_FLAG_BE) == (s->outdesc->flags & AV_PIX_FMT_FLAG_BE)) &&
             av_pix_fmt_count_planes(i) == desc->nb_components &&
             (ret = ff_add_format(&formats, i)) < 0)
                 return ret;
