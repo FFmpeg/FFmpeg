@@ -1025,26 +1025,54 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, oc, st);
     while (bsfs && *bsfs) {
         const AVBitStreamFilter *filter;
-        char *bsf;
+        const char *bsf, *bsf_options_str, *bsf_name;
+        AVDictionary *bsf_options = NULL;
 
-        bsf = av_get_token(&bsfs, ",");
+        bsf = bsf_options_str = av_get_token(&bsfs, ",");
         if (!bsf)
             exit_program(1);
-
-        filter = av_bsf_get_by_name(bsf);
-        if (!filter) {
-            av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf);
+        bsf_name = av_get_token(&bsf_options_str, "=");
+        if (!bsf_name)
             exit_program(1);
+
+        filter = av_bsf_get_by_name(bsf_name);
+        if (!filter) {
+            av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf_name);
+            exit_program(1);
+        }
+        if (*bsf_options_str++) {
+            ret = av_dict_parse_string(&bsf_options, bsf_options_str, "=", ":", 0);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error parsing options for bitstream filter %s\n", bsf_name);
+                exit_program(1);
+            }
         }
         av_freep(&bsf);
 
-        ost->bitstream_filters = av_realloc_array(ost->bitstream_filters,
-                                                  ost->nb_bitstream_filters + 1,
-                                                  sizeof(*ost->bitstream_filters));
-        if (!ost->bitstream_filters)
+        ost->bsf_ctx = av_realloc_array(ost->bsf_ctx,
+                                        ost->nb_bitstream_filters + 1,
+                                        sizeof(*ost->bsf_ctx));
+        if (!ost->bsf_ctx)
             exit_program(1);
 
-        ost->bitstream_filters[ost->nb_bitstream_filters++] = filter;
+        ret = av_bsf_alloc(filter, &ost->bsf_ctx[ost->nb_bitstream_filters]);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error allocating a bistream filter context\n");
+            exit_program(1);
+        }
+        ost->nb_bitstream_filters++;
+
+        if (bsf_options) {
+            ret = av_opt_set_dict(ost->bsf_ctx[ost->nb_bitstream_filters-1]->priv_data, &bsf_options);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error setting options for bitstream filter %s\n", bsf_name);
+                exit_program(1);
+            }
+            assert_avoptions(bsf_options);
+            av_dict_free(&bsf_options);
+        }
+        av_freep(&bsf_name);
+
         if (*bsfs)
             bsfs++;
     }

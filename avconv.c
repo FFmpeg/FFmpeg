@@ -190,7 +190,6 @@ static void avconv_cleanup(int ret)
         for (j = 0; j < ost->nb_bitstream_filters; j++)
             av_bsf_free(&ost->bsf_ctx[j]);
         av_freep(&ost->bsf_ctx);
-        av_freep(&ost->bitstream_filters);
 
         av_frame_free(&ost->filtered_frame);
 
@@ -1798,17 +1797,8 @@ static int init_output_bsfs(OutputStream *ost)
     if (!ost->nb_bitstream_filters)
         return 0;
 
-    ost->bsf_ctx = av_mallocz_array(ost->nb_bitstream_filters, sizeof(*ost->bsf_ctx));
-    if (!ost->bsf_ctx)
-        return AVERROR(ENOMEM);
-
     for (i = 0; i < ost->nb_bitstream_filters; i++) {
-        ret = av_bsf_alloc(ost->bitstream_filters[i], &ctx);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error allocating a bitstream filter context\n");
-            return ret;
-        }
-        ost->bsf_ctx[i] = ctx;
+        ctx = ost->bsf_ctx[i];
 
         ret = avcodec_parameters_copy(ctx->par_in,
                                       i ? ost->bsf_ctx[i - 1]->par_out : ost->st->codecpar);
@@ -1820,12 +1810,11 @@ static int init_output_bsfs(OutputStream *ost)
         ret = av_bsf_init(ctx);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error initializing bitstream filter: %s\n",
-                   ost->bitstream_filters[i]->name);
+                   ctx->filter->name);
             return ret;
         }
     }
 
-    ctx = ost->bsf_ctx[ost->nb_bitstream_filters - 1];
     ret = avcodec_parameters_copy(ost->st->codecpar, ctx->par_out);
     if (ret < 0)
         return ret;

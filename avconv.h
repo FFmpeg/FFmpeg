@@ -360,7 +360,6 @@ typedef struct OutputStream {
     AVRational mux_timebase;
 
     int                    nb_bitstream_filters;
-    const AVBitStreamFilter **bitstream_filters;
     AVBSFContext            **bsf_ctx;
 
     AVCodecContext *enc_ctx;
