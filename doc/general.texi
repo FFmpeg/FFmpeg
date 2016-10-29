@@ -182,6 +182,19 @@ provides a GNU-style Makefile which can install just the headers using
 @code{make install PREFIX=/install/prefix}.
 
 @float NOTE
+There is currently a regression in AviSynth+'s @code{capi.h} header as of
+October 2016, which interferes with the ability for builds of Libav to use
+MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
+a known good version is installed by checking out a version from before
+the regression occurred:
+
+@code{git clone -b MT git://github.com/AviSynth/AviSynthPlus.git @*
+cd AviSynthPlus @*
+git checkout -b oldheader b4f292b4dbfad149697fb65c6a037bb3810813f9 @*
+make install PREFIX=/install/prefix}
+@end float
+
+@float NOTE
 When using AviSynth+'s installed headers, the user must also pass
 the avisynth/ include directory to @code{--extra-cflags}. For example,
 if the PREFIX given to AviSynth+'s Makefile was /usr/i686-w64-mingw32,
