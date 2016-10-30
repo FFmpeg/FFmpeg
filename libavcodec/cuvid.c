@@ -664,11 +664,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     ctx->cuparseinfo.pExtVideoInfo = &ctx->cuparse_ext;
 
     switch (avctx->codec->id) {
-#if CONFIG_H263_CUVID_DECODER
-    case AV_CODEC_ID_H263:
-        ctx->cuparseinfo.CodecType = cudaVideoCodec_MPEG4;
-        break;
-#endif
 #if CONFIG_H264_CUVID_DECODER
     case AV_CODEC_ID_H264:
         ctx->cuparseinfo.CodecType = cudaVideoCodec_H264;
@@ -893,10 +888,6 @@ static const AVOption options[] = {
 
 #if CONFIG_HEVC_CUVID_DECODER
 DEFINE_CUVID_CODEC(hevc, HEVC)
-#endif
-
-#if CONFIG_H263_CUVID_DECODER
-DEFINE_CUVID_CODEC(h263, H263)
 #endif
 
 #if CONFIG_H264_CUVID_DECODER
