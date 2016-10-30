@@ -4786,8 +4786,8 @@ if enabled libxcb; then
             enabled libxcb_xfixes && die "ERROR: libxcb_xfixes not found";
         } && enable libxcb_xfixes
 
-    add_cflags "$xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
-    add_extralibs "$xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
+    add_cflags "$xcb_shape_cflags $xcb_event_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
+    add_extralibs "$xcb_shape_libs $xcb_event_libs $xcb_shm_libs $xcb_xfixes_libs"
 fi
 
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
