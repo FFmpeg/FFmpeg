@@ -260,7 +260,8 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const ref = a->ref;
     uint8_t* outdata;
     int delta, ret;
-    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+    int pal_size;
+    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
 
     if (avpkt->size < 0x86) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
@@ -287,9 +288,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     /* make the palette available on the way out */
-    if (pal) {
+    if (pal && pal_size == AVPALETTE_SIZE) {
         p->palette_has_changed = 1;
         memcpy(a->pal, pal, AVPALETTE_SIZE);
+    } else if (pal) {
+        av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
     }
     memcpy(p->data[1], a->pal, AVPALETTE_SIZE);
 
