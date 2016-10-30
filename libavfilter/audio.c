@@ -22,7 +22,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavcodec/avcodec.h"
 
 #include "audio.h"
 #include "avfilter.h"

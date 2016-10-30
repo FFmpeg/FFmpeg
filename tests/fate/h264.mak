@@ -205,7 +205,7 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
 # this sample has invalid extradata that is not escaped
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
 
-FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
+FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF H264_MUXER) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call DEMDEC, FLV, H264) += fate-h264-brokensps-2580
 FATE_H264-$(call DEMDEC, MXF, H264) += fate-h264-xavc-4389
@@ -405,7 +405,8 @@ fate-h264-conformance-sva_fm1_e:                  CMD = framecrc -vsync drop -i 
 fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL1_B.264
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
-fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
+fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -f h264
+
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3

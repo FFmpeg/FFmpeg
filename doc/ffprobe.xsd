@@ -166,6 +166,7 @@
       <xsd:attribute name="visual_impaired"  type="xsd:int" use="required" />
       <xsd:attribute name="clean_effects"    type="xsd:int" use="required" />
       <xsd:attribute name="attached_pic"     type="xsd:int" use="required" />
+      <xsd:attribute name="timed_thumbnails" type="xsd:int" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="streamType">
@@ -201,6 +202,7 @@
       <xsd:attribute name="color_transfer"       type="xsd:string"/>
       <xsd:attribute name="color_primaries"      type="xsd:string"/>
       <xsd:attribute name="chroma_location"      type="xsd:string"/>
+      <xsd:attribute name="field_order"          type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
       <xsd:attribute name="refs"                 type="xsd:int"/>
 

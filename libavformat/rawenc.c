@@ -20,8 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "rawenc.h"
+#include "internal.h"
 
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -236,6 +239,15 @@ AVOutputFormat ff_h263_muxer = {
 #endif
 
 #if CONFIG_H264_MUXER
+static int h264_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    AVStream *st = s->streams[0];
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "h264_mp4toannexb", NULL);
+    return 1;
+}
+
 AVOutputFormat ff_h264_muxer = {
     .name              = "h264",
     .long_name         = NULL_IF_CONFIG_SMALL("raw H.264 video"),
@@ -244,11 +256,21 @@ AVOutputFormat ff_h264_muxer = {
     .video_codec       = AV_CODEC_ID_H264,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = h264_check_bitstream,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
 
 #if CONFIG_HEVC_MUXER
+static int hevc_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    AVStream *st = s->streams[0];
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "hevc_mp4toannexb", NULL);
+    return 1;
+}
+
 AVOutputFormat ff_hevc_muxer = {
     .name              = "hevc",
     .long_name         = NULL_IF_CONFIG_SMALL("raw HEVC video"),
@@ -257,6 +279,7 @@ AVOutputFormat ff_hevc_muxer = {
     .video_codec       = AV_CODEC_ID_HEVC,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = hevc_check_bitstream,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif

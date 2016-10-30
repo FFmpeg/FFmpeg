@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+version 3.2:
 - libopenmpt demuxer
 - tee protocol
 - Changed metadata print option to accept general urls

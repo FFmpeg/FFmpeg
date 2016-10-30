@@ -66,6 +66,7 @@ typedef struct FLVContext {
     int keyframe_count;
     int64_t *keyframe_times;
     int64_t *keyframe_filepositions;
+    int missing_streams;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -137,6 +138,11 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
                            && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE
                            && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE))
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
+    if (codec_type == AVMEDIA_TYPE_AUDIO)
+        flv->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
+    if (codec_type == AVMEDIA_TYPE_VIDEO)
+        flv->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
+
 
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     flv->last_keyframe_stream_index = s->nb_streams - 1;
@@ -674,11 +680,14 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 
 static int flv_read_header(AVFormatContext *s)
 {
+    int flags;
     FLVContext *flv = s->priv_data;
     int offset;
 
     avio_skip(s->pb, 4);
-    avio_r8(s->pb); // flags
+    flags = avio_r8(s->pb);
+
+    flv->missing_streams = flags & (FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO);
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -1163,6 +1172,7 @@ retry_duration:
     pkt->dts          = dts;
     pkt->pts          = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
+    pkt->pos          = pos;
     if (flv->new_extradata[stream_type]) {
         uint8_t *side = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                                 flv->new_extradata_size[stream_type]);
@@ -1215,6 +1225,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index,
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
+    { "missing_streams", "", OFFSET(missing_streams), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xFF, VD | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { NULL }
 };
 

@@ -31,6 +31,8 @@ void avpriv_emms_yasm(void);
  * Empty mmx state.
  * this must be called between any dsp function and float/double code.
  * for example sin(); dsp->idct_put(); emms_c(); cos()
+ * Note, *alloc() and *free() also use float code in some libc implementations
+ * thus this also applies to them or any function using them.
  */
 static av_always_inline void emms_c(void)
 {

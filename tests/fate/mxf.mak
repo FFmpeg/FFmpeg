@@ -14,7 +14,28 @@ fate-mxf-metadata-source-ref1: CMD = fmtstdout ffmetadata -i $(TARGET_SAMPLES)/m
 FATE_MXF += fate-mxf-metadata-source-ref2
 fate-mxf-metadata-source-ref2: CMD = fmtstdout ffmetadata -i $(TARGET_SAMPLES)/mxf/track_02_a01.mxf -fflags +bitexact -flags +bitexact -map 0:0 -map 0:1 -map 0:3  -map_metadata:g -1
 
+#
+# Tests probing MXF format and stream properties
+#
+PROBE_FORMAT_STREAMS_COMMAND = \
+    ffprobe$(PROGSSUF)$(EXESUF) -show_entries format=format_name,duration,bit_rate:format_tags:streams:stream_tags \
+    -print_format default -bitexact -v 0
+
+FATE_MXF_PROBE-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-probe-d10
+fate-mxf-probe-d10: SRC = $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
+fate-mxf-probe-d10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+
+FATE_MXF_PROBE-$(call ENCDEC, DNXHD, MXF) += fate-mxf-probe-dnxhd
+fate-mxf-probe-dnxhd: SRC = $(TARGET_SAMPLES)/mxf/multiple_components.mxf
+fate-mxf-probe-dnxhd: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+
+FATE_MXF_PROBE-$(call ENCDEC2, DVVIDEO, PCM_S16LE, MXF) += fate-mxf-probe-dv25
+fate-mxf-probe-dv25: SRC = $(TARGET_SAMPLES)/mxf/Avid-00005.mxf
+fate-mxf-probe-dv25: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+
 FATE_MXF-$(CONFIG_MXF_DEMUXER) += $(FATE_MXF)
 
 FATE_SAMPLES_AVCONV += $(FATE_MXF-yes)
-fate-mxf: $(FATE_MXF-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_MXF_PROBE-yes)
+
+fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes)

@@ -89,6 +89,7 @@ typedef struct SegmentContext {
     int64_t last_val;      ///< remember last time for wrap around detection
     int64_t last_cut;      ///< remember last cut
     int cut_pending;
+    int header_written;    ///< whether we've already called avformat_write_header
 
     char *entry_prefix;    ///< prefix to add to list entry filenames
     int list_type;         ///< set the list type
@@ -260,6 +261,7 @@ static int segment_start(AVFormatContext *s, int write_header)
     if (write_header) {
         AVDictionary *options = NULL;
         av_dict_copy(&options, seg->format_options, 0);
+        av_dict_set(&options, "fflags", "-autobsf", 0);
         err = avformat_write_header(oc, &options);
         av_dict_free(&options);
         if (err < 0)
@@ -627,8 +629,9 @@ static int select_reference_stream(AVFormatContext *s)
     return 0;
 }
 
-static void seg_free_context(SegmentContext *seg)
+static void seg_free(AVFormatContext *s)
 {
+    SegmentContext *seg = s->priv_data;
     ff_format_io_close(seg->avf, &seg->list_pb);
     avformat_free_context(seg->avf);
     seg->avf = NULL;
@@ -693,7 +696,7 @@ static int seg_init(AVFormatContext *s)
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
                    seg->format_options_str);
-            goto fail;
+            return ret;
         }
     }
 
@@ -707,7 +710,7 @@ static int seg_init(AVFormatContext *s)
         }
         if (!seg->list_size && seg->list_type != LIST_TYPE_M3U8) {
             if ((ret = segment_list_open(s)) < 0)
-                goto fail;
+                return ret;
         } else {
             const char *proto = avio_find_protocol_name(seg->list);
             seg->use_rename = proto && !strcmp(proto, "file");
@@ -718,29 +721,26 @@ static int seg_init(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
 
     if ((ret = select_reference_stream(s)) < 0)
-        goto fail;
+        return ret;
     av_log(s, AV_LOG_VERBOSE, "Selected stream id:%d type:%s\n",
            seg->reference_stream_index,
            av_get_media_type_string(s->streams[seg->reference_stream_index]->codecpar->codec_type));
 
     seg->oformat = av_guess_format(seg->format, s->filename, NULL);
 
-    if (!seg->oformat) {
-        ret = AVERROR_MUXER_NOT_FOUND;
-        goto fail;
-    }
+    if (!seg->oformat)
+        return AVERROR_MUXER_NOT_FOUND;
     if (seg->oformat->flags & AVFMT_NOFILE) {
         av_log(s, AV_LOG_ERROR, "format %s not supported.\n",
                seg->oformat->name);
-        ret = AVERROR(EINVAL);
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     if ((ret = segment_mux_init(s)) < 0)
-        goto fail;
+        return ret;
 
     if ((ret = set_segment_filename(s)) < 0)
-        goto fail;
+        return ret;
     oc = seg->avf;
 
     if (seg->write_header_trailer) {
@@ -748,31 +748,40 @@ static int seg_init(AVFormatContext *s)
                               seg->header_filename ? seg->header_filename : oc->filename,
                               AVIO_FLAG_WRITE, NULL)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", oc->filename);
-            goto fail;
+            return ret;
         }
         if (!seg->individual_header_trailer)
             oc->pb->seekable = 0;
     } else {
         if ((ret = open_null_ctx(&oc->pb)) < 0)
-            goto fail;
+            return ret;
     }
 
     av_dict_copy(&options, seg->format_options, 0);
-    ret = avformat_write_header(oc, &options);
+    av_dict_set(&options, "fflags", "-autobsf", 0);
+    ret = avformat_init_output(oc, &options);
     if (av_dict_count(options)) {
         av_log(s, AV_LOG_ERROR,
                "Some of the provided format options in '%s' are not recognized\n", seg->format_options_str);
-        ret = AVERROR(EINVAL);
-        goto fail;
+        av_dict_free(&options);
+        return AVERROR(EINVAL);
     }
+    av_dict_free(&options);
 
     if (ret < 0) {
         ff_format_io_close(oc, &oc->pb);
-        goto fail;
+        return ret;
     }
     seg->segment_frame_count = 0;
 
     av_assert0(s->nb_streams == oc->nb_streams);
+    if (ret == AVSTREAM_INIT_IN_WRITE_HEADER) {
+        ret = avformat_write_header(oc, NULL);
+        if (ret < 0)
+            return ret;
+        seg->header_written = 1;
+    }
+
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *inner_st  = oc->streams[i];
         AVStream *outer_st = s->streams[i];
@@ -782,6 +791,21 @@ static int seg_init(AVFormatContext *s)
     if (oc->avoid_negative_ts > 0 && s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
 
+    return ret;
+}
+
+static int seg_write_header(AVFormatContext *s)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
+    int ret;
+
+    if (!seg->header_written) {
+        ret = avformat_write_header(oc, NULL);
+        if (ret < 0)
+            return ret;
+    }
+
     if (!seg->write_header_trailer || seg->header_filename) {
         if (seg->header_filename) {
             av_write_frame(oc, NULL);
@@ -790,17 +814,12 @@ static int seg_init(AVFormatContext *s)
             close_null_ctxp(&oc->pb);
         }
         if ((ret = oc->io_open(oc, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
-            goto fail;
+            return ret;
         if (!seg->individual_header_trailer)
             oc->pb->seekable = 0;
     }
 
-fail:
-    av_dict_free(&options);
-    if (ret < 0)
-        seg_free_context(seg);
-
-    return ret;
+    return 0;
 }
 
 static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -913,9 +932,6 @@ fail:
         seg->segment_frame_count++;
     }
 
-    if (ret < 0)
-        seg_free_context(seg);
-
     return ret;
 }
 
@@ -1021,8 +1037,10 @@ AVOutputFormat ff_segment_muxer = {
     .priv_data_size = sizeof(SegmentContext),
     .flags          = AVFMT_NOFILE|AVFMT_GLOBALHEADER,
     .init           = seg_init,
+    .write_header   = seg_write_header,
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
+    .deinit         = seg_free,
     .priv_class     = &seg_class,
 };
 
@@ -1039,7 +1057,9 @@ AVOutputFormat ff_stream_segment_muxer = {
     .priv_data_size = sizeof(SegmentContext),
     .flags          = AVFMT_NOFILE,
     .init           = seg_init,
+    .write_header   = seg_write_header,
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
+    .deinit         = seg_free,
     .priv_class     = &sseg_class,
 };

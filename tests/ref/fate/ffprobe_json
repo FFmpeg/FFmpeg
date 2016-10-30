@@ -550,7 +550,8 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
             },
             "tags": {
                 "E": "mc²",
@@ -592,7 +593,8 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
             },
             "tags": {
                 "title": "foobar",
@@ -635,7 +637,8 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
             },
             "tags": {
                 "encoder": "Lavc rawvideo"

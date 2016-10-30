@@ -564,6 +564,7 @@ hearing_impaired=0
 visual_impaired=0
 clean_effects=0
 attached_pic=0
+timed_thumbnails=0
 
 [streams.stream.0.tags]
 E=mc²
@@ -591,6 +592,7 @@ color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
 chroma_location=unspecified
+field_order=unknown
 timecode=N/A
 refs=1
 id=N/A
@@ -620,6 +622,7 @@ hearing_impaired=0
 visual_impaired=0
 clean_effects=0
 attached_pic=0
+timed_thumbnails=0
 
 [streams.stream.1.tags]
 title=foobar
@@ -648,6 +651,7 @@ color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
 chroma_location=unspecified
+field_order=unknown
 timecode=N/A
 refs=1
 id=N/A
@@ -677,6 +681,7 @@ hearing_impaired=0
 visual_impaired=0
 clean_effects=0
 attached_pic=0
+timed_thumbnails=0
 
 [streams.stream.2.tags]
 encoder=Lavc rawvideo

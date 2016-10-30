@@ -423,10 +423,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
          *options = tmp;
     }
 
-    if (s->oformat->init && (ret = s->oformat->init(s)) < 0) {
-        if (s->oformat->deinit)
-            s->oformat->deinit(s);
-        goto fail;
+    if (s->oformat->init) {
+        if ((ret = s->oformat->init(s)) < 0) {
+            if (s->oformat->deinit)
+                s->oformat->deinit(s);
+            return ret;
+        }
+        return ret == 0;
     }
 
     return 0;
@@ -493,12 +496,43 @@ static int write_header_internal(AVFormatContext *s)
     return 0;
 }
 
-int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0;
 
     if ((ret = init_muxer(s, options)) < 0)
         return ret;
+
+    s->internal->initialized = 1;
+    s->internal->streams_initialized = ret;
+
+    if (s->oformat->init && ret) {
+        if ((ret = init_pts(s)) < 0)
+            return ret;
+
+        if (s->avoid_negative_ts < 0) {
+            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
+            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+                s->avoid_negative_ts = 0;
+            } else
+                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+        }
+
+        return AVSTREAM_INIT_IN_INIT_OUTPUT;
+    }
+
+    return AVSTREAM_INIT_IN_WRITE_HEADER;
+}
+
+int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+{
+    int ret = 0;
+    int already_initialized = s->internal->initialized;
+    int streams_already_initialized = s->internal->streams_initialized;
+
+    if (!already_initialized)
+        if ((ret = avformat_init_output(s, options)) < 0)
+            return ret;
 
     if (!(s->oformat->check_bitstream && s->flags & AVFMT_FLAG_AUTO_BSF)) {
         ret = write_header_internal(s);
@@ -506,18 +540,20 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             goto fail;
     }
 
-    if ((ret = init_pts(s)) < 0)
-        goto fail;
+    if (!s->internal->streams_initialized) {
+        if ((ret = init_pts(s)) < 0)
+            goto fail;
 
-    if (s->avoid_negative_ts < 0) {
-        av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
-        if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-            s->avoid_negative_ts = 0;
-        } else
-            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+        if (s->avoid_negative_ts < 0) {
+            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
+            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+                s->avoid_negative_ts = 0;
+            } else
+                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+        }
     }
 
-    return 0;
+    return streams_already_initialized;
 
 fail:
     if (s->oformat->deinit)
@@ -1291,6 +1327,10 @@ fail:
 
     if (s->oformat->deinit)
         s->oformat->deinit(s);
+
+    s->internal->header_written =
+    s->internal->initialized =
+    s->internal->streams_initialized = 0;
 
     if (s->pb)
        avio_flush(s->pb);

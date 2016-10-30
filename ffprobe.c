@@ -2268,6 +2268,19 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         else
             print_str_opt("chroma_location", av_chroma_location_name(par->chroma_location));
 
+        if (par->field_order == AV_FIELD_PROGRESSIVE)
+            print_str("field_order", "progressive");
+        else if (par->field_order == AV_FIELD_TT)
+            print_str("field_order", "tt");
+        else if (par->field_order == AV_FIELD_BB)
+            print_str("field_order", "bb");
+        else if (par->field_order == AV_FIELD_TB)
+            print_str("field_order", "tb");
+        else if (par->field_order == AV_FIELD_BT)
+            print_str("field_order", "bt");
+        else
+            print_str_opt("field_order", "unknown");
+
 #if FF_API_PRIVATE_OPT
         if (dec_ctx && dec_ctx->timecode_frame_start >= 0) {
             char tcbuf[AV_TIMECODE_STR_SIZE];
@@ -2370,6 +2383,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     PRINT_DISPOSITION(VISUAL_IMPAIRED,  "visual_impaired");
     PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
     PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
+    PRINT_DISPOSITION(TIMED_THUMBNAILS, "timed_thumbnails");
     writer_print_section_footer(w);
     }
 
