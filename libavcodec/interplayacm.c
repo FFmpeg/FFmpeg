@@ -325,6 +325,10 @@ static int t15(InterplayACMContext *s, unsigned ind, unsigned col)
     for (i = 0; i < s->rows; i++) {
         /* b = (x1) + (x2 * 3) + (x3 * 9) */
         b = get_bits(gb, 5);
+        if (b > 26) {
+            av_log(NULL, AV_LOG_ERROR, "Too large b = %d > 26\n", b);
+            return AVERROR_INVALIDDATA;
+        }
 
         n1 =  (mul_3x3[b] & 0x0F) - 1;
         n2 = ((mul_3x3[b] >> 4) & 0x0F) - 1;
@@ -350,6 +354,10 @@ static int t27(InterplayACMContext *s, unsigned ind, unsigned col)
     for (i = 0; i < s->rows; i++) {
         /* b = (x1) + (x2 * 5) + (x3 * 25) */
         b = get_bits(gb, 7);
+        if (b > 124) {
+            av_log(NULL, AV_LOG_ERROR, "Too large b = %d > 124\n", b);
+            return AVERROR_INVALIDDATA;
+        }
 
         n1 =  (mul_3x5[b] & 0x0F) - 2;
         n2 = ((mul_3x5[b] >> 4) & 0x0F) - 2;
@@ -374,6 +382,10 @@ static int t37(InterplayACMContext *s, unsigned ind, unsigned col)
     for (i = 0; i < s->rows; i++) {
         /* b = (x1) + (x2 * 11) */
         b = get_bits(gb, 7);
+        if (b > 120) {
+            av_log(NULL, AV_LOG_ERROR, "Too large b = %d > 120\n", b);
+            return AVERROR_INVALIDDATA;
+        }
 
         n1 =  (mul_2x11[b] & 0x0F) - 5;
         n2 = ((mul_2x11[b] >> 4) & 0x0F) - 5;
