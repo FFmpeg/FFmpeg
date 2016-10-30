@@ -92,6 +92,7 @@ EXPORTS
     avformat_get_mov_video_tags
     avformat_get_riff_audio_tags
     avformat_get_riff_video_tags
+    avformat_init_output
     avformat_license
     avformat_match_stream_specifier
     avformat_network_deinit

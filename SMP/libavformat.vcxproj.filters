@@ -13,8 +13,11 @@
     <Filter Include="Header Files\libavformat">
       <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libavformat">
+    <Filter Include="Resource Files\libavformat">
       <UniqueIdentifier>{9fee14b2-1b77-463a-bd6b-60efdcf8850f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libavformat">
+      <UniqueIdentifier>{bf017c32-250d-47da-b7e6-d5a5091cb1e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -24,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\libavformat\avformatres.rc">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\libavformat</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>

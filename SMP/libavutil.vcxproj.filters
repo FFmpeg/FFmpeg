@@ -13,17 +13,20 @@
     <Filter Include="Header Files\libavutil">
       <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\compat">
+    <Filter Include="Resource Files\libavutil">
       <UniqueIdentifier>{9fee14b2-1b77-463a-bd6b-60efdcf8850f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\compat\msvcrt">
+    <Filter Include="Source Files\compat">
       <UniqueIdentifier>{bf017c32-250d-47da-b7e6-d5a5091cb1e6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libavutil">
+    <Filter Include="Source Files\compat\msvcrt">
       <UniqueIdentifier>{fd9e10e9-18f6-437d-b5d7-17290540c8b8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libavutil\x86">
+    <Filter Include="Source Files\libavutil">
       <UniqueIdentifier>{f026e68e-ff14-4bf4-8758-6384ac7bcfaf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libavutil\x86">
+      <UniqueIdentifier>{a2d068fe-f5d5-4b6f-95d4-f15631533341}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -33,7 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\libavutil\avutilres.rc">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\libavutil</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
