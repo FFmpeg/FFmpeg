@@ -76,7 +76,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->block   = av_calloc(s->block_len, sizeof(int));
     s->wrapbuf = av_calloc(s->wrapbuf_len, sizeof(int));
     s->ampbuf  = av_calloc(0x10000, sizeof(int));
-    s->bitstream = av_calloc(s->max_framesize, sizeof(*s->bitstream));
+    s->bitstream = av_calloc(s->max_framesize + AV_INPUT_BUFFER_PADDING_SIZE / sizeof(*s->bitstream) + 1, sizeof(*s->bitstream));
     if (!s->block || !s->wrapbuf || !s->ampbuf || !s->bitstream)
         return AVERROR(ENOMEM);
 
