@@ -98,11 +98,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
-        if (pal) {
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(c->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
         memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
