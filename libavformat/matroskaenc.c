@@ -121,6 +121,8 @@ typedef struct MatroskaMuxContext {
     ebml_master     tags;
     AVIOContext     *info_bc;
     ebml_master     info;
+    AVIOContext     *tracks_bc;
+    ebml_master     tracks_master;
     ebml_master     segment;
     int64_t         segment_offset;
     ebml_master     cluster;
@@ -1283,15 +1285,14 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *dyn_cp, *pb = s->pb;
-    ebml_master tracks;
+    AVIOContext *pb = s->pb;
     int i, ret, default_stream_exists = 0;
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
     if (ret < 0)
         return ret;
 
-    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &tracks, MATROSKA_ID_TRACKS, 0);
+    ret = start_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, &mkv->tracks_master, MATROSKA_ID_TRACKS, 0);
     if (ret < 0)
         return ret;
 
@@ -1300,11 +1301,16 @@ static int mkv_write_tracks(AVFormatContext *s)
         default_stream_exists |= st->disposition & AV_DISPOSITION_DEFAULT;
     }
     for (i = 0; i < s->nb_streams; i++) {
-        ret = mkv_write_track(s, mkv, i, dyn_cp, default_stream_exists);
+        ret = mkv_write_track(s, mkv, i, mkv->tracks_bc, default_stream_exists);
         if (ret < 0)
             return ret;
     }
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, tracks);
+
+    if (pb->seekable && !mkv->is_live)
+        put_ebml_void(pb, avio_tell(mkv->tracks_bc));
+    else
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
+
     return 0;
 }
 
@@ -2335,6 +2341,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         put_ebml_float(mkv->info_bc, MATROSKA_ID_DURATION, mkv->duration);
         avio_seek(pb, mkv->info.pos, SEEK_SET);
         end_ebml_master_crc32(pb, &mkv->info_bc, mkv, mkv->info);
+
+        // write tracks master
+        avio_seek(pb, mkv->tracks_master.pos, SEEK_SET);
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
 
         // update stream durations
         if (!mkv->is_live && mkv->stream_durations) {
