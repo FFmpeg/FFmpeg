@@ -61,6 +61,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size < 14)
         return AVERROR_INVALIDDATA;
 
+    if (avctx->channels <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels: %d\n", avctx->channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     s->level = AV_RL16(avctx->extradata + 12) & 0xf;
     s->rows  = AV_RL16(avctx->extradata + 12) >>  4;
     s->cols  = 1 << s->level;
