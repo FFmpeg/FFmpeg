@@ -328,8 +328,12 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
     /* make sure we do not enter an infinite loop if the SDK
      * did not consume any data and did not return anything */
     if (!*sync && !bs.DataOffset) {
-        ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
         bs.DataOffset = avpkt->size;
+        ++q->zero_consume_run;
+        if (q->zero_consume_run > 1)
+            ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
+    } else {
+        q->zero_consume_run = 0;
     }
 
     if (*sync) {
