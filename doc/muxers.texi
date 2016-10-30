@@ -1494,6 +1494,7 @@ Specify whether to remove all fragments when finished. Default 0 (do not remove)
 
 @end table
 
+@anchor{fifo}
 @section fifo
 
 The fifo pseudo-muxer allows the separation of encoding and muxing by using
@@ -1601,6 +1602,18 @@ with the tee muxer; encoding can be a very expensive process. It is not
 useful when using the libavformat API directly because it is then possible
 to feed the same packets to several muxers directly.
 
+@table @option
+
+@item use_fifo @var{bool}
+If set to 1, slave outputs will be processed in separate thread using @ref{fifo}
+muxer. This allows to compensate for different speed/latency/reliability of
+outputs and setup transparent recovery. By default this feature is turned off.
+
+@item fifo_options
+Options to pass to fifo pseudo-muxer instances. See @ref{fifo}.
+
+@end table
+
 The slave outputs are specified in the file name given to the muxer,
 separated by '|'. If any of the slave name contains the '|' separator,
 leading or trailing spaces or any special character, it must be
@@ -1621,6 +1634,13 @@ output name suffix.
 @item bsfs[/@var{spec}]
 Specify a list of bitstream filters to apply to the specified
 output.
+
+@item use_fifo @var{bool}
+This allows to override tee muxer use_fifo option for individual slave muxer.
+
+@item fifo_options
+This allows to override tee muxer fifo_options for individual slave muxer.
+See @ref{fifo}.
 
 It is possible to specify to which streams a given bitstream filter
 applies, by appending a stream specifier to the option separated by
