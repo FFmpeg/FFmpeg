@@ -2753,6 +2753,9 @@ ac3_at_decoder_select="ac3_parser"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
 alac_at_decoder_deps="audiotoolbox"
 amr_nb_at_decoder_deps="audiotoolbox"
+avisynth_deps_any="dlopen LoadLibrary"
+avisynth_demuxer_deps="avisynth"
+avisynth_demuxer_select="riffdec"
 eac3_at_decoder_deps="audiotoolbox"
 eac3_at_decoder_select="ac3_parser"
 gsm_ms_at_decoder_deps="audiotoolbox"
@@ -2846,8 +2849,6 @@ asf_muxer_select="riffenc"
 asf_stream_muxer_select="asf_muxer"
 avi_demuxer_select="iso_media riffdec exif"
 avi_muxer_select="riffenc"
-avisynth_demuxer_deps="avisynth"
-avisynth_demuxer_select="riffdec"
 caf_demuxer_select="iso_media riffdec"
 dash_muxer_select="mp4_muxer"
 dirac_demuxer_select="dirac_parser"
@@ -5414,6 +5415,7 @@ elif check_func dlopen -ldl && check_func dlsym -ldl; then
     ldl=-ldl
 fi
 
+avisynth_demuxer_extralibs='$ldl'
 decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
 decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
@@ -5661,9 +5663,6 @@ fi
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
-enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
-                               { check_lib2 "dlfcn.h" dlopen -ldl; } ||
-                               die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
                                die "ERROR: CUDA not found"; }
 enabled cuvid             && { add_cflags -I$source_path;

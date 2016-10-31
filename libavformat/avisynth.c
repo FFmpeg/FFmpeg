@@ -29,7 +29,7 @@
 
 /* Platform-specific directives for AviSynth vs AvxSynth. */
 #ifdef _WIN32
-  #include <windows.h>
+  #include "compat/w32dlfcn.h"
   #undef EXTERN_C
   #include "compat/avisynth/avisynth_c.h"
   #define AVISYNTH_LIB "avisynth"
@@ -39,10 +39,6 @@
   #include "compat/avisynth/avxsynth_c.h"
   #define AVISYNTH_NAME "libavxsynth"
   #define AVISYNTH_LIB AVISYNTH_NAME SLIBSUF
-
-  #define LoadLibrary(x) dlopen(x, RTLD_NOW | RTLD_LOCAL)
-  #define GetProcAddress dlsym
-  #define FreeLibrary dlclose
 #endif
 
 typedef struct AviSynthLibrary {
@@ -118,13 +114,13 @@ static av_cold void avisynth_atexit_handler(void);
 
 static av_cold int avisynth_load_library(void)
 {
-    avs_library.library = LoadLibrary(AVISYNTH_LIB);
+    avs_library.library = dlopen(AVISYNTH_LIB, RTLD_NOW | RTLD_LOCAL);
     if (!avs_library.library)
         return AVERROR_UNKNOWN;
 
 #define LOAD_AVS_FUNC(name, continue_on_fail)                          \
         avs_library.name =                                             \
-            (void *)GetProcAddress(avs_library.library, #name);        \
+            (void *)dlsym(avs_library.library, #name);                 \
         if (!continue_on_fail && !avs_library.name)                    \
             goto fail;
 
@@ -157,7 +153,7 @@ static av_cold int avisynth_load_library(void)
     return 0;
 
 fail:
-    FreeLibrary(avs_library.library);
+    dlclose(avs_library.library);
     return AVERROR_UNKNOWN;
 }
 
@@ -225,7 +221,7 @@ static av_cold void avisynth_atexit_handler(void)
         avisynth_context_destroy(avs);
         avs = next;
     }
-    FreeLibrary(avs_library.library);
+    dlclose(avs_library.library);
 
     avs_atexit_called = 1;
 }
