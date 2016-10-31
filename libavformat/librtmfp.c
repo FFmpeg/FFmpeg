@@ -21,7 +21,7 @@
 
 /**
  * @file
- * RTMFP protocol based on http://TODO librtmfp
+ * RTMFP protocol based on https://github.com/MonaSolutions/librtmfp librtmfp
  */
 
 /*#include "libavutil/avstring.h"
@@ -31,7 +31,7 @@
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
-#include "url.h"
+#include <sys/timeb.h>
 
 #include <librtmfp/librtmfp.h>
 
@@ -48,7 +48,7 @@ typedef struct LibRTMFPContext {
     // NetGroup members
     RTMFPGroupConfig    group;
     char*               netgroup;
-    double              updatePeriod;
+    unsigned int        updatePeriod;
     unsigned int        windowDuration;
 } LibRTMFPContext;
 
@@ -57,6 +57,7 @@ static void rtmfp_log(unsigned int threadID, int level, const char* fileName, lo
     const char* strLevel = "";
     time_t today2 ;
     struct tm *today = NULL;
+    struct timeb msec;
 
     switch (level) {
     default:
@@ -67,18 +68,18 @@ static void rtmfp_log(unsigned int threadID, int level, const char* fileName, lo
     case 5:
     case 6: level = AV_LOG_INFO; strLevel = "INFO";   break;
     case 7: level = AV_LOG_DEBUG; strLevel = "DEBUG";  break;
-    case 8: level = AV_LOG_VERBOSE; strLevel = "VERBOSE"; break;
+    case 8: level = AV_LOG_TRACE; strLevel = "TRACE"; break;
     }
 
     today2 = time(NULL);
     today = localtime(&today2);
-
-    av_log(NULL, level, "%.2d:%.2d:%.2d [%s] %s\n", today->tm_hour, today->tm_min, today->tm_sec, strLevel, message);
+    ftime(&msec);
+    av_log(NULL, level, "%.2d:%.2d:%.2d.%d [%s] %s\n", today->tm_hour, today->tm_min, today->tm_sec, msec.millitm / 100, strLevel, message);
 }
 
-static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
+/*static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
     av_log(NULL, AV_LOG_DEBUG, "%s\n%s", header, (const char*)data);
-}
+}*/
 
 static int rtmfp_close(URLContext *s)
 {
@@ -133,8 +134,8 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 
     RTMFP_LogSetLevel(level);
     RTMFP_LogSetCallback(rtmfp_log);
-    RTMFP_ActiveDump();
-    RTMFP_DumpSetCallback(rtmfp_dump);
+    /*RTMFP_ActiveDump();
+    RTMFP_DumpSetCallback(rtmfp_dump);*/
     RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
     RTMFP_GetPublicationAndUrlFromUri(url, &ctx->publication);
@@ -143,8 +144,6 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
-
-    av_log(NULL, AV_LOG_INFO, " group : %s", ctx->netgroup);
     if (ctx->netgroup) {
         ctx->group.netGroup = ctx->netgroup;
         ctx->group.availabilityUpdatePeriod = ctx->updatePeriod;
