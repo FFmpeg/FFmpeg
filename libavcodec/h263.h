@@ -21,7 +21,11 @@
 #define AVCODEC_H263_H
 
 #include <stdint.h>
+
+#include "config.h"
+
 #include "libavutil/rational.h"
+
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "h263data.h"
@@ -95,7 +99,7 @@ int av_const h263_get_picture_format(int width, int height);
 
 void ff_clean_h263_qscales(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
-const uint8_t *ff_h263_find_resync_marker(const uint8_t *p, const uint8_t *end);
+const uint8_t *ff_h263_find_resync_marker(const uint8_t *restrict p, const uint8_t *restrict end);
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
 
 
