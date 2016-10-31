@@ -161,15 +161,10 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
     if (input->format == outlink->format)
         return ff_filter_frame(outlink, input);
 
-    output = av_frame_alloc();
+    output = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!output) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    err = av_hwframe_get_buffer(ctx->hwframes_ref, output, 0);
-    if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate frame to upload to.\n");
+        err = AVERROR(ENOMEM);
         goto fail;
     }
 

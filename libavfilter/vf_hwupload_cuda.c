@@ -156,15 +156,11 @@ static int cudaupload_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFrame *out = NULL;
     int ret;
 
-    out = av_frame_alloc();
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-
-    ret = av_hwframe_get_buffer(s->hwframe, out, 0);
-    if (ret < 0)
-        goto fail;
 
     out->width  = in->width;
     out->height = in->height;
