@@ -93,6 +93,7 @@ typedef struct mkv_cues {
 typedef struct mkv_track {
     int             write_dts;
     int             has_cue;
+    int64_t         codecpriv_offset;
     int64_t         ts_offset;
 } mkv_track;
 
@@ -1272,6 +1273,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT) {
+        mkv->tracks[i].codecpriv_offset = avio_tell(pb);
         ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
         if (ret < 0)
             return ret;
@@ -2097,6 +2099,52 @@ static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
     avio_flush(s->pb);
 }
 
+static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    mkv_track *track        = &mkv->tracks[pkt->stream_index];
+    AVCodecParameters *par  = s->streams[pkt->stream_index]->codecpar;
+    uint8_t *side_data;
+    int side_data_size = 0, ret;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                        &side_data_size);
+
+    switch (par->codec_id) {
+    case AV_CODEC_ID_FLAC:
+        if (side_data_size && s->pb->seekable) {
+            AVCodecParameters *codecpriv_par;
+            int64_t curpos;
+            if (side_data_size != par->extradata_size) {
+                av_log(s, AV_LOG_ERROR, "Invalid FLAC STREAMINFO metadata for output stream %d\n",
+                       pkt->stream_index);
+                return AVERROR(EINVAL);
+            }
+            codecpriv_par = avcodec_parameters_alloc();
+            if (!codecpriv_par)
+                return AVERROR(ENOMEM);
+            ret = avcodec_parameters_copy(codecpriv_par, par);
+            if (ret < 0) {
+                avcodec_parameters_free(&codecpriv_par);
+                return ret;
+            }
+            memcpy(codecpriv_par->extradata, side_data, side_data_size);
+            curpos = avio_tell(mkv->tracks_bc);
+            avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
+            mkv_write_codecprivate(s, mkv->tracks_bc, codecpriv_par, 1, 0);
+            avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
+            avcodec_parameters_free(&codecpriv_par);
+        }
+        break;
+    default:
+        if (side_data_size)
+            av_log(s, AV_LOG_DEBUG, "Ignoring new extradata in a packet for stream %d.\n", pkt->stream_index);
+        break;
+    }
+
+    return 0;
+}
+
 static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_cue)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -2188,6 +2236,10 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t cluster_time;
     int ret;
     int start_new_cluster;
+
+    ret = mkv_check_new_extra_data(s, pkt);
+    if (ret < 0)
+        return ret;
 
     if (mkv->tracks[pkt->stream_index].write_dts)
         cluster_time = pkt->dts - mkv->cluster_pts;
