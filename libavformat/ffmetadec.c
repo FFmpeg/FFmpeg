@@ -78,10 +78,11 @@ static AVChapter *read_chapter(AVFormatContext *s)
     return avpriv_new_chapter(s, s->nb_chapters, tb, start, end, NULL);
 }
 
-static uint8_t *unescape(uint8_t *buf, int size)
+static uint8_t *unescape(const uint8_t *buf, int size)
 {
     uint8_t *ret = av_malloc(size + 1);
-    uint8_t *p1  = ret, *p2 = buf;
+    uint8_t *p1  = ret;
+    const uint8_t *p2 = buf;
 
     if (!ret)
         return NULL;
@@ -95,9 +96,10 @@ static uint8_t *unescape(uint8_t *buf, int size)
     return ret;
 }
 
-static int read_tag(uint8_t *line, AVDictionary **m)
+static int read_tag(const uint8_t *line, AVDictionary **m)
 {
-    uint8_t *key, *value, *p = line;
+    uint8_t *key, *value;
+    const uint8_t *p = line;
 
     /* find first not escaped '=' */
     while (1) {
@@ -137,8 +139,8 @@ static int read_header(AVFormatContext *s)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type = AVMEDIA_TYPE_DATA;
-            st->codec->codec_id   = AV_CODEC_ID_FFMETADATA;
+            st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+            st->codecpar->codec_id   = AV_CODEC_ID_FFMETADATA;
 
             m = &st->metadata;
         } else if (!memcmp(line, ID_CHAPTER, strlen(ID_CHAPTER))) {

@@ -165,8 +165,8 @@ static int lrc_read_header(AVFormatContext *s)
     }
     avpriv_set_pts_info(st, 64, 1, 1000);
     lrc->ts_offset = 0;
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_TEXT;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_TEXT;
     av_bprint_init(&line, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while(!avio_feof(s->pb)) {
@@ -210,7 +210,7 @@ static int lrc_read_header(AVFormatContext *s)
             }
         }
     }
-    ff_subtitles_queue_finalize(&lrc->q);
+    ff_subtitles_queue_finalize(s, &lrc->q);
     ff_metadata_conv_ctx(s, NULL, ff_lrc_metadata_conv);
     return 0;
 }

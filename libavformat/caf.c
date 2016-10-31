@@ -55,12 +55,24 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
     { AV_CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
     { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','2') },
-    { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','C') },
+    { AV_CODEC_ID_QDMC,            MKTAG('Q','D','M','C') },
   /* currently unsupported codecs */
   /*{ AC-3 over S/PDIF          MKTAG('c','a','c','3') },*/
   /*{ MPEG4CELP                 MKTAG('c','e','l','p') },*/
   /*{ MPEG4HVXC                 MKTAG('h','v','x','c') },*/
   /*{ MPEG4TwinVQ               MKTAG('t','w','v','q') },*/
+
+    { AV_CODEC_ID_PCM_S8,       MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S16LE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S16BE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S24LE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S24BE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S32LE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_S32BE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_F32LE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_F32BE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_F64LE,    MKTAG('l','p','c','m') },
+    { AV_CODEC_ID_PCM_F64BE,    MKTAG('l','p','c','m') },
     { AV_CODEC_ID_NONE,            0 },
 };
 

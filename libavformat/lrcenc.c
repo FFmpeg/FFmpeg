@@ -39,19 +39,20 @@ static int lrc_write_header(AVFormatContext *s)
     const AVDictionaryEntry *metadata_item;
 
     if(s->nb_streams != 1 ||
-       s->streams[0]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+       s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(s, AV_LOG_ERROR,
                "LRC supports only a single subtitle stream.\n");
         return AVERROR(EINVAL);
     }
-    if(s->streams[0]->codec->codec_id != AV_CODEC_ID_SUBRIP &&
-       s->streams[0]->codec->codec_id != AV_CODEC_ID_TEXT) {
+    if(s->streams[0]->codecpar->codec_id != AV_CODEC_ID_SUBRIP &&
+       s->streams[0]->codecpar->codec_id != AV_CODEC_ID_TEXT) {
         av_log(s, AV_LOG_ERROR, "Unsupported subtitle codec: %s\n",
-               avcodec_get_name(s->streams[0]->codec->codec_id));
+               avcodec_get_name(s->streams[0]->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
 
+    ff_standardize_creation_time(s);
     ff_metadata_conv_ctx(s, ff_lrc_metadata_conv, NULL);
     if(!(s->flags & AVFMT_FLAG_BITEXACT)) { // avoid breaking regression tests
         /* LRC provides a metadata slot for specifying encoder version
@@ -64,15 +65,15 @@ static int lrc_write_header(AVFormatContext *s)
     }
     for(metadata_item = NULL;
        (metadata_item = av_dict_get(s->metadata, "", metadata_item,
-                                    AV_DICT_IGNORE_SUFFIX)) != NULL;) {
+                                    AV_DICT_IGNORE_SUFFIX));) {
         char *delim;
         if(!metadata_item->value[0]) {
             continue;
         }
-        while((delim = strchr(metadata_item->value, '\n')) != NULL) {
+        while((delim = strchr(metadata_item->value, '\n'))) {
             *delim = ' ';
         }
-        while((delim = strchr(metadata_item->value, '\r')) != NULL) {
+        while((delim = strchr(metadata_item->value, '\r'))) {
             *delim = ' ';
         }
         avio_printf(s->pb, "[%s:%s]\n",

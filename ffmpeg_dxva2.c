@@ -40,6 +40,9 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
 
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_dxva2.h"
+
 /* define all the GUIDs used directly here,
    to avoid problems with inconsistent dxva2api.h versions in mingw-w64 and different MSVC version */
 #include <initguid.h>
@@ -52,11 +55,11 @@ DEFINE_GUID(DXVA2_ModeH264_F,         0x1b81be69, 0xa0c7,0x11d3,0xb9,0x84,0x00,0
 DEFINE_GUID(DXVADDI_Intel_ModeH264_E, 0x604F8E68, 0x4951,0x4C54,0x88,0xFE,0xAB,0xD2,0x5C,0x15,0xB3,0xD6);
 DEFINE_GUID(DXVA2_ModeVC1_D,          0x1b81beA3, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(DXVA2_ModeVC1_D2010,      0x1b81beA4, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
+DEFINE_GUID(DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x09,0xf2,0xa1,0x16,0x0c,0xc0);
+DEFINE_GUID(DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x67,0xa1,0x63,0x07,0x3d,0x13);
+DEFINE_GUID(DXVA2_ModeVP9_VLD_Profile0, 0x463707f8, 0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
 DEFINE_GUID(DXVA2_NoEncrypt,          0x1b81beD0, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(GUID_NULL,                0x00000000, 0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
-
-typedef IDirect3D9* WINAPI pDirect3DCreate9(UINT);
-typedef HRESULT WINAPI pCreateDeviceManager9(UINT *, IDirect3DDeviceManager9 **);
 
 typedef struct dxva2_mode {
   const GUID     *guid;
@@ -80,65 +83,28 @@ static const dxva2_mode dxva2_modes[] = {
     { &DXVA2_ModeVC1_D,          AV_CODEC_ID_VC1  },
     { &DXVA2_ModeVC1_D,          AV_CODEC_ID_WMV3 },
 
+    /* HEVC/H.265 */
+    { &DXVA2_ModeHEVC_VLD_Main,  AV_CODEC_ID_HEVC },
+    { &DXVA2_ModeHEVC_VLD_Main10,AV_CODEC_ID_HEVC },
+
+    /* VP8/9 */
+    { &DXVA2_ModeVP9_VLD_Profile0, AV_CODEC_ID_VP9 },
+
     { NULL,                      0 },
 };
 
-typedef struct surface_info {
-    int used;
-    uint64_t age;
-} surface_info;
-
 typedef struct DXVA2Context {
-    HMODULE d3dlib;
-    HMODULE dxva2lib;
-
-    HANDLE  deviceHandle;
-
-    IDirect3D9                  *d3d9;
-    IDirect3DDevice9            *d3d9device;
-    IDirect3DDeviceManager9     *d3d9devmgr;
-    IDirectXVideoDecoderService *decoder_service;
     IDirectXVideoDecoder        *decoder;
 
     GUID                        decoder_guid;
     DXVA2_ConfigPictureDecode   decoder_config;
-
-    LPDIRECT3DSURFACE9          *surfaces;
-    surface_info                *surface_infos;
-    uint32_t                    num_surfaces;
-    uint64_t                    surface_age;
+    IDirectXVideoDecoderService *decoder_service;
 
     AVFrame                     *tmp_frame;
+
+    AVBufferRef                 *hw_device_ctx;
+    AVBufferRef                 *hw_frames_ctx;
 } DXVA2Context;
-
-typedef struct DXVA2SurfaceWrapper {
-    DXVA2Context         *ctx;
-    LPDIRECT3DSURFACE9   surface;
-    IDirectXVideoDecoder *decoder;
-} DXVA2SurfaceWrapper;
-
-static void dxva2_destroy_decoder(AVCodecContext *s)
-{
-    InputStream  *ist = s->opaque;
-    DXVA2Context *ctx = ist->hwaccel_ctx;
-    int i;
-
-    if (ctx->surfaces) {
-        for (i = 0; i < ctx->num_surfaces; i++) {
-            if (ctx->surfaces[i])
-                IDirect3DSurface9_Release(ctx->surfaces[i]);
-        }
-    }
-    av_freep(&ctx->surfaces);
-    av_freep(&ctx->surface_infos);
-    ctx->num_surfaces = 0;
-    ctx->surface_age  = 0;
-
-    if (ctx->decoder) {
-        IDirectXVideoDecoder_Release(ctx->decoder);
-        ctx->decoder = NULL;
-    }
-}
 
 static void dxva2_uninit(AVCodecContext *s)
 {
@@ -149,29 +115,11 @@ static void dxva2_uninit(AVCodecContext *s)
     ist->hwaccel_get_buffer    = NULL;
     ist->hwaccel_retrieve_data = NULL;
 
-    if (ctx->decoder)
-        dxva2_destroy_decoder(s);
-
     if (ctx->decoder_service)
         IDirectXVideoDecoderService_Release(ctx->decoder_service);
 
-    if (ctx->d3d9devmgr && ctx->deviceHandle != INVALID_HANDLE_VALUE)
-        IDirect3DDeviceManager9_CloseDeviceHandle(ctx->d3d9devmgr, ctx->deviceHandle);
-
-    if (ctx->d3d9devmgr)
-        IDirect3DDeviceManager9_Release(ctx->d3d9devmgr);
-
-    if (ctx->d3d9device)
-        IDirect3DDevice9_Release(ctx->d3d9device);
-
-    if (ctx->d3d9)
-        IDirect3D9_Release(ctx->d3d9);
-
-    if (ctx->d3dlib)
-        FreeLibrary(ctx->d3dlib);
-
-    if (ctx->dxva2lib)
-        FreeLibrary(ctx->dxva2lib);
+    av_buffer_unref(&ctx->hw_frames_ctx);
+    av_buffer_unref(&ctx->hw_device_ctx);
 
     av_frame_free(&ctx->tmp_frame);
 
@@ -179,119 +127,34 @@ static void dxva2_uninit(AVCodecContext *s)
     av_freep(&s->hwaccel_context);
 }
 
-static void dxva2_release_buffer(void *opaque, uint8_t *data)
-{
-    DXVA2SurfaceWrapper *w   = opaque;
-    DXVA2Context        *ctx = w->ctx;
-    int i;
-
-    for (i = 0; i < ctx->num_surfaces; i++) {
-        if (ctx->surfaces[i] == w->surface) {
-            ctx->surface_infos[i].used = 0;
-            break;
-        }
-    }
-    IDirect3DSurface9_Release(w->surface);
-    IDirectXVideoDecoder_Release(w->decoder);
-    av_free(w);
-}
-
 static int dxva2_get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
 {
     InputStream  *ist = s->opaque;
     DXVA2Context *ctx = ist->hwaccel_ctx;
-    int i, old_unused = -1;
-    LPDIRECT3DSURFACE9 surface;
-    DXVA2SurfaceWrapper *w = NULL;
 
-    av_assert0(frame->format == AV_PIX_FMT_DXVA2_VLD);
-
-    for (i = 0; i < ctx->num_surfaces; i++) {
-        surface_info *info = &ctx->surface_infos[i];
-        if (!info->used && (old_unused == -1 || info->age < ctx->surface_infos[old_unused].age))
-            old_unused = i;
-    }
-    if (old_unused == -1) {
-        av_log(NULL, AV_LOG_ERROR, "No free DXVA2 surface!\n");
-        return AVERROR(ENOMEM);
-    }
-    i = old_unused;
-
-    surface = ctx->surfaces[i];
-
-    w = av_mallocz(sizeof(*w));
-    if (!w)
-        return AVERROR(ENOMEM);
-
-    frame->buf[0] = av_buffer_create((uint8_t*)surface, 0,
-                                     dxva2_release_buffer, w,
-                                     AV_BUFFER_FLAG_READONLY);
-    if (!frame->buf[0]) {
-        av_free(w);
-        return AVERROR(ENOMEM);
-    }
-
-    w->ctx     = ctx;
-    w->surface = surface;
-    IDirect3DSurface9_AddRef(w->surface);
-    w->decoder = ctx->decoder;
-    IDirectXVideoDecoder_AddRef(w->decoder);
-
-    ctx->surface_infos[i].used = 1;
-    ctx->surface_infos[i].age  = ctx->surface_age++;
-
-    frame->data[3] = (uint8_t *)surface;
-
-    return 0;
+    return av_hwframe_get_buffer(ctx->hw_frames_ctx, frame, 0);
 }
 
 static int dxva2_retrieve_data(AVCodecContext *s, AVFrame *frame)
 {
-    LPDIRECT3DSURFACE9 surface =  (LPDIRECT3DSURFACE9)frame->data[3];
     InputStream        *ist = s->opaque;
     DXVA2Context       *ctx = ist->hwaccel_ctx;
-    D3DSURFACE_DESC    surfaceDesc;
-    D3DLOCKED_RECT     LockedRect;
-    HRESULT            hr;
     int                ret;
 
-    IDirect3DSurface9_GetDesc(surface, &surfaceDesc);
-
-    ctx->tmp_frame->width  = frame->width;
-    ctx->tmp_frame->height = frame->height;
-    ctx->tmp_frame->format = AV_PIX_FMT_NV12;
-
-    ret = av_frame_get_buffer(ctx->tmp_frame, 32);
+    ret = av_hwframe_transfer_data(ctx->tmp_frame, frame, 0);
     if (ret < 0)
         return ret;
 
-    hr = IDirect3DSurface9_LockRect(surface, &LockedRect, NULL, D3DLOCK_READONLY);
-    if (FAILED(hr)) {
-        av_log(NULL, AV_LOG_ERROR, "Unable to lock DXVA2 surface\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    av_image_copy_plane(ctx->tmp_frame->data[0], ctx->tmp_frame->linesize[0],
-                        (uint8_t*)LockedRect.pBits,
-                        LockedRect.Pitch, frame->width, frame->height);
-
-    av_image_copy_plane(ctx->tmp_frame->data[1], ctx->tmp_frame->linesize[1],
-                        (uint8_t*)LockedRect.pBits + LockedRect.Pitch * surfaceDesc.Height,
-                        LockedRect.Pitch, frame->width, frame->height / 2);
-
-    IDirect3DSurface9_UnlockRect(surface);
-
     ret = av_frame_copy_props(ctx->tmp_frame, frame);
-    if (ret < 0)
-        goto fail;
+    if (ret < 0) {
+        av_frame_unref(ctx->tmp_frame);
+        return ret;
+    }
 
     av_frame_unref(frame);
     av_frame_move_ref(frame, ctx->tmp_frame);
 
     return 0;
-fail:
-    av_frame_unref(ctx->tmp_frame);
-    return ret;
 }
 
 static int dxva2_alloc(AVCodecContext *s)
@@ -299,94 +162,40 @@ static int dxva2_alloc(AVCodecContext *s)
     InputStream  *ist = s->opaque;
     int loglevel = (ist->hwaccel_id == HWACCEL_AUTO) ? AV_LOG_VERBOSE : AV_LOG_ERROR;
     DXVA2Context *ctx;
-    pDirect3DCreate9      *createD3D = NULL;
-    pCreateDeviceManager9 *createDeviceManager = NULL;
+    HANDLE device_handle;
     HRESULT hr;
-    D3DPRESENT_PARAMETERS d3dpp = {0};
-    D3DDISPLAYMODE        d3ddm;
-    unsigned resetToken = 0;
-    UINT adapter = D3DADAPTER_DEFAULT;
+
+    AVHWDeviceContext    *device_ctx;
+    AVDXVA2DeviceContext *device_hwctx;
+    int ret;
 
     ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return AVERROR(ENOMEM);
-
-    ctx->deviceHandle = INVALID_HANDLE_VALUE;
 
     ist->hwaccel_ctx           = ctx;
     ist->hwaccel_uninit        = dxva2_uninit;
     ist->hwaccel_get_buffer    = dxva2_get_buffer;
     ist->hwaccel_retrieve_data = dxva2_retrieve_data;
 
-    ctx->d3dlib = LoadLibrary("d3d9.dll");
-    if (!ctx->d3dlib) {
-        av_log(NULL, loglevel, "Failed to load D3D9 library\n");
+    ret = av_hwdevice_ctx_create(&ctx->hw_device_ctx, AV_HWDEVICE_TYPE_DXVA2,
+                                 ist->hwaccel_device, NULL, 0);
+    if (ret < 0)
         goto fail;
-    }
-    ctx->dxva2lib = LoadLibrary("dxva2.dll");
-    if (!ctx->dxva2lib) {
-        av_log(NULL, loglevel, "Failed to load DXVA2 library\n");
-        goto fail;
-    }
+    device_ctx   = (AVHWDeviceContext*)ctx->hw_device_ctx->data;
+    device_hwctx = device_ctx->hwctx;
 
-    createD3D = (pDirect3DCreate9 *)GetProcAddress(ctx->d3dlib, "Direct3DCreate9");
-    if (!createD3D) {
-        av_log(NULL, loglevel, "Failed to locate Direct3DCreate9\n");
-        goto fail;
-    }
-    createDeviceManager = (pCreateDeviceManager9 *)GetProcAddress(ctx->dxva2lib, "DXVA2CreateDirect3DDeviceManager9");
-    if (!createDeviceManager) {
-        av_log(NULL, loglevel, "Failed to locate DXVA2CreateDirect3DDeviceManager9\n");
-        goto fail;
-    }
-
-    ctx->d3d9 = createD3D(D3D_SDK_VERSION);
-    if (!ctx->d3d9) {
-        av_log(NULL, loglevel, "Failed to create IDirect3D object\n");
-        goto fail;
-    }
-
-    if (ist->hwaccel_device) {
-        adapter = atoi(ist->hwaccel_device);
-        av_log(NULL, AV_LOG_INFO, "Using HWAccel device %d\n", adapter);
-    }
-
-    IDirect3D9_GetAdapterDisplayMode(ctx->d3d9, adapter, &d3ddm);
-    d3dpp.Windowed         = TRUE;
-    d3dpp.BackBufferWidth  = 640;
-    d3dpp.BackBufferHeight = 480;
-    d3dpp.BackBufferCount  = 0;
-    d3dpp.BackBufferFormat = d3ddm.Format;
-    d3dpp.SwapEffect       = D3DSWAPEFFECT_DISCARD;
-    d3dpp.Flags            = D3DPRESENTFLAG_VIDEO;
-
-    hr = IDirect3D9_CreateDevice(ctx->d3d9, adapter, D3DDEVTYPE_HAL, GetShellWindow(),
-                                 D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
-                                 &d3dpp, &ctx->d3d9device);
+    hr = IDirect3DDeviceManager9_OpenDeviceHandle(device_hwctx->devmgr,
+                                                  &device_handle);
     if (FAILED(hr)) {
-        av_log(NULL, loglevel, "Failed to create Direct3D device\n");
+        av_log(NULL, loglevel, "Failed to open a device handle\n");
         goto fail;
     }
 
-    hr = createDeviceManager(&resetToken, &ctx->d3d9devmgr);
-    if (FAILED(hr)) {
-        av_log(NULL, loglevel, "Failed to create Direct3D device manager\n");
-        goto fail;
-    }
-
-    hr = IDirect3DDeviceManager9_ResetDevice(ctx->d3d9devmgr, ctx->d3d9device, resetToken);
-    if (FAILED(hr)) {
-        av_log(NULL, loglevel, "Failed to bind Direct3D device to device manager\n");
-        goto fail;
-    }
-
-    hr = IDirect3DDeviceManager9_OpenDeviceHandle(ctx->d3d9devmgr, &ctx->deviceHandle);
-    if (FAILED(hr)) {
-        av_log(NULL, loglevel, "Failed to open device handle\n");
-        goto fail;
-    }
-
-    hr = IDirect3DDeviceManager9_GetVideoService(ctx->d3d9devmgr, ctx->deviceHandle, &IID_IDirectXVideoDecoderService, (void **)&ctx->decoder_service);
+    hr = IDirect3DDeviceManager9_GetVideoService(device_hwctx->devmgr, device_handle,
+                                                 &IID_IDirectXVideoDecoderService,
+                                                 (void **)&ctx->decoder_service);
+    IDirect3DDeviceManager9_CloseDeviceHandle(device_hwctx->devmgr, device_handle);
     if (FAILED(hr)) {
         av_log(NULL, loglevel, "Failed to create IDirectXVideoDecoderService\n");
         goto fail;
@@ -462,12 +271,16 @@ static int dxva2_create_decoder(AVCodecContext *s)
     GUID *guid_list = NULL;
     unsigned guid_count = 0, i, j;
     GUID device_guid = GUID_NULL;
+    const D3DFORMAT surface_format = (s->sw_pix_fmt == AV_PIX_FMT_YUV420P10) ? MKTAG('P','0','1','0') : MKTAG('N','V','1','2');
     D3DFORMAT target_format = 0;
     DXVA2_VideoDesc desc = { 0 };
     DXVA2_ConfigPictureDecode config;
     HRESULT hr;
-    int surface_alignment;
+    int surface_alignment, num_surfaces;
     int ret;
+
+    AVDXVA2FramesContext *frames_hwctx;
+    AVHWFramesContext *frames_ctx;
 
     hr = IDirectXVideoDecoderService_GetDecoderDeviceGuids(ctx->decoder_service, &guid_count, &guid_list);
     if (FAILED(hr)) {
@@ -495,7 +308,7 @@ static int dxva2_create_decoder(AVCodecContext *s)
         }
         for (j = 0; j < target_count; j++) {
             const D3DFORMAT format = target_list[j];
-            if (format == MKTAG('N','V','1','2')) {
+            if (format == surface_format) {
                 target_format = format;
                 break;
             }
@@ -526,45 +339,51 @@ static int dxva2_create_decoder(AVCodecContext *s)
        but it causes issues for H.264 on certain AMD GPUs..... */
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO)
         surface_alignment = 32;
+    /* the HEVC DXVA2 spec asks for 128 pixel aligned surfaces to ensure
+       all coding features have enough room to work with */
+    else if  (s->codec_id == AV_CODEC_ID_HEVC)
+        surface_alignment = 128;
     else
         surface_alignment = 16;
 
     /* 4 base work surfaces */
-    ctx->num_surfaces = 4;
+    num_surfaces = 4;
 
     /* add surfaces based on number of possible refs */
-    if (s->codec_id == AV_CODEC_ID_H264)
-        ctx->num_surfaces += 16;
+    if (s->codec_id == AV_CODEC_ID_H264 || s->codec_id == AV_CODEC_ID_HEVC)
+        num_surfaces += 16;
+    else if (s->codec_id == AV_CODEC_ID_VP9)
+        num_surfaces += 8;
     else
-        ctx->num_surfaces += 2;
+        num_surfaces += 2;
 
     /* add extra surfaces for frame threading */
     if (s->active_thread_type & FF_THREAD_FRAME)
-        ctx->num_surfaces += s->thread_count;
+        num_surfaces += s->thread_count;
 
-    ctx->surfaces      = av_mallocz(ctx->num_surfaces * sizeof(*ctx->surfaces));
-    ctx->surface_infos = av_mallocz(ctx->num_surfaces * sizeof(*ctx->surface_infos));
-
-    if (!ctx->surfaces || !ctx->surface_infos) {
-        av_log(NULL, loglevel, "Unable to allocate surface arrays\n");
+    ctx->hw_frames_ctx = av_hwframe_ctx_alloc(ctx->hw_device_ctx);
+    if (!ctx->hw_frames_ctx)
         goto fail;
-    }
+    frames_ctx   = (AVHWFramesContext*)ctx->hw_frames_ctx->data;
+    frames_hwctx = frames_ctx->hwctx;
 
-    hr = IDirectXVideoDecoderService_CreateSurface(ctx->decoder_service,
-                                                   FFALIGN(s->coded_width, surface_alignment),
-                                                   FFALIGN(s->coded_height, surface_alignment),
-                                                   ctx->num_surfaces - 1,
-                                                   target_format, D3DPOOL_DEFAULT, 0,
-                                                   DXVA2_VideoDecoderRenderTarget,
-                                                   ctx->surfaces, NULL);
-    if (FAILED(hr)) {
-        av_log(NULL, loglevel, "Failed to create %d video surfaces\n", ctx->num_surfaces);
+    frames_ctx->format            = AV_PIX_FMT_DXVA2_VLD;
+    frames_ctx->sw_format         = (target_format == MKTAG('P','0','1','0') ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12);
+    frames_ctx->width             = FFALIGN(s->coded_width, surface_alignment);
+    frames_ctx->height            = FFALIGN(s->coded_height, surface_alignment);
+    frames_ctx->initial_pool_size = num_surfaces;
+
+    frames_hwctx->surface_type = DXVA2_VideoDecoderRenderTarget;
+
+    ret = av_hwframe_ctx_init(ctx->hw_frames_ctx);
+    if (ret < 0) {
+        av_log(NULL, loglevel, "Failed to initialize the HW frames context\n");
         goto fail;
     }
 
     hr = IDirectXVideoDecoderService_CreateVideoDecoder(ctx->decoder_service, &device_guid,
-                                                        &desc, &config, ctx->surfaces,
-                                                        ctx->num_surfaces, &ctx->decoder);
+                                                        &desc, &config, frames_hwctx->surfaces,
+                                                        frames_hwctx->nb_surfaces, &frames_hwctx->decoder_to_release);
     if (FAILED(hr)) {
         av_log(NULL, loglevel, "Failed to create DXVA2 video decoder\n");
         goto fail;
@@ -574,16 +393,16 @@ static int dxva2_create_decoder(AVCodecContext *s)
     ctx->decoder_config = config;
 
     dxva_ctx->cfg           = &ctx->decoder_config;
-    dxva_ctx->decoder       = ctx->decoder;
-    dxva_ctx->surface       = ctx->surfaces;
-    dxva_ctx->surface_count = ctx->num_surfaces;
+    dxva_ctx->decoder       = frames_hwctx->decoder_to_release;
+    dxva_ctx->surface       = frames_hwctx->surfaces;
+    dxva_ctx->surface_count = frames_hwctx->nb_surfaces;
 
     if (IsEqualGUID(&ctx->decoder_guid, &DXVADDI_Intel_ModeH264_E))
         dxva_ctx->workaround |= FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO;
 
     return 0;
 fail:
-    dxva2_destroy_decoder(s);
+    av_buffer_unref(&ctx->hw_frames_ctx);
     return AVERROR(EINVAL);
 }
 
@@ -607,8 +426,13 @@ int dxva2_init(AVCodecContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (ctx->decoder)
-        dxva2_destroy_decoder(s);
+    if (s->codec_id == AV_CODEC_ID_HEVC &&
+        s->profile != FF_PROFILE_HEVC_MAIN && s->profile != FF_PROFILE_HEVC_MAIN_10) {
+        av_log(NULL, loglevel, "Unsupported HEVC profile for DXVA2 HWAccel: %d\n", s->profile);
+        return AVERROR(EINVAL);
+    }
+
+    av_buffer_unref(&ctx->hw_frames_ctx);
 
     ret = dxva2_create_decoder(s);
     if (ret < 0) {

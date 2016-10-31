@@ -387,6 +387,13 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
             if ((ret = ffurl_write(h, &marker, 1)) < 0)
                 return ret;
             written++;
+            if (pkt->ts_field == 0xFFFFFF) {
+                uint8_t ts_header[4];
+                AV_WB32(ts_header, timestamp);
+                if ((ret = ffurl_write(h, ts_header, 4)) < 0)
+                    return ret;
+                written += 4;
+            }
         }
     }
     return written;
@@ -396,7 +403,7 @@ int ff_rtmp_packet_create(RTMPPacket *pkt, int channel_id, RTMPPacketType type,
                           int timestamp, int size)
 {
     if (size) {
-        pkt->data = av_malloc(size);
+        pkt->data = av_realloc(NULL, size);
         if (!pkt->data)
             return AVERROR(ENOMEM);
     }
@@ -433,6 +440,7 @@ int ff_amf_tag_size(const uint8_t *data, const uint8_t *data_end)
     case AMF_DATA_TYPE_STRING:      return 3 + AV_RB16(data);
     case AMF_DATA_TYPE_LONG_STRING: return 5 + AV_RB32(data);
     case AMF_DATA_TYPE_NULL:        return 1;
+    case AMF_DATA_TYPE_DATE:        return 11;
     case AMF_DATA_TYPE_ARRAY:
         parse_key = 0;
     case AMF_DATA_TYPE_MIXEDARRAY:

@@ -50,7 +50,7 @@ static void lsf2lsp(const float *lsf, double *lsp)
         lsp[i] = cosf(lsf[i]);
 }
 
-static void dequant(float *out, const int *idx, const float *cbs[])
+static void dequant(float *out, const int *idx, const float * const cbs[])
 {
     int i;
 

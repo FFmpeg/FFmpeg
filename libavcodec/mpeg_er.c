@@ -58,3 +58,74 @@ void ff_mpeg_er_frame_start(MpegEncContext *s)
 
     ff_er_frame_start(er);
 }
+
+static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
+                              int (*mv)[2][4][2], int mb_x, int mb_y,
+                              int mb_intra, int mb_skipped)
+{
+    MpegEncContext *s = opaque;
+
+    s->mv_dir     = mv_dir;
+    s->mv_type    = mv_type;
+    s->mb_intra   = mb_intra;
+    s->mb_skipped = mb_skipped;
+    s->mb_x       = mb_x;
+    s->mb_y       = mb_y;
+    memcpy(s->mv, mv, sizeof(*mv));
+
+    ff_init_block_index(s);
+    ff_update_block_index(s);
+
+    s->bdsp.clear_blocks(s->block[0]);
+
+    s->dest[0] = s->current_picture.f->data[0] +
+                 s->mb_y * 16 * s->linesize +
+                 s->mb_x * 16;
+    s->dest[1] = s->current_picture.f->data[1] +
+                 s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize +
+                 s->mb_x * (16 >> s->chroma_x_shift);
+    s->dest[2] = s->current_picture.f->data[2] +
+                 s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize +
+                 s->mb_x * (16 >> s->chroma_x_shift);
+
+    if (ref)
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "Interlaced error concealment is not fully implemented\n");
+    ff_mpv_decode_mb(s, s->block);
+}
+
+int ff_mpeg_er_init(MpegEncContext *s)
+{
+    ERContext *er = &s->er;
+    int mb_array_size = s->mb_height * s->mb_stride;
+    int i;
+
+    er->avctx       = s->avctx;
+
+    er->mb_index2xy = s->mb_index2xy;
+    er->mb_num      = s->mb_num;
+    er->mb_width    = s->mb_width;
+    er->mb_height   = s->mb_height;
+    er->mb_stride   = s->mb_stride;
+    er->b8_stride   = s->b8_stride;
+
+    er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride);
+    er->error_status_table = av_mallocz(mb_array_size);
+    if (!er->er_temp_buffer || !er->error_status_table)
+        goto fail;
+
+    er->mbskip_table  = s->mbskip_table;
+    er->mbintra_table = s->mbintra_table;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->dc_val); i++)
+        er->dc_val[i] = s->dc_val[i];
+
+    er->decode_mb = mpeg_er_decode_mb;
+    er->opaque    = s;
+
+    return 0;
+fail:
+    av_freep(&er->er_temp_buffer);
+    av_freep(&er->error_status_table);
+    return AVERROR(ENOMEM);
+}

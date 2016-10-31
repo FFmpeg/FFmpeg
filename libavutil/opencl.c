@@ -28,16 +28,10 @@
 #include "opt.h"
 
 #if HAVE_THREADS
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#endif
+#include "thread.h"
 #include "atomic.h"
 
-static volatile pthread_mutex_t *atomic_opencl_lock = NULL;
+static pthread_mutex_t * volatile atomic_opencl_lock = NULL;
 #define LOCK_OPENCL pthread_mutex_lock(atomic_opencl_lock)
 #define UNLOCK_OPENCL pthread_mutex_unlock(atomic_opencl_lock)
 #else
@@ -70,12 +64,6 @@ typedef struct {
     cl_context context;
     cl_device_id device_id;
     cl_command_queue command_queue;
-#if FF_API_OLD_OPENCL
-    char *build_options;
-    int program_count;
-    cl_program programs[MAX_KERNEL_CODE_NUM];
-    int kernel_count;
-#endif
     int kernel_code_count;
     KernelCode kernel_code[MAX_KERNEL_CODE_NUM];
     AVOpenCLDeviceList device_list;
@@ -86,14 +74,11 @@ typedef struct {
 static const AVOption opencl_options[] = {
      { "platform_idx",        "set platform index value",  OFFSET(platform_idx),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
      { "device_idx",          "set device index value",    OFFSET(device_idx),    AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
-#if FF_API_OLD_OPENCL
-     { "build_options",       "build options of opencl",   OFFSET(build_options), AV_OPT_TYPE_STRING, {.str="-I."},  CHAR_MIN, CHAR_MAX},
-#endif
      { NULL }
 };
 
 static const AVClass openclutils_class = {
-    .class_name                = "OPENCLUTILS",
+    .class_name                = "opencl",
     .option                    = opencl_options,
     .item_name                 = av_default_item_name,
     .version                   = LIBAVUTIL_VERSION_INT,
@@ -190,9 +175,11 @@ static void free_device_list(AVOpenCLDeviceList *device_list)
         if (!device_list->platform_node[i])
             continue;
         for (j = 0; j < device_list->platform_node[i]->device_num; j++) {
+            av_freep(&(device_list->platform_node[i]->device_node[j]->device_name));
             av_freep(&(device_list->platform_node[i]->device_node[j]));
         }
         av_freep(&device_list->platform_node[i]->device_node);
+        av_freep(&(device_list->platform_node[i]->platform_name));
         av_freep(&device_list->platform_node[i]);
     }
     av_freep(&device_list->platform_node);
@@ -207,13 +194,15 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
     cl_platform_id *platform_ids = NULL;
     cl_device_id *device_ids = NULL;
     AVOpenCLDeviceNode *device_node = NULL;
+    size_t platform_name_size = 0;
+    size_t device_name_size = 0;
     status = clGetPlatformIDs(0, NULL, &device_list->platform_num);
     if (status != CL_SUCCESS) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not get OpenCL platform ids: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    platform_ids = av_mallocz(device_list->platform_num * sizeof(cl_platform_id));
+    platform_ids = av_mallocz_array(device_list->platform_num, sizeof(cl_platform_id));
     if (!platform_ids)
         return AVERROR(ENOMEM);
     status = clGetPlatformIDs(device_list->platform_num, platform_ids, NULL);
@@ -223,7 +212,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    device_list->platform_node = av_mallocz(device_list->platform_num * sizeof(AVOpenCLPlatformNode *));
+    device_list->platform_node = av_mallocz_array(device_list->platform_num, sizeof(AVOpenCLPlatformNode *));
     if (!device_list->platform_node) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -241,22 +230,39 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         }
         device_list->platform_node[i]->platform_id = platform_ids[i];
         status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
-                                   sizeof(device_list->platform_node[i]->platform_name),
-                                   device_list->platform_node[i]->platform_name, NULL);
+                                   0, NULL, &platform_name_size);
+        if (status != CL_SUCCESS) {
+            av_log(&opencl_ctx, AV_LOG_WARNING,
+                    "Could not get size of platform name: %s\n", av_opencl_errstr(status));
+        } else {
+            device_list->platform_node[i]->platform_name = av_malloc(platform_name_size * sizeof(char));
+            if (!device_list->platform_node[i]->platform_name) {
+                av_log(&opencl_ctx, AV_LOG_WARNING,
+                        "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+            } else {
+                status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
+                                           platform_name_size * sizeof(char),
+                                           device_list->platform_node[i]->platform_name, NULL);
+                if (status != CL_SUCCESS) {
+                    av_log(&opencl_ctx, AV_LOG_WARNING,
+                            "Could not get platform name: %s\n", av_opencl_errstr(status));
+                }
+            }
+        }
         total_devices_num = 0;
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             status = clGetDeviceIDs(device_list->platform_node[i]->platform_id,
                                     device_type[j], 0, NULL, &devices_num[j]);
             total_devices_num += devices_num[j];
         }
-        device_list->platform_node[i]->device_node = av_mallocz(total_devices_num * sizeof(AVOpenCLDeviceNode *));
+        device_list->platform_node[i]->device_node = av_mallocz_array(total_devices_num, sizeof(AVOpenCLDeviceNode *));
         if (!device_list->platform_node[i]->device_node) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
         for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
             if (devices_num[j]) {
-                device_ids = av_mallocz(devices_num[j] * sizeof(cl_device_id));
+                device_ids = av_mallocz_array(devices_num[j], sizeof(cl_device_id));
                 if (!device_ids) {
                     ret = AVERROR(ENOMEM);
                     goto end;
@@ -280,8 +286,21 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                     device_node->device_id = device_ids[k];
                     device_node->device_type = device_type[j];
                     status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
-                                             sizeof(device_node->device_name), device_node->device_name,
-                                             NULL);
+                                             0, NULL, &device_name_size);
+                    if (status != CL_SUCCESS) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not get size of device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    device_node->device_name = av_malloc(device_name_size * sizeof(char));
+                    if (!device_node->device_name) {
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
+                                "Could not allocate memory for device name: %s\n", av_opencl_errstr(status));
+                        continue;
+                    }
+                    status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
+                                             device_name_size * sizeof(char),
+                                             device_node->device_name, NULL);
                     if (status != CL_SUCCESS) {
                         av_log(&opencl_ctx, AV_LOG_WARNING,
                                 "Could not get device name: %s\n", av_opencl_errstr(status));
@@ -338,7 +357,7 @@ static inline int init_opencl_mtx(void)
             av_free(tmp);
             return AVERROR(err);
         }
-        if (avpriv_atomic_ptr_cas(&atomic_opencl_lock, NULL, tmp)) {
+        if (avpriv_atomic_ptr_cas((void * volatile *)&atomic_opencl_lock, NULL, tmp)) {
             pthread_mutex_destroy(tmp);
             av_free(tmp);
         }
@@ -424,12 +443,14 @@ end:
 cl_program av_opencl_compile(const char *program_name, const char *build_opts)
 {
     int i;
-    cl_int status;
+    cl_int status, build_status;
     int kernel_code_idx = 0;
-    const char *kernel_source;
+    const char *kernel_source = NULL;
     size_t kernel_code_len;
     char* ptr = NULL;
     cl_program program = NULL;
+    size_t log_size;
+    char *log = NULL;
 
     LOCK_OPENCL;
     for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
@@ -456,10 +477,36 @@ cl_program av_opencl_compile(const char *program_name, const char *build_opts)
         program = NULL;
         goto end;
     }
-    status = clBuildProgram(program, 1, &(opencl_ctx.device_id), build_opts, NULL, NULL);
+
+    build_status = clBuildProgram(program, 1, &(opencl_ctx.device_id), build_opts, NULL, NULL);
+    status = clGetProgramBuildInfo(program, opencl_ctx.device_id,
+                                   CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
     if (status != CL_SUCCESS) {
+        av_log(&opencl_ctx, AV_LOG_WARNING,
+               "Failed to get compilation log: %s\n",
+               av_opencl_errstr(status));
+    } else {
+        log = av_malloc(log_size);
+        if (log) {
+            status = clGetProgramBuildInfo(program, opencl_ctx.device_id,
+                                           CL_PROGRAM_BUILD_LOG, log_size,
+                                           log, NULL);
+            if (status != CL_SUCCESS) {
+                av_log(&opencl_ctx, AV_LOG_WARNING,
+                       "Failed to get compilation log: %s\n",
+                       av_opencl_errstr(status));
+            } else {
+                int level = build_status == CL_SUCCESS ? AV_LOG_DEBUG :
+                                                         AV_LOG_ERROR;
+                av_log(&opencl_ctx, level, "Compilation log:\n%s\n", log);
+            }
+        }
+        av_freep(&log);
+    }
+    if (build_status != CL_SUCCESS) {
         av_log(&opencl_ctx, AV_LOG_ERROR,
-               "Compilation failed with OpenCL program: %s\n", program_name);
+               "Compilation failed with OpenCL program '%s': %s\n",
+               program_name, av_opencl_errstr(build_status));
         program = NULL;
         goto end;
     }
@@ -474,19 +521,6 @@ cl_command_queue av_opencl_get_command_queue(void)
 {
     return opencl_ctx.command_queue;
 }
-
-#if FF_API_OLD_OPENCL
-int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name)
-{
-    av_log(&opencl_ctx, AV_LOG_ERROR, "Could not create OpenCL kernel %s, please update libavfilter.\n", kernel_name);
-    return AVERROR(EINVAL);
-}
-
-void av_opencl_release_kernel(AVOpenCLKernelEnv *env)
-{
-    av_log(&opencl_ctx, AV_LOG_ERROR, "Could not release OpenCL kernel, please update libavfilter.\n");
-}
-#endif
 
 static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_opencl_env)
 {
@@ -610,6 +644,7 @@ end:
 
 void av_opencl_uninit(void)
 {
+    int i;
     cl_int status;
     LOCK_OPENCL;
     opencl_ctx.init_count--;
@@ -632,6 +667,9 @@ void av_opencl_uninit(void)
                    "Could not release OpenCL context: %s\n", av_opencl_errstr(status));
         }
         opencl_ctx.context = NULL;
+    }
+    for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
+        opencl_ctx.kernel_code[i].is_compiled = 0;
     }
     free_device_list(&opencl_ctx.device_list);
 end:

@@ -57,7 +57,12 @@ static int mv_probe(AVProbeData *p)
 static char *var_read_string(AVIOContext *pb, int size)
 {
     int n;
-    char *str = av_malloc(size + 1);
+    char *str;
+
+    if (size < 0 || size == INT_MAX)
+        return NULL;
+
+    str = av_malloc(size + 1);
     if (!str)
         return NULL;
     n = avio_get_str(pb, size, str, size + 1);
@@ -101,9 +106,9 @@ static int set_channels(AVFormatContext *avctx, AVStream *st, int channels)
         av_log(avctx, AV_LOG_ERROR, "Channel count %d invalid.\n", channels);
         return AVERROR_INVALIDDATA;
     }
-    st->codec->channels       = channels;
-    st->codec->channel_layout = (st->codec->channels == 1) ? AV_CH_LAYOUT_MONO
-                                                           : AV_CH_LAYOUT_STEREO;
+    st->codecpar->channels       = channels;
+    st->codecpar->channel_layout = (st->codecpar->channels == 1) ? AV_CH_LAYOUT_MONO
+                                                                 : AV_CH_LAYOUT_STEREO;
     return 0;
 }
 
@@ -151,10 +156,10 @@ static int parse_audio_var(AVFormatContext *avctx, AVStream *st,
     } else if (!strcmp(name, "NUM_CHANNELS")) {
         return set_channels(avctx, st, var_read_int(pb, size));
     } else if (!strcmp(name, "SAMPLE_RATE")) {
-        st->codec->sample_rate = var_read_int(pb, size);
-        avpriv_set_pts_info(st, 33, 1, st->codec->sample_rate);
+        st->codecpar->sample_rate = var_read_int(pb, size);
+        avpriv_set_pts_info(st, 33, 1, st->codecpar->sample_rate);
     } else if (!strcmp(name, "SAMPLE_WIDTH")) {
-        st->codec->bits_per_coded_sample = var_read_int(pb, size) * 8;
+        st->codecpar->bits_per_coded_sample = var_read_int(pb, size) * 8;
     } else
         return AVERROR_INVALIDDATA;
 
@@ -176,16 +181,16 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st,
         if (!str)
             return AVERROR_INVALIDDATA;
         if (!strcmp(str, "1")) {
-            st->codec->codec_id = AV_CODEC_ID_MVC1;
+            st->codecpar->codec_id = AV_CODEC_ID_MVC1;
         } else if (!strcmp(str, "2")) {
-            st->codec->pix_fmt  = AV_PIX_FMT_ABGR;
-            st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+            st->codecpar->format = AV_PIX_FMT_ABGR;
+            st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
         } else if (!strcmp(str, "3")) {
-            st->codec->codec_id = AV_CODEC_ID_SGIRLE;
+            st->codecpar->codec_id = AV_CODEC_ID_SGIRLE;
         } else if (!strcmp(str, "10")) {
-            st->codec->codec_id = AV_CODEC_ID_MJPEG;
+            st->codecpar->codec_id = AV_CODEC_ID_MJPEG;
         } else if (!strcmp(str, "MVC2")) {
-            st->codec->codec_id = AV_CODEC_ID_MVC2;
+            st->codecpar->codec_id = AV_CODEC_ID_MVC2;
         } else {
             avpriv_request_sample(avctx, "Video compression %s", str);
         }
@@ -195,18 +200,18 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st,
         avpriv_set_pts_info(st, 64, fps.den, fps.num);
         st->avg_frame_rate = fps;
     } else if (!strcmp(name, "HEIGHT")) {
-        st->codec->height = var_read_int(pb, size);
+        st->codecpar->height = var_read_int(pb, size);
     } else if (!strcmp(name, "PIXEL_ASPECT")) {
         st->sample_aspect_ratio = var_read_float(pb, size);
         av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
                   st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                   INT_MAX);
     } else if (!strcmp(name, "WIDTH")) {
-        st->codec->width = var_read_int(pb, size);
+        st->codecpar->width = var_read_int(pb, size);
     } else if (!strcmp(name, "ORIENTATION")) {
         if (var_read_int(pb, size) == 1101) {
-            st->codec->extradata      = av_strdup("BottomUp");
-            st->codec->extradata_size = 9;
+            st->codecpar->extradata      = av_strdup("BottomUp");
+            st->codecpar->extradata_size = 9;
         }
     } else if (!strcmp(name, "Q_SPATIAL") || !strcmp(name, "Q_TEMPORAL")) {
         var_read_metadata(avctx, name, size);
@@ -218,7 +223,7 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st,
     return 0;
 }
 
-static void read_table(AVFormatContext *avctx, AVStream *st,
+static int read_table(AVFormatContext *avctx, AVStream *st,
                        int (*parse)(AVFormatContext *avctx, AVStream *st,
                                     const char *name, int size))
 {
@@ -233,11 +238,16 @@ static void read_table(AVFormatContext *avctx, AVStream *st,
         avio_read(pb, name, 16);
         name[sizeof(name) - 1] = 0;
         size = avio_rb32(pb);
+        if (size < 0) {
+            av_log(avctx, AV_LOG_ERROR, "entry size %d is invalid\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         if (parse(avctx, st, name, size) < 0) {
             avpriv_request_sample(avctx, "Variable %s", name);
             avio_skip(pb, size);
         }
     }
+    return 0;
 }
 
 static void read_index(AVIOContext *pb, AVStream *st)
@@ -249,8 +259,8 @@ static void read_index(AVIOContext *pb, AVStream *st)
         uint32_t size = avio_rb32(pb);
         avio_skip(pb, 8);
         av_add_index_entry(st, pos, timestamp, size, 0, AVINDEX_KEYFRAME);
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            timestamp += size / (st->codec->channels * 2);
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            timestamp += size / (st->codecpar->channels * 2);
         } else {
             timestamp++;
         }
@@ -263,6 +273,7 @@ static int mv_read_header(AVFormatContext *avctx)
     AVIOContext *pb = avctx->pb;
     AVStream *ast = NULL, *vst = NULL; //initialization to suppress warning
     int version, i;
+    int ret;
 
     avio_skip(pb, 4);
 
@@ -282,37 +293,37 @@ static int mv_read_header(AVFormatContext *avctx)
         if (!vst)
             return AVERROR(ENOMEM);
         avpriv_set_pts_info(vst, 64, 1, 15);
-        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         vst->avg_frame_rate    = av_inv_q(vst->time_base);
         vst->nb_frames         = avio_rb32(pb);
         v = avio_rb32(pb);
         switch (v) {
         case 1:
-            vst->codec->codec_id = AV_CODEC_ID_MVC1;
+            vst->codecpar->codec_id = AV_CODEC_ID_MVC1;
             break;
         case 2:
-            vst->codec->pix_fmt  = AV_PIX_FMT_ARGB;
-            vst->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+            vst->codecpar->format = AV_PIX_FMT_ARGB;
+            vst->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
             break;
         default:
             avpriv_request_sample(avctx, "Video compression %i", v);
             break;
         }
-        vst->codec->codec_tag = 0;
-        vst->codec->width     = avio_rb32(pb);
-        vst->codec->height    = avio_rb32(pb);
+        vst->codecpar->codec_tag = 0;
+        vst->codecpar->width     = avio_rb32(pb);
+        vst->codecpar->height    = avio_rb32(pb);
         avio_skip(pb, 12);
 
-        ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+        ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
         ast->nb_frames          = vst->nb_frames;
-        ast->codec->sample_rate = avio_rb32(pb);
-        avpriv_set_pts_info(ast, 33, 1, ast->codec->sample_rate);
+        ast->codecpar->sample_rate = avio_rb32(pb);
+        avpriv_set_pts_info(ast, 33, 1, ast->codecpar->sample_rate);
         if (set_channels(avctx, ast, avio_rb32(pb)) < 0)
             return AVERROR_INVALIDDATA;
 
         v = avio_rb32(pb);
         if (v == AUDIO_FORMAT_SIGNED) {
-            ast->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
+            ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
         } else {
             avpriv_request_sample(avctx, "Audio compression (format %i)", v);
         }
@@ -330,12 +341,13 @@ static int mv_read_header(AVFormatContext *avctx)
             avio_skip(pb, 8);
             av_add_index_entry(ast, pos, timestamp, asize, 0, AVINDEX_KEYFRAME);
             av_add_index_entry(vst, pos + asize, i, vsize, 0, AVINDEX_KEYFRAME);
-            timestamp += asize / (ast->codec->channels * 2);
+            timestamp += asize / (ast->codecpar->channels * 2);
         }
     } else if (!version && avio_rb16(pb) == 3) {
         avio_skip(pb, 4);
 
-        read_table(avctx, NULL, parse_global_var);
+        if ((ret = read_table(avctx, NULL, parse_global_var)) < 0)
+            return ret;
 
         if (mv->nb_audio_tracks > 1) {
             avpriv_request_sample(avctx, "Multiple audio streams support");
@@ -344,20 +356,21 @@ static int mv_read_header(AVFormatContext *avctx)
             ast = avformat_new_stream(avctx, NULL);
             if (!ast)
                 return AVERROR(ENOMEM);
-            ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            read_table(avctx, ast, parse_audio_var);
+            ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            if ((read_table(avctx, ast, parse_audio_var)) < 0)
+                return ret;
             if (mv->acompression == 100 &&
                 mv->aformat == AUDIO_FORMAT_SIGNED &&
-                ast->codec->bits_per_coded_sample == 16) {
-                ast->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
+                ast->codecpar->bits_per_coded_sample == 16) {
+                ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
             } else {
                 avpriv_request_sample(avctx,
                                       "Audio compression %i (format %i, sr %i)",
                                       mv->acompression, mv->aformat,
-                                      ast->codec->bits_per_coded_sample);
-                ast->codec->codec_id = AV_CODEC_ID_NONE;
+                                      ast->codecpar->bits_per_coded_sample);
+                ast->codecpar->codec_id = AV_CODEC_ID_NONE;
             }
-            if (ast->codec->channels <= 0) {
+            if (ast->codecpar->channels <= 0) {
                 av_log(avctx, AV_LOG_ERROR, "No valid channel count found.\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -370,8 +383,9 @@ static int mv_read_header(AVFormatContext *avctx)
             vst = avformat_new_stream(avctx, NULL);
             if (!vst)
                 return AVERROR(ENOMEM);
-            vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            read_table(avctx, vst, parse_video_var);
+            vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            if ((ret = read_table(avctx, vst, parse_video_var))<0)
+                return ret;
         }
 
         if (mv->nb_audio_tracks)
@@ -394,7 +408,7 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     AVStream *st = avctx->streams[mv->stream_index];
     const AVIndexEntry *index;
     int frame = mv->frame[mv->stream_index];
-    int ret;
+    int64_t ret;
     uint64_t pos;
 
     if (frame < st->nb_index_entries) {

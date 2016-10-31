@@ -171,7 +171,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int bfi_decode_close(AVCodecContext *avctx)
 {
     BFIContext *bfi = avctx->priv_data;
-    av_free(bfi->dst);
+    av_freep(&bfi->dst);
     return 0;
 }
 
@@ -184,5 +184,5 @@ AVCodec ff_bfi_decoder = {
     .init           = bfi_decode_init,
     .close          = bfi_decode_close,
     .decode         = bfi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

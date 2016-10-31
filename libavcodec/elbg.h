@@ -36,10 +36,11 @@
  * @param num_steps The maximum number of steps. One step is already a good compromise between time and quality.
  * @param closest_cb Return the closest codebook to each point. Must be allocated.
  * @param rand_state A random number generator state. Should be already initialized by av_lfg_init().
+ * @return < 0 in case of error, 0 otherwise
  */
-void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
-                int numCB, int num_steps, int *closest_cb,
-                AVLFG *rand_state);
+int avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
+               int numCB, int num_steps, int *closest_cb,
+               AVLFG *rand_state);
 
 /**
  * Initialize the **codebook vector for the elbg algorithm. If you have already
@@ -47,9 +48,10 @@ void avpriv_do_elbg(int *points, int dim, int numpoints, int *codebook,
  * If numpoints < 8*numCB this function fills **codebook with random numbers.
  * If not, it calls avpriv_do_elbg for a (smaller) random sample of the points in
  * **points. Get the same parameters as avpriv_do_elbg.
+ * @return < 0 in case of error, 0 otherwise
  */
-void avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
-                  int numCB, int num_steps, int *closest_cb,
-                  AVLFG *rand_state);
+int avpriv_init_elbg(int *points, int dim, int numpoints, int *codebook,
+                 int numCB, int num_steps, int *closest_cb,
+                 AVLFG *rand_state);
 
 #endif /* AVCODEC_ELBG_H */

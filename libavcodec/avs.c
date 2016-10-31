@@ -23,8 +23,7 @@
 #include "get_bits.h"
 #include "internal.h"
 
-
-typedef struct {
+typedef struct AvsContext {
     AVFrame *frame;
 } AvsContext;
 
@@ -165,9 +164,8 @@ static av_cold int avs_decode_init(AVCodecContext * avctx)
         return AVERROR(ENOMEM);
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    ff_set_dimensions(avctx, 318, 198);
 
-    return 0;
+    return ff_set_dimensions(avctx, 318, 198);
 }
 
 static av_cold int avs_decode_end(AVCodecContext *avctx)
@@ -187,5 +185,5 @@ AVCodec ff_avs_decoder = {
     .init           = avs_decode_init,
     .decode         = avs_decode_frame,
     .close          = avs_decode_end,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

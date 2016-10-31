@@ -824,7 +824,7 @@ static inline void silk_stabilize_lsf(int16_t nlsf[16], int order, const uint16_
 
             /* upper extent */
             for (i = order; i > k; i--)
-                max_center -= min_delta[k];
+                max_center -= min_delta[i];
             max_center -= min_delta[k] >> 1;
 
             /* move apart */
@@ -1077,7 +1077,7 @@ static inline void silk_decode_lpc(SilkContext *s, SilkFrame *frame,
         weight = y + ((213 * fpart * y) >> 16);
 
         value = cur * 128 + (lsf_res[i] * 16384) / weight;
-        nlsf[i] = av_clip(value, 0, 32767);
+        nlsf[i] = av_clip_uintp2(value, 15);
     }
 
     /* stabilize the NLSF coefficients */
@@ -1288,8 +1288,8 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         } else {
             /* gain is coded relative */
             int delta_gain = opus_rc_getsymbol(rc, silk_model_gain_delta);
-            log_gain = av_clip(FFMAX((delta_gain<<1) - 16,
-                                     frame->log_gain + delta_gain - 4), 0, 63);
+            log_gain = av_clip_uintp2(FFMAX((delta_gain<<1) - 16,
+                                     frame->log_gain + delta_gain - 4), 6);
         }
 
         frame->log_gain = log_gain;
@@ -1323,7 +1323,7 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         if (lag_absolute) {
             /* primary lag is coded absolute */
             int highbits, lowbits;
-            const uint16_t *model[] = {
+            static const uint16_t *model[] = {
                 silk_model_pitch_lowbits_nb, silk_model_pitch_lowbits_mb,
                 silk_model_pitch_lowbits_wb
             };
@@ -1357,11 +1357,11 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         ltpfilter = opus_rc_getsymbol(rc, silk_model_ltp_filter);
         for (i = 0; i < s->subframes; i++) {
             int index, j;
-            const uint16_t *filter_sel[] = {
+            static const uint16_t *filter_sel[] = {
                 silk_model_ltp_filter0_sel, silk_model_ltp_filter1_sel,
                 silk_model_ltp_filter2_sel
             };
-            const int8_t (*filter_taps[])[5] = {
+            static const int8_t (*filter_taps[])[5] = {
                 silk_ltp_filter0_taps, silk_ltp_filter1_taps, silk_ltp_filter2_taps
             };
             index = opus_rc_getsymbol(rc, filter_sel[ltpfilter]);

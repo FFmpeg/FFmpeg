@@ -98,7 +98,7 @@ static int expand_rle_row16(SgiState *s, uint16_t *out_buf,
             break;
 
         /* Check for buffer overflow. */
-        if (pixelstride * (count - 1) >= len) {
+        if (out_end - out_buf <= pixelstride * (count - 1)) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid pixel count.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -145,7 +145,7 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
     for (z = 0; z < s->depth; z++) {
         dest_row = out_buf;
         for (y = 0; y < s->height; y++) {
-            linesize = s->width * s->depth * s->bytes_per_channel;
+            linesize = s->width * s->depth;
             dest_row -= s->linesize;
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(&s->g, start_offset, SEEK_SET);
@@ -296,5 +296,5 @@ AVCodec ff_sgi_decoder = {
     .priv_data_size = sizeof(SgiState),
     .decode         = decode_frame,
     .init           = sgi_decode_init,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

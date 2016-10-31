@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "sp5x.h"
@@ -103,8 +104,9 @@ AVCodec ff_sp5x_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = sp5x_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_AMV_DECODER
@@ -118,5 +120,7 @@ AVCodec ff_amv_decoder = {
     .close          = ff_mjpeg_decode_end,
     .decode         = sp5x_decode_frame,
     .max_lowres     = 3,
+    .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

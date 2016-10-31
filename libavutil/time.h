@@ -32,8 +32,8 @@ int64_t av_gettime(void);
  * Get the current time in microseconds since some unspecified starting point.
  * On platforms that support it, the time comes from a monotonic clock
  * This property makes this time source ideal for measuring relative time.
- * If a monotonic clock is not available on the targeted platform, the
- * implementation fallsback on using av_gettime().
+ * The returned values may not be monotonic on platforms where a monotonic
+ * clock is not available.
  */
 int64_t av_gettime_relative(void);
 

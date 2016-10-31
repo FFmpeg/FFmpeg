@@ -47,7 +47,7 @@ typedef struct Bs2bContext {
 #define OFFSET(x) offsetof(Bs2bContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
 
-static const AVOption options[] = {
+static const AVOption bs2b_options[] = {
     { "profile", "Apply a pre-defined crossfeed level",
             OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = BS2B_DEFAULT_CLEVEL }, 0, INT_MAX, A, "profile" },
         { "default", "default profile", 0, AV_OPT_TYPE_CONST, { .i64 = BS2B_DEFAULT_CLEVEL }, 0, 0, A, "profile" },
@@ -60,12 +60,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass bs2b_class = {
-    .class_name = "bs2b filter",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(bs2b);
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -106,22 +101,25 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE,
     };
+    int ret;
 
     if (ff_add_channel_layout(&layouts, AV_CH_LAYOUT_STEREO) != 0)
         return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)

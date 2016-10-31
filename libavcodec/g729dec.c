@@ -181,14 +181,6 @@ static inline uint16_t g729_prng(uint16_t value)
 }
 
 /**
- * Get parity bit of bit 2..7
- */
-static inline int get_parity(uint8_t value)
-{
-   return (0x6996966996696996ULL >> (value >> 2)) & 1;
-}
-
-/**
  * Decodes LSF (Line Spectral Frequencies) from L0-L3 (3.2.4).
  * @param[out] lsfq (2.13) quantized LSF coefficients
  * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
@@ -421,7 +413,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         return ret;
     out_frame = (int16_t*) frame->data[0];
 
-    if (buf_size == 10) {
+    if (buf_size % 10 == 0) {
         packet_type = FORMAT_G729_8K;
         format = &format_g729_8k;
         //Reset voice decision
@@ -480,7 +472,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         ac_index      = get_bits(&gb, format->ac_index_bits[i]);
         if(!i && format->parity_bit)
-            bad_pitch = get_parity(ac_index) == get_bits1(&gb);
+            bad_pitch = av_parity(ac_index >> 2) == get_bits1(&gb);
         fc_indexes    = get_bits(&gb, format->fc_indexes_bits);
         pulses_signs  = get_bits(&gb, format->fc_signs_bits);
         gc_1st_index  = get_bits(&gb, format->gc_1st_index_bits);
@@ -512,7 +504,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
-            fc_indexes   = ctx->rand_value & ((1 << format->fc_indexes_bits) - 1);
+            fc_indexes   = av_mod_uintp2(ctx->rand_value, format->fc_indexes_bits);
 
             ctx->rand_value = g729_prng(ctx->rand_value);
             pulses_signs = ctx->rand_value;
@@ -711,7 +703,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *got_frame_ptr = 1;
-    return buf_size;
+    return packet_type == FORMAT_G729_8K ? 10 : 8;
 }
 
 AVCodec ff_g729_decoder = {
@@ -722,5 +714,5 @@ AVCodec ff_g729_decoder = {
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
 };

@@ -137,7 +137,7 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
                  * We have to reset :(.
                  */
 
-                av_log(context, AV_LOG_ERROR, "DV1394: Ring buffer overflow. Reseting ..\n");
+                av_log(context, AV_LOG_ERROR, "DV1394: Ring buffer overflow. Resetting ..\n");
 
                 dv1394_reset(dv);
                 dv1394_start(dv);
@@ -160,7 +160,7 @@ restart_poll:
             av_log(context, AV_LOG_ERROR, "Failed to get status: %s\n", strerror(errno));
             return AVERROR(EIO);
         }
-        av_dlog(context, "DV1394: status\n"
+        av_log(context, AV_LOG_TRACE, "DV1394: status\n"
                 "\tactive_frame\t%d\n"
                 "\tfirst_clear_frame\t%d\n"
                 "\tn_clear_frames\t%d\n"
@@ -173,7 +173,7 @@ restart_poll:
         dv->done  = 0;
 
         if (s.dropped_frames) {
-            av_log(context, AV_LOG_ERROR, "DV1394: Frame drop detected (%d). Reseting ..\n",
+            av_log(context, AV_LOG_ERROR, "DV1394: Frame drop detected (%d). Resetting ..\n",
                     s.dropped_frames);
 
             dv1394_reset(dv);
@@ -181,7 +181,7 @@ restart_poll:
         }
     }
 
-    av_dlog(context, "index %d, avail %d, done %d\n", dv->index, dv->avail,
+    av_log(context, AV_LOG_TRACE, "index %d, avail %d, done %d\n", dv->index, dv->avail,
             dv->done);
 
     size = avpriv_dv_produce_packet(dv->dv_demux, pkt,
@@ -206,7 +206,7 @@ static int dv1394_close(AVFormatContext * context)
         av_log(context, AV_LOG_ERROR, "Failed to munmap DV1394 ring buffer: %s\n", strerror(errno));
 
     close(dv->fd);
-    av_free(dv->dv_demux);
+    av_freep(&dv->dv_demux);
 
     return 0;
 }

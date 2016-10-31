@@ -24,14 +24,14 @@
 #include "asm.h"
 
 void put_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
-                                int line_size);
+                                ptrdiff_t line_size);
 void add_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
-                                int line_size);
+                                ptrdiff_t line_size);
 
 void (*put_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                 int line_size);
+                                 ptrdiff_t line_size);
 void (*add_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
-                                 int line_size);
+                                 ptrdiff_t line_size);
 
 #if 0
 /* These functions were the base for the optimized assembler routines,

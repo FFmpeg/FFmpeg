@@ -35,7 +35,6 @@
  *   http://www.pcisys.net/~melanson/codecs
  *
  * Supports: BGR24 (RGB 24bpp)
- *
  */
 
 #include <stdio.h>
@@ -52,9 +51,6 @@
 #include <zlib.h>
 #endif
 
-/*
- * Decoder context
- */
 typedef struct LclDecContext {
     // Image type
     int imgtype;
@@ -158,11 +154,6 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
 #endif
 
 
-/*
- *
- * Decode a frame
- *
- */
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     AVFrame *frame = data;
@@ -180,6 +171,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int uqvq, ret;
     unsigned int mthread_inlen, mthread_outlen;
     unsigned int len = buf_size;
+    int linesize;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
@@ -191,7 +183,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case AV_CODEC_ID_MSZH:
         switch (c->compression) {
         case COMP_MSZH:
-            if (c->imgtype == IMGTYPE_RGB24 && len == width * height * 3) {
+            if (c->imgtype == IMGTYPE_RGB24 && len == FFALIGN(width * 3, 4) * height ||
+                c->imgtype == IMGTYPE_YUV111 && len == width * height * 3) {
                 ;
             } else if (c->flags & FLAG_MULTITHREAD) {
                 mthread_inlen = AV_RL32(buf);
@@ -410,10 +403,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         }
         break;
     case IMGTYPE_RGB24:
+        linesize = len < FFALIGN(3 * width, 4) * height ? 3 * width : FFALIGN(3 * width, 4);
         for (row = height - 1; row >= 0; row--) {
             pixel_ptr = row * frame->linesize[0];
             memcpy(outptr + pixel_ptr, encoded, 3 * width);
-            encoded += 3 * width;
+            encoded += linesize;
         }
         break;
     case IMGTYPE_YUV411:
@@ -470,11 +464,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
-/*
- *
- * Init lcl decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -509,7 +498,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:2.\n");
         if (avctx->width % 4) {
-            avpriv_request_sample(avctx, "Unsupported dimensions\n");
+            avpriv_request_sample(avctx, "Unsupported dimensions");
             return AVERROR_INVALIDDATA;
         }
         break;
@@ -544,7 +533,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &subsample_h, &subsample_v);
     if (avctx->width % (1<<subsample_h) || avctx->height % (1<<subsample_v)) {
-        avpriv_request_sample(avctx, "Unsupported dimensions\n");
+        avpriv_request_sample(avctx, "Unsupported dimensions");
         return AVERROR_INVALIDDATA;
     }
 
@@ -593,7 +582,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
-        if ((c->decomp_buf = av_malloc(max_decomp_size)) == NULL) {
+        if (!(c->decomp_buf = av_malloc(max_decomp_size))) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);
         }
@@ -629,11 +618,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/*
- *
- * Uninit lcl decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -657,7 +641,7 @@ AVCodec ff_mszh_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -671,6 +655,6 @@ AVCodec ff_zlib_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

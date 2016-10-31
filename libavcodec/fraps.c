@@ -105,7 +105,9 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     s->bdsp.bswap_buf((uint32_t *) s->tmpbuf,
                       (const uint32_t *) src, size >> 2);
 
-    init_get_bits(&gb, s->tmpbuf, size * 8);
+    if ((ret = init_get_bits8(&gb, s->tmpbuf, size)) < 0)
+        return ret;
+
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
             dst[i] = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
@@ -186,13 +188,13 @@ static int decode_frame(AVCodecContext *avctx,
             return buf_size;
         }
         if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
-            av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
+            av_log(avctx, AV_LOG_ERROR, "error in data stream\n");
             return AVERROR_INVALIDDATA;
         }
         for (i = 0; i < planes; i++) {
             offs[i] = AV_RL32(buf + 4 + i * 4);
             if (offs[i] >= buf_size - header_size || (i && offs[i] <= offs[i - 1] + 1024)) {
-                av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
+                av_log(avctx, AV_LOG_ERROR, "plane %i offset is out of bounds\n", i);
                 return AVERROR_INVALIDDATA;
             }
         }
@@ -322,5 +324,5 @@ AVCodec ff_fraps_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
 };

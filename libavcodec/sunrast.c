@@ -127,7 +127,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     buf += maplength;
 
     if (maplength && depth < 8) {
-        ptr = ptr2 = av_malloc((w + 15) * h);
+        ptr = ptr2 = av_malloc_array((w + 15), h);
         if (!ptr)
             return AVERROR(ENOMEM);
         stride = (w + 15 >> 3) * depth;
@@ -211,5 +211,5 @@ AVCodec ff_sunrast_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SUNRAST,
     .decode         = sunrast_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

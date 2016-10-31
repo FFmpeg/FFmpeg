@@ -33,6 +33,7 @@
 #include "libavutil/replaygain.h"
 
 #include "avformat.h"
+#include "internal.h"
 #include "replaygain.h"
 
 static int32_t parse_value(const char *value, int32_t min)
@@ -69,36 +70,15 @@ static int32_t parse_value(const char *value, int32_t min)
 int ff_replaygain_export_raw(AVStream *st, int32_t tg, uint32_t tp,
                              int32_t ag, uint32_t ap)
 {
-    AVPacketSideData *sd, *tmp;
     AVReplayGain *replaygain;
-    int i;
 
     if (tg == INT32_MIN && ag == INT32_MIN)
         return 0;
 
-    for (i = 0; i < st->nb_side_data; i++) {
-        AVPacketSideData *src_sd = &st->side_data[i];
-
-        if (src_sd->type == AV_PKT_DATA_REPLAYGAIN)
-            return 0;
-    }
-
-    replaygain = av_mallocz(sizeof(*replaygain));
+    replaygain = (AVReplayGain*)av_stream_new_side_data(st, AV_PKT_DATA_REPLAYGAIN,
+                                                        sizeof(*replaygain));
     if (!replaygain)
         return AVERROR(ENOMEM);
-
-    tmp = av_realloc_array(st->side_data, st->nb_side_data + 1, sizeof(*tmp));
-    if (!tmp) {
-        av_freep(&replaygain);
-        return AVERROR(ENOMEM);
-    }
-    st->side_data = tmp;
-    st->nb_side_data++;
-
-    sd = &st->side_data[st->nb_side_data - 1];
-    sd->type = AV_PKT_DATA_REPLAYGAIN;
-    sd->data = (uint8_t*)replaygain;
-    sd->size = sizeof(*replaygain);
 
     replaygain->track_gain = tg;
     replaygain->track_peak = tp;

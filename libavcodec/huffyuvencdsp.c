@@ -25,7 +25,7 @@
 #define pb_7f (~0UL / 255 * 0x7f)
 #define pb_80 (~0UL / 255 * 0x80)
 
-static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w)
+static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, intptr_t w)
 {
     long i;
 
@@ -54,7 +54,7 @@ static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 }
 
 static void sub_hfyu_median_pred_c(uint8_t *dst, const uint8_t *src1,
-                                   const uint8_t *src2, int w,
+                                   const uint8_t *src2, intptr_t w,
                                    int *left, int *left_top)
 {
     int i;

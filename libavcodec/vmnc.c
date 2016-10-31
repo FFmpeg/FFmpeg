@@ -528,7 +528,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->width  = avctx->width;
     c->height = avctx->height;
     c->bpp    = avctx->bits_per_coded_sample;
-    c->bpp2   = c->bpp / 8;
 
     switch (c->bpp) {
     case 8:
@@ -537,13 +536,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case 16:
         avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
+    case 24:
+        /* 24 bits is not technically supported, but some clients might
+         * mistakenly set it, so let's assume they actually meant 32 bits */
+        c->bpp = 32;
     case 32:
-        avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_0RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bitdepth %i\n", c->bpp);
         return AVERROR_INVALIDDATA;
     }
+    c->bpp2 = c->bpp / 8;
 
     c->pic = av_frame_alloc();
     if (!c->pic)
@@ -573,5 +577,5 @@ AVCodec ff_vmnc_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -75,7 +75,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int qdbov;
     int16_t *samples = (int16_t*) frame->data[0];
 
-    if ((ret = ff_alloc_packet(avpkt, 1 + p->order))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 1 + p->order, 1 + p->order))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
     }
@@ -87,7 +87,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     energy /= frame->nb_samples;
     if (energy > 0) {
         double dbov = 10 * log10(energy / 1081109975);
-        qdbov = av_clip(-floor(dbov), 0, 127);
+        qdbov = av_clip_uintp2(-floor(dbov), 7);
     } else {
         qdbov = 127;
     }
@@ -97,7 +97,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         avpkt->data[1 + i] = p->ref_coef[i] * 127 + 127;
 
     *got_packet_ptr = 1;
-    avpkt->size = 1 + p->order;
+    av_assert1(avpkt->size == 1 + p->order);
 
     return 0;
 }

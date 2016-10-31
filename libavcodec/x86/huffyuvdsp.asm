@@ -23,13 +23,13 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-pb_f: times 16 db 15
+cextern pb_15
 pb_zzzzzzzz77777777: times 8 db -1
 pb_7: times 8 db 7
 pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
 pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
 
-SECTION_TEXT
+SECTION .text
 
 ; void ff_add_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 ;                                     const uint8_t *diff, int w,
@@ -157,7 +157,7 @@ cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
 
 INIT_XMM sse4
 cglobal add_hfyu_left_pred, 3,3,7, dst, src, w, left
-    mova    m5, [pb_f]
+    mova    m5, [pb_15]
     mova    m6, [pb_zzzzzzzz77777777]
     mova    m4, [pb_zzzz3333zzzzbbbb]
     mova    m3, [pb_zz11zz55zz99zzdd]
@@ -196,7 +196,7 @@ cglobal add_bytes, 3,4,2, dst, src, w, size
     add   dstq, wq
     add   srcq, wq
     neg     wq
-.3
+.3:
     mov  sizeb, [srcq + wq]
     add [dstq + wq], sizeb
     inc     wq

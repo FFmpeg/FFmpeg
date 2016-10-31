@@ -30,6 +30,7 @@
 #include "config.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
@@ -104,7 +105,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         break;
 
     case F0R_PARAM_DOUBLE:
-        val.d = strtod(param, &tail);
+        val.d = av_strtod(param, &tail);
         if (*tail || val.d == HUGE_VAL)
             goto fail;
         break;
@@ -159,54 +160,6 @@ static int set_params(AVFilterContext *ctx, const char *params)
             if (ret < 0)
                 return ret;
         }
-
-        av_log(ctx, AV_LOG_VERBOSE,
-               "idx:%d name:'%s' type:%s explanation:'%s' ",
-               i, info.name,
-               info.type == F0R_PARAM_BOOL     ? "bool"     :
-               info.type == F0R_PARAM_DOUBLE   ? "double"   :
-               info.type == F0R_PARAM_COLOR    ? "color"    :
-               info.type == F0R_PARAM_POSITION ? "position" :
-               info.type == F0R_PARAM_STRING   ? "string"   : "unknown",
-               info.explanation);
-
-#ifdef DEBUG
-        av_log(ctx, AV_LOG_DEBUG, "value:");
-        switch (info.type) {
-            void *v;
-            double d;
-            char s[128];
-            f0r_param_color_t col;
-            f0r_param_position_t pos;
-
-        case F0R_PARAM_BOOL:
-            v = &d;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%s", d >= 0.5 && d <= 1.0 ? "y" : "n");
-            break;
-        case F0R_PARAM_DOUBLE:
-            v = &d;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f", d);
-            break;
-        case F0R_PARAM_COLOR:
-            v = &col;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f/%f/%f", col.r, col.g, col.b);
-            break;
-        case F0R_PARAM_POSITION:
-            v = &pos;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f/%f", pos.x, pos.y);
-            break;
-        default: /* F0R_PARAM_STRING */
-            v = s;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "'%s'", s);
-            break;
-        }
-#endif
-        av_log(ctx, AV_LOG_VERBOSE, ".\n");
     }
 
     return 0;
@@ -370,11 +323,14 @@ static int query_formats(AVFilterContext *ctx)
 {
     Frei0rContext *s = ctx->priv;
     AVFilterFormats *formats = NULL;
+    int ret;
 
     if        (s->plugin_info.color_model == F0R_COLOR_MODEL_BGRA8888) {
-        ff_add_format(&formats, AV_PIX_FMT_BGRA);
+        if ((ret = ff_add_format(&formats, AV_PIX_FMT_BGRA)) < 0)
+            return ret;
     } else if (s->plugin_info.color_model == F0R_COLOR_MODEL_RGBA8888) {
-        ff_add_format(&formats, AV_PIX_FMT_RGBA);
+        if ((ret = ff_add_format(&formats, AV_PIX_FMT_RGBA)) < 0)
+            return ret;
     } else {                                   /* F0R_COLOR_MODEL_PACKED32 */
         static const enum AVPixelFormat pix_fmts[] = {
             AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_ARGB, AV_PIX_FMT_NONE
@@ -385,8 +341,7 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
 
-    ff_set_common_formats(ctx, formats);
-    return 0;
+    return ff_set_common_formats(ctx, formats);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -471,6 +426,7 @@ static int source_config_props(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = s->time_base;
+    outlink->frame_rate = av_inv_q(s->time_base);
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
     if (s->destruct && s->instance)
@@ -506,7 +462,7 @@ static int source_request_frame(AVFilterLink *outlink)
 
 static const AVOption frei0r_src_options[] = {
     { "size",          "Dimensions of the generated video.", OFFSET(w),         AV_OPT_TYPE_IMAGE_SIZE, { .str = "320x240" }, .flags = FLAGS },
-    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = FLAGS },
+    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, 0, INT_MAX, .flags = FLAGS },
     { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { "filter_params", NULL,                                 OFFSET(params),    AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { NULL },

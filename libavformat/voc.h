@@ -27,6 +27,7 @@
 
 typedef struct voc_dec_context {
     int64_t remaining_size;
+    int64_t pts;
 } VocDecContext;
 
 typedef enum voc_type {

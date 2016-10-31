@@ -1,4 +1,4 @@
-aaee9d1ff7dccfc045603c45f0160000 *tests/data/fate/vsynth2-mpng.avi
-12558330 tests/data/fate/vsynth2-mpng.avi
-98d0e2854731472c5bf13d8638502d0a *tests/data/fate/vsynth2-mpng.out.rawvideo
-stddev:    1.26 PSNR: 46.10 MAXDIFF:   13 bytes:  7603200/  7603200
+481e2d148f411bb61783aa688ec22943 *tests/data/fate/vsynth2-mpng.avi
+11816978 tests/data/fate/vsynth2-mpng.avi
+32fae3e665407bb4317b3f90fedb903c *tests/data/fate/vsynth2-mpng.out.rawvideo
+stddev:    1.54 PSNR: 44.37 MAXDIFF:   17 bytes:  7603200/  7603200

@@ -33,6 +33,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "libschroedinger.h"
@@ -41,6 +44,8 @@
 
 /** libschroedinger encoder private data */
 typedef struct SchroEncoderParams {
+    AVClass        *class;
+
     /** Schroedinger video format */
     SchroVideoFormat *format;
 
@@ -70,6 +75,9 @@ typedef struct SchroEncoderParams {
 
     /* counter for frames submitted to encoder, used as dts */
     int64_t dts;
+
+    /** enable noarith */
+    int noarith;
 } SchroEncoderParams;
 
 /**
@@ -155,22 +163,24 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
     p_schro_params->format->frame_rate_numerator   = avctx->time_base.den;
     p_schro_params->format->frame_rate_denominator = avctx->time_base.num;
 
-    p_schro_params->frame_size = avpicture_get_size(avctx->pix_fmt,
-                                                    avctx->width,
-                                                    avctx->height);
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    p_schro_params->frame_size = av_image_get_buffer_size(avctx->pix_fmt,
+                                                          avctx->width,
+                                                          avctx->height, 1);
 
     if (!avctx->gop_size) {
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "gop_structure",
                                          SCHRO_ENCODER_GOP_INTRA_ONLY);
 
-        if (avctx->coder_type == FF_CODER_TYPE_VLC)
-            schro_encoder_setting_set_double(p_schro_params->encoder,
-                                             "enable_noarith", 1);
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (avctx->coder_type != FF_CODER_TYPE_VLC)
+            p_schro_params->noarith = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        schro_encoder_setting_set_double(p_schro_params->encoder,
+                                         "enable_noarith",
+                                         p_schro_params->noarith);
     } else {
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "au_distance", avctx->gop_size);
@@ -179,7 +189,7 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
     }
 
     /* FIXME - Need to handle SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY. */
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         if (!avctx->global_quality) {
             /* lossless coding */
             schro_encoder_setting_set_double(p_schro_params->encoder,
@@ -206,14 +216,14 @@ static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
                                          "bitrate", avctx->bit_rate);
     }
 
-    if (avctx->flags & CODEC_FLAG_INTERLACED_ME)
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)
         /* All material can be coded as interlaced or progressive
            irrespective of the type of source material. */
         schro_encoder_setting_set_double(p_schro_params->encoder,
                                          "interlaced_coding", 1);
 
     schro_encoder_setting_set_double(p_schro_params->encoder, "open_gop",
-                                     !(avctx->flags & CODEC_FLAG_CLOSED_GOP));
+                                     !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
     /* FIXME: Signal range hardcoded to 8-bit data until both libschroedinger
      * and libdirac support other bit-depth data. */
@@ -238,17 +248,17 @@ static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avctx,
                                                    const AVFrame *frame)
 {
     SchroEncoderParams *p_schro_params = avctx->priv_data;
-    SchroFrame *in_frame;
-    /* Input line size may differ from what the codec supports. Especially
-     * when transcoding from one format to another. So use avpicture_layout
-     * to copy the frame. */
-    in_frame = ff_create_schro_frame(avctx, p_schro_params->frame_format);
+    SchroFrame *in_frame = ff_create_schro_frame(avctx,
+                                                 p_schro_params->frame_format);
 
-    if (in_frame)
-        avpicture_layout((const AVPicture *)frame, avctx->pix_fmt,
-                          avctx->width, avctx->height,
-                          in_frame->components[0].data,
-                          p_schro_params->frame_size);
+    if (in_frame) {
+        /* Copy input data to SchroFrame buffers (they match the ones
+         * referenced by the AVFrame stored in priv) */
+        if (av_frame_copy(in_frame->priv, frame) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to copy input data\n");
+            return NULL;
+        }
+    }
 
     return in_frame;
 }
@@ -284,6 +294,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         /* Allocate frame data to schro input buffer. */
         SchroFrame *in_frame = libschroedinger_frame_from_data(avctx, frame);
+        if (!in_frame)
+            return AVERROR(ENOMEM);
         /* Load next frame. */
         schro_encoder_push_frame(encoder, in_frame);
     }
@@ -332,6 +344,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
             /* Create output frame. */
             p_frame_output = av_mallocz(sizeof(FFSchroEncodedFrame));
+            if (!p_frame_output)
+                return AVERROR(ENOMEM);
             /* Set output data. */
             p_frame_output->size     = p_schro_params->enc_buf_size;
             p_frame_output->p_encbuf = p_schro_params->enc_buf;
@@ -340,7 +354,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 p_frame_output->key_frame = 1;
 
             /* Parse the coded frame number from the bitstream. Bytes 14
-             * through 17 represesent the frame number. */
+             * through 17 represent the frame number. */
             p_frame_output->frame_num = AV_RB32(enc_buf->data + 13);
 
             ff_schro_queue_push_back(&p_schro_params->enc_frame_queue,
@@ -379,16 +393,20 @@ static int libschroedinger_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt_size = p_frame_output->size;
     if (last_frame_in_sequence && p_schro_params->enc_buf_size > 0)
         pkt_size += p_schro_params->enc_buf_size;
-    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, pkt_size, 0)) < 0)
         goto error;
 
     memcpy(pkt->data, p_frame_output->p_encbuf, p_frame_output->size);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = p_frame_output->key_frame;
+    avctx->coded_frame->pts = p_frame_output->frame_num;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     /* Use the frame number of the encoded frame as the pts. It is OK to
      * do so since Dirac is a constant frame rate codec. It expects input
      * to be of constant frame rate. */
-    pkt->pts =
-    avctx->coded_frame->pts = p_frame_output->frame_num;
+    pkt->pts = p_frame_output->frame_num;
     pkt->dts = p_schro_params->dts++;
     enc_size = p_frame_output->size;
 
@@ -432,11 +450,23 @@ static int libschroedinger_encode_close(AVCodecContext *avctx)
     /* Free the video format structure. */
     av_freep(&p_schro_params->format);
 
-    av_frame_free(&avctx->coded_frame);
-
     return 0;
 }
 
+#define OFFSET(x) offsetof(SchroEncoderParams, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "noarith", "Enable noarith", OFFSET(noarith), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass libschroedinger_class = {
+    .class_name = "libschroedinger",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_libschroedinger_encoder = {
     .name           = "libschroedinger",
@@ -444,10 +474,11 @@ AVCodec ff_libschroedinger_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(SchroEncoderParams),
+    .priv_class     = &libschroedinger_class,
     .init           = libschroedinger_encode_init,
     .encode2        = libschroedinger_encode_frame,
     .close          = libschroedinger_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },

@@ -26,9 +26,17 @@
  * RTMP Diffie-Hellmann utilities
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "rtmpdh.h"
+
+#include "libavutil/attributes.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
+
+#include "rtmpdh.h"
 
 #define P1024                                          \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -46,8 +54,8 @@
     "F71C35FDAD44CFD2D74F9208BE258FF324943328F67329C0" \
     "FFFFFFFFFFFFFFFF"
 
-#if CONFIG_NETTLE || CONFIG_GCRYPT
-#if CONFIG_NETTLE
+#if CONFIG_GMP || CONFIG_GCRYPT
+#if CONFIG_GMP
 #define bn_new(bn)                      \
     do {                                \
         bn = av_malloc(sizeof(*bn));    \
@@ -65,30 +73,48 @@
 #define bn_sub_word(bn, w)          mpz_sub_ui(bn, bn, w)
 #define bn_cmp_1(bn)                mpz_cmp_ui(bn, 1)
 #define bn_num_bytes(bn)            (mpz_sizeinbase(bn, 2) + 7) / 8
-#define bn_bn2bin(bn, buf, len)     nettle_mpz_get_str_256(len, buf, bn)
+#define bn_bn2bin(bn, buf, len)                     \
+    do {                                            \
+        memset(buf, 0, len);                        \
+        if (bn_num_bytes(bn) <= len)                \
+            mpz_export(buf, NULL, 1, 1, 0, 0, bn);  \
+    } while (0)
 #define bn_bin2bn(bn, buf, len)                     \
     do {                                            \
         bn_new(bn);                                 \
         if (bn)                                     \
-            nettle_mpz_set_str_256_u(bn, len, buf); \
+            mpz_import(bn, len, 1, 1, 0, 0, buf);   \
     } while (0)
 #define bn_hex2bn(bn, buf, ret)                     \
     do {                                            \
         bn_new(bn);                                 \
         if (bn)                                     \
             ret = (mpz_set_str(bn, buf, 16) == 0);  \
+        else                                        \
+            ret = 1;                                \
     } while (0)
 #define bn_modexp(bn, y, q, p)      mpz_powm(bn, y, q, p)
-#define bn_random(bn, num_bytes)                    \
-    do {                                            \
-        gmp_randstate_t rs;                         \
-        gmp_randinit_mt(rs);                        \
-        gmp_randseed_ui(rs, av_get_random_seed());  \
-        mpz_urandomb(bn, rs, num_bytes);            \
-        gmp_randclear(rs);                          \
+#define bn_random(bn, num_bits)                       \
+    do {                                              \
+        int bits = num_bits;                          \
+        mpz_set_ui(bn, 0);                            \
+        for (bits = num_bits; bits > 0; bits -= 32) { \
+            mpz_mul_2exp(bn, bn, 32);                 \
+            mpz_add_ui(bn, bn, av_get_random_seed()); \
+        }                                             \
+        mpz_fdiv_r_2exp(bn, bn, num_bits);            \
     } while (0)
 #elif CONFIG_GCRYPT
-#define bn_new(bn)                  bn = gcry_mpi_new(1)
+#define bn_new(bn)                                              \
+    do {                                                        \
+        if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P)) { \
+            if (!gcry_check_version("1.5.4"))                   \
+                return AVERROR(EINVAL);                         \
+            gcry_control(GCRYCTL_DISABLE_SECMEM, 0);            \
+            gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);   \
+        }                                                       \
+        bn = gcry_mpi_new(1);                                   \
+    } while (0)
 #define bn_free(bn)                 gcry_mpi_release(bn)
 #define bn_set_word(bn, w)          gcry_mpi_set_ui(bn, w)
 #define bn_cmp(a, b)                gcry_mpi_cmp(a, b)
@@ -100,7 +126,7 @@
 #define bn_bin2bn(bn, buf, len)     gcry_mpi_scan(&bn, GCRYMPI_FMT_USG, buf, len, NULL)
 #define bn_hex2bn(bn, buf, ret)     ret = (gcry_mpi_scan(&bn, GCRYMPI_FMT_HEX, buf, 0, 0) == 0)
 #define bn_modexp(bn, y, q, p)      gcry_mpi_powm(bn, y, q, p)
-#define bn_random(bn, num_bytes)    gcry_mpi_randomize(bn, num_bytes, GCRY_WEAK_RANDOM)
+#define bn_random(bn, num_bits)     gcry_mpi_randomize(bn, num_bits, GCRY_WEAK_RANDOM)
 #endif
 
 #define MAX_BYTES 18000
@@ -118,7 +144,7 @@ static FFBigNum dh_generate_key(FF_DH *dh)
     bn_new(dh->priv_key);
     if (!dh->priv_key)
         return NULL;
-    bn_random(dh->priv_key, num_bytes);
+    bn_random(dh->priv_key, 8 * num_bytes);
 
     bn_new(dh->pub_key);
     if (!dh->pub_key) {
@@ -132,29 +158,26 @@ static FFBigNum dh_generate_key(FF_DH *dh)
 }
 
 static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
-                          uint32_t pub_key_len, uint8_t *secret_key)
+                          uint32_t secret_key_len, uint8_t *secret_key)
 {
     FFBigNum k;
-    int num_bytes;
-
-    num_bytes = bn_num_bytes(dh->p);
-    if (num_bytes <= 0 || num_bytes > MAX_BYTES)
-        return -1;
 
     bn_new(k);
     if (!k)
         return -1;
 
     bn_modexp(k, pub_key_bn, dh->priv_key, dh->p);
-    bn_bn2bin(k, secret_key, pub_key_len);
+    bn_bn2bin(k, secret_key, secret_key_len);
     bn_free(k);
 
     /* return the length of the shared secret key like DH_compute_key */
-    return pub_key_len;
+    return secret_key_len;
 }
 
 void ff_dh_free(FF_DH *dh)
 {
+    if (!dh)
+        return;
     bn_free(dh->p);
     bn_free(dh->g);
     bn_free(dh->pub_key);
@@ -187,10 +210,19 @@ void ff_dh_free(FF_DH *dh)
 
 #define dh_new()                                DH_new()
 #define dh_generate_key(dh)                     DH_generate_key(dh)
-#define dh_compute_key(dh, pub, len, secret)    DH_compute_key(secret, pub, dh)
+
+static int dh_compute_key(FF_DH *dh, FFBigNum pub_key_bn,
+                          uint32_t secret_key_len, uint8_t *secret_key)
+{
+    if (secret_key_len < DH_size(dh))
+        return AVERROR(EINVAL);
+    return DH_compute_key(secret_key, pub_key_bn, dh);
+}
 
 void ff_dh_free(FF_DH *dh)
 {
+    if (!dh)
+        return;
     DH_free(dh);
 }
 #endif
@@ -304,7 +336,8 @@ int ff_dh_write_public_key(FF_DH *dh, uint8_t *pub_key, int pub_key_len)
 }
 
 int ff_dh_compute_shared_secret_key(FF_DH *dh, const uint8_t *pub_key,
-                                    int pub_key_len, uint8_t *secret_key)
+                                    int pub_key_len, uint8_t *secret_key,
+                                    int secret_key_len)
 {
     FFBigNum q1 = NULL, pub_key_bn = NULL;
     int ret;
@@ -324,7 +357,7 @@ int ff_dh_compute_shared_secret_key(FF_DH *dh, const uint8_t *pub_key,
     /* when the public key is valid we have to compute the shared secret key */
     if ((ret = dh_is_valid_public_key(pub_key_bn, dh->p, q1)) < 0) {
         goto fail;
-    } else if ((ret = dh_compute_key(dh, pub_key_bn, pub_key_len,
+    } else if ((ret = dh_compute_key(dh, pub_key_bn, secret_key_len,
                                      secret_key)) < 0) {
         ret = AVERROR(EINVAL);
         goto fail;
@@ -336,4 +369,3 @@ fail:
 
     return ret;
 }
-

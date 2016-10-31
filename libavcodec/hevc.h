@@ -31,6 +31,7 @@
 #include "cabac.h"
 #include "get_bits.h"
 #include "hevcpred.h"
+#include "h2645_parse.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -56,7 +57,6 @@
 #define MAX_TRANSFORM_DEPTH 5
 
 #define MAX_TB_SIZE 32
-#define MAX_PB_SIZE 64
 #define MAX_LOG2_CTB_SIZE 6
 #define MAX_QP 51
 #define DEFAULT_INTRA_TC_OFFSET 2
@@ -277,6 +277,7 @@ enum ScanType {
 typedef struct ShortTermRPS {
     unsigned int num_negative_pics;
     int num_delta_pocs;
+    int rps_idx_num_delta_pocs;
     int32_t delta_poc[32];
     uint8_t used[32];
 } ShortTermRPS;
@@ -299,10 +300,10 @@ typedef struct RefPicListTab {
 } RefPicListTab;
 
 typedef struct HEVCWindow {
-    int left_offset;
-    int right_offset;
-    int top_offset;
-    int bottom_offset;
+    unsigned int left_offset;
+    unsigned int right_offset;
+    unsigned int top_offset;
+    unsigned int bottom_offset;
 } HEVCWindow;
 
 typedef struct VUI {
@@ -386,6 +387,9 @@ typedef struct HEVCVPS {
     uint8_t vps_poc_proportional_to_timing_flag;
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -482,6 +486,9 @@ typedef struct HEVCSPS {
     int vshift[3];
 
     int qp_bd_offset;
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCSPS;
 
 typedef struct HEVCPPS {
@@ -556,7 +563,21 @@ typedef struct HEVCPPS {
     int *tile_pos_rs;       ///< TilePosRS
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
+
+    uint8_t data[4096];
+    int data_size;
 } HEVCPPS;
+
+typedef struct HEVCParamSets {
+    AVBufferRef *vps_list[MAX_VPS_COUNT];
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    /* currently active parameter sets */
+    const HEVCVPS *vps;
+    const HEVCSPS *sps;
+    const HEVCPPS *pps;
+} HEVCParamSets;
 
 typedef struct SliceHeader {
     unsigned int pps_id;
@@ -576,8 +597,11 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
 
     ///< RPS coded in the slice header itself is stored here
+    int short_term_ref_pic_set_sps_flag;
+    int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
     const ShortTermRPS *short_term_rps;
+    int long_term_ref_pic_set_size;
     LongTermRPS long_term_rps;
     unsigned int list_entry_lx[2][32];
 
@@ -608,7 +632,7 @@ typedef struct SliceHeader {
 
     unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
 
-    int *entry_point_offset;
+    unsigned *entry_point_offset;
     int * offset;
     int * size;
     int num_entry_point_offsets;
@@ -632,20 +656,12 @@ typedef struct SliceHeader {
     int slice_ctb_addr_rs;
 } SliceHeader;
 
-typedef struct CodingTree {
-    int depth; ///< ctDepth
-} CodingTree;
-
 typedef struct CodingUnit {
     int x;
     int y;
 
     enum PredMode pred_mode;    ///< PredMode
     enum PartMode part_mode;    ///< PartMode
-
-    uint8_t rqt_root_cbf;
-
-    uint8_t pcm_flag;
 
     // Inferred parameters
     uint8_t intra_split_flag;   ///< IntraSplitFlag
@@ -684,7 +700,6 @@ typedef struct PredictionUnit {
 } PredictionUnit;
 
 typedef struct TransformUnit {
-    DECLARE_ALIGNED(32, int16_t, coeffs[2][MAX_TB_SIZE * MAX_TB_SIZE]);
     int cu_qp_delta;
 
     int res_scale_val;
@@ -726,6 +741,9 @@ typedef struct HEVCFrame {
     AVBufferRef *rpl_tab_buf;
     AVBufferRef *rpl_buf;
 
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private;
+
     /**
      * A sequence counter, so that old frames are output first
      * after a POC reset
@@ -738,16 +756,7 @@ typedef struct HEVCFrame {
     uint8_t flags;
 } HEVCFrame;
 
-typedef struct HEVCNAL {
-    uint8_t *rbsp_buffer;
-    int rbsp_buffer_size;
-
-    int size;
-    const uint8_t *data;
-} HEVCNAL;
-
 typedef struct HEVCLocalContext {
-    DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
     uint8_t cabac_state[HEVC_CONTEXTS];
 
     uint8_t stat_coeff[4];
@@ -772,9 +781,11 @@ typedef struct HEVCLocalContext {
     int     end_of_tiles_y;
     /* +7 is for subpixel interpolation, *2 for high bit depths */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+    /* The extended size between the new edge emu buffer is abused by SAO */
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
 
-    CodingTree ct;
+    int ct_depth;
     CodingUnit cu;
     PredictionUnit pu;
     NeighbourAvailable na;
@@ -809,18 +820,11 @@ typedef struct HEVCContext {
     uint8_t slice_initialized;
 
     AVFrame *frame;
-    AVFrame *sao_frame;
-    AVFrame *tmp_frame;
     AVFrame *output_frame;
+    uint8_t *sao_pixel_buffer_h[3];
+    uint8_t *sao_pixel_buffer_v[3];
 
-    const HEVCVPS *vps;
-    const HEVCSPS *sps;
-    const HEVCPPS *pps;
-    AVBufferRef *vps_list[MAX_VPS_COUNT];
-    AVBufferRef *sps_list[MAX_SPS_COUNT];
-    AVBufferRef *pps_list[MAX_PPS_COUNT];
-
-    AVBufferRef *current_sps;
+    HEVCParamSets ps;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
@@ -845,6 +849,7 @@ typedef struct HEVCContext {
     int bs_height;
 
     int is_decoded;
+    int no_rasl_output_flag;
 
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
@@ -881,19 +886,10 @@ typedef struct HEVCContext {
 
     int enable_parallel_tiles;
     int wpp_err;
-    int skipped_bytes;
-    int *skipped_bytes_pos;
-    int skipped_bytes_pos_size;
-
-    int *skipped_bytes_nal;
-    int **skipped_bytes_pos_nal;
-    int *skipped_bytes_pos_size_nal;
 
     const uint8_t *data;
 
-    HEVCNAL *nals;
-    int nb_nals;
-    int nals_allocated;
+    H2645Packet pkt;
     // type of the first VCL NAL of the current frame
     enum NALUnitType first_nal_type;
 
@@ -924,17 +920,41 @@ typedef struct HEVCContext {
     int sei_hflip, sei_vflip;
 
     int picture_struct;
+
+    uint8_t* a53_caption;
+    int a53_caption_size;
+
+    /** mastering display */
+    int sei_mastering_display_info_present;
+    uint16_t display_primaries[3][2];
+    uint16_t white_point[2];
+    uint32_t max_mastering_luminance;
+    uint32_t min_mastering_luminance;
+
 } HEVCContext;
 
-int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
-                                  const HEVCSPS *sps, int is_slice_header);
-int ff_hevc_decode_nal_vps(HEVCContext *s);
-int ff_hevc_decode_nal_sps(HEVCContext *s);
-int ff_hevc_decode_nal_pps(HEVCContext *s);
-int ff_hevc_decode_nal_sei(HEVCContext *s);
+int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
+                                  ShortTermRPS *rps, const HEVCSPS *sps, int is_slice_header);
 
-int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                         HEVCNAL *nal);
+/**
+ * Parse the SPS from the bitstream into the provided HEVCSPS struct.
+ *
+ * @param sps_id the SPS id will be written here
+ * @param apply_defdispwin if set 1, the default display window from the VUI
+ *                         will be applied to the video dimensions
+ * @param vps_list if non-NULL, this function will validate that the SPS refers
+ *                 to an existing VPS
+ */
+int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+                      int apply_defdispwin, AVBufferRef **vps_list, AVCodecContext *avctx);
+
+int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps);
+int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps, int apply_defdispwin);
+int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
+                           HEVCParamSets *ps);
+int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 /**
  * Mark all frames in DPB as unused for reference.
@@ -1039,6 +1059,18 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
+
+int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
+                           uint8_t *buf, int buf_size);
+
+/**
+ * Reset SEI values that are stored on the Context.
+ * e.g. Caption data that was extracted during NAL
+ * parsing.
+ *
+ * @param s HEVCContext.
+ */
+void ff_hevc_reset_sei(HEVCContext *s);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

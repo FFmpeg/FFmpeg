@@ -1,6 +1,6 @@
 /*
  * id Quake II CIN Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -56,8 +56,7 @@
 #define HUF_TOKENS 256
 #define PALETTE_COUNT 256
 
-typedef struct
-{
+typedef struct hnode {
   int count;
   unsigned char used;
   int children[2];
@@ -215,7 +214,8 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IdcinContext *s = avctx->priv_data;
-    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+    int pal_size;
+    const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     AVFrame *frame = data;
     int ret;
 
@@ -228,9 +228,11 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     if (idcin_decode_vlcs(s, frame))
         return AVERROR_INVALIDDATA;
 
-    if (pal) {
+    if (pal && pal_size == AVPALETTE_SIZE) {
         frame->palette_has_changed = 1;
         memcpy(s->pal, pal, AVPALETTE_SIZE);
+    } else if (pal) {
+        av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
     }
     /* make the palette available on the way out */
     memcpy(frame->data[1], s->pal, AVPALETTE_SIZE);
@@ -249,5 +251,5 @@ AVCodec ff_idcin_decoder = {
     .priv_data_size = sizeof(IdcinContext),
     .init           = idcin_decode_init,
     .decode         = idcin_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

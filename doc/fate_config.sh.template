@@ -1,5 +1,6 @@
 slot=                                    # some unique identifier
 repo=git://source.ffmpeg.org/ffmpeg.git  # the source repository
+#branch=release/2.6                       # the branch to test
 samples=                                 # path to samples directory
 workdir=                                 # directory in which to do all the work
 #fate_recv="ssh -T fate@fate.ffmpeg.org" # command to submit report

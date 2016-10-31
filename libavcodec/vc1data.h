@@ -29,8 +29,10 @@
 #define AVCODEC_VC1DATA_H
 
 #include <stdint.h>
+
 #include "libavutil/rational.h"
-#include "get_bits.h"
+
+#include "vlc.h"
 
 /** Table for conversion between TTBLK and TTMB */
 extern const int ff_vc1_ttblk_to_tt[3][8];
@@ -94,8 +96,6 @@ extern VLC ff_vc1_ac_coeff_table[8];
 #define VC1_IF_MBMODE_VLC_BITS 5
 //@}
 
-
-/* Denominator used for ff_vc1_bfraction_lut */
 #define B_FRACTION_DEN  256
 
 /* pre-computed scales for all bfractions and base=256 */

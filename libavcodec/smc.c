@@ -1,6 +1,6 @@
 /*
  * Quicktime Graphics (SMC) Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -70,7 +70,7 @@ typedef struct SmcContext {
         row_ptr += stride * 4; \
     } \
     total_blocks--; \
-    if (total_blocks < 0) \
+    if (total_blocks < !!n_blocks) \
     { \
         av_log(s->avctx, AV_LOG_INFO, "warning: block counter just went negative (this should not happen)\n"); \
         return; \
@@ -92,7 +92,7 @@ static void smc_decode_stream(SmcContext *s)
     unsigned int color_flags_b;
     unsigned int flag_mask;
 
-    unsigned char *pixels = s->frame->data[0];
+    unsigned char * const pixels = s->frame->data[0];
 
     int image_size = height * s->frame->linesize[0];
     int row_ptr = 0;
@@ -472,5 +472,5 @@ AVCodec ff_smc_decoder = {
     .init           = smc_decode_init,
     .close          = smc_decode_end,
     .decode         = smc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

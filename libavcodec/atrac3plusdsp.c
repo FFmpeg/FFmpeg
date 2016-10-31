@@ -28,6 +28,7 @@
 #include <math.h>
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/libm.h"
 #include "avcodec.h"
 #include "sinewin.h"
 #include "fft.h"
@@ -107,7 +108,7 @@ av_cold void ff_atrac3p_init_wave_synth(void)
 
     /* generate amplitude scalefactors table */
     for (i = 0; i < 64; i++)
-        amp_sf_tab[i] = pow(2.0f, ((double)i - 3) / 4.0f);
+        amp_sf_tab[i] = exp2f((i - 3) / 4.0f);
 }
 
 /**
@@ -116,14 +117,16 @@ av_cold void ff_atrac3p_init_wave_synth(void)
  *  @param[in]    synth_param   ptr to common synthesis parameters
  *  @param[in]    waves_info    parameters for each sine wave
  *  @param[in]    envelope      envelope data for all waves in a group
- *  @param[in]    phase_shift   flag indicates 180° phase shift
+ *  @param[in]    fdsp          ptr to floating-point DSP context
+ *  @param[in]    invert_phase  flag indicating 180° phase shift
  *  @param[in]    reg_offset    region offset for trimming envelope data
  *  @param[out]   out           receives sythesized data
  */
 static void waves_synth(Atrac3pWaveSynthParams *synth_param,
                         Atrac3pWavesData *waves_info,
                         Atrac3pWaveEnvelope *envelope,
-                        int phase_shift, int reg_offset, float *out)
+                        AVFloatDSPContext *fdsp,
+                        int invert_phase, int reg_offset, float *out)
 {
     int i, wn, inc, pos;
     double amp;
@@ -145,6 +148,10 @@ static void waves_synth(Atrac3pWaveSynthParams *synth_param,
             pos     = (pos + inc) & 2047;
         }
     }
+
+    /* invert phase if requested */
+    if (invert_phase)
+        fdsp->vector_fmul_scalar(out, out, -1.0f, 128);
 
     /* fade in with steep Hann window if requested */
     if (envelope->has_start_point) {
@@ -216,12 +223,12 @@ void ff_atrac3p_generate_tones(Atrac3pChanUnitCtx *ch_unit, AVFloatDSPContext *f
     /* synthesize waves for both overlapping regions */
     if (tones_now->num_wavs && reg1_env_nonzero)
         waves_synth(ch_unit->waves_info_prev, tones_now, &tones_now->curr_env,
-                    ch_unit->waves_info_prev->phase_shift[sb] & ch_num,
+                    fdsp, ch_unit->waves_info_prev->invert_phase[sb] & ch_num,
                     128, wavreg1);
 
     if (tones_next->num_wavs && reg2_env_nonzero)
-        waves_synth(ch_unit->waves_info, tones_next, &tones_next->curr_env,
-                    ch_unit->waves_info->phase_shift[sb] & ch_num, 0, wavreg2);
+        waves_synth(ch_unit->waves_info, tones_next, &tones_next->curr_env, fdsp,
+                    ch_unit->waves_info->invert_phase[sb] & ch_num, 0, wavreg2);
 
     /* Hann windowing for non-faded wave signals */
     if (tones_now->num_wavs && tones_next->num_wavs &&
@@ -599,8 +606,8 @@ void ff_atrac3p_ipqf(FFTContext *dct_ctx, Atrac3pIPQFChannelCtx *hist,
                      const float *in, float *out)
 {
     int i, s, sb, t, pos_now, pos_next;
-    DECLARE_ALIGNED(32, float, idct_in)[ATRAC3P_SUBBANDS];
-    DECLARE_ALIGNED(32, float, idct_out)[ATRAC3P_SUBBANDS];
+    LOCAL_ALIGNED(32, float, idct_in, [ATRAC3P_SUBBANDS]);
+    LOCAL_ALIGNED(32, float, idct_out, [ATRAC3P_SUBBANDS]);
 
     memset(out, 0, ATRAC3P_FRAME_SAMPLES * sizeof(*out));
 

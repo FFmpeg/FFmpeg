@@ -27,19 +27,12 @@
 #define AVCODEC_VP8_H
 
 #include "libavutil/buffer.h"
+#include "libavutil/thread.h"
 
 #include "h264pred.h"
 #include "thread.h"
 #include "vp56.h"
 #include "vp8dsp.h"
-
-#if HAVE_PTHREADS
-#   include <pthread.h>
-#elif HAVE_OS2THREADS
-#   include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#   include "compat/w32pthreads.h"
-#endif
 
 #define VP8_MAX_QUANT 127
 
@@ -134,6 +127,11 @@ typedef struct VP8Frame {
     AVBufferRef *seg_map;
 } VP8Frame;
 
+typedef struct VP8intmv {
+    int x;
+    int y;
+} VP8intmv;
+
 #define MAX_THREADS 8
 typedef struct VP8Context {
     VP8ThreadData *thread_data;
@@ -152,8 +150,8 @@ typedef struct VP8Context {
     uint8_t deblock_filter;
     uint8_t mbskip_enabled;
     uint8_t profile;
-    VP56mv mv_min;
-    VP56mv mv_max;
+    VP8intmv mv_min;
+    VP8intmv mv_max;
 
     int8_t sign_bias[4]; ///< one state [0, 1] per ref frame type
     int ref_count[3];
@@ -225,7 +223,7 @@ typedef struct VP8Context {
 
     /**
      * These are all of the updatable probabilities for binary decisions.
-     * They are only implictly reset on keyframes, making it quite likely
+     * They are only implicitly reset on keyframes, making it quite likely
      * for an interframe to desync if a prior frame's header was corrupt
      * or missing outright!
      */
@@ -266,11 +264,14 @@ typedef struct VP8Context {
     vp8_mc_func put_pixels_tab[3][3][3];
     VP8Frame frames[5];
 
+    uint8_t colorspace; ///< 0 is the only value allowed (meaning bt601)
+    uint8_t fullrange;  ///< whether we can skip clamping in dsp functions
+
     int num_jobs;
     /**
      * This describes the macroblock memory layout.
      * 0 -> Only width+height*2+1 macroblocks allocated (frame/single thread).
-     * 1 -> Macroblocks for entire frame alloced (sliced thread).
+     * 1 -> Macroblocks for entire frame allocated (sliced thread).
      */
     int mb_layout;
 

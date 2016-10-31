@@ -1,7 +1,7 @@
-CROSS_TEST = $(foreach I,$(1),                                        \
-                 $(foreach J,$(1),                                    \
-                     $(if $(filter-out $(I),$(J)),                    \
-                         $(eval $(call $(2),$(I),$(J),$(3),$(4),$(5))),    \
+CROSS_TEST = $(foreach I,$(1),                                          \
+                 $(foreach J,$(1),                                      \
+                     $(if $(filter-out $(I),$(J)),                      \
+                         $(eval $(call $(2),$(I),$(J),$(3),$(4),$(5))), \
                      )))
 
 MIX_CHANNELS = 1 2 3 4 5 6 7 8
@@ -38,7 +38,7 @@ fate-lavr-resample-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asy
 fate-lavr-resample-$(3)-$(1)-$(2): CMP = oneoff
 fate-lavr-resample-$(3)-$(1)-$(2): CMP_UNIT = $(5)
 fate-lavr-resample-$(3)-$(1)-$(2): FUZZ = 6
-fate-lavr-resample-$(3)-$(1)-$(2): REF = $(SAMPLES)/lavr/lavr-resample-$(3)-$(1)-$(2)-v2
+fate-lavr-resample-$(3)-$(1)-$(2): REF = $(SAMPLES)/lavr/lavr-resample-$(3)-$(1)-$(2)-v3
 endef
 
 $(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s16p,s16le,s16)

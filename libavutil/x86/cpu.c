@@ -41,11 +41,11 @@
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
-        "mov    %%"REG_b", %%"REG_S" \n\t"                      \
+        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
         "cpuid                       \n\t"                      \
-        "xchg   %%"REG_b", %%"REG_S                             \
+        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-        : "0" (index))
+        : "0" (index), "2"(0))
 
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
@@ -126,6 +126,8 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
             rval |= AV_CPU_FLAG_SSE42;
+        if (ecx & 0x01000000 )
+            rval |= AV_CPU_FLAG_AESNI;
 #if HAVE_AVX
         /* Check OXSAVE and AVX bits */
         if ((ecx & 0x18000000) == 0x18000000) {
@@ -167,6 +169,7 @@ int ff_get_cpu_flags_x86(void)
         if (ext_caps & (1 << 22))
             rval |= AV_CPU_FLAG_MMXEXT;
 
+        if (!strncmp(vendor.c, "AuthenticAMD", 12)) {
         /* Allow for selectively disabling SSE2 functions on AMD processors
            with SSE2 support but not SSE4a. This includes Athlon64, some
            Opteron, and some Sempron processors. MMX, SSE, or 3DNow! are faster
@@ -174,9 +177,17 @@ int ff_get_cpu_flags_x86(void)
            AV_CPU_FLAG_SSE2 and AV_CPU_FLAG_SSE2SLOW are both set in this case
            so that SSE2 is used unless explicitly disabled by checking
            AV_CPU_FLAG_SSE2SLOW. */
-        if (!strncmp(vendor.c, "AuthenticAMD", 12) &&
-            rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040)) {
-            rval |= AV_CPU_FLAG_SSE2SLOW;
+            if (rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040))
+                rval |= AV_CPU_FLAG_SSE2SLOW;
+
+        /* Similar to the above but for AVX functions on AMD processors.
+           This is necessary only for functions using YMM registers on Bulldozer
+           and Jaguar based CPUs as they lack 256-bit execution units. SSE/AVX
+           functions using XMM registers are always faster on them.
+           AV_CPU_FLAG_AVX and AV_CPU_FLAG_AVXSLOW are both set so that AVX is
+           used unless explicitly disabled by checking AV_CPU_FLAG_AVXSLOW. */
+            if ((family == 0x15 || family == 0x16) && (rval & AV_CPU_FLAG_AVX))
+                rval |= AV_CPU_FLAG_AVXSLOW;
         }
 
         /* XOP and FMA4 use the AVX instruction coding scheme, so they can't be

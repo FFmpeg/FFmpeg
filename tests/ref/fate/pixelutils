@@ -34,3 +34,15 @@
 [OK] [AA] SAD [min] 4x4=0 ref=0
 [OK] [AA] SAD [min] 8x8=0 ref=0
 [OK] [AA] SAD [min] 16x16=0 ref=0
+[OK] [UU] SAD [small] 2x2=400 ref=400
+[OK] [AU] SAD [small] 2x2=384 ref=384
+[OK] [AA] SAD [small] 2x2=409 ref=409
+[OK] [UU] SAD [small] 4x4=1144 ref=1144
+[OK] [AU] SAD [small] 4x4=1156 ref=1156
+[OK] [AA] SAD [small] 4x4=1086 ref=1086
+[OK] [UU] SAD [small] 8x8=6510 ref=6510
+[OK] [AU] SAD [small] 8x8=5755 ref=5755
+[OK] [AA] SAD [small] 8x8=6156 ref=6156
+[OK] [UU] SAD [small] 16x16=19490 ref=19490
+[OK] [AU] SAD [small] 16x16=21037 ref=21037
+[OK] [AA] SAD [small] 16x16=22986 ref=22986

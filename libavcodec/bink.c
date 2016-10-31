@@ -23,16 +23,16 @@
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "binkdata.h"
 #include "binkdsp.h"
 #include "blockdsp.h"
+#include "get_bits.h"
 #include "hpeldsp.h"
 #include "internal.h"
 #include "mathops.h"
-
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 
 #define BINK_FLAG_ALPHA 0x00100000
 #define BINK_FLAG_GRAY  0x00020000
@@ -950,15 +950,32 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     return 0;
 }
 
+static int bink_put_pixels(BinkContext *c,
+                           uint8_t *dst, uint8_t *prev, int stride,
+                           uint8_t *ref_start,
+                           uint8_t *ref_end)
+{
+    int xoff     = get_value(c, BINK_SRC_X_OFF);
+    int yoff     = get_value(c, BINK_SRC_Y_OFF);
+    uint8_t *ref = prev + xoff + yoff * stride;
+    if (ref < ref_start || ref > ref_end) {
+        av_log(c->avctx, AV_LOG_ERROR, "Copy out of bounds @%d, %d\n",
+               xoff, yoff);
+        return AVERROR_INVALIDDATA;
+    }
+    c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+
+    return 0;
+}
+
 static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                              int plane_idx, int is_chroma)
 {
     int blk, ret;
     int i, j, bx, by;
-    uint8_t *dst, *prev, *ref, *ref_start, *ref_end;
+    uint8_t *dst, *prev, *ref_start, *ref_end;
     int v, col[2];
     const uint8_t *scan;
-    int xoff, yoff;
     LOCAL_ALIGNED_16(int16_t, block, [64]);
     LOCAL_ALIGNED_16(uint8_t, ublock, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
@@ -1080,15 +1097,10 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 prev += 8;
                 break;
             case MOTION_BLOCK:
-                xoff = get_value(c, BINK_SRC_X_OFF);
-                yoff = get_value(c, BINK_SRC_Y_OFF);
-                ref = prev + xoff + yoff * stride;
-                if (ref < ref_start || ref > ref_end) {
-                    av_log(c->avctx, AV_LOG_ERROR, "Copy out of bounds @%d, %d\n",
-                           bx*8 + xoff, by*8 + yoff);
-                    return AVERROR_INVALIDDATA;
-                }
-                c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                ret = bink_put_pixels(c, dst, prev, stride,
+                                      ref_start, ref_end);
+                if (ret < 0)
+                    return ret;
                 break;
             case RUN_BLOCK:
                 scan = bink_patterns[get_bits(gb, 4)];
@@ -1114,15 +1126,10 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                     dst[coordmap[*scan++]] = get_value(c, BINK_SRC_COLORS);
                 break;
             case RESIDUE_BLOCK:
-                xoff = get_value(c, BINK_SRC_X_OFF);
-                yoff = get_value(c, BINK_SRC_Y_OFF);
-                ref = prev + xoff + yoff * stride;
-                if (ref < ref_start || ref > ref_end) {
-                    av_log(c->avctx, AV_LOG_ERROR, "Copy out of bounds @%d, %d\n",
-                           bx*8 + xoff, by*8 + yoff);
-                    return AVERROR_INVALIDDATA;
-                }
-                c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                ret = bink_put_pixels(c, dst, prev, stride,
+                                      ref_start, ref_end);
+                if (ret < 0)
+                    return ret;
                 c->bdsp.clear_block(block);
                 v = get_bits(gb, 7);
                 read_residue(gb, block, v);
@@ -1139,15 +1146,10 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 c->bdsp.fill_block_tab[1](dst, v, stride, 8);
                 break;
             case INTER_BLOCK:
-                xoff = get_value(c, BINK_SRC_X_OFF);
-                yoff = get_value(c, BINK_SRC_Y_OFF);
-                ref = prev + xoff + yoff * stride;
-                if (ref < ref_start || ref > ref_end) {
-                    av_log(c->avctx, AV_LOG_ERROR, "Copy out of bounds @%d, %d\n",
-                           bx*8 + xoff, by*8 + yoff);
-                    return -1;
-                }
-                c->hdsp.put_pixels_tab[1][0](dst, ref, stride, 8);
+                ret = bink_put_pixels(c, dst, prev, stride,
+                                      ref_start, ref_end);
+                if (ret < 0)
+                    return ret;
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = get_value(c, BINK_SRC_INTER_DC);
                 read_dct_coeffs(gb, dctblock, bink_scan, bink_inter_quant, -1);
@@ -1238,7 +1240,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 }
 
 /**
- * Caclulate quantization tables for version b
+ * Calculate quantization tables for version b
  */
 static av_cold void binkb_calc_quant(void)
 {
@@ -1352,5 +1354,5 @@ AVCodec ff_bink_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

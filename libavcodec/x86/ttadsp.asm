@@ -31,7 +31,7 @@ SECTION .text
 
 %macro TTA_FILTER 2
 INIT_XMM %1
-cglobal ttafilter_process_dec, 5,5,%2, qm, dx, dl, error, in, shift, round
+cglobal tta_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     mova       m2, [qmq       ]
     mova       m3, [qmq + 0x10]
     mova       m4, [dxq       ]

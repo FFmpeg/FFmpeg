@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -36,6 +37,7 @@ typedef struct FICThreadContext {
 } FICThreadContext;
 
 typedef struct FICContext {
+    AVClass *class;
     AVCodecContext *avctx;
     AVFrame *frame;
     AVFrame *final_frame;
@@ -51,6 +53,7 @@ typedef struct FICContext {
     int num_slices, slice_h;
 
     uint8_t cursor_buf[4096];
+    int skip_cursor;
 } FICContext;
 
 static const uint8_t fic_qmat_hq[64] = {
@@ -263,13 +266,11 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     int msize;
     int tsize;
     int cur_x, cur_y;
-    int skip_cursor = 0;
+    int skip_cursor = ctx->skip_cursor;
     uint8_t *sdata;
 
-    if ((ret = ff_reget_buffer(avctx, ctx->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, ctx->frame)) < 0)
         return ret;
-    }
 
     /* Header + at least one slice (4) */
     if (avpkt->size < FIC_HEADER_SIZE + 4) {
@@ -282,8 +283,13 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_WARNING, "Invalid FIC Header.\n");
 
     /* Is it a skip frame? */
-    if (src[17])
+    if (src[17]) {
+        if (!ctx->final_frame) {
+            av_log(avctx, AV_LOG_WARNING, "Initial frame is skipped\n");
+            return AVERROR_INVALIDDATA;
+        }
         goto skip;
+    }
 
     nslices = src[13];
     if (!nslices) {
@@ -303,7 +309,10 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (tsize < 32) {
+    if (!tsize || !AV_RL16(src + 37) || !AV_RL16(src + 39))
+        skip_cursor = 1;
+
+    if (!skip_cursor && tsize < 32) {
         av_log(avctx, AV_LOG_WARNING,
                "Cursor data too small. Skipping cursor.\n");
         skip_cursor = 1;
@@ -312,14 +321,14 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     /* Cursor position. */
     cur_x = AV_RL16(src + 33);
     cur_y = AV_RL16(src + 35);
-    if (cur_x > avctx->width || cur_y > avctx->height) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Invalid cursor position: (%d,%d). Skipping cusor.\n",
+    if (!skip_cursor && (cur_x > avctx->width || cur_y > avctx->height)) {
+        av_log(avctx, AV_LOG_DEBUG,
+               "Invalid cursor position: (%d,%d). Skipping cursor.\n",
                cur_x, cur_y);
         skip_cursor = 1;
     }
 
-    if (AV_RL16(src + 37) != 32 || AV_RL16(src + 39) != 32) {
+    if (!skip_cursor && (AV_RL16(src + 37) != 32 || AV_RL16(src + 39) != 32)) {
         av_log(avctx, AV_LOG_WARNING,
                "Invalid cursor size. Skipping cursor.\n");
         skip_cursor = 1;
@@ -446,6 +455,18 @@ static av_cold int fic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVOption options[] = {
+{ "skip_cursor", "skip the cursor", offsetof(FICContext, skip_cursor), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
+{ NULL },
+};
+
+static const AVClass fic_decoder_class = {
+    .class_name = "FIC encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_fic_decoder = {
     .name           = "fic",
     .long_name      = NULL_IF_CONFIG_SMALL("Mirillis FIC"),
@@ -455,5 +476,6 @@ AVCodec ff_fic_decoder = {
     .init           = fic_decode_init,
     .decode         = fic_decode_frame,
     .close          = fic_decode_close,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
+    .priv_class     = &fic_decoder_class,
 };

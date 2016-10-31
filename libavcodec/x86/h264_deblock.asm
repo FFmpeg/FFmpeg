@@ -446,13 +446,13 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 INIT_MMX cpuname
-cglobal deblock_h_luma_8, 0,5,8,0x60+HAVE_ALIGNED_STACK*12
+cglobal deblock_h_luma_8, 0,5,8,0x60+12
     mov    r0, r0mp
     mov    r3, r1m
     lea    r4, [r3*3]
     sub    r0, 4
     lea    r1, [r0+r4]
-%define pix_tmp esp+12*HAVE_ALIGNED_STACK
+%define pix_tmp esp+12
 
     ; transpose 6x16 -> tmp space
     TRANSPOSE6x8_MEM  PASS8ROWS(r0, r1, r3, r4), pix_tmp
@@ -864,7 +864,52 @@ ff_chroma_inter_body_mmxext:
     DEBLOCK_P0_Q0
     ret
 
+%define t5 r4
+%define t6 r5
 
+cglobal deblock_h_chroma422_8, 5, 6
+    SUB rsp, (1+ARCH_X86_64*2)*mmsize
+    %if ARCH_X86_64
+        %define buf0 [rsp+16]
+        %define buf1 [rsp+8]
+    %else
+        %define buf0 r0m
+        %define buf1 r2m
+    %endif
+
+    movd m6, [r4]
+    punpcklbw m6, m6
+    movq [rsp], m6
+    CHROMA_H_START
+
+    TRANSPOSE4x8B_LOAD PASS8ROWS(t5, r0, r1, t6)
+    movq buf0, m0
+    movq buf1, m3
+    LOAD_MASK r2d, r3d
+    movd m6, [rsp]
+    punpcklwd m6, m6
+    pand m7, m6
+    DEBLOCK_P0_Q0
+    movq m0, buf0
+    movq m3, buf1
+    TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+
+    lea r0, [r0+r1*8]
+    lea t5, [t5+r1*8]
+
+    TRANSPOSE4x8B_LOAD PASS8ROWS(t5, r0, r1, t6)
+    movq buf0, m0
+    movq buf1, m3
+    LOAD_MASK r2d, r3d
+    movd m6, [rsp+4]
+    punpcklwd m6, m6
+    pand m7, m6
+    DEBLOCK_P0_Q0
+    movq m0, buf0
+    movq m3, buf1
+    TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+    ADD rsp, (1+ARCH_X86_64*2)*mmsize
+RET
 
 ; in: %1=p0 %2=p1 %3=q1
 ; out: p0 = (p0 + q1 + 2*p1 + 2) >> 2
@@ -876,9 +921,6 @@ ff_chroma_inter_body_mmxext:
     psubusb %1, m4
     pavgb   %1, %2             ; dst = avg(p1, avg(p0,q1) - ((p0^q1)&1))
 %endmacro
-
-%define t5 r4
-%define t6 r5
 
 ;------------------------------------------------------------------------------
 ; void ff_deblock_v_chroma_intra(uint8_t *pix, int stride, int alpha, int beta)

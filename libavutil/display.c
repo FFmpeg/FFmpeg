@@ -44,12 +44,12 @@ double av_display_rotation_get(const int32_t matrix[9])
     rotation = atan2(CONV_FP(matrix[1]) / scale[1],
                      CONV_FP(matrix[0]) / scale[0]) * 180 / M_PI;
 
-    return rotation;
+    return -rotation;
 }
 
 void av_display_rotation_set(int32_t matrix[9], double angle)
 {
-    double radians = angle * M_PI / 180.0f;
+    double radians = -angle * M_PI / 180.0f;
     double c = cos(radians);
     double s = sin(radians);
 

@@ -32,7 +32,11 @@
 #define AVI_MASTER_INDEX_SIZE   256
 #define AVI_MAX_STREAM_COUNT    100
 
+/* stream header flags */
+#define AVISF_VIDEO_PALCHANGES  0x00010000
+
 /* index flags */
-#define AVIIF_INDEX             0x10
+#define AVIIF_INDEX             0x00000010
+#define AVIIF_NO_TIME           0x00000100
 
 #endif /* AVFORMAT_AVI_H */

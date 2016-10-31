@@ -109,7 +109,7 @@ typedef struct TwinVQFrameData {
  * bitrate/sample rate
  */
 typedef struct TwinVQModeTab {
-    struct TwinVQFrameMode fmode[3]; ///< frame type-dependant parameters
+    struct TwinVQFrameMode fmode[3]; ///< frame type-dependent parameters
 
     uint16_t     size;        ///< frame size in samples
     uint8_t      n_lsp;       ///< number of lsp coefficients
@@ -136,7 +136,7 @@ typedef struct TwinVQModeTab {
 
 typedef struct TwinVQContext {
     AVCodecContext *avctx;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext mdct_ctx[3];
 
     const TwinVQModeTab *mtab;
@@ -197,7 +197,7 @@ static inline float twinvq_mulawinv(float y, float clip, float mu)
 
 int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
                            int *got_frame_ptr, AVPacket *avpkt);
-av_cold int ff_twinvq_decode_close(AVCodecContext *avctx);
-av_cold int ff_twinvq_decode_init(AVCodecContext *avctx);
+int ff_twinvq_decode_close(AVCodecContext *avctx);
+int ff_twinvq_decode_init(AVCodecContext *avctx);
 
-#endif /* AVCODEC_TWINVQ_DATA_H */
+#endif /* AVCODEC_TWINVQ_H */

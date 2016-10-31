@@ -85,7 +85,7 @@ typedef enum {
     /*@}*/
 } MMSSCPacketType;
 
-typedef struct {
+typedef struct MMSTContext {
     MMSContext  mms;
     int outgoing_packet_seq;             ///< Outgoing packet sequence number.
     char path[256];                      ///< Path of the resource being asked for.
@@ -215,11 +215,11 @@ static int send_media_file_request(MMSTContext *mmst)
 static void handle_packet_stream_changing_type(MMSTContext *mmst)
 {
     MMSContext *mms = &mmst->mms;
-    av_dlog(NULL, "Stream changing!\n");
+    av_log(NULL, AV_LOG_TRACE, "Stream changing!\n");
 
     // 40 is the packet header size, 7 is the prefix size.
     mmst->header_packet_id= AV_RL32(mms->in_buffer + 40 + 7);
-    av_dlog(NULL, "Changed header prefix to 0x%x", mmst->header_packet_id);
+    av_log(NULL, AV_LOG_TRACE, "Changed header prefix to 0x%x", mmst->header_packet_id);
 }
 
 static int send_keepalive_packet(MMSTContext *mmst)
@@ -279,7 +279,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             }
 
             length_remaining= AV_RL32(mms->in_buffer+8) + 4;
-            av_dlog(NULL, "Length remaining is %d\n", length_remaining);
+            av_log(NULL, AV_LOG_TRACE, "Length remaining is %d\n", length_remaining);
             // read the rest of the packet.
             if (length_remaining < 0
                 || length_remaining > sizeof(mms->in_buffer) - 12) {
@@ -358,7 +358,7 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
             } else if(packet_id_type == mmst->packet_id) {
                 packet_type = SC_PKT_ASF_MEDIA;
             } else {
-                av_dlog(NULL, "packet id type %d is old.", packet_id_type);
+                av_log(NULL, AV_LOG_TRACE, "packet id type %d is old.", packet_id_type);
                 continue;
             }
         }
@@ -384,7 +384,7 @@ static int mms_safe_send_recv(MMSTContext *mmst,
     if(send_fun) {
         int ret = send_fun(mmst);
         if (ret < 0) {
-            av_dlog(NULL, "Send Packet error before expecting recv packet %d\n", expect_type);
+            av_log(NULL, AV_LOG_TRACE, "Send Packet error before expecting recv packet %d\n", expect_type);
             return ret;
         }
     }
@@ -427,7 +427,7 @@ static int send_startup_packet(MMSTContext *mmst)
     int ret;
     MMSContext *mms = &mmst->mms;
     // SubscriberName is defined in MS specification linked below.
-    // The guid value can be any valid value.
+    // The GUID value can be any valid value.
     // http://download.microsoft.com/
     // download/9/5/E/95EF66AF-9026-4BB0-A41D-A4F81802D92C/%5BMS-WMSP%5D.pdf
     snprintf(data_string, sizeof(data_string),
@@ -477,8 +477,8 @@ static int mms_close(URLContext *h)
     }
 
     /* free all separately allocated pointers in mms */
-    av_free(mms->streams);
-    av_free(mms->asf_header);
+    av_freep(&mms->streams);
+    av_freep(&mms->asf_header);
 
     return 0;
 }
@@ -524,12 +524,13 @@ static int mms_open(URLContext *h, const char *uri, int flags)
             sizeof(mmst->path), uri);
 
     if(port<0)
-        port = 1755; // defaut mms protocol port
+        port = 1755; // default MMS protocol port
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = ffurl_open(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+    err = ffurl_open_whitelist(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
+                               &h->interrupt_callback, NULL,
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (err)
         goto fail;
 
@@ -561,7 +562,7 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     }
     err = ff_mms_asf_header_parser(mms);
     if (err) {
-        av_dlog(NULL, "asf header parsed failed!\n");
+        av_log(NULL, AV_LOG_TRACE, "asf header parsed failed!\n");
         goto fail;
     }
     mms->header_parsed = 1;
@@ -578,11 +579,11 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     if (err) {
         goto fail;
     }
-    av_dlog(NULL, "Leaving open (success)\n");
+    av_log(NULL, AV_LOG_TRACE, "Leaving open (success)\n");
     return 0;
 fail:
     mms_close(h);
-    av_dlog(NULL, "Leaving open (failure: %d)\n", err);
+    av_log(NULL, AV_LOG_TRACE, "Leaving open (failure: %d)\n", err);
     return err;
 }
 
@@ -615,12 +616,12 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
                     // copy the data to the packet buffer.
                     result = ff_mms_read_data(mms, buf, size);
                     if (result == 0) {
-                        av_dlog(NULL, "Read ASF media packet size is zero!\n");
+                        av_log(NULL, AV_LOG_TRACE, "Read ASF media packet size is zero!\n");
                         break;
                     }
                 }
             } else {
-                av_dlog(NULL, "read packet error!\n");
+                av_log(NULL, AV_LOG_TRACE, "read packet error!\n");
                 break;
             }
         }
@@ -628,7 +629,7 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
     return result;
 }
 
-URLProtocol ff_mmst_protocol = {
+const URLProtocol ff_mmst_protocol = {
     .name           = "mmst",
     .url_open       = mms_open,
     .url_read       = mms_read,

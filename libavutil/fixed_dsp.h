@@ -54,8 +54,13 @@
 #include "libavcodec/mathops.h"
 
 typedef struct AVFixedDSPContext {
+    /* Assume len is a multiple of 16, and arrays are 32-byte aligned */
+    /* Results of multiplications are scaled down by 31 bit (and rounded) if not
+     * stated otherwise */
+
     /**
      * Overlap/add with window function.
+     * Result is scaled down by "bits" bits.
      * Used primarily by MDCT-based audio codecs.
      * Source and destination vectors must overlap exactly or not at all.
      *
@@ -92,6 +97,60 @@ typedef struct AVFixedDSPContext {
      */
     void (*vector_fmul_window)(int32_t *dst, const int32_t *src0, const int32_t *src1, const int32_t *win, int len);
 
+    /**
+     * Fixed-point multiplication that calculates the entry wise product of two
+     * vectors of integers and stores the result in a vector of integers.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul)(int *dst, const int *src0, const int *src1,
+                        int len);
+
+    void (*vector_fmul_reverse)(int *dst, const int *src0, const int *src1, int len);
+    /**
+     * Calculate the entry wise product of two vectors of integers, add a third vector of
+     * integers and store the result in a vector of integers.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param src2 third input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul_add)(int *dst, const int *src0, const int *src1,
+                            const int *src2, int len);
+
+    /**
+     * Calculate the scalar product of two vectors of integers.
+     *
+     * @param v1  first vector, 16-byte aligned
+     * @param v2  second vector, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     *
+     * @return sum of elementwise products
+     */
+    int (*scalarproduct_fixed)(const int *v1, const int *v2, int len);
+
+    /**
+     * Calculate the sum and difference of two vectors of integers.
+     *
+     * @param v1  first input vector, sum output, 16-byte aligned
+     * @param v2  second input vector, difference output, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     */
+    void (*butterflies_fixed)(int *av_restrict v1, int *av_restrict v2, int len);
 } AVFixedDSPContext;
 
 /**
@@ -101,6 +160,8 @@ typedef struct AVFixedDSPContext {
  * @param strict  setting to non-zero avoids using functions which may not be IEEE-754 compliant
  */
 AVFixedDSPContext * avpriv_alloc_fixed_dsp(int strict);
+
+void ff_fixed_dsp_init_x86(AVFixedDSPContext *fdsp);
 
 /**
  * Calculate the square root

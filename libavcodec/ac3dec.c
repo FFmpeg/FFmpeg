@@ -63,8 +63,11 @@ static const uint8_t quantization_tab[16] = {
     5, 6, 7, 8, 9, 10, 11, 12, 14, 16
 };
 
+#if (!USE_FIXED)
 /** dynamic range table. converts codes to scale factors. */
 static float dynamic_range_tab[256];
+float ff_ac3_heavy_dynamic_range_tab[256];
+#endif
 
 /** Adjustments in dB gain */
 static const float gain_levels[9] = {
@@ -111,7 +114,7 @@ static const uint8_t ac3_default_coeffs[8][5][2] = {
 static inline int
 symmetric_dequant(int code, int levels)
 {
-    return ((code - (levels >> 1)) << 24) / levels;
+    return ((code - (levels >> 1)) * (1 << 24)) / levels;
 }
 
 /*
@@ -158,12 +161,21 @@ static av_cold void ac3_tables_init(void)
         b5_mantissas[i] = symmetric_dequant(i, 15);
     }
 
+#if (!USE_FIXED)
     /* generate dynamic range table
        reference: Section 7.7.1 Dynamic Range Control */
     for (i = 0; i < 256; i++) {
         int v = (i >> 5) - ((i >> 7) << 3) - 5;
         dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0x1F) | 0x20);
     }
+
+    /* generate compr dynamic range table
+       reference: Section 7.7.2 Heavy Compression */
+    for (i = 0; i < 256; i++) {
+        int v = (i >> 4) - ((i >> 7) << 4) - 4;
+        ff_ac3_heavy_dynamic_range_tab[i] = powf(2.0f, v) * ((i & 0xF) | 0x10);
+    }
+#endif
 }
 
 /**
@@ -176,7 +188,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    ff_ac3_common_init();
     ac3_tables_init();
     ff_mdct_init(&s->imdct_256, 8, 1, 1.0);
     ff_mdct_init(&s->imdct_512, 9, 1, 1.0);
@@ -184,13 +195,13 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&s->bdsp);
 
 #if (USE_FIXED)
-    s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #else
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
 #endif
 
-    ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
-    ff_fmt_convert_init(&s->fmt_conv, avctx);
+    ff_ac3dsp_init(&s->ac3dsp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
     av_lfg_init(&s->dith_state, 0);
 
     if (USE_FIXED)
@@ -199,14 +210,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo or mono */
-#if FF_API_REQUEST_CHANNELS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channels == 1)
-        avctx->request_channel_layout = AV_CH_LAYOUT_MONO;
-    else if (avctx->request_channels == 2)
-        avctx->request_channel_layout = AV_CH_LAYOUT_STEREO;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (avctx->channels > 1 &&
         avctx->request_channel_layout == AV_CH_LAYOUT_MONO)
         avctx->channels = 1;
@@ -236,9 +239,19 @@ static int ac3_parse_header(AC3DecodeContext *s)
     /* read the rest of the bsi. read twice for dual mono mode. */
     i = !s->channel_mode;
     do {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc))
-            skip_bits(gbc, 8); //skip compression
+        s->dialog_normalization[(!s->channel_mode)-i] = -get_bits(gbc, 5);
+        if (s->dialog_normalization[(!s->channel_mode)-i] == 0) {
+            s->dialog_normalization[(!s->channel_mode)-i] = -31;
+        }
+        if (s->target_level != 0) {
+            s->level_gain[(!s->channel_mode)-i] = powf(2.0f,
+                (float)(s->target_level -
+                s->dialog_normalization[(!s->channel_mode)-i])/6.0f);
+        }
+        if (s->compression_exists[(!s->channel_mode)-i] = get_bits1(gbc)) {
+            s->heavy_dynamic_range[(!s->channel_mode)-i] =
+                AC3_HEAVY_RANGE(get_bits(gbc, 8));
+        }
         if (get_bits1(gbc))
             skip_bits(gbc, 8); //skip language code
         if (get_bits1(gbc))
@@ -287,7 +300,7 @@ static int parse_frame_header(AC3DecodeContext *s)
     AC3HeaderInfo hdr, *phdr=&hdr;
     int err;
 
-    err = avpriv_ac3_parse_header2(&s->gbc, &phdr);
+    err = avpriv_ac3_parse_header(&s->gbc, &phdr);
     if (err)
         return err;
 
@@ -401,7 +414,8 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
  * Decode the grouped exponents according to exponent strategy.
  * reference: Section 7.1.3 Exponent Decoding
  */
-static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
+static int decode_exponents(AC3DecodeContext *s,
+                            GetBitContext *gbc, int exp_strategy, int ngrps,
                             uint8_t absexp, int8_t *dexps)
 {
     int i, j, grp, group_size;
@@ -421,8 +435,10 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
     prevexp = absexp;
     for (i = 0, j = 0; i < ngrps * 3; i++) {
         prevexp += dexp[i] - 2;
-        if (prevexp > 24U)
+        if (prevexp > 24U) {
+            av_log(s->avctx, AV_LOG_ERROR, "exponent %d is out-of-range\n", prevexp);
             return -1;
+        }
         switch (group_size) {
         case 4: dexps[j++] = prevexp;
                 dexps[j++] = prevexp;
@@ -451,7 +467,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
                 int cpl_coord = s->cpl_coords[ch][band] << 5;
                 for (bin = band_start; bin < band_end; bin++) {
                     s->fixed_coeffs[ch][bin] =
-                        MULH(s->fixed_coeffs[CPL_CH][bin] << 4, cpl_coord);
+                        MULH(s->fixed_coeffs[CPL_CH][bin] * (1 << 4), cpl_coord);
                 }
                 if (ch == 2 && s->phase_flags[band]) {
                     for (bin = band_start; bin < band_end; bin++)
@@ -466,7 +482,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 /**
  * Grouped mantissas for 3-level 5-level and 11-level quantization
  */
-typedef struct {
+typedef struct mant_groups {
     int b1_mant[2];
     int b2_mant[2];
     int b4_mant;
@@ -548,8 +564,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
                 av_log(s->avctx, AV_LOG_ERROR, "bap %d is invalid in plain AC-3\n", bap);
                 bap = 15;
             }
-            mantissa = get_sbits(gbc, quantization_tab[bap]);
-            mantissa <<= 24 - quantization_tab[bap];
+            mantissa = (unsigned)get_sbits(gbc, quantization_tab[bap]) << (24 - quantization_tab[bap]);
             break;
         }
         coeffs[freq] = mantissa >> exps[freq];
@@ -583,7 +598,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
         /* if AHT is used, mantissas for all blocks are encoded in the first
            block of the frame. */
         int bin;
-        if (!blk && CONFIG_EAC3_DECODER)
+        if (CONFIG_EAC3_DECODER && !blk)
             ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
             s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
@@ -669,7 +684,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
-            s->fdsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
+            s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128);
 #endif
             for (i = 0; i < 128; i++)
@@ -681,7 +696,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128, 8);
 #else
-            s->fdsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
+            s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                        s->tmp_output, s->window, 128);
 #endif
             memcpy(s->delay[ch - 1], s->tmp_output + 128, 128 * sizeof(FFTSample));
@@ -819,8 +834,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         if (get_bits1(gbc)) {
             /* Allow asymmetric application of DRC when drc_scale > 1.
                Amplification of quiet sounds is enhanced */
-            INTFLOAT range = AC3_RANGE(get_bits(gbc, 8));
-            if (range > 1.0 || s->drc_scale <= 1.0)
+            int range_bits = get_bits(gbc, 8);
+            INTFLOAT range = AC3_RANGE(range_bits);
+            if (range_bits <= 127 || s->drc_scale <= 1.0)
                 s->dynamic_range[i] = AC3_DYNAMIC_RANGE(range);
             else
                 s->dynamic_range[i] = range;
@@ -852,7 +868,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                 start_subband += start_subband - 7;
             end_subband    = get_bits(gbc, 3) + 5;
 #if USE_FIXED
-            s->spx_dst_end_freq = end_freq_inv_tab[end_subband];
+            s->spx_dst_end_freq = end_freq_inv_tab[end_subband-5];
 #endif
             if (end_subband   > 7)
                 end_subband   += end_subband   - 7;
@@ -882,11 +898,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                                   ff_eac3_default_spx_band_struct,
                                   &s->num_spx_bands,
                                   s->spx_band_sizes);
-        } else {
-            for (ch = 1; ch <= fbw_channels; ch++) {
-                s->channel_uses_spx[ch] = 0;
-                s->first_spx_coords[ch] = 1;
-            }
+        }
+    }
+    if (!s->eac3 || !s->spx_in_use) {
+        s->spx_in_use = 0;
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->channel_uses_spx[ch] = 0;
+            s->first_spx_coords[ch] = 1;
         }
     }
 
@@ -904,14 +922,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
                     bin = s->spx_src_start_freq;
                     for (bnd = 0; bnd < s->num_spx_bands; bnd++) {
-                        int bandsize;
+                        int bandsize = s->spx_band_sizes[bnd];
                         int spx_coord_exp, spx_coord_mant;
                         INTFLOAT nratio, sblend, nblend;
 #if USE_FIXED
-                        int64_t accu;
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
-                        accu = (int64_t)((bin << 23) + (bandsize << 22)) * s->spx_dst_end_freq;
+                        int64_t accu = ((bin << 23) + (bandsize << 22))
+                                     * (int64_t)s->spx_dst_end_freq;
                         nratio = (int)(accu >> 32);
                         nratio -= spx_blend << 18;
 
@@ -919,7 +936,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                             nblend = 0;
                             sblend = 0x800000;
                         } else if (nratio > 0x7fffff) {
-                            nblend = 0x800000;
+                            nblend = 14529495; // sqrt(3) in FP.23
                             sblend = 0;
                         } else {
                             nblend = fixed_sqrt(nratio, 23);
@@ -931,7 +948,6 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                         float spx_coord;
 
                         /* calculate blending factors */
-                        bandsize = s->spx_band_sizes[bnd];
                         nratio = ((float)((bin + (bandsize >> 1))) / s->spx_dst_end_freq) - spx_blend;
                         nratio = av_clipf(nratio, 0.0f, 1.0f);
                         nblend = sqrtf(3.0f * nratio); // noise is scaled by sqrt(3)
@@ -1133,10 +1149,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     for (ch = !cpl_in_use; ch <= s->channels; ch++) {
         if (s->exp_strategy[blk][ch] != EXP_REUSE) {
             s->dexps[ch][0] = get_bits(gbc, 4) << !ch;
-            if (decode_exponents(gbc, s->exp_strategy[blk][ch],
+            if (decode_exponents(s, gbc, s->exp_strategy[blk][ch],
                                  s->num_exp_groups[ch], s->dexps[ch][0],
                                  &s->dexps[ch][s->start_freq[ch]+!!ch])) {
-                av_log(s->avctx, AV_LOG_ERROR, "exponent out-of-range\n");
                 return AVERROR_INVALIDDATA;
             }
             if (ch != CPL_CH && ch != s->lfe_ch)
@@ -1314,15 +1329,20 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* apply scaling to coefficients (headroom, dynrng) */
     for (ch = 1; ch <= s->channels; ch++) {
+        int audio_channel = 0;
         INTFLOAT gain;
-        if(s->channel_mode == AC3_CHMODE_DUALMONO) {
-            gain = s->dynamic_range[2-ch];
-        } else {
-            gain = s->dynamic_range[0];
-        }
+        if (s->channel_mode == AC3_CHMODE_DUALMONO)
+            audio_channel = 2-ch;
+        if (s->heavy_compression && s->compression_exists[audio_channel])
+            gain = s->heavy_dynamic_range[audio_channel];
+        else
+            gain = s->dynamic_range[audio_channel];
+
 #if USE_FIXED
         scale_coefs(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
 #else
+        if (s->target_level != 0)
+          gain = gain * s->level_gain[audio_channel];
         gain *= 1.0 / 4194304.0f;
         s->fmt_conv.int32_to_float_fmul_scalar(s->transform_coeffs[ch],
                                                s->fixed_coeffs[ch], gain, 256);
@@ -1330,7 +1350,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* apply spectral extension to high frequency bins */
-    if (s->spx_in_use && CONFIG_EAC3_DECODER) {
+    if (CONFIG_EAC3_DECODER && s->spx_in_use) {
         ff_eac3_apply_spectral_extension(s);
     }
 
@@ -1404,7 +1424,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
     buf = s->input_buffer;
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
-    init_get_bits(&s->gbc, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)
+        return ret;
 
     /* parse the syncinfo */
     err = parse_frame_header(s);
@@ -1427,8 +1448,9 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             /* skip frame if CRC is ok. otherwise use error concealment. */
             /* TODO: add support for substreams and dependent frames */
             if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT || s->substreamid) {
-                av_log(avctx, AV_LOG_WARNING, "unsupported frame type : "
-                       "skipping frame\n");
+                av_log(avctx, AV_LOG_DEBUG,
+                       "unsupported frame type %d: skipping frame\n",
+                       s->frame_type);
                 *got_frame_ptr = 0;
                 return buf_size;
             } else {
@@ -1610,9 +1632,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     AC3DecodeContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
-#if (USE_FIXED)
     av_freep(&s->fdsp);
-#endif
 
     return 0;
 }

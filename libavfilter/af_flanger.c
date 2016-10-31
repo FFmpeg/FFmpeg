@@ -95,23 +95,26 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -127,7 +130,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     ff_generate_wave_table(s->wave_shape, AV_SAMPLE_FMT_FLT, s->lfo, s->lfo_length,
-                           floor(s->delay_min * inlink->sample_rate + 0.5),
+                           rint(s->delay_min * inlink->sample_rate),
                            s->max_samples - 2., 3 * M_PI_2);
 
     return av_samples_alloc_array_and_samples(&s->delay_buffer, NULL,
@@ -146,8 +149,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         out_frame = frame;
     } else {
         out_frame = ff_get_audio_buffer(inlink, frame->nb_samples);
-        if (!out_frame)
+        if (!out_frame) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy_props(out_frame, frame);
     }
 

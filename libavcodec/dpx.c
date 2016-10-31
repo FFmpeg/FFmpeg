@@ -163,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
         if(i) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
-                avctx->time_base = av_inv_q(q);
+                avctx->framerate = q;
         }
     }
 
@@ -173,10 +173,15 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 52: // ABGR
     case 51: // RGBA
+    case 103: // UYVA4444
         elements = 4;
         break;
     case 50: // RGB
+    case 102: // UYV444
         elements = 3;
+        break;
+    case 100: // UYVY422
+        elements = 2;
         break;
     default:
         avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
@@ -251,16 +256,20 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case 50100:
-    case 51100:
     case 50101:
-    case 51101:
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
         break;
+    case 51100:
+    case 51101:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
+        break;
     case 50120:
-    case 51120:
     case 50121:
-    case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        break;
+    case 51120:
+    case 51121:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
     case 6161:
         avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
@@ -279,6 +288,15 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 51160:
         avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
+        break;
+    case 100081:
+        avctx->pix_fmt = AV_PIX_FMT_UYVY422;
+        break;
+    case 102081:
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        break;
+    case 103081:
+        avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
@@ -299,9 +317,10 @@ static int decode_frame(AVCodecContext *avctx,
     switch (bits_per_color) {
     case 10:
         for (x = 0; x < avctx->height; x++) {
-            uint16_t *dst[3] = {(uint16_t*)ptr[0],
+            uint16_t *dst[4] = {(uint16_t*)ptr[0],
                                 (uint16_t*)ptr[1],
-                                (uint16_t*)ptr[2]};
+                                (uint16_t*)ptr[2],
+                                (uint16_t*)ptr[3]};
             for (y = 0; y < avctx->width; y++) {
                 *dst[2]++ = read10in32(&buf, &rgbBuffer,
                                        &n_datum, endian);
@@ -309,21 +328,22 @@ static int decode_frame(AVCodecContext *avctx,
                                        &n_datum, endian);
                 *dst[1]++ = read10in32(&buf, &rgbBuffer,
                                        &n_datum, endian);
-                // For 10 bit, ignore alpha
                 if (elements == 4)
+                    *dst[3]++ =
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian);
             }
             n_datum = 0;
-            for (i = 0; i < 3; i++)
+            for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
         }
         break;
     case 12:
         for (x = 0; x < avctx->height; x++) {
-            uint16_t *dst[3] = {(uint16_t*)ptr[0],
+            uint16_t *dst[4] = {(uint16_t*)ptr[0],
                                 (uint16_t*)ptr[1],
-                                (uint16_t*)ptr[2]};
+                                (uint16_t*)ptr[2],
+                                (uint16_t*)ptr[3]};
             for (y = 0; y < avctx->width; y++) {
                 *dst[2] = read16(&buf, endian) >> 4;
                 dst[2]++;
@@ -331,22 +351,38 @@ static int decode_frame(AVCodecContext *avctx,
                 dst[0]++;
                 *dst[1] = read16(&buf, endian) >> 4;
                 dst[1]++;
-                // For 12 bit, ignore alpha
                 if (elements == 4)
-                    buf += 2;
-                // Jump to next aligned position
-                buf += need_align;
+                    *dst[3]++ = read16(&buf, endian) >> 4;
             }
-            for (i = 0; i < 3; i++)
+            for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
+            // Jump to next aligned position
+            buf += need_align;
         }
         break;
     case 16:
         elements *= 2;
     case 8:
+        if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
+            || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < avctx->height; x++) {
+                ptr[0] = p->data[0] + x * p->linesize[0];
+                ptr[1] = p->data[1] + x * p->linesize[1];
+                ptr[2] = p->data[2] + x * p->linesize[2];
+                ptr[3] = p->data[3] + x * p->linesize[3];
+                for (y = 0; y < avctx->width; y++) {
+                    *ptr[1]++ = *buf++;
+                    *ptr[0]++ = *buf++;
+                    *ptr[2]++ = *buf++;
+                    if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P)
+                        *ptr[3]++ = *buf++;
+                }
+            }
+        } else {
         av_image_copy_plane(ptr[0], p->linesize[0],
                             buf, stride,
                             elements * avctx->width, avctx->height);
+        }
         break;
     }
 
@@ -361,5 +397,5 @@ AVCodec ff_dpx_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "libavutil/mem.h"
+#include "libavcodec/aac_defines.h"
 
 #if CONFIG_HARDCODED_TABLES
 #   define SINETABLE_CONST const
@@ -30,20 +31,24 @@
 #   define SINETABLE_CONST
 #endif
 
+#ifndef USE_FIXED
+#define USE_FIXED 0
+#endif
+
 #define SINETABLE(size) \
-    SINETABLE_CONST DECLARE_ALIGNED(32, float, ff_sine_##size)[size]
+    SINETABLE_CONST DECLARE_ALIGNED(32, INTFLOAT, AAC_RENAME(ff_sine_##size))[size]
 
 /**
  * Generate a sine window.
  * @param   window  pointer to half window
  * @param   n       size of half window
  */
-void ff_sine_window_init(float *window, int n);
+void AAC_RENAME(ff_sine_window_init)(INTFLOAT *window, int n);
 
 /**
  * initialize the specified entry of ff_sine_windows
  */
-void ff_init_ff_sine_windows(int index);
+void AAC_RENAME(ff_init_ff_sine_windows)(int index);
 
 extern SINETABLE(  32);
 extern SINETABLE(  64);
@@ -55,6 +60,6 @@ extern SINETABLE(2048);
 extern SINETABLE(4096);
 extern SINETABLE(8192);
 
-extern SINETABLE_CONST float * const ff_sine_windows[14];
+extern SINETABLE_CONST INTFLOAT * const AAC_RENAME(ff_sine_windows)[14];
 
 #endif /* AVCODEC_SINEWIN_H */

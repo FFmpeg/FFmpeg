@@ -64,23 +64,26 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 #define DELAY(name, type, fill)                                           \
@@ -135,14 +138,20 @@ static int config_input(AVFilterLink *inlink)
     for (i = 0; i < s->nb_delays; i++) {
         ChanDelay *d = &s->chandelay[i];
         float delay;
+        char type = 0;
+        int ret;
 
         if (!(arg = av_strtok(p, "|", &saveptr)))
             break;
 
         p = NULL;
-        sscanf(arg, "%f", &delay);
 
-        d->delay = delay * inlink->sample_rate / 1000.0;
+        ret = sscanf(arg, "%d%c", &d->delay, &type);
+        if (ret != 2 || type != 'S') {
+            sscanf(arg, "%f", &delay);
+            d->delay = delay * inlink->sample_rate / 1000.0;
+        }
+
         if (d->delay < 0) {
             av_log(ctx, AV_LOG_ERROR, "Delay must be non negative number.\n");
             return AVERROR(EINVAL);
@@ -189,8 +198,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return ff_filter_frame(ctx->outputs[0], frame);
 
     out_frame = ff_get_audio_buffer(inlink, frame->nb_samples);
-    if (!out_frame)
+    if (!out_frame) {
+        av_frame_free(&frame);
         return AVERROR(ENOMEM);
+    }
     av_frame_copy_props(out_frame, frame);
 
     for (i = 0; i < s->nb_delays; i++) {
@@ -246,7 +257,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     for (i = 0; i < s->nb_delays; i++)
-        av_free(s->chandelay[i].samples);
+        av_freep(&s->chandelay[i].samples);
     av_freep(&s->chandelay);
 }
 

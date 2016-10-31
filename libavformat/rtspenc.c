@@ -56,7 +56,7 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 
     /* Announce the stream */
     sdp = av_mallocz(SDP_MAX_SIZE);
-    if (sdp == NULL)
+    if (!sdp)
         return AVERROR(ENOMEM);
     /* We create the SDP based on the RTSP AVFormatContext where we
      * aren't allowed to change the filename field. (We create the SDP
@@ -84,7 +84,7 @@ int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
                                   reply, NULL, sdp, strlen(sdp));
     av_free(sdp);
     if (reply->status_code != RTSP_STATUS_OK)
-        return AVERROR_INVALIDDATA;
+        return ff_rtsp_averror(reply->status_code, AVERROR_INVALIDDATA);
 
     /* Set up the RTSPStreams for each AVStream */
     for (i = 0; i < s->nb_streams; i++) {
@@ -116,7 +116,7 @@ static int rtsp_write_record(AVFormatContext *s)
              "Range: npt=0.000-\r\n");
     ff_rtsp_send_cmd(s, "RECORD", rt->control_uri, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK)
-        return -1;
+        return ff_rtsp_averror(reply->status_code, -1);
     rt->state = RTSP_STATE_STREAMING;
     return 0;
 }

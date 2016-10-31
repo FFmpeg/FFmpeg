@@ -30,13 +30,7 @@ static av_cold int y41p_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_frame = av_frame_alloc();
     avctx->bits_per_coded_sample = 12;
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }
@@ -48,11 +42,9 @@ static int y41p_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 1.5)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 1.5, 0)) < 0)
         return ret;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     dst = pkt->data;
 
     for (i = avctx->height - 1; i >= 0; i--) {
@@ -84,8 +76,6 @@ static int y41p_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int y41p_encode_close(AVCodecContext *avctx)
 {
-    av_freep(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -99,4 +89,5 @@ AVCodec ff_y41p_encoder = {
     .close        = y41p_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                  AV_PIX_FMT_NONE },
+    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };

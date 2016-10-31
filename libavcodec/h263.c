@@ -1,7 +1,7 @@
 /*
- * H263/MPEG4 backend for encoder and decoder
+ * H.263/MPEG-4 backend for encoder and decoder
  * Copyright (c) 2000,2001 Fabrice Bellard
- * H263+ support.
+ * H.263+ support.
  * Copyright (c) 2001 Juan J. Sierralta P
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -24,7 +24,7 @@
 
 /**
  * @file
- * h263/mpeg4 codec.
+ * H.263/MPEG-4 codec.
  */
 
 #include <limits.h>
@@ -35,12 +35,8 @@
 #include "h263data.h"
 #include "mathops.h"
 #include "mpegutils.h"
-#include "unary.h"
 #include "flv.h"
 #include "mpeg4video.h"
-
-
-uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 
 void ff_h263_update_motion_val(MpegEncContext * s){
@@ -323,7 +319,7 @@ int16_t *ff_h263_pred_motion(MpegEncContext * s, int block, int dir,
     A = mot_val[ - 1];
     /* special case for first (slice) line */
     if (s->first_slice_line && block<3) {
-        // we can't just change some MVs to simulate that as we need them for the B frames (and ME)
+        // we can't just change some MVs to simulate that as we need them for the B-frames (and ME)
         // and if we ever support non rectangular objects than we need to do a few ifs here anyway :(
         if(block==0){ //most common case
             if(s->mb_x  == s->resync_mb_x){ //rare
@@ -366,17 +362,4 @@ int16_t *ff_h263_pred_motion(MpegEncContext * s, int block, int dir,
         *py = mid_pred(A[1], B[1], C[1]);
     }
     return *mot_val;
-}
-
-
-/**
- * Get the GOB height based on picture height.
- */
-int ff_h263_get_gob_height(MpegEncContext *s){
-    if (s->height <= 400)
-        return 1;
-    else if (s->height <= 800)
-        return  2;
-    else
-        return 4;
 }

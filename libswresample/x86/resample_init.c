@@ -43,7 +43,7 @@ RESAMPLE_FUNCS(float,  fma3);
 RESAMPLE_FUNCS(float,  fma4);
 RESAMPLE_FUNCS(double, sse2);
 
-void swri_resample_dsp_x86_init(ResampleContext *c)
+av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
 {
     int av_unused mm_flags = av_get_cpu_flags();
 
@@ -67,11 +67,11 @@ void swri_resample_dsp_x86_init(ResampleContext *c)
             c->dsp.resample = c->linear ? ff_resample_linear_float_sse
                                         : ff_resample_common_float_sse;
         }
-        if (EXTERNAL_AVX(mm_flags)) {
+        if (EXTERNAL_AVX_FAST(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_avx
                                         : ff_resample_common_float_avx;
         }
-        if (EXTERNAL_FMA3(mm_flags)) {
+        if (EXTERNAL_FMA3_FAST(mm_flags)) {
             c->dsp.resample = c->linear ? ff_resample_linear_float_fma3
                                         : ff_resample_common_float_fma3;
         }

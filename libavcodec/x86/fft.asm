@@ -36,8 +36,6 @@
 %define pointer resd
 %endif
 
-SECTION_RODATA 32
-
 struc FFTContext
     .nbits:    resd 1
     .reverse:  resd 1
@@ -52,6 +50,8 @@ struc FFTContext
     .imdctcalc:pointer 1
     .imdcthalf:pointer 1
 endstruc
+
+SECTION_RODATA 32
 
 %define M_SQRT1_2 0.70710678118654752440
 %define M_COS_PI_1_8 0.923879532511287
@@ -73,7 +73,7 @@ ps_m1p1: dd 1<<31, 0
 cextern ps_neg
 
 %assign i 16
-%rep 13
+%rep 14
 cextern cos_ %+ i
 %assign i i<<1
 %endrep
@@ -90,7 +90,7 @@ cextern cos_ %+ i
     %1
 %endmacro
 
-SECTION_TEXT
+SECTION .text
 
 %macro T2_3DNOW 4 ; z0, z1, mem0, mem1
     mova     %1, %3
@@ -756,7 +756,7 @@ DECL_PASS pass_interleave_3dnow, PASS_BIG 0
 %endif
 
 %assign n 1<<%1
-%rep 17-%1
+%rep 18-%1
 %assign n2 n/2
 %assign n4 n/4
 %xdefine list_of_fft list_of_fft, fft %+ n %+ fullsuffix SECTION_REL

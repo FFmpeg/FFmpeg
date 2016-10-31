@@ -20,6 +20,8 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
 /**
@@ -27,7 +29,9 @@
  * Options definition for AVFormatContext.
  */
 
+FF_DISABLE_DEPRECATION_WARNINGS
 #include "options_table.h"
+FF_ENABLE_DEPRECATION_WARNINGS
 
 static const char* format_to_name(void* ptr)
 {
@@ -55,7 +59,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     AVOutputFormat *ofmt = NULL;
 
     if (!prev)
-        return &ffio_url_class;
+        return &ff_avio_class;
 
     while ((ifmt = av_iformat_next(ifmt)))
         if (ifmt->priv_class == prev)
@@ -95,11 +99,32 @@ static const AVClass av_format_context_class = {
     .get_category   = get_category,
 };
 
+static int io_open_default(AVFormatContext *s, AVIOContext **pb,
+                           const char *url, int flags, AVDictionary **options)
+{
+#if FF_API_OLD_OPEN_CALLBACKS
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (s->open_cb)
+        return s->open_cb(s, pb, url, flags, &s->interrupt_callback, options);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    return ffio_open_whitelist(pb, url, flags, &s->interrupt_callback, options, s->protocol_whitelist, s->protocol_blacklist);
+}
+
+static void io_close_default(AVFormatContext *s, AVIOContext *pb)
+{
+    avio_close(pb);
+}
+
 static void avformat_get_context_defaults(AVFormatContext *s)
 {
     memset(s, 0, sizeof(AVFormatContext));
 
     s->av_class = &av_format_context_class;
+
+    s->io_open  = io_open_default;
+    s->io_close = io_close_default;
 
     av_opt_set_defaults(s);
 }
@@ -116,6 +141,9 @@ AVFormatContext *avformat_alloc_context(void)
         avformat_free_context(ic);
         return NULL;
     }
+    ic->internal->offset = AV_NOPTS_VALUE;
+    ic->internal->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+    ic->internal->shortest_end = AV_NOPTS_VALUE;
 
     return ic;
 }

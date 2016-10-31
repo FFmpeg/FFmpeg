@@ -38,6 +38,7 @@ typedef struct MPEG4AudioConfig {
     int ext_chan_config;
     int channels;
     int ps;  ///< -1 implicit, 1 presence
+    int frame_length_short;
 } MPEG4AudioConfig;
 
 extern av_export const int avpriv_mpeg4audio_sample_rates[16];
@@ -101,7 +102,7 @@ enum AudioObjectType {
     AOT_USAC,                  ///< N                       Unified Speech and Audio Coding
 };
 
-#define MAX_PCE_SIZE 304 ///<Maximum size of a PCE including the 3-bit ID_PCE
+#define MAX_PCE_SIZE 320 ///<Maximum size of a PCE including the 3-bit ID_PCE
                          ///<marker and the comment
 
 int avpriv_copy_pce_data(PutBitContext *pb, GetBitContext *gb);

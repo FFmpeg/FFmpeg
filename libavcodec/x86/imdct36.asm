@@ -72,7 +72,7 @@ costabs:  times 4 dd  0.98480773
           times 4 dd  5.73685646
 
 %define SBLIMIT 32
-SECTION_TEXT
+SECTION .text
 
 %macro PSHUFD 3
 %if cpuflag(sse2) && notcpuflag(avx)
@@ -143,6 +143,12 @@ SECTION_TEXT
 %endmacro
 
 %macro STORE 4
+%if cpuflag(sse4)
+    movss     [%3       ], %1
+    extractps [%3 +   %4], %1, 1
+    extractps [%3 + 2*%4], %1, 2
+    extractps [%3 + 3*%4], %1, 3
+%else
     movhlps %2, %1
     movss   [%3       ], %1
     movss   [%3 + 2*%4], %2
@@ -150,6 +156,7 @@ SECTION_TEXT
     movss   [%3 +   %4], %1
     movhlps %2, %1
     movss   [%3 + 3*%4], %2
+%endif
 %endmacro
 
 %macro LOAD 4

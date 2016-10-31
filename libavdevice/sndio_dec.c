@@ -22,12 +22,14 @@
 #include <stdint.h>
 #include <sndio.h>
 
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 
-#include "sndio_common.h"
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
+
+#include "libavdevice/sndio.h"
 
 static av_cold int audio_read_header(AVFormatContext *s1)
 {
@@ -44,10 +46,10 @@ static av_cold int audio_read_header(AVFormatContext *s1)
         return ret;
 
     /* take real parameters */
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = s->codec_id;
-    st->codec->sample_rate = s->sample_rate;
-    st->codec->channels    = s->channels;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = s->codec_id;
+    st->codecpar->sample_rate = s->sample_rate;
+    st->codecpar->channels    = s->channels;
 
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
@@ -65,7 +67,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     ret = sio_read(s->hdl, pkt->data, pkt->size);
     if (ret == 0 || sio_eof(s->hdl)) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
 

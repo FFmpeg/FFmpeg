@@ -42,6 +42,7 @@ enum {
 };
 
 typedef struct FFMContext {
+    const AVClass *class;
     /* only reading mode */
     int64_t write_index, file_size;
     int read_state;
@@ -55,6 +56,7 @@ typedef struct FFMContext {
     uint8_t *packet_ptr, *packet_end;
     uint8_t packet[FFM_PACKET_SIZE];
     int64_t start_time;
+    int server_attached;
 } FFMContext;
 
 #endif /* AVFORMAT_FFM_H */

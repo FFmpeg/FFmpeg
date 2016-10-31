@@ -30,9 +30,10 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo4data.h"
+#include "internal.h"
+#include "ivi.h"
+#include "ivi_dsp.h"
 
 #define IVI4_PIC_SIZE_ESC   7
 
@@ -118,17 +119,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-#if IVI4_STREAM_ANALYSER
     if (ctx->frame_type == IVI4_FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
-#endif
 
-    ctx->transp_status = get_bits1(&ctx->gb);
-#if IVI4_STREAM_ANALYSER
-    if (ctx->transp_status) {
-        ctx->has_transp = 1;
-    }
-#endif
+    ctx->has_transp = get_bits1(&ctx->gb);
 
     /* unknown bit: Mac decoder ignores this bit, XANIM returns error */
     if (get_bits1(&ctx->gb)) {
@@ -140,7 +134,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* null frames don't contain anything else so we just return */
     if (ctx->frame_type >= IVI4_FRAMETYPE_NULL_FIRST) {
-        av_dlog(avctx, "Null frame encountered!\n");
+        ff_dlog(avctx, "Null frame encountered!\n");
         return 0;
     }
 
@@ -149,7 +143,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     /* we don't do that because Indeo 4 videos can be decoded anyway */
     if (get_bits1(&ctx->gb)) {
         skip_bits_long(&ctx->gb, 32);
-        av_dlog(avctx, "Password-protected clip!\n");
+        ff_dlog(avctx, "Password-protected clip!\n");
     }
 
     pic_size_indx = get_bits(&ctx->gb, 3);
@@ -162,12 +156,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     /* Decode tile dimensions. */
-    if (get_bits1(&ctx->gb)) {
+    ctx->uses_tiling = get_bits1(&ctx->gb);
+    if (ctx->uses_tiling) {
         pic_conf.tile_height = scale_tile_size(pic_conf.pic_height, get_bits(&ctx->gb, 4));
         pic_conf.tile_width  = scale_tile_size(pic_conf.pic_width,  get_bits(&ctx->gb, 4));
-#if IVI4_STREAM_ANALYSER
-        ctx->uses_tiling = 1;
-#endif
     } else {
         pic_conf.tile_height = pic_conf.pic_height;
         pic_conf.tile_width  = pic_conf.pic_width;
@@ -244,7 +236,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
-        av_dlog(avctx, "Pic hdr extension encountered!\n");
+        ff_dlog(avctx, "Pic hdr extension encountered!\n");
         skip_bits(&ctx->gb, 8);
     }
 
@@ -294,10 +286,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                    band->is_halfpel);
             return AVERROR_INVALIDDATA;
         }
-#if IVI4_STREAM_ANALYSER
         if (!band->is_halfpel)
             ctx->uses_fullpel = 1;
-#endif
 
         band->checksum_present = get_bits1(&ctx->gb);
         if (band->checksum_present)
@@ -333,10 +323,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR, "wrong transform size!\n");
                 return AVERROR_INVALIDDATA;
             }
-#if IVI4_STREAM_ANALYSER
             if ((transform_id >= 0 && transform_id <= 2) || transform_id == 10)
                 ctx->uses_haar = 1;
-#endif
 
             band->inv_transform = transforms[transform_id].inv_trans;
             band->dc_transform  = transforms[transform_id].dc_trans;
@@ -682,6 +670,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->is_nonnull_frame = is_nonnull_frame;
 
     ctx->is_indeo4 = 1;
+    ctx->show_indeo4_info = 1;
 
     ctx->dst_buf   = 0;
     ctx->ref_buf   = 1;
@@ -703,5 +692,5 @@ AVCodec ff_indeo4_decoder = {
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

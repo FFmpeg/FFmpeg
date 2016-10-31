@@ -56,10 +56,10 @@
 #include "config.h"
 #include "libavcodec/ac3dsp.h"
 #include "libavcodec/ac3.h"
-
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
-#if HAVE_MIPSDSPR1
+#if HAVE_MIPSDSP
 static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
                                         int start, int end,
                                         int snr_offset, int floor,
@@ -91,7 +91,7 @@ static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
             "2:                                                     \n\t"
             "lh         %[address1],    0(%[psd1])                  \n\t"
             "lh         %[address2],    2(%[psd1])                  \n\t"
-            "addiu      %[psd1],        %[psd1],        4           \n\t"
+            PTR_ADDIU " %[psd1],        %[psd1],        4           \n\t"
             "subu       %[address1],    %[address1],    %[m]        \n\t"
             "sra        %[address1],    %[address1],    5           \n\t"
             "addiu      %[address1],    %[address1],    -32         \n\t"
@@ -109,14 +109,14 @@ static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
             "addiu      %[address2],    %[address2],    32          \n\t"
             "lbux       %[address2],    %[address2](%[bap_tab])     \n\t"
             "sb         %[address2],    1(%[bap1])                  \n\t"
-            "addiu      %[bap1],        %[bap1],        2           \n\t"
+            PTR_ADDIU " %[bap1],        %[bap1],        2           \n\t"
             "bnez       %[cond],        2b                          \n\t"
-            "addiu      %[psd_end],     %[psd_end],     2           \n\t"
+            PTR_ADDIU " %[psd_end],     %[psd_end],     2           \n\t"
             "slt        %[cond],        %[psd1],        %[psd_end]  \n\t"
             "beqz       %[cond],        3f                          \n\t"
             "1:                                                     \n\t"
             "lh         %[address1],    0(%[psd1])                  \n\t"
-            "addiu      %[psd1],        %[psd1],        2           \n\t"
+            PTR_ADDIU " %[psd1],        %[psd1],        2           \n\t"
             "subu       %[address1],    %[address1],    %[m]        \n\t"
             "sra        %[address1],    %[address1],    5           \n\t"
             "addiu      %[address1],    %[address1],    -32         \n\t"
@@ -125,7 +125,7 @@ static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
             "addiu      %[address1],    %[address1],    32          \n\t"
             "lbux       %[address1],    %[address1](%[bap_tab])     \n\t"
             "sb         %[address1],    0(%[bap1])                  \n\t"
-            "addiu      %[bap1],        %[bap1],        1           \n\t"
+            PTR_ADDIU " %[bap1],        %[bap1],        1           \n\t"
             "3:                                                     \n\t"
 
             : [address1]"=&r"(address1), [address2]"=&r"(address2),
@@ -140,34 +140,35 @@ static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
 static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
                                        int len)
 {
-    int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
+    void *temp0, *temp2, *temp4, *temp5, *temp6, *temp7;
+    int temp1, temp3;
 
     __asm__ volatile (
         "andi   %[temp3],   %[len],         3               \n\t"
-        "addu   %[temp2],   %[bap],         %[len]          \n\t"
-        "addu   %[temp4],   %[bap],         %[temp3]        \n\t"
+        PTR_ADDU "%[temp2], %[bap],         %[len]          \n\t"
+        PTR_ADDU "%[temp4], %[bap],         %[temp3]        \n\t"
         "beq    %[temp2],   %[temp4],       4f              \n\t"
         "1:                                                 \n\t"
         "lbu    %[temp0],   -1(%[temp2])                    \n\t"
         "lbu    %[temp5],   -2(%[temp2])                    \n\t"
         "lbu    %[temp6],   -3(%[temp2])                    \n\t"
         "sll    %[temp0],   %[temp0],       1               \n\t"
-        "addu   %[temp0],   %[mant_cnt],    %[temp0]        \n\t"
+        PTR_ADDU "%[temp0], %[mant_cnt],    %[temp0]        \n\t"
         "sll    %[temp5],   %[temp5],       1               \n\t"
-        "addu   %[temp5],   %[mant_cnt],    %[temp5]        \n\t"
+        PTR_ADDU "%[temp5], %[mant_cnt],    %[temp5]        \n\t"
         "lhu    %[temp1],   0(%[temp0])                     \n\t"
         "sll    %[temp6],   %[temp6],       1               \n\t"
-        "addu   %[temp6],   %[mant_cnt],    %[temp6]        \n\t"
+        PTR_ADDU "%[temp6], %[mant_cnt],    %[temp6]        \n\t"
         "addiu  %[temp1],   %[temp1],       1               \n\t"
         "sh     %[temp1],   0(%[temp0])                     \n\t"
         "lhu    %[temp1],   0(%[temp5])                     \n\t"
         "lbu    %[temp7],   -4(%[temp2])                    \n\t"
-        "addiu  %[temp2],   %[temp2],       -4              \n\t"
+        PTR_ADDIU "%[temp2],%[temp2],       -4              \n\t"
         "addiu  %[temp1],   %[temp1],       1               \n\t"
         "sh     %[temp1],   0(%[temp5])                     \n\t"
         "lhu    %[temp1],   0(%[temp6])                     \n\t"
         "sll    %[temp7],   %[temp7],       1               \n\t"
-        "addu   %[temp7],   %[mant_cnt],    %[temp7]        \n\t"
+        PTR_ADDU "%[temp7], %[mant_cnt],    %[temp7]        \n\t"
         "addiu  %[temp1],   %[temp1],1                      \n\t"
         "sh     %[temp1],   0(%[temp6])                     \n\t"
         "lhu    %[temp1],   0(%[temp7])                     \n\t"
@@ -179,9 +180,9 @@ static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
         "3:                                                 \n\t"
         "addiu  %[temp3],   %[temp3],       -1              \n\t"
         "lbu    %[temp0],   -1(%[temp2])                    \n\t"
-        "addiu  %[temp2],   %[temp2],       -1              \n\t"
+        PTR_ADDIU "%[temp2],%[temp2],       -1              \n\t"
         "sll    %[temp0],   %[temp0],       1               \n\t"
-        "addu   %[temp0],   %[mant_cnt],    %[temp0]        \n\t"
+        PTR_ADDU "%[temp0], %[mant_cnt],    %[temp0]        \n\t"
         "lhu    %[temp1],   0(%[temp0])                     \n\t"
         "addiu  %[temp1],   %[temp1],       1               \n\t"
         "sh     %[temp1],   0(%[temp0])                     \n\t"
@@ -199,7 +200,8 @@ static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
 }
 #endif
 
-#if HAVE_MIPSFPU && HAVE_MIPS32R2
+#if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void float_to_fixed24_mips(int32_t *dst, const float *src, unsigned int len)
 {
     const float scale = 1 << 24;
@@ -274,7 +276,7 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
     float v0, v1, v2, v3;
     float v4, v5, v6, v7;
     float samples0, samples1, samples2, samples3, matrix_j, matrix_j2;
-    float *samples_p,*matrix_p, **samples_x, **samples_end, **samples_sw;
+    float *samples_p, *samples_sw, *matrix_p, **samples_x, **samples_end;
 
     __asm__ volatile(
         ".set   push                                                \n\t"
@@ -283,7 +285,7 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "li     %[i1],          2                                   \n\t"
         "sll    %[len],         2                                   \n\t"
         "move   %[i],           $zero                               \n\t"
-        "sll    %[j],           %[in_ch],               2           \n\t"
+        "sll    %[j],           %[in_ch],             " PTRLOG "    \n\t"
 
         "bne    %[out_ch],      %[i1],                  3f          \n\t"   // if (out_ch == 2)
         " li    %[i2],          1                                   \n\t"
@@ -301,9 +303,9 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "mtc1   $zero,          %[v7]                               \n\t"
         "addiu  %[i1],          %[i],                  4            \n\t"
         "addiu  %[i2],          %[i],                  8            \n\t"
-        "lw     %[samples_p],   0(%[samples_x])                     \n\t"
+        PTR_L " %[samples_p],   0(%[samples_x])                     \n\t"
         "addiu  %[i3],          %[i],                  12           \n\t"
-        "addu   %[samples_end], %[samples_x],          %[j]         \n\t"
+        PTR_ADDU "%[samples_end],%[samples_x],         %[j]         \n\t"
         "move   %[samples_sw],  %[samples_p]                        \n\t"
 
         "1:                                                         \n\t"   // start of the inner for loop (for (j = 0; j < in_ch; j++))
@@ -313,8 +315,8 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "lwxc1  %[samples1],    %[i1](%[samples_p])                 \n\t"
         "lwxc1  %[samples2],    %[i2](%[samples_p])                 \n\t"
         "lwxc1  %[samples3],    %[i3](%[samples_p])                 \n\t"
-        "addiu  %[matrix_p],    8                                   \n\t"
-        "addiu  %[samples_x],   4                                   \n\t"
+        PTR_ADDIU "%[matrix_p], 8                                   \n\t"
+        PTR_ADDIU "%[samples_x]," PTRSIZE "                         \n\t"
         "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
         "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
         "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
@@ -324,9 +326,9 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "madd.s %[v6],          %[v6],  %[samples2],    %[matrix_j2]\n\t"
         "madd.s %[v7],          %[v7],  %[samples3],    %[matrix_j2]\n\t"
         "bne    %[samples_x],   %[samples_end],         1b          \n\t"
-        " lw    %[samples_p],   0(%[samples_x])                     \n\t"
+        PTR_L " %[samples_p],   0(%[samples_x])                     \n\t"
 
-        "lw     %[samples_p],   4(%[samples])                       \n\t"
+        PTR_L " %[samples_p],  " PTRSIZE "(%[samples])              \n\t"
         "swxc1  %[v0],          %[i](%[samples_sw])                 \n\t"
         "swxc1  %[v1],          %[i1](%[samples_sw])                \n\t"
         "swxc1  %[v2],          %[i2](%[samples_sw])                \n\t"
@@ -351,9 +353,9 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "mtc1   $zero,          %[v3]                               \n\t"
         "addiu  %[i1],          %[i],                  4            \n\t"
         "addiu  %[i2],          %[i],                  8            \n\t"
-        "lw     %[samples_p],   0(%[samples_x])                     \n\t"
+        PTR_L " %[samples_p],   0(%[samples_x])                     \n\t"
         "addiu  %[i3],          %[i],                  12           \n\t"
-        "addu   %[samples_end], %[samples_x],          %[j]         \n\t"
+        PTR_ADDU "%[samples_end],%[samples_x],         %[j]         \n\t"
         "move   %[samples_sw],  %[samples_p]                        \n\t"
 
         "4:                                                         \n\t"   // start of the inner for loop (for (j = 0; j < in_ch; j++))
@@ -362,14 +364,14 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         "lwxc1  %[samples1],    %[i1](%[samples_p])                 \n\t"
         "lwxc1  %[samples2],    %[i2](%[samples_p])                 \n\t"
         "lwxc1  %[samples3],    %[i3](%[samples_p])                 \n\t"
-        "addiu  %[matrix_p],    8                                   \n\t"
-        "addiu  %[samples_x],   4                                   \n\t"
+        PTR_ADDIU "%[matrix_p], 8                                   \n\t"
+        PTR_ADDIU "%[samples_x]," PTRSIZE "                         \n\t"
         "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
         "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
         "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
         "madd.s %[v3],          %[v3],  %[samples3],    %[matrix_j] \n\t"
         "bne    %[samples_x],   %[samples_end],         4b          \n\t"
-        " lw    %[samples_p],   0(%[samples_x])                     \n\t"
+        PTR_L " %[samples_p],   0(%[samples_x])                     \n\t"
 
         "swxc1  %[v0],          %[i](%[samples_sw])                 \n\t"
         "addiu  %[i],           16                                  \n\t"
@@ -394,19 +396,22 @@ static void ac3_downmix_mips(float **samples, float (*matrix)[2],
         :"memory"
     );
 }
-#endif
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
+#endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
 void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {
 #if HAVE_INLINE_ASM
-#if HAVE_MIPSDSPR1
+#if HAVE_MIPSDSP
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_mips;
     c->update_bap_counts  = ac3_update_bap_counts_mips;
 #endif
-#if HAVE_MIPSFPU && HAVE_MIPS32R2
+#if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     c->float_to_fixed24 = float_to_fixed24_mips;
     c->downmix          = ac3_downmix_mips;
 #endif
 #endif
 
+#endif
 }

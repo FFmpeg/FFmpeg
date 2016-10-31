@@ -1,0 +1,4 @@
+396a76466dee56e2714dfa42cebe3d2d *tests/data/fate/vsynth_lena-mpeg4-rc.avi
+226314 tests/data/fate/vsynth_lena-mpeg4-rc.avi
+6e8b62e8c3bcbfdcc58afb69a0b1c4e3 *tests/data/fate/vsynth_lena-mpeg4-rc.out.rawvideo
+stddev:    4.23 PSNR: 35.60 MAXDIFF:   85 bytes:  7603200/  7603200

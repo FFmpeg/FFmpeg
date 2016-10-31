@@ -65,13 +65,6 @@ wrap(avcodec_encode_audio2(AVCodecContext *avctx,
                     got_packet_ptr);
 }
 
-wrap(avcodec_encode_video(AVCodecContext *avctx,
-                          uint8_t *buf, int buf_size,
-                          const AVFrame *pict))
-{
-    testxmmclobbers(avcodec_encode_video, avctx, buf, buf_size, pict);
-}
-
 wrap(avcodec_encode_subtitle(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size,
                              const AVSubtitle *sub))
@@ -83,4 +76,24 @@ wrap(avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
                            const AVFrame *frame, int *got_packet_ptr))
 {
     testxmmclobbers(avcodec_encode_video2, avctx, avpkt, frame, got_packet_ptr);
+}
+
+wrap(avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt))
+{
+    testxmmclobbers(avcodec_send_packet, avctx, avpkt);
+}
+
+wrap(avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame))
+{
+    testxmmclobbers(avcodec_receive_frame, avctx, frame);
+}
+
+wrap(avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame))
+{
+    testxmmclobbers(avcodec_send_frame, avctx, frame);
+}
+
+wrap(avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt))
+{
+    testxmmclobbers(avcodec_receive_packet, avctx, avpkt);
 }

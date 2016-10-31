@@ -25,7 +25,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
-#include "imgconvert.h"
 #include "me_cmp.h"
 #include "mpegvideoencdsp.h"
 
@@ -154,6 +153,93 @@ static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
             memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
 }
 
+/* 2x2 -> 1x1 */
+static void shrink22(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    const uint8_t *s1, *s2;
+    uint8_t *d;
+
+    for (; height > 0; height--) {
+        s1 = src;
+        s2 = s1 + src_wrap;
+        d = dst;
+        for (w = width; w >= 4; w -= 4) {
+            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 2;
+            d[1] = (s1[2] + s1[3] + s2[2] + s2[3] + 2) >> 2;
+            d[2] = (s1[4] + s1[5] + s2[4] + s2[5] + 2) >> 2;
+            d[3] = (s1[6] + s1[7] + s2[6] + s2[7] + 2) >> 2;
+            s1 += 8;
+            s2 += 8;
+            d += 4;
+        }
+        for (; w > 0; w--) {
+            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 2;
+            s1 += 2;
+            s2 += 2;
+            d++;
+        }
+        src += 2 * src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 4x4 -> 1x1 */
+static void shrink44(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    const uint8_t *s1, *s2, *s3, *s4;
+    uint8_t *d;
+
+    for (; height > 0; height--) {
+        s1 = src;
+        s2 = s1 + src_wrap;
+        s3 = s2 + src_wrap;
+        s4 = s3 + src_wrap;
+        d = dst;
+        for (w = width; w > 0; w--) {
+            d[0] = (s1[0] + s1[1] + s1[2] + s1[3] +
+                    s2[0] + s2[1] + s2[2] + s2[3] +
+                    s3[0] + s3[1] + s3[2] + s3[3] +
+                    s4[0] + s4[1] + s4[2] + s4[3] + 8) >> 4;
+            s1 += 4;
+            s2 += 4;
+            s3 += 4;
+            s4 += 4;
+            d++;
+        }
+        src += 4 * src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 8x8 -> 1x1 */
+static void shrink88(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w, i;
+
+    for (; height > 0; height--) {
+        for(w = width;w > 0; w--) {
+            int tmp = 0;
+            for (i = 0; i < 8; i++) {
+                tmp += src[0] + src[1] + src[2] + src[3] +
+                       src[4] + src[5] + src[6] + src[7];
+                src += src_wrap;
+            }
+            *(dst++) = (tmp + 32) >> 6;
+            src += 8 - 8 * src_wrap;
+        }
+        src += 8 * src_wrap - 8 * width;
+        dst += dst_wrap - width;
+    }
+}
+
 av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
                                      AVCodecContext *avctx)
 {
@@ -161,9 +247,9 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
     c->add_8x8basis = add_8x8basis_c;
 
     c->shrink[0] = av_image_copy_plane;
-    c->shrink[1] = ff_shrink22;
-    c->shrink[2] = ff_shrink44;
-    c->shrink[3] = ff_shrink88;
+    c->shrink[1] = shrink22;
+    c->shrink[2] = shrink44;
+    c->shrink[3] = shrink88;
 
     c->pix_sum   = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
@@ -176,4 +262,6 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
         ff_mpegvideoencdsp_init_ppc(c, avctx);
     if (ARCH_X86)
         ff_mpegvideoencdsp_init_x86(c, avctx);
+    if (ARCH_MIPS)
+        ff_mpegvideoencdsp_init_mips(c, avctx);
 }

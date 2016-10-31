@@ -322,7 +322,7 @@ endfunc
 
         vmov.i16        q12, #3
         vsubl.s8        q10, d8,  d6            @ QS0 - PS0
-        vsubl.s8        q11, d9,  d7            @   (widened to 16bit)
+        vsubl.s8        q11, d9,  d7            @   (widened to 16 bits)
         veor            q2,  q2,  q13           @ PS1 = P1 ^ 0x80
         veor            q5,  q5,  q13           @ QS1 = Q1 ^ 0x80
         vmul.i16        q10, q10, q12           @ w = 3 * (QS0 - PS0)

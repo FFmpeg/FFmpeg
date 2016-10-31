@@ -1,6 +1,6 @@
 fate-acodec-%: CODEC = $(@:fate-acodec-%=%)
 fate-acodec-%: SRC = tests/data/asynth-44100-2.wav
-fate-acodec-%: CMD = enc_dec wav $(SRC) $(FMT) "-b 128k -c $(CODEC) $(ENCOPTS)" wav "-c pcm_s16le $(DECOPTS)" -keep
+fate-acodec-%: CMD = enc_dec wav $(SRC) $(FMT) "-b:a 128k -c $(CODEC) $(ENCOPTS)" wav "-c pcm_s16le $(DECOPTS)" -keep
 fate-acodec-%: CMP_UNIT = 2
 fate-acodec-%: REF = $(SRC_PATH)/tests/ref/acodec/$(@:fate-acodec-%=%)
 
@@ -93,6 +93,7 @@ fate-acodec-mp2: ENCOPTS = -b:a 128k
 FATE_ACODEC-$(call ENCDEC, MP2FIXED MP2 , MP2 MP3) += fate-acodec-mp2fixed
 fate-acodec-mp2fixed: FMT = mp2
 fate-acodec-mp2fixed: CMP_SHIFT = -1924
+fate-acodec-mp2fixed: ENCOPTS = -b:a 384k
 
 FATE_ACODEC-$(call ENCDEC, ALAC, MOV) += fate-acodec-alac
 fate-acodec-alac: FMT = mov
@@ -103,7 +104,7 @@ fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
 fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
 fate-acodec-dca: CMP = oneline
-fate-acodec-dca: REF = fe28cef432ed88de4ee01b87537fd2bd
+fate-acodec-dca: REF = 7ffdefdf47069289990755c79387cc90
 
 FATE_ACODEC-$(call ENCDEC, DCA, WAV) += fate-acodec-dca2
 fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact
@@ -113,9 +114,12 @@ fate-acodec-dca2: CMP_SHIFT = -2048
 fate-acodec-dca2: CMP_TARGET = 527
 fate-acodec-dca2: SIZE_TOLERANCE = 1632
 
-FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac
+FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac fate-acodec-flac-exact-rice
 fate-acodec-flac: FMT = flac
 fate-acodec-flac: CODEC = flac -compression_level 2
+
+fate-acodec-flac-exact-rice: FMT = flac
+fate-acodec-flac-exact-rice: CODEC = flac -compression_level 2 -exact_rice_parameters 1
 
 FATE_ACODEC-$(call ENCDEC, G723_1, G723_1) += fate-acodec-g723_1
 fate-acodec-g723_1: tests/data/asynth-8000-1.wav
@@ -139,6 +143,19 @@ fate-acodec-roqaudio: FMT = roq
 fate-acodec-roqaudio: CODEC = roq_dpcm
 fate-acodec-roqaudio: ENCOPTS = -ar 22050
 fate-acodec-roqaudio: DECOPTS = -ar 44100
+
+FATE_ACODEC-$(call ENCDEC, S302M, MPEGTS) += fate-acodec-s302m
+fate-acodec-s302m: FMT = mpegts
+fate-acodec-s302m: CODEC = s302m
+fate-acodec-s302m: ENCOPTS = -ar 48000 -strict -2
+fate-acodec-s302m: DECOPTS = -ar 44100
+
+FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
+fate-acodec-wavpack: FMT = wv
+fate-acodec-wavpack: CODEC = wavpack -compression_level 1
+
+FATE_ACODEC-$(call ENCDEC, TTA, TTA) += fate-acodec-tta
+fate-acodec-tta: FMT = tta
 
 FATE_ACODEC += $(FATE_ACODEC-yes)
 

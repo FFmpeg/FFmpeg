@@ -28,6 +28,9 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#if CONFIG_NETWORK
+#include "network.h"
+#endif
 #include "url.h"
 
 #include <librtmp/rtmp.h>
@@ -48,6 +51,7 @@ typedef struct LibRTMPContext {
     char *client_buffer_time;
     int live;
     char *temp_filename;
+    int buffer_size;
 } LibRTMPContext;
 
 static void rtmp_log(int level, const char *fmt, va_list args)
@@ -169,7 +173,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
     if (ctx->swfurl) {
         av_strlcat(filename, " swfUrl=", len);
-        av_strlcat(filename, ctx->pageurl, len);
+        av_strlcat(filename, ctx->swfurl, len);
     }
     if (ctx->flashver) {
         av_strlcat(filename, " flashVer=", len);
@@ -189,6 +193,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
             if (sep)
                 p = sep + 1;
+            else
+                break;
         }
     }
     if (ctx->playpath) {
@@ -229,6 +235,13 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         rc = AVERROR_UNKNOWN;
         goto fail;
     }
+
+#if CONFIG_NETWORK
+    if (ctx->buffer_size >= 0 && (flags & AVIO_FLAG_WRITE)) {
+        int tmp = ctx->buffer_size;
+        setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp));
+    }
+#endif
 
     s->is_streamed = 1;
     return 0;
@@ -311,6 +324,9 @@ static const AVOption options[] = {
     {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_swfverify", "URL to player swf file, compute hash/size automatically. (unimplemented)", OFFSET(swfverify), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+#if CONFIG_NETWORK
+    {"rtmp_buffer_size", "set buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC|ENC },
+#endif
     { NULL },
 };
 
@@ -323,7 +339,7 @@ static const AVClass lib ## flavor ## _class = {\
 };
 
 RTMP_CLASS(rtmp)
-URLProtocol ff_librtmp_protocol = {
+const URLProtocol ff_librtmp_protocol = {
     .name                = "rtmp",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -338,7 +354,7 @@ URLProtocol ff_librtmp_protocol = {
 };
 
 RTMP_CLASS(rtmpt)
-URLProtocol ff_librtmpt_protocol = {
+const URLProtocol ff_librtmpt_protocol = {
     .name                = "rtmpt",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -353,7 +369,7 @@ URLProtocol ff_librtmpt_protocol = {
 };
 
 RTMP_CLASS(rtmpe)
-URLProtocol ff_librtmpe_protocol = {
+const URLProtocol ff_librtmpe_protocol = {
     .name                = "rtmpe",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -368,7 +384,7 @@ URLProtocol ff_librtmpe_protocol = {
 };
 
 RTMP_CLASS(rtmpte)
-URLProtocol ff_librtmpte_protocol = {
+const URLProtocol ff_librtmpte_protocol = {
     .name                = "rtmpte",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -383,7 +399,7 @@ URLProtocol ff_librtmpte_protocol = {
 };
 
 RTMP_CLASS(rtmps)
-URLProtocol ff_librtmps_protocol = {
+const URLProtocol ff_librtmps_protocol = {
     .name                = "rtmps",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,

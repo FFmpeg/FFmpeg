@@ -49,7 +49,7 @@ static int sap_write_close(AVFormatContext *s)
         if (!rtpctx)
             continue;
         av_write_trailer(rtpctx);
-        avio_close(rtpctx->pb);
+        avio_closep(&rtpctx->pb);
         avformat_free_context(rtpctx);
         s->streams[i]->priv_data = NULL;
     }
@@ -149,7 +149,9 @@ static int sap_write_header(AVFormatContext *s)
                     "?ttl=%d", ttl);
         if (!same_port)
             base_port += 2;
-        ret = ffurl_open(&fd, url, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+        ret = ffurl_open_whitelist(&fd, url, AVIO_FLAG_WRITE,
+                                   &s->interrupt_callback, NULL,
+                                   s->protocol_whitelist, s->protocol_blacklist, NULL);
         if (ret) {
             ret = AVERROR(EIO);
             goto fail;
@@ -167,8 +169,9 @@ static int sap_write_header(AVFormatContext *s)
 
     ff_url_join(url, sizeof(url), "udp", NULL, announce_addr, port,
                 "?ttl=%d&connect=1", ttl);
-    ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = ffurl_open_whitelist(&sap->ann_fd, url, AVIO_FLAG_WRITE,
+                               &s->interrupt_callback, NULL,
+                               s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret) {
         ret = AVERROR(EIO);
         goto fail;

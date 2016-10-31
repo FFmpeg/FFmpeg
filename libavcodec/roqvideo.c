@@ -115,7 +115,7 @@ static inline void apply_motion_generic(RoqContext *ri, int x, int y, int deltax
         return;
     }
 
-    if (ri->last_frame->data[0] == NULL) {
+    if (!ri->last_frame->data[0]) {
         av_log(ri->avctx, AV_LOG_ERROR, "Invalid decode type. Invalid header?\n");
         return;
     }

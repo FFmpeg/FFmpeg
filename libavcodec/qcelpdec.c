@@ -50,7 +50,7 @@ typedef enum {
     RATE_FULL
 } qcelp_packet_rate;
 
-typedef struct {
+typedef struct QCELPContext {
     GetBitContext     gb;
     qcelp_packet_rate bitrate;
     QCELPFrame        frame;    /**< unpacked data frame */
@@ -603,7 +603,7 @@ static qcelp_packet_rate buf_size2bitrate(const int buf_size)
  *
  * @param avctx the AV codec context
  * @param buf_size length of the buffer
- * @param buf the bufffer
+ * @param buf the buffer
  *
  * @return the bitrate on success,
  *         I_F_Q  if the bitrate cannot be satisfactorily determined
@@ -719,7 +719,8 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
                                          qcelp_unpacking_bitmaps_lengths[q->bitrate];
         uint8_t *unpacked_data         = (uint8_t *)&q->frame;
 
-        init_get_bits(&q->gb, buf, 8 * buf_size);
+        if ((ret = init_get_bits8(&q->gb, buf, buf_size)) < 0)
+            return ret;
 
         memset(&q->frame, 0, sizeof(QCELPFrame));
 
@@ -796,6 +797,6 @@ AVCodec ff_qcelp_decoder = {
     .id             = AV_CODEC_ID_QCELP,
     .init           = qcelp_decode_init,
     .decode         = qcelp_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(QCELPContext),
 };

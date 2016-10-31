@@ -80,5 +80,3 @@ void ff_generate_wave_table(enum WaveType wave_type,
         }
     }
 }
-
-

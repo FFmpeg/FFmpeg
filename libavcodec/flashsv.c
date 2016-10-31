@@ -365,7 +365,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
         s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
                                sizeof(s->blocks[0]));
 
-    av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
             s->image_width, s->image_height, s->block_width, s->block_height,
             h_blocks, v_blocks, h_part, v_part);
 
@@ -413,6 +413,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 if (has_diff) {
+                    if (size < 3) {
+                        av_log(avctx, AV_LOG_ERROR, "size too small for diff\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     if (!s->keyframe) {
                         av_log(avctx, AV_LOG_ERROR,
                                "Inter frame without keyframe\n");
@@ -440,6 +444,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     int row = get_bits(&gb, 8);
                     av_log(avctx, AV_LOG_DEBUG, "%dx%d zlibprime_curr %dx%d\n",
                            i, j, col, row);
+                    if (size < 3) {
+                        av_log(avctx, AV_LOG_ERROR, "size too small for zlibprime_curr\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     size -= 2;
                     avpriv_request_sample(avctx, "zlibprime_curr");
                     return AVERROR_PATCHWELCOME;
@@ -509,7 +517,7 @@ AVCodec ff_flashsv_decoder = {
     .init           = flashsv_decode_init,
     .close          = flashsv_decode_end,
     .decode         = flashsv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV_DECODER */
@@ -572,7 +580,7 @@ AVCodec ff_flashsv2_decoder = {
     .init           = flashsv2_decode_init,
     .close          = flashsv2_decode_end,
     .decode         = flashsv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
 };
 #endif /* CONFIG_FLASHSV2_DECODER */

@@ -21,12 +21,18 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/log.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
 
 #define AES3_HEADER_LEN 4
+
+typedef struct S302Context {
+    AVClass *class;
+    int non_pcm_mode;
+} S302Context;
 
 static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
                                     int buf_size)
@@ -79,11 +85,6 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
         case 8:
             avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
     }
-    avctx->sample_rate = 48000;
-    avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
-                         32 * (48000 / (buf_size * 8 /
-                                        (avctx->channels *
-                                         (avctx->bits_per_raw_sample + 4))));
 
     return frame_size;
 }
@@ -91,10 +92,13 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
 static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
+    S302Context *s = avctx->priv_data;
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int block_size, ret;
+    int i;
+    int non_pcm_data_type = -1;
 
     int frame_size = s302m_parse_frame_header(avctx, buf, buf_size);
     if (frame_size < 0)
@@ -109,6 +113,8 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
+    avctx->bit_rate = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
+                      32 * 48000 / frame->nb_samples;
     buf_size = (frame->nb_samples * avctx->channels / 2) * block_size;
 
     if (avctx->bits_per_raw_sample == 24) {
@@ -123,6 +129,16 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                    (ff_reverse[buf[3] & 0x0f] <<  4);
             buf += 7;
         }
+        o = (uint32_t *)frame->data[0];
+        if (avctx->channels == 2)
+            for (i=0; i<frame->nb_samples * 2 - 6; i+=2) {
+                if (o[i] || o[i+1] || o[i+2] || o[i+3])
+                    break;
+                if (o[i+4] == 0x96F87200U && o[i+5] == 0xA54E1F00) {
+                    non_pcm_data_type = (o[i+6] >> 16) & 0x1F;
+                    break;
+                }
+            }
     } else if (avctx->bits_per_raw_sample == 20) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 5; buf_size -= 6) {
@@ -134,6 +150,16 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                    (ff_reverse[buf[3]]        << 12);
             buf += 6;
         }
+        o = (uint32_t *)frame->data[0];
+        if (avctx->channels == 2)
+            for (i=0; i<frame->nb_samples * 2 - 6; i+=2) {
+                if (o[i] || o[i+1] || o[i+2] || o[i+3])
+                    break;
+                if (o[i+4] == 0x6F872000U && o[i+5] == 0x54E1F000) {
+                    non_pcm_data_type = (o[i+6] >> 16) & 0x1F;
+                    break;
+                }
+            }
     } else {
         uint16_t *o = (uint16_t *)frame->data[0];
         for (; buf_size > 4; buf_size -= 5) {
@@ -144,18 +170,61 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                    (ff_reverse[buf[2]]        >>  4);
             buf += 5;
         }
+        o = (uint16_t *)frame->data[0];
+        if (avctx->channels == 2)
+            for (i=0; i<frame->nb_samples * 2 - 6; i+=2) {
+                if (o[i] || o[i+1] || o[i+2] || o[i+3])
+                    break;
+                if (o[i+4] == 0xF872U && o[i+5] == 0x4E1F) {
+                    non_pcm_data_type = (o[i+6] & 0x1F);
+                    break;
+                }
+            }
     }
+
+    if (non_pcm_data_type != -1) {
+        if (s->non_pcm_mode == 3) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "S302 non PCM mode with data type %d not supported\n",
+                   non_pcm_data_type);
+            return AVERROR_PATCHWELCOME;
+        }
+        if (s->non_pcm_mode & 1) {
+            return avpkt->size;
+        }
+    }
+
+    avctx->sample_rate = 48000;
 
     *got_frame_ptr = 1;
 
     return avpkt->size;
 }
 
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM
+static const AVOption s302m_options[] = {
+    {"non_pcm_mode", "Chooses what to do with NON-PCM", offsetof(S302Context, non_pcm_mode), AV_OPT_TYPE_INT, {.i64 = 3}, 0, 3, FLAGS, "non_pcm_mode"},
+    {"copy"        , "Pass NON-PCM through unchanged"     , 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 3, FLAGS, "non_pcm_mode"},
+    {"drop"        , "Drop NON-PCM"                       , 0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 3, FLAGS, "non_pcm_mode"},
+    {"decode_copy" , "Decode if possible else passthrough", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 3, FLAGS, "non_pcm_mode"},
+    {"decode_drop" , "Decode if possible else drop"       , 0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 3, FLAGS, "non_pcm_mode"},
+    {NULL}
+};
+
+static const AVClass s302m_class = {
+    "SMPTE 302M Decoder",
+    av_default_item_name,
+    s302m_options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_s302m_decoder = {
     .name           = "s302m",
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_S302M,
+    .priv_data_size = sizeof(S302Context),
     .decode         = s302m_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
+    .priv_class     = &s302m_class,
 };

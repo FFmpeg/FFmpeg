@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle FFmpeg Automated Testing Environment
 @titlepage
@@ -12,36 +13,36 @@
 
 @chapter Introduction
 
-  FATE is an extended regression suite on the client-side and a means
+FATE is an extended regression suite on the client-side and a means
 for results aggregation and presentation on the server-side.
 
-  The first part of this document explains how you can use FATE from
+The first part of this document explains how you can use FATE from
 your FFmpeg source directory to test your ffmpeg binary. The second
 part describes how you can run FATE to submit the results to FFmpeg's
 FATE server.
 
-  In any way you can have a look at the publicly viewable FATE results
+In any way you can have a look at the publicly viewable FATE results
 by visiting this website:
 
-  @url{http://fate.ffmpeg.org/}
+@url{http://fate.ffmpeg.org/}
 
-  This is especially recommended for all people contributing source
+This is especially recommended for all people contributing source
 code to FFmpeg, as it can be seen if some test on some platform broke
 with their recent contribution. This usually happens on the platforms
 the developers could not test on.
 
-  The second part of this document describes how you can run FATE to
+The second part of this document describes how you can run FATE to
 submit your results to FFmpeg's FATE server. If you want to submit your
 results be sure to check that your combination of CPU, OS and compiler
 is not already listed on the above mentioned website.
 
-  In the third part you can find a comprehensive listing of FATE makefile
+In the third part you can find a comprehensive listing of FATE makefile
 targets and variables.
 
 
 @chapter Using FATE from your FFmpeg source directory
 
-  If you want to run FATE on your machine you need to have the samples
+If you want to run FATE on your machine you need to have the samples
 in place. You can get the samples via the build target fate-rsync.
 Use this command from the top-level source directory:
 
@@ -50,11 +51,11 @@ make fate-rsync SAMPLES=fate-suite/
 make fate       SAMPLES=fate-suite/
 @end example
 
-  The above commands set the samples location by passing a makefile
+The above commands set the samples location by passing a makefile
 variable via command line. It is also possible to set the samples
 location at source configuration time by invoking configure with
-`--samples=<path to the samples directory>'. Afterwards you can
-invoke the makefile targets without setting the SAMPLES makefile
+@option{--samples=<path to the samples directory>}. Afterwards you can
+invoke the makefile targets without setting the @var{SAMPLES} makefile
 variable. This is illustrated by the following commands:
 
 @example
@@ -63,7 +64,7 @@ make fate-rsync
 make fate
 @end example
 
-  Yet another way to tell FATE about the location of the sample
+Yet another way to tell FATE about the location of the sample
 directory is by making sure the environment variable FATE_SAMPLES
 contains the path to your samples directory. This can be achieved
 by e.g. putting that variable in your shell profile or by setting
@@ -84,7 +85,7 @@ To use a custom wrapper to run the test, pass @option{--target-exec} to
 
 @chapter Submitting the results to the FFmpeg result aggregation server
 
-  To submit your results to the server you should run fate through the
+To submit your results to the server you should run fate through the
 shell script @file{tests/fate.sh} from the FFmpeg sources. This script needs
 to be invoked with a configuration file as its first argument.
 
@@ -92,23 +93,23 @@ to be invoked with a configuration file as its first argument.
 tests/fate.sh /path/to/fate_config
 @end example
 
-  A configuration file template with comments describing the individual
+A configuration file template with comments describing the individual
 configuration variables can be found at @file{doc/fate_config.sh.template}.
 
 @ifhtml
-  The mentioned configuration template is also available here:
+The mentioned configuration template is also available here:
 @verbatiminclude fate_config.sh.template
 @end ifhtml
 
-  Create a configuration that suits your needs, based on the configuration
-template. The `slot' configuration variable can be any string that is not
+Create a configuration that suits your needs, based on the configuration
+template. The @env{slot} configuration variable can be any string that is not
 yet used, but it is suggested that you name it adhering to the following
-pattern <arch>-<os>-<compiler>-<compiler version>. The configuration file
-itself will be sourced in a shell script, therefore all shell features may
-be used. This enables you to setup the environment as you need it for your
-build.
+pattern @samp{@var{arch}-@var{os}-@var{compiler}-@var{compiler version}}. The
+configuration file itself will be sourced in a shell script, therefore all
+shell features may be used. This enables you to setup the environment as you
+need it for your build.
 
-  For your first test runs the `fate_recv' variable should be empty or
+For your first test runs the @env{fate_recv} variable should be empty or
 commented out. This will run everything as normal except that it will omit
 the submission of the results to the server. The following files should be
 present in $workdir as specified in the configuration file:
@@ -121,29 +122,29 @@ present in $workdir as specified in the configuration file:
     @item version
 @end itemize
 
-  When you have everything working properly you can create an SSH key pair
+When you have everything working properly you can create an SSH key pair
 and send the public key to the FATE server administrator who can be contacted
 at the email address @email{fate-admin@@ffmpeg.org}.
 
-  Configure your SSH client to use public key authentication with that key
+Configure your SSH client to use public key authentication with that key
 when connecting to the FATE server. Also do not forget to check the identity
 of the server and to accept its host key. This can usually be achieved by
 running your SSH client manually and killing it after you accepted the key.
 The FATE server's fingerprint is:
 
-@table @option
+@table @samp
 @item RSA
    d3:f1:83:97:a4:75:2b:a6:fb:d6:e8:aa:81:93:97:51
 @item ECDSA
    76:9f:68:32:04:1e:d5:d4:ec:47:3f:dc:fc:18:17:86
 @end table
 
-  If you have problems connecting to the FATE server, it may help to try out
+If you have problems connecting to the FATE server, it may help to try out
 the @command{ssh} command with one or more @option{-v} options. You should
 get detailed output concerning your SSH configuration and the authentication
 process.
 
-  The only thing left is to automate the execution of the fate.sh script and
+The only thing left is to automate the execution of the fate.sh script and
 the synchronisation of the samples directory.
 
 
@@ -164,7 +165,7 @@ Run the FATE test suite (requires the fate-suite dataset).
 
 @section Makefile variables
 
-@table @option
+@table @env
 @item V
 Verbosity level, can be set to 0, 1 or 2.
     @itemize
@@ -182,20 +183,20 @@ Specify how many threads to use while running regression tests, it is
 quite useful to detect thread-related regressions.
 
 @item THREAD_TYPE
-Specify which threading strategy test, either @var{slice} or @var{frame},
-by default @var{slice+frame}
+Specify which threading strategy test, either @samp{slice} or @samp{frame},
+by default @samp{slice+frame}
 
 @item CPUFLAGS
 Specify CPU flags.
 
 @item TARGET_EXEC
 Specify or override the wrapper used to run the tests.
-The @var{TARGET_EXEC} option provides a way to run FATE wrapped in
+The @env{TARGET_EXEC} option provides a way to run FATE wrapped in
 @command{valgrind}, @command{qemu-user} or @command{wine} or on remote targets
 through @command{ssh}.
 
 @item GEN
-Set to @var{1} to generate the missing or mismatched references.
+Set to @samp{1} to generate the missing or mismatched references.
 @end table
 
 @section Examples

@@ -1,0 +1,4 @@
+4863978263d966d704ffaaa6d23123bb *tests/data/fate/vsynth_lena-qtrle.mov
+14798345 tests/data/fate/vsynth_lena-qtrle.mov
+98d0e2854731472c5bf13d8638502d0a *tests/data/fate/vsynth_lena-qtrle.out.rawvideo
+stddev:    1.26 PSNR: 46.10 MAXDIFF:   13 bytes:  7603200/  7603200

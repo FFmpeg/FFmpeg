@@ -28,8 +28,9 @@
  */
 
 /**
- * @defgroup lavd Special devices muxing/demuxing library
- * @{
+ * @defgroup lavd libavdevice
+ * Special devices muxing/demuxing library.
+ *
  * Libavdevice is a complementary library to @ref libavf "libavformat". It
  * provides various "special" platform-specific muxers and demuxers, e.g. for
  * grabbing devices, audio capture and playback etc. As a consequence, the
@@ -40,7 +41,8 @@
  *
  * To use libavdevice, simply call avdevice_register_all() to register all
  * compiled muxers and demuxers. They all use standard libavformat API.
- * @}
+ *
+ * @{
  */
 
 #include "libavutil/log.h"
@@ -324,7 +326,7 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
  * Following API allows user to probe device capabilities (supported codecs,
  * pixel formats, sample formats, resolutions, channel counts, etc).
  * It is build on top op AVOption API.
- * Queried capabilities allows to set up converters of video or audio
+ * Queried capabilities make it possible to set up converters of video or audio
  * parameters that fit to the device.
  *
  * List of capabilities that can be queried:
@@ -483,5 +485,31 @@ int avdevice_list_devices(struct AVFormatContext *s, AVDeviceInfoList **device_l
  * @param devices device list to be freed.
  */
 void avdevice_free_list_devices(AVDeviceInfoList **device_list);
+
+/**
+ * List devices.
+ *
+ * Returns available device names and their parameters.
+ * These are convinient wrappers for avdevice_list_devices().
+ * Device context is allocated and deallocated internally.
+ *
+ * @param device           device format. May be NULL if device name is set.
+ * @param device_name      device name. May be NULL if device format is set.
+ * @param device_options   An AVDictionary filled with device-private options. May be NULL.
+ *                         The same options must be passed later to avformat_write_header() for output
+ *                         devices or avformat_open_input() for input devices, or at any other place
+ *                         that affects device-private options.
+ * @param[out] device_list list of autodetected devices
+ * @return count of autodetected devices, negative on error.
+ * @note device argument takes precedence over device_name when both are set.
+ */
+int avdevice_list_input_sources(struct AVInputFormat *device, const char *device_name,
+                                AVDictionary *device_options, AVDeviceInfoList **device_list);
+int avdevice_list_output_sinks(struct AVOutputFormat *device, const char *device_name,
+                               AVDictionary *device_options, AVDeviceInfoList **device_list);
+
+/**
+ * @}
+ */
 
 #endif /* AVDEVICE_AVDEVICE_H */

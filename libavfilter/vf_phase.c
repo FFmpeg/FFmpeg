@@ -41,7 +41,7 @@ enum PhaseMode {
 
 typedef struct PhaseContext {
     const AVClass *class;
-    enum PhaseMode mode;
+    int mode;                   ///<PhaseMode
     AVFrame *frame; /* previous frame */
     int nb_planes;
     int planeheight[4];
@@ -77,8 +77,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -90,7 +92,7 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
@@ -106,7 +108,7 @@ static int config_input(AVFilterLink *inlink)
  *
  * (The result is actually multiplied by 25)
  */
-#define DIFF(a, as, b, bs) (t = ((*a - b[bs]) << 2) + a[as << 1] - b[-bs], t * t)
+#define DIFF(a, as, b, bs) ((t) = ((*(a) - (b)[bs]) << 2) + (a)[(as) << 1] - (b)[-(bs)], (t) * (t))
 
 /*
  * Find which field combination has the smallest average squared difference
@@ -114,14 +116,7 @@ static int config_input(AVFilterLink *inlink)
  */
 static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old, AVFrame *new)
 {
-    double bdiff, tdiff, pdiff, scale;
-    const int ns = new->linesize[0];
-    const int os = old->linesize[0];
-    const uint8_t *nptr = new->data[0];
-    const uint8_t *optr = old->data[0];
-    const int h = new->height;
-    const int w = new->width;
-    int bdif, tdif, pdif;
+    double bdiff, tdiff, pdiff;
 
     if (mode == AUTO) {
         mode = new->interlaced_frame ? new->top_field_first ?
@@ -134,6 +129,15 @@ static enum PhaseMode analyze_plane(void *ctx, enum PhaseMode mode, AVFrame *old
     if (mode <= BOTTOM_FIRST) {
         bdiff = pdiff = tdiff = 65536.0;
     } else {
+        const int ns = new->linesize[0];
+        const int os = old->linesize[0];
+        const uint8_t *nptr = new->data[0];
+        const uint8_t *optr = old->data[0];
+        const int h = new->height;
+        const int w = new->width;
+        int bdif, tdif, pdif;
+        double scale;
+
         int top = 0, t;
         const uint8_t *rend, *end = nptr + (h - 2) * ns;
 

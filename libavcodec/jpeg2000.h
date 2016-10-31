@@ -58,18 +58,19 @@ enum Jpeg2000Markers {
     JPEG2000_EOC = 0xffd9, // end of codestream
 };
 
+#define JPEG2000_SOP_FIXED_BYTES 0xFF910004
+#define JPEG2000_SOP_BYTE_LENGTH 6
+
 enum Jpeg2000Quantsty { // quantization style
     JPEG2000_QSTY_NONE, // no quantization
     JPEG2000_QSTY_SI,   // scalar derived
     JPEG2000_QSTY_SE    // scalar expounded
 };
 
-#define JPEG2000_MAX_CBLKW 64
-#define JPEG2000_MAX_CBLKH 64
-
-
-#define JPEG2000_MAX_DECLEVELS 32
+#define JPEG2000_MAX_DECLEVELS 33
 #define JPEG2000_MAX_RESLEVELS (JPEG2000_MAX_DECLEVELS + 1)
+
+#define JPEG2000_MAX_PASSES 100
 
 // T1 flags
 // flags determining significance of neighbor coefficients
@@ -118,9 +119,10 @@ enum Jpeg2000Quantsty { // quantization style
 #define JPEG2000_PGOD_CPRL      0x04  // Component-position-resolution level-layer progression
 
 typedef struct Jpeg2000T1Context {
-    int data[JPEG2000_MAX_CBLKW][JPEG2000_MAX_CBLKH];
-    int flags[JPEG2000_MAX_CBLKW + 2][JPEG2000_MAX_CBLKH + 2];
+    int data[6144];
+    uint16_t flags[6156];
     MqcState mqc;
+    int stride;
 } Jpeg2000T1Context;
 
 typedef struct Jpeg2000TgtNode {
@@ -154,6 +156,8 @@ typedef struct Jpeg2000QuantStyle {
 typedef struct Jpeg2000Pass {
     uint16_t rate;
     int64_t disto;
+    uint8_t flushed[4];
+    int flushed_len;
 } Jpeg2000Pass;
 
 typedef struct Jpeg2000Cblk {
@@ -161,25 +165,30 @@ typedef struct Jpeg2000Cblk {
     uint8_t ninclpasses; // number coding of passes included in codestream
     uint8_t nonzerobits;
     uint16_t length;
-    uint16_t lengthinc;
+    uint16_t lengthinc[JPEG2000_MAX_PASSES];
+    uint8_t nb_lengthinc;
     uint8_t lblock;
     uint8_t zero;
     uint8_t data[8192];
-    Jpeg2000Pass passes[100];
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int nb_terminations;
+    int nb_terminationsinc;
+    int data_start[JPEG2000_MAX_PASSES];
+    Jpeg2000Pass passes[JPEG2000_MAX_PASSES];
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
-    uint16_t nb_codeblocks_width;
-    uint16_t nb_codeblocks_height;
+    int nb_codeblocks_width;
+    int nb_codeblocks_height;
     Jpeg2000TgtNode *zerobits;
     Jpeg2000TgtNode *cblkincl;
     Jpeg2000Cblk *cblk;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int decoded_layers;
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 
 typedef struct Jpeg2000Band {
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
     int i_stepsize; // quantization stepsize
     float f_stepsize; // quantization stepsize
@@ -188,8 +197,8 @@ typedef struct Jpeg2000Band {
 
 typedef struct Jpeg2000ResLevel {
     uint8_t nbands;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
-    uint16_t num_precincts_x, num_precincts_y; // number of precincts in x/y direction
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int num_precincts_x, num_precincts_y; // number of precincts in x/y direction
     uint8_t log2_prec_width, log2_prec_height; // exponent of precinct size
     Jpeg2000Band *band;
 } Jpeg2000ResLevel; // resolution level
@@ -199,14 +208,14 @@ typedef struct Jpeg2000Component {
     DWTContext dwt;
     float *f_data;
     int *i_data;
-    uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
-    uint16_t coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
+    int coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
+    int coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
 } Jpeg2000Component;
 
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
-    return (a + (1 << b) - 1) >> b;
+    return -(((int64_t)(-a)) >> b);
 }
 
 static inline int ff_jpeg2000_ceildiv(int a, int b)
@@ -261,5 +270,22 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
+
+static inline int needs_termination(int style, int passno) {
+    if (style & JPEG2000_CBLK_BYPASS) {
+        int type = passno % 3;
+        passno /= 3;
+        if (type == 0 && passno > 2)
+            return 2;
+        if (type == 2 && passno > 2)
+            return 1;
+        if (style & JPEG2000_CBLK_TERMALL) {
+            return passno > 2 ? 2 : 1;
+        }
+    }
+    if (style & JPEG2000_CBLK_TERMALL)
+        return 1;
+    return 0;
+}
 
 #endif /* AVCODEC_JPEG2000_H */

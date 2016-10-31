@@ -45,8 +45,8 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_MPEG4;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_MPEG4;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     avpriv_set_pts_info(st, 64, 1, 90000);
 
@@ -92,7 +92,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_append_packet(s->pb, pkt, size);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "failed to grow packet\n");
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return ret;
             }
         }

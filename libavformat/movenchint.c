@@ -37,11 +37,11 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->tag = MKTAG('r','t','p',' ');
     track->src_track = src_index;
 
-    track->enc = avcodec_alloc_context3(NULL);
-    if (!track->enc)
+    track->par = avcodec_parameters_alloc();
+    if (!track->par)
         goto fail;
-    track->enc->codec_type = AVMEDIA_TYPE_DATA;
-    track->enc->codec_tag  = track->tag;
+    track->par->codec_type = AVMEDIA_TYPE_DATA;
+    track->par->codec_tag  = track->tag;
 
     ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
                                 RTP_MAX_PACKET_SIZE, src_index);
@@ -58,7 +58,7 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 fail:
     av_log(s, AV_LOG_WARNING,
            "Unable to initialize hinting of stream %d\n", src_index);
-    av_freep(&track->enc);
+    avcodec_parameters_free(&track->par);
     /* Set a default timescale, to avoid crashes in av_dump_format */
     track->timescale = 90000;
     return ret;
@@ -72,7 +72,7 @@ static void sample_queue_pop(HintSampleQueue *queue)
     if (queue->len <= 0)
         return;
     if (queue->samples[0].own_data)
-        av_free(queue->samples[0].data);
+        av_freep(&queue->samples[0].data);
     queue->len--;
     memmove(queue->samples, queue->samples + 1, sizeof(HintSample)*queue->len);
 }
@@ -85,7 +85,7 @@ static void sample_queue_free(HintSampleQueue *queue)
     int i;
     for (i = 0; i < queue->len; i++)
         if (queue->samples[i].own_data)
-            av_free(queue->samples[i].data);
+            av_freep(&queue->samples[i].data);
     av_freep(&queue->samples);
     queue->len  = 0;
     queue->size = 0;
@@ -459,16 +459,14 @@ done:
 void ff_mov_close_hinting(MOVTrack *track)
 {
     AVFormatContext *rtp_ctx = track->rtp_ctx;
-    uint8_t *ptr;
 
-    av_freep(&track->enc);
+    avcodec_parameters_free(&track->par);
     sample_queue_free(&track->sample_queue);
     if (!rtp_ctx)
         return;
     if (rtp_ctx->pb) {
         av_write_trailer(rtp_ctx);
-        avio_close_dyn_buf(rtp_ctx->pb, &ptr);
-        av_free(ptr);
+        ffio_free_dyn_buf(&rtp_ctx->pb);
     }
     avformat_free_context(rtp_ctx);
 }

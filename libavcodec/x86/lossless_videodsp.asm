@@ -29,7 +29,7 @@ pb_67: times 8 db  6, 7
 pb_zzzz2323zzzzabab: db -1,-1,-1,-1, 2, 3, 2, 3,-1,-1,-1,-1,10,11,10,11
 pb_zzzzzzzz67676767: db -1,-1,-1,-1,-1,-1,-1,-1, 6, 7, 6, 7, 6, 7, 6, 7
 
-SECTION_TEXT
+SECTION .text
 
 %macro INT16_LOOP 2 ; %1 = a/u (aligned/unaligned), %2 = add/sub
     movd    m4, maskd

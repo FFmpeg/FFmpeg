@@ -156,8 +156,7 @@ typedef struct {
 
 static void encode_codeword(PutBitContext *pb, int val, int codebook)
 {
-    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros,
-            mask;
+    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros;
 
     /* number of bits to switch between rice and exp golomb */
     switch_bits = codebook & 3;
@@ -174,10 +173,9 @@ static void encode_codeword(PutBitContext *pb, int val, int codebook)
         put_bits(pb, zeros, 0);
         put_bits(pb, exp + 1, val);
     } else if (rice_order) {
-        mask = (1 << rice_order) - 1;
         put_bits(pb, (val >> rice_order), 0);
         put_bits(pb, 1, 1);
-        put_bits(pb, rice_order, val & mask);
+        put_sbits(pb, rice_order, val);
     } else {
         put_bits(pb, val, 0);
         put_bits(pb, 1, 1);
@@ -286,7 +284,8 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
 {
     ProresContext* ctx = avctx->priv_data;
     FDCTDSPContext *fdsp = &ctx->fdsp;
-    DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
+    LOCAL_ALIGNED(16, int16_t, blocks, [DEFAULT_SLICE_MB_WIDTH << 8]);
+    int16_t *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 
@@ -304,7 +303,7 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
     }
 
     blocks_per_slice = mb_count << (2 - chroma);
-    init_put_bits(&pb, buf, buf_size << 3);
+    init_put_bits(&pb, buf, buf_size);
 
     encode_dc_coeffs(&pb, blocks, blocks_per_slice, qmat);
     encode_ac_coeffs(avctx, &pb, blocks, blocks_per_slice, qmat);
@@ -324,7 +323,7 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
     *y_data_size = encode_slice_plane(avctx, mb_count, dest_y, luma_stride,
             buf, data_size, ctx->qmat_luma[qp - 1], 0);
 
-    if (!(avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
         *u_data_size = encode_slice_plane(avctx, mb_count, dest_u,
                 chroma_stride, buf + *y_data_size, data_size - *y_data_size,
                 ctx->qmat_chroma[qp - 1], 1);
@@ -492,10 +491,10 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int header_size = 148;
     uint8_t *buf;
     int pic_size, ret;
-    int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + FF_MIN_BUFFER_SIZE; //FIXME choose tighter limit
+    int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + AV_INPUT_BUFFER_MIN_SIZE; //FIXME choose tighter limit
 
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, frame_size + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     buf = pkt->data;
@@ -543,14 +542,14 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 
     if (avctx->pix_fmt != AV_PIX_FMT_YUV422P10) {
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     avctx->bits_per_raw_sample = 10;
 
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
                 "frame width needs to be multiple of 2\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->width > 65534 || avctx->height > 65535) {
@@ -579,7 +578,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
                 AV_LOG_ERROR,
                 "unknown profile %d, use [0 - apco, 1 - apcs, 2 - apcn (default), 3 - apch]\n",
                 avctx->profile);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     ff_fdctdsp_init(&ctx->fdsp, avctx);
@@ -591,17 +590,12 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         scale_mat(QMAT_CHROMA[avctx->profile], ctx->qmat_chroma[i - 1], i);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
     return 0;
 }
 
 static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
     ProresContext* ctx = avctx->priv_data;
-    av_freep(&avctx->coded_frame);
     av_freep(&ctx->fill_y);
 
     return 0;
@@ -617,7 +611,7 @@ AVCodec ff_prores_aw_encoder = {
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles
 };
 
@@ -631,6 +625,6 @@ AVCodec ff_prores_encoder = {
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles
 };

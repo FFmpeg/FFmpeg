@@ -31,7 +31,6 @@
 #include "blockdsp.h"
 #include "bswapdsp.h"
 #include "idctdsp.h"
-#include "mpegvideo.h"
 #include "mpeg12.h"
 #include "thread.h"
 
@@ -88,7 +87,12 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
             if (level == 127) {
                 break;
             } else if (level != 0) {
-                i    += run;
+                i += run;
+                if (i > 63) {
+                    av_log(a->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
+                    return AVERROR_INVALIDDATA;
+                }
                 j     = scantable[i];
                 level = (level * qscale * quant_matrix[j]) >> 3;
                 level = (level ^ SHOW_SBITS(re, &a->gb, 1)) - SHOW_SBITS(re, &a->gb, 1);
@@ -98,8 +102,13 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 run = SHOW_UBITS(re, &a->gb, 6)+1; LAST_SKIP_BITS(re, &a->gb, 6);
                 UPDATE_CACHE(re, &a->gb);
                 level = SHOW_SBITS(re, &a->gb, 10); SKIP_BITS(re, &a->gb, 10);
-                i    += run;
-                j     = scantable[i];
+                i += run;
+                if (i > 63) {
+                    av_log(a->avctx, AV_LOG_ERROR,
+                           "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
+                    return AVERROR_INVALIDDATA;
+                }
+                j = scantable[i];
                 if (level < 0) {
                     level = -level;
                     level = (level * qscale * quant_matrix[j]) >> 3;
@@ -109,10 +118,6 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                     level = (level * qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
-            }
-            if (i > 63) {
-                av_log(a->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
-                return AVERROR_INVALIDDATA;
             }
 
             block[j] = level;
@@ -154,7 +159,7 @@ static inline void idct_put(MDECContext *a, AVFrame *frame, int mb_x, int mb_y)
     a->idsp.idct_put(dest_y + 8 * linesize,     linesize, block[2]);
     a->idsp.idct_put(dest_y + 8 * linesize + 8, linesize, block[3]);
 
-    if (!(a->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(a->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         a->idsp.idct_put(dest_cb, frame->linesize[1], block[4]);
         a->idsp.idct_put(dest_cr, frame->linesize[2], block[5]);
     }
@@ -228,6 +233,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
 static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 {
     MDECContext * const a = avctx->priv_data;
@@ -236,6 +242,7 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {
@@ -256,6 +263,6 @@ AVCodec ff_mdec_decoder = {
     .init             = decode_init,
     .close            = decode_end,
     .decode           = decode_frame,
-    .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy)
 };

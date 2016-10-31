@@ -58,7 +58,7 @@ struct rgbvec {
 
 typedef struct LUT3DContext {
     const AVClass *class;
-    enum interp_mode interpolation;
+    int interpolation;          ///<interp_mode
     char *file;
     uint8_t rgba_map[4];
     int step;
@@ -471,8 +471,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -529,7 +531,7 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);
@@ -615,11 +617,11 @@ static const AVFilterPad lut3d_inputs[] = {
 };
 
 static const AVFilterPad lut3d_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_lut3d = {
@@ -705,6 +707,8 @@ static int config_clut(AVFilterLink *inlink)
     LUT3DContext *lut3d = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
+    av_assert0(desc);
+
     lut3d->clut_is16bit = 0;
     switch (inlink->format) {
     case AV_PIX_FMT_RGB48:
@@ -768,8 +772,8 @@ static av_cold void haldclut_uninit(AVFilterContext *ctx)
 }
 
 static const AVOption haldclut_options[] = {
-    { "shortest",   "force termination when the shortest input terminates", OFFSET(dinput.shortest),   AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
-    { "repeatlast", "continue applying the last clut after eos",            OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS },
+    { "shortest",   "force termination when the shortest input terminates", OFFSET(dinput.shortest),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "repeatlast", "continue applying the last clut after eos",            OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     COMMON_OPTIONS
 };
 

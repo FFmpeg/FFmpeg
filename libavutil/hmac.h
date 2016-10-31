@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "version.h"
 /**
  * @defgroup lavu_hmac HMAC
  * @ingroup lavu_crypto
@@ -32,9 +33,9 @@
 enum AVHMACType {
     AV_HMAC_MD5,
     AV_HMAC_SHA1,
-    AV_HMAC_SHA224 = 10,
+    AV_HMAC_SHA224,
     AV_HMAC_SHA256,
-    AV_HMAC_SHA384,
+    AV_HMAC_SHA384 = 12,
     AV_HMAC_SHA512,
 };
 

@@ -1,7 +1,15 @@
 #extradata 0:        4, 0x021800a2
 #extradata 1:       46, 0x63d9043a
 #tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: wmv3
+#dimensions 0: 320x176
+#sar 0: 0/1
 #tb 1: 1/1000
+#media_type 1: audio
+#codec_id 1: wmavoice
+#sample_rate 1: 22050
+#channel_layout 1: 4
 0,          0,          0,        0,      282, 0x000d949a
 1,          0,          0,        0,     1088, 0x5cd379bb
 1,        435,        435,        0,     1088, 0x8dfa1368

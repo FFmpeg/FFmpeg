@@ -513,21 +513,21 @@ AVSC_INLINE AVS_Value avs_array_elt(AVS_Value v, int index)
 // only use these functions on am AVS_Value that does not already have
 // an active value.  Remember, treat AVS_Value as a fat pointer.
 AVSC_INLINE AVS_Value avs_new_value_bool(int v0)
-        { AVS_Value v; v.type = 'b'; v.d.boolean = v0 == 0 ? 0 : 1; return v; }
+        { AVS_Value v = {0}; v.type = 'b'; v.d.boolean = v0 == 0 ? 0 : 1; return v; }
 AVSC_INLINE AVS_Value avs_new_value_int(int v0)
-        { AVS_Value v; v.type = 'i'; v.d.integer = v0; return v; }
+        { AVS_Value v = {0}; v.type = 'i'; v.d.integer = v0; return v; }
 AVSC_INLINE AVS_Value avs_new_value_string(const char * v0)
-        { AVS_Value v; v.type = 's'; v.d.string = v0; return v; }
+        { AVS_Value v = {0}; v.type = 's'; v.d.string = v0; return v; }
 AVSC_INLINE AVS_Value avs_new_value_float(float v0)
-        { AVS_Value v; v.type = 'f'; v.d.floating_pt = v0; return v;}
+        { AVS_Value v = {0}; v.type = 'f'; v.d.floating_pt = v0; return v;}
 AVSC_INLINE AVS_Value avs_new_value_error(const char * v0)
-        { AVS_Value v; v.type = 'e'; v.d.string = v0; return v; }
+        { AVS_Value v = {0}; v.type = 'e'; v.d.string = v0; return v; }
 #ifndef AVSC_NO_DECLSPEC
 AVSC_INLINE AVS_Value avs_new_value_clip(AVS_Clip * v0)
-        { AVS_Value v; avs_set_to_clip(&v, v0); return v; }
+        { AVS_Value v = {0}; avs_set_to_clip(&v, v0); return v; }
 #endif
 AVSC_INLINE AVS_Value avs_new_value_array(AVS_Value * v0, int size)
-        { AVS_Value v; v.type = 'a'; v.d.array = v0; v.array_size = size; return v; }
+        { AVS_Value v = {0}; v.type = 'a'; v.d.array = v0; v.array_size = size; return v; }
 
 /////////////////////////////////////////////////////////////////////
 //

@@ -29,7 +29,20 @@
 /** maximum number of channels */
 #define PSY_MAX_CHANS 20
 
-#define AAC_CUTOFF(s) ((s)->bit_rate ? FFMIN3(4000 + (s)->bit_rate/8, 12000 + (s)->bit_rate/32, (s)->sample_rate / 2) : ((s)->sample_rate / 2))
+/* cutoff for VBR is purposely increased, since LP filtering actually
+ * hinders VBR performance rather than the opposite
+ */
+#define AAC_CUTOFF_FROM_BITRATE(bit_rate,channels,sample_rate) (bit_rate ? FFMIN3(FFMIN3( \
+    FFMAX(bit_rate/channels/5, bit_rate/channels*15/32 - 5500), \
+    3000 + bit_rate/channels/4, \
+    12000 + bit_rate/channels/16), \
+    22000, \
+    sample_rate / 2): (sample_rate / 2))
+#define AAC_CUTOFF(s) ( \
+    (s->flags & CODEC_FLAG_QSCALE) \
+    ? s->sample_rate / 2 \
+    : AAC_CUTOFF_FROM_BITRATE(s->bit_rate, s->channels, s->sample_rate) \
+)
 
 /**
  * single band psychoacoustic information
@@ -38,8 +51,7 @@ typedef struct FFPsyBand {
     int   bits;
     float energy;
     float threshold;
-    float distortion;
-    float perceptual_weight;
+    float spread;    /* Energy spread over the band */
 } FFPsyBand;
 
 /**
@@ -67,6 +79,7 @@ typedef struct FFPsyWindowInfo {
     int window_shape;                 ///< window shape (sine/KBD/whatever)
     int num_windows;                  ///< number of windows in a frame
     int grouping[8];                  ///< window grouping (for e.g. AAC)
+    float clipping[8];                ///< maximum absolute normalized intensity in the given window for clip avoidance
     int *window_sizes;                ///< sequence of window sizes inside one frame (for eg. WMA)
 } FFPsyWindowInfo;
 
@@ -80,6 +93,7 @@ typedef struct FFPsyContext {
     FFPsyChannel      *ch;            ///< single channel information
     FFPsyChannelGroup *group;         ///< channel group information
     int num_groups;                   ///< number of channel groups
+    int cutoff;                       ///< lowpass frequency cutoff for analysis
 
     uint8_t **bands;                  ///< scalefactor band sizes for possible frame sizes
     int     *num_bands;               ///< number of scalefactor bands for possible frame sizes
@@ -88,6 +102,7 @@ typedef struct FFPsyContext {
     struct {
         int size;                     ///< size of the bitresevoir in bits
         int bits;                     ///< number of bits used in the bitresevoir
+        int alloc;                    ///< number of bits allocated by the psy, or -1 if no allocation was done
     } bitres;
 
     void* model_priv_data;            ///< psychoacoustic model implementation private data

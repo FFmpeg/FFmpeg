@@ -1,10 +1,12 @@
 FATE_WMAPRO-$(call DEMDEC, ASF, WMAPRO) += fate-wmapro-2ch
-fate-wmapro-2ch: CMD = pcm -i $(TARGET_SAMPLES)/wmapro/Beethovens_9th-1_small.wma
+fate-wmapro-2ch: CMD = pcm -i $(TARGET_SAMPLES)/wmapro/Beethovens_9th-1_small.wma -frames 43
 fate-wmapro-2ch: REF = $(SAMPLES)/wmapro/Beethovens_9th-1_small.pcm
+fate-wmapro-2ch: SIZE_TOLERANCE = 8192
 
 FATE_WMAPRO-$(call DEMDEC, ASF, WMAPRO) += fate-wmapro-5.1
-fate-wmapro-5.1: CMD = pcm -i $(TARGET_SAMPLES)/wmapro/latin_192_mulitchannel_cut.wma
+fate-wmapro-5.1: CMD = pcm -i $(TARGET_SAMPLES)/wmapro/latin_192_mulitchannel_cut.wma -frames 101
 fate-wmapro-5.1: REF = $(SAMPLES)/wmapro/latin_192_mulitchannel_cut.pcm
+fate-wmapro-5.1: SIZE_TOLERANCE = 24576
 
 FATE_WMAPRO-$(call DEMDEC, MOV, WMAPRO) += fate-wmapro-ism
 fate-wmapro-ism: CMD = pcm -i $(TARGET_SAMPLES)/isom/vc1-wmapro.ism -vn

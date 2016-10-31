@@ -1,0 +1,4 @@
+e5f96a1d0fe5c519f6cb954838e105bc *tests/data/fate/vsynth_lena-r210.avi
+22125252 tests/data/fate/vsynth_lena-r210.avi
+6ea4fcd93fc83defc8770e85b64b60bb *tests/data/fate/vsynth_lena-r210.out.rawvideo
+stddev:    0.70 PSNR: 51.12 MAXDIFF:   12 bytes:  7603200/  7603200

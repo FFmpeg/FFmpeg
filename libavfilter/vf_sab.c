@@ -65,9 +65,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 #define RADIUS_MIN 0.1
@@ -106,24 +107,24 @@ AVFILTER_DEFINE_CLASS(sab);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    SabContext *sab = ctx->priv;
+    SabContext *s = ctx->priv;
 
     /* make chroma default to luma values, if not explicitly set */
-    if (sab->chroma.radius < RADIUS_MIN)
-        sab->chroma.radius = sab->luma.radius;
-    if (sab->chroma.pre_filter_radius < PRE_FILTER_RADIUS_MIN)
-        sab->chroma.pre_filter_radius = sab->luma.pre_filter_radius;
-    if (sab->chroma.strength < STRENGTH_MIN)
-        sab->chroma.strength = sab->luma.strength;
+    if (s->chroma.radius < RADIUS_MIN)
+        s->chroma.radius = s->luma.radius;
+    if (s->chroma.pre_filter_radius < PRE_FILTER_RADIUS_MIN)
+        s->chroma.pre_filter_radius = s->luma.pre_filter_radius;
+    if (s->chroma.strength < STRENGTH_MIN)
+        s->chroma.strength = s->luma.strength;
 
-    sab->luma.quality = sab->chroma.quality = 3.0;
-    sab->sws_flags = SWS_POINT;
+    s->luma.quality = s->chroma.quality = 3.0;
+    s->sws_flags = SWS_POINT;
 
     av_log(ctx, AV_LOG_VERBOSE,
            "luma_radius:%f luma_pre_filter_radius::%f luma_strength:%f "
            "chroma_radius:%f chroma_pre_filter_radius:%f chroma_strength:%f\n",
-           sab->luma  .radius, sab->luma  .pre_filter_radius, sab->luma  .strength,
-           sab->chroma.radius, sab->chroma.pre_filter_radius, sab->chroma.strength);
+           s->luma  .radius, s->luma  .pre_filter_radius, s->luma  .strength,
+           s->chroma.radius, s->chroma.pre_filter_radius, s->chroma.strength);
     return 0;
 }
 
@@ -139,10 +140,10 @@ static void close_filter_param(FilterParam *f)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    SabContext *sab = ctx->priv;
+    SabContext *s = ctx->priv;
 
-    close_filter_param(&sab->luma);
-    close_filter_param(&sab->chroma);
+    close_filter_param(&s->luma);
+    close_filter_param(&s->chroma);
 }
 
 static int open_filter_param(FilterParam *f, int width, int height, unsigned int sws_flags)
@@ -199,22 +200,22 @@ static int open_filter_param(FilterParam *f, int width, int height, unsigned int
 
 static int config_props(AVFilterLink *inlink)
 {
-    SabContext *sab = inlink->dst->priv;
+    SabContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
-    sab->hsub = desc->log2_chroma_w;
-    sab->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    close_filter_param(&sab->luma);
-    ret = open_filter_param(&sab->luma, inlink->w, inlink->h, sab->sws_flags);
+    close_filter_param(&s->luma);
+    ret = open_filter_param(&s->luma, inlink->w, inlink->h, s->sws_flags);
     if (ret < 0)
         return ret;
 
-    close_filter_param(&sab->chroma);
-    ret = open_filter_param(&sab->chroma,
-                            FF_CEIL_RSHIFT(inlink->w, sab->hsub),
-                            FF_CEIL_RSHIFT(inlink->h, sab->vsub), sab->sws_flags);
+    close_filter_param(&s->chroma);
+    ret = open_filter_param(&s->chroma,
+                            AV_CEIL_RSHIFT(inlink->w, s->hsub),
+                            AV_CEIL_RSHIFT(inlink->h, s->vsub), s->sws_flags);
     return ret;
 }
 
@@ -253,8 +254,7 @@ static void blur(uint8_t       *dst, const int dst_linesize,
                 for (dy = 0; dy < radius*2 + 1; dy++) {
                     int dx;
                     int iy = y+dy - radius;
-                    if      (iy < 0)  iy = -iy;
-                    else if (iy >= h) iy = h+h-iy-1;
+                    iy = avpriv_mirror(iy, h-1);
 
                     for (dx = 0; dx < radius*2 + 1; dx++) {
                         const int ix = x+dx - radius;
@@ -265,13 +265,11 @@ static void blur(uint8_t       *dst, const int dst_linesize,
                 for (dy = 0; dy < radius*2+1; dy++) {
                     int dx;
                     int iy = y+dy - radius;
-                    if      (iy <  0) iy = -iy;
-                    else if (iy >= h) iy = h+h-iy-1;
+                    iy = avpriv_mirror(iy, h-1);
 
                     for (dx = 0; dx < radius*2 + 1; dx++) {
                         int ix = x+dx - radius;
-                        if      (ix < 0)  ix = -ix;
-                        else if (ix >= w) ix = w+w-ix-1;
+                        ix = avpriv_mirror(ix, w-1);
                         UPDATE_FACTOR;
                     }
                 }
@@ -283,7 +281,7 @@ static void blur(uint8_t       *dst, const int dst_linesize,
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
-    SabContext  *sab = inlink->dst->priv;
+    SabContext  *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic;
 
@@ -295,12 +293,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     av_frame_copy_props(outpic, inpic);
 
     blur(outpic->data[0], outpic->linesize[0], inpic->data[0],  inpic->linesize[0],
-         inlink->w, inlink->h, &sab->luma);
+         inlink->w, inlink->h, &s->luma);
     if (inpic->data[2]) {
-        int cw = FF_CEIL_RSHIFT(inlink->w, sab->hsub);
-        int ch = FF_CEIL_RSHIFT(inlink->h, sab->vsub);
-        blur(outpic->data[1], outpic->linesize[1], inpic->data[1], inpic->linesize[1], cw, ch, &sab->chroma);
-        blur(outpic->data[2], outpic->linesize[2], inpic->data[2], inpic->linesize[2], cw, ch, &sab->chroma);
+        int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+        int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
+        blur(outpic->data[1], outpic->linesize[1], inpic->data[1], inpic->linesize[1], cw, ch, &s->chroma);
+        blur(outpic->data[2], outpic->linesize[2], inpic->data[2], inpic->linesize[2], cw, ch, &s->chroma);
     }
 
     av_frame_free(&inpic);

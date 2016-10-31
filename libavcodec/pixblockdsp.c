@@ -20,15 +20,42 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "pixblockdsp.h"
 
-#define BIT_DEPTH 16
-#include "pixblockdsp_template.c"
-#undef BIT_DEPTH
+static void get_pixels_16_c(int16_t *av_restrict block, const uint8_t *pixels,
+                            ptrdiff_t line_size)
+{
+    AV_COPY128U(block + 0 * 8, pixels + 0 * line_size);
+    AV_COPY128U(block + 1 * 8, pixels + 1 * line_size);
+    AV_COPY128U(block + 2 * 8, pixels + 2 * line_size);
+    AV_COPY128U(block + 3 * 8, pixels + 3 * line_size);
+    AV_COPY128U(block + 4 * 8, pixels + 4 * line_size);
+    AV_COPY128U(block + 5 * 8, pixels + 5 * line_size);
+    AV_COPY128U(block + 6 * 8, pixels + 6 * line_size);
+    AV_COPY128U(block + 7 * 8, pixels + 7 * line_size);
+}
 
-#define BIT_DEPTH 8
-#include "pixblockdsp_template.c"
+static void get_pixels_8_c(int16_t *av_restrict block, const uint8_t *pixels,
+                           ptrdiff_t line_size)
+{
+    int i;
+
+    /* read the pixels */
+    for (i = 0; i < 8; i++) {
+        block[0] = pixels[0];
+        block[1] = pixels[1];
+        block[2] = pixels[2];
+        block[3] = pixels[3];
+        block[4] = pixels[4];
+        block[5] = pixels[5];
+        block[6] = pixels[6];
+        block[7] = pixels[7];
+        pixels  += line_size;
+        block   += 8;
+    }
+}
 
 static void diff_pixels_c(int16_t *av_restrict block, const uint8_t *s1,
                           const uint8_t *s2, int stride)
@@ -79,4 +106,6 @@ av_cold void ff_pixblockdsp_init(PixblockDSPContext *c, AVCodecContext *avctx)
         ff_pixblockdsp_init_ppc(c, avctx, high_bit_depth);
     if (ARCH_X86)
         ff_pixblockdsp_init_x86(c, avctx, high_bit_depth);
+    if (ARCH_MIPS)
+        ff_pixblockdsp_init_mips(c, avctx, high_bit_depth);
 }

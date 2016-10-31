@@ -60,8 +60,10 @@ static av_cold int init(AVFilterContext *ctx)
     int i;
     int ret;
 
-    if (!s->pix_fmts)
+    if (!s->pix_fmts) {
+        av_log(ctx, AV_LOG_ERROR, "Empty output format string.\n");
         return AVERROR(EINVAL);
+    }
 
     /* count the formats */
     cur = s->pix_fmts;
@@ -132,14 +134,13 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
 
-    ff_set_common_formats(ctx, formats);
-    return 0;
+    return ff_set_common_formats(ctx, formats);
 }
 
 
 #define OFFSET(x) offsetof(FormatContext, x)
 static const AVOption options[] = {
-    { "pix_fmts", "A '|'-separated list of pixel formats", OFFSET(pix_fmts), AV_OPT_TYPE_STRING, .flags = AV_OPT_FLAG_VIDEO_PARAM },
+    { "pix_fmts", "A '|'-separated list of pixel formats", OFFSET(pix_fmts), AV_OPT_TYPE_STRING, .flags = AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM },
     { NULL }
 };
 

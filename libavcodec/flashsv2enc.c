@@ -192,7 +192,7 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
 
     if ((avctx->width > 4095) || (avctx->height > 4095)) {
         av_log(avctx, AV_LOG_ERROR,
-               "Input dimensions too large, input must be max 4096x4096 !\n");
+               "Input dimensions too large, input must be max 4095x4095 !\n");
         return -1;
     }
     if ((avctx->width < 16) || (avctx->height < 16)) {
@@ -287,7 +287,7 @@ static int write_header(FlashSV2Context * s, uint8_t * buf, int buf_size)
     if (buf_size < 5)
         return -1;
 
-    init_put_bits(&pb, buf, buf_size * 8);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits(&pb, 4, (s->block_width  >> 4) - 1);
     put_bits(&pb, 12, s->image_width);
@@ -412,12 +412,14 @@ static inline unsigned pixel_color15(const uint8_t * src)
 
 static inline unsigned int chroma_diff(unsigned int c1, unsigned int c2)
 {
+#define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
+
     unsigned int t1 = (c1 & 0x000000ff) + ((c1 & 0x0000ff00) >> 8) + ((c1 & 0x00ff0000) >> 16);
     unsigned int t2 = (c2 & 0x000000ff) + ((c2 & 0x0000ff00) >> 8) + ((c2 & 0x00ff0000) >> 16);
 
-    return abs(t1 - t2) + abs((c1 & 0x000000ff) - (c2 & 0x000000ff)) +
-        abs(((c1 & 0x0000ff00) >> 8) - ((c2 & 0x0000ff00) >> 8)) +
-        abs(((c1 & 0x00ff0000) >> 16) - ((c2 & 0x00ff0000) >> 16));
+    return ABSDIFF(t1, t2) + ABSDIFF(c1 & 0x000000ff, c2 & 0x000000ff) +
+        ABSDIFF((c1 & 0x0000ff00) >> 8 , (c2 & 0x0000ff00) >> 8) +
+        ABSDIFF((c1 & 0x00ff0000) >> 16, (c2 & 0x00ff0000) >> 16);
 }
 
 static inline int pixel_color7_fast(Palette * palette, unsigned c15)
@@ -732,7 +734,11 @@ static void recommend_keyframe(FlashSV2Context * s, int *keyframe)
 #endif
 }
 
+#ifndef FLASHSV2_DUMB
 static const double block_size_fraction = 1.0 / 300;
+static const double use15_7_threshold = 8192;
+static const double color15_7_factor = 100;
+#endif
 static int optimum_block_width(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
@@ -757,8 +763,6 @@ static int optimum_block_height(FlashSV2Context * s)
 #endif
 }
 
-static const double use15_7_threshold = 8192;
-
 static int optimum_use15_7(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
@@ -773,8 +777,6 @@ static int optimum_use15_7(FlashSV2Context * s)
     return s->avctx->global_quality == 0;
 #endif
 }
-
-static const double color15_7_factor = 100;
 
 static int optimum_dist(FlashSV2Context * s)
 {
@@ -806,8 +808,8 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
         s->block_width  = block_width;
         s->block_height = block_height;
         if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
-            s->frame_blocks = av_realloc(s->frame_blocks, s->rows * s->cols * sizeof(Block));
-            s->key_blocks = av_realloc(s->key_blocks, s->cols * s->rows * sizeof(Block));
+            s->frame_blocks = av_realloc_array(s->frame_blocks, s->rows, s->cols * sizeof(Block));
+            s->key_blocks = av_realloc_array(s->key_blocks, s->cols, s->rows * sizeof(Block));
             if (!s->frame_blocks || !s->key_blocks) {
                 av_log(s->avctx, AV_LOG_ERROR, "Memory allocation failed.\n");
                 return -1;
@@ -854,7 +856,7 @@ static int flashsv2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int res;
     int keyframe = 0;
 
-    if ((res = ff_alloc_packet2(avctx, pkt, s->frame_size + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((res = ff_alloc_packet2(avctx, pkt, s->frame_size + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return res;
 
     /* First frame needs to be a keyframe */

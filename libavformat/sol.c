@@ -50,18 +50,15 @@ static int sol_probe(AVProbeData *p)
 
 static enum AVCodecID sol_codec_id(int magic, int type)
 {
-    if (magic == 0x0B8D)
-    {
-        if (type & SOL_DPCM) return AV_CODEC_ID_SOL_DPCM;
-        else return AV_CODEC_ID_PCM_U8;
-    }
     if (type & SOL_DPCM)
-    {
-        if (type & SOL_16BIT) return AV_CODEC_ID_SOL_DPCM;
-        else if (magic == 0x0C8D) return AV_CODEC_ID_SOL_DPCM;
-        else return AV_CODEC_ID_SOL_DPCM;
-    }
-    if (type & SOL_16BIT) return AV_CODEC_ID_PCM_S16LE;
+        return AV_CODEC_ID_SOL_DPCM;
+
+    if (magic == 0x0B8D)
+        return AV_CODEC_ID_PCM_U8;
+
+    if (type & SOL_16BIT)
+        return AV_CODEC_ID_PCM_S16LE;
+
     return AV_CODEC_ID_PCM_U8;
 }
 
@@ -113,13 +110,13 @@ static int sol_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag = id;
-    st->codec->codec_id = codec;
-    st->codec->channels = channels;
-    st->codec->channel_layout = channels == 1 ? AV_CH_LAYOUT_MONO :
-                                                AV_CH_LAYOUT_STEREO;
-    st->codec->sample_rate = rate;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_tag = id;
+    st->codecpar->codec_id = codec;
+    st->codecpar->channels = channels;
+    st->codecpar->channel_layout = channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                   AV_CH_LAYOUT_STEREO;
+    st->codecpar->sample_rate = rate;
     avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }

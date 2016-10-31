@@ -99,5 +99,6 @@ void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags);
+void ff_hpeldsp_init_mips(HpelDSPContext *c, int flags);
 
 #endif /* AVCODEC_HPELDSP_H */

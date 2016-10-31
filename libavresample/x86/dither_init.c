@@ -46,14 +46,14 @@ av_cold void ff_dither_init_x86(DitherDSPContext *ddsp,
         if (EXTERNAL_SSE2(cpu_flags)) {
             ddsp->dither_int_to_float = ff_dither_int_to_float_rectangular_sse2;
         }
-        if (EXTERNAL_AVX(cpu_flags)) {
+        if (EXTERNAL_AVX_FAST(cpu_flags)) {
             ddsp->dither_int_to_float = ff_dither_int_to_float_rectangular_avx;
         }
     } else {
         if (EXTERNAL_SSE2(cpu_flags)) {
             ddsp->dither_int_to_float = ff_dither_int_to_float_triangular_sse2;
         }
-        if (EXTERNAL_AVX(cpu_flags)) {
+        if (EXTERNAL_AVX_FAST(cpu_flags)) {
             ddsp->dither_int_to_float = ff_dither_int_to_float_triangular_avx;
         }
     }

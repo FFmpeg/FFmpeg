@@ -27,67 +27,64 @@
 #if HAVE_XFORM_ASM
 
 #if HAVE_BIGENDIAN
-#define AV_RL16 AV_RX16
-#define AV_WL16 AV_WX16
-#define AV_RL32 AV_RX32
-#define AV_WL32 AV_WX32
+#define AV_RL16 av_read_bswap16
+#define AV_WL16 av_write_bswap16
+#define AV_RL32 av_read_bswap32
+#define AV_WL32 av_write_bswap32
+#define AV_RL64 av_read_bswap64
+#define AV_WL64 av_write_bswap64
+
 #else
-#define AV_RB16 AV_RX16
-#define AV_WB16 AV_WX16
-#define AV_RB32 AV_RX32
-#define AV_WB32 AV_WX32
+#define AV_RB16 av_read_bswap16
+#define AV_WB16 av_write_bswap16
+#define AV_RB32 av_read_bswap32
+#define AV_WB32 av_write_bswap32
+#define AV_RB64 av_read_bswap64
+#define AV_WB64 av_write_bswap64
+
 #endif
 
-static av_always_inline uint16_t AV_RX16(const void *p)
+static av_always_inline uint16_t av_read_bswap16(const void *p)
 {
     uint16_t v;
     __asm__ ("lhbrx   %0, %y1" : "=r"(v) : "Z"(*(const uint16_t*)p));
     return v;
 }
 
-static av_always_inline void AV_WX16(void *p, uint16_t v)
+static av_always_inline void av_write_bswap16(void *p, uint16_t v)
 {
     __asm__ ("sthbrx  %1, %y0" : "=Z"(*(uint16_t*)p) : "r"(v));
 }
 
-static av_always_inline uint32_t AV_RX32(const void *p)
+static av_always_inline uint32_t av_read_bswap32(const void *p)
 {
     uint32_t v;
     __asm__ ("lwbrx   %0, %y1" : "=r"(v) : "Z"(*(const uint32_t*)p));
     return v;
 }
 
-static av_always_inline void AV_WX32(void *p, uint32_t v)
+static av_always_inline void av_write_bswap32(void *p, uint32_t v)
 {
     __asm__ ("stwbrx  %1, %y0" : "=Z"(*(uint32_t*)p) : "r"(v));
 }
 
 #if HAVE_LDBRX
 
-#if HAVE_BIGENDIAN
-#define AV_RL64 AV_RX64
-#define AV_WL64 AV_WX64
-#else
-#define AV_RB64 AV_RX64
-#define AV_WB64 AV_WX64
-#endif
-
-static av_always_inline uint64_t AV_RX64(const void *p)
+static av_always_inline uint64_t av_read_bswap64(const void *p)
 {
     uint64_t v;
     __asm__ ("ldbrx   %0, %y1" : "=r"(v) : "Z"(*(const uint64_t*)p));
     return v;
 }
 
-static av_always_inline void AV_WX64(void *p, uint64_t v)
+static av_always_inline void av_write_bswap64(void *p, uint64_t v)
 {
     __asm__ ("stdbrx  %1, %y0" : "=Z"(*(uint64_t*)p) : "r"(v));
 }
 
 #else
 
-#define AV_RL64 AV_RL64
-static av_always_inline uint64_t AV_RL64(const void *p)
+static av_always_inline uint64_t av_read_bswap64(const void *p)
 {
     union { uint64_t v; uint32_t hl[2]; } v;
     __asm__ ("lwbrx   %0, %y2  \n\t"
@@ -97,8 +94,7 @@ static av_always_inline uint64_t AV_RL64(const void *p)
     return v.v;
 }
 
-#define AV_WL64 AV_WL64
-static av_always_inline void AV_WL64(void *p, uint64_t v)
+static av_always_inline void av_write_bswap64(void *p, uint64_t v)
 {
     union { uint64_t v; uint32_t hl[2]; } vv = { v };
     __asm__ ("stwbrx  %2, %y0  \n\t"
@@ -110,15 +106,5 @@ static av_always_inline void AV_WL64(void *p, uint64_t v)
 #endif /* HAVE_LDBRX */
 
 #endif /* HAVE_XFORM_ASM */
-
-/*
- * GCC fails miserably on the packed struct version which is used by
- * default, so we override it here.
- */
-
-#if HAVE_BIGENDIAN
-#define AV_RB64(p) (*(const uint64_t *)(p))
-#define AV_WB64(p, v) (*(uint64_t *)(p) = (v))
-#endif
 
 #endif /* AVUTIL_PPC_INTREADWRITE_H */

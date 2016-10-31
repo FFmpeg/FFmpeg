@@ -22,6 +22,7 @@
 
 #include <string.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -453,12 +454,17 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int hnm_decode_init(AVCodecContext *avctx)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
+    int ret;
 
     if (avctx->extradata_size < 1) {
         av_log(avctx, AV_LOG_ERROR,
                "Extradata missing, decoder requires version number\n");
         return AVERROR_INVALIDDATA;
     }
+
+    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
+    if (ret < 0)
+        return ret;
 
     hnm->version   = avctx->extradata[0];
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
@@ -504,5 +510,5 @@ AVCodec ff_hnm4_video_decoder = {
     .init           = hnm_decode_init,
     .close          = hnm_decode_end,
     .decode         = hnm_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

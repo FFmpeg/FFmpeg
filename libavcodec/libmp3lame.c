@@ -50,9 +50,10 @@ typedef struct LAMEContext {
     int reservoir;
     int joint_stereo;
     int abr;
+    int delay_sent;
     float *samples_flt[2];
     AudioFrameQueue afq;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
 } LAMEContext;
 
 
@@ -61,7 +62,7 @@ static int realloc_buffer(LAMEContext *s)
     if (!s->buffer || s->buffer_size - s->buffer_index < BUFFER_SIZE) {
         int new_size = s->buffer_index + 2 * BUFFER_SIZE, err;
 
-        av_dlog(s->avctx, "resizing output buffer: %d -> %d\n", s->buffer_size,
+        ff_dlog(s->avctx, "resizing output buffer: %d -> %d\n", s->buffer_size,
                 new_size);
         if ((err = av_reallocp(&s->buffer, new_size)) < 0) {
             s->buffer_size = s->buffer_index = 0;
@@ -79,6 +80,7 @@ static av_cold int mp3lame_encode_close(AVCodecContext *avctx)
     av_freep(&s->samples_flt[0]);
     av_freep(&s->samples_flt[1]);
     av_freep(&s->buffer);
+    av_freep(&s->fdsp);
 
     ff_af_queue_close(&s->afq);
 
@@ -94,7 +96,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     /* initialize LAME and get defaults */
-    if ((s->gfp = lame_init()) == NULL)
+    if (!(s->gfp = lame_init()))
         return AVERROR(ENOMEM);
 
 
@@ -106,13 +108,11 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     lame_set_out_samplerate(s->gfp, avctx->sample_rate);
 
     /* algorithmic quality */
-    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
-        lame_set_quality(s->gfp, 5);
-    else
+    if (avctx->compression_level != FF_COMPRESSION_DEFAULT)
         lame_set_quality(s->gfp, avctx->compression_level);
 
     /* rate control */
-    if (avctx->flags & CODEC_FLAG_QSCALE) { // VBR
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) { // VBR
         lame_set_VBR(s->gfp, vbr_default);
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
     } else {
@@ -138,7 +138,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     }
 
     /* get encoder delay */
-    avctx->delay = lame_get_encoder_delay(s->gfp) + 528 + 1;
+    avctx->initial_padding = lame_get_encoder_delay(s->gfp) + 528 + 1;
     ff_af_queue_init(avctx, &s->afq);
 
     avctx->frame_size  = lame_get_framesize(s->gfp);
@@ -147,7 +147,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLTP) {
         int ch;
         for (ch = 0; ch < avctx->channels; ch++) {
-            s->samples_flt[ch] = av_malloc(avctx->frame_size *
+            s->samples_flt[ch] = av_malloc_array(avctx->frame_size,
                                            sizeof(*s->samples_flt[ch]));
             if (!s->samples_flt[ch]) {
                 ret = AVERROR(ENOMEM);
@@ -160,7 +160,12 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!s->fdsp) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
 
     return 0;
 error:
@@ -181,7 +186,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     LAMEContext *s = avctx->priv_data;
     MPADecodeHeader hdr;
-    int len, ret, ch;
+    int len, ret, ch, discard_padding;
     int lame_result;
     uint32_t h;
 
@@ -199,7 +204,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 return AVERROR(EINVAL);
             }
             for (ch = 0; ch < avctx->channels; ch++) {
-                s->fdsp.vector_fmul_scalar(s->samples_flt[ch],
+                s->fdsp->vector_fmul_scalar(s->samples_flt[ch],
                                            (const float *)frame->data[ch],
                                            32768.0f,
                                            FFALIGN(frame->nb_samples, 8));
@@ -242,19 +247,20 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (s->buffer_index < 4)
         return 0;
     h = AV_RB32(s->buffer);
-    if (ff_mpa_check_header(h) < 0) {
+
+    ret = avpriv_mpegaudio_decode_header(&hdr, h);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid mp3 header at start of buffer\n");
         return AVERROR_BUG;
-    }
-    if (avpriv_mpegaudio_decode_header(&hdr, h)) {
+    } else if (ret) {
         av_log(avctx, AV_LOG_ERROR, "free format output not supported\n");
         return -1;
     }
     len = hdr.frame_size;
-    av_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
+    ff_dlog(avctx, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len,
             s->buffer_index);
     if (len <= s->buffer_index) {
-        if ((ret = ff_alloc_packet2(avctx, avpkt, len)) < 0)
+        if ((ret = ff_alloc_packet2(avctx, avpkt, len, 0)) < 0)
             return ret;
         memcpy(avpkt->data, s->buffer, len);
         s->buffer_index -= len;
@@ -263,6 +269,30 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         /* Get the next frame pts/duration */
         ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                            &avpkt->duration);
+
+        discard_padding = avctx->frame_size - avpkt->duration;
+        // Check if subtraction resulted in an overflow
+        if ((discard_padding < avctx->frame_size) != (avpkt->duration > 0)) {
+            av_log(avctx, AV_LOG_ERROR, "discard padding overflow\n");
+            av_packet_unref(avpkt);
+            av_free(avpkt);
+            return AVERROR(EINVAL);
+        }
+        if ((!s->delay_sent && avctx->initial_padding > 0) || discard_padding > 0) {
+            uint8_t* side_data = av_packet_new_side_data(avpkt,
+                                                         AV_PKT_DATA_SKIP_SAMPLES,
+                                                         10);
+            if(!side_data) {
+                av_packet_unref(avpkt);
+                av_free(avpkt);
+                return AVERROR(ENOMEM);
+            }
+            if (!s->delay_sent) {
+                AV_WL32(side_data, avctx->initial_padding);
+                s->delay_sent = 1;
+            }
+            AV_WL32(side_data + 4, discard_padding);
+        }
 
         avpkt->size = len;
         *got_packet_ptr = 1;
@@ -273,9 +303,9 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define OFFSET(x) offsetof(LAMEContext, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "reservoir",    "use bit reservoir", OFFSET(reservoir),    AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
-    { "joint_stereo", "use joint stereo",  OFFSET(joint_stereo), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
-    { "abr",          "use ABR",           OFFSET(abr),          AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AE },
+    { "reservoir",    "use bit reservoir", OFFSET(reservoir),    AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AE },
+    { "joint_stereo", "use joint stereo",  OFFSET(joint_stereo), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AE },
+    { "abr",          "use ABR",           OFFSET(abr),          AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, AE },
     { NULL },
 };
 
@@ -304,7 +334,7 @@ AVCodec ff_libmp3lame_encoder = {
     .init                  = mp3lame_encode_init,
     .encode2               = mp3lame_encode_frame,
     .close                 = mp3lame_encode_close,
-    .capabilities          = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities          = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
                                                              AV_SAMPLE_FMT_FLTP,
                                                              AV_SAMPLE_FMT_S16P,

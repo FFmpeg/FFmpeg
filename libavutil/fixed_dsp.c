@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Nedeljko Babic (nbabic@mips.com)
+ * Author:  Nedeljko Babic (nedeljko.babic imgtec com)
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,29 @@
 
 #include "fixed_dsp.h"
 
-static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
+static void vector_fmul_add_c(int *dst, const int *src0, const int *src1, const int *src2, int len){
+    int i;
+    int64_t accu;
+
+    for (i=0; i<len; i++) {
+        accu = (int64_t)src0[i] * src1[i];
+        dst[i] = src2[i] + (int)((accu + 0x40000000) >> 31);
+    }
+}
+
+static void vector_fmul_reverse_c(int *dst, const int *src0, const int *src1, int len)
+{
+    int i;
+    int64_t accu;
+
+    src1 += len-1;
+    for (i=0; i<len; i++) {
+        accu = (int64_t)src0[i] * src1[-i];
+        dst[i] = (int)((accu+0x40000000) >> 31);
+    }
+}
+
+static void vector_fmul_window_scaled_c(int16_t *dst, const int32_t *src0,
                                        const int32_t *src1, const int32_t *win,
                                        int len, uint8_t bits)
 {
@@ -63,12 +85,12 @@ static void vector_fmul_window_fixed_scaled_c(int16_t *dst, const int32_t *src0,
         s1 = src1[j];
         wi = win[i];
         wj = win[j];
-        dst[i] = av_clip_int16_c(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
-        dst[j] = av_clip_int16_c(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
+        dst[i] = av_clip_int16(((((int64_t)s0*wj - (int64_t)s1*wi + 0x40000000) >> 31) + round) >> bits);
+        dst[j] = av_clip_int16(((((int64_t)s0*wi + (int64_t)s1*wj + 0x40000000) >> 31) + round) >> bits);
     }
 }
 
-static void vector_fmul_window_fixed_c(int32_t *dst, const int32_t *src0,
+static void vector_fmul_window_c(int32_t *dst, const int32_t *src0,
                                        const int32_t *src1, const int32_t *win,
                                        int len)
 {
@@ -88,11 +110,58 @@ static void vector_fmul_window_fixed_c(int32_t *dst, const int32_t *src0,
     }
 }
 
+static void vector_fmul_c(int *dst, const int *src0, const int *src1, int len)
+{
+    int i;
+    int64_t accu;
+
+    for (i = 0; i < len; i++){
+        accu = (int64_t)src0[i] * src1[i];
+        dst[i] = (int)((accu+0x40000000) >> 31);
+    }
+}
+
+static int scalarproduct_fixed_c(const int *v1, const int *v2, int len)
+{
+    /** p is initialized with 0x40000000 so that the proper rounding will occur
+      * at the end */
+    int64_t p = 0x40000000;
+    int i;
+
+    for (i = 0; i < len; i++)
+        p += (int64_t)v1[i] * v2[i];
+
+    return (int)(p >> 31);
+}
+
+static void butterflies_fixed_c(int *v1, int *v2, int len)
+{
+    int i;
+
+    for (i = 0; i < len; i++){
+        int t = v1[i] - v2[i];
+        v1[i] += v2[i];
+        v2[i] = t;
+    }
+}
+
 AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
 {
     AVFixedDSPContext * fdsp = av_malloc(sizeof(AVFixedDSPContext));
-    fdsp->vector_fmul_window_scaled = vector_fmul_window_fixed_scaled_c;
-    fdsp->vector_fmul_window = vector_fmul_window_fixed_c;
+
+    if (!fdsp)
+        return NULL;
+
+    fdsp->vector_fmul_window_scaled = vector_fmul_window_scaled_c;
+    fdsp->vector_fmul_window = vector_fmul_window_c;
+    fdsp->vector_fmul = vector_fmul_c;
+    fdsp->vector_fmul_add = vector_fmul_add_c;
+    fdsp->vector_fmul_reverse = vector_fmul_reverse_c;
+    fdsp->butterflies_fixed = butterflies_fixed_c;
+    fdsp->scalarproduct_fixed = scalarproduct_fixed_c;
+
+    if (ARCH_X86)
+        ff_fixed_dsp_init_x86(fdsp);
 
     return fdsp;
 }

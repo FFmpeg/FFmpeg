@@ -1,6 +1,7 @@
 Evaluating ''
 '' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '1;2'
 '1;2' -> 2.000000
 
@@ -28,45 +29,58 @@ Evaluating '1Gi'
 Evaluating '1gi'
 '1gi' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '1GiFoo'
 '1GiFoo' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '1k+1k'
 '1k+1k' -> 2000.000000
 
 Evaluating '1Gi*3foo'
 '1Gi*3foo' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'foo'
 'foo' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'foo('
 'foo(' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'foo()'
 'foo()' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'foo)'
 'foo)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin'
 'sin' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin('
 'sin(' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin()'
 'sin()' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin)'
 'sin)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin 10'
 'sin 10' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin(1,2,3)'
 'sin(1,2,3)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'sin(1 )'
 'sin(1 )' -> 0.841471
 
@@ -76,15 +90,19 @@ Evaluating '1'
 Evaluating '1foo'
 '1foo' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'bar + PI + E + 100f*2 + foo'
 'bar + PI + E + 100f*2 + foo' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '13k + 12f - foo(1, 2)'
 '13k + 12f - foo(1, 2)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '1gi'
 '1gi' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating '1Gi'
 '1Gi' -> 1073741824.000000
 
@@ -127,6 +145,7 @@ Evaluating 'st(1, 1); st(2, 2); st(0, 1); while(lte(ld(0),10), st(3, ld(1)+ld(2)
 Evaluating 'while(0, 10)'
 'while(0, 10)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))'
 'st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))' -> 101.000000
 
@@ -151,6 +170,7 @@ Evaluating 'isinf(INF)'
 Evaluating 'floor(NAN)'
 'floor(NAN)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'floor(123.123)'
 'floor(123.123)' -> 123.000000
 
@@ -202,6 +222,7 @@ Evaluating 'PI^1.23'
 Evaluating 'pow(-1,1.23)'
 'pow(-1,1.23)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'if(1, 2)'
 'if(1, 2)' -> 2.000000
 
@@ -259,6 +280,7 @@ Evaluating 'bitand(42, 12)'
 Evaluating 'bitand(NAN, 1)'
 'bitand(NAN, 1)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'between(10, -3, 10)'
 'between(10, -3, 10)' -> 1.000000
 
@@ -268,14 +290,18 @@ Evaluating 'between(-4, -2, -1)'
 Evaluating 'between(1,2)'
 'between(1,2)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'clip(0, 2, 1)'
 'clip(0, 2, 1)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'clip(0/0, 1, 2)'
 'clip(0/0, 1, 2)' -> nan
 
+av_expr_parse_and_eval failed
 Evaluating 'clip(0, 0/0, 1)'
 'clip(0, 0/0, 1)' -> nan
 
+av_expr_parse_and_eval failed
 12.700000 == 12.7
 0.931323 == 0.931322575

@@ -16,8 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#elif defined(__linux__)
+#include <asm/cputable.h>
+#include <linux/auxvec.h>
+#include <fcntl.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #elif defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
@@ -28,9 +37,9 @@
 #include <proto/exec.h>
 #endif /* __APPLE__ */
 
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
-#include "config.h"
 
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
@@ -62,18 +71,75 @@ int ff_get_cpu_flags_ppc(void)
     if (err == 0)
         return has_vu ? AV_CPU_FLAG_ALTIVEC : 0;
     return 0;
-#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__) && !ARCH_PPC64
+#elif defined(__linux__)
+    // The linux kernel could have the altivec support disabled
+    // even if the cpu has it.
+    int i, ret = 0;
+    int fd = open("/proc/self/auxv", O_RDONLY);
+    unsigned long buf[64] = { 0 };
+    ssize_t count;
+
+    if (fd < 0)
+        return 0;
+
+    while ((count = read(fd, buf, sizeof(buf))) > 0) {
+        for (i = 0; i < count / sizeof(*buf); i += 2) {
+            if (buf[i] == AT_NULL)
+                goto out;
+            if (buf[i] == AT_HWCAP) {
+                if (buf[i + 1] & PPC_FEATURE_HAS_ALTIVEC)
+                    ret = AV_CPU_FLAG_ALTIVEC;
+#ifdef PPC_FEATURE_HAS_VSX
+                if (buf[i + 1] & PPC_FEATURE_HAS_VSX)
+                    ret |= AV_CPU_FLAG_VSX;
+#endif
+#ifdef PPC_FEATURE_ARCH_2_07
+                if (buf[i + 1] & PPC_FEATURE_HAS_POWER8)
+                    ret |= AV_CPU_FLAG_POWER8;
+#endif
+                if (ret & AV_CPU_FLAG_VSX)
+                    av_assert0(ret & AV_CPU_FLAG_ALTIVEC);
+                goto out;
+            }
+        }
+    }
+
+out:
+    close(fd);
+    return ret;
+#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__)
+#define PVR_G4_7400  0x000C
+#define PVR_G5_970   0x0039
+#define PVR_G5_970FX 0x003C
+#define PVR_G5_970MP 0x0044
+#define PVR_G5_970GX 0x0045
+#define PVR_POWER6   0x003E
+#define PVR_POWER7   0x003F
+#define PVR_POWER8   0x004B
+#define PVR_CELL_PPU 0x0070
+    int ret = 0;
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
     __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
     proc_ver >>= 16;
     if (proc_ver  & 0x8000 ||
-        proc_ver == 0x000c ||
-        proc_ver == 0x0039 || proc_ver == 0x003c ||
-        proc_ver == 0x0044 || proc_ver == 0x0045 ||
-        proc_ver == 0x0070)
-        return AV_CPU_FLAG_ALTIVEC;
-    return 0;
+        proc_ver == PVR_G4_7400  ||
+        proc_ver == PVR_G5_970   ||
+        proc_ver == PVR_G5_970FX ||
+        proc_ver == PVR_G5_970MP ||
+        proc_ver == PVR_G5_970GX ||
+        proc_ver == PVR_POWER6   ||
+        proc_ver == PVR_POWER7   ||
+        proc_ver == PVR_POWER8   ||
+        proc_ver == PVR_CELL_PPU)
+        ret = AV_CPU_FLAG_ALTIVEC;
+    if (proc_ver == PVR_POWER7 ||
+        proc_ver == PVR_POWER8)
+        ret |= AV_CPU_FLAG_VSX;
+    if (proc_ver == PVR_POWER8)
+        ret |= AV_CPU_FLAG_POWER8;
+
+    return ret;
 #else
     // Since we were compiled for AltiVec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).

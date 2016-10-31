@@ -28,6 +28,7 @@
 
 #include <string.h>
 #include "libavutil/intreadwrite.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
@@ -58,22 +59,22 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
 
     if (config_packet) {
 
-        av_freep(&st->codec->extradata);
-        st->codec->extradata_size = 0;
+        av_freep(&st->codecpar->extradata);
+        st->codecpar->extradata_size = 0;
 
-        if (len < 2 || ff_alloc_extradata(st->codec, len + 8))
+        if (len < 2 || ff_alloc_extradata(st->codecpar, len + 8))
             return AVERROR_INVALIDDATA;
 
-        memcpy(st->codec->extradata, "SEQH", 4);
-        AV_WB32(st->codec->extradata + 4, len);
-        memcpy(st->codec->extradata + 8, buf, len);
+        memcpy(st->codecpar->extradata, "SEQH", 4);
+        AV_WB32(st->codecpar->extradata + 4, len);
+        memcpy(st->codecpar->extradata + 8, buf, len);
 
         /* We set codec_id to AV_CODEC_ID_NONE initially to
          * delay decoder initialization since extradata is
          * carried within the RTP stream, not SDP. Here,
          * by setting codec_id to AV_CODEC_ID_SVQ3, we are signalling
          * to the decoder that it is OK to initialize. */
-        st->codec->codec_id = AV_CODEC_ID_SVQ3;
+        st->codecpar->codec_id = AV_CODEC_ID_SVQ3;
 
         return AVERROR(EAGAIN);
     }
@@ -81,11 +82,7 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     if (start_packet) {
         int res;
 
-        if (sv->pktbuf) {
-            uint8_t *tmp;
-            avio_close_dyn_buf(sv->pktbuf, &tmp);
-            av_free(tmp);
-        }
+        ffio_free_dyn_buf(&sv->pktbuf);
         if ((res = avio_open_dyn_buf(&sv->pktbuf)) < 0)
             return res;
         sv->timestamp   = *timestamp;
@@ -108,26 +105,16 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     return AVERROR(EAGAIN);
 }
 
-static PayloadContext *svq3_extradata_new(void)
+static void svq3_close_context(PayloadContext *sv)
 {
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void svq3_extradata_free(PayloadContext *sv)
-{
-    if (sv->pktbuf) {
-        uint8_t *buf;
-        avio_close_dyn_buf(sv->pktbuf, &buf);
-        av_free(buf);
-    }
-    av_free(sv);
+    ffio_free_dyn_buf(&sv->pktbuf);
 }
 
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
-    .alloc            = svq3_extradata_new,
-    .free             = svq3_extradata_free,
+    .priv_data_size   = sizeof(PayloadContext),
+    .close            = svq3_close_context,
     .parse_packet     = svq3_parse_packet,
 };

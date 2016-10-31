@@ -68,6 +68,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     AVStream *st = NULL;
     enum AVPixelFormat pix_fmt;
     int ret, flags = O_RDONLY;
+    const char* device;
 
     if (!(st = avformat_new_stream(avctx, NULL)))
         return AVERROR(ENOMEM);
@@ -77,11 +78,16 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)
         flags |= O_NONBLOCK;
 
-    if ((fbdev->fd = avpriv_open(avctx->filename, flags)) == -1) {
+    if (avctx->filename[0])
+        device = avctx->filename;
+    else
+        device = ff_fbdev_default_device();
+
+    if ((fbdev->fd = avpriv_open(device, flags)) == -1) {
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
                "Could not open framebuffer device '%s': %s\n",
-               avctx->filename, av_err2str(ret));
+               device, av_err2str(ret));
         return ret;
     }
 
@@ -120,21 +126,21 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
         goto fail;
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width      = fbdev->width;
-    st->codec->height     = fbdev->height;
-    st->codec->pix_fmt    = pix_fmt;
-    st->codec->time_base  = av_inv_q(fbdev->framerate_q);
-    st->codec->bit_rate   =
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width      = fbdev->width;
+    st->codecpar->height     = fbdev->height;
+    st->codecpar->format     = pix_fmt;
+    st->avg_frame_rate       = fbdev->framerate_q;
+    st->codecpar->bit_rate   =
         fbdev->width * fbdev->height * fbdev->bytes_per_pixel * av_q2d(fbdev->framerate_q) * 8;
 
     av_log(avctx, AV_LOG_INFO,
-           "w:%d h:%d bpp:%d pixfmt:%s fps:%d/%d bit_rate:%d\n",
+           "w:%d h:%d bpp:%d pixfmt:%s fps:%d/%d bit_rate:%"PRId64"\n",
            fbdev->width, fbdev->height, fbdev->varinfo.bits_per_pixel,
            av_get_pix_fmt_name(pix_fmt),
            fbdev->framerate_q.num, fbdev->framerate_q.den,
-           st->codec->bit_rate);
+           (int64_t)st->codecpar->bit_rate);
     return 0;
 
 fail:
@@ -157,7 +163,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     while (1) {
         curtime = av_gettime();
         delay = fbdev->time_frame - curtime;
-        av_dlog(avctx,
+        av_log(avctx, AV_LOG_TRACE,
                 "time_frame:%"PRId64" curtime:%"PRId64" delay:%"PRId64"\n",
                 fbdev->time_frame, curtime, delay);
         if (delay <= 0) {
@@ -175,9 +181,10 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         return ret;
 
     /* refresh fbdev->varinfo, visible data position may change at each call */
-    if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0)
+    if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0) {
         av_log(avctx, AV_LOG_WARNING,
-               "Error refreshing variable info: %s\n", av_err2str(ret));
+               "Error refreshing variable info: %s\n", av_err2str(AVERROR(errno)));
+    }
 
     pkt->pts = curtime;
 
@@ -213,7 +220,7 @@ static int fbdev_get_device_list(AVFormatContext *s, AVDeviceInfoList *device_li
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
+    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
 };
 

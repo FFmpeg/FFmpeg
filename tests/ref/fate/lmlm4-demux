@@ -1,6 +1,14 @@
 #extradata 0:       28, 0x2f140538
 #tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 320x240
+#sar 0: 1/1
 #tb 1: 1/90000
+#media_type 1: audio
+#codec_id 1: mp2
+#sample_rate 1: 48000
+#channel_layout 1: 3
 0,          0, -9223372036854775808,        1,     5951, 0xe9118e0d
 1,          0,          0,     2160,      768, 0xaebcbebb
 1,       2160,       2160,     2160,      768, 0xaebcbebb

@@ -12,17 +12,17 @@ explicitly specified. The following rules are applied:
 
 @itemize
 @item
-@code{'} and @code{\} are special characters (respectively used for
+@samp{'} and @samp{\} are special characters (respectively used for
 quoting and escaping). In addition to them, there might be other
 special characters depending on the specific syntax where the escaping
 and quoting are employed.
 
 @item
-A special character is escaped by prefixing it with a '\'.
+A special character is escaped by prefixing it with a @samp{\}.
 
 @item
-All characters enclosed between '' are included literally in the
-parsed string. The quote character @code{'} itself cannot be quoted,
+All characters enclosed between @samp{''} are included literally in the
+parsed string. The quote character @samp{'} itself cannot be quoted,
 so you may need to close the quote and escape it.
 
 @item
@@ -71,7 +71,7 @@ Escaping and quoting can be mixed together:
 @end example
 
 @item
-To include a literal @code{\} you can use either escaping or quoting:
+To include a literal @samp{\} you can use either escaping or quoting:
 @example
 'c:\foo' can be written as c:\\foo
 @end example
@@ -238,6 +238,14 @@ The following abbreviations are recognized:
 480x320
 @item qhd
 960x540
+@item 2kdci
+2048x1080
+@item 4kdci
+4096x2160
+@item uhd2160
+3840x2160
+@item uhd4320
+7680x4320
 @end table
 
 @anchor{video rate syntax}
@@ -844,7 +852,7 @@ Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
 Return 1.0 if @var{x} is NAN, 0.0 otherwise.
 
 @item ld(var)
-Allow to load the value of the internal variable with number
+Load the value of the internal variable with number
 @var{var}, which was previously stored with st(@var{var}, @var{expr}).
 The function returns the loaded value.
 
@@ -861,7 +869,7 @@ Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
 Return the maximum between @var{x} and @var{y}.
 
 @item min(x, y)
-Return the maximum between @var{x} and @var{y}.
+Return the minimum between @var{x} and @var{y}.
 
 @item mod(x, y)
 Compute the remainder of division of @var{x} by @var{y}.
@@ -912,7 +920,7 @@ Compute the square root of @var{expr}. This is equivalent to
 Compute expression @code{1/(1 + exp(4*x))}.
 
 @item st(var, expr)
-Allow to store the value of the expression @var{expr} in an internal
+Store the value of the expression @var{expr} in an internal
 variable. @var{var} specifies the number of the variable where to
 store the value, and it is a value ranging from 0 to 9. The function
 returns the value stored in the internal variable.

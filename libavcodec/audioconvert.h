@@ -23,6 +23,8 @@
 #ifndef AVCODEC_AUDIOCONVERT_H
 #define AVCODEC_AUDIOCONVERT_H
 
+#include "version.h"
+
 /**
  * @file
  * Audio format conversion routines

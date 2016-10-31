@@ -55,14 +55,14 @@ typedef struct MPTestContext {
     AVRational frame_rate;
     int64_t pts, max_pts, duration;
     int hsub, vsub;
-    enum test_type test;
+    int test;           ///< test_type
 } MPTestContext;
 
 #define OFFSET(x) offsetof(MPTestContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mptestsrc_options[]= {
-    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
+    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
 
@@ -121,7 +121,7 @@ static void idct(uint8_t *dst, int dst_linesize, int src[64])
             for (k = 0; k < 8; k++)
                 sum += c[k*8+i]*tmp[8*k+j];
 
-            dst[dst_linesize*i + j] = av_clip((int)floor(sum+0.5), 0, 255);
+            dst[dst_linesize*i + j] = av_clip_uint8(lrint(sum));
         }
     }
 }
@@ -240,7 +240,7 @@ static void ring2_test(uint8_t *dst, int dst_linesize, int off)
 
     for (y = 0; y < 16*16; y++) {
         for (x = 0; x < 16*16; x++) {
-            double d = sqrt((x-8*16)*(x-8*16) + (y-8*16)*(y-8*16));
+            double d = hypot(x-8*16, y-8*16);
             double r = d/20 - (int)(d/20);
             if (r < off/30.0) {
                 dst[x + y*dst_linesize]     = 255;
@@ -291,8 +291,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -300,7 +302,7 @@ static int request_frame(AVFilterLink *outlink)
     MPTestContext *test = outlink->src->priv;
     AVFrame *picref;
     int w = WIDTH, h = HEIGHT,
-        cw = FF_CEIL_RSHIFT(w, test->hsub), ch = FF_CEIL_RSHIFT(h, test->vsub);
+        cw = AV_CEIL_RSHIFT(w, test->hsub), ch = AV_CEIL_RSHIFT(h, test->vsub);
     unsigned int frame = outlink->frame_count;
     enum test_type tt = test->test;
     int i;

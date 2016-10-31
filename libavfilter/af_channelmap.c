@@ -57,7 +57,6 @@ enum MappingMode {
 #define MAX_CH 64
 typedef struct ChannelMapContext {
     const AVClass *class;
-    AVFilterChannelLayouts *channel_layouts;
     char *mapping_str;
     char *channel_layout_str;
     uint64_t output_layout;
@@ -88,9 +87,12 @@ static char* split(char *message, char delim) {
 
 static int get_channel_idx(char **map, int *ch, char delim, int max_ch)
 {
-    char *next = split(*map, delim);
+    char *next;
     int len;
     int n = 0;
+    if (!*map)
+        return AVERROR(EINVAL);
+    next = split(*map, delim);
     if (!next && delim == '-')
         return AVERROR(EINVAL);
     len = strlen(*map);
@@ -272,8 +274,6 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    ff_add_channel_layout(&s->channel_layouts, s->output_layout);
-
     if (mode == MAP_PAIR_INT_STR || mode == MAP_PAIR_STR_STR) {
         for (i = 0; i < s->nch; i++) {
             s->map[i].out_channel_idx = av_get_channel_layout_channel_index(
@@ -287,13 +287,28 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
 static int channelmap_query_formats(AVFilterContext *ctx)
 {
     ChannelMapContext *s = ctx->priv;
+    AVFilterChannelLayouts *layouts;
+    AVFilterChannelLayouts *channel_layouts = NULL;
+    int ret;
 
-    ff_set_common_formats(ctx, ff_planar_sample_fmts());
-    ff_set_common_samplerates(ctx, ff_all_samplerates());
-    ff_channel_layouts_ref(ff_all_channel_layouts(), &ctx->inputs[0]->out_channel_layouts);
-    ff_channel_layouts_ref(s->channel_layouts,       &ctx->outputs[0]->in_channel_layouts);
+    layouts = ff_all_channel_layouts();
+    if (!layouts) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    if ((ret = ff_add_channel_layout     (&channel_layouts, s->output_layout                    )) < 0 ||
+        (ret = ff_set_common_formats     (ctx             , ff_planar_sample_fmts()             )) < 0 ||
+        (ret = ff_set_common_samplerates (ctx             , ff_all_samplerates()                )) < 0 ||
+        (ret = ff_channel_layouts_ref    (layouts         , &ctx->inputs[0]->out_channel_layouts)) < 0 ||
+        (ret = ff_channel_layouts_ref    (channel_layouts , &ctx->outputs[0]->in_channel_layouts)) < 0)
+            goto fail;
 
     return 0;
+fail:
+    if (layouts)
+        av_freep(&layouts->channel_layouts);
+    av_freep(&layouts);
+    return ret;
 }
 
 static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
@@ -339,6 +354,7 @@ static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
     buf->channel_layout = outlink->channel_layout;
+    av_frame_set_channels(buf, outlink->channels);
 
     return ff_filter_frame(outlink, buf);
 }

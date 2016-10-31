@@ -22,7 +22,7 @@
 #include "internal.h"
 #include "libavutil/common.h"
 
-typedef struct {
+typedef struct ZeroCodecContext {
     AVFrame  *previous_frame;
     z_stream zstream;
 } ZeroCodecContext;
@@ -148,5 +148,5 @@ AVCodec ff_zerocodec_decoder = {
     .init           = zerocodec_decode_init,
     .decode         = zerocodec_decode_frame,
     .close          = zerocodec_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

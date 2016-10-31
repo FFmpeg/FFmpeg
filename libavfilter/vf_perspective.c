@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
@@ -46,6 +47,8 @@ typedef struct PerspectiveContext {
     int height[4];
     int hsub, vsub;
     int nb_planes;
+    int sense;
+    int eval_mode;
 
     int (*perspective)(AVFilterContext *ctx,
                        void *arg, int job, int nb_jobs);
@@ -53,6 +56,17 @@ typedef struct PerspectiveContext {
 
 #define OFFSET(x) offsetof(PerspectiveContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+enum PERSPECTIVESense {
+    PERSPECTIVE_SENSE_SOURCE      = 0, ///< coordinates give locations in source of corners of destination.
+    PERSPECTIVE_SENSE_DESTINATION = 1, ///< coordinates give locations in destination of corners of source.
+};
+
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
 
 static const AVOption perspective_options[] = {
     { "x0", "set top left x coordinate",     OFFSET(expr_str[0][0]), AV_OPT_TYPE_STRING, {.str="0"}, 0, 0, FLAGS },
@@ -66,6 +80,15 @@ static const AVOption perspective_options[] = {
     { "interpolation", "set interpolation", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=LINEAR}, 0, 1, FLAGS, "interpolation" },
     {      "linear", "", 0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "interpolation" },
     {       "cubic", "", 0, AV_OPT_TYPE_CONST, {.i64=CUBIC},  0, 0, FLAGS, "interpolation" },
+    { "sense",   "specify the sense of the coordinates", OFFSET(sense), AV_OPT_TYPE_INT, {.i64=PERSPECTIVE_SENSE_SOURCE}, 0, 1, FLAGS, "sense"},
+    {       "source", "specify locations in source to send to corners in destination",
+                0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_SOURCE}, 0, 0, FLAGS, "sense"},
+    {       "destination", "specify locations in destination to send corners of source",
+                0, AV_OPT_TYPE_CONST, {.i64=PERSPECTIVE_SENSE_DESTINATION}, 0, 0, FLAGS, "sense"},
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
+
     { NULL }
 };
 
@@ -80,8 +103,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static inline double get_coeff(double d)
@@ -100,19 +125,22 @@ static inline double get_coeff(double d)
     return coeff;
 }
 
-static const char *const var_names[] = {   "W",   "H",        NULL };
-enum                                   { VAR_W, VAR_H, VAR_VARS_NB };
+static const char *const var_names[] = {   "W",   "H",   "in",   "on",        NULL };
+enum                                   { VAR_W, VAR_H, VAR_IN, VAR_ON, VAR_VARS_NB };
 
-static int config_input(AVFilterLink *inlink)
+static int calc_persp_luts(AVFilterContext *ctx, AVFilterLink *inlink)
 {
-    double x0, x1, x2, x3, x4, x5, x6, x7, q;
-    AVFilterContext *ctx = inlink->dst;
     PerspectiveContext *s = ctx->priv;
-    double (*ref)[2] = s->ref;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h };
-    int h = inlink->h;
-    int w = inlink->w;
+    AVFilterLink *outlink = ctx->outputs[0];
+    double (*ref)[2]      = s->ref;
+
+    double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h,
+                                   [VAR_IN] = inlink->frame_count  + 1,
+                                   [VAR_ON] = outlink->frame_count + 1 };
+    const int h = values[VAR_H];
+    const int w = values[VAR_W];
+    double x0, x1, x2, x3, x4, x5, x6, x7, x8, q;
+    double t0, t1, t2, t3;
     int x, y, i, j, ret;
 
     for (i = 0; i < 4; i++) {
@@ -128,48 +156,99 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    switch (s->sense) {
+    case PERSPECTIVE_SENSE_SOURCE:
+        x6 = ((ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
+              (ref[2][1] - ref[3][1]) -
+             ( ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
+              (ref[2][0] - ref[3][0])) * h;
+        x7 = ((ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
+              (ref[1][0] - ref[3][0]) -
+             ( ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
+              (ref[1][1] - ref[3][1])) * w;
+        q =  ( ref[1][0] - ref[3][0]) * (ref[2][1] - ref[3][1]) -
+             ( ref[2][0] - ref[3][0]) * (ref[1][1] - ref[3][1]);
+
+        x0 = q * (ref[1][0] - ref[0][0]) * h + x6 * ref[1][0];
+        x1 = q * (ref[2][0] - ref[0][0]) * w + x7 * ref[2][0];
+        x2 = q *  ref[0][0] * w * h;
+        x3 = q * (ref[1][1] - ref[0][1]) * h + x6 * ref[1][1];
+        x4 = q * (ref[2][1] - ref[0][1]) * w + x7 * ref[2][1];
+        x5 = q *  ref[0][1] * w * h;
+        x8 = q * w * h;
+        break;
+    case PERSPECTIVE_SENSE_DESTINATION:
+        t0 = ref[0][0] * (ref[3][1] - ref[1][1]) +
+             ref[1][0] * (ref[0][1] - ref[3][1]) +
+             ref[3][0] * (ref[1][1] - ref[0][1]);
+        t1 = ref[1][0] * (ref[2][1] - ref[3][1]) +
+             ref[2][0] * (ref[3][1] - ref[1][1]) +
+             ref[3][0] * (ref[1][1] - ref[2][1]);
+        t2 = ref[0][0] * (ref[3][1] - ref[2][1]) +
+             ref[2][0] * (ref[0][1] - ref[3][1]) +
+             ref[3][0] * (ref[2][1] - ref[0][1]);
+        t3 = ref[0][0] * (ref[1][1] - ref[2][1]) +
+             ref[1][0] * (ref[2][1] - ref[0][1]) +
+             ref[2][0] * (ref[0][1] - ref[1][1]);
+
+        x0 = t0 * t1 * w * (ref[2][1] - ref[0][1]);
+        x1 = t0 * t1 * w * (ref[0][0] - ref[2][0]);
+        x2 = t0 * t1 * w * (ref[0][1] * ref[2][0] - ref[0][0] * ref[2][1]);
+        x3 = t1 * t2 * h * (ref[1][1] - ref[0][1]);
+        x4 = t1 * t2 * h * (ref[0][0] - ref[1][0]);
+        x5 = t1 * t2 * h * (ref[0][1] * ref[1][0] - ref[0][0] * ref[1][1]);
+        x6 = t1 * t2 * (ref[1][1] - ref[0][1]) +
+             t0 * t3 * (ref[2][1] - ref[3][1]);
+        x7 = t1 * t2 * (ref[0][0] - ref[1][0]) +
+             t0 * t3 * (ref[3][0] - ref[2][0]);
+        x8 = t1 * t2 * (ref[0][1] * ref[1][0] - ref[0][0] * ref[1][1]) +
+             t0 * t3 * (ref[2][0] * ref[3][1] - ref[2][1] * ref[3][0]);
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    for (y = 0; y < h; y++){
+        for (x = 0; x < w; x++){
+            int u, v;
+
+            u =      lrint(SUB_PIXELS * (x0 * x + x1 * y + x2) /
+                                        (x6 * x + x7 * y + x8));
+            v =      lrint(SUB_PIXELS * (x3 * x + x4 * y + x5) /
+                                        (x6 * x + x7 * y + x8));
+
+            s->pv[x + y * w][0] = u;
+            s->pv[x + y * w][1] = v;
+        }
+    }
+
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    PerspectiveContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int h = inlink->h;
+    int w = inlink->w;
+    int i, j, ret;
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->height[1] = s->height[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->height[0] = s->height[3] = inlink->h;
 
     s->pv = av_realloc_f(s->pv, w * h, 2 * sizeof(*s->pv));
     if (!s->pv)
         return AVERROR(ENOMEM);
 
-    x6 = ((ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
-          (ref[2][1] - ref[3][1]) -
-         ( ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
-          (ref[2][0] - ref[3][0])) * h;
-    x7 = ((ref[0][1] - ref[1][1] - ref[2][1] + ref[3][1]) *
-          (ref[1][0] - ref[3][0]) -
-         ( ref[0][0] - ref[1][0] - ref[2][0] + ref[3][0]) *
-          (ref[1][1] - ref[3][1])) * w;
-    q =  ( ref[1][0] - ref[3][0]) * (ref[2][1] - ref[3][1]) -
-         ( ref[2][0] - ref[3][0]) * (ref[1][1] - ref[3][1]);
-
-    x0 = q * (ref[1][0] - ref[0][0]) * h + x6 * ref[1][0];
-    x1 = q * (ref[2][0] - ref[0][0]) * w + x7 * ref[2][0];
-    x2 = q *  ref[0][0] * w * h;
-    x3 = q * (ref[1][1] - ref[0][1]) * h + x6 * ref[1][1];
-    x4 = q * (ref[2][1] - ref[0][1]) * w + x7 * ref[2][1];
-    x5 = q *  ref[0][1] * w * h;
-
-    for (y = 0; y < h; y++){
-        for (x = 0; x < w; x++){
-            int u, v;
-
-            u = (int)floor(SUB_PIXELS * (x0 * x + x1 * y + x2) /
-                                        (x6 * x + x7 * y + q * w * h) + 0.5);
-            v = (int)floor(SUB_PIXELS * (x3 * x + x4 * y + x5) /
-                                        (x6 * x + x7 * y + q * w * h) + 0.5);
-
-            s->pv[x + y * w][0] = u;
-            s->pv[x + y * w][1] = v;
+    if (s->eval_mode == EVAL_MODE_INIT) {
+        if ((ret = calc_persp_luts(ctx, inlink)) < 0) {
+            return ret;
         }
     }
 
@@ -185,7 +264,7 @@ static int config_input(AVFilterLink *inlink)
             sum += temp[j];
 
         for (j = 0; j < 4; j++)
-            s->coeff[i][j] = (int)floor((1 << COEFF_BITS) * temp[j] / sum + 0.5);
+            s->coeff[i][j] = lrint((1 << COEFF_BITS) * temp[j] / sum);
     }
 
     return 0;
@@ -272,7 +351,7 @@ static int resample_cubic(AVFilterContext *ctx, void *arg,
             }
 
             sum = (sum + (1<<(COEFF_BITS * 2 - 1))) >> (COEFF_BITS * 2);
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }
@@ -347,7 +426,7 @@ static int resample_linear(AVFilterContext *ctx, void *arg,
                 }
             }
 
-            sum = av_clip(sum, 0, 255);
+            sum = av_clip_uint8(sum);
             dst[x + y * dst_linesize] = sum;
         }
     }
@@ -373,6 +452,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     PerspectiveContext *s = ctx->priv;
     AVFrame *out;
     int plane;
+    int ret;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -380,6 +460,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, frame);
+
+    if (s->eval_mode == EVAL_MODE_FRAME) {
+        if ((ret = calc_persp_luts(ctx, inlink)) < 0) {
+            return ret;
+        }
+    }
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
@@ -392,7 +478,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                          .h = s->height[plane],
                          .hsub = hsub,
                          .vsub = vsub };
-        ctx->internal->execute(ctx, s->perspective, &td, NULL, FFMIN(td.h, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, s->perspective, &td, NULL, FFMIN(td.h, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&frame);

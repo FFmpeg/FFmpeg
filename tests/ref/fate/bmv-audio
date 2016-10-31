@@ -1,4 +1,8 @@
 #tb 0: 1/22050
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 22050
+#channel_layout 0: 3
 0,          0,          0,     1856,     7424, 0x18540b36
 0,       1856,       1856,     1824,     7296, 0x5acd2484
 0,       3680,       3680,     1856,     7424, 0xa1bc5c5a

@@ -1,6 +1,6 @@
 /*
  * AMR Audio decoder stub
- * Copyright (c) 2003 the ffmpeg project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include <inttypes.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -99,7 +101,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     enum Mode dec_mode;
     int packet_size, ret;
 
-    av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
+    ff_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
             buf, buf_size, avctx->frame_number);
 
     /* get output buffer */
@@ -111,13 +113,13 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     packet_size = block_size[dec_mode] + 1;
 
     if (packet_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
+        av_log(avctx, AV_LOG_ERROR, "AMR frame too short (%d, should be %d)\n",
                buf_size, packet_size);
         return AVERROR_INVALIDDATA;
     }
 
-    av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
-              packet_size, buf[0], buf[1], buf[2], buf[3]);
+    ff_dlog(avctx, "packet_size=%d buf= 0x%"PRIx8" %"PRIx8" %"PRIx8" %"PRIx8"\n",
+            packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
     Decoder_Interface_Decode(s->dec_state, buf, (short *)frame->data[0], 0);
 
@@ -135,7 +137,7 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
     .decode         = amr_nb_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
 
@@ -149,7 +151,7 @@ typedef struct AMR_bitrates {
 /* Match desired bitrate */
 static int get_bitrate_mode(int bitrate, void *log_ctx)
 {
-    /* make the correspondance between bitrate and mode */
+    /* make the correspondence between bitrate and mode */
     static const AMR_bitrates rates[] = {
         { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
         { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }
@@ -199,7 +201,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size  = 160;
-    avctx->delay       =  50;
+    avctx->initial_padding = 50;
     ff_af_queue_init(avctx, &s->afq);
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
@@ -236,7 +238,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->enc_bitrate = avctx->bit_rate;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 32)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 32, 0)) < 0)
         return ret;
 
     if (frame) {
@@ -246,7 +248,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 return AVERROR(ENOMEM);
             memcpy(flush_buf, samples, frame->nb_samples * sizeof(*flush_buf));
             samples = flush_buf;
-            if (frame->nb_samples < avctx->frame_size - avctx->delay)
+            if (frame->nb_samples < avctx->frame_size - avctx->initial_padding)
                 s->enc_last_frame = -1;
         }
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0) {
@@ -265,7 +267,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
                                        avpkt->data, 0);
-    av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
+    ff_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
             written, s->enc_mode, avpkt->data[0]);
 
     /* Get the next frame pts/duration */
@@ -287,7 +289,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
     .init           = amr_nb_encode_init,
     .encode2        = amr_nb_encode_frame,
     .close          = amr_nb_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &amrnb_class,
@@ -339,7 +341,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     packet_size = block_size[mode];
 
     if (packet_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n",
+        av_log(avctx, AV_LOG_ERROR, "AMR frame too short (%d, should be %d)\n",
                buf_size, packet_size + 1);
         return AVERROR_INVALIDDATA;
     }
@@ -372,7 +374,7 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 #endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */

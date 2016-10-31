@@ -48,7 +48,7 @@ typedef struct {
 } MotionVector;
 
 typedef struct {
-    MotionVector vector;  ///< Motion vector
+    MotionVector vec;     ///< Motion vector
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
 } Transform;
@@ -71,8 +71,13 @@ typedef struct {
 
 #endif
 
+#define MAX_R 64
+
 typedef struct {
     const AVClass *class;
+    int counts[2*MAX_R+1][2*MAX_R+1]; /// < Scratch buffer for motion search
+    double *angles;            ///< Scratch buffer for block angles
+    unsigned angles_size;
     AVFrame *ref;              ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift

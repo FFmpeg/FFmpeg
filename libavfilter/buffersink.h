@@ -33,63 +33,6 @@
  * @{
  */
 
-#if FF_API_AVFILTERBUFFER
-/**
- * Get an audio/video buffer data from buffer_sink and put it in bufref.
- *
- * This function works with both audio and video buffer sinks.
- *
- * @param buffer_sink pointer to a buffersink or abuffersink context
- * @param flags a combination of AV_BUFFERSINK_FLAG_* flags
- * @return >= 0 in case of success, a negative AVERROR code in case of
- * failure
- */
-attribute_deprecated
-int av_buffersink_get_buffer_ref(AVFilterContext *buffer_sink,
-                                 AVFilterBufferRef **bufref, int flags);
-
-/**
- * Get the number of immediately available frames.
- */
-attribute_deprecated
-int av_buffersink_poll_frame(AVFilterContext *ctx);
-
-/**
- * Get a buffer with filtered data from sink and put it in buf.
- *
- * @param ctx pointer to a context of a buffersink or abuffersink AVFilter.
- * @param buf pointer to the buffer will be written here if buf is non-NULL. buf
- *            must be freed by the caller using avfilter_unref_buffer().
- *            Buf may also be NULL to query whether a buffer is ready to be
- *            output.
- *
- * @return >= 0 in case of success, a negative AVERROR code in case of
- *         failure.
- */
-attribute_deprecated
-int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf);
-
-/**
- * Same as av_buffersink_read, but with the ability to specify the number of
- * samples read. This function is less efficient than av_buffersink_read(),
- * because it copies the data around.
- *
- * @param ctx pointer to a context of the abuffersink AVFilter.
- * @param buf pointer to the buffer will be written here if buf is non-NULL. buf
- *            must be freed by the caller using avfilter_unref_buffer(). buf
- *            will contain exactly nb_samples audio samples, except at the end
- *            of stream, when it can contain less than nb_samples.
- *            Buf may also be NULL to query whether a buffer is ready to be
- *            output.
- *
- * @warning do not mix this function with av_buffersink_read(). Use only one or
- * the other with a single sink, not both.
- */
-attribute_deprecated
-int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
-                               int nb_samples);
-#endif
-
 /**
  * Get a frame with filtered data from sink and put it in frame.
  *

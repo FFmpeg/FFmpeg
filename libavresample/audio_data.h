@@ -76,9 +76,10 @@ int ff_audio_data_set_channels(AudioData *a, int channels);
  * @param name            name for debug logging (can be NULL)
  * @return                0 on success, negative AVERROR value on error
  */
-int ff_audio_data_init(AudioData *a, uint8_t **src, int plane_size, int channels,
-                       int nb_samples, enum AVSampleFormat sample_fmt,
-                       int read_only, const char *name);
+int ff_audio_data_init(AudioData *a, uint8_t * const *src, int plane_size,
+                       int channels, int nb_samples,
+                       enum AVSampleFormat sample_fmt, int read_only,
+                       const char *name);
 
 /**
  * Allocate AudioData.

@@ -47,7 +47,7 @@ static const uint8_t center_levels[4] = { 4, 5, 6, 5 };
 static const uint8_t surround_levels[4] = { 4, 6, 7, 6 };
 
 
-int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
+int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo **phdr)
 {
     int frame_size_code;
     AC3HeaderInfo *hdr;
@@ -140,8 +140,8 @@ int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
         hdr->channel_mode = get_bits(gbc, 3);
         hdr->lfe_on = get_bits1(gbc);
 
-        hdr->bit_rate = (uint32_t)(8.0 * hdr->frame_size * hdr->sample_rate /
-                        (hdr->num_blocks * 256.0));
+        hdr->bit_rate = 8LL * hdr->frame_size * hdr->sample_rate /
+                        (hdr->num_blocks * 256);
         hdr->channels = ff_ac3_channels_tab[hdr->channel_mode] + hdr->lfe_on;
     }
     hdr->channel_layout = avpriv_ac3_channel_layout_tab[hdr->channel_mode];
@@ -151,28 +151,19 @@ int avpriv_ac3_parse_header2(GetBitContext *gbc, AC3HeaderInfo **phdr)
     return 0;
 }
 
-int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
-{
-    AC3HeaderInfo tmp, *ptmp = &tmp;
-    int ret = avpriv_ac3_parse_header2(gbc, &ptmp);
-
-    memcpy(hdr, ptmp, ((intptr_t)&tmp.channel_layout) - ((intptr_t)&tmp) + sizeof(uint64_t));
-    return ret;
-}
-
 static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
         int *need_next_header, int *new_frame_start)
 {
     int err;
     union {
         uint64_t u64;
-        uint8_t  u8[8];
+        uint8_t  u8[8 + AV_INPUT_BUFFER_PADDING_SIZE];
     } tmp = { av_be2ne64(state) };
     AC3HeaderInfo hdr, *phdr = &hdr;
     GetBitContext gbc;
 
     init_get_bits(&gbc, tmp.u8+8-AC3_HEADER_SIZE, 54);
-    err = avpriv_ac3_parse_header2(&gbc, &phdr);
+    err = avpriv_ac3_parse_header(&gbc, &phdr);
 
     if(err < 0)
         return 0;

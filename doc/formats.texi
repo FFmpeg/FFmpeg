@@ -23,7 +23,7 @@ Reduce buffering.
 
 @item probesize @var{integer} (@emph{input})
 Set probing size in bytes, i.e. the size of the data to analyze to get
-stream information. A higher value will allow to detect more
+stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
@@ -37,6 +37,8 @@ Possible values:
 @table @samp
 @item ignidx
 Ignore index.
+@item fastseek
+Enable fast, but inaccurate seeks for some formats.
 @item genpts
 Generate PTS.
 @item nofillin
@@ -55,6 +57,14 @@ Do not merge side data.
 Enable RTP MP4A-LATM payload.
 @item nobuffer
 Reduce the latency introduced by optional buffering
+@item bitexact
+Only write platform-, build- and time-independent data.
+This ensures that file and data checksums are reproducible and match between
+platforms. Its primary use is for regression testing.
+@item shortest
+Stop muxing at the end of the shortest stream.
+It may be needed to increase max_interleave_delta to avoid flushing the longer
+streams before EOF.
 @end table
 
 @item seek2any @var{integer} (@emph{input})
@@ -63,7 +73,7 @@ Default is 0.
 
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A
-higher value will allow to detect more accurate information, but will
+higher value will enable detecting more accurate information, but will
 increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
 
 @item cryptokey @var{hexadecimal string} (@emph{input})
@@ -121,8 +131,27 @@ Consider all spec non compliancies as errors.
 Consider things that a sane encoder should not do as an error.
 @end table
 
+@item max_interleave_delta @var{integer} (@emph{output})
+Set maximum buffering duration for interleaving. The duration is
+expressed in microseconds, and defaults to 1000000 (1 second).
+
+To ensure all the streams are interleaved correctly, libavformat will
+wait until it has at least one packet for each stream before actually
+writing any packets to the output file. When some streams are
+"sparse" (i.e. there are large gaps between successive packets), this
+can result in excessive buffering.
+
+This field specifies the maximum difference between the timestamps of the
+first and the last packet in the muxing queue, above which libavformat
+will output a packet regardless of whether it has queued a packet for all
+the streams.
+
+If set to 0, libavformat will continue buffering packets until it has
+a packet for each stream, regardless of the maximum timestamp
+difference between the buffered packets.
+
 @item use_wallclock_as_timestamps @var{integer} (@emph{input})
-Use wallclock as timestamps.
+Use wallclock as timestamps if set to 1. Default is 0.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
 
@@ -168,6 +197,18 @@ The offset is added by the muxer to the output timestamps.
 Specifying a positive offset means that the corresponding streams are
 delayed bt the time duration specified in @var{offset}. Default value
 is @code{0} (meaning that no offset is applied).
+
+@item format_whitelist @var{list} (@emph{input})
+"," separated list of allowed demuxers. By default all are allowed.
+
+@item dump_separator @var{string} (@emph{input})
+Separator used to separate the fields printed on the command line about the
+Stream parameters.
+For example to separate the fields with newlines and indention:
+@example
+ffprobe -dump_separator "
+                          "  -i ~/videos/matrixbench_mpeg2.mpg
+@end example
 @end table
 
 @c man end FORMAT OPTIONS

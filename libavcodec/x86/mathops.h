@@ -23,6 +23,7 @@
 #define AVCODEC_X86_MATHOPS_H
 
 #include "config.h"
+
 #include "libavutil/common.h"
 #include "libavutil/x86/asm.h"
 
@@ -100,6 +101,7 @@ __asm__ volatile(\
     : "r" (y), "r" (b), "r" (d)\
 );
 #endif /* HAVE_6REGS */
+
 #endif /* HAVE_I686 */
 
 #define MASK_ABS(mask, level)                   \

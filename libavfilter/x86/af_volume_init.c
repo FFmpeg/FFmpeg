@@ -52,7 +52,7 @@ av_cold void ff_volume_init_x86(VolumeContext *vol)
             vol->scale_samples = ff_scale_samples_s32_ssse3_atom;
             vol->samples_align = 4;
         }
-        if (EXTERNAL_AVX(cpu_flags)) {
+        if (EXTERNAL_AVX_FAST(cpu_flags)) {
             vol->scale_samples = ff_scale_samples_s32_avx;
             vol->samples_align = 8;
         }

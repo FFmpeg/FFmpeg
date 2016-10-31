@@ -56,13 +56,13 @@ typedef struct HTTPAuthState {
     /**
      * The currently chosen auth type.
      */
-    HTTPAuthType auth_type;
+    int auth_type;
     /**
      * Authentication realm
      */
     char realm[200];
     /**
-     * The parameters specifiec to digest authentication.
+     * The parameters specific to digest authentication.
      */
     DigestParams digest_params;
     /**

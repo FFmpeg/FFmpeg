@@ -43,7 +43,7 @@ static int y41p_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if (avpkt->size < 1.5 * avctx->height * avctx->width) {
+    if (avpkt->size < 3LL * avctx->height * avctx->width / 2) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
@@ -88,5 +88,5 @@ AVCodec ff_y41p_decoder = {
     .id           = AV_CODEC_ID_Y41P,
     .init         = y41p_decode_init,
     .decode       = y41p_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

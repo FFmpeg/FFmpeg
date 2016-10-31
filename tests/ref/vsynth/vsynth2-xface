@@ -1,0 +1,4 @@
+c498ec3b58b86b8164cef9d63184fa6d *tests/data/fate/vsynth2-xface.nut
+16423 tests/data/fate/vsynth2-xface.nut
+9106961054b226c360f284272cfd4474 *tests/data/fate/vsynth2-xface.out.rawvideo
+stddev:   85.41 PSNR:  9.50 MAXDIFF:  250 bytes:  7603200/  7603200

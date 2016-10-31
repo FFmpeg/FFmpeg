@@ -51,11 +51,17 @@ enum var_name {
     VAR_NB
 };
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
 typedef struct {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int backward;
-    enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
+    int eval_mode;                      ///< EvalMode
 #define DEF_EXPR_FIELDS(name) AVExpr *name##_pexpr; char *name##_expr; double name
     DEF_EXPR_FIELDS(angle);
     DEF_EXPR_FIELDS(x0);
@@ -84,7 +90,7 @@ static const AVOption vignette_options[] = {
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions for each frame",             0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
-    { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
+    { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     { "aspect", "set aspect ratio", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 1}, 0, DBL_MAX, .flags = FLAGS },
     { NULL }
 };
@@ -130,8 +136,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static double get_natural_factor(const VignetteContext *s, int x, int y)
@@ -161,14 +169,19 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {
-        s->var_values[VAR_N]   = 0;
+        s->var_values[VAR_N]   = NAN;
         s->var_values[VAR_T]   = NAN;
         s->var_values[VAR_PTS] = NAN;
     }
 
-    s->angle = av_clipf(av_expr_eval(s->angle_pexpr, s->var_values, NULL), 0, M_PI_2);
+    s->angle = av_expr_eval(s->angle_pexpr, s->var_values, NULL);
     s->x0 = av_expr_eval(s->x0_pexpr, s->var_values, NULL);
     s->y0 = av_expr_eval(s->y0_pexpr, s->var_values, NULL);
+
+    if (isnan(s->x0) || isnan(s->y0) || isnan(s->angle))
+        s->eval_mode = EVAL_MODE_FRAME;
+
+    s->angle = av_clipf(s->angle, 0, M_PI_2);
 
     if (s->backward) {
         for (y = 0; y < inlink->h; y++) {
@@ -254,8 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const int chroma = plane == 1 || plane == 2;
             const int hsub = chroma ? s->desc->log2_chroma_w : 0;
             const int vsub = chroma ? s->desc->log2_chroma_h : 0;
-            const int w = FF_CEIL_RSHIFT(inlink->w, hsub);
-            const int h = FF_CEIL_RSHIFT(inlink->h, vsub);
+            const int w = AV_CEIL_RSHIFT(inlink->w, hsub);
+            const int h = AV_CEIL_RSHIFT(inlink->h, vsub);
 
             for (y = 0; y < h; y++) {
                 uint8_t *dstp = dst;
@@ -325,11 +338,11 @@ static const AVFilterPad vignette_inputs[] = {
 };
 
 static const AVFilterPad vignette_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_vignette = {

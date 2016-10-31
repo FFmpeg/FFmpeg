@@ -1,6 +1,6 @@
 /*
  * id Quake II CIN File Demuxer
- * Copyright (c) 2003 The ffmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -33,7 +33,7 @@
  * types. However, a CIN file does start with 5 32-bit numbers that
  * specify audio and video parameters. This demuxer gets around the lack
  * of file signature by performing sanity checks on those parameters.
- * Probabalistically, this is a reasonable solution since the number of
+ * Probabilistically, this is a reasonable solution since the number of
  * valid combinations of the 5 parameters is a very small subset of the
  * total 160-bit number space.
  *
@@ -198,14 +198,14 @@ static int idcin_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
     st->start_time = 0;
     idcin->video_stream_index = st->index;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_IDCIN;
-    st->codec->codec_tag = 0;  /* no fourcc */
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_IDCIN;
+    st->codecpar->codec_tag = 0;  /* no fourcc */
+    st->codecpar->width = width;
+    st->codecpar->height = height;
 
     /* load up the Huffman tables into extradata */
-    if ((ret = ff_get_extradata(st->codec, pb, HUFFMAN_TABLE_SIZE)) < 0)
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, HUFFMAN_TABLE_SIZE)) < 0)
         return ret;
 
     if (idcin->audio_present) {
@@ -216,19 +216,19 @@ static int idcin_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 63, 1, sample_rate);
         st->start_time = 0;
         idcin->audio_stream_index = st->index;
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_tag = 1;
-        st->codec->channels = channels;
-        st->codec->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
-                                                   AV_CH_LAYOUT_MONO;
-        st->codec->sample_rate = sample_rate;
-        st->codec->bits_per_coded_sample = bytes_per_sample * 8;
-        st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
-        st->codec->block_align = idcin->block_align = bytes_per_sample * channels;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_tag = 1;
+        st->codecpar->channels = channels;
+        st->codecpar->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
+                                                      AV_CH_LAYOUT_MONO;
+        st->codecpar->sample_rate = sample_rate;
+        st->codecpar->bits_per_coded_sample = bytes_per_sample * 8;
+        st->codecpar->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
+        st->codecpar->block_align = idcin->block_align = bytes_per_sample * channels;
         if (bytes_per_sample == 1)
-            st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
         else
-            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
+            st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
 
         if (sample_rate % 14 != 0) {
             idcin->audio_chunk_size1 = (sample_rate / 14) *
@@ -307,15 +307,13 @@ static int idcin_read_packet(AVFormatContext *s,
         }
         /* skip the number of decoded bytes (always equal to width * height) */
         avio_skip(pb, 4);
-        if (chunk_size < 4)
-            return AVERROR_INVALIDDATA;
         chunk_size -= 4;
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret < 0)
             return ret;
         else if (ret != chunk_size) {
             av_log(s, AV_LOG_ERROR, "incomplete packet\n");
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return AVERROR(EIO);
         }
         if (command == 1) {
@@ -324,7 +322,7 @@ static int idcin_read_packet(AVFormatContext *s,
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
             if (!pal) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
             }
             memcpy(pal, palette, AVPALETTE_SIZE);
@@ -359,7 +357,7 @@ static int idcin_read_seek(AVFormatContext *s, int stream_index,
     IdcinDemuxContext *idcin = s->priv_data;
 
     if (idcin->first_pkt_pos > 0) {
-        int ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
+        int64_t ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
         if (ret < 0)
             return ret;
         ff_update_cur_dts(s, s->streams[idcin->video_stream_index], 0);

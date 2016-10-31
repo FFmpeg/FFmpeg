@@ -28,6 +28,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "idctdsp.h"
+#include "thread.h"
 #include "unary.h"
 
 #define AIC_HDR_SIZE    24
@@ -132,7 +133,7 @@ static const uint8_t aic_c_ext_scan[192] = {
     177, 184, 176, 169, 162, 161, 168, 160,
 };
 
-static const uint8_t *aic_scan[NUM_BANDS] = {
+static const uint8_t * const aic_scan[NUM_BANDS] = {
     aic_y_scan, aic_c_scan, aic_y_ext_scan, aic_c_ext_scan
 };
 
@@ -375,6 +376,7 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     uint32_t off;
     int x, y, ret;
     int slice_size;
+    ThreadFrame frame = { .f = data };
 
     ctx->frame            = data;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
@@ -387,10 +389,13 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = aic_decode_header(ctx, buf, buf_size)) < 0)
+    ret = aic_decode_header(ctx, buf, buf_size);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid header\n");
         return ret;
+    }
 
-    if ((ret = ff_get_buffer(avctx, ctx->frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
     bytestream2_init(&gb, buf + AIC_HDR_SIZE,
@@ -400,13 +405,17 @@ static int aic_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         for (x = 0; x < ctx->mb_width; x += ctx->slice_width) {
             slice_size = bytestream2_get_le16(&gb) * 4;
             if (slice_size + off > buf_size || !slice_size) {
-                av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
+                av_log(avctx, AV_LOG_ERROR,
+                       "Incorrect slice size %d at %d.%d\n", slice_size, x, y);
                 return AVERROR_INVALIDDATA;
             }
 
-            if ((ret = aic_decode_slice(ctx, x, y,
-                                        buf + off, slice_size)) < 0)
+            ret = aic_decode_slice(ctx, x, y, buf + off, slice_size);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Error decoding slice at %d.%d\n", x, y);
                 return ret;
+            }
 
             off += slice_size;
         }
@@ -438,17 +447,17 @@ static av_cold int aic_decode_init(AVCodecContext *avctx)
     ctx->mb_width  = FFALIGN(avctx->width,  16) >> 4;
     ctx->mb_height = FFALIGN(avctx->height, 16) >> 4;
 
-    ctx->num_x_slices = 16;
-    ctx->slice_width  = ctx->mb_width / 16;
+    ctx->num_x_slices = (ctx->mb_width + 15) >> 4;
+    ctx->slice_width  = 16;
     for (i = 1; i < 32; i++) {
-        if (!(ctx->mb_width % i) && (ctx->mb_width / i < 32)) {
+        if (!(ctx->mb_width % i) && (ctx->mb_width / i <= 32)) {
             ctx->slice_width  = ctx->mb_width / i;
             ctx->num_x_slices = i;
             break;
         }
     }
 
-    ctx->slice_data = av_malloc(ctx->slice_width * AIC_BAND_COEFFS
+    ctx->slice_data = av_malloc_array(ctx->slice_width, AIC_BAND_COEFFS
                                 * sizeof(*ctx->slice_data));
     if (!ctx->slice_data) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating slice buffer\n");
@@ -481,5 +490,6 @@ AVCodec ff_aic_decoder = {
     .init           = aic_decode_init,
     .close          = aic_decode_close,
     .decode         = aic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(aic_decode_init),
 };

@@ -1,5 +1,13 @@
 #tb 0: 1/12
+#media_type 0: video
+#codec_id 0: vb
+#dimensions 0: 320x240
+#sar 0: 0/1
 #tb 1: 1/22050
+#media_type 1: audio
+#codec_id 1: pcm_u8
+#sample_rate 1: 22050
+#channel_layout 1: 4
 0,          0,          0,        1,    15152, 0x14fc0f1f
 1,          0,          0,    22050,    22050, 0xa7d60d27
 0,          1,          1,        1,    15344, 0x31614bd7

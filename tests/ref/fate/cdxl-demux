@@ -1,5 +1,13 @@
 #tb 0: 1/11025
+#media_type 0: video
+#codec_id 0: cdxl
+#dimensions 0: 176x128
+#sar 0: 0/1
 #tb 1: 1/11025
+#media_type 1: audio
+#codec_id 1: pcm_s8
+#sample_rate 1: 11025
+#channel_layout 1: 4
 0,          0,          0,     1884,    22688, 0xc954a244
 1,          0,          0,     1884,     1884, 0x06925e3e
 0,       1884,       1884,     1884,    22688, 0x3ee4a304

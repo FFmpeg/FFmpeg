@@ -87,8 +87,7 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
-    return 0;
+    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -116,8 +115,6 @@ static int config_props(AVFilterLink *outlink)
                                    av_make_q(1, tile->nb_frames));
     ff_draw_init(&tile->draw, inlink->format, 0);
     ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
-
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }

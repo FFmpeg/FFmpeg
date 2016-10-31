@@ -124,5 +124,5 @@ AVCodec ff_alias_pix_decoder = {
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_ALIAS_PIX,
     .decode       = decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

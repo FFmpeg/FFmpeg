@@ -177,7 +177,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     if (!huff.nums || !huff.bits || !huff.lens) {
         res = AVERROR(ENOMEM);
-        goto fail;
+        goto out;
     }
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
@@ -203,13 +203,14 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
             code->recode = av_malloc_array(code->length, sizeof(int));
             if (!code->recode) {
                 res = AVERROR(ENOMEM);
-                goto fail;
+                goto out;
             }
             for (i = 0; i < code->length; i++)
                 code->recode[i] = huff.nums[i];
         }
     }
-fail:
+
+out:
     /* free allocated memory */
     av_free(huff.nums);
     av_free(huff.bits);
@@ -302,8 +303,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     if (len == 0)
         return 4;
 
-    if (len >= INT_MAX/4-1 || len < 0 || skip > buf_size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "invalid stream size\n");
+    if (len >= INT_MAX / 4 - 1 || len < 0 || skip > buf_size) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Error, invalid stream size.\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -343,31 +344,35 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     /* check if we have sane number of tokens */
     if ((toks < 0) || (toks > 0xFFFFFF)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-        tm2_free_codes(&codes);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     ret = av_reallocp_array(&ctx->tokens[stream_id], toks, sizeof(int));
     if (ret < 0) {
         ctx->tok_lens[stream_id] = 0;
-        return ret;
+        goto end;
     }
     ctx->tok_lens[stream_id] = toks;
     len = bytestream2_get_be32(&gb);
     if (len > 0) {
         pos = bytestream2_tell(&gb);
-        if (skip <= pos)
-            return AVERROR_INVALIDDATA;
+        if (skip <= pos) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
         for (i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS || ctx->tokens[stream_id][i]<0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     } else {
@@ -376,13 +381,17 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     }
-    tm2_free_codes(&codes);
 
-    return skip;
+    ret = skip;
+
+end:
+    tm2_free_codes(&codes);
+    return ret;
 }
 
 static inline int GET_TOK(TM2Context *ctx,int type)
@@ -996,14 +1005,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_free(l->last);
     av_free(l->clast);
     for (i = 0; i < TM2_NUM_STREAMS; i++)
-        av_free(l->tokens[i]);
+        av_freep(&l->tokens[i]);
     if (l->Y1) {
-        av_free(l->Y1_base);
-        av_free(l->U1_base);
-        av_free(l->V1_base);
-        av_free(l->Y2_base);
-        av_free(l->U2_base);
-        av_free(l->V2_base);
+        av_freep(&l->Y1_base);
+        av_freep(&l->U1_base);
+        av_freep(&l->V1_base);
+        av_freep(&l->Y2_base);
+        av_freep(&l->U2_base);
+        av_freep(&l->V2_base);
     }
     av_freep(&l->buffer);
     l->buffer_size = 0;
@@ -1022,5 +1031,5 @@ AVCodec ff_truemotion2_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

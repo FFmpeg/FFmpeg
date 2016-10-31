@@ -26,7 +26,7 @@
 
 #define MAGIC "Packed Animation File V1.0\n(c) 1992-96 Amazing Studio\x0a\x1a"
 
-typedef struct {
+typedef struct PAFDemuxContext {
     uint32_t buffer_size;
     uint32_t frame_blks;
     uint32_t nb_frames;
@@ -104,13 +104,13 @@ static int read_header(AVFormatContext *s)
     p->nb_frames    = avio_rl32(pb);
     avio_skip(pb, 4);
 
-    vst->codec->width  = avio_rl32(pb);
-    vst->codec->height = avio_rl32(pb);
+    vst->codecpar->width  = avio_rl32(pb);
+    vst->codecpar->height = avio_rl32(pb);
     avio_skip(pb, 4);
 
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_tag  = 0;
-    vst->codec->codec_id   = AV_CODEC_ID_PAF_VIDEO;
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_tag  = 0;
+    vst->codecpar->codec_id   = AV_CODEC_ID_PAF_VIDEO;
     avpriv_set_pts_info(vst, 64, 1, 10);
 
     ast = avformat_new_stream(s, 0);
@@ -118,12 +118,12 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     ast->start_time            = 0;
-    ast->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_tag      = 0;
-    ast->codec->codec_id       = AV_CODEC_ID_PAF_AUDIO;
-    ast->codec->channels       = 2;
-    ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-    ast->codec->sample_rate    = 22050;
+    ast->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    ast->codecpar->codec_tag      = 0;
+    ast->codecpar->codec_id       = AV_CODEC_ID_PAF_AUDIO;
+    ast->codecpar->channels       = 2;
+    ast->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    ast->codecpar->sample_rate    = 22050;
     avpriv_set_pts_info(ast, 64, 1, 22050);
 
     p->buffer_size    = avio_rl32(pb);

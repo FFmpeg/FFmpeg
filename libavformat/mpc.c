@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavcodec/get_bits.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "apetag.h"
@@ -31,12 +31,12 @@
 #define DELAY_FRAMES   32
 
 static const int mpc_rate[4] = { 44100, 48000, 37800, 32000 };
-typedef struct {
+typedef struct MPCFrame {
     int64_t pos;
     int size, skip;
 }MPCFrame;
 
-typedef struct {
+typedef struct MPCContext {
     int ver;
     uint32_t curframe, lastframe;
     uint32_t fcount;
@@ -89,16 +89,16 @@ static int mpc_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_MUSEPACK7;
-    st->codec->channels = 2;
-    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-    st->codec->bits_per_coded_sample = 16;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_MUSEPACK7;
+    st->codecpar->channels = 2;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->bits_per_coded_sample = 16;
 
-    if (ff_get_extradata(st->codec, s->pb, 16) < 0)
+    if (ff_get_extradata(s, st->codecpar, s->pb, 16) < 0)
         return AVERROR(ENOMEM);
-    st->codec->sample_rate = mpc_rate[st->codec->extradata[2] & 3];
-    avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codec->sample_rate);
+    st->codecpar->sample_rate = mpc_rate[st->codecpar->extradata[2] & 3];
+    avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codecpar->sample_rate);
     /* scan for seekpoints */
     st->start_time = 0;
     st->duration = c->fcount;
@@ -166,7 +166,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(c->curbits)
         avio_seek(s->pb, -4, SEEK_CUR);
     if(ret < size){
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
     pkt->size = ret + 4;
@@ -217,7 +217,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             c->curframe = lastframe;
             return ret;
         }
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     }
     return 0;
 }

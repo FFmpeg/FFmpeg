@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/imgutils.h"
+
 #include "parser.h" //for ParseContext
 #include "pnm.h"
 
@@ -55,7 +57,7 @@ retry:
             goto retry;
         }
 #if 0
-        if (pc->index && pc->index * 2 + FF_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index) {
+        if (pc->index && pc->index * 2 + AV_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index) {
             memcpy(pc->buffer + pc->index, buf, pc->index);
             pc->index += pc->index;
             buf       += pc->index;
@@ -64,9 +66,11 @@ retry:
         }
 #endif
         next = END_NOT_FOUND;
+    } else if (pnmctx.type < 4) {
+        next = END_NOT_FOUND;
     } else {
         next = pnmctx.bytestream - pnmctx.bytestream_start
-               + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+               + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
         if (pnmctx.bytestream_start != buf)
             next -= pc->index;
         if (next > buf_size)

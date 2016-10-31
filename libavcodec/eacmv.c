@@ -154,7 +154,7 @@ static int cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t *
 
     fps = AV_RL16(&buf[10]);
     if (fps > 0)
-        s->avctx->time_base = (AVRational){ 1, fps };
+        s->avctx->framerate = (AVRational){ fps, 1 };
 
     pal_start = AV_RL16(&buf[12]);
     pal_count = AV_RL16(&buf[14]);
@@ -242,5 +242,5 @@ AVCodec ff_eacmv_decoder = {
     .init           = cmv_decode_init,
     .close          = cmv_decode_end,
     .decode         = cmv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

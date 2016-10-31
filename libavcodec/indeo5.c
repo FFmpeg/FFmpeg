@@ -30,8 +30,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo5data.h"
 
 /**
@@ -688,5 +688,5 @@ AVCodec ff_indeo5_decoder = {
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

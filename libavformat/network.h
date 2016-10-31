@@ -78,7 +78,7 @@ extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 
-void ff_tls_init(void);
+int ff_tls_init(void);
 void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
@@ -110,6 +110,18 @@ struct sockaddr_storage {
     char ss_pad2[112];
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
+
+typedef union sockaddr_union {
+    struct sockaddr_storage storage;
+    struct sockaddr_in in;
+#if HAVE_STRUCT_SOCKADDR_IN6
+    struct sockaddr_in6 in6;
+#endif
+} sockaddr_union;
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {
@@ -241,6 +253,26 @@ int ff_is_multicast_address(struct sockaddr *addr);
 int ff_listen_bind(int fd, const struct sockaddr *addr,
                    socklen_t addrlen, int timeout,
                    URLContext *h);
+
+/**
+ * Bind to a file descriptor to an address without accepting connections.
+ * @param fd      First argument of bind().
+ * @param addr    Second argument of bind().
+ * @param addrlen Third argument of bind().
+ * @return        0 on success or an AVERROR on failure.
+ */
+int ff_listen(int fd, const struct sockaddr *addr, socklen_t addrlen);
+
+/**
+ * Poll for a single connection on the passed file descriptor.
+ * @param fd      The listening socket file descriptor.
+ * @param timeout Polling timeout in milliseconds.
+ * @param h       URLContext providing interrupt check
+ *                callback and logging context.
+ * @return        A non-blocking file descriptor on success
+ *                or an AVERROR on failure.
+ */
+int ff_accept(int fd, int timeout, URLContext *h);
 
 /**
  * Connect to a file descriptor and poll for result.

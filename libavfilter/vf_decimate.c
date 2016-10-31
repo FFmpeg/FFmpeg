@@ -42,7 +42,7 @@ typedef struct {
     AVFrame *last;          ///< last frame from the previous queue
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
-    double ts_unit;         ///< timestamp units for the output frames
+    AVRational ts_unit;     ///< timestamp units for the output frames
     int64_t start_pts;      ///< base for output timestamps
     uint32_t eof;           ///< bitmask for end of stream
     int hsub, vsub;         ///< chroma subsampling values
@@ -71,8 +71,8 @@ static const AVOption decimate_options[] = {
     { "scthresh",  "set scene change threshold", OFFSET(scthresh_flt),  AV_OPT_TYPE_DOUBLE, {.dbl = 15.0}, 0, 100, FLAGS },
     { "blockx",    "set the size of the x-axis blocks used during metric calculations", OFFSET(blockx), AV_OPT_TYPE_INT, {.i64 = 32}, 4, 1<<9, FLAGS },
     { "blocky",    "set the size of the y-axis blocks used during metric calculations", OFFSET(blocky), AV_OPT_TYPE_INT, {.i64 = 32}, 4, 1<<9, FLAGS },
-    { "ppsrc",     "mark main input as a pre-processed input and activate clean source input stream", OFFSET(ppsrc), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "chroma",    "set whether or not chroma is considered in the metric calculations", OFFSET(chroma), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "ppsrc",     "mark main input as a pre-processed input and activate clean source input stream", OFFSET(ppsrc), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "chroma",    "set whether or not chroma is considered in the metric calculations", OFFSET(chroma), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -93,8 +93,8 @@ static void calc_diffs(const DecimateContext *dm, struct qitem *q,
         const int linesize2 = f2->linesize[plane];
         const uint8_t *f1p = f1->data[plane];
         const uint8_t *f2p = f2->data[plane];
-        int width    = plane ? FF_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
-        int height   = plane ? FF_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
+        int width    = plane ? AV_CEIL_RSHIFT(f1->width,  dm->hsub) : f1->width;
+        int height   = plane ? AV_CEIL_RSHIFT(f1->height, dm->vsub) : f1->height;
         int hblockx  = dm->blockx / 2;
         int hblocky  = dm->blocky / 2;
 
@@ -164,12 +164,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return 0;
     dm->got_frame[INPUT_MAIN] = dm->got_frame[INPUT_CLEANSRC] = 0;
 
+    if (dm->ppsrc)
+        in = dm->clean_src[dm->fid];
+
     if (in) {
         /* update frame metrics */
-        prv = dm->fid ? dm->queue[dm->fid - 1].frame : dm->last;
-        if (!prv)
-            prv = in;
-        calc_diffs(dm, &dm->queue[dm->fid], prv, in);
+        prv = dm->fid ? (dm->ppsrc ? dm->clean_src[dm->fid - 1] : dm->queue[dm->fid - 1].frame) : dm->last;
+        if (!prv) {
+            dm->queue[dm->fid].maxbdiff = INT64_MAX;
+            dm->queue[dm->fid].totdiff  = INT64_MAX;
+        } else {
+            calc_diffs(dm, &dm->queue[dm->fid], prv, in);
+        }
         if (++dm->fid != dm->cycle)
             return 0;
         av_frame_free(&dm->last);
@@ -217,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
             }
-            frame->pts = outlink->frame_count * dm->ts_unit +
+            frame->pts = av_rescale_q(outlink->frame_count, dm->ts_unit, (AVRational){1,1}) +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
@@ -239,7 +245,7 @@ static int config_input(AVFilterLink *inlink)
 
     dm->hsub      = pix_desc->log2_chroma_w;
     dm->vsub      = pix_desc->log2_chroma_h;
-    dm->depth     = pix_desc->comp[0].depth_minus1 + 1;
+    dm->depth     = pix_desc->comp[0].depth;
     max_value     = (1 << dm->depth) - 1;
     dm->scthresh  = (int64_t)(((int64_t)max_value *          w * h          * dm->scthresh_flt)  / 100);
     dm->dupthresh = (int64_t)(((int64_t)max_value * dm->blockx * dm->blocky * dm->dupthresh_flt) / 100);
@@ -350,8 +356,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -370,13 +378,12 @@ static int config_output(AVFilterLink *outlink)
     fps = av_mul_q(fps, (AVRational){dm->cycle - 1, dm->cycle});
     av_log(ctx, AV_LOG_VERBOSE, "FPS: %d/%d -> %d/%d\n",
            inlink->frame_rate.num, inlink->frame_rate.den, fps.num, fps.den);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->time_base  = inlink->time_base;
     outlink->frame_rate = fps;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->w = inlink->w;
     outlink->h = inlink->h;
-    dm->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
+    dm->ts_unit = av_inv_q(av_mul_q(fps, outlink->time_base));
     return 0;
 }
 

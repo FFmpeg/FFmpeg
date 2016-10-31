@@ -21,6 +21,7 @@
  */
 
 #include "vaapi_internal.h"
+#include "internal.h"
 #include "vc1.h"
 #include "vc1data.h"
 
@@ -147,10 +148,8 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
 {
     VC1Context * const v = avctx->priv_data;
     MpegEncContext * const s = &v->s;
-    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VAPictureParameterBufferVC1 *pic_param;
-
-    av_dlog(avctx, "vaapi_vc1_start_frame()\n");
 
     vactx->slice_param_size = sizeof(VASliceParameterBufferVC1);
 
@@ -314,9 +313,8 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
 {
     VC1Context * const v = avctx->priv_data;
     MpegEncContext * const s = &v->s;
+    FFVAContext * const vactx = ff_vaapi_get_context(avctx);
     VASliceParameterBufferVC1 *slice_param;
-
-    av_dlog(avctx, "vaapi_vc1_decode_slice(): buffer %p, size %d\n", buffer, size);
 
     /* Current bit buffer is beyond any marker for VC-1, so skip it */
     if (avctx->codec_id == AV_CODEC_ID_VC1 && IS_MARKER(AV_RB32(buffer))) {
@@ -325,7 +323,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
     }
 
     /* Fill in VASliceParameterBufferVC1 */
-    slice_param = (VASliceParameterBufferVC1 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
+    slice_param = (VASliceParameterBufferVC1 *)ff_vaapi_alloc_slice(vactx, buffer, size);
     if (!slice_param)
         return -1;
     slice_param->macroblock_offset       = get_bits_count(&s->gb);
@@ -338,10 +336,13 @@ AVHWAccel ff_wmv3_vaapi_hwaccel = {
     .name           = "wmv3_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
-    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
+    .pix_fmt        = AV_PIX_FMT_VAAPI,
     .start_frame    = vaapi_vc1_start_frame,
     .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_vc1_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };
 #endif
 
@@ -349,8 +350,11 @@ AVHWAccel ff_vc1_vaapi_hwaccel = {
     .name           = "vc1_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
-    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
+    .pix_fmt        = AV_PIX_FMT_VAAPI,
     .start_frame    = vaapi_vc1_start_frame,
     .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_vc1_decode_slice,
+    .init           = ff_vaapi_context_init,
+    .uninit         = ff_vaapi_context_fini,
+    .priv_data_size = sizeof(FFVAContext),
 };

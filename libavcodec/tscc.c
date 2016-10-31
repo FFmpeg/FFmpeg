@@ -32,7 +32,6 @@
  *  then this coded picture is packed with ZLib
  *
  * Supports: BGR8,BGR555,BGR24 - only BGR8 and BGR555 tested
- *
  */
 
 #include <stdio.h>
@@ -94,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
                          c->decomp_size - c->zstream.avail_out);
-        ff_msrle_decode(avctx, (AVPicture*)frame, c->bpp, &c->gb);
+        ff_msrle_decode(avctx, frame, c->bpp, &c->gb);
     }
 
     /* make the palette available on the way out */
@@ -133,7 +132,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case 24:
              avctx->pix_fmt = AV_PIX_FMT_BGR24;
              break;
-    case 32: avctx->pix_fmt = AV_PIX_FMT_RGB32; break;
+    case 32: avctx->pix_fmt = AV_PIX_FMT_0RGB32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_coded_sample);
              return AVERROR_PATCHWELCOME;
     }
@@ -143,7 +142,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
-        if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
+        if (!(c->decomp_buf = av_malloc(c->decomp_size))) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);
         }
@@ -184,5 +183,5 @@ AVCodec ff_tscc_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

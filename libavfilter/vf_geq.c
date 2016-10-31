@@ -26,6 +26,7 @@
  * ported by Clément Bœsch for FFmpeg.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
@@ -74,8 +75,8 @@ static inline double getpix(void *priv, double x, double y, int plane)
     AVFrame *picref = geq->picref;
     const uint8_t *src = picref->data[plane];
     const int linesize = picref->linesize[plane];
-    const int w = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
-    const int h = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
+    const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
+    const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
 
     if (!src)
         return 0;
@@ -165,28 +166,34 @@ end:
 static int geq_query_formats(AVFilterContext *ctx)
 {
     GEQContext *geq = ctx->priv;
-    static const enum PixelFormat yuv_pix_fmts[] = {
+    static const enum AVPixelFormat yuv_pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    static const enum PixelFormat rgb_pix_fmts[] = {
+    static const enum AVPixelFormat rgb_pix_fmts[] = {
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
+    AVFilterFormats *fmts_list;
+
     if (geq->is_rgb) {
-        ff_set_common_formats(ctx, ff_make_format_list(rgb_pix_fmts));
+        fmts_list = ff_make_format_list(rgb_pix_fmts);
     } else
-        ff_set_common_formats(ctx, ff_make_format_list(yuv_pix_fmts));
-    return 0;
+        fmts_list = ff_make_format_list(yuv_pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int geq_config_props(AVFilterLink *inlink)
 {
     GEQContext *geq = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    av_assert0(desc);
 
     geq->hsub = desc->log2_chroma_w;
     geq->vsub = desc->log2_chroma_h;
@@ -217,8 +224,8 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
         int x, y;
         uint8_t *dst = out->data[plane];
         const int linesize = out->linesize[plane];
-        const int w = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
-        const int h = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
+        const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
+        const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
 
         values[VAR_W]  = w;
         values[VAR_H]  = h;

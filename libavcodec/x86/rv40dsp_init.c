@@ -82,7 +82,7 @@ static void OP ## rv40_qpel ##SIZE ##_mc ##PH ##PV ##OPT(uint8_t *dst,  \
 {                                                                       \
     int i;                                                              \
     if (PH && PV) {                                                     \
-        DECLARE_ALIGNED(16, uint8_t, tmp)[SIZE * (SIZE + 5)];           \
+        LOCAL_ALIGNED(16, uint8_t, tmp, [SIZE * (SIZE + 5)]);           \
         uint8_t *tmpptr = tmp + SIZE * 2;                               \
         src -= stride * 2;                                              \
                                                                         \
@@ -101,7 +101,7 @@ static void OP ## rv40_qpel ##SIZE ##_mc ##PH ##PV ##OPT(uint8_t *dst,  \
             ff_ ##OP ##rv40_qpel_h ## OPT(dst + i, stride, src + i,     \
                                           stride, SIZE, HCOFF(PH));     \
     }                                                                   \
-};
+}
 
 /** Declare functions for sizes 8 and 16 and given operations
  *  and qpel position. */
@@ -214,7 +214,7 @@ DEFINE_FN(avg, 16, mmx)
 
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
-    int cpu_flags = av_get_cpu_flags();
+    av_unused int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMX_INLINE
     if (INLINE_MMX(cpu_flags)) {

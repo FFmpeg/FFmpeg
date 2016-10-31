@@ -48,8 +48,8 @@ static int ast_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     avio_skip(s->pb, 8);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = ff_codec_get_id(ff_codec_ast_tags, avio_rb16(s->pb));
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = ff_codec_get_id(ff_codec_ast_tags, avio_rb16(s->pb));
 
     depth = avio_rb16(s->pb);
     if (depth != 16) {
@@ -57,23 +57,23 @@ static int ast_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->channels = avio_rb16(s->pb);
-    if (!st->codec->channels)
+    st->codecpar->channels = avio_rb16(s->pb);
+    if (!st->codecpar->channels)
         return AVERROR_INVALIDDATA;
 
-    if (st->codec->channels == 2)
-        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-    else if (st->codec->channels == 4)
-        st->codec->channel_layout = AV_CH_LAYOUT_4POINT0;
+    if (st->codecpar->channels == 2)
+        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    else if (st->codecpar->channels == 4)
+        st->codecpar->channel_layout = AV_CH_LAYOUT_4POINT0;
 
     avio_skip(s->pb, 2);
-    st->codec->sample_rate = avio_rb32(s->pb);
-    if (st->codec->sample_rate <= 0)
+    st->codecpar->sample_rate = avio_rb32(s->pb);
+    if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
     st->start_time         = 0;
     st->duration           = avio_rb32(s->pb);
     avio_skip(s->pb, 40);
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
@@ -90,10 +90,10 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     pos  = avio_tell(s->pb);
     type = avio_rl32(s->pb);
     size = avio_rb32(s->pb);
-    if (size > INT_MAX / s->streams[0]->codec->channels)
+    if (!s->streams[0]->codecpar->channels || size > INT_MAX / s->streams[0]->codecpar->channels)
         return AVERROR_INVALIDDATA;
 
-    size *= s->streams[0]->codec->channels;
+    size *= s->streams[0]->codecpar->channels;
     if ((ret = avio_skip(s->pb, 24)) < 0) // padding
         return ret;
 

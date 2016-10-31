@@ -24,6 +24,17 @@
 #include <stdint.h>
 
 /**
+ * Count up to 127 consecutive pixels which are either all the same or
+ * all differ from the previous and next pixels.
+ * @param start Pointer to the first pixel
+ * @param len Maximum number of pixels
+ * @param bpp Bytes per pixel
+ * @param same 1 if searching for identical pixel values, 0 for differing
+ * @return Number of matching consecutive pixels found
+ */
+int ff_rle_count_pixels(const uint8_t *start, int len, int bpp, int same);
+
+/**
  * RLE compress the row, with maximum size of out_size. Value before repeated bytes is (count ^ xor_rep) + add_rep.
  *                                                      Value before raw bytes is      (count ^ xor_raw) + add_raw.
  * @param outbuf Output buffer

@@ -24,8 +24,9 @@
  * Intel Indeo 2 decoder.
  */
 
-#define BITSTREAM_READER_LE
 #include "libavutil/attributes.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
 #include "indeo2data.h"
@@ -54,15 +55,13 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     int i;
     int j;
     int out = 0;
-    int c;
-    int t;
 
     if (width & 1)
         return AVERROR_INVALIDDATA;
 
     /* first line contain absolute values, other lines contain deltas */
     while (out < width) {
-        c = ir2_get_code(&ctx->gb);
+        int c = ir2_get_code(&ctx->gb);
         if (c >= 0x80) { /* we have a run */
             c -= 0x7F;
             if (out + c*2 > width)
@@ -79,7 +78,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     for (j = 1; j < height; j++) {
         out = 0;
         while (out < width) {
-            c = ir2_get_code(&ctx->gb);
+            int c = ir2_get_code(&ctx->gb);
             if (c >= 0x80) { /* we have a skip */
                 c -= 0x7F;
                 if (out + c*2 > width)
@@ -89,7 +88,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
                     out++;
                 }
             } else { /* add two deltas from table */
-                t        = dst[out - pitch] + (table[c * 2] - 128);
+                int t    = dst[out - pitch] + (table[c * 2] - 128);
                 t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
@@ -148,6 +147,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame *picture     = data;
     AVFrame * const p    = s->picture;
     int start, ret;
+    int ltab, ctab;
 
     if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
@@ -167,36 +167,45 @@ static int ir2_decode_frame(AVCodecContext *avctx,
         buf[i] = ff_reverse[buf[i]];
 #endif
 
-    init_get_bits(&s->gb, buf + start, (buf_size - start) * 8);
+    if ((ret = init_get_bits8(&s->gb, buf + start, buf_size - start)) < 0)
+        return ret;
+
+    ltab = buf[0x22] & 3;
+    ctab = buf[0x22] >> 2;
+
+    if (ctab > 3) {
+        av_log(avctx, AV_LOG_ERROR, "ctab %d is invalid\n", ctab);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (s->decode_delta) { /* intraframe */
         if ((ret = ir2_decode_plane(s, avctx->width, avctx->height,
                                     p->data[0], p->linesize[0],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ltab])) < 0)
             return ret;
 
         /* swapped U and V */
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
                                     p->data[2], p->linesize[2],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ctab])) < 0)
             return ret;
         if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
                                     p->data[1], p->linesize[1],
-                                    ir2_luma_table)) < 0)
+                                    ir2_delta_table[ctab])) < 0)
             return ret;
     } else { /* interframe */
         if ((ret = ir2_decode_plane_inter(s, avctx->width, avctx->height,
                                           p->data[0], p->linesize[0],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ltab])) < 0)
             return ret;
         /* swapped U and V */
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
                                           p->data[2], p->linesize[2],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ctab])) < 0)
             return ret;
         if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
                                           p->data[1], p->linesize[1],
-                                          ir2_luma_table)) < 0)
+                                          ir2_delta_table[ctab])) < 0)
             return ret;
     }
 
@@ -254,5 +263,5 @@ AVCodec ff_indeo2_decoder = {
     .init           = ir2_decode_init,
     .close          = ir2_decode_end,
     .decode         = ir2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

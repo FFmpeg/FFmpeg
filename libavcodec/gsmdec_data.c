@@ -26,6 +26,13 @@ const uint16_t ff_gsm_long_term_gain_tab[4] = {
     3277, 11469, 21299, 32767
 };
 
+const uint8_t ff_gsm_requant_tab[4][8] = {
+    { 0 },
+    { 0, 7 },
+    { 0, 2, 5, 7 },
+    { 0, 1, 2, 3, 4, 5, 6, 7 }
+};
+
 const int16_t ff_gsm_dequant_tab[64][8] = {
     {   -28,    -20,    -12,     -4,      4,     12,     20,     28},
     {   -56,    -40,    -24,     -8,      8,     24,     40,     56},

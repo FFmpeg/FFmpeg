@@ -29,9 +29,6 @@
 
 #define RTMP_HANDSHAKE_PACKET_SIZE 1536
 
-#define HMAC_IPAD_VAL 0x36
-#define HMAC_OPAD_VAL 0x5C
-
 /**
  * emulated Flash client version - 9.0.124.2 on Linux
  * @{

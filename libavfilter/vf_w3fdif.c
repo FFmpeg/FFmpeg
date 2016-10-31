@@ -29,6 +29,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "w3fdif.h"
 
 typedef struct W3FDIFContext {
     const AVClass *class;
@@ -40,7 +41,10 @@ typedef struct W3FDIFContext {
     int eof;
     int nb_planes;
     AVFrame *prev, *cur, *next;  ///< previous, current, next frames
-    int32_t *work_line;   ///< line we are calculating
+    int32_t **work_line;  ///< lines we are calculating
+    int nb_threads;
+
+    W3FDIFDSPContext dsp;
 } W3FDIFContext;
 
 #define OFFSET(x) offsetof(W3FDIFContext, x)
@@ -74,27 +78,117 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
 
-    return 0;
+static void filter_simple_low(int32_t *work_line,
+                              uint8_t *in_lines_cur[2],
+                              const int16_t *coef, int linesize)
+{
+    int i;
+
+    for (i = 0; i < linesize; i++) {
+        *work_line    = *in_lines_cur[0]++ * coef[0];
+        *work_line++ += *in_lines_cur[1]++ * coef[1];
+    }
+}
+
+static void filter_complex_low(int32_t *work_line,
+                               uint8_t *in_lines_cur[4],
+                               const int16_t *coef, int linesize)
+{
+    int i;
+
+    for (i = 0; i < linesize; i++) {
+        *work_line    = *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line++ += *in_lines_cur[3]++ * coef[3];
+    }
+}
+
+static void filter_simple_high(int32_t *work_line,
+                               uint8_t *in_lines_cur[3],
+                               uint8_t *in_lines_adj[3],
+                               const int16_t *coef, int linesize)
+{
+    int i;
+
+    for (i = 0; i < linesize; i++) {
+        *work_line   += *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_adj[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_adj[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line++ += *in_lines_adj[2]++ * coef[2];
+    }
+}
+
+static void filter_complex_high(int32_t *work_line,
+                                uint8_t *in_lines_cur[5],
+                                uint8_t *in_lines_adj[5],
+                                const int16_t *coef, int linesize)
+{
+    int i;
+
+    for (i = 0; i < linesize; i++) {
+        *work_line   += *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_adj[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_adj[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line   += *in_lines_adj[2]++ * coef[2];
+        *work_line   += *in_lines_cur[3]++ * coef[3];
+        *work_line   += *in_lines_adj[3]++ * coef[3];
+        *work_line   += *in_lines_cur[4]++ * coef[4];
+        *work_line++ += *in_lines_adj[4]++ * coef[4];
+    }
+}
+
+static void filter_scale(uint8_t *out_pixel, const int32_t *work_pixel, int linesize)
+{
+    int j;
+
+    for (j = 0; j < linesize; j++, out_pixel++, work_pixel++)
+        *out_pixel = av_clip(*work_pixel, 0, 255 * 256 * 128) >> 15;
 }
 
 static int config_input(AVFilterLink *inlink)
 {
-    W3FDIFContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    W3FDIFContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int ret;
+    int ret, i;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->work_line = av_calloc(s->linesize[0], sizeof(*s->work_line));
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
+    s->work_line = av_calloc(s->nb_threads, sizeof(*s->work_line));
     if (!s->work_line)
         return AVERROR(ENOMEM);
+
+    for (i = 0; i < s->nb_threads; i++) {
+        s->work_line[i] = av_calloc(FFALIGN(s->linesize[0], 32), sizeof(*s->work_line[0]));
+        if (!s->work_line[i])
+            return AVERROR(ENOMEM);
+    }
+
+    s->dsp.filter_simple_low   = filter_simple_low;
+    s->dsp.filter_complex_low  = filter_complex_low;
+    s->dsp.filter_simple_high  = filter_simple_high;
+    s->dsp.filter_complex_high = filter_complex_high;
+    s->dsp.filter_scale        = filter_scale;
+
+    if (ARCH_X86)
+        ff_w3fdif_init_x86(&s->dsp);
 
     return 0;
 }
@@ -107,13 +201,12 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base.den = inlink->time_base.den * 2;
     outlink->frame_rate.num = inlink->frame_rate.num * 2;
     outlink->frame_rate.den = inlink->frame_rate.den;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }
 
 /*
- * Filter coefficients from PH-2071, scaled by 256 * 256.
+ * Filter coefficients from PH-2071, scaled by 256 * 128.
  * Each set of coefficients has a set for low-frequencies and high-frequencies.
  * n_coef_lf[] and n_coef_hf[] are the number of coefs for simple and more-complex.
  * It is important for later that n_coef_lf[] is even and n_coef_hf[] is odd.
@@ -121,17 +214,26 @@ static int config_output(AVFilterLink *outlink)
  * and high-frequencies for simple and more-complex mode.
  */
 static const int8_t   n_coef_lf[2] = { 2, 4 };
-static const int32_t coef_lf[2][4] = {{ 32768, 32768,     0,     0},
-                                      { -1704, 34472, 34472, -1704}};
+static const int16_t coef_lf[2][4] = {{ 16384, 16384,     0,    0},
+                                      {  -852, 17236, 17236, -852}};
 static const int8_t   n_coef_hf[2] = { 3, 5 };
-static const int32_t coef_hf[2][5] = {{ -4096,  8192, -4096,     0,     0},
-                                      {  2032, -7602, 11140, -7602,  2032}};
+static const int16_t coef_hf[2][5] = {{ -2048,  4096, -2048,     0,    0},
+                                      {  1016, -3801,  5570, -3801, 1016}};
 
-static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
-                              const AVFrame *cur, const AVFrame *adj,
-                              const int filter, const int plane)
+typedef struct ThreadData {
+    AVFrame *out, *cur, *adj;
+    int plane;
+} ThreadData;
+
+static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     W3FDIFContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *cur = td->cur;
+    AVFrame *adj = td->adj;
+    const int plane = td->plane;
+    const int filter = s->filter;
     uint8_t *in_line, *in_lines_cur[5], *in_lines_adj[5];
     uint8_t *out_line, *out_pixel;
     int32_t *work_line, *work_pixel;
@@ -143,15 +245,17 @@ static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
     const int cur_line_stride = cur->linesize[plane];
     const int adj_line_stride = adj->linesize[plane];
     const int dst_line_stride = out->linesize[plane];
-    int i, j, y_in, y_out;
+    const int start = (height * jobnr) / nb_jobs;
+    const int end = (height * (jobnr+1)) / nb_jobs;
+    int j, y_in, y_out;
 
     /* copy unchanged the lines of the field */
-    y_out = s->field == cur->top_field_first;
+    y_out = start + (s->field == cur->top_field_first) - (start & 1);
 
     in_line  = cur_data + (y_out * cur_line_stride);
     out_line = dst_data + (y_out * dst_line_stride);
 
-    while (y_out < height) {
+    while (y_out < end) {
         memcpy(out_line, in_line, linesize);
         y_out += 2;
         in_line  += cur_line_stride * 2;
@@ -159,14 +263,11 @@ static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
     }
 
     /* interpolate other lines of the field */
-    y_out = s->field != cur->top_field_first;
+    y_out = start + (s->field != cur->top_field_first) - (start & 1);
 
     out_line = dst_data + (y_out * dst_line_stride);
 
-    while (y_out < height) {
-        /* clear workspace */
-        memset(s->work_line, 0, sizeof(*s->work_line) * linesize);
-
+    while (y_out < end) {
         /* get low vertical frequencies from current field */
         for (j = 0; j < n_coef_lf[filter]; j++) {
             y_in = (y_out + 1) + (j * 2) - n_coef_lf[filter];
@@ -179,21 +280,15 @@ static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
             in_lines_cur[j] = cur_data + (y_in * cur_line_stride);
         }
 
-        work_line = s->work_line;
+        work_line = s->work_line[jobnr];
         switch (n_coef_lf[filter]) {
         case 2:
-            for (i = 0; i < linesize; i++) {
-                *work_line   += *in_lines_cur[0]++ * coef_lf[filter][0];
-                *work_line++ += *in_lines_cur[1]++ * coef_lf[filter][1];
-            }
+            s->dsp.filter_simple_low(work_line, in_lines_cur,
+                                     coef_lf[filter], linesize);
             break;
         case 4:
-            for (i = 0; i < linesize; i++) {
-                *work_line   += *in_lines_cur[0]++ * coef_lf[filter][0];
-                *work_line   += *in_lines_cur[1]++ * coef_lf[filter][1];
-                *work_line   += *in_lines_cur[2]++ * coef_lf[filter][2];
-                *work_line++ += *in_lines_cur[3]++ * coef_lf[filter][3];
-            }
+            s->dsp.filter_complex_low(work_line, in_lines_cur,
+                                      coef_lf[filter], linesize);
         }
 
         /* get high vertical frequencies from adjacent fields */
@@ -209,44 +304,29 @@ static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
             in_lines_adj[j] = adj_data + (y_in * adj_line_stride);
         }
 
-        work_line = s->work_line;
+        work_line = s->work_line[jobnr];
         switch (n_coef_hf[filter]) {
         case 3:
-            for (i = 0; i < linesize; i++) {
-                *work_line   += *in_lines_cur[0]++ * coef_hf[filter][0];
-                *work_line   += *in_lines_adj[0]++ * coef_hf[filter][0];
-                *work_line   += *in_lines_cur[1]++ * coef_hf[filter][1];
-                *work_line   += *in_lines_adj[1]++ * coef_hf[filter][1];
-                *work_line   += *in_lines_cur[2]++ * coef_hf[filter][2];
-                *work_line++ += *in_lines_adj[2]++ * coef_hf[filter][2];
-            }
+            s->dsp.filter_simple_high(work_line, in_lines_cur, in_lines_adj,
+                                      coef_hf[filter], linesize);
             break;
         case 5:
-            for (i = 0; i < linesize; i++) {
-                *work_line   += *in_lines_cur[0]++ * coef_hf[filter][0];
-                *work_line   += *in_lines_adj[0]++ * coef_hf[filter][0];
-                *work_line   += *in_lines_cur[1]++ * coef_hf[filter][1];
-                *work_line   += *in_lines_adj[1]++ * coef_hf[filter][1];
-                *work_line   += *in_lines_cur[2]++ * coef_hf[filter][2];
-                *work_line   += *in_lines_adj[2]++ * coef_hf[filter][2];
-                *work_line   += *in_lines_cur[3]++ * coef_hf[filter][3];
-                *work_line   += *in_lines_adj[3]++ * coef_hf[filter][3];
-                *work_line   += *in_lines_cur[4]++ * coef_hf[filter][4];
-                *work_line++ += *in_lines_adj[4]++ * coef_hf[filter][4];
-            }
+            s->dsp.filter_complex_high(work_line, in_lines_cur, in_lines_adj,
+                                       coef_hf[filter], linesize);
         }
 
-        /* save scaled result to the output frame, scaling down by 256 * 256 */
-        work_pixel = s->work_line;
+        /* save scaled result to the output frame, scaling down by 256 * 128 */
+        work_pixel = s->work_line[jobnr];
         out_pixel = out_line;
 
-        for (j = 0; j < linesize; j++, out_pixel++, work_pixel++)
-             *out_pixel = av_clip(*work_pixel, 0, 255 * 256 * 256) >> 16;
+        s->dsp.filter_scale(out_pixel, work_pixel, linesize);
 
         /* move on to next line */
         y_out += 2;
         out_line += dst_line_stride * 2;
     }
+
+    return 0;
 }
 
 static int filter(AVFilterContext *ctx, int is_second)
@@ -254,6 +334,7 @@ static int filter(AVFilterContext *ctx, int is_second)
     W3FDIFContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *adj;
+    ThreadData td;
     int plane;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -277,8 +358,11 @@ static int filter(AVFilterContext *ctx, int is_second)
     }
 
     adj = s->field ? s->next : s->prev;
-    for (plane = 0; plane < s->nb_planes; plane++)
-        deinterlace_plane(ctx, out, s->cur, adj, s->filter, plane);
+    td.out = out; td.cur = s->cur; td.adj = adj;
+    for (plane = 0; plane < s->nb_planes; plane++) {
+        td.plane = plane;
+        ctx->internal->execute(ctx, deinterlace_slice, &td, NULL, FFMIN(s->planeheight[plane], s->nb_threads));
+    }
 
     s->field = !s->field;
 
@@ -327,26 +411,23 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     W3FDIFContext *s = ctx->priv;
+    int ret;
 
-    do {
-        int ret;
+    if (s->eof)
+        return AVERROR_EOF;
 
-        if (s->eof)
-            return AVERROR_EOF;
+    ret = ff_request_frame(ctx->inputs[0]);
 
-        ret = ff_request_frame(ctx->inputs[0]);
-
-        if (ret == AVERROR_EOF && s->cur) {
-            AVFrame *next = av_frame_clone(s->next);
-            if (!next)
-                return AVERROR(ENOMEM);
-            next->pts = s->next->pts * 2 - s->cur->pts;
-            filter_frame(ctx->inputs[0], next);
-            s->eof = 1;
-        } else if (ret < 0) {
-            return ret;
-        }
-    } while (!s->cur);
+    if (ret == AVERROR_EOF && s->cur) {
+        AVFrame *next = av_frame_clone(s->next);
+        if (!next)
+            return AVERROR(ENOMEM);
+        next->pts = s->next->pts * 2 - s->cur->pts;
+        filter_frame(ctx->inputs[0], next);
+        s->eof = 1;
+    } else if (ret < 0) {
+        return ret;
+    }
 
     return 0;
 }
@@ -354,10 +435,15 @@ static int request_frame(AVFilterLink *outlink)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     W3FDIFContext *s = ctx->priv;
+    int i;
 
     av_frame_free(&s->prev);
     av_frame_free(&s->cur );
     av_frame_free(&s->next);
+
+    for (i = 0; i < s->nb_threads; i++)
+        av_freep(&s->work_line[i]);
+
     av_freep(&s->work_line);
 }
 
@@ -390,5 +476,5 @@ AVFilter ff_vf_w3fdif = {
     .query_formats = query_formats,
     .inputs        = w3fdif_inputs,
     .outputs       = w3fdif_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

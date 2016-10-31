@@ -87,11 +87,12 @@ end:
     return ret;
 }
 
-static int compute_mask_matrix(cl_mem cl_mask_matrix, int step_x, int step_y)
+static int copy_separable_masks(cl_mem cl_mask_x, cl_mem cl_mask_y, int step_x, int step_y)
 {
-    int i, j, ret = 0;
-    uint32_t *mask_matrix, *mask_x, *mask_y;
-    size_t size_matrix = sizeof(uint32_t) * (2 * step_x + 1) * (2 * step_y + 1);
+    int ret = 0;
+    uint32_t *mask_x, *mask_y;
+    size_t size_mask_x = sizeof(uint32_t) * (2 * step_x + 1);
+    size_t size_mask_y = sizeof(uint32_t) * (2 * step_y + 1);
     mask_x = av_mallocz_array(2 * step_x + 1, sizeof(uint32_t));
     if (!mask_x) {
         ret = AVERROR(ENOMEM);
@@ -102,37 +103,36 @@ static int compute_mask_matrix(cl_mem cl_mask_matrix, int step_x, int step_y)
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    mask_matrix = av_mallocz(size_matrix);
-    if (!mask_matrix) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
+
     ret = compute_mask(step_x, mask_x);
     if (ret < 0)
         goto end;
     ret = compute_mask(step_y, mask_y);
     if (ret < 0)
         goto end;
-    for (j = 0; j < 2 * step_y + 1; j++) {
-        for (i = 0; i < 2 * step_x + 1; i++) {
-            mask_matrix[i + j * (2 * step_x + 1)] = mask_y[j] * mask_x[i];
-        }
-    }
-    ret = av_opencl_buffer_write(cl_mask_matrix, (uint8_t *)mask_matrix, size_matrix);
+
+    ret = av_opencl_buffer_write(cl_mask_x, (uint8_t *)mask_x, size_mask_x);
+    ret = av_opencl_buffer_write(cl_mask_y, (uint8_t *)mask_y, size_mask_y);
 end:
     av_freep(&mask_x);
     av_freep(&mask_y);
-    av_freep(&mask_matrix);
+
     return ret;
 }
 
 static int generate_mask(AVFilterContext *ctx)
 {
-    UnsharpContext *unsharp = ctx->priv;
-    int i, ret = 0, step_x[2], step_y[2];
+    cl_mem masks[4];
     cl_mem mask_matrix[2];
+    int i, ret = 0, step_x[2], step_y[2];
+
+    UnsharpContext *unsharp = ctx->priv;
     mask_matrix[0] = unsharp->opencl_ctx.cl_luma_mask;
     mask_matrix[1] = unsharp->opencl_ctx.cl_chroma_mask;
+    masks[0] = unsharp->opencl_ctx.cl_luma_mask_x;
+    masks[1] = unsharp->opencl_ctx.cl_luma_mask_y;
+    masks[2] = unsharp->opencl_ctx.cl_chroma_mask_x;
+    masks[3] = unsharp->opencl_ctx.cl_chroma_mask_y;
     step_x[0] = unsharp->luma.steps_x;
     step_x[1] = unsharp->chroma.steps_x;
     step_y[0] = unsharp->luma.steps_y;
@@ -144,12 +144,16 @@ static int generate_mask(AVFilterContext *ctx)
     else
         unsharp->opencl_ctx.use_fast_kernels = 1;
 
+    if (!masks[0] || !masks[1] || !masks[2] || !masks[3]) {
+        av_log(ctx, AV_LOG_ERROR, "Luma mask and chroma mask should not be NULL\n");
+        return AVERROR(EINVAL);
+    }
     if (!mask_matrix[0] || !mask_matrix[1]) {
         av_log(ctx, AV_LOG_ERROR, "Luma mask and chroma mask should not be NULL\n");
         return AVERROR(EINVAL);
     }
     for (i = 0; i < 2; i++) {
-        ret = compute_mask_matrix(mask_matrix[i], step_x[i], step_y[i]);
+        ret = copy_separable_masks(masks[2*i], masks[2*i+1], step_x[i], step_y[i]);
         if (ret < 0)
             return ret;
     }
@@ -166,8 +170,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     FFOpenclParam kernel2 = {0};
     int width = link->w;
     int height = link->h;
-    int cw = FF_CEIL_RSHIFT(link->w, unsharp->hsub);
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int cw = AV_CEIL_RSHIFT(link->w, unsharp->hsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
     size_t globalWorkSize1d = width * height + 2 * ch * cw;
     size_t globalWorkSize2dLuma[2];
     size_t globalWorkSize2dChroma[2];
@@ -184,7 +188,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         ret = avpriv_opencl_set_parameter(&kernel1,
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
-                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask_x),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask_y),
                                       FF_OPENCL_PARAM_INFO(unsharp->luma.amount),
                                       FF_OPENCL_PARAM_INFO(unsharp->luma.scalebits),
                                       FF_OPENCL_PARAM_INFO(unsharp->luma.halfscale),
@@ -201,7 +206,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         ret = avpriv_opencl_set_parameter(&kernel2,
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                       FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
-                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask_x),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask_y),
                                       FF_OPENCL_PARAM_INFO(unsharp->chroma.amount),
                                       FF_OPENCL_PARAM_INFO(unsharp->chroma.scalebits),
                                       FF_OPENCL_PARAM_INFO(unsharp->chroma.halfscale),
@@ -264,7 +270,9 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
             return AVERROR_EXTERNAL;
         }
     }
-    clFinish(unsharp->opencl_ctx.command_queue);
+    //blocking map is suffficient, no need for clFinish
+    //clFinish(unsharp->opencl_ctx.command_queue);
+
     return av_opencl_buffer_read_image(out->data, unsharp->opencl_ctx.out_plane_size,
                                        unsharp->opencl_ctx.plane_num, unsharp->opencl_ctx.cl_outbuf,
                                        unsharp->opencl_ctx.cl_outbuf_size);
@@ -285,6 +293,27 @@ int ff_opencl_unsharp_init(AVFilterContext *ctx)
         return ret;
     ret = av_opencl_buffer_create(&unsharp->opencl_ctx.cl_chroma_mask,
                                   sizeof(uint32_t) * (2 * unsharp->chroma.steps_x + 1) * (2 * unsharp->chroma.steps_y + 1),
+                                  CL_MEM_READ_ONLY, NULL);
+    // separable filters
+    if (ret < 0)
+        return ret;
+    ret = av_opencl_buffer_create(&unsharp->opencl_ctx.cl_luma_mask_x,
+                                  sizeof(uint32_t) * (2 * unsharp->luma.steps_x + 1),
+                                  CL_MEM_READ_ONLY, NULL);
+    if (ret < 0)
+        return ret;
+    ret = av_opencl_buffer_create(&unsharp->opencl_ctx.cl_luma_mask_y,
+                                  sizeof(uint32_t) * (2 * unsharp->luma.steps_y + 1),
+                                  CL_MEM_READ_ONLY, NULL);
+    if (ret < 0)
+        return ret;
+    ret = av_opencl_buffer_create(&unsharp->opencl_ctx.cl_chroma_mask_x,
+                                  sizeof(uint32_t) * (2 * unsharp->chroma.steps_x + 1),
+                                  CL_MEM_READ_ONLY, NULL);
+    if (ret < 0)
+        return ret;
+    ret = av_opencl_buffer_create(&unsharp->opencl_ctx.cl_chroma_mask_y,
+                                  sizeof(uint32_t) * (2 * unsharp->chroma.steps_y + 1),
                                   CL_MEM_READ_ONLY, NULL);
     if (ret < 0)
         return ret;
@@ -339,6 +368,10 @@ void ff_opencl_unsharp_uninit(AVFilterContext *ctx)
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_outbuf);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_luma_mask);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_chroma_mask);
+    av_opencl_buffer_release(&unsharp->opencl_ctx.cl_luma_mask_x);
+    av_opencl_buffer_release(&unsharp->opencl_ctx.cl_chroma_mask_x);
+    av_opencl_buffer_release(&unsharp->opencl_ctx.cl_luma_mask_y);
+    av_opencl_buffer_release(&unsharp->opencl_ctx.cl_chroma_mask_y);
     clReleaseKernel(unsharp->opencl_ctx.kernel_default);
     clReleaseKernel(unsharp->opencl_ctx.kernel_luma);
     clReleaseKernel(unsharp->opencl_ctx.kernel_chroma);
@@ -352,7 +385,7 @@ int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
     int ret = 0;
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
 
     if ((!unsharp->opencl_ctx.cl_inbuf) || (!unsharp->opencl_ctx.cl_outbuf)) {
         unsharp->opencl_ctx.in_plane_size[0]  = (in->linesize[0] * in->height);

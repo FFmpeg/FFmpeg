@@ -651,7 +651,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     if (s->alpha_context) {
         ff_vp56_free_context(s->alpha_context);
         vp6_decode_free_context(s->alpha_context);
-        av_free(s->alpha_context);
+        av_freep(&s->alpha_context);
     }
 
     return 0;
@@ -679,7 +679,7 @@ AVCodec ff_vp6_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 /* flash version, not flipped upside-down */
@@ -692,7 +692,7 @@ AVCodec ff_vp6f_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 /* flash version, not flipped upside-down, with alpha channel */
@@ -705,5 +705,5 @@ AVCodec ff_vp6a_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
 };

@@ -37,7 +37,7 @@ enum SetFieldMode {
 
 typedef struct {
     const AVClass *class;
-    enum SetFieldMode mode;
+    int mode;                   ///< SetFieldMode
 } SetFieldContext;
 
 #define OFFSET(x) offsetof(SetFieldContext, x)

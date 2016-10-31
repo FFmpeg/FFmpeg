@@ -116,13 +116,13 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
                                   "video packet");
         }
         avpriv_set_pts_info(st, 64, 185, vid->sample_rate);
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = AV_CODEC_ID_BETHSOFTVID;
-        st->codec->width      = vid->width;
-        st->codec->height     = vid->height;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = AV_CODEC_ID_BETHSOFTVID;
+        st->codecpar->width      = vid->width;
+        st->codecpar->height     = vid->height;
     }
     st      = s->streams[vid->video_index];
-    npixels = st->codec->width * st->codec->height;
+    npixels = st->codecpar->width * st->codecpar->height;
 
     vidbuf_start = av_malloc(vidbuf_capacity = BUFFER_PADDING_SIZE);
     if(!vidbuf_start)
@@ -180,7 +180,6 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if ((ret = av_new_packet(pkt, vidbuf_nbytes)) < 0)
         goto fail;
     memcpy(pkt->data, vidbuf_start, vidbuf_nbytes);
-    av_free(vidbuf_start);
 
     pkt->pos = position;
     pkt->stream_index = vid->video_index;
@@ -192,13 +191,17 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if (vid->palette) {
         uint8_t *pdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                                  BVID_PALETTE_SIZE);
-        if (pdata)
-            memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        if (!pdata) {
+            ret = AVERROR(ENOMEM);
+            av_log(s, AV_LOG_ERROR, "Failed to allocate palette side data\n");
+            goto fail;
+        }
+        memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+
         av_freep(&vid->palette);
     }
 
     vid->nframes--;  // used to check if all the frames were read
-    return 0;
 fail:
     av_free(vidbuf_start);
     return ret;
@@ -242,13 +245,13 @@ static int vid_read_packet(AVFormatContext *s,
                 if (!st)
                     return AVERROR(ENOMEM);
                 vid->audio_index                 = st->index;
-                st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id              = AV_CODEC_ID_PCM_U8;
-                st->codec->channels              = 1;
-                st->codec->channel_layout        = AV_CH_LAYOUT_MONO;
-                st->codec->bits_per_coded_sample = 8;
-                st->codec->sample_rate           = vid->sample_rate;
-                st->codec->bit_rate              = 8 * st->codec->sample_rate;
+                st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+                st->codecpar->codec_id              = AV_CODEC_ID_PCM_U8;
+                st->codecpar->channels              = 1;
+                st->codecpar->channel_layout        = AV_CH_LAYOUT_MONO;
+                st->codecpar->bits_per_coded_sample = 8;
+                st->codecpar->sample_rate           = vid->sample_rate;
+                st->codecpar->bit_rate              = 8 * st->codecpar->sample_rate;
                 st->start_time                   = 0;
                 avpriv_set_pts_info(st, 64, 1, vid->sample_rate);
             }

@@ -26,18 +26,19 @@
 
 SECTION_RODATA
 
+cextern pw_1023
+%define pw_pixel_max pw_1023
 cextern pw_512
 cextern pw_16
 cextern pw_8
 cextern pw_4
 cextern pw_2
 cextern pw_1
+cextern pd_16
 
 pw_m32101234: dw -3, -2, -1, 0, 1, 2, 3, 4
 pw_m3:        times 8 dw -3
-pw_pixel_max: times 8 dw ((1 << 10)-1)
 pd_17:        times 4 dd 17
-pd_16:        times 4 dd 16
 
 SECTION .text
 

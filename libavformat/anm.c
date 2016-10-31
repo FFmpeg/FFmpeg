@@ -28,13 +28,13 @@
 #include "avformat.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct Page {
     int base_record;
     unsigned int nb_records;
     int size;
 } Page;
 
-typedef struct {
+typedef struct AnmDemuxContext {
     unsigned int nb_pages;    /**< total pages in file */
     unsigned int nb_records;  /**< total records in file */
     int page_table_offset;
@@ -100,11 +100,11 @@ static int read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_ANM;
-    st->codec->codec_tag  = 0; /* no fourcc */
-    st->codec->width      = avio_rl16(pb);
-    st->codec->height     = avio_rl16(pb);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_ANM;
+    st->codecpar->codec_tag  = 0; /* no fourcc */
+    st->codecpar->width      = avio_rl16(pb);
+    st->codecpar->height     = avio_rl16(pb);
     if (avio_r8(pb) != 0)
         goto invalid;
     avio_skip(pb, 1); /* frame rate multiplier info */
@@ -132,12 +132,12 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 58);
 
     /* color cycling and palette data */
-    st->codec->extradata_size = 16*8 + 4*256;
-    st->codec->extradata      = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata) {
+    st->codecpar->extradata_size = 16*8 + 4*256;
+    st->codecpar->extradata      = av_mallocz(st->codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codecpar->extradata) {
         return AVERROR(ENOMEM);
     }
-    ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
+    ret = avio_read(pb, st->codecpar->extradata, st->codecpar->extradata_size);
     if (ret < 0)
         return ret;
 

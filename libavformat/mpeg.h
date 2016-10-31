@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 muxer and demuxer common defines
+ * MPEG-1/2 muxer and demuxer common defines
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -40,6 +40,7 @@
 
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
+#define H264_ID  0xe2
 #define AC3_ID   0x80
 #define DTS_ID   0x88
 #define LPCM_ID  0xa0

@@ -24,8 +24,8 @@
 #include <stdint.h>
 
 #include "libavutil/frame.h"
+
 #include "avcodec.h"
-#include "get_bits.h"
 #include "hpeldsp.h"
 #include "me_cmp.h"
 #include "mpegvideo.h"
@@ -42,7 +42,10 @@ typedef struct SVQ1EncContext {
     AVFrame *current_picture;
     AVFrame *last_picture;
     PutBitContext pb;
-    GetBitContext gb;
+
+    /* Some compression statistics */
+    enum AVPictureType pict_type;
+    int quality;
 
     /* why ooh why this sick breadth first order,
      * everything is slower and more complex */
@@ -59,6 +62,8 @@ typedef struct SVQ1EncContext {
     int c_block_width;
     int c_block_height;
 
+    DECLARE_ALIGNED(16, int16_t, encoded_block_levels)[6][7][256];
+
     uint16_t *mb_type;
     uint32_t *dummy;
     int16_t (*motion_val8[3])[2];
@@ -67,6 +72,8 @@ typedef struct SVQ1EncContext {
     int64_t rd_total;
 
     uint8_t *scratchbuf;
+
+    int motion_est;
 
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              intptr_t size);

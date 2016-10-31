@@ -1,6 +1,6 @@
 /*
  * Wing Commander/Xan Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -34,9 +34,10 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "internal.h"
 
@@ -263,7 +264,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
     prevframe_x = x + motion_x;
 
     if (prev_palette_plane == palette_plane && FFABS(curframe_index - prevframe_index) < pixel_count) {
-         avpriv_request_sample(s->avctx, "Overlapping copy\n");
+         avpriv_request_sample(s->avctx, "Overlapping copy");
          return ;
     }
 
@@ -556,7 +557,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         int i;
         tag  = bytestream2_get_le32(&ctx);
         size = bytestream2_get_be32(&ctx);
-        if(size < 0) {
+        if (size < 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid tag size %d\n", size);
             return AVERROR_INVALIDDATA;
         }
@@ -567,8 +568,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             if (s->palettes_count >= PALETTES_MAX)
                 return AVERROR_INVALIDDATA;
-            tmpptr = av_realloc(s->palettes,
-                                (s->palettes_count + 1) * AVPALETTE_SIZE);
+            tmpptr = av_realloc_array(s->palettes,
+                                      s->palettes_count + 1, AVPALETTE_SIZE);
             if (!tmpptr)
                 return AVERROR(ENOMEM);
             s->palettes = tmpptr;
@@ -644,5 +645,5 @@ AVCodec ff_xan_wc3_decoder = {
     .init           = xan_decode_init,
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

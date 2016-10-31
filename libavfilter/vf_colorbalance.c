@@ -76,15 +76,16 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,  AV_PIX_FMT_BGR0,
         AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    ColorBalanceContext *cb = ctx->priv;
+    ColorBalanceContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     double *shadows, *midtones, *highlights, *buffer;
     int i, r, g, b;
@@ -110,27 +111,27 @@ static int config_output(AVFilterLink *outlink)
     for (i = 0; i < 256; i++) {
         r = g = b = i;
 
-        r = av_clip_uint8(r + cb->cyan_red.shadows         * shadows[r]);
-        r = av_clip_uint8(r + cb->cyan_red.midtones        * midtones[r]);
-        r = av_clip_uint8(r + cb->cyan_red.highlights      * highlights[r]);
+        r = av_clip_uint8(r + s->cyan_red.shadows         * shadows[r]);
+        r = av_clip_uint8(r + s->cyan_red.midtones        * midtones[r]);
+        r = av_clip_uint8(r + s->cyan_red.highlights      * highlights[r]);
 
-        g = av_clip_uint8(g + cb->magenta_green.shadows    * shadows[g]);
-        g = av_clip_uint8(g + cb->magenta_green.midtones   * midtones[g]);
-        g = av_clip_uint8(g + cb->magenta_green.highlights * highlights[g]);
+        g = av_clip_uint8(g + s->magenta_green.shadows    * shadows[g]);
+        g = av_clip_uint8(g + s->magenta_green.midtones   * midtones[g]);
+        g = av_clip_uint8(g + s->magenta_green.highlights * highlights[g]);
 
-        b = av_clip_uint8(b + cb->yellow_blue.shadows      * shadows[b]);
-        b = av_clip_uint8(b + cb->yellow_blue.midtones     * midtones[b]);
-        b = av_clip_uint8(b + cb->yellow_blue.highlights   * highlights[b]);
+        b = av_clip_uint8(b + s->yellow_blue.shadows      * shadows[b]);
+        b = av_clip_uint8(b + s->yellow_blue.midtones     * midtones[b]);
+        b = av_clip_uint8(b + s->yellow_blue.highlights   * highlights[b]);
 
-        cb->lut[R][i] = r;
-        cb->lut[G][i] = g;
-        cb->lut[B][i] = b;
+        s->lut[R][i] = r;
+        s->lut[G][i] = g;
+        s->lut[B][i] = b;
     }
 
     av_free(buffer);
 
-    ff_fill_rgba_map(cb->rgba_map, outlink->format);
-    cb->step = av_get_padded_bits_per_pixel(desc) >> 3;
+    ff_fill_rgba_map(s->rgba_map, outlink->format);
+    s->step = av_get_padded_bits_per_pixel(desc) >> 3;
 
     return 0;
 }
@@ -138,13 +139,13 @@ static int config_output(AVFilterLink *outlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    ColorBalanceContext *cb = ctx->priv;
+    ColorBalanceContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    const uint8_t roffset = cb->rgba_map[R];
-    const uint8_t goffset = cb->rgba_map[G];
-    const uint8_t boffset = cb->rgba_map[B];
-    const uint8_t aoffset = cb->rgba_map[A];
-    const int step = cb->step;
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const uint8_t aoffset = s->rgba_map[A];
+    const int step = s->step;
     const uint8_t *srcrow = in->data[0];
     uint8_t *dstrow;
     AVFrame *out;
@@ -167,9 +168,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         uint8_t *dst = dstrow;
 
         for (j = 0; j < outlink->w * step; j += step) {
-            dst[j + roffset] = cb->lut[R][src[j + roffset]];
-            dst[j + goffset] = cb->lut[G][src[j + goffset]];
-            dst[j + boffset] = cb->lut[B][src[j + boffset]];
+            dst[j + roffset] = s->lut[R][src[j + roffset]];
+            dst[j + goffset] = s->lut[G][src[j + goffset]];
+            dst[j + boffset] = s->lut[B][src[j + boffset]];
             if (in != out && step == 4)
                 dst[j + aoffset] = src[j + aoffset];
         }

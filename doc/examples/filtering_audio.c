@@ -33,7 +33,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
-#include <libavfilter/avcodec.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -66,7 +65,7 @@ static int open_input_file(const char *filename)
     /* select the audio stream */
     ret = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, &dec, 0);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot find a audio stream in the input file\n");
+        av_log(NULL, AV_LOG_ERROR, "Cannot find an audio stream in the input file\n");
         return ret;
     }
     audio_stream_index = ret;
@@ -145,12 +144,28 @@ static int init_filters(const char *filters_descr)
         goto end;
     }
 
-    /* Endpoints for the filter graph. */
+    /*
+     * Set the endpoints for the filter graph. The filter_graph will
+     * be linked to the graph described by filters_descr.
+     */
+
+    /*
+     * The buffer source output must be connected to the input pad of
+     * the first filter described by filters_descr; since the first
+     * filter input label is not specified, it is set to "in" by
+     * default.
+     */
     outputs->name       = av_strdup("in");
     outputs->filter_ctx = buffersrc_ctx;
     outputs->pad_idx    = 0;
     outputs->next       = NULL;
 
+    /*
+     * The buffer sink input must be connected to the output pad of
+     * the last filter described by filters_descr; since the last
+     * filter output label is not specified, it is set to "out" by
+     * default.
+     */
     inputs->name       = av_strdup("out");
     inputs->filter_ctx = buffersink_ctx;
     inputs->pad_idx    = 0;
@@ -258,10 +273,10 @@ int main(int argc, char **argv)
             }
 
             if (packet.size <= 0)
-                av_free_packet(&packet0);
+                av_packet_unref(&packet0);
         } else {
             /* discard non-wanted packets */
-            av_free_packet(&packet0);
+            av_packet_unref(&packet0);
         }
     }
 end:

@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "buffer.h"
+#include "thread.h"
 
 /**
  * The buffer is always treated as read-only.
@@ -68,11 +69,12 @@ typedef struct BufferPoolEntry {
     void (*free)(void *opaque, uint8_t *data);
 
     AVBufferPool *pool;
-    struct BufferPoolEntry * volatile next;
+    struct BufferPoolEntry *next;
 } BufferPoolEntry;
 
 struct AVBufferPool {
-    BufferPoolEntry * volatile pool;
+    AVMutex mutex;
+    BufferPoolEntry *pool;
 
     /*
      * This is used to track when the pool is to be freed.
@@ -88,7 +90,10 @@ struct AVBufferPool {
     volatile int nb_allocated;
 
     int size;
+    void *opaque;
     AVBufferRef* (*alloc)(int size);
+    AVBufferRef* (*alloc2)(void *opaque, int size);
+    void         (*pool_free)(void *opaque);
 };
 
 #endif /* AVUTIL_BUFFER_INTERNAL_H */

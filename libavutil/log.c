@@ -47,9 +47,16 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define LINE_SZ 1024
 
+#if HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+/* this is the log level at which valgrind will output a full backtrace */
+#define BACKTRACE_LOGLEVEL AV_LOG_ERROR
+#endif
+
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
+#define NB_LEVELS 8
 #if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
@@ -60,6 +67,7 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_INFO   /8] =  7,
     [AV_LOG_VERBOSE/8] = 10,
     [AV_LOG_DEBUG  /8] = 10,
+    [AV_LOG_TRACE  /8] = 8,
     [16+AV_CLASS_CATEGORY_NA              ] =  7,
     [16+AV_CLASS_CATEGORY_INPUT           ] = 13,
     [16+AV_CLASS_CATEGORY_OUTPUT          ] =  5,
@@ -91,6 +99,7 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_INFO   /8] = 253 <<  8 | 0x09,
     [AV_LOG_VERBOSE/8] =  40 <<  8 | 0x02,
     [AV_LOG_DEBUG  /8] =  34 <<  8 | 0x02,
+    [AV_LOG_TRACE  /8] =  34 <<  8 | 0x07,
     [16+AV_CLASS_CATEGORY_NA              ] = 250 << 8 | 0x09,
     [16+AV_CLASS_CATEGORY_INPUT           ] = 219 << 8 | 0x15,
     [16+AV_CLASS_CATEGORY_OUTPUT          ] = 201 << 8 | 0x05,
@@ -275,10 +284,19 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
+    av_log_format_line2(ptr, level, fmt, vl, line, line_size, print_prefix);
+}
+
+int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix)
+{
     AVBPrint part[4];
+    int ret;
+
     format_line(ptr, level, fmt, vl, part, print_prefix, NULL);
-    snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
+    ret = snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
     av_bprint_finalize(part+3, NULL);
+    return ret;
 }
 
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
@@ -328,9 +346,14 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     sanitize(part[1].str);
     colored_fputs(type[1], 0, part[1].str);
     sanitize(part[2].str);
-    colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[2].str);
+    colored_fputs(av_clip(level >> 3, 0, NB_LEVELS - 1), tint >> 8, part[2].str);
     sanitize(part[3].str);
-    colored_fputs(av_clip(level >> 3, 0, 6), tint >> 8, part[3].str);
+    colored_fputs(av_clip(level >> 3, 0, NB_LEVELS - 1), tint >> 8, part[3].str);
+
+#if CONFIG_VALGRIND_BACKTRACE
+    if (level <= BACKTRACE_LOGLEVEL)
+        VALGRIND_PRINTF_BACKTRACE("%s", "");
+#endif
 end:
     av_bprint_finalize(part+3, NULL);
 #if HAVE_PTHREADS
@@ -416,26 +439,3 @@ void avpriv_report_missing_feature(void *avc, const char *msg, ...)
     missing_feature_sample(0, avc, msg, argument_list);
     va_end(argument_list);
 }
-
-#ifdef TEST
-// LCOV_EXCL_START
-#include <string.h>
-
-int main(int argc, char **argv)
-{
-    int i;
-    av_log_set_level(AV_LOG_DEBUG);
-    for (use_color=0; use_color<=256; use_color = 255*use_color+1) {
-        av_log(NULL, AV_LOG_FATAL, "use_color: %d\n", use_color);
-        for (i = AV_LOG_DEBUG; i>=AV_LOG_QUIET; i-=8) {
-            av_log(NULL, i, " %d", i);
-            av_log(NULL, AV_LOG_INFO, "e ");
-            av_log(NULL, i + 256*123, "C%d", i);
-            av_log(NULL, AV_LOG_INFO, "e");
-        }
-        av_log(NULL, AV_LOG_PANIC, "\n");
-    }
-    return 0;
-}
-// LCOV_EXCL_STOP
-#endif

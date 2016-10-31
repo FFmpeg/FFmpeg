@@ -22,7 +22,6 @@
 /**
  * @file
  * VC-1 and WMV3 decoder
- *
  */
 
 #include "libavutil/avassert.h"
@@ -723,10 +722,10 @@ static void OPNAME ## pixels16x16_c(uint8_t *block, const uint8_t *pixels, ptrdi
     }\
 }
 
-#define op_put(a, b) a = av_clip_uint8(b)
-#define op_avg(a, b) a = (a + av_clip_uint8(b) + 1) >> 1
-#define op4_avg(a, b) a = rnd_avg32(a, b)
-#define op4_put(a, b) a = b
+#define op_put(a, b) (a) = av_clip_uint8(b)
+#define op_avg(a, b) (a) = ((a) + av_clip_uint8(b) + 1) >> 1
+#define op4_avg(a, b) (a) = rnd_avg32(a, b)
+#define op4_put(a, b) (a) = (b)
 
 VC1_MSPEL_MC(op_put, op4_put, put_)
 VC1_MSPEL_MC(op_avg, op4_avg, avg_)

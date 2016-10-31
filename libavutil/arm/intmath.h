@@ -31,9 +31,9 @@
 #if HAVE_ARMV6_INLINE
 
 #define av_clip_uint8 av_clip_uint8_arm
-static av_always_inline av_const unsigned av_clip_uint8_arm(int a)
+static av_always_inline av_const int av_clip_uint8_arm(int a)
 {
-    unsigned x;
+    int x;
     __asm__ ("usat %0, #8,  %1" : "=r"(x) : "r"(a));
     return x;
 }
@@ -47,9 +47,9 @@ static av_always_inline av_const int av_clip_int8_arm(int a)
 }
 
 #define av_clip_uint16 av_clip_uint16_arm
-static av_always_inline av_const unsigned av_clip_uint16_arm(int a)
+static av_always_inline av_const int av_clip_uint16_arm(int a)
 {
-    unsigned x;
+    int x;
     __asm__ ("usat %0, #16, %1" : "=r"(x) : "r"(a));
     return x;
 }
@@ -59,6 +59,14 @@ static av_always_inline av_const int av_clip_int16_arm(int a)
 {
     int x;
     __asm__ ("ssat %0, #16, %1" : "=r"(x) : "r"(a));
+    return x;
+}
+
+#define av_clip_intp2 av_clip_intp2_arm
+static av_always_inline av_const int av_clip_intp2_arm(int a, int p)
+{
+    unsigned x;
+    __asm__ ("ssat %0, %2, %1" : "=r"(x) : "r"(a), "i"(p+1));
     return x;
 }
 

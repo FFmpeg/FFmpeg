@@ -41,7 +41,7 @@
 // see Ref 2.2.1.8
 #define USERAGENT  "User-Agent: NSPlayer/4.1.0.3856\r\n"
 // see Ref 2.2.1.4.33
-// the guid value can be changed to any valid value.
+// the GUID value can be changed to any valid value.
 #define CLIENTGUID "Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"
 
 // see Ref 2.2.3 for packet type define:
@@ -54,7 +54,7 @@ typedef enum {
     CHUNK_TYPE_STREAM_CHANGE = 0x4324,
 } ChunkType;
 
-typedef struct {
+typedef struct MMSHContext {
     MMSContext mms;
     uint8_t location[1024];
     int request_seq;  ///< request packet sequence
@@ -124,7 +124,7 @@ static int read_data_packet(MMSHContext *mmsh, const int len)
         return AVERROR(EIO);
     }
     res = ffurl_read_complete(mms->mms_hd, mms->in_buffer, len);
-    av_dlog(NULL, "Data packet len = %d\n", len);
+    av_log(NULL, AV_LOG_TRACE, "Data packet len = %d\n", len);
     if (res != len) {
         av_log(NULL, AV_LOG_ERROR, "Read data packet failed!\n");
         return AVERROR(EIO);
@@ -158,7 +158,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                 if (mms->asf_header) {
                     if (len != mms->asf_header_size) {
                         mms->asf_header_size = len;
-                        av_dlog(NULL, "Header len changed from %d to %d\n",
+                        av_log(NULL, AV_LOG_TRACE, "Header len changed from %d to %d\n",
                                 mms->asf_header_size, len);
                         av_freep(&mms->asf_header);
                     }
@@ -203,7 +203,7 @@ static int get_http_header_data(MMSHContext *mmsh)
                     av_log(NULL, AV_LOG_ERROR, "Read other chunk type data failed!\n");
                     return AVERROR(EIO);
                 } else {
-                    av_dlog(NULL, "Skip chunk type %d \n", chunk_type);
+                    av_log(NULL, AV_LOG_TRACE, "Skip chunk type %d \n", chunk_type);
                     continue;
                 }
             }
@@ -245,6 +245,14 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
              "Connection: Close\r\n",
              host, port, mmsh->request_seq++);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
+
+    if (!mms->mms_hd->protocol_whitelist && h->protocol_whitelist) {
+        mms->mms_hd->protocol_whitelist = av_strdup(h->protocol_whitelist);
+        if (!mms->mms_hd->protocol_whitelist) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
 
     err = ffurl_connect(mms->mms_hd, NULL);
     if (err) {
@@ -291,7 +299,7 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
         av_log(NULL, AV_LOG_ERROR, "Build play request failed!\n");
         goto fail;
     }
-    av_dlog(NULL, "out_buffer is %s", headers);
+    av_log(NULL, AV_LOG_TRACE, "out_buffer is %s", headers);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
     err = ffurl_connect(mms->mms_hd, NULL);
@@ -305,12 +313,12 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
         goto fail;
     }
 
-    av_dlog(NULL, "Connection successfully open\n");
+    av_log(NULL, AV_LOG_TRACE, "Connection successfully open\n");
     return 0;
 fail:
     av_freep(&stream_selection);
     mmsh_close(h);
-    av_dlog(NULL, "Connection failed with error %d\n", err);
+    av_log(NULL, AV_LOG_TRACE, "Connection failed with error %d\n", err);
     return err;
 }
 
@@ -401,7 +409,7 @@ static int64_t mmsh_seek(URLContext *h, int64_t pos, int whence)
     return AVERROR(ENOSYS);
 }
 
-URLProtocol ff_mmsh_protocol = {
+const URLProtocol ff_mmsh_protocol = {
     .name           = "mmsh",
     .url_open       = mmsh_open,
     .url_read       = mmsh_read,
@@ -410,4 +418,5 @@ URLProtocol ff_mmsh_protocol = {
     .url_read_seek  = mmsh_read_seek,
     .priv_data_size = sizeof(MMSHContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "http,tcp",
 };

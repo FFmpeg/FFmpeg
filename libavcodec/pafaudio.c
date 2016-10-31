@@ -24,9 +24,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-
-#define PAF_SOUND_SAMPLES     2205
-#define PAF_SOUND_FRAME_SIZE  ((256 + PAF_SOUND_SAMPLES) * 2)
+#include "paf.h"
 
 static av_cold int paf_audio_init(AVCodecContext *avctx)
 {
@@ -80,5 +78,5 @@ AVCodec ff_paf_audio_decoder = {
     .id           = AV_CODEC_ID_PAF_AUDIO,
     .init         = paf_audio_init,
     .decode       = paf_audio_decode,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

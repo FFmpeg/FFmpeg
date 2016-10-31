@@ -47,7 +47,6 @@ void ff_float_to_fixed24_sse2 (int32_t *dst, const float *src, unsigned int len)
 
 int ff_ac3_compute_mantissa_size_sse2(uint16_t mant_cnt[6][16]);
 
-void ff_ac3_extract_exponents_3dnow(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_extract_exponents_sse2 (uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_coefs);
 
@@ -165,7 +164,7 @@ static void ac3_downmix_sse(float **samples, float (*matrix)[2],
                matrix_cmp[3][0] == matrix_cmp[4][0]) {
         MIX5(IF1, IF0);
     } else {
-        DECLARE_ALIGNED(16, float, matrix_simd)[AC3_MAX_CHANNELS][2][4];
+        LOCAL_ALIGNED(16, float, matrix_simd, [AC3_MAX_CHANNELS], [2][4]);
         float *samp[AC3_MAX_CHANNELS];
 
         for (j = 0; j < in_ch; j++)

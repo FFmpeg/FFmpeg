@@ -189,7 +189,7 @@ static void skip_sub_layer_hrd_parameters(GetBitContext *gb,
     }
 }
 
-static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
+static int skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
                                 unsigned int max_sub_layers_minus1)
 {
     unsigned int i;
@@ -246,8 +246,11 @@ static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
         else
             low_delay_hrd_flag = get_bits1(gb);
 
-        if (!low_delay_hrd_flag)
+        if (!low_delay_hrd_flag) {
             cpb_cnt_minus1 = get_ue_golomb_long(gb);
+            if (cpb_cnt_minus1 > 31)
+                return AVERROR_INVALIDDATA;
+        }
 
         if (nal_hrd_parameters_present_flag)
             skip_sub_layer_hrd_parameters(gb, cpb_cnt_minus1,
@@ -257,6 +260,8 @@ static void skip_hrd_parameters(GetBitContext *gb, uint8_t cprms_present_flag,
             skip_sub_layer_hrd_parameters(gb, cpb_cnt_minus1,
                                           sub_pic_hrd_params_present_flag);
     }
+
+    return 0;
 }
 
 static void skip_timing_info(GetBitContext *gb)
@@ -444,7 +449,7 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
          *
          * NumDeltaPocs[RefRpsIdx]: num_delta_pocs[rps_idx - 1]
          */
-        for (i = 0; i < num_delta_pocs[rps_idx - 1]; i++) {
+        for (i = 0; i <= num_delta_pocs[rps_idx - 1]; i++) {
             uint8_t use_delta_flag = 0;
             uint8_t used_by_curr_pic_flag = get_bits1(gb);
             if (!used_by_curr_pic_flag)
@@ -456,6 +461,9 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
     } else {
         unsigned int num_negative_pics = get_ue_golomb_long(gb);
         unsigned int num_positive_pics = get_ue_golomb_long(gb);
+
+        if ((num_positive_pics + (uint64_t)num_negative_pics) * 2 > get_bits_left(gb))
+            return AVERROR_INVALIDDATA;
 
         num_delta_pocs[rps_idx] = num_negative_pics + num_positive_pics;
 
@@ -557,7 +565,10 @@ static int hvcc_parse_sps(GetBitContext *gb,
     }
 
     if (get_bits1(gb)) {                               // long_term_ref_pics_present_flag
-        for (i = 0; i < get_ue_golomb_long(gb); i++) { // num_long_term_ref_pics_sps
+        unsigned num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
+        if (num_long_term_ref_pics_sps > 31U)
+            return AVERROR_INVALIDDATA;
+        for (i = 0; i < num_long_term_ref_pics_sps; i++) { // num_long_term_ref_pics_sps
             int len = FFMIN(log2_max_pic_order_cnt_lsb_minus4 + 4, 16);
             skip_bits (gb, len); // lt_ref_pic_poc_lsb_sps[i]
             skip_bits1(gb);      // used_by_curr_pic_lt_sps_flag[i]
@@ -608,11 +619,12 @@ static int hvcc_parse_pps(GetBitContext *gb,
     get_se_golomb_long(gb); // pps_cr_qp_offset
 
     /*
+     * pps_slice_chroma_qp_offsets_present_flag u(1)
      * weighted_pred_flag               u(1)
      * weighted_bipred_flag             u(1)
      * transquant_bypass_enabled_flag   u(1)
      */
-    skip_bits(gb, 3);
+    skip_bits(gb, 4);
 
     tiles_enabled_flag               = get_bits1(gb);
     entropy_coding_sync_enabled_flag = get_bits1(gb);
@@ -636,7 +648,7 @@ static uint8_t *nal_unit_extract_rbsp(const uint8_t *src, uint32_t src_len,
     uint8_t *dst;
     uint32_t i, len;
 
-    dst = av_malloc(src_len);
+    dst = av_malloc(src_len + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!dst)
         return NULL;
 
@@ -849,51 +861,51 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
     hvcc->avgFrameRate      = 0;
     hvcc->constantFrameRate = 0;
 
-    av_dlog(NULL,  "configurationVersion:                %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "configurationVersion:                %"PRIu8"\n",
             hvcc->configurationVersion);
-    av_dlog(NULL,  "general_profile_space:               %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "general_profile_space:               %"PRIu8"\n",
             hvcc->general_profile_space);
-    av_dlog(NULL,  "general_tier_flag:                   %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "general_tier_flag:                   %"PRIu8"\n",
             hvcc->general_tier_flag);
-    av_dlog(NULL,  "general_profile_idc:                 %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "general_profile_idc:                 %"PRIu8"\n",
             hvcc->general_profile_idc);
-    av_dlog(NULL, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
+    av_log(NULL, AV_LOG_TRACE, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
             hvcc->general_profile_compatibility_flags);
-    av_dlog(NULL, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
+    av_log(NULL, AV_LOG_TRACE, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
             hvcc->general_constraint_indicator_flags);
-    av_dlog(NULL,  "general_level_idc:                   %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "general_level_idc:                   %"PRIu8"\n",
             hvcc->general_level_idc);
-    av_dlog(NULL,  "min_spatial_segmentation_idc:        %"PRIu16"\n",
+    av_log(NULL, AV_LOG_TRACE,  "min_spatial_segmentation_idc:        %"PRIu16"\n",
             hvcc->min_spatial_segmentation_idc);
-    av_dlog(NULL,  "parallelismType:                     %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "parallelismType:                     %"PRIu8"\n",
             hvcc->parallelismType);
-    av_dlog(NULL,  "chromaFormat:                        %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "chromaFormat:                        %"PRIu8"\n",
             hvcc->chromaFormat);
-    av_dlog(NULL,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
             hvcc->bitDepthLumaMinus8);
-    av_dlog(NULL,  "bitDepthChromaMinus8:                %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "bitDepthChromaMinus8:                %"PRIu8"\n",
             hvcc->bitDepthChromaMinus8);
-    av_dlog(NULL,  "avgFrameRate:                        %"PRIu16"\n",
+    av_log(NULL, AV_LOG_TRACE,  "avgFrameRate:                        %"PRIu16"\n",
             hvcc->avgFrameRate);
-    av_dlog(NULL,  "constantFrameRate:                   %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "constantFrameRate:                   %"PRIu8"\n",
             hvcc->constantFrameRate);
-    av_dlog(NULL,  "numTemporalLayers:                   %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "numTemporalLayers:                   %"PRIu8"\n",
             hvcc->numTemporalLayers);
-    av_dlog(NULL,  "temporalIdNested:                    %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "temporalIdNested:                    %"PRIu8"\n",
             hvcc->temporalIdNested);
-    av_dlog(NULL,  "lengthSizeMinusOne:                  %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "lengthSizeMinusOne:                  %"PRIu8"\n",
             hvcc->lengthSizeMinusOne);
-    av_dlog(NULL,  "numOfArrays:                         %"PRIu8"\n",
+    av_log(NULL, AV_LOG_TRACE,  "numOfArrays:                         %"PRIu8"\n",
             hvcc->numOfArrays);
     for (i = 0; i < hvcc->numOfArrays; i++) {
-        av_dlog(NULL, "array_completeness[%"PRIu8"]:               %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "array_completeness[%"PRIu8"]:               %"PRIu8"\n",
                 i, hvcc->array[i].array_completeness);
-        av_dlog(NULL, "NAL_unit_type[%"PRIu8"]:                    %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%"PRIu8"]:                    %"PRIu8"\n",
                 i, hvcc->array[i].NAL_unit_type);
-        av_dlog(NULL, "numNalus[%"PRIu8"]:                         %"PRIu16"\n",
+        av_log(NULL, AV_LOG_TRACE, "numNalus[%"PRIu8"]:                         %"PRIu16"\n",
                 i, hvcc->array[i].numNalus);
         for (j = 0; j < hvcc->array[i].numNalus; j++)
-            av_dlog(NULL,
+            av_log(NULL, AV_LOG_TRACE,
                     "nalUnitLength[%"PRIu8"][%"PRIu16"]:                 %"PRIu16"\n",
                     i, j, hvcc->array[i].nalUnitLength[j]);
     }

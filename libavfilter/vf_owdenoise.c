@@ -42,6 +42,7 @@ typedef struct {
     float *plane[16+1][4];
     int linesize;
     int hsub, vsub;
+    int pixel_depth;
 } OWDenoiseContext;
 
 #define OFFSET(x) offsetof(OWDenoiseContext, x)
@@ -98,15 +99,6 @@ static const double icoeff[2][5] = {
     }
 };
 
-static inline int mirror(int x, int w)
-{
-    while ((unsigned)x > (unsigned)w) {
-        x = -x;
-        if (x < 0)
-            x += 2 * w;
-    }
-    return x;
-}
 
 static inline void decompose(float *dst_l, float *dst_h, const float *src,
                              int linesize, int w)
@@ -116,8 +108,8 @@ static inline void decompose(float *dst_l, float *dst_h, const float *src,
         double sum_l = src[x * linesize] * coeff[0][0];
         double sum_h = src[x * linesize] * coeff[1][0];
         for (i = 1; i <= 4; i++) {
-            const double s = src[mirror(x - i, w - 1) * linesize]
-                           + src[mirror(x + i, w - 1) * linesize];
+            const double s = src[avpriv_mirror(x - i, w - 1) * linesize]
+                           + src[avpriv_mirror(x + i, w - 1) * linesize];
 
             sum_l += coeff[0][i] * s;
             sum_h += coeff[1][i] * s;
@@ -135,8 +127,8 @@ static inline void compose(float *dst, const float *src_l, const float *src_h,
         double sum_l = src_l[x * linesize] * icoeff[0][0];
         double sum_h = src_h[x * linesize] * icoeff[1][0];
         for (i = 1; i <= 4; i++) {
-            const int x0 = mirror(x - i, w - 1) * linesize;
-            const int x1 = mirror(x + i, w - 1) * linesize;
+            const int x0 = avpriv_mirror(x - i, w - 1) * linesize;
+            const int x1 = avpriv_mirror(x + i, w - 1) * linesize;
 
             sum_l += icoeff[0][i] * (src_l[x0] + src_l[x1]);
             sum_h += icoeff[1][i] * (src_h[x0] + src_h[x1]);
@@ -197,9 +189,18 @@ static void filter(OWDenoiseContext *s,
     while (1<<depth > width || 1<<depth > height)
         depth--;
 
-    for (y = 0; y < height; y++)
-        for(x = 0; x < width; x++)
-            s->plane[0][0][y*s->linesize + x] = src[y*src_linesize + x];
+    if (s->pixel_depth <= 8) {
+        for (y = 0; y < height; y++)
+            for(x = 0; x < width; x++)
+                s->plane[0][0][y*s->linesize + x] = src[y*src_linesize + x];
+    } else {
+        const uint16_t *src16 = (const uint16_t *)src;
+
+        src_linesize /= 2;
+        for (y = 0; y < height; y++)
+            for(x = 0; x < width; x++)
+                s->plane[0][0][y*s->linesize + x] = src16[y*src_linesize + x];
+    }
 
     for (i = 0; i < depth; i++)
         decompose2D2(s->plane[i + 1], s->plane[i][0], s->plane[0] + 1, s->linesize, 1<<i, width, height);
@@ -220,28 +221,45 @@ static void filter(OWDenoiseContext *s,
     for (i = depth-1; i >= 0; i--)
         compose2D2(s->plane[i][0], s->plane[i + 1], s->plane[0] + 1, s->linesize, 1<<i, width, height);
 
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            i = s->plane[0][0][y*s->linesize + x] + dither[x&7][y&7]*(1.0/64) + 1.0/128; // yes the rounding is insane but optimal :)
-            if ((unsigned)i > 255U) i = ~(i >> 31);
-            dst[y*dst_linesize + x] = i;
+    if (s->pixel_depth <= 8) {
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                i = s->plane[0][0][y*s->linesize + x] + dither[x&7][y&7]*(1.0/64) + 1.0/128; // yes the rounding is insane but optimal :)
+                if ((unsigned)i > 255U) i = ~(i >> 31);
+                dst[y*dst_linesize + x] = i;
+            }
+        }
+    } else {
+        uint16_t *dst16 = (uint16_t *)dst;
+
+        dst_linesize /= 2;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                i = s->plane[0][0][y*s->linesize + x];
+                dst16[y*dst_linesize + x] = i;
+            }
         }
     }
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    int direct = 0;
     AVFilterContext *ctx = inlink->dst;
     OWDenoiseContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    const int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-    const int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    const int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     if (av_frame_is_writable(in)) {
-        direct = 1;
         out = in;
+
+        if (s->luma_strength > 0)
+            filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
+        if (s->chroma_strength > 0) {
+            filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,        ch,        s->chroma_strength);
+            filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,        ch,        s->chroma_strength);
+        }
     } else {
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
@@ -249,13 +267,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             return AVERROR(ENOMEM);
         }
         av_frame_copy_props(out, in);
-    }
 
-    filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
-    filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,        ch,        s->chroma_strength);
-    filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,        ch,        s->chroma_strength);
+        if (s->luma_strength > 0) {
+            filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
+        } else {
+            av_image_copy_plane(out->data[0], out->linesize[0], in ->data[0], in ->linesize[0], inlink->w, inlink->h);
+        }
+        if (s->chroma_strength > 0) {
+            filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw, ch, s->chroma_strength);
+            filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw, ch, s->chroma_strength);
+        } else {
+            av_image_copy_plane(out->data[1], out->linesize[1], in ->data[1], in ->linesize[1], inlink->w, inlink->h);
+            av_image_copy_plane(out->data[2], out->linesize[2], in ->data[2], in ->linesize[2], inlink->w, inlink->h);
+        }
 
-    if (!direct) {
         if (in->data[3])
             av_image_copy_plane(out->data[3], out->linesize[3],
                                 in ->data[3], in ->linesize[3],
@@ -274,10 +299,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P,     AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -289,6 +323,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
+    s->pixel_depth = desc->comp[0].depth;
 
     s->linesize = FFALIGN(inlink->w, 16);
     for (j = 0; j < 4; j++) {
@@ -322,11 +357,11 @@ static const AVFilterPad owdenoise_inputs[] = {
 };
 
 static const AVFilterPad owdenoise_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter ff_vf_owdenoise = {

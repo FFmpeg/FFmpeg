@@ -101,7 +101,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (avpkt->size < (hdr_size + 1) * avctx->channels) {
             av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         }
 
         esc->fib_acc[0] = avpkt->data[1] + 128;
@@ -124,7 +124,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     }
     if (!esc->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "unexpected empty packet\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     /* decode next piece of data from the buffer */
@@ -194,7 +194,7 @@ AVCodec ff_eightsvx_fib_decoder = {
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
   .close          = eightsvx_decode_close,
-  .capabilities   = CODEC_CAP_DR1,
+  .capabilities   = AV_CODEC_CAP_DR1,
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };
@@ -209,7 +209,7 @@ AVCodec ff_eightsvx_exp_decoder = {
   .init           = eightsvx_decode_init,
   .decode         = eightsvx_decode_frame,
   .close          = eightsvx_decode_close,
-  .capabilities   = CODEC_CAP_DR1,
+  .capabilities   = AV_CODEC_CAP_DR1,
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };

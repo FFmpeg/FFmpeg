@@ -58,8 +58,8 @@ static int aqt_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, aqt->frame_rate.den, aqt->frame_rate.num);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_TEXT;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_TEXT;
 
     while (!avio_feof(s->pb)) {
         char line[4096];
@@ -95,7 +95,7 @@ static int aqt_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&aqt->q);
+    ff_subtitles_queue_finalize(s, &aqt->q);
     return 0;
 }
 

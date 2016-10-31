@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/error.h"
+#include "libavutil/ffmath.h"
 
 #include "opus.h"
 #include "vorbis.h"
@@ -264,7 +265,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
     } else {
         pkt->mode = OPUS_MODE_CELT;
         pkt->bandwidth = (pkt->config - 16) >> 2;
-        /* skip mediumband */
+        /* skip medium band */
         if (pkt->bandwidth)
             pkt->bandwidth++;
     }
@@ -290,10 +291,6 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                                     OpusContext *s)
 {
     static const uint8_t default_channel_map[2] = { 0, 1 };
-    uint8_t default_extradata[19] = {
-        'O', 'p', 'u', 's', 'H', 'e', 'a', 'd',
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    };
 
     int (*channel_reorder)(int, int) = channel_reorder_unknown;
 
@@ -308,9 +305,8 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                    "Multichannel configuration without extradata.\n");
             return AVERROR(EINVAL);
         }
-        default_extradata[9] = (avctx->channels == 1) ? 1 : 2;
-        extradata      = default_extradata;
-        extradata_size = sizeof(default_extradata);
+        extradata      = opus_default_extradata;
+        extradata_size = sizeof(opus_default_extradata);
     } else {
         extradata = avctx->extradata;
         extradata_size = avctx->extradata_size;
@@ -330,15 +326,15 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     avctx->delay = AV_RL16(extradata + 10);
 
-    channels = extradata[9];
+    channels = avctx->extradata ? extradata[9] : (avctx->channels == 1) ? 1 : 2;
     if (!channels) {
-        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extadata\n");
+        av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extradata\n");
         return AVERROR_INVALIDDATA;
     }
 
     s->gain_i = AV_RL16(extradata + 16);
     if (s->gain_i)
-        s->gain = pow(10, s->gain_i / (20.0 * 256));
+        s->gain = ff_exp10(s->gain_i / (20.0 * 256));
 
     map_type = extradata[18];
     if (!map_type) {
@@ -351,7 +347,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         streams        = 1;
         stereo_streams = channels - 1;
         channel_map    = default_channel_map;
-    } else if (map_type == 1 || map_type == 255) {
+    } else if (map_type == 1 || map_type == 2 || map_type == 255) {
         if (extradata_size < 21 + channels) {
             av_log(avctx, AV_LOG_ERROR, "Invalid extradata size: %d\n",
                    extradata_size);
@@ -375,6 +371,15 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             }
             layout = ff_vorbis_channel_layouts[channels - 1];
             channel_reorder = channel_reorder_vorbis;
+        } else if (map_type == 2) {
+            int ambisonic_order = ff_sqrt(channels) - 1;
+            if (channels != (ambisonic_order + 1) * (ambisonic_order + 1)) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Channel mapping 2 is only specified for channel counts"
+                       " which can be written as (n + 1)^2 for nonnegative integer n\n");
+                return AVERROR_INVALIDDATA;
+            }
+            layout = 0;
         } else
             layout = 0;
 
@@ -401,7 +406,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        /* check that we din't see this index yet */
+        /* check that we did not see this index yet */
         map->copy = 0;
         for (j = 0; j < i; j++)
             if (channel_map[channel_reorder(channels, j)] == idx) {

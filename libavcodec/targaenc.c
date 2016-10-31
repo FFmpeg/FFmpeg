@@ -21,13 +21,21 @@
 
 #include <string.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "rle.h"
 #include "targa.h"
+
+typedef struct TargaContext {
+    AVClass *class;
+
+    int rle;
+} TargaContext;
 
 /**
  * RLE compress the image, with maximum size of out_size
@@ -77,6 +85,7 @@ static int targa_encode_normal(uint8_t *outbuf, const AVFrame *pic, int bpp, int
 static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *p, int *got_packet)
 {
+    TargaContext *s = avctx->priv_data;
     int bpp, picsize, datasize = -1, ret, i;
     uint8_t *out;
 
@@ -84,8 +93,9 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
         return AVERROR(EINVAL);
     }
-    picsize = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45)) < 0)
+    picsize = av_image_get_buffer_size(avctx->pix_fmt,
+                                       avctx->width, avctx->height, 1);
+    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
         return ret;
 
     /* zero out the header and only set applicable fields */
@@ -145,8 +155,16 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     bpp = pkt->data[16] >> 3;
 
+
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+        s->rle = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     /* try RLE compression */
-    if (avctx->coder_type != FF_CODER_TYPE_RAW)
+    if (s->rle)
         datasize = targa_encode_rle(out, picsize, p, bpp, avctx->width, avctx->height);
 
     /* if that worked well, mark the picture as RLE compressed */
@@ -172,29 +190,39 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int targa_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }
 
-static av_cold int targa_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
+#define OFFSET(x) offsetof(TargaContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "rle", "Use run-length compression", OFFSET(rle), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass targa_class = {
+    .class_name = "targa",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_targa_encoder = {
     .name           = "targa",
     .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
+    .priv_data_size = sizeof(TargaContext),
+    .priv_class     = &targa_class,
     .init           = targa_encode_init,
-    .close          = targa_encode_close,
     .encode2        = targa_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,

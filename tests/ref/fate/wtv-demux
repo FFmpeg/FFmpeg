@@ -1,7 +1,15 @@
 #extradata 0:       86, 0xc7ca09e5
 #extradata 1:       22, 0x12dc010c
 #tb 0: 1/10000000
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 720x576
+#sar 0: 64/45
 #tb 1: 1/10000000
+#media_type 1: audio
+#codec_id 1: mp2
+#sample_rate 1: 48000
+#channel_layout 1: 3
 1,         -2,         -2,   240000,      576, 0x9b6e1638
 1,     239998,     239998,   240000,      576, 0x0ca91183
 1,     479998,     479998,   240000,      576, 0xec6a180f

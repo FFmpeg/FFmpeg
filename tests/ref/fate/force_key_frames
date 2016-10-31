@@ -1,4 +1,4 @@
-74daf0c27174418b74191fd855a631e8 *tests/data/fate/force_key_frames.avi
-113308 tests/data/fate/force_key_frames.avi
-8f68ad2e602ecd87a3e0c097ba99d773 *tests/data/fate/force_key_frames.out.framecrc
-stddev:34363.01 PSNR:  5.61 MAXDIFF:56305 bytes:  7603200/      186
+07567b9528b8de523faaf49e4e1e0fc6 *tests/data/fate/force_key_frames.avi
+113312 tests/data/fate/force_key_frames.avi
+b2e92b97bac0243242281d71108ffdbd *tests/data/fate/force_key_frames.out.framecrc
+stddev:34612.83 PSNR:  5.54 MAXDIFF:61408 bytes:  7603200/      264

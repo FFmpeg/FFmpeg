@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-2003 The ffmpeg Project
+ * Copyright (c) 2001-2003 The FFmpeg project
  *
  * first version by Francois Revol (revol@free.fr)
  * fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
@@ -113,7 +113,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2;
         avctx->bits_per_coded_sample = 4;
         avctx->block_align    = BLKSIZE;
-        if (!(avctx->extradata = av_malloc(32 + FF_INPUT_BUFFER_PADDING_SIZE)))
+        if (!(avctx->extradata = av_malloc(32 + AV_INPUT_BUFFER_PADDING_SIZE)))
             goto error;
         avctx->extradata_size = 32;
         extradata = avctx->extradata;
@@ -227,7 +227,7 @@ static inline uint8_t adpcm_ms_compress_sample(ADPCMChannelStatus *c,
         bias = -c->idelta / 2;
 
     nibble = (nibble + bias) / c->idelta;
-    nibble = av_clip(nibble, -8, 7) & 0x0F;
+    nibble = av_clip_intp2(nibble, 3) & 0x0F;
 
     predictor += ((nibble & 0x08) ? (nibble - 0x10) : nibble) * c->idelta;
 
@@ -486,7 +486,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         pkt_size = (2 + avctx->channels * (22 + 4 * (frame->nb_samples - 1)) + 7) / 8;
     else
         pkt_size = avctx->block_align;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
     dst = avpkt->data;
 
@@ -509,7 +509,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         /* stereo: 4 bytes (8 samples) for left, 4 bytes for right */
         if (avctx->trellis > 0) {
-            FF_ALLOC_OR_GOTO(avctx, buf, avctx->channels * blocks * 8, error);
+            FF_ALLOC_ARRAY_OR_GOTO(avctx, buf, avctx->channels, blocks * 8, error);
             for (ch = 0; ch < avctx->channels; ch++) {
                 adpcm_compress_trellis(avctx, &samples_p[ch][1],
                                        buf + ch * blocks * 8, &c->status[ch],
@@ -541,7 +541,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         for (ch = 0; ch < avctx->channels; ch++) {
             ADPCMChannelStatus *status = &c->status[ch];
@@ -571,7 +571,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_ADPCM_SWF:
     {
         PutBitContext pb;
-        init_put_bits(&pb, dst, pkt_size * 8);
+        init_put_bits(&pb, dst, pkt_size);
 
         n = frame->nb_samples - 1;
 
@@ -581,7 +581,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         // init the encoder state
         for (i = 0; i < avctx->channels; i++) {
             // clip step so it fits 6 bits
-            c->status[i].step_index = av_clip(c->status[i].step_index, 0, 63);
+            c->status[i].step_index = av_clip_uintp2(c->status[i].step_index, 6);
             put_sbits(&pb, 16, samples[i]);
             put_bits(&pb, 6, c->status[i].step_index);
             c->status[i].prev_sample = samples[i];

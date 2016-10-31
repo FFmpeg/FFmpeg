@@ -78,11 +78,16 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
     uint8_t *o;
     PutBitContext pb;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)) < 0)
+    if (buf_size - AES3_HEADER_LEN > UINT16_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "number of samples in frame too big\n");
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
         return ret;
 
     o = avpkt->data;
-    init_put_bits(&pb, o, buf_size * 8);
+    init_put_bits(&pb, o, buf_size);
     put_bits(&pb, 16, buf_size - AES3_HEADER_LEN);
     put_bits(&pb, 2, (avctx->channels - 2) >> 1);   // number of channels
     put_bits(&pb, 8, 0);                            // channel ID
@@ -173,6 +178,11 @@ AVCodec ff_s302m_encoder = {
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
-    .capabilities          = CODEC_CAP_VARIABLE_FRAME_SIZE | CODEC_CAP_EXPERIMENTAL,
+    .capabilities          = AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_EXPERIMENTAL,
     .supported_samplerates = (const int[]) { 48000, 0 },
+ /* .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
+                                                  AV_CH_LAYOUT_QUAD,
+                                                  AV_CH_LAYOUT_5POINT1_BACK,
+                                                  AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,
+                                                  0 }, */
 };

@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle FFmpeg FAQ
 @titlepage
@@ -90,13 +91,63 @@ To build FFmpeg, you need to install the development package. It is usually
 called @file{libfoo-dev} or @file{libfoo-devel}. You can remove it after the
 build is finished, but be sure to keep the main package.
 
+@section How do I make @command{pkg-config} find my libraries?
+
+Somewhere along with your libraries, there is a @file{.pc} file (or several)
+in a @file{pkgconfig} directory. You need to set environment variables to
+point @command{pkg-config} to these files.
+
+If you need to @emph{add} directories to @command{pkg-config}'s search list
+(typical use case: library installed separately), add it to
+@code{$PKG_CONFIG_PATH}:
+
+@example
+export PKG_CONFIG_PATH=/opt/x264/lib/pkgconfig:/opt/opus/lib/pkgconfig
+@end example
+
+If you need to @emph{replace} @command{pkg-config}'s search list
+(typical use case: cross-compiling), set it in
+@code{$PKG_CONFIG_LIBDIR}:
+
+@example
+export PKG_CONFIG_LIBDIR=/home/me/cross/usr/lib/pkgconfig:/home/me/cross/usr/local/lib/pkgconfig
+@end example
+
+If you need to know the library's internal dependencies (typical use: static
+linking), add the @code{--static} option to @command{pkg-config}:
+
+@example
+./configure --pkg-config-flags=--static
+@end example
+
+@section How do I use @command{pkg-config} when cross-compiling?
+
+The best way is to install @command{pkg-config} in your cross-compilation
+environment. It will automatically use the cross-compilation libraries.
+
+You can also use @command{pkg-config} from the host environment by
+specifying explicitly @code{--pkg-config=pkg-config} to @command{configure}.
+In that case, you must point @command{pkg-config} to the correct directories
+using the @code{PKG_CONFIG_LIBDIR}, as explained in the previous entry.
+
+As an intermediate solution, you can place in your cross-compilation
+environment a script that calls the host @command{pkg-config} with
+@code{PKG_CONFIG_LIBDIR} set. That script can look like that:
+
+@example
+#!/bin/sh
+PKG_CONFIG_LIBDIR=/path/to/cross/lib/pkgconfig
+export PKG_CONFIG_LIBDIR
+exec /usr/bin/pkg-config "$@@"
+@end example
+
 @chapter Usage
 
 @section ffmpeg does not work; what is wrong?
 
 Try a @code{make distclean} in the ffmpeg source directory before the build.
 If this does not help see
-(@url{http://ffmpeg.org/bugreports.html}).
+(@url{https://ffmpeg.org/bugreports.html}).
 
 @section How do I encode single pictures into movies?
 
@@ -260,18 +311,18 @@ invoking ffmpeg with several @option{-i} options.
 For audio, to put all channels together in a single stream (example: two
 mono streams into one stereo stream): this is sometimes called to
 @emph{merge} them, and can be done using the
-@url{http://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
+@url{ffmpeg-filters.html#amerge, @code{amerge}} filter.
 
 @item
 For audio, to play one on top of the other: this is called to @emph{mix}
 them, and can be done by first merging them into a single stream and then
-using the @url{http://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
+using the @url{ffmpeg-filters.html#pan, @code{pan}} filter to mix
 the channels at will.
 
 @item
 For video, to display both together, side by side or one on top of a part of
 the other; it can be done using the
-@url{http://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
+@url{ffmpeg-filters.html#overlay, @code{overlay}} video filter.
 
 @end itemize
 
@@ -282,23 +333,23 @@ There are several solutions, depending on the exact circumstances.
 
 @subsection Concatenating using the concat @emph{filter}
 
-FFmpeg has a @url{http://ffmpeg.org/ffmpeg-filters.html#concat,
+FFmpeg has a @url{ffmpeg-filters.html#concat,
 @code{concat}} filter designed specifically for that, with examples in the
 documentation. This operation is recommended if you need to re-encode.
 
 @subsection Concatenating using the concat @emph{demuxer}
 
-FFmpeg has a @url{http://www.ffmpeg.org/ffmpeg-formats.html#concat,
+FFmpeg has a @url{ffmpeg-formats.html#concat,
 @code{concat}} demuxer which you can use when you want to avoid a re-encode and
 your format doesn't support file level concatenation.
 
 @subsection Concatenating using the concat @emph{protocol} (file level)
 
-FFmpeg has a @url{http://ffmpeg.org/ffmpeg-protocols.html#concat,
+FFmpeg has a @url{ffmpeg-protocols.html#concat,
 @code{concat}} protocol designed specifically for that, with examples in the
 documentation.
 
-A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
+A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow one to concatenate
 video by merely concatenating the files containing them.
 
 Hence you may concatenate your multimedia files by first transcoding them to
@@ -416,6 +467,40 @@ point acceptable for your tastes. The most common options to do that are
 @option{-qscale} and @option{-qmax}, but you should peruse the documentation
 of the encoder you chose.
 
+@section I have a stretched video, why does scaling does not fix it?
+
+A lot of video codecs and formats can store the @emph{aspect ratio} of the
+video: this is the ratio between the width and the height of either the full
+image (DAR, display aspect ratio) or individual pixels (SAR, sample aspect
+ratio). For example, EGA screens at resolution 640×350 had 4:3 DAR and 35:48
+SAR.
+
+Most still image processing work with square pixels, i.e. 1:1 SAR, but a lot
+of video standards, especially from the analogic-numeric transition era, use
+non-square pixels.
+
+Most processing filters in FFmpeg handle the aspect ratio to avoid
+stretching the image: cropping adjusts the DAR to keep the SAR constant,
+scaling adjusts the SAR to keep the DAR constant.
+
+If you want to stretch, or “unstretch”, the image, you need to override the
+information with the
+@url{ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
+
+Do not forget to examine carefully the original video to check whether the
+stretching comes from the image or from the aspect ratio information.
+
+For example, to fix a badly encoded EGA capture, use the following commands,
+either the first one to upscale to square pixels or the second one to set
+the correct aspect ratio or the third one to avoid transcoding (may not work
+depending on the format / codec / player / phase of the moon):
+
+@example
+ffmpeg -i ega_screen.nut -vf scale=640:480,setsar=1 ega_screen_scaled.nut
+ffmpeg -i ega_screen.nut -vf setdar=4/3 ega_screen_anamorphic.nut
+ffmpeg -i ega_screen.nut -aspect 4/3 -c copy ega_screen_overridden.nut
+@end example
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
@@ -504,7 +589,7 @@ see @file{libavformat/aviobuf.c} in FFmpeg and @file{libmpdemux/demux_lavf.c} in
 
 @section Where is the documentation about ffv1, msmpeg4, asv1, 4xm?
 
-see @url{http://www.ffmpeg.org/~michael/}
+see @url{https://www.ffmpeg.org/~michael/}
 
 @section How do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
 

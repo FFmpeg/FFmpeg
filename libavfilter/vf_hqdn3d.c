@@ -121,19 +121,21 @@ static void denoise_spatial(HQDN3DContext *s,
 }
 
 av_always_inline
-static void denoise_depth(HQDN3DContext *s,
-                          uint8_t *src, uint8_t *dst,
-                          uint16_t *line_ant, uint16_t **frame_ant_ptr,
-                          int w, int h, int sstride, int dstride,
-                          int16_t *spatial, int16_t *temporal, int depth)
+static int denoise_depth(HQDN3DContext *s,
+                         uint8_t *src, uint8_t *dst,
+                         uint16_t *line_ant, uint16_t **frame_ant_ptr,
+                         int w, int h, int sstride, int dstride,
+                         int16_t *spatial, int16_t *temporal, int depth)
 {
-    // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
+    // FIXME: For 16-bit depth, frame_ant could be a pointer to the previous
     // filtered frame rather than a separate buffer.
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
     if (!frame_ant) {
         uint8_t *frame_src = src;
         *frame_ant_ptr = frame_ant = av_malloc_array(w, h*sizeof(uint16_t));
+        if (!frame_ant)
+            return AVERROR(ENOMEM);
         for (y = 0; y < h; y++, src += sstride, frame_ant += w)
             for (x = 0; x < w; x++)
                 frame_ant[x] = LOAD(x);
@@ -148,15 +150,25 @@ static void denoise_depth(HQDN3DContext *s,
         denoise_temporal(src, dst, frame_ant,
                          w, h, sstride, dstride, temporal, depth);
     emms_c();
+    return 0;
 }
 
-#define denoise(...) \
-    switch (s->depth) {\
-        case  8: denoise_depth(__VA_ARGS__,  8); break;\
-        case  9: denoise_depth(__VA_ARGS__,  9); break;\
-        case 10: denoise_depth(__VA_ARGS__, 10); break;\
-        case 16: denoise_depth(__VA_ARGS__, 16); break;\
-    }
+#define denoise(...)                                                          \
+    do {                                                                      \
+        int ret = AVERROR_BUG;                                                \
+        switch (s->depth) {                                                   \
+            case  8: ret = denoise_depth(__VA_ARGS__,  8); break;             \
+            case  9: ret = denoise_depth(__VA_ARGS__,  9); break;             \
+            case 10: ret = denoise_depth(__VA_ARGS__, 10); break;             \
+            case 16: ret = denoise_depth(__VA_ARGS__, 16); break;             \
+        }                                                                     \
+        if (ret < 0) {                                                        \
+            av_frame_free(&out);                                              \
+            if (!direct)                                                      \
+                av_frame_free(&in);                                           \
+            return ret;                                                       \
+        }                                                                     \
+    } while (0)
 
 static int16_t *precalc_coefs(double dist25, int depth)
 {
@@ -168,9 +180,9 @@ static int16_t *precalc_coefs(double dist25, int depth)
 
     gamma = log(0.25) / log(1.0 - FFMIN(dist25,252.0)/255.0 - 0.00001);
 
-    for (i = -255<<LUT_BITS; i <= 255<<LUT_BITS; i++) {
+    for (i = -256<<LUT_BITS; i < 256<<LUT_BITS; i++) {
         double f = ((i<<(9-LUT_BITS)) + (1<<(8-LUT_BITS)) - 1) / 512.0; // midpoint of the bin
-        simil = 1.0 - FFABS(f) / 255.0;
+        simil = FFMAX(0, 1.0 - fabs(f) / 255.0);
         C = pow(simil, gamma) * 256.0 * f;
         ct[(256<<LUT_BITS)+i] = lrint(C);
     }
@@ -241,10 +253,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -257,7 +269,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
-    s->depth = desc->comp[0].depth_minus1+1;
+    s->depth = desc->comp[0].depth;
 
     s->line = av_malloc_array(inlink->w, sizeof(*s->line));
     if (!s->line)
@@ -282,13 +294,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
 
     AVFrame *out;
-    int direct, c;
+    int c, direct = av_frame_is_writable(in) && !ctx->is_disabled;
 
-    if (av_frame_is_writable(in) && !ctx->is_disabled) {
-        direct = 1;
+    if (direct) {
         out = in;
     } else {
-        direct = 0;
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
             av_frame_free(&in);
@@ -301,8 +311,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (c = 0; c < 3; c++) {
         denoise(s, in->data[c], out->data[c],
                 s->line, &s->frame_prev[c],
-                FF_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
-                FF_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
+                AV_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
+                AV_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
                 in->linesize[c], out->linesize[c],
                 s->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
                 s->coefs[c ? CHROMA_TMP     : LUMA_TMP]);

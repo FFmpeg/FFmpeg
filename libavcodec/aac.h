@@ -30,12 +30,17 @@
 #ifndef AVCODEC_AAC_H
 #define AVCODEC_AAC_H
 
+
+#include "aac_defines.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/fixed_dsp.h"
 #include "avcodec.h"
+#if !USE_FIXED
+#include "imdct15.h"
+#endif
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"
-#include "fmtconvert.h"
 
 #include <stdint.h>
 
@@ -44,6 +49,8 @@
 
 #define TNS_MAX_ORDER 20
 #define MAX_LTP_LONG_SFB 40
+
+#define CLIP_AVOIDANCE_FACTOR 0.95f
 
 enum RawDataBlockType {
     TYPE_SCE,
@@ -76,9 +83,10 @@ enum BandType {
     ZERO_BT        = 0,     ///< Scalefactors and spectral data are all zero.
     FIRST_PAIR_BT  = 5,     ///< This and later band types encode two values (rather than four) with one code word.
     ESC_BT         = 11,    ///< Spectral data are coded with an escape sequence.
+    RESERVED_BT    = 12,    ///< Band types following are encoded differently from others.
     NOISE_BT       = 13,    ///< Spectral data are scaled white noise not coded in the bitstream.
-    INTENSITY_BT2  = 14,    ///< Scalefactor data are intensity stereo positions.
-    INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions.
+    INTENSITY_BT2  = 14,    ///< Scalefactor data are intensity stereo positions (out of phase).
+    INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions (in phase).
 };
 
 #define IS_CODEBOOK_UNSIGNED(x) (((x) - 1) & 10)
@@ -125,12 +133,14 @@ typedef struct OutputConfiguration {
  * Predictor State
  */
 typedef struct PredictorState {
-    float cor0;
-    float cor1;
-    float var0;
-    float var1;
-    float r0;
-    float r1;
+    AAC_FLOAT cor0;
+    AAC_FLOAT cor1;
+    AAC_FLOAT var0;
+    AAC_FLOAT var1;
+    AAC_FLOAT r0;
+    AAC_FLOAT r1;
+    AAC_FLOAT k1;
+    AAC_FLOAT x_est;
 } PredictorState;
 
 #define MAX_PREDICTORS 672
@@ -141,13 +151,20 @@ typedef struct PredictorState {
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
 
+#define POW_SF2_ZERO    200    ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
+
+#define NOISE_PRE       256    ///< preamble for NOISE_BT, put in bitstream with the first noise band
+#define NOISE_PRE_BITS    9    ///< length of preamble
+#define NOISE_OFFSET     90    ///< subtracted from global gain, used as offset for the preamble
+
 /**
  * Long Term Prediction
  */
 typedef struct LongTermPrediction {
     int8_t present;
     int16_t lag;
-    float coef;
+    int coef_idx;
+    INTFLOAT coef;
     int8_t used[MAX_LTP_LONG_SFB];
 } LongTermPrediction;
 
@@ -169,7 +186,10 @@ typedef struct IndividualChannelStream {
     int predictor_present;
     int predictor_initialized;
     int predictor_reset_group;
+    int predictor_reset_count[31];  ///< used by encoder to count prediction resets
     uint8_t prediction_used[41];
+    uint8_t window_clipping[8]; ///< set if a certain window is near clipping
+    float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
 } IndividualChannelStream;
 
 /**
@@ -181,7 +201,8 @@ typedef struct TemporalNoiseShaping {
     int length[8][4];
     int direction[8][4];
     int order[8][4];
-    float coef[8][4][TNS_MAX_ORDER];
+    int coef_idx[8][4][TNS_MAX_ORDER];
+    INTFLOAT coef[8][4][TNS_MAX_ORDER];
 } TemporalNoiseShaping;
 
 /**
@@ -218,7 +239,7 @@ typedef struct ChannelCoupling {
     int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for right channel;
                             *   [2] list of gains for left channel; [3] lists of gains for both channels
                             */
-    float gain[16][120];
+    INTFLOAT gain[16][120];
 } ChannelCoupling;
 
 /**
@@ -229,26 +250,36 @@ typedef struct SingleChannelElement {
     TemporalNoiseShaping tns;
     Pulse pulse;
     enum BandType band_type[128];                   ///< band types
+    enum BandType band_alt[128];                    ///< alternative band type (used by encoder)
     int band_type_run_end[120];                     ///< band type run end points
-    float sf[120];                                  ///< scalefactors
+    INTFLOAT sf[120];                               ///< scalefactors
     int sf_idx[128];                                ///< scalefactor indices (used by encoder)
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
-    DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
-    DECLARE_ALIGNED(32, float,   saved)[1536];      ///< overlap
-    DECLARE_ALIGNED(32, float,   ret_buf)[2048];    ///< PCM output buffer
-    DECLARE_ALIGNED(16, float,   ltp_state)[3072];  ///< time signal for LTP
+    uint8_t can_pns[128];                           ///< band is allowed to PNS (informative)
+    float  is_ener[128];                            ///< Intensity stereo pos (used by encoder)
+    float pns_ener[128];                            ///< Noise energy values (used by encoder)
+    DECLARE_ALIGNED(32, INTFLOAT, pcoeffs)[1024];   ///< coefficients for IMDCT, pristine
+    DECLARE_ALIGNED(32, INTFLOAT, coeffs)[1024];    ///< coefficients for IMDCT, maybe processed
+    DECLARE_ALIGNED(32, INTFLOAT, saved)[1536];     ///< overlap
+    DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
+    DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
+    DECLARE_ALIGNED(32, AAC_FLOAT, lcoeffs)[1024];  ///< MDCT of LTP coefficients (used by encoder)
+    DECLARE_ALIGNED(32, AAC_FLOAT, prcoeffs)[1024]; ///< Main prediction coefs (used by encoder)
     PredictorState predictor_state[MAX_PREDICTORS];
-    float *ret;                                     ///< PCM output
+    INTFLOAT *ret;                                  ///< PCM output
 } SingleChannelElement;
 
 /**
  * channel element - generic struct for SCE/CPE/CCE/LFE
  */
 typedef struct ChannelElement {
+    int present;
     // CPE specific
     int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
     int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
+    uint8_t is_mode;          ///< Set if any bands have been encoded using intensity stereo (used by encoder)
     uint8_t ms_mask[128];     ///< Set if mid/side stereo is used for each scalefactor window band
+    uint8_t is_mask[128];     ///< Set if intensity stereo is used (used by encoder)
     // shared
     SingleChannelElement ch[2];
     // CCE specific
@@ -274,6 +305,7 @@ struct AACContext {
     ChannelElement          *che[4][MAX_ELEM_ID];
     ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
     int tags_mapped;
+    int warned_remapping_once;
     /** @} */
 
     /**
@@ -281,7 +313,7 @@ struct AACContext {
      * (We do not want to have these on the stack.)
      * @{
      */
-    DECLARE_ALIGNED(32, float, buf_mdct)[1024];
+    DECLARE_ALIGNED(32, INTFLOAT, buf_mdct)[1024];
     /** @} */
 
     /**
@@ -292,8 +324,12 @@ struct AACContext {
     FFTContext mdct_small;
     FFTContext mdct_ld;
     FFTContext mdct_ltp;
-    FmtConvertContext fmt_conv;
-    AVFloatDSPContext fdsp;
+#if USE_FIXED
+    AVFixedDSPContext *fdsp;
+#else
+    IMDCT15Context *mdct480;
+    AVFloatDSPContext *fdsp;
+#endif /* USE_FIXED */
     int random_state;
     /** @} */
 
@@ -313,7 +349,7 @@ struct AACContext {
     int dmono_mode;      ///< 0->not dmono, 1->use first channel, 2->use second channel
     /** @} */
 
-    DECLARE_ALIGNED(32, float, temp)[128];
+    DECLARE_ALIGNED(32, INTFLOAT, temp)[128];
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
@@ -321,11 +357,13 @@ struct AACContext {
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);
     void (*apply_ltp)(AACContext *ac, SingleChannelElement *sce);
-    void (*apply_tns)(float coef[1024], TemporalNoiseShaping *tns,
+    void (*apply_tns)(INTFLOAT coef[1024], TemporalNoiseShaping *tns,
                       IndividualChannelStream *ics, int decode);
-    void (*windowing_and_mdct_ltp)(AACContext *ac, float *out,
-                                   float *in, IndividualChannelStream *ics);
+    void (*windowing_and_mdct_ltp)(AACContext *ac, INTFLOAT *out,
+                                   INTFLOAT *in, IndividualChannelStream *ics);
     void (*update_ltp)(AACContext *ac, SingleChannelElement *sce);
+    void (*vector_pow43)(int *coefs, int len);
+    void (*subband_scale)(int *dst, int *src, int scale, int offset, int len);
 
 };
 

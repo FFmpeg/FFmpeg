@@ -64,6 +64,7 @@ void write_int8_t_array     (const int8_t   *, int);
 void write_uint8_t_array    (const uint8_t  *, int);
 void write_uint16_t_array   (const uint16_t *, int);
 void write_uint32_t_array   (const uint32_t *, int);
+void write_int32_t_array    (const int32_t  *, int);
 void write_float_array      (const float    *, int);
 void write_int8_t_2d_array  (const void *, int, int);
 void write_uint8_t_2d_array (const void *, int, int);
@@ -80,6 +81,16 @@ void write_float_2d_array   (const void *, int, int);
 #else
 #define FMT "zu"
 #endif
+
+#define WRITE_ARRAY_ALIGNED(prefix, align, type, name)  \
+    do {                                                \
+        const size_t array_size = FF_ARRAY_ELEMS(name); \
+        printf(prefix" DECLARE_ALIGNED("#align", "      \
+               #type", "#name")[%"FMT"] = {\n",         \
+               array_size);                             \
+        write_##type##_array(name, array_size);         \
+        printf("};\n");                                 \
+    } while(0)
 
 #define WRITE_ARRAY(prefix, type, name)                 \
     do {                                                \
@@ -104,7 +115,9 @@ void write_float_2d_array   (const void *, int, int);
 WRITE_1D_FUNC(int8_t,   "%3"PRIi8, 15)
 WRITE_1D_FUNC(uint8_t,  "0x%02"PRIx8, 15)
 WRITE_1D_FUNC(uint16_t, "0x%08"PRIx16, 7)
+WRITE_1D_FUNC(int16_t,  "%5"PRIi16, 7)
 WRITE_1D_FUNC(uint32_t, "0x%08"PRIx32, 7)
+WRITE_1D_FUNC(int32_t,  "0x%08"PRIx32, 7)
 WRITE_1D_FUNC(float,    "%.18e", 3)
 
 WRITE_2D_FUNC(int8_t)

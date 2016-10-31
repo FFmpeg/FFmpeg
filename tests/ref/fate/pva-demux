@@ -1,5 +1,13 @@
 #tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 544x576
+#sar 0: 24/17
 #tb 1: 1/90000
+#media_type 1: audio
+#codec_id 1: mp2
+#sample_rate 1: 48000
+#channel_layout 1: 3
 1,          0,          0,     2160,      384, 0x071abcc8
 1,       2160,       2160,     2160,      384, 0x31c9aee0
 1,       4320,       4320,     2160,      384, 0xa50eaa94

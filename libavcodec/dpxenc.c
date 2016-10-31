@@ -39,7 +39,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
     s->big_endian         = !!(desc->flags & AV_PIX_FMT_FLAG_BE);
-    s->bits_per_component = desc->comp[0].depth_minus1 + 1;
+    s->bits_per_component = desc->comp[0].depth;
     s->num_components     = desc->nb_components;
     s->descriptor         = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? 51 : 50;
     s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
@@ -75,19 +75,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#define write16(p, value) \
-do { \
-    if (s->big_endian) AV_WB16(p, value); \
-    else               AV_WL16(p, value); \
-} while(0)
+static av_always_inline void write16_internal(int big_endian, void *p, int value)
+{
+    if (big_endian) AV_WB16(p, value);
+    else            AV_WL16(p, value);
+}
 
-#define write32(p, value) \
-do { \
-    if (s->big_endian) AV_WB32(p, value); \
-    else               AV_WL32(p, value); \
-} while(0)
+static av_always_inline void write32_internal(int big_endian, void *p, int value)
+{
+    if (big_endian) AV_WB32(p, value);
+    else            AV_WL32(p, value);
+}
 
-static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic, uint8_t *dst)
+#define write16(p, value) write16_internal(s->big_endian, p, value)
+#define write32(p, value) write32_internal(s->big_endian, p, value)
+
+static void encode_rgb48_10bit(AVCodecContext *avctx, const AVFrame *pic,
+                               uint8_t *dst)
 {
     DPXContext *s = avctx->priv_data;
     const uint8_t *src = pic->data[0];
@@ -112,7 +116,7 @@ static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic, uint
     }
 }
 
-static void encode_gbrp10(AVCodecContext *avctx, const AVPicture *pic, uint8_t *dst)
+static void encode_gbrp10(AVCodecContext *avctx, const AVFrame *pic, uint8_t *dst)
 {
     DPXContext *s = avctx->priv_data;
     const uint8_t *src[3] = {pic->data[0], pic->data[1], pic->data[2]};
@@ -138,7 +142,7 @@ static void encode_gbrp10(AVCodecContext *avctx, const AVPicture *pic, uint8_t *
     }
 }
 
-static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t *dst)
+static void encode_gbrp12(AVCodecContext *avctx, const AVFrame *pic, uint16_t *dst)
 {
     DPXContext *s = avctx->priv_data;
     const uint16_t *src[3] = {(uint16_t*)pic->data[0],
@@ -159,11 +163,11 @@ static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t 
                 value[2] = AV_RL16(src[1] + x) << 4;
                 value[0] = AV_RL16(src[2] + x) << 4;
             }
-            for (i = 0; i < pad; i++)
-                *dst++ = 0;
             for (i = 0; i < 3; i++)
                 write16(dst++, value[i]);
         }
+        for (i = 0; i < pad; i++)
+            *dst++ = 0;
         for (i = 0; i < 3; i++)
             src[i] += pic->linesize[i]/2;
     }
@@ -192,7 +196,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         need_align = size - len;
         size *= avctx->height;
     }
-    if ((ret = ff_alloc_packet2(avctx, pkt, size + HEADER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, size + HEADER_SIZE, 0)) < 0)
         return ret;
     buf = pkt->data;
 
@@ -204,7 +208,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     memcpy (buf +   8, "V1.0", 4);
     write32(buf +  20, 1); /* new image */
     write32(buf +  24, HEADER_SIZE);
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT))
+    if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
         memcpy (buf + 160, LIBAVCODEC_IDENT, FFMIN(sizeof(LIBAVCODEC_IDENT), 100));
     write32(buf + 660, 0xFFFFFFFF); /* unencrypted */
 
@@ -240,21 +244,22 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 src += frame->linesize[0];
             }
         } else {
-            size = avpicture_layout((const AVPicture*)frame, avctx->pix_fmt,
-                                    avctx->width, avctx->height,
-                                    buf + HEADER_SIZE, pkt->size - HEADER_SIZE);
+            size = av_image_copy_to_buffer(buf + HEADER_SIZE, pkt->size - HEADER_SIZE,
+                                           (const uint8_t**)frame->data, frame->linesize,
+                                           avctx->pix_fmt,
+                                           avctx->width, avctx->height, 1);
         }
         if (size < 0)
             return size;
         break;
     case 10:
         if (s->planar)
-            encode_gbrp10(avctx, (const AVPicture*)frame, buf + HEADER_SIZE);
+            encode_gbrp10(avctx, frame, buf + HEADER_SIZE);
         else
-            encode_rgb48_10bit(avctx, (const AVPicture*)frame, buf + HEADER_SIZE);
+            encode_rgb48_10bit(avctx, frame, buf + HEADER_SIZE);
         break;
     case 12:
-        encode_gbrp12(avctx, (const AVPicture*)frame, (uint16_t*)(buf + HEADER_SIZE));
+        encode_gbrp12(avctx, frame, (uint16_t*)(buf + HEADER_SIZE));
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", s->bits_per_component);

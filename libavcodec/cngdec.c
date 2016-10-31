@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -41,11 +42,11 @@ typedef struct CNGContext {
 static av_cold int cng_decode_close(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
-    av_free(p->refl_coef);
-    av_free(p->target_refl_coef);
-    av_free(p->lpc_coef);
-    av_free(p->filter_out);
-    av_free(p->excitation);
+    av_freep(&p->refl_coef);
+    av_freep(&p->target_refl_coef);
+    av_freep(&p->lpc_coef);
+    av_freep(&p->filter_out);
+    av_freep(&p->excitation);
     return 0;
 }
 
@@ -112,7 +113,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
 
     if (avpkt->size) {
         int dbov = -avpkt->data[0];
-        p->target_energy = 1081109975 * pow(10, dbov / 10.0) * 0.75;
+        p->target_energy = 1081109975 * ff_exp10(dbov / 10.0) * 0.75;
         memset(p->target_refl_coef, 0, p->order * sizeof(*p->target_refl_coef));
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;
@@ -167,5 +168,5 @@ AVCodec ff_comfortnoise_decoder = {
     .close          = cng_decode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
 };

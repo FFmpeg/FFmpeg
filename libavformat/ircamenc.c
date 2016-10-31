@@ -28,7 +28,7 @@
 
 static int ircam_write_header(AVFormatContext *s)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     uint32_t tag;
 
     if (s->nb_streams != 1) {
@@ -36,15 +36,15 @@ static int ircam_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    tag = ff_codec_get_tag(ff_codec_ircam_le_tags, codec->codec_id);
+    tag = ff_codec_get_tag(ff_codec_ircam_le_tags, par->codec_id);
     if (!tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
 
     avio_wl32(s->pb, 0x0001A364);
-    avio_wl32(s->pb, av_float2int(codec->sample_rate));
-    avio_wl32(s->pb, codec->channels);
+    avio_wl32(s->pb, av_q2intfloat((AVRational){par->sample_rate, 1}));
+    avio_wl32(s->pb, par->channels);
     avio_wl32(s->pb, tag);
     ffio_fill(s->pb, 0, 1008);
     return 0;

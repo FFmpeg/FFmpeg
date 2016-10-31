@@ -47,7 +47,7 @@ static const int wv_rates[16] = {
     32000, 44100, 48000, 64000, 88200, 96000, 192000,    -1
 };
 
-typedef struct {
+typedef struct WVContext {
     uint8_t block_header[WV_HEADER_SIZE];
     WvHeader header;
     int rate, chan, bpp;
@@ -124,7 +124,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                    "Cannot determine additional parameters\n");
             return AVERROR_INVALIDDATA;
         }
-        while (avio_tell(pb) < block_end) {
+        while (avio_tell(pb) < block_end && !avio_feof(pb)) {
             int id, size;
             id   = avio_r8(pb);
             size = (id & 0x80) ? avio_rl24(pb) : avio_r8(pb);
@@ -230,12 +230,12 @@ static int wv_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id              = AV_CODEC_ID_WAVPACK;
-    st->codec->channels              = wc->chan;
-    st->codec->channel_layout        = wc->chmask;
-    st->codec->sample_rate           = wc->rate;
-    st->codec->bits_per_coded_sample = wc->bpp;
+    st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id              = AV_CODEC_ID_WAVPACK;
+    st->codecpar->channels              = wc->chan;
+    st->codecpar->channel_layout        = wc->chmask;
+    st->codecpar->sample_rate           = wc->rate;
+    st->codecpar->bits_per_coded_sample = wc->bpp;
     avpriv_set_pts_info(st, 64, 1, wc->rate);
     st->start_time = 0;
     if (wc->header.total_samples != 0xFFFFFFFFu)
@@ -273,29 +273,30 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
     ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
     if (ret != wc->header.blocksize) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
     while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
 
         off = pkt->size;
         if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->header.blocksize)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
 
         ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->header.blocksize);
         if (ret != wc->header.blocksize) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return (ret < 0) ? ret : AVERROR_EOF;
         }
     }
     pkt->stream_index = 0;
+    pkt->pos          = pos;
     wc->block_parsed  = 1;
     pkt->pts          = wc->header.block_idx;
     block_samples     = wc->header.samples;
@@ -305,41 +306,6 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     else
         pkt->duration = block_samples;
 
-    av_add_index_entry(s->streams[0], pos, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
-    return 0;
-}
-
-static int wv_read_seek(AVFormatContext *s, int stream_index,
-                        int64_t timestamp, int flags)
-{
-    AVStream  *st = s->streams[stream_index];
-    WVContext *wc = s->priv_data;
-    AVPacket pkt1, *pkt = &pkt1;
-    int ret;
-    int index = av_index_search_timestamp(st, timestamp, flags);
-    int64_t pos, pts;
-
-    /* if found, seek there */
-    if (index >= 0 &&
-        timestamp <= st->index_entries[st->nb_index_entries - 1].timestamp) {
-        wc->block_parsed = 1;
-        avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
-        return 0;
-    }
-    /* if timestamp is out of bounds, return error */
-    if (timestamp < 0 || timestamp >= s->duration)
-        return AVERROR(EINVAL);
-
-    pos = avio_tell(s->pb);
-    do {
-        ret = av_read_frame(s, pkt);
-        if (ret < 0) {
-            avio_seek(s->pb, pos, SEEK_SET);
-            return ret;
-        }
-        pts = pkt->pts;
-        av_free_packet(pkt);
-    } while(pts < timestamp);
     return 0;
 }
 
@@ -350,5 +316,5 @@ AVInputFormat ff_wv_demuxer = {
     .read_probe     = wv_probe,
     .read_header    = wv_read_header,
     .read_packet    = wv_read_packet,
-    .read_seek      = wv_read_seek,
+    .flags          = AVFMT_GENERIC_INDEX,
 };

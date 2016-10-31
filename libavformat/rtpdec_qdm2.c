@@ -104,18 +104,18 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
             case 4: /* stream with extradata */
                 if (item_len < 30)
                     return AVERROR_INVALIDDATA;
-                av_freep(&st->codec->extradata);
-                if (ff_alloc_extradata(st->codec, 26 + item_len)) {
+                av_freep(&st->codecpar->extradata);
+                if (ff_alloc_extradata(st->codecpar, 26 + item_len)) {
                     return AVERROR(ENOMEM);
                 }
-                AV_WB32(st->codec->extradata, 12);
-                memcpy(st->codec->extradata + 4, "frma", 4);
-                memcpy(st->codec->extradata + 8, "QDM2", 4);
-                AV_WB32(st->codec->extradata + 12, 6 + item_len);
-                memcpy(st->codec->extradata + 16, "QDCA", 4);
-                memcpy(st->codec->extradata + 20, p + 2, item_len - 2);
-                AV_WB32(st->codec->extradata + 18 + item_len, 8);
-                AV_WB32(st->codec->extradata + 22 + item_len, 0);
+                AV_WB32(st->codecpar->extradata, 12);
+                memcpy(st->codecpar->extradata + 4, "frma", 4);
+                memcpy(st->codecpar->extradata + 8, "QDM2", 4);
+                AV_WB32(st->codecpar->extradata + 12, 6 + item_len);
+                memcpy(st->codecpar->extradata + 16, "QDCA", 4);
+                memcpy(st->codecpar->extradata + 20, p + 2, item_len - 2);
+                AV_WB32(st->codecpar->extradata + 18 + item_len, 8);
+                AV_WB32(st->codecpar->extradata + 22 + item_len, 0);
 
                 qdm->block_size = AV_RB32(p + 26);
                 break;
@@ -189,7 +189,7 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
     uint8_t *p, *csum_pos = NULL;
 
     /* create packet to hold subpkts into a superblock */
-    assert(qdm->cache > 0);
+    av_assert0(qdm->cache > 0);
     for (n = 0; n < 0x80; n++)
         if (qdm->len[n] > 0)
             break;
@@ -265,9 +265,9 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
              * carried within the RTP stream, not SDP. Here,
              * by setting codec_id to AV_CODEC_ID_QDM2, we are signalling
              * to the decoder that it is OK to initialize. */
-            st->codec->codec_id = AV_CODEC_ID_QDM2;
+            st->codecpar->codec_id = AV_CODEC_ID_QDM2;
         }
-        if (st->codec->codec_id == AV_CODEC_ID_NONE)
+        if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
             return AVERROR(EAGAIN);
 
         /* subpackets */
@@ -298,21 +298,10 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
     return (qdm->cache > 0) ? 1 : 0;
 }
 
-static PayloadContext *qdm2_extradata_new(void)
-{
-    return av_mallocz(sizeof(PayloadContext));
-}
-
-static void qdm2_extradata_free(PayloadContext *qdm)
-{
-    av_free(qdm);
-}
-
 RTPDynamicProtocolHandler ff_qdm2_dynamic_handler = {
     .enc_name         = "X-QDM",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_NONE,
-    .alloc            = qdm2_extradata_new,
-    .free             = qdm2_extradata_free,
+    .priv_data_size   = sizeof(PayloadContext),
     .parse_packet     = qdm2_parse_packet,
 };

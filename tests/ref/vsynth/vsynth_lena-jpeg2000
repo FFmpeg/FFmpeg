@@ -1,0 +1,4 @@
+1f2cf6061c78905b8011091a9a7c425f *tests/data/fate/vsynth_lena-jpeg2000.avi
+1138054 tests/data/fate/vsynth_lena-jpeg2000.avi
+955653ca7a08447e7b1501b444f24562 *tests/data/fate/vsynth_lena-jpeg2000.out.rawvideo
+stddev:    4.40 PSNR: 35.25 MAXDIFF:   58 bytes:  7603200/  7603200

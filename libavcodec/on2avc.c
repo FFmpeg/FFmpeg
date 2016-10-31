@@ -21,14 +21,13 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "get_bits.h"
-#include "golomb.h"
 #include "internal.h"
-#include "unary.h"
 
 #include "on2avcdata.h"
 
@@ -47,7 +46,7 @@ enum WindowTypes {
 
 typedef struct On2AVCContext {
     AVCodecContext *avctx;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext mdct, mdct_half, mdct_small;
     FFTContext fft128, fft256, fft512, fft1024;
     void (*wtf)(struct On2AVCContext *ctx, float *out, float *in, int size);
@@ -119,12 +118,12 @@ static int on2avc_decode_band_types(On2AVCContext *c, GetBitContext *gb)
         run_len   = 1;
         do {
             run = get_bits(gb, bits_per_sect);
+            if (run > num_bands - band - run_len) {
+                av_log(c->avctx, AV_LOG_ERROR, "Invalid band type run\n");
+                return AVERROR_INVALIDDATA;
+            }
             run_len += run;
         } while (run == esc_val);
-        if (band + run_len > num_bands) {
-            av_log(c->avctx, AV_LOG_ERROR, "Invalid band type run\n");
-            return AVERROR_INVALIDDATA;
-        }
         for (i = band; i < band + run_len; i++) {
             c->band_type[i]    = band_type;
             c->band_run_end[i] = band + run_len;
@@ -186,7 +185,7 @@ static int on2avc_decode_band_scales(On2AVCContext *c, GetBitContext *gb)
 
 static inline float on2avc_scale(int v, float scale)
 {
-    return v * sqrtf(fabsf(v)) * scale;
+    return v * sqrtf(abs(v)) * scale;
 }
 
 // spectral data is coded completely differently - there are no unsigned codebooks
@@ -211,9 +210,16 @@ static inline int get_egolomb(GetBitContext *gb)
 {
     int v = 4;
 
-    while (get_bits1(gb)) v++;
+    while (get_bits1(gb)) {
+        v++;
+        if (v > 30) {
+            av_log(NULL, AV_LOG_WARNING, "Too large golomb code in get_egolomb.\n");
+            v = 30;
+            break;
+        }
+    }
 
-    return (1 << v) + get_bits(gb, v);
+    return (1 << v) + get_bits_long(gb, v);
 }
 
 static int on2avc_decode_pairs(On2AVCContext *c, GetBitContext *gb, float *dst,
@@ -679,11 +685,11 @@ static void wtf_44(On2AVCContext *c, float *out, float *src, int size)
     }
 }
 
-static int on2avc_reconstruct_stereo(On2AVCContext *c, AVFrame *dst, int offset)
+static int on2avc_reconstruct_channel_ext(On2AVCContext *c, AVFrame *dst, int offset)
 {
     int ch, i;
 
-    for (ch = 0; ch < 2; ch++) {
+    for (ch = 0; ch < c->avctx->channels; ch++) {
         float *out   = (float*)dst->extended_data[ch] + offset;
         float *in    = c->coeffs[ch];
         float *saved = c->delay[ch];
@@ -714,7 +720,7 @@ static int on2avc_reconstruct_stereo(On2AVCContext *c, AVFrame *dst, int offset)
         }
 
         memcpy(out, saved, 448 * sizeof(float));
-        c->fdsp.vector_fmul_window(wout, saved + 448, buf, c->short_win, 64);
+        c->fdsp->vector_fmul_window(wout, saved + 448, buf, c->short_win, 64);
         memcpy(wout + 128,  buf + 64,         448 * sizeof(float));
         memcpy(saved,       buf + 512,        448 * sizeof(float));
         memcpy(saved + 448, buf + 7*128 + 64,  64 * sizeof(float));
@@ -750,20 +756,20 @@ static int on2avc_reconstruct_channel(On2AVCContext *c, int channel,
          c->prev_window_type == WINDOW_TYPE_LONG_STOP) &&
         (c->window_type == WINDOW_TYPE_LONG ||
          c->window_type == WINDOW_TYPE_LONG_START)) {
-        c->fdsp.vector_fmul_window(out, saved, buf, c->long_win, 512);
+        c->fdsp->vector_fmul_window(out, saved, buf, c->long_win, 512);
     } else {
         float *wout = out + 448;
         memcpy(out, saved, 448 * sizeof(float));
 
         if (c->window_type == WINDOW_TYPE_8SHORT) {
-            c->fdsp.vector_fmul_window(wout + 0*128, saved + 448,      buf + 0*128, c->short_win, 64);
-            c->fdsp.vector_fmul_window(wout + 1*128, buf + 0*128 + 64, buf + 1*128, c->short_win, 64);
-            c->fdsp.vector_fmul_window(wout + 2*128, buf + 1*128 + 64, buf + 2*128, c->short_win, 64);
-            c->fdsp.vector_fmul_window(wout + 3*128, buf + 2*128 + 64, buf + 3*128, c->short_win, 64);
-            c->fdsp.vector_fmul_window(temp,         buf + 3*128 + 64, buf + 4*128, c->short_win, 64);
+            c->fdsp->vector_fmul_window(wout + 0*128, saved + 448,      buf + 0*128, c->short_win, 64);
+            c->fdsp->vector_fmul_window(wout + 1*128, buf + 0*128 + 64, buf + 1*128, c->short_win, 64);
+            c->fdsp->vector_fmul_window(wout + 2*128, buf + 1*128 + 64, buf + 2*128, c->short_win, 64);
+            c->fdsp->vector_fmul_window(wout + 3*128, buf + 2*128 + 64, buf + 3*128, c->short_win, 64);
+            c->fdsp->vector_fmul_window(temp,         buf + 3*128 + 64, buf + 4*128, c->short_win, 64);
             memcpy(wout + 4*128, temp, 64 * sizeof(float));
         } else {
-            c->fdsp.vector_fmul_window(wout, saved + 448, buf, c->short_win, 64);
+            c->fdsp->vector_fmul_window(wout, saved + 448, buf, c->short_win, 64);
             memcpy(wout + 128, buf + 64, 448 * sizeof(float));
         }
     }
@@ -772,9 +778,9 @@ static int on2avc_reconstruct_channel(On2AVCContext *c, int channel,
     switch (c->window_type) {
     case WINDOW_TYPE_8SHORT:
         memcpy(saved,       temp + 64,         64 * sizeof(float));
-        c->fdsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, c->short_win, 64);
-        c->fdsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, c->short_win, 64);
-        c->fdsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, c->short_win, 64);
+        c->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, c->short_win, 64);
+        c->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, c->short_win, 64);
+        c->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, c->short_win, 64);
         memcpy(saved + 448, buf + 7*128 + 64,  64 * sizeof(float));
         break;
     case WINDOW_TYPE_LONG_START:
@@ -795,17 +801,15 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
     GetBitContext gb;
     int i, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
+
     if (get_bits1(&gb)) {
         av_log(c->avctx, AV_LOG_ERROR, "enh bit set\n");
         return AVERROR_INVALIDDATA;
     }
     c->prev_window_type = c->window_type;
     c->window_type      = get_bits(&gb, 3);
-    if (c->window_type >= WINDOW_TYPE_EXT4 && c->avctx->channels == 1) {
-        av_log(c->avctx, AV_LOG_ERROR, "stereo mode window for mono audio\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     c->band_start  = c->modes[c->window_type].band_start;
     c->num_windows = c->modes[c->window_type].num_windows;
@@ -826,7 +830,7 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
         for (i = 0; i < c->avctx->channels; i++)
             on2avc_reconstruct_channel(c, i, dst, offset);
     } else {
-        on2avc_reconstruct_stereo(c, dst, offset);
+        on2avc_reconstruct_channel_ext(c, dst, offset);
     }
 
     return 0;
@@ -846,10 +850,8 @@ static int on2avc_decode_frame(AVCodecContext * avctx, void *data,
     if (c->is_av500) {
         /* get output buffer */
         frame->nb_samples = ON2AVC_SUBFRAME_SIZE;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
-        }
 
         if ((ret = on2avc_decode_subframe(c, buf, buf_size, frame, 0)) < 0)
             return ret;
@@ -872,10 +874,8 @@ static int on2avc_decode_frame(AVCodecContext * avctx, void *data,
 
         /* get output buffer */
         frame->nb_samples = ON2AVC_SUBFRAME_SIZE * num_frames;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
-        }
 
         audio_off = 0;
         bytestream2_init(&gb, buf, buf_size);
@@ -908,24 +908,29 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     On2AVCContext *c = avctx->priv_data;
     int i;
 
+    if (avctx->channels > 2U) {
+        avpriv_request_sample(avctx, "Decoding more than 2 channels");
+        return AVERROR_PATCHWELCOME;
+    }
+
     c->avctx = avctx;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
     avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
                                                    : AV_CH_LAYOUT_MONO;
 
     c->is_av500 = (avctx->codec_tag == 0x500);
-    if (c->is_av500 && avctx->channels == 2) {
-        av_log(avctx, AV_LOG_ERROR, "0x500 version should be mono\n");
-        return AVERROR_INVALIDDATA;
-    }
+
     if (avctx->channels == 2)
         av_log(avctx, AV_LOG_WARNING,
                "Stereo mode support is not good, patch is welcome\n");
 
+    // We add -0.01 before ceil() to avoid any values to fall at exactly the
+    // midpoint between different ceil values. The results are identical to
+    // using pow(10, i / 10.0) without such bias
     for (i = 0; i < 20; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 16) / 32;
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16 - 0.01) / 32;
     for (; i < 128; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 0.5);
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5 - 0.01);
 
     if (avctx->sample_rate < 32000 || avctx->channels == 1)
         memcpy(c->long_win, ff_on2avc_window_long_24000,
@@ -947,13 +952,14 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
     ff_fft_init(&c->fft256,  7, 0);
     ff_fft_init(&c->fft512,  8, 1);
     ff_fft_init(&c->fft1024, 9, 1);
-    avpriv_float_dsp_init(&c->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    c->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!c->fdsp)
+        return AVERROR(ENOMEM);
 
     if (init_vlc(&c->scale_diff, 9, ON2AVC_SCALE_DIFFS,
                  ff_on2avc_scale_diff_bits,  1, 1,
                  ff_on2avc_scale_diff_codes, 4, 4, 0)) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
-        return AVERROR(ENOMEM);
+        goto vlc_fail;
     }
     for (i = 1; i < 9; i++) {
         int idx = i - 1;
@@ -961,9 +967,7 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
                                ff_on2avc_quad_cb_bits[idx],  1, 1,
                                ff_on2avc_quad_cb_codes[idx], 4, 4,
                                ff_on2avc_quad_cb_syms[idx],  2, 2, 0)) {
-            av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
-            on2avc_free_vlcs(c);
-            return AVERROR(ENOMEM);
+            goto vlc_fail;
         }
     }
     for (i = 9; i < 16; i++) {
@@ -972,13 +976,16 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
                                ff_on2avc_pair_cb_bits[idx],  1, 1,
                                ff_on2avc_pair_cb_codes[idx], 2, 2,
                                ff_on2avc_pair_cb_syms[idx],  2, 2, 0)) {
-            av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
-            on2avc_free_vlcs(c);
-            return AVERROR(ENOMEM);
+            goto vlc_fail;
         }
     }
 
     return 0;
+vlc_fail:
+    av_log(avctx, AV_LOG_ERROR, "Cannot init VLC\n");
+    on2avc_free_vlcs(c);
+    av_freep(&c->fdsp);
+    return AVERROR(ENOMEM);
 }
 
 static av_cold int on2avc_decode_close(AVCodecContext *avctx)
@@ -992,6 +999,8 @@ static av_cold int on2avc_decode_close(AVCodecContext *avctx)
     ff_fft_end(&c->fft256);
     ff_fft_end(&c->fft512);
     ff_fft_end(&c->fft1024);
+
+    av_freep(&c->fdsp);
 
     on2avc_free_vlcs(c);
 
@@ -1008,7 +1017,7 @@ AVCodec ff_on2avc_decoder = {
     .init           = on2avc_decode_init,
     .decode         = on2avc_decode_frame,
     .close          = on2avc_decode_close,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

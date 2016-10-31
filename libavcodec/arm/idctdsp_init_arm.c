@@ -29,37 +29,33 @@
 #include "idct.h"
 #include "idctdsp_arm.h"
 
-/* XXX: local hack */
-static void (*put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-static void (*add_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
-
 void ff_add_pixels_clamped_arm(const int16_t *block, uint8_t *dest,
-                               int line_size);
+                               ptrdiff_t line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
  * converted */
 static void j_rev_dct_arm_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct_arm(block);
-    put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 static void j_rev_dct_arm_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct_arm(block);
-    add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 static void simple_idct_arm_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_arm(block);
-    put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped(block, dest, line_size);
 }
 
 static void simple_idct_arm_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_arm(block);
-    add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped(block, dest, line_size);
 }
 
 av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
@@ -67,11 +63,8 @@ av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
 {
     int cpu_flags = av_get_cpu_flags();
 
-    put_pixels_clamped = c->put_pixels_clamped;
-    add_pixels_clamped = c->add_pixels_clamped;
-
     if (!avctx->lowres && !high_bit_depth) {
-        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & CODEC_FLAG_BITEXACT)) ||
+        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & AV_CODEC_FLAG_BITEXACT)) ||
             avctx->idct_algo == FF_IDCT_ARM) {
             c->idct_put  = j_rev_dct_arm_put;
             c->idct_add  = j_rev_dct_arm_add;

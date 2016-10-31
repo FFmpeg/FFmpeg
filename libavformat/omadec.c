@@ -47,6 +47,7 @@
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/des.h"
+#include "libavutil/mathematics.h"
 #include "oma.h"
 #include "pcm.h"
 #include "id3v2.h"
@@ -73,7 +74,7 @@ typedef struct OMAContext {
     uint8_t sm_val[8];
     uint8_t e_val[8];
     uint8_t iv[8];
-    struct AVDES av_des;
+    struct AVDES *av_des;
 } OMAContext;
 
 static void hex_log(AVFormatContext *s, int level,
@@ -124,27 +125,33 @@ static int rprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
 {
     OMAContext *oc = s->priv_data;
     unsigned int pos;
-    struct AVDES av_des;
+    struct AVDES *av_des;
 
     if (!enc_header || !r_val ||
         size < OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size + oc->i_size ||
         size < OMA_RPROBE_M_VAL)
         return -1;
 
+    av_des = av_des_alloc();
+    if (!av_des)
+        return AVERROR(ENOMEM);
+
     /* m_val */
-    av_des_init(&av_des, r_val, 192, 1);
-    av_des_crypt(&av_des, oc->m_val, &enc_header[48], 1, NULL, 1);
+    av_des_init(av_des, r_val, 192, 1);
+    av_des_crypt(av_des, oc->m_val, &enc_header[48], 1, NULL, 1);
 
     /* s_val */
-    av_des_init(&av_des, oc->m_val, 64, 0);
-    av_des_crypt(&av_des, oc->s_val, NULL, 1, NULL, 0);
+    av_des_init(av_des, oc->m_val, 64, 0);
+    av_des_crypt(av_des, oc->s_val, NULL, 1, NULL, 0);
 
     /* sm_val */
     pos = OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size;
-    av_des_init(&av_des, oc->s_val, 64, 0);
-    av_des_mac(&av_des, oc->sm_val, &enc_header[pos], (oc->i_size >> 3));
+    av_des_init(av_des, oc->s_val, 64, 0);
+    av_des_mac(av_des, oc->sm_val, &enc_header[pos], (oc->i_size >> 3));
 
     pos += oc->i_size;
+
+    av_free(av_des);
 
     return memcmp(&enc_header[pos], oc->sm_val, 8) ? -1 : 0;
 }
@@ -155,7 +162,7 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     OMAContext *oc = s->priv_data;
     uint64_t pos;
     uint32_t taglen, datalen;
-    struct AVDES av_des;
+    struct AVDES *av_des;
 
     if (!enc_header || !n_val ||
         size < OMA_ENC_HEADER_SIZE + oc->k_size + 4)
@@ -174,20 +181,27 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     taglen  = AV_RB32(&enc_header[pos + 32]);
     datalen = AV_RB32(&enc_header[pos + 36]) >> 4;
 
-    pos += 44L + taglen;
+    pos += 44LL + taglen;
 
     if (pos + (((uint64_t)datalen) << 4) > size)
         return -1;
 
-    av_des_init(&av_des, n_val, 192, 1);
+    av_des = av_des_alloc();
+    if (!av_des)
+        return AVERROR(ENOMEM);
+
+    av_des_init(av_des, n_val, 192, 1);
     while (datalen-- > 0) {
-        av_des_crypt(&av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
+        av_des_crypt(av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
         kset(s, oc->r_val, NULL, 16);
-        if (!rprobe(s, enc_header, size, oc->r_val))
+        if (!rprobe(s, enc_header, size, oc->r_val)) {
+            av_free(av_des);
             return 0;
+        }
         pos += 16;
     }
 
+    av_free(av_des);
     return -1;
 }
 
@@ -272,14 +286,18 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
         }
     }
 
+    oc->av_des = av_des_alloc();
+    if (!oc->av_des)
+        return AVERROR(ENOMEM);
+
     /* e_val */
-    av_des_init(&oc->av_des, oc->m_val, 64, 0);
-    av_des_crypt(&oc->av_des, oc->e_val,
+    av_des_init(oc->av_des, oc->m_val, 64, 0);
+    av_des_crypt(oc->av_des, oc->e_val,
                  &gdata[OMA_ENC_HEADER_SIZE + 40], 1, NULL, 0);
     hex_log(s, AV_LOG_DEBUG, "EK", oc->e_val, 8);
 
     /* init e_val */
-    av_des_init(&oc->av_des, oc->e_val, 64, 1);
+    av_des_init(oc->av_des, oc->e_val, 64, 1);
 
     return 0;
 }
@@ -324,10 +342,10 @@ static int oma_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->start_time = 0;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag  = buf[32];
-    st->codec->codec_id   = ff_codec_get_id(ff_oma_codec_tags,
-                                            st->codec->codec_tag);
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_tag  = buf[32];
+    st->codecpar->codec_id   = ff_codec_get_id(ff_oma_codec_tags,
+                                               st->codecpar->codec_tag);
 
     switch (buf[32]) {
     case OMA_CODECID_ATRAC3:
@@ -344,17 +362,17 @@ static int oma_read_header(AVFormatContext *s)
         /* get stereo coding mode, 1 for joint-stereo */
         jsflag = (codec_params >> 17) & 1;
 
-        st->codec->channels    = 2;
-        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-        st->codec->sample_rate = samplerate;
-        st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
+        st->codecpar->channels    = 2;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        st->codecpar->sample_rate = samplerate;
+        st->codecpar->bit_rate    = st->codecpar->sample_rate * framesize * 8 / 1024;
 
         /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
-        if (ff_alloc_extradata(st->codec, 14))
+        if (ff_alloc_extradata(st->codecpar, 14))
             return AVERROR(ENOMEM);
 
-        edata = st->codec->extradata;
+        edata = st->codecpar->extradata;
         AV_WL16(&edata[0],  1);             // always 1
         AV_WL32(&edata[2],  samplerate);    // samples rate
         AV_WL16(&edata[6],  jsflag);        // coding mode
@@ -362,7 +380,7 @@ static int oma_read_header(AVFormatContext *s)
         AV_WL16(&edata[10], 1);             // always 1
         // AV_WL16(&edata[12], 0);          // always 0
 
-        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
         break;
     case OMA_CODECID_ATRAC3P:
         channel_id = (codec_params >> 10) & 7;
@@ -371,16 +389,16 @@ static int oma_read_header(AVFormatContext *s)
                    "Invalid ATRAC-X channel id: %"PRIu32"\n", channel_id);
             return AVERROR_INVALIDDATA;
         }
-        st->codec->channel_layout = ff_oma_chid_to_native_layout[channel_id - 1];
-        st->codec->channels       = ff_oma_chid_to_num_channels[channel_id - 1];
+        st->codecpar->channel_layout = ff_oma_chid_to_native_layout[channel_id - 1];
+        st->codecpar->channels       = ff_oma_chid_to_num_channels[channel_id - 1];
         framesize = ((codec_params & 0x3FF) * 8) + 8;
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
             av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
             return AVERROR_INVALIDDATA;
         }
-        st->codec->sample_rate = samplerate;
-        st->codec->bit_rate    = samplerate * framesize * 8 / 2048;
+        st->codecpar->sample_rate = samplerate;
+        st->codecpar->bit_rate    = samplerate * framesize * 8 / 2048;
         avpriv_set_pts_info(st, 64, 1, samplerate);
         break;
     case OMA_CODECID_MP3:
@@ -389,22 +407,22 @@ static int oma_read_header(AVFormatContext *s)
         break;
     case OMA_CODECID_LPCM:
         /* PCM 44.1 kHz 16 bit stereo big-endian */
-        st->codec->channels = 2;
-        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-        st->codec->sample_rate = 44100;
+        st->codecpar->channels = 2;
+        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        st->codecpar->sample_rate = 44100;
         framesize = 1024;
         /* bit rate = sample rate x PCM block align (= 4) x 8 */
-        st->codec->bit_rate = st->codec->sample_rate * 32;
-        st->codec->bits_per_coded_sample =
-            av_get_bits_per_sample(st->codec->codec_id);
-        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        st->codecpar->bit_rate = st->codecpar->sample_rate * 32;
+        st->codecpar->bits_per_coded_sample =
+            av_get_bits_per_sample(st->codecpar->codec_id);
+        avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n", buf[32]);
         return AVERROR(ENOSYS);
     }
 
-    st->codec->block_align = framesize;
+    st->codecpar->block_align = framesize;
 
     return 0;
 }
@@ -412,9 +430,12 @@ static int oma_read_header(AVFormatContext *s)
 
 static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    OMAContext *oc = s->priv_data;
-    int packet_size = s->streams[0]->codec->block_align;
-    int ret = av_get_packet(s->pb, pkt, packet_size);
+    OMAContext *oc  = s->priv_data;
+    AVStream *st    = s->streams[0];
+    int packet_size = st->codecpar->block_align;
+    int byte_rate   = st->codecpar->bit_rate >> 3;
+    int64_t pos     = avio_tell(s->pb);
+    int ret         = av_get_packet(s->pb, pkt, packet_size);
 
     if (ret < packet_size)
         pkt->flags |= AV_PKT_FLAG_CORRUPT;
@@ -426,11 +447,17 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
 
+    if (pos >= oc->content_start && byte_rate > 0) {
+        pkt->pts =
+        pkt->dts = av_rescale(pos - oc->content_start, st->time_base.den,
+                              byte_rate * (int64_t)st->time_base.num);
+    }
+
     if (oc->encrypted) {
         /* previous unencrypted block saved in IV for
          * the next packet (CBC mode) */
         if (ret == packet_size)
-            av_des_crypt(&oc->av_des, pkt->data, pkt->data,
+            av_des_crypt(oc->av_des, pkt->data, pkt->data,
                          (packet_size >> 3), oc->iv, 1);
         else
             memset(oc->iv, 0, 8);
@@ -464,7 +491,7 @@ static int oma_read_seek(struct AVFormatContext *s,
                          int stream_index, int64_t timestamp, int flags)
 {
     OMAContext *oc = s->priv_data;
-    int err = ff_pcm_read_seek(s, stream_index, timestamp, flags);
+    int64_t err = ff_pcm_read_seek(s, stream_index, timestamp, flags);
 
     if (!oc->encrypted)
         return err;
@@ -486,6 +513,13 @@ wipe:
     return err;
 }
 
+static int oma_read_close(AVFormatContext *s)
+{
+    OMAContext *oc = s->priv_data;
+    av_free(oc->av_des);
+    return 0;
+}
+
 AVInputFormat ff_oma_demuxer = {
     .name           = "oma",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
@@ -494,6 +528,7 @@ AVInputFormat ff_oma_demuxer = {
     .read_header    = oma_read_header,
     .read_packet    = oma_read_packet,
     .read_seek      = oma_read_seek,
+    .read_close     = oma_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "oma,omg,aa3",
     .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},

@@ -24,12 +24,21 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "libavutil/opt.h"
 
 #if HAVE_GLOB
 #include <glob.h>
 #endif
 
-typedef struct {
+enum PatternType {
+    PT_GLOB_SEQUENCE,
+    PT_GLOB,
+    PT_SEQUENCE,
+    PT_NONE,
+    PT_DEFAULT
+};
+
+typedef struct VideoDemuxData {
     const AVClass *class;  /**< Class for private options. */
     int img_first;
     int img_last;
@@ -43,7 +52,7 @@ typedef struct {
     int width, height;      /**< Set by a private option. */
     AVRational framerate;   /**< Set by a private option. */
     int loop;
-    enum { PT_GLOB_SEQUENCE, PT_GLOB, PT_SEQUENCE } pattern_type;
+    int pattern_type; /**< PatternType */
     int use_glob;
 #if HAVE_GLOB
     glob_t globstate;
@@ -54,8 +63,16 @@ typedef struct {
     int ts_from_file;
 } VideoDemuxData;
 
+typedef struct IdStrMap {
+    enum AVCodecID id;
+    const char *str;
+} IdStrMap;
+
+extern const IdStrMap ff_img_tags[];
+
+extern const AVOption ff_img_options[];
+
 int ff_img_read_header(AVFormatContext *s1);
 
 int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt);
-
 #endif

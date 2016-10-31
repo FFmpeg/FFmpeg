@@ -30,14 +30,10 @@
 function ff_fft_calc_vfp, export=1
         ldr     ip, [a1, #0]    @ nbits
         mov     a1, a2
-A       ldr     pc, [pc, ip, lsl #2]
-A       .word   0
-A       .word   0
-A       .word   0
-T       movrel  a2, (fft_tab_vfp - 8)
-T       ldr     pc, [a2, ip, lsl #2]
-T endfunc
-T const fft_tab_vfp
+        movrel  a2, (fft_tab_vfp - 8)
+        ldr     pc, [a2, ip, lsl #2]
+endfunc
+const   fft_tab_vfp, relocate=1
         .word   fft4_vfp
         .word   fft8_vfp
         .word   X(ff_fft16_vfp)     @ this one alone is exported
@@ -53,7 +49,7 @@ T const fft_tab_vfp
         .word   fft16384_vfp
         .word   fft32768_vfp
         .word   fft65536_vfp
-A endfunc
+endconst
 
 function fft4_vfp
         vldr    d0, [a1, #0*2*4]   @ s0,s1   = z[0]

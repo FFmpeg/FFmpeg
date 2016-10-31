@@ -269,7 +269,7 @@ fail:
             st = &streams[i];
             if (st->mux) {
                 if (st->mux->pb)
-                    avio_close(st->mux->pb);
+                    avio_closep(&st->mux->pb);
                 avformat_free_context(st->mux);
             }
         }

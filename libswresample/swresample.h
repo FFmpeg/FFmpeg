@@ -28,11 +28,10 @@
  */
 
 /**
- * @defgroup lswr Libswresample
+ * @defgroup lswr libswresample
  * @{
  *
- * Libswresample (lswr) is a library that handles audio resampling, sample
- * format conversion and mixing.
+ * Audio resampling, sample format conversion and mixing library.
  *
  * Interaction with lswr is done through SwrContext, which is
  * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
@@ -121,6 +120,8 @@
  */
 
 #include <stdint.h>
+#include "libavutil/channel_layout.h"
+#include "libavutil/frame.h"
 #include "libavutil/samplefmt.h"
 
 #include "libswresample/version.h"
@@ -168,8 +169,8 @@ enum SwrEngine {
 /** Resampling Filter Types */
 enum SwrFilterType {
     SWR_FILTER_TYPE_CUBIC,              /**< Cubic */
-    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
-    SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall windowed sinc */
+    SWR_FILTER_TYPE_KAISER,             /**< Kaiser windowed sinc */
 };
 
 /**
@@ -293,9 +294,10 @@ void swr_close(struct SwrContext *s);
  * in and in_count can be set to 0 to flush the last few samples out at the
  * end.
  *
- * If more input is provided than output space then the input will be buffered.
- * You can avoid this buffering by providing more output space than input.
- * Conversion will run directly without copying whenever possible.
+ * If more input is provided than output space, then the input will be buffered.
+ * You can avoid this buffering by using swr_get_out_samples() to retrieve an
+ * upper bound on the required number of output samples for the given number of
+ * input samples. Conversion will run directly without copying whenever possible.
  *
  * @param s         allocated Swr context, with parameters set
  * @param out       output buffers, only the first one need be set in case of packed audio
@@ -363,6 +365,36 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
  * @return >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
+
+/**
+ * Generate a channel mixing matrix.
+ *
+ * This function is the one used internally by libswresample for building the
+ * default mixing matrix. It is made public just as a utility function for
+ * building custom matrices.
+ *
+ * @param in_layout           input channel layout
+ * @param out_layout          output channel layout
+ * @param center_mix_level    mix level for the center channel
+ * @param surround_mix_level  mix level for the surround channel(s)
+ * @param lfe_mix_level       mix level for the low-frequency effects channel
+ * @param rematrix_maxval     if 1.0, coefficients will be normalized to prevent
+ *                            overflow. if INT_MAX, coefficients will not be
+ *                            normalized.
+ * @param[out] matrix         mixing coefficients; matrix[i + stride * o] is
+ *                            the weight of input channel i in output channel o.
+ * @param stride              distance between adjacent input channels in the
+ *                            matrix array
+ * @param matrix_encoding     matrixed stereo downmix mode (e.g. dplii)
+ * @param log_ctx             parent logging context, can be NULL
+ * @return                    0 on success, negative AVERROR code on failure
+ */
+int swr_build_matrix(uint64_t in_layout, uint64_t out_layout,
+                     double center_mix_level, double surround_mix_level,
+                     double lfe_mix_level, double rematrix_maxval,
+                     double rematrix_volume, double *matrix,
+                     int stride, enum AVMatrixEncoding matrix_encoding,
+                     void *log_ctx);
 
 /**
  * Set a customized remix matrix.
@@ -435,6 +467,24 @@ int swr_inject_silence(struct SwrContext *s, int count);
 int64_t swr_get_delay(struct SwrContext *s, int64_t base);
 
 /**
+ * Find an upper bound on the number of samples that the next swr_convert
+ * call will output, if called with in_samples of input samples. This
+ * depends on the internal state, and anything changing the internal state
+ * (like further swr_convert() calls) will may change the number of samples
+ * swr_get_out_samples() returns for the same number of input samples.
+ *
+ * @param in_samples    number of input samples.
+ * @note any call to swr_inject_silence(), swr_convert(), swr_next_pts()
+ *       or swr_set_compensation() invalidates this limit
+ * @note it is recommended to pass the correct available buffer size
+ *       to all functions like swr_convert() even if swr_get_out_samples()
+ *       indicates that less would be used.
+ * @returns an upper bound on the number of samples that the next swr_convert
+ *          will output or a negative value to indicate an error
+ */
+int swr_get_out_samples(struct SwrContext *s, int in_samples);
+
+/**
  * @}
  *
  * @name Configuration accessors
@@ -464,6 +514,66 @@ const char *swresample_configuration(void);
  * @returns     the license of libswresample, determined at build-time
  */
 const char *swresample_license(void);
+
+/**
+ * @}
+ *
+ * @name AVFrame based API
+ * @{
+ */
+
+/**
+ * Convert the samples in the input AVFrame and write them to the output AVFrame.
+ *
+ * Input and output AVFrames must have channel_layout, sample_rate and format set.
+ *
+ * If the output AVFrame does not have the data pointers allocated the nb_samples
+ * field will be set using av_frame_get_buffer()
+ * is called to allocate the frame.
+ *
+ * The output AVFrame can be NULL or have fewer allocated samples than required.
+ * In this case, any remaining samples not written to the output will be added
+ * to an internal FIFO buffer, to be returned at the next call to this function
+ * or to swr_convert().
+ *
+ * If converting sample rate, there may be data remaining in the internal
+ * resampling delay buffer. swr_get_delay() tells the number of
+ * remaining samples. To get this data as output, call this function or
+ * swr_convert() with NULL input.
+ *
+ * If the SwrContext configuration does not match the output and
+ * input AVFrame settings the conversion does not take place and depending on
+ * which AVFrame is not matching AVERROR_OUTPUT_CHANGED, AVERROR_INPUT_CHANGED
+ * or the result of a bitwise-OR of them is returned.
+ *
+ * @see swr_delay()
+ * @see swr_convert()
+ * @see swr_get_delay()
+ *
+ * @param swr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure or nonmatching
+ *                        configuration.
+ */
+int swr_convert_frame(SwrContext *swr,
+                      AVFrame *output, const AVFrame *input);
+
+/**
+ * Configure or reconfigure the SwrContext using the information
+ * provided by the AVFrames.
+ *
+ * The original resampling context is reset even on failure.
+ * The function calls swr_close() internally if the context is open.
+ *
+ * @see swr_close();
+ *
+ * @param swr             audio resample context
+ * @param output          output AVFrame
+ * @param input           input AVFrame
+ * @return                0 on success, AVERROR on failure.
+ */
+int swr_config_frame(SwrContext *swr, const AVFrame *out, const AVFrame *in);
 
 /**
  * @}

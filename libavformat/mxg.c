@@ -48,20 +48,20 @@ static int mxg_read_header(AVFormatContext *s)
     video_st = avformat_new_stream(s, NULL);
     if (!video_st)
         return AVERROR(ENOMEM);
-    video_st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    video_st->codec->codec_id = AV_CODEC_ID_MXPEG;
+    video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    video_st->codecpar->codec_id = AV_CODEC_ID_MXPEG;
     avpriv_set_pts_info(video_st, 64, 1, 1000000);
 
     audio_st = avformat_new_stream(s, NULL);
     if (!audio_st)
         return AVERROR(ENOMEM);
-    audio_st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    audio_st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
-    audio_st->codec->channels = 1;
-    audio_st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-    audio_st->codec->sample_rate = 8000;
-    audio_st->codec->bits_per_coded_sample = 8;
-    audio_st->codec->block_align = 1;
+    audio_st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    audio_st->codecpar->codec_id = AV_CODEC_ID_PCM_ALAW;
+    audio_st->codecpar->channels = 1;
+    audio_st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    audio_st->codecpar->sample_rate = 8000;
+    audio_st->codecpar->bits_per_coded_sample = 8;
+    audio_st->codecpar->block_align = 1;
     avpriv_set_pts_info(audio_st, 64, 1, 1000000);
 
     mxg->soi_ptr = mxg->buffer_ptr = mxg->buffer = 0;
@@ -111,7 +111,7 @@ static int mxg_update_cache(AVFormatContext *s, unsigned int cache_size)
     soi_pos = mxg->soi_ptr - mxg->buffer;
     buffer = av_fast_realloc(mxg->buffer, &mxg->buffer_size,
                              current_pos + cache_size +
-                             FF_INPUT_BUFFER_PADDING_SIZE);
+                             AV_INPUT_BUFFER_PADDING_SIZE);
     if (!buffer)
         return AVERROR(ENOMEM);
     mxg->buffer = buffer;
@@ -171,18 +171,13 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                 pkt->pts = pkt->dts = mxg->dts;
                 pkt->stream_index = 0;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-                pkt->destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                 pkt->buf  = NULL;
                 pkt->size = mxg->buffer_ptr - mxg->soi_ptr;
                 pkt->data = mxg->soi_ptr;
 
                 if (mxg->soi_ptr - mxg->buffer > mxg->cache_size) {
                     if (mxg->cache_size > 0) {
-                        memcpy(mxg->buffer, mxg->buffer_ptr, mxg->cache_size);
+                        memmove(mxg->buffer, mxg->buffer_ptr, mxg->cache_size);
                     }
 
                     mxg->buffer_ptr = mxg->buffer;
@@ -214,11 +209,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     /* time (GMT) of first sample in usec since 1970, little-endian */
                     pkt->pts = pkt->dts = AV_RL64(startmarker_ptr + 8);
                     pkt->stream_index = 1;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-                    pkt->destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                     pkt->buf  = NULL;
                     pkt->size = size - 14;
                     pkt->data = startmarker_ptr + 16;

@@ -51,6 +51,7 @@ void (*rgb16to15)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*rgb15to16)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*rgb15to32)(const uint8_t *src, uint8_t *dst, int src_size);
 
+void (*shuffle_bytes_0321)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, int src_size);
 
 void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc,
@@ -129,7 +130,7 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
  * 32-bit C version, and and&add trick by Michael Niedermayer
  */
 
-av_cold void sws_rgb2rgb_init(void)
+av_cold void ff_sws_rgb2rgb_init(void)
 {
     rgb2rgb_init_c();
     if (ARCH_X86)
@@ -333,7 +334,6 @@ void shuffle_bytes_ ## a ## b ## c ## d(const uint8_t *src,             \
     }                                                                   \
 }
 
-DEFINE_SHUFFLE_BYTES(0, 3, 2, 1)
 DEFINE_SHUFFLE_BYTES(1, 2, 3, 0)
 DEFINE_SHUFFLE_BYTES(3, 0, 1, 2)
 DEFINE_SHUFFLE_BYTES(3, 2, 1, 0)

@@ -22,13 +22,13 @@
 #ifndef AVFORMAT_RTMPDH_H
 #define AVFORMAT_RTMPDH_H
 
-#include "avformat.h"
+#include <stdint.h>
+
 #include "config.h"
 
-#if CONFIG_NETTLE || CONFIG_GCRYPT
-#if CONFIG_NETTLE
+#if CONFIG_GMP || CONFIG_GCRYPT
+#if CONFIG_GMP
 #include <gmp.h>
-#include <nettle/bignum.h>
 
 typedef mpz_ptr FFBigNum;
 #elif CONFIG_GCRYPT
@@ -38,11 +38,11 @@ typedef gcry_mpi_t FFBigNum;
 #endif
 
 typedef struct FF_DH {
-  FFBigNum p;
-  FFBigNum g;
-  FFBigNum pub_key;
-  FFBigNum priv_key;
-  long length;
+    FFBigNum p;
+    FFBigNum g;
+    FFBigNum pub_key;
+    FFBigNum priv_key;
+    long length;
 } FF_DH;
 
 #elif CONFIG_OPENSSL
@@ -92,11 +92,13 @@ int ff_dh_write_public_key(FF_DH *dh, uint8_t *pub_key, int pub_key_len);
  *
  * @param dh            a Diffie-Hellmann context, containing the private key
  * @param pub_key       the buffer containing the public key
- * @param pub_key_len   the length of the buffer
+ * @param pub_key_len   the length of the public key buffer
  * @param secret_key    the buffer where the secret key is written
+ * @param secret_key_len the length of the secret key buffer
  * @return length of the shared secret key on success, negative value otherwise
  */
 int ff_dh_compute_shared_secret_key(FF_DH *dh, const uint8_t *pub_key,
-                                    int pub_key_len, uint8_t *secret_key);
+                                    int pub_key_len, uint8_t *secret_key,
+                                    int secret_key_len);
 
 #endif /* AVFORMAT_RTMPDH_H */

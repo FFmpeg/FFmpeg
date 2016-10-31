@@ -37,6 +37,8 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/samplefmt.h"
 
+#include "libavcodec/avcodec.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -142,6 +144,30 @@ static void dump_replaygain(AVFilterContext *ctx, AVFrameSideData *sd)
     print_peak(ctx, "album peak", rg->album_peak);
 }
 
+static void dump_audio_service_type(AVFilterContext *ctx, AVFrameSideData *sd)
+{
+    enum AVAudioServiceType *ast;
+
+    av_log(ctx, AV_LOG_INFO, "audio service type: ");
+    if (sd->size < sizeof(*ast)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+    ast = (enum AVAudioServiceType*)sd->data;
+    switch (*ast) {
+    case AV_AUDIO_SERVICE_TYPE_MAIN:              av_log(ctx, AV_LOG_INFO, "Main Audio Service"); break;
+    case AV_AUDIO_SERVICE_TYPE_EFFECTS:           av_log(ctx, AV_LOG_INFO, "Effects");            break;
+    case AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED: av_log(ctx, AV_LOG_INFO, "Visually Impaired");  break;
+    case AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED:  av_log(ctx, AV_LOG_INFO, "Hearing Impaired");   break;
+    case AV_AUDIO_SERVICE_TYPE_DIALOGUE:          av_log(ctx, AV_LOG_INFO, "Dialogue");           break;
+    case AV_AUDIO_SERVICE_TYPE_COMMENTARY:        av_log(ctx, AV_LOG_INFO, "Commentary");         break;
+    case AV_AUDIO_SERVICE_TYPE_EMERGENCY:         av_log(ctx, AV_LOG_INFO, "Emergency");          break;
+    case AV_AUDIO_SERVICE_TYPE_VOICE_OVER:        av_log(ctx, AV_LOG_INFO, "Voice Over");         break;
+    case AV_AUDIO_SERVICE_TYPE_KARAOKE:           av_log(ctx, AV_LOG_INFO, "Karaoke");            break;
+    default:                                      av_log(ctx, AV_LOG_INFO, "unknown");            break;
+    }
+}
+
 static void dump_unknown(AVFilterContext *ctx, AVFrameSideData *sd)
 {
     av_log(ctx, AV_LOG_INFO, "unknown side data type: %d, size %d bytes", sd->type, sd->size);
@@ -159,7 +185,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     int data_size   = buf->nb_samples * block_align;
     int planes      = planar ? channels : 1;
     int i;
-    void *tmp_ptr = av_realloc(s->plane_checksums, channels * sizeof(*s->plane_checksums));
+    void *tmp_ptr = av_realloc_array(s->plane_checksums, channels, sizeof(*s->plane_checksums));
 
     if (!tmp_ptr)
         return AVERROR(ENOMEM);
@@ -200,6 +226,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         case AV_FRAME_DATA_MATRIXENCODING: dump_matrixenc (ctx, sd); break;
         case AV_FRAME_DATA_DOWNMIX_INFO:   dump_downmix   (ctx, sd); break;
         case AV_FRAME_DATA_REPLAYGAIN:     dump_replaygain(ctx, sd); break;
+        case AV_FRAME_DATA_AUDIO_SERVICE_TYPE: dump_audio_service_type(ctx, sd); break;
         default:                           dump_unknown   (ctx, sd); break;
         }
 

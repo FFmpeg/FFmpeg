@@ -20,7 +20,6 @@
 
 #include "avcodec.h"
 #include "diracdsp.h"
-#include "libavcodec/x86/diracdsp_mmx.h"
 
 #define FILTER(src, stride)                                     \
     ((21*((src)[ 0*stride] + (src)[1*stride])                   \
@@ -135,9 +134,10 @@ ADD_OBMC(8)
 ADD_OBMC(16)
 ADD_OBMC(32)
 
-static void put_signed_rect_clamped_c(uint8_t *dst, int dst_stride, const int16_t *src, int src_stride, int width, int height)
+static void put_signed_rect_clamped_8bit_c(uint8_t *dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
 {
     int x, y;
+    int16_t *src = (int16_t *)_src;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=4) {
             dst[x  ] = av_clip_uint8(src[x  ] + 128);
@@ -146,9 +146,31 @@ static void put_signed_rect_clamped_c(uint8_t *dst, int dst_stride, const int16_
             dst[x+3] = av_clip_uint8(src[x+3] + 128);
         }
         dst += dst_stride;
-        src += src_stride;
+        src += src_stride >> 1;
     }
 }
+
+#define PUT_SIGNED_RECT_CLAMPED(PX)                                                                     \
+static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_stride, const uint8_t *_src, \
+                                                  int src_stride, int width, int height)                \
+{                                                                                                       \
+    int x, y;                                                                                           \
+    uint16_t *dst = (uint16_t *)_dst;                                                                   \
+    int32_t *src = (int32_t *)_src;                                                                     \
+    for (y = 0; y < height; y++) {                                                                      \
+        for (x = 0; x < width; x+=4) {                                                                  \
+            dst[x  ] = av_clip_uintp2(src[x  ] + (1 << (PX - 1)), PX);                                  \
+            dst[x+1] = av_clip_uintp2(src[x+1] + (1 << (PX - 1)), PX);                                  \
+            dst[x+2] = av_clip_uintp2(src[x+2] + (1 << (PX - 1)), PX);                                  \
+            dst[x+3] = av_clip_uintp2(src[x+3] + (1 << (PX - 1)), PX);                                  \
+        }                                                                                               \
+        dst += dst_stride >> 1;                                                                         \
+        src += src_stride >> 2;                                                                         \
+    }                                                                                                   \
+}
+
+PUT_SIGNED_RECT_CLAMPED(10)
+PUT_SIGNED_RECT_CLAMPED(12)
 
 static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
                                const int16_t *idwt, int idwt_stride,
@@ -167,17 +189,40 @@ static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
     }
 }
 
+#define DEQUANT_SUBBAND(PX)                                                                \
+static void dequant_subband_ ## PX ## _c(uint8_t *src, uint8_t *dst, ptrdiff_t stride,     \
+                                         const int qf, const int qs, int tot_v, int tot_h) \
+{                                                                                          \
+    int i, y;                                                                              \
+    for (y = 0; y < tot_v; y++) {                                                          \
+        PX c, sign, *src_r = (PX *)src, *dst_r = (PX *)dst;                                \
+        for (i = 0; i < tot_h; i++) {                                                      \
+            c = *src_r++;                                                                  \
+            sign = FFSIGN(c)*(!!c);                                                        \
+            c = (FFABS(c)*qf + qs) >> 2;                                                   \
+            *dst_r++ = c*sign;                                                             \
+        }                                                                                  \
+        src += tot_h << (sizeof(PX) >> 1);                                                 \
+        dst += stride;                                                                     \
+    }                                                                                      \
+}
+
+DEQUANT_SUBBAND(int16_t)
+DEQUANT_SUBBAND(int32_t)
+
 #define PIXFUNC(PFX, WIDTH)                                             \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][0] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _c; \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][1] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _l2_c; \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][2] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _l4_c; \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][3] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _bilinear_c
 
-void ff_diracdsp_init(DiracDSPContext *c)
+av_cold void ff_diracdsp_init(DiracDSPContext *c)
 {
     c->dirac_hpel_filter = dirac_hpel_filter;
     c->add_rect_clamped = add_rect_clamped_c;
-    c->put_signed_rect_clamped = put_signed_rect_clamped_c;
+    c->put_signed_rect_clamped[0] = put_signed_rect_clamped_8bit_c;
+    c->put_signed_rect_clamped[1] = put_signed_rect_clamped_10bit_c;
+    c->put_signed_rect_clamped[2] = put_signed_rect_clamped_12bit_c;
 
     c->add_dirac_obmc[0] = add_obmc8_c;
     c->add_dirac_obmc[1] = add_obmc16_c;
@@ -190,6 +235,9 @@ void ff_diracdsp_init(DiracDSPContext *c)
     c->biweight_dirac_pixels_tab[1] = biweight_dirac_pixels16_c;
     c->biweight_dirac_pixels_tab[2] = biweight_dirac_pixels32_c;
 
+    c->dequant_subband[0] = c->dequant_subband[2] = dequant_subband_int16_t_c;
+    c->dequant_subband[1] = c->dequant_subband[3] = dequant_subband_int32_t_c;
+
     PIXFUNC(put, 8);
     PIXFUNC(put, 16);
     PIXFUNC(put, 32);
@@ -197,5 +245,6 @@ void ff_diracdsp_init(DiracDSPContext *c)
     PIXFUNC(avg, 16);
     PIXFUNC(avg, 32);
 
-    if (HAVE_MMX && HAVE_YASM) ff_diracdsp_init_mmx(c);
+    if (ARCH_X86)
+        ff_diracdsp_init_x86(c);
 }

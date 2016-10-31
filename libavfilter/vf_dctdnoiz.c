@@ -367,10 +367,10 @@ static av_always_inline void filter_freq_##bsize(const float *src, int src_lines
         float *b = &tmp_block2[i];                                                          \
         /* frequency filtering */                                                           \
         if (expr) {                                                                         \
-            var_values[VAR_C] = FFABS(*b);                                                  \
+            var_values[VAR_C] = fabsf(*b);                                                  \
             *b *= av_expr_eval(expr, var_values, NULL);                                     \
         } else {                                                                            \
-            if (FFABS(*b) < sigma_th)                                                       \
+            if (fabsf(*b) < sigma_th)                                                       \
                 *b = 0;                                                                     \
         }                                                                                   \
     }                                                                                       \
@@ -507,15 +507,15 @@ static int config_input(AVFilterLink *inlink)
                inlink->h - s->pr_height);
 
     max_slice_h = s->pr_height / ((s->bsize - 1) * 2);
-    s->nb_threads = FFMIN3(MAX_THREADS, ctx->graph->nb_threads, max_slice_h);
+    s->nb_threads = FFMIN3(MAX_THREADS, ff_filter_get_nb_threads(ctx), max_slice_h);
     av_log(ctx, AV_LOG_DEBUG, "threads: [max=%d hmax=%d user=%d] => %d\n",
-           MAX_THREADS, max_slice_h, ctx->graph->nb_threads, s->nb_threads);
+           MAX_THREADS, max_slice_h, ff_filter_get_nb_threads(ctx), s->nb_threads);
 
     s->p_linesize = linesize = FFALIGN(s->pr_width, 32);
     for (i = 0; i < 2; i++) {
-        s->cbuf[i][0] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][0]));
-        s->cbuf[i][1] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][1]));
-        s->cbuf[i][2] = av_malloc(linesize * s->pr_height * sizeof(*s->cbuf[i][2]));
+        s->cbuf[i][0] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][0]));
+        s->cbuf[i][1] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][1]));
+        s->cbuf[i][2] = av_malloc_array(linesize * s->pr_height, sizeof(*s->cbuf[i][2]));
         if (!s->cbuf[i][0] || !s->cbuf[i][1] || !s->cbuf[i][2])
             return AVERROR(ENOMEM);
     }
@@ -534,7 +534,7 @@ static int config_input(AVFilterLink *inlink)
     /* each slice will need to (pre & re)process the top and bottom block of
      * the previous one in in addition to its processing area. This is because
      * each pixel is averaged by all the surrounding blocks */
-    slice_h = (int)ceilf(s->pr_height / s->nb_threads) + (s->bsize - 1) * 2;
+    slice_h = (int)ceilf(s->pr_height / (float)s->nb_threads) + (s->bsize - 1) * 2;
     for (i = 0; i < s->nb_threads; i++) {
         s->slices[i] = av_malloc_array(linesize, slice_h * sizeof(*s->slices[i]));
         if (!s->slices[i])
@@ -600,8 +600,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 typedef struct ThreadData {
@@ -732,14 +734,14 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
     DCTdnoizContext *s = ctx->priv;
 
-    av_free(s->weights);
+    av_freep(&s->weights);
     for (i = 0; i < 2; i++) {
-        av_free(s->cbuf[i][0]);
-        av_free(s->cbuf[i][1]);
-        av_free(s->cbuf[i][2]);
+        av_freep(&s->cbuf[i][0]);
+        av_freep(&s->cbuf[i][1]);
+        av_freep(&s->cbuf[i][2]);
     }
     for (i = 0; i < s->nb_threads; i++) {
-        av_free(s->slices[i]);
+        av_freep(&s->slices[i]);
         av_expr_free(s->expr[i]);
     }
 }

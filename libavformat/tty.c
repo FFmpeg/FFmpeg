@@ -34,7 +34,7 @@
 #include "internal.h"
 #include "sauce.h"
 
-typedef struct {
+typedef struct TtyDemuxContext {
     AVClass *class;
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
@@ -82,12 +82,12 @@ static int read_header(AVFormatContext *avctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    st->codec->codec_tag   = 0;
-    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id    = AV_CODEC_ID_ANSI;
+    st->codecpar->codec_tag   = 0;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id    = AV_CODEC_ID_ANSI;
 
-    st->codec->width  = s->width;
-    st->codec->height = s->height;
+    st->codecpar->width  = s->width;
+    st->codecpar->height = s->height;
     avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
     st->avg_frame_rate = s->framerate;
 
@@ -138,7 +138,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
 static const AVOption options[] = {
     { "chars_per_frame", "", offsetof(TtyDemuxContext, chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
 };
 

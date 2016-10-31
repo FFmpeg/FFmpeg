@@ -192,33 +192,51 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               $(FATE_H264_REINIT_TESTS:%=fate-h264-reinit-%)            \
               fate-h264-extreme-plane-pred                              \
               fate-h264-lossless                                        \
+              fate-h264-3386                                            \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
-FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
+
+# this sample has invalid reference list modification, but decodes fine
+# by using a previous ref frame instead of a missing one
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
+
+# this sample has invalid extradata that is not escaped
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
+
+FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF H264_MUXER) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
+FATE_H264-$(call DEMDEC, FLV, H264) += fate-h264-brokensps-2580
+FATE_H264-$(call DEMDEC, MXF, H264) += fate-h264-xavc-4389
+FATE_H264-$(call DEMDEC, MOV, H264) += fate-h264-attachment-631
+FATE_H264-$(call DEMDEC, MPEGTS, H264) += fate-h264-skip-nokey fate-h264-skip-nointra
+FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-dts_5frames
 
 FATE_SAMPLES_AVCONV += $(FATE_H264-yes)
-fate-h264: $(FATE_H264-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_H264_FFPROBE-yes)
+fate-h264: $(FATE_H264-yes) $(FATE_H264_FFPROBE-yes)
 
 fate-h264-conformance-aud_mw_e:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/AUD_MW_E.264
-fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
-fate-h264-conformance-ba1_sony_d:                 CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA1_Sony_D.jsv
-fate-h264-conformance-ba2_sony_f:                 CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA2_Sony_F.jsv
-fate-h264-conformance-ba3_sva_c:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA3_SVA_C.264
-fate-h264-conformance-ba_mw_d:                    CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BA_MW_D.264
-fate-h264-conformance-bamq1_jvc_c:                CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BAMQ1_JVC_C.264
-fate-h264-conformance-bamq2_jvc_c:                CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BAMQ2_JVC_C.264
-fate-h264-conformance-banm_mw_d:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BANM_MW_D.264
-fate-h264-conformance-basqp1_sony_c:              CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/BASQP1_Sony_C.jsv
-fate-h264-conformance-caba1_sony_d:               CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA1_Sony_D.jsv
-fate-h264-conformance-caba1_sva_b:                CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA1_SVA_B.264
-fate-h264-conformance-caba2_sony_e:               CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA2_Sony_E.jsv
-fate-h264-conformance-caba2_sva_b:                CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA2_SVA_B.264
-fate-h264-conformance-caba3_sony_c:               CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA3_Sony_C.jsv
-fate-h264-conformance-caba3_sva_b:                CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA3_SVA_B.264
-fate-h264-conformance-caba3_toshiba_e:            CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/CABA3_TOSHIBA_E.264
+
+#force framerate so that the option is tested, theres no other case that tests it, its not needed at all otherwise here
+fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -framerate 19 -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
+
+fate-h264-conformance-ba1_sony_d:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BA1_Sony_D.jsv
+fate-h264-conformance-ba2_sony_f:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BA2_Sony_F.jsv
+fate-h264-conformance-ba3_sva_c:                  CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BA3_SVA_C.264
+fate-h264-conformance-ba_mw_d:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BA_MW_D.264
+fate-h264-conformance-bamq1_jvc_c:                CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BAMQ1_JVC_C.264
+fate-h264-conformance-bamq2_jvc_c:                CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BAMQ2_JVC_C.264
+fate-h264-conformance-banm_mw_d:                  CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BANM_MW_D.264
+fate-h264-conformance-basqp1_sony_c:              CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BASQP1_Sony_C.jsv
+fate-h264-conformance-caba1_sony_d:               CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA1_Sony_D.jsv
+fate-h264-conformance-caba1_sva_b:                CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA1_SVA_B.264
+fate-h264-conformance-caba2_sony_e:               CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA2_Sony_E.jsv
+fate-h264-conformance-caba2_sva_b:                CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA2_SVA_B.264
+fate-h264-conformance-caba3_sony_c:               CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA3_Sony_C.jsv
+fate-h264-conformance-caba3_sva_b:                CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA3_SVA_B.264
+fate-h264-conformance-caba3_toshiba_e:            CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/CABA3_TOSHIBA_E.264
 fate-h264-conformance-cabac_mot_fld0_full:        CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/camp_mot_fld0_full.26l
 fate-h264-conformance-cabac_mot_frm0_full:        CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/camp_mot_frm0_full.26l
 fate-h264-conformance-cabac_mot_mbaff0_full:      CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/camp_mot_mbaff0_full.26l
@@ -387,11 +405,22 @@ fate-h264-conformance-sva_fm1_e:                  CMD = framecrc -vsync drop -i 
 fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL1_B.264
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
-fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
+fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -f h264
+
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
+fate-h264-brokensps-2580:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/brokensps.flv -vf format=yuv420p,scale=w=192:h=144 -sws_flags bitexact+bilinear
+fate-h264-xavc-4389:                              CMD = framecrc -i $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF -pix_fmt yuv422p10le
+fate-h264-attachment-631:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/attachment631-small.mp4 -an -max_error_rate 0.95
+fate-h264-skip-nokey:                             CMD = framecrc -skip_frame nokey -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
+fate-h264-skip-nointra:                           CMD = framecrc -skip_frame nointra -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
+fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
+fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
+fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
+
+fate-h264-dts_5frames:                            CMD = probeframes $(TARGET_SAMPLES)/h264/dts_5frames.mkv

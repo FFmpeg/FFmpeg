@@ -29,14 +29,14 @@
  * change without prior notice.
  */
 
-#ifndef LIBAVUTIL_OPENCL_H
-#define LIBAVUTIL_OPENCL_H
+#ifndef AVUTIL_OPENCL_H
+#define AVUTIL_OPENCL_H
 
-#include "config.h"
-#if HAVE_CL_CL_H
-#include <CL/cl.h>
-#else
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS 1
+#ifdef __APPLE__
 #include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
 #endif
 #include <stdint.h>
 #include "dict.h"
@@ -45,21 +45,15 @@
 
 #define AV_OPENCL_KERNEL( ... )# __VA_ARGS__
 
-#define AV_OPENCL_MAX_KERNEL_NAME_SIZE 150
-
-#define AV_OPENCL_MAX_DEVICE_NAME_SIZE 100
-
-#define AV_OPENCL_MAX_PLATFORM_NAME_SIZE 100
-
 typedef struct {
     int device_type;
-    char device_name[AV_OPENCL_MAX_DEVICE_NAME_SIZE];
+    char *device_name;
     cl_device_id device_id;
 } AVOpenCLDeviceNode;
 
 typedef struct {
     cl_platform_id platform_id;
-    char platform_name[AV_OPENCL_MAX_PLATFORM_NAME_SIZE];
+    char *platform_name;
     int device_num;
     AVOpenCLDeviceNode **device_node;
 } AVOpenCLPlatformNode;
@@ -68,14 +62,6 @@ typedef struct {
     int platform_num;
     AVOpenCLPlatformNode **platform_node;
 } AVOpenCLDeviceList;
-
-#if FF_API_OLD_OPENCL
-typedef struct {
-    cl_command_queue command_queue;
-    cl_kernel kernel;
-    char kernel_name[AV_OPENCL_MAX_KERNEL_NAME_SIZE];
-} AVOpenCLKernelEnv;
-#endif
 
 typedef struct {
     cl_platform_id platform_id;
@@ -187,19 +173,6 @@ int av_opencl_register_kernel_code(const char *kernel_code);
  */
 int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env);
 
-#if FF_API_OLD_OPENCL
-/**
- * Create kernel object in the specified kernel environment.
- *
- * @param env              pointer to kernel environment which is filled with
- *                         the environment used to run the kernel
- * @param kernel_name      kernel function name
- * @return >=0 on success, a negative error code in case of failure
- * @deprecated, use clCreateKernel
- */
-int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name);
-#endif
-
 /**
  * compile specific OpenCL kernel source
  *
@@ -292,17 +265,6 @@ int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_n
  */
 void av_opencl_buffer_release(cl_mem *cl_buf);
 
-#if FF_API_OLD_OPENCL
-/**
- * Release kernel object.
- *
- * @param env kernel environment where the kernel object was created
- *            with av_opencl_create_kernel()
- * @deprecated, use clReleaseKernel
- */
-void av_opencl_release_kernel(AVOpenCLKernelEnv *env);
-#endif
-
 /**
  * Release OpenCL environment.
  *
@@ -327,4 +289,4 @@ void av_opencl_uninit(void);
 int64_t av_opencl_benchmark(AVOpenCLDeviceNode *device, cl_platform_id platform,
                             int64_t (*benchmark)(AVOpenCLExternalEnv *ext_opencl_env));
 
-#endif /* LIBAVUTIL_OPENCL_H */
+#endif /* AVUTIL_OPENCL_H */

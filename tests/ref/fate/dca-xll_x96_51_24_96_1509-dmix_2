@@ -1,0 +1,15 @@
+#format: frame checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/96000
+#media_type 0: audio
+#codec_id 0: pcm_s24le
+#sample_rate 0: 96000
+#channel_layout 0: 60f
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,     1024,    18432, f9debe3f07be68533bf0295e3d2ba68a
+0,       1024,       1024,     1024,    18432, f9debe3f07be68533bf0295e3d2ba68a
+0,       2048,       2048,     1024,    18432, f68686e3f6dec5aa00fc8ef495c3a3fa
+0,       3072,       3072,     1024,    18432, 03adab4e2a4a5e9917d29de09e0afb22
+0,       4096,       4096,     1024,    18432, d7d1ab1efd7f2ff45f7374b41abaec51
+0,       5120,       5120,     1024,    18432, fe2aa09319ac1d7017e29fdab6207f27

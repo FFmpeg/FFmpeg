@@ -45,4 +45,6 @@
 
 #define AV_PRAGMA(s) _Pragma(#s)
 
+#define FFALIGN(x, a) (((x)+(a)-1)&~((a)-1))
+
 #endif /* AVUTIL_MACROS_H */

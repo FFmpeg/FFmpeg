@@ -19,6 +19,7 @@
 #include "config.h"
 #include "common.h"
 #include "pixelutils.h"
+#include "internal.h"
 
 #if CONFIG_PIXELUTILS
 
@@ -84,80 +85,3 @@ av_pixelutils_sad_fn av_pixelutils_get_sad_fn(int w_bits, int h_bits, int aligne
     return sad[w_bits - 1];
 #endif
 }
-
-#ifdef TEST
-#define W1 320
-#define H1 240
-#define W2 640
-#define H2 480
-
-static int run_test(const char *test,
-                    const uint8_t *b1, const uint8_t *b2)
-{
-    int i, a, ret = 0;
-
-    for (a = 0; a < 3; a++) {
-        const uint8_t *block1 = b1;
-        const uint8_t *block2 = b2;
-
-        switch (a) {
-        case 0: block1++; block2++; break;
-        case 1:           block2++; break;
-        case 2:                     break;
-        }
-        for (i = 1; i <= FF_ARRAY_ELEMS(sad_c); i++) {
-            av_pixelutils_sad_fn f_ref = sad_c[i - 1];
-            av_pixelutils_sad_fn f_out = av_pixelutils_get_sad_fn(i, i, a, NULL);
-            const int out = f_out(block1, W1, block2, W2);
-            const int ref = f_ref(block1, W1, block2, W2);
-            printf("[%s] [%c%c] SAD [%s] %dx%d=%d ref=%d\n",
-                   out == ref ? "OK" : "FAIL",
-                   a ? 'A' : 'U', a == 2 ? 'A' : 'U',
-                   test, 1<<i, 1<<i, out, ref);
-            if (out != ref)
-                ret = 1;
-        }
-    }
-    return ret;
-}
-
-int main(void)
-{
-    int i, ret;
-    uint8_t *buf1 = av_malloc(W1*H1);
-    uint8_t *buf2 = av_malloc(W2*H2);
-    uint32_t state = 0;
-
-    if (!buf1 || !buf2) {
-        fprintf(stderr, "malloc failure\n");
-        ret = 1;
-        goto end;
-    }
-
-    for (i = 0; i < W1*H1; i++) {
-        state = state * 1664525 + 1013904223;
-        buf1[i] = state>>24;
-    }
-    for (i = 0; i < W2*H2; i++) {
-        state = state * 1664525 + 1013904223;
-        buf2[i] = state>>24;
-    }
-    ret = run_test("random", buf1, buf2);
-    if (ret < 0)
-        goto end;
-
-    memset(buf1, 0xff, W1*H1);
-    memset(buf2, 0x00, W2*H2);
-    ret = run_test("max", buf1, buf2);
-    if (ret < 0)
-        goto end;
-
-    memset(buf1, 0x90, W1*H1);
-    memset(buf2, 0x90, W2*H2);
-    ret = run_test("min", buf1, buf2);
-end:
-    av_free(buf1);
-    av_free(buf2);
-    return ret;
-}
-#endif /* TEST */

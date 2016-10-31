@@ -65,9 +65,11 @@ static av_always_inline int yuv_diff(uint32_t yuv1, uint32_t yuv2)
 #define YMASK 0xff0000
 #define UMASK 0x00ff00
 #define VMASK 0x0000ff
-    return abs((yuv1 & YMASK) - (yuv2 & YMASK)) > (48 << 16) ||
-           abs((yuv1 & UMASK) - (yuv2 & UMASK)) > ( 7 <<  8) ||
-           abs((yuv1 & VMASK) - (yuv2 & VMASK)) > ( 6 <<  0);
+#define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
+
+    return ABSDIFF(yuv1 & YMASK, yuv2 & YMASK) > (48 << 16) ||
+           ABSDIFF(yuv1 & UMASK, yuv2 & UMASK) > ( 7 <<  8) ||
+           ABSDIFF(yuv1 & VMASK, yuv2 & VMASK) > ( 6 <<  0);
 }
 
 /* (c1*w1 + c2*w2) >> s */
@@ -462,8 +464,10 @@ HQX_FUNC(4)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -498,7 +502,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
     td.rgbtoyuv = hqx->rgbtoyuv;
-    ctx->internal->execute(ctx, hqx->func, &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, hqx->func, &td, NULL, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

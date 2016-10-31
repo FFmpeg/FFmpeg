@@ -1,5 +1,6 @@
 /*
  * FLV specific private header.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,14 +21,14 @@
 #ifndef AVCODEC_FLV_H
 #define AVCODEC_FLV_H
 
-#include "mpegvideo.h"
 #include "get_bits.h"
+#include "mpegvideo.h"
 #include "put_bits.h"
 
-void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number);
-void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run, int last);
+void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run,
+                           int last);
 
 int ff_flv_decode_picture_header(MpegEncContext *s);
-void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last);
 
 #endif /* AVCODEC_FLV_H */

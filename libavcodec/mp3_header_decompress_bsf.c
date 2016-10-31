@@ -21,32 +21,43 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bsf.h"
 #include "mpegaudiodecheader.h"
 #include "mpegaudiodata.h"
 
 
-static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe){
+static int mp3_header_decompress(AVBSFContext *ctx, AVPacket *out)
+{
+    AVPacket *in;
     uint32_t header;
-    int sample_rate= avctx->sample_rate;
+    int sample_rate= ctx->par_in->sample_rate;
     int sample_rate_index=0;
-    int lsf, mpeg25, bitrate_index, frame_size;
+    int lsf, mpeg25, bitrate_index, frame_size, ret;
+    uint8_t *buf;
+    int buf_size;
+
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    buf      = in->data;
+    buf_size = in->size;
 
     header = AV_RB32(buf);
     if(ff_mpa_check_header(header) >= 0){
-        *poutbuf= (uint8_t *) buf;
-        *poutbuf_size= buf_size;
+        av_packet_move_ref(out, in);
+        av_packet_free(&in);
 
         return 0;
     }
 
-    if(avctx->extradata_size != 15 || strcmp(avctx->extradata, "FFCMP3 0.0")){
-        av_log(avctx, AV_LOG_ERROR, "Extradata invalid %d\n", avctx->extradata_size);
-        return -1;
+    if(ctx->par_in->extradata_size != 15 || strcmp(ctx->par_in->extradata, "FFCMP3 0.0")){
+        av_log(ctx, AV_LOG_ERROR, "Extradata invalid %d\n", ctx->par_in->extradata_size);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
-    header= AV_RB32(avctx->extradata+11) & MP3_MASK;
+    header= AV_RB32(ctx->par_in->extradata+11) & MP3_MASK;
 
     lsf     = sample_rate < (24000+32000)/2;
     mpeg25  = sample_rate < (12000+16000)/2;
@@ -62,20 +73,27 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
             break;
     }
     if(bitrate_index == 30){
-        av_log(avctx, AV_LOG_ERROR, "Could not find bitrate_index.\n");
-        return -1;
+        av_log(ctx, AV_LOG_ERROR, "Could not find bitrate_index.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     header |= (bitrate_index&1)<<9;
     header |= (bitrate_index>>1)<<12;
     header |= (frame_size == buf_size + 4)<<16; //FIXME actually set a correct crc instead of 0
 
-    *poutbuf_size= frame_size;
-    *poutbuf= av_malloc(frame_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    memcpy(*poutbuf + frame_size - buf_size, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    ret = av_new_packet(out, frame_size);
+    if (ret < 0)
+        goto fail;
+    ret = av_packet_copy_props(out, in);
+    if (ret < 0) {
+        av_packet_free(&out);
+        goto fail;
+    }
+    memcpy(out->data + frame_size - buf_size, buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
-    if(avctx->channels==2){
-        uint8_t *p= *poutbuf + frame_size - buf_size;
+    if(ctx->par_in->channels==2){
+        uint8_t *p= out->data + frame_size - buf_size;
         if(lsf){
             FFSWAP(int, p[1], p[2]);
             header |= (p[1] & 0xC0)>>2;
@@ -86,12 +104,21 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
         }
     }
 
-    AV_WB32(*poutbuf, header);
+    AV_WB32(out->data, header);
 
-    return 1;
+    ret = 0;
+
+fail:
+    av_packet_free(&in);
+    return ret;
 }
 
-AVBitStreamFilter ff_mp3_header_decompress_bsf={
-    .name   = "mp3decomp",
-    .filter = mp3_header_decompress,
+static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_MP3, AV_CODEC_ID_NONE,
+};
+
+const AVBitStreamFilter ff_mp3_header_decompress_bsf = {
+    .name      = "mp3decomp",
+    .filter    = mp3_header_decompress,
+    .codec_ids = codec_ids,
 };

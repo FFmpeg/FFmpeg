@@ -115,12 +115,33 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
+    static const enum AVPixelFormat pix_fmts_alpha[] = {
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat pix_fmts_rgba[] = {
+        AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
+    };
+    AVFilterFormats *fmts_list;
 
-    if (s->black_fade)
-        ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    else
-        ff_set_common_formats(ctx, ff_make_format_list(pix_fmts_rgb));
-    return 0;
+    if (s->alpha) {
+        if (s->black_fade)
+            fmts_list = ff_make_format_list(pix_fmts_alpha);
+        else
+            fmts_list = ff_make_format_list(pix_fmts_rgba);
+    } else {
+        if (s->black_fade)
+            fmts_list = ff_make_format_list(pix_fmts);
+        else
+            fmts_list = ff_make_format_list(pix_fmts_rgb);
+    }
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 const static enum AVPixelFormat studio_level_pix_fmts[] = {
@@ -138,7 +159,9 @@ static int config_props(AVFilterLink *inlink)
     s->hsub = pixdesc->log2_chroma_w;
     s->vsub = pixdesc->log2_chroma_h;
 
-    s->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+    s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
+             1 :
+             av_get_bits_per_pixel(pixdesc) >> 3;
     s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
     s->is_packed_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
 
@@ -221,10 +244,10 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     FadeContext *s = ctx->priv;
     AVFrame *frame = arg;
     int i, j, plane;
-    const int width = FF_CEIL_RSHIFT(frame->width, s->hsub);
-    const int height= FF_CEIL_RSHIFT(frame->height, s->vsub);
+    const int width = AV_CEIL_RSHIFT(frame->width, s->hsub);
+    const int height= AV_CEIL_RSHIFT(frame->height, s->vsub);
     int slice_start = (height *  jobnr   ) / nb_jobs;
-    int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    int slice_end   = FFMIN(((height * (jobnr+1)) / nb_jobs), frame->height);
 
     for (plane = 1; plane < 3; plane++) {
         for (i = slice_start; i < slice_end; i++) {
@@ -324,19 +347,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
             ctx->internal->execute(ctx, filter_slice_alpha, frame, NULL,
-                                FFMIN(frame->height, ctx->graph->nb_threads));
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else if (s->is_packed_rgb && !s->black_fade) {
             ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
-                                   FFMIN(frame->height, ctx->graph->nb_threads));
+                                   FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
             /* luma, or rgb plane in case of black */
             ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
-                                FFMIN(frame->height, ctx->graph->nb_threads));
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
             if (frame->data[1] && frame->data[2]) {
                 /* chroma planes */
                 ctx->internal->execute(ctx, filter_slice_chroma, frame, NULL,
-                                    FFMIN(frame->height, ctx->graph->nb_threads));
+                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
             }
         }
     }
@@ -361,7 +384,7 @@ static const AVOption fade_options[] = {
                                                     OFFSET(nb_frames),   AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, FLAGS },
     { "n",           "Number of frames to which the effect should be applied.",
                                                     OFFSET(nb_frames),   AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, FLAGS },
-    { "alpha",       "fade alpha if it is available on the input", OFFSET(alpha),       AV_OPT_TYPE_INT, {.i64 = 0    }, 0,       1, FLAGS },
+    { "alpha",       "fade alpha if it is available on the input", OFFSET(alpha),       AV_OPT_TYPE_BOOL, {.i64 = 0    }, 0,       1, FLAGS },
     { "start_time",  "Number of seconds of the beginning of the effect.",
                                                     OFFSET(start_time),  AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "st",          "Number of seconds of the beginning of the effect.",

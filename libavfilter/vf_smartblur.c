@@ -84,34 +84,34 @@ AVFILTER_DEFINE_CLASS(smartblur);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    SmartblurContext *sblur = ctx->priv;
+    SmartblurContext *s = ctx->priv;
 
     /* make chroma default to luma values, if not explicitly set */
-    if (sblur->chroma.radius < RADIUS_MIN)
-        sblur->chroma.radius = sblur->luma.radius;
-    if (sblur->chroma.strength < STRENGTH_MIN)
-        sblur->chroma.strength  = sblur->luma.strength;
-    if (sblur->chroma.threshold < THRESHOLD_MIN)
-        sblur->chroma.threshold = sblur->luma.threshold;
+    if (s->chroma.radius < RADIUS_MIN)
+        s->chroma.radius = s->luma.radius;
+    if (s->chroma.strength < STRENGTH_MIN)
+        s->chroma.strength  = s->luma.strength;
+    if (s->chroma.threshold < THRESHOLD_MIN)
+        s->chroma.threshold = s->luma.threshold;
 
-    sblur->luma.quality = sblur->chroma.quality = 3.0;
-    sblur->sws_flags = SWS_BICUBIC;
+    s->luma.quality = s->chroma.quality = 3.0;
+    s->sws_flags = SWS_BICUBIC;
 
     av_log(ctx, AV_LOG_VERBOSE,
            "luma_radius:%f luma_strength:%f luma_threshold:%d "
            "chroma_radius:%f chroma_strength:%f chroma_threshold:%d\n",
-           sblur->luma.radius, sblur->luma.strength, sblur->luma.threshold,
-           sblur->chroma.radius, sblur->chroma.strength, sblur->chroma.threshold);
+           s->luma.radius, s->luma.strength, s->luma.threshold,
+           s->chroma.radius, s->chroma.strength, s->chroma.threshold);
 
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    SmartblurContext *sblur = ctx->priv;
+    SmartblurContext *s = ctx->priv;
 
-    sws_freeContext(sblur->luma.filter_context);
-    sws_freeContext(sblur->chroma.filter_context);
+    sws_freeContext(s->luma.filter_context);
+    sws_freeContext(s->chroma.filter_context);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -124,9 +124,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int flags)
@@ -158,17 +159,17 @@ static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int
 
 static int config_props(AVFilterLink *inlink)
 {
-    SmartblurContext *sblur = inlink->dst->priv;
+    SmartblurContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    sblur->hsub = desc->log2_chroma_w;
-    sblur->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    alloc_sws_context(&sblur->luma, inlink->w, inlink->h, sblur->sws_flags);
-    alloc_sws_context(&sblur->chroma,
-                      FF_CEIL_RSHIFT(inlink->w, sblur->hsub),
-                      FF_CEIL_RSHIFT(inlink->h, sblur->vsub),
-                      sblur->sws_flags);
+    alloc_sws_context(&s->luma, inlink->w, inlink->h, s->sws_flags);
+    alloc_sws_context(&s->chroma,
+                      AV_CEIL_RSHIFT(inlink->w, s->hsub),
+                      AV_CEIL_RSHIFT(inlink->h, s->vsub),
+                      s->sws_flags);
 
     return 0;
 }
@@ -239,11 +240,11 @@ static void blur(uint8_t       *dst, const int dst_linesize,
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
-    SmartblurContext  *sblur  = inlink->dst->priv;
+    SmartblurContext  *s  = inlink->dst->priv;
     AVFilterLink *outlink     = inlink->dst->outputs[0];
     AVFrame *outpic;
-    int cw = FF_CEIL_RSHIFT(inlink->w, sblur->hsub);
-    int ch = FF_CEIL_RSHIFT(inlink->h, sblur->vsub);
+    int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
@@ -254,18 +255,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     blur(outpic->data[0], outpic->linesize[0],
          inpic->data[0],  inpic->linesize[0],
-         inlink->w, inlink->h, sblur->luma.threshold,
-         sblur->luma.filter_context);
+         inlink->w, inlink->h, s->luma.threshold,
+         s->luma.filter_context);
 
     if (inpic->data[2]) {
         blur(outpic->data[1], outpic->linesize[1],
              inpic->data[1],  inpic->linesize[1],
-             cw, ch, sblur->chroma.threshold,
-             sblur->chroma.filter_context);
+             cw, ch, s->chroma.threshold,
+             s->chroma.filter_context);
         blur(outpic->data[2], outpic->linesize[2],
              inpic->data[2],  inpic->linesize[2],
-             cw, ch, sblur->chroma.threshold,
-             sblur->chroma.filter_context);
+             cw, ch, s->chroma.threshold,
+             s->chroma.filter_context);
     }
 
     av_frame_free(&inpic);

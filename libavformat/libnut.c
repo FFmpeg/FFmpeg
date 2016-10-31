@@ -75,46 +75,46 @@ static int nut_write_header(AVFormatContext * avf) {
         return AVERROR(ENOMEM);
 
     for (i = 0; i < avf->nb_streams; i++) {
-        AVCodecContext * codec = avf->streams[i]->codec;
+        AVCodecParameters *par = avf->streams[i]->codecpar;
         int j;
         int fourcc = 0;
         int num, denom, ssize;
 
-        s[i].type = codec->codec_type == AVMEDIA_TYPE_VIDEO ? NUT_VIDEO_CLASS : NUT_AUDIO_CLASS;
+        s[i].type = par->codec_type == AVMEDIA_TYPE_VIDEO ? NUT_VIDEO_CLASS : NUT_AUDIO_CLASS;
 
-        if (codec->codec_tag) fourcc = codec->codec_tag;
-        else fourcc = ff_codec_get_tag(nut_tags, codec->codec_id);
+        if (par->codec_tag) fourcc = par->codec_tag;
+        else fourcc = ff_codec_get_tag(nut_tags, par->codec_id);
 
         if (!fourcc) {
-            if (codec->codec_type == AVMEDIA_TYPE_VIDEO) fourcc = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
-            if (codec->codec_type == AVMEDIA_TYPE_AUDIO) fourcc = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
+            if (par->codec_type == AVMEDIA_TYPE_VIDEO) fourcc = ff_codec_get_tag(ff_codec_bmp_tags, par->codec_id);
+            if (par->codec_type == AVMEDIA_TYPE_AUDIO) fourcc = ff_codec_get_tag(ff_codec_wav_tags, par->codec_id);
         }
 
         s[i].fourcc_len = 4;
         s[i].fourcc = av_malloc(s[i].fourcc_len);
         for (j = 0; j < s[i].fourcc_len; j++) s[i].fourcc[j] = (fourcc >> (j*8)) & 0xFF;
 
-        ff_parse_specific_params(codec, &num, &ssize, &denom);
+        ff_parse_specific_params(avf->streams[i], &num, &ssize, &denom);
         avpriv_set_pts_info(avf->streams[i], 60, denom, num);
 
         s[i].time_base.num = denom;
         s[i].time_base.den = num;
 
         s[i].fixed_fps = 0;
-        s[i].decode_delay = codec->has_b_frames;
-        s[i].codec_specific_len = codec->extradata_size;
-        s[i].codec_specific = codec->extradata;
+        s[i].decode_delay = par->video_delay;
+        s[i].codec_specific_len = par->extradata_size;
+        s[i].codec_specific = par->extradata;
 
-        if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            s[i].width = codec->width;
-            s[i].height = codec->height;
+        if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
+            s[i].width = par->width;
+            s[i].height = par->height;
             s[i].sample_width = 0;
             s[i].sample_height = 0;
             s[i].colorspace_type = 0;
         } else {
-            s[i].samplerate_num = codec->sample_rate;
+            s[i].samplerate_num = par->sample_rate;
             s[i].samplerate_denom = 1;
-            s[i].channel_count = codec->channels;
+            s[i].channel_count = par->channels;
         }
     }
 
@@ -179,7 +179,7 @@ static size_t av_read(void * h, size_t len, uint8_t * buf) {
     return avio_read(bc, buf, len);
 }
 
-static off_t av_seek(void * h, long long pos, int whence) {
+static off_t av_seek(void * h, int64_t pos, int whence) {
     AVIOContext * bc = h;
     if (whence == SEEK_END) {
         pos = avio_size(bc) + pos;
@@ -226,45 +226,45 @@ static int nut_read_header(AVFormatContext * avf) {
         if (!st)
             return AVERROR(ENOMEM);
 
-        for (j = 0; j < s[i].fourcc_len && j < 8; j++) st->codec->codec_tag |= s[i].fourcc[j]<<(j*8);
+        for (j = 0; j < s[i].fourcc_len && j < 8; j++) st->codecpar->codec_tag |= s[i].fourcc[j]<<(j*8);
 
-        st->codec->has_b_frames = s[i].decode_delay;
+        st->codecpar->video_delay = s[i].decode_delay;
 
-        st->codec->extradata_size = s[i].codec_specific_len;
-        if (st->codec->extradata_size) {
-            if(ff_alloc_extradata(st->codec, st->codec->extradata_size)){
+        st->codecpar->extradata_size = s[i].codec_specific_len;
+        if (st->codecpar->extradata_size) {
+            if(ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size)){
                 nut_demuxer_uninit(nut);
                 priv->nut = NULL;
                 return AVERROR(ENOMEM);
             }
-            memcpy(st->codec->extradata, s[i].codec_specific, st->codec->extradata_size);
+            memcpy(st->codecpar->extradata, s[i].codec_specific, st->codecpar->extradata_size);
         }
 
         avpriv_set_pts_info(avf->streams[i], 60, s[i].time_base.num, s[i].time_base.den);
         st->start_time = 0;
         st->duration = s[i].max_pts;
 
-        st->codec->codec_id = ff_codec_get_id(nut_tags, st->codec->codec_tag);
+        st->codecpar->codec_id = ff_codec_get_id(nut_tags, st->codecpar->codec_tag);
 
         switch(s[i].type) {
         case NUT_AUDIO_CLASS:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            if (st->codec->codec_id == AV_CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, st->codec->codec_tag);
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            if (st->codecpar->codec_id == AV_CODEC_ID_NONE) st->codecpar->codec_id = ff_codec_get_id(ff_codec_wav_tags, st->codecpar->codec_tag);
 
-            st->codec->channels = s[i].channel_count;
-            st->codec->sample_rate = s[i].samplerate_num / s[i].samplerate_denom;
+            st->codecpar->channels = s[i].channel_count;
+            st->codecpar->sample_rate = s[i].samplerate_num / s[i].samplerate_denom;
             break;
         case NUT_VIDEO_CLASS:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            if (st->codec->codec_id == AV_CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            if (st->codecpar->codec_id == AV_CODEC_ID_NONE) st->codecpar->codec_id = ff_codec_get_id(ff_codec_bmp_tags, st->codecpar->codec_tag);
 
-            st->codec->width = s[i].width;
-            st->codec->height = s[i].height;
+            st->codecpar->width = s[i].width;
+            st->codecpar->height = s[i].height;
             st->sample_aspect_ratio.num = s[i].sample_width;
             st->sample_aspect_ratio.den = s[i].sample_height;
             break;
         }
-        if (st->codec->codec_id == AV_CODEC_ID_NONE) av_log(avf, AV_LOG_ERROR, "Unknown codec?!\n");
+        if (st->codecpar->codec_id == AV_CODEC_ID_NONE) av_log(avf, AV_LOG_ERROR, "Unknown codec?!\n");
     }
 
     return 0;

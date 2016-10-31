@@ -247,7 +247,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
     s->compression_level = AV_RL16(avctx->extradata + 2);
     s->flags             = AV_RL16(avctx->extradata + 4);
 
-    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n",
+    av_log(avctx, AV_LOG_VERBOSE, "Compression Level: %d - Flags: %d\n",
            s->compression_level, s->flags);
     if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE ||
         !s->compression_level ||
@@ -339,10 +339,10 @@ static inline void range_dec_normalize(APEContext *ctx)
 }
 
 /**
- * Calculate culmulative frequency for next symbol. Does NO update!
+ * Calculate cumulative frequency for next symbol. Does NO update!
  * @param ctx decoder context
  * @param tot_f is the total frequency or (code_value)1<<shift
- * @return the culmulative frequency
+ * @return the cumulative frequency
  */
 static inline int range_decode_culfreq(APEContext *ctx, int tot_f)
 {
@@ -505,10 +505,7 @@ static inline int ape_decode_value_3860(APEContext *ctx, GetBitContext *gb,
         rice->k++;
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
@@ -542,10 +539,7 @@ static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
@@ -588,10 +582,7 @@ static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
     update_rice(rice, x);
 
     /* Convert to signed */
-    if (x & 1)
-        return (x >> 1) + 1;
-    else
-        return -(x >> 1);
+    return ((x >> 1) ^ ((x & 1) - 1)) + 1;
 }
 
 static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
@@ -601,14 +592,14 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
     int ksummax, ksummin;
 
     rice->ksum = 0;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < FFMIN(blockstodecode, 5); i++) {
         out[i] = get_rice_ook(&ctx->gb, 10);
         rice->ksum += out[i];
     }
     rice->k = av_log2(rice->ksum / 10) + 1;
     if (rice->k >= 24)
         return;
-    for (; i < 64; i++) {
+    for (; i < FFMIN(blockstodecode, 64); i++) {
         out[i] = get_rice_ook(&ctx->gb, rice->k);
         rice->ksum += out[i];
         rice->k = av_log2(rice->ksum / ((i + 1) * 2)) + 1;
@@ -634,12 +625,8 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
         }
     }
 
-    for (i = 0; i < blockstodecode; i++) {
-        if (out[i] & 1)
-            out[i] = (out[i] >> 1) + 1;
-        else
-            out[i] = -(out[i] >> 1);
-    }
+    for (i = 0; i < blockstodecode; i++)
+        out[i] = ((out[i] >> 1) ^ ((out[i] & 1) - 1)) + 1;
 }
 
 static void entropy_decode_mono_0000(APEContext *ctx, int blockstodecode)
@@ -899,11 +886,14 @@ static av_always_inline int filter_3800(APEPredictor *p,
     return p->filterA[filter];
 }
 
-static void long_filter_high_3800(int32_t *buffer, int order, int shift,
-                                  int32_t *coeffs, int32_t *delay, int length)
+static void long_filter_high_3800(int32_t *buffer, int order, int shift, int length)
 {
     int i, j;
     int32_t dotprod, sign;
+    int32_t coeffs[256], delay[256];
+
+    if (order >= length)
+        return;
 
     memset(coeffs, 0, order * sizeof(*coeffs));
     for (i = 0; i < order; i++)
@@ -947,13 +937,12 @@ static void predictor_decode_stereo_3800(APEContext *ctx, int count)
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
-    int32_t coeffs[256], delay[256];
     int start = 4, shift = 10;
 
     if (ctx->compression_level == COMPRESSION_LEVEL_HIGH) {
         start = 16;
-        long_filter_high_3800(decoded0, 16, 9, coeffs, delay, count);
-        long_filter_high_3800(decoded1, 16, 9, coeffs, delay, count);
+        long_filter_high_3800(decoded0, 16, 9, count);
+        long_filter_high_3800(decoded1, 16, 9, count);
     } else if (ctx->compression_level == COMPRESSION_LEVEL_EXTRA_HIGH) {
         int order = 128, shift2 = 11;
 
@@ -965,8 +954,8 @@ static void predictor_decode_stereo_3800(APEContext *ctx, int count)
             long_filter_ehigh_3830(decoded1 + order, count - order);
         }
         start = order;
-        long_filter_high_3800(decoded0, order, shift2, coeffs, delay, count);
-        long_filter_high_3800(decoded1, order, shift2, coeffs, delay, count);
+        long_filter_high_3800(decoded0, order, shift2, count);
+        long_filter_high_3800(decoded1, order, shift2, count);
     }
 
     while (count--) {
@@ -1002,12 +991,11 @@ static void predictor_decode_mono_3800(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
-    int32_t coeffs[256], delay[256];
     int start = 4, shift = 10;
 
     if (ctx->compression_level == COMPRESSION_LEVEL_HIGH) {
         start = 16;
-        long_filter_high_3800(decoded0, 16, 9, coeffs, delay, count);
+        long_filter_high_3800(decoded0, 16, 9, count);
     } else if (ctx->compression_level == COMPRESSION_LEVEL_EXTRA_HIGH) {
         int order = 128, shift2 = 11;
 
@@ -1018,7 +1006,7 @@ static void predictor_decode_mono_3800(APEContext *ctx, int count)
             long_filter_ehigh_3830(decoded0 + order, count - order);
         }
         start = order;
-        long_filter_high_3800(decoded0, order, shift2, coeffs, delay, count);
+        long_filter_high_3800(decoded0, order, shift2, count);
     }
 
     while (count--) {
@@ -1296,8 +1284,16 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             /* Update the adaption coefficients */
             absres = FFABS(res);
             if (absres)
-                *f->adaptcoeffs = ((res & (-1<<31)) ^ (-1<<30)) >>
-                                  (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
+                *f->adaptcoeffs = APESIGN(res) *
+                                  (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
+                /* equivalent to the following code
+                    if (absres <= f->avg * 4 / 3)
+                        *f->adaptcoeffs = APESIGN(res) * 8;
+                    else if (absres <= f->avg * 3)
+                        *f->adaptcoeffs = APESIGN(res) * 16;
+                    else
+                        *f->adaptcoeffs = APESIGN(res) * 32;
+                */
             else
                 *f->adaptcoeffs = 0;
 
@@ -1384,7 +1380,7 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
 
-    if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
+    if ((ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) == APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, so we're done. */
         av_log(ctx->avctx, AV_LOG_DEBUG, "pure silence stereo\n");
         return;
@@ -1476,13 +1472,13 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
                    nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->samples = nblocks;
 
         /* Initialize the frame decoder */
         if (init_frame_decoder(s) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
             return AVERROR_INVALIDDATA;
         }
+        s->samples = nblocks;
     }
 
     if (!s->data) {
@@ -1585,7 +1581,8 @@ AVCodec ff_ape_decoder = {
     .init           = ape_decode_init,
     .close          = ape_decode_close,
     .decode         = ape_decode_frame,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_DR1,
     .flush          = ape_flush,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_S16P,

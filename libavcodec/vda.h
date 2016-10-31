@@ -171,6 +171,12 @@ typedef struct AVVDAContext {
      * Set by av_vda_alloc_context().
      */
     VDADecoderOutputCallback output_callback;
+
+    /**
+     * CVPixelBuffer Format Type that VDA will use for decoded frames; set by
+     * the caller.
+     */
+    OSType cv_pix_fmt_type;
 } AVVDAContext;
 
 /**
@@ -197,6 +203,17 @@ AVVDAContext *av_vda_alloc_context(void);
  * @return >= 0 on success, a negative AVERROR code on failure
  */
 int av_vda_default_init(AVCodecContext *avctx);
+
+/**
+ * This is a convenience function that creates and sets up the VDA context using
+ * an internal implementation.
+ *
+ * @param avctx the corresponding codec context
+ * @param vdactx the VDA context to use
+ *
+ * @return >= 0 on success, a negative AVERROR code on failure
+ */
+int av_vda_default_init2(AVCodecContext *avctx, AVVDAContext *vdactx);
 
 /**
  * This function must be called to free the VDA context initialized with

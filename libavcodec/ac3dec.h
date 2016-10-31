@@ -84,6 +84,9 @@ typedef struct AC3DecodeContext {
     int bitstream_mode;                     ///< bitstream mode                         (bsmod)
     int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
+    int dialog_normalization[2];            ///< dialog level in dBFS                   (dialnorm)
+    int compression_exists[2];              ///< compression field is valid for frame   (compre)
+    int compression_gain[2];                ///< gain to apply for heavy compression    (compr)
     int channel_map;                        ///< custom channel map
     int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
@@ -93,6 +96,8 @@ typedef struct AC3DecodeContext {
     int lfe_mix_level_exists;               ///< indicates if lfemixlevcod is specified (lfemixlevcode)
     int lfe_mix_level;                      ///< LFE mix level index                    (lfemixlevcod)
     int eac3;                               ///< indicates if current frame is E-AC-3
+    int eac3_frame_dependent_found;         ///< bitstream has E-AC-3 dependent frame(s)
+    int eac3_subsbtreamid_found;            ///< bitstream has E-AC-3 additional substream(s)
     int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
     int dolby_surround_ex_mode;             ///< dolby surround ex mode                 (dsurexmod)
     int dolby_headphone_mode;               ///< dolby headphone mode                   (dheadphonmod)
@@ -103,6 +108,8 @@ typedef struct AC3DecodeContext {
     float ltrt_surround_mix_level;
     float loro_center_mix_level;
     float loro_surround_mix_level;
+    int target_level;                       ///< target level in dBFS
+    float level_gain[2];
 
 ///@name Frame syntax parameters
     int snr_offset_strategy;                ///< SNR offset strategy                    (snroffststr)
@@ -161,6 +168,8 @@ typedef struct AC3DecodeContext {
 ///@name Dynamic range
     INTFLOAT dynamic_range[2];                 ///< dynamic range
     INTFLOAT drc_scale;                        ///< percentage of dynamic range compression to be applied
+    int heavy_compression;                     ///< apply heavy compression
+    INTFLOAT heavy_dynamic_range[2];           ///< heavy dynamic range compression
 ///@}
 
 ///@name Bandwidth
@@ -211,7 +220,7 @@ typedef struct AC3DecodeContext {
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
 #endif
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
@@ -228,7 +237,7 @@ typedef struct AC3DecodeContext {
     DECLARE_ALIGNED(32, INTFLOAT, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
     DECLARE_ALIGNED(32, INTFLOAT, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
     DECLARE_ALIGNED(32, SHORTFLOAT, output)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
-    DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
+    DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
 ///@}
 } AC3DecodeContext;
 
@@ -236,19 +245,23 @@ typedef struct AC3DecodeContext {
  * Parse the E-AC-3 frame header.
  * This parses both the bit stream info and audio frame header.
  */
-int ff_eac3_parse_header(AC3DecodeContext *s);
+static int ff_eac3_parse_header(AC3DecodeContext *s);
 
 /**
  * Decode mantissas in a single channel for the entire frame.
  * This is used when AHT mode is enabled.
  */
-void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
+static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 /**
  * Apply spectral extension to each channel by copying lower frequency
  * coefficients to higher frequency bins and applying side information to
  * approximate the original high frequency signal.
  */
-void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+
+#if (!USE_FIXED)
+extern float ff_ac3_heavy_dynamic_range_tab[256];
+#endif
 
 #endif /* AVCODEC_AC3DEC_H */

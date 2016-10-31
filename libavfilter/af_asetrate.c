@@ -39,8 +39,8 @@ typedef struct {
     OPT_GENERIC(name, field, def, min, max, descr, INT, i64, __VA_ARGS__)
 
 static const AVOption asetrate_options[] = {
-    OPT_INT("sample_rate", sample_rate, 44100, 1, INT_MAX, "set the sample rate"),
-    OPT_INT("r",           sample_rate, 44100, 1, INT_MAX, "set the sample rate"),
+    OPT_INT("sample_rate", sample_rate, 44100, 1, INT_MAX, "set the sample rate",),
+    OPT_INT("r",           sample_rate, 44100, 1, INT_MAX, "set the sample rate",),
     {NULL},
 };
 
@@ -51,9 +51,8 @@ static av_cold int query_formats(AVFilterContext *ctx)
     ASetRateContext *sr = ctx->priv;
     int sample_rates[] = { sr->sample_rate, -1 };
 
-    ff_formats_ref(ff_make_format_list(sample_rates),
+    return ff_formats_ref(ff_make_format_list(sample_rates),
                    &ctx->outputs[0]->in_samplerates);
-    return 0;
 }
 
 static av_cold int config_props(AVFilterLink *outlink)

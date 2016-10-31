@@ -30,6 +30,15 @@ static uint32_t ran(void)
     return state = state * 1664525 + 1013904223;
 }
 
+static void checked_seek(FILE *stream, int64_t offset, int whence)
+{
+    offset = fseek(stream, offset, whence);
+    if (offset < 0) {
+        fprintf(stderr, "seek failed\n");
+        exit(1);
+    }
+}
+
 int main(int argc, char **argv)
 {
     FILE *f;
@@ -49,17 +58,14 @@ int main(int argc, char **argv)
     maxburst = atoi(argv[3]);
     state    = atoi(argv[4]);
 
-    fseek(f, 0, SEEK_END);
+    checked_seek(f, 0, SEEK_END);
     length = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    checked_seek(f, 0, SEEK_SET);
 
     while (count--) {
         int burst = 1 + ran() * (uint64_t) (abs(maxburst) - 1) / UINT32_MAX;
         int pos   = ran() * (uint64_t) length / UINT32_MAX;
-        if (fseek(f, pos, SEEK_SET) < 0) {
-            fprintf(stderr, "seek failed\n");
-            return 1;
-        }
+        checked_seek(f, pos, SEEK_SET);
 
         if (maxburst < 0)
             burst = -maxburst;

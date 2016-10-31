@@ -46,11 +46,16 @@ enum {
     STATE_EOF,
 };
 
-void ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in)
+int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in)
 {
     fs->class  = &framesync_class;
     fs->parent = parent;
     fs->nb_in  = nb_in;
+
+    fs->in = av_calloc(nb_in, sizeof(*fs->in));
+    if (!fs->in)
+        return AVERROR(ENOMEM);
+    return 0;
 }
 
 static void framesync_sync_level_update(FFFrameSync *fs)
@@ -267,6 +272,8 @@ void ff_framesync_uninit(FFFrameSync *fs)
         av_frame_free(&fs->in[i].frame_next);
         ff_bufqueue_discard_all(&fs->in[i].queue);
     }
+
+    av_freep(&fs->in);
 }
 
 int ff_framesync_process_frame(FFFrameSync *fs, unsigned all)
@@ -315,7 +322,6 @@ int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
         return 0;
     if (fs->eof)
         return AVERROR_EOF;
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     input = fs->in_request;
     ret = ff_request_frame(ctx->inputs[input]);
     if (ret == AVERROR_EOF) {

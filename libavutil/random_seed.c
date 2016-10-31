@@ -97,8 +97,13 @@ static uint32_t get_generic_seed(void)
         last_t = t;
     }
 
-    if(TEST)
+    if(TEST) {
         buffer[0] = buffer[1] = 0;
+    } else {
+#ifdef AV_READ_TIME
+        buffer[111] += AV_READ_TIME();
+#endif
+    }
 
     av_sha_init(sha, 160);
     av_sha_update(sha, (const uint8_t *)buffer, sizeof(buffer));
@@ -121,35 +126,13 @@ uint32_t av_get_random_seed(void)
     }
 #endif
 
+#if HAVE_ARC4RANDOM
+    return arc4random();
+#endif
+
     if (read_random(&seed, "/dev/urandom") == sizeof(seed))
         return seed;
     if (read_random(&seed, "/dev/random")  == sizeof(seed))
         return seed;
     return get_generic_seed();
 }
-
-#if TEST
-#undef printf
-#define N 256
-#include <stdio.h>
-
-int main(void)
-{
-    int i, j, retry;
-    uint32_t seeds[N];
-
-    for (retry=0; retry<3; retry++){
-        for (i=0; i<N; i++){
-            seeds[i] = av_get_random_seed();
-            for (j=0; j<i; j++)
-                if (seeds[j] == seeds[i])
-                    goto retry;
-        }
-        printf("seeds OK\n");
-        return 0;
-        retry:;
-    }
-    printf("FAIL at %d with %X\n", j, seeds[j]);
-    return 1;
-}
-#endif

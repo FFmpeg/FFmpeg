@@ -24,7 +24,9 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
-#include "h264.h"
+#include "internal.h"
+#include "h264dec.h"
+#include "h264_ps.h"
 #include "mpegutils.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -50,7 +52,7 @@ static void vdpau_h264_clear_rf(VdpReferenceFrameH264 *rf)
 static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, H264Picture *pic,
                               int pic_structure)
 {
-    VdpVideoSurface surface = ff_vdpau_get_surface_id(&pic->f);
+    VdpVideoSurface surface = ff_vdpau_get_surface_id(pic->f);
 
     if (pic_structure == 0)
         pic_structure = pic->reference;
@@ -87,7 +89,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
             if (!pic || !pic->reference)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
-            surface_ref = ff_vdpau_get_surface_id(&pic->f);
+            surface_ref = ff_vdpau_get_surface_id(pic->f);
 
             rf2 = &info->referenceFrames[0];
             while (rf2 != rf) {
@@ -119,45 +121,54 @@ static int vdpau_h264_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     H264Context * const h = avctx->priv_data;
+    const PPS *pps = h->ps.pps;
+    const SPS *sps = h->ps.sps;
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoH264 *info = &pic_ctx->info.h264;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    VdpPictureInfoH264Predictive *info2 = &pic_ctx->info.h264_predictive;
+#endif
 
     /* init VdpPictureInfoH264 */
     info->slice_count                            = 0;
     info->field_order_cnt[0]                     = h264_foc(pic->field_poc[0]);
     info->field_order_cnt[1]                     = h264_foc(pic->field_poc[1]);
     info->is_reference                           = h->nal_ref_idc != 0;
-    info->frame_num                              = h->frame_num;
+    info->frame_num                              = h->poc.frame_num;
     info->field_pic_flag                         = h->picture_structure != PICT_FRAME;
     info->bottom_field_flag                      = h->picture_structure == PICT_BOTTOM_FIELD;
-    info->num_ref_frames                         = h->sps.ref_frame_count;
-    info->mb_adaptive_frame_field_flag           = h->sps.mb_aff && !info->field_pic_flag;
-    info->constrained_intra_pred_flag            = h->pps.constrained_intra_pred;
-    info->weighted_pred_flag                     = h->pps.weighted_pred;
-    info->weighted_bipred_idc                    = h->pps.weighted_bipred_idc;
-    info->frame_mbs_only_flag                    = h->sps.frame_mbs_only_flag;
-    info->transform_8x8_mode_flag                = h->pps.transform_8x8_mode;
-    info->chroma_qp_index_offset                 = h->pps.chroma_qp_index_offset[0];
-    info->second_chroma_qp_index_offset          = h->pps.chroma_qp_index_offset[1];
-    info->pic_init_qp_minus26                    = h->pps.init_qp - 26;
-    info->num_ref_idx_l0_active_minus1           = h->pps.ref_count[0] - 1;
-    info->num_ref_idx_l1_active_minus1           = h->pps.ref_count[1] - 1;
-    info->log2_max_frame_num_minus4              = h->sps.log2_max_frame_num - 4;
-    info->pic_order_cnt_type                     = h->sps.poc_type;
-    info->log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
-    info->delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
-    info->direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
-    info->entropy_coding_mode_flag               = h->pps.cabac;
-    info->pic_order_present_flag                 = h->pps.pic_order_present;
-    info->deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
-    info->redundant_pic_cnt_present_flag         = h->pps.redundant_pic_cnt_present;
+    info->num_ref_frames                         = sps->ref_frame_count;
+    info->mb_adaptive_frame_field_flag           = sps->mb_aff && !info->field_pic_flag;
+    info->constrained_intra_pred_flag            = pps->constrained_intra_pred;
+    info->weighted_pred_flag                     = pps->weighted_pred;
+    info->weighted_bipred_idc                    = pps->weighted_bipred_idc;
+    info->frame_mbs_only_flag                    = sps->frame_mbs_only_flag;
+    info->transform_8x8_mode_flag                = pps->transform_8x8_mode;
+    info->chroma_qp_index_offset                 = pps->chroma_qp_index_offset[0];
+    info->second_chroma_qp_index_offset          = pps->chroma_qp_index_offset[1];
+    info->pic_init_qp_minus26                    = pps->init_qp - 26;
+    info->num_ref_idx_l0_active_minus1           = pps->ref_count[0] - 1;
+    info->num_ref_idx_l1_active_minus1           = pps->ref_count[1] - 1;
+    info->log2_max_frame_num_minus4              = sps->log2_max_frame_num - 4;
+    info->pic_order_cnt_type                     = sps->poc_type;
+    info->log2_max_pic_order_cnt_lsb_minus4      = sps->poc_type ? 0 : sps->log2_max_poc_lsb - 4;
+    info->delta_pic_order_always_zero_flag       = sps->delta_pic_order_always_zero_flag;
+    info->direct_8x8_inference_flag              = sps->direct_8x8_inference_flag;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    info2->qpprime_y_zero_transform_bypass_flag  = sps->transform_bypass;
+    info2->separate_colour_plane_flag            = sps->residual_color_transform_flag;
+#endif
+    info->entropy_coding_mode_flag               = pps->cabac;
+    info->pic_order_present_flag                 = pps->pic_order_present;
+    info->deblocking_filter_control_present_flag = pps->deblocking_filter_parameters_present;
+    info->redundant_pic_cnt_present_flag         = pps->redundant_pic_cnt_present;
 
-    memcpy(info->scaling_lists_4x4, h->pps.scaling_matrix4,
+    memcpy(info->scaling_lists_4x4, pps->scaling_matrix4,
            sizeof(info->scaling_lists_4x4));
-    memcpy(info->scaling_lists_8x8[0], h->pps.scaling_matrix8[0],
+    memcpy(info->scaling_lists_8x8[0], pps->scaling_matrix8[0],
            sizeof(info->scaling_lists_8x8[0]));
-    memcpy(info->scaling_lists_8x8[1], h->pps.scaling_matrix8[3],
+    memcpy(info->scaling_lists_8x8[1], pps->scaling_matrix8[3],
            sizeof(info->scaling_lists_8x8[1]));
 
     vdpau_h264_set_reference_frames(avctx);
@@ -189,41 +200,65 @@ static int vdpau_h264_decode_slice(AVCodecContext *avctx,
 
 static int vdpau_h264_end_frame(AVCodecContext *avctx)
 {
-    int res = 0;
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
     H264Context *h = avctx->priv_data;
+    H264SliceContext *sl = &h->slice_ctx[0];
     H264Picture *pic = h->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(&pic->f);
+    int val;
 
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->info = pic_ctx->info;
-    hwctx->bitstream_buffers = pic_ctx->bitstream_buffers;
-    hwctx->bitstream_buffers_used = pic_ctx->bitstream_buffers_used;
-    hwctx->bitstream_buffers_allocated = pic_ctx->bitstream_buffers_allocated;
-FF_ENABLE_DEPRECATION_WARNINGS
+    val = ff_vdpau_common_end_frame(avctx, pic->f, pic_ctx);
+    if (val < 0)
+        return val;
+
+    ff_h264_draw_horiz_band(h, sl, 0, h->avctx->height);
+    return 0;
+}
+
+static int vdpau_h264_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+    uint32_t level = avctx->level;
+
+    switch (avctx->profile & ~FF_PROFILE_H264_INTRA) {
+    case FF_PROFILE_H264_BASELINE:
+        profile = VDP_DECODER_PROFILE_H264_BASELINE;
+        break;
+    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
+#ifdef VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE
+        profile = VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE;
+        break;
 #endif
-
-    if (!hwctx->render) {
-        res = hwctx->render2(avctx, &pic->f, (void *)&pic_ctx->info,
-                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
-    } else
-    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
-                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
-
-    ff_h264_draw_horiz_band(h, 0, h->avctx->height);
-    av_freep(&pic_ctx->bitstream_buffers);
-
-#if FF_API_BUFS_VDPAU
-FF_DISABLE_DEPRECATION_WARNINGS
-    hwctx->bitstream_buffers = NULL;
-    hwctx->bitstream_buffers_used = 0;
-    hwctx->bitstream_buffers_allocated = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
+    case FF_PROFILE_H264_MAIN:
+        profile = VDP_DECODER_PROFILE_H264_MAIN;
+        break;
+    case FF_PROFILE_H264_HIGH:
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+#ifdef VDP_DECODER_PROFILE_H264_EXTENDED
+    case FF_PROFILE_H264_EXTENDED:
+        profile = VDP_DECODER_PROFILE_H264_EXTENDED;
+        break;
 #endif
+    case FF_PROFILE_H264_HIGH_10:
+        /* XXX: High 10 can be treated as High so long as only 8 bits per
+         * format are supported. */
+        profile = VDP_DECODER_PROFILE_H264_HIGH;
+        break;
+#ifdef VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE
+    case FF_PROFILE_H264_HIGH_422:
+    case FF_PROFILE_H264_HIGH_444_PREDICTIVE:
+    case FF_PROFILE_H264_CAVLC_444:
+        profile = VDP_DECODER_PROFILE_H264_HIGH_444_PREDICTIVE;
+        break;
+#endif
+    default:
+        return AVERROR(ENOTSUP);
+    }
 
-    return res;
+    if ((avctx->profile & FF_PROFILE_H264_INTRA) && avctx->level == 11)
+        level = VDP_DECODER_LEVEL_H264_1b;
+
+    return ff_vdpau_common_init(avctx, profile, level);
 }
 
 AVHWAccel ff_h264_vdpau_hwaccel = {
@@ -235,4 +270,7 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_h264_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
 };

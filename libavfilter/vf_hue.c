@@ -105,8 +105,8 @@ static inline void compute_sin_and_cos(HueContext *hue)
      * the saturation.
      * This will be useful in the apply_lut function.
      */
-    hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
-    hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
+    hue->hue_sin = lrint(sin(hue->hue) * (1 << 16) * hue->saturation);
+    hue->hue_cos = lrint(cos(hue->hue) * (1 << 16) * hue->saturation);
 }
 
 static inline void create_luma_lut(HueContext *h)
@@ -233,10 +233,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_props(AVFilterLink *inlink)
@@ -377,8 +377,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     apply_lut(hue, outpic->data[1], outpic->data[2], outpic->linesize[1],
               inpic->data[1],  inpic->data[2],  inpic->linesize[1],
-              FF_CEIL_RSHIFT(inlink->w, hue->hsub),
-              FF_CEIL_RSHIFT(inlink->h, hue->vsub));
+              AV_CEIL_RSHIFT(inlink->w, hue->hsub),
+              AV_CEIL_RSHIFT(inlink->h, hue->vsub));
     if (hue->brightness)
         apply_luma_lut(hue, outpic->data[0], outpic->linesize[0],
                        inpic->data[0], inpic->linesize[0], inlink->w, inlink->h);

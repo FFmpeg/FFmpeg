@@ -23,7 +23,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 ;----------------------------------------
 ; void ff_clear_block(int16_t *blocks);
@@ -64,7 +64,7 @@ cglobal clear_blocks, 1, 2, %1, blocks, len
     add   blocksq, 768
     mov      lenq, -768
     ZERO       m0, m0
-.loop
+.loop:
     mova  [blocksq+lenq+mmsize*0], m0
     mova  [blocksq+lenq+mmsize*1], m0
     mova  [blocksq+lenq+mmsize*2], m0

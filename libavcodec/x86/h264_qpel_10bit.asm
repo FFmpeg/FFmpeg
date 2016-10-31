@@ -26,11 +26,12 @@
 
 SECTION_RODATA 32
 
+cextern pd_65535
+cextern pw_1023
+%define pw_pixel_max pw_1023
 cextern pw_16
 cextern pw_1
-pb_0: times 32 db 0 ; we do not use cextern here as old llvm-gcc fails to align it correctly
-
-pw_pixel_max: times 8 dw ((1 << 10)-1)
+cextern pb_0
 
 pad10: times 8 dw 10*1023
 pad20: times 8 dw 20*1023
@@ -42,7 +43,6 @@ unpad: times 8 dw 16*1022/32 ; needs to be mod 16
 tap1: times 4 dw  1, -5
 tap2: times 4 dw 20, 20
 tap3: times 4 dw -5,  1
-pd_0f: times 4 dd 0xffff
 
 SECTION .text
 
@@ -386,7 +386,7 @@ MC_CACHE MC10
 ; void ff_h264_qpel_mc02(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro V_FILT 10
-v_filt%9_%10_10
+v_filt%9_%10_10:
     add    r4, r2
 .no_addr4:
     FILT_V m0, m1, m2, m3, m4, m5, m6, m7
@@ -708,7 +708,7 @@ h%1_loop_op:
     psrad      m1, 10
     psrad      m2, 10
     pslld      m2, 16
-    pand       m1, [pd_0f]
+    pand       m1, [pd_65535]
     por        m1, m2
 %if num_mmregs <= 8
     pxor       m0, m0

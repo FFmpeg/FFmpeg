@@ -73,12 +73,12 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    rbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    rbuf = av_malloc(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!rbuf) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
         return AVERROR(ENOMEM);
     }
-    memset(rbuf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(rbuf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_free(rbuf);
@@ -88,7 +88,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (i = 8; i < buf_size; i++)
         rbuf[i] = ff_reverse[buf[i]];
-    init_get_bits(&l->gb, rbuf + 8, (buf_size - 8) * 8);
+
+    if ((ret = init_get_bits8(&l->gb, rbuf + 8, buf_size - 8)) < 0)
+        return ret;
 
     if (buf[2] >> 4 == 6)
         l->shift = 2;
@@ -153,5 +155,5 @@ AVCodec ff_wnv1_decoder = {
     .priv_data_size = sizeof(WNV1Context),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

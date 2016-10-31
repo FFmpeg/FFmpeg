@@ -50,7 +50,7 @@ static const uint8_t ansi_to_cga[16] = {
     0,  4,  2,  6,  1,  5,  3, 7, 8, 12, 10, 14,  9, 13, 11, 15
 };
 
-typedef struct {
+typedef struct AnsiContext {
     AVFrame *frame;
     int x;                /**< x cursor position (pixels) */
     int y;                /**< y cursor position (pixels) */
@@ -90,9 +90,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
-    if (!avctx->width || !avctx->height)
-        ff_set_dimensions(avctx, 80 << 3, 25 << 4);
-
+    if (!avctx->width || !avctx->height) {
+        int ret = ff_set_dimensions(avctx, 80 << 3, 25 << 4);
+        if (ret < 0)
+            return ret;
+    } else if (avctx->width % FONT_WIDTH || avctx->height % s->font_height) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid dimensions %d %d\n", avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
     return 0;
 }
 
@@ -204,7 +209,7 @@ static int execute_code(AVCodecContext * avctx, int c)
         s->y = s->nb_args > 0 ? av_clip((s->args[0] - 1)*s->font_height, 0, avctx->height - s->font_height) : 0;
         s->x = s->nb_args > 1 ? av_clip((s->args[1] - 1)*FONT_WIDTH,     0, avctx->width  - FONT_WIDTH) : 0;
         break;
-    case 'h': //set creen mode
+    case 'h': //set screen mode
     case 'l': //reset screen mode
         if (s->nb_args < 2)
             s->args[0] = DEFAULT_SCREEN_MODE;
@@ -476,5 +481,5 @@ AVCodec ff_ansi_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

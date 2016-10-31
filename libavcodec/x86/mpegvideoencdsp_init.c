@@ -24,6 +24,7 @@
 #include "libavcodec/mpegvideoencdsp.h"
 
 int ff_pix_sum16_mmx(uint8_t *pix, int line_size);
+int ff_pix_sum16_mmxext(uint8_t *pix, int line_size);
 int ff_pix_sum16_sse2(uint8_t *pix, int line_size);
 int ff_pix_sum16_xop(uint8_t *pix, int line_size);
 int ff_pix_norm1_mmx(uint8_t *pix, int line_size);
@@ -218,10 +219,16 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 {
     int cpu_flags = av_get_cpu_flags();
 
+#if ARCH_X86_32
     if (EXTERNAL_MMX(cpu_flags)) {
         c->pix_sum   = ff_pix_sum16_mmx;
         c->pix_norm1 = ff_pix_norm1_mmx;
     }
+
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        c->pix_sum     = ff_pix_sum16_mmxext;
+    }
+#endif
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->pix_sum     = ff_pix_sum16_sse2;
@@ -235,7 +242,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 #if HAVE_INLINE_ASM
 
     if (INLINE_MMX(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_mmx;
         }
         c->add_8x8basis = add_8x8basis_mmx;
@@ -246,7 +253,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
     }
 
     if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_3dnow;
         }
         c->add_8x8basis = add_8x8basis_3dnow;
@@ -254,7 +261,7 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 
 #if HAVE_SSSE3_INLINE
     if (INLINE_SSSE3(cpu_flags)) {
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_ssse3;
         }
         c->add_8x8basis = add_8x8basis_ssse3;

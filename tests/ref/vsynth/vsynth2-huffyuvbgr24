@@ -1,4 +1,4 @@
-d72d98a2847811499028f8997320a38b *tests/data/fate/vsynth2-huffyuvbgr24.avi
-8872410 tests/data/fate/vsynth2-huffyuvbgr24.avi
-0a8b7ddfec03622e37c869c5b552f9fc *tests/data/fate/vsynth2-huffyuvbgr24.out.rawvideo
-stddev:    1.24 PSNR: 46.26 MAXDIFF:   17 bytes:  7603200/  7603200
+f7a321d9dc6b2cdef377067eae413954 *tests/data/fate/vsynth2-huffyuvbgr24.avi
+8809210 tests/data/fate/vsynth2-huffyuvbgr24.avi
+835a86f8dff88917c3e5f2776954c5b7 *tests/data/fate/vsynth2-huffyuvbgr24.out.rawvideo
+stddev:    1.57 PSNR: 44.18 MAXDIFF:   20 bytes:  7603200/  7603200

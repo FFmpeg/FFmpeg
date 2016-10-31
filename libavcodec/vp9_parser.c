@@ -1,5 +1,8 @@
 /*
- * Copyright (C) 2008 Michael Niedermayer
+ * VP9 compatible video decoder
+ *
+ * Copyright (C) 2013 Ronald S. Bultje <rsbultje gmail com>
+ * Copyright (C) 2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -19,22 +22,55 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/get_bits.h"
 #include "parser.h"
 
 typedef struct VP9ParseContext {
     int n_frames; // 1-8
     int size[8];
+    int marker_size;
+    int64_t pts;
 } VP9ParseContext;
 
-static void parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
+static int parse_frame(AVCodecParserContext *ctx, const uint8_t *buf, int size)
 {
-    if (buf[0] & 0x4) {
+    VP9ParseContext *s = ctx->priv_data;
+    GetBitContext gb;
+    int res, profile, keyframe, invisible;
+
+    if ((res = init_get_bits8(&gb, buf, size)) < 0)
+        return res;
+    get_bits(&gb, 2); // frame marker
+    profile  = get_bits1(&gb);
+    profile |= get_bits1(&gb) << 1;
+    if (profile == 3) profile += get_bits1(&gb);
+
+    if (get_bits1(&gb)) {
+        keyframe = 0;
+        invisible = 0;
+    } else {
+        keyframe  = !get_bits1(&gb);
+        invisible = !get_bits1(&gb);
+    }
+
+    if (!keyframe) {
         ctx->pict_type = AV_PICTURE_TYPE_P;
         ctx->key_frame = 0;
     } else {
         ctx->pict_type = AV_PICTURE_TYPE_I;
         ctx->key_frame = 1;
     }
+
+    if (!invisible) {
+        if (ctx->pts == AV_NOPTS_VALUE)
+            ctx->pts = s->pts;
+        s->pts = AV_NOPTS_VALUE;
+    } else if (ctx->pts != AV_NOPTS_VALUE) {
+        s->pts = ctx->pts;
+        ctx->pts = AV_NOPTS_VALUE;
+    }
+
+    return 0;
 }
 
 static int parse(AVCodecParserContext *ctx,
@@ -43,6 +79,7 @@ static int parse(AVCodecParserContext *ctx,
                  const uint8_t *data, int size)
 {
     VP9ParseContext *s = ctx->priv_data;
+    int full_size = size;
     int marker;
 
     if (size <= 0) {
@@ -50,6 +87,21 @@ static int parse(AVCodecParserContext *ctx,
         *out_data = data;
 
         return 0;
+    }
+
+    if (s->n_frames > 0) {
+        int i;
+        int size_sum = 0;
+
+        for (i = 0; i < s->n_frames ;i++)
+            size_sum += s->size[i];
+        size_sum += s->marker_size;
+
+        if (size_sum != size) {
+            av_log(avctx, AV_LOG_ERROR, "Inconsistent input frame sizes %d %d\n",
+                   size_sum, size);
+            s->n_frames = 0;
+        }
     }
 
     if (s->n_frames > 0) {
@@ -75,12 +127,14 @@ static int parse(AVCodecParserContext *ctx,
                 while (n_frames--) { \
                     unsigned sz = rd; \
                     idx += a; \
-                    if (sz > size) { \
+                    if (sz == 0 || sz > size) { \
                         s->n_frames = 0; \
+                        *out_size = size; \
+                        *out_data = data; \
                         av_log(avctx, AV_LOG_ERROR, \
-                               "Superframe packet size too big: %u > %d\n", \
+                               "Invalid superframe packet size: %u frame size: %d\n", \
                                sz, size); \
-                        return size; \
+                        return full_size; \
                     } \
                     if (first) { \
                         first = 0; \
@@ -93,8 +147,9 @@ static int parse(AVCodecParserContext *ctx,
                     data += sz; \
                     size -= sz; \
                 } \
+                s->marker_size = size; \
                 parse_frame(ctx, *out_data, *out_size); \
-                return *out_size
+                return s->n_frames > 0 ? *out_size : full_size
 
                 case_n(1, *idx);
                 case_n(2, AV_RL16(idx));

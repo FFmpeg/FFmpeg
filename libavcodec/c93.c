@@ -23,7 +23,7 @@
 #include "bytestream.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct C93DecoderContext {
     AVFrame *pictures[2];
     int currentpic;
 } C93DecoderContext;
@@ -182,7 +182,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                         int from_y = offset / WIDTH;
                         if (block_type == C93_4X4_FROM_CURR && from_y == y+j &&
                             (FFABS(from_x - x-i) < 4 || FFABS(from_x - x-i) > WIDTH-4)) {
-                            avpriv_request_sample(avctx, "block overlap %d %d %d %d\n", from_x, x+i, from_y, y+j);
+                            avpriv_request_sample(avctx, "block overlap %d %d %d %d", from_x, x+i, from_y, y+j);
                             return AVERROR_INVALIDDATA;
                         }
                         if ((ret = copy_block(avctx, &out[j*stride+i],
@@ -268,5 +268,5 @@ AVCodec ff_c93_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

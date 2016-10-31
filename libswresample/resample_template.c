@@ -52,8 +52,8 @@
 #    define FELEM2 int64_t
 #    define FELEM_MAX INT32_MAX
 #    define FELEM_MIN INT32_MIN
-#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                      d = (uint64_t)(v + 0x80000000) > 0xFFFFFFFF ? (v>>63) ^ 0x7FFFFFFF : v
+#    define OUT(d, v) (v) = ((v) + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      (d) = av_clipl_int32(v)
 
 #elif    defined(TEMPLATE_RESAMPLE_S16)
 
@@ -65,8 +65,8 @@
 #    define FELEML int64_t
 #    define FELEM_MAX INT16_MAX
 #    define FELEM_MIN INT16_MIN
-#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                      d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+#    define OUT(d, v) (v) = ((v) + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      (d) = av_clip_int16(v)
 
 #endif
 
@@ -92,9 +92,13 @@ static int RENAME(resample_common)(ResampleContext *c,
     int dst_index;
     int index= c->index;
     int frac= c->frac;
-    int sample_index = index >> c->phase_shift;
+    int sample_index = 0;
 
-    index &= c->phase_mask;
+    while (index >= c->phase_count) {
+        sample_index++;
+        index -= c->phase_count;
+    }
+
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
 
@@ -111,8 +115,11 @@ static int RENAME(resample_common)(ResampleContext *c,
             frac -= c->src_incr;
             index++;
         }
-        sample_index += index >> c->phase_shift;
-        index &= c->phase_mask;
+
+        while (index >= c->phase_count) {
+            sample_index++;
+            index -= c->phase_count;
+        }
     }
 
     if(update_ctx){
@@ -132,12 +139,16 @@ static int RENAME(resample_linear)(ResampleContext *c,
     int dst_index;
     int index= c->index;
     int frac= c->frac;
-    int sample_index = index >> c->phase_shift;
+    int sample_index = 0;
 #if FILTER_SHIFT == 0
     double inv_src_incr = 1.0 / c->src_incr;
 #endif
 
-    index &= c->phase_mask;
+    while (index >= c->phase_count) {
+        sample_index++;
+        index -= c->phase_count;
+    }
+
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
         FELEM2 val=0, v2 = 0;
@@ -164,8 +175,11 @@ static int RENAME(resample_linear)(ResampleContext *c,
             frac -= c->src_incr;
             index++;
         }
-        sample_index += index >> c->phase_shift;
-        index &= c->phase_mask;
+
+        while (index >= c->phase_count) {
+            sample_index++;
+            index -= c->phase_count;
+        }
     }
 
     if(update_ctx){

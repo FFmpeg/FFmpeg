@@ -30,17 +30,19 @@
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
  *
- * smptebars and smptehdbars are by Paul B Mahol.
+ * allyuv, smptebars and smptehdbars are by Paul B Mahol.
  */
 
 #include <float.h>
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
@@ -84,8 +86,8 @@ typedef struct TestSourceContext {
     { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },\
 
 #define COMMON_OPTIONS_NOSIZE \
-    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
-    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
+    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },\
+    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },\
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },\
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },\
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
@@ -202,8 +204,7 @@ static av_cold int color_init(AVFilterContext *ctx)
 
 static int color_query_formats(AVFilterContext *ctx)
 {
-    ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
-    return 0;
+    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
 }
 
 static int color_config_props(AVFilterLink *inlink)
@@ -366,8 +367,11 @@ static int haldclutsrc_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE,
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int haldclutsrc_config_props(AVFilterLink *outlink)
@@ -612,7 +616,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     if (seg_size >= 1 && height >= 13 * seg_size) {
         int64_t p10decimals = 1;
         double time = av_q2d(test->time_base) * test->nb_frame *
-                      pow(10, test->nb_decimals);
+                      ff_exp10(test->nb_decimals);
         if (time >= INT_MAX)
             return;
 
@@ -646,8 +650,11 @@ static int test_query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
@@ -673,6 +680,276 @@ AVFilter ff_vsrc_testsrc = {
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
+
+#if CONFIG_TESTSRC2_FILTER
+
+static const AVOption testsrc2_options[] = {
+    COMMON_OPTIONS
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(testsrc2);
+
+static void set_color(TestSourceContext *s, FFDrawColor *color, uint32_t argb)
+{
+    uint8_t rgba[4] = { (argb >> 16) & 0xFF,
+                        (argb >>  8) & 0xFF,
+                        (argb >>  0) & 0xFF,
+                        (argb >> 24) & 0xFF, };
+    ff_draw_color(&s->draw, color, rgba);
+}
+
+static uint32_t color_gradient(unsigned index)
+{
+    unsigned si = index & 0xFF, sd = 0xFF - si;
+    switch (index >> 8) {
+    case 0: return 0xFF0000 + (si <<  8);
+    case 1: return 0x00FF00 + (sd << 16);
+    case 2: return 0x00FF00 + (si <<  0);
+    case 3: return 0x0000FF + (sd <<  8);
+    case 4: return 0x0000FF + (si << 16);
+    case 5: return 0xFF0000 + (sd <<  0);
+    }
+    av_assert0(0);
+}
+
+static void draw_text(TestSourceContext *s, AVFrame *frame, FFDrawColor *color,
+                      int x0, int y0, const uint8_t *text)
+{
+    int x = x0;
+
+    for (; *text; text++) {
+        if (*text == '\n') {
+            x = x0;
+            y0 += 16;
+            continue;
+        }
+        ff_blend_mask(&s->draw, color, frame->data, frame->linesize,
+                      frame->width, frame->height,
+                      avpriv_vga16_font + *text * 16, 1, 8, 16, 0, 0, x, y0);
+        x += 8;
+    }
+}
+
+static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    TestSourceContext *s = ctx->priv;
+    FFDrawColor color;
+
+    /* colored background */
+    {
+        unsigned i, x = 0, x2;
+
+        x = 0;
+        for (i = 1; i < 7; i++) {
+            x2 = av_rescale(i, s->w, 6);
+            x2 = ff_draw_round_to_sub(&s->draw, 0, 0, x2);
+            set_color(s, &color, ((i & 1) ? 0xFF0000 : 0) |
+                                 ((i & 2) ? 0x00FF00 : 0) |
+                                 ((i & 4) ? 0x0000FF : 0));
+            ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                              x, 0, x2 - x, frame->height);
+            x = x2;
+        }
+    }
+
+    /* oblique gradient */
+    /* note: too slow if using blending */
+    if (s->h >= 64) {
+        unsigned x, dx, y0, y, g0, g;
+
+        dx = ff_draw_round_to_sub(&s->draw, 0, +1, 1);
+        y0 = av_rescale_q(s->pts, s->time_base, av_make_q(2, s->h - 16));
+        g0 = av_rescale_q(s->pts, s->time_base, av_make_q(1, 128));
+        for (x = 0; x < s->w; x += dx) {
+            g = (av_rescale(x, 6 * 256, s->w) + g0) % (6 * 256);
+            set_color(s, &color, color_gradient(g));
+            y = y0 + av_rescale(x, s->h / 2, s->w);
+            y %= 2 * (s->h - 16);
+            if (y > s->h - 16)
+                y = 2 * (s->h - 16) - y;
+            y = ff_draw_round_to_sub(&s->draw, 1, 0, y);
+            ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                              x, y, dx, 16);
+        }
+    }
+
+    /* top right: draw clock hands */
+    if (s->w >= 64 && s->h >= 64) {
+        int l = (FFMIN(s->w, s->h) - 32) >> 1;
+        int steps = FFMAX(4, l >> 5);
+        int xc = (s->w >> 2) + (s->w >> 1);
+        int yc = (s->h >> 2);
+        int cycle = l << 2;
+        int pos, xh, yh;
+        int c, i;
+
+        for (c = 0; c < 3; c++) {
+            set_color(s, &color, 0xBBBBBB ^ (0xFF << (c << 3)));
+            pos = av_rescale_q(s->pts, s->time_base, av_make_q(64 >> (c << 1), cycle)) % cycle;
+            xh = pos < 1 * l ? pos :
+                 pos < 2 * l ? l :
+                 pos < 3 * l ? 3 * l - pos : 0;
+            yh = pos < 1 * l ? 0 :
+                 pos < 2 * l ? pos - l :
+                 pos < 3 * l ? l :
+                               cycle - pos;
+            xh -= l >> 1;
+            yh -= l >> 1;
+            for (i = 1; i <= steps; i++) {
+                int x = av_rescale(xh, i, steps) + xc;
+                int y = av_rescale(yh, i, steps) + yc;
+                x = ff_draw_round_to_sub(&s->draw, 0, -1, x);
+                y = ff_draw_round_to_sub(&s->draw, 1, -1, y);
+                ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                                  x, y, 8, 8);
+            }
+        }
+    }
+
+    /* bottom left: beating rectangles */
+    if (s->w >= 64 && s->h >= 64) {
+        int l = (FFMIN(s->w, s->h) - 16) >> 2;
+        int cycle = l << 3;
+        int xc = (s->w >> 2);
+        int yc = (s->h >> 2) + (s->h >> 1);
+        int xm1 = ff_draw_round_to_sub(&s->draw, 0, -1, xc - 8);
+        int xm2 = ff_draw_round_to_sub(&s->draw, 0, +1, xc + 8);
+        int ym1 = ff_draw_round_to_sub(&s->draw, 1, -1, yc - 8);
+        int ym2 = ff_draw_round_to_sub(&s->draw, 1, +1, yc + 8);
+        int size, step, x1, x2, y1, y2;
+
+        size = av_rescale_q(s->pts, s->time_base, av_make_q(4, cycle));
+        step = size / l;
+        size %= l;
+        if (step & 1)
+            size = l - size;
+        step = (step >> 1) & 3;
+        set_color(s, &color, 0xFF808080);
+        x1 = ff_draw_round_to_sub(&s->draw, 0, -1, xc - 4 - size);
+        x2 = ff_draw_round_to_sub(&s->draw, 0, +1, xc + 4 + size);
+        y1 = ff_draw_round_to_sub(&s->draw, 1, -1, yc - 4 - size);
+        y2 = ff_draw_round_to_sub(&s->draw, 1, +1, yc + 4 + size);
+        if (step == 0 || step == 2)
+            ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                              x1, ym1, x2 - x1, ym2 - ym1);
+        if (step == 1 || step == 2)
+            ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                              xm1, y1, xm2 - xm1, y2 - y1);
+        if (step == 3)
+            ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                              x1, y1, x2 - x1, y2 - y1);
+    }
+
+    /* bottom right: checker with random noise */
+    {
+        unsigned xmin = av_rescale(5, s->w, 8);
+        unsigned xmax = av_rescale(7, s->w, 8);
+        unsigned ymin = av_rescale(5, s->h, 8);
+        unsigned ymax = av_rescale(7, s->h, 8);
+        unsigned x, y, i, r;
+        uint8_t alpha[256];
+
+        r = s->pts;
+        for (y = ymin; y < ymax - 15; y += 16) {
+            for (x = xmin; x < xmax - 15; x += 16) {
+                if ((x ^ y) & 16)
+                    continue;
+                for (i = 0; i < 256; i++) {
+                    r = r * 1664525 + 1013904223;
+                    alpha[i] = r >> 24;
+                }
+                set_color(s, &color, 0xFF00FF80);
+                ff_blend_mask(&s->draw, &color, frame->data, frame->linesize,
+                                   frame->width, frame->height,
+                                   alpha, 16, 16, 16, 3, 0, x, y);
+            }
+        }
+    }
+
+    /* bouncing square */
+    if (s->w >= 16 && s->h >= 16) {
+        unsigned w = s->w - 8;
+        unsigned h = s->h - 8;
+        unsigned x = av_rescale_q(s->pts, s->time_base, av_make_q(233, 55 * w)) % (w << 1);
+        unsigned y = av_rescale_q(s->pts, s->time_base, av_make_q(233, 89 * h)) % (h << 1);
+        if (x > w)
+            x = (w << 1) - x;
+        if (y > h)
+            y = (h << 1) - y;
+        x = ff_draw_round_to_sub(&s->draw, 0, -1, x);
+        y = ff_draw_round_to_sub(&s->draw, 1, -1, y);
+        set_color(s, &color, 0xFF8000FF);
+        ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                          x, y, 8, 8);
+    }
+
+    /* top right: draw frame time and frame number */
+    {
+        char buf[256];
+        unsigned time;
+
+        time = av_rescale_q(s->pts, s->time_base, av_make_q(1, 1000)) % 86400000;
+        set_color(s, &color, 0xC0000000);
+        ff_blend_rectangle(&s->draw, &color, frame->data, frame->linesize,
+                           frame->width, frame->height,
+                           2, 2, 100, 36);
+        set_color(s, &color, 0xFFFF8000);
+        snprintf(buf, sizeof(buf), "%02d:%02d:%02d.%03d\n%12"PRIi64,
+                 time / 3600000, (time / 60000) % 60, (time / 1000) % 60,
+                 time % 1000, s->pts);
+        draw_text(s, frame, &color, 4, 4, buf);
+    }
+}
+static av_cold int test2_init(AVFilterContext *ctx)
+{
+    TestSourceContext *s = ctx->priv;
+
+    s->fill_picture_fn = test2_fill_picture;
+    return init(ctx);
+}
+
+static int test2_query_formats(AVFilterContext *ctx)
+{
+    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+}
+
+static int test2_config_props(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->src;
+    TestSourceContext *s = ctx->priv;
+
+    av_assert0(ff_draw_init(&s->draw, inlink->format, 0) >= 0);
+    s->w = ff_draw_round_to_sub(&s->draw, 0, -1, s->w);
+    s->h = ff_draw_round_to_sub(&s->draw, 1, -1, s->h);
+    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
+        return AVERROR(EINVAL);
+    return config_props(inlink);
+}
+
+static const AVFilterPad avfilter_vsrc_testsrc2_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = test2_config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_testsrc2 = {
+    .name          = "testsrc2",
+    .description   = NULL_IF_CONFIG_SMALL("Generate another test pattern."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &testsrc2_class,
+    .init          = test2_init,
+    .uninit        = uninit,
+    .query_formats = test2_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_testsrc2_outputs,
+};
+
+#endif /* CONFIG_TESTSRC2_FILTER */
 
 #if CONFIG_RGBTESTSRC_FILTER
 
@@ -754,8 +1031,11 @@ static int rgbtest_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB555, AV_PIX_FMT_BGR555,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int rgbtest_config_props(AVFilterLink *outlink)
@@ -790,38 +1070,223 @@ AVFilter ff_vsrc_rgbtestsrc = {
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
 
+#if CONFIG_YUVTESTSRC_FILTER
+
+#define yuvtestsrc_options options
+AVFILTER_DEFINE_CLASS(yuvtestsrc);
+
+static void yuvtest_fill_picture8(AVFilterContext *ctx, AVFrame *frame)
+{
+    int x, y, w = frame->width, h = frame->height / 3;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const int factor = 1 << desc->comp[0].depth;
+    const int mid = 1 << (desc->comp[0].depth - 1);
+    uint8_t *ydst = frame->data[0];
+    uint8_t *udst = frame->data[1];
+    uint8_t *vdst = frame->data[2];
+    int ylinesize = frame->linesize[0];
+    int ulinesize = frame->linesize[1];
+    int vlinesize = frame->linesize[2];
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = c;
+            udst[x] = mid;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    h += h;
+    for (; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = c;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    for (; y < frame->height; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = mid;
+            vdst[x] = c;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+}
+
+static void yuvtest_fill_picture16(AVFilterContext *ctx, AVFrame *frame)
+{
+    int x, y, w = frame->width, h = frame->height / 3;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const int factor = 1 << desc->comp[0].depth;
+    const int mid = 1 << (desc->comp[0].depth - 1);
+    uint16_t *ydst = (uint16_t *)frame->data[0];
+    uint16_t *udst = (uint16_t *)frame->data[1];
+    uint16_t *vdst = (uint16_t *)frame->data[2];
+    int ylinesize = frame->linesize[0] / 2;
+    int ulinesize = frame->linesize[1] / 2;
+    int vlinesize = frame->linesize[2] / 2;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = c;
+            udst[x] = mid;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    h += h;
+    for (; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = c;
+            vdst[x] = mid;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+
+    for (; y < frame->height; y++) {
+        for (x = 0; x < w; x++) {
+            int c = factor * x / w;
+
+            ydst[x] = mid;
+            udst[x] = mid;
+            vdst[x] = c;
+        }
+
+        ydst += ylinesize;
+        udst += ulinesize;
+        vdst += vlinesize;
+    }
+}
+
+static av_cold int yuvtest_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->draw_once = 1;
+    return init(ctx);
+}
+
+static int yuvtest_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static int yuvtest_config_props(AVFilterLink *outlink)
+{
+    TestSourceContext *test = outlink->src->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
+
+    test->fill_picture_fn = desc->comp[0].depth > 8 ? yuvtest_fill_picture16 : yuvtest_fill_picture8;
+    return config_props(outlink);
+}
+
+static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = yuvtest_config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_yuvtestsrc = {
+    .name          = "yuvtestsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &yuvtestsrc_class,
+    .init          = yuvtest_init,
+    .uninit        = uninit,
+    .query_formats = yuvtest_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_yuvtestsrc_outputs,
+};
+
+#endif /* CONFIG_YUVTESTSRC_FILTER */
+
 #if CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER
 
 static const uint8_t rainbow[7][4] = {
-    { 180, 128, 128, 255 },     /* gray */
-    { 168,  44, 136, 255 },     /* yellow */
-    { 145, 147,  44, 255 },     /* cyan */
-    { 133,  63,  52, 255 },     /* green */
-    {  63, 193, 204, 255 },     /* magenta */
-    {  51, 109, 212, 255 },     /* red */
-    {  28, 212, 120, 255 },     /* blue */
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 162,  44, 142, 255 },     /* 75% yellow */
+    { 131, 156,  44, 255 },     /* 75% cyan */
+    { 112,  72,  58, 255 },     /* 75% green */
+    {  84, 184, 198, 255 },     /* 75% magenta */
+    {  65, 100, 212, 255 },     /* 75% red */
+    {  35, 212, 114, 255 },     /* 75% blue */
+};
+
+static const uint8_t rainbowhd[7][4] = {
+    { 180, 128, 128, 255 },     /* 75% white */
+    { 168,  44, 136, 255 },     /* 75% yellow */
+    { 145, 147,  44, 255 },     /* 75% cyan */
+    { 133,  63,  52, 255 },     /* 75% green */
+    {  63, 193, 204, 255 },     /* 75% magenta */
+    {  51, 109, 212, 255 },     /* 75% red */
+    {  28, 212, 120, 255 },     /* 75% blue */
 };
 
 static const uint8_t wobnair[7][4] = {
-    {  32, 240, 118, 255 },     /* blue */
+    {  35, 212, 114, 255 },     /* 75% blue */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    {  54, 184, 198, 255 },     /* magenta */
+    {  84, 184, 198, 255 },     /* 75% magenta */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 188, 154,  16, 255 },     /* cyan */
+    { 131, 156,  44, 255 },     /* 75% cyan */
     {  19, 128, 128, 255 },     /* 7.5% intensity black */
-    { 191, 128, 128, 255 },     /* gray */
+    { 180, 128, 128, 255 },     /* 75% white */
 };
 
 static const uint8_t white[4] = { 235, 128, 128, 255 };
-static const uint8_t black[4] = {  19, 128, 128, 255 }; /* 7.5% intensity black */
 
 /* pluge pulses */
-static const uint8_t neg4ire[4] = {  9, 128, 128, 255 }; /*  3.5% intensity black */
-static const uint8_t pos4ire[4] = { 29, 128, 128, 255 }; /* 11.5% intensity black */
+static const uint8_t neg4ire[4] = {  7, 128, 128, 255 };
+static const uint8_t pos4ire[4] = { 24, 128, 128, 255 };
 
 /* fudged Q/-I */
-static const uint8_t i_pixel[4] = { 61, 153,  99, 255 };
-static const uint8_t q_pixel[4] = { 35, 174, 152, 255 };
+static const uint8_t i_pixel[4] = { 57, 156,  97, 255 };
+static const uint8_t q_pixel[4] = { 44, 171, 147, 255 };
 
 static const uint8_t gray40[4] = { 104, 128, 128, 255 };
 static const uint8_t gray15[4] = {  49, 128, 128, 255 };
@@ -835,7 +1300,7 @@ static const uint8_t black4[4] = {  25, 128, 128, 255 };
 static const uint8_t   neg2[4] = {  12, 128, 128, 255 };
 
 static void draw_bar(TestSourceContext *test, const uint8_t color[4],
-                     unsigned x, unsigned y, unsigned w, unsigned h,
+                     int x, int y, int w, int h,
                      AVFrame *frame)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
@@ -857,9 +1322,9 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
         if (plane == 1 || plane == 2) {
             px = x >> desc->log2_chroma_w;
-            pw = w >> desc->log2_chroma_w;
+            pw = AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
             py = y >> desc->log2_chroma_h;
-            ph = h >> desc->log2_chroma_h;
+            ph = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
         } else {
             px = x;
             pw = w;
@@ -883,8 +1348,11 @@ static int smptebars_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_NONE,
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static const AVFilterPad smptebars_outputs[] = {
@@ -929,16 +1397,16 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, q_pixel, x, r_h + w_h, p_w, p_h, picref);
     x += p_w;
     tmp = FFALIGN(5 * r_w - x,  1 << pixdesc->log2_chroma_w);
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     tmp = FFALIGN(r_w / 3,  1 << pixdesc->log2_chroma_w);
     draw_bar(test, neg4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, tmp, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
     draw_bar(test, pos4ire, x, r_h + w_h, tmp, p_h, picref);
     x += tmp;
-    draw_bar(test, black, x, r_h + w_h, test->w - x, p_h, picref);
+    draw_bar(test, black0, x, r_h + w_h, test->w - x, p_h, picref);
 }
 
 static av_cold int smptebars_init(AVFilterContext *ctx)
@@ -984,7 +1452,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 
     r_w = FFALIGN((((test->w + 3) / 4) * 3) / 7, 1 << pixdesc->log2_chroma_w);
     for (i = 0; i < 7; i++) {
-        draw_bar(test, rainbow[i], x, 0, r_w, r_h, picref);
+        draw_bar(test, rainbowhd[i], x, 0, r_w, r_h, picref);
         x += r_w;
     }
     draw_bar(test, gray40, x, 0, test->w - x, r_h, picref);
@@ -995,7 +1463,7 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, i_pixel, x, y, r_w, r_h, picref);
     x += r_w;
     tmp = r_w * 6;
-    draw_bar(test, rainbow[0], x, y, tmp, r_h, picref);
+    draw_bar(test, rainbowhd[0], x, y, tmp, r_h, picref);
     x += tmp;
     l_w = x;
     draw_bar(test, blue, x, y, test->w - x, r_h, picref);
@@ -1069,3 +1537,165 @@ AVFilter ff_vsrc_smptehdbars = {
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
 #endif  /* CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
+
+#if CONFIG_ALLYUV_FILTER
+
+static const AVOption allyuv_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(allyuv);
+
+static void allyuv_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    const int ys = frame->linesize[0];
+    const int us = frame->linesize[1];
+    const int vs = frame->linesize[2];
+    int x, y, j;
+
+    for (y = 0; y < 4096; y++) {
+        for (x = 0; x < 2048; x++) {
+            frame->data[0][y * ys + x] = ((x / 8) % 256);
+            frame->data[0][y * ys + 4095 - x] = ((x / 8) % 256);
+        }
+
+        for (x = 0; x < 2048; x+=8) {
+            for (j = 0; j < 8; j++) {
+                frame->data[1][vs * y + x + j]        = (y%16 + (j % 8) * 16);
+                frame->data[1][vs * y + 4095 - x - j] = (128 + y%16 + (j % 8) * 16);
+            }
+        }
+
+        for (x = 0; x < 4096; x++)
+            frame->data[2][y * us + x] = 256 * y / 4096;
+    }
+}
+
+static av_cold int allyuv_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->w = test->h = 4096;
+    test->draw_once = 1;
+    test->fill_picture_fn = allyuv_fill_picture;
+    return init(ctx);
+}
+
+static int allyuv_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_allyuv = {
+    .name          = "allyuv",
+    .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &allyuv_class,
+    .init          = allyuv_init,
+    .uninit        = uninit,
+    .query_formats = allyuv_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_allyuv_outputs,
+};
+
+#endif /* CONFIG_ALLYUV_FILTER */
+
+#if CONFIG_ALLRGB_FILTER
+
+static const AVOption allrgb_options[] = {
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(allrgb);
+
+static void allrgb_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    unsigned x, y;
+    const int linesize = frame->linesize[0];
+    uint8_t *line = frame->data[0];
+
+    for (y = 0; y < 4096; y++) {
+        uint8_t *dst = line;
+
+        for (x = 0; x < 4096; x++) {
+            *dst++ = x;
+            *dst++ = y;
+            *dst++ = (x >> 8) | ((y >> 8) << 4);
+        }
+        line += linesize;
+    }
+}
+
+static av_cold int allrgb_init(AVFilterContext *ctx)
+{
+    TestSourceContext *test = ctx->priv;
+
+    test->w = test->h = 4096;
+    test->draw_once = 1;
+    test->fill_picture_fn = allrgb_fill_picture;
+    return init(ctx);
+}
+
+static int allrgb_config_props(AVFilterLink *outlink)
+{
+    TestSourceContext *test = outlink->src->priv;
+
+    ff_fill_rgba_map(test->rgba_map, outlink->format);
+    return config_props(outlink);
+}
+
+static int allrgb_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = allrgb_config_props,
+    },
+    { NULL }
+};
+
+AVFilter ff_vsrc_allrgb = {
+    .name          = "allrgb",
+    .description   = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &allrgb_class,
+    .init          = allrgb_init,
+    .uninit        = uninit,
+    .query_formats = allrgb_query_formats,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_allrgb_outputs,
+};
+
+#endif /* CONFIG_ALLRGB_FILTER */

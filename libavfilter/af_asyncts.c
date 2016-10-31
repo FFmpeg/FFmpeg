@@ -53,7 +53,7 @@ typedef struct ASyncContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption asyncts_options[] = {
-    { "compensate", "Stretch/squeeze the data to make it match the timestamps", OFFSET(resample),      AV_OPT_TYPE_INT,   { .i64 = 0 },   0, 1,       A|F },
+    { "compensate", "Stretch/squeeze the data to make it match the timestamps", OFFSET(resample),      AV_OPT_TYPE_BOOL,  { .i64 = 0 },   0, 1,       A|F },
     { "min_delta",  "Minimum difference between timestamps and audio data "
                     "(in seconds) to trigger padding/trimmin the data.",        OFFSET(min_delta_sec), AV_OPT_TYPE_FLOAT, { .dbl = 0.1 }, 0, INT_MAX, A|F },
     { "max_comp",   "Maximum compensation in samples per second.",              OFFSET(max_comp),      AV_OPT_TYPE_INT,   { .i64 = 500 }, 0, INT_MAX, A|F },
@@ -139,8 +139,7 @@ static int request_frame(AVFilterLink *link)
     int nb_samples;
 
     s->got_output = 0;
-    while (ret >= 0 && !s->got_output)
-        ret = ff_request_frame(ctx->inputs[0]);
+    ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
     if (ret == AVERROR_EOF) {
@@ -205,7 +204,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     delta    = pts - s->pts - get_delay(s);
     out_size = avresample_available(s->avr);
 
-    if (labs(delta) > s->min_delta ||
+    if (llabs(delta) > s->min_delta ||
         (s->first_frame && delta && s->first_pts != AV_NOPTS_VALUE)) {
         av_log(ctx, AV_LOG_VERBOSE, "Discontinuity - %"PRId64" samples.\n", delta);
         out_size = av_clipl_int32((int64_t)out_size + delta);
@@ -313,7 +312,7 @@ static const AVFilterPad avfilter_af_asyncts_outputs[] = {
 
 AVFilter ff_af_asyncts = {
     .name        = "asyncts",
-    .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps"),
+    .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps."),
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(ASyncContext),

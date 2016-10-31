@@ -94,11 +94,11 @@ typedef struct ChanCache {
     double o1, o2;
 } ChanCache;
 
-typedef struct {
+typedef struct BiquadsContext {
     const AVClass *class;
 
     enum FilterType filter_type;
-    enum WidthType width_type;
+    int width_type;
     int poles;
     int csg;
 
@@ -110,20 +110,21 @@ typedef struct {
     double b0, b1, b2;
 
     ChanCache *cache;
+    int clippings;
 
-    void (*filter)(const void *ibuf, void *obuf, int len,
+    void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
                    double b0, double b1, double b2, double a1, double a2);
 } BiquadsContext;
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    BiquadsContext *p = ctx->priv;
+    BiquadsContext *s = ctx->priv;
 
-    if (p->filter_type != biquad) {
-        if (p->frequency <= 0 || p->width <= 0) {
+    if (s->filter_type != biquad) {
+        if (s->frequency <= 0 || s->width <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Invalid frequency %f and/or width %f <= 0\n",
-                   p->frequency, p->width);
+                   s->frequency, s->width);
             return AVERROR(EINVAL);
         }
     }
@@ -142,27 +143,31 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
 
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats(ctx, formats);
+    if (ret < 0)
+        return ret;
 
     formats = ff_all_samplerates();
     if (!formats)
         return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 #define BIQUAD_FILTER(name, type, min, max, need_clipping)                    \
-static void biquad_## name (const void *input, void *output, int len,         \
+static void biquad_## name (BiquadsContext *s,                                \
+                            const void *input, void *output, int len,         \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
                             double b0, double b1, double b2,                  \
@@ -182,10 +187,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
         if (need_clipping && o2 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o2 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o2;                                                     \
@@ -194,10 +199,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
         if (need_clipping && o1 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o1 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o1;                                                     \
@@ -210,10 +215,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
         if (need_clipping && o0 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o0 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o0;                                                     \
@@ -233,153 +238,153 @@ BIQUAD_FILTER(dbl, double,  -1., 1., 0)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx    = outlink->src;
-    BiquadsContext *p       = ctx->priv;
+    BiquadsContext *s       = ctx->priv;
     AVFilterLink *inlink    = ctx->inputs[0];
-    double A = exp(p->gain / 40 * log(10.));
-    double w0 = 2 * M_PI * p->frequency / inlink->sample_rate;
+    double A = exp(s->gain / 40 * log(10.));
+    double w0 = 2 * M_PI * s->frequency / inlink->sample_rate;
     double alpha;
 
     if (w0 > M_PI) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid frequency %f. Frequency must be less than half the sample-rate %d.\n",
-               p->frequency, inlink->sample_rate);
+               s->frequency, inlink->sample_rate);
         return AVERROR(EINVAL);
     }
 
-    switch (p->width_type) {
+    switch (s->width_type) {
     case NONE:
         alpha = 0.0;
         break;
     case HERTZ:
-        alpha = sin(w0) / (2 * p->frequency / p->width);
+        alpha = sin(w0) / (2 * s->frequency / s->width);
         break;
     case OCTAVE:
-        alpha = sin(w0) * sinh(log(2.) / 2 * p->width * w0 / sin(w0));
+        alpha = sin(w0) * sinh(log(2.) / 2 * s->width * w0 / sin(w0));
         break;
     case QFACTOR:
-        alpha = sin(w0) / (2 * p->width);
+        alpha = sin(w0) / (2 * s->width);
         break;
     case SLOPE:
-        alpha = sin(w0) / 2 * sqrt((A + 1 / A) * (1 / p->width - 1) + 2);
+        alpha = sin(w0) / 2 * sqrt((A + 1 / A) * (1 / s->width - 1) + 2);
         break;
     default:
         av_assert0(0);
     }
 
-    switch (p->filter_type) {
+    switch (s->filter_type) {
     case biquad:
         break;
     case equalizer:
-        p->a0 =   1 + alpha / A;
-        p->a1 =  -2 * cos(w0);
-        p->a2 =   1 - alpha / A;
-        p->b0 =   1 + alpha * A;
-        p->b1 =  -2 * cos(w0);
-        p->b2 =   1 - alpha * A;
+        s->a0 =   1 + alpha / A;
+        s->a1 =  -2 * cos(w0);
+        s->a2 =   1 - alpha / A;
+        s->b0 =   1 + alpha * A;
+        s->b1 =  -2 * cos(w0);
+        s->b2 =   1 - alpha * A;
         break;
     case bass:
-        p->a0 =          (A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
-        p->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
-        p->a2 =          (A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
-        p->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
-        p->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
-        p->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
+        s->a0 =          (A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
+        s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
+        s->a2 =          (A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
+        s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
+        s->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
+        s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
         break;
     case treble:
-        p->a0 =          (A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
-        p->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
-        p->a2 =          (A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
-        p->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
-        p->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
-        p->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
+        s->a0 =          (A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
+        s->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
+        s->a2 =          (A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
+        s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
+        s->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
+        s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
         break;
     case bandpass:
-        if (p->csg) {
-            p->a0 =  1 + alpha;
-            p->a1 = -2 * cos(w0);
-            p->a2 =  1 - alpha;
-            p->b0 =  sin(w0) / 2;
-            p->b1 =  0;
-            p->b2 = -sin(w0) / 2;
+        if (s->csg) {
+            s->a0 =  1 + alpha;
+            s->a1 = -2 * cos(w0);
+            s->a2 =  1 - alpha;
+            s->b0 =  sin(w0) / 2;
+            s->b1 =  0;
+            s->b2 = -sin(w0) / 2;
         } else {
-            p->a0 =  1 + alpha;
-            p->a1 = -2 * cos(w0);
-            p->a2 =  1 - alpha;
-            p->b0 =  alpha;
-            p->b1 =  0;
-            p->b2 = -alpha;
+            s->a0 =  1 + alpha;
+            s->a1 = -2 * cos(w0);
+            s->a2 =  1 - alpha;
+            s->b0 =  alpha;
+            s->b1 =  0;
+            s->b2 = -alpha;
         }
         break;
     case bandreject:
-        p->a0 =  1 + alpha;
-        p->a1 = -2 * cos(w0);
-        p->a2 =  1 - alpha;
-        p->b0 =  1;
-        p->b1 = -2 * cos(w0);
-        p->b2 =  1;
+        s->a0 =  1 + alpha;
+        s->a1 = -2 * cos(w0);
+        s->a2 =  1 - alpha;
+        s->b0 =  1;
+        s->b1 = -2 * cos(w0);
+        s->b2 =  1;
         break;
     case lowpass:
-        if (p->poles == 1) {
-            p->a0 = 1;
-            p->a1 = -exp(-w0);
-            p->a2 = 0;
-            p->b0 = 1 + p->a1;
-            p->b1 = 0;
-            p->b2 = 0;
+        if (s->poles == 1) {
+            s->a0 = 1;
+            s->a1 = -exp(-w0);
+            s->a2 = 0;
+            s->b0 = 1 + s->a1;
+            s->b1 = 0;
+            s->b2 = 0;
         } else {
-            p->a0 =  1 + alpha;
-            p->a1 = -2 * cos(w0);
-            p->a2 =  1 - alpha;
-            p->b0 = (1 - cos(w0)) / 2;
-            p->b1 =  1 - cos(w0);
-            p->b2 = (1 - cos(w0)) / 2;
+            s->a0 =  1 + alpha;
+            s->a1 = -2 * cos(w0);
+            s->a2 =  1 - alpha;
+            s->b0 = (1 - cos(w0)) / 2;
+            s->b1 =  1 - cos(w0);
+            s->b2 = (1 - cos(w0)) / 2;
         }
         break;
     case highpass:
-        if (p->poles == 1) {
-            p->a0 = 1;
-            p->a1 = -exp(-w0);
-            p->a2 = 0;
-            p->b0 = (1 - p->a1) / 2;
-            p->b1 = -p->b0;
-            p->b2 = 0;
+        if (s->poles == 1) {
+            s->a0 = 1;
+            s->a1 = -exp(-w0);
+            s->a2 = 0;
+            s->b0 = (1 - s->a1) / 2;
+            s->b1 = -s->b0;
+            s->b2 = 0;
         } else {
-            p->a0 =   1 + alpha;
-            p->a1 =  -2 * cos(w0);
-            p->a2 =   1 - alpha;
-            p->b0 =  (1 + cos(w0)) / 2;
-            p->b1 = -(1 + cos(w0));
-            p->b2 =  (1 + cos(w0)) / 2;
+            s->a0 =   1 + alpha;
+            s->a1 =  -2 * cos(w0);
+            s->a2 =   1 - alpha;
+            s->b0 =  (1 + cos(w0)) / 2;
+            s->b1 = -(1 + cos(w0));
+            s->b2 =  (1 + cos(w0)) / 2;
         }
         break;
     case allpass:
-        p->a0 =  1 + alpha;
-        p->a1 = -2 * cos(w0);
-        p->a2 =  1 - alpha;
-        p->b0 =  1 - alpha;
-        p->b1 = -2 * cos(w0);
-        p->b2 =  1 + alpha;
+        s->a0 =  1 + alpha;
+        s->a1 = -2 * cos(w0);
+        s->a2 =  1 - alpha;
+        s->b0 =  1 - alpha;
+        s->b1 = -2 * cos(w0);
+        s->b2 =  1 + alpha;
         break;
     default:
         av_assert0(0);
     }
 
-    p->a1 /= p->a0;
-    p->a2 /= p->a0;
-    p->b0 /= p->a0;
-    p->b1 /= p->a0;
-    p->b2 /= p->a0;
+    s->a1 /= s->a0;
+    s->a2 /= s->a0;
+    s->b0 /= s->a0;
+    s->b1 /= s->a0;
+    s->b2 /= s->a0;
 
-    p->cache = av_realloc_f(p->cache, sizeof(ChanCache), inlink->channels);
-    if (!p->cache)
+    s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->channels);
+    if (!s->cache)
         return AVERROR(ENOMEM);
-    memset(p->cache, 0, sizeof(ChanCache) * inlink->channels);
+    memset(s->cache, 0, sizeof(ChanCache) * inlink->channels);
 
     switch (inlink->format) {
-    case AV_SAMPLE_FMT_S16P: p->filter = biquad_s16; break;
-    case AV_SAMPLE_FMT_S32P: p->filter = biquad_s32; break;
-    case AV_SAMPLE_FMT_FLTP: p->filter = biquad_flt; break;
-    case AV_SAMPLE_FMT_DBLP: p->filter = biquad_dbl; break;
+    case AV_SAMPLE_FMT_S16P: s->filter = biquad_s16; break;
+    case AV_SAMPLE_FMT_S32P: s->filter = biquad_s32; break;
+    case AV_SAMPLE_FMT_FLTP: s->filter = biquad_flt; break;
+    case AV_SAMPLE_FMT_DBLP: s->filter = biquad_dbl; break;
     default: av_assert0(0);
     }
 
@@ -388,8 +393,9 @@ static int config_output(AVFilterLink *outlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
-    BiquadsContext *p       = inlink->dst->priv;
-    AVFilterLink *outlink   = inlink->dst->outputs[0];
+    AVFilterContext  *ctx = inlink->dst;
+    BiquadsContext *s     = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out_buf;
     int nb_samples = buf->nb_samples;
     int ch;
@@ -398,17 +404,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = buf;
     } else {
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
-        if (!out_buf)
+        if (!out_buf) {
+            av_frame_free(&buf);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy_props(out_buf, buf);
     }
 
     for (ch = 0; ch < av_frame_get_channels(buf); ch++)
-        p->filter(buf->extended_data[ch],
+        s->filter(s, buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
-                  &p->cache[ch].i1, &p->cache[ch].i2,
-                  &p->cache[ch].o1, &p->cache[ch].o2,
-                  p->b0, p->b1, p->b2, p->a1, p->a2);
+                  &s->cache[ch].i1, &s->cache[ch].i2,
+                  &s->cache[ch].o1, &s->cache[ch].o2,
+                  s->b0, s->b1, s->b2, s->a1, s->a2);
+
+    if (s->clippings > 0)
+        av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
 
     if (buf != out_buf)
         av_frame_free(&buf);
@@ -418,9 +429,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    BiquadsContext *p = ctx->priv;
+    BiquadsContext *s = ctx->priv;
 
-    av_freep(&p->cache);
+    av_freep(&s->cache);
 }
 
 static const AVFilterPad inputs[] = {
@@ -448,9 +459,9 @@ static const AVFilterPad outputs[] = {
 AVFILTER_DEFINE_CLASS(name_);                                           \
 static av_cold int name_##_init(AVFilterContext *ctx) \
 {                                                                       \
-    BiquadsContext *p = ctx->priv;                                      \
-    p->class = &name_##_class;                                          \
-    p->filter_type = name_;                                             \
+    BiquadsContext *s = ctx->priv;                                      \
+    s->class = &name_##_class;                                          \
+    s->filter_type = name_;                                             \
     return init(ctx);                                             \
 }                                                                       \
                                                          \
@@ -531,7 +542,7 @@ static const AVOption bandpass_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
-    {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
+    {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {NULL}
 };
 

@@ -21,22 +21,29 @@
 #include "libavutil/mem.h"
 
 #include "vda.h"
-#include "vda_internal.h"
+#include "vda_vt_internal.h"
 
 #if CONFIG_H264_VDA_HWACCEL
 AVVDAContext *av_vda_alloc_context(void)
 {
     AVVDAContext *ret = av_mallocz(sizeof(*ret));
 
-    if (ret)
+    if (ret) {
         ret->output_callback = ff_vda_output_callback;
+        ret->cv_pix_fmt_type = kCVPixelFormatType_422YpCbCr8;
+    }
 
     return ret;
 }
 
 int av_vda_default_init(AVCodecContext *avctx)
 {
-    avctx->hwaccel_context = av_vda_alloc_context();
+    return av_vda_default_init2(avctx, NULL);
+}
+
+int av_vda_default_init2(AVCodecContext *avctx, AVVDAContext *vdactx)
+{
+    avctx->hwaccel_context = vdactx ?: av_vda_alloc_context();
     if (!avctx->hwaccel_context)
         return AVERROR(ENOMEM);
     return ff_vda_default_init(avctx);
@@ -62,6 +69,11 @@ AVVDAContext *av_vda_alloc_context(void)
 }
 
 int av_vda_default_init(AVCodecContext *avctx)
+{
+    return AVERROR(ENOSYS);
+}
+
+int av_vda_default_init2(AVCodecContext *avctx, AVVDAContext *vdactx)
 {
     return AVERROR(ENOSYS);
 }

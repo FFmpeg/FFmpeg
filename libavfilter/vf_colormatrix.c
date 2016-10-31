@@ -40,19 +40,12 @@
 #define NS(n) ((n) < 0 ? (int)((n)*65536.0-0.5+DBL_EPSILON) : (int)((n)*65536.0+0.5))
 #define CB(n) av_clip_uint8(n)
 
-static const double yuv_coeff[4][3][3] = {
-    { { +0.7152, +0.0722, +0.2126 }, // Rec.709 (0)
-      { -0.3850, +0.5000, -0.1150 },
-      { -0.4540, -0.0460, +0.5000 } },
-    { { +0.5900, +0.1100, +0.3000 }, // FCC (1)
-      { -0.3310, +0.5000, -0.1690 },
-      { -0.4210, -0.0790, +0.5000 } },
-    { { +0.5870, +0.1140, +0.2990 }, // Rec.601 (ITU-R BT.470-2/SMPTE 170M) (2)
-      { -0.3313, +0.5000, -0.1687 },
-      { -0.4187, -0.0813, +0.5000 } },
-    { { +0.7010, +0.0870, +0.2120 }, // SMPTE 240M (3)
-      { -0.3840, +0.5000, -0.1160 },
-      { -0.4450, -0.0550, +0.5000 } },
+static const double yuv_coeff_luma[5][3] = {
+    { +0.7152, +0.0722, +0.2126 }, // Rec.709 (0)
+    { +0.5900, +0.1100, +0.3000 }, // FCC (1)
+    { +0.5870, +0.1140, +0.2990 }, // Rec.601 (ITU-R BT.470-2/SMPTE 170M) (2)
+    { +0.7010, +0.0870, +0.2120 }, // SMPTE 240M (3)
+    { +0.6780, +0.0593, +0.2627 }, // Rec.2020 (4)
 };
 
 enum ColorMode {
@@ -61,17 +54,29 @@ enum ColorMode {
     COLOR_MODE_FCC,
     COLOR_MODE_BT601,
     COLOR_MODE_SMPTE240M,
+    COLOR_MODE_BT2020,
     COLOR_MODE_COUNT
 };
 
 typedef struct {
     const AVClass *class;
-    int yuv_convert[16][3][3];
+    int yuv_convert[25][3][3];
     int interlaced;
-    enum ColorMode source, dest;
+    int source, dest;        ///< ColorMode
     int mode;
     int hsub, vsub;
 } ColorMatrixContext;
+
+typedef struct ThreadData {
+    AVFrame *dst;
+    const AVFrame *src;
+    int c2;
+    int c3;
+    int c4;
+    int c5;
+    int c6;
+    int c7;
+} ThreadData;
 
 #define OFFSET(x) offsetof(ColorMatrixContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -82,7 +87,11 @@ static const AVOption colormatrix_options[] = {
     { "bt709",     "set BT.709 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT709},       .flags=FLAGS, .unit="color_mode" },
     { "fcc",       "set FCC colorspace   ",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_FCC},         .flags=FLAGS, .unit="color_mode" },
     { "bt601",     "set BT.601 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "bt470",     "set BT.470 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "bt470bg",   "set BT.470 colorspace",      0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
+    { "smpte170m", "set SMTPE-170M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT601},       .flags=FLAGS, .unit="color_mode" },
     { "smpte240m", "set SMPTE-240M colorspace",  0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_SMPTE240M},   .flags=FLAGS, .unit="color_mode" },
+    { "bt2020",    "set BT.2020 colorspace",     0, AV_OPT_TYPE_CONST, {.i64=COLOR_MODE_BT2020},      .flags=FLAGS, .unit="color_mode" },
     { NULL }
 };
 
@@ -108,7 +117,7 @@ AVFILTER_DEFINE_CLASS(colormatrix);
 #define imh im[2][1]
 #define imi im[2][2]
 
-static void inverse3x3(double im[3][3], const double m[3][3])
+static void inverse3x3(double im[3][3], double m[3][3])
 {
     double det = ma * (me * mi - mf * mh) - mb * (md * mi - mf * mg) + mc * (md * mh - me * mg);
     det = 1.0 / det;
@@ -123,7 +132,7 @@ static void inverse3x3(double im[3][3], const double m[3][3])
     imi = det * (ma * me - mb * md);
 }
 
-static void solve_coefficients(double cm[3][3], double rgb[3][3], const double yuv[3][3])
+static void solve_coefficients(double cm[3][3], double rgb[3][3], double yuv[3][3])
 {
     int i, j;
     for (i = 0; i < 3; i++)
@@ -134,15 +143,29 @@ static void solve_coefficients(double cm[3][3], double rgb[3][3], const double y
 static void calc_coefficients(AVFilterContext *ctx)
 {
     ColorMatrixContext *color = ctx->priv;
-    double rgb_coeffd[4][3][3];
-    double yuv_convertd[16][3][3];
+    double yuv_coeff[5][3][3];
+    double rgb_coeffd[5][3][3];
+    double yuv_convertd[25][3][3];
+    double bscale, rscale;
     int v = 0;
     int i, j, k;
-
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < 5; i++) {
+        yuv_coeff[i][0][0] = yuv_coeff_luma[i][0];
+        yuv_coeff[i][0][1] = yuv_coeff_luma[i][1];
+        yuv_coeff[i][0][2] = yuv_coeff_luma[i][2];
+        bscale = 0.5 / (yuv_coeff[i][0][1] - 1.0);
+        rscale = 0.5 / (yuv_coeff[i][0][2] - 1.0);
+        yuv_coeff[i][1][0] = bscale * yuv_coeff[i][0][0];
+        yuv_coeff[i][1][1] = 0.5;
+        yuv_coeff[i][1][2] = bscale * yuv_coeff[i][0][2];
+        yuv_coeff[i][2][0] = rscale * yuv_coeff[i][0][0];
+        yuv_coeff[i][2][1] = rscale * yuv_coeff[i][0][1];
+        yuv_coeff[i][2][2] = 0.5;
+    }
+    for (i = 0; i < 5; i++)
         inverse3x3(rgb_coeffd[i], yuv_coeff[i]);
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
             solve_coefficients(yuv_convertd[v], rgb_coeffd[i], yuv_coeff[j]);
             for (k = 0; k < 3; k++) {
                 color->yuv_convert[v][k][0] = NS(yuv_convertd[v][k][0]);
@@ -158,7 +181,7 @@ static void calc_coefficients(AVFilterContext *ctx)
     }
 }
 
-static const char *color_modes[] = {"bt709", "fcc", "bt601", "smpte240m"};
+static const char * const color_modes[] = {"bt709", "fcc", "bt601", "smpte240m", "bt2020"};
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -174,27 +197,33 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    calc_coefficients(ctx);
+
     return 0;
 }
 
-static void process_frame_uyvy422(ColorMatrixContext *color,
-                                  AVFrame *dst, AVFrame *src)
+static int process_slice_uyvy422(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    const unsigned char *srcp = src->data[0];
-    const int src_pitch = src->linesize[0];
+    const ThreadData *td = arg;
+    const AVFrame *src = td->src;
+    AVFrame *dst = td->dst;
     const int height = src->height;
     const int width = src->width*2;
-    unsigned char *dstp = dst->data[0];
+    const int src_pitch = src->linesize[0];
     const int dst_pitch = dst->linesize[0];
-    const int c2 = color->yuv_convert[color->mode][0][1];
-    const int c3 = color->yuv_convert[color->mode][0][2];
-    const int c4 = color->yuv_convert[color->mode][1][1];
-    const int c5 = color->yuv_convert[color->mode][1][2];
-    const int c6 = color->yuv_convert[color->mode][2][1];
-    const int c7 = color->yuv_convert[color->mode][2][2];
+    const int slice_start = (height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const unsigned char *srcp = src->data[0] + slice_start * src_pitch;
+    unsigned char *dstp = dst->data[0] + slice_start * dst_pitch;
+    const int c2 = td->c2;
+    const int c3 = td->c3;
+    const int c4 = td->c4;
+    const int c5 = td->c5;
+    const int c6 = td->c6;
+    const int c7 = td->c7;
     int x, y;
 
-    for (y = 0; y < height; y++) {
+    for (y = slice_start; y < slice_end; y++) {
         for (x = 0; x < width; x += 4) {
             const int u = srcp[x + 0] - 128;
             const int v = srcp[x + 2] - 128;
@@ -207,32 +236,85 @@ static void process_frame_uyvy422(ColorMatrixContext *color,
         srcp += src_pitch;
         dstp += dst_pitch;
     }
+
+    return 0;
 }
 
-static void process_frame_yuv422p(ColorMatrixContext *color,
-                                  AVFrame *dst, AVFrame *src)
+static int process_slice_yuv444p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    const unsigned char *srcpU = src->data[1];
-    const unsigned char *srcpV = src->data[2];
-    const unsigned char *srcpY = src->data[0];
-    const int src_pitchY  = src->linesize[0];
-    const int src_pitchUV = src->linesize[1];
+    const ThreadData *td = arg;
+    const AVFrame *src = td->src;
+    AVFrame *dst = td->dst;
     const int height = src->height;
     const int width = src->width;
-    unsigned char *dstpU = dst->data[1];
-    unsigned char *dstpV = dst->data[2];
-    unsigned char *dstpY = dst->data[0];
+    const int slice_start = (height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int src_pitchY  = src->linesize[0];
+    const int src_pitchUV = src->linesize[1];
+    const unsigned char *srcpU = src->data[1] + slice_start * src_pitchUV;
+    const unsigned char *srcpV = src->data[2] + slice_start * src_pitchUV;
+    const unsigned char *srcpY = src->data[0] + slice_start * src_pitchY;
     const int dst_pitchY  = dst->linesize[0];
     const int dst_pitchUV = dst->linesize[1];
-    const int c2 = color->yuv_convert[color->mode][0][1];
-    const int c3 = color->yuv_convert[color->mode][0][2];
-    const int c4 = color->yuv_convert[color->mode][1][1];
-    const int c5 = color->yuv_convert[color->mode][1][2];
-    const int c6 = color->yuv_convert[color->mode][2][1];
-    const int c7 = color->yuv_convert[color->mode][2][2];
+    unsigned char *dstpU = dst->data[1] + slice_start * dst_pitchUV;
+    unsigned char *dstpV = dst->data[2] + slice_start * dst_pitchUV;
+    unsigned char *dstpY = dst->data[0] + slice_start * dst_pitchY;
+    const int c2 = td->c2;
+    const int c3 = td->c3;
+    const int c4 = td->c4;
+    const int c5 = td->c5;
+    const int c6 = td->c6;
+    const int c7 = td->c7;
     int x, y;
 
-    for (y = 0; y < height; y++) {
+    for (y = slice_start; y < slice_end; y++) {
+        for (x = 0; x < width; x++) {
+            const int u = srcpU[x] - 128;
+            const int v = srcpV[x] - 128;
+            const int uvval = c2 * u + c3 * v + 1081344;
+            dstpY[x] = CB((65536 * (srcpY[x] - 16) + uvval) >> 16);
+            dstpU[x] = CB((c4 * u + c5 * v + 8421376) >> 16);
+            dstpV[x] = CB((c6 * u + c7 * v + 8421376) >> 16);
+        }
+        srcpY += src_pitchY;
+        dstpY += dst_pitchY;
+        srcpU += src_pitchUV;
+        srcpV += src_pitchUV;
+        dstpU += dst_pitchUV;
+        dstpV += dst_pitchUV;
+    }
+
+    return 0;
+}
+
+static int process_slice_yuv422p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    const ThreadData *td = arg;
+    const AVFrame *src = td->src;
+    AVFrame *dst = td->dst;
+    const int height = src->height;
+    const int width = src->width;
+    const int slice_start = (height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int src_pitchY  = src->linesize[0];
+    const int src_pitchUV = src->linesize[1];
+    const unsigned char *srcpU = src->data[1] + slice_start * src_pitchUV;
+    const unsigned char *srcpV = src->data[2] + slice_start * src_pitchUV;
+    const unsigned char *srcpY = src->data[0] + slice_start * src_pitchY;
+    const int dst_pitchY  = dst->linesize[0];
+    const int dst_pitchUV = dst->linesize[1];
+    unsigned char *dstpU = dst->data[1] + slice_start * dst_pitchUV;
+    unsigned char *dstpV = dst->data[2] + slice_start * dst_pitchUV;
+    unsigned char *dstpY = dst->data[0] + slice_start * dst_pitchY;
+    const int c2 = td->c2;
+    const int c3 = td->c3;
+    const int c4 = td->c4;
+    const int c5 = td->c5;
+    const int c6 = td->c6;
+    const int c7 = td->c7;
+    int x, y;
+
+    for (y = slice_start; y < slice_end; y++) {
         for (x = 0; x < width; x += 2) {
             const int u = srcpU[x >> 1] - 128;
             const int v = srcpV[x >> 1] - 128;
@@ -249,34 +331,40 @@ static void process_frame_yuv422p(ColorMatrixContext *color,
         dstpU += dst_pitchUV;
         dstpV += dst_pitchUV;
     }
+
+    return 0;
 }
 
-static void process_frame_yuv420p(ColorMatrixContext *color,
-                                  AVFrame *dst, AVFrame *src)
+static int process_slice_yuv420p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    const unsigned char *srcpU = src->data[1];
-    const unsigned char *srcpV = src->data[2];
-    const unsigned char *srcpY = src->data[0];
-    const unsigned char *srcpN = src->data[0] + src->linesize[0];
+    const ThreadData *td = arg;
+    const AVFrame *src = td->src;
+    AVFrame *dst = td->dst;
+    const int height = FFALIGN(src->height, 2) >> 1;
+    const int width = src->width;
+    const int slice_start = ((height *  jobnr   ) / nb_jobs) << 1;
+    const int slice_end   = ((height * (jobnr+1)) / nb_jobs) << 1;
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
-    const int height = src->height;
-    const int width = src->width;
-    unsigned char *dstpU = dst->data[1];
-    unsigned char *dstpV = dst->data[2];
-    unsigned char *dstpY = dst->data[0];
-    unsigned char *dstpN = dst->data[0] + dst->linesize[0];
     const int dst_pitchY  = dst->linesize[0];
     const int dst_pitchUV = dst->linesize[1];
-    const int c2 = color->yuv_convert[color->mode][0][1];
-    const int c3 = color->yuv_convert[color->mode][0][2];
-    const int c4 = color->yuv_convert[color->mode][1][1];
-    const int c5 = color->yuv_convert[color->mode][1][2];
-    const int c6 = color->yuv_convert[color->mode][2][1];
-    const int c7 = color->yuv_convert[color->mode][2][2];
+    const unsigned char *srcpY = src->data[0] + src_pitchY * slice_start;
+    const unsigned char *srcpU = src->data[1] + src_pitchUV * (slice_start >> 1);
+    const unsigned char *srcpV = src->data[2] + src_pitchUV * (slice_start >> 1);
+    const unsigned char *srcpN = src->data[0] + src_pitchY * (slice_start + 1);
+    unsigned char *dstpU = dst->data[1] + dst_pitchUV * (slice_start >> 1);
+    unsigned char *dstpV = dst->data[2] + dst_pitchUV * (slice_start >> 1);
+    unsigned char *dstpY = dst->data[0] + dst_pitchY * slice_start;
+    unsigned char *dstpN = dst->data[0] + dst_pitchY * (slice_start + 1);
+    const int c2 = td->c2;
+    const int c3 = td->c3;
+    const int c4 = td->c4;
+    const int c5 = td->c5;
+    const int c6 = td->c6;
+    const int c7 = td->c7;
     int x, y;
 
-    for (y = 0; y < height; y += 2) {
+    for (y = slice_start; y < slice_end; y += 2) {
         for (x = 0; x < width; x += 2) {
             const int u = srcpU[x >> 1] - 128;
             const int v = srcpV[x >> 1] - 128;
@@ -297,6 +385,8 @@ static void process_frame_yuv420p(ColorMatrixContext *color,
         dstpU += dst_pitchUV;
         dstpV += dst_pitchUV;
     }
+
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -317,15 +407,16 @@ static int config_input(AVFilterLink *inlink)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_UYVY422,
         AV_PIX_FMT_NONE
     };
-
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
@@ -334,6 +425,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     ColorMatrixContext *color = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
+    ThreadData td = {0};
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -351,30 +443,47 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         case AVCOL_SPC_FCC       : source = COLOR_MODE_FCC       ; break;
         case AVCOL_SPC_SMPTE240M : source = COLOR_MODE_SMPTE240M ; break;
         case AVCOL_SPC_BT470BG   : source = COLOR_MODE_BT601     ; break;
+        case AVCOL_SPC_SMPTE170M : source = COLOR_MODE_BT601     ; break;
+        case AVCOL_SPC_BT2020_NCL: source = COLOR_MODE_BT2020    ; break;
+        case AVCOL_SPC_BT2020_CL : source = COLOR_MODE_BT2020    ; break;
         default :
             av_log(ctx, AV_LOG_ERROR, "Input frame does not specify a supported colorspace, and none has been specified as source either\n");
             av_frame_free(&out);
             return AVERROR(EINVAL);
         }
-        color->mode = source * 4 + color->dest;
+        color->mode = source * 5 + color->dest;
     } else
-        color->mode = color->source * 4 + color->dest;
+        color->mode = color->source * 5 + color->dest;
 
     switch(color->dest) {
-    case COLOR_MODE_BT709    : av_frame_set_colorspace(out, AVCOL_SPC_BT709)    ; break;
-    case COLOR_MODE_FCC      : av_frame_set_colorspace(out, AVCOL_SPC_FCC)      ; break;
-    case COLOR_MODE_SMPTE240M: av_frame_set_colorspace(out, AVCOL_SPC_SMPTE240M); break;
-    case COLOR_MODE_BT601    : av_frame_set_colorspace(out, AVCOL_SPC_BT470BG)  ; break;
+    case COLOR_MODE_BT709    : av_frame_set_colorspace(out, AVCOL_SPC_BT709)     ; break;
+    case COLOR_MODE_FCC      : av_frame_set_colorspace(out, AVCOL_SPC_FCC)       ; break;
+    case COLOR_MODE_SMPTE240M: av_frame_set_colorspace(out, AVCOL_SPC_SMPTE240M) ; break;
+    case COLOR_MODE_BT601    : av_frame_set_colorspace(out, AVCOL_SPC_BT470BG)   ; break;
+    case COLOR_MODE_BT2020   : av_frame_set_colorspace(out, AVCOL_SPC_BT2020_NCL); break;
     }
 
-    calc_coefficients(ctx);
+    td.src = in;
+    td.dst = out;
+    td.c2 = color->yuv_convert[color->mode][0][1];
+    td.c3 = color->yuv_convert[color->mode][0][2];
+    td.c4 = color->yuv_convert[color->mode][1][1];
+    td.c5 = color->yuv_convert[color->mode][1][2];
+    td.c6 = color->yuv_convert[color->mode][2][1];
+    td.c7 = color->yuv_convert[color->mode][2][2];
 
-    if (in->format == AV_PIX_FMT_YUV422P)
-        process_frame_yuv422p(color, out, in);
+    if (in->format == AV_PIX_FMT_YUV444P)
+        ctx->internal->execute(ctx, process_slice_yuv444p, &td, NULL,
+                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+    else if (in->format == AV_PIX_FMT_YUV422P)
+        ctx->internal->execute(ctx, process_slice_yuv422p, &td, NULL,
+                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     else if (in->format == AV_PIX_FMT_YUV420P)
-        process_frame_yuv420p(color, out, in);
+        ctx->internal->execute(ctx, process_slice_yuv420p, &td, NULL,
+                               FFMIN(in->height / 2, ff_filter_get_nb_threads(ctx)));
     else
-        process_frame_uyvy422(color, out, in);
+        ctx->internal->execute(ctx, process_slice_uyvy422, &td, NULL,
+                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -407,5 +516,5 @@ AVFilter ff_vf_colormatrix = {
     .inputs        = colormatrix_inputs,
     .outputs       = colormatrix_outputs,
     .priv_class    = &colormatrix_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

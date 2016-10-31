@@ -22,6 +22,7 @@
 #define AVUTIL_DISPLAY_H
 
 #include <stdint.h>
+#include "common.h"
 
 /**
  * The display transformation matrix specifies an affine transformation that
@@ -55,9 +56,9 @@
  * Extract the rotation component of the transformation matrix.
  *
  * @param matrix the transformation matrix
- * @return the angle (in degrees) by which the transformation rotates the frame.
- *         The angle will be in range [-180.0, 180.0], or NaN if the matrix is
- *         singular.
+ * @return the angle (in degrees) by which the transformation rotates the frame
+ *         counterclockwise. The angle will be in range [-180.0, 180.0],
+ *         or NaN if the matrix is singular.
  *
  * @note floating point numbers are inherently inexact, so callers are
  *       recommended to round the return value to nearest integer before use.
@@ -65,8 +66,8 @@
 double av_display_rotation_get(const int32_t matrix[9]);
 
 /**
- * Initialize a transformation matrix describing a pure rotation by the
- * specified angle (in degrees).
+ * Initialize a transformation matrix describing a pure counterclockwise
+ * rotation by the specified angle (in degrees).
  *
  * @param matrix an allocated transformation matrix (will be fully overwritten
  *               by this function)

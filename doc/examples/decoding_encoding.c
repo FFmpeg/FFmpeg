@@ -25,9 +25,9 @@
  * libavcodec API use example.
  *
  * @example decoding_encoding.c
- * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
- * not file formats (avi, vob, mp4, mov, mkv, mxf, flv, mpegts, mpegps, etc...). See library 'libavformat' for the
- * format handling
+ * Note that libavcodec only handles codecs (MPEG, MPEG-4, etc...),
+ * not file formats (AVI, VOB, MP4, MOV, MKV, MXF, FLV, MPEG-TS, MPEG-PS, etc...).
+ * See library 'libavformat' for the format handling
  */
 
 #include <math.h>
@@ -211,7 +211,7 @@ static void audio_encode_example(const char *filename)
         }
         if (got_output) {
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
 
@@ -225,7 +225,7 @@ static void audio_encode_example(const char *filename)
 
         if (got_output) {
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
     fclose(f);
@@ -245,7 +245,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     int len;
     FILE *f, *outfile;
-    uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t inbuf[AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
     AVFrame *decoded_frame = NULL;
 
@@ -253,7 +253,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     printf("Decode audio file %s to %s\n", filename, outfilename);
 
-    /* find the mpeg audio decoder */
+    /* find the MPEG audio decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -288,6 +288,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
     while (avpkt.size > 0) {
+        int i, ch;
         int got_frame = 0;
 
         if (!decoded_frame) {
@@ -304,15 +305,15 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         }
         if (got_frame) {
             /* if a frame has been decoded, output it */
-            int data_size = av_samples_get_buffer_size(NULL, c->channels,
-                                                       decoded_frame->nb_samples,
-                                                       c->sample_fmt, 1);
+            int data_size = av_get_bytes_per_sample(c->sample_fmt);
             if (data_size < 0) {
                 /* This should not occur, checking just for paranoia */
                 fprintf(stderr, "Failed to calculate data size\n");
                 exit(1);
             }
-            fwrite(decoded_frame->data[0], 1, data_size, outfile);
+            for (i=0; i<decoded_frame->nb_samples; i++)
+                for (ch=0; ch<c->channels; ch++)
+                    fwrite(decoded_frame->data[ch] + data_size*i, 1, data_size, outfile);
         }
         avpkt.size -= len;
         avpkt.data += len;
@@ -355,7 +356,7 @@ static void video_encode_example(const char *filename, int codec_id)
 
     printf("Encode video file %s\n", filename);
 
-    /* find the mpeg1 video encoder */
+    /* find the video encoder */
     codec = avcodec_find_encoder(codec_id);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -453,7 +454,7 @@ static void video_encode_example(const char *filename, int codec_id)
         if (got_output) {
             printf("Write frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
 
@@ -470,11 +471,11 @@ static void video_encode_example(const char *filename, int codec_id)
         if (got_output) {
             printf("Write frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
-            av_free_packet(&pkt);
+            av_packet_unref(&pkt);
         }
     }
 
-    /* add sequence end code to have a real mpeg file */
+    /* add sequence end code to have a real MPEG file */
     fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
 
@@ -520,7 +521,7 @@ static int decode_write_frame(const char *outfilename, AVCodecContext *avctx,
         /* the picture is allocated by the decoder, no need to free it */
         snprintf(buf, sizeof(buf), outfilename, *frame_count);
         pgm_save(frame->data[0], frame->linesize[0],
-                 avctx->width, avctx->height, buf);
+                 frame->width, frame->height, buf);
         (*frame_count)++;
     }
     if (pkt->data) {
@@ -537,17 +538,17 @@ static void video_decode_example(const char *outfilename, const char *filename)
     int frame_count;
     FILE *f;
     AVFrame *frame;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
 
     av_init_packet(&avpkt);
 
-    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
-    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
+    memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     printf("Decode video file %s to %s\n", filename, outfilename);
 
-    /* find the mpeg1 video decoder */
+    /* find the MPEG-1 video decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
@@ -560,8 +561,8 @@ static void video_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    if(codec->capabilities&CODEC_CAP_TRUNCATED)
-        c->flags|= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+    if (codec->capabilities & AV_CODEC_CAP_TRUNCATED)
+        c->flags |= AV_CODEC_FLAG_TRUNCATED; // we do not send complete frames
 
     /* For some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because this information is not
@@ -612,9 +613,9 @@ static void video_decode_example(const char *outfilename, const char *filename)
                 exit(1);
     }
 
-    /* some codecs, such as MPEG, transmit the I and P frame with a
+    /* Some codecs, such as MPEG, transmit the I- and P-frame with a
        latency of one frame. You must do the following to have a
-       chance to get the last frame of the video */
+       chance to get the last frame of the video. */
     avpkt.data = NULL;
     avpkt.size = 0;
     decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 1);
@@ -650,7 +651,7 @@ int main(int argc, char **argv)
         video_encode_example("test.h264", AV_CODEC_ID_H264);
     } else if (!strcmp(output_type, "mp2")) {
         audio_encode_example("test.mp2");
-        audio_decode_example("test.sw", "test.mp2");
+        audio_decode_example("test.pcm", "test.mp2");
     } else if (!strcmp(output_type, "mpg")) {
         video_encode_example("test.mpg", AV_CODEC_ID_MPEG1VIDEO);
         video_decode_example("test%02d.pgm", "test.mpg");

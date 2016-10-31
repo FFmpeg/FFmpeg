@@ -41,6 +41,17 @@
     b_add = FIX(1.77200*255.0/224.0) * cb + ONE_HALF;\
 }
 
+#define YUV_TO_RGB1_CCIR_BT709(cb1, cr1)                      \
+    {                                                         \
+        cb    = (cb1) - 128;                                  \
+        cr    = (cr1) - 128;                                  \
+        r_add = ONE_HALF + FIX(1.5747 * 255.0 / 224.0) * cr;  \
+        g_add = ONE_HALF - FIX(0.1873 * 255.0 / 224.0) * cb - \
+                           FIX(0.4682 * 255.0 / 224.0) * cr;  \
+        b_add = ONE_HALF + FIX(1.8556 * 255.0 / 224.0) * cb;  \
+    }
+
+// To be used for the BT709 variant as well
 #define YUV_TO_RGB2_CCIR(r, g, b, y1)\
 {\
     y = ((y1) - 16) * FIX(255.0/219.0);\
@@ -83,18 +94,6 @@ static inline int C_JPEG_TO_CCIR(int y) {
     return y;
 }
 
-
-#define RGB_TO_Y(r, g, b) \
-((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
-  FIX(0.11400) * (b) + ONE_HALF) >> SCALEBITS)
-
-#define RGB_TO_U(r1, g1, b1, shift)\
-(((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +         \
-     FIX(0.50000) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
-
-#define RGB_TO_V(r1, g1, b1, shift)\
-(((FIX(0.50000) * r1 - FIX(0.41869) * g1 -           \
-   FIX(0.08131) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
 #define RGB_TO_Y_CCIR(r, g, b) \
 ((FIX(0.29900*219.0/255.0) * (r) + FIX(0.58700*219.0/255.0) * (g) + \

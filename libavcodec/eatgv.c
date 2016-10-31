@@ -28,12 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGV
  */
 
-#include "avcodec.h"
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
+#include "avcodec.h"
+#include "get_bits.h"
+#include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')
@@ -55,7 +56,7 @@ static av_cold int tgv_decode_init(AVCodecContext *avctx)
 {
     TgvContext *s = avctx->priv_data;
     s->avctx         = avctx;
-    avctx->time_base = (AVRational){1, 15};
+    avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt   = AV_PIX_FMT_PAL8;
 
     s->last_frame = av_frame_alloc();
@@ -173,9 +174,10 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
 
     /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
-        if (av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook))) {
+        int err = av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook));
+        if (err < 0) {
             s->num_mvs = 0;
-            return AVERROR(ENOMEM);
+            return err;
         }
         s->num_mvs = num_mvs;
     }
@@ -349,8 +351,8 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
     TgvContext *s = avctx->priv_data;
     av_frame_free(&s->last_frame);
     av_freep(&s->frame_buffer);
-    av_free(s->mv_codebook);
-    av_free(s->block_codebook);
+    av_freep(&s->mv_codebook);
+    av_freep(&s->block_codebook);
     return 0;
 }
 
@@ -363,5 +365,5 @@ AVCodec ff_eatgv_decoder = {
     .init           = tgv_decode_init,
     .close          = tgv_decode_end,
     .decode         = tgv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

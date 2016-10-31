@@ -1,6 +1,6 @@
 ;******************************************************************************
-;* SSE-optimized functions for the DCA decoder
-;* Copyright (C) 2012-2014 Christophe Gisquet <christophe.gisquet@gmail.com>
+;* SIMD-optimized functions for the DCA decoder
+;* Copyright (C) 2016 James Almer
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -21,411 +21,281 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
-pf_inv16:  times 4 dd 0x3D800000 ; 1/16
+SECTION .text
 
-SECTION_TEXT
+%define sizeof_float 4
+%define FMA3_OFFSET (8 * cpuflag(fma3))
 
-; void decode_hf(float dst[DCA_SUBBANDS][8], const int32_t vq_num[DCA_SUBBANDS],
-;                const int8_t hf_vq[1024][32], intptr_t vq_offset,
-;                int32_t scale[DCA_SUBBANDS][2], intptr_t start, intptr_t end)
+%macro LFE_FIR0_FLOAT 0
+cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks, cnt1, cnt2
+    shr nblocksd, 1
+    sub     lfeq, 7*sizeof_float
+    mov    cnt1d, 32*sizeof_float
+    mov    cnt2d, 32*sizeof_float-8-FMA3_OFFSET
+    lea   coeffq, [coeffq+cnt1q*8]
+    add samplesq, cnt1q
+    neg    cnt1q
 
-%macro DECODE_HF 0
-cglobal decode_hf, 6,6,5, dst, num, src, offset, scale, start, end
-    lea       srcq, [srcq + offsetq]
-    shl     startq, 2
-    mov    offsetd, endm
-%define DICT offsetq
-    shl    offsetq, 2
-    mov       endm, offsetq
 .loop:
+%if cpuflag(avx)
+    cvtdq2ps  m4, [lfeq+16]
+    cvtdq2ps  m5, [lfeq   ]
+    shufps    m7, m4, m4, q0123
+    shufps    m6, m5, m5, q0123
+%elif cpuflag(sse2)
+    movu      m4, [lfeq+16]
+    movu      m5, [lfeq   ]
+    cvtdq2ps  m4, m4
+    cvtdq2ps  m5, m5
+    pshufd    m7, m4, q0123
+    pshufd    m6, m5, q0123
+%else
+    cvtpi2ps  m4, [lfeq+16]
+    cvtpi2ps  m0, [lfeq+24]
+    cvtpi2ps  m5, [lfeq   ]
+    cvtpi2ps  m1, [lfeq+8 ]
+    shufps    m4, m0, q1010
+    shufps    m5, m1, q1010
+    shufps    m7, m4, m4, q0123
+    shufps    m6, m5, m5, q0123
+%endif
+
+.inner_loop:
 %if ARCH_X86_64
-    mov    offsetd, [scaleq + 2 * startq]
-    cvtsi2ss    m0, offsetd
+    movaps    m8, [coeffq+cnt1q*8   ]
+    movaps    m9, [coeffq+cnt1q*8+16]
+    movaps   m10, [coeffq+cnt1q*8+32]
+    movaps   m11, [coeffq+cnt1q*8+48]
+%if cpuflag(fma3)
+    movaps   m12, [coeffq+cnt1q*8+64]
+    movaps   m13, [coeffq+cnt1q*8+80]
+    movaps   m14, [coeffq+cnt1q*8+96]
+    movaps   m15, [coeffq+cnt1q*8+112]
+    mulps     m0, m7, m8
+    mulps     m1, m7, m10
+    mulps     m2, m7, m12
+    mulps     m3, m7, m14
+    fmaddps   m0, m6, m9, m0
+    fmaddps   m1, m6, m11, m1
+    fmaddps   m2, m6, m13, m2
+    fmaddps   m3, m6, m15, m3
+
+    haddps    m0, m1
+    haddps    m2, m3
+    haddps    m0, m2
+    movaps [samplesq+cnt1q], m0
 %else
-    cvtsi2ss    m0, [scaleq + 2 * startq]
+    mulps     m0, m7, m8
+    mulps     m1, m6, m9
+    mulps     m2, m7, m10
+    mulps     m3, m6, m11
+    addps     m0, m1
+    addps     m2, m3
+
+    unpckhps  m3, m0, m2
+    unpcklps  m0, m2
+    addps     m3, m0
+    movhlps   m2, m3
+    addps     m2, m3
+    movlps [samplesq+cnt1q], m2
 %endif
-    mov    offsetd, [numq + startq]
-    mulss       m0, [pf_inv16]
-    shl       DICT, 5
-    shufps      m0, m0, 0
-%if cpuflag(sse2)
-%if cpuflag(sse4)
-    pmovsxbd    m1, [srcq + DICT + 0]
-    pmovsxbd    m2, [srcq + DICT + 4]
+%else ; ARCH_X86_32
+%if cpuflag(fma3)
+    mulps     m0, m7, [coeffq+cnt1q*8    ]
+    mulps     m1, m7, [coeffq+cnt1q*8+32 ]
+    mulps     m2, m7, [coeffq+cnt1q*8+64 ]
+    mulps     m3, m7, [coeffq+cnt1q*8+96 ]
+    fmaddps   m0, m6, [coeffq+cnt1q*8+16 ], m0
+    fmaddps   m1, m6, [coeffq+cnt1q*8+48 ], m1
+    fmaddps   m2, m6, [coeffq+cnt1q*8+80 ], m2
+    fmaddps   m3, m6, [coeffq+cnt1q*8+112], m3
+
+    haddps    m0, m1
+    haddps    m2, m3
+    haddps    m0, m2
+    movaps [samplesq+cnt1q], m0
 %else
-    movq        m1, [srcq + DICT]
-    punpcklbw   m1, m1
-    mova        m2, m1
-    punpcklwd   m1, m1
-    punpckhwd   m2, m2
-    psrad       m1, 24
-    psrad       m2, 24
+    mulps     m0, m7, [coeffq+cnt1q*8   ]
+    mulps     m1, m6, [coeffq+cnt1q*8+16]
+    mulps     m2, m7, [coeffq+cnt1q*8+32]
+    mulps     m3, m6, [coeffq+cnt1q*8+48]
+    addps     m0, m1
+    addps     m2, m3
+
+    unpckhps  m3, m0, m2
+    unpcklps  m0, m2
+    addps     m3, m0
+    movhlps   m2, m3
+    addps     m2, m3
+    movlps [samplesq+cnt1q], m2
 %endif
-    cvtdq2ps    m1, m1
-    cvtdq2ps    m2, m2
+%endif; ARCH
+
+%if ARCH_X86_64
+%if cpuflag(fma3)
+    mulps     m8, m5
+    mulps    m10, m5
+    mulps    m12, m5
+    mulps    m14, m5
+    fmaddps   m8, m4, m9, m8
+    fmaddps  m10, m4, m11, m10
+    fmaddps  m12, m4, m13, m12
+    fmaddps  m14, m4, m15, m14
+
+    haddps   m10, m8
+    haddps   m14, m12
+    haddps   m14, m10
+    movaps [samplesq+cnt2q], m14
 %else
-    movd       mm0, [srcq + DICT + 0]
-    movd       mm1, [srcq + DICT + 4]
-    punpcklbw  mm0, mm0
-    punpcklbw  mm1, mm1
-    movq       mm2, mm0
-    movq       mm3, mm1
-    punpcklwd  mm0, mm0
-    punpcklwd  mm1, mm1
-    punpckhwd  mm2, mm2
-    punpckhwd  mm3, mm3
-    psrad      mm0, 24
-    psrad      mm1, 24
-    psrad      mm2, 24
-    psrad      mm3, 24
-    cvtpi2ps    m1, mm0
-    cvtpi2ps    m2, mm1
-    cvtpi2ps    m3, mm2
-    cvtpi2ps    m4, mm3
-    shufps      m0, m0, 0
-    shufps      m1, m3, q1010
-    shufps      m2, m4, q1010
+    mulps     m8, m5
+    mulps     m9, m4
+    mulps    m10, m5
+    mulps    m11, m4
+    addps     m8, m9
+    addps    m10, m11
+
+    unpckhps m11, m10, m8
+    unpcklps m10, m8
+    addps    m11, m10
+    movhlps   m8, m11
+    addps     m8, m11
+    movlps [samplesq+cnt2q], m8
 %endif
-    mulps       m1, m0
-    mulps       m2, m0
-    mova [dstq + 8 * startq +  0], m1
-    mova [dstq + 8 * startq + 16], m2
-    add     startq, 4
-    cmp     startq, endm
-    jl       .loop
-.end:
-%if notcpuflag(sse2)
-    emms
+%else ; ARCH_X86_32
+%if cpuflag(fma3)
+    mulps     m0, m5, [coeffq+cnt1q*8    ]
+    mulps     m1, m5, [coeffq+cnt1q*8+32 ]
+    mulps     m2, m5, [coeffq+cnt1q*8+64 ]
+    mulps     m3, m5, [coeffq+cnt1q*8+96 ]
+    fmaddps   m0, m4, [coeffq+cnt1q*8+16 ], m0
+    fmaddps   m1, m4, [coeffq+cnt1q*8+48 ], m1
+    fmaddps   m2, m4, [coeffq+cnt1q*8+80 ], m2
+    fmaddps   m3, m4, [coeffq+cnt1q*8+112], m3
+
+    haddps    m1, m0
+    haddps    m3, m2
+    haddps    m3, m1
+    movaps [samplesq+cnt2q], m3
+%else
+    mulps     m0, m5, [coeffq+cnt1q*8   ]
+    mulps     m1, m4, [coeffq+cnt1q*8+16]
+    mulps     m2, m5, [coeffq+cnt1q*8+32]
+    mulps     m3, m4, [coeffq+cnt1q*8+48]
+    addps     m0, m1
+    addps     m2, m3
+
+    unpckhps  m3, m2, m0
+    unpcklps  m2, m0
+    addps     m3, m2
+    movhlps   m0, m3
+    addps     m0, m3
+    movlps [samplesq+cnt2q], m0
 %endif
-    REP_RET
+%endif; ARCH
+
+    sub    cnt2d, 8 + FMA3_OFFSET
+    add    cnt1q, 8 + FMA3_OFFSET
+    jl .inner_loop
+
+    add     lfeq, 4
+    add samplesq,  64*sizeof_float
+    mov    cnt1q, -32*sizeof_float
+    mov    cnt2d,  32*sizeof_float-8-FMA3_OFFSET
+    sub nblocksd, 1
+    jg .loop
+    RET
 %endmacro
 
 %if ARCH_X86_32
 INIT_XMM sse
-DECODE_HF
+LFE_FIR0_FLOAT
 %endif
-
 INIT_XMM sse2
-DECODE_HF
-
-INIT_XMM sse4
-DECODE_HF
-
-; %1=v0/v1  %2=in1  %3=in2
-%macro FIR_LOOP 2-3
-.loop%1:
-%define va          m1
-%define vb          m2
-%if %1
-%define OFFSET      0
-%else
-%define OFFSET      NUM_COEF*count
+LFE_FIR0_FLOAT
+%if HAVE_AVX_EXTERNAL
+INIT_XMM avx
+LFE_FIR0_FLOAT
 %endif
-; for v0, incrementing and for v1, decrementing
-    mova        va, [cf0q + OFFSET]
-    mova        vb, [cf0q + OFFSET + 4*NUM_COEF]
-%if %0 == 3
-    mova        m4, [cf0q + OFFSET + mmsize]
-    mova        m0, [cf0q + OFFSET + 4*NUM_COEF + mmsize]
-%endif
-    mulps       va, %2
-    mulps       vb, %2
-%if %0 == 3
-%if cpuflag(fma3)
-    fmaddps     va, m4, %3, va
-    fmaddps     vb, m0, %3, vb
-%else
-    mulps       m4, %3
-    mulps       m0, %3
-    addps       va, m4
-    addps       vb, m0
-%endif
-%endif
-    ; va = va1 va2 va3 va4
-    ; vb = vb1 vb2 vb3 vb4
-%if %1
-    SWAP        va, vb
-%endif
-    mova        m4, va
-    unpcklps    va, vb ; va3 vb3 va4 vb4
-    unpckhps    m4, vb ; va1 vb1 va2 vb2
-    addps       m4, va ; va1+3 vb1+3 va2+4 vb2+4
-    movhlps     vb, m4 ; va1+3  vb1+3
-    addps       vb, m4 ; va0..4 vb0..4
-    movlps  [outq + count], vb
-%if %1
-    sub       cf0q, 8*NUM_COEF
-%endif
-    add      count, 8
-    jl   .loop%1
-%endmacro
-
-; void dca_lfe_fir(float *out, float *in, float *coefs)
-%macro DCA_LFE_FIR 1
-cglobal dca_lfe_fir%1, 3,3,6-%1, out, in, cf0
-%define IN1       m3
-%define IN2       m5
-%define count     inq
-%define NUM_COEF  4*(2-%1)
-%define NUM_OUT   32*(%1+1)
-
-    movu     IN1, [inq + 4 - 1*mmsize]
-    shufps   IN1, IN1, q0123
-%if %1 == 0
-    movu     IN2, [inq + 4 - 2*mmsize]
-    shufps   IN2, IN2, q0123
-%endif
-
-    mov    count, -4*NUM_OUT
-    add     cf0q, 4*NUM_COEF*NUM_OUT
-    add     outq, 4*NUM_OUT
-    ; compute v0 first
-%if %1 == 0
-    FIR_LOOP   0, IN1, IN2
-%else
-    FIR_LOOP   0, IN1
-%endif
-    shufps   IN1, IN1, q0123
-    mov    count, -4*NUM_OUT
-    ; cf1 already correctly positioned
-    add     outq, 4*NUM_OUT          ; outq now at out2
-    sub     cf0q, 8*NUM_COEF
-%if %1 == 0
-    shufps   IN2, IN2, q0123
-    FIR_LOOP   1, IN2, IN1
-%else
-    FIR_LOOP   1, IN1
-%endif
-    RET
-%endmacro
-
-INIT_XMM sse
-DCA_LFE_FIR 0
-DCA_LFE_FIR 1
 %if HAVE_FMA3_EXTERNAL
 INIT_XMM fma3
-DCA_LFE_FIR 0
+LFE_FIR0_FLOAT
 %endif
 
-%macro SETZERO 1
-%if cpuflag(sse2) && notcpuflag(avx)
-    pxor          %1, %1
-%else
-    xorps         %1, %1, %1
-%endif
-%endmacro
+%macro LFE_FIR1_FLOAT 0
+cglobal lfe_fir1_float, 4, 6, 10, samples, lfe, coeff, nblocks, cnt1, cnt2
+    shr nblocksd, 2
+    sub     lfeq, 3*sizeof_float
+    mov    cnt1d, 64*sizeof_float
+    mov    cnt2d, 64*sizeof_float-16
+    lea   coeffq, [coeffq+cnt1q*4]
+    add samplesq, cnt1q
+    neg    cnt1q
 
-%macro SHUF 3
+.loop:
 %if cpuflag(avx)
-    mova          %3, [%2 - 16]
-    vperm2f128    %1, %3, %3, 1
-    vshufps       %1, %1, %1, q0123
+    cvtdq2ps  m4, [lfeq]
+    shufps    m5, m4, m4, q0123
 %elif cpuflag(sse2)
-    pshufd        %1, [%2], q0123
+    movu      m4, [lfeq]
+    cvtdq2ps  m4, m4
+    pshufd    m5, m4, q0123
+%endif
+
+.inner_loop:
+    movaps    m6, [coeffq+cnt1q*4   ]
+    movaps    m7, [coeffq+cnt1q*4+16]
+    mulps     m0, m5, m6
+    mulps     m1, m5, m7
+%if ARCH_X86_64
+    movaps    m8, [coeffq+cnt1q*4+32]
+    movaps    m9, [coeffq+cnt1q*4+48]
+    mulps     m2, m5, m8
+    mulps     m3, m5, m9
 %else
-    mova          %1, [%2]
-    shufps        %1, %1, q0123
+    mulps     m2, m5, [coeffq+cnt1q*4+32]
+    mulps     m3, m5, [coeffq+cnt1q*4+48]
 %endif
-%endmacro
 
-%macro INNER_LOOP   1
-    ; reading backwards:  ptr1 = synth_buf + j + i; ptr2 = synth_buf + j - i
-    ;~ a += window[i + j]      * (-synth_buf[15 - i + j])
-    ;~ b += window[i + j + 16] * (synth_buf[i + j])
-    SHUF          m5,  ptr2 + j + (15 - 3) * 4, m6
-    mova          m6, [ptr1 + j]
-%if ARCH_X86_64
-    SHUF         m11,  ptr2 + j + (15 - 3) * 4 - mmsize, m12
-    mova         m12, [ptr1 + j + mmsize]
-%endif
-%if cpuflag(fma3)
-    fmaddps       m2, m6,  [win + %1 + j + 16 * 4], m2
-    fnmaddps      m1, m5,  [win + %1 + j], m1
-%if ARCH_X86_64
-    fmaddps       m8, m12, [win + %1 + j + mmsize + 16 * 4], m8
-    fnmaddps      m7, m11, [win + %1 + j + mmsize], m7
-%endif
-%else ; non-FMA
-    mulps         m6, m6,  [win + %1 + j + 16 * 4]
-    mulps         m5, m5,  [win + %1 + j]
-%if ARCH_X86_64
-    mulps        m12, m12, [win + %1 + j + mmsize + 16 * 4]
-    mulps        m11, m11, [win + %1 + j + mmsize]
-%endif
-    addps         m2, m2, m6
-    subps         m1, m1, m5
-%if ARCH_X86_64
-    addps         m8, m8, m12
-    subps         m7, m7, m11
-%endif
-%endif ; cpuflag(fma3)
-    ;~ c += window[i + j + 32] * (synth_buf[16 + i + j])
-    ;~ d += window[i + j + 48] * (synth_buf[31 - i + j])
-    SHUF          m6,  ptr2 + j + (31 - 3) * 4, m5
-    mova          m5, [ptr1 + j + 16 * 4]
-%if ARCH_X86_64
-    SHUF         m12,  ptr2 + j + (31 - 3) * 4 - mmsize, m11
-    mova         m11, [ptr1 + j + mmsize + 16 * 4]
-%endif
-%if cpuflag(fma3)
-    fmaddps       m3, m5,  [win + %1 + j + 32 * 4], m3
-    fmaddps       m4, m6,  [win + %1 + j + 48 * 4], m4
-%if ARCH_X86_64
-    fmaddps       m9, m11, [win + %1 + j + mmsize + 32 * 4], m9
-    fmaddps      m10, m12, [win + %1 + j + mmsize + 48 * 4], m10
-%endif
-%else ; non-FMA
-    mulps         m5, m5,  [win + %1 + j + 32 * 4]
-    mulps         m6, m6,  [win + %1 + j + 48 * 4]
-%if ARCH_X86_64
-    mulps        m11, m11, [win + %1 + j + mmsize + 32 * 4]
-    mulps        m12, m12, [win + %1 + j + mmsize + 48 * 4]
-%endif
-    addps         m3, m3, m5
-    addps         m4, m4, m6
-%if ARCH_X86_64
-    addps         m9, m9, m11
-    addps        m10, m10, m12
-%endif
-%endif ; cpuflag(fma3)
-    sub            j, 64 * 4
-%endmacro
+    haddps    m0, m1
+    haddps    m2, m3
+    haddps    m0, m2
+    movaps [samplesq+cnt1q], m0
 
-; void ff_synth_filter_inner_<opt>(float *synth_buf, float synth_buf2[32],
-;                                  const float window[512], float out[32],
-;                                  intptr_t offset, float scale)
-%macro SYNTH_FILTER 0
-cglobal synth_filter_inner, 0, 6 + 4 * ARCH_X86_64, 7 + 6 * ARCH_X86_64, \
-                              synth_buf, synth_buf2, window, out, off, scale
-%define scale m0
-%if ARCH_X86_32 || WIN64
-%if cpuflag(sse2) && notcpuflag(avx)
-    movd       scale, scalem
-    SPLATD        m0
+    mulps     m6, m4
+    mulps     m7, m4
+%if ARCH_X86_64
+    mulps     m8, m4
+    mulps     m9, m4
+
+    haddps    m6, m7
+    haddps    m8, m9
+    haddps    m6, m8
 %else
-    VBROADCASTSS  m0, scalem
-%endif
-; Make sure offset is in a register and not on the stack
-%define OFFQ  r4q
-%else
-    SPLATD      xmm0
-%if cpuflag(avx)
-    vinsertf128   m0, m0, xmm0, 1
-%endif
-%define OFFQ  offq
-%endif
-    ; prepare inner counter limit 1
-    mov          r5q, 480
-    sub          r5q, offmp
-    and          r5q, -64
-    shl          r5q, 2
-%if ARCH_X86_32 || notcpuflag(avx)
-    mov         OFFQ, r5q
-%define i        r5q
-    mov            i, 16 * 4 - (ARCH_X86_64 + 1) * mmsize  ; main loop counter
-%else
-%define i 0
-%define OFFQ  r5q
-%endif
+    mulps     m2, m4, [coeffq+cnt1q*4+32]
+    mulps     m3, m4, [coeffq+cnt1q*4+48]
 
-%define buf2     synth_buf2q
-%if ARCH_X86_32
-    mov         buf2, synth_buf2mp
+    haddps    m6, m7
+    haddps    m2, m3
+    haddps    m6, m2
 %endif
-.mainloop
-    ; m1 = a  m2 = b  m3 = c  m4 = d
-    SETZERO       m3
-    SETZERO       m4
-    mova          m1, [buf2 + i]
-    mova          m2, [buf2 + i + 16 * 4]
-%if ARCH_X86_32
-%define ptr1     r0q
-%define ptr2     r1q
-%define win      r2q
-%define j        r3q
-    mov          win, windowm
-    mov         ptr1, synth_bufm
-%if ARCH_X86_32 || notcpuflag(avx)
-    add          win, i
-    add         ptr1, i
-%endif
-%else ; ARCH_X86_64
-%define ptr1     r6q
-%define ptr2     r7q ; must be loaded
-%define win      r8q
-%define j        r9q
-    SETZERO       m9
-    SETZERO      m10
-    mova          m7, [buf2 + i + mmsize]
-    mova          m8, [buf2 + i + mmsize + 16 * 4]
-    lea          win, [windowq + i]
-    lea         ptr1, [synth_bufq + i]
-%endif
-    mov         ptr2, synth_bufmp
-    ; prepare the inner loop counter
-    mov            j, OFFQ
-%if ARCH_X86_32 || notcpuflag(avx)
-    sub         ptr2, i
-%endif
-.loop1:
-    INNER_LOOP  0
-    jge       .loop1
+    movaps [samplesq+cnt2q], m6
 
-    mov            j, 448 * 4
-    sub            j, OFFQ
-    jz          .end
-    sub         ptr1, j
-    sub         ptr2, j
-    add          win, OFFQ ; now at j-64, so define OFFSET
-    sub            j, 64 * 4
-.loop2:
-    INNER_LOOP  64 * 4
-    jge       .loop2
+    sub    cnt2d, 16
+    add    cnt1q, 16
+    jl .inner_loop
 
-.end:
-%if ARCH_X86_32
-    mov         buf2, synth_buf2m ; needed for next iteration anyway
-    mov         outq, outmp       ; j, which will be set again during it
-%endif
-    ;~ out[i]      = a * scale;
-    ;~ out[i + 16] = b * scale;
-    mulps         m1, m1, scale
-    mulps         m2, m2, scale
-%if ARCH_X86_64
-    mulps         m7, m7, scale
-    mulps         m8, m8, scale
-%endif
-    ;~ synth_buf2[i]      = c;
-    ;~ synth_buf2[i + 16] = d;
-    mova   [buf2 + i +  0 * 4], m3
-    mova   [buf2 + i + 16 * 4], m4
-%if ARCH_X86_64
-    mova   [buf2 + i +  0 * 4 + mmsize], m9
-    mova   [buf2 + i + 16 * 4 + mmsize], m10
-%endif
-    ;~ out[i]      = a;
-    ;~ out[i + 16] = a;
-    mova   [outq + i +  0 * 4], m1
-    mova   [outq + i + 16 * 4], m2
-%if ARCH_X86_64
-    mova   [outq + i +  0 * 4 + mmsize], m7
-    mova   [outq + i + 16 * 4 + mmsize], m8
-%endif
-%if ARCH_X86_32 || notcpuflag(avx)
-    sub            i, (ARCH_X86_64 + 1) * mmsize
-    jge    .mainloop
-%endif
+    add     lfeq, sizeof_float
+    add samplesq, 128*sizeof_float
+    mov    cnt1q, -64*sizeof_float
+    mov    cnt2d,  64*sizeof_float-16
+    sub nblocksd, 1
+    jg .loop
     RET
 %endmacro
 
-%if ARCH_X86_32
-INIT_XMM sse
-SYNTH_FILTER
+INIT_XMM sse3
+LFE_FIR1_FLOAT
+%if HAVE_AVX_EXTERNAL
+INIT_XMM avx
+LFE_FIR1_FLOAT
 %endif
-INIT_XMM sse2
-SYNTH_FILTER
-INIT_YMM avx
-SYNTH_FILTER
-INIT_YMM fma3
-SYNTH_FILTER

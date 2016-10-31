@@ -525,7 +525,7 @@ static const float lsf_cb5_16k[128][4] = {
     { 0.124405,  0.009943, -0.148477, -0.205184}
 };
 
-static const float *lsf_codebooks_16k[] = {
+static const float * const lsf_codebooks_16k[] = {
     lsf_cb1_16k[0], lsf_cb2_16k[0], lsf_cb3_16k[0], lsf_cb4_16k[0],
     lsf_cb5_16k[0]
 };

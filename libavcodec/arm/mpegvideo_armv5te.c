@@ -29,7 +29,7 @@ void ff_dct_unquantize_h263_armv5te(int16_t *block, int qmul, int qadd, int coun
 
 #ifdef ENABLE_ARM_TESTS
 /**
- * h263 dequantizer supplementary function, it is performance critical and needs to
+ * H.263 dequantizer supplementary function, it is performance critical and needs to
  * have optimized implementations for each architecture. Is also used as a reference
  * implementation in regression tests
  */
@@ -95,7 +95,7 @@ static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
     ff_dct_unquantize_h263_armv5te(block, qmul, qadd, nCoeffs + 1);
 }
 
-av_cold void ff_MPV_common_init_armv5te(MpegEncContext *s)
+av_cold void ff_mpv_common_init_armv5te(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_armv5te;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_armv5te;

@@ -62,46 +62,36 @@ void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p = last_iformat;
 
-    format->next = NULL;
-    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+    // Note, format could be added after the first 2 checks but that implies that *p is no longer NULL
+    while(p != &format->next && !format->next && avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
-    last_iformat = &format->next;
+
+    if (!format->next)
+        last_iformat = &format->next;
 }
 
 void av_register_output_format(AVOutputFormat *format)
 {
     AVOutputFormat **p = last_oformat;
 
-    format->next = NULL;
-    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+    // Note, format could be added after the first 2 checks but that implies that *p is no longer NULL
+    while(p != &format->next && !format->next && avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
         p = &(*p)->next;
-    last_oformat = &format->next;
+
+    if (!format->next)
+        last_oformat = &format->next;
 }
 
 int av_match_ext(const char *filename, const char *extensions)
 {
-    const char *ext, *p;
-    char ext1[32], *q;
+    const char *ext;
 
     if (!filename)
         return 0;
 
     ext = strrchr(filename, '.');
-    if (ext) {
-        ext++;
-        p = extensions;
-        for (;;) {
-            q = ext1;
-            while (*p != '\0' && *p != ','  && q - ext1 < sizeof(ext1) - 1)
-                *q++ = *p++;
-            *q = '\0';
-            if (!av_strcasecmp(ext1, ext))
-                return 1;
-            if (*p == '\0')
-                break;
-            p++;
-        }
-    }
+    if (ext)
+        return av_match_name(ext + 1, extensions);
     return 0;
 }
 
@@ -165,6 +155,8 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
         return fmt->audio_codec;
     else if (type == AVMEDIA_TYPE_SUBTITLE)
         return fmt->subtitle_codec;
+    else if (type == AVMEDIA_TYPE_DATA)
+        return fmt->data_codec;
     else
         return AV_CODEC_ID_NONE;
 }
@@ -183,48 +175,71 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
-    int score, nodat = 0, score_max = 0;
+    int score, score_max = 0;
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
+    enum nodat {
+        NO_ID3,
+        ID3_ALMOST_GREATER_PROBE,
+        ID3_GREATER_PROBE,
+        ID3_GREATER_MAX_PROBE,
+    } nodat = NO_ID3;
 
     if (!lpd.buf)
-        lpd.buf = zerobuffer;
+        lpd.buf = (unsigned char *) zerobuffer;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
         if (lpd.buf_size > id3len + 16) {
+            if (lpd.buf_size < 2LL*id3len + 16)
+                nodat = ID3_ALMOST_GREATER_PROBE;
             lpd.buf      += id3len;
             lpd.buf_size -= id3len;
         } else if (id3len >= PROBE_BUF_MAX) {
-            nodat = 2;
+            nodat = ID3_GREATER_MAX_PROBE;
         } else
-            nodat = 1;
+            nodat = ID3_GREATER_PROBE;
     }
 
     fmt = NULL;
     while ((fmt1 = av_iformat_next(fmt1))) {
-        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
+        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;
         if (fmt1->read_probe) {
             score = fmt1->read_probe(&lpd);
+            if (score)
+                av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
-                if      (nodat == 0) score = FFMAX(score, 1);
-                else if (nodat == 1) score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
-                else                 score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+                switch (nodat) {
+                case NO_ID3:
+                    score = FFMAX(score, 1);
+                    break;
+                case ID3_GREATER_PROBE:
+                case ID3_ALMOST_GREATER_PROBE:
+                    score = FFMAX(score, AVPROBE_SCORE_EXTENSION / 2 - 1);
+                    break;
+                case ID3_GREATER_MAX_PROBE:
+                    score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+                    break;
+                }
             }
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions))
                 score = AVPROBE_SCORE_EXTENSION;
         }
-        if (av_match_name(lpd.mime_type, fmt1->mime_type))
-            score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
+        if (av_match_name(lpd.mime_type, fmt1->mime_type)) {
+            if (AVPROBE_SCORE_MIME > score) {
+                av_log(NULL, AV_LOG_DEBUG, "Probing %s score:%d increased to %d due to MIME type\n", fmt1->name, score, AVPROBE_SCORE_MIME);
+                score = AVPROBE_SCORE_MIME;
+            }
+        }
         if (score > score_max) {
             score_max = score;
             fmt       = fmt1;
         } else if (score == score_max)
             fmt = NULL;
     }
-    if (nodat == 1)
+    if (nodat == ID3_GREATER_PROBE)
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
     *score_ret = score_max;
 
@@ -269,8 +284,16 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     if (offset >= max_probe_size)
         return AVERROR(EINVAL);
 
-    if (pb->av_class)
-        av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &pd.mime_type);
+    if (pb->av_class) {
+        uint8_t *mime_type_opt = NULL;
+        char *semi;
+        av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type_opt);
+        pd.mime_type = (const char *)mime_type_opt;
+        semi = pd.mime_type ? strchr(pd.mime_type, ';') : NULL;
+        if (semi) {
+            *semi = '\0';
+        }
+    }
 #if 0
     if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
         if (!av_strcasecmp(mime_type, "audio/aacp")) {
@@ -334,7 +357,7 @@ fail:
     if (ret >= 0)
         ret = ret2;
 
-    av_free(pd.mime_type);
+    av_freep(&pd.mime_type);
     return ret < 0 ? ret : score;
 }
 

@@ -75,15 +75,21 @@ static int pp_process_command(AVFilterContext *ctx, const char *cmd, const char 
 
 static int pp_query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
+    static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int pp_config_props(AVFilterLink *inlink)
@@ -92,13 +98,17 @@ static int pp_config_props(AVFilterLink *inlink)
     PPFilterContext *pp = inlink->dst->priv;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YUVJ420P:
     case AV_PIX_FMT_YUV420P: flags |= PP_FORMAT_420; break;
     case AV_PIX_FMT_YUVJ422P:
     case AV_PIX_FMT_YUV422P: flags |= PP_FORMAT_422; break;
     case AV_PIX_FMT_YUV411P: flags |= PP_FORMAT_411; break;
+    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUV444P: flags |= PP_FORMAT_444; break;
+    case AV_PIX_FMT_YUVJ440P:
+    case AV_PIX_FMT_YUV440P: flags |= PP_FORMAT_440; break;
     default: av_assert0(0);
     }
 

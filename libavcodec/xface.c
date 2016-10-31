@@ -24,6 +24,8 @@
  * X-Face common data and utilities definition.
  */
 
+#include "libavutil/avassert.h"
+
 #include "xface.h"
 
 void ff_big_add(BigInt *b, uint8_t a)
@@ -43,6 +45,7 @@ void ff_big_add(BigInt *b, uint8_t a)
         c >>= XFACE_BITSPERWORD;
     }
     if (i == b->nb_words && c) {
+        av_assert0(b->nb_words < XFACE_MAX_WORDS);
         b->nb_words++;
         *w = c & XFACE_WORDMASK;
     }
@@ -98,6 +101,7 @@ void ff_big_mul(BigInt *b, uint8_t a)
         return;
     if (a == 0) {
         /* treat this as a == WORDCARRY and just shift everything left a WORD */
+        av_assert0(b->nb_words < XFACE_MAX_WORDS);
         i = b->nb_words++;
         w = b->words + i;
         while (i--) {
@@ -116,6 +120,7 @@ void ff_big_mul(BigInt *b, uint8_t a)
         c >>= XFACE_BITSPERWORD;
     }
     if (c) {
+        av_assert0(b->nb_words < XFACE_MAX_WORDS);
         b->nb_words++;
         *w = c & XFACE_WORDMASK;
     }

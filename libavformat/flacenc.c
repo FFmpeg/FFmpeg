@@ -50,12 +50,14 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
                                     int last_block, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
-    unsigned int len;
+    int64_t len;
     uint8_t *p, *p0;
 
     ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
 
     len = ff_vorbiscomment_length(*m, vendor);
+    if (len >= ((1<<24) - 4))
+        return AVERROR(EINVAL);
     p0 = av_malloc(len+4);
     if (!p0)
         return AVERROR(ENOMEM);
@@ -76,7 +78,7 @@ static int flac_write_header(struct AVFormatContext *s)
 {
     int ret;
     int padding = s->metadata_header_padding;
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     FlacMuxerContext *c   = s->priv_data;
 
     if (!c->write_header)
@@ -86,7 +88,7 @@ static int flac_write_header(struct AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
         return AVERROR(EINVAL);
     }
-    if (codec->codec_id != AV_CODEC_ID_FLAC) {
+    if (par->codec_id != AV_CODEC_ID_FLAC) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
@@ -95,17 +97,17 @@ static int flac_write_header(struct AVFormatContext *s)
         padding = 8192;
     /* The FLAC specification states that 24 bits are used to represent the
      * size of a metadata block so we must clip this value to 2^24-1. */
-    padding = av_clip_c(padding, 0, 16777215);
+    padding = av_clip_uintp2(padding, 24);
 
-    ret = ff_flac_write_header(s->pb, codec->extradata,
-                               codec->extradata_size, 0);
+    ret = ff_flac_write_header(s->pb, par->extradata,
+                               par->extradata_size, 0);
     if (ret)
         return ret;
 
     /* add the channel layout tag */
-    if (codec->channel_layout &&
-        !(codec->channel_layout & ~0x3ffffULL) &&
-        !ff_flac_is_native_layout(codec->channel_layout)) {
+    if (par->channel_layout &&
+        !(par->channel_layout & ~0x3ffffULL) &&
+        !ff_flac_is_native_layout(par->channel_layout)) {
         AVDictionaryEntry *chmask = av_dict_get(s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK",
                                                 NULL, 0);
 
@@ -114,7 +116,7 @@ static int flac_write_header(struct AVFormatContext *s)
                    "already present, this muxer will not overwrite it.\n");
         } else {
             uint8_t buf[32];
-            snprintf(buf, sizeof(buf), "0x%"PRIx64, codec->channel_layout);
+            snprintf(buf, sizeof(buf), "0x%"PRIx64, par->channel_layout);
             av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
         }
     }
@@ -140,7 +142,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
     int64_t file_size;
     FlacMuxerContext *c = s->priv_data;
     uint8_t *streaminfo = c->streaminfo ? c->streaminfo :
-                                          s->streams[0]->codec->extradata;
+                                          s->streams[0]->codecpar->extradata;
 
     if (!c->write_header || !streaminfo)
         return 0;
@@ -185,7 +187,7 @@ static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 }
 
 static const AVOption flacenc_options[] = {
-    { "write_header", "Write the file header", offsetof(FlacMuxerContext, write_header), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "write_header", "Write the file header", offsetof(FlacMuxerContext, write_header), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

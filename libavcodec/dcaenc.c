@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
 #include "avcodec.h"
 #include "dca.h"
 #include "dcadata.h"
@@ -37,13 +38,13 @@
 #define DCA_HEADER_SIZE 13
 #define DCA_LFE_SAMPLES 8
 
-#define DCA_SUBBANDS 32
+#define DCAENC_SUBBANDS 32
 #define SUBFRAMES 1
 #define SUBSUBFRAMES 2
 #define SUBBAND_SAMPLES (SUBFRAMES * SUBSUBFRAMES * 8)
 #define AUBANDS 25
 
-typedef struct DCAContext {
+typedef struct DCAEncContext {
     PutBitContext pb;
     int frame_size;
     int frame_bits;
@@ -58,22 +59,23 @@ typedef struct DCAContext {
     int lfe_scale_factor;
     softfloat lfe_quant;
     int32_t lfe_peak_cb;
+    const int8_t *channel_order_tab;  ///< channel reordering table, lfe and non lfe
 
     int32_t history[512][MAX_CHANNELS]; /* This is a circular buffer */
-    int32_t subband[SUBBAND_SAMPLES][DCA_SUBBANDS][MAX_CHANNELS];
-    int32_t quantized[SUBBAND_SAMPLES][DCA_SUBBANDS][MAX_CHANNELS];
-    int32_t peak_cb[DCA_SUBBANDS][MAX_CHANNELS];
+    int32_t subband[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
+    int32_t quantized[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
+    int32_t peak_cb[DCAENC_SUBBANDS][MAX_CHANNELS];
     int32_t downsampled_lfe[DCA_LFE_SAMPLES];
     int32_t masking_curve_cb[SUBSUBFRAMES][256];
-    int abits[DCA_SUBBANDS][MAX_CHANNELS];
-    int scale_factor[DCA_SUBBANDS][MAX_CHANNELS];
-    softfloat quant[DCA_SUBBANDS][MAX_CHANNELS];
+    int abits[DCAENC_SUBBANDS][MAX_CHANNELS];
+    int scale_factor[DCAENC_SUBBANDS][MAX_CHANNELS];
+    softfloat quant[DCAENC_SUBBANDS][MAX_CHANNELS];
     int32_t eff_masking_curve_cb[256];
     int32_t band_masking_cb[32];
     int32_t worst_quantization_noise;
     int32_t worst_noise_ever;
     int consumed_bits;
-} DCAContext;
+} DCAEncContext;
 
 static int32_t cos_table[2048];
 static int32_t band_interpolation[2][512];
@@ -105,7 +107,7 @@ static double gammafilter(int i, double f)
 
 static int encode_init(AVCodecContext *avctx)
 {
-    DCAContext *c = avctx->priv_data;
+    DCAEncContext *c = avctx->priv_data;
     uint64_t layout = avctx->channel_layout;
     int i, min_frame_bits;
 
@@ -133,8 +135,12 @@ static int encode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (c->lfe_channel)
+    if (c->lfe_channel) {
         c->fullband_channels--;
+        c->channel_order_tab = channel_reorder_lfe[c->channel_config];
+    } else {
+        c->channel_order_tab = channel_reorder_nolfe[c->channel_config];
+    }
 
     for (i = 0; i < 9; i++) {
         if (sample_rates[i] == avctx->sample_rate)
@@ -145,13 +151,12 @@ static int encode_init(AVCodecContext *avctx)
     c->samplerate_index = i;
 
     if (avctx->bit_rate < 32000 || avctx->bit_rate > 3840000) {
-        av_log(avctx, AV_LOG_ERROR, "Bit rate %i not supported.", avctx->bit_rate);
+        av_log(avctx, AV_LOG_ERROR, "Bit rate %"PRId64" not supported.", (int64_t)avctx->bit_rate);
         return AVERROR(EINVAL);
     }
-    for (i = 0; dca_bit_rates[i] < avctx->bit_rate; i++)
+    for (i = 0; ff_dca_bit_rates[i] < avctx->bit_rate; i++)
         ;
     c->bitrate_index = i;
-    avctx->bit_rate = dca_bit_rates[i];
     c->frame_bits = FFALIGN((avctx->bit_rate * 512 + avctx->sample_rate - 1) / avctx->sample_rate, 32);
     min_frame_bits = 132 + (493 + 28 * 32) * c->fullband_channels + c->lfe_channel * 72;
     if (c->frame_bits < min_frame_bits || c->frame_bits > (DCA_MAX_FRAME_SIZE << 3))
@@ -164,20 +169,29 @@ static int encode_init(AVCodecContext *avctx)
     if (!cos_table[0]) {
         int j, k;
 
-        for (i = 0; i < 2048; i++) {
+        cos_table[0] = 0x7fffffff;
+        cos_table[512] = 0;
+        cos_table[1024] = -cos_table[0];
+        for (i = 1; i < 512; i++) {
             cos_table[i]   = (int32_t)(0x7fffffff * cos(M_PI * i / 1024));
-            cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
+            cos_table[1024-i] = -cos_table[i];
+            cos_table[1024+i] = -cos_table[i];
+            cos_table[2048-i] = cos_table[i];
+        }
+        for (i = 0; i < 2048; i++) {
+            cb_to_level[i] = (int32_t)(0x7fffffff * ff_exp10(-0.005 * i));
         }
 
-        /* FIXME: probably incorrect */
-        for (i = 0; i < 256; i++) {
-            lfe_fir_64i[i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
-            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
+        for (k = 0; k < 32; k++) {
+            for (j = 0; j < 8; j++) {
+                lfe_fir_64i[64 * j + k] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+                lfe_fir_64i[64 * (7-j) + (63 - k)] = (int32_t)(0xffffff800000ULL * ff_dca_lfe_fir_64[8 * k + j]);
+            }
         }
 
         for (i = 0; i < 512; i++) {
-            band_interpolation[0][i] = (int32_t)(0x1000000000ULL * fir_32bands_perfect[i]);
-            band_interpolation[1][i] = (int32_t)(0x1000000000ULL * fir_32bands_nonperfect[i]);
+            band_interpolation[0][i] = (int32_t)(0x1000000000ULL * ff_dca_fir_32bands_perfect[i]);
+            band_interpolation[1][i] = (int32_t)(0x1000000000ULL * ff_dca_fir_32bands_nonperfect[i]);
         }
 
         for (i = 0; i < 9; i++) {
@@ -191,13 +205,13 @@ static int encode_init(AVCodecContext *avctx)
         }
 
         for (i = 0; i < 256; i++) {
-            double add = 1 + pow(10, -0.01 * i);
+            double add = 1 + ff_exp10(-0.01 * i);
             cb_to_add[i] = (int32_t)(100 * log10(add));
         }
         for (j = 0; j < 8; j++) {
             double accum = 0;
             for (i = 0; i < 512; i++) {
-                double reconst = fir_32bands_perfect[i] * ((i & 64) ? (-1) : 1);
+                double reconst = ff_dca_fir_32bands_perfect[i] * ((i & 64) ? (-1) : 1);
                 accum += reconst * cos(2 * M_PI * (i + 0.5 - 256) * (j + 0.5) / 512);
             }
             band_spectrum[0][j] = (int32_t)(200 * log10(accum));
@@ -205,7 +219,7 @@ static int encode_init(AVCodecContext *avctx)
         for (j = 0; j < 8; j++) {
             double accum = 0;
             for (i = 0; i < 512; i++) {
-                double reconst = fir_32bands_nonperfect[i] * ((i & 64) ? (-1) : 1);
+                double reconst = ff_dca_fir_32bands_nonperfect[i] * ((i & 64) ? (-1) : 1);
                 accum += reconst * cos(2 * M_PI * (i + 0.5 - 256) * (j + 0.5) / 512);
             }
             band_spectrum[1][j] = (int32_t)(200 * log10(accum));
@@ -235,7 +249,7 @@ static inline int32_t mul32(int32_t a, int32_t b)
     return r >> 32;
 }
 
-static void subband_transform(DCAContext *c, const int32_t *input)
+static void subband_transform(DCAEncContext *c, const int32_t *input)
 {
     int ch, subs, i, k, j;
 
@@ -243,6 +257,7 @@ static void subband_transform(DCAContext *c, const int32_t *input)
         /* History is copied because it is also needed for PSY */
         int32_t hist[512];
         int hist_start = 0;
+        const int chi = c->channel_order_tab[ch];
 
         for (i = 0; i < 512; i++)
             hist[i] = c->history[i][ch];
@@ -279,15 +294,16 @@ static void subband_transform(DCAContext *c, const int32_t *input)
 
             /* Copy in 32 new samples from input */
             for (i = 0; i < 32; i++)
-                hist[i + hist_start] = input[(subs * 32 + i) * c->channels + ch];
+                hist[i + hist_start] = input[(subs * 32 + i) * c->channels + chi];
             hist_start = (hist_start + 32) & 511;
         }
     }
 }
 
-static void lfe_downsample(DCAContext *c, const int32_t *input)
+static void lfe_downsample(DCAEncContext *c, const int32_t *input)
 {
     /* FIXME: make 128x LFE downsampling possible */
+    const int lfech = lfe_index[c->channel_config];
     int i, j, lfes;
     int32_t hist[512];
     int32_t accum;
@@ -309,7 +325,7 @@ static void lfe_downsample(DCAContext *c, const int32_t *input)
 
         /* Copy in 64 new samples from input */
         for (i = 0; i < 64; i++)
-            hist[i + hist_start] = input[(lfes * 64 + i) * c->channels + c->channels - 1];
+            hist[i + hist_start] = input[(lfes * 64 + i) * c->channels + lfech];
 
         hist_start = (hist_start + 64) & 511;
     }
@@ -442,11 +458,11 @@ static void adjust_jnd(int samplerate_index,
         out_cb[j] = add_cb(out_cb[j], -out_cb_unnorm[j] - ca_cb - cs_cb);
 }
 
-typedef void (*walk_band_t)(DCAContext *c, int band1, int band2, int f,
+typedef void (*walk_band_t)(DCAEncContext *c, int band1, int band2, int f,
                             int32_t spectrum1, int32_t spectrum2, int channel,
                             int32_t * arg);
 
-static void walk_band_low(DCAContext *c, int band, int channel,
+static void walk_band_low(DCAEncContext *c, int band, int channel,
                           walk_band_t walk, int32_t *arg)
 {
     int f;
@@ -461,7 +477,7 @@ static void walk_band_low(DCAContext *c, int band, int channel,
     }
 }
 
-static void walk_band_high(DCAContext *c, int band, int channel,
+static void walk_band_high(DCAEncContext *c, int band, int channel,
                            walk_band_t walk, int32_t *arg)
 {
     int f;
@@ -476,7 +492,7 @@ static void walk_band_high(DCAContext *c, int band, int channel,
     }
 }
 
-static void update_band_masking(DCAContext *c, int band1, int band2,
+static void update_band_masking(DCAEncContext *c, int band1, int band2,
                                 int f, int32_t spectrum1, int32_t spectrum2,
                                 int channel, int32_t * arg)
 {
@@ -486,7 +502,7 @@ static void update_band_masking(DCAContext *c, int band1, int band2,
         c->band_masking_cb[band1] = value;
 }
 
-static void calc_masking(DCAContext *c, const int32_t *input)
+static void calc_masking(DCAEncContext *c, const int32_t *input)
 {
     int i, k, band, ch, ssf;
     int32_t data[512];
@@ -497,10 +513,12 @@ static void calc_masking(DCAContext *c, const int32_t *input)
 
     for (ssf = 0; ssf < SUBSUBFRAMES; ssf++)
         for (ch = 0; ch < c->fullband_channels; ch++) {
+            const int chi = c->channel_order_tab[ch];
+
             for (i = 0, k = 128 + 256 * ssf; k < 512; i++, k++)
                 data[i] = c->history[k][ch];
             for (k -= 512; i < 512; i++, k++)
-                data[i] = input[k * c->channels + ch];
+                data[i] = input[k * c->channels + chi];
             adjust_jnd(c->samplerate_index, data, c->masking_curve_cb[ssf]);
         }
     for (i = 0; i < 256; i++) {
@@ -519,7 +537,7 @@ static void calc_masking(DCAContext *c, const int32_t *input)
     }
 }
 
-static void find_peaks(DCAContext *c)
+static void find_peaks(DCAEncContext *c)
 {
     int band, ch;
 
@@ -552,7 +570,7 @@ static const int snr_fudge = 128;
 #define USED_NABITS 2
 #define USED_26ABITS 4
 
-static int init_quantization_noise(DCAContext *c, int noise)
+static int init_quantization_noise(DCAEncContext *c, int noise)
 {
     int ch, band, ret = 0;
 
@@ -589,7 +607,7 @@ static int init_quantization_noise(DCAContext *c, int noise)
     return ret;
 }
 
-static void assign_bits(DCAContext *c)
+static void assign_bits(DCAEncContext *c)
 {
     /* Find the bounds where the binary search should work */
     int low, high, down;
@@ -627,13 +645,16 @@ out:
         c->worst_noise_ever = high;
 }
 
-static void shift_history(DCAContext *c, const int32_t *input)
+static void shift_history(DCAEncContext *c, const int32_t *input)
 {
     int k, ch;
 
     for (k = 0; k < 512; k++)
-        for (ch = 0; ch < c->channels; ch++)
-            c->history[k][ch] = input[k * c->channels + ch];
+        for (ch = 0; ch < c->channels; ch++) {
+            const int chi = c->channel_order_tab[ch];
+
+            c->history[k][ch] = input[k * c->channels + chi];
+        }
 }
 
 static int32_t quantize_value(int32_t value, softfloat quant)
@@ -662,7 +683,7 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
             continue;
         our_quant.m = mul32(scalefactor_inv[our_nscale - try_remove].m, stepsize_inv[abits].m);
         our_quant.e = scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e - 17;
-        if ((quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
+        if ((ff_dca_quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
             continue;
         our_nscale -= try_remove;
     }
@@ -672,12 +693,12 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
 
     quant->m = mul32(scalefactor_inv[our_nscale].m, stepsize_inv[abits].m);
     quant->e = scalefactor_inv[our_nscale].e + stepsize_inv[abits].e - 17;
-    av_assert0((quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
+    av_assert0((ff_dca_quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
 
     return our_nscale;
 }
 
-static void calc_scales(DCAContext *c)
+static void calc_scales(DCAEncContext *c)
 {
     int band, ch;
 
@@ -691,7 +712,7 @@ static void calc_scales(DCAContext *c)
         c->lfe_scale_factor = calc_one_scale(c->lfe_peak_cb, 11, &c->lfe_quant);
 }
 
-static void quantize_all(DCAContext *c)
+static void quantize_all(DCAEncContext *c)
 {
     int sample, band, ch;
 
@@ -701,7 +722,7 @@ static void quantize_all(DCAContext *c)
                 c->quantized[sample][band][ch] = quantize_value(c->subband[sample][band][ch], c->quant[band][ch]);
 }
 
-static void put_frame_header(DCAContext *c)
+static void put_frame_header(DCAEncContext *c)
 {
     /* SYNC */
     put_bits(&c->pb, 16, 0x7ffe);
@@ -784,7 +805,7 @@ static void put_frame_header(DCAContext *c)
     put_bits(&c->pb, 4, 0);
 }
 
-static void put_primary_audio_header(DCAContext *c)
+static void put_primary_audio_header(DCAEncContext *c)
 {
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11]    = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
@@ -798,11 +819,11 @@ static void put_primary_audio_header(DCAContext *c)
 
     /* Subband activity count */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        put_bits(&c->pb, 5, DCA_SUBBANDS - 2);
+        put_bits(&c->pb, 5, DCAENC_SUBBANDS - 2);
 
     /* High frequency VQ start subband */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        put_bits(&c->pb, 5, DCA_SUBBANDS - 1);
+        put_bits(&c->pb, 5, DCAENC_SUBBANDS - 1);
 
     /* Joint intensity coding index: 0, 0 */
     for (ch = 0; ch < c->fullband_channels; ch++)
@@ -830,16 +851,16 @@ static void put_primary_audio_header(DCAContext *c)
     /* Audio header CRC check word: not transmitted */
 }
 
-static void put_subframe_samples(DCAContext *c, int ss, int band, int ch)
+static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
 {
     if (c->abits[band][ch] <= 7) {
         int sum, i, j;
         for (i = 0; i < 8; i += 4) {
             sum = 0;
             for (j = 3; j >= 0; j--) {
-                sum *= quant_levels[c->abits[band][ch]];
+                sum *= ff_dca_quant_levels[c->abits[band][ch]];
                 sum += c->quantized[ss * 8 + i + j][band][ch];
-                sum += (quant_levels[c->abits[band][ch]] - 1) / 2;
+                sum += (ff_dca_quant_levels[c->abits[band][ch]] - 1) / 2;
             }
             put_bits(&c->pb, bit_consumption[c->abits[band][ch]] / 4, sum);
         }
@@ -847,13 +868,12 @@ static void put_subframe_samples(DCAContext *c, int ss, int band, int ch)
         int i;
         for (i = 0; i < 8; i++) {
             int bits = bit_consumption[c->abits[band][ch]] / 16;
-            int32_t mask = (1 << bits) - 1;
-            put_bits(&c->pb, bits, c->quantized[ss * 8 + i][band][ch] & mask);
+            put_sbits(&c->pb, bits, c->quantized[ss * 8 + i][band][ch]);
         }
     }
 }
 
-static void put_subframe(DCAContext *c, int subframe)
+static void put_subframe(DCAEncContext *c, int subframe)
 {
     int i, band, ss, ch;
 
@@ -865,25 +885,25 @@ static void put_subframe(DCAContext *c, int subframe)
 
     /* Prediction mode: no ADPCM, in each channel and subband */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 1, 0);
 
     /* Prediction VQ address: not transmitted */
     /* Bit allocation index */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 5, c->abits[band][ch]);
 
     if (SUBSUBFRAMES > 1) {
         /* Transition mode: none for each channel and subband */
         for (ch = 0; ch < c->fullband_channels; ch++)
-            for (band = 0; band < DCA_SUBBANDS; band++)
+            for (band = 0; band < DCAENC_SUBBANDS; band++)
                 put_bits(&c->pb, 1, 0); /* codebook A4 */
     }
 
     /* Scale factors */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCA_SUBBANDS; band++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
             put_bits(&c->pb, 7, c->scale_factor[band][ch]);
 
     /* Joint subband scale factor codebook select: not transmitted */
@@ -903,7 +923,7 @@ static void put_subframe(DCAContext *c, int subframe)
     /* Audio data (subsubframes) */
     for (ss = 0; ss < SUBSUBFRAMES ; ss++)
         for (ch = 0; ch < c->fullband_channels; ch++)
-            for (band = 0; band < DCA_SUBBANDS; band++)
+            for (band = 0; band < DCAENC_SUBBANDS; band++)
                     put_subframe_samples(c, ss, band, ch);
 
     /* DSYNC */
@@ -913,11 +933,11 @@ static void put_subframe(DCAContext *c, int subframe)
 static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                         const AVFrame *frame, int *got_packet_ptr)
 {
-    DCAContext *c = avctx->priv_data;
+    DCAEncContext *c = avctx->priv_data;
     const int32_t *samples;
     int ret, i;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size )) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, c->frame_size, 0)) < 0)
         return ret;
 
     samples = (const int32_t *)frame->data[0];
@@ -939,11 +959,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     for (i = 0; i < SUBFRAMES; i++)
         put_subframe(c, i);
 
+
+    for (i = put_bits_count(&c->pb); i < 8*c->frame_size; i++)
+        put_bits(&c->pb, 1, 0);
+
     flush_put_bits(&c->pb);
 
     avpkt->pts      = frame->pts;
     avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples);
-    avpkt->size     = c->frame_size + 1;
+    avpkt->size     = put_bits_count(&c->pb) >> 3;
     *got_packet_ptr = 1;
     return 0;
 }
@@ -958,10 +982,10 @@ AVCodec ff_dca_encoder = {
     .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_DTS,
-    .priv_data_size        = sizeof(DCAContext),
+    .priv_data_size        = sizeof(DCAEncContext),
     .init                  = encode_init,
     .encode2               = encode_frame,
-    .capabilities          = CODEC_CAP_EXPERIMENTAL,
+    .capabilities          = AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
     .supported_samplerates = sample_rates,

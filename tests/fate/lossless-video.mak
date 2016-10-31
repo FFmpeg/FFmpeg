@@ -1,15 +1,3 @@
-FATE_CLLC += fate-cllc-argb
-fate-cllc-argb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-argb.avi
-
-FATE_CLLC += fate-cllc-rgb
-fate-cllc-rgb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-rgb.avi
-
-FATE_CLLC += fate-cllc-yuy2-noblock
-fate-cllc-yuy2-noblock: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-yuy2-noblock.avi
-
-FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, CLLC) += $(FATE_CLLC)
-fate-cllc: $(FATE_CLLC)
-
 FATE_LAGARITH += fate-lagarith-rgb24
 fate-lagarith-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lag-rgb24.avi
 
@@ -24,6 +12,13 @@ fate-lagarith-yv12: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lag-yv12.avi
 
 FATE_LAGARITH += fate-lagarith-red
 fate-lagarith-red: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-red.avi
+
+FATE_LAGARITH += fate-lagarith-ticket4119 fate-lagarith-ticket4119-cfr fate-lagarith-ticket4119-vfr fate-lagarith-ticket4119-pass fate-lagarith-ticket4119-drop
+fate-lagarith-ticket4119: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi
+fate-lagarith-ticket4119-cfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync cfr
+fate-lagarith-ticket4119-vfr : CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync vfr
+fate-lagarith-ticket4119-pass: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync passthrough
+fate-lagarith-ticket4119-drop: CMD = framecrc -i $(TARGET_SAMPLES)/lagarith/lagarith-1.3.27-black-frames-and-off-by-ones.avi -vsync drop
 
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, LAGARITH) += $(FATE_LAGARITH)
 fate-lagarith: $(FATE_LAGARITH)

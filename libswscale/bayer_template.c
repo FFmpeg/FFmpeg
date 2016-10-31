@@ -36,12 +36,12 @@
 #define BAYER_SHIFT   0
 #endif
 #if defined(BAYER_16LE)
-#define BAYER_READ(x) AV_RL16(&x)
+#define BAYER_READ(x) AV_RL16(&(x))
 #define BAYER_SIZEOF  2
 #define BAYER_SHIFT   8
 #endif
 #if defined(BAYER_16BE)
-#define BAYER_READ(x) AV_RB16(&x)
+#define BAYER_READ(x) AV_RB16(&(x))
 #define BAYER_SIZEOF  2
 #define BAYER_SHIFT   8
 #endif

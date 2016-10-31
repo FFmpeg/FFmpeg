@@ -54,6 +54,7 @@
 
 #include "config.h"
 #include "libavcodec/aacpsdsp.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
 static void ps_hybrid_analysis_ileave_mips(float (*out)[32][2], float L[2][38][64],
@@ -86,8 +87,8 @@ static void ps_hybrid_analysis_ileave_mips(float (*out)[32][2], float L[2][38][6
             "sw      %[temp5],   20(%[out1])         \n\t"
             "sw      %[temp6],   24(%[out1])         \n\t"
             "sw      %[temp7],   28(%[out1])         \n\t"
-            "addiu   %[out1],    %[out1],      32    \n\t"
-            "addiu   %[L1],      %[L1],        1024  \n\t"
+            PTR_ADDIU "%[out1],  %[out1],      32    \n\t"
+            PTR_ADDIU "%[L1],    %[L1],        1024  \n\t"
             "bne     %[out1],    %[j],         1b    \n\t"
 
             : [out1]"+r"(out1), [L1]"+r"(L1), [j]"+r"(j),
@@ -128,10 +129,10 @@ static void ps_hybrid_synthesis_deint_mips(float out[2][38][64],
                  "lw      %[temp5],   16(%[in2])              \n\t"
                  "lw      %[temp6],   24(%[in1])              \n\t"
                  "lw      %[temp7],   24(%[in2])              \n\t"
-                 "addiu   %[out1],    %[out1],         1024   \n\t"
-                 "addiu   %[out2],    %[out2],         1024   \n\t"
-                 "addiu   %[in1],     %[in1],          32     \n\t"
-                 "addiu   %[in2],     %[in2],          32     \n\t"
+                 PTR_ADDIU "%[out1],  %[out1],         1024   \n\t"
+                 PTR_ADDIU "%[out2],  %[out2],         1024   \n\t"
+                 PTR_ADDIU "%[in1],   %[in1],          32     \n\t"
+                 PTR_ADDIU "%[in2],   %[in2],          32     \n\t"
                  "sw      %[temp0],   -1024(%[out1])          \n\t"
                  "sw      %[temp1],   -1024(%[out2])          \n\t"
                  "sw      %[temp2],   -768(%[out1])           \n\t"
@@ -161,10 +162,10 @@ static void ps_hybrid_synthesis_deint_mips(float out[2][38][64],
             "lw      %[temp5],   16(%[in2])              \n\t"
             "lw      %[temp6],   24(%[in1])              \n\t"
             "lw      %[temp7],   24(%[in2])              \n\t"
-            "addiu   %[out1],    %[out1],        -7164   \n\t"
-            "addiu   %[out2],    %[out2],        -7164   \n\t"
-            "addiu   %[in1],     %[in1],         32      \n\t"
-            "addiu   %[in2],     %[in2],         32      \n\t"
+            PTR_ADDIU "%[out1],  %[out1],        -7164   \n\t"
+            PTR_ADDIU "%[out2],  %[out2],        -7164   \n\t"
+            PTR_ADDIU "%[in1],   %[in1],         32      \n\t"
+            PTR_ADDIU "%[in2],   %[in2],         32      \n\t"
             "sw      %[temp0],   7164(%[out1])           \n\t"
             "sw      %[temp1],   7164(%[out2])           \n\t"
             "sw      %[temp2],   7420(%[out1])           \n\t"
@@ -187,6 +188,7 @@ static void ps_hybrid_synthesis_deint_mips(float out[2][38][64],
 }
 
 #if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void ps_add_squares_mips(float *dst, const float (*src)[2], int n)
 {
     int i;
@@ -226,8 +228,8 @@ static void ps_add_squares_mips(float *dst, const float (*src)[2], int n)
             "swc1     %[temp2],    4(%[dst0])                          \n\t"
             "swc1     %[temp4],    8(%[dst0])                          \n\t"
             "swc1     %[temp6],    12(%[dst0])                         \n\t"
-            "addiu    %[dst0],     %[dst0],     16                     \n\t"
-            "addiu    %[src0],     %[src0],     32                     \n\t"
+            PTR_ADDIU "%[dst0],    %[dst0],     16                     \n\t"
+            PTR_ADDIU "%[src0],    %[src0],     32                     \n\t"
 
             : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1), [temp2]"=&f"(temp2),
               [temp3]"=&f"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
@@ -257,14 +259,14 @@ static void ps_mul_pair_single_mips(float (*dst)[2], float (*src0)[2], float *sr
         "lwc1     %[temp2],   0(%[p_s1])                \n\t"
         "lwc1     %[temp0],   0(%[p_s0])                \n\t"
         "lwc1     %[temp1],   4(%[p_s0])                \n\t"
-        "addiu    %[p_d],     %[p_d],       8           \n\t"
+        PTR_ADDIU "%[p_d],    %[p_d],       8           \n\t"
         "mul.s    %[temp0],   %[temp0],     %[temp2]    \n\t"
         "mul.s    %[temp1],   %[temp1],     %[temp2]    \n\t"
-        "addiu    %[p_s0],    %[p_s0],      8           \n\t"
+        PTR_ADDIU "%[p_s0],   %[p_s0],      8           \n\t"
         "swc1     %[temp0],   -8(%[p_d])                \n\t"
         "swc1     %[temp1],   -4(%[p_d])                \n\t"
         "bne      %[p_s1],    %[end],       1b          \n\t"
-        " addiu   %[p_s1],    %[p_s1],      4           \n\t"
+        PTR_ADDIU "%[p_s1],   %[p_s1],      4           \n\t"
         ".set pop                                       \n\t"
 
         : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),
@@ -277,7 +279,7 @@ static void ps_mul_pair_single_mips(float (*dst)[2], float (*src0)[2], float *sr
 
 static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
                              float (*ap_delay)[PS_QMF_TIME_SLOTS + PS_MAX_AP_DELAY][2],
-                             const float phi_fract[2], float (*Q_fract)[2],
+                             const float phi_fract[2], const float (*Q_fract)[2],
                              const float *transient_gain,
                              float g_decay_slope,
                              int len)
@@ -285,14 +287,14 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
     float *p_delay = &delay[0][0];
     float *p_out = &out[0][0];
     float *p_ap_delay = &ap_delay[0][0][0];
-    float *p_t_gain = (float*)transient_gain;
-    float *p_Q_fract = &Q_fract[0][0];
+    const float *p_t_gain = transient_gain;
+    const float *p_Q_fract = &Q_fract[0][0];
     float ag0, ag1, ag2;
     float phi_fract0 = phi_fract[0];
     float phi_fract1 = phi_fract[1];
     float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9;
 
-    len = (int)((int*)p_delay + (len << 1));
+    float *p_delay_end = (p_delay + (len << 1));
 
     /* merged 2 loops */
     __asm__ volatile(
@@ -355,20 +357,20 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
         "mul.s   %[temp1],      %[ag2],        %[temp3]                  \n\t"
         "lwc1    %[temp4],      0(%[p_t_gain])                           \n\t"
         "sub.s   %[temp0],      %[temp8],      %[temp0]                  \n\t"
-        "addiu   %[p_ap_delay], %[p_ap_delay], 8                         \n\t"
+        PTR_ADDIU "%[p_ap_delay], %[p_ap_delay], 8                       \n\t"
         "sub.s   %[temp1],      %[temp9],      %[temp1]                  \n\t"
-        "addiu   %[p_t_gain],   %[p_t_gain],   4                         \n\t"
+        PTR_ADDIU "%[p_t_gain], %[p_t_gain],   4                         \n\t"
         "madd.s  %[temp2],      %[temp2],      %[ag2],   %[temp0]        \n\t"
-        "addiu   %[p_delay],    %[p_delay],    8                         \n\t"
+        PTR_ADDIU "%[p_delay],  %[p_delay],    8                         \n\t"
         "madd.s  %[temp3],      %[temp3],      %[ag2],   %[temp1]        \n\t"
-        "addiu   %[p_out],      %[p_out],      8                         \n\t"
+        PTR_ADDIU "%[p_out],    %[p_out],      8                         \n\t"
         "mul.s   %[temp5],      %[temp4],      %[temp0]                  \n\t"
         "mul.s   %[temp6],      %[temp4],      %[temp1]                  \n\t"
         "swc1    %[temp2],      624(%[p_ap_delay])                       \n\t"
         "swc1    %[temp3],      628(%[p_ap_delay])                       \n\t"
         "swc1    %[temp5],      -8(%[p_out])                             \n\t"
         "swc1    %[temp6],      -4(%[p_out])                             \n\t"
-        "bne     %[p_delay],    %[len],        1b                        \n\t"
+        "bne     %[p_delay],    %[p_delay_end],1b                        \n\t"
         " swc1   %[temp6],      -4(%[p_out])                             \n\t"
         ".set    pop                                                     \n\t"
 
@@ -379,7 +381,7 @@ static void ps_decorrelate_mips(float (*out)[2], float (*delay)[2],
           [p_Q_fract]"+r"(p_Q_fract), [p_t_gain]"+r"(p_t_gain), [p_out]"+r"(p_out),
           [ag0]"=&f"(ag0), [ag1]"=&f"(ag1), [ag2]"=&f"(ag2)
         : [phi_fract0]"f"(phi_fract0), [phi_fract1]"f"(phi_fract1),
-          [len]"r"(len), [g_decay_slope]"f"(g_decay_slope)
+          [p_delay_end]"r"(p_delay_end), [g_decay_slope]"f"(g_decay_slope)
         : "memory"
     );
 }
@@ -399,7 +401,7 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
     float temp0, temp1, temp2, temp3;
     float l_re, l_im, r_re, r_im;
 
-    len = (int)((int*)l + (len << 1));
+    float *l_end = ((float *)l + (len << 1));
 
     __asm__ volatile(
         ".set    push                                     \n\t"
@@ -414,9 +416,9 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
         "add.s   %[h3],     %[h3],     %[hs3]             \n\t"
         "lwc1    %[r_im],   4(%[r])                       \n\t"
         "mul.s   %[temp0],  %[h0],     %[l_re]            \n\t"
-        "addiu   %[l],      %[l],      8                  \n\t"
+        PTR_ADDIU "%[l],    %[l],      8                  \n\t"
         "mul.s   %[temp2],  %[h1],     %[l_re]            \n\t"
-        "addiu   %[r],      %[r],      8                  \n\t"
+        PTR_ADDIU "%[r],    %[r],      8                  \n\t"
         "madd.s  %[temp0],  %[temp0],  %[h2],   %[r_re]   \n\t"
         "madd.s  %[temp2],  %[temp2],  %[h3],   %[r_re]   \n\t"
         "mul.s   %[temp1],  %[h0],     %[l_im]            \n\t"
@@ -426,7 +428,7 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
         "swc1    %[temp0],  -8(%[l])                      \n\t"
         "swc1    %[temp2],  -8(%[r])                      \n\t"
         "swc1    %[temp1],  -4(%[l])                      \n\t"
-        "bne     %[l],      %[len],    1b                 \n\t"
+        "bne     %[l],      %[l_end],  1b                 \n\t"
         " swc1   %[temp3],  -4(%[r])                      \n\t"
         ".set    pop                                      \n\t"
 
@@ -437,10 +439,11 @@ static void ps_stereo_interpolate_mips(float (*l)[2], float (*r)[2],
           [l_re]"=&f"(l_re), [l_im]"=&f"(l_im),
           [r_re]"=&f"(r_re), [r_im]"=&f"(r_im)
         : [hs0]"f"(hs0), [hs1]"f"(hs1), [hs2]"f"(hs2),
-          [hs3]"f"(hs3), [len]"r"(len)
+          [hs3]"f"(hs3), [l_end]"r"(l_end)
         : "memory"
     );
 }
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
@@ -450,10 +453,12 @@ void ff_psdsp_init_mips(PSDSPContext *s)
     s->hybrid_analysis_ileave = ps_hybrid_analysis_ileave_mips;
     s->hybrid_synthesis_deint = ps_hybrid_synthesis_deint_mips;
 #if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     s->add_squares            = ps_add_squares_mips;
     s->mul_pair_single        = ps_mul_pair_single_mips;
     s->decorrelate            = ps_decorrelate_mips;
     s->stereo_interpolate[0]  = ps_stereo_interpolate_mips;
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 }

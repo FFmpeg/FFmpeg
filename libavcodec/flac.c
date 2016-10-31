@@ -166,7 +166,7 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps)
     return count;
 }
 
-int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+int ff_flac_is_extradata_valid(AVCodecContext *avctx,
                                enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start)
 {
@@ -201,7 +201,7 @@ void ff_flac_set_channel_layout(AVCodecContext *avctx)
         avctx->channel_layout = 0;
 }
 
-void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
     GetBitContext gb;

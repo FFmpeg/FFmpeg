@@ -25,6 +25,7 @@
 #define AVFORMAT_RTSPCODES_H
 
 #include "libavutil/common.h"
+#include "libavformat/http.h"
 
 /** RTSP handling */
 enum RTSPStatusCode {
@@ -74,7 +75,7 @@ RTSP_STATUS_VERSION              =505,
 RTSP_STATUS_UNSUPPORTED_OPTION   =551,
 };
 
-static const av_unused char *rtsp_status_strings[] = {
+static const av_unused char * const rtsp_status_strings[] = {
 [RTSP_STATUS_CONTINUE]               ="Continue",
 [RTSP_STATUS_OK]                     ="OK",
 [RTSP_STATUS_CREATED]                ="Created",
@@ -139,4 +140,10 @@ enum RTSPMethod {
     RECORD,
     UNKNOWN = -1,
 };
+
+static inline int ff_rtsp_averror(enum RTSPStatusCode status_code, int default_averror)
+{
+    return ff_http_averror(status_code, default_averror);
+}
+
 #endif /* AVFORMAT_RTSPCODES_H */

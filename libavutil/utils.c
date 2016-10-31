@@ -20,12 +20,20 @@
 #include "avutil.h"
 #include "avassert.h"
 #include "samplefmt.h"
-#include "pixdesc.h"
+#include "internal.h"
 
 /**
  * @file
  * various utility functions
  */
+
+#include "libavutil/ffversion.h"
+const char av_util_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
+
+const char *av_version_info(void)
+{
+    return FFMPEG_VERSION;
+}
 
 unsigned avutil_version(void)
 {
@@ -33,7 +41,9 @@ unsigned avutil_version(void)
     if (checks_done)
         return LIBAVUTIL_VERSION_INT;
 
+#if FF_API_VDPAU
     av_assert0(AV_PIX_FMT_VDA_VLD == 81); //check if the pix fmt enum has not had anything inserted or removed by mistake
+#endif
     av_assert0(AV_SAMPLE_FMT_DBLP == 9);
     av_assert0(AVMEDIA_TYPE_ATTACHMENT == 4);
     av_assert0(AV_PICTURE_TYPE_BI == 7);
@@ -43,7 +53,7 @@ unsigned avutil_version(void)
     av_assert0(((size_t)-1) > 0); // C guarantees this but if false on a platform we care about revert at least b284e1ffe343d6697fb950d1ee517bafda8a9844
 
     if (av_sat_dadd32(1, 2) != 5) {
-        av_log(NULL, AV_LOG_FATAL, "Libavutil has been build with a broken binutils, please upgrade binutils and rebuild\n");
+        av_log(NULL, AV_LOG_FATAL, "Libavutil has been built with a broken binutils, please upgrade binutils and rebuild\n");
         abort();
     }
 
@@ -51,9 +61,6 @@ unsigned avutil_version(void)
         av_log(NULL, AV_LOG_ERROR, "Libavutil has been linked to a broken llrint()\n");
     }
 
-#if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 0
-    ff_check_pixfmt_descriptors();
-#endif
     checks_done = 1;
     return LIBAVUTIL_VERSION_INT;
 }
@@ -117,4 +124,17 @@ unsigned av_int_list_length_for_size(unsigned elsize,
 AVRational av_get_time_base_q(void)
 {
     return (AVRational){1, AV_TIME_BASE};
+}
+
+void av_assert0_fpu(void) {
+#if HAVE_MMX_INLINE
+    uint16_t state[14];
+     __asm volatile (
+        "fstenv %0 \n\t"
+        : "+m" (state)
+        :
+        : "memory"
+    );
+    av_assert0((state[4] & 3) == 3);
+#endif
 }

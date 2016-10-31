@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder/decoder internal header.
+ * MPEG-4 encoder/decoder internal header.
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -59,6 +59,9 @@
 #define VISUAL_OBJ_STARTCODE 0x1B5
 #define VOP_STARTCODE        0x1B6
 
+/* smaller packets likely don't contain a real frame */
+#define MAX_NVOP_SIZE 19
+
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
@@ -104,7 +107,7 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_b;
 } Mpeg4DecContext;
 
-/* dc encoding for mpeg4 */
+/* dc encoding for MPEG-4 */
 extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 
@@ -137,7 +140,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s,
 void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
                       int dir);
 void ff_set_mpeg4_time(MpegEncContext *s);
-void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
 int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
@@ -155,7 +158,6 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
 int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
- *
  * @return the mb_type
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
@@ -227,21 +229,21 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
     } else {
         level += pred;
         ret    = level;
-        if (s->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) {
+    }
+    level *= scale;
+    if (level & (~2047)) {
+        if (!s->encoding && (s->avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE))) {
             if (level < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
                 return -1;
             }
-            if (level * scale > 2048 + scale) {
+            if (level > 2048 + scale) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
                 return -1;
             }
         }
-    }
-    level *= scale;
-    if (level & (~2047)) {
         if (level < 0)
             level = 0;
         else if (!(s->workaround_bugs & FF_BUG_DC_CLIP))
