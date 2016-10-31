@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -43,11 +44,16 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
     if (!frame)
         return NULL;
 
-    frame->width  = w;
-    frame->height = h;
-    frame->format = link->format;
+    if (link->hw_frames_ctx &&
+        ((AVHWFramesContext*)link->hw_frames_ctx->data)->format == link->format) {
+        ret = av_hwframe_get_buffer(link->hw_frames_ctx, frame, 0);
+    } else {
+        frame->width  = w;
+        frame->height = h;
+        frame->format = link->format;
 
-    ret = av_frame_get_buffer(frame, 32);
+        ret = av_frame_get_buffer(frame, 32);
+    }
     if (ret < 0)
         av_frame_free(&frame);
 
