@@ -54,7 +54,7 @@ void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
 
 float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
-void ff_butterflies_float_sse(float *src0, float *src1, int len);
+void ff_butterflies_float_sse(float *restrict src0, float *restrict src1, int len);
 
 #if HAVE_6REGS && HAVE_INLINE_ASM
 static void vector_fmul_window_3dnowext(float *dst, const float *src0,
