@@ -2961,7 +2961,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int first_non_zero_audio_edit = -1;
     int packet_skip_samples = 0;
 
-    if (!msc->elst_data || msc->elst_count <= 0) {
+    if (!msc->elst_data || msc->elst_count <= 0 || nb_old <= 0) {
         return;
     }
     // Clean AVStream from traces of old index
