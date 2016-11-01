@@ -394,6 +394,7 @@ static const AVOption avcodec_options[] = {
 {"mpeg4_core", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_MPEG4_CORE }, INT_MIN, INT_MAX, V|E, "profile"},
 {"mpeg4_main", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_MPEG4_MAIN }, INT_MIN, INT_MAX, V|E, "profile"},
 {"mpeg4_asp",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_MPEG4_ADVANCED_SIMPLE }, INT_MIN, INT_MAX, V|E, "profile"},
+{"main10",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_HEVC_MAIN_10 }, INT_MIN, INT_MAX, V|E, "profile"},
 {"level", NULL, OFFSET(level), AV_OPT_TYPE_INT, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "level"},
 {"unknown", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "level"},
 {"lowres", "decode at 1= 1/2, 2=1/4, 3=1/8 resolutions", OFFSET(lowres), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, V|A|D},
