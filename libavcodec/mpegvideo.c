@@ -940,37 +940,37 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     if (!s->new_picture.f)
         goto fail;
 
-        if (init_context_frame(s))
-            goto fail;
+    if (init_context_frame(s))
+        goto fail;
 
-        s->parse_context.state = -1;
+    s->parse_context.state = -1;
 
-        s->context_initialized = 1;
-        memset(s->thread_context, 0, sizeof(s->thread_context));
-        s->thread_context[0]   = s;
+    s->context_initialized = 1;
+    memset(s->thread_context, 0, sizeof(s->thread_context));
+    s->thread_context[0]   = s;
 
 //     if (s->width && s->height) {
-        if (nb_slices > 1) {
-            for (i = 0; i < nb_slices; i++) {
-                if (i) {
-                    s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
-                    if (!s->thread_context[i])
-                        goto fail;
-                }
-                if (init_duplicate_context(s->thread_context[i]) < 0)
+    if (nb_slices > 1) {
+        for (i = 0; i < nb_slices; i++) {
+            if (i) {
+                s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
+                if (!s->thread_context[i])
                     goto fail;
-                    s->thread_context[i]->start_mb_y =
-                        (s->mb_height * (i) + nb_slices / 2) / nb_slices;
-                    s->thread_context[i]->end_mb_y   =
-                        (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
-        } else {
-            if (init_duplicate_context(s) < 0)
+            if (init_duplicate_context(s->thread_context[i]) < 0)
                 goto fail;
-            s->start_mb_y = 0;
-            s->end_mb_y   = s->mb_height;
+            s->thread_context[i]->start_mb_y =
+                (s->mb_height * (i) + nb_slices / 2) / nb_slices;
+            s->thread_context[i]->end_mb_y   =
+                (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
         }
-        s->slice_context_count = nb_slices;
+    } else {
+        if (init_duplicate_context(s) < 0)
+            goto fail;
+        s->start_mb_y = 0;
+        s->end_mb_y   = s->mb_height;
+    }
+    s->slice_context_count = nb_slices;
 //     }
 
     return 0;
@@ -1090,10 +1090,10 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
                 }
                 if ((err = init_duplicate_context(s->thread_context[i])) < 0)
                     goto fail;
-                    s->thread_context[i]->start_mb_y =
-                        (s->mb_height * (i) + nb_slices / 2) / nb_slices;
-                    s->thread_context[i]->end_mb_y   =
-                        (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
+                s->thread_context[i]->start_mb_y =
+                    (s->mb_height * (i) + nb_slices / 2) / nb_slices;
+                s->thread_context[i]->end_mb_y   =
+                    (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
             err = init_duplicate_context(s);
