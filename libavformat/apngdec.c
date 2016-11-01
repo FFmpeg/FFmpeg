@@ -49,6 +49,10 @@ typedef struct APNGDemuxContext {
 
     int is_key_frame;
 
+    uint8_t *extra_data;
+    int extra_data_size;
+    int extra_data_updated;
+
     /*
      * loop options
      */
@@ -122,9 +126,9 @@ end:
     return AVPROBE_SCORE_MAX;
 }
 
-static int append_extradata(AVCodecParameters *par, AVIOContext *pb, int len)
+static int append_extradata(APNGDemuxContext *ctx, AVIOContext *pb, int len)
 {
-    int previous_size = par->extradata_size;
+    int previous_size = ctx->extra_data_size;
     int new_size, ret;
     uint8_t *new_extradata;
 
@@ -132,16 +136,28 @@ static int append_extradata(AVCodecParameters *par, AVIOContext *pb, int len)
         return AVERROR_INVALIDDATA;
 
     new_size = previous_size + len;
-    new_extradata = av_realloc(par->extradata, new_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    new_extradata = av_realloc(ctx->extra_data, new_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!new_extradata)
         return AVERROR(ENOMEM);
-    par->extradata = new_extradata;
-    par->extradata_size = new_size;
+    ctx->extra_data = new_extradata;
+    ctx->extra_data_size = new_size;
 
-    if ((ret = avio_read(pb, par->extradata + previous_size, len)) < 0)
+    if ((ret = avio_read(pb, ctx->extra_data + previous_size, len)) < 0)
         return ret;
 
     return previous_size;
+}
+
+static int send_extradata(APNGDemuxContext *ctx, AVPacket *pkt)
+{
+    if (!ctx->extra_data_updated) {
+        uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, ctx->extra_data_size);
+        if (!side_data)
+            return AVERROR(ENOMEM);
+        memcpy(side_data, ctx->extra_data, ctx->extra_data_size);
+        ctx->extra_data_updated = 1;
+    }
+    return 0;
 }
 
 static int apng_read_header(AVFormatContext *s)
@@ -178,15 +194,15 @@ static int apng_read_header(AVFormatContext *s)
         return ret;
 
     /* extradata will contain every chunk up to the first fcTL (excluded) */
-    st->codecpar->extradata = av_malloc(len + 12 + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codecpar->extradata)
+    ctx->extra_data = av_malloc(len + 12 + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!ctx->extra_data)
         return AVERROR(ENOMEM);
-    st->codecpar->extradata_size = len + 12;
-    AV_WB32(st->codecpar->extradata,    len);
-    AV_WL32(st->codecpar->extradata+4,  tag);
-    AV_WB32(st->codecpar->extradata+8,  st->codecpar->width);
-    AV_WB32(st->codecpar->extradata+12, st->codecpar->height);
-    if ((ret = avio_read(pb, st->codecpar->extradata+16, 9)) < 0)
+    ctx->extra_data_size = len + 12;
+    AV_WB32(ctx->extra_data,    len);
+    AV_WL32(ctx->extra_data+4,  tag);
+    AV_WB32(ctx->extra_data+8,  st->codecpar->width);
+    AV_WB32(ctx->extra_data+12, st->codecpar->height);
+    if ((ret = avio_read(pb, ctx->extra_data+16, 9)) < 0)
         goto fail;
 
     while (!avio_feof(pb)) {
@@ -218,11 +234,11 @@ static int apng_read_header(AVFormatContext *s)
         switch (tag) {
         case MKTAG('a', 'c', 'T', 'L'):
             if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
-                (ret = append_extradata(st->codecpar, pb, len + 12)) < 0)
+                (ret = append_extradata(ctx, pb, len + 12)) < 0)
                 goto fail;
             acTL_found = 1;
-            ctx->num_frames = AV_RB32(st->codecpar->extradata + ret + 8);
-            ctx->num_play   = AV_RB32(st->codecpar->extradata + ret + 12);
+            ctx->num_frames = AV_RB32(ctx->extra_data + ret + 8);
+            ctx->num_play   = AV_RB32(ctx->extra_data + ret + 12);
             av_log(s, AV_LOG_DEBUG, "num_frames: %"PRIu32", num_play: %"PRIu32"\n",
                                     ctx->num_frames, ctx->num_play);
             break;
@@ -236,15 +252,15 @@ static int apng_read_header(AVFormatContext *s)
             return 0;
         default:
             if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
-                (ret = append_extradata(st->codecpar, pb, len + 12)) < 0)
+                (ret = append_extradata(ctx, pb, len + 12)) < 0)
                 goto fail;
         }
     }
 
 fail:
-    if (st->codecpar->extradata_size) {
-        av_freep(&st->codecpar->extradata);
-        st->codecpar->extradata_size = 0;
+    if (ctx->extra_data_size) {
+        av_freep(&ctx->extra_data);
+        ctx->extra_data_size = 0;
     }
     return ret;
 }
@@ -393,16 +409,16 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->pts = ctx->pkt_pts;
         pkt->duration = ctx->pkt_duration;
         ctx->pkt_pts += ctx->pkt_duration;
-        return ret;
+        return send_extradata(ctx, pkt);
     case MKTAG('I', 'E', 'N', 'D'):
         ctx->cur_loop++;
         if (ctx->ignore_loop || ctx->num_play >= 1 && ctx->cur_loop == ctx->num_play) {
             avio_seek(pb, -8, SEEK_CUR);
             return AVERROR_EOF;
         }
-        if ((ret = avio_seek(pb, s->streams[0]->codecpar->extradata_size + 8, SEEK_SET)) < 0)
+        if ((ret = avio_seek(pb, ctx->extra_data_size + 8, SEEK_SET)) < 0)
             return ret;
-        return 0;
+        return send_extradata(ctx, pkt);
     default:
         {
         char tag_buf[32];
@@ -415,6 +431,14 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* Handle the unsupported yet cases */
     return AVERROR_PATCHWELCOME;
+}
+
+static int apng_read_close(AVFormatContext *s)
+{
+    APNGDemuxContext *ctx = s->priv_data;
+    av_freep(&ctx->extra_data);
+    ctx->extra_data_size = 0;
+    return 0;
 }
 
 static const AVOption options[] = {
@@ -442,6 +466,7 @@ AVInputFormat ff_apng_demuxer = {
     .read_probe     = apng_probe,
     .read_header    = apng_read_header,
     .read_packet    = apng_read_packet,
+    .read_close     = apng_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
     .priv_class     = &demuxer_class,
 };
