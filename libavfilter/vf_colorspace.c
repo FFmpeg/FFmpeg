@@ -280,6 +280,7 @@ static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
     [AVCOL_PRI_SMPTE240M] = { WP_D65, 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 },
     [AVCOL_PRI_SMPTE431]  = { WP_DCI, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
     [AVCOL_PRI_SMPTE432]  = { WP_D65, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
+    [AVCOL_PRI_FILM]      = { WP_C,   0.681, 0.319, 0.243, 0.692, 0.145, 0.049 },
     [AVCOL_PRI_BT2020]    = { WP_D65, 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 },
 };
 
@@ -1084,6 +1085,7 @@ static const AVOption colorspace_options[] = {
     ENUM("bt470bg",      AVCOL_PRI_BT470BG,    "prm"),
     ENUM("smpte170m",    AVCOL_PRI_SMPTE170M,  "prm"),
     ENUM("smpte240m",    AVCOL_PRI_SMPTE240M,  "prm"),
+    ENUM("film",         AVCOL_PRI_FILM,       "prm"),
     ENUM("smpte431",     AVCOL_PRI_SMPTE431,   "prm"),
     ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
