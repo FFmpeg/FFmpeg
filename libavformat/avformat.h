@@ -2780,11 +2780,10 @@ void av_dump_format(AVFormatContext *ic,
  * @param path numbered sequence string
  * @param number frame number
  * @param flags AV_FRAME_FILENAME_FLAGS_*
- * @param ts frame timestamp in AV_TIME_BASE fractional seconds.
  * @return 0 if OK, -1 on format error
  */
 int av_get_frame_filename2(char *buf, int buf_size,
-                          const char *path, int number, int flags, int64_t ts);
+                          const char *path, int number, int flags);
 
 int av_get_frame_filename(char *buf, int buf_size,
                           const char *path, int number);

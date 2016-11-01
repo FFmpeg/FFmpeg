@@ -654,7 +654,7 @@ static int hls_start(AVFormatContext *s)
     } else if (c->max_seg_size > 0) {
         if (av_get_frame_filename2(oc->filename, sizeof(oc->filename),
             c->basename, c->wrap ? c->sequence % c->wrap : c->sequence,
-            AV_FRAME_FILENAME_FLAGS_MULTIPLE, 0) < 0) {
+            AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
                 av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", c->basename);
                 return AVERROR(EINVAL);
         }
@@ -685,14 +685,14 @@ static int hls_start(AVFormatContext *s)
             }
         } else if (av_get_frame_filename2(oc->filename, sizeof(oc->filename),
                                   c->basename, c->wrap ? c->sequence % c->wrap : c->sequence,
-                                  AV_FRAME_FILENAME_FLAGS_MULTIPLE, 0) < 0) {
+                                  AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
             av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", c->basename);
             return AVERROR(EINVAL);
         }
         if( c->vtt_basename) {
             if (av_get_frame_filename2(vtt_oc->filename, sizeof(vtt_oc->filename),
                               c->vtt_basename, c->wrap ? c->sequence % c->wrap : c->sequence,
-                              AV_FRAME_FILENAME_FLAGS_MULTIPLE, 0) < 0) {
+                              AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
                 av_log(vtt_oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", c->vtt_basename);
                 return AVERROR(EINVAL);
             }
