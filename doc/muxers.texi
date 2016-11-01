@@ -1055,6 +1055,8 @@ Use LATM packetization for AAC.
 Reemit PAT and PMT at each video frame.
 @item system_b
 Conform to System B (DVB) instead of System A (ATSC).
+@item initial_discontinuity
+Mark the initial packet of each stream as discontinuity.
 @end table
 
 @subsection Example

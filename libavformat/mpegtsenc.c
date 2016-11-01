@@ -46,6 +46,7 @@
 typedef struct MpegTSSection {
     int pid;
     int cc;
+    int discontinuity;
     void (*write_packet)(struct MpegTSSection *s, const uint8_t *packet);
     void *opaque;
 } MpegTSSection;
@@ -104,6 +105,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_AAC_LATM        0x02
 #define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
 #define MPEGTS_FLAG_SYSTEM_B        0x08
+#define MPEGTS_FLAG_DISCONT         0x10
     int flags;
     int copyts;
     int tables_version;
@@ -153,6 +155,12 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
         *q++  = s->pid;
         s->cc = s->cc + 1 & 0xf;
         *q++  = 0x10 | s->cc;
+        if (s->discontinuity) {
+            q[-1] |= 0x20;
+            *q++ = 1;
+            *q++ = 0x80;
+            s->discontinuity = 0;
+        }
         if (first)
             *q++ = 0; /* 0 offset */
         len1 = TS_PACKET_SIZE - (q - packet);
@@ -223,6 +231,7 @@ typedef struct MpegTSWriteStream {
     struct MpegTSService *service;
     int pid; /* stream associated pid */
     int cc;
+    int discontinuity;
     int payload_size;
     int first_pts_check; ///< first pts check needed
     int prev_payload_key;
@@ -782,6 +791,7 @@ static int mpegts_init(AVFormatContext *s)
         service->pmt.write_packet = section_write_packet;
         service->pmt.opaque       = s;
         service->pmt.cc           = 15;
+        service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     } else {
         for (i = 0; i < s->nb_programs; i++) {
             AVProgram *program = s->programs[i];
@@ -800,6 +810,7 @@ static int mpegts_init(AVFormatContext *s)
             service->pmt.write_packet = section_write_packet;
             service->pmt.opaque       = s;
             service->pmt.cc           = 15;
+            service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
             service->program          = program;
         }
     }
@@ -808,11 +819,13 @@ static int mpegts_init(AVFormatContext *s)
     /* Initialize at 15 so that it wraps and is equal to 0 for the
      * first packet we write. */
     ts->pat.cc           = 15;
+    ts->pat.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     ts->pat.write_packet = section_write_packet;
     ts->pat.opaque       = s;
 
     ts->sdt.pid          = SDT_PID;
     ts->sdt.cc           = 15;
+    ts->sdt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque       = s;
 
@@ -883,6 +896,7 @@ static int mpegts_init(AVFormatContext *s)
         ts_st->payload_dts     = AV_NOPTS_VALUE;
         ts_st->first_pts_check = 1;
         ts_st->cc              = 15;
+        ts_st->discontinuity   = ts->flags & MPEGTS_FLAG_DISCONT;
         /* update PCR pid by using the first video stream */
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff) {
@@ -1078,6 +1092,10 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     /* Continuity Count field does not increment (see 13818-1 section 2.4.3.3) */
     *q++ = TS_PACKET_SIZE - 5; /* Adaptation Field Length */
     *q++ = 0x10;               /* Adaptation flags: PCR present */
+    if (ts_st->discontinuity) {
+        q[-1] |= 0x80;
+        ts_st->discontinuity = 0;
+    }
 
     /* PCR coded into 6 bytes */
     q += write_pcr_bits(q, get_pcr(ts, s->pb));
@@ -1195,6 +1213,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         *q++      = ts_st->pid;
         ts_st->cc = ts_st->cc + 1 & 0xf;
         *q++      = 0x10 | ts_st->cc; // payload indicator + CC
+        if (ts_st->discontinuity) {
+            set_af_flag(buf, 0x80);
+            q = get_ts_payload_start(buf);
+            ts_st->discontinuity = 0;
+        }
         if (key && is_start && pts != AV_NOPTS_VALUE) {
             // set Random Access for key frames
             if (ts_st->pid == ts_st->service->pcr_pid)
@@ -1871,6 +1894,9 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "system_b", "Conform to System B (DVB) instead of System A (ATSC)",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_SYSTEM_B }, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "initial_discontinuity", "Mark initial packets as discontinuous",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_DISCONT }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
