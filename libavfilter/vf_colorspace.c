@@ -56,6 +56,7 @@ enum Colorspace {
 enum Whitepoint {
     WP_D65,
     WP_C,
+    WP_DCI,
     WP_NB,
 };
 
@@ -268,6 +269,7 @@ static const struct TransferCharacteristics *
 static const struct WhitepointCoefficients whitepoint_coefficients[WP_NB] = {
     [WP_D65] = { 0.3127, 0.3290 },
     [WP_C]   = { 0.3100, 0.3160 },
+    [WP_DCI] = { 0.3140, 0.3510 },
 };
 
 static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
@@ -276,6 +278,8 @@ static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
     [AVCOL_PRI_BT470BG]   = { WP_D65, 0.640, 0.330, 0.290, 0.600, 0.150, 0.060,},
     [AVCOL_PRI_SMPTE170M] = { WP_D65, 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 },
     [AVCOL_PRI_SMPTE240M] = { WP_D65, 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 },
+    [AVCOL_PRI_SMPTE431]  = { WP_DCI, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
+    [AVCOL_PRI_SMPTE432]  = { WP_D65, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
     [AVCOL_PRI_BT2020]    = { WP_D65, 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 },
 };
 
@@ -1080,6 +1084,8 @@ static const AVOption colorspace_options[] = {
     ENUM("bt470bg",      AVCOL_PRI_BT470BG,    "prm"),
     ENUM("smpte170m",    AVCOL_PRI_SMPTE170M,  "prm"),
     ENUM("smpte240m",    AVCOL_PRI_SMPTE240M,  "prm"),
+    ENUM("smpte431",     AVCOL_PRI_SMPTE431,   "prm"),
+    ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
 
     { "trc",        "Output transfer characteristics",
