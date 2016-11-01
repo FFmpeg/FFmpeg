@@ -168,7 +168,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         for (y = 0; y < h; y++) {
-            if (buf_end - buf < len)
+            if (buf_end - buf < alen)
                 break;
             memcpy(ptr, buf, len);
             ptr += stride;
