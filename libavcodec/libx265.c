@@ -42,6 +42,7 @@ typedef struct libx265Context {
     const x265_api *api;
 
     float crf;
+    int   forced_idr;
     char *preset;
     char *tune;
     char *x265_opts;
@@ -273,7 +274,8 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         x265pic.pts      = pic->pts;
         x265pic.bitDepth = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth;
 
-        x265pic.sliceType = pic->pict_type == AV_PICTURE_TYPE_I ? X265_TYPE_I :
+        x265pic.sliceType = pic->pict_type == AV_PICTURE_TYPE_I ?
+                                              (ctx->forced_idr ? X265_TYPE_IDR : X265_TYPE_I) :
                             pic->pict_type == AV_PICTURE_TYPE_P ? X265_TYPE_P :
                             pic->pict_type == AV_PICTURE_TYPE_B ? X265_TYPE_B :
                             X265_TYPE_AUTO;
@@ -382,6 +384,7 @@ static av_cold void libx265_encode_init_csp(AVCodec *codec)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "crf",         "set the x265 crf",                                                            OFFSET(crf),       AV_OPT_TYPE_FLOAT,  { .dbl = -1 }, -1, FLT_MAX, VE },
+    { "forced-idr",  "if forcing keyframes, force them as IDR frames",                              OFFSET(forced_idr),AV_OPT_TYPE_BOOL,   { .i64 =  0 },  0,       1, VE },
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
