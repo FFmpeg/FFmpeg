@@ -27,6 +27,7 @@
 #include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/dict.h"
 #include "libavutil/libm.h"
@@ -766,6 +767,7 @@ static void show_stream(InputFile *ifile, InputStream *ist)
         for (i = 0; i < stream->nb_side_data; i++) {
             const AVPacketSideData* sd = &stream->side_data[i];
             AVStereo3D *stereo;
+            AVSphericalMapping *spherical;
 
             switch (sd->type) {
             case AV_PKT_DATA_DISPLAYMATRIX:
@@ -785,6 +787,25 @@ static void show_stream(InputFile *ifile, InputStream *ist)
                 probe_int("inverted",
                           !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
                 probe_object_footer("stereo3d");
+                break;
+            case AV_PKT_DATA_SPHERICAL:
+                spherical = (AVSphericalMapping *)sd->data;
+                probe_object_header("spherical");
+
+                if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+                    probe_str("projection", "equirectangular");
+                else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+                    probe_str("projection", "cubemap");
+                else
+                    probe_str("projection", "unknown");
+
+                probe_object_header("orientation");
+                probe_int("yaw", (double) spherical->yaw / (1 << 16));
+                probe_int("pitch", (double) spherical->pitch / (1 << 16));
+                probe_int("roll", (double) spherical->roll / (1 << 16));
+                probe_object_footer("orientation");
+
+                probe_object_footer("spherical");
                 break;
             }
         }

@@ -1289,6 +1289,12 @@ enum AVPacketSideDataType {
      * This side data corresponds to the AVCPBProperties struct.
      */
     AV_PKT_DATA_CPB_PROPERTIES,
+
+    /**
+     * This side data should be associated with a video stream and corresponds
+     * to the AVSphericalMapping structure.
+     */
+    AV_PKT_DATA_SPHERICAL,
 };
 
 typedef struct AVPacketSideData {
