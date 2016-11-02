@@ -3049,6 +3049,8 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
     int ret;
+    int new_extradata_size;
+    uint8_t *new_extradata;
     HEVCContext *s = avctx->priv_data;
 
     if (!avpkt->size) {
@@ -3058,6 +3060,14 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 
         *got_output = ret;
         return 0;
+    }
+
+    new_extradata = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &new_extradata_size);
+    if (new_extradata && new_extradata_size > 0) {
+        ret = hevc_decode_extradata(s, new_extradata, new_extradata_size);
+        if (ret < 0)
+            return ret;
     }
 
     s->ref = NULL;
