@@ -1780,13 +1780,11 @@ static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
     int video_codec_id = ff_codec_get_id(ff_codec_movvideo_tags, format);
 
     if (codec_tag &&
-        (codec_tag == AV_RL32("hvc1") ||
-         codec_tag == AV_RL32("hev1") ||
-         (codec_tag != format &&
-          // prores is allowed to have differing data format and codec tag
-          codec_tag != AV_RL32("apcn") && codec_tag != AV_RL32("apch") &&
-          (c->fc->video_codec_id ? video_codec_id != c->fc->video_codec_id
-                                 : codec_tag != MKTAG('j','p','e','g'))))) {
+        (codec_tag != format &&
+         // prores is allowed to have differing data format and codec tag
+         codec_tag != AV_RL32("apcn") && codec_tag != AV_RL32("apch") &&
+         (c->fc->video_codec_id ? video_codec_id != c->fc->video_codec_id
+                                : codec_tag != MKTAG('j','p','e','g')))) {
         /* Multiple fourcc, we skip JPEG. This is not correct, we should
          * export it as a separate AVStream but this needs a few changes
          * in the MOV demuxer, patch welcome. */
