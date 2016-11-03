@@ -126,6 +126,7 @@ static int64_t getmaxrss(void);
 
 static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
+static unsigned dup_warning = 1000;
 static int nb_frames_drop = 0;
 static int64_t decode_error_stat[2];
 
@@ -1136,6 +1137,10 @@ static void do_video_out(OutputFile *of,
         }
         nb_frames_dup += nb_frames - (nb0_frames && ost->last_dropped) - (nb_frames > nb0_frames);
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
+        if (nb_frames_dup > dup_warning) {
+            av_log(NULL, AV_LOG_WARNING, "More than %d frames duplicated\n", dup_warning);
+            dup_warning *= 10;
+        }
     }
     ost->last_dropped = nb_frames == nb0_frames && next_picture;
 
