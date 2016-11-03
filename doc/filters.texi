@@ -2585,6 +2585,10 @@ Set file for dumping, suitable for gnuplot.
 @item dumpscale
 Set scale for dumpfile. Acceptable values are same with scale option.
 Default is linlog.
+
+@item fft2
+Enable 2-channel convolution using complex FFT. This improves speed significantly.
+Default is disabled.
 @end table
 
 @subsection Examples
