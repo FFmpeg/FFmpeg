@@ -214,6 +214,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
         exit_program(1);
     fg->inputs[0]->ist   = ist;
     fg->inputs[0]->graph = fg;
+    fg->inputs[0]->format = -1;
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[0];
@@ -292,6 +293,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         exit_program(1);
     fg->inputs[fg->nb_inputs - 1]->ist   = ist;
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
+    fg->inputs[fg->nb_inputs - 1]->format = -1;
 
     GROW_ARRAY(ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
@@ -667,7 +669,7 @@ int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOu
     }
 }
 
-static int sub2video_prepare(InputStream *ist)
+static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
 {
     AVFormatContext *avf = input_files[ist->file_index]->ctx;
     int i, w, h;
@@ -675,8 +677,8 @@ static int sub2video_prepare(InputStream *ist)
     /* Compute the size of the canvas for the subtitles stream.
        If the subtitles codecpar has set a size, use it. Otherwise use the
        maximum dimensions of the video streams in the same file. */
-    w = ist->dec_ctx->width;
-    h = ist->dec_ctx->height;
+    w = ifilter->width;
+    h = ifilter->height;
     if (!(w && h)) {
         for (i = 0; i < avf->nb_streams; i++) {
             if (avf->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -695,7 +697,7 @@ static int sub2video_prepare(InputStream *ist)
 
     /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
        palettes for all rectangles are identical or compatible */
-    ist->resample_pix_fmt = ist->dec_ctx->pix_fmt = AV_PIX_FMT_RGB32;
+    ist->resample_pix_fmt = ifilter->format = AV_PIX_FMT_RGB32;
 
     ist->sub2video.frame = av_frame_alloc();
     if (!ist->sub2video.frame)
@@ -736,22 +738,19 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
         fr = av_guess_frame_rate(input_files[ist->file_index]->ctx, ist->st, NULL);
 
     if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        ret = sub2video_prepare(ist);
+        ret = sub2video_prepare(ist, ifilter);
         if (ret < 0)
             goto fail;
     }
 
-    sar = ist->st->sample_aspect_ratio.num ?
-          ist->st->sample_aspect_ratio :
-          ist->dec_ctx->sample_aspect_ratio;
+    sar = ifilter->sample_aspect_ratio;
     if(!sar.den)
         sar = (AVRational){0,1};
     av_bprint_init(&args, 0, 1);
     av_bprintf(&args,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
-             "pixel_aspect=%d/%d:sws_param=flags=%d", ist->resample_width,
-             ist->resample_height,
-             ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->resample_pix_fmt,
+             "pixel_aspect=%d/%d:sws_param=flags=%d",
+             ifilter->width, ifilter->height, ifilter->format,
              tb.num, tb.den, sar.num, sar.den,
              SWS_BILINEAR + ((ist->dec_ctx->flags&AV_CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
     if (fr.num && fr.den)
@@ -763,7 +762,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
                                             args.str, NULL, fg->graph)) < 0)
         goto fail;
-    par->hw_frames_ctx = ist->hw_frames_ctx;
+    par->hw_frames_ctx = ifilter->hw_frames_ctx;
     ret = av_buffersrc_parameters_set(ifilter->filter, par);
     if (ret < 0)
         goto fail;
@@ -866,14 +865,14 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
-             1, ist->dec_ctx->sample_rate,
-             ist->dec_ctx->sample_rate,
-             av_get_sample_fmt_name(ist->dec_ctx->sample_fmt));
-    if (ist->dec_ctx->channel_layout)
+             1, ifilter->sample_rate,
+             ifilter->sample_rate,
+             av_get_sample_fmt_name(ifilter->format));
+    if (ifilter->channel_layout)
         av_bprintf(&args, ":channel_layout=0x%"PRIx64,
-                   ist->dec_ctx->channel_layout);
+                   ifilter->channel_layout);
     else
-        av_bprintf(&args, ":channels=%d", ist->dec_ctx->channels);
+        av_bprintf(&args, ":channels=%d", ifilter->channels);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
@@ -1088,6 +1087,58 @@ int configure_filtergraph(FilterGraph *fg)
             !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
             av_buffersink_set_frame_size(ost->filter->filter,
                                          ost->enc_ctx->frame_size);
+    }
+
+    return 0;
+}
+
+int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
+{
+    av_buffer_unref(&ifilter->hw_frames_ctx);
+
+    ifilter->format = frame->format;
+
+    ifilter->width               = frame->width;
+    ifilter->height              = frame->height;
+    ifilter->sample_aspect_ratio = frame->sample_aspect_ratio;
+
+    ifilter->sample_rate         = frame->sample_rate;
+    ifilter->channels            = av_frame_get_channels(frame);
+    ifilter->channel_layout      = frame->channel_layout;
+
+    if (frame->hw_frames_ctx) {
+        ifilter->hw_frames_ctx = av_buffer_ref(frame->hw_frames_ctx);
+        if (!ifilter->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
+int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *avctx)
+{
+    av_buffer_unref(&ifilter->hw_frames_ctx);
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+        ifilter->format = avctx->pix_fmt;
+    else
+        ifilter->format = avctx->sample_fmt;
+
+    ifilter->width               = avctx->width;
+    ifilter->height              = avctx->height;
+    if (ifilter->ist && ifilter->ist->st && ifilter->ist->st->sample_aspect_ratio.num)
+        ifilter->sample_aspect_ratio = ifilter->ist->st->sample_aspect_ratio;
+    else
+        ifilter->sample_aspect_ratio = avctx->sample_aspect_ratio;
+
+    ifilter->sample_rate         = avctx->sample_rate;
+    ifilter->channels            = avctx->channels;
+    ifilter->channel_layout      = avctx->channel_layout;
+
+    if (avctx->hw_frames_ctx) {
+        ifilter->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!ifilter->hw_frames_ctx)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
