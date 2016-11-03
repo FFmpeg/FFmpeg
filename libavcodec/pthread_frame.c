@@ -571,6 +571,8 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             av_freep(&p->avctx->slice_offset);
         }
 
+        av_buffer_unref(&p->avctx->hw_frames_ctx);
+
         av_freep(&p->avctx->internal);
         av_freep(&p->avctx);
     }
