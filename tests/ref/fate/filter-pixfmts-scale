@@ -23,6 +23,8 @@ gbrp12le            735061c07442657580577d1cede3a636
 gbrp9be             01c837e1def99abec205b80d21b68bf0
 gbrp9le             dd982d59c3d71c3b201f2d9363d8952c
 gray                4c571fb634a75f177b64cee168fbf3a1
+gray12be            d237d56e08482038ebc5f3943d6ec8d5
+gray12le            dcd15a0ed89bd019cc367b552fc9b1c0
 gray16be            9b57ff7d2090b47e4427bee79dba0d9e
 gray16le            17d2c00c6ffe346dfb632d927ebbf30a
 monob               e28955319a03f1850c467f8fe65b2a22
