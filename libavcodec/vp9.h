@@ -127,9 +127,8 @@ typedef struct ProbContext {
     uint8_t partition[4][4][3];
 } ProbContext;
 
-typedef void (*vp9_mc_func)(uint8_t *dst, const uint8_t *ref,
-                            ptrdiff_t dst_stride,
-                            ptrdiff_t ref_stride,
+typedef void (*vp9_mc_func)(uint8_t *dst, ptrdiff_t dst_stride,
+                            const uint8_t *ref, ptrdiff_t ref_stride,
                             int h, int mx, int my);
 
 typedef struct VP9DSPContext {

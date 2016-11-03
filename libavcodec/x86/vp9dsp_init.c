@@ -29,10 +29,9 @@
 
 #if HAVE_YASM
 
-#define fpel_func(avg, sz, opt)                                             \
-void ff_vp9_ ## avg ## sz ## _ ## opt(uint8_t *dst, const uint8_t *src,     \
-                                      ptrdiff_t dst_stride,                 \
-                                      ptrdiff_t src_stride,                 \
+#define fpel_func(avg, sz, opt)                                                 \
+void ff_vp9_ ## avg ## sz ## _ ## opt(uint8_t *dst, ptrdiff_t dst_stride,       \
+                                      const uint8_t *src, ptrdiff_t src_stride, \
                                       int h, int mx, int my)
 
 fpel_func(put,  4, mmx);
@@ -54,8 +53,8 @@ fpel_func(avg, 64, avx2);
 #define mc_func(avg, sz, dir, opt, type, f_sz)                                  \
 void                                                                            \
 ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,         \
-                                                          const uint8_t *src,   \
                                                           ptrdiff_t dst_stride, \
+                                                          const uint8_t *src,   \
                                                           ptrdiff_t src_stride, \
                                                           int h,                \
                                                           const type (*filter)[f_sz])
@@ -81,20 +80,21 @@ mc_funcs(32, avx2,  int8_t,  32);
 #define mc_rep_func(avg, sz, hsz, dir, opt, type, f_sz)                     \
 static av_always_inline void                                                \
 ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(uint8_t *dst,     \
-                                                      const uint8_t *src,   \
                                                       ptrdiff_t dst_stride, \
+                                                      const uint8_t *src,   \
                                                       ptrdiff_t src_stride, \
                                                       int h,                \
                                                       const type (*filter)[f_sz]) \
 {                                                                           \
-    ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst, src,    \
+    ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst,         \
                                                            dst_stride,      \
+                                                           src,             \
                                                            src_stride,      \
                                                            h,               \
                                                            filter);         \
     ff_vp9_ ## avg ## _8tap_1d_ ## dir ## _ ## hsz ## _ ## opt(dst + hsz,   \
-                                                           src + hsz,       \
                                                            dst_stride,      \
+                                                           src + hsz,       \
                                                            src_stride,      \
                                                            h, filter);      \
 }
@@ -126,19 +126,18 @@ extern const int16_t ff_filters_sse2[3][15][8][8];
 #define filter_8tap_2d_fn(op, sz, f, f_opt, fname, align, opt)                   \
 static void                                                                      \
 op ## _8tap_ ## fname ## _ ## sz ## hv_ ## opt(uint8_t *dst,                     \
-                                               const uint8_t *src,               \
                                                ptrdiff_t dst_stride,             \
+                                               const uint8_t *src,               \
                                                ptrdiff_t src_stride,             \
                                                int h, int mx, int my)            \
 {                                                                                \
     LOCAL_ALIGNED_ ## align(uint8_t, temp, [71 * 64]);                           \
-    ff_vp9_put_8tap_1d_h_ ## sz ## _ ## opt(temp, src - 3 * src_stride,          \
-                                            64, src_stride,                      \
-                                            h + 7,                               \
+    ff_vp9_put_8tap_1d_h_ ## sz ## _ ## opt(temp, 64,                            \
+                                            src - 3 * src_stride,                \
+                                            src_stride, h + 7,                   \
                                             ff_filters_ ## f_opt[f][mx - 1]);    \
-    ff_vp9_ ## op ## _8tap_1d_v_ ## sz ## _ ## opt(dst, temp + 3 * 64,           \
-                                                   dst_stride, 64,               \
-                                                   h,                            \
+    ff_vp9_ ## op ## _8tap_1d_v_ ## sz ## _ ## opt(dst, dst_stride,              \
+                                                   temp + 3 * 64, 64, h,         \
                                                    ff_filters_ ## f_opt[f][my - 1]); \
 }
 
@@ -173,14 +172,15 @@ filters_8tap_2d_fn(avg, 32, 32, avx2, ssse3)
 #define filter_8tap_1d_fn(op, sz, f, f_opt, fname, dir, dvar, opt)         \
 static void                                                                \
 op ## _8tap_ ## fname ## _ ## sz ## dir ## _ ## opt(uint8_t *dst,          \
-                                                    const uint8_t *src,    \
                                                     ptrdiff_t dst_stride,  \
+                                                    const uint8_t *src,    \
                                                     ptrdiff_t src_stride,  \
                                                     int h, int mx,         \
                                                     int my)                \
 {                                                                          \
-    ff_vp9_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(dst, src,     \
+    ff_vp9_ ## op ## _8tap_1d_ ## dir ## _ ## sz ## _ ## opt(dst,          \
                                                              dst_stride,   \
+                                                             src,          \
                                                              src_stride, h,\
                                                              ff_filters_ ## f_opt[f][dvar - 1]); \
 }

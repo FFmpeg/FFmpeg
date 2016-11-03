@@ -228,8 +228,8 @@ static void check_mc(void)
     int op, hsize, filter, dx, dy;
 
     declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT,
-                      void, uint8_t *dst, const uint8_t *ref,
-                      ptrdiff_t dst_stride, ptrdiff_t ref_stride,
+                      void, uint8_t *dst, ptrdiff_t dst_stride,
+                      const uint8_t *ref, ptrdiff_t ref_stride,
                       int h, int mx, int my);
 
     for (op = 0; op < 2; op++) {
@@ -252,13 +252,11 @@ static void check_mc(void)
                             int mx = dx ? 1 + (rnd() % 14) : 0;
                             int my = dy ? 1 + (rnd() % 14) : 0;
                             randomize_buffers();
-                            call_ref(dst0, src,
-                                     size * SIZEOF_PIXEL,
-                                     SRC_BUF_STRIDE * SIZEOF_PIXEL,
+                            call_ref(dst0, size * SIZEOF_PIXEL,
+                                     src, SRC_BUF_STRIDE * SIZEOF_PIXEL,
                                      size, mx, my);
-                            call_new(dst1, src,
-                                     size * SIZEOF_PIXEL,
-                                     SRC_BUF_STRIDE * SIZEOF_PIXEL,
+                            call_new(dst1, size * SIZEOF_PIXEL,
+                                     src, SRC_BUF_STRIDE * SIZEOF_PIXEL,
                                      size, mx, my);
                             if (memcmp(dst0, dst1, DST_BUF_SIZE))
                                 fail();
@@ -267,8 +265,8 @@ static void check_mc(void)
                             // functions are identical
                             if (filter >= 1 && filter <= 2) continue;
 
-                            bench_new(dst1, src, size * SIZEOF_PIXEL,
-                                      SRC_BUF_STRIDE * SIZEOF_PIXEL,
+                            bench_new(dst1, size * SIZEOF_PIXEL,
+                                      src, SRC_BUF_STRIDE * SIZEOF_PIXEL,
                                       size, mx, my);
                         }
                     }

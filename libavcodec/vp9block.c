@@ -1187,7 +1187,7 @@ static av_always_inline void mc_luma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
         ref        = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;
         ref_stride = 80;
     }
-    mc[!!mx][!!my](dst, ref, dst_stride, ref_stride, bh, mx << 1, my << 1);
+    mc[!!mx][!!my](dst, dst_stride, ref, ref_stride, bh, mx << 1, my << 1);
 }
 
 static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
@@ -1227,7 +1227,7 @@ static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
         ref_u = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;
-        mc[!!mx][!!my](dst_u, ref_u, dst_stride, 80, bh, mx, my);
+        mc[!!mx][!!my](dst_u, dst_stride, ref_u, 80, bh, mx, my);
 
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref_v - !!my * 3 * src_stride_v - !!mx * 3,
@@ -1236,10 +1236,10 @@ static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
         ref_v = s->edge_emu_buffer + !!my * 3 * 80 + !!mx * 3;
-        mc[!!mx][!!my](dst_v, ref_v, dst_stride, 80, bh, mx, my);
+        mc[!!mx][!!my](dst_v, dst_stride, ref_v, 80, bh, mx, my);
     } else {
-        mc[!!mx][!!my](dst_u, ref_u, dst_stride, src_stride_u, bh, mx, my);
-        mc[!!mx][!!my](dst_v, ref_v, dst_stride, src_stride_v, bh, mx, my);
+        mc[!!mx][!!my](dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my);
+        mc[!!mx][!!my](dst_v, dst_stride, ref_v, src_stride_v, bh, mx, my);
     }
 }
 
@@ -1668,8 +1668,8 @@ int ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
             av_assert2(n <= 4);
             if (w & bw) {
                 s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o,
-                                         s->tmp_y + o,
                                          f->linesize[0],
+                                         s->tmp_y + o,
                                          64, h, 0, 0);
                 o += bw;
             }
@@ -1686,12 +1686,12 @@ int ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
             av_assert2(n <= 4);
             if (w & bw) {
                 s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o,
-                                         s->tmp_uv[0] + o,
                                          f->linesize[1],
+                                         s->tmp_uv[0] + o,
                                          32, h, 0, 0);
                 s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o,
-                                         s->tmp_uv[1] + o,
                                          f->linesize[2],
+                                         s->tmp_uv[1] + o,
                                          32, h, 0, 0);
                 o += bw;
             }
