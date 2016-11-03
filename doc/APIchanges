@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.28.0 - pixfmt.h
+  Add AV_PIX_FMT_GRAY12(LE/BE).
+
 2016-xx-xx - xxxxxxx - lavu 55.27.0 - hwcontext.h
   Add av_hwframe_map() and associated AV_HWFRAME_MAP_* flags.
   Add av_hwframe_ctx_create_derived().
