@@ -420,7 +420,8 @@ typedef struct VP9Context {
     // whole-frame cache
     uint8_t *intra_pred_data[3];
     VP9Filter *lflvl;
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[71 * 80];
+    // This requires 64 + 8 rows, with 80 bytes stride
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[72 * 80];
 
     // block reconstruction intermediates
     int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
@@ -432,6 +433,7 @@ typedef struct VP9Context {
 
 void ff_vp9dsp_init(VP9DSPContext *dsp);
 
+void ff_vp9dsp_init_arm(VP9DSPContext *dsp);
 void ff_vp9dsp_init_x86(VP9DSPContext *dsp);
 
 void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb);
