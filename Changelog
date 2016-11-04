@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.5:
+- avcodec/rawdec: check for side data before checking its size
 - avcodec/flacdec: Fix undefined shift in decode_subframe()
 - avcodec/get_bits: Fix get_sbits_long(0)
 - avformat/ffmdec: Check media type for chunks
