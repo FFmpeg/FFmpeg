@@ -692,7 +692,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, did_split;
+    int ret;
     int64_t pts_backup, dts_backup;
 
     pts_backup = pkt->pts;
@@ -755,8 +755,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    did_split = av_packet_split_side_data(pkt);
-
     if (!s->internal->header_written) {
         ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
         if (ret < 0)
@@ -780,9 +778,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
 fail:
-    if (did_split)
-        av_packet_merge_side_data(pkt);
-
     if (ret < 0) {
         pkt->pts = pts_backup;
         pkt->dts = dts_backup;
@@ -918,7 +913,7 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
 
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret;
+    int ret, did_split = 0;
 
     ret = prepare_input_packet(s, pkt);
     if (ret < 0)
@@ -939,7 +934,8 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
         return 1;
-    }
+    } else
+        did_split = av_packet_split_side_data(pkt);
 
     ret = do_packet_auto_bsf(s, pkt);
     if (ret <= 0)
@@ -958,6 +954,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
+
+    if (did_split)
+        av_packet_merge_side_data(pkt);
+
     return ret;
 }
 
@@ -1224,7 +1224,7 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, flush = 0;
+    int ret, did_split = 0, flush = 0;
 
     ret = prepare_input_packet(s, pkt);
     if (ret < 0)
@@ -1232,6 +1232,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
+
+        did_split = av_packet_split_side_data(pkt);
 
         ret = do_packet_auto_bsf(s, pkt);
         if (ret == 0)
@@ -1280,6 +1282,9 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             return s->pb->error;
     }
 fail:
+    if (did_split)
+        av_packet_merge_side_data(pkt);
+
     av_packet_unref(pkt);
     return ret;
 }
