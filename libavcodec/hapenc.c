@@ -318,7 +318,7 @@ static const AVClass hapenc_class = {
 
 AVCodec ff_hap_encoder = {
     .name           = "hap",
-    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap encoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HAP,
     .priv_data_size = sizeof(HapContext),
