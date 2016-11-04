@@ -114,6 +114,8 @@ static void add_keyframes_index(AVFormatContext *s)
 
     if (stream->nb_index_entries == 0) {
         for (i = 0; i < flv->keyframe_count; i++) {
+            av_log(s, AV_LOG_TRACE, "keyframe filepositions = %"PRId64" times = %"PRId64"\n",
+                   flv->keyframe_filepositions[i], flv->keyframe_times[i] * 1000);
             av_add_index_entry(stream, flv->keyframe_filepositions[i],
                 flv->keyframe_times[i] * 1000, 0, 0, AVINDEX_KEYFRAME);
         }
