@@ -2391,7 +2391,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 
         if ((frame->flags & AV_FRAME_FLAG_DISCARD) && *got_frame_ptr &&
             !(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
-            avctx->internal->skip_samples -= frame->nb_samples;
+            avctx->internal->skip_samples = FFMAX(0, avctx->internal->skip_samples - frame->nb_samples);
             *got_frame_ptr = 0;
         }
 
