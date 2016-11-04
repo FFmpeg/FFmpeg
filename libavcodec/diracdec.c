@@ -910,6 +910,7 @@ static int decode_lowdelay(DiracContext *s)
         s->slice_params_buf = av_realloc_f(s->slice_params_buf, s->num_x * s->num_y, sizeof(DiracSlice));
         if (!s->slice_params_buf) {
             av_log(s->avctx, AV_LOG_ERROR, "slice params buffer allocation failure\n");
+            s->slice_params_num_buf = 0;
             return AVERROR(ENOMEM);
         }
         s->slice_params_num_buf = s->num_x * s->num_y;
