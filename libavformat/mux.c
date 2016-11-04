@@ -878,6 +878,9 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         }
     }
 
+    if (st->internal->nb_bsfcs)
+        av_packet_split_side_data(pkt);
+
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
         if (i > 0) {
