@@ -369,7 +369,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                                                      &pal_size);
         int ret;
 
-        if (pal_size != AVPALETTE_SIZE) {
+        if (pal && pal_size != AVPALETTE_SIZE) {
             av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", pal_size);
             pal = NULL;
         }
