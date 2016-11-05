@@ -1536,6 +1536,8 @@ static void set_stream_info_from_input_stream(AVStream *st, struct playlist *pls
         avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);
     else
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+
+    st->internal->need_context_update = 1;
 }
 
 /* add new subdemuxer streams to our context, if any */
@@ -1950,6 +1952,8 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* If we got a packet, return it */
     if (minplaylist >= 0) {
         struct playlist *pls = c->playlists[minplaylist];
+        AVStream *ist;
+        AVStream *st;
 
         ret = update_streams_from_subdemuxer(s, pls);
         if (ret < 0) {
@@ -1972,14 +1976,22 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_BUG;
         }
 
+        ist = pls->ctx->streams[pls->pkt.stream_index];
+        st = pls->main_streams[pls->pkt.stream_index];
+
         *pkt = pls->pkt;
-        pkt->stream_index = pls->main_streams[pls->pkt.stream_index]->index;
+        pkt->stream_index = st->index;
         reset_packet(&c->playlists[minplaylist]->pkt);
 
         if (pkt->dts != AV_NOPTS_VALUE)
             c->cur_timestamp = av_rescale_q(pkt->dts,
-                                            pls->ctx->streams[pls->pkt.stream_index]->time_base,
+                                            ist->time_base,
                                             AV_TIME_BASE_Q);
+
+        /* There may be more situations where this would be useful, but this at least
+         * handles newly probed codecs properly (i.e. request_probe by mpegts). */
+        if (ist->codecpar->codec_id != st->codecpar->codec_id)
+            set_stream_info_from_input_stream(st, pls, ist);
 
         return 0;
     }
