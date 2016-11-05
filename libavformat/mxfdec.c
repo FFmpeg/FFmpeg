@@ -1978,7 +1978,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             source_package = mxf_resolve_source_package(mxf, component->source_package_uid);
             if (!source_package) {
                 av_log(mxf->fc, AV_LOG_TRACE, "material track %d: no corresponding source package found\n", material_track->track_id);
-                break;
+                continue;
             }
             for (k = 0; k < source_package->tracks_count; k++) {
                 if (!(temp_track = mxf_resolve_strong_ref(mxf, &source_package->tracks_refs[k], Track))) {
