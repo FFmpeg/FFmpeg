@@ -1786,7 +1786,7 @@ copy_avg_fn(4)
 #undef fpel_fn
 #undef copy_avg_fn
 
-static const int8_t vp9_subpel_filters[3][15][8] = {
+const DECLARE_ALIGNED(8, int8_t, ff_vp9_subpel_filters)[3][15][8] = {
     [FILTER_8TAP_REGULAR] = {
         {  0,  1,  -5, 126,   8,  -3,  1,  0 },
         { -1,  3, -10, 122,  18,  -6,  2,  0 },
@@ -1948,7 +1948,7 @@ avg ## _8tap_ ## type ## _ ## sz ## dir ## _c(uint8_t *dst,                 \
                                               int h, int mx, int my)        \
 {                                                                           \
     avg ## _8tap_1d_ ## dir ## _c(dst, dst_stride, src, src_stride, sz, h,  \
-                                  vp9_subpel_filters[type_idx][dir_m - 1]); \
+                                  ff_vp9_subpel_filters[type_idx][dir_m - 1]); \
 }
 
 #define filter_fn_2d(sz, type, type_idx, avg)                               \
@@ -1959,8 +1959,8 @@ static void avg ## _8tap_ ## type ## _ ## sz ## hv_c(uint8_t *dst,          \
                                                      int h, int mx, int my) \
 {                                                                           \
     avg ## _8tap_2d_hv_c(dst, dst_stride, src, src_stride, sz, h,           \
-                         vp9_subpel_filters[type_idx][mx - 1],              \
-                         vp9_subpel_filters[type_idx][my - 1]);             \
+                         ff_vp9_subpel_filters[type_idx][mx - 1],           \
+                         ff_vp9_subpel_filters[type_idx][my - 1]);          \
 }
 
 #define FILTER_BILIN(src, x, mxy, stride)                       \

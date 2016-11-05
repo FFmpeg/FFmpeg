@@ -431,6 +431,8 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][32 * 32];
 } VP9Context;
 
+extern const int8_t ff_vp9_subpel_filters[3][15][8];
+
 void ff_vp9dsp_init(VP9DSPContext *dsp);
 
 void ff_vp9dsp_init_arm(VP9DSPContext *dsp);
