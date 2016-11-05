@@ -1528,6 +1528,16 @@ static void add_stream_to_programs(AVFormatContext *s, struct playlist *pls, AVS
         av_dict_set_int(&stream->metadata, "variant_bitrate", bandwidth, 0);
 }
 
+static void set_stream_info_from_input_stream(AVStream *st, struct playlist *pls, AVStream *ist)
+{
+    avcodec_parameters_copy(st->codecpar, ist->codecpar);
+
+    if (pls->is_id3_timestamped) /* custom timestamps via id3 */
+        avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);
+    else
+        avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+}
+
 /* add new subdemuxer streams to our context, if any */
 static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *pls)
 {
@@ -1540,13 +1550,7 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
             return AVERROR(ENOMEM);
 
         st->id = pls->index;
-
-        avcodec_parameters_copy(st->codecpar, ist->codecpar);
-
-        if (pls->is_id3_timestamped) /* custom timestamps via id3 */
-            avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);
-        else
-            avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+        set_stream_info_from_input_stream(st, pls, ist);
 
         dynarray_add(&pls->main_streams, &pls->n_main_streams, st);
 
