@@ -5,6 +5,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-elist-starts-ctts-2ndsample \
            fate-mov-1elist-ends-last-bframe \
            fate-mov-2elist-elist1-ends-bframe \
+           fate-mov-zombie \
            fate-mov-aac-2048-priming
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
@@ -30,3 +31,6 @@ fate-mov-2elist-elist1-ends-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-
 
 fate-mov-aac-2048-priming: ffprobe$(PROGSSUF)$(EXESUF)
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
+
+fate-mov-zombie: ffprobe$(PROGSSUF)$(EXESUF)
+fate-mov-zombie: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packets -show_format -show_frames -bitexact -print_format compact $(TARGET_SAMPLES)/mov/white_zombie_scrunch-part.mov
