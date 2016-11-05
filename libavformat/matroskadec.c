@@ -3082,10 +3082,14 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
             av_free(pkt);
             return AVERROR(ENOMEM);
         }
-        AV_WL32(side_data, 0);
-        AV_WL32(side_data + 4, av_rescale_q(discard_padding,
+        discard_padding = av_rescale_q(discard_padding,
                                             (AVRational){1, 1000000000},
-                                            (AVRational){1, st->codecpar->sample_rate}));
+                                            (AVRational){1, st->codecpar->sample_rate});
+        if (discard_padding > 0) {
+            AV_WL32(side_data + 4, discard_padding);
+        } else {
+            AV_WL32(side_data, -discard_padding);
+        }
     }
 
     if (track->ms_compat)
