@@ -800,6 +800,12 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         while (idx) {
             /* get a packet from the previous filter up the chain */
             ret = av_bsf_receive_packet(ost->bsf_ctx[idx - 1], pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                ret = 0;
+                idx--;
+                continue;
+            } else if (ret < 0)
+                goto finish;
             /* HACK! - aac_adtstoasc updates extradata after filtering the first frame when
              * the api states this shouldn't happen after init(). Propagate it here to the
              * muxer and to the next filters in the chain to workaround this.
@@ -811,12 +817,6 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                     goto finish;
                 ost->bsf_extradata_updated[idx - 1] |= 1;
             }
-            if (ret == AVERROR(EAGAIN)) {
-                ret = 0;
-                idx--;
-                continue;
-            } else if (ret < 0)
-                goto finish;
 
             /* send it to the next filter down the chain or to the muxer */
             if (idx < ost->nb_bitstream_filters) {
