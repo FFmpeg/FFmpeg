@@ -1528,9 +1528,13 @@ static void add_stream_to_programs(AVFormatContext *s, struct playlist *pls, AVS
         av_dict_set_int(&stream->metadata, "variant_bitrate", bandwidth, 0);
 }
 
-static void set_stream_info_from_input_stream(AVStream *st, struct playlist *pls, AVStream *ist)
+static int set_stream_info_from_input_stream(AVStream *st, struct playlist *pls, AVStream *ist)
 {
-    avcodec_parameters_copy(st->codecpar, ist->codecpar);
+    int err;
+
+    err = avcodec_parameters_copy(st->codecpar, ist->codecpar);
+    if (err < 0)
+        return err;
 
     if (pls->is_id3_timestamped) /* custom timestamps via id3 */
         avpriv_set_pts_info(st, 33, 1, MPEG_TIME_BASE);
@@ -1538,11 +1542,15 @@ static void set_stream_info_from_input_stream(AVStream *st, struct playlist *pls
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
 
     st->internal->need_context_update = 1;
+
+    return 0;
 }
 
 /* add new subdemuxer streams to our context, if any */
 static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *pls)
 {
+    int err;
+
     while (pls->n_main_streams < pls->ctx->nb_streams) {
         int ist_idx = pls->n_main_streams;
         AVStream *st = avformat_new_stream(s, NULL);
@@ -1552,11 +1560,13 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
             return AVERROR(ENOMEM);
 
         st->id = pls->index;
-        set_stream_info_from_input_stream(st, pls, ist);
-
         dynarray_add(&pls->main_streams, &pls->n_main_streams, st);
 
         add_stream_to_programs(s, pls, st);
+
+        err = set_stream_info_from_input_stream(st, pls, ist);
+        if (err < 0)
+            return err;
     }
 
     return 0;
@@ -1990,8 +2000,13 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         /* There may be more situations where this would be useful, but this at least
          * handles newly probed codecs properly (i.e. request_probe by mpegts). */
-        if (ist->codecpar->codec_id != st->codecpar->codec_id)
-            set_stream_info_from_input_stream(st, pls, ist);
+        if (ist->codecpar->codec_id != st->codecpar->codec_id) {
+            ret = set_stream_info_from_input_stream(st, pls, ist);
+            if (ret < 0) {
+                av_packet_unref(pkt);
+                return ret;
+            }
+        }
 
         return 0;
     }
