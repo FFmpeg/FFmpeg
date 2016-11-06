@@ -63,6 +63,7 @@ Options: [defaults in brackets after descriptions]
 
 Help options:
   --help                   print this message
+  --quiet                  Suppress showing informative output
   --list-decoders          show all available decoders
   --list-encoders          show all available encoders
   --list-hwaccels          show all available hardware accelerators
@@ -1167,7 +1168,7 @@ apply(){
 }
 
 cp_if_changed(){
-    cmp -s "$1" "$2" && echo "$2 is unchanged" && return
+    cmp -s "$1" "$2" && { test "$quiet" != "yes" && echo "$2 is unchanged"; } && return
     mkdir -p "$(dirname $2)"
     $cp_f "$1" "$2"
 }
@@ -2739,6 +2740,8 @@ for opt do
             eval show_list $NAME \$$(toupper $NAME)_LIST
         ;;
         --help|-h) show_help
+        ;;
+        --quiet|-q) quiet=yes
         ;;
         *)
             optname="${opt%%=*}"
@@ -5112,6 +5115,8 @@ expand_deps(){
 
 map 'expand_deps $v' $LIBRARY_LIST
 
+if test "$quiet" != "yes"; then
+
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -5210,6 +5215,8 @@ fi
 echo "License: $license"
 
 echo "Creating config.mak and config.h..."
+
+fi # test "$quiet" != "yes"
 
 test -e Makefile || echo "include $source_path/Makefile" > Makefile
 
