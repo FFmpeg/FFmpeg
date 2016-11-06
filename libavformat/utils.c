@@ -480,6 +480,12 @@ static int update_stream_avctx(AVFormatContext *s)
         if (!st->internal->need_context_update)
             continue;
 
+        /* close parser, because it depends on the codec */
+        if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
+            av_parser_close(st->parser);
+            st->parser = NULL;
+        }
+
         /* update internal codec context, for the parser */
         ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
         if (ret < 0)
@@ -1513,6 +1519,12 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
                 avcodec_close(st->internal->avctx);
                 st->info->found_decoder = 0;
+            }
+
+            /* close parser, because it depends on the codec */
+            if (st->parser && st->internal->avctx->codec_id != st->codecpar->codec_id) {
+                av_parser_close(st->parser);
+                st->parser = NULL;
             }
 
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);

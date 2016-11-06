@@ -3,6 +3,7 @@
 #codec_id 0: adpcm_ima_ws
 #sample_rate 0: 22050
 #channel_layout 0: 4
+#channel_layout_name 0: mono
 0,          0,          0,     1024,      512, 0x6694cc55
 0,       1024,       1024,     1024,      512, 0xdbc5cb22
 0,       2048,       2048,     1024,      512, 0x8e5bcbfd

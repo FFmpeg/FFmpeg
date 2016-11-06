@@ -2973,6 +2973,80 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
     return 0;
 }
 
+static int hevc_decode_extradata(HEVCContext *s)
+{
+    AVCodecContext *avctx = s->avctx;
+    GetByteContext gb;
+    int ret, i;
+
+    bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
+
+    if (avctx->extradata_size > 3 &&
+        (avctx->extradata[0] || avctx->extradata[1] ||
+         avctx->extradata[2] > 1)) {
+        /* It seems the extradata is encoded as hvcC format.
+         * Temporarily, we support configurationVersion==0 until 14496-15 3rd
+         * is finalized. When finalized, configurationVersion will be 1 and we
+         * can recognize hvcC by checking if avctx->extradata[0]==1 or not. */
+        int i, j, num_arrays, nal_len_size;
+
+        s->is_nalff = 1;
+
+        bytestream2_skip(&gb, 21);
+        nal_len_size = (bytestream2_get_byte(&gb) & 3) + 1;
+        num_arrays   = bytestream2_get_byte(&gb);
+
+        /* nal units in the hvcC always have length coded with 2 bytes,
+         * so put a fake nal_length_size = 2 while parsing them */
+        s->nal_length_size = 2;
+
+        /* Decode nal units from hvcC. */
+        for (i = 0; i < num_arrays; i++) {
+            int type = bytestream2_get_byte(&gb) & 0x3f;
+            int cnt  = bytestream2_get_be16(&gb);
+
+            for (j = 0; j < cnt; j++) {
+                // +2 for the nal size field
+                int nalsize = bytestream2_peek_be16(&gb) + 2;
+                if (bytestream2_get_bytes_left(&gb) < nalsize) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "Invalid NAL unit size in extradata.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
+                ret = decode_nal_units(s, gb.buffer, nalsize);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Decoding nal unit %d %d from hvcC failed\n",
+                           type, i);
+                    return ret;
+                }
+                bytestream2_skip(&gb, nalsize);
+            }
+        }
+
+        /* Now store right nal length size, that will be used to parse
+         * all other nals */
+        s->nal_length_size = nal_len_size;
+    } else {
+        s->is_nalff = 0;
+        ret = decode_nal_units(s, avctx->extradata, avctx->extradata_size);
+        if (ret < 0)
+            return ret;
+    }
+
+    /* export stream parameters from the first SPS */
+    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
+        if (s->ps.sps_list[i]) {
+            const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
+            export_stream_params(s->avctx, &s->ps, sps);
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
                              AVPacket *avpkt)
 {
@@ -3238,80 +3312,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra = INT_MAX;
-    }
-
-    return 0;
-}
-
-static int hevc_decode_extradata(HEVCContext *s)
-{
-    AVCodecContext *avctx = s->avctx;
-    GetByteContext gb;
-    int ret, i;
-
-    bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
-
-    if (avctx->extradata_size > 3 &&
-        (avctx->extradata[0] || avctx->extradata[1] ||
-         avctx->extradata[2] > 1)) {
-        /* It seems the extradata is encoded as hvcC format.
-         * Temporarily, we support configurationVersion==0 until 14496-15 3rd
-         * is finalized. When finalized, configurationVersion will be 1 and we
-         * can recognize hvcC by checking if avctx->extradata[0]==1 or not. */
-        int i, j, num_arrays, nal_len_size;
-
-        s->is_nalff = 1;
-
-        bytestream2_skip(&gb, 21);
-        nal_len_size = (bytestream2_get_byte(&gb) & 3) + 1;
-        num_arrays   = bytestream2_get_byte(&gb);
-
-        /* nal units in the hvcC always have length coded with 2 bytes,
-         * so put a fake nal_length_size = 2 while parsing them */
-        s->nal_length_size = 2;
-
-        /* Decode nal units from hvcC. */
-        for (i = 0; i < num_arrays; i++) {
-            int type = bytestream2_get_byte(&gb) & 0x3f;
-            int cnt  = bytestream2_get_be16(&gb);
-
-            for (j = 0; j < cnt; j++) {
-                // +2 for the nal size field
-                int nalsize = bytestream2_peek_be16(&gb) + 2;
-                if (bytestream2_get_bytes_left(&gb) < nalsize) {
-                    av_log(s->avctx, AV_LOG_ERROR,
-                           "Invalid NAL unit size in extradata.\n");
-                    return AVERROR_INVALIDDATA;
-                }
-
-                ret = decode_nal_units(s, gb.buffer, nalsize);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Decoding nal unit %d %d from hvcC failed\n",
-                           type, i);
-                    return ret;
-                }
-                bytestream2_skip(&gb, nalsize);
-            }
-        }
-
-        /* Now store right nal length size, that will be used to parse
-         * all other nals */
-        s->nal_length_size = nal_len_size;
-    } else {
-        s->is_nalff = 0;
-        ret = decode_nal_units(s, avctx->extradata, avctx->extradata_size);
-        if (ret < 0)
-            return ret;
-    }
-
-    /* export stream parameters from the first SPS */
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
-        if (s->ps.sps_list[i]) {
-            const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
-            export_stream_params(s->avctx, &s->ps, sps);
-            break;
-        }
     }
 
     return 0;

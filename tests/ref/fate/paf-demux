@@ -8,6 +8,7 @@
 #codec_id 1: paf_audio
 #sample_rate 1: 22050
 #channel_layout 1: 3
+#channel_layout_name 1: stereo
 0,          0,          0,        1,   262144, 0x7f9a3c6a
 1,          0,          0,    57330,   131072, 0x255a6ac2
 0,          1,          1,        1,   260600, 0x0329e6f4, F=0x0

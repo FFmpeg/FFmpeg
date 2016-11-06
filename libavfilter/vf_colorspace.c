@@ -56,6 +56,7 @@ enum Colorspace {
 enum Whitepoint {
     WP_D65,
     WP_C,
+    WP_DCI,
     WP_NB,
 };
 
@@ -175,6 +176,13 @@ typedef struct ColorSpaceContext {
 // FIXME dithering if bitdepth goes down?
 // FIXME bitexact for fate integration?
 
+static const double ycgco_matrix[3][3] =
+{
+    {  0.25, 0.5,  0.25 },
+    { -0.25, 0.5, -0.25 },
+    {  0.5,  0,   -0.5  },
+};
+
 /*
  * All constants explained in e.g. https://linuxtv.org/downloads/v4l-dvb-apis/ch02s06.html
  * The older ones (bt470bg/m) are also explained in their respective ITU docs
@@ -187,6 +195,7 @@ static const struct LumaCoefficients luma_coefficients[AVCOL_SPC_NB] = {
     [AVCOL_SPC_SMPTE170M]  = { 0.299,  0.587,  0.114  },
     [AVCOL_SPC_BT709]      = { 0.2126, 0.7152, 0.0722 },
     [AVCOL_SPC_SMPTE240M]  = { 0.212,  0.701,  0.087  },
+    [AVCOL_SPC_YCOCG]      = { 0.25,   0.5,    0.25   },
     [AVCOL_SPC_BT2020_NCL] = { 0.2627, 0.6780, 0.0593 },
     [AVCOL_SPC_BT2020_CL]  = { 0.2627, 0.6780, 0.0593 },
 };
@@ -208,6 +217,12 @@ static void fill_rgb2yuv_table(const struct LumaCoefficients *coeffs,
                                double rgb2yuv[3][3])
 {
     double bscale, rscale;
+
+    // special ycgco matrix
+    if (coeffs->cr == 0.25 && coeffs->cg == 0.5 && coeffs->cb == 0.25) {
+        memcpy(rgb2yuv, ycgco_matrix, sizeof(double) * 9);
+        return;
+    }
 
     rgb2yuv[0][0] = coeffs->cr;
     rgb2yuv[0][1] = coeffs->cg;
@@ -232,6 +247,7 @@ static const struct TransferCharacteristics transfer_characteristics[AVCOL_TRC_N
     [AVCOL_TRC_SMPTE170M] = { 1.099,  0.018,  0.45, 4.5 },
     [AVCOL_TRC_SMPTE240M] = { 1.1115, 0.0228, 0.45, 4.0 },
     [AVCOL_TRC_IEC61966_2_1] = { 1.055, 0.0031308, 1.0 / 2.4, 12.92 },
+    [AVCOL_TRC_IEC61966_2_4] = { 1.099, 0.018, 0.45, 4.5 },
     [AVCOL_TRC_BT2020_10] = { 1.099,  0.018,  0.45, 4.5 },
     [AVCOL_TRC_BT2020_12] = { 1.0993, 0.0181, 0.45, 4.5 },
 };
@@ -253,6 +269,7 @@ static const struct TransferCharacteristics *
 static const struct WhitepointCoefficients whitepoint_coefficients[WP_NB] = {
     [WP_D65] = { 0.3127, 0.3290 },
     [WP_C]   = { 0.3100, 0.3160 },
+    [WP_DCI] = { 0.3140, 0.3510 },
 };
 
 static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
@@ -261,6 +278,9 @@ static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
     [AVCOL_PRI_BT470BG]   = { WP_D65, 0.640, 0.330, 0.290, 0.600, 0.150, 0.060,},
     [AVCOL_PRI_SMPTE170M] = { WP_D65, 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 },
     [AVCOL_PRI_SMPTE240M] = { WP_D65, 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 },
+    [AVCOL_PRI_SMPTE431]  = { WP_DCI, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
+    [AVCOL_PRI_SMPTE432]  = { WP_D65, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
+    [AVCOL_PRI_FILM]      = { WP_C,   0.681, 0.319, 0.243, 0.692, 0.145, 0.049 },
     [AVCOL_PRI_BT2020]    = { WP_D65, 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 },
 };
 
@@ -1046,6 +1066,7 @@ static const AVOption colorspace_options[] = {
     ENUM("bt470bg",     AVCOL_SPC_BT470BG,     "csp"),
     ENUM("smpte170m",   AVCOL_SPC_SMPTE170M,   "csp"),
     ENUM("smpte240m",   AVCOL_SPC_SMPTE240M,   "csp"),
+    ENUM("ycgco",       AVCOL_SPC_YCGCO,       "csp"),
     ENUM("bt2020ncl",   AVCOL_SPC_BT2020_NCL,  "csp"),
 
     { "range",      "Output color range",
@@ -1064,6 +1085,9 @@ static const AVOption colorspace_options[] = {
     ENUM("bt470bg",      AVCOL_PRI_BT470BG,    "prm"),
     ENUM("smpte170m",    AVCOL_PRI_SMPTE170M,  "prm"),
     ENUM("smpte240m",    AVCOL_PRI_SMPTE240M,  "prm"),
+    ENUM("film",         AVCOL_PRI_FILM,       "prm"),
+    ENUM("smpte431",     AVCOL_PRI_SMPTE431,   "prm"),
+    ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
 
     { "trc",        "Output transfer characteristics",
@@ -1078,6 +1102,8 @@ static const AVOption colorspace_options[] = {
     ENUM("smpte240m",    AVCOL_TRC_SMPTE240M,    "trc"),
     ENUM("srgb",         AVCOL_TRC_IEC61966_2_1, "trc"),
     ENUM("iec61966-2-1", AVCOL_TRC_IEC61966_2_1, "trc"),
+    ENUM("xvycc",        AVCOL_TRC_IEC61966_2_4, "trc"),
+    ENUM("iec61966-2-4", AVCOL_TRC_IEC61966_2_4, "trc"),
     ENUM("bt2020-10",    AVCOL_TRC_BT2020_10,    "trc"),
     ENUM("bt2020-12",    AVCOL_TRC_BT2020_12,    "trc"),
 

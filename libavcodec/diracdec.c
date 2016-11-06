@@ -907,9 +907,10 @@ static int decode_lowdelay(DiracContext *s)
     int slice_num = 0;
 
     if (s->slice_params_num_buf != (s->num_x * s->num_y)) {
-        s->slice_params_buf = av_realloc_f(s->thread_buf, s->num_x * s->num_y, sizeof(DiracSlice));
+        s->slice_params_buf = av_realloc_f(s->slice_params_buf, s->num_x * s->num_y, sizeof(DiracSlice));
         if (!s->slice_params_buf) {
             av_log(s->avctx, AV_LOG_ERROR, "slice params buffer allocation failure\n");
+            s->slice_params_num_buf = 0;
             return AVERROR(ENOMEM);
         }
         s->slice_params_num_buf = s->num_x * s->num_y;
@@ -1974,7 +1975,9 @@ static int dirac_decode_picture_header(DiracContext *s)
             for (j = 0; j < MAX_FRAMES; j++)
                 if (!s->all_frames[j].avframe->data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
-                    get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    ret = get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    if (ret < 0)
+                        return ret;
                     break;
                 }
 

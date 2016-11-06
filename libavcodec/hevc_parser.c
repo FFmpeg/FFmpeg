@@ -312,6 +312,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 ps->vps = (HEVCVPS*)ps->vps_list[ps->sps->vps_id]->data;
             }
 
+            s->coded_width  = ps->sps->width;
+            s->coded_height = ps->sps->height;
+            s->width        = ps->sps->output_width;
+            s->height       = ps->sps->output_height;
+            s->format       = ps->sps->pix_fmt;
+            avctx->profile  = ps->sps->ptl.general_ptl.profile_idc;
+            avctx->level    = ps->sps->ptl.general_ptl.level_idc;
+
             if (!sh->first_slice_in_pic_flag) {
                 int slice_address_length;
 

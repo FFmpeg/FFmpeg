@@ -49,6 +49,8 @@
 typedef struct XCBGrabContext {
     const AVClass *class;
 
+    uint8_t *buffer;
+
     xcb_connection_t *conn;
     xcb_screen_t *screen;
     xcb_window_t window;
@@ -219,22 +221,16 @@ static int check_shm(xcb_connection_t *conn)
     return 0;
 }
 
-static void dealloc_shm(void *unused, uint8_t *data)
-{
-    shmdt(data);
-}
-
-static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
+static int allocate_shm(AVFormatContext *s)
 {
     XCBGrabContext *c = s->priv_data;
-    xcb_shm_get_image_cookie_t iq;
-    xcb_shm_get_image_reply_t *img;
-    xcb_drawable_t drawable = c->screen->root;
-    uint8_t *data;
     int size = c->frame_size + AV_INPUT_BUFFER_PADDING_SIZE;
-    int id   = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
-    xcb_generic_error_t *e = NULL;
+    uint8_t *data;
+    int id;
 
+    if (c->buffer)
+        return 0;
+    id = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
     if (id == -1) {
         char errbuf[1024];
         int err = AVERROR(errno);
@@ -243,15 +239,31 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
                size, errbuf);
         return err;
     }
-
     xcb_shm_attach(c->conn, c->segment, id, 0);
+    data = shmat(id, NULL, 0);
+    shmctl(id, IPC_RMID, 0);
+    if ((intptr_t)data == -1 || !data)
+        return AVERROR(errno);
+    c->buffer = data;
+    return 0;
+}
+
+static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
+{
+    XCBGrabContext *c = s->priv_data;
+    xcb_shm_get_image_cookie_t iq;
+    xcb_shm_get_image_reply_t *img;
+    xcb_drawable_t drawable = c->screen->root;
+    xcb_generic_error_t *e = NULL;
+    int ret;
+
+    ret = allocate_shm(s);
+    if (ret < 0)
+        return ret;
 
     iq = xcb_shm_get_image(c->conn, drawable,
                            c->x, c->y, c->width, c->height, ~0,
                            XCB_IMAGE_FORMAT_Z_PIXMAP, c->segment, 0);
-
-    xcb_shm_detach(c->conn, c->segment);
-
     img = xcb_shm_get_image_reply(c->conn, iq, &e);
 
     xcb_flush(c->conn);
@@ -264,25 +276,12 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
                e->response_type, e->error_code,
                e->sequence, e->resource_id, e->minor_code, e->major_code);
 
-        shmctl(id, IPC_RMID, 0);
         return AVERROR(EACCES);
     }
 
     free(img);
 
-    data = shmat(id, NULL, 0);
-    shmctl(id, IPC_RMID, 0);
-
-    if ((intptr_t)data == -1)
-        return AVERROR(errno);
-
-    pkt->buf = av_buffer_create(data, size, dealloc_shm, NULL, 0);
-    if (!pkt->buf) {
-        shmdt(data);
-        return AVERROR(ENOMEM);
-    }
-
-    pkt->data = pkt->buf->data;
+    pkt->data = c->buffer;
     pkt->size = c->frame_size;
 
     return 0;
@@ -435,6 +434,12 @@ static int xcbgrab_read_packet(AVFormatContext *s, AVPacket *pkt)
 static av_cold int xcbgrab_read_close(AVFormatContext *s)
 {
     XCBGrabContext *ctx = s->priv_data;
+
+#if CONFIG_LIBXCB_SHM
+    if (ctx->buffer) {
+        shmdt(ctx->buffer);
+    }
+#endif
 
     xcb_disconnect(ctx->conn);
 

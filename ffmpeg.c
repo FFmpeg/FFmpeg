@@ -126,6 +126,7 @@ static int64_t getmaxrss(void);
 
 static int run_as_daemon  = 0;
 static int nb_frames_dup = 0;
+static unsigned dup_warning = 1000;
 static int nb_frames_drop = 0;
 static int64_t decode_error_stat[2];
 
@@ -471,6 +472,7 @@ static void ffmpeg_cleanup(int ret)
         FilterGraph *fg = filtergraphs[i];
         avfilter_graph_free(&fg->graph);
         for (j = 0; j < fg->nb_inputs; j++) {
+            av_buffer_unref(&fg->inputs[j]->hw_frames_ctx);
             av_freep(&fg->inputs[j]->name);
             av_freep(&fg->inputs[j]);
         }
@@ -789,6 +791,7 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     if (ost->nb_bitstream_filters) {
         int idx;
 
+        av_packet_split_side_data(pkt);
         ret = av_bsf_send_packet(ost->bsf_ctx[0], pkt);
         if (ret < 0)
             goto finish;
@@ -797,6 +800,12 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         while (idx) {
             /* get a packet from the previous filter up the chain */
             ret = av_bsf_receive_packet(ost->bsf_ctx[idx - 1], pkt);
+            if (ret == AVERROR(EAGAIN)) {
+                ret = 0;
+                idx--;
+                continue;
+            } else if (ret < 0)
+                goto finish;
             /* HACK! - aac_adtstoasc updates extradata after filtering the first frame when
              * the api states this shouldn't happen after init(). Propagate it here to the
              * muxer and to the next filters in the chain to workaround this.
@@ -808,12 +817,6 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                     goto finish;
                 ost->bsf_extradata_updated[idx - 1] |= 1;
             }
-            if (ret == AVERROR(EAGAIN)) {
-                ret = 0;
-                idx--;
-                continue;
-            } else if (ret < 0)
-                goto finish;
 
             /* send it to the next filter down the chain or to the muxer */
             if (idx < ost->nb_bitstream_filters) {
@@ -1134,6 +1137,10 @@ static void do_video_out(OutputFile *of,
         }
         nb_frames_dup += nb_frames - (nb0_frames && ost->last_dropped) - (nb_frames > nb0_frames);
         av_log(NULL, AV_LOG_VERBOSE, "*** %d dup!\n", nb_frames - 1);
+        if (nb_frames_dup > dup_warning) {
+            av_log(NULL, AV_LOG_WARNING, "More than %d frames duplicated\n", dup_warning);
+            dup_warning *= 10;
+        }
     }
     ost->last_dropped = nb_frames == nb0_frames && next_picture;
 
@@ -2128,6 +2135,16 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ist->resample_channel_layout = decoded_frame->channel_layout;
         ist->resample_channels       = avctx->channels;
 
+        for (i = 0; i < ist->nb_filters; i++) {
+            err = ifilter_parameters_from_frame(ist->filters[i], decoded_frame);
+            if (err < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error reconfiguring input stream %d:%d filter %d\n",
+                       ist->file_index, ist->st->index, i);
+                goto fail;
+            }
+        }
+
         for (i = 0; i < nb_filtergraphs; i++)
             if (ist_in_filtergraph(filtergraphs[i], ist)) {
                 FilterGraph *fg = filtergraphs[i];
@@ -2169,6 +2186,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     }
     decoded_frame->pts = AV_NOPTS_VALUE;
 
+fail:
     av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
     return err < 0 ? err : ret;
@@ -2306,6 +2324,16 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eo
         ist->resample_width   = decoded_frame->width;
         ist->resample_height  = decoded_frame->height;
         ist->resample_pix_fmt = decoded_frame->format;
+
+        for (i = 0; i < ist->nb_filters; i++) {
+            err = ifilter_parameters_from_frame(ist->filters[i], decoded_frame);
+            if (err < 0) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error reconfiguring input stream %d:%d filter %d\n",
+                       ist->file_index, ist->st->index, i);
+                goto fail;
+            }
+        }
 
         for (i = 0; i < nb_filtergraphs; i++) {
             if (ist_in_filtergraph(filtergraphs[i], ist) && ist->reinit_filters &&
@@ -3305,6 +3333,16 @@ static int transcode_init(void)
                  enc_ctx->codec_type == AVMEDIA_TYPE_AUDIO) &&
                  filtergraph_is_simple(ost->filter->graph)) {
                     FilterGraph *fg = ost->filter->graph;
+
+                    if (dec_ctx) {
+                        ret = ifilter_parameters_from_decoder(fg->inputs[0],
+                                                              dec_ctx);
+                        if (ret < 0) {
+                            av_log(NULL, AV_LOG_FATAL, "Error initializing filter input\n");
+                            exit_program(1);
+                        }
+                    }
+
                     if (configure_filtergraph(fg)) {
                         av_log(NULL, AV_LOG_FATAL, "Error opening filters!\n");
                         exit_program(1);

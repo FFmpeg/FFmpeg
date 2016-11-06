@@ -179,6 +179,7 @@ typedef struct MOVStreamContext {
     int32_t *display_matrix;
     uint32_t format;
 
+    int has_sidx;  // If there is an sidx entry for this stream.
     struct {
         int use_subsamples;
         uint8_t* auxiliary_info;

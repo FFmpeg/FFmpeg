@@ -1,5 +1,7 @@
 /*
- * Intel MediaSDK QSV based MPEG-2 video decoder
+ * Intel MediaSDK QSV based MPEG-2 decoder
+ *
+ * copyright (c) 2015 Anton Khirnov
  *
  * This file is part of FFmpeg.
  *
@@ -18,19 +20,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+
 #include <stdint.h>
 #include <string.h>
 
+#include <mfx/mfxvideo.h>
+
 #include "libavutil/common.h"
+#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
+#include "internal.h"
+#include "qsv_internal.h"
 #include "qsvdec.h"
+#include "qsv.h"
 
 typedef struct QSVMPEG2Context {
     AVClass *class;
     QSVContext qsv;
+
+    AVFifoBuffer *packet_fifo;
+
+    AVPacket input_ref;
 } QSVMPEG2Context;
+
+static void qsv_clear_buffers(QSVMPEG2Context *s)
+{
+    AVPacket pkt;
+    while (av_fifo_size(s->packet_fifo) >= sizeof(pkt)) {
+        av_fifo_generic_read(s->packet_fifo, &pkt, sizeof(pkt), NULL);
+        av_packet_unref(&pkt);
+    }
+
+    av_packet_unref(&s->input_ref);
+}
 
 static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
@@ -38,12 +62,28 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 
     ff_qsv_decode_close(&s->qsv);
 
+    qsv_clear_buffers(s);
+
+    av_fifo_free(s->packet_fifo);
+
     return 0;
 }
 
 static av_cold int qsv_decode_init(AVCodecContext *avctx)
 {
+    QSVMPEG2Context *s = avctx->priv_data;
+    int ret;
+
+    s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
+    if (!s->packet_fifo) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     return 0;
+fail:
+    qsv_decode_close(avctx);
+    return ret;
 }
 
 static int qsv_decode_frame(AVCodecContext *avctx, void *data,
@@ -51,14 +91,53 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 {
     QSVMPEG2Context *s = avctx->priv_data;
     AVFrame *frame    = data;
+    int ret;
 
-    return ff_qsv_decode(avctx, &s->qsv, frame, got_frame, avpkt);
+    /* buffer the input packet */
+    if (avpkt->size) {
+        AVPacket input_ref = { 0 };
+
+        if (av_fifo_space(s->packet_fifo) < sizeof(input_ref)) {
+            ret = av_fifo_realloc2(s->packet_fifo,
+                                   av_fifo_size(s->packet_fifo) + sizeof(input_ref));
+            if (ret < 0)
+                return ret;
+        }
+
+        ret = av_packet_ref(&input_ref, avpkt);
+        if (ret < 0)
+            return ret;
+        av_fifo_generic_write(s->packet_fifo, &input_ref, sizeof(input_ref), NULL);
+    }
+
+    /* process buffered data */
+    while (!*got_frame) {
+        if (s->input_ref.size <= 0) {
+            /* no more data */
+            if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
+                return avpkt->size ? avpkt->size : ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
+
+            av_packet_unref(&s->input_ref);
+            av_fifo_generic_read(s->packet_fifo, &s->input_ref, sizeof(s->input_ref), NULL);
+        }
+
+        ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->input_ref);
+        if (ret < 0)
+            return ret;
+
+        s->input_ref.size -= ret;
+        s->input_ref.data += ret;
+    }
+
+    return avpkt->size;
 }
 
 static void qsv_decode_flush(AVCodecContext *avctx)
 {
     QSVMPEG2Context *s = avctx->priv_data;
-    ff_qsv_decode_reset(avctx, &s->qsv);
+
+    qsv_clear_buffers(s);
+    ff_qsv_decode_flush(avctx, &s->qsv);
 }
 
 AVHWAccel ff_mpeg2_qsv_hwaccel = {
@@ -92,7 +171,7 @@ AVCodec ff_mpeg2_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
     .priv_class     = &class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,

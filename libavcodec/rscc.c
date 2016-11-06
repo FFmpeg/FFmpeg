@@ -310,12 +310,15 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         frame->pict_type = AV_PICTURE_TYPE_P;
     }
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        int size;
         const uint8_t *pal = av_packet_get_side_data(avpkt,
                                                      AV_PKT_DATA_PALETTE,
-                                                     NULL);
-        if (pal) {
+                                                     &size);
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(ctx->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
         memcpy (frame->data[1], ctx->pal, AVPALETTE_SIZE);
     }

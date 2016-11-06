@@ -67,7 +67,6 @@ void avcodec_register_all(void)
     initialized = 1;
 
     /* hardware accelerators */
-    REGISTER_HWACCEL(H263_CUVID,        h263_cuvid);
     REGISTER_HWACCEL(H263_VAAPI,        h263_vaapi);
     REGISTER_HWACCEL(H263_VIDEOTOOLBOX, h263_videotoolbox);
     REGISTER_HWACCEL(H264_CUVID,        h264_cuvid);
@@ -634,7 +633,6 @@ void avcodec_register_all(void)
     /* external libraries, that shouldn't be used by default if one of the
      * above is available */
     REGISTER_ENCDEC (LIBOPENH264,       libopenh264);
-    REGISTER_DECODER(H263_CUVID,        h263_cuvid);
     REGISTER_DECODER(H264_CUVID,        h264_cuvid);
     REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_OMX,          h264_omx);

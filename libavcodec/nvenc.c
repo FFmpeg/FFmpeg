@@ -34,11 +34,7 @@
 #endif
 
 #if defined(_WIN32)
-#include <windows.h>
-
-#define dlopen(filename, flags) LoadLibrary(TEXT(filename))
-#define dlsym(handle, symbol)   GetProcAddress(handle, symbol)
-#define dlclose(handle)         FreeLibrary(handle)
+#include "compat/w32dlfcn.h"
 #else
 #include <dlfcn.h>
 #endif

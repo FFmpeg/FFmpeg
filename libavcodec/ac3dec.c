@@ -426,6 +426,10 @@ static int decode_exponents(AC3DecodeContext *s,
     group_size = exp_strategy + (exp_strategy == EXP_D45);
     for (grp = 0, i = 0; grp < ngrps; grp++) {
         expacc = get_bits(gbc, 7);
+        if (expacc >= 125) {
+            av_log(s->avctx, AV_LOG_ERROR, "expacc %d is out-of-range\n", expacc);
+            return AVERROR_INVALIDDATA;
+        }
         dexp[i++] = ungroup_3_in_7_bits_tab[expacc][0];
         dexp[i++] = ungroup_3_in_7_bits_tab[expacc][1];
         dexp[i++] = ungroup_3_in_7_bits_tab[expacc][2];

@@ -309,12 +309,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-        /* update internal context from codecpar, old bsf api needs this
-         * FIXME: remove when autobsf uses new bsf API */
-        ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
-        if (ret < 0)
-            goto fail;
-
         if (!st->time_base.num) {
             /* fall back on the default timebase values */
             if (par->codec_type == AVMEDIA_TYPE_AUDIO && par->sample_rate)
@@ -878,6 +872,9 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         }
     }
 
+    if (st->internal->nb_bsfcs)
+        av_packet_split_side_data(pkt);
+
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
         if (i > 0) {
@@ -891,7 +888,7 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
         // flush each stream's BSF chain on write_trailer.
         if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
-                    "Failed to send packet to filter %s for stream %d",
+                    "Failed to send packet to filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
             return ret;
         }
@@ -902,7 +899,7 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 return 0;
             av_log(ctx, AV_LOG_ERROR,
-                    "Failed to send packet to filter %s for stream %d",
+                    "Failed to send packet to filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
             return ret;
         }

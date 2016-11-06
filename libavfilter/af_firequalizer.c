@@ -69,6 +69,7 @@ typedef struct {
     RDFTContext   *analysis_irdft;
     RDFTContext   *rdft;
     RDFTContext   *irdft;
+    FFTContext    *fft_ctx;
     int           analysis_rdft_len;
     int           rdft_len;
 
@@ -97,6 +98,7 @@ typedef struct {
     int           scale;
     char          *dumpfile;
     int           dumpscale;
+    int           fft2;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -132,6 +134,7 @@ static const AVOption firequalizer_options[] = {
         { "loglog", "logarithmic-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLOG }, 0, 0, FLAGS, "scale" },
     { "dumpfile", "set dump file", OFFSET(dumpfile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { "dumpscale", "set dump scale", OFFSET(dumpscale), AV_OPT_TYPE_INT, { .i64 = SCALE_LINLOG }, 0, NB_SCALE-1, FLAGS, "scale" },
+    { "fft2", "set 2-channels fft", OFFSET(fft2), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -143,7 +146,9 @@ static void common_uninit(FIREqualizerContext *s)
     av_rdft_end(s->analysis_irdft);
     av_rdft_end(s->rdft);
     av_rdft_end(s->irdft);
+    av_fft_end(s->fft_ctx);
     s->analysis_rdft = s->analysis_irdft = s->rdft = s->irdft = NULL;
+    s->fft_ctx = NULL;
 
     av_freep(&s->analysis_buf);
     av_freep(&s->dump_buf);
@@ -227,6 +232,70 @@ static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, floa
         }
         fast_convolute(s, kernel_buf, conv_buf, idx, data, nsamples/2);
         fast_convolute(s, kernel_buf, conv_buf, idx, data + nsamples/2, nsamples - nsamples/2);
+    }
+}
+
+static void fast_convolute2(FIREqualizerContext *s, const float *kernel_buf, FFTComplex *conv_buf,
+                            OverlapIndex *idx, float *data0, float *data1, int nsamples)
+{
+    if (nsamples <= s->nsamples_max) {
+        FFTComplex *buf = conv_buf + idx->buf_idx * s->rdft_len;
+        FFTComplex *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        int center = s->fir_len/2;
+        int k;
+        float tmp;
+
+        memset(buf, 0, center * sizeof(*buf));
+        for (k = 0; k < nsamples; k++) {
+            buf[center+k].re = data0[k];
+            buf[center+k].im = data1[k];
+        }
+        memset(buf + center + nsamples, 0, (s->rdft_len - nsamples - center) * sizeof(*buf));
+        av_fft_permute(s->fft_ctx, buf);
+        av_fft_calc(s->fft_ctx, buf);
+
+        /* swap re <-> im, do backward fft using forward fft_ctx */
+        /* normalize with 0.5f */
+        tmp = buf[0].re;
+        buf[0].re = 0.5f * kernel_buf[0] * buf[0].im;
+        buf[0].im = 0.5f * kernel_buf[0] * tmp;
+        for (k = 1; k < s->rdft_len/2; k++) {
+            int m = s->rdft_len - k;
+            tmp = buf[k].re;
+            buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
+            buf[k].im = 0.5f * kernel_buf[k] * tmp;
+            tmp = buf[m].re;
+            buf[m].re = 0.5f * kernel_buf[k] * buf[m].im;
+            buf[m].im = 0.5f * kernel_buf[k] * tmp;
+        }
+        tmp = buf[k].re;
+        buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
+        buf[k].im = 0.5f * kernel_buf[k] * tmp;
+
+        av_fft_permute(s->fft_ctx, buf);
+        av_fft_calc(s->fft_ctx, buf);
+
+        for (k = 0; k < s->rdft_len - idx->overlap_idx; k++) {
+            buf[k].re += obuf[k].re;
+            buf[k].im += obuf[k].im;
+        }
+
+        /* swapped re <-> im */
+        for (k = 0; k < nsamples; k++) {
+            data0[k] = buf[k].im;
+            data1[k] = buf[k].re;
+        }
+        idx->buf_idx = !idx->buf_idx;
+        idx->overlap_idx = nsamples;
+    } else {
+        while (nsamples > s->nsamples_max * 2) {
+            fast_convolute2(s, kernel_buf, conv_buf, idx, data0, data1, s->nsamples_max);
+            data0 += s->nsamples_max;
+            data1 += s->nsamples_max;
+            nsamples -= s->nsamples_max;
+        }
+        fast_convolute2(s, kernel_buf, conv_buf, idx, data0, data1, nsamples/2);
+        fast_convolute2(s, kernel_buf, conv_buf, idx, data0 + nsamples/2, data1 + nsamples/2, nsamples - nsamples/2);
     }
 }
 
@@ -598,6 +667,9 @@ static int config_input(AVFilterLink *inlink)
     if (!(s->rdft = av_rdft_init(rdft_bits, DFT_R2C)) || !(s->irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
         return AVERROR(ENOMEM);
 
+    if (s->fft2 && !s->multi && inlink->channels > 1 && !(s->fft_ctx = av_fft_init(rdft_bits, 0)))
+        return AVERROR(ENOMEM);
+
     for ( ; rdft_bits <= RDFT_BITS_MAX; rdft_bits++) {
         s->analysis_rdft_len = 1 << rdft_bits;
         if (inlink->sample_rate <= s->accuracy * s->analysis_rdft_len)
@@ -640,7 +712,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     FIREqualizerContext *s = ctx->priv;
     int ch;
 
-    for (ch = 0; ch < inlink->channels; ch++) {
+    for (ch = 0; ch + 1 < inlink->channels && s->fft_ctx; ch += 2) {
+        fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
+                        s->conv_idx + ch, (float *) frame->extended_data[ch],
+                        (float *) frame->extended_data[ch+1], frame->nb_samples);
+    }
+
+    for ( ; ch < inlink->channels; ch++) {
         fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
                        s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
                        (float *) frame->extended_data[ch], frame->nb_samples);

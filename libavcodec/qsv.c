@@ -25,7 +25,10 @@
 #include <string.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/error.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_qsv.h"
 
 #include "avcodec.h"
 #include "qsv_internal.h"
@@ -49,6 +52,22 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
     }
 
     return AVERROR(ENOSYS);
+}
+
+int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile)
+{
+    if (profile == FF_PROFILE_UNKNOWN)
+        return MFX_PROFILE_UNKNOWN;
+    switch (codec_id) {
+    case AV_CODEC_ID_H264:
+    case AV_CODEC_ID_HEVC:
+        return profile;
+    case AV_CODEC_ID_VC1:
+        return 4 * profile + 1;
+    case AV_CODEC_ID_MPEG2VIDEO:
+        return 0x10 * profile;
+    }
+    return MFX_PROFILE_UNKNOWN;
 }
 
 int ff_qsv_error(int mfx_err)
@@ -85,90 +104,58 @@ int ff_qsv_error(int mfx_err)
         return AVERROR_UNKNOWN;
     }
 }
-static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
+
+static int qsv_load_plugins(mfxSession session, const char *load_plugins,
+                            void *logctx)
 {
-    // this code is only required for Linux.  It searches for a valid
-    // display handle.  First in /dev/dri/renderD then in /dev/dri/card
-#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
-    // VAAPI display handle
-    int ret = 0;
-    VADisplay va_dpy = NULL;
-    VAStatus va_res = VA_STATUS_SUCCESS;
-    int major_version = 0, minor_version = 0;
-    int fd = -1;
-    char adapterpath[256];
-    int adapter_num;
+    if (!load_plugins || !*load_plugins)
+        return 0;
 
-    qs->fd_display = -1;
-    qs->va_display = NULL;
+    while (*load_plugins) {
+        mfxPluginUID uid;
+        mfxStatus ret;
+        int i, err = 0;
 
-    //search for valid graphics device
-    for (adapter_num = 0;adapter_num < 6;adapter_num++) {
-
-        if (adapter_num<3) {
-            snprintf(adapterpath,sizeof(adapterpath),
-                "/dev/dri/renderD%d", adapter_num+128);
-        } else {
-            snprintf(adapterpath,sizeof(adapterpath),
-                "/dev/dri/card%d", adapter_num-3);
+        char *plugin = av_get_token(&load_plugins, ":");
+        if (!plugin)
+            return AVERROR(ENOMEM);
+        if (strlen(plugin) != 2 * sizeof(uid.Data)) {
+            av_log(logctx, AV_LOG_ERROR, "Invalid plugin UID length\n");
+            err = AVERROR(EINVAL);
+            goto load_plugin_fail;
         }
 
-        fd = open(adapterpath, O_RDWR);
-        if (fd < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                "mfx init: %s fd open failed\n", adapterpath);
-            continue;
-        }
-
-        va_dpy = vaGetDisplayDRM(fd);
-        if (!va_dpy) {
-            av_log(avctx, AV_LOG_ERROR,
-                "mfx init: %s vaGetDisplayDRM failed\n", adapterpath);
-            close(fd);
-            continue;
-        }
-
-        va_res = vaInitialize(va_dpy, &major_version, &minor_version);
-        if (VA_STATUS_SUCCESS != va_res) {
-            av_log(avctx, AV_LOG_ERROR,
-                "mfx init: %s vaInitialize failed\n", adapterpath);
-            close(fd);
-            fd = -1;
-            continue;
-        } else {
-            av_log(avctx, AV_LOG_VERBOSE,
-            "mfx initialization: %s vaInitialize successful\n",adapterpath);
-            qs->fd_display = fd;
-            qs->va_display = va_dpy;
-            ret = MFXVideoCORE_SetHandle(qs->session,
-                  (mfxHandleType)MFX_HANDLE_VA_DISPLAY, (mfxHDL)va_dpy);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR,
-                "Error %d during set display handle\n", ret);
-                return ff_qsv_error(ret);
+        for (i = 0; i < sizeof(uid.Data); i++) {
+            err = sscanf(plugin + 2 * i, "%2hhx", uid.Data + i);
+            if (err != 1) {
+                av_log(logctx, AV_LOG_ERROR, "Invalid plugin UID\n");
+                err = AVERROR(EINVAL);
+                goto load_plugin_fail;
             }
-            break;
+
         }
+
+        ret = MFXVideoUSER_Load(session, &uid, 1);
+        if (ret < 0) {
+            av_log(logctx, AV_LOG_ERROR, "Could not load the requested plugin: %s\n",
+                   plugin);
+            err = ff_qsv_error(ret);
+            goto load_plugin_fail;
+        }
+
+        if (*load_plugins)
+            load_plugins++;
+load_plugin_fail:
+        av_freep(&plugin);
+        if (err < 0)
+            return err;
     }
-#endif //AVCODEC_QSV_LINUX_SESSION_HANDLE
+
     return 0;
+
 }
-/**
- * @brief Initialize a MSDK session
- *
- * Media SDK is based on sessions, so this is the prerequisite
- * initialization for HW acceleration.  For Windows the session is
- * complete and ready to use, for Linux a display handle is
- * required.  For releases of Media Server Studio >= 2015 R4 the
- * render nodes interface is preferred (/dev/dri/renderD).
- * Using Media Server Studio 2015 R4 or newer is recommended
- * but the older /dev/dri/card interface is also searched
- * for broader compatibility.
- *
- * @param avctx    ffmpeg metadata for this codec context
- * @param session  the MSDK session used
- */
-int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
+
+int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                                  const char *load_plugins)
 {
     mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
@@ -177,58 +164,19 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
     const char *desc;
     int ret;
 
-    ret = MFXInit(impl, &ver, &qs->session);
+    ret = MFXInit(impl, &ver, session);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing an internal MFX session\n");
         return ff_qsv_error(ret);
     }
 
-    ret = ff_qsv_set_display_handle(avctx, qs);
-    if (ret < 0)
+    ret = qsv_load_plugins(*session, load_plugins, avctx);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error loading plugins\n");
         return ret;
-
-    if (load_plugins && *load_plugins) {
-        while (*load_plugins) {
-            mfxPluginUID uid;
-            int i, err = 0;
-
-            char *plugin = av_get_token(&load_plugins, ":");
-            if (!plugin)
-                return AVERROR(ENOMEM);
-            if (strlen(plugin) != 2 * sizeof(uid.Data)) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid plugin UID length\n");
-                err = AVERROR(EINVAL);
-                goto load_plugin_fail;
-            }
-
-            for (i = 0; i < sizeof(uid.Data); i++) {
-                err = sscanf(plugin + 2 * i, "%2hhx", uid.Data + i);
-                if (err != 1) {
-                    av_log(avctx, AV_LOG_ERROR, "Invalid plugin UID\n");
-                    err = AVERROR(EINVAL);
-                    goto load_plugin_fail;
-                }
-
-            }
-
-            ret = MFXVideoUSER_Load(qs->session, &uid, 1);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Could not load the requested plugin: %s\n",
-                       plugin);
-                err = ff_qsv_error(ret);
-                goto load_plugin_fail;
-            }
-
-            if (*load_plugins)
-                load_plugins++;
-load_plugin_fail:
-            av_freep(&plugin);
-            if (err < 0)
-                return err;
-        }
     }
 
-    MFXQueryIMPL(qs->session, &impl);
+    MFXQueryIMPL(*session, &impl);
 
     switch (MFX_IMPL_BASETYPE(impl)) {
     case MFX_IMPL_SOFTWARE:
@@ -251,21 +199,146 @@ load_plugin_fail:
     return 0;
 }
 
-int ff_qsv_close_internal_session(QSVSession *qs)
+static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
+                                 mfxFrameAllocResponse *resp)
 {
-    if (qs->session) {
-        MFXClose(qs->session);
-        qs->session = NULL;
+    QSVFramesContext *ctx = pthis;
+    mfxFrameInfo      *i  = &req->Info;
+    mfxFrameInfo      *i1 = &ctx->info;
+
+    if (!(req->Type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET) ||
+        !(req->Type & (MFX_MEMTYPE_FROM_DECODE | MFX_MEMTYPE_FROM_ENCODE)) ||
+        !(req->Type & MFX_MEMTYPE_EXTERNAL_FRAME))
+        return MFX_ERR_UNSUPPORTED;
+    if (i->Width  != i1->Width || i->Height != i1->Height ||
+        i->FourCC != i1->FourCC || i->ChromaFormat != i1->ChromaFormat) {
+        av_log(ctx, AV_LOG_ERROR, "Mismatching surface properties in an "
+               "allocation request: %dx%d %d %d vs %dx%d %d %d\n",
+               i->Width,  i->Height,  i->FourCC,  i->ChromaFormat,
+               i1->Width, i1->Height, i1->FourCC, i1->ChromaFormat);
+        return MFX_ERR_UNSUPPORTED;
     }
-#ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
-    if (qs->va_display) {
-        vaTerminate(qs->va_display);
-        qs->va_display = NULL;
+
+    resp->mids           = ctx->mids;
+    resp->NumFrameActual = ctx->nb_mids;
+
+    return MFX_ERR_NONE;
+}
+
+static mfxStatus qsv_frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
+{
+    return MFX_ERR_NONE;
+}
+
+static mfxStatus qsv_frame_lock(mfxHDL pthis, mfxMemId mid, mfxFrameData *ptr)
+{
+    return MFX_ERR_UNSUPPORTED;
+}
+
+static mfxStatus qsv_frame_unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData *ptr)
+{
+    return MFX_ERR_UNSUPPORTED;
+}
+
+static mfxStatus qsv_frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
+{
+    *hdl = mid;
+    return MFX_ERR_NONE;
+}
+
+int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
+                                  QSVFramesContext *qsv_frames_ctx,
+                                  const char *load_plugins, int opaque)
+{
+    static const mfxHandleType handle_types[] = {
+        MFX_HANDLE_VA_DISPLAY,
+        MFX_HANDLE_D3D9_DEVICE_MANAGER,
+        MFX_HANDLE_D3D11_DEVICE,
+    };
+    mfxFrameAllocator frame_allocator = {
+        .pthis  = qsv_frames_ctx,
+        .Alloc  = qsv_frame_alloc,
+        .Lock   = qsv_frame_lock,
+        .Unlock = qsv_frame_unlock,
+        .GetHDL = qsv_frame_get_hdl,
+        .Free   = qsv_frame_free,
+    };
+
+    AVHWFramesContext    *frames_ctx = (AVHWFramesContext*)qsv_frames_ctx->hw_frames_ctx->data;
+    AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
+    AVQSVDeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
+    mfxSession        parent_session = device_hwctx->session;
+
+    mfxSession    session;
+    mfxVersion    ver;
+    mfxIMPL       impl;
+    mfxHDL        handle = NULL;
+    mfxHandleType handle_type;
+    mfxStatus err;
+
+    int i, ret;
+
+    err = MFXQueryIMPL(parent_session, &impl);
+    if (err == MFX_ERR_NONE)
+        err = MFXQueryVersion(parent_session, &ver);
+    if (err != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error querying the session attributes\n");
+        return ff_qsv_error(err);
     }
-    if (qs->fd_display > 0) {
-        close(qs->fd_display);
-        qs->fd_display = -1;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(handle_types); i++) {
+        err = MFXVideoCORE_GetHandle(parent_session, handle_types[i], &handle);
+        if (err == MFX_ERR_NONE) {
+            handle_type = handle_types[i];
+            break;
+        }
+        handle = NULL;
     }
-#endif
+    if (!handle) {
+        av_log(avctx, AV_LOG_VERBOSE, "No supported hw handle could be retrieved "
+               "from the session\n");
+    }
+
+    err = MFXInit(impl, &ver, &session);
+    if (err != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Error initializing a child MFX session: %d\n", err);
+        return ff_qsv_error(err);
+    }
+
+    if (handle) {
+        err = MFXVideoCORE_SetHandle(session, handle_type, handle);
+        if (err != MFX_ERR_NONE) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting a HW handle: %d\n", err);
+            return ff_qsv_error(err);
+        }
+    }
+
+    ret = qsv_load_plugins(session, load_plugins, avctx);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error loading plugins\n");
+        return ret;
+    }
+
+    if (!opaque) {
+        av_freep(&qsv_frames_ctx->mids);
+        qsv_frames_ctx->mids = av_mallocz_array(frames_hwctx->nb_surfaces,
+                                                sizeof(*qsv_frames_ctx->mids));
+        if (!qsv_frames_ctx->mids)
+            return AVERROR(ENOMEM);
+
+        qsv_frames_ctx->info    = frames_hwctx->surfaces[0].Info;
+        qsv_frames_ctx->nb_mids = frames_hwctx->nb_surfaces;
+        for (i = 0; i < frames_hwctx->nb_surfaces; i++)
+            qsv_frames_ctx->mids[i] = frames_hwctx->surfaces[i].Data.MemId;
+
+        err = MFXVideoCORE_SetFrameAllocator(session, &frame_allocator);
+        if (err != MFX_ERR_NONE) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting a frame allocator: %d\n", err);
+            return ff_qsv_error(err);
+        }
+    }
+
+    *psession = session;
     return 0;
 }

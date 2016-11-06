@@ -6,6 +6,7 @@
 #codec_id 0: pcm_s16le
 #sample_rate 0: 96000
 #channel_layout 0: 60f
+#channel_layout_name 0: 5.1(side)
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,      341,     4092, 697cddfcd0e21f24782af0705b7048f3
 0,        341,        341,      341,     4092, a057b18cd493923fed33c18578f61e0b
