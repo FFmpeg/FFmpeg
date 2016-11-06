@@ -1751,6 +1751,10 @@ Exhaustive search.
 Hadamard exhaustive search (slowest).
 @end table
 
+@item forced-idr
+Normally, when forcing a I-frame type, the encoder can select any type
+of I-frame. This option forces it to choose an IDR-frame.
+
 @item subq (@emph{subme})
 Sub-pixel motion estimation method.
 
@@ -2040,6 +2044,10 @@ Set the x265 preset.
 
 @item tune
 Set the x265 tune parameter.
+
+@item forced-idr
+Normally, when forcing a I-frame type, the encoder can select any type
+of I-frame. This option forces it to choose an IDR-frame.
 
 @item x265-params
 Set x265 options using a list of @var{key}=@var{value} couples separated
