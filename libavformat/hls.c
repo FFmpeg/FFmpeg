@@ -1593,6 +1593,19 @@ static void update_noheader_flag(AVFormatContext *s)
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
 }
 
+static int hls_close(AVFormatContext *s)
+{
+    HLSContext *c = s->priv_data;
+
+    free_playlist_list(c);
+    free_variant_list(c);
+    free_rendition_list(c);
+
+    av_dict_free(&c->avio_opts);
+
+    return 0;
+}
+
 static int hls_read_header(AVFormatContext *s)
 {
     void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
@@ -2011,19 +2024,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     }
     return AVERROR_EOF;
-}
-
-static int hls_close(AVFormatContext *s)
-{
-    HLSContext *c = s->priv_data;
-
-    free_playlist_list(c);
-    free_variant_list(c);
-    free_rendition_list(c);
-
-    av_dict_free(&c->avio_opts);
-
-    return 0;
 }
 
 static int hls_read_seek(AVFormatContext *s, int stream_index,
