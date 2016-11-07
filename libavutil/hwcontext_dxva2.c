@@ -315,6 +315,9 @@ static int dxva2_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     AVFrame *map;
     int ret;
 
+    if (src->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
@@ -338,6 +341,9 @@ static int dxva2_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     AVFrame *map;
     ptrdiff_t src_linesize[4], dst_linesize[4];
     int ret, i;
+
+    if (dst->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
 
     map = av_frame_alloc();
     if (!map)
