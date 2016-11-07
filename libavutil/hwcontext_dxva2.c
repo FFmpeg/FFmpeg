@@ -309,12 +309,34 @@ fail:
     return err;
 }
 
-static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
-                               const AVFrame *src)
+static int dxva2_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+                                  const AVFrame *src)
 {
-    int download = !!src->hw_frames_ctx;
-
     AVFrame *map;
+    int ret;
+
+    map = av_frame_alloc();
+    if (!map)
+        return AVERROR(ENOMEM);
+    map->format = dst->format;
+
+    ret = dxva2_map_frame(ctx, map, dst, AV_HWFRAME_MAP_WRITE | AV_HWFRAME_MAP_OVERWRITE);
+    if (ret < 0)
+        goto fail;
+
+    av_image_copy(map->data, map->linesize, src->data, src->linesize,
+                  ctx->sw_format, src->width, src->height);
+
+fail:
+    av_frame_free(&map);
+    return ret;
+}
+
+static int dxva2_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+                                    const AVFrame *src)
+{
+    AVFrame *map;
+    ptrdiff_t src_linesize[4], dst_linesize[4];
     int ret, i;
 
     map = av_frame_alloc();
@@ -322,25 +344,16 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(ENOMEM);
     map->format = dst->format;
 
-    ret = dxva2_map_frame(ctx, map, download ? src : dst,
-                          download ? AV_HWFRAME_MAP_READ :
-                                     AV_HWFRAME_MAP_WRITE | AV_HWFRAME_MAP_OVERWRITE);
+    ret = dxva2_map_frame(ctx, map, src, AV_HWFRAME_MAP_READ);
     if (ret < 0)
         goto fail;
 
-    if (download) {
-        ptrdiff_t src_linesize[4], dst_linesize[4];
-        for (i = 0; i < 4; i++) {
-            dst_linesize[i] = dst->linesize[i];
-            src_linesize[i] = map->linesize[i];
-        }
-        av_image_copy_uc_from(dst->data, dst_linesize, map->data, src_linesize,
-                              ctx->sw_format, src->width, src->height);
-    } else {
-        av_image_copy(map->data, map->linesize, src->data, src->linesize,
-                      ctx->sw_format, src->width, src->height);
+    for (i = 0; i < 4; i++) {
+        dst_linesize[i] = dst->linesize[i];
+        src_linesize[i] = map->linesize[i];
     }
-
+    av_image_copy_uc_from(dst->data, dst_linesize, map->data, src_linesize,
+                          ctx->sw_format, src->width, src->height);
 fail:
     av_frame_free(&map);
     return ret;
@@ -498,8 +511,8 @@ const HWContextType ff_hwcontext_type_dxva2 = {
     .frames_uninit        = dxva2_frames_uninit,
     .frames_get_buffer    = dxva2_get_buffer,
     .transfer_get_formats = dxva2_transfer_get_formats,
-    .transfer_data_to     = dxva2_transfer_data,
-    .transfer_data_from   = dxva2_transfer_data,
+    .transfer_data_to     = dxva2_transfer_data_to,
+    .transfer_data_from   = dxva2_transfer_data_from,
     .map_from             = dxva2_map_from,
 
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_DXVA2_VLD, AV_PIX_FMT_NONE },
