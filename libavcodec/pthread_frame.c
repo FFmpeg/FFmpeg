@@ -223,6 +223,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         dst->hwaccel = src->hwaccel;
         dst->hwaccel_context = src->hwaccel_context;
         dst->internal->hwaccel_priv_data = src->internal->hwaccel_priv_data;
+
+        if (!!dst->hw_frames_ctx != !!src->hw_frames_ctx ||
+            (dst->hw_frames_ctx && dst->hw_frames_ctx->data != src->hw_frames_ctx->data)) {
+            av_buffer_unref(&dst->hw_frames_ctx);
+
+            if (src->hw_frames_ctx) {
+                dst->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+                if (!dst->hw_frames_ctx)
+                    return AVERROR(ENOMEM);
+            }
+        }
     }
 
     if (for_user) {
