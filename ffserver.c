@@ -155,7 +155,7 @@ typedef struct HTTPContext {
     int feed_streams[FFSERVER_MAX_STREAMS]; /* index of streams in the feed */
     int switch_feed_streams[FFSERVER_MAX_STREAMS]; /* index of streams in the feed */
     int switch_pending;
-    AVFormatContext fmt_ctx; /* instance of FFServerStream for one user */
+    AVFormatContext *pfmt_ctx; /* instance of FFServerStream for one user */
     int last_packet_sent; /* true if last data packet was sent */
     int suppress_log;
     DataRateData datarate;
@@ -930,21 +930,22 @@ static void close_connection(HTTPContext *c)
         ffurl_close(c->rtp_handles[i]);
     }
 
-    ctx = &c->fmt_ctx;
+    ctx = c->pfmt_ctx;
 
-    if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
-        /* prepare header */
-        if (ctx->oformat && avio_open_dyn_buf(&ctx->pb) >= 0) {
-            av_write_trailer(ctx);
-            av_freep(&c->pb_buffer);
-            avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
+    if (ctx) {
+        if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
+            /* prepare header */
+            if (ctx->oformat && avio_open_dyn_buf(&ctx->pb) >= 0) {
+                av_write_trailer(ctx);
+                av_freep(&c->pb_buffer);
+                avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
+            }
         }
-    }
-
-    for(i=0; i<ctx->nb_streams; i++)
-        av_freep(&ctx->streams[i]);
-    av_freep(&ctx->streams);
-    av_freep(&ctx->priv_data);
+        for(i=0; i<ctx->nb_streams; i++)
+            av_freep(&ctx->streams[i]);
+        av_freep(&ctx->streams);
+        av_freep(&ctx->priv_data);
+        }
 
     if (c->stream && !c->post && c->stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth -= c->stream->bandwidth;
@@ -2258,17 +2259,16 @@ static int http_prepare_data(HTTPContext *c)
         ctx = avformat_alloc_context();
         if (!ctx)
             return AVERROR(ENOMEM);
-        c->fmt_ctx = *ctx;
-        av_freep(&ctx);
-        av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
-        c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams,
+        c->pfmt_ctx = ctx;
+        av_dict_copy(&(c->pfmt_ctx->metadata), c->stream->metadata, 0);
+        c->pfmt_ctx->streams = av_mallocz_array(c->stream->nb_streams,
                                               sizeof(AVStream *));
-        if (!c->fmt_ctx.streams)
+        if (!c->pfmt_ctx->streams)
             return AVERROR(ENOMEM);
 
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *src;
-            c->fmt_ctx.streams[i] = av_mallocz(sizeof(AVStream));
+            c->pfmt_ctx->streams[i] = av_mallocz(sizeof(AVStream));
 
             /* if file or feed, then just take streams from FFServerStream
              * struct */
@@ -2278,39 +2278,39 @@ static int http_prepare_data(HTTPContext *c)
             else
                 src = c->stream->feed->streams[c->stream->feed_streams[i]];
 
-            *(c->fmt_ctx.streams[i]) = *src;
-            c->fmt_ctx.streams[i]->priv_data = 0;
+            *(c->pfmt_ctx->streams[i]) = *src;
+            c->pfmt_ctx->streams[i]->priv_data = 0;
             /* XXX: should be done in AVStream, not in codec */
-            c->fmt_ctx.streams[i]->codec->frame_number = 0;
+            c->pfmt_ctx->streams[i]->codec->frame_number = 0;
         }
         /* set output format parameters */
-        c->fmt_ctx.oformat = c->stream->fmt;
-        c->fmt_ctx.nb_streams = c->stream->nb_streams;
+        c->pfmt_ctx->oformat = c->stream->fmt;
+        c->pfmt_ctx->nb_streams = c->stream->nb_streams;
 
         c->got_key_frame = 0;
 
         /* prepare header and save header data in a stream */
-        if (avio_open_dyn_buf(&c->fmt_ctx.pb) < 0) {
+        if (avio_open_dyn_buf(&c->pfmt_ctx->pb) < 0) {
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->seekable = 0;
+        c->pfmt_ctx->pb->seekable = 0;
 
         /*
          * HACK to avoid MPEG-PS muxer to spit many underflow errors
          * Default value from FFmpeg
          * Try to set it using configuration option
          */
-        c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
+        c->pfmt_ctx->max_delay = (int)(0.7*AV_TIME_BASE);
 
-        if ((ret = avformat_write_header(&c->fmt_ctx, NULL)) < 0) {
+        if ((ret = avformat_write_header(c->pfmt_ctx, NULL)) < 0) {
             http_log("Error writing output header for stream '%s': %s\n",
                      c->stream->filename, av_err2str(ret));
             return ret;
         }
-        av_dict_free(&c->fmt_ctx.metadata);
+        av_dict_free(&c->pfmt_ctx->metadata);
 
-        len = avio_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
+        len = avio_close_dyn_buf(c->pfmt_ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2412,7 +2412,7 @@ static int http_prepare_data(HTTPContext *c)
                         /* only one stream per RTP connection */
                         pkt.stream_index = 0;
                     } else {
-                        ctx = &c->fmt_ctx;
+                        ctx = c->pfmt_ctx;
                         /* Fudge here */
                         codec = ctx->streams[pkt.stream_index]->codec;
                     }
@@ -2471,13 +2471,13 @@ static int http_prepare_data(HTTPContext *c)
         /* last packet test ? */
         if (c->last_packet_sent || c->is_packetized)
             return -1;
-        ctx = &c->fmt_ctx;
+        ctx = c->pfmt_ctx;
         /* prepare header */
         if (avio_open_dyn_buf(&ctx->pb) < 0) {
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->seekable = 0;
+        c->pfmt_ctx->pb->seekable = 0;
         av_write_trailer(ctx);
         len = avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
