@@ -3776,6 +3776,11 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Failed to read file headers\n");
         return -1;
     }
+    if (!s->nb_streams) {
+        matroska_read_close(s);
+        av_log(s, AV_LOG_ERROR, "No streams found\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (!matroska->is_live) {
         buf = av_asprintf("%g", matroska->duration);
