@@ -98,7 +98,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     } else if (codec_id == AV_CODEC_ID_MP3ADU) {
                         avpriv_report_missing_feature(avctx,
                             "MP3ADU full parser");
-                        return AVERROR_PATCHWELCOME;
+                        return 0; /* parsers must not return error codes */
                     }
 
                     break;
