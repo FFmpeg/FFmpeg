@@ -345,6 +345,10 @@ static int dxva2_map_from(AVHWFramesContext *ctx,
 {
     int err;
 
+    if (dst->format != AV_PIX_FMT_NONE && dst->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
+    dst->format = ctx->sw_format;
+
     err = dxva2_map_frame(ctx, dst, src, flags);
     if (err < 0)
         return err;
