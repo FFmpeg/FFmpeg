@@ -138,7 +138,7 @@ static void celt_decode_coarse_energy(CeltContext *s, OpusRangeCoder *rc)
     /* use the 2D z-transform to apply prediction in both */
     /* the time domain (alpha) and the frequency domain (beta) */
 
-    if (opus_rc_tell(rc)+3 <= s->framebits && opus_rc_p2model(rc, 3)) {
+    if (opus_rc_tell(rc)+3 <= s->framebits && ff_opus_rc_dec_log(rc, 3)) {
         /* intra frame */
         alpha = 0;
         beta  = 1.0f - 4915.0f/32768.0f;
@@ -164,12 +164,12 @@ static void celt_decode_coarse_energy(CeltContext *s, OpusRangeCoder *rc)
             if (available >= 15) {
                 /* decode using a Laplace distribution */
                 int k = FFMIN(i, 20) << 1;
-                value = opus_rc_laplace(rc, model[k] << 7, model[k+1] << 6);
+                value = ff_opus_rc_dec_laplace(rc, model[k] << 7, model[k+1] << 6);
             } else if (available >= 2) {
-                int x = opus_rc_getsymbol(rc, ff_celt_model_energy_small);
+                int x = ff_opus_rc_dec_cdf(rc, ff_celt_model_energy_small);
                 value = (x>>1) ^ -(x&1);
             } else if (available >= 1) {
-                value = -(float)opus_rc_p2model(rc, 1);
+                value = -(float)ff_opus_rc_dec_log(rc, 1);
             } else value = -1;
 
             frame->energy[i] = FFMAX(-9.0f, frame->energy[i]) * alpha + prev[j] + value;
@@ -190,7 +190,7 @@ static void celt_decode_fine_energy(CeltContext *s, OpusRangeCoder *rc)
             CeltFrame *frame = &s->frame[j];
             int q2;
             float offset;
-            q2 = opus_getrawbits(rc, s->fine_bits[i]);
+            q2 = ff_opus_rc_get_raw(rc, s->fine_bits[i]);
             offset = (q2 + 0.5f) * (1 << (14 - s->fine_bits[i])) / 16384.0f - 0.5f;
             frame->energy[i] += offset;
         }
@@ -210,7 +210,7 @@ static void celt_decode_final_energy(CeltContext *s, OpusRangeCoder *rc,
             for (j = 0; j < s->coded_channels; j++) {
                 int q2;
                 float offset;
-                q2 = opus_getrawbits(rc, 1);
+                q2 = ff_opus_rc_get_raw(rc, 1);
                 offset = (q2 - 0.5f) * (1 << (14 - s->fine_bits[i] - 1)) / 16384.0f;
                 s->frame[j].energy[i] += offset;
                 bits_left--;
@@ -230,7 +230,7 @@ static void celt_decode_tf_changes(CeltContext *s, OpusRangeCoder *rc,
 
     for (i = s->startband; i < s->endband; i++) {
         if (consumed+bits+tf_select_bit <= s->framebits) {
-            diff ^= opus_rc_p2model(rc, bits);
+            diff ^= ff_opus_rc_dec_log(rc, bits);
             consumed = opus_rc_tell(rc);
             tf_changed |= diff;
         }
@@ -240,7 +240,7 @@ static void celt_decode_tf_changes(CeltContext *s, OpusRangeCoder *rc,
 
     if (tf_select_bit && ff_celt_tf_select[s->duration][transient][0][tf_changed] !=
                          ff_celt_tf_select[s->duration][transient][1][tf_changed])
-        tf_select = opus_rc_p2model(rc, 1);
+        tf_select = ff_opus_rc_dec_log(rc, 1);
 
     for (i = s->startband; i < s->endband; i++) {
         s->tf_change[i] = ff_celt_tf_select[s->duration][transient][tf_select][s->tf_change[i]];
@@ -277,7 +277,7 @@ static void celt_decode_allocation(CeltContext *s, OpusRangeCoder *rc)
     /* obtain spread flag */
     s->spread = CELT_SPREAD_NORMAL;
     if (consumed + 4 <= s->framebits)
-        s->spread = opus_rc_getsymbol(rc, ff_celt_model_spread);
+        s->spread = ff_opus_rc_dec_cdf(rc, ff_celt_model_spread);
 
     /* generate static allocation caps */
     for (i = 0; i < CELT_MAX_BANDS; i++) {
@@ -297,7 +297,7 @@ static void celt_decode_allocation(CeltContext *s, OpusRangeCoder *rc)
         quanta = FFMIN(quanta << 3, FFMAX(6 << 3, quanta));
         band_dynalloc = dynalloc;
         while (consumed + (band_dynalloc<<3) < totalbits && boost[i] < cap[i]) {
-            int add = opus_rc_p2model(rc, band_dynalloc);
+            int add = ff_opus_rc_dec_log(rc, band_dynalloc);
             consumed = opus_rc_tell_frac(rc);
             if (!add)
                 break;
@@ -313,7 +313,7 @@ static void celt_decode_allocation(CeltContext *s, OpusRangeCoder *rc)
 
     /* obtain allocation trim */
     if (consumed + (6 << 3) <= totalbits)
-        alloctrim = opus_rc_getsymbol(rc, ff_celt_model_alloc_trim);
+        alloctrim = ff_opus_rc_dec_cdf(rc, ff_celt_model_alloc_trim);
 
     /* anti-collapse bit reservation */
     totalbits = (s->framebits << 3) - opus_rc_tell_frac(rc) - 1;
@@ -465,7 +465,7 @@ static void celt_decode_allocation(CeltContext *s, OpusRangeCoder *rc)
         /* a "do not skip" marker is only coded if the allocation is
            above the chosen threshold */
         if (allocation >= FFMAX(threshold[j], (s->coded_channels + 1) <<3 )) {
-            if (opus_rc_p2model(rc, 1))
+            if (ff_opus_rc_dec_log(rc, 1))
                 break;
 
             total      += 1 << 3;
@@ -489,11 +489,11 @@ static void celt_decode_allocation(CeltContext *s, OpusRangeCoder *rc)
     s->dualstereo      = 0;
     if (intensitystereo_bit)
         s->intensitystereo = s->startband +
-                          opus_rc_unimodel(rc, s->codedbands + 1 - s->startband);
+                          ff_opus_rc_dec_uint(rc, s->codedbands + 1 - s->startband);
     if (s->intensitystereo <= s->startband)
         totalbits += dualstereo_bit; /* no intensity stereo means no dual stereo */
     else if (dualstereo_bit)
-        s->dualstereo = opus_rc_p2model(rc, 1);
+        s->dualstereo = ff_opus_rc_dec_log(rc, 1);
 
     /* supply the remaining bits in this frame to lower bands */
     remaining = totalbits - total;
@@ -909,7 +909,7 @@ static inline float celt_decode_pulses(OpusRangeCoder *rc, int *y, unsigned int 
     unsigned int idx;
 #define CELT_PVQ_U(n, k) (ff_celt_pvq_u_row[FFMIN(n, k)][FFMAX(n, k)])
 #define CELT_PVQ_V(n, k) (CELT_PVQ_U(n, k) + CELT_PVQ_U(n, (k) + 1))
-    idx = opus_rc_unimodel(rc, CELT_PVQ_V(N, K));
+    idx = ff_opus_rc_dec_uint(rc, CELT_PVQ_V(N, K));
     return celt_cwrsi(N, K, idx, y);
 }
 
@@ -960,7 +960,7 @@ static unsigned int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
         for (i = 0; i <= dualstereo; i++) {
             int sign = 0;
             if (s->remaining2 >= 1<<3) {
-                sign           = opus_getrawbits(rc, 1);
+                sign           = ff_opus_rc_get_raw(rc, 1);
                 s->remaining2 -= 1 << 3;
                 b             -= 1 << 3;
             }
@@ -1048,16 +1048,16 @@ static unsigned int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
             /* Entropy coding of the angle. We use a uniform pdf for the
             time split, a step for stereo, and a triangular one for the rest. */
             if (dualstereo && N > 2)
-                itheta = opus_rc_stepmodel(rc, qn/2);
+                itheta = ff_opus_rc_dec_uint_step(rc, qn/2);
             else if (dualstereo || B0 > 1)
-                itheta = opus_rc_unimodel(rc, qn+1);
+                itheta = ff_opus_rc_dec_uint(rc, qn+1);
             else
-                itheta = opus_rc_trimodel(rc, qn);
+                itheta = ff_opus_rc_dec_uint_tri(rc, qn);
             itheta = itheta * 16384 / qn;
             /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
             Let's do that at higher complexity */
         } else if (dualstereo) {
-            inv = (b > 2 << 3 && s->remaining2 > 2 << 3) ? opus_rc_p2model(rc, 2) : 0;
+            inv = (b > 2 << 3 && s->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
             itheta = 0;
         }
         qalloc = opus_rc_tell_frac(rc) - tell;
@@ -1103,7 +1103,7 @@ static unsigned int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
             x2 = c ? Y : X;
             y2 = c ? X : Y;
             if (sbits)
-                sign = opus_getrawbits(rc, 1);
+                sign = ff_opus_rc_get_raw(rc, 1);
             sign = 1 - 2 * sign;
             /* We use orig_fill here because we want to fold the side, but if
             itheta==16384, we'll have cleared the low bits of fill. */
@@ -1411,16 +1411,16 @@ static int parse_postfilter(CeltContext *s, OpusRangeCoder *rc, int consumed)
     memset(s->frame[1].pf_gains_new, 0, sizeof(s->frame[1].pf_gains_new));
 
     if (s->startband == 0 && consumed + 16 <= s->framebits) {
-        int has_postfilter = opus_rc_p2model(rc, 1);
+        int has_postfilter = ff_opus_rc_dec_log(rc, 1);
         if (has_postfilter) {
             float gain;
             int tapset, octave, period;
 
-            octave = opus_rc_unimodel(rc, 6);
-            period = (16 << octave) + opus_getrawbits(rc, 4 + octave) - 1;
-            gain   = 0.09375f * (opus_getrawbits(rc, 3) + 1);
+            octave = ff_opus_rc_dec_uint(rc, 6);
+            period = (16 << octave) + ff_opus_rc_get_raw(rc, 4 + octave) - 1;
+            gain   = 0.09375f * (ff_opus_rc_get_raw(rc, 3) + 1);
             tapset = (opus_rc_tell(rc) + 2 <= s->framebits) ?
-                     opus_rc_getsymbol(rc, ff_celt_model_tapset) : 0;
+                     ff_opus_rc_dec_cdf(rc, ff_celt_model_tapset) : 0;
 
             for (i = 0; i < 2; i++) {
                 CeltFrame *frame = &s->frame[i];
@@ -1636,7 +1636,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
     if (consumed >= s->framebits)
         silence = 1;
     else if (consumed == 1)
-        silence = opus_rc_p2model(rc, 15);
+        silence = ff_opus_rc_dec_log(rc, 15);
 
 
     if (silence) {
@@ -1649,7 +1649,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
 
     /* obtain transient flag */
     if (s->duration != 0 && consumed+3 <= s->framebits)
-        transient = opus_rc_p2model(rc, 3);
+        transient = ff_opus_rc_dec_log(rc, 3);
 
     s->blocks    = transient ? 1 << s->duration : 1;
     s->blocksize = frame_size / s->blocks;
@@ -1668,7 +1668,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
     celt_decode_bands        (s, rc);
 
     if (s->anticollapse_bit)
-        anticollapse = opus_getrawbits(rc, 1);
+        anticollapse = ff_opus_rc_get_raw(rc, 1);
 
     celt_decode_final_energy(s, rc, s->framebits - opus_rc_tell(rc));
 
