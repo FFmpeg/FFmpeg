@@ -52,11 +52,13 @@ enum HapHeaderLength {
     HAP_HDR_LONG = 8,
 };
 
-static void compress_texture(AVCodecContext *avctx, const AVFrame *f)
+static int compress_texture(AVCodecContext *avctx, uint8_t *out, int out_length, const AVFrame *f)
 {
     HapContext *ctx = avctx->priv_data;
-    uint8_t *out = ctx->tex_buf;
     int i, j;
+
+    if (ctx->tex_size > out_length)
+        return AVERROR_BUFFER_TOO_SMALL;
 
     for (j = 0; j < avctx->height; j += 4) {
         for (i = 0; i < avctx->width; i += 4) {
@@ -65,6 +67,8 @@ static void compress_texture(AVCodecContext *avctx, const AVFrame *f)
             out += step;
         }
     }
+
+    return 0;
 }
 
 /* section_length does not include the header */
@@ -201,7 +205,9 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     /* DXTC compression. */
-    compress_texture(avctx, frame);
+    ret = compress_texture(avctx, ctx->tex_buf, ctx->tex_size, frame);
+    if (ret < 0)
+        return ret;
 
     /* Compress (using Snappy) the frame */
     final_data_size = hap_compress_frame(avctx, pkt->data + header_length);
