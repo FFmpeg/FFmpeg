@@ -1807,9 +1807,7 @@ static int hls_read_header(AVFormatContext *s)
 
     return 0;
 fail:
-    free_playlist_list(c);
-    free_variant_list(c);
-    free_rendition_list(c);
+    hls_close(s);
     return ret;
 }
 
