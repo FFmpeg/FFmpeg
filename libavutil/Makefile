@@ -48,6 +48,7 @@ HEADERS = adler32.h                                                     \
           replaygain.h                                                  \
           samplefmt.h                                                   \
           sha.h                                                         \
+          spherical.h                                                   \
           stereo3d.h                                                    \
           time.h                                                        \
           version.h                                                     \
@@ -102,6 +103,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       spherical.o                                                      \
        stereo3d.o                                                       \
        time.o                                                           \
        tree.o                                                           \
