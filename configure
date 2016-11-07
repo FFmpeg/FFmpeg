@@ -5177,7 +5177,6 @@ echo "shared                    ${shared-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
-echo "SDL support               ${sdl-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
 echo
@@ -5191,6 +5190,10 @@ echo
 
 echo "Libraries:"
 print_enabled '' $LIBRARY_LIST | print_3_columns
+echo
+
+echo "Programs:"
+print_enabled '' $PROGRAM_LIST | print_3_columns
 echo
 
 for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
