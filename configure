@@ -4778,8 +4778,6 @@ if enabled libcdio; then
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
-
 if enabled libxcb; then
     check_pkg_config xcb-shape xcb/shape.h xcb_shape_rectangles || {
         enabled libxcb && die "ERROR: libxcb not found";
@@ -4805,18 +4803,19 @@ enabled vaapi &&
     check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
     disable vaapi
 
-if enabled vaapi ; then
-    enabled xlib &&
-    check_lib "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
-    enable vaapi_x11
-
+enabled vaapi &&
     check_lib "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
     enable vaapi_drm
-fi
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     disable vdpau
+
+enabled_any vaapi vdpau && check_lib X11/Xlib.h XOpenDisplay -lX11 && enable xlib
+
+enabled vaapi && enabled xlib &&
+    check_lib "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
+    enable vaapi_x11
 
 enabled vdpau && enabled xlib &&
     check_lib "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
