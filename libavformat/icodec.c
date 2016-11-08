@@ -174,8 +174,10 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bytestream_put_le16(&buf, 0);
         bytestream_put_le32(&buf, 0);
 
-        if ((ret = avio_read(pb, buf, image->size)) < 0)
+        if ((ret = avio_read(pb, buf, image->size)) < 0) {
+            av_packet_unref(pkt);
             return ret;
+        }
 
         st->codecpar->bits_per_coded_sample = AV_RL16(buf + 14);
 
