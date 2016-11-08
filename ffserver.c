@@ -1191,7 +1191,7 @@ static int extract_rates(char *rates, int ratelen, const char *request)
     return 0;
 }
 
-static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec,
+static int find_stream_in_feed(FFServerStream *feed, AVCodecParameters *codec,
                                int bit_rate)
 {
     int i;
@@ -1199,7 +1199,7 @@ static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec,
     int best = -1;
 
     for (i = 0; i < feed->nb_streams; i++) {
-        AVCodecContext *feed_codec = feed->streams[i]->codec;
+        AVCodecParameters *feed_codec = feed->streams[i]->codecpar;
 
         if (feed_codec->codec_id != codec->codec_id ||
             feed_codec->sample_rate != codec->sample_rate ||
@@ -1240,7 +1240,7 @@ static int modify_current_stream(HTTPContext *c, char *rates)
         return 0;
 
     for (i = 0; i < req->nb_streams; i++) {
-        AVCodecContext *codec = req->streams[i]->codec;
+        AVCodecParameters *codec = req->streams[i]->codecpar;
 
         switch(rates[i]) {
             case 0:
