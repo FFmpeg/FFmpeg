@@ -810,7 +810,7 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
         list_inv[     i ] = bestv;
     }
 
-    count = i - 1;
+    count = FFMAX(i - 1, 1);
     for (i--; i>=0; i--) {
         int v = i*255/count;
         AV_WN32(rect->data[1] + 4*list_inv[i], RGBA(v/2,v,v/2,v));
