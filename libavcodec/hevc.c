@@ -2973,17 +2973,15 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
     return 0;
 }
 
-static int hevc_decode_extradata(HEVCContext *s)
+static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length)
 {
     AVCodecContext *avctx = s->avctx;
     GetByteContext gb;
     int ret, i;
 
-    bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
+    bytestream2_init(&gb, buf, length);
 
-    if (avctx->extradata_size > 3 &&
-        (avctx->extradata[0] || avctx->extradata[1] ||
-         avctx->extradata[2] > 1)) {
+    if (length > 3 && (buf[0] || buf[1] || buf[2] > 1)) {
         /* It seems the extradata is encoded as hvcC format.
          * Temporarily, we support configurationVersion==0 until 14496-15 3rd
          * is finalized. When finalized, configurationVersion will be 1 and we
@@ -3030,7 +3028,7 @@ static int hevc_decode_extradata(HEVCContext *s)
         s->nal_length_size = nal_len_size;
     } else {
         s->is_nalff = 0;
-        ret = decode_nal_units(s, avctx->extradata, avctx->extradata_size);
+        ret = decode_nal_units(s, buf, length);
         if (ret < 0)
             return ret;
     }
@@ -3338,7 +3336,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
         s->threads_number = 1;
 
     if (avctx->extradata_size > 0 && avctx->extradata) {
-        ret = hevc_decode_extradata(s);
+        ret = hevc_decode_extradata(s, avctx->extradata, avctx->extradata_size);
         if (ret < 0) {
             hevc_decode_free(avctx);
             return ret;
