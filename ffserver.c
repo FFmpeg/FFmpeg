@@ -1990,11 +1990,11 @@ static void compute_status(HTTPContext *c)
 
             for(i=0;i<stream->nb_streams;i++) {
                 AVStream *st = stream->streams[i];
-                AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
+                AVCodec *codec = avcodec_find_encoder(st->codecpar->codec_id);
 
-                switch(st->codec->codec_type) {
+                switch(st->codecpar->codec_type) {
                 case AVMEDIA_TYPE_AUDIO:
-                    audio_bit_rate += st->codec->bit_rate;
+                    audio_bit_rate += st->codecpar->bit_rate;
                     if (codec) {
                         if (*audio_codec_name)
                             audio_codec_name_extra = "...";
@@ -2002,7 +2002,7 @@ static void compute_status(HTTPContext *c)
                     }
                     break;
                 case AVMEDIA_TYPE_VIDEO:
-                    video_bit_rate += st->codec->bit_rate;
+                    video_bit_rate += st->codecpar->bit_rate;
                     if (codec) {
                         if (*video_codec_name)
                             video_codec_name_extra = "...";
@@ -2010,7 +2010,7 @@ static void compute_status(HTTPContext *c)
                     }
                     break;
                 case AVMEDIA_TYPE_DATA:
-                    video_bit_rate += st->codec->bit_rate;
+                    video_bit_rate += st->codecpar->bit_rate;
                     break;
                 default:
                     abort();
@@ -2107,9 +2107,9 @@ static void compute_status(HTTPContext *c)
         if (c1->stream) {
             for (j = 0; j < c1->stream->nb_streams; j++) {
                 if (!c1->stream->feed)
-                    bitrate += c1->stream->streams[j]->codec->bit_rate;
+                    bitrate += c1->stream->streams[j]->codecpar->bit_rate;
                 else if (c1->feed_streams[j] >= 0)
-                    bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec->bit_rate;
+                    bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codecpar->bit_rate;
             }
         }
 
