@@ -44,6 +44,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/rational.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -239,8 +240,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /* utils */
 static size_t htmlencode (const char *src, char **dest);
 static inline void cp_html_entity (char *buffer, const char *entity);
-static inline int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs,
-                                    int stream);
+static inline int check_codec_match(AVStream *ccf, AVStream *ccs, int stream);
 
 static const char *my_program_name;
 
@@ -3711,26 +3711,25 @@ static void build_file_streams(void)
 }
 
 static inline
-int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs, int stream)
+int check_codec_match(AVStream *ccf, AVStream *ccs, int stream)
 {
     int matches = 1;
 
-#define CHECK_CODEC(x)  (ccf->x != ccs->x)
+/* FIXME: Missed check on AVCodecContext.flags */
+#define CHECK_CODEC(x)  (ccf->codecpar->x != ccs->codecpar->x)
     if (CHECK_CODEC(codec_id) || CHECK_CODEC(codec_type)) {
         http_log("Codecs do not match for stream %d\n", stream);
         matches = 0;
-    } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
+    } else if (CHECK_CODEC(bit_rate)) {
         http_log("Codec bitrates do not match for stream %d\n", stream);
         matches = 0;
-    } else if (ccf->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (CHECK_CODEC(time_base.den) ||
-            CHECK_CODEC(time_base.num) ||
-            CHECK_CODEC(width) ||
-            CHECK_CODEC(height)) {
+    } else if (ccf->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (av_cmp_q(ccf->time_base, ccs->time_base) ||
+            CHECK_CODEC(width) || CHECK_CODEC(height)) {
             http_log("Codec width, height or framerate do not match for stream %d\n", stream);
             matches = 0;
         }
-    } else if (ccf->codec_type == AVMEDIA_TYPE_AUDIO) {
+    } else if (ccf->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (CHECK_CODEC(sample_rate) ||
             CHECK_CODEC(channels) ||
             CHECK_CODEC(frame_size)) {
@@ -3812,7 +3811,7 @@ static int build_feed_streams(void)
                     break;
                 }
 
-                matches = check_codec_match (sf->codec, ss->codec, i);
+                matches = check_codec_match (sf, ss, i);
                 if (!matches)
                     break;
             }
