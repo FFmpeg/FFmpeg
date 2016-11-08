@@ -147,6 +147,9 @@ Place AAC sequence header based on audio stream data.
 
 @item no_sequence_end
 Disable sequence end tag.
+
+@item add_keyframe_index
+Used to facilitate seeking; particularly for HTTP pseudo streaming.
 @end table
 @end table
 

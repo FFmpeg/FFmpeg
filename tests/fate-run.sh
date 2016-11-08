@@ -129,6 +129,10 @@ framecrc(){
     ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framecrc -
 }
 
+ffmetadata(){
+    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f ffmetadata -
+}
+
 framemd5(){
     ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framemd5 -
 }
