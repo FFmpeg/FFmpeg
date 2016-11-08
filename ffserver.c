@@ -1895,7 +1895,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
             snprintf(parameters, sizeof(parameters),
                      "%dx%d, q=%d-%d, fps=%d", st->codecpar->width,
                      st->codecpar->height, st->codec->qmin, st->codec->qmax,
-                     st->codec->time_base.den / st->codec->time_base.num);
+                     st->time_base.den / st->time_base.num);
             break;
         default:
             abort();
@@ -1903,7 +1903,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
 
         avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%"PRId64
                         "<td>%s<td>%s\n",
-                    i, type, (int64_t)st->codec->bit_rate/1000,
+                    i, type, (int64_t)st->codecpar->bit_rate/1000,
                     codec ? codec->name : "", parameters);
      }
 
