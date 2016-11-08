@@ -199,6 +199,13 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int ico_read_close(AVFormatContext * s)
+{
+    IcoDemuxContext *ico = s->priv_data;
+    av_freep(&ico->images);
+    return 0;
+}
+
 AVInputFormat ff_ico_demuxer = {
     .name           = "ico",
     .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
@@ -206,5 +213,6 @@ AVInputFormat ff_ico_demuxer = {
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
+    .read_close     = ico_read_close,
     .flags          = AVFMT_NOTIMESTAMPS,
 };
