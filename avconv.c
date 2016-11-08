@@ -206,7 +206,6 @@ static void avconv_cleanup(int ret)
         if (ost->muxing_queue) {
             while (av_fifo_size(ost->muxing_queue)) {
                 AVPacket pkt;
-                av_log(NULL, AV_LOG_INFO, "after av_fifo_size()\n");
                 av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
                 av_packet_unref(&pkt);
             }
