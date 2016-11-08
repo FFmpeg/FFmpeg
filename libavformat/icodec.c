@@ -109,6 +109,10 @@ static int read_header(AVFormatContext *s)
         avio_skip(pb, 5);
 
         ico->images[i].size   = avio_rl32(pb);
+        if (ico->images[i].size <= 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid image size %d\n", ico->images[i].size);
+            return AVERROR_INVALIDDATA;
+        }
         ico->images[i].offset = avio_rl32(pb);
 
         if (avio_seek(pb, ico->images[i].offset, SEEK_SET) < 0)
@@ -174,9 +178,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bytestream_put_le16(&buf, 0);
         bytestream_put_le32(&buf, 0);
 
-        if ((ret = avio_read(pb, buf, image->size)) < 0) {
+        if ((ret = avio_read(pb, buf, image->size)) != image->size) {
             av_packet_unref(pkt);
-            return ret;
+            return ret < 0 ? ret : AVERROR_INVALIDDATA;
         }
 
         st->codecpar->bits_per_coded_sample = AV_RL16(buf + 14);
