@@ -1027,6 +1027,7 @@ check_exec(){
 }
 
 check_exec_crash(){
+    log check_exec_crash "$@"
     code=$(cat)
 
     # exit() is not async signal safe.  _Exit (C99) and _exit (POSIX)
@@ -1097,6 +1098,7 @@ check_compile_assert(){
 }
 
 require(){
+    log require "$@"
     name="$1"
     headers="$2"
     func="$3"
@@ -1105,6 +1107,7 @@ require(){
 }
 
 require_pkg_config(){
+    log require_pkg_config "$@"
     pkg="$1"
     check_pkg_config "$@" || die "ERROR: $pkg not found"
     add_cflags    $(get_safe "${pkg}_cflags")
