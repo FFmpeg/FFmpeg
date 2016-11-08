@@ -1880,21 +1880,21 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
 
     for (i = 0; i < stream_no; i++) {
         st = stream->streams[i];
-        codec = avcodec_find_encoder(st->codec->codec_id);
+        codec = avcodec_find_encoder(st->codecpar->codec_id);
 
         parameters[0] = 0;
 
-        switch(st->codec->codec_type) {
+        switch(st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             type = "audio";
             snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz",
-                     st->codec->channels, st->codec->sample_rate);
+                     st->codecpar->channels, st->codecpar->sample_rate);
             break;
         case AVMEDIA_TYPE_VIDEO:
             type = "video";
             snprintf(parameters, sizeof(parameters),
-                     "%dx%d, q=%d-%d, fps=%d", st->codec->width,
-                     st->codec->height, st->codec->qmin, st->codec->qmax,
+                     "%dx%d, q=%d-%d, fps=%d", st->codecpar->width,
+                     st->codecpar->height, st->codec->qmin, st->codec->qmax,
                      st->codec->time_base.den / st->codec->time_base.num);
             break;
         default:
