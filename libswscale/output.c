@@ -1979,10 +1979,8 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             for (j = 0; j < lumFilterSize; j++)
                 A += alpSrc[j][i] * lumFilter[j];
 
-            A >>= 19;
-
-            if (A & 0x100)
-                A = av_clip_uint8(A);
+            if (A & 0xF8000000)
+                A =  av_clip_uintp2(A, 27);
         }
 
         Y -= c->yuv2rgb_y_offset;
@@ -2003,13 +2001,13 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             dest16[1][i] = B >> SH;
             dest16[2][i] = R >> SH;
             if (hasAlpha)
-                dest16[3][i] = A;
+                dest16[3][i] = A >> (SH - 3);
         } else {
             dest[0][i] = G >> 22;
             dest[1][i] = B >> 22;
             dest[2][i] = R >> 22;
             if (hasAlpha)
-                dest[3][i] = A;
+                dest[3][i] = A >> 19;
         }
     }
     if (SH != 22 && (!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
