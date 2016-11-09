@@ -83,6 +83,7 @@ typedef struct mkv_track {
     int             write_dts;
     int             sample_rate;
     int64_t         sample_rate_offset;
+    int64_t         codecpriv_offset;
     int64_t         ts_offset;
 } mkv_track;
 
@@ -931,6 +932,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         break;
     }
 
+    mkv->tracks[i].codecpriv_offset = avio_tell(pb);
     ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
     if (ret < 0)
         return ret;
@@ -1584,6 +1586,31 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
             // No extradata (codecpar or packet side data).
             av_log(s, AV_LOG_ERROR, "Error parsing AAC extradata, unable to determine samplerate.\n");
             return AVERROR(EINVAL);
+        }
+        break;
+    case AV_CODEC_ID_FLAC:
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+            AVCodecParameters *codecpriv_par;
+            int64_t curpos;
+            if (side_data_size != par->extradata_size) {
+                av_log(s, AV_LOG_ERROR, "Invalid FLAC STREAMINFO metadata for output stream %d\n",
+                       pkt->stream_index);
+                return AVERROR(EINVAL);
+            }
+            codecpriv_par = avcodec_parameters_alloc();
+            if (!codecpriv_par)
+                return AVERROR(ENOMEM);
+            ret = avcodec_parameters_copy(codecpriv_par, par);
+            if (ret < 0) {
+                avcodec_parameters_free(&codecpriv_par);
+                return ret;
+            }
+            memcpy(codecpriv_par->extradata, side_data, side_data_size);
+            curpos = avio_tell(s->pb);
+            avio_seek(s->pb, track->codecpriv_offset, SEEK_SET);
+            mkv_write_codecprivate(s, s->pb, codecpriv_par, 1, 0);
+            avio_seek(s->pb, curpos, SEEK_SET);
+            avcodec_parameters_free(&codecpriv_par);
         }
         break;
     default:
