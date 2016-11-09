@@ -1457,6 +1457,8 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         case AV_PIX_FMT_GBRP10LE:
         case AV_PIX_FMT_GBRP12BE:
         case AV_PIX_FMT_GBRP12LE:
+        case AV_PIX_FMT_GBRAP10BE:
+        case AV_PIX_FMT_GBRAP10LE:
         case AV_PIX_FMT_GBRAP12BE:
         case AV_PIX_FMT_GBRAP12LE:
         case AV_PIX_FMT_GBRP16BE:
