@@ -162,7 +162,7 @@ function ff_h264_idct_add8_neon, export=1
         mov             w19, w3                 // stride
         movrel          x13, X(ff_h264_idct_dc_add_neon)
         movrel          x14, X(ff_h264_idct_add_neon)
-        movrel          x7,  scan8+16
+        movrel          x7,  scan8, 16
         mov             x10, #0
         mov             x11, #16
 1:      mov             w2,  w19
