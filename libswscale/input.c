@@ -1490,7 +1490,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     }
     if (c->needAlpha) {
         if (is16BPS(srcFormat) || isNBPS(srcFormat)) {
-            if (HAVE_BIGENDIAN == !isBE(srcFormat))
+            if (HAVE_BIGENDIAN == !isBE(srcFormat) && !c->readAlpPlanar)
                 c->alpToYV12 = bswap16Y_c;
         }
         switch (srcFormat) {
