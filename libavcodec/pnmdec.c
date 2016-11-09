@@ -43,7 +43,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size         = avpkt->size;
     PNMContext * const s = avctx->priv_data;
     AVFrame * const p    = data;
-    int i, j, n, linesize, h, upgrade = 0, is_mono = 0;
+    int i, j, k, n, linesize, h, upgrade = 0, is_mono = 0;
     unsigned char *ptr;
     int components, sample_len, ret;
 
@@ -143,10 +143,14 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                         v = (*s->bytestream++)&1;
                     } else {
                         /* read a sequence of digits */
-                        do {
+                        for (k = 0; k < 5 && c <= 9; k += 1) {
                             v = 10*v + c;
                             c = (*s->bytestream++) - '0';
-                        } while (c <= 9);
+                        }
+                        if (v > s->maxval) {
+                            av_log(avctx, AV_LOG_ERROR, "value %d larger than maxval %d\n", v, s->maxval);
+                            return AVERROR_INVALIDDATA;
+                        }
                     }
                     if (sample_len == 16) {
                         ((uint16_t*)ptr)[j] = (((1<<sample_len)-1)*v + (s->maxval>>1))/s->maxval;
