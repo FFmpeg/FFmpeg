@@ -625,7 +625,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
 
     /* if V or alpha component size is negative that means that previous
        component sizes are too large */
-    if (v_data_size < 0 || a_data_size < 0 || hdr_size < 6) {
+    if (v_data_size < 0 || a_data_size < 0 || hdr_size < 6 || coff[3] > slice_data_size) {
         av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
         return AVERROR_INVALIDDATA;
     }
