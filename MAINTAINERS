@@ -396,7 +396,8 @@ Muxers/Demuxers:
   epafdec.c                             Paul B Mahol
   ffm*                                  Baptiste Coudurier
   flic.c                                Mike Melanson
-  flvdec.c, flvenc.c                    Michael Niedermayer
+  flvdec.c                              Michael Niedermayer
+  flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
   hls.c                                 Anssi Hannula
