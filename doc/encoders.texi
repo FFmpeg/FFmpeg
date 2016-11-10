@@ -2501,6 +2501,45 @@ Reduces detail but attempts to preserve color at extremely low bitrates.
 
 @end table
 
+@section Hap
+
+Vidvox Hap video encoder.
+
+@subsection Options
+
+@table @option
+@item format @var{integer}
+Specifies the Hap format to encode.
+
+@table @option
+@item hap
+@item hap_alpha
+@item hap_q
+@end table
+
+Default value is @option{hap}.
+
+@item chunks @var{integer}
+Specifies the number of chunks to split frames into, between 1 and 64. This
+permits multithreaded decoding of large frames, potentially at the cost of
+data-rate. The encoder may modify this value to divide frames evenly.
+
+Default value is @var{1}.
+
+@item compressor @var{integer}
+Specifies the second-stage compressor to use. If set to @option{none},
+@option{chunks} will be limited to 1, as chunked uncompressed frames offer no
+benefit.
+
+@table @option
+@item none
+@item snappy
+@end table
+
+Default value is @option{snappy}.
+
+@end table
+
 @c man end VIDEO ENCODERS
 
 @chapter Subtitles Encoders
