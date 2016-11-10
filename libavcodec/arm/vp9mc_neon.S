@@ -404,7 +404,7 @@ function ff_vp9_\type\()_\filter\()\size\()_h_neon, export=1
         ldr             r4,  [sp, #16]
         ldr             r5,  [sp, #20]
 .endif
-        movrelx         r12, X(ff_vp9_subpel_filters)
+        movrelx         r12, X(ff_vp9_subpel_filters), r6
         add             r12, r12, 120*\offset - 8
         cmp             r5,  #8
         add             r12, r12, r5, lsl #3
@@ -680,8 +680,8 @@ function ff_vp9_\type\()_\filter\()\size\()_v_neon, export=1
         push            {r4-r5}
         vpush           {q4-q7}
         ldr             r4,  [sp, #72]
+        movrelx         r12, X(ff_vp9_subpel_filters), r5
         ldr             r5,  [sp, #80]
-        movrelx         r12, X(ff_vp9_subpel_filters)
         add             r12, r12, 120*\offset - 8
         add             r12, r12, r5, lsl #3
         cmp             r5,  #8
