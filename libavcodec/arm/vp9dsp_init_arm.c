@@ -43,7 +43,7 @@ static void op##_##filter##sz##_hv_neon(uint8_t *dst, ptrdiff_t dst_stride,     
                                         const uint8_t *src, ptrdiff_t src_stride, \
                                         int h, int mx, int my)                    \
 {                                                                                 \
-    LOCAL_ALIGNED_16(uint8_t, temp, [((sz < 64 ? 2 * sz : 64) + 8) * sz]);        \
+    LOCAL_ALIGNED_16(uint8_t, temp, [((1 + (sz < 64)) * sz + 8) * sz]);           \
     /* We only need h + 7 lines, but the horizontal filter assumes an             \
      * even number of rows, so filter h + 8 lines here. */                        \
     ff_vp9_put_##filter##sz##_h_neon(temp, sz,                                    \

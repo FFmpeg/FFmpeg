@@ -20,60 +20,6 @@
 
 #include "libavutil/arm/asm.S"
 
-const regular_filter, align=4
-        .short  0,  1,  -5, 126,   8,  -3,  1,  0
-        .short -1,  3, -10, 122,  18,  -6,  2,  0
-        .short -1,  4, -13, 118,  27,  -9,  3, -1
-        .short -1,  4, -16, 112,  37, -11,  4, -1
-        .short -1,  5, -18, 105,  48, -14,  4, -1
-        .short -1,  5, -19,  97,  58, -16,  5, -1
-        .short -1,  6, -19,  88,  68, -18,  5, -1
-        .short -1,  6, -19,  78,  78, -19,  6, -1
-        .short -1,  5, -18,  68,  88, -19,  6, -1
-        .short -1,  5, -16,  58,  97, -19,  5, -1
-        .short -1,  4, -14,  48, 105, -18,  5, -1
-        .short -1,  4, -11,  37, 112, -16,  4, -1
-        .short -1,  3,  -9,  27, 118, -13,  4, -1
-        .short  0,  2,  -6,  18, 122, -10,  3, -1
-        .short  0,  1,  -3,   8, 126,  -5,  1,  0
-endconst
-
-const sharp_filter, align=4
-        .short -1,  3,  -7, 127,   8,  -3,  1,  0
-        .short -2,  5, -13, 125,  17,  -6,  3, -1
-        .short -3,  7, -17, 121,  27, -10,  5, -2
-        .short -4,  9, -20, 115,  37, -13,  6, -2
-        .short -4, 10, -23, 108,  48, -16,  8, -3
-        .short -4, 10, -24, 100,  59, -19,  9, -3
-        .short -4, 11, -24,  90,  70, -21, 10, -4
-        .short -4, 11, -23,  80,  80, -23, 11, -4
-        .short -4, 10, -21,  70,  90, -24, 11, -4
-        .short -3,  9, -19,  59, 100, -24, 10, -4
-        .short -3,  8, -16,  48, 108, -23, 10, -4
-        .short -2,  6, -13,  37, 115, -20,  9, -4
-        .short -2,  5, -10,  27, 121, -17,  7, -3
-        .short -1,  3,  -6,  17, 125, -13,  5, -2
-        .short  0,  1,  -3,   8, 127,  -7,  3, -1
-endconst
-
-const smooth_filter, align=4
-        .short -3, -1,  32,  64,  38,   1, -3,  0
-        .short -2, -2,  29,  63,  41,   2, -3,  0
-        .short -2, -2,  26,  63,  43,   4, -4,  0
-        .short -2, -3,  24,  62,  46,   5, -4,  0
-        .short -2, -3,  21,  60,  49,   7, -4,  0
-        .short -1, -4,  18,  59,  51,   9, -4,  0
-        .short -1, -4,  16,  57,  53,  12, -4, -1
-        .short -1, -4,  14,  55,  55,  14, -4, -1
-        .short -1, -4,  12,  53,  57,  16, -4, -1
-        .short  0, -4,   9,  51,  59,  18, -4, -1
-        .short  0, -4,   7,  49,  60,  21, -3, -2
-        .short  0, -4,   5,  46,  62,  24, -3, -2
-        .short  0, -4,   4,  43,  63,  26, -2, -2
-        .short  0, -3,   2,  41,  63,  29, -2, -2
-        .short  0, -3,   1,  38,  64,  32, -1, -3
-endconst
-
 @ All public functions in this file have the following signature:
 @ typedef void (*vp9_mc_func)(uint8_t *dst, ptrdiff_t dst_stride,
 @                            const uint8_t *ref, ptrdiff_t ref_stride,
@@ -156,20 +102,21 @@ function ff_vp9_copy16_neon, export=1
 endfunc
 
 function ff_vp9_avg16_neon, export=1
-        ldr             r12, [sp]
+        push            {lr}
+        ldr             r12, [sp, #4]
+        mov             lr,  r0
 1:
         vld1.8          {q2},  [r2], r3
         vld1.8          {q0},  [r0, :128], r1
         vld1.8          {q3},  [r2], r3
         vrhadd.u8       q0,  q0,  q2
-        vld1.8          {q1},  [r0, :128]
-        sub             r0,  r0,  r1
+        vld1.8          {q1},  [r0, :128], r1
         vrhadd.u8       q1,  q1,  q3
         subs            r12, r12, #2
-        vst1.8          {q0},  [r0, :128], r1
-        vst1.8          {q1},  [r0, :128], r1
+        vst1.8          {q0},  [lr, :128], r1
+        vst1.8          {q1},  [lr, :128], r1
         bne             1b
-        bx              lr
+        pop             {pc}
 endfunc
 
 function ff_vp9_copy8_neon, export=1
@@ -218,7 +165,9 @@ function ff_vp9_copy4_neon, export=1
 endfunc
 
 function ff_vp9_avg4_neon, export=1
-        ldr             r12, [sp]
+        push            {lr}
+        ldr             r12, [sp, #4]
+        mov             lr,  r0
 1:
         vld1.32         {d4[]},   [r2], r3
         vld1.32         {d0[]},   [r0, :32], r1
@@ -231,15 +180,14 @@ function ff_vp9_avg4_neon, export=1
         vld1.32         {d7[]},   [r2], r3
         vrhadd.u8       d2,  d2,  d6
         vld1.32         {d3[]},   [r0, :32], r1
-        sub             r0,  r0,  r1, lsl #2
         subs            r12, r12, #4
-        vst1.32         {d0[0]},  [r0, :32], r1
+        vst1.32         {d0[0]},  [lr, :32], r1
         vrhadd.u8       d3,  d3,  d7
-        vst1.32         {d1[0]},  [r0, :32], r1
-        vst1.32         {d2[0]},  [r0, :32], r1
-        vst1.32         {d3[0]},  [r0, :32], r1
+        vst1.32         {d1[0]},  [lr, :32], r1
+        vst1.32         {d2[0]},  [lr, :32], r1
+        vst1.32         {d3[0]},  [lr, :32], r1
         bne             1b
-        bx              lr
+        pop             {pc}
 endfunc
 
 @ Helper macros for vmul/vmla with a constant from either d0 or d1 depending on index
@@ -327,7 +275,8 @@ function \type\()_8tap_\size\()h_\idx1\idx2
         sub             r3,  r3,  #8
 .endif
         @ Load the filter vector
-        vld1.16         {q0},  [r12,:128]
+        vld1.8          {d0},  [r12,:64]
+        vmovl.s8        q0,  d0
 1:
 .if \size >= 16
         mov             r12, r5
@@ -397,12 +346,12 @@ function \type\()_8tap_\size\()h_\idx1\idx2
 .endif
         @ Store and loop horizontally (for size >= 16)
 .if \size >= 16
+        subs            r12, r12, #16
         vst1.8          {q1}, [r0,:128]!
         vst1.8          {q3}, [r6,:128]!
+        beq             3f
         vmov            q8,  q10
         vmov            q11, q13
-        subs            r12, r12, #16
-        beq             3f
         vld1.8          {q10}, [r2]!
         vld1.8          {q13}, [r7]!
         vmovl.u8        q9,  d20
@@ -444,7 +393,7 @@ do_8tap_h_size 4
 do_8tap_h_size 8
 do_8tap_h_size 16
 
-.macro do_8tap_h_func type, filter, size
+.macro do_8tap_h_func type, filter, offset, size
 function ff_vp9_\type\()_\filter\()\size\()_h_neon, export=1
         push            {r4-r7}
 .if \size >= 16
@@ -455,9 +404,10 @@ function ff_vp9_\type\()_\filter\()\size\()_h_neon, export=1
         ldr             r4,  [sp, #16]
         ldr             r5,  [sp, #20]
 .endif
-        movrel          r12, \filter\()_filter-16
+        movrelx         r12, X(ff_vp9_subpel_filters)
+        add             r12, r12, 120*\offset - 8
         cmp             r5,  #8
-        add             r12,  r12, r5, lsl #4
+        add             r12, r12, r5, lsl #3
         mov             r5, #\size
 .if \size >= 16
         bge             \type\()_8tap_16h_34
@@ -470,12 +420,12 @@ endfunc
 .endm
 
 .macro do_8tap_h_filters size
-do_8tap_h_func put, regular, \size
-do_8tap_h_func avg, regular, \size
-do_8tap_h_func put, sharp,   \size
-do_8tap_h_func avg, sharp,   \size
-do_8tap_h_func put, smooth,  \size
-do_8tap_h_func avg, smooth,  \size
+do_8tap_h_func put, regular, 1, \size
+do_8tap_h_func avg, regular, 1, \size
+do_8tap_h_func put, sharp,   2, \size
+do_8tap_h_func avg, sharp,   2, \size
+do_8tap_h_func put, smooth,  0, \size
+do_8tap_h_func avg, smooth,  0, \size
 .endm
 
 do_8tap_h_filters 64
@@ -590,7 +540,8 @@ do_8tap_h_filters 4
 function \type\()_8tap_8v_\idx1\idx2
         sub             r2,  r2,  r3, lsl #1
         sub             r2,  r2,  r3
-        vld1.16         {q0},  [r12, :128]
+        vld1.8          {d0},  [r12, :64]
+        vmovl.s8        q0,  d0
 1:
         mov             r12,  r4
 
@@ -660,7 +611,8 @@ do_8tap_8v avg, 4, 3
 function \type\()_8tap_4v_\idx1\idx2
         sub             r2,  r2,  r3, lsl #1
         sub             r2,  r2,  r3
-        vld1.16         {q0},  [r12, :128]
+        vld1.8          {d0},  [r12, :64]
+        vmovl.s8        q0,  d0
 
         vld1.32         {d2[]},   [r2], r3
         vld1.32         {d3[]},   [r2], r3
@@ -723,14 +675,15 @@ do_8tap_4v put, 4, 3
 do_8tap_4v avg, 3, 4
 do_8tap_4v avg, 4, 3
 
-.macro do_8tap_v_func type, filter, size
+.macro do_8tap_v_func type, filter, offset, size
 function ff_vp9_\type\()_\filter\()\size\()_v_neon, export=1
         push            {r4-r5}
         vpush           {q4-q7}
         ldr             r4,  [sp, #72]
         ldr             r5,  [sp, #80]
-        movrel          r12, \filter\()_filter-16
-        add             r12,  r12, r5, lsl #4
+        movrelx         r12, X(ff_vp9_subpel_filters)
+        add             r12, r12, 120*\offset - 8
+        add             r12, r12, r5, lsl #3
         cmp             r5,  #8
         mov             r5,  #\size
 .if \size >= 8
@@ -744,12 +697,12 @@ endfunc
 .endm
 
 .macro do_8tap_v_filters size
-do_8tap_v_func put, regular, \size
-do_8tap_v_func avg, regular, \size
-do_8tap_v_func put, sharp,   \size
-do_8tap_v_func avg, sharp,   \size
-do_8tap_v_func put, smooth,  \size
-do_8tap_v_func avg, smooth,  \size
+do_8tap_v_func put, regular, 1, \size
+do_8tap_v_func avg, regular, 1, \size
+do_8tap_v_func put, sharp,   2, \size
+do_8tap_v_func avg, sharp,   2, \size
+do_8tap_v_func put, smooth,  0, \size
+do_8tap_v_func avg, smooth,  0, \size
 .endm
 
 do_8tap_v_filters 64
