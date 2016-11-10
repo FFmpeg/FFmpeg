@@ -435,6 +435,7 @@ extern const int8_t ff_vp9_subpel_filters[3][15][8];
 
 void ff_vp9dsp_init(VP9DSPContext *dsp);
 
+void ff_vp9dsp_init_aarch64(VP9DSPContext *dsp);
 void ff_vp9dsp_init_arm(VP9DSPContext *dsp);
 void ff_vp9dsp_init_x86(VP9DSPContext *dsp);
 

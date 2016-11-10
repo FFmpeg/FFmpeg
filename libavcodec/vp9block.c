@@ -1176,7 +1176,7 @@ static av_always_inline void mc_luma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
 
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
-    // The arm _hv filters read one more row than what actually is
+    // The arm/aarch64 _hv filters read one more row than what actually is
     // needed, so switch to emulated edge one pixel sooner vertically
     // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
@@ -1221,7 +1221,7 @@ static av_always_inline void mc_chroma_dir(VP9Context *s, vp9_mc_func(*mc)[2],
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
 
     // FIXME bilinear filter only needs 0/1 pixels, not 3/4
-    // The arm _hv filters read one more row than what actually is
+    // The arm/aarch64 _hv filters read one more row than what actually is
     // needed, so switch to emulated edge one pixel sooner vertically
     // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
