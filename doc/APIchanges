@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavu 55.42.100 / 55.30.0 - spherical.h
+  Add AV_FRAME_DATA_SPHERICAL value, av_spherical_alloc() API and
+  AVSphericalMapping type to export and describe spherical video properties.
+
 2016-11-18 - xxxxxxx - lavf 57.58.100 - avformat.h
   Add av_stream_add_side_data().
 

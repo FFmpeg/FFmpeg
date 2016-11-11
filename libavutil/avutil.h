@@ -118,6 +118,12 @@
  *
  * @}
  *
+ * @defgroup lavu_video Video related
+ *
+ * @{
+ *
+ * @}
+ *
  * @defgroup lavu_audio Audio related
  *
  * @{
