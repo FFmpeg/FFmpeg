@@ -762,6 +762,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     } sd[] = {
         { AV_PKT_DATA_REPLAYGAIN ,                AV_FRAME_DATA_REPLAYGAIN },
         { AV_PKT_DATA_DISPLAYMATRIX,              AV_FRAME_DATA_DISPLAYMATRIX },
+        { AV_PKT_DATA_SPHERICAL,                  AV_FRAME_DATA_SPHERICAL },
         { AV_PKT_DATA_STEREO3D,                   AV_FRAME_DATA_STEREO3D },
         { AV_PKT_DATA_AUDIO_SERVICE_TYPE,         AV_FRAME_DATA_AUDIO_SERVICE_TYPE },
         { AV_PKT_DATA_MASTERING_DISPLAY_METADATA, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA },

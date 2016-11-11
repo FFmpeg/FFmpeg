@@ -37,6 +37,7 @@
 #include "libavutil/hash.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -1783,6 +1784,18 @@ static void print_pkt_side_data(WriterContext *w,
             const AVStereo3D *stereo = (AVStereo3D *)sd->data;
             print_str("type", av_stereo3d_type_name(stereo->type));
             print_int("inverted", !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
+        } else if (sd->type == AV_PKT_DATA_SPHERICAL) {
+            const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
+            if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+                print_str("projection", "equirectangular");
+            else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+                print_str("projection", "cubemap");
+            else
+                print_str("projection", "unknown");
+
+            print_int("yaw", (double) spherical->yaw / (1 << 16));
+            print_int("pitch", (double) spherical->pitch / (1 << 16));
+            print_int("roll", (double) spherical->roll / (1 << 16));
         }
         writer_print_section_footer(w);
     }
