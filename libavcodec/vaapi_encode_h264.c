@@ -146,6 +146,7 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_b;
 
     int next_frame_num;
+    int64_t last_idr_frame;
     int64_t idr_pic_count;
 
     int cpb_delay;
@@ -960,6 +961,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         vpic->frame_num = 0;
         priv->next_frame_num = 1;
         priv->cpb_delay = 0;
+        priv->last_idr_frame = pic->display_order;
     } else {
         vpic->frame_num = priv->next_frame_num;
         if (pic->type != PICTURE_TYPE_B) {
@@ -976,8 +978,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     vpic->CurrPic.picture_id          = pic->recon_surface;
     vpic->CurrPic.frame_idx           = vpic->frame_num;
     vpic->CurrPic.flags               = 0;
-    vpic->CurrPic.TopFieldOrderCnt    = pic->display_order;
-    vpic->CurrPic.BottomFieldOrderCnt = pic->display_order;
+    vpic->CurrPic.TopFieldOrderCnt    = pic->display_order - priv->last_idr_frame;
+    vpic->CurrPic.BottomFieldOrderCnt = pic->display_order - priv->last_idr_frame;
 
     for (i = 0; i < pic->nb_refs; i++) {
         VAAPIEncodePicture *ref = pic->refs[i];
@@ -985,8 +987,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         vpic->ReferenceFrames[i].picture_id = ref->recon_surface;
         vpic->ReferenceFrames[i].frame_idx  = ref->encode_order;
         vpic->ReferenceFrames[i].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-        vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order;
-        vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order;
+        vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order - priv->last_idr_frame;
+        vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order - priv->last_idr_frame;
     }
     for (; i < FF_ARRAY_ELEMS(vpic->ReferenceFrames); i++) {
         vpic->ReferenceFrames[i].picture_id = VA_INVALID_ID;
@@ -1057,7 +1059,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     vslice->pic_parameter_set_id = vpic->pic_parameter_set_id;
     vslice->idr_pic_id = priv->idr_pic_count++;
 
-    vslice->pic_order_cnt_lsb = pic->display_order &
+    vslice->pic_order_cnt_lsb = (pic->display_order - priv->last_idr_frame) &
         ((1 << (4 + vseq->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4)) - 1);
 
     for (i = 0; i < FF_ARRAY_ELEMS(vslice->RefPicList0); i++) {
