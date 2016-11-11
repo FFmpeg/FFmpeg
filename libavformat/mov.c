@@ -42,6 +42,8 @@
 #include "libavutil/aes.h"
 #include "libavutil/aes_ctr.h"
 #include "libavutil/sha.h"
+#include "libavutil/spherical.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
@@ -4498,8 +4500,204 @@ static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    enum AVStereo3DType type;
+    int mode;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    if (atom.size < 5) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty stereoscopic video box\n");
+        return AVERROR_INVALIDDATA;
+    }
+    avio_skip(pb, 4); /* version + flags */
+
+    mode = avio_r8(pb);
+    switch (mode) {
+    case 0:
+        type = AV_STEREO3D_2D;
+        break;
+    case 1:
+        type = AV_STEREO3D_TOPBOTTOM;
+        break;
+    case 2:
+        type = AV_STEREO3D_SIDEBYSIDE;
+        break;
+    default:
+        av_log(c->fc, AV_LOG_WARNING, "Unknown st3d mode value %d\n", mode);
+        return 0;
+    }
+
+    sc->stereo3d = av_stereo3d_alloc();
+    if (!sc->stereo3d)
+        return AVERROR(ENOMEM);
+
+    sc->stereo3d->type = type;
+    return 0;
+}
+
+static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    int size;
+    int32_t yaw, pitch, roll;
+    uint32_t tag;
+    enum AVSphericalProjection projection;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    if (atom.size < 8) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty spherical video box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    size = avio_rb32(pb);
+    if (size > atom.size)
+        return AVERROR_INVALIDDATA;
+
+    tag = avio_rl32(pb);
+    if (tag != MKTAG('s','v','h','d')) {
+        av_log(c->fc, AV_LOG_ERROR, "Missing spherical video header\n");
+        return 0;
+    }
+    avio_skip(pb, 4); /*  version + flags */
+    avio_skip(pb, avio_r8(pb)); /* metadata_source */
+
+    size = avio_rb32(pb);
+    if (size > atom.size)
+        return AVERROR_INVALIDDATA;
+
+    tag = avio_rl32(pb);
+    if (tag != MKTAG('p','r','o','j')) {
+        av_log(c->fc, AV_LOG_ERROR, "Missing projection box\n");
+        return 0;
+    }
+
+    size = avio_rb32(pb);
+    if (size > atom.size)
+        return AVERROR_INVALIDDATA;
+
+    tag = avio_rl32(pb);
+    if (tag != MKTAG('p','r','h','d')) {
+        av_log(c->fc, AV_LOG_ERROR, "Missing projection header box\n");
+        return 0;
+    }
+    avio_skip(pb, 4); /*  version + flags */
+
+    /* 16.16 fixed point */
+    yaw   = avio_rb32(pb);
+    pitch = avio_rb32(pb);
+    roll  = avio_rb32(pb);
+
+    size = avio_rb32(pb);
+    if (size > atom.size)
+        return AVERROR_INVALIDDATA;
+
+    tag = avio_rl32(pb);
+    avio_skip(pb, 4); /*  version + flags */
+    switch (tag) {
+    case MKTAG('c','b','m','p'):
+        projection = AV_SPHERICAL_CUBEMAP;
+        break;
+    case MKTAG('e','q','u','i'):
+        projection = AV_SPHERICAL_EQUIRECTANGULAR;
+        break;
+    default:
+        av_log(c->fc, AV_LOG_ERROR, "Unknown projection type\n");
+        return 0;
+    }
+
+    sc->spherical = av_spherical_alloc(&sc->spherical_size);
+    if (!sc->spherical)
+        return AVERROR(ENOMEM);
+
+    sc->spherical->projection = projection;
+
+    sc->spherical->yaw   = yaw;
+    sc->spherical->pitch = pitch;
+    sc->spherical->roll  = roll;
+
+    return 0;
+}
+
+static int mov_parse_uuid_spherical(MOVStreamContext *sc, AVIOContext *pb, size_t len)
+{
+    int ret = 0;
+    uint8_t *buffer = av_malloc(len + 1);
+    const char *val;
+
+    if (!buffer)
+        return AVERROR(ENOMEM);
+    buffer[len] = '\0';
+
+    ret = ffio_read_size(pb, buffer, len);
+    if (ret < 0)
+        goto out;
+
+    /* Check for mandatory keys and values, try to support XML as best-effort */
+    if (av_stristr(buffer, "<GSpherical:StitchingSoftware>") &&
+        (val = av_stristr(buffer, "<GSpherical:Spherical>")) &&
+        av_stristr(val, "true") &&
+        (val = av_stristr(buffer, "<GSpherical:Stitched>")) &&
+        av_stristr(val, "true") &&
+        (val = av_stristr(buffer, "<GSpherical:ProjectionType>")) &&
+        av_stristr(val, "equirectangular")) {
+        sc->spherical = av_spherical_alloc(&sc->spherical_size);
+        if (!sc->spherical)
+            goto out;
+
+        sc->spherical->projection = AV_SPHERICAL_EQUIRECTANGULAR;
+
+        if (av_stristr(buffer, "<GSpherical:StereoMode>")) {
+            enum AVStereo3DType mode;
+
+            if (av_stristr(buffer, "left-right"))
+                mode = AV_STEREO3D_SIDEBYSIDE;
+            else if (av_stristr(buffer, "top-bottom"))
+                mode = AV_STEREO3D_TOPBOTTOM;
+            else
+                mode = AV_STEREO3D_2D;
+
+            sc->stereo3d = av_stereo3d_alloc();
+            if (!sc->stereo3d)
+                goto out;
+
+            sc->stereo3d->type = mode;
+        }
+
+        /* orientation */
+        val = av_stristr(buffer, "<GSpherical:InitialViewHeadingDegrees>");
+        if (val)
+            sc->spherical->yaw = strtol(val, NULL, 10) * (1 << 16);
+        val = av_stristr(buffer, "<GSpherical:InitialViewPitchDegrees>");
+        if (val)
+            sc->spherical->pitch = strtol(val, NULL, 10) * (1 << 16);
+        val = av_stristr(buffer, "<GSpherical:InitialViewRollDegrees>");
+        if (val)
+            sc->spherical->roll = strtol(val, NULL, 10) * (1 << 16);
+    }
+
+out:
+    av_free(buffer);
+    return ret;
+}
+
 static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    AVStream *st;
+    MOVStreamContext *sc;
     int ret;
     uint8_t uuid[16];
     static const uint8_t uuid_isml_manifest[] = {
@@ -4510,9 +4708,18 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
         0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac
     };
+    static const uint8_t uuid_spherical[] = {
+        0xff, 0xcc, 0x82, 0x63, 0xf8, 0x55, 0x4a, 0x93,
+        0x88, 0x14, 0x58, 0x7a, 0x02, 0x52, 0x1f, 0xdd,
+    };
 
     if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
         return AVERROR_INVALIDDATA;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
 
     ret = avio_read(pb, uuid, sizeof(uuid));
     if (ret < 0) {
@@ -4585,7 +4792,14 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
         }
         av_free(buffer);
-    }
+    } else if (!memcmp(uuid, uuid_spherical, sizeof(uuid))) {
+        size_t len = atom.size - sizeof(uuid);
+        ret = mov_parse_uuid_spherical(sc, pb, len);
+        if (ret < 0)
+            return ret;
+        if (!sc->spherical)
+            av_log(c->fc, AV_LOG_WARNING, "Invalid spherical metadata found\n");    }
+
     return 0;
 }
 
@@ -4973,6 +5187,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','e','n','c'), mov_read_senc },
 { MKTAG('s','a','i','z'), mov_read_saiz },
 { MKTAG('d','f','L','a'), mov_read_dfla },
+{ MKTAG('s','t','3','d'), mov_read_st3d }, /* stereoscopic 3D video box */
+{ MKTAG('s','v','3','d'), mov_read_sv3d }, /* spherical video box */
 { 0, NULL }
 };
 
@@ -5393,6 +5609,9 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->cenc.auxiliary_info);
         av_freep(&sc->cenc.auxiliary_info_sizes);
         av_aes_ctr_free(sc->cenc.aes_ctr);
+
+        av_freep(&sc->stereo3d);
+        av_freep(&sc->spherical);
     }
 
     if (mov->dv_demux) {
@@ -5710,6 +5929,24 @@ static int mov_read_header(AVFormatContext *s)
                     return err;
 
                 sc->display_matrix = NULL;
+            }
+            if (sc->stereo3d) {
+                err = av_stream_add_side_data(st, AV_PKT_DATA_STEREO3D,
+                                              (uint8_t *)sc->stereo3d,
+                                              sizeof(*sc->stereo3d));
+                if (err < 0)
+                    return err;
+
+                sc->stereo3d = NULL;
+            }
+            if (sc->spherical) {
+                err = av_stream_add_side_data(st, AV_PKT_DATA_SPHERICAL,
+                                              (uint8_t *)sc->spherical,
+                                              sc->spherical_size);
+                if (err < 0)
+                    return err;
+
+                sc->spherical = NULL;
             }
             break;
         }
