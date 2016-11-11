@@ -1142,8 +1142,9 @@ int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *
     ifilter->channels            = avctx->channels;
     ifilter->channel_layout      = avctx->channel_layout;
 
-    if (avctx->hw_frames_ctx) {
-        ifilter->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+    if (ifilter->ist && ifilter->ist->hw_frames_ctx) {
+        ifilter->format = ifilter->ist->resample_pix_fmt;
+        ifilter->hw_frames_ctx = av_buffer_ref(ifilter->ist->hw_frames_ctx);
         if (!ifilter->hw_frames_ctx)
             return AVERROR(ENOMEM);
     }
