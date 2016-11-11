@@ -4776,24 +4776,28 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     } else if (!memcmp(uuid, uuid_xmp, sizeof(uuid))) {
         uint8_t *buffer;
         size_t len = atom.size - sizeof(uuid);
-
-        buffer = av_mallocz(len + 1);
-        if (!buffer) {
-            return AVERROR(ENOMEM);
-        }
-        ret = avio_read(pb, buffer, len);
-        if (ret < 0) {
-            av_free(buffer);
-            return ret;
-        } else if (ret != len) {
-            av_free(buffer);
-            return AVERROR_INVALIDDATA;
-        }
         if (c->export_xmp) {
+            buffer = av_mallocz(len + 1);
+            if (!buffer) {
+                return AVERROR(ENOMEM);
+            }
+            ret = avio_read(pb, buffer, len);
+            if (ret < 0) {
+                av_free(buffer);
+                return ret;
+            } else if (ret != len) {
+                av_free(buffer);
+                return AVERROR_INVALIDDATA;
+            }
             buffer[len] = '\0';
             av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
+            av_free(buffer);
+        } else {
+            // skip all uuid atom, which makes it fast for long uuid-xmp file
+            ret = avio_skip(pb, len);
+            if (ret < 0)
+                return ret;
         }
-        av_free(buffer);
     } else if (!memcmp(uuid, uuid_spherical, sizeof(uuid))) {
         size_t len = atom.size - sizeof(uuid);
         ret = mov_parse_uuid_spherical(sc, pb, len);
