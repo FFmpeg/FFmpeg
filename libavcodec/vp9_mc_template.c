@@ -205,7 +205,9 @@ static void FN(inter_pred)(AVCodecContext *ctx)
         } else
 #endif
         {
+#if SCALED == 0
             av_assert2(b->bs == BS_4x4);
+#endif
 
             // FIXME if two horizontally adjacent blocks have the same MV,
             // do a w8 instead of a w4 call
