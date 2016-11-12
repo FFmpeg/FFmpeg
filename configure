@@ -2467,6 +2467,7 @@ transcode_aac_example_deps="avcodec avformat avresample"
 
 # libraries, in linking order
 avcodec_deps="avutil"
+avcodec_select="null_bsf"
 avdevice_deps="avformat avcodec avutil"
 avfilter_deps="avutil"
 avformat_deps="avcodec avutil"
