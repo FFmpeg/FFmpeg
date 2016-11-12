@@ -258,8 +258,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
 .endif
 
         vmov.i16        q15, #0
-.ifc \txfm1,idct
-.ifc \txfm2,idct
+.ifc \txfm1\()_\txfm2,idct_idct
         cmp             r3,  #1
         bne             1f
         @ DC-only for idct/idct
@@ -272,7 +271,6 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
         vdup.16         q2,  d4[0]
         vmov            q3,  q2
         b               2f
-.endif
 .endif
 
 1:
@@ -386,29 +384,21 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         @ if only idct is involved.
         @ The iadst also uses a few coefficients from
         @ idct, so those always need to be loaded.
-.ifc \txfm1,iadst
-        movrel          r12, iadst8_coeffs
-        vld1.16         {q1}, [r12,:128]!
-        vpush           {q4-q7}
-        vld1.16         {q0}, [r12,:128]
-.else
-.ifc \txfm2,iadst
-        movrel          r12, iadst8_coeffs
-        vld1.16         {q1}, [r12,:128]!
-        vpush           {q4-q7}
-        vld1.16         {q0}, [r12,:128]
-.else
+.ifc \txfm1\()_\txfm2,idct_idct
         movrel          r12, idct_coeffs
         vpush           {q4-q5}
         vld1.16         {q0}, [r12,:128]
-.endif
+.else
+        movrel          r12, iadst8_coeffs
+        vld1.16         {q1}, [r12,:128]!
+        vpush           {q4-q7}
+        vld1.16         {q0}, [r12,:128]
 .endif
 
         vmov.i16        q2, #0
         vmov.i16        q3, #0
 
-.ifc \txfm1,idct
-.ifc \txfm2,idct
+.ifc \txfm1\()_\txfm2,idct_idct
         cmp             r3,  #1
         bne             1f
         @ DC-only for idct/idct
@@ -427,7 +417,6 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         vmov            q15, q8
         vst1.16         {d4[0]}, [r2,:16]
         b               2f
-.endif
 .endif
 1:
         vld1.16         {q8-q9},    [r2,:128]!
@@ -497,14 +486,10 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         vst1.8          {d10}, [r3,:64], r1
         vst1.8          {d11}, [r3,:64], r1
 
-.ifc \txfm1,iadst
-        vpop            {q4-q7}
-.else
-.ifc \txfm2,iadst
-        vpop            {q4-q7}
-.else
+.ifc \txfm1\()_\txfm2,idct_idct
         vpop            {q4-q5}
-.endif
+.else
+        vpop            {q4-q7}
 .endif
         bx              lr
 endfunc
@@ -798,19 +783,13 @@ itxfm16_1d_funcs iadst
 
 .macro itxfm_func16x16 txfm1, txfm2
 function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
-.ifc \txfm1,idct
-.ifc \txfm2,idct
+.ifc \txfm1\()_\txfm2,idct_idct
         cmp             r3,  #1
         beq             idct16x16_dc_add_neon
 .endif
-.endif
         push            {r4-r7,lr}
-.ifc \txfm1,iadst
+.ifnc \txfm1\()_\txfm2,idct_idct
         vpush           {q4-q7}
-.else
-.ifc \txfm2,iadst
-        vpush           {q4-q7}
-.endif
 .endif
         mov             r7,  sp
 
@@ -850,12 +829,8 @@ A       sub             sp,  sp,  #512
 .endr
 
         mov             sp,  r7
-.ifc \txfm1,iadst
+.ifnc \txfm1\()_\txfm2,idct_idct
         vpop            {q4-q7}
-.else
-.ifc \txfm2,iadst
-        vpop            {q4-q7}
-.endif
 .endif
         pop             {r4-r7,pc}
 endfunc
