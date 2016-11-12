@@ -2195,6 +2195,13 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
         if (ctx->lavc_build <= 4712U)
             s->workaround_bugs |= FF_BUG_DC_CLIP;
 
+        if ((ctx->lavc_build&0xFF) >= 100) {
+            if (ctx->lavc_build > 3621476 && ctx->lavc_build < 3752552 &&
+               (ctx->lavc_build < 3752037 || ctx->lavc_build > 3752191) // 3.2.1+
+            )
+                s->workaround_bugs |= FF_BUG_IEDGE;
+        }
+
         if (ctx->divx_version >= 0)
             s->workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
         if (ctx->divx_version == 501 && ctx->divx_build == 20020416)

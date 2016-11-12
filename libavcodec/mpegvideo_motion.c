@@ -327,6 +327,8 @@ void mpeg_motion_internal(MpegEncContext *s,
         if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             uint8_t *ubuf = s->sc.edge_emu_buffer + 18 * s->linesize;
             uint8_t *vbuf = ubuf + 10 * s->uvlinesize;
+            if (s->workaround_bugs & FF_BUG_IEDGE)
+                vbuf -= s->uvlinesize;
             uvsrc_y = (unsigned)uvsrc_y << field_based;
             s->vdsp.emulated_edge_mc(ubuf, ptr_cb,
                                      s->uvlinesize, s->uvlinesize,
@@ -550,6 +552,8 @@ static inline void qpel_motion(MpegEncContext *s,
         if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             uint8_t *ubuf = s->sc.edge_emu_buffer + 18 * s->linesize;
             uint8_t *vbuf = ubuf + 10 * s->uvlinesize;
+            if (s->workaround_bugs & FF_BUG_IEDGE)
+                vbuf -= s->uvlinesize;
             s->vdsp.emulated_edge_mc(ubuf, ptr_cb,
                                      s->uvlinesize, s->uvlinesize,
                                      9, 9 + field_based,
