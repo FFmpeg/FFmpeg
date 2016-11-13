@@ -307,7 +307,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     /* Grab next frame to be returned from the top of the queue. */
     framewithpts = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
-    if (framewithpts && framewithpts->frame) {
+    if (framewithpts && framewithpts->frame && framewithpts->frame->components[0].stride) {
         if (ff_get_buffer(avctx, avframe, 0) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Unable to allocate buffer\n");
             return AVERROR(ENOMEM);
