@@ -175,7 +175,7 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
  */
 static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
     int exp_offset = 0;
-    if(v == INT_MIN){
+    if(v <= INT_MIN + 1){
         exp_offset = 1;
         v>>=1;
     }
