@@ -307,7 +307,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     /* Grab next frame to be returned from the top of the queue. */
     framewithpts = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
-    if (framewithpts && framewithpts->frame) {
+    if (framewithpts && framewithpts->frame && framewithpts->frame->components[0].stride) {
         int ret;
 
         if ((ret = ff_get_buffer(avctx, avframe, 0)) < 0)
