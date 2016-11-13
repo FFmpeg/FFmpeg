@@ -254,6 +254,18 @@ typedef struct OutputFilter {
     /* temporary storage until stream maps are processed */
     AVFilterInOut       *out_tmp;
     enum AVMediaType     type;
+
+    /* desired output stream properties */
+    int width, height;
+    AVRational frame_rate;
+    int format;
+    int sample_rate;
+    uint64_t channel_layout;
+
+    // those are only set if no format is specified and the encoder gives us multiple options
+    int *formats;
+    uint64_t *channel_layouts;
+    int *sample_rates;
 } OutputFilter;
 
 typedef struct FilterGraph {
