@@ -442,6 +442,20 @@ int show_license(void *optctx, const char *opt, const char *arg);
 int show_formats(void *optctx, const char *opt, const char *arg);
 
 /**
+ * Print a listing containing all the muxers supported by the
+ * program (including devices).
+ * This option processing function does not utilize the arguments.
+ */
+int show_muxers(void *optctx, const char *opt, const char *arg);
+
+/**
+ * Print a listing containing all the demuxer supported by the
+ * program (including devices).
+ * This option processing function does not utilize the arguments.
+ */
+int show_demuxers(void *optctx, const char *opt, const char *arg);
+
+/**
  * Print a listing containing all the devices supported by the
  * program.
  * This option processing function does not utilize the arguments.

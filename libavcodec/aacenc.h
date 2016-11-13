@@ -112,7 +112,6 @@ typedef struct AACEncContext {
     struct FFPsyPreprocessContext* psypp;
     AACCoefficientsEncoder *coder;
     int cur_channel;                             ///< current channel for coder context
-    int last_frame;
     int random_state;
     float lambda;
     int last_frame_pb_count;                     ///< number of bits for the previous frame

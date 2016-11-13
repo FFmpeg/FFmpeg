@@ -1979,10 +1979,8 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             for (j = 0; j < lumFilterSize; j++)
                 A += alpSrc[j][i] * lumFilter[j];
 
-            A >>= 19;
-
-            if (A & 0x100)
-                A = av_clip_uint8(A);
+            if (A & 0xF8000000)
+                A =  av_clip_uintp2(A, 27);
         }
 
         Y -= c->yuv2rgb_y_offset;
@@ -2003,13 +2001,13 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             dest16[1][i] = B >> SH;
             dest16[2][i] = R >> SH;
             if (hasAlpha)
-                dest16[3][i] = A;
+                dest16[3][i] = A >> (SH - 3);
         } else {
             dest[0][i] = G >> 22;
             dest[1][i] = B >> 22;
             dest[2][i] = R >> 22;
             if (hasAlpha)
-                dest[3][i] = A;
+                dest[3][i] = A >> 19;
         }
     }
     if (SH != 22 && (!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
@@ -2184,7 +2182,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     } else if (is16BPS(dstFormat)) {
         *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
         *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
-    } else if (is9_OR_10BPS(dstFormat)) {
+    } else if (isNBPS(dstFormat)) {
         if (desc->comp[0].depth == 9) {
             *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;
             *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_9BE_c  : yuv2plane1_9LE_c;
@@ -2407,6 +2405,10 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         case AV_PIX_FMT_GBRP16BE:
         case AV_PIX_FMT_GBRP16LE:
         case AV_PIX_FMT_GBRAP:
+        case AV_PIX_FMT_GBRAP10BE:
+        case AV_PIX_FMT_GBRAP10LE:
+        case AV_PIX_FMT_GBRAP12BE:
+        case AV_PIX_FMT_GBRAP12LE:
             *yuv2anyX = yuv2gbrp_full_X_c;
             break;
         }

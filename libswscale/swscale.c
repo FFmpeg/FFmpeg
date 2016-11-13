@@ -254,7 +254,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
     const int chrSrcSliceY           =                srcSliceY >> c->chrSrcVSubSample;
     const int chrSrcSliceH           = AV_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
-    int should_dither                = is9_OR_10BPS(c->srcFormat) ||
+    int should_dither                = isNBPS(c->srcFormat) ||
                                        is16BPS(c->srcFormat);
     int lastDstY;
 

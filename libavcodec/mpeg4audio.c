@@ -42,6 +42,11 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
     // which are buggy in old ALS conformance files
     c->sample_rate = get_bits_long(gb, 32);
 
+    if (c->sample_rate <= 0) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid sample rate %d\n", c->sample_rate);
+        return AVERROR_INVALIDDATA;
+    }
+
     // skip number of samples
     skip_bits_long(gb, 32);
 

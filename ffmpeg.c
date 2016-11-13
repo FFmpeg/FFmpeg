@@ -2800,7 +2800,7 @@ static int check_init_output_file(OutputFile *of, int file_index)
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR,
                "Could not write header for output file #%d "
-               "(incorrect codec parameters ?): %s",
+               "(incorrect codec parameters ?): %s\n",
                file_index, av_err2str(ret));
         return ret;
     }

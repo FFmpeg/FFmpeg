@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-11-10 - xxxxxxx - lavu 55.36.100 - pixfmt.h
+  Add AV_PIX_FMT_GRAY12(LE/BE).
+
 -------- 8< --------- FFmpeg 3.2 was cut here -------- 8< ---------
 
 2016-10-24 - 73ead47 - lavf 57.55.100 - avformat.h

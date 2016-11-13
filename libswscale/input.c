@@ -1323,6 +1323,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P16LE:
     case AV_PIX_FMT_YUV444P16LE:
 
+    case AV_PIX_FMT_GRAY12LE:
     case AV_PIX_FMT_GRAY16LE:
         c->lumToYV12 = bswap16Y_c;
         break;
@@ -1357,6 +1358,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_YUV422P16BE:
     case AV_PIX_FMT_YUV444P16BE:
 
+    case AV_PIX_FMT_GRAY12BE:
     case AV_PIX_FMT_GRAY16BE:
         c->lumToYV12 = bswap16Y_c;
         break;
@@ -1490,7 +1492,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     }
     if (c->needAlpha) {
         if (is16BPS(srcFormat) || isNBPS(srcFormat)) {
-            if (HAVE_BIGENDIAN == !isBE(srcFormat))
+            if (HAVE_BIGENDIAN == !isBE(srcFormat) && !c->readAlpPlanar)
                 c->alpToYV12 = bswap16Y_c;
         }
         switch (srcFormat) {

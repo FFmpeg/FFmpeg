@@ -39,6 +39,9 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 
+int filter_nbthreads = -1;
+int filter_complex_nbthreads = -1;
+
 static const enum AVPixelFormat *get_compliance_unofficial_pix_fmts(enum AVCodecID codec_id, const enum AVPixelFormat default_formats[])
 {
     static const enum AVPixelFormat mjpeg_formats[] =
@@ -991,6 +994,8 @@ int configure_filtergraph(FilterGraph *fg)
         char args[512];
         AVDictionaryEntry *e = NULL;
 
+        fg->graph->nb_threads = filter_complex_nbthreads;
+
         args[0] = 0;
         while ((e = av_dict_get(ost->sws_dict, "", e,
                                 AV_DICT_IGNORE_SUFFIX))) {
@@ -1021,6 +1026,8 @@ int configure_filtergraph(FilterGraph *fg)
         e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
         if (e)
             av_opt_set(fg->graph, "threads", e->value, 0);
+    } else {
+        fg->graph->nb_threads = filter_nbthreads;
     }
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)

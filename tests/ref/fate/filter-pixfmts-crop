@@ -19,6 +19,10 @@ bgra                e66a5f68ba463cbc89fce23a61bb5203
 bgra64be            1ad8dd02714cafec793fb89577ddde47
 bgra64le            dd29ec9aba43aa3e8f9f5b9a93ca8831
 gbrap               188cd467fe7ae7d85ae9ca8bdfa07739
+gbrap10be           1880c4856d9cc6492b8b859f2711aaf1
+gbrap10le           c2b6e35f8b7ca363a7ec021ccdf31d1f
+gbrap12be           c9769d18733cdc2664d8b9af09a03f6d
+gbrap12le           3f80453c1ac6c5d1b2febf3ef141b476
 gbrp                ec671f573c2105072ab68a1933c58fee
 gbrp10be            6f0130a41f01e58593d3840446dd94b7
 gbrp10le            9c152b7dfb7ad7bc477518d97316d04f
@@ -29,6 +33,8 @@ gbrp14le            d4764dba3c3efd1263c2c8e0f5ac9f6a
 gbrp9be             4af43999e5e9742992b6550ea5ad9b23
 gbrp9le             b4cbfa7878706a14295f09212e41f7fe
 gray                0d70b54b4b888ec4dbd89713620ac1ee
+gray12be            ffc8ec5de51e2998d666a5e209d1f7f5
+gray12le            548dc0885922d2f5898a904b40287b92
 gray16be            38f599da990224de86e3dc7a543121a9
 gray16le            9ff7c866bd98def4e6c91542c1c45f80
 nv12                92cda427f794374731ec0321ee00caac

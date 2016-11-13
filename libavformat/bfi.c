@@ -88,6 +88,10 @@ static int bfi_read_header(AVFormatContext * s)
                vstream->codecpar->extradata_size);
 
     astream->codecpar->sample_rate = avio_rl32(pb);
+    if (astream->codecpar->sample_rate <= 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", astream->codecpar->sample_rate);
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Set up the video codec... */
     avpriv_set_pts_info(vstream, 32, 1, fps);

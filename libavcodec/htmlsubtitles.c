@@ -146,7 +146,7 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                 if (stack[sptr].param[i][0])
                                     av_bprintf(dst, "%s", stack[sptr].param[i]);
                         }
-                    } else if (!tagname[1] && strspn(tagname, "bisu") == 1) {
+                    } else if (tagname[0] && !tagname[1] && strspn(tagname, "bisu") == 1) {
                         av_bprintf(dst, "{\\%c%d}", tagname[0], !tag_close);
                     } else {
                         unknown = 1;

@@ -513,8 +513,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return ret;
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
             MPEG4AudioConfig cfg = {0};
-            avpriv_mpeg4audio_get_config(&cfg, st->codecpar->extradata,
-                                         st->codecpar->extradata_size * 8, 1);
+            ret = avpriv_mpeg4audio_get_config(&cfg, st->codecpar->extradata,
+                                               st->codecpar->extradata_size * 8, 1);
+            if (ret < 0)
+                return ret;
             st->codecpar->channels = cfg.channels;
             if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
                 st->codecpar->sample_rate = avpriv_mpa_freq_tab[cfg.sampling_index];
