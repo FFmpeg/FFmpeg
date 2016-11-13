@@ -165,6 +165,8 @@
     <ClCompile Include="..\libavfilter\af_flanger.c" />
     <ClCompile Include="..\libavfilter\af_hdcd.c" />
     <ClCompile Include="..\libavfilter\af_join.c" />
+    <ClCompile Include="..\libavfilter\af_loudnorm.c" />
+    <ClCompile Include="..\libavfilter\ebur128.c" />
     <ClCompile Include="..\libavfilter\af_pan.c" />
     <ClCompile Include="..\libavfilter\af_replaygain.c" />
     <ClCompile Include="..\libavfilter\af_silencedetect.c" />

@@ -602,7 +602,9 @@
     <ClCompile Include="..\libavcodec\opusdec.c" />
     <ClCompile Include="..\libavcodec\opus.c" />
     <ClCompile Include="..\libavcodec\opus_celt.c" />
+    <ClCompile Include="..\libavcodec\opus_rc.c" />
     <ClCompile Include="..\libavcodec\opus_silk.c" />
+    <ClCompile Include="..\libavcodec\opustab.c" />
     <ClCompile Include="..\libavcodec\pafaudio.c" />
     <ClCompile Include="..\libavcodec\pafvideo.c" />
     <ClCompile Include="..\libavcodec\pnmdec.c" />

@@ -318,6 +318,12 @@
     <ClCompile Include="..\libavfilter\af_join.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_loudnorm.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\ebur128.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_pan.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
