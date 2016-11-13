@@ -312,12 +312,10 @@ void ff_ebur128_destroy(FFEBUR128State ** st)
     *st = NULL;
 }
 
-#define EBUR128_FILTER(type, min_scale, max_scale)                                 \
+#define EBUR128_FILTER(type, scaling_factor)                                       \
 static void ebur128_filter_##type(FFEBUR128State* st, const type** srcs,           \
                                   size_t src_index, size_t frames,                 \
                                   int stride) {                                    \
-    static double scaling_factor = -((double) min_scale) > (double) max_scale ?    \
-                                   -((double) min_scale) : (double) max_scale;     \
     double* audio_data = st->d->audio_data + st->d->audio_data_index;              \
     size_t i, c;                                                                   \
                                                                                    \
@@ -363,9 +361,10 @@ static void ebur128_filter_##type(FFEBUR128State* st, const type** srcs,        
         st->d->v[ci][1] = fabs(st->d->v[ci][1]) < DBL_MIN ? 0.0 : st->d->v[ci][1]; \
     }                                                                              \
 }
-EBUR128_FILTER(short, SHRT_MIN, SHRT_MAX)
-EBUR128_FILTER(int, INT_MIN, INT_MAX)
-EBUR128_FILTER(float, -1.0f, 1.0f) EBUR128_FILTER(double, -1.0, 1.0)
+EBUR128_FILTER(short, -((double)SHRT_MIN))
+EBUR128_FILTER(int, -((double)INT_MIN))
+EBUR128_FILTER(float,  1.0)
+EBUR128_FILTER(double, 1.0)
 
 static double ebur128_energy_to_loudness(double energy)
 {
