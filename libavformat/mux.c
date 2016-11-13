@@ -575,6 +575,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
 
     if (!s->internal->missing_ts_warning &&
         !(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+        (!(st->disposition & AV_DISPOSITION_ATTACHED_PIC) || (st->disposition & AV_DISPOSITION_TIMED_THUMBNAILS)) &&
         (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE)) {
         av_log(s, AV_LOG_WARNING,
                "Timestamps are unset in a packet for stream %d. "
