@@ -142,7 +142,8 @@ static int hwdownload_filter_frame(AVFilterLink *link, AVFrame *input)
         goto fail;
     }
 
-    output = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    output = ff_get_video_buffer(outlink, ctx->hwframes->width,
+                                 ctx->hwframes->height);
     if (!output) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -153,6 +154,9 @@ static int hwdownload_filter_frame(AVFilterLink *link, AVFrame *input)
         av_log(ctx, AV_LOG_ERROR, "Failed to download frame: %d.\n", err);
         goto fail;
     }
+
+    output->width  = outlink->w;
+    output->height = outlink->h;
 
     err = av_frame_copy_props(output, input);
     if (err < 0)
