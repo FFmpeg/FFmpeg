@@ -1188,13 +1188,17 @@ static int update_refs(AVCodecContext *avctx)
     return 0;
 }
 
-static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, const uint8_t *data, int size,
-                            int can_finish_setup)
+static int vp9_decode_frame(AVCodecContext *avctx, void *output,
+                            int *got_frame, AVPacket *pkt)
 {
     VP9Context *s = avctx->priv_data;
+    AVFrame      *frame = output;
+    const uint8_t *data = pkt->data;
+    int            size = pkt->size;
     AVFrame *f;
     int ret, tile_row, tile_col, i, ref = -1, row, col;
+
+    s->setup_finished = 0;
 
     ret = decode_frame_header(avctx, data, size, &ref);
     if (ret < 0) {
@@ -1210,7 +1214,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (ret < 0)
             return ret;
         *got_frame = 1;
-        return 0;
+        return pkt->size;
     }
     data += ret;
     size -= ret;
@@ -1261,7 +1265,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         s->prob_ctx[s->framectxid].p = s->prob.p;
     }
     if ((s->parallelmode || !s->refreshctx) &&
-        can_finish_setup && avctx->active_thread_type & FF_THREAD_FRAME) {
+        avctx->active_thread_type & FF_THREAD_FRAME) {
         ff_thread_finish_setup(avctx);
         s->setup_finished = 1;
     }
@@ -1402,7 +1406,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
         if (s->pass < 2 && s->refreshctx && !s->parallelmode) {
             ff_vp9_adapt_probs(s);
-            if (can_finish_setup && avctx->active_thread_type & FF_THREAD_FRAME) {
+            if (avctx->active_thread_type & FF_THREAD_FRAME) {
                 ff_thread_finish_setup(avctx);
                 s->setup_finished = 1;
             }
@@ -1428,60 +1432,7 @@ fail:
         *got_frame = 1;
     }
 
-    return 0;
-}
-
-static int vp9_decode_packet(AVCodecContext *avctx, void *frame,
-                             int *got_frame, AVPacket *avpkt)
-{
-    VP9Context *s = avctx->priv_data;
-    const uint8_t *data = avpkt->data;
-    int size            = avpkt->size;
-    int marker, ret;
-
-    s->setup_finished = 0;
-
-    /* Read superframe index - this is a collection of individual frames
-     * that together lead to one visible frame */
-    marker = data[size - 1];
-    if ((marker & 0xe0) == 0xc0) {
-        int nbytes   = 1 + ((marker >> 3) & 0x3);
-        int n_frames = 1 + (marker & 0x7);
-        int idx_sz   = 2 + n_frames * nbytes;
-
-        if (size >= idx_sz && data[size - idx_sz] == marker) {
-            const uint8_t *idx = data + size + 1 - idx_sz;
-
-            while (n_frames--) {
-                unsigned sz = AV_RL32(idx);
-
-                if (nbytes < 4)
-                    sz &= (1 << (8 * nbytes)) - 1;
-                idx += nbytes;
-
-                if (sz > size) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Superframe packet size too big: %u > %d\n",
-                           sz, size);
-                    return AVERROR_INVALIDDATA;
-                }
-
-                ret = vp9_decode_frame(avctx, frame, got_frame, data, sz,
-                                       !n_frames);
-                if (ret < 0)
-                    return ret;
-                data += sz;
-                size -= sz;
-            }
-            return avpkt->size;
-        }
-    }
-
-    /* If we get here, there was no valid superframe index, i.e. this is just
-     * one whole single frame. Decode it as such from the complete input buf. */
-    if ((ret = vp9_decode_frame(avctx, frame, got_frame, data, size, 1)) < 0)
-        return ret;
-    return size;
+    return pkt->size;
 }
 
 static av_cold int vp9_decode_free(AVCodecContext *avctx)
@@ -1590,10 +1541,11 @@ AVCodec ff_vp9_decoder = {
     .id                    = AV_CODEC_ID_VP9,
     .priv_data_size        = sizeof(VP9Context),
     .init                  = vp9_decode_init,
-    .decode                = vp9_decode_packet,
+    .decode                = vp9_decode_frame,
     .flush                 = vp9_decode_flush,
     .close                 = vp9_decode_free,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .init_thread_copy      = vp9_decode_init,
     .update_thread_context = vp9_decode_update_thread_context,
+    .bsfs                  = "vp9_superframe_split",
 };
