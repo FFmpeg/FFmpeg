@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/imgutils.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -68,10 +69,8 @@ static int read_header(AVFormatContext *s)
     st->codec->height     = avio_rb16(pb);
     film->leading         = avio_rb16(pb);
 
-    if (st->codec->width * 4LL * st->codec->height >= INT_MAX) {
-        av_log(s, AV_LOG_ERROR, "dimensions too large\n");
-        return AVERROR_PATCHWELCOME;
-    }
+    if (av_image_check_size(st->codec->width, st->codec->height, 0, s) < 0)
+        return AVERROR_INVALIDDATA;
 
     avpriv_set_pts_info(st, 64, 1, avio_rb16(pb));
 
