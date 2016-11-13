@@ -2135,7 +2135,7 @@ static const char *color_primaries_names[AVCOL_PRI_NB] = {
     [AVCOL_PRI_SMPTE240M] = "smpte240m",
     [AVCOL_PRI_FILM] = "film",
     [AVCOL_PRI_BT2020] = "bt2020",
-    [AVCOL_PRI_SMPTEST428_1] = "smpte428-1",
+    [AVCOL_PRI_SMPTE428] = "smpte428",
     [AVCOL_PRI_SMPTE431] = "smpte431",
     [AVCOL_PRI_SMPTE432] = "smpte432",
 };
@@ -2157,8 +2157,8 @@ static const char *color_transfer_names[] = {
     [AVCOL_TRC_IEC61966_2_1] = "iec61966-2-1",
     [AVCOL_TRC_BT2020_10] = "bt2020-10",
     [AVCOL_TRC_BT2020_12] = "bt2020-20",
-    [AVCOL_TRC_SMPTEST2084] = "smpte2084",
-    [AVCOL_TRC_SMPTEST428_1] = "smpte428-1",
+    [AVCOL_TRC_SMPTE2084] = "smpte2084",
+    [AVCOL_TRC_SMPTE428] = "smpte428",
     [AVCOL_TRC_ARIB_STD_B67] = "arib-std-b67",
 };
 
