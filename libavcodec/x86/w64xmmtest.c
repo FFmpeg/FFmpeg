@@ -23,7 +23,7 @@
 #include "libavutil/x86/w64xmmtest.h"
 
 wrap(avcodec_open2(AVCodecContext *avctx,
-                   AVCodec *codec,
+                   const AVCodec *codec,
                    AVDictionary **options))
 {
     testxmmclobbers(avcodec_open2, avctx, codec, options);
