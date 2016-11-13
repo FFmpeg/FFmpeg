@@ -34,6 +34,7 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
 
 #define randomize_buffers()                                                  \
     do {                                                                     \
+        int x, y;                                                            \
         uint32_t mask = pixel_mask[bit_depth - 8];                           \
         for (y = 0; y < sz; y++) {                                           \
             for (x = 0; x < PIXEL_STRIDE; x += 4) {                          \
@@ -178,8 +179,7 @@ static void check_idct(void)
     LOCAL_ALIGNED_16(int16_t, subcoef0, [8 * 8 * 2]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [8 * 8 * 2]);
     H264DSPContext h;
-    int bit_depth, sz, align;
-    int x, y, dc;
+    int bit_depth, sz, align, dc;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, int stride);
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
