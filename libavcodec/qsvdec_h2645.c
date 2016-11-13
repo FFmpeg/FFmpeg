@@ -49,12 +49,9 @@ typedef struct QSVH2645Context {
 
     int load_plugin;
 
-    // the filter for converting to Annex B
-    AVBSFContext *bsf;
-
     AVFifoBuffer *packet_fifo;
 
-    AVPacket pkt_filtered;
+    AVPacket buffer_pkt;
 } QSVH2645Context;
 
 static void qsv_clear_buffers(QSVH2645Context *s)
@@ -65,9 +62,7 @@ static void qsv_clear_buffers(QSVH2645Context *s)
         av_packet_unref(&pkt);
     }
 
-    av_bsf_free(&s->bsf);
-
-    av_packet_unref(&s->pkt_filtered);
+    av_packet_unref(&s->buffer_pkt);
 }
 
 static av_cold int qsv_decode_close(AVCodecContext *avctx)
@@ -120,48 +115,12 @@ fail:
     return ret;
 }
 
-static int qsv_init_bsf(AVCodecContext *avctx, QSVH2645Context *s)
-{
-    const char *filter_name = avctx->codec_id == AV_CODEC_ID_HEVC ?
-                              "hevc_mp4toannexb" : "h264_mp4toannexb";
-    const AVBitStreamFilter *filter;
-    int ret;
-
-    if (s->bsf)
-        return 0;
-
-    filter = av_bsf_get_by_name(filter_name);
-    if (!filter)
-        return AVERROR_BUG;
-
-    ret = av_bsf_alloc(filter, &s->bsf);
-    if (ret < 0)
-        return ret;
-
-    ret = avcodec_parameters_from_context(s->bsf->par_in, avctx);
-    if (ret < 0)
-        return ret;
-
-    s->bsf->time_base_in = avctx->time_base;
-
-    ret = av_bsf_init(s->bsf);
-    if (ret < 0)
-        return ret;
-
-    return ret;
-}
-
 static int qsv_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
     QSVH2645Context *s = avctx->priv_data;
     AVFrame *frame    = data;
     int ret;
-
-    /* make sure the bitstream filter is initialized */
-    ret = qsv_init_bsf(avctx, s);
-    if (ret < 0)
-        return ret;
 
     /* buffer the input packet */
     if (avpkt->size) {
@@ -182,36 +141,23 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* process buffered data */
     while (!*got_frame) {
-        /* prepare the input data -- convert to Annex B if needed */
-        if (s->pkt_filtered.size <= 0) {
-            AVPacket input_ref;
-
+        /* prepare the input data */
+        if (s->buffer_pkt.size <= 0) {
             /* no more data */
             if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
                 return avpkt->size ? avpkt->size : ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
 
-            av_packet_unref(&s->pkt_filtered);
+            av_packet_unref(&s->buffer_pkt);
 
-            av_fifo_generic_read(s->packet_fifo, &input_ref, sizeof(input_ref), NULL);
-            ret = av_bsf_send_packet(s->bsf, &input_ref);
-            if (ret < 0) {
-                av_packet_unref(&input_ref);
-                return ret;
-            }
-
-            ret = av_bsf_receive_packet(s->bsf, &s->pkt_filtered);
-            if (ret < 0)
-                av_packet_move_ref(&s->pkt_filtered, &input_ref);
-            else
-                av_packet_unref(&input_ref);
+            av_fifo_generic_read(s->packet_fifo, &s->buffer_pkt, sizeof(s->buffer_pkt), NULL);
         }
 
-        ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->pkt_filtered);
+        ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->buffer_pkt);
         if (ret < 0)
             return ret;
 
-        s->pkt_filtered.size -= ret;
-        s->pkt_filtered.data += ret;
+        s->buffer_pkt.size -= ret;
+        s->buffer_pkt.data += ret;
     }
 
     return avpkt->size;
@@ -274,6 +220,7 @@ AVCodec ff_hevc_qsv_decoder = {
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .bsfs           = "hevc_mp4toannexb",
 };
 #endif
 
@@ -315,5 +262,6 @@ AVCodec ff_h264_qsv_decoder = {
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .bsfs           = "h264_mp4toannexb",
 };
 #endif
