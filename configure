@@ -188,6 +188,7 @@ External library support:
   themselves, not all their features will necessarily be usable by Libav.
 
   --enable-avisynth          video frameserver
+  --enable-avxsynth          Linux version of AviSynth
   --enable-bzlib             bzip2 compression [autodetect]
   --enable-frei0r            video filtering plugins
   --enable-gnutls            crypto
@@ -1268,6 +1269,7 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_NONFREE_LIST
     $EXTERNAL_LIBRARY_VERSION3_LIST
     avisynth
+    avxsynth
     bzlib
     frei0r
     gnutls
@@ -2243,6 +2245,10 @@ vc1_parser_select="vc1dsp"
 mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
+avisynth_deps="LoadLibrary"
+avxsynth_deps="dlopen"
+avisynth_demuxer_deps_any="avisynth avxsynth"
+avisynth_demuxer_select="riffdec"
 libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
@@ -2302,8 +2308,6 @@ asf_muxer_select="riffenc"
 asf_stream_muxer_select="asf_muxer"
 avi_demuxer_select="iso_media riffdec"
 avi_muxer_select="riffenc"
-avisynth_demuxer_deps="avisynth"
-avisynth_demuxer_select="riffdec"
 caf_demuxer_select="iso_media riffdec"
 dash_muxer_select="mp4_muxer"
 dirac_demuxer_select="dirac_parser"
@@ -4610,9 +4614,8 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth          && { check_lib "avisynth/avisynth_c.h windows.h" LoadLibrary ||
-                               check_lib "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl   ||
-                               die "ERROR: LoadLibrary/dlopen not found, or avisynth header not found"; }
+enabled avisynth          && { check_header avisynth/avisynth_c.h || die "ERROR: avisynth/avisynth_c.h header not found"; }
+enabled avxsynth          && require avxsynth "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl
 enabled cuda              && check_lib cuda.h cuInit -lcuda
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
