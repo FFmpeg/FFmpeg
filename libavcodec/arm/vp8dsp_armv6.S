@@ -1181,7 +1181,7 @@ function ff_put_vp8_pixels4_armv6, export=1
 endfunc
 
 @ note: worst case sum of all 6-tap filter values * 255 is 0x7f80 so 16 bit
-@ arithmatic can be used to apply filters
+@ arithmetic can be used to apply filters
 const   sixtap_filters_13245600, align=4
         .short     2, 108, -11,  36,  -8, 1, 0, 0
         .short     3,  77, -16,  77, -16, 3, 0, 0
