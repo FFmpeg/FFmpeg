@@ -65,6 +65,8 @@ int ff_qsv_error(int mfx_err);
 int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile);
 
+int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc);
+
 int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                                  const char *load_plugins);
 
