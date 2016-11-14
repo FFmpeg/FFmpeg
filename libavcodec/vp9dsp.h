@@ -129,6 +129,7 @@ void ff_vp9dsp_init_8(VP9DSPContext *dsp);
 void ff_vp9dsp_init_10(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12(VP9DSPContext *dsp);
 
+void ff_vp9dsp_init_aarch64(VP9DSPContext *dsp, int bpp);
 void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp);
 void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact);
 void ff_vp9dsp_init_mips(VP9DSPContext *dsp, int bpp);
