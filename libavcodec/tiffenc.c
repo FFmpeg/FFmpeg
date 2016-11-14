@@ -265,6 +265,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     s->subsampling[0] = 1;
     s->subsampling[1] = 1;
 
+    if (!desc)
+        return AVERROR(EINVAL);
+
     avctx->bits_per_coded_sample =
     s->bpp          = av_get_bits_per_pixel(desc);
     s->bpp_tab_size = desc->nb_components;
