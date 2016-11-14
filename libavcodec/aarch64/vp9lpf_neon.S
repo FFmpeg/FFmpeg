@@ -218,13 +218,15 @@
         xtn_sz          v5,     v6.8h,  v7.8h,  \sz
         and             v4\sz,  v4\sz,  v5\sz         // fm
 
+        // If no pixels need filtering, just exit as soon as possible
         mov             x5,  v4.d[0]
 .ifc \sz, .16b
         mov             x6,  v4.d[1]
-        orr             x5,  x5,  x6
-.endif
-        // If no pixels need filtering, just exit as soon as possible
+        adds            x5,  x5,  x6
+        b.eq            9f
+.else
         cbz             x5,  9f
+.endif
 
 .if \wd >= 8
         movi            v0\sz,  #1
@@ -344,15 +346,17 @@
         bit             v22\sz, v0\sz,  v5\sz       // if (!hev && fm && !flat8in)
         bit             v25\sz, v2\sz,  v5\sz
 
+        // If no pixels need flat8in, jump to flat8out
+        // (or to a writeout of the inner 4 pixels, for wd=8)
 .if \wd >= 8
         mov             x5,  v6.d[0]
 .ifc \sz, .16b
         mov             x6,  v6.d[1]
-        orr             x5,  x5,  x6
-.endif
-        // If no pixels need flat8in, jump to flat8out
-        // (or to a writeout of the inner 4 pixels, for wd=8)
+        adds            x5,  x5,  x6
+        b.eq            6f
+.else
         cbz             x5,  6f
+.endif
 
         // flat8in
         uaddl_sz        \tmp1\().8h, \tmp2\().8h,  v20, v21, \sz
@@ -406,20 +410,25 @@
         mov             x5,  v2.d[0]
 .ifc \sz, .16b
         mov             x6,  v2.d[1]
-        orr             x5,  x5,  x6
+        adds             x5,  x5,  x6
+        b.ne            1f
+.else
+        cbnz            x5,  1f
 .endif
         // If no pixels needed flat8in nor flat8out, jump to a
         // writeout of the inner 4 pixels
-        cbnz            x5,  1f
         br              x14
 1:
+
         mov             x5,  v7.d[0]
 .ifc \sz, .16b
         mov             x6,  v7.d[1]
-        orr             x5,  x5,  x6
+        adds             x5,  x5,  x6
+        b.ne            1f
+.else
+        cbnz            x5,  1f
 .endif
         // If no pixels need flat8out, jump to a writeout of the inner 6 pixels
-        cbnz            x5,  1f
         br              x15
 
 1:
