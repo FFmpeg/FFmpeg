@@ -94,7 +94,7 @@ define_8tap_2d_funcs(8)
 define_8tap_2d_funcs(4)
 
 
-av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_mc_init_arm(VP9DSPContext *dsp, int bpp)
 {
     int cpu_flags = av_get_cpu_flags();
 
@@ -140,4 +140,56 @@ av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
         init_mc_funcs_dirs(3, 8);
         init_mc_funcs_dirs(4, 4);
     }
+}
+
+#define define_itxfm(type_a, type_b, sz)                                   \
+void ff_vp9_##type_a##_##type_b##_##sz##x##sz##_add_neon(uint8_t *_dst,    \
+                                                         ptrdiff_t stride, \
+                                                         int16_t *_block, int eob)
+
+#define define_itxfm_funcs(sz)      \
+    define_itxfm(idct,  idct,  sz); \
+    define_itxfm(iadst, idct,  sz); \
+    define_itxfm(idct,  iadst, sz); \
+    define_itxfm(iadst, iadst, sz)
+
+define_itxfm_funcs(4);
+define_itxfm_funcs(8);
+define_itxfm_funcs(16);
+define_itxfm(idct, idct, 32);
+define_itxfm(iwht, iwht, 4);
+
+
+static av_cold void vp9dsp_itxfm_init_arm(VP9DSPContext *dsp, int bpp)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (bpp != 8)
+        return;
+
+    if (have_neon(cpu_flags)) {
+#define init_itxfm(tx, sz)                                             \
+    dsp->itxfm_add[tx][DCT_DCT]   = ff_vp9_idct_idct_##sz##_add_neon;  \
+    dsp->itxfm_add[tx][DCT_ADST]  = ff_vp9_iadst_idct_##sz##_add_neon; \
+    dsp->itxfm_add[tx][ADST_DCT]  = ff_vp9_idct_iadst_##sz##_add_neon; \
+    dsp->itxfm_add[tx][ADST_ADST] = ff_vp9_iadst_iadst_##sz##_add_neon
+
+#define init_idct(tx, nm)           \
+    dsp->itxfm_add[tx][DCT_DCT]   = \
+    dsp->itxfm_add[tx][ADST_DCT]  = \
+    dsp->itxfm_add[tx][DCT_ADST]  = \
+    dsp->itxfm_add[tx][ADST_ADST] = ff_vp9_##nm##_add_neon
+
+        init_itxfm(TX_4X4, 4x4);
+        init_itxfm(TX_8X8, 8x8);
+        init_itxfm(TX_16X16, 16x16);
+        init_idct(TX_32X32, idct_idct_32x32);
+        init_idct(4, iwht_iwht_4x4);
+    }
+}
+
+av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
+{
+    vp9dsp_mc_init_arm(dsp, bpp);
+    vp9dsp_itxfm_init_arm(dsp, bpp);
 }
