@@ -81,15 +81,15 @@ enum channel {
  *  modes that suit your needs, as performance will be better.
  */
 enum mode {
-  /** can call ebur128_loudness_momentary */
+  /** can call ff_ebur128_loudness_momentary */
     FF_EBUR128_MODE_M = (1 << 0),
-  /** can call ebur128_loudness_shortterm */
+  /** can call ff_ebur128_loudness_shortterm */
     FF_EBUR128_MODE_S = (1 << 1) | FF_EBUR128_MODE_M,
-  /** can call ebur128_loudness_global_* and ebur128_relative_threshold */
+  /** can call ff_ebur128_loudness_global_* and ff_ebur128_relative_threshold */
     FF_EBUR128_MODE_I = (1 << 2) | FF_EBUR128_MODE_M,
-  /** can call ebur128_loudness_range */
+  /** can call ff_ebur128_loudness_range */
     FF_EBUR128_MODE_LRA = (1 << 3) | FF_EBUR128_MODE_S,
-  /** can call ebur128_sample_peak */
+  /** can call ff_ebur128_sample_peak */
     FF_EBUR128_MODE_SAMPLE_PEAK = (1 << 4) | FF_EBUR128_MODE_M,
 };
 
