@@ -413,7 +413,7 @@
         cbz             x5,  7f
         mov             x5,  v7.d[0]
 .ifc \sz, .16b
-        mov             x6,  v2.d[1]
+        mov             x6,  v7.d[1]
         orr             x5,  x5,  x6
 .endif
         // If no pixels need flat8out, jump to a writeout of the inner 6 pixels
