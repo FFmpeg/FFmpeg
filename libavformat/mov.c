@@ -2332,8 +2332,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int ret;
-    int entries;
+    int ret, entries;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2342,7 +2341,7 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
-    entries = avio_rb32(pb); /* entries */
+    entries = avio_rb32(pb);
 
     if (entries <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "invalid STSD entries %d\n", entries);
