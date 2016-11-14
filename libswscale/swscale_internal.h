@@ -695,6 +695,8 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
 #define isGray(x)                      \
     ((x) == AV_PIX_FMT_GRAY8       ||  \
      (x) == AV_PIX_FMT_YA8         ||  \
+     (x) == AV_PIX_FMT_GRAY10BE    ||  \
+     (x) == AV_PIX_FMT_GRAY10LE    ||  \
      (x) == AV_PIX_FMT_GRAY12BE    ||  \
      (x) == AV_PIX_FMT_GRAY12LE    ||  \
      (x) == AV_PIX_FMT_GRAY16BE    ||  \
