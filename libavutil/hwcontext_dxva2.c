@@ -251,19 +251,11 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     D3DLOCKED_RECT     LockedRect;
     HRESULT            hr;
 
-    int download = !!src->hw_frames_ctx;
-    int bytes_per_component;
+    uint8_t *surf_data[4]     = { NULL };
+    int      surf_linesize[4] = { 0 };
+    int i;
 
-    switch (ctx->sw_format) {
-        case AV_PIX_FMT_NV12:
-            bytes_per_component = 1;
-            break;
-        case AV_PIX_FMT_P010:
-            bytes_per_component = 2;
-            break;
-        default:
-            av_assert0(0);
-    }
+    int download = !!src->hw_frames_ctx;
 
     surface = (IDirect3DSurface9*)(download ? src->data[3] : dst->data[3]);
 
@@ -280,20 +272,18 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR_UNKNOWN;
     }
 
+    for (i = 0; download ? dst->data[i] : src->data[i]; i++)
+        surf_linesize[i] = LockedRect.Pitch;
+
+    av_image_fill_pointers(surf_data, ctx->sw_format, surfaceDesc.Height,
+                           (uint8_t*)LockedRect.pBits, surf_linesize);
+
     if (download) {
-        av_image_copy_plane(dst->data[0], dst->linesize[0],
-                            (uint8_t*)LockedRect.pBits, LockedRect.Pitch,
-                            src->width * bytes_per_component, src->height);
-        av_image_copy_plane(dst->data[1], dst->linesize[1],
-                            (uint8_t*)LockedRect.pBits + LockedRect.Pitch * surfaceDesc.Height,
-                            LockedRect.Pitch, src->width * bytes_per_component, src->height / 2);
+        av_image_copy(dst->data, dst->linesize, surf_data, surf_linesize,
+                      ctx->sw_format, src->width, src->height);
     } else {
-        av_image_copy_plane((uint8_t*)LockedRect.pBits, LockedRect.Pitch,
-                            dst->data[0], dst->linesize[0],
-                            src->width * bytes_per_component, src->height);
-        av_image_copy_plane((uint8_t*)LockedRect.pBits + LockedRect.Pitch * surfaceDesc.Height,
-                            LockedRect.Pitch, dst->data[1], dst->linesize[1],
-                            src->width * bytes_per_component, src->height / 2);
+        av_image_copy(surf_data, surf_linesize, src->data, src->linesize,
+                      ctx->sw_format, src->width, src->height);
     }
 
     IDirect3DSurface9_UnlockRect(surface);
