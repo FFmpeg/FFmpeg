@@ -188,8 +188,68 @@ static av_cold void vp9dsp_itxfm_init_arm(VP9DSPContext *dsp, int bpp)
     }
 }
 
+#define define_loop_filter(dir, wd, size) \
+void ff_vp9_loop_filter_##dir##_##wd##_##size##_neon(uint8_t *dst, ptrdiff_t stride, int E, int I, int H)
+
+#define define_loop_filters(wd, size) \
+    define_loop_filter(h, wd, size);  \
+    define_loop_filter(v, wd, size)
+
+define_loop_filters(4, 8);
+define_loop_filters(8, 8);
+define_loop_filters(16, 8);
+define_loop_filters(16, 16);
+
+#define lf_mix_fn(dir, wd1, wd2, stridea)                                                         \
+static void loop_filter_##dir##_##wd1##wd2##_16_neon(uint8_t *dst,                                \
+                                                     ptrdiff_t stride,                            \
+                                                     int E, int I, int H)                         \
+{                                                                                                 \
+    ff_vp9_loop_filter_##dir##_##wd1##_8_neon(dst, stride, E & 0xff, I & 0xff, H & 0xff);         \
+    ff_vp9_loop_filter_##dir##_##wd2##_8_neon(dst + 8 * stridea, stride, E >> 8, I >> 8, H >> 8); \
+}
+
+#define lf_mix_fns(wd1, wd2)       \
+    lf_mix_fn(h, wd1, wd2, stride) \
+    lf_mix_fn(v, wd1, wd2, sizeof(uint8_t))
+
+lf_mix_fns(4, 4)
+lf_mix_fns(4, 8)
+lf_mix_fns(8, 4)
+lf_mix_fns(8, 8)
+
+static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp, int bpp)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (bpp != 8)
+        return;
+
+    if (have_neon(cpu_flags)) {
+        dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_neon;
+        dsp->loop_filter_8[0][0] = ff_vp9_loop_filter_h_4_8_neon;
+        dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_neon;
+        dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_neon;
+        dsp->loop_filter_8[2][1] = ff_vp9_loop_filter_v_16_8_neon;
+        dsp->loop_filter_8[2][0] = ff_vp9_loop_filter_h_16_8_neon;
+
+        dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_neon;
+        dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_neon;
+
+        dsp->loop_filter_mix2[0][0][0] = loop_filter_h_44_16_neon;
+        dsp->loop_filter_mix2[0][0][1] = loop_filter_v_44_16_neon;
+        dsp->loop_filter_mix2[0][1][0] = loop_filter_h_48_16_neon;
+        dsp->loop_filter_mix2[0][1][1] = loop_filter_v_48_16_neon;
+        dsp->loop_filter_mix2[1][0][0] = loop_filter_h_84_16_neon;
+        dsp->loop_filter_mix2[1][0][1] = loop_filter_v_84_16_neon;
+        dsp->loop_filter_mix2[1][1][0] = loop_filter_h_88_16_neon;
+        dsp->loop_filter_mix2[1][1][1] = loop_filter_v_88_16_neon;
+    }
+}
+
 av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
 {
     vp9dsp_mc_init_arm(dsp, bpp);
+    vp9dsp_loopfilter_init_arm(dsp, bpp);
     vp9dsp_itxfm_init_arm(dsp, bpp);
 }

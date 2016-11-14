@@ -141,4 +141,5 @@ NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)     += arm/vorbisdsp_neon.o
 NEON-OBJS-$(CONFIG_VP6_DECODER)        += arm/vp6dsp_neon.o
 NEON-OBJS-$(CONFIG_VP9_DECODER)        += arm/vp9itxfm_neon.o           \
+                                          arm/vp9lpf_neon.o             \
                                           arm/vp9mc_neon.o
