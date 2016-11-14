@@ -2881,7 +2881,7 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     AVCodecParameters *par_src = ost->ref_par;
     AVRational sar;
     int i, ret;
-    uint64_t extra_size;
+    uint32_t codec_tag = par_dst->codec_tag;
 
     av_assert0(ist && !ost->filter);
 
@@ -2894,38 +2894,19 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     }
     avcodec_parameters_from_context(par_src, ost->enc_ctx);
 
-    extra_size = (uint64_t)par_src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
-
-    if (extra_size > INT_MAX) {
-        return AVERROR(EINVAL);
-    }
-
-    /* if stream_copy is selected, no need to decode or encode */
-    par_dst->codec_id   = par_src->codec_id;
-    par_dst->codec_type = par_src->codec_type;
-
-    if (!par_dst->codec_tag) {
-        unsigned int codec_tag;
+    if (!codec_tag) {
+        unsigned int codec_tag_tmp;
         if (!of->ctx->oformat->codec_tag ||
-            av_codec_get_id (of->ctx->oformat->codec_tag, par_src->codec_tag) == par_dst->codec_id ||
-            !av_codec_get_tag2(of->ctx->oformat->codec_tag, par_src->codec_id, &codec_tag))
-            par_dst->codec_tag = par_src->codec_tag;
+            av_codec_get_id (of->ctx->oformat->codec_tag, par_src->codec_tag) == par_src->codec_id ||
+            !av_codec_get_tag2(of->ctx->oformat->codec_tag, par_src->codec_id, &codec_tag_tmp))
+            codec_tag = par_src->codec_tag;
     }
 
-    par_dst->bit_rate        = par_src->bit_rate;
-    par_dst->field_order     = par_src->field_order;
-    par_dst->chroma_location = par_src->chroma_location;
+    ret = avcodec_parameters_copy(par_dst, par_src);
+    if (ret < 0)
+        return ret;
 
-    if (par_src->extradata_size) {
-        par_dst->extradata      = av_mallocz(extra_size);
-        if (!par_dst->extradata) {
-            return AVERROR(ENOMEM);
-        }
-        memcpy(par_dst->extradata, par_src->extradata, par_src->extradata_size);
-        par_dst->extradata_size = par_src->extradata_size;
-    }
-    par_dst->bits_per_coded_sample  = par_src->bits_per_coded_sample;
-    par_dst->bits_per_raw_sample    = par_src->bits_per_raw_sample;
+    par_dst->codec_tag = codec_tag;
 
     if (!ost->frame_rate.num)
         ost->frame_rate = ist->framerate;
@@ -2976,29 +2957,12 @@ static int init_output_stream_streamcopy(OutputStream *ost)
             av_log(NULL, AV_LOG_FATAL, "-acodec copy and -vol are incompatible (frames are not decoded)\n");
             exit_program(1);
         }
-        par_dst->channel_layout     = par_src->channel_layout;
-        par_dst->sample_rate        = par_src->sample_rate;
-        par_dst->channels           = par_src->channels;
-        par_dst->frame_size         = par_src->frame_size;
-        par_dst->block_align        = par_src->block_align;
-        par_dst->initial_padding    = par_src->initial_padding;
-        par_dst->trailing_padding   = par_src->trailing_padding;
-        par_dst->profile            = par_src->profile;
         if((par_dst->block_align == 1 || par_dst->block_align == 1152 || par_dst->block_align == 576) && par_dst->codec_id == AV_CODEC_ID_MP3)
             par_dst->block_align= 0;
         if(par_dst->codec_id == AV_CODEC_ID_AC3)
             par_dst->block_align= 0;
         break;
     case AVMEDIA_TYPE_VIDEO:
-        par_dst->format             = par_src->format;
-        par_dst->color_space        = par_src->color_space;
-        par_dst->color_range        = par_src->color_range;
-        par_dst->color_primaries    = par_src->color_primaries;
-        par_dst->color_trc          = par_src->color_trc;
-        par_dst->width              = par_src->width;
-        par_dst->height             = par_src->height;
-        par_dst->video_delay        = par_src->video_delay;
-        par_dst->profile            = par_src->profile;
         if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
             sar =
                 av_mul_q(ost->frame_aspect_ratio,
@@ -3014,16 +2978,6 @@ static int init_output_stream_streamcopy(OutputStream *ost)
         ost->st->avg_frame_rate = ist->st->avg_frame_rate;
         ost->st->r_frame_rate = ist->st->r_frame_rate;
         break;
-    case AVMEDIA_TYPE_SUBTITLE:
-        par_dst->width  = par_src->width;
-        par_dst->height = par_src->height;
-        break;
-    case AVMEDIA_TYPE_UNKNOWN:
-    case AVMEDIA_TYPE_DATA:
-    case AVMEDIA_TYPE_ATTACHMENT:
-        break;
-    default:
-        abort();
     }
 
     return 0;
