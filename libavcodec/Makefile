@@ -37,6 +37,7 @@ OBJS = allcodecs.o                                                      \
        jni.o                                                            \
        mathtables.o                                                     \
        mediacodec.o                                                     \
+       mpeg12framerate.o                                                \
        options.o                                                        \
        parser.o                                                         \
        profiles.o                                                       \
@@ -217,7 +218,7 @@ OBJS-$(CONFIG_BMV_VIDEO_DECODER)       += bmvvideo.o
 OBJS-$(CONFIG_BRENDER_PIX_DECODER)     += brenderpix.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
 OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
-                                          cavsdata.o mpeg12data.o
+                                          cavsdata.o
 OBJS-$(CONFIG_CCAPTION_DECODER)        += ccaption_dec.o
 OBJS-$(CONFIG_CDGRAPHICS_DECODER)      += cdgraphics.o
 OBJS-$(CONFIG_CDXL_DECODER)            += cdxl.o
@@ -239,8 +240,7 @@ OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadata.o dcahuff.o \
 OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o dca.o dcadata.o
 OBJS-$(CONFIG_DDS_DECODER)             += dds.o
 OBJS-$(CONFIG_DIRAC_DECODER)           += diracdec.o dirac.o diracdsp.o diractab.o \
-                                          dirac_arith.o mpeg12data.o dirac_dwt.o \
-                                          dirac_vlc.o
+                                          dirac_arith.o dirac_dwt.o dirac_vlc.o
 OBJS-$(CONFIG_DFA_DECODER)             += dfa.o
 OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o dnxhddata.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o
