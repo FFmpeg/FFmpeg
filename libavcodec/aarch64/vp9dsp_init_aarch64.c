@@ -201,8 +201,56 @@ static av_cold void vp9dsp_itxfm_init_aarch64(VP9DSPContext *dsp, int bpp)
     }
 }
 
+#define define_loop_filter(dir, wd, len) \
+void ff_vp9_loop_filter_##dir##_##wd##_##len##_neon(uint8_t *dst, ptrdiff_t stride, int E, int I, int H)
+
+#define define_loop_filters(wd, len) \
+    define_loop_filter(h, wd, len);  \
+    define_loop_filter(v, wd, len)
+
+define_loop_filters(4, 8);
+define_loop_filters(8, 8);
+define_loop_filters(16, 8);
+
+define_loop_filters(16, 16);
+
+define_loop_filters(44, 16);
+define_loop_filters(48, 16);
+define_loop_filters(84, 16);
+define_loop_filters(88, 16);
+
+static av_cold void vp9dsp_loopfilter_init_aarch64(VP9DSPContext *dsp, int bpp)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (bpp != 8)
+        return;
+
+    if (have_neon(cpu_flags)) {
+        dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_neon;
+        dsp->loop_filter_8[0][0] = ff_vp9_loop_filter_h_4_8_neon;
+        dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_neon;
+        dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_neon;
+        dsp->loop_filter_8[2][1] = ff_vp9_loop_filter_v_16_8_neon;
+        dsp->loop_filter_8[2][0] = ff_vp9_loop_filter_h_16_8_neon;
+
+        dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_neon;
+        dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_neon;
+
+        dsp->loop_filter_mix2[0][0][0] = ff_vp9_loop_filter_h_44_16_neon;
+        dsp->loop_filter_mix2[0][0][1] = ff_vp9_loop_filter_v_44_16_neon;
+        dsp->loop_filter_mix2[0][1][0] = ff_vp9_loop_filter_h_48_16_neon;
+        dsp->loop_filter_mix2[0][1][1] = ff_vp9_loop_filter_v_48_16_neon;
+        dsp->loop_filter_mix2[1][0][0] = ff_vp9_loop_filter_h_84_16_neon;
+        dsp->loop_filter_mix2[1][0][1] = ff_vp9_loop_filter_v_84_16_neon;
+        dsp->loop_filter_mix2[1][1][0] = ff_vp9_loop_filter_h_88_16_neon;
+        dsp->loop_filter_mix2[1][1][1] = ff_vp9_loop_filter_v_88_16_neon;
+    }
+}
+
 av_cold void ff_vp9dsp_init_aarch64(VP9DSPContext *dsp, int bpp)
 {
     vp9dsp_mc_init_aarch64(dsp, bpp);
+    vp9dsp_loopfilter_init_aarch64(dsp, bpp);
     vp9dsp_itxfm_init_aarch64(dsp, bpp);
 }

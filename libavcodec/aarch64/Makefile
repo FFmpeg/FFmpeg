@@ -43,4 +43,5 @@ NEON-OBJS-$(CONFIG_MPEGAUDIODSP)        += aarch64/mpegaudiodsp_neon.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)      += aarch64/vorbisdsp_neon.o
 NEON-OBJS-$(CONFIG_VP9_DECODER)         += aarch64/vp9itxfm_neon.o             \
+                                           aarch64/vp9lpf_neon.o               \
                                            aarch64/vp9mc_neon.o
