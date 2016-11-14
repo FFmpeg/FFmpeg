@@ -73,6 +73,7 @@ OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_H263DSP)                 += h263dsp.o
 OBJS-$(CONFIG_H264CHROMA)              += h264chroma.o
 OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o
+OBJS-$(CONFIG_H264PARSE)               += h264_parse.o h2645_parse.o h264_ps.o
 OBJS-$(CONFIG_H264PRED)                += h264pred.o
 OBJS-$(CONFIG_H264QPEL)                += h264qpel.o
 OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
@@ -311,10 +312,9 @@ OBJS-$(CONFIG_H263_ENCODER)            += mpeg4videoenc.o mpeg4video.o  \
                                           h263.o ituh263enc.o flvenc.o h263data.o
 OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
                                           h264_direct.o h264_loopfilter.o  \
-                                          h264_mb.o h264_picture.o h264_ps.o \
+                                          h264_mb.o h264_picture.o \
                                           h264_refs.o h264_sei.o \
-                                          h264_slice.o h264data.o h264_parse.o \
-                                          h2645_parse.o
+                                          h264_slice.o h264data.o
 OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuvid.o
 OBJS-$(CONFIG_H264_MEDIACODEC_DECODER) += mediacodecdec.o
 OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
@@ -534,8 +534,7 @@ OBJS-$(CONFIG_SUNRAST_ENCODER)         += sunrastenc.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o svq13.o h263data.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o  h263data.o  \
                                           h263.o ituh263enc.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o \
-                                          h264_parse.o h264data.o h264_ps.o h2645_parse.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o svq13.o mpegutils.o h264data.o
 OBJS-$(CONFIG_TEXT_DECODER)            += textdec.o ass.o
 OBJS-$(CONFIG_TEXT_ENCODER)            += srtenc.o ass_split.o
 OBJS-$(CONFIG_TAK_DECODER)             += takdec.o tak.o takdsp.o
@@ -937,8 +936,7 @@ OBJS-$(CONFIG_G729_PARSER)             += g729_parser.o
 OBJS-$(CONFIG_GSM_PARSER)              += gsm_parser.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
-OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264_parse.o h2645_parse.o \
-                                          h264_ps.o h264_sei.o h264data.o
+OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264_sei.o h264data.o
 OBJS-$(CONFIG_HEVC_PARSER)             += hevc_parser.o h2645_parse.o hevc_ps.o hevc_data.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parser.o mlp.o
