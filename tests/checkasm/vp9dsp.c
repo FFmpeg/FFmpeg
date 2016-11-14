@@ -297,6 +297,12 @@ static void check_itxfm(void)
                 }
                 bench_new(dst, sz * SIZEOF_PIXEL, coef, sz * sz);
             }
+            if (txtp == 0 && tx != 4) {
+                if (check_func(dsp.itxfm_add[tx][txtp], "vp9_inv_%s_%dx%d_dc_add",
+                               txtp_types[txtp], sz, sz)) {
+                    bench_new(dst, sz * SIZEOF_PIXEL, coef, 1);
+                }
+            }
         }
     }
     report("itxfm");
