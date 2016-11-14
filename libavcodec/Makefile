@@ -820,7 +820,6 @@ OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o vorbis_data.o    \
                                           flac.o flacdata.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += flac.o flacdata.o vorbis_data.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
-OBJS-$(CONFIG_MP2_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
 OBJS-$(CONFIG_MP3_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpeg4audio.o
 OBJS-$(CONFIG_MXF_MUXER)               += dnxhddata.o
