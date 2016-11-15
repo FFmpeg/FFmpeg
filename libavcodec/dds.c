@@ -680,7 +680,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
         avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
-    } else if (!ctx->paletted && ctx->bpp == 4) {
+    } else if (!ctx->paletted && ctx->bpp == 4 && avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         uint8_t *dst = frame->data[0];
         int x, y, i;
 
