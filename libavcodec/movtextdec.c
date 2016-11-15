@@ -482,6 +482,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             //size_var is equal to 8 or 16 depending on the size of box
 
             if (tsmb_size == 0) {
+                av_log(avctx, AV_LOG_ERROR, "tsmb_size is 0\n");
                 return AVERROR_INVALIDDATA;
             }
 
