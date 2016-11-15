@@ -109,6 +109,8 @@ static int get_dimension(GetBitContext *gb, const int *dim)
         val = dim[get_bits1(gb) - val];
     if(!val){
         do{
+            if (get_bits_left(gb) < 8)
+                return AVERROR_INVALIDDATA;
             t = get_bits(gb, 8);
             val += t << 2;
         }while(t == 0xFF);
