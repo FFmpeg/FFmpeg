@@ -2759,8 +2759,8 @@ static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ( (matrix)[0][0] == (1 << 16) &&       \
       (matrix)[1][1] == (1 << 16) &&       \
       (matrix)[2][2] == (1 << 30) &&       \
-     !(matrix)[0][1] && !(matrix)[0][2] || \
-     !(matrix)[1][0] && !(matrix)[1][2] || \
+     !(matrix)[0][1] && !(matrix)[0][2] && \
+     !(matrix)[1][0] && !(matrix)[1][2] && \
      !(matrix)[2][0] && !(matrix)[2][1])
 
 static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
