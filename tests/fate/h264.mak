@@ -196,6 +196,10 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
+
+# this sample has two stsd entries and needs to reload extradata
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-extradata-reload
+
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 
 # this sample has invalid reference list modification, but decodes fine
@@ -408,6 +412,7 @@ fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -vsync drop -i 
 fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -f h264
 
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
+fate-h264-extradata-reload:                       CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
