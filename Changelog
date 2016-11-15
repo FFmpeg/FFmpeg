@@ -43,6 +43,7 @@ version 3.2:
 - Matroska muxer now writes CRC32 elements by default in all Level 1 elements
 - sidedata video and asidedata audio filter
 - Changed mapping of rtp MIME type G726 to codec g726le.
+- spec compliant VAAPI/DXVA2 VC-1 decoding of slices in frame-coded images
 
 
 version 3.1:
