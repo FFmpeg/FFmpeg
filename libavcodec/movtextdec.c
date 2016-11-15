@@ -485,7 +485,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 m->size_var = 8;
             //size_var is equal to 8 or 16 depending on the size of box
 
-            if (m->tracksize + tsmb_size > avpkt->size)
+            if (tsmb_size > avpkt->size - m->tracksize)
                 break;
 
             for (size_t i = 0; i < box_count; i++) {
