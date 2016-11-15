@@ -262,7 +262,7 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
 static av_always_inline float ff_exp2fi(int x) {
     /* Normal range */
     if (-126 <= x && x <= 128)
-        return av_int2float(x+127 << 23);
+        return av_int2float((x+127) << 23);
     /* Too large */
     else if (x > 128)
         return INFINITY;
