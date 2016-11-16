@@ -1417,8 +1417,7 @@ static int decode_header(EXRContext *s)
                     return AVERROR_PATCHWELCOME;
                 }
 
-                if (s->channel_offsets[channel_index] == -1){/* channel have not been previously assign */
-                    if (channel_index >= 0) {
+                if (channel_index >= 0 && s->channel_offsets[channel_index] == -1) { /* channel has not been previously assigned */
                         if (s->pixel_type != EXR_UNKNOWN &&
                             s->pixel_type != current_pixel_type) {
                             av_log(s->avctx, AV_LOG_ERROR,
@@ -1427,7 +1426,6 @@ static int decode_header(EXRContext *s)
                         }
                         s->pixel_type                     = current_pixel_type;
                         s->channel_offsets[channel_index] = s->current_channel_offset;
-                    }
                 }
 
                 s->channels = av_realloc(s->channels,
