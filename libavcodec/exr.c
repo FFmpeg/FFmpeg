@@ -1448,7 +1448,11 @@ static int decode_header(EXRContext *s)
                 channel->xsub       = xsub;
                 channel->ysub       = ysub;
 
-                s->current_channel_offset += 1 << current_pixel_type;
+                if (current_pixel_type == EXR_HALF) {
+                    s->current_channel_offset += 2;
+                } else {/* Float or UINT32 */
+                    s->current_channel_offset += 4;
+                }
             }
 
             /* Check if all channels are set with an offset or if the channels
