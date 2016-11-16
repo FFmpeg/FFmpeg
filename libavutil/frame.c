@@ -350,13 +350,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return AVERROR(ENOMEM);
             }
             if (sd_src->buf) {
-            sd_dst->buf = av_buffer_ref(sd_src->buf);
-            if (!sd_dst->buf) {
-                wipe_side_data(dst);
-                return AVERROR(ENOMEM);
-            }
-            sd_dst->data = sd_dst->buf->data;
-            sd_dst->size = sd_dst->buf->size;
+                sd_dst->buf = av_buffer_ref(sd_src->buf);
+                if (!sd_dst->buf) {
+                    wipe_side_data(dst);
+                    return AVERROR(ENOMEM);
+                }
+                sd_dst->data = sd_dst->buf->data;
+                sd_dst->size = sd_dst->buf->size;
             }
         }
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
