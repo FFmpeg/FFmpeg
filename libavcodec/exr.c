@@ -1429,14 +1429,14 @@ static int decode_header(EXRContext *s)
                 }
 
                 if (channel_index >= 0 && s->channel_offsets[channel_index] == -1) { /* channel has not been previously assigned */
-                        if (s->pixel_type != EXR_UNKNOWN &&
-                            s->pixel_type != current_pixel_type) {
-                            av_log(s->avctx, AV_LOG_ERROR,
-                                   "RGB channels not of the same depth.\n");
-                            return AVERROR_INVALIDDATA;
-                        }
-                        s->pixel_type                     = current_pixel_type;
-                        s->channel_offsets[channel_index] = s->current_channel_offset;
+                    if (s->pixel_type != EXR_UNKNOWN &&
+                        s->pixel_type != current_pixel_type) {
+                        av_log(s->avctx, AV_LOG_ERROR,
+                               "RGB channels not of the same depth.\n");
+                        return AVERROR_INVALIDDATA;
+                    }
+                    s->pixel_type                     = current_pixel_type;
+                    s->channel_offsets[channel_index] = s->current_channel_offset;
                 }
 
                 s->channels = av_realloc(s->channels,
