@@ -1,5 +1,10 @@
 /avcodec
+/decode_audio
+/decode_video
+/encode_audio
+/encode_video
 /filter_audio
 /metadata
 /output
+/qsvdec
 /transcode_aac
