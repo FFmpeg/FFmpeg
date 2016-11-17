@@ -636,6 +636,13 @@ static int read_header(FFV1Context *f)
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P10; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P10; break;
             }
+        } else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency) {
+            f->packed_at_lsb = 1;
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P12; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P12; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P12; break;
+            }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
