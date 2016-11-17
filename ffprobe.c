@@ -3311,6 +3311,12 @@ int main(int argc, char **argv)
         goto end;
     }
     w_name = av_strtok(print_format, "=", &buf);
+    if (!w_name) {
+        av_log(NULL, AV_LOG_ERROR,
+               "No name specified for the output format\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
     w_args = buf;
 
     if (show_data_hash) {
