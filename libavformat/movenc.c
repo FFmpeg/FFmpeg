@@ -4291,7 +4291,9 @@ static int mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
     AVCodecParameters *video_par = s->streams[0]->codecpar;
     AVCodecParameters *audio_par = s->streams[1]->codecpar;
     int audio_rate = audio_par->sample_rate;
-    int64_t frame_rate = (video_st->avg_frame_rate.num * 0x10000LL) / video_st->avg_frame_rate.den;
+    int64_t frame_rate = video_st->avg_frame_rate.den ?
+                        (video_st->avg_frame_rate.num * 0x10000LL) / video_st->avg_frame_rate.den :
+                        0;
     int audio_kbitrate = audio_par->bit_rate / 1000;
     int video_kbitrate = FFMIN(video_par->bit_rate / 1000, 800 - audio_kbitrate);
 
