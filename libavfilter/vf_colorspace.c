@@ -168,7 +168,7 @@ typedef struct ColorSpaceContext {
     int did_warn_range;
 } ColorSpaceContext;
 
-// FIXME deal with odd width/heights (or just forbid it)
+// FIXME deal with odd width/heights
 // FIXME faster linearize/delinearize implementation (integer pow)
 // FIXME bt2020cl support (linearization between yuv/rgb step instead of between rgb/xyz)
 // FIXME test that the values in (de)lin_lut don't exceed their container storage
@@ -1031,7 +1031,14 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_props(AVFilterLink *outlink)
 {
+    AVFilterContext *ctx = outlink->dst;
     AVFilterLink *inlink = outlink->src->inputs[0];
+
+    if (inlink->w % 2 || inlink->h % 2) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid odd size (%dx%d)\n",
+               inlink->w, inlink->h);
+        return AVERROR_PATCHWELCOME;
+    }
 
     outlink->w = inlink->w;
     outlink->h = inlink->h;
