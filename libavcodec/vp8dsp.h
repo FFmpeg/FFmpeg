@@ -70,7 +70,7 @@ typedef struct VP8DSPContext {
     void (*vp8_h_loop_filter_simple)(uint8_t *dst, ptrdiff_t stride, int flim);
 
     /**
-     * first dimension: 4-log2(width), height is assumed equal to width
+     * first dimension: 4-log2(width)
      * second dimension: 0 if no vertical interpolation is needed;
      *                   1 4-tap vertical interpolation filter (my & 1)
      *                   2 6-tap vertical interpolation filter (!(my & 1))
