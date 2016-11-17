@@ -575,8 +575,19 @@ static int read_header(FFV1Context *f)
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-            else
+            else if (f->avctx->bits_per_raw_sample == 10) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+            } else if (f->avctx->bits_per_raw_sample == 12) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY12;
+            } else if (f->avctx->bits_per_raw_sample == 16) {
+                f->packed_at_lsb = 1;
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            } else if (f->avctx->bits_per_raw_sample < 16) {
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            } else
+                return AVERROR(ENOSYS);
         } else if (f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_YA8;
