@@ -3832,7 +3832,7 @@ AVPacket *av_packet_alloc(void);
  * @see av_packet_alloc
  * @see av_packet_ref
  */
-AVPacket *av_packet_clone(AVPacket *src);
+AVPacket *av_packet_clone(const AVPacket *src);
 
 /**
  * Free the packet, if the packet is reference counted, it will be
@@ -3986,7 +3986,7 @@ void av_packet_free_side_data(AVPacket *pkt);
  *
  * @return 0 on success, a negative AVERROR on error.
  */
-int av_packet_ref(AVPacket *dst, AVPacket *src);
+int av_packet_ref(AVPacket *dst, const AVPacket *src);
 
 /**
  * Wipe the packet.
