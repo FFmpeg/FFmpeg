@@ -5647,20 +5647,13 @@ static int mov_read_header(AVFormatContext *s)
             break;
         case AVMEDIA_TYPE_VIDEO:
             if (sc->display_matrix) {
-                AVPacketSideData *sd, *tmp;
+                int ret;
 
-                tmp = av_realloc_array(st->side_data,
-                                       st->nb_side_data + 1, sizeof(*tmp));
-                if (!tmp)
-                    return AVERROR(ENOMEM);
+                ret = av_stream_add_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, (uint8_t*)sc->display_matrix,
+                                              sizeof(int32_t) * 9);
+                if (ret < 0)
+                    return ret;
 
-                st->side_data = tmp;
-                st->nb_side_data++;
-
-                sd = &st->side_data[st->nb_side_data - 1];
-                sd->type = AV_PKT_DATA_DISPLAYMATRIX;
-                sd->size = sizeof(int32_t) * 9;
-                sd->data = (uint8_t*)sc->display_matrix;
                 sc->display_matrix = NULL;
             }
             break;
