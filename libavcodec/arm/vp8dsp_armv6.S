@@ -1226,13 +1226,8 @@ vp8_mc_1                bilin,  8, v
 vp8_mc_1                bilin,  4, h
 vp8_mc_1                bilin,  4, v
 
-/* True relational expressions have the value -1 in the GNU assembler,
-   +1 in Apple's. */
-#ifdef __APPLE__
-#   define TMPSIZE \size * (8 + 8*(\size > 4) + \ytaps - 1)
-#else
-#   define TMPSIZE \size * (8 - 8*(\size > 4) + \ytaps - 1)
-#endif
+@ 4 and 8 pixel wide mc blocks might have height of 8 or 16 lines
+#define TMPSIZE \size * (16 / ((16 / \size + 1) / 2) + \ytaps - 1)
 
 .macro  vp8_mc_hv       name, size, h, v, ytaps
 function ff_put_vp8_\name\size\()_\h\v\()_armv6, export=1
