@@ -5104,15 +5104,11 @@ uint8_t *av_stream_get_side_data(const AVStream *st,
     return NULL;
 }
 
-uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
-                                 int size)
+int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
+                            uint8_t *data, size_t size)
 {
     AVPacketSideData *sd, *tmp;
     int i;
-    uint8_t *data = av_malloc(size);
-
-    if (!data)
-        return NULL;
 
     for (i = 0; i < st->nb_side_data; i++) {
         sd = &st->side_data[i];
@@ -5121,14 +5117,13 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
             av_freep(&sd->data);
             sd->data = data;
             sd->size = size;
-            return sd->data;
+            return 0;
         }
     }
 
     tmp = av_realloc_array(st->side_data, st->nb_side_data + 1, sizeof(*tmp));
     if (!tmp) {
-        av_freep(&data);
-        return NULL;
+        return AVERROR(ENOMEM);
     }
 
     st->side_data = tmp;
@@ -5138,6 +5133,25 @@ uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
     sd->type = type;
     sd->data = data;
     sd->size = size;
+
+    return 0;
+}
+
+uint8_t *av_stream_new_side_data(AVStream *st, enum AVPacketSideDataType type,
+                                 int size)
+{
+    int ret;
+    uint8_t *data = av_malloc(size);
+
+    if (!data)
+        return NULL;
+
+    ret = av_stream_add_side_data(st, type, data, size);
+    if (ret < 0) {
+        av_freep(&data);
+        return NULL;
+    }
+
     return data;
 }
 

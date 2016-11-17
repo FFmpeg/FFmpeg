@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-11-18 - xxxxxxx - lavf 57.58.100 - avformat.h
+  Add av_stream_add_side_data().
+
 2016-xx-xx - xxxxxxx - lavu 55.39.100 - hwcontext_vaapi.h
   Add AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE.
 
