@@ -1282,6 +1282,10 @@ static int video_open(VideoState *is, Frame *vp)
         if (window) {
             SDL_RendererInfo info;
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            if (!renderer) {
+                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
+                renderer = SDL_CreateRenderer(window, -1, 0);
+            }
             if (renderer) {
                 if (!SDL_GetRendererInfo(renderer, &info))
                     av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", info.name);
