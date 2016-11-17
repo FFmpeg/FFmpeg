@@ -247,7 +247,7 @@ static void check_luma_dc_wht(void)
 }
 
 #define SRC_BUF_STRIDE 32
-#define SRC_BUF_SIZE ((size + 5) * SRC_BUF_STRIDE)
+#define SRC_BUF_SIZE (((size << (size < 16)) + 5) * SRC_BUF_STRIDE)
 // The mc subpixel interpolation filter needs the 2 previous pixels in either
 // direction, the +1 is to make sure the actual load addresses always are
 // unaligned.
