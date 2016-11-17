@@ -142,7 +142,7 @@ static void decode_plane(FFV1Context *s, uint8_t *src,
                 }
             } else {
                 for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample);
+                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * s->avctx->bits_per_raw_sample - 16);
                 }
             }
         }
