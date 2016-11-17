@@ -275,7 +275,7 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
         }
         if (section->format_header && !order) {
             len = strlen(section->format_header);
-            if (buf[len] == ':' && !strncmp(buf, section->format_header, len)) {
+            if (!strncmp(buf, section->format_header, len) && buf[len] == ':') {
                 buf += len + 1;
                 while (!is_eol(*buf)) {
                     buf = skip_space(buf);
