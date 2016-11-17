@@ -268,15 +268,17 @@ static void check_mc(void)
     LOCAL_ALIGNED_16(uint8_t, dst0, [16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16]);
     VP8DSPContext d;
-    int type, hsize, dx, dy;
+    int type, k, dx, dy;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t, uint8_t *, ptrdiff_t, int, int, int);
 
     ff_vp78dsp_init(&d);
 
     for (type = 0; type < 2; type++) {
         vp8_mc_func (*tab)[3][3] = type ? d.put_vp8_bilinear_pixels_tab : d.put_vp8_epel_pixels_tab;
-        for (hsize = 0; hsize < 3; hsize++) {
-            int size = 16 >> hsize;
+        for (k = 1; k < 8; k++) {
+            int hsize  = k / 3;
+            int size   = 16 >> hsize;
+            int height = (size << 1) >> (k % 3);
             for (dy = 0; dy < 3; dy++) {
                 for (dx = 0; dx < 3; dx++) {
                     char str[100];
@@ -309,11 +311,11 @@ static void check_mc(void)
                             src[i                 ] = val;
                             src[i * SRC_BUF_STRIDE] = val;
                         }
-                        call_ref(dst0, size, src, SRC_BUF_STRIDE, size, mx, my);
-                        call_new(dst1, size, src, SRC_BUF_STRIDE, size, mx, my);
-                        if (memcmp(dst0, dst1, size * size))
+                        call_ref(dst0, size, src, SRC_BUF_STRIDE, height, mx, my);
+                        call_new(dst1, size, src, SRC_BUF_STRIDE, height, mx, my);
+                        if (memcmp(dst0, dst1, size * height))
                             fail();
-                        bench_new(dst1, size, src, SRC_BUF_STRIDE, size, mx, my);
+                        bench_new(dst1, size, src, SRC_BUF_STRIDE, height, mx, my);
                     }
                 }
             }
