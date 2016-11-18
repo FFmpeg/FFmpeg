@@ -2092,7 +2092,7 @@ IADST16_FN iadst, IADST16, iadst, IADST16, avx
     SWAP                     5,  9, 15
 %endmacro
 
-%if ARCH_X86_64
+%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
 %macro IADST16_YMM_FN 4
 INIT_YMM avx2
 cglobal vp9_%1_%3_16x16_add, 4, 4, 16, dst, stride, block, eob
