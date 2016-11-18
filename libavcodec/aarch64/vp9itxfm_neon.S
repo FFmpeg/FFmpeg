@@ -204,7 +204,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
 
         movi            v31.8h, #0
 .ifc \txfm1\()_\txfm2,idct_idct
-        cmp             x3,  #1
+        cmp             w3,  #1
         b.ne            1f
         // DC-only for idct/idct
         ld1r            {v2.4h},  [x2]
@@ -344,7 +344,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         movi            v5.16b, #0
 
 .ifc \txfm1\()_\txfm2,idct_idct
-        cmp             x3,  #1
+        cmp             w3,  #1
         b.ne            1f
         // DC-only for idct/idct
         ld1r            {v2.4h},  [x2]
@@ -722,7 +722,7 @@ itxfm16_1d_funcs iadst
 .macro itxfm_func16x16 txfm1, txfm2
 function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 .ifc \txfm1\()_\txfm2,idct_idct
-        cmp             x3,  #1
+        cmp             w3,  #1
         b.eq            idct16x16_dc_add_neon
 .endif
         mov             x15, x30
@@ -1074,7 +1074,7 @@ function idct32_1d_8x32_pass2_neon
 endfunc
 
 function ff_vp9_idct_idct_32x32_add_neon, export=1
-        cmp             x3,  #1
+        cmp             w3,  #1
         b.eq            idct32x32_dc_add_neon
 
         movrel          x10, idct_coeffs
