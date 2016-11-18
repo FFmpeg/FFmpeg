@@ -1884,6 +1884,13 @@ typedef struct AVFormatContext {
      * - decoding: set by user through AVOptions (NO direct access)
      */
     char *protocol_blacklist;
+
+    /**
+     * The maximum number of streams.
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    int max_streams;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
