@@ -107,6 +107,7 @@ typedef struct VPxEncoderContext {
     int drop_threshold;
     int noise_sensitivity;
     int vpx_cs;
+    float level;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -133,6 +134,9 @@ static const char *const ctlidstr[] = {
 #endif
 #if VPX_ENCODER_ABI_VERSION >= 11
     [VP9E_SET_COLOR_RANGE]             = "VP9E_SET_COLOR_RANGE",
+#endif
+#if VPX_ENCODER_ABI_VERSION >= 12
+    [VP9E_SET_TARGET_LEVEL]            = "VP9E_SET_TARGET_LEVEL",
 #endif
 #endif
 };
@@ -680,6 +684,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #if VPX_ENCODER_ABI_VERSION >= 11
         set_color_range(avctx);
 #endif
+#if VPX_ENCODER_ABI_VERSION >= 12
+        codecctl_int(avctx, VP9E_SET_TARGET_LEVEL, ctx->level < 0 ? 255 : lrint(ctx->level * 10));
+#endif
     }
 #endif
 
@@ -1089,6 +1096,9 @@ static const AVOption vp9_options[] = {
     { "variance",        "Variance based Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "aq_mode" },
     { "complexity",      "Complexity based Aq", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "aq_mode" },
     { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode" },
+#if VPX_ENCODER_ABI_VERSION >= 12
+    {"level", "Specify level", OFFSET(level), AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1, 6.2, VE},
+#endif
     LEGACY_OPTIONS
     { NULL }
 };
