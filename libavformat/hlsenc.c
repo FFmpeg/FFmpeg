@@ -92,6 +92,7 @@ static int randomize(uint8_t *buf, int len)
 #elif CONFIG_OPENSSL
     if (RAND_bytes(buf, len))
         return 0;
+    return AVERROR(EIO);
 #else
     return AVERROR(ENOSYS);
 #endif
