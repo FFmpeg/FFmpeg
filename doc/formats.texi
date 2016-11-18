@@ -209,6 +209,10 @@ For example to separate the fields with newlines and indention:
 ffprobe -dump_separator "
                           "  -i ~/videos/matrixbench_mpeg2.mpg
 @end example
+
+@item max_streams @var{integer} (@emph{input})
+Specifies the maximum number of streams. This can be used to reject files that
+would require too many resources due to a large number of streams.
 @end table
 
 @c man end FORMAT OPTIONS
