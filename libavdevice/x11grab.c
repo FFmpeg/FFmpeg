@@ -544,7 +544,6 @@ static int x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
       s->time_frame += INT64_C(1000000);
     } while ((s->time_frame * av_q2d(s->time_base) - curtime) <= 0);
 
-    av_init_packet(pkt);
     pkt->data = image->data;
     pkt->size = s->frame_size;
     pkt->pts  = curtime;
