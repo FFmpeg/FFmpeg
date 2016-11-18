@@ -5744,8 +5744,11 @@ static int mov_init(AVFormatContext *s)
                         pix_fmt == AV_PIX_FMT_MONOWHITE ||
                         pix_fmt == AV_PIX_FMT_MONOBLACK;
             }
-            if (track->mode == MODE_MP4 &&
-                track->par->codec_id == AV_CODEC_ID_VP9) {
+            if (track->par->codec_id == AV_CODEC_ID_VP9) {
+                if (track->mode != MODE_MP4) {
+                    av_log(s, AV_LOG_ERROR, "VP9 only supported in MP4.\n");
+                    return AVERROR(EINVAL);
+                }
                 if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
                     av_log(s, AV_LOG_ERROR,
                            "VP9 in MP4 support is experimental, add "
