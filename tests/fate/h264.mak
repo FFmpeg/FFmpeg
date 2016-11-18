@@ -206,6 +206,10 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 # by using a previous ref frame instead of a missing one
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
 
+# this sample gives an explicit size for a single NAL unit, but contains
+# several NAL units
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-mixed-nal-coding
+
 # this sample has invalid extradata that is not escaped
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
 
@@ -423,6 +427,7 @@ fate-h264-skip-nokey:                             CMD = framecrc -skip_frame nok
 fate-h264-skip-nointra:                           CMD = framecrc -skip_frame nointra -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
+fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 
