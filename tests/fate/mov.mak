@@ -7,7 +7,8 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-2elist-elist1-ends-bframe \
            fate-mov-zombie \
            fate-mov-aac-2048-priming \
-           fate-mp4-init-nonkeyframe
+           fate-mp4-init-nonkeyframe \
+           fate-mov-displaymatrix \
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 
@@ -38,3 +39,6 @@ fate-mov-zombie: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packe
 
 fate-mp4-init-nonkeyframe: ffprobe$(PROGSSUF)$(EXESUF)
 fate-mp4-init-nonkeyframe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact -select_streams v $(TARGET_SAMPLES)/mov/mp4-init-nonkeyframe.mp4
+
+fate-mp4-displaymatrix: ffprobe$(PROGSSUF)$(EXESUF)
+fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/displaymatrix.mov
