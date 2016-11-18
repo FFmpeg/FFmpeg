@@ -791,15 +791,13 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 .ifnc \txfm1\()_\txfm2,idct_idct
         vpush           {q4-q7}
 .endif
-        mov             r7,  sp
 
         @ Align the stack, allocate a temp buffer
-T       mov             r12, sp
-T       bic             r12, r12, #15
-T       sub             r12, r12, #512
-T       mov             sp,  r12
-A       bic             sp,  sp,  #15
-A       sub             sp,  sp,  #512
+T       mov             r7,  sp
+T       and             r7,  r7,  #15
+A       and             r7,  sp,  #15
+        add             r7,  r7,  #512
+        sub             sp,  sp,  r7
 
         mov             r4,  r0
         mov             r5,  r1
@@ -828,7 +826,7 @@ A       sub             sp,  sp,  #512
         bl              \txfm2\()16_1d_4x16_pass2_neon
 .endr
 
-        mov             sp,  r7
+        add             sp,  sp,  r7
 .ifnc \txfm1\()_\txfm2,idct_idct
         vpop            {q4-q7}
 .endif
@@ -1117,15 +1115,13 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
         beq             idct32x32_dc_add_neon
         push            {r4-r7,lr}
         vpush           {q4-q7}
-        mov             r7,  sp
 
         @ Align the stack, allocate a temp buffer
-T       mov             r12, sp
-T       bic             r12, r12, #15
-T       sub             r12, r12, #2048
-T       mov             sp,  r12
-A       bic             sp,  sp,  #15
-A       sub             sp,  sp,  #2048
+T       mov             r7,  sp
+T       and             r7,  r7,  #15
+A       and             r7,  sp,  #15
+        add             r7,  r7,  #2048
+        sub             sp,  sp,  r7
 
         mov             r4,  r0
         mov             r5,  r1
@@ -1143,7 +1139,7 @@ A       sub             sp,  sp,  #2048
         bl              idct32_1d_4x32_pass2_neon
 .endr
 
-        mov             sp,  r7
+        add             sp,  sp,  r7
         vpop            {q4-q7}
         pop             {r4-r7,pc}
 endfunc
