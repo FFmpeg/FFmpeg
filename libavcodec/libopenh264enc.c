@@ -167,6 +167,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR,
                "Invalid combination -slices %d and -max_nal_size %d.\n",
                avctx->slices, s->max_nal_size);
+        err = AVERROR(EINVAL);
         goto fail;
     }
 
@@ -195,6 +196,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         } else {
             av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
                    "specify a valid max_nal_size to use -slice_mode dyn\n");
+            err = AVERROR(EINVAL);
             goto fail;
         }
     }
