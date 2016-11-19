@@ -180,6 +180,7 @@ static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st);
 
 static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
@@ -391,6 +392,11 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x00,0x00,0x00 },
       mxf_write_mpegvideo_desc },
+    // S436M ANC
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x0D,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x17,0x01,0x02,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x01,0x5C,0x00 },
+      mxf_write_s436m_anc_desc },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
@@ -725,9 +731,14 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
 
     mxf_write_refs_count(pb, DESCRIPTOR_COUNT(c->essence_container_count));
     av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
-    for (i = 0; i < c->essence_container_count; i++) {
+    for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
+        // check first track of essence container type and only write it once
+        if (sc->track_essence_element_key[15] != 0)
+            continue;
         avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
+        if (c->essence_container_count == 1)
+            break;
     }
 
     if (c->essence_container_count > 1)
@@ -1184,6 +1195,7 @@ static int64_t mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UI
     return pos;
 }
 
+static const UID mxf_s436m_anc_descriptor_key = { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x5c,0x00 };
 static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 };
 static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 };
 static const UID mxf_aes3_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 };
@@ -1396,6 +1408,12 @@ static void mxf_update_klv_size(AVIOContext *pb, int64_t pos)
 static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 {
     int64_t pos = mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
+}
+
+static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st)
+{
+    int64_t pos = mxf_write_generic_desc(s, st, mxf_s436m_anc_descriptor_key);
     mxf_update_klv_size(s->pb, pos);
 }
 
@@ -1753,6 +1771,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     int i, j, temporal_reordering = 0;
     int key_index = mxf->last_key_index;
     int prev_non_b_picture = 0;
+    int audio_frame_size = 0;
     int64_t pos;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
@@ -1822,9 +1841,11 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
         } else if (i == 0) { // video track
             avio_w8(pb, 0); // slice number
             avio_wb32(pb, KAG_SIZE); // system item size including klv fill
-        } else { // audio track
-            unsigned audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
-            audio_frame_size += klv_fill_size(audio_frame_size);
+        } else { // audio or data track
+            if (!audio_frame_size) {
+                audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
+                audio_frame_size += klv_fill_size(audio_frame_size);
+            }
             avio_w8(pb, 1);
             avio_wb32(pb, (i-1)*audio_frame_size); // element delta
         }
@@ -2556,6 +2577,18 @@ static int mxf_write_header(AVFormatContext *s)
                 sc->frame_size = (st->codecpar->channels * spf[0].samples_per_frame[0] *
                                   av_get_bits_per_sample(st->codecpar->codec_id)) / 8;
             }
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
+            AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
+            if (e && !strcmp(e->value, "vbi_vanc_smpte_436M")) {
+                sc->index = 38;
+            } else {
+                av_log(s, AV_LOG_ERROR, "track %d: unsupported data type\n", i);
+                return -1;
+            }
+            if (st->index != s->nb_streams - 1) {
+                av_log(s, AV_LOG_ERROR, "data track must be placed last\n");
+                return -1;
+            }
         }
 
         if (!sc->index) {
@@ -2625,13 +2658,21 @@ static void mxf_write_system_item(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned frame;
     uint32_t time_code;
+    int i, system_item_bitmap = 0x58; // UL, user date/time stamp, picture present
 
     frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     // write system metadata pack
     avio_write(pb, system_metadata_pack_key, 16);
     klv_encode_ber4_length(pb, 57);
-    avio_w8(pb, 0x5c); // UL, user date/time stamp, picture and sound item present
+
+    for (i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            system_item_bitmap |= 0x4;
+        else if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            system_item_bitmap |= 0x2;
+    }
+    avio_w8(pb, system_item_bitmap);
     avio_w8(pb, mxf->content_package_rate); // content package rate
     avio_w8(pb, 0x00); // content package type
     avio_wb16(pb, 0x00); // channel handle

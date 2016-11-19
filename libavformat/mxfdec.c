@@ -3311,6 +3311,8 @@ static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt)
         if (ret < 0)
             return ret;
     } else if (track) {
+        pkt->dts = pkt->pts = track->sample_count;
+        pkt->duration = 1;
         track->sample_count++;
     }
     return 0;
