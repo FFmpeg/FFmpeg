@@ -44,6 +44,7 @@
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000
 #define SMKTREE_DECODE_MAX_RECURSION 32
+#define SMKTREE_DECODE_BIG_MAX_RECURSION 500
 
 typedef struct SmackVContext {
     AVCodecContext *avctx;
@@ -133,8 +134,14 @@ static int smacker_decode_tree(BitstreamContext *bc, HuffContext *hc,
  * Decode header tree
  */
 static int smacker_decode_bigtree(BitstreamContext *bc, HuffContext *hc,
-                                  DBCtx *ctx)
+                                  DBCtx *ctx, int length)
 {
+    // Larger length can cause segmentation faults due to too deep recursion.
+    if (length > SMKTREE_DECODE_BIG_MAX_RECURSION) {
+        av_log(NULL, AV_LOG_ERROR, "Maximum bigtree recursion level exceeded.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (hc->current + 1 >= hc->length) {
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
         return AVERROR_INVALIDDATA;
@@ -163,12 +170,12 @@ static int smacker_decode_bigtree(BitstreamContext *bc, HuffContext *hc,
         int r = 0, r_new, t;
 
         t = hc->current++;
-        r = smacker_decode_bigtree(bc, hc, ctx);
+        r = smacker_decode_bigtree(bc, hc, ctx, length + 1);
         if(r < 0)
             return r;
         hc->values[t] = SMK_NODE | r;
         r++;
-        r_new = smacker_decode_bigtree(bc, hc, ctx);
+        r_new = smacker_decode_bigtree(bc, hc, ctx, length + 1);
         if (r_new < 0)
             return r_new;
         return r + r_new;
@@ -269,7 +276,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, BitstreamContext *bc,
         goto error;
     }
 
-    if ((res = smacker_decode_bigtree(bc, &huff, &ctx)) < 0)
+    if ((res = smacker_decode_bigtree(bc, &huff, &ctx, 0)) < 0)
         err = res;
     bitstream_skip(bc, 1);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
