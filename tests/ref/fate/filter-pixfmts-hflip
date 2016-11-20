@@ -33,6 +33,8 @@ gbrp14le            91bb636f4e1f5d50312b136c185542e9
 gbrp9be             174de037c2a9f2b6fb4d9444ae0ff82f
 gbrp9le             ba7c2631fb2967aa909c66509bd243fe
 gray                8bd4ece1dbf89b20ee785e0515356e07
+gray10be            b75156463e3799e8eac19ca36032f4a2
+gray10le            e3f834c845d7060c71a3f1585437944c
 gray12be            aff18f944e023a767c59357eb362fab2
 gray12le            6a50f886754a32a01254bddbb0823880
 gray16be            cf7294d9aa23e1b838692ec01ade587b

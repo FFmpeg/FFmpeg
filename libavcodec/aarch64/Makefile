@@ -16,6 +16,7 @@ OBJS-$(CONFIG_DCA_DECODER)              += aarch64/synth_filter_init.o
 OBJS-$(CONFIG_RV40_DECODER)             += aarch64/rv40dsp_init_aarch64.o
 OBJS-$(CONFIG_VC1DSP)                   += aarch64/vc1dsp_init_aarch64.o
 OBJS-$(CONFIG_VORBIS_DECODER)           += aarch64/vorbisdsp_init.o
+OBJS-$(CONFIG_VP9_DECODER)              += aarch64/vp9dsp_init_aarch64.o
 
 # ARMv8 optimizations
 
@@ -41,3 +42,6 @@ NEON-OBJS-$(CONFIG_MPEGAUDIODSP)        += aarch64/mpegaudiodsp_neon.o
 # decoders/encoders
 NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_VORBIS_DECODER)      += aarch64/vorbisdsp_neon.o
+NEON-OBJS-$(CONFIG_VP9_DECODER)         += aarch64/vp9itxfm_neon.o             \
+                                           aarch64/vp9lpf_neon.o               \
+                                           aarch64/vp9mc_neon.o

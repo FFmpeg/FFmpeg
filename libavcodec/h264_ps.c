@@ -467,15 +467,22 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     sps->mb_height                      = get_ue_golomb(gb) + 1;
 
     sps->frame_mbs_only_flag = get_bits1(gb);
+
+    if (sps->mb_height >= INT_MAX / 2) {
+        av_log(avctx, AV_LOG_ERROR, "height overflow\n");
+        goto fail;
+    }
+    sps->mb_height *= 2 - sps->frame_mbs_only_flag;
+
     if (!sps->frame_mbs_only_flag)
         sps->mb_aff = get_bits1(gb);
     else
         sps->mb_aff = 0;
 
     if ((unsigned)sps->mb_width  >= INT_MAX / 16 ||
-        (unsigned)sps->mb_height >= INT_MAX / (16 * (2 - sps->frame_mbs_only_flag)) ||
+        (unsigned)sps->mb_height >= INT_MAX / 16 ||
         av_image_check_size(16 * sps->mb_width,
-                            16 * sps->mb_height * (2 - sps->frame_mbs_only_flag), 0, avctx)) {
+                            16 * sps->mb_height, 0, avctx)) {
         av_log(avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
         goto fail;
     }
@@ -494,7 +501,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
         unsigned int crop_top    = get_ue_golomb(gb);
         unsigned int crop_bottom = get_ue_golomb(gb);
         int width  = 16 * sps->mb_width;
-        int height = 16 * sps->mb_height * (2 - sps->frame_mbs_only_flag);
+        int height = 16 * sps->mb_height;
 
         if (avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
             av_log(avctx, AV_LOG_DEBUG, "discarding sps cropping, original "

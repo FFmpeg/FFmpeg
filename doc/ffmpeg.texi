@@ -357,6 +357,40 @@ To set the language of the first audio stream:
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
+@item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
+Sets the disposition for a stream.
+
+This option overrides the disposition copied from the input stream. It is also
+possible to delete the disposition by setting it to 0.
+
+The following dispositions are recognized:
+@table @option
+@item default
+@item dub
+@item original
+@item comment
+@item lyrics
+@item karaoke
+@item forced
+@item hearing_impaired
+@item visual_impaired
+@item clean_effects
+@item captions
+@item descriptions
+@item metadata
+@end table
+
+For example, to make the second audio stream the default stream:
+@example
+ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+@end example
+
+To make the second subtitle stream the default stream and remove the default
+disposition from the first subtitle stream:
+@example
+ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
+@end example
+
 @item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
 
 Creates a program with the specified @var{title}, @var{program_num} and adds the specified

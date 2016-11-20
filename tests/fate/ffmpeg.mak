@@ -20,7 +20,7 @@ fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5 -fflags
 
 FATE_SAMPLES_FFMPEG-$(CONFIG_COLORKEY_FILTER) += fate-ffmpeg-filter_colorkey
 fate-ffmpeg-filter_colorkey: tests/data/filtergraphs/colorkey
-fate-ffmpeg-filter_colorkey: CMD = framecrc -idct simple -fflags +bitexact -flags +bitexact  -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/cavs/cavs.mpg -fflags +bitexact -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/lena.pnm -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/colorkey -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -qscale 2 -vframes 10
+fate-ffmpeg-filter_colorkey: CMD = framecrc -idct simple -fflags +bitexact -flags +bitexact  -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/cavs/cavs.mpg -fflags +bitexact -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/lena.pnm -an -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/colorkey -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -qscale 2 -vframes 10
 
 FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-lavfi
 fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5 -fflags +bitexact

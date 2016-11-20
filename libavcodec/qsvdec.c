@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
 
@@ -39,17 +40,6 @@
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvdec.h"
-
-int ff_qsv_map_pixfmt(enum AVPixelFormat format)
-{
-    switch (format) {
-    case AV_PIX_FMT_YUV420P:
-    case AV_PIX_FMT_YUVJ420P:
-        return AV_PIX_FMT_NV12;
-    default:
-        return AVERROR(ENOSYS);
-    }
-}
 
 static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session,
                             AVBufferRef *hw_frames_ref)
@@ -97,10 +87,17 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
 
 static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
+    const AVPixFmtDescriptor *desc;
     mfxSession session = NULL;
     int iopattern = 0;
     mfxVideoParam param = { { 0 } };
+    int frame_width  = avctx->coded_width;
+    int frame_height = avctx->coded_height;
     int ret;
+
+    desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
+    if (!desc)
+        return AVERROR_BUG;
 
     if (!q->async_fifo) {
         q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
@@ -127,6 +124,9 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
             else if (frames_hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
                 iopattern = MFX_IOPATTERN_OUT_VIDEO_MEMORY;
         }
+
+        frame_width  = frames_hwctx->surfaces[0].Info.Width;
+        frame_height = frames_hwctx->surfaces[0].Info.Height;
     }
 
     if (!iopattern)
@@ -147,12 +147,12 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.mfx.CodecProfile = ff_qsv_profile_to_mfx(avctx->codec_id, avctx->profile);
     param.mfx.CodecLevel   = avctx->level == FF_LEVEL_UNKNOWN ? MFX_LEVEL_UNKNOWN : avctx->level;
 
-    param.mfx.FrameInfo.BitDepthLuma   = 8;
-    param.mfx.FrameInfo.BitDepthChroma = 8;
-    param.mfx.FrameInfo.Shift          = 0;
-    param.mfx.FrameInfo.FourCC         = MFX_FOURCC_NV12;
-    param.mfx.FrameInfo.Width          = avctx->coded_width;
-    param.mfx.FrameInfo.Height         = avctx->coded_height;
+    param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
+    param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
+    param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
+    param.mfx.FrameInfo.FourCC         = q->fourcc;
+    param.mfx.FrameInfo.Width          = frame_width;
+    param.mfx.FrameInfo.Height         = frame_height;
     param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
 
     switch (avctx->field_order) {
@@ -187,10 +187,12 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return ff_qsv_error(ret);
     }
 
+    q->frame_info = param.mfx.FrameInfo;
+
     return 0;
 }
 
-static int alloc_frame(AVCodecContext *avctx, QSVFrame *frame)
+static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 {
     int ret;
 
@@ -201,12 +203,7 @@ static int alloc_frame(AVCodecContext *avctx, QSVFrame *frame)
     if (frame->frame->format == AV_PIX_FMT_QSV) {
         frame->surface = (mfxFrameSurface1*)frame->frame->data[3];
     } else {
-        frame->surface_internal.Info.BitDepthLuma   = 8;
-        frame->surface_internal.Info.BitDepthChroma = 8;
-        frame->surface_internal.Info.FourCC         = MFX_FOURCC_NV12;
-        frame->surface_internal.Info.Width          = avctx->coded_width;
-        frame->surface_internal.Info.Height         = avctx->coded_height;
-        frame->surface_internal.Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
+        frame->surface_internal.Info = q->frame_info;
 
         frame->surface_internal.Data.PitchLow = frame->frame->linesize[0];
         frame->surface_internal.Data.Y        = frame->frame->data[0];
@@ -241,7 +238,7 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     last  = &q->work_frames;
     while (frame) {
         if (!frame->surface) {
-            ret = alloc_frame(avctx, frame);
+            ret = alloc_frame(avctx, q, frame);
             if (ret < 0)
                 return ret;
             *surf = frame->surface;
@@ -262,7 +259,7 @@ static int get_surface(AVCodecContext *avctx, QSVContext *q, mfxFrameSurface1 **
     }
     *last = frame;
 
-    ret = alloc_frame(avctx, frame);
+    ret = alloc_frame(avctx, q, frame);
     if (ret < 0)
         return ret;
 
@@ -474,10 +471,11 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                                            AV_PIX_FMT_NONE };
         enum AVPixelFormat qsv_format;
 
-        qsv_format = ff_qsv_map_pixfmt(q->parser->format);
+        qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
         if (qsv_format < 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Only 8-bit YUV420 streams are supported.\n");
+                   "Decoding pixel format '%s' is not supported\n",
+                   av_get_pix_fmt_name(q->parser->format));
             ret = AVERROR(ENOSYS);
             goto reinit_fail;
         }

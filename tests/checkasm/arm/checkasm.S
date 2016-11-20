@@ -22,7 +22,7 @@
 
 #include "libavutil/arm/asm.S"
 
-const register_init
+const register_init, align=3
     .quad 0x21f86d66c8ca00ce
     .quad 0x75b6ba21077c48ad
     .quad 0xed56bb2dcb3c7736
@@ -42,6 +42,9 @@ endconst
 
 #define ARG_STACK 4*(MAX_ARGS - 2)
 
+@ align the used stack space to 8 to preserve the stack alignment
+#define ARG_STACK_A (((ARG_STACK + pushed + 7) & ~7) - pushed)
+
 .macro clobbercheck variant
 .equ pushed, 4*9
 function checkasm_checked_call_\variant, export=1
@@ -59,10 +62,10 @@ function checkasm_checked_call_\variant, export=1
 .endif
     ldm         r12, {r4-r11}
 
-    sub         sp,  sp,  #ARG_STACK
+    sub         sp,  sp,  #ARG_STACK_A
 .equ pos, 0
 .rept MAX_ARGS-2
-    ldr         r12, [sp, #ARG_STACK + pushed + 8 + pos]
+    ldr         r12, [sp, #ARG_STACK_A + pushed + 8 + pos]
     str         r12, [sp, #pos]
 .equ pos, pos + 4
 .endr
@@ -70,9 +73,9 @@ function checkasm_checked_call_\variant, export=1
     mov         r12, r0
     mov         r0,  r2
     mov         r1,  r3
-    ldrd        r2,  r3,  [sp, #ARG_STACK + pushed]
+    ldrd        r2,  r3,  [sp, #ARG_STACK_A + pushed]
     blx         r12
-    add         sp,  sp,  #ARG_STACK
+    add         sp,  sp,  #ARG_STACK_A
 
     push        {r0, r1}
     movrel      r12, register_init

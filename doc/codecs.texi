@@ -1067,6 +1067,7 @@ SMPTE 240 M
 Film
 @item bt2020
 BT.2020
+@item smpte428
 @item smpte428_1
 SMPTE ST 428-1
 @item smpte431
@@ -1091,21 +1092,29 @@ SMPTE 240 M
 @item linear
 Linear
 @item log
+@item log100
 Log
 @item log_sqrt
+@item log316
 Log square root
 @item iec61966_2_4
+@item iec61966-2-4
 IEC 61966-2-4
 @item bt1361
+@item bt1361e
 BT.1361
 @item iec61966_2_1
+@item iec61966-2-1
 IEC 61966-2-1
+@item bt2020_10
 @item bt2020_10bit
 BT.2020 - 10 bit
+@item bt2020_12
 @item bt2020_12bit
 BT.2020 - 12 bit
 @item smpte2084
 SMPTE ST 2084
+@item smpte428
 @item smpte428_1
 SMPTE ST 428-1
 @item arib-std-b67
@@ -1129,8 +1138,10 @@ SMPTE 170 M
 SMPTE 240 M
 @item ycocg
 YCOCG
+@item bt2020nc
 @item bt2020_ncl
 BT.2020 NCL
+@item bt2020c
 @item bt2020_cl
 BT.2020 CL
 @item smpte2085
@@ -1140,8 +1151,32 @@ SMPTE 2085
 @item color_range @var{integer} (@emph{decoding/encoding,video})
 If used as input parameter, it serves as a hint to the decoder, which
 color_range the input has.
+Possible values:
+@table @samp
+@item tv
+@item mpeg
+MPEG (219*2^(n-8))
+@item pc
+@item jpeg
+JPEG (2^n-1)
+@end table
 
 @item chroma_sample_location @var{integer} (@emph{decoding/encoding,video})
+Possible values:
+@table @samp
+@item left
+
+@item center
+
+@item topleft
+
+@item top
+
+@item bottomleft
+
+@item bottom
+
+@end table
 
 @item log_level_offset @var{integer}
 Set the log level offset.

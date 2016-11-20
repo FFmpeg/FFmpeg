@@ -142,7 +142,7 @@ static void decode_plane(FFV1Context *s, uint8_t *src,
                 }
             } else {
                 for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample);
+                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * s->avctx->bits_per_raw_sample - 16);
                 }
             }
         }
@@ -575,8 +575,19 @@ static int read_header(FFV1Context *f)
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-            else
+            else if (f->avctx->bits_per_raw_sample == 10) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+            } else if (f->avctx->bits_per_raw_sample == 12) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY12;
+            } else if (f->avctx->bits_per_raw_sample == 16) {
+                f->packed_at_lsb = 1;
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            } else if (f->avctx->bits_per_raw_sample < 16) {
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            } else
+                return AVERROR(ENOSYS);
         } else if (f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_YA8;
@@ -626,12 +637,14 @@ static int read_header(FFV1Context *f)
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P10; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
+            f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P16; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P16; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P16; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && f->transparency){
+            f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P16; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P16; break;

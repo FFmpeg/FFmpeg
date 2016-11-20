@@ -573,6 +573,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_YUVA420P9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
+    case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
@@ -1298,6 +1299,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YA8,
+        AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_NONE
 

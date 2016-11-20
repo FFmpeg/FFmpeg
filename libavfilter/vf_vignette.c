@@ -165,7 +165,7 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
     int dst_linesize = s->fmap_linesize;
 
     if (frame) {
-        s->var_values[VAR_N]   = inlink->frame_count;
+        s->var_values[VAR_N]   = inlink->frame_count_out;
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {

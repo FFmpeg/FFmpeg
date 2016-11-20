@@ -81,6 +81,7 @@ static void apng_write_chunk(AVIOContext *io_context, uint32_t tag,
 static int apng_write_header(AVFormatContext *format_context)
 {
     APNGMuxContext *apng = format_context->priv_data;
+    AVCodecParameters *par = format_context->streams[0]->codecpar;
 
     if (format_context->nb_streams != 1 ||
         format_context->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
@@ -100,6 +101,14 @@ static int apng_write_header(AVFormatContext *format_context)
 
     avio_wb64(format_context->pb, PNGSIG);
     // Remaining headers are written when they are copied from the encoder
+
+    if (par->extradata_size) {
+        apng->extra_data = av_mallocz(par->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!apng->extra_data)
+            return AVERROR(ENOMEM);
+        apng->extra_data_size = par->extradata_size;
+        memcpy(apng->extra_data, par->extradata, par->extradata_size);
+    }
 
     return 0;
 }

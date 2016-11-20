@@ -1991,61 +1991,6 @@ copy_avg_fn(4)
 
 #endif /* BIT_DEPTH != 12 */
 
-static const int16_t vp9_subpel_filters[3][16][8] = {
-    [FILTER_8TAP_REGULAR] = {
-        {  0,  0,   0, 128,   0,   0,  0,  0 },
-        {  0,  1,  -5, 126,   8,  -3,  1,  0 },
-        { -1,  3, -10, 122,  18,  -6,  2,  0 },
-        { -1,  4, -13, 118,  27,  -9,  3, -1 },
-        { -1,  4, -16, 112,  37, -11,  4, -1 },
-        { -1,  5, -18, 105,  48, -14,  4, -1 },
-        { -1,  5, -19,  97,  58, -16,  5, -1 },
-        { -1,  6, -19,  88,  68, -18,  5, -1 },
-        { -1,  6, -19,  78,  78, -19,  6, -1 },
-        { -1,  5, -18,  68,  88, -19,  6, -1 },
-        { -1,  5, -16,  58,  97, -19,  5, -1 },
-        { -1,  4, -14,  48, 105, -18,  5, -1 },
-        { -1,  4, -11,  37, 112, -16,  4, -1 },
-        { -1,  3,  -9,  27, 118, -13,  4, -1 },
-        {  0,  2,  -6,  18, 122, -10,  3, -1 },
-        {  0,  1,  -3,   8, 126,  -5,  1,  0 },
-    }, [FILTER_8TAP_SHARP] = {
-        {  0,  0,   0, 128,   0,   0,  0,  0 },
-        { -1,  3,  -7, 127,   8,  -3,  1,  0 },
-        { -2,  5, -13, 125,  17,  -6,  3, -1 },
-        { -3,  7, -17, 121,  27, -10,  5, -2 },
-        { -4,  9, -20, 115,  37, -13,  6, -2 },
-        { -4, 10, -23, 108,  48, -16,  8, -3 },
-        { -4, 10, -24, 100,  59, -19,  9, -3 },
-        { -4, 11, -24,  90,  70, -21, 10, -4 },
-        { -4, 11, -23,  80,  80, -23, 11, -4 },
-        { -4, 10, -21,  70,  90, -24, 11, -4 },
-        { -3,  9, -19,  59, 100, -24, 10, -4 },
-        { -3,  8, -16,  48, 108, -23, 10, -4 },
-        { -2,  6, -13,  37, 115, -20,  9, -4 },
-        { -2,  5, -10,  27, 121, -17,  7, -3 },
-        { -1,  3,  -6,  17, 125, -13,  5, -2 },
-        {  0,  1,  -3,   8, 127,  -7,  3, -1 },
-    }, [FILTER_8TAP_SMOOTH] = {
-        {  0,  0,   0, 128,   0,   0,  0,  0 },
-        { -3, -1,  32,  64,  38,   1, -3,  0 },
-        { -2, -2,  29,  63,  41,   2, -3,  0 },
-        { -2, -2,  26,  63,  43,   4, -4,  0 },
-        { -2, -3,  24,  62,  46,   5, -4,  0 },
-        { -2, -3,  21,  60,  49,   7, -4,  0 },
-        { -1, -4,  18,  59,  51,   9, -4,  0 },
-        { -1, -4,  16,  57,  53,  12, -4, -1 },
-        { -1, -4,  14,  55,  55,  14, -4, -1 },
-        { -1, -4,  12,  53,  57,  16, -4, -1 },
-        {  0, -4,   9,  51,  59,  18, -4, -1 },
-        {  0, -4,   7,  49,  60,  21, -3, -2 },
-        {  0, -4,   5,  46,  62,  24, -3, -2 },
-        {  0, -4,   4,  43,  63,  26, -2, -2 },
-        {  0, -3,   2,  41,  63,  29, -2, -2 },
-        {  0, -3,   1,  38,  64,  32, -1, -3 },
-    }
-};
-
 #define FILTER_8TAP(src, x, F, stride) \
     av_clip_pixel((F[0] * src[x + -3 * stride] + \
                    F[1] * src[x + -2 * stride] + \
@@ -2155,7 +2100,7 @@ static void avg##_8tap_##type##_##sz##dir##_c(uint8_t *dst, ptrdiff_t dst_stride
                                               int h, int mx, int my) \
 { \
     avg##_8tap_1d_##dir##_c(dst, dst_stride, src, src_stride, sz, h, \
-                            vp9_subpel_filters[type_idx][dir_m]); \
+                            ff_vp9_subpel_filters[type_idx][dir_m]); \
 }
 
 #define filter_fn_2d(sz, type, type_idx, avg) \
@@ -2164,8 +2109,8 @@ static void avg##_8tap_##type##_##sz##hv_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                            int h, int mx, int my) \
 { \
     avg##_8tap_2d_hv_c(dst, dst_stride, src, src_stride, sz, h, \
-                       vp9_subpel_filters[type_idx][mx], \
-                       vp9_subpel_filters[type_idx][my]); \
+                       ff_vp9_subpel_filters[type_idx][mx], \
+                       ff_vp9_subpel_filters[type_idx][my]); \
 }
 
 #if BIT_DEPTH != 12
@@ -2454,7 +2399,7 @@ static void avg##_scaled_##type##_##sz##_c(uint8_t *dst, ptrdiff_t dst_stride, \
                                            int h, int mx, int my, int dx, int dy) \
 { \
     avg##_scaled_8tap_c(dst, dst_stride, src, src_stride, sz, h, mx, my, dx, dy, \
-                        vp9_subpel_filters[type_idx]); \
+                        ff_vp9_subpel_filters[type_idx]); \
 }
 
 #if BIT_DEPTH != 12

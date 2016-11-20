@@ -300,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (s->fade_state == VF_FADE_WAITING) {
         s->factor=0;
         if (frame_timestamp >= s->start_time/(double)AV_TIME_BASE
-            && inlink->frame_count >= s->start_frame) {
+            && inlink->frame_count_out >= s->start_frame) {
             // Time to start fading
             s->fade_state = VF_FADE_FADING;
 
@@ -311,15 +311,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             // Save start frame in case we are starting based on time and fading based on frames
             if (s->start_time != 0 && s->start_frame == 0) {
-                s->start_frame = inlink->frame_count;
+                s->start_frame = inlink->frame_count_out;
             }
         }
     }
     if (s->fade_state == VF_FADE_FADING) {
         if (s->duration == 0) {
             // Fading based on frame count
-            s->factor = (inlink->frame_count - s->start_frame) * s->fade_per_frame;
-            if (inlink->frame_count > s->start_frame + s->nb_frames) {
+            s->factor = (inlink->frame_count_out - s->start_frame) * s->fade_per_frame;
+            if (inlink->frame_count_out > s->start_frame + s->nb_frames) {
                 s->fade_state = VF_FADE_DONE;
             }
 

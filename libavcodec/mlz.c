@@ -166,6 +166,10 @@ int ff_mlz_decompression(MLZ* mlz, GetBitContext* gb, int size, unsigned char *b
                         }
                         output_chars += ret;
                         set_new_entry_dict(dict, mlz->next_code, last_string_code, char_code);
+                        if (mlz->next_code >= TABLE_SIZE - 1) {
+                            av_log(mlz->context, AV_LOG_ERROR, "Too many MLZ codes\n");
+                            return output_chars;
+                        }
                         mlz->next_code++;
                     } else {
                         int ret = decode_string(mlz, &buff[output_chars], string_code, &char_code, size - output_chars);
@@ -177,6 +181,10 @@ int ff_mlz_decompression(MLZ* mlz, GetBitContext* gb, int size, unsigned char *b
                         if (output_chars <= size && !mlz->freeze_flag) {
                             if (last_string_code != -1) {
                                 set_new_entry_dict(dict, mlz->next_code, last_string_code, char_code);
+                                if (mlz->next_code >= TABLE_SIZE - 1) {
+                                    av_log(mlz->context, AV_LOG_ERROR, "Too many MLZ codes\n");
+                                    return output_chars;
+                                }
                                 mlz->next_code++;
                             }
                         } else {

@@ -471,10 +471,6 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             tsmb_type = AV_RB32(tsmb);
             tsmb += 4;
 
-            if (tsmb_size == 0) {
-              return AVERROR_INVALIDDATA;
-            }
-
             if (tsmb_size == 1) {
                 if (m->tracksize + 16 > avpkt->size)
                     break;
@@ -485,7 +481,12 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 m->size_var = 8;
             //size_var is equal to 8 or 16 depending on the size of box
 
-            if (m->tracksize + tsmb_size > avpkt->size)
+            if (tsmb_size == 0) {
+                av_log(avctx, AV_LOG_ERROR, "tsmb_size is 0\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            if (tsmb_size > avpkt->size - m->tracksize)
                 break;
 
             for (size_t i = 0; i < box_count; i++) {

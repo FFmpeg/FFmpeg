@@ -32,7 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 
-#ifndef __MAC_10_11
+#if __MAC_OS_X_VERSION_MIN_REQUIRED < 101100
 #define kAudioFormatEnhancedAC3 'ec-3'
 #endif
 

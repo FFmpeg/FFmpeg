@@ -393,7 +393,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
     vol->var_values[VAR_PTS] = TS2D(buf->pts);
     vol->var_values[VAR_T  ] = TS2T(buf->pts, inlink->time_base);
-    vol->var_values[VAR_N  ] = inlink->frame_count;
+    vol->var_values[VAR_N  ] = inlink->frame_count_out;
 
     pos = av_frame_get_pkt_pos(buf);
     vol->var_values[VAR_POS] = pos == -1 ? NAN : pos;

@@ -575,6 +575,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
 
     if (!s->internal->missing_ts_warning &&
         !(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+        (!(st->disposition & AV_DISPOSITION_ATTACHED_PIC) || (st->disposition & AV_DISPOSITION_TIMED_THUMBNAILS)) &&
         (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE)) {
         av_log(s, AV_LOG_WARNING,
                "Timestamps are unset in a packet for stream %d. "
@@ -692,6 +693,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     pts_backup = pkt->pts;
     dts_backup = pkt->dts;
 
+    // If the timestamp offsetting below is adjusted, adjust
+    // ff_interleaved_peek similarly.
     if (s->output_ts_offset) {
         AVStream *st = s->streams[pkt->stream_index];
         int64_t offset = av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
@@ -1180,23 +1183,30 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     }
 }
 
-const AVPacket *ff_interleaved_peek(AVFormatContext *s, int stream, int64_t *ts_offset)
+int ff_interleaved_peek(AVFormatContext *s, int stream,
+                        AVPacket *pkt, int add_offset)
 {
     AVPacketList *pktl = s->internal->packet_buffer;
     while (pktl) {
         if (pktl->pkt.stream_index == stream) {
-            AVPacket *pkt = &pktl->pkt;
-            AVStream *st = s->streams[pkt->stream_index];
-            *ts_offset = st->mux_ts_offset;
+            *pkt = pktl->pkt;
+            if (add_offset) {
+                AVStream *st = s->streams[pkt->stream_index];
+                int64_t offset = st->mux_ts_offset;
 
-            if (s->output_ts_offset)
-                *ts_offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
+                if (s->output_ts_offset)
+                    offset += av_rescale_q(s->output_ts_offset, AV_TIME_BASE_Q, st->time_base);
 
-            return pkt;
+                if (pkt->dts != AV_NOPTS_VALUE)
+                    pkt->dts += offset;
+                if (pkt->pts != AV_NOPTS_VALUE)
+                    pkt->pts += offset;
+            }
+            return 0;
         }
         pktl = pktl->next;
     }
-    return NULL;
+    return AVERROR(ENOENT);
 }
 
 /**

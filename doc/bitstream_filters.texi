@@ -26,18 +26,25 @@ with their parameters, if any.
 
 @section aac_adtstoasc
 
-Convert MPEG-2/4 AAC ADTS to MPEG-4 Audio Specific Configuration
-bitstream filter.
+Convert MPEG-2/4 AAC ADTS to an MPEG-4 Audio Specific Configuration
+bitstream.
 
 This filter creates an MPEG-4 AudioSpecificConfig from an MPEG-2/4
 ADTS header and removes the ADTS header.
 
-This is required for example when copying an AAC stream from a raw
-ADTS AAC container to a FLV or a MOV/MP4 file.
+This filter is required for example when copying an AAC stream from a
+raw ADTS AAC or an MPEG-TS container to MP4A-LATM, to an FLV file, or
+to MOV/MP4 files and related formats such as 3GP or M4A. Please note
+that it is auto-inserted for MP4A-LATM and MOV/MP4 and related formats.
 
 @section chomp
 
 Remove zero padding at the end of a packet.
+
+@section dca_core
+
+Extract the core from a DCA/DTS stream, dropping extensions such as
+DTS-HD.
 
 @section dump_extra
 
@@ -67,10 +74,6 @@ the header stored in extradata to the key packets:
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
 
-@section dca_core
-
-Extract DCA core from DTS-HD streams.
-
 @section h264_mp4toannexb
 
 Convert an H.264 bitstream from length prefixed mode to start code
@@ -78,7 +81,7 @@ prefixed mode (as defined in the Annex B of the ITU-T H.264
 specification).
 
 This is required by some streaming formats, typically the MPEG-2
-transport stream format ("mpegts").
+transport stream format (muxer @code{mpegts}).
 
 For example to remux an MP4 file containing an H.264 stream to mpegts
 format with @command{ffmpeg}, you can use the command:
@@ -86,6 +89,29 @@ format with @command{ffmpeg}, you can use the command:
 @example
 ffmpeg -i INPUT.mp4 -codec copy -bsf:v h264_mp4toannexb OUTPUT.ts
 @end example
+
+Please note that this filter is auto-inserted for MPEG-TS (muxer
+@code{mpegts}) and raw H.264 (muxer @code{h264}) output formats.
+
+@section hevc_mp4toannexb
+
+Convert an HEVC/H.265 bitstream from length prefixed mode to start code
+prefixed mode (as defined in the Annex B of the ITU-T H.265
+specification).
+
+This is required by some streaming formats, typically the MPEG-2
+transport stream format (muxer @code{mpegts}).
+
+For example to remux an MP4 file containing an HEVC stream to mpegts
+format with @command{ffmpeg}, you can use the command:
+
+@example
+ffmpeg -i INPUT.mp4 -codec copy -bsf:v hevc_mp4toannexb OUTPUT.ts
+@end example
+
+Please note that this filter is auto-inserted for MPEG-TS (muxer
+@code{mpegts}) and raw HEVC/H.265 (muxer @code{h265} or
+@code{hevc}) output formats.
 
 @section imxdump
 
@@ -137,11 +163,22 @@ exiftran -i -9 frame*.jpg
 ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 @end example
 
-@section mjpega_dump_header
+@section mjpegadump
 
-@section movsub
+Add an MJPEG A header to the bitstream, to enable decoding by
+Quicktime.
 
-@section mp3_header_decompress
+@anchor{mov2textsub}
+@section mov2textsub
+
+Extract a representable text file from MOV subtitles, stripping the
+metadata header from each subtitle packet.
+
+See also the @ref{text2movsub} filter.
+
+@section mp3decomp
+
+Decompress non-standard compressed MP3 audio headers.
 
 @section mpeg4_unpack_bframes
 
@@ -180,5 +217,39 @@ ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 applies the modification to every byte.
 
 @section remove_extra
+
+Remove extradata from packets.
+
+It accepts the following parameter:
+@table @option
+@item freq
+Set which frame types to remove extradata from.
+
+@table @samp
+@item k
+Remove extradata from non-keyframes only.
+
+@item keyframe
+Remove extradata from keyframes only.
+
+@item e, all
+Remove extradata from all frames.
+
+@end table
+@end table
+
+@anchor{text2movsub}
+@section text2movsub
+
+Convert text subtitles to MOV subtitles (as used by the @code{mov_text}
+codec) with metadata headers.
+
+See also the @ref{mov2textsub} filter.
+
+@section vp9_superframe
+
+Merge VP9 invisible (alt-ref) frames back into VP9 superframes. This
+fixes merging of split/segmented VP9 streams where the alt-ref frame
+was split from its visible counterpart.
 
 @c man end BITSTREAM FILTERS

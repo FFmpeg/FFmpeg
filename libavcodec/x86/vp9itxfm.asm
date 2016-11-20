@@ -1581,33 +1581,30 @@ cglobal vp9_idct_idct_16x16_add, 4, 4, 16, dst, stride, block, eob
     VP9_IDCT16_YMM_1D
 
     mova      [blockq+224], m7
-    mova      [blockq+480], m15
-    pxor               m15, m15
 
     ; store
-    VP9_IDCT8_WRITEx2    0,  1, 6, 7, 15, [pw_512], 6
+    VP9_IDCT8_WRITEx2    0,  1, 6, 7, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2    2,  3, 6, 7, 15, [pw_512], 6
+    VP9_IDCT8_WRITEx2    2,  3, 6, 7, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2    4,  5, 6, 7, 15, [pw_512], 6
+    VP9_IDCT8_WRITEx2    4,  5, 6, 7, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
     mova                m6, [blockq+192]
     mova                m7, [blockq+224]
-    SWAP                 0, 15
-    mova               m15, [blockq+480]
-    VP9_IDCT8_WRITEx2    6,  7, 1, 2, 0, [pw_512], 6
+    VP9_IDCT8_WRITEx2    6,  7, 1, 2, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2    8,  9, 1, 2, 0, [pw_512], 6
+    VP9_IDCT8_WRITEx2    8,  9, 1, 2, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2   10, 11, 1, 2, 0, [pw_512], 6
+    VP9_IDCT8_WRITEx2   10, 11, 1, 2, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2   12, 13, 1, 2, 0, [pw_512], 6
+    VP9_IDCT8_WRITEx2   12, 13, 1, 2, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
-    VP9_IDCT8_WRITEx2   14, 15, 1, 2, 0, [pw_512], 6
+    VP9_IDCT8_WRITEx2   14, 15, 1, 2, unused, [pw_512], 6
     lea               dstq, [dstq+2*strideq]
 
     ; at the end of the loop, m0 should still be zero
     ; use that to zero out block coefficients
+    pxor                m0, m0
     ZERO_BLOCK      blockq, 32, 16, m0
     RET
 %endif
@@ -1986,6 +1983,173 @@ IADST16_FN iadst, IADST16, iadst, IADST16, ssse3
 IADST16_FN idct,  IDCT16,  iadst, IADST16, avx
 IADST16_FN iadst, IADST16, idct,  IDCT16,  avx
 IADST16_FN iadst, IADST16, iadst, IADST16, avx
+
+; in: data in m[0-15] except m0/m4, which are in [blockq+0] and [blockq+128]
+; out: m[0-15] except m6, which is in [blockq+192]
+; uses blockq as scratch space
+%macro VP9_IADST16_YMM_1D 0
+    mova          [blockq+ 32], m3
+    mova          [blockq+ 64], m7
+    mova          [blockq+ 96], m8
+
+    ; first half of round 1
+    VP9_UNPACK_MULSUB_2D_4X  9,  6,  0,  3, 13160,  9760    ; m9/x=t7[d], m6/x=t6[d]
+    VP9_UNPACK_MULSUB_2D_4X  1, 14,  4,  7,  2404, 16207    ; m1/x=t15[d], m14/x=t14[d]
+    VP9_RND_SH_SUMSUB_BA    14,  6,  7,  3,  8, [pd_8192]   ; m14=t6[w], m6=t14[w]
+    VP9_RND_SH_SUMSUB_BA     1,  9,  4,  0,  8, [pd_8192]   ; m1=t7[w], m9=t15[w]
+
+    VP9_UNPACK_MULSUB_2D_4X 13,  2,  4,  7, 15893,  3981    ; m13/x=t3[d], m2/x=t2[d]
+    VP9_UNPACK_MULSUB_2D_4X  5, 10,  0,  3,  8423, 14053    ; m5/x=t11[d], m10/x=t10[d]
+    VP9_RND_SH_SUMSUB_BA    10,  2,  3,  7,  8, [pd_8192]   ; m10=t2[w], m2=t10[w]
+    VP9_RND_SH_SUMSUB_BA     5, 13,  0,  4,  8, [pd_8192]   ; m5=t3[w], m13=t11[w]
+
+    ; half of round 2 t8-15
+    VP9_UNPACK_MULSUB_2D_4X  2, 13,  4,  7,  9102, 13623    ; m2/x=t11[d], m13/x=t10[d]
+    VP9_UNPACK_MULSUB_2D_4X  9,  6,  3,  0, 13623,  9102    ; m9/x=t14[d], m6/x=t15[d]
+    VP9_RND_SH_SUMSUB_BA     9, 13,  3,  7,  8, [pd_8192]   ; m9=t10[w], m13=t14[w]
+    VP9_RND_SH_SUMSUB_BA     6,  2,  0,  4,  8, [pd_8192]   ; m6=t11[w], m2=t15[w]
+
+    SUMSUB_BA            w, 14, 10,  8                      ; m14=t2, m10=t6
+    SUMSUB_BA            w,  1,  5,  8                      ; m1=t3, m5=t7
+
+    mova                    m0, [blockq+  0]
+    mova                    m4, [blockq+128]
+    mova                    m3, [blockq+ 32]
+    mova                    m7, [blockq+ 64]
+    mova                    m8, [blockq+ 96]
+    mova          [blockq+  0], m1
+    mova          [blockq+128], m14
+    mova          [blockq+ 32], m6
+    mova          [blockq+ 64], m9
+    mova          [blockq+ 96], m10
+
+    ; second half of round 1
+    VP9_UNPACK_MULSUB_2D_4X 15,  0,  1,  9, 16364,   804    ; m15/x=t1[d], m0/x=t0[d]
+    VP9_UNPACK_MULSUB_2D_4X  7,  8, 10,  6, 11003, 12140    ; m7/x=t9[d], m8/x=t8[d]
+    VP9_RND_SH_SUMSUB_BA     8,  0,  6,  9, 14, [pd_8192]   ; m8=t0[w], m0=t8[w]
+    VP9_RND_SH_SUMSUB_BA     7, 15, 10,  1, 14, [pd_8192]   ; m7=t1[w], m15=t9[w]
+
+    VP9_UNPACK_MULSUB_2D_4X 11,  4, 10,  6, 14811,  7005    ; m11/x=t5[d], m4/x=t4[d]
+    VP9_UNPACK_MULSUB_2D_4X  3, 12,  1,  9,  5520, 15426    ; m3/x=t13[d], m12/x=t12[d]
+    VP9_RND_SH_SUMSUB_BA    12,  4,  9,  6, 14, [pd_8192]   ; m12=t4[w], m4=t12[w]
+    VP9_RND_SH_SUMSUB_BA     3, 11,  1, 10, 14, [pd_8192]   ; m3=t5[w], m11=t13[w]
+
+    ; second half of round 2 t8-15
+    VP9_UNPACK_MULSUB_2D_4X  0, 15,  6, 10, 16069,  3196    ; m15/x=t8[d], m0/x=t9[d]
+    VP9_UNPACK_MULSUB_2D_4X 11,  4,  9,  1,  3196, 16069    ; m11/x=t12[d], m4/x=t13[d]
+    VP9_RND_SH_SUMSUB_BA    11, 15,  9, 10, 14, [pd_8192]   ; m11=t8[w], m15=t12[w]
+    VP9_RND_SH_SUMSUB_BA     4,  0,  1,  6, 14, [pd_8192]   ; m4=t9[w], m0=t13[w]
+
+    SUMSUB_BA            w, 12,  8, 14                      ; m12=t0, m8=t4
+    SUMSUB_BA            w,  3,  7, 14                      ; m3=t1, m7=t5
+
+    mova                   m10, [blockq+ 96]
+    mova          [blockq+ 96], m12
+
+    ; round 3
+    VP9_UNPACK_MULSUB_2D_4X 15,  0,  9, 12, 15137,  6270    ; m15/x=t13[d], m0/x=t12[d]
+    VP9_UNPACK_MULSUB_2D_4X  2, 13,  1,  6,  6270, 15137    ; m2/x=t14[d], m13/x=t15[d]
+    VP9_RND_SH_SUMSUB_BA     2,  0,  1, 12, 14, [pd_8192]   ; m2=out2[w], m0=t14a[w]
+    VP9_RND_SH_SUMSUB_BA    13, 15,  6,  9, 14, [pd_8192]
+    PSIGNW                 m13, [pw_m1]                     ; m13=out13[w], m15=t15a[w]
+
+    VP9_UNPACK_MULSUB_2D_4X  8,  7, 12,  9, 15137,  6270    ; m8/x=t5[d], m7/x=t4[d]
+    VP9_UNPACK_MULSUB_2D_4X  5, 10,  1,  6,  6270, 15137    ; m5/x=t6[d], m10/x=t7[d]
+    VP9_RND_SH_SUMSUB_BA     5,  7,  1,  9, 14, [pd_8192]
+    PSIGNW                  m5, [pw_m1]                     ; m5=out3[w], m7=t6[w]
+    VP9_RND_SH_SUMSUB_BA    10,  8,  6, 12, 14, [pd_8192]   ; m10=out12[w], m8=t7[w]
+
+    mova                    m1, [blockq+  0]
+    mova                   m14, [blockq+128]
+    mova                    m6, [blockq+ 32]
+    mova                    m9, [blockq+ 64]
+    mova                   m12, [blockq+ 96]
+    mova          [blockq+  0], m10
+    mova          [blockq+128], m5
+
+    SUMSUB_BA            w, 14, 12,  5                      ; m14=out0, m12=t2a
+    SUMSUB_BA            w,  1,  3,  5
+    PSIGNW                  m1, [pw_m1]                     ; m1=out15, m3=t3a
+
+    SUMSUB_BA            w,  9, 11,  5
+    PSIGNW                  m9, [pw_m1]                     ; m9=out1, m11=t10
+    SUMSUB_BA            w,  6,  4,  5                      ; m6=out14, m4=t11
+
+    VP9_UNPACK_MULSUB_2W_4X  4, 11, 11585, 11585, [pd_8192],  5, 10 ; m4=out9, m11=out6
+    mova                    m5, [blockq+128]
+    mova          [blockq+192], m11
+    PSIGNW                 m15, [pw_m1]
+    VP9_UNPACK_MULSUB_2W_4X 15,  0, 11585, 11585, [pd_8192], 10, 11 ; m15=out5, m0=out10
+
+    PSIGNW                  m3, [pw_m1]
+    VP9_UNPACK_MULSUB_2W_4X  3, 12, 11585, 11585, [pd_8192], 10, 11 ; m3=out7,m12=out8
+    VP9_UNPACK_MULSUB_2W_4X  8,  7, 11585, 11585, [pd_8192], 10, 11 ; m8=out11,m7=out4
+
+    mova                   m10, [blockq+  0]
+
+    SWAP                     0, 14,  6, 11,  8, 12, 10
+    SWAP                     1,  9, 15,  4,  7,  3,  5
+    SWAP                     5,  9, 15
+%endmacro
+
+%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+%macro IADST16_YMM_FN 4
+INIT_YMM avx2
+cglobal vp9_%1_%3_16x16_add, 4, 4, 16, dst, stride, block, eob
+    mova                m1, [blockq+ 32]
+    mova                m2, [blockq+ 64]
+    mova                m3, [blockq+ 96]
+    mova                m5, [blockq+160]
+    mova                m6, [blockq+192]
+    mova                m7, [blockq+224]
+    mova                m8, [blockq+256]
+    mova                m9, [blockq+288]
+    mova               m10, [blockq+320]
+    mova               m11, [blockq+352]
+    mova               m12, [blockq+384]
+    mova               m13, [blockq+416]
+    mova               m14, [blockq+448]
+    mova               m15, [blockq+480]
+
+    VP9_%2_YMM_1D
+    TRANSPOSE16x16W      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, \
+                         [blockq+192], [blockq+128], 1
+    mova      [blockq+  0], m0
+    VP9_%4_YMM_1D
+
+    mova      [blockq+224], m7
+
+    ; store
+    VP9_IDCT8_WRITEx2    0,  1, 6, 7, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2    2,  3, 6, 7, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2    4,  5, 6, 7, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    mova                m6, [blockq+192]
+    mova                m7, [blockq+224]
+    VP9_IDCT8_WRITEx2    6,  7, 1, 2, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2    8,  9, 1, 2, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2   10, 11, 1, 2, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2   12, 13, 1, 2, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+    VP9_IDCT8_WRITEx2   14, 15, 1, 2, unused, [pw_512], 6
+    lea               dstq, [dstq+2*strideq]
+
+    ; at the end of the loop, m0 should still be zero
+    ; use that to zero out block coefficients
+    pxor                m0, m0
+    ZERO_BLOCK      blockq, 32, 16, m0
+    RET
+%endmacro
+
+IADST16_YMM_FN idct,  IDCT16,  iadst, IADST16
+IADST16_YMM_FN iadst, IADST16, idct,  IDCT16
+IADST16_YMM_FN iadst, IADST16, iadst, IADST16
+%endif
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_32x32_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);

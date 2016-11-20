@@ -533,7 +533,7 @@ struct AVFilterLink {
     /**
      * Number of past frames sent through the link.
      */
-    int64_t frame_count;
+    int64_t frame_count_in, frame_count_out;
 
     /**
      * A pointer to a FFVideoFramePool struct.

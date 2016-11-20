@@ -147,22 +147,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
             switch (s->mode) {
             case 0:
-                if (tf > outlink->frame_count + 1 || tf < FFMAX(0, outlink->frame_count - 1) ||
-                    bf > outlink->frame_count + 1 || bf < FFMAX(0, outlink->frame_count - 1)) {
-                    av_log(ctx, AV_LOG_ERROR, "Out of range frames %"PRId64" and/or %"PRId64" on line %"PRId64" for %"PRId64". input frame.\n", tf, bf, s->line, inlink->frame_count);
+                if (tf > outlink->frame_count_in + 1 || tf < FFMAX(0, outlink->frame_count_in - 1) ||
+                    bf > outlink->frame_count_in + 1 || bf < FFMAX(0, outlink->frame_count_in - 1)) {
+                    av_log(ctx, AV_LOG_ERROR, "Out of range frames %"PRId64" and/or %"PRId64" on line %"PRId64" for %"PRId64". input frame.\n", tf, bf, s->line, inlink->frame_count_out);
                     return AVERROR_INVALIDDATA;
                 }
                 break;
             case 1:
                 if (tf > 1 || tf < -1 ||
                     bf > 1 || bf < -1) {
-                    av_log(ctx, AV_LOG_ERROR, "Out of range %"PRId64" and/or %"PRId64" on line %"PRId64" for %"PRId64". input frame.\n", tf, bf, s->line, inlink->frame_count);
+                    av_log(ctx, AV_LOG_ERROR, "Out of range %"PRId64" and/or %"PRId64" on line %"PRId64" for %"PRId64". input frame.\n", tf, bf, s->line, inlink->frame_count_out);
                     return AVERROR_INVALIDDATA;
                 }
             };
             break;
         } else {
-            av_log(ctx, AV_LOG_ERROR, "Missing entry for %"PRId64". input frame.\n", inlink->frame_count);
+            av_log(ctx, AV_LOG_ERROR, "Missing entry for %"PRId64". input frame.\n", inlink->frame_count_out);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -174,8 +174,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     switch (s->mode) {
     case 0:
-        top    = s->frame[tf - outlink->frame_count + 1];
-        bottom = s->frame[bf - outlink->frame_count + 1];
+        top    = s->frame[tf - outlink->frame_count_in + 1];
+        bottom = s->frame[bf - outlink->frame_count_in + 1];
         break;
     case 1:
         top    = s->frame[1 + tf];

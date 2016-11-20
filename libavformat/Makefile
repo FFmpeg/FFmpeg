@@ -132,7 +132,7 @@ OBJS-$(CONFIG_CINE_DEMUXER)              += cinedec.o
 OBJS-$(CONFIG_CONCAT_DEMUXER)            += concatdec.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DATA_DEMUXER)              += rawdec.o
-OBJS-$(CONFIG_DATA_MUXER)                += rawdec.o
+OBJS-$(CONFIG_DATA_MUXER)                += rawenc.o
 OBJS-$(CONFIG_DASH_MUXER)                += dashenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += dauddec.o
 OBJS-$(CONFIG_DAUD_MUXER)                += daudenc.o
@@ -285,7 +285,7 @@ OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o mov_chan.o replaygain.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o avc.o hevc.o vpcc.o \
                                             movenchint.o mov_chan.o rtp.o \
                                             movenccenc.o rawutils.o
-OBJS-$(CONFIG_MP2_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o
+OBJS-$(CONFIG_MP2_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MP3_DEMUXER)               += mp3dec.o replaygain.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o
 OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o apetag.o img2.o
@@ -558,6 +558,7 @@ OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
 OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf.o
 OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
+OBJS-$(CONFIG_PROMPEG_PROTOCOL)          += prompeg.o
 OBJS-$(CONFIG_RTMP_PROTOCOL)             += rtmpproto.o rtmppkt.o
 OBJS-$(CONFIG_RTMPE_PROTOCOL)            += rtmpproto.o rtmppkt.o
 OBJS-$(CONFIG_RTMPS_PROTOCOL)            += rtmpproto.o rtmppkt.o

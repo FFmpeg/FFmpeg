@@ -15,6 +15,16 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-11-18 - xxxxxxx - lavf 57.58.100 - avformat.h
+  Add av_stream_add_side_data().
+
+2016-xx-xx - xxxxxxx - lavu 55.39.100 - hwcontext_vaapi.h
+  Add AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE.
+
+2016-xx-xx - xxxxxxx - lavu 55.38.100 - hwcontext_vaapi.h
+  Add driver quirks field to VAAPI-specific hwdevice and enum with
+  members AV_VAAPI_DRIVER_QUIRK_* to represent its values.
+
 2016-11-10 - xxxxxxx - lavu 55.36.100 - pixfmt.h
   Add AV_PIX_FMT_GRAY12(LE/BE).
 

@@ -120,12 +120,17 @@ typedef struct VP9DSPContext {
     vp9_scaled_mc_func smc[5][4][2];
 } VP9DSPContext;
 
+
+extern const int16_t ff_vp9_subpel_filters[3][16][8];
+
 void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp, int bitexact);
 
 void ff_vp9dsp_init_8(VP9DSPContext *dsp);
 void ff_vp9dsp_init_10(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12(VP9DSPContext *dsp);
 
+void ff_vp9dsp_init_aarch64(VP9DSPContext *dsp, int bpp);
+void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp);
 void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact);
 void ff_vp9dsp_init_mips(VP9DSPContext *dsp, int bpp);
 

@@ -178,16 +178,12 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     pic->recon_surface = (VASurfaceID)(uintptr_t)pic->recon_image->data[3];
     av_log(avctx, AV_LOG_DEBUG, "Recon surface is %#x.\n", pic->recon_surface);
 
-    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
-                         VAEncCodedBufferType,
-                         MAX_OUTPUT_BUFFER_SIZE, 1, 0,
-                         &pic->output_buffer);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create bitstream "
-               "output buffer: %d (%s).\n", vas, vaErrorStr(vas));
+    pic->output_buffer_ref = av_buffer_pool_get(ctx->output_buffer_pool);
+    if (!pic->output_buffer_ref) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
+    pic->output_buffer = (VABufferID)(uintptr_t)pic->output_buffer_ref->data;
     av_log(avctx, AV_LOG_DEBUG, "Output buffer is %#x.\n",
            pic->output_buffer);
 
@@ -389,7 +385,27 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Failed to end picture encode issue: "
                "%d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(EIO);
-        goto fail_at_end;
+        // vaRenderPicture() has been called here, so we should not destroy
+        // the parameter buffers unless separate destruction is required.
+        if (ctx->hwctx->driver_quirks &
+            AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
+            goto fail;
+        else
+            goto fail_at_end;
+    }
+
+    if (ctx->hwctx->driver_quirks &
+        AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
+        for (i = 0; i < pic->nb_param_buffers; i++) {
+            vas = vaDestroyBuffer(ctx->hwctx->display,
+                                  pic->param_buffers[i]);
+            if (vas != VA_STATUS_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to destroy "
+                       "param buffer %#x: %d (%s).\n",
+                       pic->param_buffers[i], vas, vaErrorStr(vas));
+                // And ignore.
+            }
+        }
     }
 
     pic->encode_issued = 1;
@@ -438,7 +454,7 @@ static int vaapi_encode_output(AVCodecContext *avctx,
 
         err = av_new_packet(pkt, buf->size);
         if (err < 0)
-            goto fail;
+            goto fail_mapped;
 
         memcpy(pkt->data, buf->buf, buf->size);
     }
@@ -456,35 +472,32 @@ static int vaapi_encode_output(AVCodecContext *avctx,
         goto fail;
     }
 
-    vaDestroyBuffer(ctx->hwctx->display, pic->output_buffer);
+    av_buffer_unref(&pic->output_buffer_ref);
     pic->output_buffer = VA_INVALID_ID;
 
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
            pic->display_order, pic->encode_order);
     return 0;
 
+fail_mapped:
+    vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
 fail:
-    if (pic->output_buffer != VA_INVALID_ID) {
-        vaUnmapBuffer(ctx->hwctx->display, pic->output_buffer);
-        vaDestroyBuffer(ctx->hwctx->display, pic->output_buffer);
-        pic->output_buffer = VA_INVALID_ID;
-    }
+    av_buffer_unref(&pic->output_buffer_ref);
+    pic->output_buffer = VA_INVALID_ID;
     return err;
 }
 
 static int vaapi_encode_discard(AVCodecContext *avctx,
                                 VAAPIEncodePicture *pic)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-
     vaapi_encode_wait(avctx, pic);
 
-    if (pic->output_buffer != VA_INVALID_ID) {
+    if (pic->output_buffer_ref) {
         av_log(avctx, AV_LOG_DEBUG, "Discard output for pic "
                "%"PRId64"/%"PRId64".\n",
                pic->display_order, pic->encode_order);
 
-        vaDestroyBuffer(ctx->hwctx->display, pic->output_buffer);
+        av_buffer_unref(&pic->output_buffer_ref);
         pic->output_buffer = VA_INVALID_ID;
     }
 
@@ -1025,6 +1038,57 @@ fail:
     return err;
 }
 
+static void vaapi_encode_free_output_buffer(void *opaque,
+                                            uint8_t *data)
+{
+    AVCodecContext   *avctx = opaque;
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VABufferID buffer_id;
+
+    buffer_id = (VABufferID)(uintptr_t)data;
+
+    vaDestroyBuffer(ctx->hwctx->display, buffer_id);
+
+    av_log(avctx, AV_LOG_DEBUG, "Freed output buffer %#x\n", buffer_id);
+}
+
+static AVBufferRef *vaapi_encode_alloc_output_buffer(void *opaque,
+                                                     int size)
+{
+    AVCodecContext   *avctx = opaque;
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VABufferID buffer_id;
+    VAStatus vas;
+    AVBufferRef *ref;
+
+    // The output buffer size is fixed, so it needs to be large enough
+    // to hold the largest possible compressed frame.  We assume here
+    // that the uncompressed frame plus some header data is an upper
+    // bound on that.
+    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
+                         VAEncCodedBufferType,
+                         3 * ctx->aligned_width * ctx->aligned_height +
+                         (1 << 16), 1, 0, &buffer_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create bitstream "
+               "output buffer: %d (%s).\n", vas, vaErrorStr(vas));
+        return NULL;
+    }
+
+    av_log(avctx, AV_LOG_DEBUG, "Allocated output buffer %#x\n", buffer_id);
+
+    ref = av_buffer_create((uint8_t*)(uintptr_t)buffer_id,
+                           sizeof(buffer_id),
+                           &vaapi_encode_free_output_buffer,
+                           avctx, AV_BUFFER_FLAG_READONLY);
+    if (!ref) {
+        vaDestroyBuffer(ctx->hwctx->display, buffer_id);
+        return NULL;
+    }
+
+    return ref;
+}
+
 av_cold int ff_vaapi_encode_init(AVCodecContext *avctx,
                                  const VAAPIEncodeType *type)
 {
@@ -1207,6 +1271,14 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx,
         }
     }
 
+    ctx->output_buffer_pool =
+        av_buffer_pool_init2(sizeof(VABufferID), avctx,
+                             &vaapi_encode_alloc_output_buffer, NULL);
+    if (!ctx->output_buffer_pool) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     // All I are IDR for now.
     ctx->i_per_idr = 0;
     ctx->p_per_i = ((avctx->gop_size + avctx->max_b_frames) /
@@ -1248,6 +1320,8 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
 
     if (ctx->codec->close)
         ctx->codec->close(avctx);
+
+    av_buffer_pool_uninit(&ctx->output_buffer_pool);
 
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);

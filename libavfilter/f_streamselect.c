@@ -72,7 +72,7 @@ static int process_frame(FFFrameSync *fs)
                 AVFrame *out;
 
                 if (s->is_audio && s->last_pts[j] == in[j]->pts &&
-                    ctx->outputs[i]->frame_count > 0)
+                    ctx->outputs[i]->frame_count_in > 0)
                     continue;
                 out = av_frame_clone(in[j]);
                 if (!out)

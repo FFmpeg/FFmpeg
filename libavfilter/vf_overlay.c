@@ -667,7 +667,7 @@ static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic,
     if (s->eval_mode == EVAL_MODE_FRAME) {
         int64_t pos = av_frame_get_pkt_pos(mainpic);
 
-        s->var_values[VAR_N] = inlink->frame_count;
+        s->var_values[VAR_N] = inlink->frame_count_out;
         s->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
             NAN : mainpic->pts * av_q2d(inlink->time_base);
         s->var_values[VAR_POS] = pos == -1 ? NAN : pos;

@@ -2749,8 +2749,11 @@ static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2
     // the longest loopfilter of the next sbrow
     th = (y + bh + 4 * !!my + 7) >> 6;
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    // The arm/aarch64 _hv filters read one more row than what actually is
+    // needed, so switch to emulated edge one pixel sooner vertically
+    // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
-        x + !!mx * 4 > w - bw || y + !!my * 4 > h - bh) {
+        x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref - !!my * 3 * ref_stride - !!mx * 3 * bytesperpixel,
                                  160, ref_stride,
@@ -2784,8 +2787,11 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     // the longest loopfilter of the next sbrow
     th = (y + bh + 4 * !!my + 7) >> (6 - s->ss_v);
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
+    // The arm/aarch64 _hv filters read one more row than what actually is
+    // needed, so switch to emulated edge one pixel sooner vertically
+    // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
-        x + !!mx * 4 > w - bw || y + !!my * 4 > h - bh) {
+        x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref_u - !!my * 3 * src_stride_u - !!mx * 3 * bytesperpixel,
                                  160, src_stride_u,
@@ -2871,7 +2877,10 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
     // the longest loopfilter of the next sbrow
     th = (y + refbh_m1 + 4 + 7) >> 6;
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
-    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+    // The arm/aarch64 _hv filters read one more row than what actually is
+    // needed, so switch to emulated edge one pixel sooner vertically
+    // (y + 5 >= h - refbh_m1) than horizontally (x + 4 >= w - refbw_m1).
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 5 >= h - refbh_m1) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref - 3 * ref_stride - 3 * bytesperpixel,
                                  288, ref_stride,
@@ -2937,7 +2946,10 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     // the longest loopfilter of the next sbrow
     th = (y + refbh_m1 + 4 + 7) >> (6 - s->ss_v);
     ff_thread_await_progress(ref_frame, FFMAX(th, 0), 0);
-    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 4 >= h - refbh_m1) {
+    // The arm/aarch64 _hv filters read one more row than what actually is
+    // needed, so switch to emulated edge one pixel sooner vertically
+    // (y + 5 >= h - refbh_m1) than horizontally (x + 4 >= w - refbw_m1).
+    if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 5 >= h - refbh_m1) {
         s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
                                  ref_u - 3 * src_stride_u - 3 * bytesperpixel,
                                  288, src_stride_u,

@@ -104,7 +104,7 @@ static inline int get_nalsize(int nal_length_size, const uint8_t *buf,
         nalsize = ((unsigned)nalsize << 8) | buf[(*buf_index)++];
     if (nalsize <= 0 || nalsize > buf_size - *buf_index) {
         av_log(logctx, AV_LOG_ERROR,
-               "Invalid nal size %d\n", nalsize);
+               "Invalid NAL unit size (%d > %d).\n", nalsize, buf_size - *buf_index);
         return AVERROR_INVALIDDATA;
     }
     return nalsize;

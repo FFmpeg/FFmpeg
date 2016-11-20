@@ -308,6 +308,8 @@ enum AVPixelFormat {
 
     AV_PIX_FMT_GRAY12BE,   ///<        Y        , 12bpp, big-endian
     AV_PIX_FMT_GRAY12LE,   ///<        Y        , 12bpp, little-endian
+    AV_PIX_FMT_GRAY10BE,   ///<        Y        , 10bpp, big-endian
+    AV_PIX_FMT_GRAY10LE,   ///<        Y        , 10bpp, little-endian
 
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
@@ -325,6 +327,7 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_0RGB32  AV_PIX_FMT_NE(0RGB, BGR0)
 #define AV_PIX_FMT_0BGR32  AV_PIX_FMT_NE(0BGR, RGB0)
 
+#define AV_PIX_FMT_GRAY10 AV_PIX_FMT_NE(GRAY10BE, GRAY10LE)
 #define AV_PIX_FMT_GRAY12 AV_PIX_FMT_NE(GRAY12BE, GRAY12LE)
 #define AV_PIX_FMT_GRAY16 AV_PIX_FMT_NE(GRAY16BE, GRAY16LE)
 #define AV_PIX_FMT_YA16   AV_PIX_FMT_NE(YA16BE,   YA16LE)
@@ -402,7 +405,8 @@ enum AVColorPrimaries {
     AVCOL_PRI_SMPTE240M   = 7,  ///< functionally identical to above
     AVCOL_PRI_FILM        = 8,  ///< colour filters using Illuminant C
     AVCOL_PRI_BT2020      = 9,  ///< ITU-R BT2020
-    AVCOL_PRI_SMPTEST428_1 = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTE428    = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTEST428_1 = AVCOL_PRI_SMPTE428,
     AVCOL_PRI_SMPTE431    = 11, ///< SMPTE ST 431-2 (2011)
     AVCOL_PRI_SMPTE432    = 12, ///< SMPTE ST 432-1 D65 (2010)
     AVCOL_PRI_NB                ///< Not part of ABI
@@ -428,8 +432,10 @@ enum AVColorTransferCharacteristic {
     AVCOL_TRC_IEC61966_2_1 = 13, ///< IEC 61966-2-1 (sRGB or sYCC)
     AVCOL_TRC_BT2020_10    = 14, ///< ITU-R BT2020 for 10-bit system
     AVCOL_TRC_BT2020_12    = 15, ///< ITU-R BT2020 for 12-bit system
-    AVCOL_TRC_SMPTEST2084  = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
-    AVCOL_TRC_SMPTEST428_1 = 17, ///< SMPTE ST 428-1
+    AVCOL_TRC_SMPTE2084    = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
+    AVCOL_TRC_SMPTEST2084  = AVCOL_TRC_SMPTE2084,
+    AVCOL_TRC_SMPTE428     = 17, ///< SMPTE ST 428-1
+    AVCOL_TRC_SMPTEST428_1 = AVCOL_TRC_SMPTE428,
     AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
     AVCOL_TRC_NB                 ///< Not part of ABI
 };

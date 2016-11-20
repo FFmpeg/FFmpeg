@@ -2116,7 +2116,9 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
         ptr_y = s->sc.edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
             uint8_t *ubuf = s->sc.edge_emu_buffer + 18 * s->linesize;
-            uint8_t *vbuf =ubuf + 9 * s->uvlinesize;
+            uint8_t *vbuf =ubuf + 10 * s->uvlinesize;
+            if (s->workaround_bugs & FF_BUG_IEDGE)
+                vbuf -= s->uvlinesize;
             s->vdsp.emulated_edge_mc(ubuf,  ptr_cb,
                                      uvlinesize >> field_based, uvlinesize >> field_based,
                                      9, 9 + field_based,

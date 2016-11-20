@@ -265,12 +265,30 @@ fail:
     return err;
 }
 
+static const struct {
+    const char *friendly_name;
+    const char *match_string;
+    unsigned int quirks;
+} vaapi_driver_quirks_table[] = {
+    {
+        "Intel i965 (Quick Sync)",
+        "i965",
+        AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS,
+    },
+    {
+        "Intel iHD",
+        "ubit",
+        AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE,
+    },
+};
+
 static int vaapi_device_init(AVHWDeviceContext *hwdev)
 {
     VAAPIDeviceContext *ctx = hwdev->internal->priv;
     AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
     VAImageFormat *image_list = NULL;
     VAStatus vas;
+    const char *vendor_string;
     int err, i, image_count;
     enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
@@ -309,6 +327,32 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
             ctx->formats[ctx->nb_formats].pix_fmt      = pix_fmt;
             ctx->formats[ctx->nb_formats].image_format = image_list[i];
             ++ctx->nb_formats;
+        }
+    }
+
+    if (hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_USER_SET) {
+        av_log(hwdev, AV_LOG_VERBOSE, "Not detecting driver: "
+               "quirks set by user.\n");
+    } else {
+        // Detect the driver in use and set quirk flags if necessary.
+        vendor_string = vaQueryVendorString(hwctx->display);
+        hwctx->driver_quirks = 0;
+        if (vendor_string) {
+            for (i = 0; i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table); i++) {
+                if (strstr(vendor_string,
+                           vaapi_driver_quirks_table[i].match_string)) {
+                    av_log(hwdev, AV_LOG_VERBOSE, "Matched \"%s\" as known "
+                           "driver \"%s\".\n", vendor_string,
+                           vaapi_driver_quirks_table[i].friendly_name);
+                    hwctx->driver_quirks |=
+                        vaapi_driver_quirks_table[i].quirks;
+                    break;
+                }
+            }
+            if (!(i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table))) {
+                av_log(hwdev, AV_LOG_VERBOSE, "Unknown driver \"%s\", "
+                       "assuming standard behaviour.\n", vendor_string);
+            }
         }
     }
 
@@ -410,7 +454,8 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
     }
 
     if (!hwfc->pool) {
-        int need_memory_type = 1, need_pixel_format = 1;
+        int need_memory_type = !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE);
+        int need_pixel_format = 1;
         for (i = 0; i < avfc->nb_attributes; i++) {
             if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
                 need_memory_type  = 0;
@@ -772,6 +817,9 @@ static int vaapi_transfer_data_from(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (dst->width > hwfc->width || dst->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
@@ -780,6 +828,9 @@ static int vaapi_transfer_data_from(AVHWFramesContext *hwfc,
     err = vaapi_map_frame(hwfc, map, src, VAAPI_MAP_READ);
     if (err)
         goto fail;
+
+    map->width  = dst->width;
+    map->height = dst->height;
 
     err = av_frame_copy(dst, map);
     if (err)
@@ -797,6 +848,9 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (src->width > hwfc->width || src->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
@@ -805,6 +859,9 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
     err = vaapi_map_frame(hwfc, map, dst, VAAPI_MAP_WRITE);
     if (err)
         goto fail;
+
+    map->width  = src->width;
+    map->height = src->height;
 
     err = av_frame_copy(map, src);
     if (err)
@@ -875,22 +932,25 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
 #if HAVE_VAAPI_DRM
-    if (!display && device) {
+    if (!display) {
         // Try to open the device as a DRM path.
-        priv->drm_fd = open(device, O_RDWR);
+        // Default to using the first render node if the user did not
+        // supply a path.
+        const char *path = device ? device : "/dev/dri/renderD128";
+        priv->drm_fd = open(path, O_RDWR);
         if (priv->drm_fd < 0) {
             av_log(ctx, AV_LOG_VERBOSE, "Cannot open DRM device %s.\n",
-                   device);
+                   path);
         } else {
             display = vaGetDisplayDRM(priv->drm_fd);
             if (!display) {
                 av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
-                       "from DRM device %s.\n", device);
+                       "from DRM device %s.\n", path);
                 return AVERROR_UNKNOWN;
             }
 
             av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
-                   "DRM device %s.\n", device);
+                   "DRM device %s.\n", path);
         }
     }
 #endif

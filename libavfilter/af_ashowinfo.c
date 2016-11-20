@@ -206,7 +206,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
            "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
            "checksum:%08"PRIX32" ",
-           inlink->frame_count,
+           inlink->frame_count_out,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
            av_frame_get_pkt_pos(buf),
            av_get_sample_fmt_name(buf->format), av_frame_get_channels(buf), chlayout_str,

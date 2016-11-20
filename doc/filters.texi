@@ -4539,6 +4539,10 @@ the position in the file if known or -1 and the timestamp in seconds.
 In order to display the output lines, you need to set the loglevel at
 least to the AV_LOG_INFO value.
 
+This filter exports frame metadata @code{lavfi.blackframe.pblack}.
+The value represents the percentage of pixels in the picture that
+are below the threshold value.
+
 It accepts the following parameters:
 
 @table @option
@@ -5331,6 +5335,9 @@ SMPTE-170M or BT.601-6 525
 @item smpte240m
 SMPTE-240M
 
+@item ycgco
+YCgCo
+
 @item bt2020ncl
 BT.2020 with non-constant luminance
 
@@ -5345,6 +5352,12 @@ The accepted values are:
 @item bt709
 BT.709
 
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG
+
 @item gamma22
 Constant gamma of 2.2
 
@@ -5356,6 +5369,18 @@ SMPTE-170M, BT.601-6 625 or BT.601-6 525
 
 @item smpte240m
 SMPTE-240M
+
+@item srgb
+SRGB
+
+@item iec61966-2-1
+iec61966-2-1
+
+@item iec61966-2-4
+iec61966-2-4
+
+@item xvycc
+xvycc
 
 @item bt2020-10
 BT.2020 for 10-bits content
@@ -5386,6 +5411,15 @@ SMPTE-170M or BT.601-6 525
 @item smpte240m
 SMPTE-240M
 
+@item film
+film
+
+@item smpte431
+SMPTE-431
+
+@item smpte432
+SMPTE-432
+
 @item bt2020
 BT.2020
 
@@ -5397,8 +5431,14 @@ Specify output color range.
 
 The accepted values are:
 @table @samp
+@item tv
+TV (restricted) range
+
 @item mpeg
 MPEG (restricted) range
+
+@item pc
+PC (full) range
 
 @item jpeg
 JPEG (full) range

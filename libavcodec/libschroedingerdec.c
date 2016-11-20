@@ -218,6 +218,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     int outer = 1;
     SchroParseUnitContext parse_ctx;
     LibSchroFrameContext *framewithpts = NULL;
+    int ret;
 
     *got_frame = 0;
 
@@ -307,11 +308,10 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     /* Grab next frame to be returned from the top of the queue. */
     framewithpts = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
-    if (framewithpts && framewithpts->frame) {
-        int ret;
+    if (framewithpts && framewithpts->frame && framewithpts->frame->components[0].stride) {
 
         if ((ret = ff_get_buffer(avctx, avframe, 0)) < 0)
-            return ret;
+            goto end;
 
         memcpy(avframe->data[0],
                framewithpts->frame->components[0].data,
@@ -337,15 +337,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avframe->linesize[2] = framewithpts->frame->components[2].stride;
 
         *got_frame      = 1;
-
-        /* Now free the frame resources. */
-        libschroedinger_decode_frame_free(framewithpts->frame);
-        av_free(framewithpts);
     } else {
         data       = NULL;
         *got_frame = 0;
     }
-    return buf_size;
+    ret = buf_size;
+end:
+    /* Now free the frame resources. */
+    if (framewithpts && framewithpts->frame)
+        libschroedinger_decode_frame_free(framewithpts->frame);
+    av_freep(&framewithpts);
+    return ret;
 }
 
 

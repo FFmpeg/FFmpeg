@@ -20,127 +20,74 @@
 #include <stdlib.h>
 
 #include "libavutil/dict.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavcodec/qsv.h"
 
 #include "ffmpeg.h"
 
-typedef struct QSVContext {
-    OutputStream *ost;
-
-    mfxSession session;
-
-    mfxExtOpaqueSurfaceAlloc opaque_alloc;
-    AVBufferRef             *opaque_surfaces_buf;
-
-    uint8_t           *surface_used;
-    mfxFrameSurface1 **surface_ptrs;
-    int nb_surfaces;
-
-    mfxExtBuffer *ext_buffers[1];
-} QSVContext;
-
-static void buffer_release(void *opaque, uint8_t *data)
-{
-    *(uint8_t*)opaque = 0;
-}
-
 static int qsv_get_buffer(AVCodecContext *s, AVFrame *frame, int flags)
 {
     InputStream *ist = s->opaque;
-    QSVContext  *qsv = ist->hwaccel_ctx;
-    int i;
 
-    for (i = 0; i < qsv->nb_surfaces; i++) {
-        if (qsv->surface_used[i])
-            continue;
-
-        frame->buf[0] = av_buffer_create((uint8_t*)qsv->surface_ptrs[i], sizeof(*qsv->surface_ptrs[i]),
-                                         buffer_release, &qsv->surface_used[i], 0);
-        if (!frame->buf[0])
-            return AVERROR(ENOMEM);
-        frame->data[3]       = (uint8_t*)qsv->surface_ptrs[i];
-        qsv->surface_used[i] = 1;
-        return 0;
-    }
-
-    return AVERROR(ENOMEM);
-}
-
-static int init_opaque_surf(QSVContext *qsv)
-{
-    AVQSVContext *hwctx_enc = qsv->ost->enc_ctx->hwaccel_context;
-    mfxFrameSurface1 *surfaces;
-    int i;
-
-    qsv->nb_surfaces = hwctx_enc->nb_opaque_surfaces;
-
-    qsv->opaque_surfaces_buf = av_buffer_ref(hwctx_enc->opaque_surfaces);
-    qsv->surface_ptrs        = av_mallocz_array(qsv->nb_surfaces, sizeof(*qsv->surface_ptrs));
-    qsv->surface_used        = av_mallocz_array(qsv->nb_surfaces, sizeof(*qsv->surface_used));
-    if (!qsv->opaque_surfaces_buf || !qsv->surface_ptrs || !qsv->surface_used)
-        return AVERROR(ENOMEM);
-
-    surfaces = (mfxFrameSurface1*)qsv->opaque_surfaces_buf->data;
-    for (i = 0; i < qsv->nb_surfaces; i++)
-        qsv->surface_ptrs[i] = surfaces + i;
-
-    qsv->opaque_alloc.Out.Surfaces   = qsv->surface_ptrs;
-    qsv->opaque_alloc.Out.NumSurface = qsv->nb_surfaces;
-    qsv->opaque_alloc.Out.Type       = hwctx_enc->opaque_alloc_type;
-
-    qsv->opaque_alloc.Header.BufferId = MFX_EXTBUFF_OPAQUE_SURFACE_ALLOCATION;
-    qsv->opaque_alloc.Header.BufferSz = sizeof(qsv->opaque_alloc);
-    qsv->ext_buffers[0]               = (mfxExtBuffer*)&qsv->opaque_alloc;
-
-    return 0;
+    return av_hwframe_get_buffer(ist->hw_frames_ctx, frame, 0);
 }
 
 static void qsv_uninit(AVCodecContext *s)
 {
     InputStream *ist = s->opaque;
-    QSVContext  *qsv = ist->hwaccel_ctx;
+    av_buffer_unref(&ist->hw_frames_ctx);
+}
 
-    av_freep(&qsv->ost->enc_ctx->hwaccel_context);
-    av_freep(&s->hwaccel_context);
+static int qsv_device_init(InputStream *ist)
+{
+    int err;
 
-    av_buffer_unref(&qsv->opaque_surfaces_buf);
-    av_freep(&qsv->surface_used);
-    av_freep(&qsv->surface_ptrs);
+    err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_QSV,
+                                 ist->hwaccel_device, NULL, 0);
+    if (err < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error creating a QSV device\n");
+        return err;
+    }
 
-    av_freep(&qsv);
+    return 0;
 }
 
 int qsv_init(AVCodecContext *s)
 {
     InputStream *ist = s->opaque;
-    QSVContext  *qsv = ist->hwaccel_ctx;
-    AVQSVContext *hwctx_dec;
+    AVHWFramesContext *frames_ctx;
+    AVQSVFramesContext *frames_hwctx;
     int ret;
 
-    if (!qsv) {
-        av_log(NULL, AV_LOG_ERROR, "QSV transcoding is not initialized. "
-               "-hwaccel qsv should only be used for one-to-one QSV transcoding "
-               "with no filters.\n");
-        return AVERROR_BUG;
+    if (!hw_device_ctx) {
+        ret = qsv_device_init(ist);
+        if (ret < 0)
+            return ret;
     }
 
-    ret = init_opaque_surf(qsv);
-    if (ret < 0)
-        return ret;
-
-    hwctx_dec = av_qsv_alloc_context();
-    if (!hwctx_dec)
+    av_buffer_unref(&ist->hw_frames_ctx);
+    ist->hw_frames_ctx = av_hwframe_ctx_alloc(hw_device_ctx);
+    if (!ist->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
-    hwctx_dec->session        = qsv->session;
-    hwctx_dec->iopattern      = MFX_IOPATTERN_OUT_OPAQUE_MEMORY;
-    hwctx_dec->ext_buffers    = qsv->ext_buffers;
-    hwctx_dec->nb_ext_buffers = FF_ARRAY_ELEMS(qsv->ext_buffers);
+    frames_ctx   = (AVHWFramesContext*)ist->hw_frames_ctx->data;
+    frames_hwctx = frames_ctx->hwctx;
 
-    av_freep(&s->hwaccel_context);
-    s->hwaccel_context = hwctx_dec;
+    frames_ctx->width             = FFALIGN(s->coded_width,  32);
+    frames_ctx->height            = FFALIGN(s->coded_height, 32);
+    frames_ctx->format            = AV_PIX_FMT_QSV;
+    frames_ctx->sw_format         = s->sw_pix_fmt;
+    frames_ctx->initial_pool_size = 64;
+    frames_hwctx->frame_type      = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+
+    ret = av_hwframe_ctx_init(ist->hw_frames_ctx);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error initializing a QSV frame pool\n");
+        return ret;
+    }
 
     ist->hwaccel_get_buffer = qsv_get_buffer;
     ist->hwaccel_uninit     = qsv_uninit;
@@ -148,53 +95,15 @@ int qsv_init(AVCodecContext *s)
     return 0;
 }
 
-static mfxIMPL choose_implementation(const InputStream *ist)
-{
-    static const struct {
-        const char *name;
-        mfxIMPL     impl;
-    } impl_map[] = {
-        { "auto",     MFX_IMPL_AUTO         },
-        { "sw",       MFX_IMPL_SOFTWARE     },
-        { "hw",       MFX_IMPL_HARDWARE     },
-        { "auto_any", MFX_IMPL_AUTO_ANY     },
-        { "hw_any",   MFX_IMPL_HARDWARE_ANY },
-        { "hw2",      MFX_IMPL_HARDWARE2    },
-        { "hw3",      MFX_IMPL_HARDWARE3    },
-        { "hw4",      MFX_IMPL_HARDWARE4    },
-    };
-
-    mfxIMPL impl = MFX_IMPL_AUTO_ANY;
-    int i;
-
-    if (ist->hwaccel_device) {
-        for (i = 0; i < FF_ARRAY_ELEMS(impl_map); i++)
-            if (!strcmp(ist->hwaccel_device, impl_map[i].name)) {
-                impl = impl_map[i].impl;
-                break;
-            }
-        if (i == FF_ARRAY_ELEMS(impl_map))
-            impl = strtol(ist->hwaccel_device, NULL, 0);
-    }
-
-    return impl;
-}
-
 int qsv_transcode_init(OutputStream *ost)
 {
     InputStream *ist;
     const enum AVPixelFormat *pix_fmt;
 
-    AVDictionaryEntry *e;
-    const AVOption *opt;
-    int flags = 0;
-
     int err, i;
-
-    QSVContext *qsv = NULL;
-    AVQSVContext *hwctx = NULL;
-    mfxIMPL impl;
-    mfxVersion ver = { { 3, 1 } };
+    AVBufferRef *encode_frames_ref = NULL;
+    AVHWFramesContext *encode_frames;
+    AVQSVFramesContext *qsv_frames;
 
     /* check if the encoder supports QSV */
     if (!ost->enc->pix_fmts)
@@ -225,43 +134,45 @@ int qsv_transcode_init(OutputStream *ost)
 
     av_log(NULL, AV_LOG_VERBOSE, "Setting up QSV transcoding\n");
 
-    qsv   = av_mallocz(sizeof(*qsv));
-    hwctx = av_qsv_alloc_context();
-    if (!qsv || !hwctx)
-        goto fail;
-
-    impl = choose_implementation(ist);
-
-    err = MFXInit(impl, &ver, &qsv->session);
-    if (err != MFX_ERR_NONE) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing an MFX session: %d\n", err);
-        goto fail;
+    if (!hw_device_ctx) {
+        err = qsv_device_init(ist);
+        if (err < 0)
+            goto fail;
     }
 
-    e = av_dict_get(ost->encoder_opts, "flags", NULL, 0);
-    opt = av_opt_find(ost->enc_ctx, "flags", NULL, 0, 0);
-    if (e && opt)
-        av_opt_eval_flags(ost->enc_ctx, opt, e->value, &flags);
+    // This creates a dummy hw_frames_ctx for the encoder to be
+    // suitably initialised.  It only contains one real frame, so
+    // hopefully doesn't waste too much memory.
 
-    qsv->ost = ost;
+    encode_frames_ref = av_hwframe_ctx_alloc(hw_device_ctx);
+    if (!encode_frames_ref) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+    encode_frames = (AVHWFramesContext*)encode_frames_ref->data;
+    qsv_frames = encode_frames->hwctx;
 
-    hwctx->session                = qsv->session;
-    hwctx->iopattern              = MFX_IOPATTERN_IN_OPAQUE_MEMORY;
-    hwctx->opaque_alloc           = 1;
-    hwctx->nb_opaque_surfaces     = 16;
+    encode_frames->width     = FFALIGN(ist->resample_width,  32);
+    encode_frames->height    = FFALIGN(ist->resample_height, 32);
+    encode_frames->format    = AV_PIX_FMT_QSV;
+    encode_frames->sw_format = AV_PIX_FMT_NV12;
+    encode_frames->initial_pool_size = 1;
 
-    ost->hwaccel_ctx              = qsv;
-    ost->enc_ctx->hwaccel_context = hwctx;
-    ost->enc_ctx->pix_fmt         = AV_PIX_FMT_QSV;
+    qsv_frames->frame_type = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
 
-    ist->hwaccel_ctx              = qsv;
-    ist->dec_ctx->pix_fmt         = AV_PIX_FMT_QSV;
-    ist->resample_pix_fmt         = AV_PIX_FMT_QSV;
+    err = av_hwframe_ctx_init(encode_frames_ref);
+    if (err < 0)
+        goto fail;
+
+    ist->dec_ctx->pix_fmt       = AV_PIX_FMT_QSV;
+    ist->resample_pix_fmt       = AV_PIX_FMT_QSV;
+
+    ost->enc_ctx->pix_fmt       = AV_PIX_FMT_QSV;
+    ost->enc_ctx->hw_frames_ctx = encode_frames_ref;
 
     return 0;
 
 fail:
-    av_freep(&hwctx);
-    av_freep(&qsv);
-    return AVERROR_UNKNOWN;
+    av_buffer_unref(&encode_frames_ref);
+    return err;
 }

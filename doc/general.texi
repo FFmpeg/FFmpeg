@@ -1137,6 +1137,7 @@ performance on systems without hardware floating point support).
 @item MMSH         @tab X
 @item MMST         @tab X
 @item pipe         @tab X
+@item Pro-MPEG FEC @tab X
 @item RTMP         @tab X
 @item RTMPE        @tab X
 @item RTMPS        @tab X

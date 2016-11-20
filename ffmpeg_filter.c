@@ -114,16 +114,16 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static char *choose_pix_fmts(OutputStream *ost)
+static char *choose_pix_fmts(OutputFilter *ofilter)
 {
+    OutputStream *ost = ofilter->ost;
     AVDictionaryEntry *strict_dict = av_dict_get(ost->encoder_opts, "strict", NULL, 0);
     if (strict_dict)
         // used by choose_pixel_fmt() and below
         av_opt_set(ost->enc_ctx, "strict", strict_dict->value, 0);
 
      if (ost->keep_pix_fmt) {
-        if (ost->filter)
-            avfilter_graph_set_auto_convert(ost->filter->graph->graph,
+        avfilter_graph_set_auto_convert(ofilter->graph->graph,
                                             AVFILTER_AUTO_CONVERT_NONE);
         if (ost->enc_ctx->pix_fmt == AV_PIX_FMT_NONE)
             return NULL;
@@ -158,13 +158,13 @@ static char *choose_pix_fmts(OutputStream *ost)
 
 /* Define a function for building a string containing a list of
  * allowed formats. */
-#define DEF_CHOOSE_FORMAT(type, var, supported_list, none, get_name)           \
-static char *choose_ ## var ## s(OutputStream *ost)                            \
+#define DEF_CHOOSE_FORMAT(suffix, type, var, supported_list, none, get_name)   \
+static char *choose_ ## suffix (OutputFilter *ofilter)                         \
 {                                                                              \
-    if (ost->enc_ctx->var != none) {                                           \
-        get_name(ost->enc_ctx->var);                                           \
+    if (ofilter->var != none) {                                                \
+        get_name(ofilter->var);                                                \
         return av_strdup(name);                                                \
-    } else if (ost->enc && ost->enc->supported_list) {                         \
+    } else if (ofilter->supported_list) {                                      \
         const type *p;                                                         \
         AVIOContext *s = NULL;                                                 \
         uint8_t *ret;                                                          \
@@ -173,7 +173,7 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
         if (avio_open_dyn_buf(&s) < 0)                                         \
             exit_program(1);                                                           \
                                                                                \
-        for (p = ost->enc->supported_list; *p != none; p++) {                  \
+        for (p = ofilter->supported_list; *p != none; p++) {                   \
             get_name(*p);                                                      \
             avio_printf(s, "%s|", name);                                       \
         }                                                                      \
@@ -184,16 +184,16 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
         return NULL;                                                           \
 }
 
-// DEF_CHOOSE_FORMAT(enum AVPixelFormat, pix_fmt, pix_fmts, AV_PIX_FMT_NONE,
-//                   GET_PIX_FMT_NAME)
+//DEF_CHOOSE_FORMAT(pix_fmts, enum AVPixelFormat, format, formats, AV_PIX_FMT_NONE,
+//                  GET_PIX_FMT_NAME)
 
-DEF_CHOOSE_FORMAT(enum AVSampleFormat, sample_fmt, sample_fmts,
+DEF_CHOOSE_FORMAT(sample_fmts, enum AVSampleFormat, format, formats,
                   AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME)
 
-DEF_CHOOSE_FORMAT(int, sample_rate, supported_samplerates, 0,
+DEF_CHOOSE_FORMAT(sample_rates, int, sample_rate, sample_rates, 0,
                   GET_SAMPLE_RATE_NAME)
 
-DEF_CHOOSE_FORMAT(uint64_t, channel_layout, channel_layouts, 0,
+DEF_CHOOSE_FORMAT(channel_layouts, uint64_t, channel_layout, channel_layouts, 0,
                   GET_CH_LAYOUT_NAME)
 
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
@@ -209,6 +209,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
         exit_program(1);
     fg->outputs[0]->ost   = ost;
     fg->outputs[0]->graph = fg;
+    fg->outputs[0]->format = -1;
 
     ost->filter = fg->outputs[0];
 
@@ -419,7 +420,6 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     char *pix_fmts;
     OutputStream *ost = ofilter->ost;
     OutputFile    *of = output_files[ost->file_index];
-    AVCodecContext *codec = ost->enc_ctx;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     int ret;
@@ -433,14 +433,13 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
-    if (!hw_device_ctx && (codec->width || codec->height)) {
+    if (!hw_device_ctx && (ofilter->width || ofilter->height)) {
         char args[255];
         AVFilterContext *filter;
         AVDictionaryEntry *e = NULL;
 
         snprintf(args, sizeof(args), "%d:%d",
-                 codec->width,
-                 codec->height);
+                 ofilter->width, ofilter->height);
 
         while ((e = av_dict_get(ost->sws_dict, "", e,
                                 AV_DICT_IGNORE_SUFFIX))) {
@@ -459,7 +458,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx = 0;
     }
 
-    if ((pix_fmts = choose_pix_fmts(ost))) {
+    if ((pix_fmts = choose_pix_fmts(ofilter))) {
         AVFilterContext *filter;
         snprintf(name, sizeof(name), "pixel format for output stream %d:%d",
                  ost->file_index, ost->index);
@@ -566,9 +565,9 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (codec->channels && !codec->channel_layout)
         codec->channel_layout = av_get_default_channel_layout(codec->channels);
 
-    sample_fmts     = choose_sample_fmts(ost);
-    sample_rates    = choose_sample_rates(ost);
-    channel_layouts = choose_channel_layouts(ost);
+    sample_fmts     = choose_sample_fmts(ofilter);
+    sample_rates    = choose_sample_rates(ofilter);
+    channel_layouts = choose_channel_layouts(ofilter);
     if (sample_fmts || sample_rates || channel_layouts) {
         AVFilterContext *format;
         char args[256];
@@ -1079,6 +1078,21 @@ int configure_filtergraph(FilterGraph *fg)
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
         return ret;
 
+    /* limit the lists of allowed formats to the ones selected, to
+     * make sure they stay the same if the filtergraph is reconfigured later */
+    for (i = 0; i < fg->nb_outputs; i++) {
+        OutputFilter *ofilter = fg->outputs[i];
+        AVFilterLink *link = ofilter->filter->inputs[0];
+
+        ofilter->format = link->format;
+
+        ofilter->width  = link->w;
+        ofilter->height = link->h;
+
+        ofilter->sample_rate    = link->sample_rate;
+        ofilter->channel_layout = link->channel_layout;
+    }
+
     fg->reconfiguration = 1;
 
     for (i = 0; i < fg->nb_outputs; i++) {
@@ -1142,8 +1156,9 @@ int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *
     ifilter->channels            = avctx->channels;
     ifilter->channel_layout      = avctx->channel_layout;
 
-    if (avctx->hw_frames_ctx) {
-        ifilter->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+    if (ifilter->ist && ifilter->ist->hw_frames_ctx) {
+        ifilter->format = ifilter->ist->resample_pix_fmt;
+        ifilter->hw_frames_ctx = av_buffer_ref(ifilter->ist->hw_frames_ctx);
         if (!ifilter->hw_frames_ctx)
             return AVERROR(ENOMEM);
     }

@@ -90,6 +90,7 @@ static const struct {
     uint32_t           fourcc;
 } supported_pixel_formats[] = {
     { AV_PIX_FMT_NV12, MFX_FOURCC_NV12 },
+    { AV_PIX_FMT_P010, MFX_FOURCC_P010 },
 };
 
 static int qsv_device_init(AVHWDeviceContext *ctx)

@@ -243,7 +243,7 @@ fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
 fate-aac-autobsf-adtstoasc: CMD = md5 -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts -acodec copy -fflags +bitexact -f matroska
 fate-aac-autobsf-adtstoasc: CMP = oneline
-fate-aac-autobsf-adtstoasc: REF = 8c6fbebb64ebbe9e01b345d77844d7cd
+fate-aac-autobsf-adtstoasc: REF = 8c76732bd04d9eb3468f9f842439774d
 
 FATE_AAC-$(call      DEMDEC, AAC,    AAC)      += $(FATE_AAC_CT_RAW)
 FATE_AAC-$(call      DEMDEC, MOV,    AAC)      += $(FATE_AAC)

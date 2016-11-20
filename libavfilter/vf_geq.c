@@ -208,7 +208,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     double values[VAR_VARS_NB] = {
-        [VAR_N] = inlink->frame_count,
+        [VAR_N] = inlink->frame_count_out,
         [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
     };
 

@@ -1120,7 +1120,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     pts = out->pts;
     if (dstctx->enable_str) {
         int64_t pos = av_frame_get_pkt_pos(out);
-        dstctx->var_values[VAR_N] = link->frame_count;
+        dstctx->var_values[VAR_N] = link->frame_count_out;
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
         dstctx->var_values[VAR_W] = link->w;
         dstctx->var_values[VAR_H] = link->h;
@@ -1132,7 +1132,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             filter_frame = default_filter_frame;
     }
     ret = filter_frame(link, out);
-    link->frame_count++;
+    link->frame_count_out++;
     ff_update_link_current_pts(link, pts);
     return ret;
 
@@ -1221,6 +1221,7 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
     }
 
     link->frame_wanted_out = 0;
+    link->frame_count_in++;
     /* Go directly to actual filtering if possible */
     if (link->type == AVMEDIA_TYPE_AUDIO &&
         link->min_samples &&

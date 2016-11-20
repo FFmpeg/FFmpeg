@@ -2056,6 +2056,7 @@ CONFIG_EXTRA="
     h263dsp
     h264chroma
     h264dsp
+    h264parse
     h264pred
     h264qpel
     hpeldsp
@@ -2381,7 +2382,7 @@ h263_encoder_select="aandcttables h263dsp mpegvideoenc"
 h263i_decoder_select="h263_decoder"
 h263p_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="cabac golomb h264chroma h264dsp h264pred h264qpel videodsp"
+h264_decoder_select="cabac golomb h264chroma h264dsp h264parse h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
@@ -2477,7 +2478,7 @@ sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
-svq3_decoder_select="golomb h264dsp h264pred hpeldsp tpeldsp videodsp"
+svq3_decoder_select="golomb h264dsp h264parse h264pred hpeldsp tpeldsp videodsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"
 tdsc_decoder_select="zlib mjpeg_decoder"
@@ -2539,6 +2540,7 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
+dxva2_extralibs="-luser32"
 vaapi_deps="va_va_h"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
@@ -2734,7 +2736,7 @@ vp9_cuvid_decoder_deps="cuda cuvid"
 vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
 # parsers
-h264_parser_select="golomb h264dsp"
+h264_parser_select="golomb h264dsp h264parse"
 hevc_parser_select="golomb"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
@@ -5659,10 +5661,10 @@ fi
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
-enabled cuda              && { check_lib cuda.h cuInit -lcuda ||
+enabled cuda              && { check_lib2 cuda.h cuInit -lcuda ||
                                die "ERROR: CUDA not found"; }
 enabled cuvid             && { add_cflags -I$source_path;
-                               check_lib "compat/cuda/cuviddec.h" cuvidCreateDecoder -lnvcuvid ||
+                               check_lib2 "compat/cuda/cuviddec.h" cuvidCreateDecoder -lnvcuvid ||
                                die "ERROR: CUVID not found"; } &&
                              { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
@@ -6317,7 +6319,7 @@ if test $target_os = "haiku"; then
 fi
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32" "-luser32") &&
+    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&

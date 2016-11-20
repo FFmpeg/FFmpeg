@@ -1181,7 +1181,7 @@ function ff_put_vp8_pixels4_armv6, export=1
 endfunc
 
 @ note: worst case sum of all 6-tap filter values * 255 is 0x7f80 so 16 bit
-@ arithmatic can be used to apply filters
+@ arithmetic can be used to apply filters
 const   sixtap_filters_13245600, align=4
         .short     2, 108, -11,  36,  -8, 1, 0, 0
         .short     3,  77, -16,  77, -16, 3, 0, 0
@@ -1226,13 +1226,8 @@ vp8_mc_1                bilin,  8, v
 vp8_mc_1                bilin,  4, h
 vp8_mc_1                bilin,  4, v
 
-/* True relational expressions have the value -1 in the GNU assembler,
-   +1 in Apple's. */
-#ifdef __APPLE__
-#   define TMPSIZE \size * (8 + 8*(\size > 4) + \ytaps - 1)
-#else
-#   define TMPSIZE \size * (8 - 8*(\size > 4) + \ytaps - 1)
-#endif
+@ 4 and 8 pixel wide mc blocks might have height of 8 or 16 lines
+#define TMPSIZE \size * (16 / ((16 / \size + 1) / 2) + \ytaps - 1)
 
 .macro  vp8_mc_hv       name, size, h, v, ytaps
 function ff_put_vp8_\name\size\()_\h\v\()_armv6, export=1
