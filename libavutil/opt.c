@@ -126,9 +126,13 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
         break;
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
-    case AV_OPT_TYPE_INT64:
-        *(int64_t *)dst = llrint(num / den) * intnum;
-        break;
+    case AV_OPT_TYPE_INT64:{
+        double d = num / den;
+        if (intnum == 1 && d == (double)INT64_MAX) {
+            *(int64_t *)dst = INT64_MAX;
+        } else
+            *(int64_t *)dst = llrint(d) * intnum;
+        break;}
     case AV_OPT_TYPE_FLOAT:
         *(float *)dst = num * intnum / den;
         break;
