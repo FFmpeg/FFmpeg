@@ -2078,6 +2078,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
     },
+    [AV_PIX_FMT_P016LE] = {
+        .name = "p016le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 2, 0, 0, 16, 1, 15, 1 },       /* Y */
+            { 1, 4, 0, 0, 16, 3, 15, 1 },       /* U */
+            { 1, 4, 2, 0, 16, 3, 15, 3 },       /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_P016BE] = {
+        .name = "p016be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .comp = {
+            { 0, 2, 0, 0, 16, 1, 15, 1 },       /* Y */
+            { 1, 4, 0, 0, 16, 3, 15, 1 },       /* U */
+            { 1, 4, 2, 0, 16, 3, 15, 3 },       /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
     [AV_PIX_FMT_GBRAP12LE] = {
         .name = "gbrap12le",
         .nb_components = 4,
