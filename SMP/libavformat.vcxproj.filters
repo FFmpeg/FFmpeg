@@ -751,10 +751,10 @@
     <ClCompile Include="..\libavformat\movenccenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\mp3enc.c">
+    <ClCompile Include="..\libavformat\mp3dec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\mp3dec.c">
+    <ClCompile Include="..\libavformat\mp3enc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mpc.c">
@@ -1310,6 +1310,9 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\mmst.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\prompeg.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\rtmpproto.c">

@@ -309,8 +309,8 @@
     <ClCompile Include="..\libavformat\vpcc.c" />
     <ClCompile Include="..\libavformat\movenchint.c" />
     <ClCompile Include="..\libavformat\movenccenc.c" />
-    <ClCompile Include="..\libavformat\mp3enc.c" />
     <ClCompile Include="..\libavformat\mp3dec.c" />
+    <ClCompile Include="..\libavformat\mp3enc.c" />
     <ClCompile Include="..\libavformat\mpc.c" />
     <ClCompile Include="..\libavformat\mpc8.c" />
     <ClCompile Include="..\libavformat\mpegenc.c" />
@@ -496,6 +496,7 @@
     <ClCompile Include="..\libavformat\mmsh.c" />
     <ClCompile Include="..\libavformat\mms.c" />
     <ClCompile Include="..\libavformat\mmst.c" />
+    <ClCompile Include="..\libavformat\prompeg.c" />
     <ClCompile Include="..\libavformat\rtmpproto.c" />
     <ClCompile Include="..\libavformat\rtmppkt.c" />
     <ClCompile Include="..\libavformat\rtpproto.c" />

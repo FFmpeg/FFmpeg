@@ -169,6 +169,7 @@
     <ClCompile Include="..\libavcodec\jni.c" />
     <ClCompile Include="..\libavcodec\mathtables.c" />
     <ClCompile Include="..\libavcodec\mediacodec.c" />
+    <ClCompile Include="..\libavcodec\mpeg12framerate.c" />
     <ClCompile Include="..\libavcodec\options.c" />
     <ClCompile Include="..\libavcodec\parser.c" />
     <ClCompile Include="..\libavcodec\profiles.c" />
@@ -203,6 +204,9 @@
     <ClCompile Include="..\libavcodec\h264chroma.c" />
     <ClCompile Include="..\libavcodec\h264dsp.c" />
     <ClCompile Include="..\libavcodec\h264idct.c" />
+    <ClCompile Include="..\libavcodec\h264_parse.c" />
+    <ClCompile Include="..\libavcodec\h2645_parse.c" />
+    <ClCompile Include="..\libavcodec\h264_ps.c" />
     <ClCompile Include="..\libavcodec\h264pred.c" />
     <ClCompile Include="..\libavcodec\h264qpel.c" />
     <ClCompile Include="..\libavcodec\huffman.c" />
@@ -481,13 +485,10 @@
     <ClCompile Include="..\libavcodec\h264_loopfilter.c" />
     <ClCompile Include="..\libavcodec\h264_mb.c" />
     <ClCompile Include="..\libavcodec\h264_picture.c" />
-    <ClCompile Include="..\libavcodec\h264_ps.c" />
     <ClCompile Include="..\libavcodec\h264_refs.c" />
     <ClCompile Include="..\libavcodec\h264_sei.c" />
     <ClCompile Include="..\libavcodec\h264_slice.c" />
     <ClCompile Include="..\libavcodec\h264data.c" />
-    <ClCompile Include="..\libavcodec\h264_parse.c" />
-    <ClCompile Include="..\libavcodec\h2645_parse.c" />
     <ClCompile Include="..\libavcodec\nvenc_h264.c" />
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
     <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
