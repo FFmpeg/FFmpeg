@@ -233,7 +233,6 @@ AVFilter ff_af_aloop = {
     .priv_size     = sizeof(LoopContext),
     .priv_class    = &aloop_class,
     .uninit        = auninit,
-    .query_formats = ff_query_formats_all,
     .inputs        = ainputs,
     .outputs       = aoutputs,
 };

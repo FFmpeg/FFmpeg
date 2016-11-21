@@ -365,7 +365,6 @@ AVFilter ff_af_atrim = {
     .name        = "atrim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
     .init        = init,
-    .query_formats = ff_query_formats_all,
     .priv_size   = sizeof(TrimContext),
     .priv_class  = &atrim_class,
     .inputs      = atrim_inputs,

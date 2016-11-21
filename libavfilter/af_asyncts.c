@@ -317,6 +317,7 @@ AVFilter ff_af_asyncts = {
     .uninit      = uninit,
     .priv_size   = sizeof(ASyncContext),
     .priv_class  = &asyncts_class,
+    .query_formats = ff_query_formats_all_layouts,
     .inputs      = avfilter_af_asyncts_inputs,
     .outputs     = avfilter_af_asyncts_outputs,
 };

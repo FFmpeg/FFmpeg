@@ -373,7 +373,6 @@ AVFilter ff_af_ametadata = {
     .priv_class    = &ametadata_class,
     .init          = init,
     .uninit        = uninit,
-    .query_formats = ff_query_formats_all,
     .inputs        = ainputs,
     .outputs       = aoutputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
