@@ -1981,7 +1981,7 @@ int ff_index_search_timestamp(const AVIndexEntry *entries, int nb_entries,
         m         = (a + b) >> 1;
 
         // Search for the next non-discarded packet.
-        while ((entries[m].flags & AVINDEX_DISCARD_FRAME) && m < b) {
+        while ((entries[m].flags & AVINDEX_DISCARD_FRAME) && m < b && m < nb_entries - 1) {
             m++;
             if (m == b && entries[m].timestamp >= wanted_timestamp) {
                 m = b - 1;
