@@ -67,6 +67,7 @@ typedef enum {
     FLV_AAC_SEQ_HEADER_DETECT = (1 << 0),
     FLV_NO_SEQUENCE_END = (1 << 1),
     FLV_ADD_KEYFRAME_INDEX = (1 << 2),
+    FLV_NO_METADATA = (1 << 3),
 } FLVFlags;
 
 typedef struct FLVFileposition {
@@ -744,7 +745,11 @@ static int flv_write_header(AVFormatContext *s)
             flv->reserved = 5;
         }
 
-    write_metadata(s, 0);
+    if (flv->flags & FLV_NO_METADATA) {
+        pb->seekable = 0;
+    } else {
+        write_metadata(s, 0);
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         flv_write_codec_header(s, s->streams[i]->codecpar);
@@ -1055,6 +1060,7 @@ static const AVOption options[] = {
     { "flvflags", "FLV muxer flags", offsetof(FLVContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_AAC_SEQ_HEADER_DETECT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "no_sequence_end", "disable sequence end for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_SEQUENCE_END}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "no_metadata", "disable metadata for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_METADATA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "add_keyframe_index", "Add keyframe index metadata", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_ADD_KEYFRAME_INDEX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { NULL },
 };
