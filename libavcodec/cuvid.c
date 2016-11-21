@@ -32,8 +32,6 @@
 #include "avcodec.h"
 #include "internal.h"
 
-#define MAX_FRAME_COUNT 25
-
 typedef struct CuvidContext
 {
     AVClass *avclass;
@@ -42,6 +40,7 @@ typedef struct CuvidContext
     CUvideoparser cuparser;
 
     char *cu_gpu;
+    int nb_surfaces;
 
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
@@ -189,7 +188,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     cuinfo.target_rect.right = cuinfo.ulWidth;
     cuinfo.target_rect.bottom = cuinfo.ulHeight;
 
-    cuinfo.ulNumDecodeSurfaces = MAX_FRAME_COUNT;
+    cuinfo.ulNumDecodeSurfaces = ctx->nb_surfaces;
     cuinfo.ulNumOutputSurfaces = 1;
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
     cuinfo.bitDepthMinus8 = format->bit_depth_luma_minus8;
@@ -272,7 +271,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     if (is_flush && avpkt && avpkt->size)
         return AVERROR_EOF;
 
-    if (av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame) > MAX_FRAME_COUNT - 2 && avpkt && avpkt->size)
+    if ((av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + 2 > ctx->nb_surfaces && avpkt && avpkt->size)
         return AVERROR(EAGAIN);
 
     if (ctx->bsf && avpkt && avpkt->size) {
@@ -585,7 +584,7 @@ static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cu
     cuinfo.target_rect.right = cuinfo.ulWidth;
     cuinfo.target_rect.bottom = cuinfo.ulHeight;
 
-    cuinfo.ulNumDecodeSurfaces = MAX_FRAME_COUNT;
+    cuinfo.ulNumDecodeSurfaces = ctx->nb_surfaces;
     cuinfo.ulNumOutputSurfaces = 1;
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
     cuinfo.bitDepthMinus8 = 0;
@@ -632,7 +631,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ctx->frame_queue = av_fifo_alloc(MAX_FRAME_COUNT * sizeof(CuvidParsedFrame));
+    ctx->frame_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(CuvidParsedFrame));
     if (!ctx->frame_queue) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -759,7 +758,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
                FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
     }
 
-    ctx->cuparseinfo.ulMaxNumDecodeSurfaces = MAX_FRAME_COUNT;
+    ctx->cuparseinfo.ulMaxNumDecodeSurfaces = ctx->nb_surfaces;
     ctx->cuparseinfo.ulMaxDisplayDelay = 4;
     ctx->cuparseinfo.pUserData = avctx;
     ctx->cuparseinfo.pfnSequenceCallback = cuvid_handle_video_sequence;
@@ -818,7 +817,7 @@ static void cuvid_flush(AVCodecContext *avctx)
 
     av_fifo_freep(&ctx->frame_queue);
 
-    ctx->frame_queue = av_fifo_alloc(MAX_FRAME_COUNT * sizeof(CuvidParsedFrame));
+    ctx->frame_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(CuvidParsedFrame));
     if (!ctx->frame_queue) {
         av_log(avctx, AV_LOG_ERROR, "Failed to recreate frame queue on flush\n");
         return;
@@ -867,6 +866,7 @@ static const AVOption options[] = {
     { "bob",      "Bob deinterlacing",                       0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Bob      }, 0, 0, VD, "deint" },
     { "adaptive", "Adaptive deinterlacing",                  0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Adaptive }, 0, 0, VD, "deint" },
     { "gpu",      "GPU to be used for decoding", OFFSET(cu_gpu), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
+    { "surfaces", "Maximum surfaces to be used for decoding", OFFSET(nb_surfaces), AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, VD },
     { NULL }
 };
 
