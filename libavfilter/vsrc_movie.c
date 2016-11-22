@@ -35,7 +35,11 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
+
+#include "libavcodec/avcodec.h"
+
 #include "libavformat/avformat.h"
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"

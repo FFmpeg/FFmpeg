@@ -2426,6 +2426,7 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 
 # filters
+asyncts_filter_deps="avresample"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 bs2b_filter_deps="libbs2b"
@@ -2440,6 +2441,7 @@ frei0r_src_filter_extralibs='$ldl'
 hdcd_filter_deps="libhdcd"
 hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
+movie_filter_deps="avcodec avformat"
 ocv_filter_deps="libopencv"
 resample_filter_deps="avresample"
 scale_filter_deps="swscale"
@@ -2453,7 +2455,7 @@ encode_audio_example_deps="avcodec avutil"
 encode_video_example_deps="avcodec avutil"
 filter_audio_example_deps="avfilter avutil"
 metadata_example_deps="avformat avutil"
-output_example_deps="avcodec avformat avutil swscale"
+output_example_deps="avcodec avformat avresample avutil swscale"
 qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder"
 transcode_aac_example_deps="avcodec avformat avresample"
 
@@ -5109,7 +5111,8 @@ enabled zlib && add_cppflags -DZLIB_CONST
 
 # conditional library dependencies, in linking order
 enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
-enabled resample_filter && prepend avfilter_deps "avresample"
+enabled_any asyncts_filter resample_filter &&
+                           prepend avfilter_deps "avresample"
 enabled scale_filter    && prepend avfilter_deps "swscale"
 
 enabled opus_decoder    && prepend avcodec_deps "avresample"
