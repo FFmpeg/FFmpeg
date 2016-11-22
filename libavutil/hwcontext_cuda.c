@@ -35,6 +35,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_P010,
+    AV_PIX_FMT_P016,
 };
 
 static void cuda_buffer_free(void *opaque, uint8_t *data)
@@ -111,6 +113,8 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
             size = aligned_width * ctx->height * 3 / 2;
             break;
         case AV_PIX_FMT_YUV444P:
+        case AV_PIX_FMT_P010:
+        case AV_PIX_FMT_P016:
             size = aligned_width * ctx->height * 3;
             break;
         }
@@ -125,7 +129,14 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
 
 static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
 {
-    int aligned_width = FFALIGN(ctx->width, CUDA_FRAME_ALIGNMENT);
+    int aligned_width;
+    int width_in_bytes = ctx->width;
+
+    if (ctx->sw_format == AV_PIX_FMT_P010 ||
+        ctx->sw_format == AV_PIX_FMT_P016) {
+       width_in_bytes *= 2;
+    }
+    aligned_width = FFALIGN(width_in_bytes, CUDA_FRAME_ALIGNMENT);
 
     frame->buf[0] = av_buffer_pool_get(ctx->pool);
     if (!frame->buf[0])
@@ -133,6 +144,8 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
 
     switch (ctx->sw_format) {
     case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P016:
         frame->data[0]     = frame->buf[0]->data;
         frame->data[1]     = frame->data[0] + aligned_width * ctx->height;
         frame->linesize[0] = aligned_width;
