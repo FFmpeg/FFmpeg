@@ -117,7 +117,7 @@ FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 all: $(AVPROGS)
 
 $(TOOLS): %$(EXESUF): %.o
-	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(EXTRALIBS) $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
