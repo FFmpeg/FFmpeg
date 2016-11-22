@@ -457,7 +457,8 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *ret_header)
         return CHECK_SEEK_FAILED;
 
     ret = avio_read(pb, &header_buf[0], 4);
-    if (ret < 0)
+    /* We should always find four bytes for a valid mpa header. */
+    if (ret < 4)
         return CHECK_SEEK_FAILED;
 
     header = AV_RB32(&header_buf[0]);
