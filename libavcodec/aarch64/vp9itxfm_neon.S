@@ -969,14 +969,14 @@ function idct32_1d_8x32_pass1_neon
         st1             {v7.8h},  [x0], #16
 .endm
 
-        store_rev 31, 23
-        store_rev 30, 22
-        store_rev 29, 21
-        store_rev 28, 20
-        store_rev 27, 19
-        store_rev 26, 18
-        store_rev 25, 17
-        store_rev 24, 16
+        store_rev       31, 23
+        store_rev       30, 22
+        store_rev       29, 21
+        store_rev       28, 20
+        store_rev       27, 19
+        store_rev       26, 18
+        store_rev       25, 17
+        store_rev       24, 16
 .purgem store_rev
         ret
 endfunc

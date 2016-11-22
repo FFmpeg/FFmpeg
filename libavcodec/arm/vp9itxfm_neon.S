@@ -1017,10 +1017,10 @@ function idct32_1d_4x32_pass1_neon
 .endr
 .endm
 
-        store_rev 31, 27, 23, 19
-        store_rev 30, 26, 22, 18
-        store_rev 29, 25, 21, 17
-        store_rev 28, 24, 20, 16
+        store_rev       31, 27, 23, 19
+        store_rev       30, 26, 22, 18
+        store_rev       29, 25, 21, 17
+        store_rev       28, 24, 20, 16
 .purgem store_rev
         bx              lr
 endfunc
