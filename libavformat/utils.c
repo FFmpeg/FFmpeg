@@ -5124,7 +5124,7 @@ int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
     if ((unsigned)st->nb_side_data + 1 >= INT_MAX / sizeof(*st->side_data))
         return AVERROR(ERANGE);
 
-    tmp = av_realloc(st->side_data, st->nb_side_data + 1 * sizeof(*tmp));
+    tmp = av_realloc(st->side_data, (st->nb_side_data + 1) * sizeof(*tmp));
     if (!tmp) {
         return AVERROR(ENOMEM);
     }
