@@ -382,18 +382,18 @@ static av_unused void w32thread_init(void)
 #if _WIN32_WINNT < 0x0600
     HANDLE kernel_dll = GetModuleHandle(TEXT("kernel32.dll"));
     /* if one is available, then they should all be available */
-    cond_init      =
-        (void*)GetProcAddress(kernel_dll, "InitializeConditionVariable");
-    cond_broadcast =
-        (void*)GetProcAddress(kernel_dll, "WakeAllConditionVariable");
-    cond_signal    =
-        (void*)GetProcAddress(kernel_dll, "WakeConditionVariable");
-    cond_wait      =
-        (void*)GetProcAddress(kernel_dll, "SleepConditionVariableCS");
-    initonce_begin =
-        (void*)GetProcAddress(kernel_dll, "InitOnceBeginInitialize");
-    initonce_complete =
-        (void*)GetProcAddress(kernel_dll, "InitOnceComplete");
+    cond_init      = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "InitializeConditionVariable");
+    cond_broadcast = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "WakeAllConditionVariable");
+    cond_signal    = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "WakeConditionVariable");
+    cond_wait      = (BOOL (WINAPI*)(pthread_cond_t *, pthread_mutex_t *, DWORD))
+        GetProcAddress(kernel_dll, "SleepConditionVariableCS");
+    initonce_begin = (BOOL (WINAPI*)(pthread_once_t *, DWORD, BOOL *, void **))
+        GetProcAddress(kernel_dll, "InitOnceBeginInitialize");
+    initonce_complete = (BOOL (WINAPI*)(pthread_once_t *, DWORD, void *))
+        GetProcAddress(kernel_dll, "InitOnceComplete");
 #endif
 
 }
