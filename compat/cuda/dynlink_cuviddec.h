@@ -83,7 +83,8 @@ typedef enum cudaVideoCodec_enum {
  * Video Surface Formats Enums
  */
 typedef enum cudaVideoSurfaceFormat_enum {
-    cudaVideoSurfaceFormat_NV12=0       /**< NV12 (currently the only supported output format)  */
+    cudaVideoSurfaceFormat_NV12=0,      /**< NV12  */
+    cudaVideoSurfaceFormat_P016=1       /**< P016  */
 } cudaVideoSurfaceFormat;
 
 /*!

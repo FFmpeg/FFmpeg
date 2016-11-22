@@ -28,6 +28,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -102,10 +103,45 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     CuvidContext *ctx = avctx->priv_data;
     AVHWFramesContext *hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
     CUVIDDECODECREATEINFO cuinfo;
+    int surface_fmt;
+
+    enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
+                                       AV_PIX_FMT_NONE,  // Will be updated below
+                                       AV_PIX_FMT_NONE };
 
     av_log(avctx, AV_LOG_TRACE, "pfnSequenceCallback, progressive_sequence=%d\n", format->progressive_sequence);
 
     ctx->internal_error = 0;
+
+    switch (format->bit_depth_luma_minus8) {
+    case 0: // 8-bit
+        pix_fmts[1] = AV_PIX_FMT_NV12;
+        break;
+    case 2: // 10-bit
+        pix_fmts[1] = AV_PIX_FMT_P010;
+        break;
+    case 4: // 12-bit
+        pix_fmts[1] = AV_PIX_FMT_P016;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "unsupported bit depth: %d\n",
+               format->bit_depth_luma_minus8 + 8);
+        ctx->internal_error = AVERROR(EINVAL);
+        return 0;
+    }
+    surface_fmt = ff_get_format(avctx, pix_fmts);
+    if (surface_fmt < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_get_format failed: %d\n", surface_fmt);
+        ctx->internal_error = AVERROR(EINVAL);
+        return 0;
+    }
+
+    av_log(avctx, AV_LOG_VERBOSE, "Formats: Original: %s | HW: %s | SW: %s\n",
+           av_get_pix_fmt_name(avctx->pix_fmt),
+           av_get_pix_fmt_name(surface_fmt),
+           av_get_pix_fmt_name(avctx->sw_pix_fmt));
+
+    avctx->pix_fmt = surface_fmt;
 
     avctx->width = format->display_area.right;
     avctx->height = format->display_area.bottom;
@@ -155,7 +191,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
             hwframe_ctx->width < avctx->width ||
             hwframe_ctx->height < avctx->height ||
             hwframe_ctx->format != AV_PIX_FMT_CUDA ||
-            hwframe_ctx->sw_format != AV_PIX_FMT_NV12)) {
+            hwframe_ctx->sw_format != avctx->sw_pix_fmt)) {
         av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized with incompatible parameters\n");
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
@@ -176,7 +212,20 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     cuinfo.CodecType = ctx->codec_type = format->codec;
     cuinfo.ChromaFormat = format->chroma_format;
-    cuinfo.OutputFormat = cudaVideoSurfaceFormat_NV12;
+
+    switch (avctx->sw_pix_fmt) {
+    case AV_PIX_FMT_NV12:
+        cuinfo.OutputFormat = cudaVideoSurfaceFormat_NV12;
+        break;
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P016:
+        cuinfo.OutputFormat = cudaVideoSurfaceFormat_P016;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Output formats other than NV12, P010 or P016 are not supported\n");
+        ctx->internal_error = AVERROR(EINVAL);
+        return 0;
+    }
 
     cuinfo.ulWidth = avctx->coded_width;
     cuinfo.ulHeight = avctx->coded_height;
@@ -208,7 +257,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     if (!hwframe_ctx->pool) {
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
-        hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
+        hwframe_ctx->sw_format = avctx->sw_pix_fmt;
         hwframe_ctx->width = avctx->width;
         hwframe_ctx->height = avctx->height;
 
@@ -416,7 +465,9 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
 
                 offset += avctx->coded_height;
             }
-        } else if (avctx->pix_fmt == AV_PIX_FMT_NV12) {
+        } else if (avctx->pix_fmt == AV_PIX_FMT_NV12 ||
+                   avctx->pix_fmt == AV_PIX_FMT_P010 ||
+                   avctx->pix_fmt == AV_PIX_FMT_P016) {
             AVFrame *tmp_frame = av_frame_alloc();
             if (!tmp_frame) {
                 av_log(avctx, AV_LOG_ERROR, "av_frame_alloc failed\n");
@@ -446,7 +497,6 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                 av_frame_free(&tmp_frame);
                 goto error;
             }
-
             av_frame_free(&tmp_frame);
         } else {
             ret = AVERROR_BUG;
@@ -613,17 +663,6 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     CUcontext dummy;
     const AVBitStreamFilter *bsf;
     int ret = 0;
-
-    enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
-                                       AV_PIX_FMT_NV12,
-                                       AV_PIX_FMT_NONE };
-
-    ret = ff_get_format(avctx, pix_fmts);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "ff_get_format failed: %d\n", ret);
-        return ret;
-    }
-    avctx->pix_fmt = ret;
 
     ret = cuvid_load_functions(&ctx->cvdl);
     if (ret < 0) {
@@ -899,6 +938,8 @@ static const AVOption options[] = {
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
+                                                        AV_PIX_FMT_P010, \
+                                                        AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
     };
 
