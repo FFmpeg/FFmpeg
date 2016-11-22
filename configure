@@ -4518,7 +4518,6 @@ check_func  usleep
 check_func_headers io.h setmode
 check_func_headers stdlib.h getenv
 
-check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -4776,6 +4775,10 @@ if enabled libxcb; then
     add_cflags "$xcb_shape_cflags $xcb_shm_cflags $xcb_xfixes_cflags"
     add_extralibs "$xcb_shape_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs"
 fi
+
+enabled dxva2 &&
+    check_lib windows.h CoTaskMemFree -lole32 &&
+    enable dxva2_lib
 
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
@@ -5054,10 +5057,6 @@ check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
-
-enabled_all dxva2 CoTaskMemFree &&
-    prepend avconv_extralibs $($ldflags_filter "-lole32") &&
-    enable dxva2_lib
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
