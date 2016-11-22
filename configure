@@ -3039,7 +3039,6 @@ msvc_common_flags(){
             -mthumb)              ;;
             -march=*)             ;;
             -lz)                  echo zlib.lib ;;
-            -lavifil32)           echo vfw32.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -lx264)               echo libx264.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
