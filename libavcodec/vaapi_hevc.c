@@ -265,7 +265,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     VAPictureParameterBufferHEVC *pic_param;
     VAIQMatrixBufferHEVC *iq_matrix;
     ScalingList const * scaling_list;
-    int i, j, pos;
+    int i, j;
 
     ff_dlog(avctx, "vaapi_hevc_start_frame()\n");
 
@@ -293,15 +293,13 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 
     for (i = 0; i < 6; ++i) {
         for (j = 0; j < 16; ++j) {
-            pos = 4 * ff_hevc_diag_scan4x4_y[j] + ff_hevc_diag_scan4x4_x[j];
-            iq_matrix->ScalingList4x4[i][j] = scaling_list->sl[0][i][pos];
+            iq_matrix->ScalingList4x4[i][j] = scaling_list->sl[0][i][j];
         }
         for (j = 0; j < 64; ++j) {
-            pos = 8 * ff_hevc_diag_scan8x8_y[j] + ff_hevc_diag_scan8x8_x[j];
-            iq_matrix->ScalingList8x8[i][j] = scaling_list->sl[1][i][pos];
-            iq_matrix->ScalingList16x16[i][j] = scaling_list->sl[2][i][pos];
+            iq_matrix->ScalingList8x8[i][j] = scaling_list->sl[1][i][j];
+            iq_matrix->ScalingList16x16[i][j] = scaling_list->sl[2][i][j];
             if (i < 2) {
-                iq_matrix->ScalingList32x32[i][j] = scaling_list->sl[3][i * 3][pos];
+                iq_matrix->ScalingList32x32[i][j] = scaling_list->sl[3][i * 3][j];
             }
         }
         iq_matrix->ScalingListDC16x16[i] = scaling_list->sl_dc[0][i];
