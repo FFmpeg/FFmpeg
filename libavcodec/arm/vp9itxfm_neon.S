@@ -74,6 +74,14 @@ endconst
         vrshrn.s32      \out2, \tmpq4, #14
 .endm
 
+@ Same as mbutterfly0 above, but treating the input in in2 as zero,
+@ writing the same output into both out1 and out2.
+.macro mbutterfly0_h out1, out2, in1, in2, tmpd1, tmpd2, tmpq3, tmpq4
+        vmull.s16       \tmpq3, \in1, d0[0]
+        vrshrn.s32      \out1,  \tmpq3, #14
+        vrshrn.s32      \out2,  \tmpq3, #14
+.endm
+
 @ out1,out2 = ((in1 + in2) * d0[0] + (1 << 13)) >> 14
 @ out3,out4 = ((in1 - in2) * d0[0] + (1 << 13)) >> 14
 @ Same as mbutterfly0, but with input being 2 q registers, output
@@ -135,6 +143,23 @@ endconst
 .endif
         vrshrn.s32      \inout1, \tmp1,  #14
         vrshrn.s32      \inout2, \tmp2,  #14
+.endm
+
+@ Same as mbutterfly above, but treating the input in inout2 as zero
+.macro mbutterfly_h1 inout1, inout2, coef1, coef2, tmp1, tmp2
+        vmull.s16       \tmp1,   \inout1, \coef1
+        vmull.s16       \tmp2,   \inout1, \coef2
+        vrshrn.s32      \inout1, \tmp1,   #14
+        vrshrn.s32      \inout2, \tmp2,   #14
+.endm
+
+@ Same as mbutterfly above, but treating the input in inout1 as zero
+.macro mbutterfly_h2 inout1, inout2, coef1, coef2, tmp1, tmp2
+        vmull.s16       \tmp1,   \inout2, \coef2
+        vmull.s16       \tmp2,   \inout2, \coef1
+        vneg.s32        \tmp1,   \tmp1
+        vrshrn.s32      \inout2, \tmp2,   #14
+        vrshrn.s32      \inout1, \tmp1,   #14
 .endm
 
 @ inout1,inout2 = (inout1,inout2 * coef1 - inout3,inout4 * coef2 + (1 << 13)) >> 14
@@ -534,29 +559,7 @@ function idct16x16_dc_add_neon
 endfunc
 .ltorg
 
-function idct16
-        mbutterfly0     d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
-        mbutterfly      d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
-        mbutterfly      d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
-        mbutterfly      d26, d22, d1[1], d1[2], q2,  q3  @ d26 = t5a,  d22 = t6a
-        mbutterfly      d17, d31, d1[3], d2[0], q2,  q3  @ d17 = t8a,  d31 = t15a
-        mbutterfly      d25, d23, d2[1], d2[2], q2,  q3  @ d25 = t9a,  d23 = t14a
-        mbutterfly      d21, d27, d2[3], d3[0], q2,  q3  @ d21 = t10a, d27 = t13a
-        mbutterfly      d29, d19, d3[1], d3[2], q2,  q3  @ d29 = t11a, d19 = t12a
-
-        butterfly       d4,  d28, d16, d28               @ d4  = t0,   d28 = t3
-        butterfly       d5,  d20, d24, d20               @ d5  = t1,   d20 = t2
-        butterfly       d6,  d26, d18, d26               @ d6  = t4,   d26 = t5
-        butterfly       d7,  d22, d30, d22               @ d7  = t7,   d22 = t6
-        butterfly       d16, d25, d17, d25               @ d16 = t8,   d25 = t9
-        butterfly       d24, d21, d29, d21               @ d24 = t11,  d21 = t10
-        butterfly       d17, d27, d19, d27               @ d17 = t12,  d27 = t13
-        butterfly       d29, d23, d31, d23               @ d29 = t15,  d23 = t14
-
-        mbutterfly0     d22, d26, d22, d26, d18, d30, q9,  q15  @ d22 = t6a, d26 = t5a
-        mbutterfly      d23, d25, d0[1], d0[2], q9,  q15        @ d23 = t9a,  d25 = t14a
-        mbutterfly      d27, d21, d0[1], d0[2], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
-
+.macro idct16_end
         butterfly       d18, d7,  d4,  d7                @ d18 = t0a,  d7  = t7a
         butterfly       d19, d22, d5,  d22               @ d19 = t1a,  d22 = t6
         butterfly       d4,  d26, d20, d26               @ d4  = t2a,  d26 = t5
@@ -581,6 +584,87 @@ function idct16
         butterfly       d20, d27, d6,  d27               @ d20 = out[4], d27 = out[11]
         butterfly       d21, d26, d26, d4                @ d21 = out[5], d26 = out[10]
         bx              lr
+.endm
+
+function idct16
+        mbutterfly0     d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
+        mbutterfly      d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
+        mbutterfly      d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
+        mbutterfly      d26, d22, d1[1], d1[2], q2,  q3  @ d26 = t5a,  d22 = t6a
+        mbutterfly      d17, d31, d1[3], d2[0], q2,  q3  @ d17 = t8a,  d31 = t15a
+        mbutterfly      d25, d23, d2[1], d2[2], q2,  q3  @ d25 = t9a,  d23 = t14a
+        mbutterfly      d21, d27, d2[3], d3[0], q2,  q3  @ d21 = t10a, d27 = t13a
+        mbutterfly      d29, d19, d3[1], d3[2], q2,  q3  @ d29 = t11a, d19 = t12a
+
+        butterfly       d4,  d28, d16, d28               @ d4  = t0,   d28 = t3
+        butterfly       d5,  d20, d24, d20               @ d5  = t1,   d20 = t2
+        butterfly       d6,  d26, d18, d26               @ d6  = t4,   d26 = t5
+        butterfly       d7,  d22, d30, d22               @ d7  = t7,   d22 = t6
+        butterfly       d16, d25, d17, d25               @ d16 = t8,   d25 = t9
+        butterfly       d24, d21, d29, d21               @ d24 = t11,  d21 = t10
+        butterfly       d17, d27, d19, d27               @ d17 = t12,  d27 = t13
+        butterfly       d29, d23, d31, d23               @ d29 = t15,  d23 = t14
+
+        mbutterfly0     d22, d26, d22, d26, d18, d30, q9,  q15  @ d22 = t6a, d26 = t5a
+        mbutterfly      d23, d25, d0[1], d0[2], q9,  q15        @ d23 = t9a,  d25 = t14a
+        mbutterfly      d27, d21, d0[1], d0[2], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
+        idct16_end
+endfunc
+
+function idct16_half
+        mbutterfly0_h   d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
+        mbutterfly_h1   d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
+        mbutterfly_h1   d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
+        mbutterfly_h2   d26, d22, d1[1], d1[2], q2,  q3  @ d26 = t5a,  d22 = t6a
+        mbutterfly_h1   d17, d31, d1[3], d2[0], q2,  q3  @ d17 = t8a,  d31 = t15a
+        mbutterfly_h2   d25, d23, d2[1], d2[2], q2,  q3  @ d25 = t9a,  d23 = t14a
+        mbutterfly_h1   d21, d27, d2[3], d3[0], q2,  q3  @ d21 = t10a, d27 = t13a
+        mbutterfly_h2   d29, d19, d3[1], d3[2], q2,  q3  @ d29 = t11a, d19 = t12a
+
+        butterfly       d4,  d28, d16, d28               @ d4  = t0,   d28 = t3
+        butterfly       d5,  d20, d24, d20               @ d5  = t1,   d20 = t2
+        butterfly       d6,  d26, d18, d26               @ d6  = t4,   d26 = t5
+        butterfly       d7,  d22, d30, d22               @ d7  = t7,   d22 = t6
+        butterfly       d16, d25, d17, d25               @ d16 = t8,   d25 = t9
+        butterfly       d24, d21, d29, d21               @ d24 = t11,  d21 = t10
+        butterfly       d17, d27, d19, d27               @ d17 = t12,  d27 = t13
+        butterfly       d29, d23, d31, d23               @ d29 = t15,  d23 = t14
+
+        mbutterfly0     d22, d26, d22, d26, d18, d30, q9,  q15  @ d22 = t6a, d26 = t5a
+        mbutterfly      d23, d25, d0[1], d0[2], q9,  q15        @ d23 = t9a,  d25 = t14a
+        mbutterfly      d27, d21, d0[1], d0[2], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
+        idct16_end
+endfunc
+
+function idct16_quarter
+        vmull.s16       q12, d19, d3[2]
+        vmull.s16       q2,  d17, d1[3]
+        vmull.s16       q3,  d18, d1[0]
+        vmull.s16       q15, d18, d0[3]
+        vneg.s32        q12, q12
+        vmull.s16       q14, d17, d2[0]
+        vmull.s16       q13, d19, d3[1]
+        vmull.s16       q11, d16, d0[0]
+        vrshrn.s32      d24, q12, #14
+        vrshrn.s32      d16, q2,  #14
+        vrshrn.s32      d7,  q3,  #14
+        vrshrn.s32      d6,  q15, #14
+        vrshrn.s32      d29, q14, #14
+        vrshrn.s32      d17, q13, #14
+        vrshrn.s32      d28, q11, #14
+
+        mbutterfly_l    q10, q11, d17, d24, d0[1], d0[2]
+        mbutterfly_l    q9,  q15, d29, d16, d0[1], d0[2]
+        vneg.s32        q11, q11
+        vrshrn.s32      d27, q10, #14
+        vrshrn.s32      d21, q11, #14
+        vrshrn.s32      d23, q9,  #14
+        vrshrn.s32      d25, q15, #14
+        vmov            d4,  d28
+        vmov            d5,  d28
+        mbutterfly0     d22, d26, d7,  d6,  d18, d30, q9,  q15
+        vmov            d20, d28
+        idct16_end
 endfunc
 
 function iadst16
@@ -819,6 +903,13 @@ A       and             r7,  sp,  #15
         vld1.16         {q0-q1}, [r12,:128]
 .endif
 
+.ifc \txfm1\()_\txfm2,idct_idct
+        cmp             r3,  #10
+        ble             idct16x16_quarter_add_neon
+        cmp             r3,  #38
+        ble             idct16x16_half_add_neon
+.endif
+
 .irp i, 0, 4, 8, 12
         add             r0,  sp,  #(\i*32)
 .ifc \txfm1\()_\txfm2,idct_idct
@@ -877,6 +968,169 @@ itxfm_func16x16 idct,  iadst
 itxfm_func16x16 iadst, iadst
 .ltorg
 
+function idct16_1d_4x16_pass1_quarter_neon
+        push            {lr}
+        mov             r12, #32
+        vmov.s16        q2, #0
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+
+        bl              idct16_quarter
+
+        @ Do four 4x4 transposes. Originally, d16-d31 contain the
+        @ 16 rows. Afterwards, d16-d19, d20-d23, d24-d27, d28-d31
+        @ contain the transposed 4x4 blocks.
+        transpose16_q_4x_4x4 q8,  q9,  q10, q11, q12, q13, q14, q15, d16, d17, d18, d19, d20, d21, d22, d23, d24, d25, d26, d27, d28, d29, d30, d31
+
+        @ Store the transposed 4x4 blocks horizontally.
+        @ The first 4x4 block is kept in registers for the second pass,
+        @ store the rest in the temp buffer.
+        add             r0,  r0,  #8
+        vst1.16         {d20}, [r0,:64]!
+        vst1.16         {d24}, [r0,:64]!
+        vst1.16         {d28}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d21}, [r0,:64]!
+        vst1.16         {d25}, [r0,:64]!
+        vst1.16         {d29}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d22}, [r0,:64]!
+        vst1.16         {d26}, [r0,:64]!
+        vst1.16         {d30}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d23}, [r0,:64]!
+        vst1.16         {d27}, [r0,:64]!
+        vst1.16         {d31}, [r0,:64]!
+        pop             {pc}
+endfunc
+
+function idct16_1d_4x16_pass2_quarter_neon
+        push            {lr}
+        @ Only load the top 4 lines, and only do it for the later slices.
+        @ For the first slice, d16-d19 is kept in registers from the first pass.
+        cmp             r3,  #0
+        beq             1f
+        mov             r12, #32
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+1:
+
+        add             r3,  r0,  r1
+        lsl             r1,  r1,  #1
+        bl              idct16_quarter
+
+        load_add_store  q8,  q9,  q10, q11
+        load_add_store  q12, q13, q14, q15
+
+        pop             {pc}
+endfunc
+
+function idct16_1d_4x16_pass1_half_neon
+        push            {lr}
+        mov             r12, #32
+        vmov.s16        q2, #0
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+
+        bl              idct16_half
+
+        @ Do four 4x4 transposes. Originally, d16-d31 contain the
+        @ 16 rows. Afterwards, d16-d19, d20-d23, d24-d27, d28-d31
+        @ contain the transposed 4x4 blocks.
+        transpose16_q_4x_4x4 q8,  q9,  q10, q11, q12, q13, q14, q15, d16, d17, d18, d19, d20, d21, d22, d23, d24, d25, d26, d27, d28, d29, d30, d31
+
+        @ Store the transposed 4x4 blocks horizontally.
+        cmp             r1,  #4
+        beq             1f
+.irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
+        vst1.16         {d\i}, [r0,:64]!
+.endr
+        pop             {pc}
+1:
+        @ Special case: For the second input column (r1 == 4),
+        @ which would be stored as the second row in the temp buffer,
+        @ don't store the first 4x4 block, but keep it in registers
+        @ for the first slice of the second pass (where it is the
+        @ second 4x4 block).
+        add             r0,  r0,  #8
+        vst1.16         {d20}, [r0,:64]!
+        vst1.16         {d24}, [r0,:64]!
+        vst1.16         {d28}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d21}, [r0,:64]!
+        vst1.16         {d25}, [r0,:64]!
+        vst1.16         {d29}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d22}, [r0,:64]!
+        vst1.16         {d26}, [r0,:64]!
+        vst1.16         {d30}, [r0,:64]!
+        add             r0,  r0,  #8
+        vst1.16         {d23}, [r0,:64]!
+        vst1.16         {d27}, [r0,:64]!
+        vst1.16         {d31}, [r0,:64]!
+        vmov            d20, d16
+        vmov            d21, d17
+        vmov            d22, d18
+        vmov            d23, d19
+        pop             {pc}
+endfunc
+
+function idct16_1d_4x16_pass2_half_neon
+        push            {lr}
+        mov             r12, #32
+        cmp             r3,  #0
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+        beq             1f
+.irp i, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+1:
+
+        add             r3,  r0,  r1
+        lsl             r1,  r1,  #1
+        bl              idct16_half
+
+        load_add_store  q8,  q9,  q10, q11
+        load_add_store  q12, q13, q14, q15
+
+        pop             {pc}
+endfunc
+.purgem load_add_store
+
+.macro idct16_partial size
+function idct16x16_\size\()_add_neon
+        add             r0,  sp,  #(0*32)
+        mov             r1,  #0
+        add             r2,  r6,  #(0*2)
+        bl              idct16_1d_4x16_pass1_\size\()_neon
+.ifc \size,half
+        add             r0,  sp,  #(4*32)
+        mov             r1,  #4
+        add             r2,  r6,  #(4*2)
+        bl              idct16_1d_4x16_pass1_\size\()_neon
+.endif
+.irp i, 0, 4, 8, 12
+        add             r0,  r4,  #(\i)
+        mov             r1,  r5
+        add             r2,  sp,  #(\i*2)
+        mov             r3,  #\i
+        bl              idct16_1d_4x16_pass2_\size\()_neon
+.endr
+
+        add             sp,  sp,  r7
+        pop             {r4-r8,pc}
+endfunc
+.endm
+
+idct16_partial quarter
+idct16_partial half
 
 function idct32x32_dc_add_neon
         movrel          r12, idct_coeffs
@@ -913,6 +1167,38 @@ function idct32x32_dc_add_neon
         bx              lr
 endfunc
 
+.macro idct32_end
+        butterfly       d16, d5,  d4,  d5  @ d16 = t16a, d5  = t19a
+        butterfly       d17, d20, d23, d20 @ d17 = t17,  d20 = t18
+        butterfly       d18, d6,  d7,  d6  @ d18 = t23a, d6  = t20a
+        butterfly       d19, d21, d22, d21 @ d19 = t22,  d21 = t21
+        butterfly       d4,  d28, d28, d30 @ d4  = t24a, d28 = t27a
+        butterfly       d23, d26, d25, d26 @ d23 = t25,  d26 = t26
+        butterfly       d7,  d29, d29, d31 @ d7  = t31a, d29 = t28a
+        butterfly       d22, d27, d24, d27 @ d22 = t30,  d27 = t29
+
+        mbutterfly      d27, d20, d0[1], d0[2], q12, q15        @ d27 = t18a, d20 = t29a
+        mbutterfly      d29, d5,  d0[1], d0[2], q12, q15        @ d29 = t19,  d5  = t28
+        mbutterfly      d28, d6,  d0[1], d0[2], q12, q15, neg=1 @ d28 = t27,  d6  = t20
+        mbutterfly      d26, d21, d0[1], d0[2], q12, q15, neg=1 @ d26 = t26a, d21 = t21a
+
+        butterfly       d31, d24, d7,  d4  @ d31 = t31,  d24 = t24
+        butterfly       d30, d25, d22, d23 @ d30 = t30a, d25 = t25a
+        butterfly_r     d23, d16, d16, d18 @ d23 = t23,  d16 = t16
+        butterfly_r     d22, d17, d17, d19 @ d22 = t22a, d17 = t17a
+        butterfly       d18, d21, d27, d21 @ d18 = t18,  d21 = t21
+        butterfly_r     d27, d28, d5,  d28 @ d27 = t27a, d28 = t28a
+        butterfly       d4,  d26, d20, d26 @ d4  = t29,  d26 = t26
+        butterfly       d19, d20, d29, d6  @ d19 = t19a, d20 = t20
+        vmov            d29, d4            @ d29 = t29
+
+        mbutterfly0     d27, d20, d27, d20, d4, d6, q2, q3 @ d27 = t27,  d20 = t20
+        mbutterfly0     d26, d21, d26, d21, d4, d6, q2, q3 @ d26 = t26a, d21 = t21a
+        mbutterfly0     d25, d22, d25, d22, d4, d6, q2, q3 @ d25 = t25,  d22 = t22
+        mbutterfly0     d24, d23, d24, d23, d4, d6, q2, q3 @ d24 = t24a, d23 = t23a
+        bx              lr
+.endm
+
 function idct32_odd
         movrel          r12, idct_coeffs
         add             r12, r12, #32
@@ -943,38 +1229,91 @@ function idct32_odd
         mbutterfly      d27, d20, d0[3], d1[0], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
         mbutterfly      d21, d26, d1[1], d1[2], q8, q9        @ d21 = t21a, d26 = t26a
         mbutterfly      d25, d22, d1[1], d1[2], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
-
-        butterfly       d16, d5,  d4,  d5  @ d16 = t16a, d5  = t19a
-        butterfly       d17, d20, d23, d20 @ d17 = t17,  d20 = t18
-        butterfly       d18, d6,  d7,  d6  @ d18 = t23a, d6  = t20a
-        butterfly       d19, d21, d22, d21 @ d19 = t22,  d21 = t21
-        butterfly       d4,  d28, d28, d30 @ d4  = t24a, d28 = t27a
-        butterfly       d23, d26, d25, d26 @ d23 = t25,  d26 = t26
-        butterfly       d7,  d29, d29, d31 @ d7  = t31a, d29 = t28a
-        butterfly       d22, d27, d24, d27 @ d22 = t30,  d27 = t29
-
-        mbutterfly      d27, d20, d0[1], d0[2], q12, q15        @ d27 = t18a, d20 = t29a
-        mbutterfly      d29, d5,  d0[1], d0[2], q12, q15        @ d29 = t19,  d5  = t28
-        mbutterfly      d28, d6,  d0[1], d0[2], q12, q15, neg=1 @ d28 = t27,  d6  = t20
-        mbutterfly      d26, d21, d0[1], d0[2], q12, q15, neg=1 @ d26 = t26a, d21 = t21a
-
-        butterfly       d31, d24, d7,  d4  @ d31 = t31,  d24 = t24
-        butterfly       d30, d25, d22, d23 @ d30 = t30a, d25 = t25a
-        butterfly_r     d23, d16, d16, d18 @ d23 = t23,  d16 = t16
-        butterfly_r     d22, d17, d17, d19 @ d22 = t22a, d17 = t17a
-        butterfly       d18, d21, d27, d21 @ d18 = t18,  d21 = t21
-        butterfly_r     d27, d28, d5,  d28 @ d27 = t27a, d28 = t28a
-        butterfly       d4,  d26, d20, d26 @ d4  = t29,  d26 = t26
-        butterfly       d19, d20, d29, d6  @ d19 = t19a, d20 = t20
-        vmov            d29, d4            @ d29 = t29
-
-        mbutterfly0     d27, d20, d27, d20, d4, d6, q2, q3 @ d27 = t27,  d20 = t20
-        mbutterfly0     d26, d21, d26, d21, d4, d6, q2, q3 @ d26 = t26a, d21 = t21a
-        mbutterfly0     d25, d22, d25, d22, d4, d6, q2, q3 @ d25 = t25,  d22 = t22
-        mbutterfly0     d24, d23, d24, d23, d4, d6, q2, q3 @ d24 = t24a, d23 = t23a
-        bx              lr
+        idct32_end
 endfunc
 
+function idct32_odd_half
+        movrel          r12, idct_coeffs
+        add             r12, r12, #32
+        vld1.16         {q0-q1}, [r12,:128]
+
+        mbutterfly_h1   d16, d31, d0[0], d0[1], q2, q3 @ d16 = t16a, d31 = t31a
+        mbutterfly_h2   d24, d23, d0[2], d0[3], q2, q3 @ d24 = t17a, d23 = t30a
+        mbutterfly_h1   d20, d27, d1[0], d1[1], q2, q3 @ d20 = t18a, d27 = t29a
+        mbutterfly_h2   d28, d19, d1[2], d1[3], q2, q3 @ d28 = t19a, d19 = t28a
+        mbutterfly_h1   d18, d29, d2[0], d2[1], q2, q3 @ d18 = t20a, d29 = t27a
+        mbutterfly_h2   d26, d21, d2[2], d2[3], q2, q3 @ d26 = t21a, d21 = t26a
+        mbutterfly_h1   d22, d25, d3[0], d3[1], q2, q3 @ d22 = t22a, d25 = t25a
+        mbutterfly_h2   d30, d17, d3[2], d3[3], q2, q3 @ d30 = t23a, d17 = t24a
+
+        sub             r12, r12, #32
+        vld1.16         {q0}, [r12,:128]
+
+        butterfly       d4,  d24, d16, d24 @ d4  = t16, d24 = t17
+        butterfly       d5,  d20, d28, d20 @ d5  = t19, d20 = t18
+        butterfly       d6,  d26, d18, d26 @ d6  = t20, d26 = t21
+        butterfly       d7,  d22, d30, d22 @ d7  = t23, d22 = t22
+        butterfly       d28, d25, d17, d25 @ d28 = t24, d25 = t25
+        butterfly       d30, d21, d29, d21 @ d30 = t27, d21 = t26
+        butterfly       d29, d23, d31, d23 @ d29 = t31, d23 = t30
+        butterfly       d31, d27, d19, d27 @ d31 = t28, d27 = t29
+
+        mbutterfly      d23, d24, d0[3], d1[0], q8, q9        @ d23 = t17a, d24 = t30a
+        mbutterfly      d27, d20, d0[3], d1[0], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
+        mbutterfly      d21, d26, d1[1], d1[2], q8, q9        @ d21 = t21a, d26 = t26a
+        mbutterfly      d25, d22, d1[1], d1[2], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
+
+        idct32_end
+endfunc
+
+function idct32_odd_quarter
+        movrel          r12, idct_coeffs
+        add             r12, r12, #32
+        vld1.16         {q0-q1}, [r12,:128]
+
+        vmull.s16       q2,  d16, d0[0]
+        vmull.s16       q14, d19, d1[3]
+        vmull.s16       q15, d16, d0[1]
+        vmull.s16       q11, d17, d3[2]
+        vmull.s16       q3,  d17, d3[3]
+        vmull.s16       q13, d19, d1[2]
+        vmull.s16       q10, d18, d2[0]
+        vmull.s16       q12, d18, d2[1]
+
+        sub             r12, r12, #32
+        vld1.16         {q0}, [r12,:128]
+
+        vneg.s32        q14, q14
+        vneg.s32        q3,  q3
+
+        vrshrn.s32      d4,  q2,  #14
+        vrshrn.s32      d5,  q14, #14
+        vrshrn.s32      d29, q15, #14
+        vrshrn.s32      d28, q11, #14
+        vrshrn.s32      d7,  q3,  #14
+        vrshrn.s32      d31, q13, #14
+        vrshrn.s32      d6,  q10, #14
+        vrshrn.s32      d30, q12, #14
+
+        mbutterfly_l    q8,  q9,  d29, d4,  d0[3], d1[0]
+        mbutterfly_l    q13, q10, d31, d5,  d0[3], d1[0]
+        vrshrn.s32      d23, q8,  #14
+        vrshrn.s32      d24, q9,  #14
+        vneg.s32        q10, q10
+        vrshrn.s32      d27, q13, #14
+        vrshrn.s32      d20, q10, #14
+        mbutterfly_l    q8,  q9,  d30, d6,  d1[1], d1[2]
+        vrshrn.s32      d21, q8,  #14
+        vrshrn.s32      d26, q9,  #14
+        mbutterfly_l    q8,  q9,  d28, d7,  d1[1], d1[2]
+        vrshrn.s32      d25, q8,  #14
+        vneg.s32        q9,  q9
+        vrshrn.s32      d22, q9,  #14
+
+        idct32_end
+endfunc
+
+.macro idct32_funcs suffix
 @ Do an 32-point IDCT of a 4x32 slice out of a 32x32 matrix.
 @ We don't have register space to do a single pass IDCT of 4x32 though,
 @ but the 32-point IDCT can be decomposed into two 16-point IDCTs;
@@ -984,7 +1323,7 @@ endfunc
 @ r0 = dst (temp buffer)
 @ r1 = unused
 @ r2 = src
-function idct32_1d_4x32_pass1_neon
+function idct32_1d_4x32_pass1\suffix\()_neon
         push            {lr}
 
         movrel          r12, idct_coeffs
@@ -995,12 +1334,26 @@ function idct32_1d_4x32_pass1_neon
         vmov.s16        d4, #0
 
         @ d16 = IN(0), d17 = IN(2) ... d31 = IN(30)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64]
         vst1.16         {d4},  [r2,:64], r12
 .endr
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+.endif
 
-        bl              idct16
+        bl              idct16\suffix
 
         @ Do four 4x4 transposes. Originally, d16-d31 contain the
         @ 16 rows. Afterwards, d16-d19, d20-d23, d24-d27, d28-d31
@@ -1026,17 +1379,39 @@ function idct32_1d_4x32_pass1_neon
 
         @ Move r2 back to the start of the input, and move
         @ to the first odd row
+.ifb \suffix
         sub             r2,  r2,  r12, lsl #4
+.endif
+.ifc \suffix,_quarter
+        sub             r2,  r2,  r12, lsl #2
+.endif
+.ifc \suffix,_half
+        sub             r2,  r2,  r12, lsl #3
+.endif
         add             r2,  r2,  #64
 
         vmov.s16        d4, #0
         @ d16 = IN(1), d17 = IN(3) ... d31 = IN(31)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64]
         vst1.16         {d4},  [r2,:64], r12
 .endr
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64]
+        vst1.16         {d4},  [r2,:64], r12
+.endr
+.endif
 
-        bl              idct32_odd
+        bl              idct32_odd\suffix
 
         transpose16_q_4x_4x4 q15, q14, q13, q12, q11, q10, q9,  q8,  d31, d30, d29, d28, d27, d26, d25, d24, d23, d22, d21, d20, d19, d18, d17, d16
 
@@ -1072,19 +1447,33 @@ endfunc
 @ r0 = dst
 @ r1 = dst stride
 @ r2 = src (temp buffer)
-function idct32_1d_4x32_pass2_neon
+function idct32_1d_4x32_pass2\suffix\()_neon
         push            {lr}
         movrel          r12, idct_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 
         mov             r12, #128
         @ d16 = IN(0), d17 = IN(2) ... d31 = IN(30)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64], r12
 .endr
         sub             r2,  r2,  r12, lsl #4
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+        sub             r2,  r2,  r12, lsl #2
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+        sub             r2,  r2,  r12, lsl #3
+.endif
 
-        bl              idct16
+        bl              idct16\suffix
 
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vst1.16         {d\i}, [r2,:64], r12
@@ -1094,13 +1483,27 @@ function idct32_1d_4x32_pass2_neon
         add             r2,  r2,  #64
 
         @ d16 = IN(1), d17 = IN(3) ... d31 = IN(31)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64], r12
 .endr
         sub             r2,  r2,  r12, lsl #4
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+        sub             r2,  r2,  r12, lsl #2
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        vld1.16         {d\i}, [r2,:64], r12
+.endr
+        sub             r2,  r2,  r12, lsl #3
+.endif
         sub             r2,  r2,  #64
 
-        bl              idct32_odd
+        bl              idct32_odd\suffix
 
         mov             r12, #128
 .macro load_acc_store a, b, c, d, neg=0
@@ -1150,6 +1553,11 @@ function idct32_1d_4x32_pass2_neon
 .purgem load_acc_store
         pop             {pc}
 endfunc
+.endm
+
+idct32_funcs
+idct32_funcs _quarter
+idct32_funcs _half
 
 const min_eob_idct_idct_32, align=4
         .short  0, 9, 34, 70, 135, 240, 336, 448
@@ -1172,6 +1580,11 @@ A       and             r7,  sp,  #15
         mov             r4,  r0
         mov             r5,  r1
         mov             r6,  r2
+
+        cmp             r3,  #34
+        ble             idct32x32_quarter_add_neon
+        cmp             r3,  #135
+        ble             idct32x32_half_add_neon
 
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             r0,  sp,  #(\i*64)
@@ -1203,6 +1616,76 @@ A       and             r7,  sp,  #15
         mov             r1,  r5
         add             r2,  sp,  #(\i*2)
         bl              idct32_1d_4x32_pass2_neon
+.endr
+
+        add             sp,  sp,  r7
+        vpop            {q4-q7}
+        pop             {r4-r8,pc}
+endfunc
+
+function idct32x32_quarter_add_neon
+.irp i, 0, 4
+        add             r0,  sp,  #(\i*64)
+.if \i == 4
+        cmp             r3,  #9
+        ble             1f
+.endif
+        add             r2,  r6,  #(\i*2)
+        bl              idct32_1d_4x32_pass1_quarter_neon
+.endr
+        b               3f
+
+1:
+        @ Write zeros to the temp buffer for pass 2
+        vmov.i16        q14, #0
+        vmov.i16        q15, #0
+.rept 8
+        vst1.16         {q14-q15}, [r0,:128]!
+.endr
+3:
+.irp i, 0, 4, 8, 12, 16, 20, 24, 28
+        add             r0,  r4,  #(\i)
+        mov             r1,  r5
+        add             r2,  sp,  #(\i*2)
+        bl              idct32_1d_4x32_pass2_quarter_neon
+.endr
+
+        add             sp,  sp,  r7
+        vpop            {q4-q7}
+        pop             {r4-r8,pc}
+endfunc
+
+function idct32x32_half_add_neon
+.irp i, 0, 4, 8, 12
+        add             r0,  sp,  #(\i*64)
+.if \i > 0
+        ldrh_post       r1,  r8,  #2
+        cmp             r3,  r1
+        it              le
+        movle           r1,  #(16 - \i)/2
+        ble             1f
+.endif
+        add             r2,  r6,  #(\i*2)
+        bl              idct32_1d_4x32_pass1_half_neon
+.endr
+        b               3f
+
+1:
+        @ Write zeros to the temp buffer for pass 2
+        vmov.i16        q14, #0
+        vmov.i16        q15, #0
+2:
+        subs            r1,  r1,  #1
+.rept 4
+        vst1.16         {q14-q15}, [r0,:128]!
+.endr
+        bne             2b
+3:
+.irp i, 0, 4, 8, 12, 16, 20, 24, 28
+        add             r0,  r4,  #(\i)
+        mov             r1,  r5
+        add             r2,  sp,  #(\i*2)
+        bl              idct32_1d_4x32_pass2_half_neon
 .endr
 
         add             sp,  sp,  r7
