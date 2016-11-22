@@ -599,9 +599,9 @@ endfunc
 // x1 = unused
 // x2 = src
 // x3 = slice offset
+// x9 = input stride
 .macro itxfm16_1d_funcs txfm
 function \txfm\()16_1d_8x16_pass1_neon
-        mov             x9, #32
         movi            v2.8h, #0
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         load_clear      \i,  x2,  x9
@@ -649,8 +649,8 @@ endfunc
 // x1 = dst stride
 // x2 = src (temp buffer)
 // x3 = slice offset
+// x9 = temp buffer stride
 function \txfm\()16_1d_8x16_pass2_neon
-        mov             x9, #32
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23
         load            \i,  x2,  x9
 .endr
@@ -747,6 +747,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 .ifc \txfm1,idct
         ld1             {v0.8h,v1.8h}, [x10]
 .endif
+        mov             x9, #32
 
 .irp i, 0, 8
         add             x0,  sp,  #(\i*32)
@@ -882,13 +883,12 @@ endfunc
 // x0 = dst (temp buffer)
 // x1 = unused
 // x2 = src
+// x9 = double input stride
 // x10 = idct_coeffs
 // x11 = idct_coeffs + 32
 function idct32_1d_8x32_pass1_neon
         ld1             {v0.8h,v1.8h}, [x10]
 
-        // Double stride of the input, since we only read every other line
-        mov             x9,  #128
         movi            v4.8h, #0
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
@@ -987,12 +987,13 @@ endfunc
 // x0 = dst
 // x1 = dst stride
 // x2 = src (temp buffer)
+// x7 = negative double temp buffer stride
+// x9 = double temp buffer stride
 // x10 = idct_coeffs
 // x11 = idct_coeffs + 32
 function idct32_1d_8x32_pass2_neon
         ld1             {v0.8h,v1.8h}, [x10]
 
-        mov             x9, #128
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         ld1             {v\i\().8h}, [x2], x9
@@ -1001,7 +1002,6 @@ function idct32_1d_8x32_pass2_neon
 
         idct16
 
-        mov             x9,  #128
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         st1             {v\i\().8h}, [x2], x9
 .endr
@@ -1018,11 +1018,10 @@ function idct32_1d_8x32_pass2_neon
 
         idct32_odd
 
-        mov             x9,  #128
 .macro load_acc_store a, b, c, d, neg=0
+.if \neg == 0
         ld1             {v4.8h},  [x2], x9
         ld1             {v5.8h},  [x2], x9
-.if \neg == 0
         add             v4.8h, v4.8h, v\a\().8h
         ld1             {v6.8h},  [x2], x9
         add             v5.8h, v5.8h, v\b\().8h
@@ -1030,10 +1029,12 @@ function idct32_1d_8x32_pass2_neon
         add             v6.8h, v6.8h, v\c\().8h
         add             v7.8h, v7.8h, v\d\().8h
 .else
+        ld1             {v4.8h},  [x2], x7
+        ld1             {v5.8h},  [x2], x7
         sub             v4.8h, v4.8h, v\a\().8h
-        ld1             {v6.8h},  [x2], x9
+        ld1             {v6.8h},  [x2], x7
         sub             v5.8h, v5.8h, v\b\().8h
-        ld1             {v7.8h},  [x2], x9
+        ld1             {v7.8h},  [x2], x7
         sub             v6.8h, v6.8h, v\c\().8h
         sub             v7.8h, v7.8h, v\d\().8h
 .endif
@@ -1064,7 +1065,6 @@ function idct32_1d_8x32_pass2_neon
         load_acc_store  23, 22, 21, 20
         load_acc_store  19, 18, 17, 16
         sub             x2,  x2,  x9
-        neg             x9,  x9
         load_acc_store  16, 17, 18, 19, 1
         load_acc_store  20, 21, 22, 23, 1
         load_acc_store  24, 25, 26, 27, 1
@@ -1092,6 +1092,10 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
         mov             x4,  x0
         mov             x5,  x1
         mov             x6,  x2
+
+        // Double stride of the input, since we only read every other line
+        mov             x9,  #128
+        neg             x7,  x9
 
 .irp i, 0, 8, 16, 24
         add             x0,  sp,  #(\i*64)
