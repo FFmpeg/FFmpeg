@@ -534,7 +534,7 @@ function idct16x16_dc_add_neon
 endfunc
 .ltorg
 
-.macro idct16
+function idct16
         mbutterfly0     d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
         mbutterfly      d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
         mbutterfly      d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
@@ -580,9 +580,10 @@ endfunc
         vmov            d4,  d21                         @ d4  = t10a
         butterfly       d20, d27, d6,  d27               @ d20 = out[4], d27 = out[11]
         butterfly       d21, d26, d26, d4                @ d21 = out[5], d26 = out[10]
-.endm
+        bx              lr
+endfunc
 
-.macro iadst16
+function iadst16
         movrel          r12, iadst16_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 
@@ -653,7 +654,8 @@ endfunc
 
         vmov            d16, d2
         vmov            d30, d4
-.endm
+        bx              lr
+endfunc
 
 .macro itxfm16_1d_funcs txfm
 @ Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
@@ -662,6 +664,8 @@ endfunc
 @ r1 = slice offset
 @ r2 = src
 function \txfm\()16_1d_4x16_pass1_neon
+        push            {lr}
+
         mov             r12, #32
         vmov.s16        q2, #0
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
@@ -669,7 +673,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         vst1.16         {d4},  [r2,:64], r12
 .endr
 
-        \txfm\()16
+        bl              \txfm\()16
 
         @ Do four 4x4 transposes. Originally, d16-d31 contain the
         @ 16 rows. Afterwards, d16-d19, d20-d23, d24-d27, d28-d31
@@ -682,7 +686,7 @@ function \txfm\()16_1d_4x16_pass1_neon
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
         vst1.16         {d\i}, [r0,:64]!
 .endr
-        bx              lr
+        pop             {pc}
 1:
         @ Special case: For the last input column (r1 == 12),
         @ which would be stored as the last row in the temp buffer,
@@ -709,7 +713,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         vmov            d29, d17
         vmov            d30, d18
         vmov            d31, d19
-        bx              lr
+        pop             {pc}
 endfunc
 
 @ Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
@@ -719,6 +723,7 @@ endfunc
 @ r2 = src (temp buffer)
 @ r3 = slice offset
 function \txfm\()16_1d_4x16_pass2_neon
+        push            {lr}
         mov             r12, #32
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27
         vld1.16         {d\i}, [r2,:64], r12
@@ -732,7 +737,7 @@ function \txfm\()16_1d_4x16_pass2_neon
 
         add             r3,  r0,  r1
         lsl             r1,  r1,  #1
-        \txfm\()16
+        bl              \txfm\()16
 
 .macro load_add_store coef0, coef1, coef2, coef3
         vrshr.s16       \coef0, \coef0, #6
@@ -773,7 +778,7 @@ function \txfm\()16_1d_4x16_pass2_neon
         load_add_store  q12, q13, q14, q15
 .purgem load_add_store
 
-        bx              lr
+        pop             {pc}
 endfunc
 .endm
 
@@ -908,7 +913,7 @@ function idct32x32_dc_add_neon
         bx              lr
 endfunc
 
-.macro idct32_odd
+function idct32_odd
         movrel          r12, idct_coeffs
         add             r12, r12, #32
         vld1.16         {q0-q1}, [r12,:128]
@@ -967,7 +972,8 @@ endfunc
         mbutterfly0     d26, d21, d26, d21, d4, d6, q2, q3 @ d26 = t26a, d21 = t21a
         mbutterfly0     d25, d22, d25, d22, d4, d6, q2, q3 @ d25 = t25,  d22 = t22
         mbutterfly0     d24, d23, d24, d23, d4, d6, q2, q3 @ d24 = t24a, d23 = t23a
-.endm
+        bx              lr
+endfunc
 
 @ Do an 32-point IDCT of a 4x32 slice out of a 32x32 matrix.
 @ We don't have register space to do a single pass IDCT of 4x32 though,
@@ -979,6 +985,8 @@ endfunc
 @ r1 = unused
 @ r2 = src
 function idct32_1d_4x32_pass1_neon
+        push            {lr}
+
         movrel          r12, idct_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 
@@ -992,7 +1000,7 @@ function idct32_1d_4x32_pass1_neon
         vst1.16         {d4},  [r2,:64], r12
 .endr
 
-        idct16
+        bl              idct16
 
         @ Do four 4x4 transposes. Originally, d16-d31 contain the
         @ 16 rows. Afterwards, d16-d19, d20-d23, d24-d27, d28-d31
@@ -1028,7 +1036,7 @@ function idct32_1d_4x32_pass1_neon
         vst1.16         {d4},  [r2,:64], r12
 .endr
 
-        idct32_odd
+        bl              idct32_odd
 
         transpose16_q_4x_4x4 q15, q14, q13, q12, q11, q10, q9,  q8,  d31, d30, d29, d28, d27, d26, d25, d24, d23, d22, d21, d20, d19, d18, d17, d16
 
@@ -1054,7 +1062,7 @@ function idct32_1d_4x32_pass1_neon
         store_rev       29, 25, 21, 17
         store_rev       28, 24, 20, 16
 .purgem store_rev
-        bx              lr
+        pop             {pc}
 endfunc
 .ltorg
 
@@ -1065,6 +1073,7 @@ endfunc
 @ r1 = dst stride
 @ r2 = src (temp buffer)
 function idct32_1d_4x32_pass2_neon
+        push            {lr}
         movrel          r12, idct_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 
@@ -1075,7 +1084,7 @@ function idct32_1d_4x32_pass2_neon
 .endr
         sub             r2,  r2,  r12, lsl #4
 
-        idct16
+        bl              idct16
 
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vst1.16         {d\i}, [r2,:64], r12
@@ -1091,7 +1100,7 @@ function idct32_1d_4x32_pass2_neon
         sub             r2,  r2,  r12, lsl #4
         sub             r2,  r2,  #64
 
-        idct32_odd
+        bl              idct32_odd
 
         mov             r12, #128
 .macro load_acc_store a, b, c, d, neg=0
@@ -1139,7 +1148,7 @@ function idct32_1d_4x32_pass2_neon
         load_acc_store  24, 25, 26, 27, 1
         load_acc_store  28, 29, 30, 31, 1
 .purgem load_acc_store
-        bx              lr
+        pop             {pc}
 endfunc
 
 const min_eob_idct_idct_32, align=4
