@@ -44,7 +44,20 @@
 #include <unistd.h>
 #endif
 
-static int flags, checked;
+static int cpu_flags = -1;
+
+static int get_cpu_flags(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_flags_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_flags_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_flags_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_flags_x86();
+    return 0;
+}
 
 void av_force_cpu_flags(int arg){
     if (   (arg & ( AV_CPU_FLAG_3DNOW    |
@@ -69,33 +82,22 @@ void av_force_cpu_flags(int arg){
         arg |= AV_CPU_FLAG_MMX;
     }
 
-    flags   = arg;
-    checked = arg != -1;
+    cpu_flags = arg;
 }
 
 int av_get_cpu_flags(void)
 {
-    if (checked)
-        return flags;
-
-    if (ARCH_AARCH64)
-        flags = ff_get_cpu_flags_aarch64();
-    if (ARCH_ARM)
-        flags = ff_get_cpu_flags_arm();
-    if (ARCH_PPC)
-        flags = ff_get_cpu_flags_ppc();
-    if (ARCH_X86)
-        flags = ff_get_cpu_flags_x86();
-
-    checked = 1;
+    int flags = cpu_flags;
+    if (flags == -1) {
+        flags = get_cpu_flags();
+        cpu_flags = flags;
+    }
     return flags;
 }
 
 void av_set_cpu_flags_mask(int mask)
 {
-    checked       = 0;
-    flags         = av_get_cpu_flags() & mask;
-    checked       = 1;
+    cpu_flags = get_cpu_flags() & mask;
 }
 
 int av_parse_cpu_flags(const char *s)
