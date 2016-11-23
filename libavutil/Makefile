@@ -187,6 +187,7 @@ TESTPROGS = adler32                                                     \
             camellia                                                    \
             color_utils                                                 \
             cpu                                                         \
+            cpu_init                                                    \
             crc                                                         \
             des                                                         \
             dict                                                        \
