@@ -360,7 +360,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         if (k) {
-            if (k > MIN_CACHE_BITS) {
+            if (k >= 32 || unary > INT32_MAX >> k) {
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
