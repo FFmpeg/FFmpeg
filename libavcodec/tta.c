@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "unary.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2
@@ -169,16 +170,6 @@ static void rice_init(TTARice *c, uint32_t k0, uint32_t k1)
     c->k1 = k1;
     c->sum0 = shift_16[k0];
     c->sum1 = shift_16[k1];
-}
-
-static int tta_get_unary(GetBitContext *gb)
-{
-    int ret = 0;
-
-    // count ones
-    while (get_bits_left(gb) > 0 && get_bits1(gb))
-        ret++;
-    return ret;
 }
 
 static int tta_check_crc(TTAContext *s, const uint8_t *buf, int buf_size)
@@ -352,7 +343,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         uint32_t unary, depth, k;
         int32_t value;
 
-        unary = tta_get_unary(&s->gb);
+        unary = get_unary(&s->gb, 0, get_bits_left(&s->gb));
 
         if (unary == 0) {
             depth = 0;
