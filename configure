@@ -4620,7 +4620,7 @@ ldexpf_args=2
 powf_args=2
 
 for func in $MATH_FUNCS; do
-    eval check_mathfunc $func \${${func}_args:-1}
+    eval check_mathfunc $func \${${func}_args:-1} $LIBM
 done
 
 # these are off by default, so fail if requested and not available
