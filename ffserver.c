@@ -3599,57 +3599,6 @@ static void remove_stream(FFServerStream *stream)
     }
 }
 
-/* specific MPEG4 handling : we extract the raw parameters */
-static void extract_mpeg4_header(AVFormatContext *infile)
-{
-    int mpeg4_count, i, size;
-    AVPacket pkt;
-    AVStream *st;
-    const uint8_t *p;
-
-    infile->flags |= AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE;
-
-    mpeg4_count = 0;
-    for(i=0;i<infile->nb_streams;i++) {
-        st = infile->streams[i];
-        if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
-            st->codec->extradata_size == 0) {
-            mpeg4_count++;
-        }
-    }
-    if (!mpeg4_count)
-        return;
-
-    printf("MPEG4 without extra data: trying to find header in %s\n",
-           infile->filename);
-    while (mpeg4_count > 0) {
-        if (av_read_frame(infile, &pkt) < 0)
-            break;
-        st = infile->streams[pkt.stream_index];
-        if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
-            st->codec->extradata_size == 0) {
-            av_freep(&st->codec->extradata);
-            /* fill extradata with the header */
-            /* XXX: we make hard suppositions here ! */
-            p = pkt.data;
-            while (p < pkt.data + pkt.size - 4) {
-                /* stop when vop header is found */
-                if (p[0] == 0x00 && p[1] == 0x00 &&
-                    p[2] == 0x01 && p[3] == 0xb6) {
-                    size = p - pkt.data;
-                    st->codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-                    st->codec->extradata_size = size;
-                    memcpy(st->codec->extradata, pkt.data, size);
-                    break;
-                }
-                p++;
-            }
-            mpeg4_count--;
-        }
-        av_packet_unref(&pkt);
-    }
-}
-
 /* compute the needed AVStream for each file */
 static void build_file_streams(void)
 {
@@ -3700,7 +3649,6 @@ static void build_file_streams(void)
                 avformat_close_input(&infile);
                 goto fail;
             }
-            extract_mpeg4_header(infile);
 
             for(i=0;i<infile->nb_streams;i++)
                 add_av_stream1(stream, infile->streams[i]->codec, 1);
