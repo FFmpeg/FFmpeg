@@ -35,12 +35,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
-#if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
-#include <gcrypt.h>
-#include "libavutil/thread.h"
-GCRY_THREAD_OPTION_PTHREAD_IMPL;
-#endif
-
 typedef struct TLSContext {
     const AVClass *class;
     TLSShared tls_shared;
@@ -52,10 +46,6 @@ typedef struct TLSContext {
 void ff_gnutls_init(void)
 {
     avpriv_lock_avformat();
-#if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
-    if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
-        gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
-#endif
     gnutls_global_init();
     avpriv_unlock_avformat();
 }

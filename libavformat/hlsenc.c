@@ -24,9 +24,7 @@
 
 #include <config.h>
 
-#if CONFIG_GCRYPT
-#include <gcrypt.h>
-#elif CONFIG_OPENSSL
+#if CONFIG_OPENSSL
 #include <openssl/rand.h>
 #endif
 
@@ -86,10 +84,7 @@ typedef struct HLSContext {
 
 static int randomize(uint8_t *buf, int len)
 {
-#if CONFIG_GCRYPT
-    gcry_randomize(buf, len, GCRY_VERY_STRONG_RANDOM);
-    return 0;
-#elif CONFIG_OPENSSL
+#if CONFIG_OPENSSL
     if (RAND_bytes(buf, len))
         return 0;
     return AVERROR(EIO);

@@ -107,24 +107,6 @@ static int bn_modexp(FFBigNum bn, FFBigNum y, FFBigNum q, FFBigNum p)
     mpz_powm(bn, y, q, p);
     return 0;
 }
-#elif CONFIG_GCRYPT
-#define bn_new(bn)                  bn = gcry_mpi_new(1)
-#define bn_free(bn)                 gcry_mpi_release(bn)
-#define bn_set_word(bn, w)          gcry_mpi_set_ui(bn, w)
-#define bn_cmp(a, b)                gcry_mpi_cmp(a, b)
-#define bn_copy(to, from)           gcry_mpi_set(to, from)
-#define bn_sub_word(bn, w)          gcry_mpi_sub_ui(bn, bn, w)
-#define bn_cmp_1(bn)                gcry_mpi_cmp_ui(bn, 1)
-#define bn_num_bytes(bn)            (gcry_mpi_get_nbits(bn) + 7) / 8
-#define bn_bn2bin(bn, buf, len)     gcry_mpi_print(GCRYMPI_FMT_USG, buf, len, NULL, bn)
-#define bn_bin2bn(bn, buf, len)     gcry_mpi_scan(&bn, GCRYMPI_FMT_USG, buf, len, NULL)
-#define bn_hex2bn(bn, buf, ret)     ret = (gcry_mpi_scan(&bn, GCRYMPI_FMT_HEX, buf, 0, 0) == 0)
-#define bn_random(bn, num_bits)     gcry_mpi_randomize(bn, num_bits, GCRY_WEAK_RANDOM)
-static int bn_modexp(FFBigNum bn, FFBigNum y, FFBigNum q, FFBigNum p)
-{
-    gcry_mpi_powm(bn, y, q, p);
-    return 0;
-}
 #elif CONFIG_OPENSSL
 #define bn_new(bn)                  bn = BN_new()
 #define bn_free(bn)                 BN_free(bn)

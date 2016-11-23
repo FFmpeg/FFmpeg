@@ -30,11 +30,6 @@
 #include <gmp.h>
 
 typedef mpz_ptr FFBigNum;
-#elif CONFIG_GCRYPT
-#include <gcrypt.h>
-
-typedef gcry_mpi_t FFBigNum;
-
 #elif CONFIG_OPENSSL
 #include <openssl/bn.h>
 #include <openssl/dh.h>

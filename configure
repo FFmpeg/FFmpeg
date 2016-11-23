@@ -1700,7 +1700,6 @@ CONFIG_EXTRA="
     flacdsp
     fmtconvert
     g722dsp
-    gcrypt
     gmp
     golomb
     gplv3
@@ -2387,7 +2386,7 @@ xcbgrab_indev_deps="libxcb"
 
 # protocols
 ffrtmpcrypt_protocol_deps="!librtmp_protocol"
-ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
+ffrtmpcrypt_protocol_deps_any="gmp openssl"
 ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_deps="!librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
@@ -4717,10 +4716,7 @@ enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
 
-if enabled gnutls; then
-    { check_lib gmp.h mpz_export -lgmp && enable gmp; } ||
-    { check_lib gcrypt.h gcry_mpi_new -lgcrypt && enable gcrypt; }
-fi
+enabled gnutls            && check_lib gmp.h mpz_export -lgmp && enable gmp
 
 # libdc1394 check
 if enabled libdc1394; then
