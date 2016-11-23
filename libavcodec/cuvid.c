@@ -664,6 +664,21 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     const AVBitStreamFilter *bsf;
     int ret = 0;
 
+    enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
+                                       AV_PIX_FMT_NV12,
+                                       AV_PIX_FMT_NONE };
+
+    // Accelerated transcoding scenarios with 'ffmpeg' require that the
+    // pix_fmt be set to AV_PIX_FMT_CUDA early. The sw_pix_fmt, and the
+    // pix_fmt for non-accelerated transcoding, do not need to be correct
+    // but need to be set to something. We arbitrarily pick NV12.
+    ret = ff_get_format(avctx, pix_fmts);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_get_format failed: %d\n", ret);
+        return ret;
+    }
+    avctx->pix_fmt = ret;
+
     ret = cuvid_load_functions(&ctx->cvdl);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
