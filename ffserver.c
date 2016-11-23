@@ -2213,7 +2213,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     c->pts_stream_index = 0;
     for(i=0;i<c->stream->nb_streams;i++) {
         if (c->pts_stream_index == 0 &&
-            c->stream->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            c->stream->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             c->pts_stream_index = i;
         }
     }
