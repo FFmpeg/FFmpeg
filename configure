@@ -1189,6 +1189,19 @@ check_cpp_condition(){
 EOF
 }
 
+test_cflags_cpp(){
+    log test_cflags_cpp "$@"
+    flags=$1
+    condition=$2
+    shift 2
+    set -- $($cflags_filter "$flags")
+    check_cpp "$@" <<EOF
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
+EOF
+}
+
 check_lib(){
     log check_lib "$@"
     header="$1"
@@ -1836,6 +1849,7 @@ HEADERS_LIST="
     poll_h
     sndio_h
     soundcard_h
+    stdatomic_h
     sys_mman_h
     sys_param_h
     sys_resource_h
@@ -4579,7 +4593,15 @@ fi
 add_cppflags -D_ISOC99_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
 add_cxxflags -std=c++98
-check_cflags -std=c99
+
+# some compilers silently accept -std=c11, so we also need to check that the
+# version macro is defined properly
+if test_cflags_cpp -std=c11 "__STDC_VERSION__ >= 201112L"; then
+    add_cflags -std=c11
+else
+    check_cflags -std=c99
+fi
+
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
 EOF
@@ -5568,6 +5590,11 @@ enabled videotoolbox && check_func_headers CoreVideo/CVImageBuffer.h kCVImageBuf
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
+
+# it seems there are versions of clang in some distros that try to use the
+# gcc headers, which explodes for stdatomic
+# so we also check that atomics actually work here
+check_builtin stdatomic_h stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
 
 check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
