@@ -19,6 +19,7 @@
 #include <va/va.h>
 #include <va/va_dec_vp8.h>
 
+#include "hwaccel.h"
 #include "vaapi_decode.h"
 #include "vp8.h"
 
@@ -231,4 +232,5 @@ AVHWAccel ff_vp8_vaapi_hwaccel = {
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };

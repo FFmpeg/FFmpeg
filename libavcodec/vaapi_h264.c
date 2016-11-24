@@ -22,6 +22,7 @@
 
 #include "h264dec.h"
 #include "h264_ps.h"
+#include "hwaccel.h"
 #include "vaapi_decode.h"
 
 /**
@@ -399,4 +400,5 @@ AVHWAccel ff_h264_vaapi_hwaccel = {
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };

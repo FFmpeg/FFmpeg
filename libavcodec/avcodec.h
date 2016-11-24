@@ -3375,6 +3375,11 @@ typedef struct AVHWAccel {
      * AVCodecInternal.hwaccel_priv_data.
      */
     int priv_data_size;
+
+    /**
+     * Internal hwaccel capabilities.
+     */
+    int caps_internal;
 } AVHWAccel;
 
 /**
