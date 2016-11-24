@@ -289,6 +289,31 @@ fate-png: $(FATE_PNG-yes)
 FATE_IMAGE-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(TARGET_SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 
+define FATE_IMGSUITE_PSD
+FATE_PSD += fate-psd-$(1)
+fate-psd-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-$(1).psd -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
+endef
+
+PSD_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64 ya8 ya16
+$(foreach CLSP,$(PSD_COLORSPACES),$(eval $(call FATE_IMGSUITE_PSD,$(CLSP))))
+
+FATE_PSD += fate-psd-lena-127x127-rgb24
+fate-psd-lena-127x127-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-127x127_rgb24.psd
+
+FATE_PSD += fate-psd-lena-rgb-rle-127x127-16b
+fate-psd-lena-rgb-rle-127x127-16b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgb_rle_127x127_16b.psd
+
+FATE_PSD += fate-psd-lena-rgb-rle-127x127-8b
+fate-psd-lena-rgb-rle-127x127-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgb_rle_127x127_8b.psd
+
+FATE_PSD += fate-psd-lena-rgba-rle-128x128-8b
+fate-psd-lena-rgba-rle-128x128-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgba_rle_128x128_8b.psd
+
+FATE_PSD-$(call DEMDEC, IMAGE2, PSD) += $(FATE_PSD)
+
+FATE_IMAGE += $(FATE_PSD-yes)
+fate-psd: $(FATE_PSD-yes)
+
 define FATE_IMGSUITE_SGI
 FATE_SGI += fate-sgi-$(1) fate-sgi-$(1)-rle
 fate-sgi-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/sgi/libav_$(1).sgi -sws_flags +accurate_rnd+bitexact
