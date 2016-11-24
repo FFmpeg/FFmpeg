@@ -3139,7 +3139,7 @@ int main(int argc, char **argv)
     char *w_name = NULL, *w_args = NULL;
     int ret, i;
 
-    av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    av_log_set_flags(AV_LOG_SKIP_REPEATED | AV_LOG_PRINT_LEVEL);
     register_exit(ffprobe_cleanup);
 
     options = real_options;

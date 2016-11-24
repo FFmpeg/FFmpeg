@@ -47,6 +47,7 @@ typedef struct MOVIentry {
     int64_t      dts;
     unsigned int size;
     unsigned int samples_in_chunk;
+    unsigned int samples_in_chunk_first;
     unsigned int chunkNum;              ///< Chunk number if the current entry is a chunk start otherwise 0
     unsigned int entries;
     int          cts;
@@ -194,6 +195,9 @@ typedef struct MOVMuxContext {
 
     int frag_interleave;
     int missing_duration_warned;
+
+    int moov_commit_period;
+    int moov_commit_on_next_keyframe;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)

@@ -1872,6 +1872,18 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     for (i = 0; i < mxf_h264_num_codec_uls; i++) {
         if (frame_size == mxf_h264_codec_uls[i].frame_size && sc->interlaced == mxf_h264_codec_uls[i].interlaced) {
             sc->codec_ul = &mxf_h264_codec_uls[i].uid;
+            mxf->edit_unit_byte_count = KAG_SIZE;
+            for (i = 0; i < s->nb_streams; i++) {
+                AVStream *st = s->streams[i];
+                MXFStreamContext *sc = st->priv_data;
+                if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+                    mxf->edit_unit_byte_count += 16 + 4 + sc->aic.samples[0]*sc->aic.sample_size;
+                    mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+                } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    mxf->edit_unit_byte_count += 16 + 4 + frame_size;
+                    mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+                }
+            }
             return 1;
         } else if (st->codec->profile == mxf_h264_codec_uls[i].profile) {
             sc->codec_ul = &mxf_h264_codec_uls[i].uid;

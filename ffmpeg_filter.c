@@ -385,7 +385,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         char args[255];
         AVFilterContext *filter;
 
-        snprintf(args, sizeof(args), "%d:%d:0x%X",
+        snprintf(args, sizeof(args), "%d:%d:0x%X:interl=-1",
                  codec->width,
                  codec->height,
                  (unsigned)ost->sws_flags);
@@ -917,7 +917,7 @@ int configure_filtergraph(FilterGraph *fg)
         char args[512];
         AVDictionaryEntry *e = NULL;
 
-        snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
+        snprintf(args, sizeof(args), "flags=0x%X:interl=-1", (unsigned)ost->sws_flags);
         fg->graph->scale_sws_opts = av_strdup(args);
 
         args[0] = 0;

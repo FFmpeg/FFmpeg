@@ -530,6 +530,8 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
 
+OBJS-$(CONFIG_WFM_MUXER)            += wfmenc.o
+
 OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 # libavdevice dependencies

@@ -134,6 +134,10 @@ static uint8_t *subtitle_out;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
+static int64_t incomplete_last_check_time = 0;
+static int incomplete_last_state = 0;
+#define INCOMPLETE_FILENAME_SUFFIX ".incompletelock"
+
 InputStream **input_streams = NULL;
 int        nb_input_streams = 0;
 InputFile   **input_files   = NULL;
@@ -3576,6 +3580,39 @@ static void reset_eagain(void)
 }
 
 /*
+ * check if file has incomplete flag
+ *
+ */
+static int is_incomplete(InputFile *file) {
+	size_t filename_len, ext_len;
+	char *lock_name;
+
+	if (av_gettime_relative() - incomplete_last_check_time < 500000)
+		return incomplete_last_state;
+
+	char *proto = avio_find_protocol_name(file->ctx->filename);
+	if (strcmp(proto,"file"))
+		return 0;
+
+	incomplete_last_check_time = av_gettime_relative();
+
+	ext_len = strlen(INCOMPLETE_FILENAME_SUFFIX);
+	filename_len = strlen(file->ctx->filename);
+	lock_name = av_malloc(filename_len + ext_len + 2);
+
+	av_strlcpy(lock_name, file->ctx->filename, filename_len + 1);
+	av_strlcat(lock_name, INCOMPLETE_FILENAME_SUFFIX, filename_len + ext_len + 2);
+
+	if (avio_check(lock_name, AVIO_FLAG_READ) < 0) {
+		incomplete_last_state = 0;
+	} else {
+		incomplete_last_state = 1;
+	}
+
+	return incomplete_last_state;
+}
+
+/*
  * Return
  * - 0 -- one packet was read and processed
  * - AVERROR(EAGAIN) -- no packets were available for selected file,
@@ -3591,6 +3628,15 @@ static int process_input(int file_index)
     int ret, i, j;
 
     is  = ifile->ctx;
+    if (is_incomplete(ifile)) {
+    	int64_t pos = avio_tell(is->pb);
+    	int64_t size = avio_size(is->pb);
+    	int64_t byte_rate = is->bit_rate > 10000000 ? is->bit_rate / 8 : 1250000;
+    	if (size - pos < byte_rate * 2) { // 2sec for safety
+    		usleep(100000);
+    		return AVERROR(EAGAIN);
+    	}
+    }
     ret = get_input_packet(ifile, &pkt);
 
     if (ret == AVERROR(EAGAIN)) {
@@ -4077,7 +4123,7 @@ int main(int argc, char **argv)
 
     setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
 
-    av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    av_log_set_flags(AV_LOG_SKIP_REPEATED | AV_LOG_PRINT_LEVEL);
     parse_loglevel(argc, argv, options);
 
     if(argc>1 && !strcmp(argv[1], "-d")){

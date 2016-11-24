@@ -82,6 +82,7 @@ static const AVOption options[] = {
     { "fragment_index", "Fragment number of the next fragment", offsetof(MOVMuxContext, fragments), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_interleave", "Interleave samples within fragments (max number of consecutive samples, lower is tighter interleaving, but with more overhead)", offsetof(MOVMuxContext, frag_interleave), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+	{ "moov_commit_period", "MOOV commit period (seconds)", offsetof(MOVMuxContext, moov_commit_period), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -3152,23 +3153,27 @@ static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
     return 0;
 }
 
-static void build_chunks(MOVTrack *trk)
+static void build_chunks(MOVTrack *trk,MOVMuxContext *mov)
 {
     int i;
     MOVIentry *chunk = &trk->cluster[0];
     uint64_t chunkSize = chunk->size;
     chunk->chunkNum = 1;
-    if (trk->chunkCount)
+    if (trk->chunkCount && !mov->moov_commit_period)
         return;
     trk->chunkCount = 1;
+    //av_log(trk->enc,AV_LOG_WARNING,"samples -> %d\n",chunk->samples_in_chunk);
+    chunk->samples_in_chunk = chunk->samples_in_chunk_first;
     for (i = 1; i<trk->entry; i++){
         if (chunk->pos + chunkSize == trk->cluster[i].pos &&
             chunkSize + trk->cluster[i].size < (1<<20)){
             chunkSize             += trk->cluster[i].size;
-            chunk->samples_in_chunk += trk->cluster[i].entries;
+           	chunk->samples_in_chunk += trk->cluster[i].entries;
         } else {
             trk->cluster[i].chunkNum = chunk->chunkNum+1;
             chunk=&trk->cluster[i];
+            //av_log(trk->enc,AV_LOG_WARNING,"samples -> %d\n",chunk->samples_in_chunk);
+            chunk->samples_in_chunk = chunk->samples_in_chunk_first;
             chunkSize = chunk->size;
             trk->chunkCount++;
         }
@@ -3191,7 +3196,7 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov->tracks[i].track_id = i + 1;
 
         if (mov->tracks[i].entry)
-            build_chunks(&mov->tracks[i]);
+            build_chunks(&mov->tracks[i],mov);
     }
 
     if (mov->chapter_track)
@@ -4339,6 +4344,56 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    if (mov->moov_commit_period) {
+       	MOVTrack *track = &mov->tracks[0];
+        // try to flush buffer
+        if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
+         	// check if should commit
+            int64_t duration = av_rescale_q(trk->track_duration,s->streams[pkt->stream_index]->time_base,AV_TIME_BASE_Q);
+            if (duration != 0 && (duration % (mov->moov_commit_period * 1000000)) < 1000000) {
+              	mov->moov_commit_on_next_keyframe = 1;
+              	av_log(s, AV_LOG_DEBUG, "should commit at %ld\n",duration);
+            } else if (mov->moov_commit_on_next_keyframe == 1 && (pkt->flags & AV_PKT_FLAG_KEY) && track->mdat_buf) {
+              	av_log(s, AV_LOG_DEBUG, "commit at %ld\n",duration);
+               	mov->moov_commit_on_next_keyframe = 0;
+               	// flush buffer
+               	uint8_t *buf;
+               	int buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
+               	track->mdat_buf = NULL;
+               	avio_write(s->pb, buf, buf_size);
+              	av_free(buf);
+                // remember moov pos
+                int64_t pos = avio_tell(s->pb);
+               	// update mdat
+               	if (mov->mdat_size + 8 <= UINT32_MAX) {
+               	  	avio_seek(pb, mov->mdat_pos, SEEK_SET);
+               	    avio_wb32(pb, mov->mdat_size + 8);
+               	} else {
+               	  	/* overwrite 'wide' placeholder atom */
+               	    avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);
+               	    /* special value: real atom size will be 64 bit value after
+               	     * tag field */
+               	    avio_wb32(pb, 1);
+               	    ffio_wfourcc(pb, "mdat");
+               	    avio_wb64(pb, mov->mdat_size + 16);
+               	}
+               	// update moov
+               	avio_seek(s->pb, pos, SEEK_SET);
+               	mov_write_moov_tag(s->pb, mov, s);
+               	// flush
+               	avio_flush(s->pb);
+               	avio_seek(s->pb, pos, SEEK_SET);
+            }
+        }
+        // check/create buffer
+        if (!track->mdat_buf) {
+          	int ret;
+            if ((ret = avio_open_dyn_buf(&track->mdat_buf)) < 0)
+            	return ret;
+        }
+        pb = track->mdat_buf;
+    }
+
     if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
         /* We must find out how many AMR blocks there are in one packet */
         static uint16_t packed_size[16] =
@@ -4438,8 +4493,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->cluster_capacity = new_capacity;
     }
 
-    trk->cluster[trk->entry].pos              = avio_tell(pb) - size;
+    if (mov->moov_commit_period) {
+       	trk->cluster[trk->entry].pos = avio_tell(s->pb) + avio_tell(pb) - size;
+    } else {
+      	trk->cluster[trk->entry].pos = avio_tell(pb) - size;
+    }
     trk->cluster[trk->entry].samples_in_chunk = samples_in_chunk;
+    trk->cluster[trk->entry].samples_in_chunk_first = samples_in_chunk;
     trk->cluster[trk->entry].chunkNum         = 0;
     trk->cluster[trk->entry].size             = size;
     trk->cluster[trk->entry].entries          = samples_in_chunk;
@@ -4944,6 +5004,7 @@ static int mov_write_header(AVFormatContext *s)
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *t, *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
     int i, ret, hint_track = 0, tmcd_track = 0;
+    mov->moov_commit_on_next_keyframe = 0;
 
     mov->fc = s;
 
@@ -5463,6 +5524,18 @@ static int mov_write_trailer(AVFormatContext *s)
             mov_write_subtitle_end_packet(s, i, trk->track_duration);
             trk->last_sample_is_subtitle_end = 1;
         }
+    }
+
+    if (mov->moov_commit_period) {
+        // try to flush buffer
+        MOVTrack *track = &mov->tracks[0];
+        if (track->mdat_buf) {
+           	uint8_t *buf;
+       		int buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
+       		track->mdat_buf = NULL;
+       		avio_write(s->pb, buf, buf_size);
+       		av_free(buf);
+      	}
     }
 
     // If there were no chapters when the header was written, but there

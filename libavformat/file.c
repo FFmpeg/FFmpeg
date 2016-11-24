@@ -142,6 +142,20 @@ static int file_open(URLContext *h, const char *filename, int flags)
 
     av_strstart(filename, "file:", &filename);
 
+#if !defined(_WIN32)
+    if (flags & AVIO_FLAG_WRITE) {
+    	char *name = av_strdup(filename);
+    	const char *path = av_dirname(name);
+    	if (stat(path, &st) == -1) {
+    		char *mkdir = av_mallocz(strlen(path) + 100);
+    		sprintf(mkdir,"mkdir -p '%s'",path);
+    		av_log(c, AV_LOG_WARNING,"Creating directory %s\n",mkdir);
+    		system(mkdir);
+    	}
+    	av_free(name);
+    }
+#endif
+
     if (flags & AVIO_FLAG_WRITE && flags & AVIO_FLAG_READ) {
         access = O_CREAT | O_RDWR;
         if (c->trunc)

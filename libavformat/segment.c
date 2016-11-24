@@ -248,7 +248,9 @@ static int segment_start(AVFormatContext *s, int write_header)
         av_opt_set(oc->priv_data, "mpegts_flags", "+resend_headers", 0);
 
     if (write_header) {
-        if ((err = avformat_write_header(oc, NULL)) < 0)
+    	AVDictionary *options = NULL;
+    	av_dict_copy(&options, seg->format_options, 0);
+        if ((err = avformat_write_header(oc, &options)) < 0)
             return err;
     }
 
