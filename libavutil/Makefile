@@ -166,7 +166,8 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
 
-SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda.h
+SKIPHEADERS-$(HAVE_CUDA_H)             += hwcontext_cuda.h
+SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_QSV)           += hwcontext_qsv.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h

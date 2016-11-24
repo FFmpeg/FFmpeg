@@ -1809,6 +1809,7 @@ HEADERS_LIST="
     asm_types_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
+    cuda_h
     dispatch_dispatch_h
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -5657,6 +5658,7 @@ done
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
+enabled cuda              && check_header cuda.h # this is not a dependency
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
