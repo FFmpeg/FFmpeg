@@ -496,7 +496,12 @@ static int swri_resample(ResampleContext *c,
 
         dst_size = FFMIN(dst_size, delta_n);
         if (dst_size > 0) {
-            *consumed = c->dsp.resample(c, dst, src, dst_size, update_ctx);
+            /* resample_linear and resample_common should have same behavior
+             * when frac and dst_incr_mod are zero */
+            if (c->linear && (c->frac || c->dst_incr_mod))
+                *consumed = c->dsp.resample_linear(c, dst, src, dst_size, update_ctx);
+            else
+                *consumed = c->dsp.resample_common(c, dst, src, dst_size, update_ctx);
         } else {
             *consumed = 0;
         }
