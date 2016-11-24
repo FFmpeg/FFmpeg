@@ -21,6 +21,7 @@
  */
 
 #include "h263.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "mpeg4video.h"
 #include "mpegvideo.h"
@@ -189,6 +190,7 @@ AVHWAccel ff_mpeg4_vaapi_hwaccel = {
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif
 
@@ -205,5 +207,6 @@ AVHWAccel ff_h263_vaapi_hwaccel = {
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif

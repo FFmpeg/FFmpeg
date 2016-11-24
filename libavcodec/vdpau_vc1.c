@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "vc1.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -147,6 +148,7 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .init           = vdpau_vc1_init,
     .uninit         = ff_vdpau_common_uninit,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif
 
@@ -162,4 +164,5 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .init           = vdpau_vc1_init,
     .uninit         = ff_vdpau_common_uninit,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
