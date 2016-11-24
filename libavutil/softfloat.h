@@ -27,7 +27,7 @@
 #include "avassert.h"
 #include "softfloat_tables.h"
 
-#define MIN_EXP -126
+#define MIN_EXP -149
 #define MAX_EXP  126
 #define ONE_BITS 29
 
