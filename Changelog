@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.1:
+- mss2: only use error correction for matching block counts
+- softfloat: decrease MIN_EXP to cover full float range
+- libopusdec: default to stereo for invalid number of channels
+- flvdec: require need_context_update when changing codec id
+- pgssubdec: only set w/h/linesize when allocating data
+- sbgdec: prevent NULL pointer access
+- rmdec: validate block alignment
+- smacker: limit recursion depth of smacker_decode_bigtree
+- mxfdec: fix NULL pointer dereference in mxf_read_packet_old
+- ffmdec: validate codec parameters
 - avformat/mpeg: Adjust vid probe threshold to correct mis-detection
 - avcodec/ass_split: Change order of operations in ass_split_section()
 - avcodec/rawdec: check for side data before checking its size
