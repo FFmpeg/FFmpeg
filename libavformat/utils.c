@@ -3695,9 +3695,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (!has_codec_parameters(st, NULL)) {
                 const AVCodec *codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
                 if (codec && !avctx->codec) {
-                    if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
+                    AVDictionary *opts = NULL;
+                    if (ic->codec_whitelist)
+                        av_dict_set(&opts, "codec_whitelist", ic->codec_whitelist, 0);
+                    if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : &opts) < 0)
                         av_log(ic, AV_LOG_WARNING,
                             "Failed to open codec in av_find_stream_info\n");
+                    av_dict_free(&opts);
                 }
             }
 
