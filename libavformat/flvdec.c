@@ -67,6 +67,7 @@ typedef struct FLVContext {
     int64_t *keyframe_times;
     int64_t *keyframe_filepositions;
     int missing_streams;
+    AVRational framerate;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -142,8 +143,10 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     if (codec_type == AVMEDIA_TYPE_AUDIO)
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
-    if (codec_type == AVMEDIA_TYPE_VIDEO)
+    if (codec_type == AVMEDIA_TYPE_VIDEO) {
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
+        st->avg_frame_rate = flv->framerate;
+    }
 
 
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
@@ -555,6 +558,10 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                     if (!st)
                         return AVERROR(ENOMEM);
                     st->codecpar->codec_id = AV_CODEC_ID_TEXT;
+                } else if (!strcmp(key, "framerate")) {
+                    flv->framerate = av_d2q(num_val, 1000);
+                    if (vstream)
+                        vstream->avg_frame_rate = flv->framerate;
                 } else if (flv->trust_metadata) {
                     if (!strcmp(key, "videocodecid") && vpar) {
                         int ret = flv_set_video_codec(s, vstream, num_val, 0);
