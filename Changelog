@@ -1,6 +1,75 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.1:
+- avformat/mpeg: Adjust vid probe threshold to correct mis-detection
+- avcodec/ass_split: Change order of operations in ass_split_section()
+- avcodec/rawdec: check for side data before checking its size
+- avcodec/avpacket: fix leak on realloc in av_packet_add_side_data()
+- avformat/apngenc: use the stream parameters extradata if available
+- Revert "apngdec: use side data to pass extradata to the decoder"
+- ffprobe: fix crash in case -of is specified with an empty string
+- libavcodec/exr : fix channel size calculation for uint32 channel
+- exr: fix out-of-bounds read
+- libschroedingerdec: fix leaking of framewithpts
+- libschroedingerdec: don't produce empty frames
+- dds: limit 4 bpp handling to AV_PIX_FMT_PAL8
+- mlz: limit next_code to data buffer size
+- softfloat: handle -INT_MAX correctly
+- filmstripdec: correctly check image dimensions
+- pnmdec: make sure v is capped by maxval
+- smvjpegdec: make sure cur_frame is not negative
+- icodec: correctly check avio_read return value
+- icodec: fix leaking pkt on error
+- dvbsubdec: fix division by zero in compute_default_clut
+- proresdec_lgpl: explicitly check coff[3] against slice_data_size
+- escape124: reject codebook size 0
+- mpegts: prevent division by zero
+- matroskadec: fix NULL pointer dereference in webm_dash_manifest_read_header
+- mpegaudio_parser: don't return AVERROR_PATCHWELCOME
+- mxfdec: fix NULL pointer dereference
+- lzf: update pointer p after realloc
+- diracdec: check return code of get_buffer_with_edge
+- diracdec: clear slice_params_num_buf on allocation failure
+- diracdec: use correct buffer for slice_params_buf realloc
+- ppc: pixblockdsp: do unaligned block accesses correctly again
+- avformat: close parser if codec changed
+- fate: add streamcopy test for apng
+- apngdec: use side data to pass extradata to the decoder
+- mov: immediately return from mov_fix_index without old index entries
+- interplayacm: increase bitstream buffer size by AV_INPUT_BUFFER_PADDING_SIZE
+- interplayacm: validate number of channels
+- interplayacm: check for too large b
+- doc: fix spelling errors
+- configure: make sure LTO does not optimize out the test functions
+- fate: add apng encoding/muxing test
+- apng: use side data to pass extradata to muxer
+- avcodec/mpeg4videodec: Workaround interlaced mpeg4 edge MC bug
+- avcodec/mpegvideo: Fix edge emu buffer overlap with interlaced mpeg4
+- avcodec/rv40: Test remaining space in loop of get_dimension()
+- avcodec/ituh263dec: Avoid spending a long time in slice sync
+- avcodec/movtextdec: Add error message for tsmb_size check
+- avcodec/movtextdec: Fix tsmb_size check==0 check
+- avcodec/movtextdec: Fix potential integer overflow
+- ffmpeg: Fix bsf corrupting merged side data
+- avcodec/sunrast: Fix input buffer pointer check
+- avcodec/tscc:  Check side data size before use
+- avcodec/rscc: Fix constant
+- avcodec/rawdec: Check side data size before use
+- avcodec/rscc: Check side data size before use
+- avcodec/msvideo1: Check side data size before use
+- avcodec/qpeg:  Check side data size before use
+- avcodec/qtrle:  Check side data size before use
+- avcodec/msrle:  Check side data size before use
+- avcodec/kmvc:  Check side data size before use
+- avcodec/idcinvideo: Check side data size before use
+- avcodec/cinepak: Check side data size before use
+- avcodec/8bps: Check side data size before use
+- avformat/flvdec: Fix regression losing streams
+- avformat/hls: Add missing error check for avcodec_parameters_copy()
+- avformat/hls: Fix probing mpegts audio streams that use probing
+- avformat/hls: Factor copying stream info to a separate function
+
 version 3.2:
 - libopenmpt demuxer
 - tee protocol
