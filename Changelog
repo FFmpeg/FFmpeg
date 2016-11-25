@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.1:
+- avcodec/aac_adtstoasc_bsf: validate and forward extradata if the stream is already ASC
 - mss2: only use error correction for matching block counts
 - softfloat: decrease MIN_EXP to cover full float range
 - libopusdec: default to stereo for invalid number of channels

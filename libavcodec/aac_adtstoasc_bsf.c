@@ -136,8 +136,16 @@ fail:
 
 static int aac_adtstoasc_init(AVBSFContext *ctx)
 {
-    av_freep(&ctx->par_out->extradata);
-    ctx->par_out->extradata_size = 0;
+    /* Validate the extradata if the stream is already MPEG-4 AudioSpecificConfig */
+    if (ctx->par_in->extradata) {
+        MPEG4AudioConfig mp4ac;
+        int ret = avpriv_mpeg4audio_get_config(&mp4ac, ctx->par_in->extradata,
+                                               ctx->par_in->extradata_size * 8, 1);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error parsing AudioSpecificConfig extradata!\n");
+            return ret;
+        }
+    }
 
     return 0;
 }
