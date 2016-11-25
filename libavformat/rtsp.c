@@ -2075,6 +2075,7 @@ static int sdp_read_header(AVFormatContext *s)
         rtsp_st = rt->rtsp_streams[i];
 
         if (!(rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)) {
+            namebuf[0] = '\0';
             getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
                         namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
             ff_url_join(url, sizeof(url), "rtp", NULL,
