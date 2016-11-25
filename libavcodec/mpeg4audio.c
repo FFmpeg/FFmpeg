@@ -33,10 +33,10 @@
 static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
 {
     if (get_bits_left(gb) < 112)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (get_bits_long(gb, 32) != MKBETAG('A','L','S','\0'))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     // override AudioSpecificConfig channel configuration and sample rate
     // which are buggy in old ALS conformance files
@@ -127,8 +127,9 @@ int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
 
         specific_config_bitindex = get_bits_count(&gb);
 
-        if (parse_config_ALS(&gb, c))
-            return -1;
+        ret = parse_config_ALS(&gb, c);
+        if (ret < 0)
+            return ret;
     }
 
     if (c->ext_object_type != AOT_SBR && sync_extension) {
