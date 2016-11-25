@@ -1237,6 +1237,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
                      j++, ptr += syntax[i].list_elem_size)
                     ebml_free(syntax[i].def.n, ptr);
                 av_freep(&list->elem);
+                list->nb_elem = 0;
             } else
                 ebml_free(syntax[i].def.n, data_off);
         default:
