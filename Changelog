@@ -2,6 +2,32 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.9
+- filmstripdec: correctly check image dimensions
+- mss2: only use error correction for matching block counts
+- softfloat: decrease MIN_EXP to cover full float range
+- libopusdec: default to stereo for invalid number of channels
+- sbgdec: prevent NULL pointer access
+- smacker: limit recursion depth of smacker_decode_bigtree
+- mxfdec: fix NULL pointer dereference in mxf_read_packet_old
+- libschroedingerdec: fix leaking of framewithpts
+- libschroedingerdec: don't produce empty frames
+- softfloat: handle -INT_MAX correctly
+- pnmdec: make sure v is capped by maxval
+- smvjpegdec: make sure cur_frame is not negative
+- icodec: correctly check avio_read return value
+- icodec: fix leaking pkt on error
+- dvbsubdec: fix division by zero in compute_default_clut
+- proresdec_lgpl: explicitly check coff[3] against slice_data_size
+- escape124: reject codebook size 0
+- mpegts: prevent division by zero
+- matroskadec: fix NULL pointer dereference in webm_dash_manifest_read_header
+- mpegaudio_parser: don't return AVERROR_PATCHWELCOME
+- mxfdec: fix NULL pointer dereference
+- diracdec: check return code of get_buffer_with_edge
+- ppc: pixblockdsp: do unaligned block accesses correctly again
+- mpeg12dec: unref discarded picture from extradata
+- cavsdec: unref frame before referencing again
+- avformat: prevent triggering request_probe assert in ff_read_packet
 - avformat/mpeg: Adjust vid probe threshold to correct mis-detection
 - avcodec/rv40: Test remaining space in loop of get_dimension()
 - avcodec/ituh263dec: Avoid spending a long time in slice sync
