@@ -151,6 +151,10 @@ Disable sequence end tag.
 @item no_metadata
 Disable metadata tag.
 
+@item no_duration_filesize
+Disable duration and filesize in metadata when they are equal to zero
+at the end of stream. (Be used to non-seekable living stream).
+
 @item add_keyframe_index
 Used to facilitate seeking; particularly for HTTP pseudo streaming.
 @end table

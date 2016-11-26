@@ -68,6 +68,7 @@ typedef enum {
     FLV_NO_SEQUENCE_END = (1 << 1),
     FLV_ADD_KEYFRAME_INDEX = (1 << 2),
     FLV_NO_METADATA = (1 << 3),
+    FLV_NO_DURATION_FILESIZE = (1 << 4),
 } FLVFlags;
 
 typedef struct FLVFileposition {
@@ -269,6 +270,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
 {
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
+    int write_duration_filesize = !(flv->flags & FLV_NO_DURATION_FILESIZE);
     int metadata_count = 0;
     int64_t metadata_count_pos;
     AVDictionaryEntry *tag = NULL;
@@ -292,12 +294,12 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     metadata_count = 4 * !!flv->video_par +
                      5 * !!flv->audio_par +
                      1 * !!flv->data_par;
-    if (pb->seekable) {
+    if (write_duration_filesize) {
         metadata_count += 2; // +2 for duration and file size
     }
     avio_wb32(pb, metadata_count);
 
-    if (pb->seekable) {
+    if (write_duration_filesize) {
         put_amf_string(pb, "duration");
         flv->duration_offset = avio_tell(pb);
         // fill in the guessed duration, it'll be corrected later if incorrect
@@ -378,7 +380,7 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
         metadata_count++;
     }
 
-    if (pb->seekable) {
+    if (write_duration_filesize) {
         put_amf_string(pb, "filesize");
         flv->filesize_offset = avio_tell(pb);
         put_amf_double(pb, 0); // delayed write
@@ -844,7 +846,7 @@ end:
         avio_seek(pb, flv->datasize_offset, SEEK_SET);
         put_amf_double(pb, flv->datasize);
     }
-    if (pb->seekable) {
+    if (!(flv->flags & FLV_NO_DURATION_FILESIZE)) {
         /* update information */
         if (avio_seek(pb, flv->duration_offset, SEEK_SET) < 0) {
             av_log(s, AV_LOG_WARNING, "Failed to update header with correct duration.\n");
@@ -1061,6 +1063,7 @@ static const AVOption options[] = {
     { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_AAC_SEQ_HEADER_DETECT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "no_sequence_end", "disable sequence end for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_SEQUENCE_END}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "no_metadata", "disable metadata for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_METADATA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
+    { "no_duration_filesize", "disable duration and filesize zero value metadata for FLV", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_NO_DURATION_FILESIZE}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "add_keyframe_index", "Add keyframe index metadata", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_ADD_KEYFRAME_INDEX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { NULL },
 };
