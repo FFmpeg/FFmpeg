@@ -143,9 +143,10 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
                            && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE
                            && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE))
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
-    if (codec_type == AVMEDIA_TYPE_AUDIO)
+    if (codec_type == AVMEDIA_TYPE_AUDIO) {
         st->codecpar->bit_rate = flv->audio_bit_rate;
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
+    }
     if (codec_type == AVMEDIA_TYPE_VIDEO) {
         st->codecpar->bit_rate = flv->video_bit_rate;
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
