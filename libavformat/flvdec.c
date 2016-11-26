@@ -64,6 +64,8 @@ typedef struct FLVContext {
 
     int last_keyframe_stream_index;
     int keyframe_count;
+    int64_t video_bit_rate;
+    int64_t audio_bit_rate;
     int64_t *keyframe_times;
     int64_t *keyframe_filepositions;
     int missing_streams;
@@ -142,8 +144,10 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
                            && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE))
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     if (codec_type == AVMEDIA_TYPE_AUDIO)
+        st->codecpar->bit_rate = flv->audio_bit_rate;
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
     if (codec_type == AVMEDIA_TYPE_VIDEO) {
+        st->codecpar->bit_rate = flv->video_bit_rate;
         flv->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
         st->avg_frame_rate = flv->framerate;
     }
@@ -547,12 +551,12 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                 amf_type == AMF_DATA_TYPE_BOOL) {
                 if (!strcmp(key, "duration"))
                     s->duration = num_val * AV_TIME_BASE;
-                else if (!strcmp(key, "videodatarate") && vpar &&
+                else if (!strcmp(key, "videodatarate") &&
                          0 <= (int)(num_val * 1024.0))
-                    vpar->bit_rate = num_val * 1024.0;
-                else if (!strcmp(key, "audiodatarate") && apar &&
+                    flv->video_bit_rate = num_val * 1024.0;
+                else if (!strcmp(key, "audiodatarate") &&
                          0 <= (int)(num_val * 1024.0))
-                    apar->bit_rate = num_val * 1024.0;
+                    flv->audio_bit_rate = num_val * 1024.0;
                 else if (!strcmp(key, "datastream")) {
                     AVStream *st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
                     if (!st)
