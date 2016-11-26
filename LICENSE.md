@@ -26,7 +26,6 @@ Specifically, the GPL parts of FFmpeg are:
     - `tests/checkasm/*`
     - `tests/tiny_ssim.c`
 - the following filters in libavfilter:
-    - `f_ebur128.c`
     - `vf_blackframe.c`
     - `vf_boxblur.c`
     - `vf_colormatrix.c`
