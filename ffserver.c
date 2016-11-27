@@ -2961,7 +2961,6 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
                                    struct in_addr my_ip)
 {
     AVFormatContext *avc;
-    AVStream *avs = NULL;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     AVDictionaryEntry *entry = av_dict_get(stream->metadata, "title", NULL, 0);
     int i;
@@ -2975,7 +2974,6 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     avc->oformat = rtp_format;
     av_dict_set(&avc->metadata, "title",
                 entry ? entry->value : "No Title", 0);
-    avc->nb_streams = stream->nb_streams;
     if (stream->is_multicast) {
         snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",
                  inet_ntoa(stream->multicast_ip),
@@ -2983,19 +2981,12 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     } else
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
 
-    avc->streams = av_malloc_array(avc->nb_streams, sizeof(*avc->streams));
-    if (!avc->streams)
-        goto sdp_done;
-
-    avs = av_malloc_array(avc->nb_streams, sizeof(*avs));
-    if (!avs)
-        goto sdp_done;
-
     for(i = 0; i < stream->nb_streams; i++) {
-        avc->streams[i] = &avs[i];
-        avc->streams[i]->codec = stream->streams[i]->codec;
+        AVStream *st = avformat_new_stream(avc, NULL);
+        if (!st)
+            goto sdp_done;
         avcodec_parameters_from_context(stream->streams[i]->codecpar, stream->streams[i]->codec);
-        avc->streams[i]->codecpar = stream->streams[i]->codecpar;
+        unlayer_stream(st, stream->streams[i]);
     }
 #define PBUFFER_SIZE 2048
     *pbuffer = av_mallocz(PBUFFER_SIZE);
@@ -3007,7 +2998,6 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     av_freep(&avc->streams);
     av_dict_free(&avc->metadata);
     av_free(avc);
-    av_free(avs);
 
     return *pbuffer ? strlen(*pbuffer) : AVERROR(ENOMEM);
 }
