@@ -97,6 +97,7 @@ typedef struct ZScaleContext {
     int chromal_in;
     char *size_str;
     double nominal_peak_luminance;
+    int approximate_gamma;
 
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
@@ -480,6 +481,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->params.resample_filter = s->filter;
         s->params.resample_filter_uv = s->filter;
         s->params.nominal_peak_luminance = s->nominal_peak_luminance;
+        s->params.allow_approximate_gamma = s->approximate_gamma;
 
         s->src_format.width = in->width;
         s->src_format.height = in->height;
@@ -762,6 +764,7 @@ static const AVOption zscale_options[] = {
     { "chromalin",  "set input chroma location", OFFSET(chromal_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
     { "cin",        "set input chroma location", OFFSET(chromal_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
     { "npl",       "set nominal peak luminance", OFFSET(nominal_peak_luminance), AV_OPT_TYPE_DOUBLE, {.dbl = NAN}, 0, DBL_MAX, FLAGS },
+    { "agamma",       "allow approximate gamma", OFFSET(approximate_gamma),      AV_OPT_TYPE_BOOL,   {.i64 = 1},   0, 1,       FLAGS },
     { NULL }
 };
 
