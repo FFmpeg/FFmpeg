@@ -586,11 +586,6 @@ static int nppscale_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
-              (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
-              (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
-              INT_MAX);
-
     err = device_hwctx->internal->cuda_dl->cuCtxPushCurrent(device_hwctx->cuda_ctx);
     if (err != CUDA_SUCCESS) {
         ret = AVERROR_UNKNOWN;
@@ -602,6 +597,11 @@ static int nppscale_filter_frame(AVFilterLink *link, AVFrame *in)
     device_hwctx->internal->cuda_dl->cuCtxPopCurrent(&dummy);
     if (ret < 0)
         goto fail;
+
+    av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
+              (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
+              (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
+              INT_MAX);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
