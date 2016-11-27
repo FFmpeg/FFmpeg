@@ -2288,8 +2288,6 @@ static int http_prepare_data(HTTPContext *c)
 
             unlayer_stream(c->pfmt_ctx->streams[i], src); //TODO we no longer copy st->internal, does this matter?
             av_assert0(!c->pfmt_ctx->streams[i]->priv_data);
-            /* XXX: should be done in AVStream, not in codec */
-            c->pfmt_ctx->streams[i]->codec->frame_number = 0;
         }
         /* set output format parameters */
         c->pfmt_ctx->oformat = c->stream->fmt;
@@ -2387,7 +2385,7 @@ static int http_prepare_data(HTTPContext *c)
                             AVStream *st = c->fmt_in->streams[source_index];
                             pkt.stream_index = i;
                             if (pkt.flags & AV_PKT_FLAG_KEY &&
-                                (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
+                                (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
                                  c->stream->nb_streams == 1))
                                 c->got_key_frame = 1;
                             if (!c->stream->send_on_key || c->got_key_frame)
@@ -2395,7 +2393,6 @@ static int http_prepare_data(HTTPContext *c)
                         }
                     }
                 } else {
-                    AVCodecContext *codec;
                     AVStream *ist, *ost;
                 send_it:
                     ist = c->fmt_in->streams[source_index];
@@ -2416,13 +2413,11 @@ static int http_prepare_data(HTTPContext *c)
                             av_packet_unref(&pkt);
                             break;
                         }
-                        codec = ctx->streams[0]->codec;
                         /* only one stream per RTP connection */
                         pkt.stream_index = 0;
                     } else {
                         ctx = c->pfmt_ctx;
                         /* Fudge here */
-                        codec = ctx->streams[pkt.stream_index]->codec;
                     }
 
                     if (c->is_packetized) {
@@ -2464,7 +2459,6 @@ static int http_prepare_data(HTTPContext *c)
                     c->buffer_ptr = c->pb_buffer;
                     c->buffer_end = c->pb_buffer + len;
 
-                    codec->frame_number++;
                     if (len == 0) {
                         av_packet_unref(&pkt);
                         goto redo;
