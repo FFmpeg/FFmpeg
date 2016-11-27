@@ -941,18 +941,15 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->encode_config.version = NV_ENC_CONFIG_VER;
 
-    if (avctx->sample_aspect_ratio.num && avctx->sample_aspect_ratio.den &&
-        (avctx->sample_aspect_ratio.num != 1 || avctx->sample_aspect_ratio.num != 1)) {
-        av_reduce(&dw, &dh,
-                  avctx->width * avctx->sample_aspect_ratio.num,
-                  avctx->height * avctx->sample_aspect_ratio.den,
-                  1024 * 1024);
-        ctx->init_encode_params.darHeight = dh;
-        ctx->init_encode_params.darWidth = dw;
-    } else {
-        ctx->init_encode_params.darHeight = avctx->height;
-        ctx->init_encode_params.darWidth = avctx->width;
+    dw = avctx->width;
+    dh = avctx->height;
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        dw*= avctx->sample_aspect_ratio.num;
+        dh*= avctx->sample_aspect_ratio.den;
     }
+    av_reduce(&dw, &dh, dw, dh, 1024 * 1024);
+    ctx->init_encode_params.darHeight = dh;
+    ctx->init_encode_params.darWidth = dw;
 
     ctx->init_encode_params.frameRateNum = avctx->time_base.den;
     ctx->init_encode_params.frameRateDen = avctx->time_base.num * avctx->ticks_per_frame;
