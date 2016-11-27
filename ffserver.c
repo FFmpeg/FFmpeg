@@ -187,11 +187,6 @@ typedef struct HTTPContext {
     uint8_t *packet_buffer, *packet_buffer_ptr, *packet_buffer_end;
 } HTTPContext;
 
-typedef struct FeedData {
-    long long data_count;
-    float avg_frame_size;   /* frame size averaged over last frames with exponential mean */
-} FeedData;
-
 static HTTPContext *first_http_ctx;
 
 static FFServerConfig config = {
@@ -3533,7 +3528,6 @@ static AVStream *add_av_stream1(FFServerStream *stream,
          */
         fst->codec = codec;
 
-    fst->priv_data = av_mallocz(sizeof(FeedData));
     fst->internal = av_mallocz(sizeof(*fst->internal));
     fst->internal->avctx = avcodec_alloc_context3(NULL);
     fst->codecpar = avcodec_parameters_alloc();
