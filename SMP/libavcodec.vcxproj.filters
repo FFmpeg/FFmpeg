@@ -1290,6 +1290,9 @@
     <ClCompile Include="..\libavcodec\h264data.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\cuvid.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\nvenc_h264.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

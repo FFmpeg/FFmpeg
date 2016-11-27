@@ -247,6 +247,7 @@
     <ClCompile Include="..\libavfilter\vf_stack.c" />
     <ClCompile Include="..\libavfilter\vf_hue.c" />
     <ClCompile Include="..\libavfilter\vf_hwdownload.c" />
+    <ClCompile Include="..\libavfilter\vf_hwupload_cuda.c" />
     <ClCompile Include="..\libavfilter\vf_hwupload.c" />
     <ClCompile Include="..\libavfilter\vf_hysteresis.c" />
     <ClCompile Include="..\libavfilter\vf_il.c" />
