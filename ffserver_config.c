@@ -182,7 +182,7 @@ bail:
 static void add_codec(FFServerStream *stream, AVCodecContext *av,
                       FFServerConfig *config)
 {
-    AVStream *st;
+    LayeredAVStream *st;
     AVDictionary **opts, *recommended = NULL;
     char *enc_config;
 
@@ -313,12 +313,12 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     }
 
 done:
-    st = av_mallocz(sizeof(AVStream));
+    st = av_mallocz(sizeof(*st));
     if (!st)
         return;
     av_dict_get_string(recommended, &enc_config, '=', ',');
     av_dict_free(&recommended);
-    av_stream_set_recommended_encoder_configuration(st, enc_config);
+    st->recommended_encoder_configuration = enc_config;
     st->codec = av;
     stream->streams[stream->nb_streams++] = st;
 }

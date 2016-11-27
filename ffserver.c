@@ -235,7 +235,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /* utils */
 static size_t htmlencode (const char *src, char **dest);
 static inline void cp_html_entity (char *buffer, const char *entity);
-static inline int check_codec_match(AVStream *ccf, AVStream *ccs, int stream);
+static inline int check_codec_match(LayeredAVStream *ccf, AVStream *ccs, int stream);
 
 static const char *my_program_name;
 
@@ -253,6 +253,21 @@ static int64_t cur_time;
 static AVLFG random_state;
 
 static FILE *logfile = NULL;
+
+static void unlayer_stream(AVStream *st, LayeredAVStream *lst)
+{
+    avcodec_free_context(&st->codec);
+    avcodec_parameters_free(&st->codecpar);
+#define COPY(a) st->a = lst->a;
+    COPY(index)
+    COPY(id)
+    COPY(codec)
+    COPY(codecpar)
+    COPY(time_base)
+    COPY(pts_wrap_bits)
+    COPY(sample_aspect_ratio)
+    COPY(recommended_encoder_configuration)
+}
 
 static inline void cp_html_entity (char *buffer, const char *entity) {
     if (!buffer || !entity)
@@ -1864,7 +1879,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
     int i, stream_no;
     const char *type = "unknown";
     char parameters[64];
-    AVStream *st;
+    LayeredAVStream *st;
     AVCodec *codec;
 
     stream_no = stream->nb_streams;
@@ -1984,7 +1999,7 @@ static void compute_status(HTTPContext *c)
             const char *video_codec_name_extra = "";
 
             for(i=0;i<stream->nb_streams;i++) {
-                AVStream *st = stream->streams[i];
+                LayeredAVStream *st = stream->streams[i];
                 AVCodec *codec = avcodec_find_encoder(st->codecpar->codec_id);
 
                 switch(st->codecpar->codec_type) {
@@ -2256,14 +2271,12 @@ static int http_prepare_data(HTTPContext *c)
             return AVERROR(ENOMEM);
         c->pfmt_ctx = ctx;
         av_dict_copy(&(c->pfmt_ctx->metadata), c->stream->metadata, 0);
-        c->pfmt_ctx->streams = av_mallocz_array(c->stream->nb_streams,
-                                              sizeof(AVStream *));
-        if (!c->pfmt_ctx->streams)
-            return AVERROR(ENOMEM);
 
         for(i=0;i<c->stream->nb_streams;i++) {
-            AVStream *src;
-            c->pfmt_ctx->streams[i] = av_mallocz(sizeof(AVStream));
+            LayeredAVStream *src;
+            AVStream *st = avformat_new_stream(c->pfmt_ctx, NULL);
+            if (!st)
+                return AVERROR(ENOMEM);
 
             /* if file or feed, then just take streams from FFServerStream
              * struct */
@@ -2273,14 +2286,14 @@ static int http_prepare_data(HTTPContext *c)
             else
                 src = c->stream->feed->streams[c->stream->feed_streams[i]];
 
-            *(c->pfmt_ctx->streams[i]) = *src;
-            c->pfmt_ctx->streams[i]->priv_data = 0;
+            unlayer_stream(c->pfmt_ctx->streams[i], src); //TODO we no longer copy st->internal, does this matter?
+            av_assert0(!c->pfmt_ctx->streams[i]->priv_data);
             /* XXX: should be done in AVStream, not in codec */
             c->pfmt_ctx->streams[i]->codec->frame_number = 0;
         }
         /* set output format parameters */
         c->pfmt_ctx->oformat = c->stream->fmt;
-        c->pfmt_ctx->nb_streams = c->stream->nb_streams;
+        av_assert0(c->pfmt_ctx->nb_streams == c->stream->nb_streams);
 
         c->got_key_frame = 0;
 
@@ -2807,7 +2820,7 @@ static int http_receive_data(HTTPContext *c)
             }
 
             for (i = 0; i < s->nb_streams; i++) {
-                AVStream *fst = feed->streams[i];
+                LayeredAVStream *fst = feed->streams[i];
                 AVStream *st = s->streams[i];
                 avcodec_copy_context(fst->codec, st->codec);
             }
@@ -3424,19 +3437,16 @@ static int rtp_new_av_stream(HTTPContext *c,
     if (!st)
         goto fail;
 
-    av_freep(&st->codec);
-    av_freep(&st->info);
     st_internal = st->internal;
 
     if (!c->stream->feed ||
         c->stream->feed == c->stream)
-        memcpy(st, c->stream->streams[stream_index], sizeof(AVStream));
+        unlayer_stream(st, c->stream->streams[stream_index]);
     else
-        memcpy(st,
-               c->stream->feed->streams[c->stream->feed_streams[stream_index]],
-               sizeof(AVStream));
-    st->priv_data = NULL;
-    st->internal = st_internal;
+        unlayer_stream(st,
+               c->stream->feed->streams[c->stream->feed_streams[stream_index]]);
+    av_assert0(st->priv_data == NULL);
+    av_assert0(st->internal == st_internal);
 
     /* build destination RTP address */
     ipaddr = inet_ntoa(dest_addr->sin_addr);
@@ -3504,15 +3514,15 @@ static int rtp_new_av_stream(HTTPContext *c,
 /* ffserver initialization */
 
 /* FIXME: This code should use avformat_new_stream() */
-static AVStream *add_av_stream1(FFServerStream *stream,
+static LayeredAVStream *add_av_stream1(FFServerStream *stream,
                                 AVCodecContext *codec, int copy)
 {
-    AVStream *fst;
+    LayeredAVStream *fst;
 
     if(stream->nb_streams >= FF_ARRAY_ELEMS(stream->streams))
         return NULL;
 
-    fst = av_mallocz(sizeof(AVStream));
+    fst = av_mallocz(sizeof(*fst));
     if (!fst)
         return NULL;
     if (copy) {
@@ -3528,20 +3538,20 @@ static AVStream *add_av_stream1(FFServerStream *stream,
          */
         fst->codec = codec;
 
-    fst->internal = av_mallocz(sizeof(*fst->internal));
-    fst->internal->avctx = avcodec_alloc_context3(NULL);
+    //NOTE we previously allocated internal & internal->avctx, these seemed uneeded though
     fst->codecpar = avcodec_parameters_alloc();
     fst->index = stream->nb_streams;
-    avpriv_set_pts_info(fst, 33, 1, 90000);
+    fst->time_base = (AVRational) {1, 90000};
+    fst->pts_wrap_bits = 33;
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;
     stream->streams[stream->nb_streams++] = fst;
     return fst;
 }
 
 /* return the stream number in the feed */
-static int add_av_stream(FFServerStream *feed, AVStream *st)
+static int add_av_stream(FFServerStream *feed, LayeredAVStream *st)
 {
-    AVStream *fst;
+    LayeredAVStream *fst;
     AVCodecContext *av, *av1;
     int i;
 
@@ -3575,9 +3585,9 @@ static int add_av_stream(FFServerStream *feed, AVStream *st)
     fst = add_av_stream1(feed, av, 0);
     if (!fst)
         return -1;
-    if (av_stream_get_recommended_encoder_configuration(st))
-        av_stream_set_recommended_encoder_configuration(fst,
-            av_strdup(av_stream_get_recommended_encoder_configuration(st)));
+    if (st->recommended_encoder_configuration)
+        fst->recommended_encoder_configuration =
+            av_strdup(st->recommended_encoder_configuration);
     return feed->nb_streams - 1;
 }
 
@@ -3653,7 +3663,7 @@ static void build_file_streams(void)
 }
 
 static inline
-int check_codec_match(AVStream *ccf, AVStream *ccs, int stream)
+int check_codec_match(LayeredAVStream *ccf, AVStream *ccs, int stream)
 {
     int matches = 1;
 
@@ -3741,7 +3751,8 @@ static int build_feed_streams(void)
 
             matches = 1;
             for(i=0;i<s->nb_streams;i++) {
-                AVStream *sf, *ss;
+                AVStream *ss;
+                LayeredAVStream *sf;
 
                 sf = feed->streams[i];
                 ss = s->streams[i];
@@ -3796,8 +3807,14 @@ drop:
                 goto bail;
             }
             s->oformat = feed->fmt;
-            s->nb_streams = feed->nb_streams;
-            s->streams = feed->streams;
+            for (i = 0; i<feed->nb_streams; i++) {
+                AVStream *st = avformat_new_stream(s, NULL); // FIXME free this
+                if (!st) {
+                    http_log("Failed to allocate stream\n");
+                    goto bail;
+                }
+                unlayer_stream(st, feed->streams[i]);
+            }
             if (avformat_write_header(s, NULL) < 0) {
                 http_log("Container doesn't support the required parameters\n");
                 avio_closep(&s->pb);
@@ -3847,7 +3864,7 @@ static void compute_bandwidth(void)
     for(stream = config.first_stream; stream; stream = stream->next) {
         bandwidth = 0;
         for(i=0;i<stream->nb_streams;i++) {
-            AVStream *st = stream->streams[i];
+            LayeredAVStream *st = stream->streams[i];
             switch(st->codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
             case AVMEDIA_TYPE_VIDEO:
