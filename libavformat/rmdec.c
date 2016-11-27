@@ -934,6 +934,10 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
 
              ast->sub_packet_cnt = 0;
              rm->audio_stream_num = st->index;
+            if (st->codecpar->block_align <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid block alignment %d\n", st->codecpar->block_align);
+                return AVERROR_INVALIDDATA;
+            }
              rm->audio_pkt_cnt = h * w / st->codecpar->block_align;
         } else if ((ast->deint_id == DEINT_ID_VBRF) ||
                    (ast->deint_id == DEINT_ID_VBRS)) {

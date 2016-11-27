@@ -165,6 +165,7 @@ typedef struct Frame {
     int format;
     AVRational sar;
     int uploaded;
+    int flip_v;
 } Frame;
 
 typedef struct FrameQueue {
@@ -861,12 +862,20 @@ static int upload_texture(SDL_Texture *tex, AVFrame *frame, struct SwsContext **
     int ret = 0;
     switch (frame->format) {
         case AV_PIX_FMT_YUV420P:
+            if (frame->linesize[0] < 0 || frame->linesize[1] < 0 || frame->linesize[2] < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Negative linesize is not supported for YUV.\n");
+                return -1;
+            }
             ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
                                                   frame->data[1], frame->linesize[1],
                                                   frame->data[2], frame->linesize[2]);
             break;
         case AV_PIX_FMT_BGRA:
-            ret = SDL_UpdateTexture(tex, NULL, frame->data[0], frame->linesize[0]);
+            if (frame->linesize[0] < 0) {
+                ret = SDL_UpdateTexture(tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height - 1), -frame->linesize[0]);
+            } else {
+                ret = SDL_UpdateTexture(tex, NULL, frame->data[0], frame->linesize[0]);
+            }
             break;
         default:
             /* This should only happen if we are not using avfilter... */
@@ -949,9 +958,10 @@ static void video_image_display(VideoState *is)
             if (upload_texture(vp->bmp, vp->frame, &is->img_convert_ctx) < 0)
                 return;
             vp->uploaded = 1;
+            vp->flip_v = vp->frame->linesize[0] < 0;
         }
 
-        SDL_RenderCopy(renderer, vp->bmp, NULL, &rect);
+        SDL_RenderCopyEx(renderer, vp->bmp, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
         if (sp) {
 #if USE_ONEPASS_SUBTITLE_RENDER
             SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
@@ -1272,6 +1282,10 @@ static int video_open(VideoState *is, Frame *vp)
         if (window) {
             SDL_RendererInfo info;
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            if (!renderer) {
+                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
+                renderer = SDL_CreateRenderer(window, -1, 0);
+            }
             if (renderer) {
                 if (!SDL_GetRendererInfo(renderer, &info))
                     av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", info.name);

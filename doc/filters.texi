@@ -3026,7 +3026,7 @@ output channel layout or number of channels
 
 @item outdef
 output channel specification, of the form:
-"@var{out_name}=[@var{gain}*]@var{in_name}[+[@var{gain}*]@var{in_name}...]"
+"@var{out_name}=[@var{gain}*]@var{in_name}[(+-)[@var{gain}*]@var{in_name}...]"
 
 @item out_name
 output channel to define, either a channel name (FL, FR, etc.) or a channel
@@ -14660,6 +14660,9 @@ Possible values are:
 @item linear
 @item 2020_10
 @item 2020_12
+@item smpte2084
+@item iec61966-2-1
+@item arib-std-b67
 @end table
 
 Default is same as input.
@@ -14764,6 +14767,9 @@ Possible values are:
 @item bottomleft
 @item bottom
 @end table
+
+@item npl
+Set the nominal peak luminance.
 @end table
 
 The values of the @option{w} and @option{h} options are expressions

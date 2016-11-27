@@ -84,7 +84,12 @@ typedef struct VAAPIEncodeH264MiscSequenceParams {
     char vcl_hrd_parameters_present_flag;
     char low_delay_hrd_flag;
     char pic_struct_present_flag;
-    char bitstream_restriction_flag;
+
+    char motion_vectors_over_pic_boundaries_flag;
+    unsigned int max_bytes_per_pic_denom;
+    unsigned int max_bits_per_mb_denom;
+    unsigned int max_num_reorder_frames;
+    unsigned int max_dec_pic_buffering;
 
     unsigned int cpb_cnt_minus1;
     unsigned int bit_rate_scale;
@@ -141,6 +146,7 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_b;
 
     int next_frame_num;
+    int64_t last_idr_frame;
     int64_t idr_pic_count;
 
     int cpb_delay;
@@ -148,14 +154,6 @@ typedef struct VAAPIEncodeH264Context {
 
     // Rate control configuration.
     int send_timing_sei;
-    struct {
-        VAEncMiscParameterBuffer misc;
-        VAEncMiscParameterRateControl rc;
-    } rc_params;
-    struct {
-        VAEncMiscParameterBuffer misc;
-        VAEncMiscParameterHRD hrd;
-    } hrd_params;
 
 #if VA_CHECK_VERSION(0, 36, 0)
     // Speed-quality tradeoff setting.
@@ -271,7 +269,13 @@ static void vaapi_encode_h264_write_vui(PutBitContext *pbc,
 
     u(1, vvui_field(bitstream_restriction_flag));
     if (vseq->vui_fields.bits.bitstream_restriction_flag) {
-        av_assert0(0 && "bitstream restrictions not supported");
+        u(1, mseq_var(motion_vectors_over_pic_boundaries_flag));
+        ue(mseq_var(max_bytes_per_pic_denom));
+        ue(mseq_var(max_bits_per_mb_denom));
+        ue(vvui_field(log2_max_mv_length_horizontal));
+        ue(vvui_field(log2_max_mv_length_vertical));
+        ue(mseq_var(max_num_reorder_frames));
+        ue(mseq_var(max_dec_pic_buffering));
     }
 }
 
@@ -786,7 +790,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
         vseq->level_idc = avctx->level;
 
-        vseq->max_num_ref_frames = 2;
+        vseq->max_num_ref_frames = 1 + (avctx->max_b_frames > 0);
 
         vseq->picture_width_in_mbs  = priv->mb_width;
         vseq->picture_height_in_mbs = priv->mb_height;
@@ -797,16 +801,16 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         vseq->seq_fields.bits.log2_max_frame_num_minus4 = 4;
         vseq->seq_fields.bits.pic_order_cnt_type = 0;
 
-        if (ctx->input_width  != ctx->aligned_width ||
-            ctx->input_height != ctx->aligned_height) {
+        if (avctx->width  != ctx->surface_width ||
+            avctx->height != ctx->surface_height) {
             vseq->frame_cropping_flag = 1;
 
             vseq->frame_crop_left_offset   = 0;
             vseq->frame_crop_right_offset  =
-                (ctx->aligned_width - ctx->input_width) / 2;
+                (ctx->surface_width - avctx->width) / 2;
             vseq->frame_crop_top_offset    = 0;
             vseq->frame_crop_bottom_offset =
-                (ctx->aligned_height - ctx->input_height) / 2;
+                (ctx->surface_height - avctx->height) / 2;
         } else {
             vseq->frame_cropping_flag = 0;
         }
@@ -839,12 +843,22 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             mseq->matrix_coefficients      = avctx->colorspace;
         }
 
+        vseq->vui_fields.bits.bitstream_restriction_flag = 1;
+        mseq->motion_vectors_over_pic_boundaries_flag = 1;
+        mseq->max_bytes_per_pic_denom = 0;
+        mseq->max_bits_per_mb_denom   = 0;
+        vseq->vui_fields.bits.log2_max_mv_length_horizontal = 16;
+        vseq->vui_fields.bits.log2_max_mv_length_vertical   = 16;
+
+        mseq->max_num_reorder_frames = (avctx->max_b_frames > 0);
+        mseq->max_dec_pic_buffering  = vseq->max_num_ref_frames;
+
         vseq->bits_per_second = avctx->bit_rate;
 
         vseq->vui_fields.bits.timing_info_present_flag = 1;
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-            vseq->num_units_in_tick = avctx->framerate.num;
-            vseq->time_scale        = 2 * avctx->framerate.den;
+            vseq->num_units_in_tick = avctx->framerate.den;
+            vseq->time_scale        = 2 * avctx->framerate.num;
             mseq->fixed_frame_rate_flag = 1;
         } else {
             vseq->num_units_in_tick = avctx->time_base.num;
@@ -861,14 +875,14 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             // Try to scale these to a sensible range so that the
             // golomb encode of the value is not overlong.
             mseq->bit_rate_scale =
-                av_clip_uintp2(av_log2(avctx->bit_rate) - 15, 4);
+                av_clip_uintp2(av_log2(avctx->bit_rate) - 15 - 6, 4);
             mseq->bit_rate_value_minus1[0] =
-                (avctx->bit_rate >> mseq->bit_rate_scale) - 1;
+                (avctx->bit_rate >> mseq->bit_rate_scale + 6) - 1;
 
             mseq->cpb_size_scale =
-                av_clip_uintp2(av_log2(priv->hrd_params.hrd.buffer_size) - 15, 4);
+                av_clip_uintp2(av_log2(ctx->hrd_params.hrd.buffer_size) - 15 - 4, 4);
             mseq->cpb_size_value_minus1[0] =
-                (priv->hrd_params.hrd.buffer_size >> mseq->cpb_size_scale) - 1;
+                (ctx->hrd_params.hrd.buffer_size >> mseq->cpb_size_scale + 4) - 1;
 
             // CBR mode isn't actually available here, despite naming.
             mseq->cbr_flag[0] = 0;
@@ -880,8 +894,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
             // This calculation can easily overflow 32 bits.
             mseq->initial_cpb_removal_delay = 90000 *
-                (uint64_t)priv->hrd_params.hrd.initial_buffer_fullness /
-                priv->hrd_params.hrd.buffer_size;
+                (uint64_t)ctx->hrd_params.hrd.initial_buffer_fullness /
+                ctx->hrd_params.hrd.buffer_size;
 
             mseq->initial_cpb_removal_delay_offset = 0;
         } else {
@@ -947,6 +961,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         vpic->frame_num = 0;
         priv->next_frame_num = 1;
         priv->cpb_delay = 0;
+        priv->last_idr_frame = pic->display_order;
     } else {
         vpic->frame_num = priv->next_frame_num;
         if (pic->type != PICTURE_TYPE_B) {
@@ -963,8 +978,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     vpic->CurrPic.picture_id          = pic->recon_surface;
     vpic->CurrPic.frame_idx           = vpic->frame_num;
     vpic->CurrPic.flags               = 0;
-    vpic->CurrPic.TopFieldOrderCnt    = pic->display_order;
-    vpic->CurrPic.BottomFieldOrderCnt = pic->display_order;
+    vpic->CurrPic.TopFieldOrderCnt    = pic->display_order - priv->last_idr_frame;
+    vpic->CurrPic.BottomFieldOrderCnt = pic->display_order - priv->last_idr_frame;
 
     for (i = 0; i < pic->nb_refs; i++) {
         VAAPIEncodePicture *ref = pic->refs[i];
@@ -972,8 +987,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         vpic->ReferenceFrames[i].picture_id = ref->recon_surface;
         vpic->ReferenceFrames[i].frame_idx  = ref->encode_order;
         vpic->ReferenceFrames[i].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-        vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order;
-        vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order;
+        vpic->ReferenceFrames[i].TopFieldOrderCnt    = ref->display_order - priv->last_idr_frame;
+        vpic->ReferenceFrames[i].BottomFieldOrderCnt = ref->display_order - priv->last_idr_frame;
     }
     for (; i < FF_ARRAY_ELEMS(vpic->ReferenceFrames); i++) {
         vpic->ReferenceFrames[i].picture_id = VA_INVALID_ID;
@@ -1044,7 +1059,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     vslice->pic_parameter_set_id = vpic->pic_parameter_set_id;
     vslice->idr_pic_id = priv->idr_pic_count++;
 
-    vslice->pic_order_cnt_lsb = pic->display_order &
+    vslice->pic_order_cnt_lsb = (pic->display_order - priv->last_idr_frame) &
         ((1 << (4 + vseq->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4)) - 1);
 
     for (i = 0; i < FF_ARRAY_ELEMS(vslice->RefPicList0); i++) {
@@ -1083,100 +1098,94 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
-static av_cold int vaapi_encode_h264_init_constant_bitrate(AVCodecContext *avctx)
+static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH264Context *priv = ctx->priv_data;
-    int hrd_buffer_size;
-    int hrd_initial_buffer_fullness;
+    VAAPIEncodeH264Options  *opt = ctx->codec_options;
 
-    if (avctx->bit_rate > INT32_MAX) {
-        av_log(avctx, AV_LOG_ERROR, "Target bitrate of 2^31 bps or "
-               "higher is not supported.\n");
-        return AVERROR(EINVAL);
+    priv->mb_width  = FFALIGN(avctx->width,  16) / 16;
+    priv->mb_height = FFALIGN(avctx->height, 16) / 16;
+
+    if (ctx->va_rc_mode == VA_RC_CQP) {
+        priv->fixed_qp_p = opt->qp;
+        if (avctx->i_quant_factor > 0.0)
+            priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
+                                        avctx->i_quant_offset) + 0.5);
+        else
+            priv->fixed_qp_idr = priv->fixed_qp_p;
+        if (avctx->b_quant_factor > 0.0)
+            priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
+                                      avctx->b_quant_offset) + 0.5);
+        else
+            priv->fixed_qp_b = priv->fixed_qp_p;
+
+        av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
+               "%d / %d / %d for IDR- / P- / B-frames.\n",
+               priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
+
+    } else if (ctx->va_rc_mode == VA_RC_CBR) {
+        // These still need to be  set for pic_init_qp/slice_qp_delta.
+        priv->fixed_qp_idr = 26;
+        priv->fixed_qp_p   = 26;
+        priv->fixed_qp_b   = 26;
+
+        av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
+               avctx->bit_rate);
+
+    } else {
+        av_assert0(0 && "Invalid RC mode.");
     }
 
-    if (avctx->rc_buffer_size)
-        hrd_buffer_size = avctx->rc_buffer_size;
-    else
-        hrd_buffer_size = avctx->bit_rate;
-    if (avctx->rc_initial_buffer_occupancy)
-        hrd_initial_buffer_fullness = avctx->rc_initial_buffer_occupancy;
-    else
-        hrd_initial_buffer_fullness = hrd_buffer_size * 3 / 4;
+    if (opt->quality > 0) {
+#if VA_CHECK_VERSION(0, 36, 0)
+        priv->quality_params.misc.type =
+            VAEncMiscParameterTypeQualityLevel;
+        priv->quality_params.quality.quality_level = opt->quality;
 
-    priv->rc_params.misc.type = VAEncMiscParameterTypeRateControl;
-    priv->rc_params.rc = (VAEncMiscParameterRateControl) {
-        .bits_per_second   = avctx->bit_rate,
-        .target_percentage = 66,
-        .window_size       = 1000,
-        .initial_qp        = (avctx->qmax >= 0 ? avctx->qmax : 40),
-        .min_qp            = (avctx->qmin >= 0 ? avctx->qmin : 18),
-        .basic_unit_size   = 0,
-    };
-    ctx->global_params[ctx->nb_global_params] =
-        &priv->rc_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(priv->rc_params);
+        ctx->global_params[ctx->nb_global_params] =
+            &priv->quality_params.misc;
+        ctx->global_params_size[ctx->nb_global_params++] =
+            sizeof(priv->quality_params);
+#else
+        av_log(avctx, AV_LOG_WARNING, "The encode quality option is not "
+               "supported with this VAAPI version.\n");
+#endif
+    }
 
-    priv->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
-    priv->hrd_params.hrd = (VAEncMiscParameterHRD) {
-        .initial_buffer_fullness = hrd_initial_buffer_fullness,
-        .buffer_size             = hrd_buffer_size,
-    };
-    ctx->global_params[ctx->nb_global_params] =
-        &priv->hrd_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(priv->hrd_params);
-
-    // These still need to be  set for pic_init_qp/slice_qp_delta.
-    priv->fixed_qp_idr = 26;
-    priv->fixed_qp_p   = 26;
-    priv->fixed_qp_b   = 26;
-
-    av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
-           avctx->bit_rate);
     return 0;
 }
 
-static av_cold int vaapi_encode_h264_init_fixed_qp(AVCodecContext *avctx)
+static const VAAPIEncodeType vaapi_encode_type_h264 = {
+    .priv_data_size        = sizeof(VAAPIEncodeH264Context),
+
+    .configure             = &vaapi_encode_h264_configure,
+
+    .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),
+    .init_sequence_params  = &vaapi_encode_h264_init_sequence_params,
+
+    .picture_params_size   = sizeof(VAEncPictureParameterBufferH264),
+    .init_picture_params   = &vaapi_encode_h264_init_picture_params,
+
+    .slice_params_size     = sizeof(VAEncSliceParameterBufferH264),
+    .init_slice_params     = &vaapi_encode_h264_init_slice_params,
+
+    .sequence_header_type  = VAEncPackedHeaderSequence,
+    .write_sequence_header = &vaapi_encode_h264_write_sequence_header,
+
+    .slice_header_type     = VAEncPackedHeaderH264_Slice,
+    .write_slice_header    = &vaapi_encode_h264_write_slice_header,
+
+    .write_extra_header    = &vaapi_encode_h264_write_extra_header,
+};
+
+static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
-    VAAPIEncodeH264Options  *opt = ctx->codec_options;
+    VAAPIEncodeContext     *ctx = avctx->priv_data;
+    VAAPIEncodeH264Options *opt =
+        (VAAPIEncodeH264Options*)ctx->codec_options_data;
 
-    priv->fixed_qp_p = opt->qp;
-    if (avctx->i_quant_factor > 0.0)
-        priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
-                                    avctx->i_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_idr = priv->fixed_qp_p;
-    if (avctx->b_quant_factor > 0.0)
-        priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
-                                  avctx->b_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_b = priv->fixed_qp_p;
-
-    av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
-           "%d / %d / %d for IDR- / P- / B-frames.\n",
-           priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
-    return 0;
-}
-
-static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
-{
-    static const VAConfigAttrib default_config_attributes[] = {
-        { .type  = VAConfigAttribRTFormat,
-          .value = VA_RT_FORMAT_YUV420 },
-        { .type  = VAConfigAttribEncPackedHeaders,
-          .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
-                    VA_ENC_PACKED_HEADER_SLICE) },
-    };
-
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
-    VAAPIEncodeH264Options  *opt = ctx->codec_options;
-    int i, err;
+    ctx->codec = &vaapi_encode_type_h264;
 
     switch (avctx->profile) {
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
@@ -1216,7 +1225,7 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     if (opt->low_power) {
-#if VA_CHECK_VERSION(0, 39, 1)
+#if VA_CHECK_VERSION(0, 39, 2)
         ctx->va_entrypoint = VAEntrypointEncSliceLP;
 #else
         av_log(avctx, AV_LOG_ERROR, "Low-power encoding is not "
@@ -1227,80 +1236,23 @@ static av_cold int vaapi_encode_h264_init_internal(AVCodecContext *avctx)
         ctx->va_entrypoint = VAEntrypointEncSlice;
     }
 
-    ctx->input_width    = avctx->width;
-    ctx->input_height   = avctx->height;
-    ctx->aligned_width  = FFALIGN(ctx->input_width,  16);
-    ctx->aligned_height = FFALIGN(ctx->input_height, 16);
-    priv->mb_width      = ctx->aligned_width  / 16;
-    priv->mb_height     = ctx->aligned_height / 16;
+    // Only 8-bit encode is supported.
+    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(default_config_attributes); i++) {
-        ctx->config_attributes[ctx->nb_config_attributes++] =
-            default_config_attributes[i];
-    }
-
-    if (avctx->bit_rate > 0) {
+    if (avctx->bit_rate > 0)
         ctx->va_rc_mode = VA_RC_CBR;
-        err = vaapi_encode_h264_init_constant_bitrate(avctx);
-    } else {
+    else
         ctx->va_rc_mode = VA_RC_CQP;
-        err = vaapi_encode_h264_init_fixed_qp(avctx);
-    }
-    if (err < 0)
-        return err;
 
-    ctx->config_attributes[ctx->nb_config_attributes++] = (VAConfigAttrib) {
-        .type  = VAConfigAttribRateControl,
-        .value = ctx->va_rc_mode,
-    };
+    ctx->va_packed_headers =
+        VA_ENC_PACKED_HEADER_SEQUENCE | // SPS and PPS.
+        VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
+        VA_ENC_PACKED_HEADER_MISC;      // SEI.
 
-    if (opt->quality > 0) {
-#if VA_CHECK_VERSION(0, 36, 0)
-        priv->quality_params.misc.type =
-            VAEncMiscParameterTypeQualityLevel;
-        priv->quality_params.quality.quality_level = opt->quality;
+    ctx->surface_width  = FFALIGN(avctx->width,  16);
+    ctx->surface_height = FFALIGN(avctx->height, 16);
 
-        ctx->global_params[ctx->nb_global_params] =
-            &priv->quality_params.misc;
-        ctx->global_params_size[ctx->nb_global_params++] =
-            sizeof(priv->quality_params);
-#else
-        av_log(avctx, AV_LOG_WARNING, "The encode quality option is not "
-               "supported with this VAAPI version.\n");
-#endif
-    }
-
-    ctx->nb_recon_frames = 20;
-
-    return 0;
-}
-
-static VAAPIEncodeType vaapi_encode_type_h264 = {
-    .priv_data_size        = sizeof(VAAPIEncodeH264Context),
-
-    .init                  = &vaapi_encode_h264_init_internal,
-
-    .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),
-    .init_sequence_params  = &vaapi_encode_h264_init_sequence_params,
-
-    .picture_params_size   = sizeof(VAEncPictureParameterBufferH264),
-    .init_picture_params   = &vaapi_encode_h264_init_picture_params,
-
-    .slice_params_size     = sizeof(VAEncSliceParameterBufferH264),
-    .init_slice_params     = &vaapi_encode_h264_init_slice_params,
-
-    .sequence_header_type  = VAEncPackedHeaderSequence,
-    .write_sequence_header = &vaapi_encode_h264_write_sequence_header,
-
-    .slice_header_type     = VAEncPackedHeaderH264_Slice,
-    .write_slice_header    = &vaapi_encode_h264_write_slice_header,
-
-    .write_extra_header    = &vaapi_encode_h264_write_extra_header,
-};
-
-static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
-{
-    return ff_vaapi_encode_init(avctx, &vaapi_encode_type_h264);
+    return ff_vaapi_encode_init(avctx);
 }
 
 #define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \

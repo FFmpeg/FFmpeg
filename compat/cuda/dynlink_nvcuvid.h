@@ -35,16 +35,11 @@
 #if !defined(__NVCUVID_H__)
 #define __NVCUVID_H__
 
-#include "compat/cuda/cuviddec.h"
+#include "compat/cuda/dynlink_cuviddec.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif /* __cplusplus */
-
-/*********************************
-** Initialization
-*********************************/
-CUresult  CUDAAPI cuvidInit(unsigned int Flags);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -214,43 +209,43 @@ typedef enum {
  * \fn CUresult CUDAAPI cuvidCreateVideoSource(CUvideosource *pObj, const char *pszFileName, CUVIDSOURCEPARAMS *pParams)
  * Create Video Source
  */
-CUresult CUDAAPI cuvidCreateVideoSource(CUvideosource *pObj, const char *pszFileName, CUVIDSOURCEPARAMS *pParams);
+typedef CUresult CUDAAPI tcuvidCreateVideoSource(CUvideosource *pObj, const char *pszFileName, CUVIDSOURCEPARAMS *pParams);
 
 /**
  * \fn CUresult CUDAAPI cuvidCreateVideoSourceW(CUvideosource *pObj, const wchar_t *pwszFileName, CUVIDSOURCEPARAMS *pParams)
  * Create Video Source
  */
-CUresult CUDAAPI cuvidCreateVideoSourceW(CUvideosource *pObj, const wchar_t *pwszFileName, CUVIDSOURCEPARAMS *pParams);
+typedef CUresult CUDAAPI tcuvidCreateVideoSourceW(CUvideosource *pObj, const wchar_t *pwszFileName, CUVIDSOURCEPARAMS *pParams);
 
 /**
  * \fn CUresult CUDAAPI cuvidDestroyVideoSource(CUvideosource obj)
  * Destroy Video Source
  */
-CUresult CUDAAPI cuvidDestroyVideoSource(CUvideosource obj);
+typedef CUresult CUDAAPI tcuvidDestroyVideoSource(CUvideosource obj);
 
 /**
  * \fn CUresult CUDAAPI cuvidSetVideoSourceState(CUvideosource obj, cudaVideoState state)
  * Set Video Source state
  */
-CUresult CUDAAPI cuvidSetVideoSourceState(CUvideosource obj, cudaVideoState state);
+typedef CUresult CUDAAPI tcuvidSetVideoSourceState(CUvideosource obj, cudaVideoState state);
 
 /**
  * \fn cudaVideoState CUDAAPI cuvidGetVideoSourceState(CUvideosource obj)
  * Get Video Source state
  */
-cudaVideoState CUDAAPI cuvidGetVideoSourceState(CUvideosource obj);
+typedef cudaVideoState CUDAAPI tcuvidGetVideoSourceState(CUvideosource obj);
 
 /**
  * \fn CUresult CUDAAPI cuvidGetSourceVideoFormat(CUvideosource obj, CUVIDEOFORMAT *pvidfmt, unsigned int flags)
  * Get Video Source Format
  */
-CUresult CUDAAPI cuvidGetSourceVideoFormat(CUvideosource obj, CUVIDEOFORMAT *pvidfmt, unsigned int flags);
+typedef CUresult CUDAAPI tcuvidGetSourceVideoFormat(CUvideosource obj, CUVIDEOFORMAT *pvidfmt, unsigned int flags);
 
 /**
  * \fn CUresult CUDAAPI cuvidGetSourceAudioFormat(CUvideosource obj, CUAUDIOFORMAT *paudfmt, unsigned int flags)
  * Set Video Source state
  */
-CUresult CUDAAPI cuvidGetSourceAudioFormat(CUvideosource obj, CUAUDIOFORMAT *paudfmt, unsigned int flags);
+typedef CUresult CUDAAPI tcuvidGetSourceAudioFormat(CUvideosource obj, CUAUDIOFORMAT *paudfmt, unsigned int flags);
 
 #endif
 
@@ -297,17 +292,17 @@ typedef struct _CUVIDPARSERPARAMS
 /**
  * \fn CUresult CUDAAPI cuvidCreateVideoParser(CUvideoparser *pObj, CUVIDPARSERPARAMS *pParams)
  */
-CUresult CUDAAPI cuvidCreateVideoParser(CUvideoparser *pObj, CUVIDPARSERPARAMS *pParams);
+typedef CUresult CUDAAPI tcuvidCreateVideoParser(CUvideoparser *pObj, CUVIDPARSERPARAMS *pParams);
 
 /**
  * \fn CUresult CUDAAPI cuvidParseVideoData(CUvideoparser obj, CUVIDSOURCEDATAPACKET *pPacket)
  */
-CUresult CUDAAPI cuvidParseVideoData(CUvideoparser obj, CUVIDSOURCEDATAPACKET *pPacket);
+typedef CUresult CUDAAPI tcuvidParseVideoData(CUvideoparser obj, CUVIDSOURCEDATAPACKET *pPacket);
 
 /**
  * \fn CUresult CUDAAPI cuvidDestroyVideoParser(CUvideoparser obj)
  */
-CUresult CUDAAPI cuvidDestroyVideoParser(CUvideoparser obj);
+typedef CUresult CUDAAPI tcuvidDestroyVideoParser(CUvideoparser obj);
 
 /** @} */  /* END VIDEO_PARSER */
 ////////////////////////////////////////////////////////////////////////////////////////////////

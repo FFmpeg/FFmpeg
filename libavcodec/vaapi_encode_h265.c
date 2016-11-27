@@ -616,77 +616,77 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
             if (mseq->long_term_ref_pics_present_flag) {
                 av_assert0(0);
             }
+        }
 
-            if (vseq->seq_fields.bits.sps_temporal_mvp_enabled_flag) {
-                u(1, vslice_field(slice_temporal_mvp_enabled_flag));
+        if (vseq->seq_fields.bits.sps_temporal_mvp_enabled_flag) {
+            u(1, vslice_field(slice_temporal_mvp_enabled_flag));
+        }
+
+        if (vseq->seq_fields.bits.sample_adaptive_offset_enabled_flag) {
+            u(1, vslice_field(slice_sao_luma_flag));
+            if (!vseq->seq_fields.bits.separate_colour_plane_flag &&
+                vseq->seq_fields.bits.chroma_format_idc != 0) {
+                u(1, vslice_field(slice_sao_chroma_flag));
             }
+        }
 
-            if (vseq->seq_fields.bits.sample_adaptive_offset_enabled_flag) {
-                u(1, vslice_field(slice_sao_luma_flag));
-                if (!vseq->seq_fields.bits.separate_colour_plane_flag &&
-                   vseq->seq_fields.bits.chroma_format_idc != 0) {
-                    u(1, vslice_field(slice_sao_chroma_flag));
-                }
-            }
-
-            if (vslice->slice_type == P_SLICE || vslice->slice_type == B_SLICE) {
-                u(1, vslice_field(num_ref_idx_active_override_flag));
-                if (vslice->slice_fields.bits.num_ref_idx_active_override_flag) {
-                    ue(vslice_var(num_ref_idx_l0_active_minus1));
-                    if (vslice->slice_type == B_SLICE) {
-                        ue(vslice_var(num_ref_idx_l1_active_minus1));
-                    }
-                }
-
-                if (mseq->lists_modification_present_flag) {
-                    av_assert0(0);
-                    // ref_pic_lists_modification()
-                }
+        if (vslice->slice_type == P_SLICE || vslice->slice_type == B_SLICE) {
+            u(1, vslice_field(num_ref_idx_active_override_flag));
+            if (vslice->slice_fields.bits.num_ref_idx_active_override_flag) {
+                ue(vslice_var(num_ref_idx_l0_active_minus1));
                 if (vslice->slice_type == B_SLICE) {
-                    u(1, vslice_field(mvd_l1_zero_flag));
+                    ue(vslice_var(num_ref_idx_l1_active_minus1));
                 }
-                if (mseq->cabac_init_present_flag) {
-                    u(1, vslice_field(cabac_init_flag));
-                }
-                if (vslice->slice_fields.bits.slice_temporal_mvp_enabled_flag) {
-                    if (vslice->slice_type == B_SLICE)
-                        u(1, vslice_field(collocated_from_l0_flag));
-                    ue(vpic->collocated_ref_pic_index, collocated_ref_idx);
-                }
-                if ((vpic->pic_fields.bits.weighted_pred_flag &&
-                     vslice->slice_type == P_SLICE) ||
-                    (vpic->pic_fields.bits.weighted_bipred_flag &&
-                     vslice->slice_type == B_SLICE)) {
-                    av_assert0(0);
-                    // pred_weight_table()
-                }
-                ue(5 - vslice->max_num_merge_cand, five_minus_max_num_merge_cand);
             }
 
-            se(vslice_var(slice_qp_delta));
-            if (mseq->pps_slice_chroma_qp_offsets_present_flag) {
-                se(vslice_var(slice_cb_qp_offset));
-                se(vslice_var(slice_cr_qp_offset));
+            if (mseq->lists_modification_present_flag) {
+                av_assert0(0);
+                // ref_pic_lists_modification()
             }
-            if (mseq->pps_slice_chroma_offset_list_enabled_flag) {
-                u(1, 0, cu_chroma_qp_offset_enabled_flag);
+            if (vslice->slice_type == B_SLICE) {
+                u(1, vslice_field(mvd_l1_zero_flag));
             }
-            if (mseq->deblocking_filter_override_enabled_flag) {
-                u(1, mslice_var(deblocking_filter_override_flag));
+            if (mseq->cabac_init_present_flag) {
+                u(1, vslice_field(cabac_init_flag));
             }
-            if (mslice->deblocking_filter_override_flag) {
-                u(1, vslice_field(slice_deblocking_filter_disabled_flag));
-                if (!vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag) {
-                    se(vslice_var(slice_beta_offset_div2));
-                    se(vslice_var(slice_tc_offset_div2));
-                }
+            if (vslice->slice_fields.bits.slice_temporal_mvp_enabled_flag) {
+                if (vslice->slice_type == B_SLICE)
+                    u(1, vslice_field(collocated_from_l0_flag));
+                ue(vpic->collocated_ref_pic_index, collocated_ref_idx);
             }
-            if (vpic->pic_fields.bits.pps_loop_filter_across_slices_enabled_flag &&
-                (vslice->slice_fields.bits.slice_sao_luma_flag ||
-                 vslice->slice_fields.bits.slice_sao_chroma_flag ||
-                 vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag)) {
-                u(1, vslice_field(slice_loop_filter_across_slices_enabled_flag));
+            if ((vpic->pic_fields.bits.weighted_pred_flag &&
+                 vslice->slice_type == P_SLICE) ||
+                (vpic->pic_fields.bits.weighted_bipred_flag &&
+                 vslice->slice_type == B_SLICE)) {
+                av_assert0(0);
+                // pred_weight_table()
             }
+            ue(5 - vslice->max_num_merge_cand, five_minus_max_num_merge_cand);
+        }
+
+        se(vslice_var(slice_qp_delta));
+        if (mseq->pps_slice_chroma_qp_offsets_present_flag) {
+            se(vslice_var(slice_cb_qp_offset));
+            se(vslice_var(slice_cr_qp_offset));
+        }
+        if (mseq->pps_slice_chroma_offset_list_enabled_flag) {
+            u(1, 0, cu_chroma_qp_offset_enabled_flag);
+        }
+        if (mseq->deblocking_filter_override_enabled_flag) {
+            u(1, mslice_var(deblocking_filter_override_flag));
+        }
+        if (mslice->deblocking_filter_override_flag) {
+            u(1, vslice_field(slice_deblocking_filter_disabled_flag));
+            if (!vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag) {
+                se(vslice_var(slice_beta_offset_div2));
+                se(vslice_var(slice_tc_offset_div2));
+            }
+        }
+        if (vpic->pic_fields.bits.pps_loop_filter_across_slices_enabled_flag &&
+            (vslice->slice_fields.bits.slice_sao_luma_flag ||
+             vslice->slice_fields.bits.slice_sao_chroma_flag ||
+             vslice->slice_fields.bits.slice_deblocking_filter_disabled_flag)) {
+            u(1, vslice_field(slice_loop_filter_across_slices_enabled_flag));
         }
 
         if (vpic->pic_fields.bits.tiles_enabled_flag ||
@@ -798,8 +798,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         vseq->intra_idr_period = 0;
         vseq->ip_period = 0;
 
-        vseq->pic_width_in_luma_samples  = ctx->aligned_width;
-        vseq->pic_height_in_luma_samples = ctx->aligned_height;
+        vseq->pic_width_in_luma_samples  = ctx->surface_width;
+        vseq->pic_height_in_luma_samples = ctx->surface_height;
 
         vseq->seq_fields.bits.chroma_format_idc = 1; // 4:2:0.
         vseq->seq_fields.bits.separate_colour_plane_flag = 0;
@@ -897,12 +897,12 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         mseq->log2_max_pic_order_cnt_lsb_minus4 = 8;
         mseq->vps_sub_layer_ordering_info_present_flag = 0;
-        mseq->vps_max_dec_pic_buffering_minus1[0] = 1;
-        mseq->vps_max_num_reorder_pics[0]         = ctx->b_per_p;
+        mseq->vps_max_dec_pic_buffering_minus1[0] = (avctx->max_b_frames > 0) + 1;
+        mseq->vps_max_num_reorder_pics[0]         = (avctx->max_b_frames > 0);
         mseq->vps_max_latency_increase_plus1[0]   = 0;
         mseq->sps_sub_layer_ordering_info_present_flag = 0;
-        mseq->sps_max_dec_pic_buffering_minus1[0] = 1;
-        mseq->sps_max_num_reorder_pics[0]         = ctx->b_per_p;
+        mseq->sps_max_dec_pic_buffering_minus1[0] = (avctx->max_b_frames > 0) + 1;
+        mseq->sps_max_num_reorder_pics[0]         = (avctx->max_b_frames > 0);
         mseq->sps_max_latency_increase_plus1[0]   = 0;
 
         mseq->vps_timing_info_present_flag = 1;
@@ -911,15 +911,15 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         mseq->vps_poc_proportional_to_timing_flag = 1;
         mseq->vps_num_ticks_poc_diff_minus1 = 0;
 
-        if (ctx->input_width  != ctx->aligned_width ||
-            ctx->input_height != ctx->aligned_height) {
+        if (avctx->width  != ctx->surface_width ||
+            avctx->height != ctx->surface_height) {
             mseq->conformance_window_flag = 1;
             mseq->conf_win_left_offset   = 0;
             mseq->conf_win_right_offset  =
-                (ctx->aligned_width - ctx->input_width) / 2;
+                (ctx->surface_width - avctx->width) / 2;
             mseq->conf_win_top_offset    = 0;
             mseq->conf_win_bottom_offset =
-                (ctx->aligned_height - ctx->input_height) / 2;
+                (ctx->surface_height - avctx->height) / 2;
         } else {
             mseq->conformance_window_flag = 0;
         }
@@ -1154,156 +1154,56 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
-static av_cold int vaapi_encode_h265_init_constant_bitrate(AVCodecContext *avctx)
-{
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
-    int hrd_buffer_size;
-    int hrd_initial_buffer_fullness;
-
-    if (avctx->bit_rate > INT32_MAX) {
-        av_log(avctx, AV_LOG_ERROR, "Target bitrate of 2^31 bps or "
-               "higher is not supported.\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (avctx->rc_buffer_size)
-        hrd_buffer_size = avctx->rc_buffer_size;
-    else
-        hrd_buffer_size = avctx->bit_rate;
-    if (avctx->rc_initial_buffer_occupancy)
-        hrd_initial_buffer_fullness = avctx->rc_initial_buffer_occupancy;
-    else
-        hrd_initial_buffer_fullness = hrd_buffer_size * 3 / 4;
-
-    priv->rc_params.misc.type = VAEncMiscParameterTypeRateControl;
-    priv->rc_params.rc = (VAEncMiscParameterRateControl) {
-        .bits_per_second   = avctx->bit_rate,
-        .target_percentage = 66,
-        .window_size       = 1000,
-        .initial_qp        = (avctx->qmax >= 0 ? avctx->qmax : 40),
-        .min_qp            = (avctx->qmin >= 0 ? avctx->qmin : 20),
-        .basic_unit_size   = 0,
-    };
-    ctx->global_params[ctx->nb_global_params] =
-        &priv->rc_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(priv->rc_params);
-
-    priv->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
-    priv->hrd_params.hrd = (VAEncMiscParameterHRD) {
-        .initial_buffer_fullness = hrd_initial_buffer_fullness,
-        .buffer_size             = hrd_buffer_size,
-    };
-    ctx->global_params[ctx->nb_global_params] =
-        &priv->hrd_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(priv->hrd_params);
-
-    // These still need to be  set for pic_init_qp/slice_qp_delta.
-    priv->fixed_qp_idr = 30;
-    priv->fixed_qp_p   = 30;
-    priv->fixed_qp_b   = 30;
-
-    av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
-           avctx->bit_rate);
-    return 0;
-}
-
-static av_cold int vaapi_encode_h265_init_fixed_qp(AVCodecContext *avctx)
+static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH265Context *priv = ctx->priv_data;
     VAAPIEncodeH265Options  *opt = ctx->codec_options;
 
-    priv->fixed_qp_p = opt->qp;
-    if (avctx->i_quant_factor > 0.0)
-        priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
-                                    avctx->i_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_idr = priv->fixed_qp_p;
-    if (avctx->b_quant_factor > 0.0)
-        priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
-                                  avctx->b_quant_offset) + 0.5);
-    else
-        priv->fixed_qp_b = priv->fixed_qp_p;
+    priv->ctu_width     = FFALIGN(ctx->surface_width,  32) / 32;
+    priv->ctu_height    = FFALIGN(ctx->surface_height, 32) / 32;
 
-    av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
-           "%d / %d / %d for IDR- / P- / B-frames.\n",
-           priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
-    return 0;
-}
+    av_log(avctx, AV_LOG_VERBOSE, "Input %ux%u -> Surface %ux%u -> CTU %ux%u.\n",
+           avctx->width, avctx->height, ctx->surface_width,
+           ctx->surface_height, priv->ctu_width, priv->ctu_height);
 
-static av_cold int vaapi_encode_h265_init_internal(AVCodecContext *avctx)
-{
-    static const VAConfigAttrib default_config_attributes[] = {
-        { .type  = VAConfigAttribRTFormat,
-          .value = VA_RT_FORMAT_YUV420 },
-        { .type  = VAConfigAttribEncPackedHeaders,
-          .value = (VA_ENC_PACKED_HEADER_SEQUENCE |
-                    VA_ENC_PACKED_HEADER_SLICE) },
-    };
+    if (ctx->va_rc_mode == VA_RC_CQP) {
+        priv->fixed_qp_p = opt->qp;
+        if (avctx->i_quant_factor > 0.0)
+            priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
+                                        avctx->i_quant_offset) + 0.5);
+        else
+            priv->fixed_qp_idr = priv->fixed_qp_p;
+        if (avctx->b_quant_factor > 0.0)
+            priv->fixed_qp_b = (int)((priv->fixed_qp_p * avctx->b_quant_factor +
+                                      avctx->b_quant_offset) + 0.5);
+        else
+            priv->fixed_qp_b = priv->fixed_qp_p;
 
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
-    int i, err;
+        av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
+               "%d / %d / %d for IDR- / P- / B-frames.\n",
+               priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
 
-    switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN:
-    case FF_PROFILE_UNKNOWN:
-        ctx->va_profile = VAProfileHEVCMain;
-        break;
-    case FF_PROFILE_HEVC_MAIN_10:
-        av_log(avctx, AV_LOG_ERROR, "H.265 main 10-bit profile "
-               "is not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown H.265 profile %d.\n",
-               avctx->profile);
-        return AVERROR(EINVAL);
-    }
-    ctx->va_entrypoint = VAEntrypointEncSlice;
+    } else if (ctx->va_rc_mode == VA_RC_CBR) {
+        // These still need to be  set for pic_init_qp/slice_qp_delta.
+        priv->fixed_qp_idr = 30;
+        priv->fixed_qp_p   = 30;
+        priv->fixed_qp_b   = 30;
 
-    ctx->input_width    = avctx->width;
-    ctx->input_height   = avctx->height;
-    ctx->aligned_width  = FFALIGN(ctx->input_width,  16);
-    ctx->aligned_height = FFALIGN(ctx->input_height, 16);
-    priv->ctu_width     = FFALIGN(ctx->aligned_width,  32) / 32;
-    priv->ctu_height    = FFALIGN(ctx->aligned_height, 32) / 32;
+        av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
+               avctx->bit_rate);
 
-    av_log(avctx, AV_LOG_VERBOSE, "Input %ux%u -> Aligned %ux%u -> CTU %ux%u.\n",
-           ctx->input_width, ctx->input_height, ctx->aligned_width,
-           ctx->aligned_height, priv->ctu_width, priv->ctu_height);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(default_config_attributes); i++) {
-        ctx->config_attributes[ctx->nb_config_attributes++] =
-            default_config_attributes[i];
-    }
-
-    if (avctx->bit_rate > 0) {
-        ctx->va_rc_mode = VA_RC_CBR;
-        err = vaapi_encode_h265_init_constant_bitrate(avctx);
     } else {
-        ctx->va_rc_mode = VA_RC_CQP;
-        err = vaapi_encode_h265_init_fixed_qp(avctx);
+        av_assert0(0 && "Invalid RC mode.");
     }
-    if (err < 0)
-        return err;
-
-    ctx->config_attributes[ctx->nb_config_attributes++] = (VAConfigAttrib) {
-        .type  = VAConfigAttribRateControl,
-        .value = ctx->va_rc_mode,
-    };
-
-    ctx->nb_recon_frames = 20;
 
     return 0;
 }
 
-static VAAPIEncodeType vaapi_encode_type_h265 = {
+static const VAAPIEncodeType vaapi_encode_type_h265 = {
     .priv_data_size        = sizeof(VAAPIEncodeH265Context),
 
-    .init                  = &vaapi_encode_h265_init_internal,
+    .configure             = &vaapi_encode_h265_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferHEVC),
     .init_sequence_params  = &vaapi_encode_h265_init_sequence_params,
@@ -1323,7 +1223,42 @@ static VAAPIEncodeType vaapi_encode_type_h265 = {
 
 static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 {
-    return ff_vaapi_encode_init(avctx, &vaapi_encode_type_h265);
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    ctx->codec = &vaapi_encode_type_h265;
+
+    switch (avctx->profile) {
+    case FF_PROFILE_HEVC_MAIN:
+    case FF_PROFILE_UNKNOWN:
+        ctx->va_profile = VAProfileHEVCMain;
+        break;
+    case FF_PROFILE_HEVC_MAIN_10:
+        av_log(avctx, AV_LOG_ERROR, "H.265 main 10-bit profile "
+               "is not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown H.265 profile %d.\n",
+               avctx->profile);
+        return AVERROR(EINVAL);
+    }
+    ctx->va_entrypoint = VAEntrypointEncSlice;
+
+    // This will be dependent on profile when 10-bit is supported.
+    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
+
+    if (avctx->bit_rate > 0)
+        ctx->va_rc_mode = VA_RC_CBR;
+    else
+        ctx->va_rc_mode = VA_RC_CQP;
+
+    ctx->va_packed_headers =
+        VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
+        VA_ENC_PACKED_HEADER_SLICE;     // Slice headers.
+
+    ctx->surface_width  = FFALIGN(avctx->width,  16);
+    ctx->surface_height = FFALIGN(avctx->height, 16);
+
+    return ff_vaapi_encode_init(avctx);
 }
 
 #define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \

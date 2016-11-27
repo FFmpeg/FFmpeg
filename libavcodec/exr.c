@@ -882,6 +882,22 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                     bytestream_put_le16(&out, pixel);
                 }
                 break;
+            case EXR_UINT:
+                ptr[0] = in;
+                ptr[1] = ptr[0] + s->xdelta;
+                ptr[2] = ptr[1] + s->xdelta;
+                ptr[3] = ptr[2] + s->xdelta;
+                in     = ptr[3] + s->xdelta;
+
+                for (j = 0; j < s->xdelta; ++j) {
+                    uint32_t diff = (*(ptr[0]++) << 24) |
+                    (*(ptr[1]++) << 16) |
+                    (*(ptr[2]++) << 8 ) |
+                    (*(ptr[3]++));
+                    pixel += diff;
+                    bytestream_put_le32(&out, pixel);
+                }
+                break;
             default:
                 return AVERROR_INVALIDDATA;
             }

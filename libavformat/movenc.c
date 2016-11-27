@@ -33,6 +33,7 @@
 #include "avc.h"
 #include "libavcodec/ac3_parser.h"
 #include "libavcodec/dnxhddata.h"
+#include "libavcodec/flac.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
@@ -655,6 +656,26 @@ static int mov_write_wfex_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     return update_size(pb, pos);
 }
 
+static int mov_write_dfla_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "dfLa");
+    avio_w8(pb, 0); /* version */
+    avio_wb24(pb, 0); /* flags */
+
+    /* Expect the encoder to pass a METADATA_BLOCK_TYPE_STREAMINFO. */
+    if (track->par->extradata_size != FLAC_STREAMINFO_SIZE)
+        return AVERROR_INVALIDDATA;
+
+    /* TODO: Write other METADATA_BLOCK_TYPEs if the encoder makes them available. */
+    avio_w8(pb, 1 << 7 | FLAC_METADATA_TYPE_STREAMINFO); /* LastMetadataBlockFlag << 7 | BlockType */
+    avio_wb24(pb, track->par->extradata_size); /* Length */
+    avio_write(pb, track->par->extradata, track->par->extradata_size); /* BlockData[Length] */
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_chan_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     uint32_t layout_tag, bitmap;
@@ -964,8 +985,13 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
                 avio_wb16(pb, 16);
             avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
         } else { /* reserved for mp4/3gp */
-            avio_wb16(pb, 2);
-            avio_wb16(pb, 16);
+            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
+                avio_wb16(pb, track->par->channels);
+                avio_wb16(pb, track->par->bits_per_raw_sample);
+            } else {
+                avio_wb16(pb, 2);
+                avio_wb16(pb, 16);
+            }
             avio_wb16(pb, 0);
         }
 
@@ -1010,6 +1036,8 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         mov_write_extradata_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_WMAPRO)
         mov_write_wfex_tag(s, pb, track);
+    else if (track->par->codec_id == AV_CODEC_ID_FLAC)
+        mov_write_dfla_tag(pb, track);
     else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
@@ -1178,6 +1206,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->par->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
     else if (track->par->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
     else if (track->par->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
+    else if (track->par->codec_id == AV_CODEC_ID_FLAC)      tag = MKTAG('f','L','a','C');
     else if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)  tag = MKTAG('m','p','4','v');
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)  tag = MKTAG('m','p','4','a');
     else if (track->par->codec_id == AV_CODEC_ID_DVD_SUBTITLE)  tag = MKTAG('m','p','4','s');
@@ -5043,7 +5072,8 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->start_cts = 0;
             }
 
-            if (trk->par->codec_id == AV_CODEC_ID_MP4ALS) {
+            if (trk->par->codec_id == AV_CODEC_ID_MP4ALS ||
+                trk->par->codec_id == AV_CODEC_ID_FLAC) {
                 int side_size = 0;
                 uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
                 if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
@@ -5714,8 +5744,11 @@ static int mov_init(AVFormatContext *s)
                         pix_fmt == AV_PIX_FMT_MONOWHITE ||
                         pix_fmt == AV_PIX_FMT_MONOBLACK;
             }
-            if (track->mode == MODE_MP4 &&
-                track->par->codec_id == AV_CODEC_ID_VP9) {
+            if (track->par->codec_id == AV_CODEC_ID_VP9) {
+                if (track->mode != MODE_MP4) {
+                    av_log(s, AV_LOG_ERROR, "VP9 only supported in MP4.\n");
+                    return AVERROR(EINVAL);
+                }
                 if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
                     av_log(s, AV_LOG_ERROR,
                            "VP9 in MP4 support is experimental, add "
@@ -5755,6 +5788,19 @@ static int mov_init(AVFormatContext *s)
                 } else {
                     av_log(s, AV_LOG_WARNING, "track %d: muxing mp3 at %dhz is not standard in MP4\n",
                            i, track->par->sample_rate);
+                }
+            }
+            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
+                if (track->mode != MODE_MP4) {
+                    av_log(s, AV_LOG_ERROR, "FLAC only supported in MP4.\n");
+                    return AVERROR(EINVAL);
+                }
+                if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+                    av_log(s, AV_LOG_ERROR,
+                           "FLAC in MP4 support is experimental, add "
+                           "'-strict %d' if you want to use it.\n",
+                           FF_COMPLIANCE_EXPERIMENTAL);
+                    return AVERROR_EXPERIMENTAL;
                 }
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {

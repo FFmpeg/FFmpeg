@@ -119,6 +119,8 @@ int qp_hist           = 0;
 int stdin_interaction = 1;
 int frame_bits_per_raw_sample = 0;
 float max_error_rate  = 2.0/3;
+int filter_nbthreads = 0;
+int filter_complex_nbthreads = 0;
 
 
 static int intra_only         = 0;

@@ -46,7 +46,7 @@ static struct ResampleContext *create(struct ResampleContext *c, int out_rate, i
     soxr_io_spec_t io_spec = soxr_io_spec(type, type);
 
     soxr_quality_spec_t q_spec = soxr_quality_spec((int)((precision-2)/4), (SOXR_HI_PREC_CLOCK|SOXR_ROLLOFF_NONE)*!!cheby);
-    q_spec.precision = linear? 0 : precision;
+    q_spec.precision = precision;
 #if !defined SOXR_VERSION /* Deprecated @ March 2013: */
     q_spec.bw_pc = cutoff? FFMAX(FFMIN(cutoff,.995),.8)*100 : q_spec.bw_pc;
 #else

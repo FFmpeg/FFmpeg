@@ -102,7 +102,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     PanContext *const pan = ctx->priv;
     char *arg, *arg0, *tokenizer, *args = av_strdup(pan->args);
-    int out_ch_id, in_ch_id, len, named, ret;
+    int out_ch_id, in_ch_id, len, named, ret, sign = 1;
     int nb_in_channels[2] = { 0, 0 }; // number of unnamed and named input channels
     double gain;
 
@@ -178,14 +178,18 @@ static av_cold int init(AVFilterContext *ctx)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            pan->gain[out_ch_id][in_ch_id] = gain;
+            pan->gain[out_ch_id][in_ch_id] = sign * gain;
             skip_spaces(&arg);
             if (!*arg)
                 break;
-            if (*arg != '+') {
+            if (*arg == '-') {
+                sign = -1;
+            } else if (*arg != '+') {
                 av_log(ctx, AV_LOG_ERROR, "Syntax error near \"%.8s\"\n", arg);
                 ret = AVERROR(EINVAL);
                 goto fail;
+            } else {
+                sign = 1;
             }
             arg++;
         }

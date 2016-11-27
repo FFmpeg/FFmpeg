@@ -447,8 +447,8 @@ static const AVOption avcodec_options[] = {
 {"timecode_frame_start", "GOP timecode frame start number, in non-drop-frame format", OFFSET(timecode_frame_start), AV_OPT_TYPE_INT64, {.i64 = -1 }, -1, INT64_MAX, V|E},
 #endif
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
-{"channel_layout", NULL, OFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, 0, INT64_MAX, A|E|D, "channel_layout"},
-{"request_channel_layout", NULL, OFFSET(request_channel_layout), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, 0, INT64_MAX, A|D, "request_channel_layout"},
+{"channel_layout", NULL, OFFSET(channel_layout), AV_OPT_TYPE_UINT64, {.i64 = DEFAULT }, 0, UINT64_MAX, A|E|D, "channel_layout"},
+{"request_channel_layout", NULL, OFFSET(request_channel_layout), AV_OPT_TYPE_UINT64, {.i64 = DEFAULT }, 0, UINT64_MAX, A|D, "request_channel_layout"},
 {"rc_max_vbv_use", NULL, OFFSET(rc_max_available_vbv_use), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0.0, FLT_MAX, V|E},
 {"rc_min_vbv_use", NULL, OFFSET(rc_min_vbv_overflow_use),  AV_OPT_TYPE_FLOAT, {.dbl = 3 },     0.0, FLT_MAX, V|E},
 {"ticks_per_frame", NULL, OFFSET(ticks_per_frame), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, INT_MAX, A|V|E|D},

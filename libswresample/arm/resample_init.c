@@ -111,12 +111,10 @@ av_cold void swri_resample_dsp_arm_init(ResampleContext *c)
 
     switch(c->format) {
     case AV_SAMPLE_FMT_FLTP:
-        if (!c->linear)
-            c->dsp.resample = ff_resample_common_float_neon;
+        c->dsp.resample_common = ff_resample_common_float_neon;
         break;
     case AV_SAMPLE_FMT_S16P:
-        if (!c->linear)
-            c->dsp.resample = ff_resample_common_s16_neon;
+        c->dsp.resample_common = ff_resample_common_s16_neon;
         break;
     }
 }

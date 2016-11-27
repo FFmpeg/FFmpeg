@@ -277,8 +277,8 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
     vpic->reconstructed_picture = pic->recon_surface;
     vpic->coded_buf = pic->output_buffer;
 
-    vpic->picture_width  = ctx->input_width;
-    vpic->picture_height = ctx->input_height;
+    vpic->picture_width  = avctx->width;
+    vpic->picture_height = avctx->height;
 
     vpic->pic_flags.bits.profile      = 0;
     vpic->pic_flags.bits.progressive  = 0;
@@ -333,37 +333,27 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
     return 0;
 }
 
-static av_cold int vaapi_encode_mjpeg_init_internal(AVCodecContext *avctx)
+static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 {
-    static const VAConfigAttrib default_config_attributes[] = {
-        { .type  = VAConfigAttribRTFormat,
-          .value = VA_RT_FORMAT_YUV420 },
-        { .type  = VAConfigAttribEncPackedHeaders,
-          .value = VA_ENC_PACKED_HEADER_SEQUENCE },
-    };
-
     VAAPIEncodeContext       *ctx = avctx->priv_data;
     VAAPIEncodeMJPEGContext *priv = ctx->priv_data;
-    int i;
-
-    ctx->va_profile    = VAProfileJPEGBaseline;
-    ctx->va_entrypoint = VAEntrypointEncPicture;
-
-    ctx->input_width    = avctx->width;
-    ctx->input_height   = avctx->height;
-    ctx->aligned_width  = FFALIGN(ctx->input_width,  8);
-    ctx->aligned_height = FFALIGN(ctx->input_height, 8);
-
-    for (i = 0; i < FF_ARRAY_ELEMS(default_config_attributes); i++) {
-        ctx->config_attributes[ctx->nb_config_attributes++] =
-            default_config_attributes[i];
-    }
 
     priv->quality = avctx->global_quality;
     if (priv->quality < 1 || priv->quality > 100) {
         av_log(avctx, AV_LOG_ERROR, "Invalid quality value %d "
                "(must be 1-100).\n", priv->quality);
         return AVERROR(EINVAL);
+    }
+
+    // Hack: the implementation calls the JPEG image header (which we
+    // will use in the same way as a slice header) generic "raw data".
+    // Therefore, if after the packed header capability check we have
+    // PACKED_HEADER_RAW_DATA available, rewrite it as
+    // PACKED_HEADER_SLICE so that the header-writing code can do the
+    // right thing.
+    if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_RAW_DATA) {
+        ctx->va_packed_headers &= ~VA_ENC_PACKED_HEADER_RAW_DATA;
+        ctx->va_packed_headers |=  VA_ENC_PACKED_HEADER_SLICE;
     }
 
     vaapi_encode_mjpeg_init_tables(avctx);
@@ -374,7 +364,7 @@ static av_cold int vaapi_encode_mjpeg_init_internal(AVCodecContext *avctx)
 static VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .priv_data_size        = sizeof(VAAPIEncodeMJPEGContext),
 
-    .init                  = &vaapi_encode_mjpeg_init_internal,
+    .configure             = &vaapi_encode_mjpeg_configure,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),
     .init_picture_params   = &vaapi_encode_mjpeg_init_picture_params,
@@ -390,7 +380,25 @@ static VAAPIEncodeType vaapi_encode_type_mjpeg = {
 
 static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
 {
-    return ff_vaapi_encode_init(avctx, &vaapi_encode_type_mjpeg);
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    ctx->codec = &vaapi_encode_type_mjpeg;
+
+    ctx->va_profile    = VAProfileJPEGBaseline;
+    ctx->va_entrypoint = VAEntrypointEncPicture;
+
+    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
+
+    ctx->va_rc_mode = VA_RC_CQP;
+
+    // The JPEG image header - see note above.
+    ctx->va_packed_headers =
+        VA_ENC_PACKED_HEADER_RAW_DATA;
+
+    ctx->surface_width  = FFALIGN(avctx->width,  8);
+    ctx->surface_height = FFALIGN(avctx->height, 8);
+
+    return ff_vaapi_encode_init(avctx);
 }
 
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {

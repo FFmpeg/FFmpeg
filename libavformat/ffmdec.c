@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -28,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/pixdesc.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -277,6 +279,14 @@ static int ffm_append_recommended_configuration(AVStream *st, char **conf)
     return 0;
 }
 
+#define VALIDATE_PARAMETER(parameter, name, check) {                              \
+    if (check) {                                                                  \
+        av_log(codec, AV_LOG_ERROR, "Invalid " name " %d\n", codec->parameter);   \
+        ret = AVERROR_INVALIDDATA;                                                \
+        goto fail;                                                                \
+    }                                                                             \
+}
+
 static int ffm2_read_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -342,6 +352,7 @@ static int ffm2_read_header(AVFormatContext *s)
             if (!codec_desc) {
                 av_log(s, AV_LOG_ERROR, "Invalid codec id: %d\n", codec->codec_id);
                 codec->codec_id = AV_CODEC_ID_NONE;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             codec->codec_type = avio_r8(pb);
@@ -350,14 +361,25 @@ static int ffm2_read_header(AVFormatContext *s)
                        codec_desc->type, codec->codec_type);
                 codec->codec_id = AV_CODEC_ID_NONE;
                 codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             codec->bit_rate = avio_rb32(pb);
+            if (codec->bit_rate < 0) {
+                av_log(codec, AV_LOG_ERROR, "Invalid bit rate %"PRId64"\n", codec->bit_rate);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             codec->flags = avio_rb32(pb);
             codec->flags2 = avio_rb32(pb);
             codec->debug = avio_rb32(pb);
             if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
                 int size = avio_rb32(pb);
+                if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
+                    av_log(s, AV_LOG_ERROR, "Invalid extradata size %d\n", size);
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
                 codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!codec->extradata)
                     return AVERROR(ENOMEM);
@@ -380,6 +402,9 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             codec->width = avio_rb16(pb);
             codec->height = avio_rb16(pb);
+            ret = av_image_check_size(codec->width, codec->height, 0, s);
+            if (ret < 0)
+                goto fail;
             codec->gop_size = avio_rb16(pb);
             codec->pix_fmt = avio_rb32(pb);
             if (!av_pix_fmt_desc_get(codec->pix_fmt)) {
@@ -432,13 +457,11 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             }
             codec->sample_rate = avio_rb32(pb);
-            if (codec->sample_rate <= 0) {
-                av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", codec->sample_rate);
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            VALIDATE_PARAMETER(sample_rate, "sample rate",        codec->sample_rate < 0)
             codec->channels = avio_rl16(pb);
+            VALIDATE_PARAMETER(channels,    "number of channels", codec->channels < 0)
             codec->frame_size = avio_rl16(pb);
+            VALIDATE_PARAMETER(frame_size,  "frame size",         codec->frame_size < 0)
             break;
         case MKBETAG('C', 'P', 'R', 'V'):
             if (f_cprv++) {
@@ -518,7 +541,7 @@ static int ffm_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     const AVCodecDescriptor *codec_desc;
-    int i, nb_streams;
+    int i, nb_streams, ret;
     uint32_t tag;
 
     /* header */
@@ -570,6 +593,10 @@ static int ffm_read_header(AVFormatContext *s)
             goto fail;
         }
         codec->bit_rate = avio_rb32(pb);
+        if (codec->bit_rate < 0) {
+            av_log(codec, AV_LOG_WARNING, "Invalid bit rate %"PRId64"\n", codec->bit_rate);
+            goto fail;
+        }
         codec->flags = avio_rb32(pb);
         codec->flags2 = avio_rb32(pb);
         codec->debug = avio_rb32(pb);
@@ -585,6 +612,8 @@ static int ffm_read_header(AVFormatContext *s)
             }
             codec->width = avio_rb16(pb);
             codec->height = avio_rb16(pb);
+            if (av_image_check_size(codec->width, codec->height, 0, s) < 0)
+                goto fail;
             codec->gop_size = avio_rb16(pb);
             codec->pix_fmt = avio_rb32(pb);
             if (!av_pix_fmt_desc_get(codec->pix_fmt)) {
@@ -633,18 +662,21 @@ static int ffm_read_header(AVFormatContext *s)
             break;
         case AVMEDIA_TYPE_AUDIO:
             codec->sample_rate = avio_rb32(pb);
-            if (codec->sample_rate <= 0) {
-                av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", codec->sample_rate);
-                goto fail;
-            }
+            VALIDATE_PARAMETER(sample_rate, "sample rate",        codec->sample_rate < 0)
             codec->channels = avio_rl16(pb);
+            VALIDATE_PARAMETER(channels,    "number of channels", codec->channels < 0)
             codec->frame_size = avio_rl16(pb);
+            VALIDATE_PARAMETER(frame_size,  "frame size",         codec->frame_size < 0)
             break;
         default:
             goto fail;
         }
         if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
             int size = avio_rb32(pb);
+            if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
+                av_log(s, AV_LOG_ERROR, "Invalid extradata size %d\n", size);
+                goto fail;
+            }
             codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!codec->extradata)
                 return AVERROR(ENOMEM);

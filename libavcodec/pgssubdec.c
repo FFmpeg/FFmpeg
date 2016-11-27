@@ -556,12 +556,13 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
         sub->rects[i]->x    = ctx->presentation.objects[i].x;
         sub->rects[i]->y    = ctx->presentation.objects[i].y;
-        sub->rects[i]->w    = object->w;
-        sub->rects[i]->h    = object->h;
-
-        sub->rects[i]->linesize[0] = object->w;
 
         if (object->rle) {
+            sub->rects[i]->w    = object->w;
+            sub->rects[i]->h    = object->h;
+
+            sub->rects[i]->linesize[0] = object->w;
+
             if (object->rle_remaining_len) {
                 av_log(avctx, AV_LOG_ERROR, "RLE data length %u is %u bytes shorter than expected\n",
                        object->rle_data_len, object->rle_remaining_len);

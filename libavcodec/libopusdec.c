@@ -47,6 +47,13 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled;
     uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
 
+    avc->channels = avc->extradata_size >= 10 ? avc->extradata[9] : (avc->channels == 1) ? 1 : 2;
+    if (avc->channels <= 0) {
+        av_log(avc, AV_LOG_WARNING,
+               "Invalid number of channels %d, defaulting to stereo\n", avc->channels);
+        avc->channels = 2;
+    }
+
     avc->sample_rate    = 48000;
     avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
                           AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;

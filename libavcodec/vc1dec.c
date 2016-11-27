@@ -634,6 +634,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         uint8_t *buf;
         GetBitContext gb;
         int mby_start;
+        const uint8_t *rawbuf;
+        int raw_size;
     } *slices = NULL, *tmp;
 
     v->second_field = 0;
@@ -716,6 +718,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     /* assuming that the field marker is at the exact middle,
                        hope it's correct */
                     slices[n_slices].mby_start = s->mb_height + 1 >> 1;
+                    slices[n_slices].rawbuf = start;
+                    slices[n_slices].raw_size = size + 4;
                     n_slices1 = n_slices - 1; // index of the last slice of the first field
                     n_slices++;
                     break;
@@ -743,6 +747,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                                   buf_size3 << 3);
                     slices[n_slices].mby_start = get_bits(&slices[n_slices].gb, 9);
+                    slices[n_slices].rawbuf = start;
+                    slices[n_slices].raw_size = size + 4;
                     n_slices++;
                     break;
                 }
@@ -779,6 +785,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                               buf_size3 << 3);
                 slices[n_slices].mby_start = s->mb_height + 1 >> 1;
+                slices[n_slices].rawbuf = divider;
+                slices[n_slices].raw_size = buf + buf_size - divider;
                 n_slices1 = n_slices - 1;
                 n_slices++;
             }
@@ -921,6 +929,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     } else
 #endif
     if (avctx->hwaccel) {
+        s->mb_y = 0;
         if (v->field_mode && buf_start_second_field) {
             // decode first field
             s->picture_structure = PICT_BOTTOM_FIELD - v->tff;
@@ -953,8 +962,36 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->picture_structure = PICT_FRAME;
             if ((ret = avctx->hwaccel->start_frame(avctx, buf_start, (buf + buf_size) - buf_start)) < 0)
                 goto err;
-            if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, (buf + buf_size) - buf_start)) < 0)
-                goto err;
+
+            if (n_slices == 0) {
+                // no slices, decode the frame as-is
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, (buf + buf_size) - buf_start)) < 0)
+                    goto err;
+            } else {
+                // decode the frame part as the first slice
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, slices[0].rawbuf - buf_start)) < 0)
+                    goto err;
+
+                // and process the slices as additional slices afterwards
+                for (i = 0 ; i < n_slices; i++) {
+                    s->gb = slices[i].gb;
+                    s->mb_y = slices[i].mby_start;
+
+                    v->pic_header_flag = get_bits1(&s->gb);
+                    if (v->pic_header_flag) {
+                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                            av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
+                            ret = AVERROR_INVALIDDATA;
+                            if (avctx->err_recognition & AV_EF_EXPLODE)
+                                goto err;
+                            continue;
+                        }
+                    }
+
+                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                        goto err;
+                }
+            }
             if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
                 goto err;
         }

@@ -93,6 +93,7 @@ typedef struct mkv_cues {
 typedef struct mkv_track {
     int             write_dts;
     int             has_cue;
+    int64_t         codecpriv_offset;
     int64_t         ts_offset;
 } mkv_track;
 
@@ -121,6 +122,8 @@ typedef struct MatroskaMuxContext {
     ebml_master     tags;
     AVIOContext     *info_bc;
     ebml_master     info;
+    AVIOContext     *tracks_bc;
+    ebml_master     tracks_master;
     ebml_master     segment;
     int64_t         segment_offset;
     ebml_master     cluster;
@@ -1270,6 +1273,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT) {
+        mkv->tracks[i].codecpriv_offset = avio_tell(pb);
         ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
         if (ret < 0)
             return ret;
@@ -1283,15 +1287,14 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 static int mkv_write_tracks(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *dyn_cp, *pb = s->pb;
-    ebml_master tracks;
+    AVIOContext *pb = s->pb;
     int i, ret, default_stream_exists = 0;
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
     if (ret < 0)
         return ret;
 
-    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &tracks, MATROSKA_ID_TRACKS, 0);
+    ret = start_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, &mkv->tracks_master, MATROSKA_ID_TRACKS, 0);
     if (ret < 0)
         return ret;
 
@@ -1300,11 +1303,16 @@ static int mkv_write_tracks(AVFormatContext *s)
         default_stream_exists |= st->disposition & AV_DISPOSITION_DEFAULT;
     }
     for (i = 0; i < s->nb_streams; i++) {
-        ret = mkv_write_track(s, mkv, i, dyn_cp, default_stream_exists);
+        ret = mkv_write_track(s, mkv, i, mkv->tracks_bc, default_stream_exists);
         if (ret < 0)
             return ret;
     }
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, tracks);
+
+    if (pb->seekable && !mkv->is_live)
+        put_ebml_void(pb, avio_tell(mkv->tracks_bc));
+    else
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
+
     return 0;
 }
 
@@ -2091,6 +2099,52 @@ static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
     avio_flush(s->pb);
 }
 
+static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    mkv_track *track        = &mkv->tracks[pkt->stream_index];
+    AVCodecParameters *par  = s->streams[pkt->stream_index]->codecpar;
+    uint8_t *side_data;
+    int side_data_size = 0, ret;
+
+    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                        &side_data_size);
+
+    switch (par->codec_id) {
+    case AV_CODEC_ID_FLAC:
+        if (side_data_size && s->pb->seekable) {
+            AVCodecParameters *codecpriv_par;
+            int64_t curpos;
+            if (side_data_size != par->extradata_size) {
+                av_log(s, AV_LOG_ERROR, "Invalid FLAC STREAMINFO metadata for output stream %d\n",
+                       pkt->stream_index);
+                return AVERROR(EINVAL);
+            }
+            codecpriv_par = avcodec_parameters_alloc();
+            if (!codecpriv_par)
+                return AVERROR(ENOMEM);
+            ret = avcodec_parameters_copy(codecpriv_par, par);
+            if (ret < 0) {
+                avcodec_parameters_free(&codecpriv_par);
+                return ret;
+            }
+            memcpy(codecpriv_par->extradata, side_data, side_data_size);
+            curpos = avio_tell(mkv->tracks_bc);
+            avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
+            mkv_write_codecprivate(s, mkv->tracks_bc, codecpriv_par, 1, 0);
+            avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
+            avcodec_parameters_free(&codecpriv_par);
+        }
+        break;
+    default:
+        if (side_data_size)
+            av_log(s, AV_LOG_DEBUG, "Ignoring new extradata in a packet for stream %d.\n", pkt->stream_index);
+        break;
+    }
+
+    return 0;
+}
+
 static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_cue)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -2182,6 +2236,10 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t cluster_time;
     int ret;
     int start_new_cluster;
+
+    ret = mkv_check_new_extra_data(s, pkt);
+    if (ret < 0)
+        return ret;
 
     if (mkv->tracks[pkt->stream_index].write_dts)
         cluster_time = pkt->dts - mkv->cluster_pts;
@@ -2335,6 +2393,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         put_ebml_float(mkv->info_bc, MATROSKA_ID_DURATION, mkv->duration);
         avio_seek(pb, mkv->info.pos, SEEK_SET);
         end_ebml_master_crc32(pb, &mkv->info_bc, mkv, mkv->info);
+
+        // write tracks master
+        avio_seek(pb, mkv->tracks_master.pos, SEEK_SET);
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
 
         // update stream durations
         if (!mkv->is_live && mkv->stream_durations) {

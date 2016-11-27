@@ -18,7 +18,6 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -35,60 +34,14 @@ typedef struct CudaUploadContext {
     AVBufferRef *hwframe;
 } CudaUploadContext;
 
-static void cudaupload_ctx_free(AVHWDeviceContext *ctx)
-{
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
-    cuCtxDestroy(hwctx->cuda_ctx);
-}
-
 static av_cold int cudaupload_init(AVFilterContext *ctx)
 {
     CudaUploadContext *s = ctx->priv;
+    char buf[64] = { 0 };
 
-    AVHWDeviceContext   *device_ctx;
-    AVCUDADeviceContext *device_hwctx;
-    CUdevice device;
-    CUcontext cuda_ctx = NULL, dummy;
-    CUresult err;
-    int ret;
+    snprintf(buf, sizeof(buf), "%d", s->device_idx);
 
-    err = cuInit(0);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Could not initialize the CUDA driver API\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    err = cuDeviceGet(&device, s->device_idx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Could not get the device number %d\n", s->device_idx);
-        return AVERROR_UNKNOWN;
-    }
-
-    err = cuCtxCreate(&cuda_ctx, 0, device);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error creating a CUDA context\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    cuCtxPopCurrent(&dummy);
-
-    s->hwdevice = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_CUDA);
-    if (!s->hwdevice) {
-        cuCtxDestroy(cuda_ctx);
-        return AVERROR(ENOMEM);
-    }
-
-    device_ctx       = (AVHWDeviceContext*)s->hwdevice->data;
-    device_ctx->free = cudaupload_ctx_free;
-
-    device_hwctx = device_ctx->hwctx;
-    device_hwctx->cuda_ctx = cuda_ctx;
-
-    ret = av_hwdevice_ctx_init(s->hwdevice);
-    if (ret < 0)
-        return ret;
-
-    return 0;
+    return av_hwdevice_ctx_create(&s->hwdevice, AV_HWDEVICE_TYPE_CUDA, buf, NULL, 0);
 }
 
 static av_cold void cudaupload_uninit(AVFilterContext *ctx)
@@ -101,6 +54,8 @@ static av_cold void cudaupload_uninit(AVFilterContext *ctx)
 
 static int cudaupload_query_formats(AVFilterContext *ctx)
 {
+    int ret;
+
     static const enum AVPixelFormat input_pix_fmts[] = {
         AV_PIX_FMT_NV12, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NONE,
@@ -111,8 +66,13 @@ static int cudaupload_query_formats(AVFilterContext *ctx)
     AVFilterFormats *in_fmts  = ff_make_format_list(input_pix_fmts);
     AVFilterFormats *out_fmts = ff_make_format_list(output_pix_fmts);
 
-    ff_formats_ref(in_fmts,  &ctx->inputs[0]->out_formats);
-    ff_formats_ref(out_fmts, &ctx->outputs[0]->in_formats);
+    ret = ff_formats_ref(in_fmts, &ctx->inputs[0]->out_formats);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_formats_ref(out_fmts, &ctx->outputs[0]->in_formats);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -134,8 +94,8 @@ static int cudaupload_config_output(AVFilterLink *outlink)
     hwframe_ctx            = (AVHWFramesContext*)s->hwframe->data;
     hwframe_ctx->format    = AV_PIX_FMT_CUDA;
     hwframe_ctx->sw_format = inlink->format;
-    hwframe_ctx->width     = FFALIGN(inlink->w, 16);
-    hwframe_ctx->height    = FFALIGN(inlink->h, 16);
+    hwframe_ctx->width     = inlink->w;
+    hwframe_ctx->height    = inlink->h;
 
     ret = av_hwframe_ctx_init(s->hwframe);
     if (ret < 0)

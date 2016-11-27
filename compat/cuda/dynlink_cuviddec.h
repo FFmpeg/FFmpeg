@@ -35,10 +35,6 @@
 #if !defined(__CUDA_VIDEO_H__)
 #define __CUDA_VIDEO_H__
 
-#ifndef __cuda_cuda_h__
-#include <cuda.h>
-#endif // __cuda_cuda_h__
-
 #if defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
 #if (CUDA_VERSION >= 3020) && (!defined(CUDA_FORCE_API_VERSION) || (CUDA_FORCE_API_VERSION >= 3020))
 #define __CUVID_DEVPTR64
@@ -87,7 +83,8 @@ typedef enum cudaVideoCodec_enum {
  * Video Surface Formats Enums
  */
 typedef enum cudaVideoSurfaceFormat_enum {
-    cudaVideoSurfaceFormat_NV12=0       /**< NV12 (currently the only supported output format)  */
+    cudaVideoSurfaceFormat_NV12=0,      /**< NV12  */
+    cudaVideoSurfaceFormat_P016=1       /**< P016  */
 } cudaVideoSurfaceFormat;
 
 /*!
@@ -294,7 +291,7 @@ typedef struct _CUVIDH264PICPARAMS
     {
         CUVIDH264MVCEXT mvcext;
         CUVIDH264SVCEXT svcext;
-    };
+    } svcmvc;
 } CUVIDH264PICPARAMS;
 
 
@@ -552,7 +549,7 @@ typedef struct _CUVIDVP8PICPARAMS
             unsigned char Reserved2Bits : 2;
         };
         unsigned char wFrameTagFlags;
-    };
+    } tagflags;
     unsigned char Reserved1[4];
     unsigned int  Reserved2[3];
 } CUVIDVP8PICPARAMS;
@@ -715,19 +712,19 @@ typedef struct _CUVIDPROCPARAMS
  * \fn CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci)
  * Create the decoder object
  */
-CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci);
+typedef CUresult CUDAAPI tcuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci);
 
 /**
  * \fn CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder)
  * Destroy the decoder object
  */
-CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder);
+typedef CUresult CUDAAPI tcuvidDestroyDecoder(CUvideodecoder hDecoder);
 
 /**
  * \fn CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams)
  * Decode a single picture (field or frame)
  */
-CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams);
+typedef CUresult CUDAAPI tcuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams);
 
 
 #if !defined(__CUVID_DEVPTR64) || defined(__CUVID_INTERNAL)
@@ -735,15 +732,15 @@ CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPi
  * \fn CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx, unsigned int *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
  * Post-process and map a video frame for use in cuda
  */
-CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx,
-                                           unsigned int *pDevPtr, unsigned int *pPitch,
-                                           CUVIDPROCPARAMS *pVPP);
+typedef CUresult CUDAAPI tcuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx,
+                                             unsigned int *pDevPtr, unsigned int *pPitch,
+                                             CUVIDPROCPARAMS *pVPP);
 
 /**
  * \fn CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr)
  * Unmap a previously mapped video frame
  */
-CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr);
+typedef CUresult CUDAAPI tcuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr);
 #endif
 
 #if defined(WIN64) || defined(_WIN64) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
@@ -751,21 +748,20 @@ CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevP
  * \fn CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
  * map a video frame
  */
-CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
-                                             unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
+typedef CUresult CUDAAPI tcuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
+                                               unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
 
 /**
  * \fn CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
  * Unmap a previously mapped video frame
  */
-CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
+typedef CUresult CUDAAPI tcuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
 
 #if defined(__CUVID_DEVPTR64) && !defined(__CUVID_INTERNAL)
-#define cuvidMapVideoFrame      cuvidMapVideoFrame64
-#define cuvidUnmapVideoFrame    cuvidUnmapVideoFrame64
+#define tcuvidMapVideoFrame      tcuvidMapVideoFrame64
+#define tcuvidUnmapVideoFrame    tcuvidUnmapVideoFrame64
 #endif
 #endif
-
 
 
 /**
@@ -787,41 +783,27 @@ CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long l
 /**
  * \fn CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx)
  */
-CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
+typedef CUresult CUDAAPI tcuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck)
  */
-CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck);
+typedef CUresult CUDAAPI tcuvidCtxLockDestroy(CUvideoctxlock lck);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags)
  */
-CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags);
+typedef CUresult CUDAAPI tcuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags);
 
 /**
  * \fn CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
  */
-CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags);
+typedef CUresult CUDAAPI tcuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags);
 
 /** @} */  /* End VIDEO_DECODER */
-////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__cplusplus)
-
-// Auto-lock helper for C++ applications
-class CCtxAutoLock
-{
-private:
-    CUvideoctxlock m_ctx;
-public:
-    CCtxAutoLock(CUvideoctxlock ctx);
-    ~CCtxAutoLock();
-};
-
 }
-
 #endif /* __cplusplus */
 
 #endif // __CUDA_VIDEO_H__
-

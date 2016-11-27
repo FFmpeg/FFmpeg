@@ -3361,7 +3361,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t max_subtitle_analyze_duration;
     int64_t probesize = ic->probesize;
     int eof_reached = 0;
-    int64_t *missing_streams = av_opt_ptr(ic->iformat->priv_class, ic->priv_data, "missing_streams");
+    int *missing_streams = av_opt_ptr(ic->iformat->priv_class, ic->priv_data, "missing_streams");
 
     flush_codecs = probesize > 0;
 
@@ -3695,9 +3695,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (!has_codec_parameters(st, NULL)) {
                 const AVCodec *codec = find_probe_decoder(ic, st, st->codecpar->codec_id);
                 if (codec && !avctx->codec) {
-                    if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : NULL) < 0)
+                    AVDictionary *opts = NULL;
+                    if (ic->codec_whitelist)
+                        av_dict_set(&opts, "codec_whitelist", ic->codec_whitelist, 0);
+                    if (avcodec_open2(avctx, codec, (options && stream_index < orig_nb_streams) ? &options[stream_index] : &opts) < 0)
                         av_log(ic, AV_LOG_WARNING,
                             "Failed to open codec in av_find_stream_info\n");
+                    av_dict_free(&opts);
                 }
             }
 
@@ -5124,7 +5128,7 @@ int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
     if ((unsigned)st->nb_side_data + 1 >= INT_MAX / sizeof(*st->side_data))
         return AVERROR(ERANGE);
 
-    tmp = av_realloc(st->side_data, st->nb_side_data + 1 * sizeof(*tmp));
+    tmp = av_realloc(st->side_data, (st->nb_side_data + 1) * sizeof(*tmp));
     if (!tmp) {
         return AVERROR(ENOMEM);
     }
