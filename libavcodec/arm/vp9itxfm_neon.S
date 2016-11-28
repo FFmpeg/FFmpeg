@@ -814,7 +814,7 @@ A       and             r7,  sp,  #15
         mov             r3,  #\i
         bl              \txfm1\()16_1d_4x16_pass1_neon
 .endr
-.ifc \txfm2,idct
+.ifc \txfm1\()_\txfm2,iadst_idct
         movrel          r12, idct_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 .endif
