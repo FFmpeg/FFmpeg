@@ -20,7 +20,7 @@ sleep 2
         if [ $(expr $file : "a-*") != 0 ]; then
             wget $WGET_OPTIONS -O - http://localhost:9999/$file > ff-$file
         else
-            wget $WGET_OPTIONS -O - http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=20000 > ff-$file 2>/dev/null
+            wget $WGET_OPTIONS -O - http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=100000 > ff-$file 2>/dev/null
         fi
         do_md5sum ff-$file >>ffserver.regression
     done
