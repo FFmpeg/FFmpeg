@@ -222,8 +222,10 @@ static int roq_read_packet(AVFormatContext *s,
             pkt->pos= avio_tell(pb);
             ret = avio_read(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
                 chunk_size);
-            if (ret != chunk_size)
+            if (ret != chunk_size) {
+                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
+            }
 
             packet_read = 1;
             break;
