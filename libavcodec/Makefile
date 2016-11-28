@@ -485,6 +485,7 @@ OBJS-$(CONFIG_VP8_QSV_DECODER)         += qsvdec_other.o
 OBJS-$(CONFIG_VP8_VAAPI_ENCODER)       += vaapi_encode_vp8.o
 OBJS-$(CONFIG_VP9_DECODER)             += vp9.o vp9data.o vp9dsp.o \
                                           vp9block.o vp9prob.o vp9mvs.o vp56rac.o
+OBJS-$(CONFIG_VP9_VAAPI_ENCODER)       += vaapi_encode_vp9.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
 OBJS-$(CONFIG_WEBP_DECODER)            += webp.o
