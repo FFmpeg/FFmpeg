@@ -2797,6 +2797,8 @@ vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
 vp8_vaapi_encoder_select="vaapi_encode"
 vp9_cuvid_decoder_deps="cuda cuvid"
 vp9_mediacodec_decoder_deps="mediacodec"
+vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
+vp9_vaapi_encoder_select="vaapi_encode"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 
@@ -5725,6 +5727,7 @@ check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
 check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
 check_type "va/va.h va/va_enc_mpeg2.h" "VAEncPictureParameterBufferMPEG2"
 check_type "va/va.h va/va_enc_vp8.h"  "VAEncPictureParameterBufferVP8"
+check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
