@@ -2362,7 +2362,8 @@ xwma_demuxer_select="riffdec"
 # indevs / outdevs
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
 alsa_outdev_deps="alsa_asoundlib_h"
-avfoundation_indev_deps="AVFoundation_AVFoundation_h"
+avfoundation_indev_deps="AVFoundation_AVFoundation_h objc_arc pthreads"
+avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
@@ -4721,10 +4722,7 @@ check_header linux/fb.h
 check_header linux/videodev2.h
 check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
 
-check_header AVFoundation/AVFoundation.h &&
-    check_objcflags -fobjc-arc &&
-    add_extralibs -framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia ||
-    disable AVFoundation_AVFoundation_h
+check_header AVFoundation/AVFoundation.h
 
 check_header sys/videoio.h
 
@@ -4838,6 +4836,8 @@ check_disable_warning_headers(){
 
 check_disable_warning_headers -Wno-deprecated-declarations
 check_disable_warning_headers -Wno-unused-variable
+
+check_objcflags -fobjc-arc && enable objc_arc
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
