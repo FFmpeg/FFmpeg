@@ -1,5 +1,9 @@
 #!/bin/sh
 
+target_samples=$3
+target_exec=$4
+target_path=$5
+
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_.asf>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 
@@ -8,7 +12,7 @@
 FILES=$(sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html)
 
 rm -f tests/feed1.ffm
-./ffserver${PROGSUF} -d -f "$2" 2> /dev/null &
+$target_exec ${target_path}/ffserver${PROGSUF} -d -f "$2" 2> /dev/null &
 FFSERVER_PID=$!
 echo "Waiting for feeds to startup..."
 sleep 2
