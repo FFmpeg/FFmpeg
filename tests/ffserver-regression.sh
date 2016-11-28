@@ -19,7 +19,7 @@ sleep 2
 (
     cd tests/data || exit $?
     rm -f ff-* ffserver.regression
-    WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
+    WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off -T3 --tries=1"
     for file in $FILES; do
         if [ $(expr $file : "a-*") != 0 ]; then
             wget $WGET_OPTIONS -O - http://localhost:9999/$file > ff-$file
