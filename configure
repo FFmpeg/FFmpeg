@@ -6381,6 +6381,12 @@ for thread in $THREADS_LIST; do
     fi
 done
 
+if disabled stdatomic_h; then
+    if enabled atomics_gcc; then
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/gcc'
+    fi
+fi
+
 enabled zlib && add_cppflags -DZLIB_CONST
 
 # conditional library dependencies, in linking order
