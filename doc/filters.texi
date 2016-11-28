@@ -10983,6 +10983,12 @@ Set medium thresholding (good results, default).
 @end table
 @end table
 
+@section premultiply
+Apply alpha premultiply effect to input video stream using first plane
+of second stream as alpha.
+
+Both streams must have same dimensions and same pixel format.
+
 @section prewitt
 Apply prewitt operator to input video stream.
 
