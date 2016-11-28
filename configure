@@ -6386,6 +6386,8 @@ if disabled stdatomic_h; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/gcc'
     elif enabled atomics_win32; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/win32'
+    elif enabled atomics_suncc; then
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/suncc'
     fi
 fi
 
