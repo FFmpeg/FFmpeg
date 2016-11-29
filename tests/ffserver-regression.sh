@@ -28,6 +28,8 @@ sleep 2
         fi
         do_md5sum ff-$file >>ffserver.regression
     done
+    wget  $WGET_OPTIONS -O - teststat.html http://localhost:9999/teststat.html > ff-stat 2>/dev/null
+    do_md5sum ff-stat >>ffserver.regression
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
