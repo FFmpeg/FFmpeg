@@ -157,6 +157,9 @@ static int roq_read_packet(AVFormatContext *s,
             chunk_size = AV_RL32(&preamble[2]) + RoQ_CHUNK_PREAMBLE_SIZE * 2 +
                 codebook_size;
 
+            if (chunk_size > INT_MAX)
+                return AVERROR_INVALIDDATA;
+
             /* rewind */
             avio_seek(pb, codebook_offset, SEEK_SET);
 
