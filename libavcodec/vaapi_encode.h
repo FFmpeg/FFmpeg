@@ -155,6 +155,10 @@ typedef struct VAAPIEncodeContext {
         VAEncMiscParameterBuffer misc;
         VAEncMiscParameterHRD hrd;
     } hrd_params;
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterFrameRate fr;
+    } fr_params;
 
     // Per-sequence parameter structure (VAEncSequenceParameterBuffer*).
     void           *codec_sequence_params;
