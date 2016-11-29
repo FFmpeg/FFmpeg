@@ -164,6 +164,7 @@ typedef struct HTTPContext {
     char protocol[16];
     char method[16];
     char url[128];
+    char clean_url[128*7];
     int buffer_size;
     uint8_t *buffer;
     int is_packetized; /* if true, the stream is packetized */
@@ -1920,6 +1921,34 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
      avio_printf(pb, "</table>\n");
 }
 
+static void clean_html(char *clean, int clean_len, char *dirty)
+{
+    int i, o;
+
+    for (o = i = 0; o+10 < clean_len && dirty[i];) {
+        int len = strspn(dirty+i, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$-_.+!*(),?/ :;%");
+        if (len) {
+            if (o + len >= clean_len)
+                break;
+            memcpy(clean + o, dirty + i, len);
+            i += len;
+            o += len;
+        } else {
+            int c = dirty[i++];
+            switch (c) {
+            case  '&': av_strlcat(clean+o, "&amp;"  , clean_len - o); break;
+            case  '<': av_strlcat(clean+o, "&lt;"   , clean_len - o); break;
+            case  '>': av_strlcat(clean+o, "&gt;"   , clean_len - o); break;
+            case '\'': av_strlcat(clean+o, "&apos;" , clean_len - o); break;
+            case '\"': av_strlcat(clean+o, "&quot;" , clean_len - o); break;
+            default:   av_strlcat(clean+o, "&#9785;", clean_len - o); break;
+            }
+            o += strlen(clean+o);
+        }
+    }
+    clean[o] = 0;
+}
+
 static void compute_status(HTTPContext *c)
 {
     HTTPContext *c1;
@@ -2107,7 +2136,7 @@ static void compute_status(HTTPContext *c)
                 current_bandwidth, config.max_bandwidth);
 
     avio_printf(pb, "<table>\n");
-    avio_printf(pb, "<tr><th>#<th>File<th>IP<th>Proto<th>State<th>Target "
+    avio_printf(pb, "<tr><th>#<th>File<th>IP<th>URL<th>Proto<th>State<th>Target "
                     "bit/s<th>Actual bit/s<th>Bytes transferred\n");
     c1 = first_http_ctx;
     i = 0;
@@ -2127,10 +2156,13 @@ static void compute_status(HTTPContext *c)
 
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
-        avio_printf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s"
+        clean_html(c1->clean_url, sizeof(c1->clean_url), c1->url);
+        avio_printf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s<td>%s"
                         "<td align=right>",
                     i, c1->stream ? c1->stream->filename : "",
-                    c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "", p,
+                    c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
+                    p,
+                    c1->clean_url,
                     c1->protocol, http_state[c1->state]);
         fmt_bytecount(pb, bitrate);
         avio_printf(pb, "<td align=right>");
