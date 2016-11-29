@@ -591,6 +591,7 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
             set_vbr(avctx);
             return;
         }
+        /* fall through */
     case NV_ENC_PARAMS_RC_VBR_MINQP:
         if (avctx->qmin < 0) {
             av_log(avctx, AV_LOG_WARNING,
