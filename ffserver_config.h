@@ -122,6 +122,7 @@ typedef struct FFServerConfig {
     unsigned int nb_max_connections;
     uint64_t max_bandwidth;
     int debug;
+    int bitexact;
     char logfilename[1024];
     struct sockaddr_in http_addr;
     struct sockaddr_in rtsp_addr;

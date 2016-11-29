@@ -1987,7 +1987,9 @@ static void compute_status(HTTPContext *c)
                     sfilename, stream->filename);
         avio_printf(pb, "<td align=right> %d <td align=right> ",
                     stream->conns_served);
-        fmt_bytecount(pb, stream->bytes_served);
+        // TODO: Investigate if we can make http bitexact so it always produces the same count of bytes
+        if (!config.bitexact)
+            fmt_bytecount(pb, stream->bytes_served);
 
         switch(stream->stream_type) {
         case STREAM_TYPE_LIVE: {
@@ -2140,10 +2142,12 @@ static void compute_status(HTTPContext *c)
     }
     avio_printf(pb, "</table>\n");
 
-    /* date */
-    ti = time(NULL);
-    p = ctime(&ti);
-    avio_printf(pb, "<hr size=1 noshade>Generated at %s", p);
+    if (!config.bitexact) {
+        /* date */
+        ti = time(NULL);
+        p = ctime(&ti);
+        avio_printf(pb, "<hr size=1 noshade>Generated at %s", p);
+    }
     avio_printf(pb, "</body>\n</html>\n");
 
     len = avio_close_dyn_buf(pb, &c->pb_buffer);

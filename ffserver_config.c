@@ -1048,6 +1048,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                                        AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "BitExact")) {
+        config->bitexact = 1;
         if (ffserver_save_avoption("flags", "+bitexact", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "DctFastint")) {
