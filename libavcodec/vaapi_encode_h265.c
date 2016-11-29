@@ -825,8 +825,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         vseq->bits_per_second = avctx->bit_rate;
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-            vseq->vui_num_units_in_tick = avctx->framerate.num;
-            vseq->vui_time_scale        = avctx->framerate.den;
+            vseq->vui_num_units_in_tick = avctx->framerate.den;
+            vseq->vui_time_scale        = avctx->framerate.num;
         } else {
             vseq->vui_num_units_in_tick = avctx->time_base.num;
             vseq->vui_time_scale        = avctx->time_base.den;
