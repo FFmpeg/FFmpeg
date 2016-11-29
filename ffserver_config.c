@@ -320,6 +320,8 @@ done:
     av_dict_free(&recommended);
     st->recommended_encoder_configuration = enc_config;
     st->codec = av;
+    st->codecpar = avcodec_parameters_alloc();
+    avcodec_parameters_from_context(st->codecpar, av);
     stream->streams[stream->nb_streams++] = st;
 }
 
