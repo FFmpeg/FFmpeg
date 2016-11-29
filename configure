@@ -1671,8 +1671,6 @@ HAVE_LIST="
     dos_paths
     dxva2_lib
     libc_msvcrt
-    libdc1394_1
-    libdc1394_2
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     sdl
     section_data_rel_ro
@@ -4625,6 +4623,7 @@ enabled cuda              && check_lib cuda.h cuInit -lcuda
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
+enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
 enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && require_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
@@ -4712,15 +4711,6 @@ enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_
                                die "ERROR: openssl not found"; }
 
 enabled gnutls            && check_lib gmp.h mpz_export -lgmp && enable gmp
-
-# libdc1394 check
-if enabled libdc1394; then
-    { require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new &&
-        enable libdc1394_2; } ||
-    { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
-        enable libdc1394_1; } ||
-    die "ERROR: No version of libdc1394 found "
-fi
 
 if enabled nvenc; then
     check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."
