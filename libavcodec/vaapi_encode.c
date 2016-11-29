@@ -1116,6 +1116,7 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     int rc_window_size;
     int hrd_buffer_size;
     int hrd_initial_buffer_fullness;
+    int fr_num, fr_den;
 
     if (avctx->bit_rate > INT32_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Target bitrate of 2^31 bps or "
@@ -1171,6 +1172,23 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         &ctx->hrd_params.misc;
     ctx->global_params_size[ctx->nb_global_params++] =
         sizeof(ctx->hrd_params);
+
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+        av_reduce(&fr_num, &fr_den,
+                  avctx->framerate.num, avctx->framerate.den, 65535);
+    else
+        av_reduce(&fr_num, &fr_den,
+                  avctx->time_base.den, avctx->time_base.num, 65535);
+
+    ctx->fr_params.misc.type = VAEncMiscParameterTypeFrameRate;
+    ctx->fr_params.fr.framerate = (unsigned int)fr_den << 16 | fr_num;
+
+#if VA_CHECK_VERSION(0, 40, 0)
+    ctx->global_params[ctx->nb_global_params] =
+        &ctx->fr_params.misc;
+    ctx->global_params_size[ctx->nb_global_params++] =
+        sizeof(ctx->fr_params);
+#endif
 
     return 0;
 }
