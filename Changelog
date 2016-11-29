@@ -7,7 +7,7 @@ version <next>:
 - VAAPI-accelerated VP8 and HEVC decoding
 - VAAPI-accelerated deinterlacing
 - config.log and other configuration files moved into avbuild/ directory
-- VAAPI-accelerated MPEG-2 encoding
+- VAAPI-accelerated MPEG-2 and VP8 encoding
 
 
 version 12:

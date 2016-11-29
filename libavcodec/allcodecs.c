@@ -511,6 +511,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
 #endif
+    REGISTER_ENCODER(VP8_VAAPI,         vp8_vaapi);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);
