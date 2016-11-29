@@ -63,7 +63,7 @@ static int msrle_decode_pal4(AVCodecContext *avctx, AVFrame *pic,
                 stream_byte = bytestream2_get_byte(gb);
                 pixel_ptr += stream_byte;
                 stream_byte = bytestream2_get_byte(gb);
-                avpriv_request_sample(avctx, "Unused stream byte %X", stream_byte);
+                line -= stream_byte;
             } else {
                 // copy pixels from encoded stream
                 odd_pixel =  stream_byte & 1;
