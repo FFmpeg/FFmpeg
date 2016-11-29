@@ -117,6 +117,9 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         case AV_PIX_FMT_P016:
             size = aligned_width * ctx->height * 3;
             break;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "BUG: Pixel format missing from size calculation.");
+            return AVERROR_BUG;
         }
 
         ctx->internal->pool_internal = av_buffer_pool_init2(size, ctx, cuda_pool_alloc, NULL);
