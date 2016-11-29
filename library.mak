@@ -27,7 +27,7 @@ define RULES
 $(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
 $(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 
-$(TESTPROGS) $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
+$(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
