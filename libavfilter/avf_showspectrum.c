@@ -1120,13 +1120,13 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (y = 0; y < h; y += 40) {
-                        float hz = y * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(h)));
+                        float hertz = y * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(h)));
                         char *units;
 
-                        if (hz == 0)
+                        if (hertz == 0)
                             units = av_asprintf("DC");
                         else
-                            units = av_asprintf("%.2f", hz);
+                            units = av_asprintf("%.2f", hertz);
                         if (!units)
                             return AVERROR(ENOMEM);
 
@@ -1185,13 +1185,13 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (x = 0; x < w; x += 80) {
-                        float hz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
+                        float hertz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
                         char *units;
 
-                        if (hz == 0)
+                        if (hertz == 0)
                             units = av_asprintf("DC");
                         else
-                            units = av_asprintf("%.2f", hz);
+                            units = av_asprintf("%.2f", hertz);
                         if (!units)
                             return AVERROR(ENOMEM);
 

@@ -47,7 +47,7 @@ typedef struct AudioPulsatorContext {
     double offset_r;
     double pwidth;
     double bpm;
-    double hz;
+    double hertz;
     int ms;
     int timing;
 
@@ -76,7 +76,7 @@ static const AVOption apulsator_options[] = {
     {   "hz",                   NULL, 0,                 AV_OPT_TYPE_CONST,  {.i64=UNIT_HZ},   0,          0, FLAGS, "timing" },
     { "bpm",               "set BPM", OFFSET(bpm),       AV_OPT_TYPE_DOUBLE, {.dbl=120},    30,          300, FLAGS },
     { "ms",                 "set ms", OFFSET(ms),        AV_OPT_TYPE_INT,    {.i64=500},    10,         2000, FLAGS },
-    { "hz",          "set frequency", OFFSET(hz),        AV_OPT_TYPE_DOUBLE, {.dbl=2},    0.01,          100, FLAGS },
+    { "hz",          "set frequency", OFFSET(hertz),     AV_OPT_TYPE_DOUBLE, {.dbl=2},    0.01,          100, FLAGS },
     { NULL }
 };
 
@@ -208,7 +208,7 @@ static int config_input(AVFilterLink *inlink)
     switch (s->timing) {
     case UNIT_BPM:  freq = s->bpm / 60;         break;
     case UNIT_MS:   freq = 1 / (s->ms / 1000.); break;
-    case UNIT_HZ:   freq = s->hz;               break;
+    case UNIT_HZ:   freq = s->hertz;            break;
     default: av_assert0(0);
     }
 
