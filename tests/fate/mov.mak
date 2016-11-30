@@ -10,6 +10,12 @@ fate-mov-rotation: CMD = probestream rotation $(TARGET_SAMPLES)/mov/displaymatri
 FATE_MOV += fate-mov-sar
 fate-mov-sar: CMD = probestream sample_aspect_ratio $(TARGET_SAMPLES)/mov/displaymatrix.mov
 
+FATE_MOV += fate-mov-spherical
+fate-mov-spherical: CMD = probestream projection,yaw,pitch,roll $(TARGET_SAMPLES)/mov/spherical.mov
+
+FATE_MOV += fate-mov-stereo3d
+fate-mov-stereo3d: CMD = probestream type $(TARGET_SAMPLES)/mov/spherical.mov
+
 $(FATE_MOV): avprobe$(EXESUF)
 FATE_SAMPLES-$(call ALLYES, AVPROBE MOV_DEMUXER) += $(FATE_MOV)
 fate-mov: $(FATE_MOV)
