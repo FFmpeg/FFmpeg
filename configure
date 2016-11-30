@@ -597,6 +597,13 @@ popvar(){
     done
 }
 
+request(){
+    for var in $*; do
+        eval ${var}_requested=yes
+        eval $var=
+    done
+}
+
 enable(){
     set_all yes $*
 }
@@ -651,6 +658,11 @@ enable_deep_weak(){
         popvar var
         enable_weak $var
     done
+}
+
+requested(){
+    test "${1#!}" = "$1" && op='=' || op=!=
+    eval test "x\$${1#!}_requested" $op "xyes"
 }
 
 enabled(){
@@ -724,9 +736,9 @@ do_check_deps(){
 
         [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
         [ -n "$dep_ifn" ] && { enabled_any $dep_ifn && enable_weak $cfg; }
-        enabled_all  $dep_all || disable $cfg
-        enabled_any  $dep_any || disable $cfg
-        disabled_any $dep_sel && disable $cfg
+        enabled_all  $dep_all || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not all dependencies are satisfied: $dep_all"; }
+        enabled_any  $dep_any || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not any dependency is satisfied: $dep_any"; }
+        disabled_any $dep_sel && { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some selected dependency is unsatisfied: $dep_sel"; }
 
         if enabled $cfg; then
             enable_deep $dep_sel
@@ -1481,10 +1493,25 @@ EXAMPLE_LIST="
     transcode_aac_example
     transcoding_example
 "
+EXTERNAL_AUTODETECT_LIBRARY_LIST="
+    bzlib
+    iconv
+    libxcb
+    libxcb_shm
+    libxcb_shape
+    libxcb_xfixes
+    lzma
+    schannel
+    sdl
+    sdl2
+    securetransport
+    xlib
+    zlib
+"
 
 EXTERNAL_LIBRARY_LIST="
+    $EXTERNAL_AUTODETECT_LIBRARY_LIST
     avisynth
-    bzlib
     chromaprint
     crystalhd
     decklink
@@ -1492,7 +1519,6 @@ EXTERNAL_LIBRARY_LIST="
     gcrypt
     gmp
     gnutls
-    iconv
     jni
     ladspa
     libass
@@ -1545,47 +1571,39 @@ EXTERNAL_LIBRARY_LIST="
     libx264
     libx265
     libxavs
-    libxcb
-    libxcb_shm
-    libxcb_shape
-    libxcb_xfixes
     libxvid
     libzimg
     libzmq
     libzvbi
-    lzma
     mediacodec
     netcdf
     openal
     opencl
     opengl
     openssl
-    schannel
-    sdl
-    sdl2
-    securetransport
     videotoolbox
     x11grab
-    xlib
-    zlib
 "
-
-HWACCEL_LIBRARY_LIST="
+HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
     cuda
     cuvid
     d3d11va
     dxva2
-    libmfx
-    libnpp
-    mmal
     nvenc
-    omx
     vaapi
     vda
     vdpau
     videotoolbox_hwaccel
     xvmc
+"
+
+HWACCEL_LIBRARY_LIST="
+    $HWACCEL_AUTODETECT_LIBRARY_LIST
+    libmfx
+    libnpp
+    mmal
+    omx
 "
 
 DOCUMENT_LIST="
@@ -1682,6 +1700,12 @@ ATOMICS_LIST="
     atomics_gcc
     atomics_suncc
     atomics_win32
+"
+
+AUTODETECT_LIBS="
+    $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    $HWACCEL_AUTODETECT_LIBRARY_LIST
+    $THREADS_LIST
 "
 
 ARCH_LIST="
@@ -3481,6 +3505,11 @@ done
 
 for e in $env; do
     eval "export $e"
+done
+
+# Mark specifically enabled, but normally autodetected libraries as requested.
+for lib in $AUTODETECT_LIBS; do
+    enabled $lib && request $lib
 done
 
 # Enable platform codecs by default.
@@ -6398,6 +6427,11 @@ if disabled stdatomic_h; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/dummy'
     fi
 fi
+
+# Check if requested libraries were found.
+for lib in $AUTODETECT_LIBS; do
+    requested $lib && ! enabled $lib && die "ERROR: $lib requested but not found";
+done
 
 enabled zlib && add_cppflags -DZLIB_CONST
 

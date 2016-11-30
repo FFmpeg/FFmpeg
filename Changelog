@@ -7,6 +7,7 @@ version <next>:
 - Pro-MPEG CoP #3-R2 FEC protocol
 - premultiply video filter
 - Support for spherical videos
+- configure now fails if autodetect-libraries are requested but not found
 
 version 3.2:
 - libopenmpt demuxer
