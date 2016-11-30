@@ -313,6 +313,9 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 #if ARCH_X86_32
             c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_10_mmxext;
             c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_10_mmxext;
+            if (chroma_format_idc <= 1) {
+                c->h264_h_loop_filter_chroma = ff_deblock_h_chroma_10_mmxext;
+            }
             c->h264_v_loop_filter_luma         = ff_deblock_v_luma_10_mmxext;
             c->h264_h_loop_filter_luma         = ff_deblock_h_luma_10_mmxext;
             c->h264_v_loop_filter_luma_intra   = ff_deblock_v_luma_intra_10_mmxext;
@@ -346,6 +349,9 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 
             c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_10_sse2;
             c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_10_sse2;
+            if (chroma_format_idc <= 1) {
+                c->h264_h_loop_filter_chroma = ff_deblock_h_chroma_10_sse2;
+            }
 #if HAVE_ALIGNED_STACK
             c->h264_v_loop_filter_luma       = ff_deblock_v_luma_10_sse2;
             c->h264_h_loop_filter_luma       = ff_deblock_h_luma_10_sse2;
@@ -381,6 +387,9 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 
             c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_10_avx;
             c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_10_avx;
+            if (chroma_format_idc <= 1) {
+                c->h264_h_loop_filter_chroma = ff_deblock_h_chroma_10_avx;
+            }
 #if HAVE_ALIGNED_STACK
             c->h264_v_loop_filter_luma         = ff_deblock_v_luma_10_avx;
             c->h264_h_loop_filter_luma         = ff_deblock_h_luma_10_avx;
