@@ -9,6 +9,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-aac-2048-priming \
            fate-mov-init-nonkeyframe \
            fate-mov-displaymatrix \
+           fate-mov-spherical-mono \
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 
@@ -42,3 +43,6 @@ fate-mov-init-nonkeyframe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -
 
 fate-mov-displaymatrix: ffprobe$(PROGSSUF)$(EXESUF)
 fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/displaymatrix.mov
+
+fate-mov-spherical-mono: ffprobe$(PROGSSUF)$(EXESUF)
+fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
