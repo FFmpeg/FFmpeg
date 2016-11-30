@@ -5606,6 +5606,9 @@ SMPTE-432
 @item bt2020
 BT.2020
 
+@item jedec-p22
+JEDEC P22 phosphors
+
 @end table
 
 @anchor{range}

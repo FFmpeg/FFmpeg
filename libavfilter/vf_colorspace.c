@@ -296,6 +296,7 @@ static const struct ColorPrimaries color_primaries[AVCOL_PRI_NB] = {
     [AVCOL_PRI_SMPTE432]  = { WP_D65, 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 },
     [AVCOL_PRI_FILM]      = { WP_C,   0.681, 0.319, 0.243, 0.692, 0.145, 0.049 },
     [AVCOL_PRI_BT2020]    = { WP_D65, 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 },
+    [AVCOL_PRI_JEDEC_P22] = { WP_D65, 0.630, 0.340, 0.295, 0.605, 0.155, 0.077 },
 };
 
 static const struct ColorPrimaries *get_color_primaries(enum AVColorPrimaries prm)
@@ -1112,6 +1113,7 @@ static const AVOption colorspace_options[] = {
     ENUM("smpte431",     AVCOL_PRI_SMPTE431,   "prm"),
     ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
+    ENUM("jedec-p22",    AVCOL_PRI_JEDEC_P22,  "prm"),
 
     { "trc",        "Output transfer characteristics",
       OFFSET(user_trc),   AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },
