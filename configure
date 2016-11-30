@@ -3238,15 +3238,6 @@ enable valgrind_backtrace
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
 
-# Enable platform codecs by default.
-enable audiotoolbox
-
-# Enable hwaccels by default.
-enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
-enable xlib
-
-enable cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
-
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 LIBPREF="lib"
@@ -3491,6 +3482,15 @@ done
 for e in $env; do
     eval "export $e"
 done
+
+# Enable platform codecs by default.
+enable_weak audiotoolbox
+
+# Enable hwaccels by default.
+enable_weak d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
+enable_weak xlib
+
+enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
 disabled logging && logfile=/dev/null
 
