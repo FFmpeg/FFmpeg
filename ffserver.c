@@ -3561,7 +3561,7 @@ static LayeredAVStream *add_av_stream1(FFServerStream *stream,
     //NOTE we previously allocated internal & internal->avctx, these seemed uneeded though
     fst->codecpar = avcodec_parameters_alloc();
     fst->index = stream->nb_streams;
-    fst->time_base = (AVRational) {1, 90000};
+    fst->time_base = codec->time_base;
     fst->pts_wrap_bits = 33;
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;
     stream->streams[stream->nb_streams++] = fst;
