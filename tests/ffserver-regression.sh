@@ -12,7 +12,7 @@ target_path=$5
 FILES=$(sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html)
 
 rm -f tests/feed1.ffm
-$target_exec ${target_path}/ffserver${PROGSUF} -d -f "$2" 2> /dev/null &
+$target_exec ${target_path}/ffserver${PROGSUF} -d -f "$2" &
 FFSERVER_PID=$!
 echo "Waiting for feeds to startup..."
 sleep 2
