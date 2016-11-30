@@ -1885,8 +1885,8 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
 
     stream_no = stream->nb_streams;
 
-    avio_printf(pb, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>"
-                    "type<th>kbit/s<th align=left>codec<th align=left>"
+    avio_printf(pb, "<table><tr><th>Stream<th>"
+                    "type<th>kbit/s<th>codec<th>"
                     "Parameters\n");
 
     for (i = 0; i < stream_no; i++) {
@@ -1912,7 +1912,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
             abort();
         }
 
-        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%"PRId64
+        avio_printf(pb, "<tr><td>%d<td>%s<td>%"PRId64
                         "<td>%s<td>%s\n",
                     i, type, (int64_t)st->codecpar->bit_rate/1000,
                     codec ? codec->name : "", parameters);
@@ -1979,8 +1979,8 @@ static void compute_status(HTTPContext *c)
     avio_printf(pb, "<h1>%s Status</h1>\n", program_name);
     /* format status */
     avio_printf(pb, "<h2>Available Streams</h2>\n");
-    avio_printf(pb, "<table cellspacing=0 cellpadding=4>\n");
-    avio_printf(pb, "<tr><th valign=top>Path<th align=left>Served<br>Conns<th><br>bytes<th valign=top>Format<th>Bit rate<br>kbit/s<th align=left>Video<br>kbit/s<th><br>Codec<th align=left>Audio<br>kbit/s<th><br>Codec<th align=left valign=top>Feed\n");
+    avio_printf(pb, "<table>\n");
+    avio_printf(pb, "<tr><th>Path<th>Served<br>Conns<th><br>bytes<th>Format<th>Bit rate<br>kbit/s<th>Video<br>kbit/s<th><br>Codec<th>Audio<br>kbit/s<th><br>Codec<th>Feed\n");
     stream = config.first_stream;
     while (stream) {
         char sfilename[1024];
@@ -2014,7 +2014,7 @@ static void compute_status(HTTPContext *c)
 
         avio_printf(pb, "<tr><td><a href=\"/%s\">%s</a> ",
                     sfilename, stream->filename);
-        avio_printf(pb, "<td align=right> %d <td align=right> ",
+        avio_printf(pb, "<td> %d <td> ",
                     stream->conns_served);
         // TODO: Investigate if we can make http bitexact so it always produces the same count of bytes
         if (!config.bitexact)
@@ -2058,8 +2058,7 @@ static void compute_status(HTTPContext *c)
                 }
             }
 
-            avio_printf(pb, "<td align=center> %s <td align=right> %d "
-                            "<td align=right> %d <td> %s %s <td align=right> "
+            avio_printf(pb, "<td> %s <td> %d <td> %d <td> %s %s <td> "
                             "%d <td> %s %s",
                         stream->fmt->name, stream->bandwidth,
                         video_bit_rate / 1000, video_codec_name,
@@ -2074,8 +2073,8 @@ static void compute_status(HTTPContext *c)
         }
             break;
         default:
-            avio_printf(pb, "<td align=center> - <td align=right> - "
-                            "<td align=right> - <td><td align=right> - <td>\n");
+            avio_printf(pb, "<td> - <td> - "
+                            "<td> - <td><td> - <td>\n");
             break;
         }
         stream = stream->next;
@@ -2158,16 +2157,16 @@ static void compute_status(HTTPContext *c)
         p = inet_ntoa(c1->from_addr.sin_addr);
         clean_html(c1->clean_url, sizeof(c1->clean_url), c1->url);
         avio_printf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s<td>%s"
-                        "<td align=right>",
+                        "<td>",
                     i, c1->stream ? c1->stream->filename : "",
                     c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
                     p,
                     c1->clean_url,
                     c1->protocol, http_state[c1->state]);
         fmt_bytecount(pb, bitrate);
-        avio_printf(pb, "<td align=right>");
+        avio_printf(pb, "<td>");
         fmt_bytecount(pb, compute_datarate(&c1->datarate, c1->data_count) * 8);
-        avio_printf(pb, "<td align=right>");
+        avio_printf(pb, "<td>");
         fmt_bytecount(pb, c1->data_count);
         avio_printf(pb, "\n");
         c1 = c1->next;
@@ -2178,7 +2177,7 @@ static void compute_status(HTTPContext *c)
         /* date */
         ti = time(NULL);
         p = ctime(&ti);
-        avio_printf(pb, "<hr size=1 noshade>Generated at %s", p);
+        avio_printf(pb, "<hr>Generated at %s", p);
     }
     avio_printf(pb, "</body>\n</html>\n");
 
