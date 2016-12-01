@@ -108,34 +108,34 @@ void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT(uint8_t *pix,  \
                                                                int beta);
 
 #define LF_FUNCS(type, depth)                   \
-LF_FUNC(h,  chroma,       depth, mmxext)        \
-LF_IFUNC(h, chroma_intra, depth, mmxext)        \
+LF_FUNC(h,  chroma,          depth, mmxext)     \
+LF_IFUNC(h, chroma_intra,    depth, mmxext)     \
 LF_FUNC(h,  chroma422,       depth, mmxext)     \
 LF_IFUNC(h, chroma422_intra, depth, mmxext)     \
-LF_FUNC(v,  chroma,       depth, mmxext)        \
-LF_IFUNC(v, chroma_intra, depth, mmxext)        \
-LF_FUNC(h,  luma,         depth, mmxext)        \
-LF_IFUNC(h, luma_intra,   depth, mmxext)        \
-LF_FUNC(h,  luma,         depth, sse2)          \
-LF_IFUNC(h, luma_intra,   depth, sse2)          \
-LF_FUNC(v,  luma,         depth, sse2)          \
-LF_IFUNC(v, luma_intra,   depth, sse2)          \
-LF_FUNC(h,  chroma,       depth, sse2)          \
-LF_IFUNC(h, chroma_intra, depth, sse2)          \
+LF_FUNC(v,  chroma,          depth, mmxext)     \
+LF_IFUNC(v, chroma_intra,    depth, mmxext)     \
+LF_FUNC(h,  luma,            depth, mmxext)     \
+LF_IFUNC(h, luma_intra,      depth, mmxext)     \
+LF_FUNC(h,  luma,            depth, sse2)       \
+LF_IFUNC(h, luma_intra,      depth, sse2)       \
+LF_FUNC(v,  luma,            depth, sse2)       \
+LF_IFUNC(v, luma_intra,      depth, sse2)       \
+LF_FUNC(h,  chroma,          depth, sse2)       \
+LF_IFUNC(h, chroma_intra,    depth, sse2)       \
 LF_FUNC(h,  chroma422,       depth, sse2)       \
 LF_IFUNC(h, chroma422_intra, depth, sse2)       \
-LF_FUNC(v,  chroma,       depth, sse2)          \
-LF_IFUNC(v, chroma_intra, depth, sse2)          \
-LF_FUNC(h,  luma,         depth, avx)           \
-LF_IFUNC(h, luma_intra,   depth, avx)           \
-LF_FUNC(v,  luma,         depth, avx)           \
-LF_IFUNC(v, luma_intra,   depth, avx)           \
-LF_FUNC(h,  chroma,       depth, avx)           \
-LF_IFUNC(h, chroma_intra, depth, avx)           \
+LF_FUNC(v,  chroma,          depth, sse2)       \
+LF_IFUNC(v, chroma_intra,    depth, sse2)       \
+LF_FUNC(h,  luma,            depth, avx)        \
+LF_IFUNC(h, luma_intra,      depth, avx)        \
+LF_FUNC(v,  luma,            depth, avx)        \
+LF_IFUNC(v, luma_intra,      depth, avx)        \
+LF_FUNC(h,  chroma,          depth, avx)        \
+LF_IFUNC(h, chroma_intra,    depth, avx)        \
 LF_FUNC(h,  chroma422,       depth, avx)        \
 LF_IFUNC(h, chroma422_intra, depth, avx)        \
-LF_FUNC(v,  chroma,       depth, avx)           \
-LF_IFUNC(v, chroma_intra, depth, avx)
+LF_FUNC(v,  chroma,          depth, avx)        \
+LF_IFUNC(v, chroma_intra,    depth, avx)
 
 LF_FUNCS(uint8_t,   8)
 LF_FUNCS(uint16_t, 10)
