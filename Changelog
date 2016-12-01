@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.9
+- avcodec/flac_parser: Update nb_headers_buffered
+- avformat/idroqdec: Check chunk_size for being too large
 - filmstripdec: correctly check image dimensions
 - mss2: only use error correction for matching block counts
 - softfloat: decrease MIN_EXP to cover full float range
