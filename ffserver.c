@@ -2323,6 +2323,9 @@ static int http_prepare_data(HTTPContext *c)
 
             unlayer_stream(c->pfmt_ctx->streams[i], src); //TODO we no longer copy st->internal, does this matter?
             av_assert0(!c->pfmt_ctx->streams[i]->priv_data);
+
+            if (src->codec->flags & AV_CODEC_FLAG_BITEXACT)
+                c->pfmt_ctx->flags |= AVFMT_FLAG_BITEXACT;
         }
         /* set output format parameters */
         c->pfmt_ctx->oformat = c->stream->fmt;
