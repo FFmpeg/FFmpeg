@@ -223,6 +223,7 @@ static int ffm_write_header(AVFormatContext *s)
 
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
+        int flags = 0;
         st = s->streams[i];
         avpriv_set_pts_info(st, 64, 1, 1000000);
         if(avio_open_dyn_buf(&pb) < 0)
@@ -234,7 +235,16 @@ static int ffm_write_header(AVFormatContext *s)
         avio_wb32(pb, codecpar->codec_id);
         avio_w8(pb, codecpar->codec_type);
         avio_wb32(pb, codecpar->bit_rate);
-        avio_wb32(pb, codecpar->extradata_size ? AV_CODEC_FLAG_GLOBAL_HEADER : 0);
+        if (codecpar->extradata_size)
+            flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+        // If the user is not providing us with a configuration we have to fill it in as we cannot access the encoder
+        if (!st->recommended_encoder_configuration) {
+            if (s->flags & AVFMT_FLAG_BITEXACT)
+                flags |= AV_CODEC_FLAG_BITEXACT;
+        }
+
+        avio_wb32(pb, flags);
         avio_wb32(pb, 0); // flags2
         avio_wb32(pb, 0); // debug
         if (codecpar->extradata_size) {
