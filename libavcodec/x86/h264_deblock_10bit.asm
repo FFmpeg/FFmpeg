@@ -1032,6 +1032,45 @@ cglobal deblock_h_chroma_10, 5, 7, 8, 2*mmsize, pix_, stride_, alpha_, beta_, tc
 %endif
 RET
 
+;-----------------------------------------------------------------------------
+; void ff_deblock_h_chroma422_10(uint16_t *pix, int stride, int alpha, int beta,
+;                                int8_t *tc0)
+;-----------------------------------------------------------------------------
+cglobal deblock_h_chroma422_10, 5, 7, 8, 3*mmsize, pix_, stride_, alpha_, beta_, tc0_
+    shl alpha_d,  2
+    shl beta_d,   2
+
+    movd m0, [tc0_q]
+    punpcklbw m0, m0
+    psraw m0, 6
+    movq [rsp], m0
+
+    mov r5,       pix_q
+    lea r6,      [3*stride_q]
+    add r5,       r6
+
+    mov r4, -8
+    .loop:
+
+        CHROMA_H_LOAD r5, r6, [rsp + 1*mmsize], [rsp + 2*mmsize]
+        LOAD_AB          m4,  m5, alpha_d, beta_d
+        LOAD_MASK        m0,  m1, m2, m3, m4, m5, m7, m6, m4
+        pxor             m4,  m4
+        movd             m6, [rsp + r4 + 8]
+        punpcklwd        m6,  m6
+        punpcklwd        m6,  m6
+        psubw            m6, [pw_3]
+        pmaxsw           m6,  m4
+        pand             m7,  m6
+        DEBLOCK_P0_Q0    m1,  m2, m0, m3, m7, m5, m6
+        CHROMA_H_STORE r5, r6, [rsp + 1*mmsize], [rsp + 2*mmsize]
+
+        lea pix_q, [pix_q + (mmsize/2)*stride_q]
+        lea r5,    [r5 +    (mmsize/2)*stride_q]
+        add r4, (mmsize/4)
+    jl .loop
+RET
+
 %endmacro
 
 %if ARCH_X86_64 == 0
