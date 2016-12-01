@@ -148,11 +148,11 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecParameters *ctxpar
 #undef ENC
 }
 
-static int ffm_write_recommended_config(AVIOContext *pb, AVCodecContext *ctx, unsigned tag,
+static int ffm_write_recommended_config(AVIOContext *pb, AVCodecParameters *codecpar, unsigned tag,
                                         const char *configuration)
 {
     int ret;
-    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
+    const AVCodec *enc = avcodec_find_encoder(codecpar->codec_id);
     AVIOContext *tmp;
     AVDictionaryEntry *t = NULL;
     AVDictionary *all = NULL, *comm = NULL, *prv = NULL;
@@ -207,7 +207,6 @@ static int ffm_write_header(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     AVIOContext *pb = s->pb;
-    AVCodecContext *codec;
     AVCodecParameters *codecpar;
     int bit_rate, i, ret;
 
@@ -242,7 +241,6 @@ static int ffm_write_header(AVFormatContext *s)
         if(avio_open_dyn_buf(&pb) < 0)
             return AVERROR(ENOMEM);
 
-        codec = st->codec;
         codecpar = st->codecpar;
         /* generic info */
         avio_wb32(pb, codecpar->codec_id);
@@ -271,7 +269,7 @@ static int ffm_write_header(AVFormatContext *s)
             if (st->recommended_encoder_configuration) {
                 av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
                        st->recommended_encoder_configuration);
-                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'V', 'I'),
+                if ((ret = ffm_write_recommended_config(s->pb, codecpar, MKBETAG('S', '2', 'V', 'I'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
             } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0)
@@ -281,7 +279,7 @@ static int ffm_write_header(AVFormatContext *s)
             if (st->recommended_encoder_configuration) {
                 av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
                        st->recommended_encoder_configuration);
-                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'A', 'U'),
+                if ((ret = ffm_write_recommended_config(s->pb, codecpar, MKBETAG('S', '2', 'A', 'U'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
             } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0)
