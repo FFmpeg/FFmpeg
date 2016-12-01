@@ -245,7 +245,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         const HEVCFrame *frame = &h->DPB[i];
         if (frame != h->ref && (frame->flags & (HEVC_FRAME_FLAG_LONG_REF |
                                                 HEVC_FRAME_FLAG_SHORT_REF))) {
-            if (j > 16) {
+            if (j > 15) {
                 av_log(avctx, AV_LOG_WARNING,
                      "VDPAU only supports up to 16 references in the DPB. "
                      "This frame may not be decoded correctly.\n");
