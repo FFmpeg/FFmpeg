@@ -95,35 +95,6 @@ static void write_header_chunk(AVIOContext *pb, AVIOContext *dpb, unsigned id)
     av_free(dyn_buf);
 }
 
-static int ffm_write_header_codec_private_ctx(AVFormatContext *s, AVCodecContext *ctx, int type)
-{
-    AVIOContext *pb = s->pb;
-    AVIOContext *tmp;
-    char *buf = NULL;
-    int ret;
-    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
-
-    if (!enc) {
-        av_log(s, AV_LOG_WARNING, "Stream codec is not found. Codec private options are not stored.\n");
-        return 0;
-    }
-    if (ctx->priv_data && enc->priv_class && enc->priv_data_size) {
-        if ((ret = av_opt_serialize(ctx->priv_data, AV_OPT_FLAG_ENCODING_PARAM | type,
-                                    AV_OPT_SERIALIZE_SKIP_DEFAULTS, &buf, '=', ',')) < 0)
-            return ret;
-        if (buf && strlen(buf)) {
-            if (avio_open_dyn_buf(&tmp) < 0) {
-                av_free(buf);
-                return AVERROR(ENOMEM);
-            }
-            avio_put_str(tmp, buf);
-            write_header_chunk(pb, tmp, MKBETAG('C', 'P', 'R', 'V'));
-        }
-        av_free(buf);
-    }
-    return 0;
-}
-
 static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsigned tag, int type)
 {
     AVIOContext *tmp;
@@ -280,8 +251,7 @@ static int ffm_write_header(AVFormatContext *s)
                 if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'V', 'I'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0 ||
-                       (ret = ffm_write_header_codec_private_ctx(s, codec, AV_OPT_FLAG_VIDEO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0)
                 return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
@@ -291,8 +261,7 @@ static int ffm_write_header(AVFormatContext *s)
                 if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'A', 'U'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0 ||
-                     (ret = ffm_write_header_codec_private_ctx(s, codec, AV_OPT_FLAG_AUDIO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0)
                 return ret;
             break;
         default:
