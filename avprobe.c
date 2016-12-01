@@ -1033,6 +1033,8 @@ static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
 
 static int opt_show_stream_entry(void *optctx, const char *opt, const char *arg)
 {
+    const char *p = arg;
+
     do_show_streams = 1;
     nb_stream_entries_to_show++;
     octx.print_header        = NULL;
@@ -1044,7 +1046,19 @@ static int opt_show_stream_entry(void *optctx, const char *opt, const char *arg)
 
     octx.print_integer = show_stream_entry_integer;
     octx.print_string  = show_stream_entry_string;
-    av_dict_set(&stream_entries_to_show, arg, "", 0);
+
+    while (*p) {
+        char *val = av_get_token(&p, ",");
+        if (!val)
+            return AVERROR(ENOMEM);
+
+        av_dict_set(&stream_entries_to_show, val, "", 0);
+
+        av_free(val);
+        if (*p)
+            p++;
+    }
+
     return 0;
 }
 
@@ -1099,7 +1113,7 @@ static const OptionDef real_options[] = {
     { "show_packets", OPT_BOOL, {&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {&do_show_streams}, "show streams info" },
     { "show_stream_entry", HAS_ARG, {.func_arg = opt_show_stream_entry},
-      "show a particular entry from all streams", "entry" },
+      "show a particular entry from all streams (comma separated)", "entry" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default},
       "generic catch all option", "" },
     { NULL, },
