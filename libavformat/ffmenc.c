@@ -224,6 +224,7 @@ static int ffm_write_header(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
+    AVCodecParameters *codecpar;
     int bit_rate, i, ret;
 
     if ((ret = ff_parse_creation_time_metadata(s, &ffm->start_time, 0)) < 0)
@@ -243,7 +244,7 @@ static int ffm_write_header(AVFormatContext *s)
     bit_rate = 0;
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        bit_rate += st->codec->bit_rate;
+        bit_rate += st->codecpar->bit_rate;
     }
     avio_wb32(pb, bit_rate);
 
@@ -257,20 +258,21 @@ static int ffm_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
 
         codec = st->codec;
+        codecpar = st->codecpar;
         /* generic info */
-        avio_wb32(pb, codec->codec_id);
-        avio_w8(pb, codec->codec_type);
-        avio_wb32(pb, codec->bit_rate);
-        avio_wb32(pb, codec->flags);
-        avio_wb32(pb, codec->flags2);
-        avio_wb32(pb, codec->debug);
-        if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-            avio_wb32(pb, codec->extradata_size);
-            avio_write(pb, codec->extradata, codec->extradata_size);
+        avio_wb32(pb, codecpar->codec_id);
+        avio_w8(pb, codecpar->codec_type);
+        avio_wb32(pb, codecpar->bit_rate);
+        avio_wb32(pb, codecpar->extradata_size ? AV_CODEC_FLAG_GLOBAL_HEADER : 0);
+        avio_wb32(pb, 0); // flags2
+        avio_wb32(pb, 0); // debug
+        if (codecpar->extradata_size) {
+            avio_wb32(pb, codecpar->extradata_size);
+            avio_write(pb, codecpar->extradata, codecpar->extradata_size);
         }
         write_header_chunk(s->pb, pb, MKBETAG('C', 'O', 'M', 'M'));
         /* specific info */
-        switch(codec->codec_type) {
+        switch(codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if (st->recommended_encoder_configuration) {
                 av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
