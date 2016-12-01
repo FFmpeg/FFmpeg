@@ -95,11 +95,12 @@ static void write_header_chunk(AVIOContext *pb, AVIOContext *dpb, unsigned id)
     av_free(dyn_buf);
 }
 
-static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsigned tag, int type)
+static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecParameters *ctxpar, unsigned tag, int type)
 {
     AVIOContext *tmp;
     char *buf = NULL;
     int ret, need_coma = 0;
+    AVCodecContext *ctx = NULL;
 
 #define SKIP_DEFAULTS   AV_OPT_SERIALIZE_SKIP_DEFAULTS
 #define OPT_FLAGS_EXACT AV_OPT_SERIALIZE_OPT_FLAGS_EXACT
@@ -107,6 +108,16 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
 
     if (avio_open_dyn_buf(&tmp) < 0)
         return AVERROR(ENOMEM);
+
+    // AVCodecParameters does not suport AVOptions, we thus must copy it over to a context that does
+    // otherwise it could be used directly and this would be much simpler
+    ctx = avcodec_alloc_context3(NULL);
+    if (!ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    avcodec_parameters_to_context(ctx, ctxpar);
+
     if ((ret = av_opt_serialize(ctx, ENC | type, SKIP_DEFAULTS, &buf, '=', ',')) < 0)
         goto fail;
     if (buf && strlen(buf)) {
@@ -124,10 +135,12 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
     av_freep(&buf);
     avio_w8(tmp, 0);
     write_header_chunk(pb, tmp, tag);
+    avcodec_free_context(&ctx);
     return 0;
   fail:
     av_free(buf);
     ffio_free_dyn_buf(&tmp);
+    avcodec_free_context(&ctx);
     return ret;
 
 #undef SKIP_DEFAULTS
@@ -261,7 +274,7 @@ static int ffm_write_header(AVFormatContext *s)
                 if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'V', 'I'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0)
                 return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
@@ -271,7 +284,7 @@ static int ffm_write_header(AVFormatContext *s)
                 if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'A', 'U'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0)
                 return ret;
             break;
         default:
