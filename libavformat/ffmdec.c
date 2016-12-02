@@ -271,7 +271,7 @@ static int ffm_append_recommended_configuration(AVStream *st, char **conf)
 
 #define VALIDATE_PARAMETER(parameter, name, check) {                              \
     if (check) {                                                                  \
-        av_log(codec, AV_LOG_ERROR, "Invalid " name " %d\n", codecpar->parameter);   \
+        av_log(s, AV_LOG_ERROR, "Invalid " name " %d\n", codecpar->parameter);   \
         ret = AVERROR_INVALIDDATA;                                                \
         goto fail;                                                                \
     }                                                                             \
@@ -282,7 +282,7 @@ static int ffm2_read_header(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     AVIOContext *pb = s->pb;
-    AVCodecContext *codec, *dummy_codec = NULL;
+    AVCodecContext *dummy_codec = NULL;
     AVCodecParameters *codecpar;
     const AVCodecDescriptor *codec_desc;
     int ret;
@@ -314,6 +314,7 @@ static int ffm2_read_header(AVFormatContext *s)
         unsigned size = avio_rb32(pb);
         int64_t next = avio_tell(pb) + size;
         char rc_eq_buf[128];
+        int flags;
 
         if(!id)
             break;
@@ -337,7 +338,6 @@ static int ffm2_read_header(AVFormatContext *s)
 
             avpriv_set_pts_info(st, 64, 1, 1000000);
 
-            codec = st->codec;
             codecpar = st->codecpar;
             /* generic info */
             codecpar->codec_id = avio_rb32(pb);
@@ -359,14 +359,19 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             codecpar->bit_rate = avio_rb32(pb);
             if (codecpar->bit_rate < 0) {
-                av_log(codec, AV_LOG_ERROR, "Invalid bit rate %"PRId64"\n", codecpar->bit_rate);
+                av_log(s, AV_LOG_ERROR, "Invalid bit rate %"PRId64"\n", codecpar->bit_rate);
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            codec->flags = avio_rb32(pb);
+            flags = avio_rb32(pb);
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+            st->codec->flags = flags;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             avio_rb32(pb); // flags2
             avio_rb32(pb); // debug
-            if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+            if (flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
                 int size = avio_rb32(pb);
                 if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
                     av_log(s, AV_LOG_ERROR, "Invalid extradata size %d\n", size);
@@ -530,7 +535,7 @@ static int ffm_read_header(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     AVIOContext *pb = s->pb;
-    AVCodecContext *codec, *dummy_codec = NULL;
+    AVCodecContext *dummy_codec = NULL;
     AVCodecParameters *codecpar;
     const AVCodecDescriptor *codec_desc;
     int i, nb_streams, ret;
@@ -561,6 +566,7 @@ static int ffm_read_header(AVFormatContext *s)
     /* read each stream */
     for(i=0;i<nb_streams;i++) {
         char rc_eq_buf[128];
+        int flags;
 
         st = avformat_new_stream(s, NULL);
         if (!st)
@@ -568,7 +574,6 @@ static int ffm_read_header(AVFormatContext *s)
 
         avpriv_set_pts_info(st, 64, 1, 1000000);
 
-        codec = st->codec;
         codecpar = st->codecpar;
         /* generic info */
         codecpar->codec_id = avio_rb32(pb);
@@ -588,10 +593,15 @@ static int ffm_read_header(AVFormatContext *s)
         }
         codecpar->bit_rate = avio_rb32(pb);
         if (codecpar->bit_rate < 0) {
-            av_log(codec, AV_LOG_WARNING, "Invalid bit rate %"PRId64"\n", codecpar->bit_rate);
+            av_log(s, AV_LOG_WARNING, "Invalid bit rate %"PRId64"\n", codecpar->bit_rate);
             goto fail;
         }
-        codec->flags = avio_rb32(pb);
+        flags = avio_rb32(pb);
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+            st->codec->flags = flags;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         avio_rb32(pb); // flags2
         avio_rb32(pb); // debug
         /* specific info */
@@ -660,7 +670,7 @@ static int ffm_read_header(AVFormatContext *s)
         default:
             goto fail;
         }
-        if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+        if (flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
             int size = avio_rb32(pb);
             if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
                 av_log(s, AV_LOG_ERROR, "Invalid extradata size %d\n", size);
