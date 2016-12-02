@@ -2896,7 +2896,7 @@ test -n "$cross_prefix" && enable cross_compile
 
 if enabled cross_compile; then
     test -n "$arch" && test -n "$target_os" ||
-        die "Must specify target arch and OS when cross-compiling"
+        die "Must specify target arch (--arch) and OS (--target-os) when cross-compiling"
 fi
 
 ar_default="${cross_prefix}${ar_default}"
