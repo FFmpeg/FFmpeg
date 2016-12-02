@@ -296,6 +296,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '6') },
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '7') },
 
+    { AV_CODEC_ID_PIXLET, MKTAG('p', 'x', 'l', 't') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 

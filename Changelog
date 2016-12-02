@@ -11,6 +11,7 @@ version <next>:
 - PSD Decoder
 - 16.8 floating point pcm decoder
 - 24.0 floating point pcm decoder
+- Apple Pixlet decoder
 
 version 3.2:
 - libopenmpt demuxer
