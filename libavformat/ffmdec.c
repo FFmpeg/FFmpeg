@@ -364,8 +364,8 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             }
             codec->flags = avio_rb32(pb);
-            codec->flags2 = avio_rb32(pb);
-            codec->debug = avio_rb32(pb);
+            avio_rb32(pb); // flags2
+            avio_rb32(pb); // debug
             if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
                 int size = avio_rb32(pb);
                 if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
@@ -385,14 +385,8 @@ static int ffm2_read_header(AVFormatContext *s)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            codec->time_base.num = avio_rb32(pb);
-            codec->time_base.den = avio_rb32(pb);
-            if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
-                av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
-                       codec->time_base.num, codec->time_base.den);
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            avio_rb32(pb); // time_base.num
+            avio_rb32(pb); // time_base.den
             codecpar->width = avio_rb16(pb);
             codecpar->height = avio_rb16(pb);
             ret = av_image_check_size(codecpar->width, codecpar->height, 0, s);
@@ -598,18 +592,13 @@ static int ffm_read_header(AVFormatContext *s)
             goto fail;
         }
         codec->flags = avio_rb32(pb);
-        codec->flags2 = avio_rb32(pb);
-        codec->debug = avio_rb32(pb);
+        avio_rb32(pb); // flags2
+        avio_rb32(pb); // debug
         /* specific info */
         switch(codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            codec->time_base.num = avio_rb32(pb);
-            codec->time_base.den = avio_rb32(pb);
-            if (codec->time_base.num <= 0 || codec->time_base.den <= 0) {
-                av_log(s, AV_LOG_ERROR, "Invalid time base %d/%d\n",
-                       codec->time_base.num, codec->time_base.den);
-                goto fail;
-            }
+            avio_rb32(pb); // time_base.num
+            avio_rb32(pb); // time_base.den
             codecpar->width = avio_rb16(pb);
             codecpar->height = avio_rb16(pb);
             if (av_image_check_size(codecpar->width, codecpar->height, 0, s) < 0)
