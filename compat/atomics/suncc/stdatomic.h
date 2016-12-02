@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_COMPAT_ATOMICS_SUNCC_STDATOMIC_H
-#define FFMPEG_COMPAT_ATOMICS_SUNCC_STDATOMIC_H
+#ifndef COMPAT_ATOMICS_SUNCC_STDATOMIC_H
+#define COMPAT_ATOMICS_SUNCC_STDATOMIC_H
 
 #include <atomic.h>
 #include <mbarrier.h>
@@ -183,4 +183,4 @@ static inline intptr_t atomic_fetch_and(intptr_t *object, intptr_t operand)
 #define atomic_flag_clear_explicit(object, order) \
     atomic_flag_clear(object)
 
-#endif /* FFMPEG_COMPAT_ATOMICS_SUNCC_STDATOMIC_H */
+#endif /* COMPAT_ATOMICS_SUNCC_STDATOMIC_H */

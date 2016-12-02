@@ -21,8 +21,8 @@
  * Copyright (C) 2010 Rémi Denis-Courmont
  */
 
-#ifndef FFMPEG_COMPAT_ATOMICS_PTHREAD_STDATOMIC_H
-#define FFMPEG_COMPAT_ATOMICS_PTHREAD_STDATOMIC_H
+#ifndef COMPAT_ATOMICS_PTHREAD_STDATOMIC_H
+#define COMPAT_ATOMICS_PTHREAD_STDATOMIC_H
 
 #include <stdint.h>
 
@@ -194,4 +194,4 @@ FETCH_MODIFY(and, &)
 #define atomic_flag_clear_explicit(object, order) \
     atomic_flag_clear(object)
 
-#endif /* FFMPEG_COMPAT_ATOMICS_PTHREAD_STDATOMIC_H */
+#endif /* COMPAT_ATOMICS_PTHREAD_STDATOMIC_H */
