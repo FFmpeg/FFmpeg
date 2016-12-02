@@ -2854,7 +2854,8 @@ static int http_receive_data(HTTPContext *c)
             for (i = 0; i < s->nb_streams; i++) {
                 LayeredAVStream *fst = feed->streams[i];
                 AVStream *st = s->streams[i];
-                avcodec_copy_context(fst->codec, st->codec);
+                avcodec_parameters_to_context(fst->codec, st->codecpar);
+                avcodec_parameters_from_context(fst->codecpar, fst->codec);
             }
 
             avformat_close_input(&s);
