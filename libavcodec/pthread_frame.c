@@ -103,6 +103,8 @@ typedef struct PerThreadContext {
     enum AVPixelFormat result_format;            ///< get_format() result
 
     int die;                        ///< Set when the thread should exit.
+
+    int hwaccel_serializing;
 } PerThreadContext;
 
 /**
@@ -113,6 +115,11 @@ typedef struct FrameThreadContext {
     PerThreadContext *prev_thread; ///< The last thread submit_packet() was called on.
 
     pthread_mutex_t buffer_mutex;  ///< Mutex used to protect get/release_buffer().
+    /**
+     * This lock is used for ensuring threads run in serial when hwaccel
+     * is used.
+     */
+    pthread_mutex_t hwaccel_mutex;
 
     int next_decoding;             ///< The next context to submit a packet to.
     int next_finished;             ///< The next context to return output from.
@@ -149,6 +156,21 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         if (!codec->update_thread_context && THREAD_SAFE_CALLBACKS(avctx))
             ff_thread_finish_setup(avctx);
 
+        /* If a decoder supports hwaccel, then it must call ff_get_format().
+         * Since that call must happen before ff_thread_finish_setup(), the
+         * decoder is required to implement update_thread_context() and call
+         * ff_thread_finish_setup() manually. Therefore the above
+         * ff_thread_finish_setup() call did not happen and hwaccel_serializing
+         * cannot be true here. */
+        av_assert0(!p->hwaccel_serializing);
+
+        /* if the previous thread uses hwaccel then we take the lock to ensure
+         * the threads don't run concurrently */
+        if (avctx->hwaccel) {
+            pthread_mutex_lock(&p->parent->hwaccel_mutex);
+            p->hwaccel_serializing = 1;
+        }
+
         av_frame_unref(p->frame);
         p->got_frame = 0;
         p->result = codec->decode(avctx, p->frame, &p->got_frame, &p->avpkt);
@@ -162,6 +184,11 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (atomic_load(&p->state) == STATE_SETTING_UP)
             ff_thread_finish_setup(avctx);
+
+        if (p->hwaccel_serializing) {
+            p->hwaccel_serializing = 0;
+            pthread_mutex_unlock(&p->parent->hwaccel_mutex);
+        }
 
         pthread_mutex_lock(&p->progress_mutex);
 #if 0 //BUFREF-FIXME
@@ -541,6 +568,11 @@ void ff_thread_finish_setup(AVCodecContext *avctx) {
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) return;
 
+    if (avctx->hwaccel && !p->hwaccel_serializing) {
+        pthread_mutex_lock(&p->parent->hwaccel_mutex);
+        p->hwaccel_serializing = 1;
+    }
+
     pthread_mutex_lock(&p->progress_mutex);
     if(atomic_load(&p->state) == STATE_SETUP_FINISHED){
         av_log(avctx, AV_LOG_WARNING, "Multiple ff_thread_finish_setup() calls\n");
@@ -630,6 +662,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
+    pthread_mutex_destroy(&fctx->hwaccel_mutex);
     av_freep(&avctx->internal->thread_ctx);
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
@@ -676,6 +709,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
     }
 
     pthread_mutex_init(&fctx->buffer_mutex, NULL);
+    pthread_mutex_init(&fctx->hwaccel_mutex, NULL);
     fctx->delaying = 1;
 
     for (i = 0; i < thread_count; i++) {
