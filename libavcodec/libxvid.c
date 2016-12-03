@@ -26,6 +26,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <xvid.h>
@@ -39,7 +40,6 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "libxvid.h"
 #include "mpegutils.h"
 
 /**
@@ -359,6 +359,33 @@ static void xvid_correct_framerate(AVCodecContext *avctx)
     }
 }
 
+/* Create temporary file using mkstemp(), tries /tmp first, if possible.
+ * *prefix can be a character constant; *filename will be allocated internally.
+ * Return file descriptor of opened file (or error code on error)
+ * and opened file name in **filename. */
+static int xvid_tempfile(AVCodecContext *avctx, const char *prefix,
+                         char **filename)
+{
+    int fd = -1;
+    size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
+    *filename  = av_malloc(len);
+    if (!(*filename)) {
+        av_log(avctx, AV_LOG_ERROR, "xvid_tempfile: Cannot allocate file name\n");
+        return AVERROR(ENOMEM);
+    }
+    snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
+    fd = mkstemp(*filename);
+    if (fd < 0) {
+        snprintf(*filename, len, "./%sXXXXXX", prefix);
+        fd = mkstemp(*filename);
+    }
+    if (fd < 0) {
+        av_log(avctx, AV_LOG_ERROR, "xvid_tempfile: Cannot open temporary file %s\n", *filename);
+        return AVERROR(EIO);
+    }
+    return fd; /* success */
+}
+
 static av_cold int xvid_encode_init(AVCodecContext *avctx)
 {
     int xerr, i;
@@ -519,7 +546,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = ff_tempfile("xvidff.", &x->twopassfile);
+        fd = xvid_tempfile(avctx, "xvidff.", &x->twopassfile);
         if (fd < 0) {
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write 2-pass pipe\n");
             return fd;
