@@ -222,6 +222,11 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     s->channels = get_bits(&gb, 3) + 1;
     s->bps = get_bits(&gb, 5) + 1;
 
+    if (s->bps < 4) {
+        av_log(avctx, AV_LOG_ERROR, "invalid bps: %d\n", s->bps);
+        s->bps = 16;
+    }
+
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
