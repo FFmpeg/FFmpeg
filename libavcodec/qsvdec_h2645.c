@@ -228,14 +228,16 @@ static void qsv_decode_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(QSVH2645Context, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
-#if CONFIG_HEVC_QSV_DECODER
+#if CONFIG_HEVC_QSV_HWACCEL
 AVHWAccel ff_hevc_qsv_hwaccel = {
     .name           = "hevc_qsv",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_QSV,
 };
+#endif
 
+#if CONFIG_HEVC_QSV_DECODER
 static const AVOption hevc_options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
 
@@ -275,14 +277,16 @@ AVCodec ff_hevc_qsv_decoder = {
 };
 #endif
 
-#if CONFIG_H264_QSV_DECODER
+#if CONFIG_H264_QSV_HWACCEL
 AVHWAccel ff_h264_qsv_hwaccel = {
     .name           = "h264_qsv",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_QSV,
 };
+#endif
 
+#if CONFIG_H264_QSV_DECODER
 static const AVOption options[] = {
     { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VD },
     { NULL },
