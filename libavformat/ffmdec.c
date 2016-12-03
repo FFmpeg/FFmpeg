@@ -280,10 +280,10 @@ static int ffm_append_recommended_configuration(AVStream *st, char **conf)
 static int ffm2_read_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
-    AVStream *st;
+    AVStream *st = NULL;
     AVIOContext *pb = s->pb;
     AVCodecContext *dummy_codec = NULL;
-    AVCodecParameters *codecpar;
+    AVCodecParameters *codecpar = NULL;
     const AVCodecDescriptor *codec_desc;
     int ret;
     int f_main = 0, f_cprv = -1, f_stvi = -1, f_stau = -1;
