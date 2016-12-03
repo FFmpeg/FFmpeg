@@ -558,7 +558,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 
-    if (!s->divx_packed && !avctx->hwaccel)
+    if (!s->divx_packed)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
