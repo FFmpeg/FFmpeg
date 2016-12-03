@@ -381,7 +381,7 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             break;
         case MKBETAG('S', 'T', 'V', 'I'):
-            if (f_stvi++) {
+            if (f_stvi++ || codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -445,7 +445,7 @@ static int ffm2_read_header(AVFormatContext *s)
             avio_rb32(pb); // refs
             break;
         case MKBETAG('S', 'T', 'A', 'U'):
-            if (f_stau++) {
+            if (f_stau++ || codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -474,7 +474,7 @@ static int ffm2_read_header(AVFormatContext *s)
             }
             break;
         case MKBETAG('S', '2', 'V', 'I'):
-            if (f_stvi++ || !size) {
+            if (f_stvi++ || !size || codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -492,7 +492,7 @@ static int ffm2_read_header(AVFormatContext *s)
                 goto fail;
             break;
         case MKBETAG('S', '2', 'A', 'U'):
-            if (f_stau++ || !size) {
+            if (f_stau++ || !size || codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
