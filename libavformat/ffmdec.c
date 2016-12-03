@@ -379,8 +379,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     goto fail;
                 }
                 codecpar->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (!codecpar->extradata)
-                    return AVERROR(ENOMEM);
+                if (!codecpar->extradata) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
                 codecpar->extradata_size = size;
                 avio_read(pb, codecpar->extradata, size);
             }
@@ -690,8 +692,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 goto fail;
             }
             codecpar->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!codecpar->extradata)
-                return AVERROR(ENOMEM);
+            if (!codecpar->extradata) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             codecpar->extradata_size = size;
             avio_read(pb, codecpar->extradata, size);
         }
