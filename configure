@@ -2234,8 +2234,8 @@ vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel vc1_parser"
 vp8_qsv_decoder_deps="libmfx"
 vp8_qsv_decoder_select="qsvdec vp8_qsv_hwaccel vp8_parser"
 
-nvenc_h264_encoder_deps="nvenc"
-nvenc_hevc_encoder_deps="nvenc"
+nvenc_h264_encoder_select="h264_nvenc_encoder"
+nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
