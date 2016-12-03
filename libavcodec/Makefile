@@ -82,12 +82,12 @@ OBJS-$(CONFIG_LZF)                     += lzf.o
 OBJS-$(CONFIG_MDCT)                    += mdct_fixed.o mdct_float.o
 OBJS-$(CONFIG_ME_CMP)                  += me_cmp.o
 OBJS-$(CONFIG_MPEG_ER)                 += mpeg_er.o
-OBJS-$(CONFIG_MPEGAUDIO)               += mpegaudio.o mpegaudiodata.o   \
-                                          mpegaudiodecheader.o
+OBJS-$(CONFIG_MPEGAUDIO)               += mpegaudio.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
                                           mpegaudiodsp_data.o           \
                                           mpegaudiodsp_fixed.o          \
                                           mpegaudiodsp_float.o
+OBJS-$(CONFIG_MPEGAUDIOHEADER)         += mpegaudiodecheader.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGVIDEO)               += mpegvideo.o mpegvideodsp.o rl.o \
                                           mpegvideo_motion.o mpegutils.o \
                                           mpegvideodata.o mpegpicture.o
@@ -651,7 +651,6 @@ OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
-OBJS-$(CONFIG_MP3_MUXER)               += mpegaudiodata.o mpegaudiodecheader.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
@@ -670,7 +669,7 @@ OBJS-$(CONFIG_LIBGSM_MS_ENCODER)          += libgsmenc.o
 OBJS-$(CONFIG_LIBILBC_DECODER)            += libilbc.o
 OBJS-$(CONFIG_LIBILBC_ENCODER)            += libilbc.o
 OBJS-$(CONFIG_LIBKVAZAAR_ENCODER)         += libkvazaar.o
-OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o mpegaudiodecheader.o
+OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRWB_DECODER)  += libopencore-amr.o
@@ -733,8 +732,7 @@ OBJS-$(CONFIG_MLP_PARSER)              += mlp_parser.o mlp.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
                                           mpeg4videodec.o mpeg4video.o \
                                           ituh263dec.o h263dec.o h263data.o
-OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o \
-                                          mpegaudiodecheader.o mpegaudiodata.o
+OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_OPUS_PARSER)             += opus_parser.o opus.o vorbis_data.o

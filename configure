@@ -1724,6 +1724,7 @@ CONFIG_EXTRA="
     mpeg_er
     mpegaudio
     mpegaudiodsp
+    mpegaudioheader
     mpegvideo
     mpegvideoenc
     mss34dsp
@@ -1907,7 +1908,7 @@ mdct_select="fft"
 rdft_select="fft"
 me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
-mpegaudio_select="mpegaudiodsp"
+mpegaudio_select="mpegaudiodsp mpegaudioheader"
 mpegaudiodsp_select="dct"
 mpegvideo_select="blockdsp hpeldsp idctdsp me_cmp mpeg_er videodsp"
 mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
@@ -2229,6 +2230,7 @@ nvenc_hevc_encoder_deps="nvenc"
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
 hevc_parser_select="golomb"
+mpegaudio_parser_select="mpegaudioheader"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
 vc1_parser_select="vc1dsp"
@@ -2251,7 +2253,7 @@ libilbc_decoder_deps="libilbc"
 libilbc_encoder_deps="libilbc"
 libkvazaar_encoder_deps="libkvazaar"
 libmp3lame_encoder_deps="libmp3lame"
-libmp3lame_encoder_select="audio_frame_queue"
+libmp3lame_encoder_select="audio_frame_queue mpegaudioheader"
 libopencore_amrnb_decoder_deps="libopencore_amrnb"
 libopencore_amrnb_encoder_deps="libopencore_amrnb"
 libopencore_amrnb_encoder_select="audio_frame_queue"
@@ -2319,6 +2321,7 @@ mov_demuxer_select="iso_media riffdec"
 mov_demuxer_suggest="zlib"
 mov_muxer_select="iso_media riffenc rtpenc_chain"
 mp3_demuxer_select="mpegaudio_parser"
+mp3_muxer_select="mpegaudioheader"
 mp4_muxer_select="mov_muxer"
 mpegts_demuxer_select="iso_media"
 mpegts_muxer_select="adts_muxer latm_muxer"
