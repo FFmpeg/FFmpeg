@@ -402,6 +402,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (!av_pix_fmt_desc_get(codecpar->format)) {
                 av_log(s, AV_LOG_ERROR, "Invalid pix fmt id: %d\n", codecpar->format);
                 codecpar->format = AV_PIX_FMT_NONE;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             avio_r8(pb);   // qmin
@@ -545,11 +546,15 @@ static int ffm_read_header(AVFormatContext *s)
     tag = avio_rl32(pb);
     if (tag == MKTAG('F', 'F', 'M', '2'))
         return ffm2_read_header(s);
-    if (tag != MKTAG('F', 'F', 'M', '1'))
+    if (tag != MKTAG('F', 'F', 'M', '1')) {
+        ret = AVERROR_INVALIDDATA;
         goto fail;
+    }
     ffm->packet_size = avio_rb32(pb);
-    if (ffm->packet_size != FFM_PACKET_SIZE)
+    if (ffm->packet_size != FFM_PACKET_SIZE) {
+        ret = AVERROR_INVALIDDATA;
         goto fail;
+    }
     ffm->write_index = avio_rb64(pb);
     /* get also filesize */
     if (pb->seekable) {
@@ -569,8 +574,10 @@ static int ffm_read_header(AVFormatContext *s)
         int flags;
 
         st = avformat_new_stream(s, NULL);
-        if (!st)
+        if (!st) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
 
         avpriv_set_pts_info(st, 64, 1, 1000000);
 
@@ -581,6 +588,7 @@ static int ffm_read_header(AVFormatContext *s)
         if (!codec_desc) {
             av_log(s, AV_LOG_ERROR, "Invalid codec id: %d\n", codecpar->codec_id);
             codecpar->codec_id = AV_CODEC_ID_NONE;
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         codecpar->codec_type = avio_r8(pb); /* codec_type */
@@ -589,11 +597,13 @@ static int ffm_read_header(AVFormatContext *s)
                    codec_desc->type, codecpar->codec_type);
             codecpar->codec_id = AV_CODEC_ID_NONE;
             codecpar->codec_type = AVMEDIA_TYPE_UNKNOWN;
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         codecpar->bit_rate = avio_rb32(pb);
         if (codecpar->bit_rate < 0) {
             av_log(s, AV_LOG_WARNING, "Invalid bit rate %"PRId64"\n", codecpar->bit_rate);
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         flags = avio_rb32(pb);
@@ -611,13 +621,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avio_rb32(pb); // time_base.den
             codecpar->width = avio_rb16(pb);
             codecpar->height = avio_rb16(pb);
-            if (av_image_check_size(codecpar->width, codecpar->height, 0, s) < 0)
+            if ((ret = av_image_check_size(codecpar->width, codecpar->height, 0, s)) < 0)
                 goto fail;
             avio_rb16(pb); // gop_size
             codecpar->format = avio_rb32(pb);
             if (!av_pix_fmt_desc_get(codecpar->format)) {
                 av_log(s, AV_LOG_ERROR, "Invalid pix fmt id: %d\n", codecpar->format);
                 codecpar->format = AV_PIX_FMT_NONE;
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             avio_r8(pb);   // qmin
@@ -668,12 +679,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
             VALIDATE_PARAMETER(frame_size,  "frame size",         codecpar->frame_size < 0)
             break;
         default:
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
         if (flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
             int size = avio_rb32(pb);
             if (size < 0 || size >= FF_MAX_EXTRADATA_SIZE) {
                 av_log(s, AV_LOG_ERROR, "Invalid extradata size %d\n", size);
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             codecpar->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -699,7 +712,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
  fail:
     avcodec_free_context(&dummy_codec);
-    return -1;
+    return ret;
 }
 
 /* return < 0 if eof */
