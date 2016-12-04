@@ -275,6 +275,7 @@
     <ClCompile Include="..\libavfilter\vf_phase.c" />
     <ClCompile Include="..\libavfilter\vf_pixdesctest.c" />
     <ClCompile Include="..\libavfilter\vf_pp.c" />
+    <ClCompile Include="..\libavfilter\vf_premultiply.c" />
     <ClCompile Include="..\libavfilter\vf_qp.c" />
     <ClCompile Include="..\libavfilter\vf_random.c" />
     <ClCompile Include="..\libavfilter\vf_readvitc.c" />

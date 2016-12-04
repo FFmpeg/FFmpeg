@@ -648,6 +648,9 @@
     <ClCompile Include="..\libavfilter\vf_pp.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_premultiply.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_qp.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
