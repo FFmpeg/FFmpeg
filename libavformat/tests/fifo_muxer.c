@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavformat/avformat.h"
 #include "libavformat/url.h"
+#include "libavformat/network.h"
 
 #define MAX_TST_PACKETS 128
 #define SLEEPTIME_50_MS 50000

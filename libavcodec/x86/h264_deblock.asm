@@ -946,6 +946,20 @@ cglobal deblock_h_chroma_intra_8, 4,6
     TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
     RET
 
+cglobal deblock_h_chroma422_intra_8, 4, 6
+    CHROMA_H_START
+    TRANSPOSE4x8_LOAD  bw, wd, dq, PASS8ROWS(t5, r0, r1, t6)
+    call ff_chroma_intra_body_mmxext
+    TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+
+    lea r0, [r0+r1*8]
+    lea t5, [t5+r1*8]
+
+    TRANSPOSE4x8_LOAD  bw, wd, dq, PASS8ROWS(t5, r0, r1, t6)
+    call ff_chroma_intra_body_mmxext
+    TRANSPOSE8x4B_STORE PASS8ROWS(t5, r0, r1, t6)
+RET
+
 ALIGN 16
 ff_chroma_intra_body_mmxext:
     LOAD_MASK r2d, r3d

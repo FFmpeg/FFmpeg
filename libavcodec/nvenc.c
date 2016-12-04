@@ -28,6 +28,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
+#include "libavutil/pixdesc.h"
 #include "internal.h"
 
 #define NVENC_CAP 0x30
@@ -590,6 +591,7 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
             set_vbr(avctx);
             return;
         }
+        /* fall through */
     case NV_ENC_PARAMS_RC_VBR_MINQP:
         if (avctx->qmin < 0) {
             av_log(avctx, AV_LOG_WARNING,
@@ -940,18 +942,15 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->encode_config.version = NV_ENC_CONFIG_VER;
 
-    if (avctx->sample_aspect_ratio.num && avctx->sample_aspect_ratio.den &&
-        (avctx->sample_aspect_ratio.num != 1 || avctx->sample_aspect_ratio.num != 1)) {
-        av_reduce(&dw, &dh,
-                  avctx->width * avctx->sample_aspect_ratio.num,
-                  avctx->height * avctx->sample_aspect_ratio.den,
-                  1024 * 1024);
-        ctx->init_encode_params.darHeight = dh;
-        ctx->init_encode_params.darWidth = dw;
-    } else {
-        ctx->init_encode_params.darHeight = avctx->height;
-        ctx->init_encode_params.darWidth = avctx->width;
+    dw = avctx->width;
+    dh = avctx->height;
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        dw*= avctx->sample_aspect_ratio.num;
+        dh*= avctx->sample_aspect_ratio.den;
     }
+    av_reduce(&dw, &dh, dw, dh, 1024 * 1024);
+    ctx->init_encode_params.darHeight = dh;
+    ctx->init_encode_params.darWidth = dw;
 
     ctx->init_encode_params.frameRateNum = avctx->time_base.den;
     ctx->init_encode_params.frameRateDen = avctx->time_base.num * avctx->ticks_per_frame;
@@ -1009,6 +1008,28 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     return 0;
 }
 
+static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
+{
+    switch (pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+        return NV_ENC_BUFFER_FORMAT_YV12_PL;
+    case AV_PIX_FMT_NV12:
+        return NV_ENC_BUFFER_FORMAT_NV12_PL;
+    case AV_PIX_FMT_P010:
+        return NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
+    case AV_PIX_FMT_YUV444P:
+        return NV_ENC_BUFFER_FORMAT_YUV444_PL;
+    case AV_PIX_FMT_YUV444P16:
+        return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
+    case AV_PIX_FMT_0RGB32:
+        return NV_ENC_BUFFER_FORMAT_ARGB;
+    case AV_PIX_FMT_0BGR32:
+        return NV_ENC_BUFFER_FORMAT_ABGR;
+    default:
+        return NV_ENC_BUFFER_FORMAT_UNDEFINED;
+    }
+}
+
 static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 {
     NvencContext *ctx = avctx->priv_data;
@@ -1019,46 +1040,20 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     NV_ENC_CREATE_BITSTREAM_BUFFER allocOut = { 0 };
     allocOut.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
 
-    switch (ctx->data_pix_fmt) {
-    case AV_PIX_FMT_YUV420P:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YV12_PL;
-        break;
-
-    case AV_PIX_FMT_NV12:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_NV12_PL;
-        break;
-
-    case AV_PIX_FMT_P010:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
-        break;
-
-    case AV_PIX_FMT_YUV444P:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_PL;
-        break;
-
-    case AV_PIX_FMT_YUV444P16:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
-        break;
-
-    case AV_PIX_FMT_0RGB32:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ARGB;
-        break;
-
-    case AV_PIX_FMT_0BGR32:
-        ctx->surfaces[idx].format = NV_ENC_BUFFER_FORMAT_ABGR;
-        break;
-
-    default:
-        av_log(avctx, AV_LOG_FATAL, "Invalid input pixel format\n");
-        return AVERROR(EINVAL);
-    }
-
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
         ctx->surfaces[idx].in_ref = av_frame_alloc();
         if (!ctx->surfaces[idx].in_ref)
             return AVERROR(ENOMEM);
     } else {
         NV_ENC_CREATE_INPUT_BUFFER allocSurf = { 0 };
+
+        ctx->surfaces[idx].format = nvenc_map_buffer_format(ctx->data_pix_fmt);
+        if (ctx->surfaces[idx].format == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
+            av_log(avctx, AV_LOG_FATAL, "Invalid input pixel format: %s\n",
+                   av_get_pix_fmt_name(ctx->data_pix_fmt));
+            return AVERROR(EINVAL);
+        }
+
         allocSurf.version = NV_ENC_CREATE_INPUT_BUFFER_VER;
         allocSurf.width = (avctx->width + 31) & ~31;
         allocSurf.height = (avctx->height + 31) & ~31;
@@ -1351,9 +1346,15 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
     reg.resourceType       = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR;
     reg.width              = frames_ctx->width;
     reg.height             = frames_ctx->height;
-    reg.bufferFormat       = ctx->surfaces[0].format;
     reg.pitch              = frame->linesize[0];
     reg.resourceToRegister = frame->data[0];
+
+    reg.bufferFormat       = nvenc_map_buffer_format(frames_ctx->sw_format);
+    if (reg.bufferFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
+        av_log(avctx, AV_LOG_FATAL, "Invalid input pixel format: %s\n",
+               av_get_pix_fmt_name(frames_ctx->sw_format));
+        return AVERROR(EINVAL);
+    }
 
     ret = p_nvenc->nvEncRegisterResource(ctx->nvencoder, &reg);
     if (ret != NV_ENC_SUCCESS) {

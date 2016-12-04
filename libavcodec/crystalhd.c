@@ -568,6 +568,9 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     }
 
     bwidth = av_image_get_linesize(avctx->pix_fmt, width, 0);
+    if (bwidth < 0)
+       return RET_ERROR;
+
     if (priv->is_70012) {
         int pStride;
 
@@ -577,6 +580,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
             pStride = 1280;
         else pStride = 1920;
         sStride = av_image_get_linesize(avctx->pix_fmt, pStride, 0);
+        if (sStride < 0)
+            return RET_ERROR;
     } else {
         sStride = bwidth;
     }

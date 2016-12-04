@@ -253,6 +253,12 @@ static int rv10_write_header(AVFormatContext *ctx,
                 ffio_wfourcc(s,"RV20");
             avio_wb16(s, stream->par->width);
             avio_wb16(s, stream->par->height);
+
+            if (stream->frame_rate.num / stream->frame_rate.den > 65535) {
+                av_log(s, AV_LOG_ERROR, "Frame rate %d is too high\n", stream->frame_rate.num / stream->frame_rate.den);
+                return AVERROR(EINVAL);
+            }
+
             avio_wb16(s, stream->frame_rate.num / stream->frame_rate.den); /* frames per seconds ? */
             avio_wb32(s,0);     /* unknown meaning */
             avio_wb16(s, stream->frame_rate.num / stream->frame_rate.den);  /* unknown meaning */

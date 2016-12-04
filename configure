@@ -1189,6 +1189,19 @@ check_cpp_condition(){
 EOF
 }
 
+test_cflags_cpp(){
+    log test_cflags_cpp "$@"
+    flags=$1
+    condition=$2
+    shift 2
+    set -- $($cflags_filter "$flags")
+    check_cpp "$@" <<EOF
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
+EOF
+}
+
 check_lib(){
     log check_lib "$@"
     header="$1"
@@ -1836,6 +1849,7 @@ HEADERS_LIST="
     poll_h
     sndio_h
     soundcard_h
+    stdatomic_h
     sys_mman_h
     sys_param_h
     sys_resource_h
@@ -2894,6 +2908,7 @@ ogv_muxer_select="ogg_muxer"
 opus_muxer_select="ogg_muxer"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
+rtp_muxer_select="golomb"
 rtpdec_select="asf_demuxer jpegtables mov_demuxer mpegts_demuxer rm_demuxer rtp_protocol srtp"
 rtsp_demuxer_select="http_protocol rtpdec"
 rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol rtpenc_chain"
@@ -3036,7 +3051,6 @@ cropdetect_filter_deps="gpl"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
 drawtext_filter_deps="libfreetype"
-ebur128_filter_deps="gpl"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
 fftfilt_filter_select="rdft"
@@ -4579,7 +4593,15 @@ fi
 add_cppflags -D_ISOC99_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
 add_cxxflags -std=c++98
-check_cflags -std=c99
+
+# some compilers silently accept -std=c11, so we also need to check that the
+# version macro is defined properly
+if test_cflags_cpp -std=c11 "__STDC_VERSION__ >= 201112L"; then
+    add_cflags -std=c11
+else
+    check_cflags -std=c99
+fi
+
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
 EOF
@@ -5569,6 +5591,11 @@ check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
 
+# it seems there are versions of clang in some distros that try to use the
+# gcc headers, which explodes for stdatomic
+# so we also check that atomics actually work here
+check_builtin stdatomic_h stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
+
 check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
@@ -6354,6 +6381,22 @@ for thread in $THREADS_LIST; do
             thread_type="$thread"
     fi
 done
+
+if disabled stdatomic_h; then
+    if enabled atomics_gcc; then
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/gcc'
+    elif enabled atomics_win32; then
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/win32'
+    elif enabled atomics_suncc; then
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/suncc'
+    elif enabled pthreads; then
+        add_compat atomics/pthread/stdatomic.o
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/pthread'
+    else
+        enabled threads && die "Threading is enabled, but no atomics are available"
+        add_cppflags '-I\$(SRC_PATH)/compat/atomics/dummy'
+    fi
+fi
 
 enabled zlib && add_cppflags -DZLIB_CONST
 

@@ -1240,6 +1240,7 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    int i;
     int64_t creation_time;
     int version = avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
@@ -1270,7 +1271,12 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_skip(pb, 10); /* reserved */
 
-    avio_skip(pb, 36); /* display matrix */
+    /* movie display matrix, store it in main context and use it later on */
+    for (i = 0; i < 3; i++) {
+        c->movie_display_matrix[i][0] = avio_rb32(pb); // 16.16 fixed point
+        c->movie_display_matrix[i][1] = avio_rb32(pb); // 16.16 fixed point
+        c->movie_display_matrix[i][2] = avio_rb32(pb); //  2.30 fixed point
+    }
 
     avio_rb32(pb); /* preview time */
     avio_rb32(pb); /* preview duration */
@@ -2226,10 +2232,6 @@ static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
         avio_skip(pb, size);
         return 1;
     }
-    if ( codec_tag == AV_RL32("hvc1") ||
-         codec_tag == AV_RL32("hev1")
-    )
-        av_log(c->fc, AV_LOG_WARNING, "Concatenated H.264 or H.265 might not play correctly.\n");
 
     return 0;
 }
@@ -3848,12 +3850,22 @@ static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+// return 1 when matrix is identity, 0 otherwise
+#define IS_MATRIX_IDENT(matrix)            \
+    ( (matrix)[0][0] == (1 << 16) &&       \
+      (matrix)[1][1] == (1 << 16) &&       \
+      (matrix)[2][2] == (1 << 30) &&       \
+     !(matrix)[0][1] && !(matrix)[0][2] && \
+     !(matrix)[1][0] && !(matrix)[1][2] && \
+     !(matrix)[2][0] && !(matrix)[2][1])
+
 static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    int i;
+    int i, j, e;
     int width;
     int height;
     int display_matrix[3][3];
+    int res_display_matrix[3][3] = { { 0 } };
     AVStream *st;
     MOVStreamContext *sc;
     int version;
@@ -3903,15 +3915,20 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->width = width >> 16;
     sc->height = height >> 16;
 
-    // save the matrix and add rotate metadata when it is not the default
-    // identity
-    if (display_matrix[0][0] != (1 << 16) ||
-        display_matrix[1][1] != (1 << 16) ||
-        display_matrix[2][2] != (1 << 30) ||
-        display_matrix[0][1] || display_matrix[0][2] ||
-        display_matrix[1][0] || display_matrix[1][2] ||
-        display_matrix[2][0] || display_matrix[2][1]) {
-        int i, j;
+    // apply the moov display matrix (after the tkhd one)
+    for (i = 0; i < 3; i++) {
+        const int sh[3] = { 16, 16, 30 };
+        for (j = 0; j < 3; j++) {
+            for (e = 0; e < 3; e++) {
+                res_display_matrix[i][j] +=
+                    ((int64_t) display_matrix[i][e] *
+                     c->movie_display_matrix[e][j]) >> sh[e];
+            }
+        }
+    }
+
+    // save the matrix when it is not the default identity
+    if (!IS_MATRIX_IDENT(res_display_matrix)) {
         double rotate;
 
         av_freep(&sc->display_matrix);
@@ -3921,7 +3938,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         for (i = 0; i < 3; i++)
             for (j = 0; j < 3; j++)
-                sc->display_matrix[i * 3 + j] = display_matrix[i][j];
+                sc->display_matrix[i * 3 + j] = res_display_matrix[i][j];
 
         rotate = av_display_rotation_get(sc->display_matrix);
         if (!isnan(rotate)) {
@@ -3940,7 +3957,8 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         double disp_transform[2];
 
         for (i = 0; i < 2; i++)
-            disp_transform[i] = hypot(display_matrix[i][0], display_matrix[i][1]);
+            disp_transform[i] = hypot(sc->display_matrix[0 + i],
+                                      sc->display_matrix[3 + i]);
 
         if (disp_transform[0] > 0       && disp_transform[1] > 0 &&
             disp_transform[0] < (1<<24) && disp_transform[1] < (1<<24) &&

@@ -449,7 +449,7 @@ static int rebuild_filter_bank_with_compensation(ResampleContext *c)
 static int set_compensation(ResampleContext *c, int sample_delta, int compensation_distance){
     int ret;
 
-    if (compensation_distance) {
+    if (compensation_distance && sample_delta) {
         ret = rebuild_filter_bank_with_compensation(c);
         if (ret < 0)
             return ret;

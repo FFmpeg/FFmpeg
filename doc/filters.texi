@@ -5278,6 +5278,7 @@ colormatrix=bt601:smpte240m
 @section colorspace
 
 Convert colorspace, transfer characteristics or color primaries.
+Input video needs to have an even size.
 
 The filter accepts the following options:
 
@@ -10981,6 +10982,12 @@ Set soft thresholding (better de-ringing effect, but likely blurrier).
 Set medium thresholding (good results, default).
 @end table
 @end table
+
+@section premultiply
+Apply alpha premultiply effect to input video stream using first plane
+of second stream as alpha.
+
+Both streams must have same dimensions and same pixel format.
 
 @section prewitt
 Apply prewitt operator to input video stream.

@@ -566,7 +566,7 @@ static int init_output_frame(AVFrame **frame,
      * sure that the audio frame can hold as many samples as specified.
      */
     if ((error = av_frame_get_buffer(*frame, 0)) < 0) {
-        fprintf(stderr, "Could allocate output frame samples (error '%s')\n",
+        fprintf(stderr, "Could not allocate output frame samples (error '%s')\n",
                 get_error_text(error));
         av_frame_free(frame);
         return error;

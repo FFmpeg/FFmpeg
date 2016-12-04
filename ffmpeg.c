@@ -2070,6 +2070,7 @@ static int send_frame_to_filters(InputStream *ist, AVFrame *decoded_frame)
     int i, ret;
     AVFrame *f;
 
+    av_assert1(ist->nb_filters > 0); /* ensure ret is initialized */
     for (i = 0; i < ist->nb_filters; i++) {
         if (i < ist->nb_filters - 1) {
             f = ist->filter_frame;

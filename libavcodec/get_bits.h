@@ -369,6 +369,10 @@ static inline uint64_t get_bits64(GetBitContext *s, int n)
  */
 static inline int get_sbits_long(GetBitContext *s, int n)
 {
+    // sign_extend(x, 0) is undefined
+    if (!n)
+        return 0;
+
     return sign_extend(get_bits_long(s, n), n);
 }
 

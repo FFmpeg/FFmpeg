@@ -1010,7 +1010,7 @@ static int asf_get_packet(AVFormatContext *s, AVIOContext *pb)
             }
 
             if (c != 0x82)
-                avpriv_request_sample(s, "Invalid ECC byte\n");
+                avpriv_request_sample(s, "Invalid ECC byte");
 
             if (!asf->uses_std_ecc)
                 asf->uses_std_ecc =  (c == 0x82 && !d && !e) ? 1 : -1;

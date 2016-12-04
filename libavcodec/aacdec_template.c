@@ -452,7 +452,7 @@ static int output_configure(AACContext *ac,
         int id =           layout_map[i][1];
         id_map[type][id] = type_counts[type]++;
         if (id_map[type][id] >= MAX_ELEM_ID) {
-            avpriv_request_sample(ac->avctx, "Remapped id too large\n");
+            avpriv_request_sample(ac->avctx, "Too large remapped id");
             return AVERROR_PATCHWELCOME;
         }
     }

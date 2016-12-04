@@ -8,13 +8,15 @@ bgra                929aac15e848038e367c250037575f9f
 gbrap               5f16cccab5a17cb766c882e865995167
 gbrap10le           454bf36e86ae92ab7853a9508bb75a99
 gbrap12le           e0e43f838cfbe98086042ba54b5f70be
+gbrap16le           0f4414db67b84a720106d7a3b2435766
 gbrp                3c94d39256db2409015df913fd330a90
 gbrp10le            5b356737cd8a396f39bbdadb7cb35e06
 gbrp12le            91fdad0d1edf7bfa2805e2041e8da3cd
 gbrp14le            deb2c3af6b48faa52f6a1f6590a0cdf7
+gbrp16le            a6156d1a37e05ee621b2a343fb158bd6
 gbrp9le             9e827f438e081d334a6cae7e282698b0
 gray                ddc663a0491df3959d9c5795dceaa72e
-gray10le            32ca617a9ffda4bdbdef9a058f60e828
+gray10le            92431ca3c9a3ac8f344089a799c665d0
 gray12le            94b3d77e56b5a094720842fea6138cb1
 gray16le            468bda6155bdc7a7a20c34d6e599fd16
 nv12                381574979cb04be10c9168540310afad

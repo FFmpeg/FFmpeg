@@ -1237,6 +1237,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
                      j++, ptr += syntax[i].list_elem_size)
                     ebml_free(syntax[i].def.n, ptr);
                 av_freep(&list->elem);
+                list->nb_elem = 0;
             } else
                 ebml_free(syntax[i].def.n, data_off);
         default:
@@ -3398,18 +3399,6 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         tracks[i].audio.sub_packet_cnt = 0;
         tracks[i].audio.buf_timecode   = AV_NOPTS_VALUE;
         tracks[i].end_timecode         = 0;
-        if (tracks[i].type == MATROSKA_TRACK_TYPE_SUBTITLE &&
-            tracks[i].stream &&
-            tracks[i].stream->discard != AVDISCARD_ALL) {
-            index_sub = av_index_search_timestamp(
-                tracks[i].stream, st->index_entries[index].timestamp,
-                AVSEEK_FLAG_BACKWARD);
-            while (index_sub >= 0 &&
-                  index_min > 0 &&
-                  tracks[i].stream->index_entries[index_sub].pos < st->index_entries[index_min].pos &&
-                  st->index_entries[index].timestamp - tracks[i].stream->index_entries[index_sub].timestamp < 30000000000 / matroska->time_scale)
-                index_min--;
-        }
     }
 
     avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);

@@ -86,6 +86,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_BGRA64LE,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GBRP16LE, AV_PIX_FMT_GBRAP16LE,
+        AV_PIX_FMT_YUV420P10LE,
+        AV_PIX_FMT_YUV422P10LE,
+        AV_PIX_FMT_YUV444P10LE,
+        AV_PIX_FMT_YUV440P10LE,
+        AV_PIX_FMT_YUVA420P10LE,
+        AV_PIX_FMT_YUVA422P10LE,
+        AV_PIX_FMT_YUVA444P10LE,
+        AV_PIX_FMT_YUV420P12LE,
+        AV_PIX_FMT_YUV422P12LE,
+        AV_PIX_FMT_YUV444P12LE,
+        AV_PIX_FMT_YUV440P12LE,
+        AV_PIX_FMT_GBRP10LE, AV_PIX_FMT_GBRAP10LE,
+        AV_PIX_FMT_GBRP12LE, AV_PIX_FMT_GBRAP12LE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat in_pixfmts_be[] = {
@@ -112,9 +125,26 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_BGRA64BE,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GBRP16BE, AV_PIX_FMT_GBRAP16BE,
+        AV_PIX_FMT_YUV420P10BE,
+        AV_PIX_FMT_YUV422P10BE,
+        AV_PIX_FMT_YUV444P10BE,
+        AV_PIX_FMT_YUV440P10BE,
+        AV_PIX_FMT_YUVA420P10BE,
+        AV_PIX_FMT_YUVA422P10BE,
+        AV_PIX_FMT_YUVA444P10BE,
+        AV_PIX_FMT_YUV420P12BE,
+        AV_PIX_FMT_YUV422P12BE,
+        AV_PIX_FMT_YUV444P12BE,
+        AV_PIX_FMT_YUV440P12BE,
+        AV_PIX_FMT_GBRP10BE, AV_PIX_FMT_GBRAP10BE,
+        AV_PIX_FMT_GBRP12BE, AV_PIX_FMT_GBRAP12BE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat out8_pixfmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out10le_pixfmts[] = { AV_PIX_FMT_GRAY10LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out10be_pixfmts[] = { AV_PIX_FMT_GRAY10BE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out12le_pixfmts[] = { AV_PIX_FMT_GRAY12LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out12be_pixfmts[] = { AV_PIX_FMT_GRAY12BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16le_pixfmts[] = { AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16be_pixfmts[] = { AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_NONE };
     const enum AVPixelFormat *out_pixfmts, *in_pixfmts;
@@ -150,6 +180,14 @@ static int query_formats(AVFilterContext *ctx)
 
     if (depth == 8)
         out_pixfmts = out8_pixfmts;
+    else if (!be && depth == 10)
+        out_pixfmts = out10le_pixfmts;
+    else if (be && depth == 10)
+        out_pixfmts = out10be_pixfmts;
+    else if (!be && depth == 12)
+        out_pixfmts = out12le_pixfmts;
+    else if (be && depth == 12)
+        out_pixfmts = out12be_pixfmts;
     else if (be)
         out_pixfmts = out16be_pixfmts;
     else
