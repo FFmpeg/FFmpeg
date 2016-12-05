@@ -90,8 +90,6 @@ OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
-TOOLS       = qt-faststart trasher
-TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 # $(FFLIBS-yes) needs to be in linking order
 FFLIBS-$(CONFIG_AVDEVICE)   += avdevice
@@ -108,6 +106,7 @@ DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.avpreset)
 SKIPHEADERS = cmdutils_common_opts.h                                    \
               compat/w32pthreads.h
 
+include $(SRC_PATH)/tools/Makefile
 include $(SRC_PATH)/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
@@ -171,10 +170,6 @@ $(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(EXESUF)=))))
 $(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
-OBJDIRS += tools
-
--include $(wildcard tools/*.d)
-
 VERSION_SH  = $(SRC_PATH)/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
@@ -219,7 +214,6 @@ uninstall-data:
 clean::
 	$(RM) $(ALLAVPROGS)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(CLEANSUFFIXES:%=tools/%)
 	$(RM) -rf coverage.info lcov
 
 distclean::
