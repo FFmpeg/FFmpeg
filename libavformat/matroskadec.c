@@ -182,7 +182,7 @@ typedef struct MatroskaTrackVideo {
     uint64_t field_order;
     uint64_t stereo_mode;
     uint64_t alpha_mode;
-    MatroskaTrackVideoColor color;
+    EbmlList color;
     MatroskaTrackVideoProjection projection;
 } MatroskaTrackVideo;
 
@@ -451,7 +451,7 @@ static const EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELHEIGHT,    EBML_UINT,  0, offsetof(MatroskaTrackVideo, pixel_height) },
     { MATROSKA_ID_VIDEOCOLORSPACE,     EBML_BIN,   0, offsetof(MatroskaTrackVideo, color_space) },
     { MATROSKA_ID_VIDEOALPHAMODE,      EBML_UINT,  0, offsetof(MatroskaTrackVideo, alpha_mode) },
-    { MATROSKA_ID_VIDEOCOLOR,          EBML_NEST,  0, offsetof(MatroskaTrackVideo, color), { .n = matroska_track_video_color } },
+    { MATROSKA_ID_VIDEOCOLOR,          EBML_NEST,  sizeof(MatroskaTrackVideoColor), offsetof(MatroskaTrackVideo, color), { .n = matroska_track_video_color } },
     { MATROSKA_ID_VIDEOPROJECTION,     EBML_NEST,  0, offsetof(MatroskaTrackVideo, projection), { .n = matroska_track_video_projection } },
     { MATROSKA_ID_VIDEOPIXELCROPB,     EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,     EBML_NONE },
@@ -1827,34 +1827,40 @@ static void mkv_stereo_mode_display_mul(int stereo_mode,
 }
 
 static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
-    const MatroskaMasteringMeta* mastering_meta =
-        &track->video.color.mastering_meta;
+    const MatroskaTrackVideoColor *color = track->video.color.elem;
+    const MatroskaMasteringMeta *mastering_meta;
+    int has_mastering_primaries, has_mastering_luminance;
+
+    if (!track->video.color.nb_elem)
+        return 0;
+
+    mastering_meta = &color->mastering_meta;
     // Mastering primaries are CIE 1931 coords, and must be > 0.
-    const int has_mastering_primaries =
+    has_mastering_primaries =
         mastering_meta->r_x > 0 && mastering_meta->r_y > 0 &&
         mastering_meta->g_x > 0 && mastering_meta->g_y > 0 &&
         mastering_meta->b_x > 0 && mastering_meta->b_y > 0 &&
         mastering_meta->white_x > 0 && mastering_meta->white_y > 0;
-    const int has_mastering_luminance = mastering_meta->max_luminance > 0;
+    has_mastering_luminance = mastering_meta->max_luminance > 0;
 
-    if (track->video.color.matrix_coefficients != AVCOL_SPC_RESERVED)
-        st->codecpar->color_space = track->video.color.matrix_coefficients;
-    if (track->video.color.primaries != AVCOL_PRI_RESERVED &&
-        track->video.color.primaries != AVCOL_PRI_RESERVED0)
-        st->codecpar->color_primaries = track->video.color.primaries;
-    if (track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED &&
-        track->video.color.transfer_characteristics != AVCOL_TRC_RESERVED0)
-        st->codecpar->color_trc = track->video.color.transfer_characteristics;
-    if (track->video.color.range != AVCOL_RANGE_UNSPECIFIED &&
-        track->video.color.range <= AVCOL_RANGE_JPEG)
-        st->codecpar->color_range = track->video.color.range;
-    if (track->video.color.chroma_siting_horz != MATROSKA_COLOUR_CHROMASITINGHORZ_UNDETERMINED &&
-        track->video.color.chroma_siting_vert != MATROSKA_COLOUR_CHROMASITINGVERT_UNDETERMINED &&
-        track->video.color.chroma_siting_horz  < MATROSKA_COLOUR_CHROMASITINGHORZ_NB &&
-        track->video.color.chroma_siting_vert  < MATROSKA_COLOUR_CHROMASITINGVERT_NB) {
+    if (color->matrix_coefficients != AVCOL_SPC_RESERVED)
+        st->codecpar->color_space = color->matrix_coefficients;
+    if (color->primaries != AVCOL_PRI_RESERVED &&
+        color->primaries != AVCOL_PRI_RESERVED0)
+        st->codecpar->color_primaries = color->primaries;
+    if (color->transfer_characteristics != AVCOL_TRC_RESERVED &&
+        color->transfer_characteristics != AVCOL_TRC_RESERVED0)
+        st->codecpar->color_trc = color->transfer_characteristics;
+    if (color->range != AVCOL_RANGE_UNSPECIFIED &&
+        color->range <= AVCOL_RANGE_JPEG)
+        st->codecpar->color_range = color->range;
+    if (color->chroma_siting_horz != MATROSKA_COLOUR_CHROMASITINGHORZ_UNDETERMINED &&
+        color->chroma_siting_vert != MATROSKA_COLOUR_CHROMASITINGVERT_UNDETERMINED &&
+        color->chroma_siting_horz  < MATROSKA_COLOUR_CHROMASITINGHORZ_NB &&
+        color->chroma_siting_vert  < MATROSKA_COLOUR_CHROMASITINGVERT_NB) {
         st->codecpar->chroma_location =
-            avcodec_chroma_pos_to_enum((track->video.color.chroma_siting_horz - 1) << 7,
-                                       (track->video.color.chroma_siting_vert - 1) << 7);
+            avcodec_chroma_pos_to_enum((color->chroma_siting_horz - 1) << 7,
+                                       (color->chroma_siting_vert - 1) << 7);
     }
 
     if (has_mastering_primaries || has_mastering_luminance) {
