@@ -2810,17 +2810,6 @@ typedef struct AVCodecContext {
      */
     int bits_per_raw_sample;
 
-#if FF_API_LOWRES
-    /**
-     * low resolution decoding, 1-> 1/2 size, 2->1/4 size
-     * - encoding: unused
-     * - decoding: Set by user.
-     *
-     * @deprecated use decoder private options instead
-     */
-    attribute_deprecated int lowres;
-#endif
-
 #if FF_API_CODED_FRAME
     /**
      * the picture in the bitstream
@@ -3237,9 +3226,6 @@ typedef struct AVCodec {
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
     const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
     const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
-#if FF_API_LOWRES
-    attribute_deprecated uint8_t max_lowres; ///< maximum value for lowres supported by the decoder
-#endif
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
 
