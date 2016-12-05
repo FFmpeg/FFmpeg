@@ -56,15 +56,6 @@
 #include "avcodec.h"
 #include "version.h"
 
-#if FF_API_BUFS_VDPAU
-union AVVDPAUPictureInfo {
-    VdpPictureInfoH264        h264;
-    VdpPictureInfoMPEG1Or2    mpeg;
-    VdpPictureInfoVC1          vc1;
-    VdpPictureInfoMPEG4Part2 mpeg4;
-};
-#endif
-
 /**
  * This structure is used to share data between the libavcodec library and
  * the client video application.
@@ -92,41 +83,6 @@ typedef struct AVVDPAUContext {
      * Set by the user.
      */
     VdpDecoderRender *render;
-
-#if FF_API_BUFS_VDPAU
-    /**
-     * VDPAU picture information
-     *
-     * Set by libavcodec.
-     */
-    attribute_deprecated
-    union AVVDPAUPictureInfo info;
-
-    /**
-     * Allocated size of the bitstream_buffers table.
-     *
-     * Set by libavcodec.
-     */
-    attribute_deprecated
-    int bitstream_buffers_allocated;
-
-    /**
-     * Useful bitstream buffers in the bitstream buffers table.
-     *
-     * Set by libavcodec.
-     */
-    attribute_deprecated
-    int bitstream_buffers_used;
-
-   /**
-     * Table of bitstream buffers.
-     * The user is responsible for freeing this buffer using av_freep().
-     *
-     * Set by libavcodec.
-     */
-    attribute_deprecated
-    VdpBitstreamBuffer *bitstream_buffers;
-#endif
 } AVVDPAUContext;
 
 /**
