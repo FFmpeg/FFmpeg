@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.5:
+- configure: check for strtoull on msvc
+- http: move chunk handling from http_read_stream() to http_buf_read().
+- http: make length/offset-related variables unsigned.
+- ffserver: Check chunk size
+- Avoid using the term "file" and prefer "url" in some docs and comments
+- avformat/rtmppkt: Check for packet size mismatches
+- zmqsend: Initialize ret to 0
 - avcodec/rawdec: check for side data before checking its size
 - avcodec/flacdec: Fix undefined shift in decode_subframe()
 - avcodec/get_bits: Fix get_sbits_long(0)
