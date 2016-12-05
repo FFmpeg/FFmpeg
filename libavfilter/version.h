@@ -49,8 +49,4 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_NOCONST_GET_NAME
-#define FF_API_NOCONST_GET_NAME             (LIBAVFILTER_VERSION_MAJOR < 7)
-#endif
-
 #endif /* AVFILTER_VERSION_H */

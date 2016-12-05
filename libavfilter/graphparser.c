@@ -131,7 +131,7 @@ static void append_sws_flags(const char **args, const char *sws_opts, char *tmp)
 static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
                          const char *filt_name, const char *args, void *log_ctx)
 {
-    AVFilter *filt;
+    const AVFilter *filt;
     char inst_name[30];
     char tmp_args[TMP_ARGS_SIZE];
     int ret;

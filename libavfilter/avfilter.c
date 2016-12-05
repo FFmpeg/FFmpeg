@@ -292,10 +292,7 @@ int ff_poll_frame(AVFilterLink *link)
 
 static AVFilter *first_filter;
 
-#if !FF_API_NOCONST_GET_NAME
-const
-#endif
-AVFilter *avfilter_get_by_name(const char *name)
+const AVFilter *avfilter_get_by_name(const char *name)
 {
     const AVFilter *f = NULL;
 

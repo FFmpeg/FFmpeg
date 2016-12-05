@@ -293,7 +293,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
             if (convert_needed) {
                 AVFilterContext *convert;
-                AVFilter *filter;
+                const AVFilter *filter;
                 AVFilterLink *inlink, *outlink;
                 char scale_args[256];
                 char inst_name[30];
@@ -759,7 +759,7 @@ static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
         for (j = 0; j < f->nb_inputs; j++) {
             AVFilterLink *link = f->inputs[j];
             AVFilterContext *fifo_ctx;
-            AVFilter *fifo;
+            const AVFilter *fifo;
             char name[32];
 
             if (!link->dstpad->needs_fifo)
