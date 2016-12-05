@@ -5737,6 +5737,7 @@ __declspec($_restrict) void* foo(int);
 EOF
     fi
     check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+    check_func strtoull || add_cflags -Dstrtoull=_strtoui64
 fi
 
 for pfx in "" host_; do
