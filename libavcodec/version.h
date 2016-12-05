@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_ASPECT_EXTENDED
-#define FF_API_ASPECT_EXTENDED   (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_ARCH_ALPHA
 #define FF_API_ARCH_ALPHA        (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif

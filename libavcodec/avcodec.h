@@ -1620,10 +1620,6 @@ typedef struct AVCodecContext {
      */
     int coded_width, coded_height;
 
-#if FF_API_ASPECT_EXTENDED
-#define FF_ASPECT_EXTENDED 15
-#endif
-
     /**
      * the number of pictures in a group of pictures, or 0 for intra_only
      * - encoding: Set by user.
