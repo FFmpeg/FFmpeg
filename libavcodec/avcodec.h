@@ -4900,12 +4900,6 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
  */
 
 /**
- * @deprecated Use av_pix_fmt_get_chroma_sub_sample
- */
-
-void attribute_deprecated avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift);
-
-/**
  * Return a value representing the fourCC code associated to the
  * pixel format pix_fmt, or 0 if no associated fourCC code can be
  * found.
