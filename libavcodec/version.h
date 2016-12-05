@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_UNUSED_MEMBERS
-#define FF_API_UNUSED_MEMBERS    (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_INPUT_PRESERVED
 #define FF_API_INPUT_PRESERVED   (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
