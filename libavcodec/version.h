@@ -47,18 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_INPUT_PRESERVED
-#define FF_API_INPUT_PRESERVED   (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_NORMALIZE_AQP
-#define FF_API_NORMALIZE_AQP     (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_GMC
-#define FF_API_GMC               (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_MV0
-#define FF_API_MV0               (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_CODEC_NAME
 #define FF_API_CODEC_NAME        (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
@@ -88,9 +76,6 @@
 #endif
 #ifndef FF_API_MOTION_EST
 #define FF_API_MOTION_EST        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_WITHOUT_PREFIX
-#define FF_API_WITHOUT_PREFIX    (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_SIDEDATA_ONLY_PKT
 #define FF_API_SIDEDATA_ONLY_PKT (LIBAVCODEC_VERSION_MAJOR < 59)
