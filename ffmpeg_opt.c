@@ -3009,8 +3009,8 @@ enum OptGroup {
 };
 
 static const OptionGroupDef groups[] = {
-    [GROUP_OUTFILE] = { "output file",  NULL, OPT_OUTPUT },
-    [GROUP_INFILE]  = { "input file",   "i",  OPT_INPUT },
+    [GROUP_OUTFILE] = { "output url",  NULL, OPT_OUTPUT },
+    [GROUP_INFILE]  = { "input url",   "i",  OPT_INPUT },
 };
 
 static int open_files(OptionGroupList *l, const char *inout,
