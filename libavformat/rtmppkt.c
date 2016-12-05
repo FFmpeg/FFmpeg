@@ -235,6 +235,14 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
     if (hdr != RTMP_PS_TWELVEBYTES)
         timestamp += prev_pkt[channel_id].timestamp;
 
+    if (prev_pkt[channel_id].read && size != prev_pkt[channel_id].size) {
+        av_log(NULL, AV_LOG_ERROR, "RTMP packet size mismatch %d != %d\n",
+                size,
+                prev_pkt[channel_id].size);
+        ff_rtmp_packet_destroy(&prev_pkt[channel_id]);
+        prev_pkt[channel_id].read = 0;
+    }
+
     if (!prev_pkt[channel_id].read) {
         if ((ret = ff_rtmp_packet_create(p, channel_id, type, timestamp,
                                          size)) < 0)
