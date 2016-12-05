@@ -57,6 +57,10 @@ API changes, most recent first:
   Deprecate struct vaapi_context and the vaapi.h installed header.
   Callers should set AVCodecContext.hw_frames_ctx instead.
 
+------------------------------8<-------------------------------------
+                   12 branch was cut here
+----------------------------->8--------------------------------------
+
 2016-07-20 - xxxxxxx - lavu 55.20.0 - cpu.h
   Add AV_CPU_FLAG_SSSE3SLOW.
 
