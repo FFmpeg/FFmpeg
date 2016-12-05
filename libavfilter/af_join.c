@@ -104,14 +104,6 @@ static int parse_maps(AVFilterContext *ctx)
     char separator = '|';
     char *cur      = s->map;
 
-#if FF_API_OLD_FILTER_OPTS
-    if (cur && strchr(cur, ',')) {
-        av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use '|' to "
-               "separate the mappings.\n");
-        separator = ',';
-    }
-#endif
-
     while (cur && *cur) {
         char *sep, *next, *p;
         uint64_t in_channel = 0, out_channel = 0;
