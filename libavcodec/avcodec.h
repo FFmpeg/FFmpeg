@@ -5310,36 +5310,6 @@ void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
  */
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
-#if FF_API_MISSING_SAMPLE
-/**
- * Log a generic warning message about a missing feature. This function is
- * intended to be used internally by Libav (libavcodec, libavformat, etc.)
- * only, and would normally not be used by applications.
- * @param[in] avc a pointer to an arbitrary struct of which the first field is
- * a pointer to an AVClass struct
- * @param[in] feature string containing the name of the missing feature
- * @param[in] want_sample indicates if samples are wanted which exhibit this feature.
- * If want_sample is non-zero, additional verbiage will be added to the log
- * message which tells the user how to report samples to the development
- * mailing list.
- * @deprecated Use avpriv_report_missing_feature() instead.
- */
-attribute_deprecated
-void av_log_missing_feature(void *avc, const char *feature, int want_sample);
-
-/**
- * Log a generic warning message asking for a sample. This function is
- * intended to be used internally by Libav (libavcodec, libavformat, etc.)
- * only, and would normally not be used by applications.
- * @param[in] avc a pointer to an arbitrary struct of which the first field is
- * a pointer to an AVClass struct
- * @param[in] msg string containing an optional message, or NULL if no message
- * @deprecated Use avpriv_request_sample() instead.
- */
-attribute_deprecated
-void av_log_ask_for_sample(void *avc, const char *msg, ...) av_printf_format(2, 3);
-#endif /* FF_API_MISSING_SAMPLE */
-
 /**
  * Register the hardware accelerator hwaccel.
  */

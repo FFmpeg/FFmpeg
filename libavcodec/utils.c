@@ -1359,35 +1359,6 @@ int ff_match_2uint16(const uint16_t(*tab)[2], int size, int a, int b)
     return i;
 }
 
-#if FF_API_MISSING_SAMPLE
-FF_DISABLE_DEPRECATION_WARNINGS
-void av_log_missing_feature(void *avc, const char *feature, int want_sample)
-{
-    av_log(avc, AV_LOG_WARNING, "%s is not implemented. Update your Libav "
-            "version to the newest one from Git. If the problem still "
-            "occurs, it means that your file has a feature which has not "
-            "been implemented.\n", feature);
-    if(want_sample)
-        av_log_ask_for_sample(avc, NULL);
-}
-
-void av_log_ask_for_sample(void *avc, const char *msg, ...)
-{
-    va_list argument_list;
-
-    va_start(argument_list, msg);
-
-    if (msg)
-        av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
-    av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-            "of this file to ftp://upload.libav.org/incoming/ "
-            "and contact the libav-devel mailing list.\n");
-
-    va_end(argument_list);
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_MISSING_SAMPLE */
-
 static AVHWAccel *first_hwaccel = NULL;
 
 void av_register_hwaccel(AVHWAccel *hwaccel)
