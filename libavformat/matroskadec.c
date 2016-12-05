@@ -2422,12 +2422,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     return ret;
             }
 
-            if (s->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-                int ret = mkv_parse_video_color(st, track);
-                if (ret < 0)
-                    return ret;
-            }
-
+            ret = mkv_parse_video_color(st, track);
+            if (ret < 0)
+                return ret;
             ret = mkv_parse_video_projection(st, track);
             if (ret < 0)
                 return ret;
