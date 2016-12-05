@@ -258,7 +258,8 @@ static int update_size(AVCodecContext *ctx, int w, int h)
         if ((res = ff_set_dimensions(ctx, w, h)) < 0)
             return res;
 
-        if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
+        switch (s->pix_fmt) {
+        case AV_PIX_FMT_YUV420P:
 #if CONFIG_VP9_DXVA2_HWACCEL
             *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
@@ -268,6 +269,13 @@ static int update_size(AVCodecContext *ctx, int w, int h)
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
+            break;
+        case AV_PIX_FMT_YUV420P10:
+        case AV_PIX_FMT_YUV420P12:
+#if CONFIG_VP9_VAAPI_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VAAPI;
+#endif
+            break;
         }
 
         *fmtp++ = s->pix_fmt;

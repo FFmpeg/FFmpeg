@@ -38,6 +38,7 @@ static void fill_picture_parameters(AVCodecContext                 *avctx,
     pp->first_partition_size = h->h.compressed_header_size;
 
     pp->profile = h->h.profile;
+    pp->bit_depth = h->h.bpp;
 
     pp->filter_level = h->h.filter.level;
     pp->sharpness_level = h->h.filter.sharpness;
