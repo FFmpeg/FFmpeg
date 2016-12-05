@@ -47,29 +47,17 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_QSCALE_TYPE
-#define FF_API_QSCALE_TYPE       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_MB_TYPE
 #define FF_API_MB_TYPE           (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
-#ifndef FF_API_MAX_BFRAMES
-#define FF_API_MAX_BFRAMES       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_FAST_MALLOC
 #define FF_API_FAST_MALLOC       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_NEG_LINESIZES
-#define FF_API_NEG_LINESIZES     (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_EMU_EDGE
 #define FF_API_EMU_EDGE          (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_UNUSED_MEMBERS
 #define FF_API_UNUSED_MEMBERS    (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_IDCT_XVIDMMX
-#define FF_API_IDCT_XVIDMMX      (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_INPUT_PRESERVED
 #define FF_API_INPUT_PRESERVED   (LIBAVCODEC_VERSION_MAJOR < 58)
