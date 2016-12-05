@@ -118,13 +118,6 @@ av_cold void avcodec_register(AVCodec *codec)
         codec->init_static_data(codec);
 }
 
-#if FF_API_EMU_EDGE
-unsigned avcodec_get_edge_width(void)
-{
-    return EDGE_WIDTH;
-}
-#endif
-
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
 {
     int ret = av_image_check_size(width, height, 0, s);

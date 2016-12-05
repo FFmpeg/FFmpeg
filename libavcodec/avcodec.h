@@ -947,13 +947,6 @@ typedef struct RcOverride{
 #define CODEC_FLAG_PASS1           0x0200   ///< Use internal 2pass ratecontrol in first pass mode.
 #define CODEC_FLAG_PASS2           0x0400   ///< Use internal 2pass ratecontrol in second pass mode.
 #define CODEC_FLAG_GRAY            0x2000   ///< Only decode/encode grayscale.
-#if FF_API_EMU_EDGE
-/**
- * @deprecated edges are not used/required anymore. I.e. this flag is now always
- * set.
- */
-#define CODEC_FLAG_EMU_EDGE        0x4000
-#endif
 #define CODEC_FLAG_PSNR            0x8000   ///< error[?] variables will be set during encoding.
 #define CODEC_FLAG_TRUNCATED       0x00010000 /** Input bitstream might be truncated at a random
                                                   location instead of only at frame boundaries. */
@@ -4024,21 +4017,6 @@ AVCodec *avcodec_find_decoder_by_name(const char *name);
  * AV_CODEC_CAP_DR1 set.
  */
 int avcodec_default_get_buffer2(AVCodecContext *s, AVFrame *frame, int flags);
-
-#if FF_API_EMU_EDGE
-/**
- * Return the amount of padding in pixels which the get_buffer callback must
- * provide around the edge of the image for codecs which do not have the
- * CODEC_FLAG_EMU_EDGE flag.
- *
- * @return Required padding in pixels.
- *
- * @deprecated CODEC_FLAG_EMU_EDGE is deprecated, so this function is no longer
- * needed
- */
-attribute_deprecated
-unsigned avcodec_get_edge_width(void);
-#endif
 
 /**
  * Modify width and height values so that they will result in a memory

@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_EMU_EDGE
-#define FF_API_EMU_EDGE          (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_UNUSED_MEMBERS
 #define FF_API_UNUSED_MEMBERS    (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
