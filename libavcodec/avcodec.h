@@ -2596,16 +2596,10 @@ typedef struct AVCodecContext {
      */
     int workaround_bugs;
 #define FF_BUG_AUTODETECT       1  ///< autodetection
-#if FF_API_OLD_MSMPEG4
-#define FF_BUG_OLD_MSMPEG4      2
-#endif
 #define FF_BUG_XVID_ILACE       4
 #define FF_BUG_UMP4             8
 #define FF_BUG_NO_PADDING       16
 #define FF_BUG_AMV              32
-#if FF_API_AC_VLC
-#define FF_BUG_AC_VLC           0  ///< Will be removed, libavcodec can now handle these non-compliant files by default.
-#endif
 #define FF_BUG_QPEL_CHROMA      64
 #define FF_BUG_STD_QPEL         128
 #define FF_BUG_QPEL_CHROMA2     256

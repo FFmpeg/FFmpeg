@@ -47,12 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_AC_VLC
-#define FF_API_AC_VLC            (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_OLD_MSMPEG4
-#define FF_API_OLD_MSMPEG4       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_ASPECT_EXTENDED
 #define FF_API_ASPECT_EXTENDED   (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
