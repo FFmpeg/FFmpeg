@@ -2161,15 +2161,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
-#if FF_API_VOXWARE
-    {
-        .id        = AV_CODEC_ID_VOXWARE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "voxware",
-        .long_name = NULL_IF_CONFIG_SMALL("Voxware RT29 Metasound"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-#endif
     {
         .id        = AV_CODEC_ID_APE,
         .type      = AVMEDIA_TYPE_AUDIO,

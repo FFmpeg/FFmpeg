@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_VOXWARE
-#define FF_API_VOXWARE           (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_SET_DIMENSIONS
 #define FF_API_SET_DIMENSIONS    (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
