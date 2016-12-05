@@ -430,12 +430,6 @@ int avfilter_config_links(AVFilterContext *filter);
 /** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);
 
-#if FF_API_OLD_FILTER_REGISTER
-/** Uninitialize the filter system. Unregister all filters. */
-attribute_deprecated
-void avfilter_uninit(void);
-#endif
-
 /**
  * Register a filter. This is only needed if you plan to use
  * avfilter_get_by_name later to lookup the AVFilter structure by name. A
@@ -466,18 +460,6 @@ AVFilter *avfilter_get_by_name(const char *name);
  * prev is the last filter. If prev is NULL, return the first registered filter.
  */
 const AVFilter *avfilter_next(const AVFilter *prev);
-
-#if FF_API_OLD_FILTER_REGISTER
-/**
- * If filter is NULL, returns a pointer to the first registered filter pointer,
- * if filter is non-NULL, returns the next pointer after filter.
- * If the returned pointer points to NULL, the last registered filter
- * was already reached.
- * @deprecated use avfilter_next()
- */
-attribute_deprecated
-AVFilter **av_filter_next(AVFilter **filter);
-#endif
 
 /**
  * Initialize a filter with the supplied parameters.

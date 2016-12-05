@@ -324,17 +324,6 @@ const AVFilter *avfilter_next(const AVFilter *prev)
     return prev ? prev->next : first_filter;
 }
 
-#if FF_API_OLD_FILTER_REGISTER
-AVFilter **av_filter_next(AVFilter **filter)
-{
-    return filter ? &(*filter)->next : &first_filter;
-}
-
-void avfilter_uninit(void)
-{
-}
-#endif
-
 int avfilter_pad_count(const AVFilterPad *pads)
 {
     int count;
