@@ -78,9 +78,6 @@
  * @{
  */
 
-#ifndef FF_API_OPT_TYPE_METADATA
-#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_DLOG
 #define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
