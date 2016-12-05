@@ -330,7 +330,7 @@ static void dump_mastering_display_metadata(void *ctx, AVPacketSideData* sd) {
     av_log(ctx, AV_LOG_INFO, "Mastering Display Metadata, "
            "has_primaries:%d has_luminance:%d "
            "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
-           "min_luminance=%f, max_luminance=%f\n",
+           "min_luminance=%f, max_luminance=%f",
            metadata->has_primaries, metadata->has_luminance,
            av_q2d(metadata->display_primaries[0][0]),
            av_q2d(metadata->display_primaries[0][1]),
