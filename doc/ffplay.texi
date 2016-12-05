@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffplay [@var{options}] [@file{input_file}]
+ffplay [@var{options}] [@file{input_url}]
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -106,8 +106,8 @@ the input audio.
 Use the option "-filters" to show all the available filters (including
 sources and sinks).
 
-@item -i @var{input_file}
-Read @var{input_file}.
+@item -i @var{input_url}
+Read @var{input_url}.
 @end table
 
 @section Advanced options
