@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_DEBUG_MV
-#define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_AC_VLC
 #define FF_API_AC_VLC            (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif

@@ -2655,12 +2655,6 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_BITSTREAM   4
 #define FF_DEBUG_MB_TYPE     8
 #define FF_DEBUG_QP          16
-#if FF_API_DEBUG_MV
-/**
- * @deprecated this option does nothing
- */
-#define FF_DEBUG_MV          32
-#endif
 #define FF_DEBUG_DCT_COEFF   0x00000040
 #define FF_DEBUG_SKIP        0x00000080
 #define FF_DEBUG_STARTCODE   0x00000100
@@ -2670,23 +2664,8 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_ER          0x00000400
 #define FF_DEBUG_MMCO        0x00000800
 #define FF_DEBUG_BUGS        0x00001000
-#if FF_API_DEBUG_MV
-#define FF_DEBUG_VIS_QP      0x00002000
-#define FF_DEBUG_VIS_MB_TYPE 0x00004000
-#endif
 #define FF_DEBUG_BUFFERS     0x00008000
 #define FF_DEBUG_THREADS     0x00010000
-
-#if FF_API_DEBUG_MV
-    /**
-     * @deprecated this option does not have any effect
-     */
-    attribute_deprecated
-    int debug_mv;
-#define FF_DEBUG_VIS_MV_P_FOR  0x00000001 // visualize forward predicted MVs of P-frames
-#define FF_DEBUG_VIS_MV_B_FOR  0x00000002 // visualize forward predicted MVs of B-frames
-#define FF_DEBUG_VIS_MV_B_BACK 0x00000004 // visualize backward predicted MVs of B-frames
-#endif
 
     /**
      * Error recognition; may misdetect some more or less valid parts as errors.
