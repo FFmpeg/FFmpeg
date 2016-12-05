@@ -41,11 +41,6 @@
 
 #include "version.h"
 
-#if FF_API_FAST_MALLOC
-// to provide fast_*alloc
-#include "libavutil/mem.h"
-#endif
-
 /**
  * @defgroup libavc Encoding/Decoding Library
  * @{
