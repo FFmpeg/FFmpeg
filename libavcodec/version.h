@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_ERROR_RATE
-#define FF_API_ERROR_RATE        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_QSCALE_TYPE
 #define FF_API_QSCALE_TYPE       (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif

@@ -874,13 +874,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ff_rate_control_init(s) < 0)
         return -1;
 
-#if FF_API_ERROR_RATE
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->error_rate)
-        s->error_rate = avctx->error_rate;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
 #if FF_API_NORMALIZE_AQP
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
