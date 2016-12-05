@@ -48,9 +48,7 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
-#ifndef FF_API_LAVF_CODEC_TB
-#define FF_API_LAVF_CODEC_TB            (LIBAVFORMAT_VERSION_MAJOR < 58)
-#endif
+
 #ifndef FF_API_LAVF_FMT_RAWPICTURE
 #define FF_API_LAVF_FMT_RAWPICTURE      (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif

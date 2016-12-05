@@ -110,17 +110,6 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
         st  = s->streams[i];
         par = st->codecpar;
 
-#if FF_API_LAVF_CODEC_TB && FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!st->time_base.num && st->codec->time_base.num) {
-            av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
-                   "timebase hint to the muxer is deprecated. Set "
-                   "AVStream.time_base instead.\n");
-            avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (st->codecpar->codec_type == AVMEDIA_TYPE_UNKNOWN &&
