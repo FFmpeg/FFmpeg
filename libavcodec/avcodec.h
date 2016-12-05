@@ -1219,13 +1219,6 @@ typedef struct AVCodecContext {
 
     enum AVMediaType codec_type; /* see AVMEDIA_TYPE_xxx */
     const struct AVCodec  *codec;
-#if FF_API_CODEC_NAME
-    /**
-     * @deprecated this field is not used for anything in libavcodec
-     */
-    attribute_deprecated
-    char             codec_name[32];
-#endif
     enum AVCodecID     codec_id; /* see AV_CODEC_ID_xxx */
 
     /**

@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_CODEC_NAME
-#define FF_API_CODEC_NAME        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_AFD
 #define FF_API_AFD               (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
