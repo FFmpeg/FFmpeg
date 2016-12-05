@@ -1140,6 +1140,34 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
     int len;
+
+    if (s->chunksize != UINT64_MAX) {
+        if (!s->chunksize) {
+            char line[32];
+            int err;
+
+            do {
+                if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                    return err;
+            } while (!*line);    /* skip CR LF from last chunk */
+
+            s->chunksize = strtoull(line, NULL, 16);
+
+            av_log(h, AV_LOG_TRACE,
+                   "Chunked encoding data size: %"PRIu64"'\n",
+                    s->chunksize);
+
+            if (!s->chunksize)
+                return 0;
+            else if (s->chunksize == UINT64_MAX) {
+                av_log(h, AV_LOG_ERROR, "Invalid chunk size %"PRIu64"\n",
+                       s->chunksize);
+                return AVERROR(EINVAL);
+            }
+        }
+        size = FFMIN(size, s->chunksize);
+    }
+
     /* read bytes from input buffer first */
     len = s->buf_end - s->buf_ptr;
     if (len > 0) {
@@ -1161,8 +1189,10 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     }
     if (len > 0) {
         s->off += len;
-        if (s->chunksize > 0)
+        if (s->chunksize > 0) {
+            av_assert0(s->chunksize >= len);
             s->chunksize -= len;
+        }
     }
     return len;
 }
@@ -1216,31 +1246,6 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
             return err;
     }
 
-    if (s->chunksize != UINT64_MAX) {
-        if (!s->chunksize) {
-            char line[32];
-
-                do {
-                    if ((err = http_get_line(s, line, sizeof(line))) < 0)
-                        return err;
-                } while (!*line);    /* skip CR LF from last chunk */
-
-                s->chunksize = strtoull(line, NULL, 16);
-
-                av_log(h, AV_LOG_TRACE,
-                       "Chunked encoding data size: %"PRIu64"'\n",
-                        s->chunksize);
-
-                if (!s->chunksize)
-                    return 0;
-                else if (s->chunksize == UINT64_MAX) {
-                    av_log(h, AV_LOG_ERROR, "Invalid chunk size %"PRIu64"\n",
-                           s->chunksize);
-                    return AVERROR(EINVAL);
-                }
-        }
-        size = FFMIN(size, s->chunksize);
-    }
 #if CONFIG_ZLIB
     if (s->compressed)
         return http_buf_read_compressed(h, buf, size);
