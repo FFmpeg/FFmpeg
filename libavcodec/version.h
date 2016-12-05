@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_ARCH_ALPHA
-#define FF_API_ARCH_ALPHA        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_XVMC
 #define FF_API_XVMC              (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
@@ -73,12 +70,6 @@
 #endif
 #ifndef FF_API_EMU_EDGE
 #define FF_API_EMU_EDGE          (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_ARCH_SH4
-#define FF_API_ARCH_SH4          (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_ARCH_SPARC
-#define FF_API_ARCH_SPARC        (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_UNUSED_MEMBERS
 #define FF_API_UNUSED_MEMBERS    (LIBAVCODEC_VERSION_MAJOR < 58)
