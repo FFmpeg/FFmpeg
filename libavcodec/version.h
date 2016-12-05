@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_CAP_VDPAU
-#define FF_API_CAP_VDPAU         (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_BUFS_VDPAU
 #define FF_API_BUFS_VDPAU        (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
