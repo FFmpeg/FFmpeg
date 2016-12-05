@@ -479,21 +479,6 @@ attribute_deprecated
 AVFilter **av_filter_next(AVFilter **filter);
 #endif
 
-#if FF_API_AVFILTER_INIT_FILTER
-/**
- * Initialize a filter.
- *
- * @param filter the filter to initialize
- * @param args   A string of parameters to use when initializing the filter.
- *               The format and meaning of this string varies by filter.
- * @param opaque Any extra non-string data needed by the filter. The meaning
- *               of this parameter varies by filter.
- * @return       zero on success
- */
-attribute_deprecated
-int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
-#endif
-
 /**
  * Initialize a filter with the supplied parameters.
  *
