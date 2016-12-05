@@ -1,6 +1,26 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.2:
+- ffserver: Check chunk size
+- Avoid using the term "file" and prefer "url" in some docs and comments
+- avformat/rtmppkt: Check for packet size mismatches
+- zmqsend: Initialize ret to 0
+- avcodec/flacdec: Fix undefined shift in decode_subframe()
+- avcodec/get_bits: Fix get_sbits_long(0)
+- avformat/ffmdec: Check media type for chunks
+- avcodec/flacdec: Fix signed integer overflow in decode_subframe_fixed()
+- avcodec/flacdsp_template: Fix undefined shift in flac_decorrelate_indep_c
+- avformat/oggparsespeex: Check frames_per_packet and packet_size
+- avformat/utils: Check start/end before computing duration in update_stream_timings()
+- avcodec/flac_parser: Update nb_headers_buffered
+- avformat/idroqdec: Check chunk_size for being too large
+- avcodec/me_cmp: Fix median_sad size
+- avformat/utils: Fix type mismatch
+- configure: check for strtoull on msvc
+- http: move chunk handling from http_read_stream() to http_buf_read().
+- http: make length/offset-related variables unsigned
+
 version 3.2.1:
 - avcodec/aac_adtstoasc_bsf: validate and forward extradata if the stream is already ASC
 - mss2: only use error correction for matching block counts
