@@ -475,14 +475,6 @@ err:
     return NULL;
 }
 
-#if FF_API_AVFILTER_OPEN
-int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
-{
-    *filter_ctx = ff_filter_alloc(filter, inst_name);
-    return *filter_ctx ? 0 : AVERROR(ENOMEM);
-}
-#endif
-
 static void free_link(AVFilterLink *link)
 {
     if (!link)

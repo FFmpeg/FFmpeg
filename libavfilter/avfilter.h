@@ -479,22 +479,6 @@ attribute_deprecated
 AVFilter **av_filter_next(AVFilter **filter);
 #endif
 
-#if FF_API_AVFILTER_OPEN
-/**
- * Create a filter instance.
- *
- * @param filter_ctx put here a pointer to the created filter context
- * on success, NULL on failure
- * @param filter    the filter to create an instance of
- * @param inst_name Name to give to the new instance. Can be NULL for none.
- * @return >= 0 in case of success, a negative error code otherwise
- * @deprecated use avfilter_graph_alloc_filter() instead
- */
-attribute_deprecated
-int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name);
-#endif
-
-
 #if FF_API_AVFILTER_INIT_FILTER
 /**
  * Initialize a filter.
@@ -690,20 +674,6 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
  * cannot be found.
  */
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
-
-#if FF_API_AVFILTER_OPEN
-/**
- * Add an existing filter instance to a filter graph.
- *
- * @param graphctx  the filter graph
- * @param filter the filter to be added
- *
- * @deprecated use avfilter_graph_alloc_filter() to allocate a filter in a
- * filter graph
- */
-attribute_deprecated
-int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
-#endif
 
 /**
  * Create and add a filter instance into an existing graph.
