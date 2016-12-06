@@ -1,6 +1,17 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 2.8.10
+- avformat/http: Match chunksize checks to master..3.0
+- Changelog: fix typos
+- ffserver: Check chunk size
+- Avoid using the term "file" and prefer "url" in some docs and comments
+- avformat/rtmppkt: Check for packet size mismatches
+- zmqsend: Initialize ret to 0
+- configure: check for strtoull on msvc
+- http: move chunk handling from http_read_stream() to http_buf_read().
+- http: make length/offset-related variables unsigned.
+
 version 2.8.9
 - avcodec/flacdec: Fix undefined shift in decode_subframe()
 - avcodec/get_bits: Fix get_sbits_long(0)
