@@ -1,0 +1,1 @@
+2016-12-06: Fix assembly for NASM. See http://stackoverflow.com/questions/36854583/compiling-ffmpeg-for-kali-linux-2
