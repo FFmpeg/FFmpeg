@@ -1807,9 +1807,9 @@ CMDLINE_SET="
     extra_version
     host_cc
     host_cflags
+    host_extralibs
     host_ld
     host_ldflags
-    host_libs
     host_os
     ld
     logfile
@@ -2572,7 +2572,7 @@ HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
 
-host_libs='-lm'
+host_extralibs='-lm'
 host_cflags_filter=echo
 host_ldflags_filter=echo
 
@@ -3809,7 +3809,7 @@ case $target_os in
     haiku)
         prefix_default="/boot/common"
         network_extralibs="-lnetwork"
-        host_libs=
+        host_extralibs=
         ;;
     sunos)
         SHFLAGS='-shared -Wl,-h,$$(@F)'
@@ -5281,7 +5281,7 @@ HOSTCFLAGS=$host_cflags
 HOSTCPPFLAGS=$host_cppflags
 HOSTEXESUF=$HOSTEXESUF
 HOSTLDFLAGS=$host_ldflags
-HOSTLIBS=$host_libs
+HOSTEXTRALIBS=$host_extralibs
 DEPHOSTCC=$host_cc
 DEPHOSTCCFLAGS=$DEPHOSTCCFLAGS \$(HOSTCCFLAGS)
 HOSTCCDEP=$HOSTCCDEP
