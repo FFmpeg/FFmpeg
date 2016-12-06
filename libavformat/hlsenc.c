@@ -459,6 +459,9 @@ static int parse_playlist(AVFormatContext *s, const char *url)
         read_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             hls->sequence = atoi(ptr);
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", &ptr)) {
+            is_segment = 1;
+            hls->discontinuity = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             hls->duration = atof(ptr);
