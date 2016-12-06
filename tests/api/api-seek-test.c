@@ -129,7 +129,7 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
                     av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
                     return number_of_written_bytes;
                 }
-                if ((fr->pts > ts_end) && (!no_seeking))
+                if ((!no_seeking) && (fr->pts > ts_end))
                     break;
                 crc = av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes);
                 printf("%10"PRId64", 0x%08lx\n", fr->pts, crc);
