@@ -40,7 +40,7 @@ static void *thread_main(void *arg)
 #endif
 
 
-int main(int argc, char **argv)
+int main(void)
 {
 #if HAVE_PTHREADS
     int cpu_flags1;
