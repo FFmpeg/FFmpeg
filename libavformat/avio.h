@@ -176,6 +176,7 @@ typedef struct AVIOContext {
      */
     enum AVIODataMarkerType current_type;
     int64_t last_time;
+    int64_t written;
 } AVIOContext;
 
 /**

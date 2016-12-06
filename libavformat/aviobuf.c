@@ -168,18 +168,22 @@ AVIOContext *avio_alloc_context(
 static void flush_buffer(AVIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
+        int size = s->buf_ptr - s->buffer;
         if (!s->error) {
             int ret = 0;
             if (s->write_data_type)
                 ret = s->write_data_type(s->opaque, s->buffer,
-                                         s->buf_ptr - s->buffer,
+                                         size,
                                          s->current_type,
                                          s->last_time);
             else if (s->write_packet)
                 ret = s->write_packet(s->opaque, s->buffer,
-                                      s->buf_ptr - s->buffer);
+                                      size);
             if (ret < 0) {
                 s->error = ret;
+            } else {
+                if (s->pos + size > s->written)
+                    s->written = s->pos + size;
             }
         }
         if (s->current_type == AVIO_DATA_MARKER_SYNC_POINT ||
@@ -192,7 +196,7 @@ static void flush_buffer(AVIOContext *s)
                                                  s->buf_ptr - s->checksum_ptr);
             s->checksum_ptr = s->buffer;
         }
-        s->pos += s->buf_ptr - s->buffer;
+        s->pos += size;
     }
     s->buf_ptr = s->buffer;
 }
@@ -300,6 +304,9 @@ int64_t avio_size(AVIOContext *s)
 
     if (!s)
         return AVERROR(EINVAL);
+
+    if (s->written)
+        return s->written;
 
     if (!s->seek)
         return AVERROR(ENOSYS);
