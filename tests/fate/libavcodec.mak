@@ -1,3 +1,8 @@
+FATE_LIBAVCODEC-yes += fate-avpacket
+fate-avpacket: libavcodec/tests/avpacket$(EXESUF)
+fate-avpacket: CMD = run libavcodec/tests/avpacket
+fate-avpacket: REF = /dev/null
+
 FATE_LIBAVCODEC-$(CONFIG_CABAC) += fate-cabac
 fate-cabac: libavcodec/tests/cabac$(EXESUF)
 fate-cabac: CMD = run libavcodec/tests/cabac
