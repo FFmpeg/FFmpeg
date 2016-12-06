@@ -248,10 +248,11 @@ static int seek_test(const char *input_filename, const char *start, const char *
         return -1;
 
     for (i = start_ts; i < end_ts; i += 100) {
-        for (j = i + 100; j < end_ts; j += 100)
-        result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, i, j, 0);
-        if (result != 0)
-            return -1;
+        for (j = i + 100; j < end_ts; j += 100) {
+            result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, i, j, 0);
+            if (result != 0)
+                return -1;
+        }
     }
 
     av_freep(&crc_array);
