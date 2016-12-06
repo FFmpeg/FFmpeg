@@ -44,7 +44,7 @@ fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = runecho libavutil/tests/cpu $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
 fate-cpu: REF = /dev/null
 
-FATE_LIBAVUTIL += fate-cpu_init
+FATE_LIBAVUTIL-$(HAVE_THREADS) += fate-cpu_init
 fate-cpu_init: libavutil/tests/cpu_init$(EXESUF)
 fate-cpu_init: CMD = run libavutil/tests/cpu_init
 fate-cpu_init: REF = /dev/null
