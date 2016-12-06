@@ -243,7 +243,7 @@ static int seek_test(const char *input_filename, const char *start, const char *
         return AVERROR(ENOMEM);
     }
 
-    result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, i, j, 1);
+    result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, 0, 0, 1);
     if (result != 0)
         return -1;
 
