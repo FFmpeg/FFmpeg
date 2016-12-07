@@ -4619,7 +4619,7 @@ done
 # these are off by default, so fail if requested and not available
 enabled avisynth          && { check_header avisynth/avisynth_c.h || die "ERROR: avisynth/avisynth_c.h header not found"; }
 enabled avxsynth          && require avxsynth "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl
-enabled cuda              && check_lib cuda.h cuInit -lcuda
+enabled cuda              && require cuda cuda.h cuInit -lcuda
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
