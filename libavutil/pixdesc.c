@@ -313,16 +313,6 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR,
     },
-#if FF_API_XVMC
-    [AV_PIX_FMT_XVMC_MPEG2_MC] = {
-        .name = "xvmcmc",
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
-    [AV_PIX_FMT_XVMC_MPEG2_IDCT] = {
-        .name = "xvmcidct",
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
-#endif /* FF_API_XVMC */
     [AV_PIX_FMT_UYVY422] = {
         .name = "uyvy422",
         .nb_components = 3,

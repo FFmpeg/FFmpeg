@@ -162,7 +162,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
     if (ctx->bit_depth != old_bit_depth) {
-        ff_blockdsp_init(&ctx->bdsp, ctx->avctx);
+        ff_blockdsp_init(&ctx->bdsp);
         ff_idctdsp_init(&ctx->idsp, ctx->avctx);
     }
 

@@ -22,9 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "avcodec.h"
-#include "version.h"
-
 /* add and put pixel (decoding)
  * Block sizes for op_pixels_func are 8x4,8x8 16x8 16x16.
  * h for op_pixels_func is limited to { width / 2, width },
@@ -39,15 +36,10 @@ typedef struct BlockDSPContext {
     op_fill_func fill_block_tab[2];
 } BlockDSPContext;
 
-void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx);
+void ff_blockdsp_init(BlockDSPContext *c);
 
 void ff_blockdsp_init_arm(BlockDSPContext *c);
 void ff_blockdsp_init_ppc(BlockDSPContext *c);
-#if FF_API_XVMC
-void ff_blockdsp_init_x86(BlockDSPContext *c,
-                          AVCodecContext *avctx);
-#else
 void ff_blockdsp_init_x86(BlockDSPContext *c);
-#endif /* FF_API_XVMC */
 
 #endif /* AVCODEC_BLOCKDSP_H */

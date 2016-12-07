@@ -44,7 +44,6 @@
 #include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "qpeldsp.h"
-#include "xvmc_internal.h"
 #include "thread.h"
 #include "wmv2.h"
 #include <limits.h>
@@ -270,7 +269,7 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
 /* init common dct for both encoder and decoder */
 static av_cold int dct_init(MpegEncContext *s)
 {
-    ff_blockdsp_init(&s->bdsp, s->avctx);
+    ff_blockdsp_init(&s->bdsp);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
     ff_mpegvideodsp_init(&s->mdsp);
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
@@ -1249,29 +1248,12 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
     }
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
-        return ff_xvmc_field_start(s, avctx);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
     return 0;
 }
 
 /* called after a frame has been decoded. */
 void ff_mpv_frame_end(MpegEncContext *s)
 {
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    /* redraw edges for the frame if decoding didn't complete */
-    // just to make sure that all data is rendered.
-    if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration) {
-        ff_xvmc_field_end(s);
-    } else
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
     emms_c();
 
     if (s->current_picture.reference)
@@ -1491,15 +1473,6 @@ void mpv_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
                             int is_mpeg12)
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
-
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration){
-        ff_xvmc_decode_mb(s);//xvmc uses pblocks
-        return;
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
 
     if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
        /* print DCT coefficients */

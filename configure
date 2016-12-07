@@ -2073,8 +2073,6 @@ mp3on4_decoder_select="mpegaudio"
 mp3on4float_decoder_select="mpegaudio"
 mpc7_decoder_select="bswapdsp mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
-mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
-mpeg_xvmc_decoder_select="mpeg2video_decoder"
 mpeg1video_decoder_select="error_resilience mpeg_er mpegvideo"
 mpeg1video_encoder_select="aandcttables mpegvideoenc"
 mpeg2video_decoder_select="error_resilience mpeg_er mpegvideo"
@@ -4645,7 +4643,6 @@ check_header unistd.h
 check_header valgrind/valgrind.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header windows.h
-check_header X11/extensions/XvMClib.h
 
 # it seems there are versions of clang in some distros that try to use the
 # gcc headers, which explodes for stdatomic

@@ -45,7 +45,6 @@
 #include "profiles.h"
 #include "thread.h"
 #include "version.h"
-#include "xvmc_internal.h"
 
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
@@ -763,13 +762,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             memset(s->last_mv, 0, sizeof(s->last_mv));
         }
         s->mb_intra = 1;
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-        // if 1, we memcpy blocks in xvmcvideo
-        if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
-            ff_xvmc_pack_pblocks(s, -1); // inter are always full blocks
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
 
         if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
             if (s->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
@@ -992,14 +984,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 return AVERROR_INVALIDDATA;
             }
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-            // if 1, we memcpy blocks in xvmcvideo
-            if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
-                ff_xvmc_pack_pblocks(s, cbp);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
             if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
                 if (s->avctx->flags2 & AV_CODEC_FLAG2_FAST) {
                     for (i = 0; i < 6; i++) {
@@ -1121,14 +1105,6 @@ static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm,
         matrix[new_perm[i]] = temp_matrix[old_perm[i]];
 }
 
-#if FF_API_XVMC
-static const enum AVPixelFormat pixfmt_xvmc_mpg2_420[] = {
-    AV_PIX_FMT_XVMC_MPEG2_IDCT,
-    AV_PIX_FMT_XVMC_MPEG2_MC,
-    AV_PIX_FMT_NONE
-};
-#endif /* FF_API_XVMC */
-
 static const enum AVPixelFormat mpeg12_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
@@ -1161,13 +1137,6 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     const enum AVPixelFormat *pix_fmts;
-
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->xvmc_acceleration)
-        return ff_get_format(avctx, pixfmt_xvmc_mpg2_420);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
 
     if (s->chroma_format < 2)
         pix_fmts = mpeg12_hwaccel_pixfmt_list_420;
@@ -1273,12 +1242,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
         // until then pix_fmt may be changed right after codec init
-#if FF_API_XVMC
-        if ((avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT ||
-             avctx->hwaccel) && avctx->idct_algo == FF_IDCT_AUTO)
-#else
         if (avctx->hwaccel && avctx->idct_algo == FF_IDCT_AUTO)
-#endif /* FF_API_XVMC */
             avctx->idct_algo = FF_IDCT_SIMPLE;
 
         /* Quantization matrices may need reordering
@@ -1661,16 +1625,6 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             return ret;
     }
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-// ff_mpv_frame_start will call this function too,
-// but we need to call it on every field
-    if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
-        if (ff_xvmc_field_start(s, avctx) < 0)
-            return -1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
     return 0;
 }
 
@@ -1779,14 +1733,6 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     }
 
     for (;;) {
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-        // If 1, we memcpy blocks in xvmcvideo.
-        if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
-            ff_xvmc_init_block(s); // set s->block
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
         if ((ret = mpeg_decode_mb(s, s->block)) < 0)
             return ret;
 
@@ -1991,13 +1937,6 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                    "hardware accelerator failed to decode picture\n");
     }
 
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
-        ff_xvmc_field_end(s);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
-
     /* end of slice reached */
     if (/* s->mb_y << field_pic == s->mb_height && */ !s->first_field) {
         /* end of image */
@@ -2135,12 +2074,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
 
-#if FF_API_XVMC
-    if ((avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT || avctx->hwaccel) &&
-        avctx->idct_algo == FF_IDCT_AUTO)
-#else
     if (avctx->hwaccel && avctx->idct_algo == FF_IDCT_AUTO)
-#endif /* FF_API_XVMC */
         avctx->idct_algo = FF_IDCT_SIMPLE;
 
     ff_mpv_idct_init(s);
@@ -2682,40 +2616,3 @@ AVCodec ff_mpeg2video_decoder = {
     .flush          = flush,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
 };
-
-#if FF_API_XVMC
-#if CONFIG_MPEG_XVMC_DECODER
-static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx)
-{
-    if (avctx->active_thread_type & FF_THREAD_SLICE)
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD)) {
-        ff_dlog(avctx, "mpeg12.c: XvMC decoder will work better if SLICE_FLAG_ALLOW_FIELD is set\n");
-    }
-    mpeg_decode_init(avctx);
-
-    avctx->pix_fmt           = AV_PIX_FMT_XVMC_MPEG2_IDCT;
-    avctx->xvmc_acceleration = 2; // 2 - the blocks are packed!
-
-    return 0;
-}
-
-AVCodec ff_mpeg_xvmc_decoder = {
-    .name           = "mpegvideo_xvmc",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO_XVMC,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_mc_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                      AV_CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL |
-                      AV_CODEC_CAP_DELAY,
-    .flush          = flush,
-};
-
-#endif
-#endif /* FF_API_XVMC */

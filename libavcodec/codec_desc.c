@@ -20,9 +20,9 @@
 
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
+
 #include "avcodec.h"
 #include "profiles.h"
-#include "version.h"
 
 static const AVCodecDescriptor codec_descriptors[] = {
     /* video codecs */
@@ -41,15 +41,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
         .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     },
-#if FF_API_XVMC
-    {
-        .id        = AV_CODEC_ID_MPEG2VIDEO_XVMC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mpegvideo_xvmc",
-        .long_name = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
-        .props     = AV_CODEC_PROP_LOSSY,
-    },
-#endif /* FF_API_XVMC */
     {
         .id        = AV_CODEC_ID_H261,
         .type      = AVMEDIA_TYPE_VIDEO,

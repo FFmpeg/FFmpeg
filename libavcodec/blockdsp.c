@@ -20,10 +20,10 @@
 #include <string.h>
 
 #include "config.h"
+
 #include "libavutil/attributes.h"
-#include "avcodec.h"
+
 #include "blockdsp.h"
-#include "version.h"
 
 static void clear_block_8_c(int16_t *block)
 {
@@ -57,7 +57,7 @@ static void fill_block8_c(uint8_t *block, uint8_t value, ptrdiff_t line_size,
     }
 }
 
-av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_blockdsp_init(BlockDSPContext *c)
 {
     c->clear_block  = clear_block_8_c;
     c->clear_blocks = clear_blocks_8_c;
@@ -70,9 +70,5 @@ av_cold void ff_blockdsp_init(BlockDSPContext *c, AVCodecContext *avctx)
     if (ARCH_PPC)
         ff_blockdsp_init_ppc(c);
     if (ARCH_X86)
-#if FF_API_XVMC
-        ff_blockdsp_init_x86(c, avctx);
-#else
         ff_blockdsp_init_x86(c);
-#endif /* FF_API_XVMC */
 }
