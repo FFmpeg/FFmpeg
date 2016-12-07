@@ -1001,7 +1001,7 @@ cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
 ; void ff_deblock_h_chroma_10(uint16_t *pix, int stride, int alpha, int beta,
 ;                             int8_t *tc0)
 ;-----------------------------------------------------------------------------
-cglobal deblock_h_chroma_10, 5, 7, 8, 2*mmsize, pix_, stride_, alpha_, beta_, tc0_
+cglobal deblock_h_chroma_10, 5, 7, 8, 0-2*mmsize, pix_, stride_, alpha_, beta_, tc0_
     shl alpha_d,  2
     shl beta_d,   2
     mov r5,       pix_q
@@ -1036,7 +1036,7 @@ RET
 ; void ff_deblock_h_chroma422_10(uint16_t *pix, int stride, int alpha, int beta,
 ;                                int8_t *tc0)
 ;-----------------------------------------------------------------------------
-cglobal deblock_h_chroma422_10, 5, 7, 8, 3*mmsize, pix_, stride_, alpha_, beta_, tc0_
+cglobal deblock_h_chroma422_10, 5, 7, 8, 0-3*mmsize, pix_, stride_, alpha_, beta_, tc0_
     shl alpha_d,  2
     shl beta_d,   2
 
