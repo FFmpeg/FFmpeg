@@ -85,8 +85,6 @@ void av_force_cpu_flags(int flags);
  * Set a mask on flags returned by av_get_cpu_flags().
  * This function is mainly useful for testing.
  * Please use av_force_cpu_flags() and av_get_cpu_flags() instead which are more flexible
- *
- * @warning this function is not thread safe.
  */
 attribute_deprecated void av_set_cpu_flags_mask(int mask);
 
