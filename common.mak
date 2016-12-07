@@ -2,9 +2,6 @@
 # common bits used by all libraries
 #
 
-# first so "all" becomes default target
-all: all-yes
-
 include $(SRC_PATH)/arch.mak
 
 OBJS      += $(OBJS-yes)

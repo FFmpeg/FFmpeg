@@ -106,6 +106,9 @@ DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.avpreset)
 SKIPHEADERS = cmdutils_common_opts.h                                    \
               compat/w32pthreads.h
 
+# first so "all" becomes default target
+all: all-yes
+
 include $(SRC_PATH)/tools/Makefile
 include $(SRC_PATH)/common.mak
 
