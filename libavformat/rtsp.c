@@ -1566,12 +1566,13 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             rt->transport = reply->transports[0].transport;
         }
 
-        /* Fail if the server responded with another lower transport mode
-         * than what we requested. */
+        /* If the server responded with another lower transport mode
+         * than what we requested, complain but attempt to continue.
+         * Cheap IP cameras like Sricam SP005, for example, respond with
+         * `Transport: RTP/AVP` for a SETUP request of RTP/AVP/TCP */
         if (reply->transports[0].lower_transport != lower_transport) {
             av_log(s, AV_LOG_ERROR, "Nonmatching transport in server reply\n");
-            err = AVERROR_INVALIDDATA;
-            goto fail;
+	    reply->transports[0].lower_transport = lower_transport;
         }
 
         switch(reply->transports[0].lower_transport) {
