@@ -3038,8 +3038,10 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             break;
         }
 
-        che_prev       = che;
-        elem_type_prev = elem_type;
+        if (elem_type < TYPE_DSE) {
+            che_prev       = che;
+            elem_type_prev = elem_type;
+        }
 
         if (err)
             goto fail;
