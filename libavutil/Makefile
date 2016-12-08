@@ -145,3 +145,5 @@ TESTPROGS = adler32                                                     \
             sha                                                         \
             tree                                                        \
             xtea                                                        \
+
+TESTPROGS-$(HAVE_THREADS)               += cpu_init

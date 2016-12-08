@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "cpu.h"
 #include "cpu_internal.h"
@@ -42,34 +43,35 @@
 #include <unistd.h>
 #endif
 
-static int cpuflags_mask = -1, checked;
+static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
+
+static int get_cpu_flags(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_flags_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_flags_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_flags_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_flags_x86();
+    return 0;
+}
 
 int av_get_cpu_flags(void)
 {
-    static int flags;
-
-    if (checked)
-        return flags;
-
-    if (ARCH_AARCH64)
-        flags = ff_get_cpu_flags_aarch64();
-    if (ARCH_ARM)
-        flags = ff_get_cpu_flags_arm();
-    if (ARCH_PPC)
-        flags = ff_get_cpu_flags_ppc();
-    if (ARCH_X86)
-        flags = ff_get_cpu_flags_x86();
-
-    flags  &= cpuflags_mask;
-    checked = 1;
-
+    int flags = atomic_load_explicit(&cpu_flags, memory_order_relaxed);
+    if (flags == -1) {
+        flags = get_cpu_flags();
+        atomic_store_explicit(&cpu_flags, flags, memory_order_relaxed);
+    }
     return flags;
 }
 
 void av_set_cpu_flags_mask(int mask)
 {
-    cpuflags_mask = mask;
-    checked       = 0;
+    atomic_store_explicit(&cpu_flags, get_cpu_flags() & mask,
+                          memory_order_relaxed);
 }
 
 int av_parse_cpu_flags(const char *s)

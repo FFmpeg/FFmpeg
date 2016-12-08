@@ -25,6 +25,11 @@ fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = run libavutil/tests/cpu $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
 fate-cpu: REF = /dev/null
 
+FATE_LIBAVUTIL-$(HAVE_THREADS) += fate-cpu_init
+fate-cpu_init: libavutil/tests/cpu_init$(EXESUF)
+fate-cpu_init: CMD = run libavutil/tests/cpu_init
+fate-cpu_init: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/tests/crc$(EXESUF)
 fate-crc: CMD = run libavutil/tests/crc
@@ -73,5 +78,6 @@ FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/tests/xtea$(EXESUF)
 fate-xtea: CMD = run libavutil/tests/xtea
 
+FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)
