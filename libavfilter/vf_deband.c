@@ -129,7 +129,7 @@ static int deband_8_c(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int h = s->planeheight[p] - 1;
 
         for (y = start; y < end; y++) {
-            const int pos = y * s->planeheight[0];
+            const int pos = y * s->planewidth[0];
 
             for (x = 0; x < s->planewidth[p]; x++) {
                 const int x_pos = s->x_pos[pos + x];
@@ -178,7 +178,7 @@ static int deband_16_c(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int h = s->planeheight[p] - 1;
 
         for (y = start; y < end; y++) {
-            const int pos = y * s->planeheight[0];
+            const int pos = y * s->planewidth[0];
 
             for (x = 0; x < s->planewidth[p]; x++) {
                 const int x_pos = s->x_pos[pos + x];
@@ -241,8 +241,8 @@ static int config_input(AVFilterLink *inlink)
             const float dir = direction < 0 ? -direction : r * direction;
             const int dist = range < 0 ? -range : r * range;
 
-            s->x_pos[y * s->planeheight[0] + x] = cosf(dir) * dist;
-            s->y_pos[y * s->planeheight[0] + x] = sinf(dir) * dist;
+            s->x_pos[y * s->planewidth[0] + x] = cosf(dir) * dist;
+            s->y_pos[y * s->planewidth[0] + x] = sinf(dir) * dist;
         }
     }
 
