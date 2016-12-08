@@ -6,4 +6,8 @@ fate-matroska-remux: CMD = md5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-2pas
 fate-matroska-remux: CMP = oneline
 fate-matroska-remux: REF = 9b8398b42804ba12c39d2f47299a0996
 
+FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
+fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
+
 FATE_SAMPLES_AVCONV += $(FATE_MATROSKA-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_MATROSKA_FFPROBE-yes)
