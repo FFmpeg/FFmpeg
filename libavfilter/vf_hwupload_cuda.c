@@ -187,7 +187,7 @@ fail:
 #define OFFSET(x) offsetof(CudaUploadContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption options[] = {
-    { "device", "Number of the device to use", OFFSET(device_idx), AV_OPT_TYPE_INT, { .i64 = 0 }, .flags = FLAGS },
+    { "device", "Number of the device to use", OFFSET(device_idx), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { NULL },
 };
 
