@@ -1931,8 +1931,10 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
 
     ret = av_stream_add_side_data(st, AV_PKT_DATA_SPHERICAL, (uint8_t *)spherical,
                                   spherical_size);
-    if (ret < 0)
+    if (ret < 0) {
+        av_freep(&spherical);
         return ret;
+    }
 
     return 0;
 }
