@@ -2367,23 +2367,23 @@ xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
 # indevs / outdevs
-alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
-alsa_outdev_deps="alsa_asoundlib_h"
+alsa_indev_deps="alsa"
+alsa_outdev_deps="alsa"
 avfoundation_indev_deps="AVFoundation_AVFoundation_h objc_arc pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
-jack_indev_deps="jack_jack_h"
+jack_indev_deps="jack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 pulse_indev_deps="libpulse"
-sndio_indev_deps="sndio_h"
-sndio_outdev_deps="sndio_h"
+sndio_indev_deps="sndio"
+sndio_outdev_deps="sndio"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
@@ -4742,7 +4742,6 @@ check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_def
   check_header dev/video/bktr/ioctl_bt848.h; } ||
 check_header dev/ic/bt8xx.h
 
-check_header sndio.h
 check_header sys/soundcard.h
 check_header soundcard.h
 

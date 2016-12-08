@@ -29,7 +29,7 @@ OBJS-$(CONFIG_XCBGRAB_INDEV)             += xcbgrab.o
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
-SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa.h
-SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio.h
+SKIPHEADERS-$(HAVE_ALSA)                 += alsa.h
+SKIPHEADERS-$(HAVE_SNDIO)                += sndio.h
 
 TESTPROGS-$(CONFIG_JACK_INDEV)           += timefilter
