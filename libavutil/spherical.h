@@ -26,6 +26,9 @@
 #ifndef AVUTIL_SPHERICAL_H
 #define AVUTIL_SPHERICAL_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 /**
  * @addtogroup lavu_video
  * @{
