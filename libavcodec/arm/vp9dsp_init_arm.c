@@ -94,12 +94,9 @@ define_8tap_2d_funcs(8)
 define_8tap_2d_funcs(4)
 
 
-static av_cold void vp9dsp_mc_init_arm(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_mc_init_arm(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
     if (have_neon(cpu_flags)) {
 #define init_fpel(idx1, idx2, sz, type)              \
@@ -160,12 +157,9 @@ define_itxfm(idct, idct, 32);
 define_itxfm(iwht, iwht, 4);
 
 
-static av_cold void vp9dsp_itxfm_init_arm(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_itxfm_init_arm(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
     if (have_neon(cpu_flags)) {
 #define init_itxfm(tx, sz)                                             \
@@ -218,12 +212,9 @@ lf_mix_fns(4, 8)
 lf_mix_fns(8, 4)
 lf_mix_fns(8, 8)
 
-static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
     if (have_neon(cpu_flags)) {
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_neon;
@@ -249,7 +240,10 @@ static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp, int bpp)
 
 av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
 {
-    vp9dsp_mc_init_arm(dsp, bpp);
-    vp9dsp_loopfilter_init_arm(dsp, bpp);
-    vp9dsp_itxfm_init_arm(dsp, bpp);
+    if (bpp != 8)
+        return;
+
+    vp9dsp_mc_init_arm(dsp);
+    vp9dsp_loopfilter_init_arm(dsp);
+    vp9dsp_itxfm_init_arm(dsp);
 }
