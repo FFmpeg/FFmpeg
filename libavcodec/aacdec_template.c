@@ -2923,7 +2923,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 {
     AACContext *ac = avctx->priv_data;
     ChannelElement *che = NULL, *che_prev = NULL;
-    enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
+    enum RawDataBlockType elem_type, che_prev_type = TYPE_END;
     int err, elem_id;
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
@@ -3029,7 +3029,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                     goto fail;
             }
             while (elem_id > 0)
-                elem_id -= decode_extension_payload(ac, gb, elem_id, che_prev, elem_type_prev);
+                elem_id -= decode_extension_payload(ac, gb, elem_id, che_prev, che_prev_type);
             err = 0; /* FIXME */
             break;
 
@@ -3039,8 +3039,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         }
 
         if (elem_type < TYPE_DSE) {
-            che_prev       = che;
-            elem_type_prev = elem_type;
+            che_prev      = che;
+            che_prev_type = elem_type;
         }
 
         if (err)
