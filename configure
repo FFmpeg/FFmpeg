@@ -4506,7 +4506,7 @@ check_func  mkstemp
 check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lrt && add_extralibs -lrt; }
+check_func_headers time.h nanosleep || check_lib time.h nanosleep -lrt
 check_func  sched_getaffinity
 check_func  setrlimit
 check_func  strerror_r
@@ -4581,14 +4581,12 @@ fi
 # do this before the optional library checks as some of them require pthreads
 if ! disabled pthreads && ! enabled w32threads; then
     enable pthreads
-    if check_func pthread_join -pthread; then
+    if check_lib pthread.h pthread_join -pthread; then
         add_cflags -pthread
-        add_extralibs -pthread
-    elif check_func pthread_join -pthreads; then
+    elif check_lib pthread.h pthread_join -pthreads; then
         add_cflags -pthreads
-        add_extralibs -pthreads
-    elif check_func pthread_join -lpthreadGC2; then
-        add_extralibs -lpthreadGC2
+    elif check_lib pthread.h pthread_join -lpthreadGC2; then
+        :
     elif check_lib pthread.h pthread_join -lpthread; then
         :
     elif ! check_func pthread_join; then
