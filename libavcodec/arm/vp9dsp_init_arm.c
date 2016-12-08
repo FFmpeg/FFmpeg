@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/vp9dsp.h"
+#include "vp9dsp_init.h"
 
 #define declare_fpel(type, sz)                                          \
 void ff_vp9_##type##sz##_neon(uint8_t *dst, ptrdiff_t dst_stride,       \
@@ -240,7 +241,13 @@ static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp)
 
 av_cold void ff_vp9dsp_init_arm(VP9DSPContext *dsp, int bpp)
 {
-    if (bpp != 8)
+    if (bpp == 10) {
+        ff_vp9dsp_init_10bpp_arm(dsp);
+        return;
+    } else if (bpp == 12) {
+        ff_vp9dsp_init_12bpp_arm(dsp);
+        return;
+    } else if (bpp != 8)
         return;
 
     vp9dsp_mc_init_arm(dsp);
