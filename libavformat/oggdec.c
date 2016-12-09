@@ -643,6 +643,8 @@ static int ogg_get_length(AVFormatContext *s)
         int64_t pts;
         if (i < 0) continue;
         pts = ogg_calc_pts(s, i, NULL);
+        if (s->streams[i]->duration == AV_NOPTS_VALUE)
+            continue;
         if (pts != AV_NOPTS_VALUE && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start) {
             s->streams[i]->duration -= pts;
             ogg->streams[i].got_start= 1;
