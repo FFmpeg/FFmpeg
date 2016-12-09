@@ -458,7 +458,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
     atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
 
     if (!progress ||
-        atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
+        atomic_load_explicit(&progress[field], memory_order_relaxed) >= n)
         return;
 
     p = f->owner->internal->thread_ctx;
@@ -468,7 +468,7 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 
     pthread_mutex_lock(&p->progress_mutex);
 
-    atomic_store(&progress[field], n);
+    atomic_store_explicit(&progress[field], n, memory_order_release);
 
     pthread_cond_broadcast(&p->progress_cond);
     pthread_mutex_unlock(&p->progress_mutex);
@@ -745,8 +745,8 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
         }
         progress = (atomic_int*)f->progress->data;
 
-        atomic_store(&progress[0], -1);
-        atomic_store(&progress[1], -1);
+        atomic_init(&progress[0], -1);
+        atomic_init(&progress[1], -1);
     }
 
     pthread_mutex_lock(&p->parent->buffer_mutex);
