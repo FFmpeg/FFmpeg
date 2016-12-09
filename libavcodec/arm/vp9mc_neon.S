@@ -79,7 +79,7 @@ function ff_vp9_avg32_neon, export=1
         vrhadd.u8       q0,  q0,  q2
         vrhadd.u8       q1,  q1,  q3
         subs            r12, r12, #1
-        vst1.8          {q0, q1},  [r0, :128], r1
+        vst1.8          {q0,  q1},  [r0, :128], r1
         bne             1b
         bx              lr
 endfunc
@@ -408,7 +408,7 @@ function ff_vp9_\type\()_\filter\()\size\()_h_neon, export=1
         add             r12, r12, 120*\offset - 8
         cmp             r5,  #8
         add             r12, r12, r5, lsl #3
-        mov             r5, #\size
+        mov             r5,  #\size
 .if \size >= 16
         bge             \type\()_8tap_16h_34
         b               \type\()_8tap_16h_43
@@ -543,7 +543,7 @@ function \type\()_8tap_8v_\idx1\idx2
         vld1.8          {d0},  [r12, :64]
         vmovl.s8        q0,  d0
 1:
-        mov             r12,  r4
+        mov             r12, r4
 
         loadl           q5,  q6,  q7
         loadl           q8,  q9,  q10, q11
