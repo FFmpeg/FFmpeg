@@ -936,6 +936,7 @@ static int v4l2_read_header(AVFormatContext *ctx)
         goto fail;
 
     st->codecpar->format = ff_fmt_v4l2ff(desired_format, codec_id);
+    if (st->codecpar->format != AV_PIX_FMT_NONE)
     s->frame_size = av_image_get_buffer_size(st->codecpar->format,
                                              s->width, s->height, 1);
 
