@@ -5055,7 +5055,7 @@ check_deps $CONFIG_LIST       \
            $ALL_COMPONENTS    \
 
 enabled_all dxva2 CoTaskMemFree &&
-    prepend avconv_libs $($ldflags_filter "-lole32") &&
+    prepend avconv_extralibs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
