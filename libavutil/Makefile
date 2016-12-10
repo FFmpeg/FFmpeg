@@ -202,6 +202,7 @@ TESTPROGS = adler32                                                     \
             float_dsp                                                   \
             hash                                                        \
             hmac                                                        \
+            imgutils                                                    \
             lfg                                                         \
             lls                                                         \
             log                                                         \
