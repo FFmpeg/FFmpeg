@@ -1272,6 +1272,10 @@ ffprobe -dump_separator "
                           "  -i ~/videos/matrixbench_mpeg2.mpg
 @end example
 
+@item max_pixels @var{integer} (@emph{decoding/encoding,video})
+Maximum number of pixels per image. This value can be used to avoid out of
+memory failures due to large images.
+
 @end table
 
 @c man end CODEC OPTIONS

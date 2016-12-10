@@ -3570,6 +3570,14 @@ typedef struct AVCodecContext {
      */
     int trailing_padding;
 
+    /**
+     * The number of pixels per image to maximally accept.
+     *
+     * - decoding: set by user
+     * - encoding: set by user
+     */
+    int64_t max_pixels;
+
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
