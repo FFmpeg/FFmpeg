@@ -1236,9 +1236,15 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
         ctx->va_rt_format = VA_RT_FORMAT_YUV420;
         break;
     case FF_PROFILE_HEVC_MAIN_10:
+#ifdef VA_RT_FORMAT_YUV420_10BPP
         ctx->va_profile = VAProfileHEVCMain10;
         ctx->va_rt_format = VA_RT_FORMAT_YUV420_10BPP;
         break;
+#else
+        av_log(avctx, AV_LOG_ERROR, "10-bit encoding is not "
+               "supported with this VAAPI version.\n");
+        return AVERROR(ENOSYS);
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown H.265 profile %d.\n",
                avctx->profile);
