@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-12-10 - xxxxxxx - lavu xx.xx.100- imgutils.h
+  Add av_image_check_size2()
+
 2016-xx-xx - xxxxxxx - lavc 57.67.100 / 57.29.0 - avcodec.h
   Add AV_PKT_DATA_SPHERICAL packet side data to export AVSphericalMapping
   information from containers.
