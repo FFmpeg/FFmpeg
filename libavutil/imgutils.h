@@ -192,6 +192,20 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
 int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
 
 /**
+ * Check if the given dimension of an image is valid, meaning that all
+ * bytes of the image can be addressed with a signed int.
+ *
+ * @param w the width of the picture
+ * @param h the height of the picture
+ * @param max_pixels the maximum number of pixels the user wants to accept
+ * @param pix_fmt the pixel format, can be AV_PIX_FMT_NONE if unknown.
+ * @param log_offset the offset to sum to the log level for logging with log_ctx
+ * @param log_ctx the parent logging context, it may be NULL
+ * @return >= 0 if valid, a negative error code otherwise
+ */
+int av_image_check_size2(unsigned int w, unsigned int h, int64_t max_pixels, enum AVPixelFormat pix_fmt, int log_offset, void *log_ctx);
+
+/**
  * Check if the given sample aspect ratio of an image is valid.
  *
  * It is considered invalid if the denominator is 0 or if applying the ratio
