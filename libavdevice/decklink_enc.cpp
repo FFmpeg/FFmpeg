@@ -55,7 +55,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
     virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return ++_refs; }
-    virtual ULONG   STDMETHODCALLTYPE Release(void)                           { if (!--_refs) delete this; return _refs; }
+    virtual ULONG   STDMETHODCALLTYPE Release(void)                           { if (!--_refs) {delete this; return 0;} return _refs; }
 
     struct decklink_ctx *_ctx;
     AVFrame *_avframe;
