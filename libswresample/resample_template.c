@@ -104,12 +104,20 @@ static int RENAME(resample_common)(ResampleContext *c,
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
 
-        FELEM2 val= FOFFSET;
+        FELEM2 val = FOFFSET;
+        FELEM2 val2= 0;
         int i;
-        for (i = 0; i < c->filter_length; i++) {
-            val += src[sample_index + i] * (FELEM2)filter[i];
+        for (i = 0; i + 1 < c->filter_length; i+=2) {
+            val  += src[sample_index + i    ] * (FELEM2)filter[i    ];
+            val2 += src[sample_index + i + 1] * (FELEM2)filter[i + 1];
         }
-        OUT(dst[dst_index], val);
+        if (i < c->filter_length)
+            val  += src[sample_index + i    ] * (FELEM2)filter[i    ];
+#ifdef FELEML
+        OUT(dst[dst_index], val + (FELEML)val2);
+#else
+        OUT(dst[dst_index], val + val2);
+#endif
 
         frac  += c->dst_incr_mod;
         index += c->dst_incr_div;
