@@ -208,6 +208,7 @@ decklink_input_callback::decklink_input_callback(AVFormatContext *_avctx) : m_re
     avctx = _avctx;
     decklink_cctx       *cctx = (struct decklink_cctx *)avctx->priv_data;
     ctx = (struct decklink_ctx *)cctx->ctx;
+    no_video = 0;
     initial_audio_pts = initial_video_pts = AV_NOPTS_VALUE;
     pthread_mutex_init(&m_mutex, NULL);
 }
