@@ -1096,7 +1096,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         case AVMEDIA_TYPE_AUDIO:
             av_samples_copy(out->extended_data, frame->extended_data,
                             0, 0, frame->nb_samples,
-                            av_get_channel_layout_nb_channels(frame->channel_layout),
+                            av_frame_get_channels(frame),
                             frame->format);
             break;
         default:
