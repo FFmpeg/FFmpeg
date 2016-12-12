@@ -590,6 +590,10 @@ static int vaapi_encode_step(AVCodecContext *avctx,
     } else if (ctx->issue_mode == ISSUE_MODE_MAXIMISE_THROUGHPUT) {
         int activity;
 
+        // Run through the list of all available pictures repeatedly
+        // and issue the first one found which has all dependencies
+        // available (including previously-issued but not necessarily
+        // completed pictures).
         do {
             activity = 0;
             for (pic = ctx->pic_start; pic; pic = pic->next) {
@@ -605,9 +609,15 @@ static int vaapi_encode_step(AVCodecContext *avctx,
                 if (err < 0)
                     return err;
                 activity = 1;
+                // Start again from the beginning of the list,
+                // because issuing this picture may have satisfied
+                // forward dependencies of earlier ones.
+                break;
             }
         } while(activity);
 
+        // If we had a defined target for this step then it will
+        // always have been issued by now.
         if (target) {
             av_assert0(target->encode_issued && "broken dependencies?");
         }
@@ -639,8 +649,10 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
     if (!pic)
         return AVERROR(ENOMEM);
 
-    if (ctx->input_order == 0 || ctx->gop_counter >= avctx->gop_size) {
+    if (ctx->input_order == 0 || ctx->force_idr ||
+        ctx->gop_counter >= avctx->gop_size) {
         pic->type = PICTURE_TYPE_IDR;
+        ctx->force_idr = 0;
         ctx->gop_counter = 1;
         ctx->p_counter = 0;
     } else if (ctx->p_counter >= ctx->p_per_i) {
@@ -722,7 +734,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static int vaapi_encode_mangle_end(AVCodecContext *avctx)
+static int vaapi_encode_truncate_gop(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic, *last_pic, *next;
@@ -772,7 +784,7 @@ static int vaapi_encode_mangle_end(AVCodecContext *avctx)
         // mangle anything.
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Pictures at end of stream:");
+    av_log(avctx, AV_LOG_DEBUG, "Pictures ending truncated GOP:");
     for (pic = ctx->pic_start; pic; pic = pic->next) {
         av_log(avctx, AV_LOG_DEBUG, " %s (%"PRId64"/%"PRId64")",
                picture_type_name[pic->type],
@@ -826,6 +838,13 @@ int ff_vaapi_encode2(AVCodecContext *avctx, AVPacket *pkt,
         av_log(avctx, AV_LOG_DEBUG, "Encode frame: %ux%u (%"PRId64").\n",
                input_image->width, input_image->height, input_image->pts);
 
+        if (input_image->pict_type == AV_PICTURE_TYPE_I) {
+            err = vaapi_encode_truncate_gop(avctx);
+            if (err < 0)
+                goto fail;
+            ctx->force_idr = 1;
+        }
+
         err = vaapi_encode_get_next(avctx, &pic);
         if (err) {
             av_log(avctx, AV_LOG_ERROR, "Input setup failed: %d.\n", err);
@@ -854,7 +873,7 @@ int ff_vaapi_encode2(AVCodecContext *avctx, AVPacket *pkt,
 
     } else {
         if (!ctx->end_of_stream) {
-            err = vaapi_encode_mangle_end(avctx);
+            err = vaapi_encode_truncate_gop(avctx);
             if (err < 0)
                 goto fail;
             ctx->end_of_stream = 1;
