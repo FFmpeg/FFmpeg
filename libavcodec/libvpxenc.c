@@ -293,7 +293,8 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     VPxContext *ctx = avctx->priv_data;
 
 #if VPX_ENCODER_ABI_VERSION >= 12
-    if (ctx->level >= 0 && !(avctx->flags & AV_CODEC_FLAG_PASS1)) {
+    if (avctx->codec_id == AV_CODEC_ID_VP9 && ctx->level >= 0 &&
+        !(avctx->flags & AV_CODEC_FLAG_PASS1)) {
         int level_out = 0;
         if (!codecctl_intp(avctx, VP9E_GET_LEVEL, &level_out))
             av_log(avctx, AV_LOG_INFO, "Encoded level %.1f\n", level_out * 0.1);
