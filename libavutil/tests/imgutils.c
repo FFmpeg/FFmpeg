@@ -22,7 +22,6 @@
 
 int main(void)
 {
-    int i;
     int64_t x, y;
 
     for (y = -1; y<UINT_MAX; y+= y/2 + 1) {
