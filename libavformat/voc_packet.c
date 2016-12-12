@@ -126,7 +126,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         }
     }
 
-    par->bit_rate = par->sample_rate * par->channels * par->bits_per_coded_sample;
+    par->bit_rate = (int64_t)par->sample_rate * par->channels * par->bits_per_coded_sample;
 
     if (max_size <= 0)
         max_size = 2048;

@@ -128,7 +128,7 @@ static int wsd_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rb32(pb) / 8;
     avio_skip(pb, 4);
     st->codecpar->channels    = avio_r8(pb) & 0xF;
-    st->codecpar->bit_rate    = st->codecpar->channels * st->codecpar->sample_rate * 8LL;
+    st->codecpar->bit_rate    = (int64_t)st->codecpar->channels * st->codecpar->sample_rate * 8LL;
     if (!st->codecpar->channels)
         return AVERROR_INVALIDDATA;
 

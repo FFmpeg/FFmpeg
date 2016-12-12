@@ -140,7 +140,7 @@ static int vqf_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            st->codecpar->bit_rate = read_bitrate * 1000;
+            st->codecpar->bit_rate = (int64_t)read_bitrate * 1000;
             break;
         case MKTAG('D','S','I','Z'): // size of compressed data
         {

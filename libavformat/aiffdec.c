@@ -181,7 +181,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
         par->block_align = (av_get_bits_per_sample(par->codec_id) * par->channels) >> 3;
 
     if (aiff->block_duration) {
-        par->bit_rate = par->sample_rate * (par->block_align << 3) /
+        par->bit_rate = (int64_t)par->sample_rate * (par->block_align << 3) /
                         aiff->block_duration;
     }
 
@@ -318,7 +318,7 @@ static int aiff_read_header(AVFormatContext *s)
                     st->codecpar->block_align = 35;
                 }
                 aiff->block_duration = 160;
-                st->codecpar->bit_rate = st->codecpar->sample_rate * (st->codecpar->block_align << 3) /
+                st->codecpar->bit_rate = (int64_t)st->codecpar->sample_rate * (st->codecpar->block_align << 3) /
                                          aiff->block_duration;
             }
             break;

@@ -108,7 +108,7 @@ static int bfi_read_header(AVFormatContext * s)
     astream->codecpar->channel_layout  = AV_CH_LAYOUT_MONO;
     astream->codecpar->bits_per_coded_sample = 8;
     astream->codecpar->bit_rate        =
-        astream->codecpar->sample_rate * astream->codecpar->bits_per_coded_sample;
+        (int64_t)astream->codecpar->sample_rate * astream->codecpar->bits_per_coded_sample;
     avio_seek(pb, chunk_header - 3, SEEK_SET);
     avpriv_set_pts_info(astream, 64, 1, astream->codecpar->sample_rate);
     return 0;
