@@ -288,8 +288,9 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
 {
     AVCodecContext *avctx = opaque;
     CuvidContext *ctx = avctx->priv_data;
-    CuvidParsedFrame parsed_frame = { *dispinfo, 0, 0 };
+    CuvidParsedFrame parsed_frame = { { 0 } };
 
+    parsed_frame.dispinfo = *dispinfo;
     ctx->internal_error = 0;
 
     if (ctx->deint_mode == cudaVideoDeinterlaceMode_Weave) {
