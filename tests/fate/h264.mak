@@ -182,6 +182,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-extreme-plane-pred                              \
               fate-h264-intra-refresh-recovery                          \
               fate-h264-lossless                                        \
+              fate-h264-missing-frame                                   \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
@@ -397,5 +398,6 @@ fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAM
 fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
 fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -an -frames 30
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
+fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
