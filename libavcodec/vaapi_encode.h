@@ -192,6 +192,7 @@ typedef struct VAAPIEncodeContext {
     // Frame type decision.
     int p_per_i;
     int b_per_p;
+    int force_idr;
     int gop_counter;
     int p_counter;
     int end_of_stream;
