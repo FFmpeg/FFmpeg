@@ -777,7 +777,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;libzlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libzlibd.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -842,7 +842,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;libzlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libzlibd.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -910,7 +910,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodecd.lib;avutild.lib;bz2d.lib;gmpd.lib;gnutlsd.lib;blurayd.lib;gmed.lib;modplugd.lib;sshd.lib;zlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodecd.lib;avutild.lib;bz2d.lib;zlibd.lib;gmpd.lib;gnutlsd.lib;blurayd.lib;gmed.lib;modplugd.lib;sshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -986,7 +986,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodecd.lib;avutild.lib;bz2d.lib;gmpd.lib;gnutlsd.lib;blurayd.lib;gmed.lib;modplugd.lib;sshd.lib;zlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodecd.lib;avutild.lib;bz2d.lib;zlibd.lib;gmpd.lib;gnutlsd.lib;blurayd.lib;gmed.lib;modplugd.lib;sshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -1061,7 +1061,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodecd.lib;avutild.lib;libbz2d.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;libzlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodecd.lib;avutild.lib;libbz2d.lib;libzlibd.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1137,7 +1137,7 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodecd.lib;avutild.lib;libbz2d.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;libzlibd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodecd.lib;avutild.lib;libbz2d.lib;libzlibd.lib;libgmpd.lib;libgnutlsd.lib;libblurayd.lib;libgmed.lib;libmodplugd.lib;libsshd.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
@@ -1215,7 +1215,7 @@ echo            These errors are the result of dead code elimination not being p
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1286,7 +1286,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1362,7 +1362,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodec.lib;avutil.lib;bz2.lib;gmp.lib;gnutls.lib;bluray.lib;gme.lib;modplug.lib;ssh.lib;zlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;bz2.lib;zlib.lib;gmp.lib;gnutls.lib;bluray.lib;gme.lib;modplug.lib;ssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1440,7 +1440,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodec.lib;avutil.lib;bz2.lib;gmp.lib;gnutls.lib;bluray.lib;gme.lib;modplug.lib;ssh.lib;zlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;bz2.lib;zlib.lib;gmp.lib;gnutls.lib;bluray.lib;gme.lib;modplug.lib;ssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1517,7 +1517,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodec.lib;avutil.lib;libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1595,7 +1595,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavformat.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avcodec.lib;avutil.lib;libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1667,7 +1667,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1738,7 +1738,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;libzlib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libzlib.lib;libgmp.lib;libgnutls.lib;libbluray.lib;libgme.lib;libmodplug.lib;libssh.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>

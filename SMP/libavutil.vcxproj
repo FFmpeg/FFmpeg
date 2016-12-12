@@ -127,6 +127,7 @@
     <ClCompile Include="..\libavutil\samplefmt.c" />
     <ClCompile Include="..\libavutil\sha.c" />
     <ClCompile Include="..\libavutil\sha512.c" />
+    <ClCompile Include="..\libavutil\spherical.c" />
     <ClCompile Include="..\libavutil\stereo3d.c" />
     <ClCompile Include="..\libavutil\threadmessage.c" />
     <ClCompile Include="..\libavutil\time.c" />
@@ -226,6 +227,7 @@
     <ClInclude Include="..\libavutil\samplefmt.h" />
     <ClInclude Include="..\libavutil\sha.h" />
     <ClInclude Include="..\libavutil\sha512.h" />
+    <ClInclude Include="..\libavutil\spherical.h" />
     <ClInclude Include="..\libavutil\stereo3d.h" />
     <ClInclude Include="..\libavutil\threadmessage.h" />
     <ClInclude Include="..\libavutil\time.h" />
@@ -573,6 +575,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -714,6 +717,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -861,6 +865,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1012,6 +1017,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1164,6 +1170,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1315,6 +1322,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1467,6 +1475,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1614,6 +1623,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1768,6 +1778,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -1921,6 +1932,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -2075,6 +2087,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -2228,6 +2241,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -2375,6 +2389,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil
@@ -2522,6 +2537,7 @@ copy ..\libavutil\ripemd.h $(OutDir)\include\libavutil
 copy ..\libavutil\samplefmt.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha.h $(OutDir)\include\libavutil
 copy ..\libavutil\sha512.h $(OutDir)\include\libavutil
+copy ..\libavutil\spherical.h $(OutDir)\include\libavutil
 copy ..\libavutil\stereo3d.h $(OutDir)\include\libavutil
 copy ..\libavutil\threadmessage.h $(OutDir)\include\libavutil
 copy ..\libavutil\time.h $(OutDir)\include\libavutil

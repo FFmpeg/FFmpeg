@@ -245,6 +245,7 @@ EXPORTS
     av_image_alloc
     av_image_check_sar
     av_image_check_size
+    av_image_check_size2
     av_image_copy
     av_image_copy_plane
     av_image_copy_to_buffer
@@ -395,6 +396,7 @@ EXPORTS
     av_sha_update
     av_shr_i
     av_small_strptime
+    av_spherical_alloc
     av_stereo3d_alloc
     av_stereo3d_create_side_data
     av_stereo3d_from_name
