@@ -883,11 +883,11 @@ static int upload_texture(SDL_Texture *tex, AVFrame *frame, struct SwsContext **
                 frame->width, frame->height, frame->format, frame->width, frame->height,
                 AV_PIX_FMT_BGRA, sws_flags, NULL, NULL, NULL);
             if (*img_convert_ctx != NULL) {
-                uint8_t *pixels;
-                int pitch;
-                if (!SDL_LockTexture(tex, NULL, (void **)&pixels, &pitch)) {
+                uint8_t *pixels[4];
+                int pitch[4];
+                if (!SDL_LockTexture(tex, NULL, (void **)pixels, pitch)) {
                     sws_scale(*img_convert_ctx, (const uint8_t * const *)frame->data, frame->linesize,
-                              0, frame->height, &pixels, &pitch);
+                              0, frame->height, pixels, pitch);
                     SDL_UnlockTexture(tex);
                 }
             } else {
@@ -913,8 +913,8 @@ static void video_image_display(VideoState *is)
 
                 if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
                     if (!sp->uploaded) {
-                        uint8_t *pixels;
-                        int pitch;
+                        uint8_t* pixels[4];
+                        int pitch[4];
                         int i;
                         if (!sp->width || !sp->height) {
                             sp->width = vp->width;
@@ -939,9 +939,9 @@ static void video_image_display(VideoState *is)
                                 av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
                                 return;
                             }
-                            if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)&pixels, &pitch)) {
+                            if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)pixels, pitch)) {
                                 sws_scale(is->sub_convert_ctx, (const uint8_t * const *)sub_rect->data, sub_rect->linesize,
-                                          0, sub_rect->h, &pixels, &pitch);
+                                          0, sub_rect->h, pixels, pitch);
                                 SDL_UnlockTexture(is->sub_texture);
                             }
                         }

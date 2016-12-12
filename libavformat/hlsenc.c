@@ -46,6 +46,7 @@ typedef struct HLSSegment {
     char filename[1024];
     char sub_filename[1024];
     double duration; /* in seconds */
+    int discont;
     int64_t pos;
     int64_t size;
 
@@ -107,6 +108,7 @@ typedef struct HLSContext {
     int64_t max_seg_size; // every segment file max size
     int nb_entries;
     int discontinuity_set;
+    int discontinuity;
 
     HLSSegment *segments;
     HLSSegment *last_segment;
@@ -387,6 +389,12 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     en->pos      = pos;
     en->size     = size;
     en->next     = NULL;
+    en->discont  = 0;
+
+    if (hls->discontinuity) {
+        en->discont = 1;
+        hls->discontinuity = 0;
+    }
 
     if (hls->key_info_file) {
         av_strlcpy(en->key_uri, hls->key_uri, sizeof(en->key_uri));
@@ -446,10 +454,14 @@ static int parse_playlist(AVFormatContext *s, const char *url)
         goto fail;
     }
 
+    hls->discontinuity = 0;
     while (!avio_feof(in)) {
         read_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             hls->sequence = atoi(ptr);
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", &ptr)) {
+            is_segment = 1;
+            hls->discontinuity = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             hls->duration = atof(ptr);
@@ -558,6 +570,10 @@ static int hls_window(AVFormatContext *s, int last)
             avio_printf(out, "\n");
             key_uri = en->key_uri;
             iv_string = en->iv_string;
+        }
+
+        if (en->discont) {
+            avio_printf(out, "#EXT-X-DISCONTINUITY\n");
         }
 
         if (hls->flags & HLS_ROUND_DURATIONS)
@@ -883,6 +899,7 @@ static int hls_write_header(AVFormatContext *s)
 
     if (hls->flags & HLS_APPEND_LIST) {
         parse_playlist(s, s->filename);
+        hls->discontinuity = 1;
         if (hls->init_time > 0) {
             av_log(s, AV_LOG_WARNING, "append_list mode does not support hls_init_time,"
                    " hls_init_time value will have no effect\n");

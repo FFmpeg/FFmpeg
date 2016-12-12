@@ -63,6 +63,7 @@ HEADERS = adler32.h                                                     \
           samplefmt.h                                                   \
           sha.h                                                         \
           sha512.h                                                      \
+          spherical.h                                                   \
           stereo3d.h                                                    \
           threadmessage.h                                               \
           time.h                                                        \
@@ -140,6 +141,7 @@ OBJS = adler32.o                                                        \
        samplefmt.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
+       spherical.o                                                      \
        stereo3d.o                                                       \
        threadmessage.o                                                  \
        time.o                                                           \
@@ -188,7 +190,6 @@ TESTPROGS = adler32                                                     \
             camellia                                                    \
             color_utils                                                 \
             cpu                                                         \
-            cpu_init                                                    \
             crc                                                         \
             des                                                         \
             dict                                                        \
@@ -200,6 +201,7 @@ TESTPROGS = adler32                                                     \
             float_dsp                                                   \
             hash                                                        \
             hmac                                                        \
+            imgutils                                                    \
             lfg                                                         \
             lls                                                         \
             log                                                         \
@@ -223,6 +225,7 @@ TESTPROGS = adler32                                                     \
             tea                                                         \
 
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
+TESTPROGS-$(HAVE_THREADS) += cpu_init
 
 TOOLS = crypto_bench ffhash ffeval ffescape
 

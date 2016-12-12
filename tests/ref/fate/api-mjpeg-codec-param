@@ -155,6 +155,7 @@ stream=0, decode=0
     codec_whitelist=
     pixel_format=yuvj422p
     video_size=400x225
+    max_pixels=2147483647
 stream=0, decode=1
     b=0
     ab=0
@@ -312,3 +313,4 @@ stream=0, decode=1
     codec_whitelist=
     pixel_format=yuvj422p
     video_size=400x225
+    max_pixels=2147483647

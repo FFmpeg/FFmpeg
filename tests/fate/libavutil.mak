@@ -44,7 +44,7 @@ fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = runecho libavutil/tests/cpu $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
 fate-cpu: REF = /dev/null
 
-FATE_LIBAVUTIL += fate-cpu_init
+FATE_LIBAVUTIL-$(HAVE_THREADS) += fate-cpu_init
 fate-cpu_init: libavutil/tests/cpu_init$(EXESUF)
 fate-cpu_init: CMD = run libavutil/tests/cpu_init
 fate-cpu_init: REF = /dev/null
@@ -87,6 +87,10 @@ fate-hash: CMD = run libavutil/tests/hash
 FATE_LIBAVUTIL += fate-hmac
 fate-hmac: libavutil/tests/hmac$(EXESUF)
 fate-hmac: CMD = run libavutil/tests/hmac
+
+FATE_LIBAVUTIL += fate-imgutils
+fate-imgutils: libavutil/tests/imgutils$(EXESUF)
+fate-imgutils: CMD = run libavutil/tests/imgutils
 
 FATE_LIBAVUTIL += fate-md5
 fate-md5: libavutil/tests/md5$(EXESUF)

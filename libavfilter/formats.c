@@ -596,12 +596,12 @@ static int default_query_formats_common(AVFilterContext *ctx,
 
 int ff_default_query_formats(AVFilterContext *ctx)
 {
-    return default_query_formats_common(ctx, ff_all_channel_layouts);
+    return default_query_formats_common(ctx, ff_all_channel_counts);
 }
 
-int ff_query_formats_all(AVFilterContext *ctx)
+int ff_query_formats_all_layouts(AVFilterContext *ctx)
 {
-    return default_query_formats_common(ctx, ff_all_channel_counts);
+    return default_query_formats_common(ctx, ff_all_channel_layouts);
 }
 
 /* internal functions for parsing audio format arguments */

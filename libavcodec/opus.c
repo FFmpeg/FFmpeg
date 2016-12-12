@@ -403,6 +403,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         } else if (idx >= streams + stereo_streams) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid channel map for output channel %d: %d\n", i, idx);
+            av_freep(&s->channel_maps);
             return AVERROR_INVALIDDATA;
         }
 

@@ -24,12 +24,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "config.h"
-
 #include "libavutil/cpu.h"
 #include "libavutil/thread.h"
 
-#if HAVE_PTHREADS
 static void *thread_main(void *arg)
 {
     int *flags = arg;
@@ -37,12 +34,9 @@ static void *thread_main(void *arg)
     *flags = av_get_cpu_flags();
     return NULL;
 }
-#endif
 
-
-int main(int argc, char **argv)
+int main(void)
 {
-#if HAVE_PTHREADS
     int cpu_flags1;
     int cpu_flags2;
     int ret;
@@ -66,7 +60,6 @@ int main(int argc, char **argv)
         return 2;
     if (cpu_flags1 != cpu_flags2)
         return 3;
-#endif
 
     return 0;
 }

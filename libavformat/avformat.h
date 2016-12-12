@@ -1007,7 +1007,7 @@ typedef struct AVStream {
      */
 
     /**
-     * Stream information used internally by av_find_stream_info()
+     * Stream information used internally by avformat_find_stream_info()
      */
 #define MAX_STD_TIMEBASES (30*12+30+3+6)
     struct {
@@ -1059,7 +1059,7 @@ typedef struct AVStream {
     int probe_packets;
 
     /**
-     * Number of frames that have been demuxed during av_find_stream_info()
+     * Number of frames that have been demuxed during avformat_find_stream_info()
      */
     int codec_info_nb_frames;
 
@@ -1899,6 +1899,13 @@ typedef struct AVFormatContext {
      * - decoding: set by user through AVOptions (NO direct access)
      */
     char *protocol_blacklist;
+
+    /**
+     * The maximum number of streams.
+     * - encoding: unused
+     * - decoding: set by user through AVOptions (NO direct access)
+     */
+    int max_streams;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);

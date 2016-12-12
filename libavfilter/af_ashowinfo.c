@@ -199,7 +199,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                        s->plane_checksums[0];
     }
 
-    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), -1,
+    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), av_frame_get_channels(buf),
                                  buf->channel_layout);
 
     av_log(ctx, AV_LOG_INFO,

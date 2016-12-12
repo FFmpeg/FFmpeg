@@ -137,6 +137,7 @@ typedef struct VP9Frame {
 typedef struct VP9BitstreamHeader {
     // bitstream header
     uint8_t profile;
+    uint8_t bpp;
     uint8_t keyframe;
     uint8_t invisible;
     uint8_t errorres;

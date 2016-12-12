@@ -597,6 +597,13 @@ popvar(){
     done
 }
 
+request(){
+    for var in $*; do
+        eval ${var}_requested=yes
+        eval $var=
+    done
+}
+
 enable(){
     set_all yes $*
 }
@@ -651,6 +658,11 @@ enable_deep_weak(){
         popvar var
         enable_weak $var
     done
+}
+
+requested(){
+    test "${1#!}" = "$1" && op='=' || op=!=
+    eval test "x\$${1#!}_requested" $op "xyes"
 }
 
 enabled(){
@@ -724,9 +736,9 @@ do_check_deps(){
 
         [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
         [ -n "$dep_ifn" ] && { enabled_any $dep_ifn && enable_weak $cfg; }
-        enabled_all  $dep_all || disable $cfg
-        enabled_any  $dep_any || disable $cfg
-        disabled_any $dep_sel && disable $cfg
+        enabled_all  $dep_all || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not all dependencies are satisfied: $dep_all"; }
+        enabled_any  $dep_any || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not any dependency is satisfied: $dep_any"; }
+        disabled_any $dep_sel && { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some selected dependency is unsatisfied: $dep_sel"; }
 
         if enabled $cfg; then
             enable_deep $dep_sel
@@ -1481,10 +1493,25 @@ EXAMPLE_LIST="
     transcode_aac_example
     transcoding_example
 "
+EXTERNAL_AUTODETECT_LIBRARY_LIST="
+    bzlib
+    iconv
+    libxcb
+    libxcb_shm
+    libxcb_shape
+    libxcb_xfixes
+    lzma
+    schannel
+    sdl
+    sdl2
+    securetransport
+    xlib
+    zlib
+"
 
 EXTERNAL_LIBRARY_LIST="
+    $EXTERNAL_AUTODETECT_LIBRARY_LIST
     avisynth
-    bzlib
     chromaprint
     crystalhd
     decklink
@@ -1492,7 +1519,6 @@ EXTERNAL_LIBRARY_LIST="
     gcrypt
     gmp
     gnutls
-    iconv
     jni
     ladspa
     libass
@@ -1545,47 +1571,39 @@ EXTERNAL_LIBRARY_LIST="
     libx264
     libx265
     libxavs
-    libxcb
-    libxcb_shm
-    libxcb_shape
-    libxcb_xfixes
     libxvid
     libzimg
     libzmq
     libzvbi
-    lzma
     mediacodec
     netcdf
     openal
     opencl
     opengl
     openssl
-    schannel
-    sdl
-    sdl2
-    securetransport
     videotoolbox
     x11grab
-    xlib
-    zlib
 "
-
-HWACCEL_LIBRARY_LIST="
+HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
     cuda
     cuvid
     d3d11va
     dxva2
-    libmfx
-    libnpp
-    mmal
     nvenc
-    omx
     vaapi
     vda
     vdpau
     videotoolbox_hwaccel
     xvmc
+"
+
+HWACCEL_LIBRARY_LIST="
+    $HWACCEL_AUTODETECT_LIBRARY_LIST
+    libmfx
+    libnpp
+    mmal
+    omx
 "
 
 DOCUMENT_LIST="
@@ -1682,6 +1700,12 @@ ATOMICS_LIST="
     atomics_gcc
     atomics_suncc
     atomics_win32
+"
+
+AUTODETECT_LIBS="
+    $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    $HWACCEL_AUTODETECT_LIBRARY_LIST
+    $THREADS_LIST
 "
 
 ARCH_LIST="
@@ -2689,7 +2713,7 @@ vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
 vp9_mediacodec_decoder_deps="mediacodec"
 vp9_mediacodec_hwaccel_deps="mediacodec"
-vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9"
+vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9_bit_depth"
 vp9_vaapi_hwaccel_select="vp9_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
@@ -3238,15 +3262,6 @@ enable valgrind_backtrace
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
 
-# Enable platform codecs by default.
-enable audiotoolbox
-
-# Enable hwaccels by default.
-enable d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
-enable xlib
-
-enable cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
-
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 LIBPREF="lib"
@@ -3491,6 +3506,20 @@ done
 for e in $env; do
     eval "export $e"
 done
+
+# Mark specifically enabled, but normally autodetected libraries as requested.
+for lib in $AUTODETECT_LIBS; do
+    enabled $lib && request $lib
+done
+
+# Enable platform codecs by default.
+enable_weak audiotoolbox
+
+# Enable hwaccels by default.
+enable_weak d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
+enable_weak xlib
+
+enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
 disabled logging && logfile=/dev/null
 
@@ -5610,7 +5639,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h" "VAPictureParameterBufferHEVC"
-check_type "va/va.h" "VADecPictureParameterBufferVP9"
+check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
 check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
 check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
@@ -5894,7 +5923,7 @@ if ! disabled sdl2; then
         sdl2_libs="$sdl2_libs -mconsole"
     fi
 fi
-enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
+enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -6284,6 +6313,7 @@ __declspec($_restrict) void* foo(int);
 EOF
     fi
     check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+    check_func strtoull || add_cflags -Dstrtoull=_strtoui64
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
     # this flag should be re-checked on newer compiler releases and put under a
     # version check once its fixed
@@ -6397,6 +6427,11 @@ if disabled stdatomic_h; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/dummy'
     fi
 fi
+
+# Check if requested libraries were found.
+for lib in $AUTODETECT_LIBS; do
+    requested $lib && ! enabled $lib && die "ERROR: $lib requested but not found";
+done
 
 enabled zlib && add_cppflags -DZLIB_CONST
 

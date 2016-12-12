@@ -305,8 +305,10 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
 
     do {
         ret = get_surface(avctx, q, &insurf);
-        if (ret < 0)
+        if (ret < 0) {
+            av_freep(&sync);
             return ret;
+        }
 
         ret = MFXVideoDECODE_DecodeFrameAsync(q->session, avpkt->size ? &bs : NULL,
                                               insurf, &outsurf, sync);

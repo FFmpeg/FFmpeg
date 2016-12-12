@@ -413,9 +413,9 @@ int swri_realloc_audio(AudioData *a, int count){
         return AVERROR(ENOMEM);
     for(i=0; i<a->ch_count; i++){
         a->ch[i]= a->data + i*(a->planar ? countb : a->bps);
-        if(a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
+        if(a->count && a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
     }
-    if(!a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
+    if(a->count && !a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
     av_freep(&old.data);
     a->count= count;
 

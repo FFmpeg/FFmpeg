@@ -68,7 +68,7 @@ typedef struct VP9Context {
     ptrdiff_t y_stride, uv_stride;
 
     uint8_t ss_h, ss_v;
-    uint8_t last_bpp, bpp, bpp_index, bytesperpixel;
+    uint8_t last_bpp, bpp_index, bytesperpixel;
     uint8_t last_keyframe;
     // sb_cols/rows, rows/cols and last_fmt are used for allocating all internal
     // arrays, and are thus per-thread. w/h and gf_fmt are synced between threads
@@ -258,7 +258,8 @@ static int update_size(AVCodecContext *ctx, int w, int h)
         if ((res = ff_set_dimensions(ctx, w, h)) < 0)
             return res;
 
-        if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
+        switch (s->pix_fmt) {
+        case AV_PIX_FMT_YUV420P:
 #if CONFIG_VP9_DXVA2_HWACCEL
             *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
@@ -268,6 +269,13 @@ static int update_size(AVCodecContext *ctx, int w, int h)
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
+            break;
+        case AV_PIX_FMT_YUV420P10:
+        case AV_PIX_FMT_YUV420P12:
+#if CONFIG_VP9_VAAPI_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VAAPI;
+#endif
+            break;
         }
 
         *fmtp++ = s->pix_fmt;
@@ -326,10 +334,10 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     av_freep(&s->b_base);
     av_freep(&s->block_base);
 
-    if (s->bpp != s->last_bpp) {
-        ff_vp9dsp_init(&s->dsp, s->bpp, ctx->flags & AV_CODEC_FLAG_BITEXACT);
-        ff_videodsp_init(&s->vdsp, s->bpp);
-        s->last_bpp = s->bpp;
+    if (s->s.h.bpp != s->last_bpp) {
+        ff_vp9dsp_init(&s->dsp, s->s.h.bpp, ctx->flags & AV_CODEC_FLAG_BITEXACT);
+        ff_videodsp_init(&s->vdsp, s->s.h.bpp);
+        s->last_bpp = s->s.h.bpp;
     }
 
     return 0;
@@ -458,8 +466,8 @@ static int read_colorspace_details(AVCodecContext *ctx)
     int bits = ctx->profile <= 1 ? 0 : 1 + get_bits1(&s->gb); // 0:8, 1:10, 2:12
 
     s->bpp_index = bits;
-    s->bpp = 8 + bits * 2;
-    s->bytesperpixel = (7 + s->bpp) >> 3;
+    s->s.h.bpp = 8 + bits * 2;
+    s->bytesperpixel = (7 + s->s.h.bpp) >> 3;
     ctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
     if (ctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
         static const enum AVPixelFormat pix_fmt_rgb[3] = {
@@ -571,7 +579,7 @@ static int decode_frame_header(AVCodecContext *ctx,
                     return res;
             } else {
                 s->ss_h = s->ss_v = 1;
-                s->bpp = 8;
+                s->s.h.bpp = 8;
                 s->bpp_index = 0;
                 s->bytesperpixel = 1;
                 s->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -2278,7 +2286,7 @@ static int decode_coeffs_b_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
                                  const int16_t (*nb)[2], const int16_t *band_counts,
                                  const int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 0, 0, s->bpp, cnt, eob, p,
+    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 0, 0, s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
@@ -2288,7 +2296,7 @@ static int decode_coeffs_b32_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
                                    const int16_t (*nb)[2], const int16_t *band_counts,
                                    const int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 1, 0, s->bpp, cnt, eob, p,
+    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 1, 0, s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
@@ -2479,7 +2487,7 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     int have_top = row > 0 || y > 0;
     int have_left = col > s->tile_col_start || x > 0;
     int have_right = x < w - 1;
-    int bpp = s->bpp;
+    int bpp = s->s.h.bpp;
     static const uint8_t mode_conv[10][2 /* have_left */][2 /* have_top */] = {
         [VERT_PRED]            = { { DC_127_PRED,          VERT_PRED },
                                    { DC_127_PRED,          VERT_PRED } },
@@ -3310,13 +3318,13 @@ static void decode_b(AVCodecContext *ctx, int row, int col,
         s->uv_stride = f->linesize[1];
     }
     if (b->intra) {
-        if (s->bpp > 8) {
+        if (s->s.h.bpp > 8) {
             intra_recon_16bpp(ctx, yoff, uvoff);
         } else {
             intra_recon_8bpp(ctx, yoff, uvoff);
         }
     } else {
-        if (s->bpp > 8) {
+        if (s->s.h.bpp > 8) {
             inter_recon_16bpp(ctx);
         } else {
             inter_recon_8bpp(ctx);
@@ -4353,7 +4361,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     s->gf_fmt = ssrc->gf_fmt;
     s->w = ssrc->w;
     s->h = ssrc->h;
-    s->bpp = ssrc->bpp;
+    s->s.h.bpp = ssrc->s.h.bpp;
     s->bpp_index = ssrc->bpp_index;
     s->pix_fmt = ssrc->pix_fmt;
     memcpy(&s->prob_ctx, &ssrc->prob_ctx, sizeof(s->prob_ctx));

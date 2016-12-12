@@ -209,7 +209,7 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
 
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
 {
-    int ret = av_image_check_size(width, height, 0, s);
+    int ret = av_image_check_size2(width, height, s->max_pixels, AV_PIX_FMT_NONE, 0, s);
 
     if (ret < 0)
         width = height = 0;
@@ -762,6 +762,7 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
     } sd[] = {
         { AV_PKT_DATA_REPLAYGAIN ,                AV_FRAME_DATA_REPLAYGAIN },
         { AV_PKT_DATA_DISPLAYMATRIX,              AV_FRAME_DATA_DISPLAYMATRIX },
+        { AV_PKT_DATA_SPHERICAL,                  AV_FRAME_DATA_SPHERICAL },
         { AV_PKT_DATA_STEREO3D,                   AV_FRAME_DATA_STEREO3D },
         { AV_PKT_DATA_AUDIO_SERVICE_TYPE,         AV_FRAME_DATA_AUDIO_SERVICE_TYPE },
         { AV_PKT_DATA_MASTERING_DISPLAY_METADATA, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA },
@@ -903,7 +904,7 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
     int ret;
 
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0 || avctx->pix_fmt<0) {
+        if ((ret = av_image_check_size2(avctx->width, avctx->height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx)) < 0 || avctx->pix_fmt<0) {
             av_log(avctx, AV_LOG_ERROR, "video_get_buffer: image parameters invalid\n");
             return AVERROR(EINVAL);
         }
@@ -1337,8 +1338,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
 
     if ((avctx->coded_width || avctx->coded_height || avctx->width || avctx->height)
-        && (  av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx) < 0
-           || av_image_check_size(avctx->width,       avctx->height,       0, avctx) < 0)) {
+        && (  av_image_check_size2(avctx->coded_width, avctx->coded_height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx) < 0
+           || av_image_check_size2(avctx->width,       avctx->height,       avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx) < 0)) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring invalid width/height values\n");
         ff_set_dimensions(avctx, 0, 0);
     }
@@ -1981,7 +1982,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         return 0;
     }
 
-    if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
+    if (av_image_check_size2(avctx->width, avctx->height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx))
         return AVERROR(EINVAL);
 
     if (frame && frame->format == AV_PIX_FMT_NONE)
@@ -2232,7 +2233,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     }
 
     *got_picture_ptr = 0;
-    if ((avctx->coded_width || avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
+    if ((avctx->coded_width || avctx->coded_height) && av_image_check_size2(avctx->coded_width, avctx->coded_height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx))
         return AVERROR(EINVAL);
 
     avctx->internal->pkt = avpkt;

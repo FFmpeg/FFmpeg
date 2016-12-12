@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/replaygain.h"
+#include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 
 #include "avformat.h"
@@ -330,7 +331,7 @@ static void dump_mastering_display_metadata(void *ctx, AVPacketSideData* sd) {
     av_log(ctx, AV_LOG_INFO, "Mastering Display Metadata, "
            "has_primaries:%d has_luminance:%d "
            "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
-           "min_luminance=%f, max_luminance=%f\n",
+           "min_luminance=%f, max_luminance=%f",
            metadata->has_primaries, metadata->has_luminance,
            av_q2d(metadata->display_primaries[0][0]),
            av_q2d(metadata->display_primaries[0][1]),
@@ -340,6 +341,31 @@ static void dump_mastering_display_metadata(void *ctx, AVPacketSideData* sd) {
            av_q2d(metadata->display_primaries[2][1]),
            av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]),
            av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+}
+
+static void dump_spherical(void *ctx, AVPacketSideData *sd)
+{
+    AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
+    double yaw, pitch, roll;
+
+    if (sd->size < sizeof(*spherical)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+        av_log(ctx, AV_LOG_INFO, "equirectangular ");
+    else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+        av_log(ctx, AV_LOG_INFO, "cubemap ");
+    else {
+        av_log(ctx, AV_LOG_WARNING, "unknown");
+        return;
+    }
+
+    yaw = ((double)spherical->yaw) / (1 << 16);
+    pitch = ((double)spherical->pitch) / (1 << 16);
+    roll = ((double)spherical->roll) / (1 << 16);
+    av_log(ctx, AV_LOG_INFO, "(%f/%f/%f) ", yaw, pitch, roll);
 }
 
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
@@ -392,6 +418,10 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             break;
         case AV_PKT_DATA_MASTERING_DISPLAY_METADATA:
             dump_mastering_display_metadata(ctx, &sd);
+            break;
+        case AV_PKT_DATA_SPHERICAL:
+            av_log(ctx, AV_LOG_INFO, "spherical: ");
+            dump_spherical(ctx, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_INFO,

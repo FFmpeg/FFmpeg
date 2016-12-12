@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2010 S.N. Hemanth Meenakshisundaram <smeenaks@ucsd.edu>
+ * Copyright (c) 2016 Vittorio Giovara <vittorio.giovara@gmail.com>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -17,35 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * null audio filter
- */
+#include "mem.h"
+#include "spherical.h"
 
-#include "audio.h"
-#include "avfilter.h"
-#include "internal.h"
-#include "libavutil/internal.h"
+AVSphericalMapping *av_spherical_alloc(size_t *size)
+{
+    AVSphericalMapping *spherical = av_mallocz(sizeof(AVSphericalMapping));
+    if (!spherical)
+        return NULL;
 
-static const AVFilterPad avfilter_af_anull_inputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-    { NULL }
-};
+    if (size)
+        *size = sizeof(*spherical);
 
-static const AVFilterPad avfilter_af_anull_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-    { NULL }
-};
-
-AVFilter ff_af_anull = {
-    .name          = "anull",
-    .description   = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
-    .inputs        = avfilter_af_anull_inputs,
-    .outputs       = avfilter_af_anull_outputs,
-};
+    return spherical;
+}
