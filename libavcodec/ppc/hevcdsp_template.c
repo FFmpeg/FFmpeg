@@ -22,9 +22,9 @@ static void FUNC(ff_hevc_idct_4x4, BIT_DEPTH)(int16_t *coeffs, int col_limit)
 {
     const int shift = 7;
     const int shift2 = 20 - BIT_DEPTH;
-    vector int16_t src_01, src_23;
-    vector int32_t res[4];
-    vector int16_t res_packed[2];
+    vec_s16 src_01, src_23;
+    vec_s32 res[4];
+    vec_s16 res_packed[2];
 
     src_01 = vec_ld(0, coeffs);
     src_23 = vec_ld(16, coeffs);
