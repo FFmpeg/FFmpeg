@@ -478,8 +478,9 @@ static int swri_resample(ResampleContext *c,
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
         int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
 
-        dst_size= FFMIN(dst_size, new_size);
-        c->dsp.resample_one(dst, src, dst_size, index2, incr);
+        dst_size = FFMAX(FFMIN(dst_size, new_size), 0);
+        if (dst_size > 0)
+            c->dsp.resample_one(dst, src, dst_size, index2, incr);
 
         index += dst_size * c->dst_incr_div;
         index += (frac + dst_size * (int64_t)c->dst_incr_mod) / c->src_incr;
@@ -494,7 +495,7 @@ static int swri_resample(ResampleContext *c,
         int64_t delta_frac = (end_index - c->index) * c->src_incr - c->frac;
         int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
 
-        dst_size = FFMIN(dst_size, delta_n);
+        dst_size = FFMAX(FFMIN(dst_size, delta_n), 0);
         if (dst_size > 0) {
             /* resample_linear and resample_common should have same behavior
              * when frac and dst_incr_mod are zero */
