@@ -96,12 +96,9 @@ define_8tap_2d_funcs(16)
 define_8tap_2d_funcs(8)
 define_8tap_2d_funcs(4)
 
-static av_cold void vp9dsp_mc_init_aarch64(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_mc_init_aarch64(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
 #define init_fpel(idx1, idx2, sz, type, suffix)      \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \
@@ -173,12 +170,9 @@ define_itxfm(idct, idct, 32);
 define_itxfm(iwht, iwht, 4);
 
 
-static av_cold void vp9dsp_itxfm_init_aarch64(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_itxfm_init_aarch64(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
     if (have_neon(cpu_flags)) {
 #define init_itxfm(tx, sz)                                             \
@@ -219,12 +213,9 @@ define_loop_filters(48, 16);
 define_loop_filters(84, 16);
 define_loop_filters(88, 16);
 
-static av_cold void vp9dsp_loopfilter_init_aarch64(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_loopfilter_init_aarch64(VP9DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (bpp != 8)
-        return;
 
     if (have_neon(cpu_flags)) {
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_neon;
@@ -250,7 +241,10 @@ static av_cold void vp9dsp_loopfilter_init_aarch64(VP9DSPContext *dsp, int bpp)
 
 av_cold void ff_vp9dsp_init_aarch64(VP9DSPContext *dsp, int bpp)
 {
-    vp9dsp_mc_init_aarch64(dsp, bpp);
-    vp9dsp_loopfilter_init_aarch64(dsp, bpp);
-    vp9dsp_itxfm_init_aarch64(dsp, bpp);
+    if (bpp != 8)
+        return;
+
+    vp9dsp_mc_init_aarch64(dsp);
+    vp9dsp_loopfilter_init_aarch64(dsp);
+    vp9dsp_itxfm_init_aarch64(dsp);
 }
