@@ -373,9 +373,8 @@ error:
     return ret;
 }
 
-static int parse_channel_name(char **arg, int *rchannel)
+static int parse_channel_name(char **arg, int *rchannel, char *buf)
 {
-    char buf[8];
     int len, i, channel_id = 0;
     int64_t layout, layout0;
 
@@ -409,12 +408,15 @@ static void parse_speaker_pos(AVFilterContext *ctx, int64_t in_channel_layout)
     p = args;
 
     while ((arg = av_strtok(p, "|", &tokenizer))) {
+        char buf[8];
         float azim, elev;
         int out_ch_id;
 
         p = NULL;
-        if (parse_channel_name(&arg, &out_ch_id))
+        if (parse_channel_name(&arg, &out_ch_id, buf)) {
+            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
             continue;
+        }
         if (sscanf(arg, "%f %f", &azim, &elev) == 2) {
             s->vspkrpos[out_ch_id].set = 1;
             s->vspkrpos[out_ch_id].azim = azim;
