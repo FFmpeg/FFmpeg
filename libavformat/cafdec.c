@@ -323,8 +323,13 @@ static int read_header(AVFormatContext *s)
         if (caf->data_size > 0)
             st->nb_frames = (caf->data_size / caf->bytes_per_packet) * caf->frames_per_packet;
     } else if (st->nb_index_entries && st->duration > 0) {
-        st->codecpar->bit_rate = st->codecpar->sample_rate * caf->data_size * 8 /
-                                 st->duration;
+        if (st->codecpar->sample_rate && caf->data_size / st->duration > INT64_MAX / st->codecpar->sample_rate / 8) {
+            av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %d * 8 * %"PRId64"\n",
+                   st->codecpar->sample_rate, caf->data_size / st->duration);
+            return AVERROR_INVALIDDATA;
+        }
+        st->codecpar->bit_rate = st->codecpar->sample_rate * 8LL *
+                                 (caf->data_size / st->duration);
     } else {
         av_log(s, AV_LOG_ERROR, "Missing packet table. It is required when "
                                 "block size or frame size are variable.\n");
