@@ -4968,8 +4968,8 @@ static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb32(pb);        /* entries */
 
-    if (atom.size < 8) {
-        av_log(c->fc, AV_LOG_ERROR, "senc atom size %"PRId64" too small\n", atom.size);
+    if (atom.size < 8 || atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
+        av_log(c->fc, AV_LOG_ERROR, "senc atom size %"PRId64" invalid\n", atom.size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -5035,6 +5035,11 @@ static int mov_read_saiz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (atom.size <= atom_header_size) {
         return 0;
+    }
+
+    if (atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
+        av_log(c->fc, AV_LOG_ERROR, "saiz atom auxiliary_info_sizes size %"PRId64" invalid\n", atom.size);
+        return AVERROR_INVALIDDATA;
     }
 
     /* save the auxiliary info sizes as is */
