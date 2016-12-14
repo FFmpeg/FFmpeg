@@ -273,7 +273,7 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
     const char *rc_desc;
     mfxU16      rc_mode;
 
-    int want_la     = q->la_depth >= 0;
+    int want_la     = q->la_depth >= 10;
     int want_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
     int want_vcm    = q->vcm;
 

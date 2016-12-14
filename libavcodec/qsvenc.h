@@ -55,7 +55,8 @@
 { "fast",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_SPEED  },   INT_MIN, INT_MAX, VE, "preset" },                             \
 { "medium", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BALANCED  },     INT_MIN, INT_MAX, VE, "preset" },                             \
 { "slow",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                             \
-{ "la_depth", "Number of frames to analyze before encoding.", OFFSET(qsv.la_depth), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT16_MAX, VE },        \
+{ "la_depth", "Number of frames to analyze before encoding.", OFFSET(qsv.la_depth), AV_OPT_TYPE_INT, { .i64 = 9 },   9, 100, VE, "la_depth" },  \
+{ "unset", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 9 }, INT_MIN, INT_MAX,                                                       VE, "la_depth" },  \
 { "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },        \
 { "rdo",            "Enable rate distortion optimization",    OFFSET(qsv.rdo),            AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE }, \
 { "max_frame_size", "Maximum encoded frame size in bytes",    OFFSET(qsv.max_frame_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE }, \
