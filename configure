@@ -3045,6 +3045,7 @@ msvc_common_flags(){
             # specific filters, they must be specified here as well or else the
             # generic catch all at the bottom will print the original flag.
             -Wall)                ;;
+            -Wextra)              ;;
             -std=c99)             ;;
             # Common flags
             -fomit-frame-pointer) ;;
@@ -3068,7 +3069,9 @@ msvc_flags(){
     msvc_common_flags "$@"
     for flag; do
         case $flag in
-            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
+            -Wall)                echo -W3 -wd4018 -wd4146 -wd4244 -wd4305     \
+                                       -wd4554 ;;
+            -Wextra)              echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4273 -wd4554 -wd4701 -wd4703 ;;
