@@ -771,16 +771,16 @@ static int v4l2_read_header(AVFormatContext *s1)
     }
 
     if (s->pixel_format) {
-        AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
+        const AVCodecDescriptor *desc = avcodec_descriptor_get_by_name(s->pixel_format);
 
-        if (codec) {
-            s1->video_codec_id = codec->id;
+        if (desc) {
+            s1->video_codec_id = desc->id;
             st->need_parsing   = AVSTREAM_PARSE_HEADERS;
         }
 
         pix_fmt = av_get_pix_fmt(s->pixel_format);
 
-        if (pix_fmt == AV_PIX_FMT_NONE && !codec) {
+        if (pix_fmt == AV_PIX_FMT_NONE && !desc) {
             av_log(s1, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
