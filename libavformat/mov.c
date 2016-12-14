@@ -5887,8 +5887,15 @@ static int mov_read_header(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
-            if (st->duration > 0)
+            if (st->duration > 0) {
+                if (sc->data_size > INT64_MAX / sc->time_scale / 8) {
+                    av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %"PRId64" * 8 * %d\n",
+                           sc->data_size, sc->time_scale);
+                    mov_read_close(s);
+                    return AVERROR_INVALIDDATA;
+                }
                 st->codecpar->bit_rate = sc->data_size * 8 * sc->time_scale / st->duration;
+            }
         }
     }
 
@@ -5897,6 +5904,12 @@ static int mov_read_header(AVFormatContext *s)
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
             if (sc->duration_for_fps > 0) {
+                if (sc->data_size > INT64_MAX / sc->time_scale / 8) {
+                    av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %"PRId64" * 8 * %d\n",
+                           sc->data_size, sc->time_scale);
+                    mov_read_close(s);
+                    return AVERROR_INVALIDDATA;
+                }
                 st->codecpar->bit_rate = sc->data_size * 8 * sc->time_scale /
                     sc->duration_for_fps;
             }
