@@ -742,6 +742,8 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     title_size = atom.size - 24;
     if (title_size > 0) {
+        if (title_size > FFMIN(INT_MAX, SIZE_MAX-1))
+            return AVERROR_INVALIDDATA;
         title_str = av_malloc(title_size + 1); /* Add null terminator */
         if (!title_str)
             return AVERROR(ENOMEM);
