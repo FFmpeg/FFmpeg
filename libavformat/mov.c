@@ -3810,7 +3810,7 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
 
-    if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
+    if (atom.size < sizeof(uuid) || atom.size >= FFMIN(INT_MAX, SIZE_MAX))
         return AVERROR_INVALIDDATA;
 
     ret = avio_read(pb, uuid, sizeof(uuid));
