@@ -146,7 +146,11 @@ void av_md5_init(AVMD5 *ctx)
     ctx->ABCD[3] = 0x67452301;
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_update(AVMD5 *ctx, const uint8_t *src, const int len)
+#else
+void av_md5_update(AVMD5 *ctx, const uint8_t *src, size_t len)
+#endif
 {
     int i, j;
 
@@ -177,7 +181,11 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst)
         AV_WL32(dst + 4 * i, ctx->ABCD[3 - i]);
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
+#else
+void av_md5_sum(uint8_t *dst, const uint8_t *src, size_t len)
+#endif
 {
     AVMD5 ctx;
 

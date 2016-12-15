@@ -105,6 +105,9 @@
 #ifndef FF_API_PKT_PTS
 #define FF_API_PKT_PTS                  (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_CRYPTO_SIZE_T
+#define FF_API_CRYPTO_SIZE_T            (LIBAVUTIL_VERSION_MAJOR < 56)
+#endif
 
 
 /**
