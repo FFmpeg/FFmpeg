@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
@@ -87,6 +88,8 @@ static int ircam_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->channels    = channels;
+    if (st->codecpar->channels > FF_SANE_NB_CHANNELS)
+        return AVERROR(ENOSYS);
     st->codecpar->sample_rate = sample_rate;
 
     st->codecpar->codec_id = ff_codec_get_id(tags, tag);
