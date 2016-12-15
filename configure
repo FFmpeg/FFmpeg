@@ -2387,7 +2387,6 @@ sndio_indev_deps="sndio"
 sndio_outdev_deps="sndio"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
-vfwcap_indev_extralibs="-lavicap32"
 xcbgrab_indev_deps="libxcb"
 
 # protocols
@@ -3046,7 +3045,6 @@ msvc_common_flags(){
             -mthumb)              ;;
             -march=*)             ;;
             -lz)                  echo zlib.lib ;;
-            -lavicap32)           echo vfw32.lib user32.lib ;;
             -lx264)               echo libx264.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
             -L*)                  echo -libpath:${flag#-L} ;;
@@ -4729,7 +4727,8 @@ check_header AVFoundation/AVFoundation.h
 
 check_header sys/videoio.h
 
-check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"
+check_lib "windows.h winuser.h" GetShellWindow -luser32
+check_lib "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
 check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
