@@ -909,7 +909,7 @@ static void print_report(int is_last_report, int64_t timer_start)
     char buf[1024];
     OutputStream *ost;
     AVFormatContext *oc;
-    int64_t total_size;
+    int64_t total_size = 0;
     AVCodecContext *enc;
     int frame_number, vid, i;
     double bitrate, ti1, pts;
@@ -934,16 +934,17 @@ static void print_report(int is_last_report, int64_t timer_start)
 
 
     oc = output_files[0]->ctx;
-
-    total_size = avio_size(oc->pb);
-    if (total_size <= 0) // FIXME improve avio_size() so it works with non seekable output too
-        total_size = avio_tell(oc->pb);
-    if (total_size < 0) {
-        char errbuf[128];
-        av_strerror(total_size, errbuf, sizeof(errbuf));
-        av_log(NULL, AV_LOG_VERBOSE, "Bitrate not available, "
-               "avio_tell() failed: %s\n", errbuf);
-        total_size = 0;
+    if (oc->pb) {
+        total_size = avio_size(oc->pb);
+        if (total_size <= 0) // FIXME improve avio_size() so it works with non seekable output too
+            total_size = avio_tell(oc->pb);
+        if (total_size < 0) {
+            char errbuf[128];
+            av_strerror(total_size, errbuf, sizeof(errbuf));
+            av_log(NULL, AV_LOG_VERBOSE, "Bitrate not available, "
+                   "avio_tell() failed: %s\n", errbuf);
+            total_size = 0;
+        }
     }
 
     buf[0] = '\0';
