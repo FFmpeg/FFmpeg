@@ -539,7 +539,7 @@ static int ea_read_header(AVFormatContext *s)
             ea->audio_codec = 0;
             return 1;
         }
-        if (ea->bytes <= 0) {
+        if (ea->bytes <= 0 || ea->bytes > 2) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid number of bytes per sample: %d\n", ea->bytes);
             ea->audio_codec = AV_CODEC_ID_NONE;
