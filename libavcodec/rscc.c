@@ -324,6 +324,7 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     }
     *got_frame = 1;
 
+    ret = avpkt->size;
 end:
     av_free(inflated_tiles);
     return ret;
