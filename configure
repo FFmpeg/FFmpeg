@@ -4926,16 +4926,15 @@ check_optflags(){
     enabled lto && check_ldflags "$@"
 }
 
+check_optflags $optflags
+check_optflags -fno-math-errno
+check_optflags -fno-signed-zeros
 
 if enabled lto; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
     check_cflags  -flto
     check_ldflags -flto $cpuflags
 fi
-
-check_optflags $optflags
-check_optflags -fno-math-errno
-check_optflags -fno-signed-zeros
 
 if enabled icc; then
     # Just warnings, no remarks
