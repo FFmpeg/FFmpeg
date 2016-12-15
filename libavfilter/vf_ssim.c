@@ -51,6 +51,7 @@ typedef struct SSIMContext {
     FILE *stats_file;
     char *stats_file_str;
     int nb_components;
+    int max;
     uint64_t nb_frames;
     double ssim[4], ssim_total;
     char comps[4];
@@ -60,6 +61,11 @@ typedef struct SSIMContext {
     int planeheight[4];
     int *temp;
     int is_rgb;
+    float (*ssim_plane)(SSIMDSPContext *dsp,
+                        uint8_t *main, int main_stride,
+                        uint8_t *ref, int ref_stride,
+                        int width, int height, void *temp,
+                        int max);
     SSIMDSPContext dsp;
 } SSIMContext;
 
@@ -87,9 +93,45 @@ static void set_meta(AVDictionary **metadata, const char *key, char comp, float 
     }
 }
 
-static void ssim_4x4xn(const uint8_t *main, ptrdiff_t main_stride,
-                       const uint8_t *ref, ptrdiff_t ref_stride,
-                       int (*sums)[4], int width)
+static void ssim_4x4xn_16bit(const uint8_t *main8, ptrdiff_t main_stride,
+                             const uint8_t *ref8, ptrdiff_t ref_stride,
+                             int64_t (*sums)[4], int width)
+{
+    const uint16_t *main16 = (const uint16_t *)main8;
+    const uint16_t *ref16  = (const uint16_t *)ref8;
+    int x, y, z;
+
+    main_stride >>= 1;
+    ref_stride >>= 1;
+
+    for (z = 0; z < width; z++) {
+        uint64_t s1 = 0, s2 = 0, ss = 0, s12 = 0;
+
+        for (y = 0; y < 4; y++) {
+            for (x = 0; x < 4; x++) {
+                int a = main16[x + y * main_stride];
+                int b = ref16[x + y * ref_stride];
+
+                s1  += a;
+                s2  += b;
+                ss  += a*a;
+                ss  += b*b;
+                s12 += a*b;
+            }
+        }
+
+        sums[z][0] = s1;
+        sums[z][1] = s2;
+        sums[z][2] = ss;
+        sums[z][3] = s12;
+        main16 += 4;
+        ref16 += 4;
+    }
+}
+
+static void ssim_4x4xn_8bit(const uint8_t *main, ptrdiff_t main_stride,
+                            const uint8_t *ref, ptrdiff_t ref_stride,
+                            int (*sums)[4], int width)
 {
     int x, y, z;
 
@@ -118,6 +160,22 @@ static void ssim_4x4xn(const uint8_t *main, ptrdiff_t main_stride,
     }
 }
 
+static float ssim_end1x(int64_t s1, int64_t s2, int64_t ss, int64_t s12, int max)
+{
+    int64_t ssim_c1 = (int64_t)(.01*.01*max*max*64 + .5);
+    int64_t ssim_c2 = (int64_t)(.03*.03*max*max*64*63 + .5);
+
+    int64_t fs1 = s1;
+    int64_t fs2 = s2;
+    int64_t fss = ss;
+    int64_t fs12 = s12;
+    int64_t vars = fss * 64 - fs1 * fs1 - fs2 * fs2;
+    int64_t covar = fs12 * 64 - fs1 * fs2;
+
+    return (float)(2 * fs1 * fs2 + ssim_c1) * (float)(2 * covar + ssim_c2)
+         / ((float)(fs1 * fs1 + fs2 * fs2 + ssim_c1) * (float)(vars + ssim_c2));
+}
+
 static float ssim_end1(int s1, int s2, int ss, int s12)
 {
     static const int ssim_c1 = (int)(.01*.01*255*255*64 + .5);
@@ -134,7 +192,21 @@ static float ssim_end1(int s1, int s2, int ss, int s12)
          / ((float)(fs1 * fs1 + fs2 * fs2 + ssim_c1) * (float)(vars + ssim_c2));
 }
 
-static float ssim_endn(const int (*sum0)[4], const int (*sum1)[4], int width)
+static float ssim_endn_16bit(const int64_t (*sum0)[4], const int64_t (*sum1)[4], int width, int max)
+{
+    float ssim = 0.0;
+    int i;
+
+    for (i = 0; i < width; i++)
+        ssim += ssim_end1x(sum0[i][0] + sum0[i + 1][0] + sum1[i][0] + sum1[i + 1][0],
+                           sum0[i][1] + sum0[i + 1][1] + sum1[i][1] + sum1[i + 1][1],
+                           sum0[i][2] + sum0[i + 1][2] + sum1[i][2] + sum1[i + 1][2],
+                           sum0[i][3] + sum0[i + 1][3] + sum1[i][3] + sum1[i + 1][3],
+                           max);
+    return ssim;
+}
+
+static float ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int width)
 {
     float ssim = 0.0;
     int i;
@@ -147,10 +219,39 @@ static float ssim_endn(const int (*sum0)[4], const int (*sum1)[4], int width)
     return ssim;
 }
 
+static float ssim_plane_16bit(SSIMDSPContext *dsp,
+                              uint8_t *main, int main_stride,
+                              uint8_t *ref, int ref_stride,
+                              int width, int height, void *temp,
+                              int max)
+{
+    int z = 0, y;
+    float ssim = 0.0;
+    int64_t (*sum0)[4] = temp;
+    int64_t (*sum1)[4] = sum0 + (width >> 2) + 3;
+
+    width >>= 2;
+    height >>= 2;
+
+    for (y = 1; y < height; y++) {
+        for (; z <= y; z++) {
+            FFSWAP(void*, sum0, sum1);
+            ssim_4x4xn_16bit(&main[4 * z * main_stride], main_stride,
+                             &ref[4 * z * ref_stride], ref_stride,
+                             sum0, width);
+        }
+
+        ssim += ssim_endn_16bit((const int64_t (*)[4])sum0, (const int64_t (*)[4])sum1, width - 1, max);
+    }
+
+    return ssim / ((height - 1) * (width - 1));
+}
+
 static float ssim_plane(SSIMDSPContext *dsp,
                         uint8_t *main, int main_stride,
                         uint8_t *ref, int ref_stride,
-                        int width, int height, void *temp)
+                        int width, int height, void *temp,
+                        int max)
 {
     int z = 0, y;
     float ssim = 0.0;
@@ -190,9 +291,10 @@ static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
     s->nb_frames++;
 
     for (i = 0; i < s->nb_components; i++) {
-        c[i] = ssim_plane(&s->dsp, main->data[i], main->linesize[i],
-                          ref->data[i], ref->linesize[i],
-                          s->planewidth[i], s->planeheight[i], s->temp);
+        c[i] = s->ssim_plane(&s->dsp, main->data[i], main->linesize[i],
+                             ref->data[i], ref->linesize[i],
+                             s->planewidth[i], s->planeheight[i], s->temp,
+                             s->max);
         ssimv += s->coefs[i] * c[i];
         s->ssim[i] += c[i];
     }
@@ -248,12 +350,15 @@ static av_cold int init(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_GBRP,
+#define PF(suf) AV_PIX_FMT_YUV420##suf,  AV_PIX_FMT_YUV422##suf,  AV_PIX_FMT_YUV444##suf, AV_PIX_FMT_GBR##suf
+        PF(P9), PF(P10), PF(P12), PF(P14), PF(P16),
         AV_PIX_FMT_NONE
     };
 
@@ -297,12 +402,14 @@ static int config_input_ref(AVFilterLink *inlink)
     for (i = 0; i < s->nb_components; i++)
         s->coefs[i] = (double) s->planeheight[i] * s->planewidth[i] / sum;
 
-    s->temp = av_malloc((2 * inlink->w + 12) * sizeof(*s->temp));
+    s->temp = av_malloc_array((2 * inlink->w + 12), sizeof(*s->temp) * (1 + (desc->comp[0].depth > 8)));
     if (!s->temp)
         return AVERROR(ENOMEM);
+    s->max = (1 << desc->comp[0].depth) - 1;
 
-    s->dsp.ssim_4x4_line = ssim_4x4xn;
-    s->dsp.ssim_end_line = ssim_endn;
+    s->ssim_plane = desc->comp[0].depth > 8 ? ssim_plane_16bit : ssim_plane;
+    s->dsp.ssim_4x4_line = ssim_4x4xn_8bit;
+    s->dsp.ssim_end_line = ssim_endn_8bit;
     if (ARCH_X86)
         ff_ssim_init_x86(&s->dsp);
 
