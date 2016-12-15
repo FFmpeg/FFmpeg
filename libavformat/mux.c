@@ -423,7 +423,7 @@ static int prepare_input_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-#if !FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
+#if !FF_API_COMPUTE_PKT_FIELDS2 || !FF_API_LAVF_AVCTX
     /* sanitize the timestamps */
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
         AVStream *st = s->streams[pkt->stream_index];
