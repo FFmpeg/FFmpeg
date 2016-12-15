@@ -2022,8 +2022,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                 ret = vp3_decode_init(avctx);
             if (ret < 0) {
                 vp3_decode_end(avctx);
+                return ret;
             }
-            return ret;
+            return buf_size;
         } else if (type == 2) {
             vp3_decode_end(avctx);
             ret = theora_decode_tables(avctx, &gb);
@@ -2031,8 +2032,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                 ret = vp3_decode_init(avctx);
             if (ret < 0) {
                 vp3_decode_end(avctx);
+                return ret;
             }
-            return ret;
+            return buf_size;
         }
 
         av_log(avctx, AV_LOG_ERROR,
