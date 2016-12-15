@@ -200,9 +200,11 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
             s->picture[1]->linesize[i] = mjpeg_data->linesize[i];
 
         ret = av_frame_ref(data, s->picture[1]);
+        if (ret < 0)
+            return ret;
     }
 
-    return ret;
+    return avpkt->size;
 }
 
 static const AVClass smvjpegdec_class = {
