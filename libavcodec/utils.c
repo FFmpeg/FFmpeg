@@ -2788,7 +2788,7 @@ static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = avcodec_decode_video2(avctx, avctx->internal->buffer_frame,
                                     &got_frame, pkt);
-        if (ret >= 0)
+        if (ret >= 0 && !(avctx->flags & AV_CODEC_FLAG_TRUNCATED))
             ret = pkt->size;
     } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         ret = avcodec_decode_audio4(avctx, avctx->internal->buffer_frame,
