@@ -199,7 +199,7 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
 #if ARCH_X86_64
     uint64_t retsave;
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
     uint64_t ebxsave;
 #endif
 #endif
@@ -209,7 +209,7 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
         "mov               -8(%%rsp), %%"FF_REG_a"    \n\t"
         "mov            %%"FF_REG_a", %5              \n\t"  // retsave
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
         "mov            %%"FF_REG_b", %5              \n\t"  // ebxsave
 #endif
 #endif
@@ -255,7 +255,7 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
         "mov                      %5, %%"FF_REG_a" \n\t"
         "mov            %%"FF_REG_a", -8(%%rsp)    \n\t"
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
         "mov                      %5, %%"FF_REG_b" \n\t"
 #endif
 #endif
@@ -264,12 +264,12 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
 #if ARCH_X86_64
           ,"m"(retsave)
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
           ,"m" (ebxsave)
 #endif
 #endif
         : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_D
-#if ARCH_X86_64 || !defined(PIC)
+#if ARCH_X86_64 || HAVE_EBX_AVAILABLE
          ,"%"FF_REG_b
 #endif
     );
@@ -289,7 +289,7 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if ARCH_X86_64
     DECLARE_ALIGNED(8, uint64_t, retsave);
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
 #endif
@@ -298,7 +298,7 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
         "mov          -8(%%rsp), %%"FF_REG_a"    \n\t"
         "mov       %%"FF_REG_a", %7              \n\t"  // retsave
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
         "mov       %%"FF_REG_b", %7              \n\t"  // ebxsave
 #endif
 #endif
@@ -332,7 +332,7 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
         "mov                    %7, %%"FF_REG_a" \n\t"
         "mov          %%"FF_REG_a", -8(%%rsp)    \n\t"
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
         "mov %7, %%"FF_REG_b"    \n\t"
 #endif
 #endif
@@ -341,12 +341,12 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if ARCH_X86_64
           ,"m"(retsave)
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
           ,"m" (ebxsave)
 #endif
 #endif
         : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_D
-#if ARCH_X86_64 || !defined(PIC)
+#if ARCH_X86_64 || HAVE_EBX_AVAILABLE
          ,"%"FF_REG_b
 #endif
     );
