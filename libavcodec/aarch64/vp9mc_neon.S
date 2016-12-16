@@ -250,7 +250,7 @@ function \type\()_8tap_\size\()h_\idx1\idx2
 .if \size >= 16
         sub             x1,  x1,  x5
 .endif
-        // size >= 16 loads two qwords and increments r2,
+        // size >= 16 loads two qwords and increments x2,
         // for size 4/8 it's enough with one qword and no
         // postincrement
 .if \size >= 16
