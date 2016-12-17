@@ -1,5 +1,7 @@
 include $(SRC_PATH)/avbuild/common.mak
 
+-include $(SUBDIR)lib$(NAME).version
+
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 LIBMINOR   := $(lib$(NAME)_VERSION_MINOR)
@@ -29,6 +31,9 @@ $(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 
 $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
+
+$(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
+	$$(M) $$(SRC_PATH)/avbuild/libversion.sh $(NAME) $$< > $$@
 
 $(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
 	$$(M)sed 's/MAJOR/$(lib$(NAME)_VERSION_MAJOR)/' $$< | $(VERSION_SCRIPT_POSTPROCESS_CMD) > $$@

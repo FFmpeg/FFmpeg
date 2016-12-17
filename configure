@@ -5318,19 +5318,6 @@ VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(LIBAV_SAMPLES)}
 EOF
 
-get_version(){
-    lcname=lib${1}
-    name=$(toupper $lcname)
-    file=$source_path/$lcname/version.h
-    eval $(awk "/#define ${name}_VERSION_M/ { print \$2 \"=\" \$3 }" "$file")
-    eval ${name}_VERSION=\$${name}_VERSION_MAJOR.\$${name}_VERSION_MINOR.\$${name}_VERSION_MICRO
-    eval echo "${lcname}_VERSION=\$${name}_VERSION"             >> avbuild/config.mak
-    eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> avbuild/config.mak
-    eval echo "${lcname}_VERSION_MINOR=\$${name}_VERSION_MINOR" >> avbuild/config.mak
-}
-
-map 'get_version $v' $LIBRARY_LIST
-
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> avbuild/config.mak' $LIBRARY_LIST
 
 print_program_extralibs(){
