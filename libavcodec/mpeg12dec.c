@@ -1358,8 +1358,17 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     vert_size_ext           = get_bits(&s->gb, 2);
     s->width  |= (horiz_size_ext << 12);
     s->height |= (vert_size_ext  << 12);
-    bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
-    s->bit_rate += (bit_rate_ext << 18) * 400;
+
+    bit_rate_ext = get_bits(&s->gb, 12) << 18;
+    if (bit_rate_ext < INT_MAX / 400 &&
+        bit_rate_ext * 400 < INT_MAX - s->bit_rate) {
+        s->bit_rate += bit_rate_ext * 400;
+    } else {
+        av_log(s->avctx, AV_LOG_WARNING, "Invalid bit rate extension value: %d\n",
+               bit_rate_ext >> 18);
+        s->bit_rate = 0;
+    }
+
     skip_bits1(&s->gb); /* marker */
     s->avctx->rc_buffer_size += get_bits(&s->gb, 8) * 1024 * 16 << 10;
 
