@@ -97,7 +97,14 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
                         pc->width  |=(horiz_size_ext << 12);
                         pc->height |=( vert_size_ext << 12);
-                        avctx->bit_rate += (bit_rate_ext << 18) * 400;
+
+                        bit_rate_ext <<= 18;
+                        if (bit_rate_ext < INT_MAX / 400 &&
+                            bit_rate_ext * 400 < INT_MAX - avctx->bit_rate) {
+                            avctx->bit_rate += bit_rate_ext * 400;
+                        } else
+                            avctx->bit_rate = 0;
+
                         if(did_set_size)
                             ff_set_dimensions(avctx, pc->width, pc->height);
                         avctx->framerate.num = pc->frame_rate.num * (frame_rate_ext_n + 1) * 2;
