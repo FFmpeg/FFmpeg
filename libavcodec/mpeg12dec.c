@@ -1536,10 +1536,8 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
         av_log(s->avctx, AV_LOG_WARNING, "invalid frame_pred_frame_dct\n");
 
     if (s->picture_structure == PICT_FRAME) {
-        s->first_field = 0;
         s->v_edge_pos  = 16 * s->mb_height;
     } else {
-        s->first_field ^= 1;
         s->v_edge_pos   = 8 * s->mb_height;
         memset(s->mbskip_table, 0, s->mb_stride * s->mb_height);
     }
@@ -1569,6 +1567,11 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
     AVCodecContext *avctx = s->avctx;
     Mpeg1Context *s1      = (Mpeg1Context *) s;
     int ret;
+
+    if (s->picture_structure == PICT_FRAME)
+        s->first_field = 0;
+    else
+        s->first_field ^= 1;
 
     /* start frame decoding */
     if (s->first_field || s->picture_structure == PICT_FRAME) {
