@@ -202,9 +202,12 @@ endfunc
         ext             v23.16b, \src5\().16b, \src6\().16b, #(2*\offset)
         mla             \dst2\().8h, v21.8h, v0.h[\offset]
         mla             \dst4\().8h, v23.8h, v0.h[\offset]
-.else
+.elseif \size == 8
         mla             \dst1\().8h, v20.8h, v0.h[\offset]
         mla             \dst3\().8h, v22.8h, v0.h[\offset]
+.else
+        mla             \dst1\().4h, v20.4h, v0.h[\offset]
+        mla             \dst3\().4h, v22.4h, v0.h[\offset]
 .endif
 .endm
 // The same as above, but don't accumulate straight into the
@@ -219,15 +222,23 @@ endfunc
         ext             v23.16b, \src5\().16b, \src6\().16b, #(2*\offset)
         mul             v21.8h, v21.8h, v0.h[\offset]
         mul             v23.8h, v23.8h, v0.h[\offset]
-.else
+.elseif \size == 8
         mul             v20.8h, v20.8h, v0.h[\offset]
         mul             v22.8h, v22.8h, v0.h[\offset]
+.else
+        mul             v20.4h, v20.4h, v0.h[\offset]
+        mul             v22.4h, v22.4h, v0.h[\offset]
 .endif
+.if \size == 4
+        sqadd           \dst1\().4h, \dst1\().4h, v20.4h
+        sqadd           \dst3\().4h, \dst3\().4h, v22.4h
+.else
         sqadd           \dst1\().8h, \dst1\().8h, v20.8h
         sqadd           \dst3\().8h, \dst3\().8h, v22.8h
 .if \size >= 16
         sqadd           \dst2\().8h, \dst2\().8h, v21.8h
         sqadd           \dst4\().8h, \dst4\().8h, v23.8h
+.endif
 .endif
 .endm
 
