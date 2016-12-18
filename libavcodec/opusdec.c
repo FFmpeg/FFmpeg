@@ -47,6 +47,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "opus.h"
+#include "opustab.h"
 
 static const uint16_t silk_frame_duration_ms[16] = {
     10, 20, 40, 60,

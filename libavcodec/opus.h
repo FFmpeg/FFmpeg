@@ -205,6 +205,4 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
                          float **output, int coded_channels, int frame_size,
                          int startband,  int endband);
 
-extern const float ff_celt_window2[120];
-
 #endif /* AVCODEC_OPUS_H */
