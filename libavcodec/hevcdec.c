@@ -479,17 +479,16 @@ static int hls_slice_header(HEVCContext *s)
     s->ps.pps = (HEVCPPS*)s->ps.pps_list[sh->pps_id]->data;
 
     if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
+        const HEVCSPS *sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
         enum AVPixelFormat pix_fmt;
-
-        s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
 
         ff_hevc_clear_refs(s);
 
-        pix_fmt = get_format(s, s->ps.sps);
+        pix_fmt = get_format(s, sps);
         if (pix_fmt < 0)
             return pix_fmt;
 
-        ret = set_sps(s, s->ps.sps, pix_fmt);
+        ret = set_sps(s, sps, pix_fmt);
         if (ret < 0)
             return ret;
 
