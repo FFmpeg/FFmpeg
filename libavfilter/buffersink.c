@@ -279,13 +279,26 @@ void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
     inlink->partial_buf_size = frame_size;
 }
 
-AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)
-{
-    av_assert0(   !strcmp(ctx->filter->name, "buffersink")
-               || !strcmp(ctx->filter->name, "ffbuffersink"));
-
-    return ctx->inputs[0]->frame_rate;
+#define MAKE_AVFILTERLINK_ACCESSOR(type, field) \
+type av_buffersink_get_##field(const AVFilterContext *ctx) { \
+    av_assert0(ctx->filter->uninit == uninit); \
+    return ctx->inputs[0]->field; \
 }
+
+MAKE_AVFILTERLINK_ACCESSOR(enum AVMediaType , type               );
+MAKE_AVFILTERLINK_ACCESSOR(AVRational       , time_base          );
+MAKE_AVFILTERLINK_ACCESSOR(int              , format             );
+
+MAKE_AVFILTERLINK_ACCESSOR(AVRational       , frame_rate         );
+MAKE_AVFILTERLINK_ACCESSOR(int              , w                  );
+MAKE_AVFILTERLINK_ACCESSOR(int              , h                  );
+MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio);
+
+MAKE_AVFILTERLINK_ACCESSOR(int              , channels           );
+MAKE_AVFILTERLINK_ACCESSOR(uint64_t         , channel_layout     );
+MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        );
+
+MAKE_AVFILTERLINK_ACCESSOR(AVBufferRef *    , hw_frames_ctx      );
 
 static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)
 {
