@@ -390,6 +390,10 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->key_frame              = src->key_frame;
     dst->pict_type              = src->pict_type;
     dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+    dst->crop_top               = src->crop_top;
+    dst->crop_bottom            = src->crop_bottom;
+    dst->crop_left              = src->crop_left;
+    dst->crop_right             = src->crop_right;
     dst->pts                    = src->pts;
     dst->repeat_pict            = src->repeat_pict;
     dst->interlaced_frame       = src->interlaced_frame;

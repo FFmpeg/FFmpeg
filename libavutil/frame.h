@@ -25,6 +25,7 @@
 #ifndef AVUTIL_FRAME_H
 #define AVUTIL_FRAME_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "avutil.h"
@@ -180,9 +181,18 @@ typedef struct AVFrame {
     uint8_t **extended_data;
 
     /**
-     * width and height of the video frame
+     * @name Video dimensions
+     * Video frames only. The coded dimensions (in pixels) of the video frame,
+     * i.e. the size of the rectangle that contains some well-defined values.
+     *
+     * @note The part of the frame intended for display/presentation is further
+     * restricted by the @ref cropping "Cropping rectangle".
+     * @{
      */
     int width, height;
+    /**
+     * @}
+     */
 
     /**
      * number of audio samples (per channel) described by this frame
@@ -369,6 +379,22 @@ typedef struct AVFrame {
      * AVHWFramesContext describing the frame.
      */
     AVBufferRef *hw_frames_ctx;
+
+    /**
+     * @anchor cropping
+     * @name Cropping
+     * Video frames only. The number of pixels to discard from the the
+     * top/bottom/left/right border of the frame to obtain the sub-rectangle of
+     * the frame intended for presentation.
+     * @{
+     */
+    size_t crop_top;
+    size_t crop_bottom;
+    size_t crop_left;
+    size_t crop_right;
+    /**
+     * @}
+     */
 } AVFrame;
 
 /**
