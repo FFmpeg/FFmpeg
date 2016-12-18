@@ -372,6 +372,11 @@ typedef struct H264Context {
      */
     int picture_idr;
 
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
+
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
 

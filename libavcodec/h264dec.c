@@ -661,26 +661,6 @@ static int get_consumed_bytes(int pos, int buf_size)
     return pos;
 }
 
-static int output_frame(H264Context *h, AVFrame *dst, AVFrame *src)
-{
-    int i;
-    int ret = av_frame_ref(dst, src);
-    if (ret < 0)
-        return ret;
-
-    if (!h->ps.sps || !h->ps.sps->crop)
-        return 0;
-
-    for (i = 0; i < 3; i++) {
-        int hshift = (i > 0) ? h->chroma_x_shift : 0;
-        int vshift = (i > 0) ? h->chroma_y_shift : 0;
-        int off    = ((h->ps.sps->crop_left >> hshift) << h->pixel_shift) +
-                     (h->ps.sps->crop_top >> vshift) * dst->linesize[i];
-        dst->data[i] += off;
-    }
-    return 0;
-}
-
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -722,7 +702,7 @@ out:
             h->delayed_pic[i] = h->delayed_pic[i + 1];
 
         if (out) {
-            ret = output_frame(h, pict, out->f);
+            ret = av_frame_ref(pict, out->f);
             if (ret < 0)
                 return ret;
             *got_frame = 1;
@@ -765,7 +745,7 @@ out:
 
         *got_frame = 0;
         if (h->output_frame->buf[0]) {
-            ret = output_frame(h, pict, h->output_frame) ;
+            ret = av_frame_ref(pict, h->output_frame);
             av_frame_unref(h->output_frame);
             if (ret < 0)
                 return ret;
@@ -804,7 +784,7 @@ AVCodec ff_h264_decoder = {
     .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),

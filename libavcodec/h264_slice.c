@@ -473,6 +473,11 @@ static int h264_frame_start(H264Context *h)
 
     pic->f->pict_type = h->slice_ctx[0].slice_type;
 
+    pic->f->crop_left   = h->crop_left;
+    pic->f->crop_right  = h->crop_right;
+    pic->f->crop_top    = h->crop_top;
+    pic->f->crop_bottom = h->crop_bottom;
+
     if (CONFIG_ERROR_RESILIENCE && h->enable_er)
         ff_er_frame_start(&h->slice_ctx[0].er);
 
@@ -795,8 +800,12 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
 static int init_dimensions(H264Context *h)
 {
     SPS *sps = h->ps.sps;
-    int width  = h->width  - (sps->crop_right + sps->crop_left);
-    int height = h->height - (sps->crop_top   + sps->crop_bottom);
+    int cr = sps->crop_right;
+    int cl = sps->crop_left;
+    int ct = sps->crop_top;
+    int cb = sps->crop_bottom;
+    int width  = h->width  - (cr + cl);
+    int height = h->height - (ct + cb);
 
     /* handle container cropping */
     if (h->width_from_caller > 0 && h->height_from_caller > 0     &&
@@ -805,6 +814,10 @@ static int init_dimensions(H264Context *h)
         FFALIGN(h->height_from_caller, 16) == FFALIGN(height, 16)) {
         width  = h->width_from_caller;
         height = h->height_from_caller;
+        cl = 0;
+        ct = 0;
+        cr = h->width - width;
+        cb = h->height - height;
     } else {
         h->width_from_caller  = 0;
         h->height_from_caller = 0;
@@ -814,6 +827,10 @@ static int init_dimensions(H264Context *h)
     h->avctx->coded_height = h->height;
     h->avctx->width        = width;
     h->avctx->height       = height;
+    h->crop_right          = cr;
+    h->crop_left           = cl;
+    h->crop_top            = ct;
+    h->crop_bottom         = cb;
 
     return 0;
 }
