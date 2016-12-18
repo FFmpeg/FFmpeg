@@ -30,6 +30,7 @@
 
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
+#include "libavfilter/internal.h"
 
 static void print_formats(AVFilterContext *filter_ctx)
 {
