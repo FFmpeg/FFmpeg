@@ -49,6 +49,7 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
 
     HEVCPPS *pps;
     HEVCSPS *sps;
+    HEVCWindow *ow;
     unsigned int pps_id;
 
     get_bits1(gb);          // first slice in pic
@@ -62,12 +63,13 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
     }
     pps = (HEVCPPS*)ctx->ps.pps_list[pps_id]->data;
     sps = (HEVCSPS*)ctx->ps.sps_list[pps->sps_id]->data;
+    ow  = &sps->output_window;
 
     /* export the stream parameters */
     s->coded_width  = sps->width;
     s->coded_height = sps->height;
-    s->width        = sps->output_width;
-    s->height       = sps->output_height;
+    s->width        = sps->width  - ow->left_offset - ow->right_offset;
+    s->height       = sps->height - ow->top_offset  - ow->bottom_offset;
     s->format       = sps->pix_fmt;
     avctx->profile  = sps->ptl.general_ptl.profile_idc;
     avctx->level    = sps->ptl.general_ptl.level_idc;
