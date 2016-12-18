@@ -2076,7 +2076,7 @@ static int audio_thread(void *arg)
                 goto the_end;
 
             while ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, frame, 0)) >= 0) {
-                tb = is->out_audio_filter->inputs[0]->time_base;
+                tb = av_buffersink_get_time_base(is->out_audio_filter);
 #endif
                 if (!(af = frame_queue_peek_writable(&is->sampq)))
                     goto the_end;
@@ -2184,7 +2184,7 @@ static int video_thread(void *arg)
             last_format = frame->format;
             last_serial = is->viddec.pkt_serial;
             last_vfilter_idx = is->vfilter_idx;
-            frame_rate = filt_out->inputs[0]->frame_rate;
+            frame_rate = av_buffersink_get_frame_rate(filt_out);
         }
 
         ret = av_buffersrc_add_frame(filt_in, frame);
@@ -2205,7 +2205,7 @@ static int video_thread(void *arg)
             is->frame_last_filter_delay = av_gettime_relative() / 1000000.0 - is->frame_last_returned_time;
             if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
                 is->frame_last_filter_delay = 0;
-            tb = filt_out->inputs[0]->time_base;
+            tb = av_buffersink_get_time_base(filt_out);
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
@@ -2642,7 +2642,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     case AVMEDIA_TYPE_AUDIO:
 #if CONFIG_AVFILTER
         {
-            AVFilterLink *link;
+            AVFilterContext *sink;
 
             is->audio_filter_src.freq           = avctx->sample_rate;
             is->audio_filter_src.channels       = avctx->channels;
@@ -2650,10 +2650,10 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->audio_filter_src.fmt            = avctx->sample_fmt;
             if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
                 goto fail;
-            link = is->out_audio_filter->inputs[0];
-            sample_rate    = link->sample_rate;
-            nb_channels    = avfilter_link_get_channels(link);
-            channel_layout = link->channel_layout;
+            sink = is->out_audio_filter;
+            sample_rate    = av_buffersink_get_sample_rate(sink);
+            nb_channels    = av_buffersink_get_channels(sink);
+            channel_layout = av_buffersink_get_channel_layout(sink);
         }
 #else
         sample_rate    = avctx->sample_rate;
