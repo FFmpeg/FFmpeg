@@ -53,6 +53,12 @@
  * from the input AVPacket.
  */
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
+/**
+ * The decoder sets the cropping fields in the output frames manually.
+ * If this cap is set, the generic code will initialize output frame
+ * dimensions to coded rather than display values.
+ */
+#define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 3)
 
 #ifdef DEBUG
 #   define ff_dlog(ctx, ...) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__)

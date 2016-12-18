@@ -3112,6 +3112,33 @@ typedef struct AVCodecContext {
      *             This field should be set before avcodec_open2() is called.
      */
     AVBufferRef *hw_frames_ctx;
+
+    /**
+     * Video decoding only. Certain video codecs support cropping, meaning that
+     * only a sub-rectangle of the decoded frame is intended for display.  This
+     * option controls how cropping is handled by libavcodec.
+     *
+     * When set to 1 (the default), libavcodec will apply cropping internally.
+     * I.e. it will modify the output frame width/height fields and offset the
+     * data pointers (only by as much as possible while preserving alignment, or
+     * by the full amount if the AV_CODEC_FLAG_UNALIGNED flag is set) so that
+     * the frames output by the decoder refer only to the cropped area. The
+     * crop_* fields of the output frames will be zero.
+     *
+     * When set to 0, the width/height fields of the output frames will be set
+     * to the coded dimensions and the crop_* fields will describe the cropping
+     * rectangle. Applying the cropping is left to the caller.
+     *
+     * @warning When hardware acceleration with opaque output frames is used,
+     * libavcodec is unable to apply cropping from the top/left border.
+     *
+     * @note when this option is set to zero, the width/height fields of the
+     * AVCodecContext and output AVFrames have different meanings. The codec
+     * context fields store display dimensions (with the coded dimensions in
+     * coded_width/height), while the frame fields store the coded dimensions
+     * (with the display dimensions being determined by the crop_* fields).
+     */
+    int apply_cropping;
 } AVCodecContext;
 
 /**

@@ -29,6 +29,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intmath.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -450,6 +451,111 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     return 0;
 }
 
+static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
+                                 const AVPixFmtDescriptor *desc)
+{
+    int i, j;
+
+    for (i = 0; frame->data[i]; i++) {
+        const AVComponentDescriptor *comp = NULL;
+        int shift_x = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
+        int shift_y = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+
+        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_PSEUDOPAL) && i == 1) {
+            offsets[i] = 0;
+            break;
+        }
+
+        /* find any component descriptor for this plane */
+        for (j = 0; j < desc->nb_components; j++) {
+            if (desc->comp[j].plane == i) {
+                comp = &desc->comp[j];
+                break;
+            }
+        }
+        if (!comp)
+            return AVERROR_BUG;
+
+        offsets[i] = (frame->crop_top  >> shift_y) * frame->linesize[i] +
+                     (frame->crop_left >> shift_x) * comp->step;
+    }
+
+    return 0;
+}
+
+static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
+{
+    const AVPixFmtDescriptor *desc;
+    size_t offsets[4];
+    int i;
+
+    /* make sure we are noisy about decoders returning invalid cropping data */
+    if (frame->crop_left >= INT_MAX - frame->crop_right        ||
+        frame->crop_top  >= INT_MAX - frame->crop_bottom       ||
+        (frame->crop_left + frame->crop_right) >= frame->width ||
+        (frame->crop_top + frame->crop_bottom) >= frame->height) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Invalid cropping information set by a decoder: %zu/%zu/%zu/%zu "
+               "(frame size %dx%d). This is a bug, please report it\n",
+               frame->crop_left, frame->crop_right, frame->crop_top, frame->crop_bottom,
+               frame->width, frame->height);
+        frame->crop_left   = 0;
+        frame->crop_right  = 0;
+        frame->crop_top    = 0;
+        frame->crop_bottom = 0;
+        return 0;
+    }
+
+    if (!avctx->apply_cropping)
+        return 0;
+
+    desc = av_pix_fmt_desc_get(frame->format);
+    if (!desc)
+        return AVERROR_BUG;
+
+    /* Apply just the right/bottom cropping for hwaccel formats. Bitstream
+     * formats cannot be easily handled here either (and corresponding decoders
+     * should not export any cropping anyway), so do the same for those as well.
+     * */
+    if (desc->flags & (AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_HWACCEL)) {
+        frame->width      -= frame->crop_right;
+        frame->height     -= frame->crop_bottom;
+        frame->crop_right  = 0;
+        frame->crop_bottom = 0;
+        return 0;
+    }
+
+    /* calculate the offsets for each plane */
+    calc_cropping_offsets(offsets, frame, desc);
+
+    /* adjust the offsets to avoid breaking alignment */
+    if (!(avctx->flags & AV_CODEC_FLAG_UNALIGNED)) {
+        int min_log2_align = INT_MAX;
+
+        for (i = 0; frame->data[i]; i++) {
+            int log2_align = offsets[i] ? av_ctz(offsets[i]) : INT_MAX;
+            min_log2_align = FFMIN(log2_align, min_log2_align);
+        }
+
+        if (min_log2_align < 5) {
+            frame->crop_left &= ~((1 << min_log2_align) - 1);
+            calc_cropping_offsets(offsets, frame, desc);
+        }
+    }
+
+    for (i = 0; frame->data[i]; i++)
+        frame->data[i] += offsets[i];
+
+    frame->width      -= (frame->crop_left + frame->crop_right);
+    frame->height     -= (frame->crop_top  + frame->crop_bottom);
+    frame->crop_left   = 0;
+    frame->crop_right  = 0;
+    frame->crop_top    = 0;
+    frame->crop_bottom = 0;
+
+    return 0;
+}
+
 int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal *avci = avctx->internal;
@@ -470,6 +576,14 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
         ret = decode_receive_frame_internal(avctx, frame);
         if (ret < 0)
             return ret;
+    }
+
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        ret = apply_cropping(avctx, frame);
+        if (ret < 0) {
+            av_frame_unref(frame);
+            return ret;
+        }
     }
 
     avctx->frame_number++;
@@ -1029,7 +1143,8 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     ret = avctx->get_buffer2(avctx, frame, flags);
 
 end:
-    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions) {
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&
+        !(avctx->codec->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)) {
         frame->width  = avctx->width;
         frame->height = avctx->height;
     }

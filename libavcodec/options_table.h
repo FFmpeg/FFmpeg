@@ -531,6 +531,7 @@ static const AVOption avcodec_options[] = {
 #if FF_API_SIDEDATA_ONLY_PKT
 {"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, A|V|E },
 #endif
+{"apply_cropping", NULL, OFFSET(apply_cropping), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, V | D },
 {NULL},
 };
 
