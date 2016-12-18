@@ -757,7 +757,8 @@ out:
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) ||
         (h->mb_y >= h->mb_height && h->mb_height)) {
-        ff_h264_field_end(h, &h->slice_ctx[0], 0);
+        if (h->field_started)
+            ff_h264_field_end(h, &h->slice_ctx[0], 0);
 
         *got_frame = 0;
         if (h->output_frame->buf[0]) {

@@ -194,6 +194,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     emms_c();
 
     h->current_slice = 0;
+    h->field_started = 0;
 
     return err;
 }

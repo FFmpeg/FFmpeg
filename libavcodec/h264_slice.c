@@ -1884,9 +1884,8 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
                 sl = h->slice_ctx;
             }
 
-            if (h->current_slice && h->cur_pic_ptr && FIELD_PICTURE(h)) {
+            if (h->field_started)
                 ff_h264_field_end(h, sl, 1);
-            }
 
             h->current_slice = 0;
             if (!h->first_field) {
@@ -1902,6 +1901,7 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
             ret = h264_field_start(h, sl, nal);
             if (ret < 0)
                 return ret;
+            h->field_started = 1;
         }
     }
 

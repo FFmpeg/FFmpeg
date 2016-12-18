@@ -509,6 +509,11 @@ typedef struct H264Context {
      * slices) anymore */
     int setup_finished;
 
+    /* This is set to 1 if h264_field_start() has been called successfully,
+     * so all per-field state is properly initialized and we can decode
+     * the slice data */
+    int field_started;
+
     AVFrame *output_frame;
 
     int enable_er;
