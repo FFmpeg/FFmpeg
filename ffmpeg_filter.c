@@ -1079,15 +1079,15 @@ int configure_filtergraph(FilterGraph *fg)
      * make sure they stay the same if the filtergraph is reconfigured later */
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
-        AVFilterLink *link = ofilter->filter->inputs[0];
+        AVFilterContext *sink = ofilter->filter;
 
-        ofilter->format = link->format;
+        ofilter->format = av_buffersink_get_format(sink);
 
-        ofilter->width  = link->w;
-        ofilter->height = link->h;
+        ofilter->width  = av_buffersink_get_w(sink);
+        ofilter->height = av_buffersink_get_h(sink);
 
-        ofilter->sample_rate    = link->sample_rate;
-        ofilter->channel_layout = link->channel_layout;
+        ofilter->sample_rate    = av_buffersink_get_sample_rate(sink);
+        ofilter->channel_layout = av_buffersink_get_channel_layout(sink);
     }
 
     fg->reconfiguration = 1;
