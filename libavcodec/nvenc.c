@@ -623,7 +623,7 @@ static void nvenc_setup_rate_control(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_VERBOSE, "Temporal AQ enabled.\n");
     }
 
-    if (ctx->rc_lookahead) {
+    if (ctx->rc_lookahead > 0) {
         int lkd_bound = FFMIN(ctx->nb_surfaces, ctx->async_depth) -
                         ctx->config.frameIntervalP - 4;
 
