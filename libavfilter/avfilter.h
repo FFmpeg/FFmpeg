@@ -294,6 +294,20 @@ typedef struct AVFilter {
      * used for providing binary data.
      */
     int (*init_opaque)(AVFilterContext *ctx, void *opaque);
+
+    /**
+     * Filter activation function.
+     *
+     * Called when any processing is needed from the filter, instead of any
+     * filter_frame and request_frame on pads.
+     *
+     * The function must examine inlinks and outlinks and perform a single
+     * step of processing. If there is nothing to do, the function must do
+     * nothing and not return an error. If more steps are or may be
+     * possible, it must use ff_filter_set_ready() to schedule another
+     * activation.
+     */
+    int (*activate)(AVFilterContext *ctx);
 } AVFilter;
 
 /**

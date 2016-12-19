@@ -1480,8 +1480,12 @@ int ff_filter_activate(AVFilterContext *filter)
 {
     int ret;
 
+    /* Generic timeline support is not yet implemented but should be easy */
+    av_assert1(!(filter->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC &&
+                 filter->filter->activate));
     filter->ready = 0;
-    ret = ff_filter_activate_default(filter);
+    ret = filter->filter->activate ? filter->filter->activate(filter) :
+          ff_filter_activate_default(filter);
     if (ret == FFERROR_NOT_READY)
         ret = 0;
     return ret;
