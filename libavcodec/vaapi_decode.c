@@ -306,7 +306,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     vas = vaQueryConfigProfiles(ctx->hwctx->display,
                                 profile_list, &profile_count);
     if (vas != VA_STATUS_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to query profiles: "
+        av_log(avctx, AV_LOG_ERROR, "Failed to query profiles: "
                "%d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(ENOSYS);
         goto fail;
@@ -338,7 +338,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     av_freep(&profile_list);
 
     if (profile == VAProfileNone) {
-        av_log(ctx, AV_LOG_ERROR, "No support for codec %s "
+        av_log(avctx, AV_LOG_ERROR, "No support for codec %s "
                "profile %d.\n", codec_desc->name, avctx->profile);
         err = AVERROR(ENOSYS);
         goto fail;
@@ -390,7 +390,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
             avctx->coded_height < constraints->min_height ||
             avctx->coded_width  > constraints->max_width  ||
             avctx->coded_height > constraints->max_height) {
-            av_log(ctx, AV_LOG_ERROR, "Hardware does not support image "
+            av_log(avctx, AV_LOG_ERROR, "Hardware does not support image "
                    "size %dx%d (constraints: width %d-%d height %d-%d).\n",
                    avctx->coded_width, avctx->coded_height,
                    constraints->min_width,  constraints->max_width,
