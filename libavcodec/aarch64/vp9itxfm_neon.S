@@ -1108,7 +1108,7 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
 
         movrel          x10, idct_coeffs
         add             x11, x10, #32
-        movrel          x12, min_eob_idct_idct_32 + 2
+        movrel          x12, min_eob_idct_idct_32, 2
 
         mov             x15, x30
 
