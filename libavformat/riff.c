@@ -428,6 +428,10 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '1') },
     { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '2') },
     { AV_CODEC_ID_MAGICYUV,     MKTAG('M', 'A', 'G', 'Y') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'R', 'G') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'G', '0') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'Y', '2') },
     { AV_CODEC_ID_YLC,          MKTAG('Y', 'L', 'C', '0') },
 
     { AV_CODEC_ID_NONE,         0 }
