@@ -44,6 +44,7 @@ typedef struct FFFrameBucket {
  * It is currently empty.
  */
 typedef struct FFFrameQueueGlobal {
+    char dummy; /* C does not allow empty structs */
 } FFFrameQueueGlobal;
 
 /**
