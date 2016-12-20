@@ -337,6 +337,34 @@ static av_cold void wmavoice_init_static_data(AVCodec *codec)
                     bits, 1, 1, codes, 2, 2, 132);
 }
 
+static av_cold void wmavoice_flush(AVCodecContext *ctx)
+{
+    WMAVoiceContext *s = ctx->priv_data;
+    int n;
+
+    s->postfilter_agc    = 0;
+    s->sframe_cache_size = 0;
+    s->skip_bits_next    = 0;
+    for (n = 0; n < s->lsps; n++)
+        s->prev_lsps[n] = M_PI * (n + 1.0) / (s->lsps + 1.0);
+    memset(s->excitation_history, 0,
+           sizeof(*s->excitation_history) * MAX_SIGNAL_HISTORY);
+    memset(s->synth_history,      0,
+           sizeof(*s->synth_history)      * MAX_LSPS);
+    memset(s->gain_pred_err,      0,
+           sizeof(s->gain_pred_err));
+
+    if (s->do_apf) {
+        memset(&s->synth_filter_out_buf[MAX_LSPS_ALIGN16 - s->lsps], 0,
+               sizeof(*s->synth_filter_out_buf) * s->lsps);
+        memset(s->dcf_mem,              0,
+               sizeof(*s->dcf_mem)              * 2);
+        memset(s->zero_exc_pf,          0,
+               sizeof(*s->zero_exc_pf)          * s->history_nsamples);
+        memset(s->denoise_filter_cache, 0, sizeof(s->denoise_filter_cache));
+    }
+}
+
 /**
  * Set up decoder with parameters from demuxer (extradata etc.).
  */
@@ -2044,34 +2072,6 @@ static av_cold int wmavoice_decode_end(AVCodecContext *ctx)
     }
 
     return 0;
-}
-
-static av_cold void wmavoice_flush(AVCodecContext *ctx)
-{
-    WMAVoiceContext *s = ctx->priv_data;
-    int n;
-
-    s->postfilter_agc    = 0;
-    s->sframe_cache_size = 0;
-    s->skip_bits_next    = 0;
-    for (n = 0; n < s->lsps; n++)
-        s->prev_lsps[n] = M_PI * (n + 1.0) / (s->lsps + 1.0);
-    memset(s->excitation_history, 0,
-           sizeof(*s->excitation_history) * MAX_SIGNAL_HISTORY);
-    memset(s->synth_history,      0,
-           sizeof(*s->synth_history)      * MAX_LSPS);
-    memset(s->gain_pred_err,      0,
-           sizeof(s->gain_pred_err));
-
-    if (s->do_apf) {
-        memset(&s->synth_filter_out_buf[MAX_LSPS_ALIGN16 - s->lsps], 0,
-               sizeof(*s->synth_filter_out_buf) * s->lsps);
-        memset(s->dcf_mem,              0,
-               sizeof(*s->dcf_mem)              * 2);
-        memset(s->zero_exc_pf,          0,
-               sizeof(*s->zero_exc_pf)          * s->history_nsamples);
-        memset(s->denoise_filter_cache, 0, sizeof(s->denoise_filter_cache));
-    }
 }
 
 AVCodec ff_wmavoice_decoder = {
