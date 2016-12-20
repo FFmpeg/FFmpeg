@@ -28,6 +28,18 @@
 #include "avfilter.h"
 
 /**
+ * Mark a filter ready and schedule it for activation.
+ *
+ * This is automatically done when something happens to the filter (queued
+ * frame, status change, request on output).
+ * Filters implementing the activate callback can call it directly to
+ * perform one more round of processing later.
+ * It is also useful for filters reacting to external or asynchronous
+ * events.
+ */
+void ff_filter_set_ready(AVFilterContext *filter, unsigned priority);
+
+/**
  * Test and acknowledge the change of status on the link.
  *
  * Status means EOF or an error condition; a change from the normal (0)
