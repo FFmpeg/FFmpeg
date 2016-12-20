@@ -512,7 +512,8 @@ static void adaptive_gain_control(float *out, const float *in,
         speech_energy     += fabsf(speech_synth[i]);
         postfilter_energy += fabsf(in[i]);
     }
-    gain_scale_factor = (1.0 - alpha) * speech_energy / postfilter_energy;
+    gain_scale_factor = postfilter_energy == 0.0 ? 0.0 :
+                        (1.0 - alpha) * speech_energy / postfilter_energy;
 
     for (i = 0; i < size; i++) {
         mem = alpha * mem + gain_scale_factor;
