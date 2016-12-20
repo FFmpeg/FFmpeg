@@ -1100,7 +1100,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
     int ret;
-    AVFilterCommand *cmd= link->dst->command_queue;
     int64_t pts;
 
     if (!(filter_frame = dst->filter_frame))
@@ -1112,14 +1111,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             goto fail;
     }
 
-    while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
-        av_log(link->dst, AV_LOG_DEBUG,
-               "Processing command time:%f command:%s arg:%s\n",
-               cmd->time, cmd->command, cmd->arg);
-        avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
-        ff_command_queue_pop(link->dst);
-        cmd= link->dst->command_queue;
-    }
+    ff_inlink_process_commands(link, frame);
 
     pts = frame->pts;
     if (dstctx->enable_str) {
@@ -1565,6 +1557,21 @@ int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
 
     av_frame_free(&frame);
     *rframe = out;
+    return 0;
+}
+
+int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
+{
+    AVFilterCommand *cmd = link->dst->command_queue;
+
+    while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
+        av_log(link->dst, AV_LOG_DEBUG,
+               "Processing command time:%f command:%s arg:%s\n",
+               cmd->time, cmd->command, cmd->arg);
+        avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
+        ff_command_queue_pop(link->dst);
+        cmd= link->dst->command_queue;
+    }
     return 0;
 }
 

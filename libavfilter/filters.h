@@ -40,6 +40,13 @@
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority);
 
 /**
+ * Process the commands queued in the link up to the time of the frame.
+ * Commands will trigger the process_command() callback.
+ * @return  >= 0 or AVERROR code.
+ */
+int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame);
+
+/**
  * Make sure a frame is writable.
  * This is similar to av_frame_make_writable() except it uses the link's
  * buffer allocation callback, and therefore allows direct rendering.
