@@ -1,4 +1,5 @@
 NAME = avcodec
+DESC = Libav codec library
 
 HEADERS = avcodec.h                                                     \
           avfft.h                                                       \

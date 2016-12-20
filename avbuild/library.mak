@@ -9,8 +9,8 @@ INCINSTDIR := $(INCDIR)/lib$(NAME)
 
 INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 
-all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)
-all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME)
+all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)  $(SUBDIR)lib$(NAME).pc
+all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME) $(SUBDIR)lib$(NAME).pc
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)
 $(LIBOBJS) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
@@ -34,6 +34,9 @@ $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 
 $(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/avbuild/libversion.sh $(NAME) $$< > $$@
+
+$(SUBDIR)lib$(NAME).pc: $(SUBDIR)version.h | $(SUBDIR)
+	$$(M) $$(SRC_PATH)/avbuild/pkgconfig_generate.sh $(NAME) "$(DESC)"
 
 $(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
 	$$(M)sed 's/MAJOR/$(lib$(NAME)_VERSION_MAJOR)/' $$< | $(VERSION_SCRIPT_POSTPROCESS_CMD) > $$@

@@ -67,7 +67,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
-%.c %.h %.ver %.version: TAG = GEN
+%.c %.h %.pc %.ver %.version: TAG = GEN
 
 AVPROGS-$(CONFIG_AVCONV)   += avconv
 AVPROGS-$(CONFIG_AVPLAY)   += avplay
@@ -125,7 +125,6 @@ tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
-    $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/version.h))              \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
     $(SRC_PATH)/libavformat/protocols.c                             \
 

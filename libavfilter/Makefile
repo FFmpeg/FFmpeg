@@ -1,4 +1,5 @@
 NAME = avfilter
+DESC = Libav video filtering library
 
 HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \

@@ -1,4 +1,5 @@
 NAME = swscale
+DESC = Libav image rescaling library
 
 HEADERS = swscale.h                                                     \
           version.h                                                     \

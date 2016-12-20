@@ -1,4 +1,5 @@
 NAME = avformat
+DESC = Libav container format library
 
 HEADERS = avformat.h                                                    \
           avio.h                                                        \

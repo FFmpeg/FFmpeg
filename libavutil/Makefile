@@ -1,4 +1,5 @@
 NAME = avutil
+DESC = Libav utility library
 
 HEADERS = adler32.h                                                     \
           aes.h                                                         \

@@ -1,4 +1,5 @@
 NAME = avresample
+DESC = Libav audio resampling library
 
 HEADERS = avresample.h                                                  \
           version.h                                                     \

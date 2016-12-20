@@ -1,4 +1,5 @@
 NAME    = avdevice
+DESC    = Libav device handling library
 
 HEADERS = avdevice.h                                                    \
           version.h                                                     \
