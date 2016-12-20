@@ -39,6 +39,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 
@@ -1541,6 +1542,21 @@ int ff_filter_activate(AVFilterContext *filter)
     if (ret == FFERROR_NOT_READY)
         ret = 0;
     return ret;
+}
+
+int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts)
+{
+    *rpts = link->current_pts;
+    if (ff_framequeue_queued_frames(&link->fifo))
+        return *rstatus = 0;
+    if (link->status_out)
+        return *rstatus = link->status_out;
+    if (!link->status_in)
+        return *rstatus = 0;
+    *rstatus = link->status_out = link->status_in;
+    ff_update_link_current_pts(link, link->status_in_pts);
+    *rpts = link->current_pts;
+    return 1;
 }
 
 const AVClass *avfilter_get_class(void)
