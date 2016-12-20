@@ -47,6 +47,14 @@ void ff_filter_set_ready(AVFilterContext *filter, unsigned priority);
 int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame);
 
 /**
+ * Evaluate the timeline expression of the link for the time and properties
+ * of the frame.
+ * @return  >0 if enabled, 0 if disabled
+ * @note  It does not update link->dst->is_disabled.
+ */
+int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame);
+
+/**
  * Make sure a frame is writable.
  * This is similar to av_frame_make_writable() except it uses the link's
  * buffer allocation callback, and therefore allows direct rendering.

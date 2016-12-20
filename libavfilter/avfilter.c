@@ -1100,7 +1100,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
     int ret;
-    int64_t pts;
 
     if (!(filter_frame = dst->filter_frame))
         filter_frame = default_filter_frame;
@@ -1112,24 +1111,15 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     }
 
     ff_inlink_process_commands(link, frame);
+    dstctx->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
 
-    pts = frame->pts;
-    if (dstctx->enable_str) {
-        int64_t pos = av_frame_get_pkt_pos(frame);
-        dstctx->var_values[VAR_N] = link->frame_count_out;
-        dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
-        dstctx->var_values[VAR_W] = link->w;
-        dstctx->var_values[VAR_H] = link->h;
-        dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
-
-        dstctx->is_disabled = fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) < 0.5;
+        /* TODO reindent */
         if (dstctx->is_disabled &&
             (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
             filter_frame = default_filter_frame;
-    }
     ret = filter_frame(link, frame);
     link->frame_count_out++;
-    ff_update_link_current_pts(link, pts);
+    ff_update_link_current_pts(link, frame->pts);
     return ret;
 
 fail:
@@ -1573,6 +1563,24 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
         cmd= link->dst->command_queue;
     }
     return 0;
+}
+
+int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame)
+{
+    AVFilterContext *dstctx = link->dst;
+    int64_t pts = frame->pts;
+    int64_t pos = av_frame_get_pkt_pos(frame);
+
+    if (!dstctx->enable_str)
+        return 1;
+
+    dstctx->var_values[VAR_N] = link->frame_count_out;
+    dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
+    dstctx->var_values[VAR_W] = link->w;
+    dstctx->var_values[VAR_H] = link->h;
+    dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+
+    return fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) >= 0.5;
 }
 
 const AVClass *avfilter_get_class(void)
