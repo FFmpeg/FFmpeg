@@ -55,6 +55,48 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame);
 int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame);
 
 /**
+ * Test if a frame is available on the link.
+ * @return  >0 if a frame is available
+ */
+int ff_inlink_check_available_frame(AVFilterLink *link);
+
+/**
+ * Test if enough samples are available on the link.
+ * @return  >0 if enough samples are available
+ * @note  on EOF and error, min becomes 1
+ */
+int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min);
+
+/**
+ * Take a frame from the link's FIFO and update the link's stats.
+ *
+ * If ff_inlink_check_available_frame() was previously called, the
+ * preferred way of expressing it is "av_assert1(ret);" immediately after
+ * ff_inlink_consume_frame(). Negative error codes must still be checked.
+ *
+ * @note  May trigger process_command() and/or update is_disabled.
+ * @return  >0 if a frame is available,
+ *          0 and set rframe to NULL if no frame available,
+ *          or AVERROR code
+ */
+int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe);
+
+/**
+ * Take samples from the link's FIFO and update the link's stats.
+ *
+ * If ff_inlink_check_available_samples() was previously called, the
+ * preferred way of expressing it is "av_assert1(ret);" immediately after
+ * ff_inlink_consume_samples(). Negative error codes must still be checked.
+ *
+ * @note  May trigger process_command() and/or update is_disabled.
+ * @return  >0 if a frame is available,
+ *          0 and set rframe to NULL if no frame available,
+ *          or AVERROR code
+ */
+int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
+                            AVFrame **rframe);
+
+/**
  * Make sure a frame is writable.
  * This is similar to av_frame_make_writable() except it uses the link's
  * buffer allocation callback, and therefore allows direct rendering.

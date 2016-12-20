@@ -1501,6 +1501,58 @@ int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts
     return 1;
 }
 
+int ff_inlink_check_available_frame(AVFilterLink *link)
+{
+    return ff_framequeue_queued_frames(&link->fifo) > 0;
+}
+
+int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
+{
+    uint64_t samples = ff_framequeue_queued_samples(&link->fifo);
+    av_assert1(min);
+    return samples >= min || (link->status_in && samples);
+}
+
+static void consume_update(AVFilterLink *link, const AVFrame *frame)
+{
+    ff_inlink_process_commands(link, frame);
+    link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
+    link->frame_count_out++;
+}
+
+int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe)
+{
+    AVFrame *frame;
+
+    *rframe = NULL;
+    if (!ff_inlink_check_available_frame(link))
+        return 0;
+    frame = ff_framequeue_take(&link->fifo);
+    consume_update(link, frame);
+    *rframe = frame;
+    return 1;
+}
+
+int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
+                            AVFrame **rframe)
+{
+    AVFrame *frame;
+    int ret;
+
+    av_assert1(min);
+    *rframe = NULL;
+    if (!ff_inlink_check_available_samples(link, min))
+        return 0;
+    if (link->status_in)
+        min = FFMIN(min, ff_framequeue_queued_samples(&link->fifo));
+    ret = take_samples(link, min, link->max_samples, &frame);
+    if (ret < 0)
+        return ret;
+    consume_update(link, frame);
+    *rframe = frame;
+    return 1;
+}
+
 int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
 {
     AVFrame *frame = *rframe;
