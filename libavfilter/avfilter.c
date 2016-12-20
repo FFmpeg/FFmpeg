@@ -1099,7 +1099,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     int (*filter_frame)(AVFilterLink *, AVFrame *);
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
-    AVFrame *out = NULL;
     int ret;
     AVFilterCommand *cmd= link->dst->command_queue;
     int64_t pts;
@@ -1112,9 +1111,8 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         if (ret < 0)
             goto fail;
     }
-    out = frame; /* TODO rename */
 
-    while(cmd && cmd->time <= out->pts * av_q2d(link->time_base)){
+    while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
         av_log(link->dst, AV_LOG_DEBUG,
                "Processing command time:%f command:%s arg:%s\n",
                cmd->time, cmd->command, cmd->arg);
@@ -1123,9 +1121,9 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         cmd= link->dst->command_queue;
     }
 
-    pts = out->pts;
+    pts = frame->pts;
     if (dstctx->enable_str) {
-        int64_t pos = av_frame_get_pkt_pos(out);
+        int64_t pos = av_frame_get_pkt_pos(frame);
         dstctx->var_values[VAR_N] = link->frame_count_out;
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
         dstctx->var_values[VAR_W] = link->w;
@@ -1137,13 +1135,12 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
             filter_frame = default_filter_frame;
     }
-    ret = filter_frame(link, out);
+    ret = filter_frame(link, frame);
     link->frame_count_out++;
     ff_update_link_current_pts(link, pts);
     return ret;
 
 fail:
-    av_frame_free(&out);
     av_frame_free(&frame);
     return ret;
 }
