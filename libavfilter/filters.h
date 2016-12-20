@@ -40,6 +40,13 @@
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority);
 
 /**
+ * Make sure a frame is writable.
+ * This is similar to av_frame_make_writable() except it uses the link's
+ * buffer allocation callback, and therefore allows direct rendering.
+ */
+int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe);
+
+/**
  * Test and acknowledge the change of status on the link.
  *
  * Status means EOF or an error condition; a change from the normal (0)

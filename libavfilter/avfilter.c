@@ -1107,49 +1107,12 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     if (!(filter_frame = dst->filter_frame))
         filter_frame = default_filter_frame;
 
-    /* copy the frame if needed */
-    if (dst->needs_writable && !av_frame_is_writable(frame)) {
-        av_log(link->dst, AV_LOG_DEBUG, "Copying data in avfilter.\n");
-
-        switch (link->type) {
-        case AVMEDIA_TYPE_VIDEO:
-            out = ff_get_video_buffer(link, link->w, link->h);
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            out = ff_get_audio_buffer(link, frame->nb_samples);
-            break;
-        default:
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
-        if (!out) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        ret = av_frame_copy_props(out, frame);
+    if (dst->needs_writable) {
+        ret = ff_inlink_make_frame_writable(link, &frame);
         if (ret < 0)
             goto fail;
-
-        switch (link->type) {
-        case AVMEDIA_TYPE_VIDEO:
-            av_image_copy(out->data, out->linesize, (const uint8_t **)frame->data, frame->linesize,
-                          frame->format, frame->width, frame->height);
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            av_samples_copy(out->extended_data, frame->extended_data,
-                            0, 0, frame->nb_samples,
-                            av_frame_get_channels(frame),
-                            frame->format);
-            break;
-        default:
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
-
-        av_frame_free(&frame);
-    } else
-        out = frame;
+    }
+    out = frame; /* TODO rename */
 
     while(cmd && cmd->time <= out->pts * av_q2d(link->time_base)){
         av_log(link->dst, AV_LOG_DEBUG,
@@ -1557,6 +1520,55 @@ int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts
     ff_update_link_current_pts(link, link->status_in_pts);
     *rpts = link->current_pts;
     return 1;
+}
+
+int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
+{
+    AVFrame *frame = *rframe;
+    AVFrame *out;
+    int ret;
+
+    if (av_frame_is_writable(frame))
+        return 0;
+    av_log(link->dst, AV_LOG_DEBUG, "Copying data in avfilter.\n");
+
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        out = ff_get_video_buffer(link, link->w, link->h);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        out = ff_get_audio_buffer(link, frame->nb_samples);
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+    if (!out)
+        return AVERROR(ENOMEM);
+
+    ret = av_frame_copy_props(out, frame);
+    if (ret < 0) {
+        av_frame_free(&out);
+        return ret;
+    }
+
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        av_image_copy(out->data, out->linesize, (const uint8_t **)frame->data, frame->linesize,
+                      frame->format, frame->width, frame->height);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        av_samples_copy(out->extended_data, frame->extended_data,
+                        0, 0, frame->nb_samples,
+                        av_frame_get_channels(frame),
+                        frame->format);
+        break;
+    default:
+        av_assert0(!"reached");
+    }
+
+    av_frame_free(&frame);
+    *rframe = out;
+    return 0;
 }
 
 const AVClass *avfilter_get_class(void)
