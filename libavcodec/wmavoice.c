@@ -1915,29 +1915,29 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
         /* If the packet header specifies a s->spillover_nbits, then we want
          * to push out all data of the previous packet (+ spillover) before
          * continuing to parse new superframes in the current packet. */
-            if (s->sframe_cache_size > 0) {
-                int cnt = get_bits_count(gb);
-                copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
-                flush_put_bits(&s->pb);
-                s->sframe_cache_size += s->spillover_nbits;
-                if ((res = synth_superframe(ctx, data, got_frame_ptr)) == 0 &&
-                    *got_frame_ptr) {
-                    cnt += s->spillover_nbits;
-                    s->skip_bits_next = cnt & 7;
-                    res = cnt >> 3;
-                    if (res > avpkt->size) {
-                        av_log(ctx, AV_LOG_ERROR,
-                               "Trying to skip %d bytes in packet of size %d\n",
-                               res, avpkt->size);
-                        return AVERROR_INVALIDDATA;
-                    }
-                    return res;
-                } else
-                    skip_bits_long (gb, s->spillover_nbits - cnt +
-                                    get_bits_count(gb)); // resync
-            } else if (s->spillover_nbits) {
-                skip_bits_long(gb, s->spillover_nbits);  // resync
-            }
+        if (s->sframe_cache_size > 0) {
+            int cnt = get_bits_count(gb);
+            copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
+            flush_put_bits(&s->pb);
+            s->sframe_cache_size += s->spillover_nbits;
+            if ((res = synth_superframe(ctx, data, got_frame_ptr)) == 0 &&
+                *got_frame_ptr) {
+                cnt += s->spillover_nbits;
+                s->skip_bits_next = cnt & 7;
+                res = cnt >> 3;
+                if (res > avpkt->size) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Trying to skip %d bytes in packet of size %d\n",
+                           res, avpkt->size);
+                    return AVERROR_INVALIDDATA;
+                }
+                return res;
+            } else
+                skip_bits_long (gb, s->spillover_nbits - cnt +
+                                get_bits_count(gb)); // resync
+        } else if (s->spillover_nbits) {
+            skip_bits_long(gb, s->spillover_nbits);  // resync
+        }
     } else if (s->skip_bits_next)
         skip_bits(gb, s->skip_bits_next);
 
@@ -1949,20 +1949,20 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
         *got_frame_ptr = 0;
         return size;
     } else if (s->nb_superframes > 0) {
-    if ((res = synth_superframe(ctx, data, got_frame_ptr)) < 0) {
-        return res;
-    } else if (*got_frame_ptr) {
-        int cnt = get_bits_count(gb);
-        s->skip_bits_next = cnt & 7;
-        res = cnt >> 3;
-        if (res > avpkt->size) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Trying to skip %d bytes in packet of size %d\n",
-                   res, avpkt->size);
-            return AVERROR_INVALIDDATA;
+        if ((res = synth_superframe(ctx, data, got_frame_ptr)) < 0) {
+            return res;
+        } else if (*got_frame_ptr) {
+            int cnt = get_bits_count(gb);
+            s->skip_bits_next = cnt & 7;
+            res = cnt >> 3;
+            if (res > avpkt->size) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Trying to skip %d bytes in packet of size %d\n",
+                       res, avpkt->size);
+                return AVERROR_INVALIDDATA;
+            }
+            return res;
         }
-        return res;
-    }
     } else if ((s->sframe_cache_size = pos) > 0) {
         /* ... cache it for spillover in next packet */
         init_put_bits(&s->pb, s->sframe_cache, SFRAME_CACHE_MAXSIZE);
