@@ -1800,6 +1800,11 @@ static int synth_superframe(AVCodecContext *ctx, AVFrame *frame,
         skip_bits(gb, 10 * (res + 1));
     }
 
+    if (get_bits_left(gb) < 0) {
+        wmavoice_flush(ctx);
+        return AVERROR_INVALIDDATA;
+    }
+
     *got_frame_ptr = 1;
 
     /* Update history */
@@ -1925,12 +1930,6 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
                 cnt += s->spillover_nbits;
                 s->skip_bits_next = cnt & 7;
                 res = cnt >> 3;
-                if (res > avpkt->size) {
-                    av_log(ctx, AV_LOG_ERROR,
-                           "Trying to skip %d bytes in packet of size %d\n",
-                           res, avpkt->size);
-                    return AVERROR_INVALIDDATA;
-                }
                 return res;
             } else
                 skip_bits_long (gb, s->spillover_nbits - cnt +
@@ -1955,12 +1954,6 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
             int cnt = get_bits_count(gb);
             s->skip_bits_next = cnt & 7;
             res = cnt >> 3;
-            if (res > avpkt->size) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Trying to skip %d bytes in packet of size %d\n",
-                       res, avpkt->size);
-                return AVERROR_INVALIDDATA;
-            }
             return res;
         }
     } else if ((s->sframe_cache_size = pos) > 0) {
