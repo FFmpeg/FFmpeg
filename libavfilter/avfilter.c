@@ -1253,24 +1253,25 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
 
 int ff_filter_frame_to_filter(AVFilterLink *link)
 {
-    AVFrame *frame;
+    AVFrame *frame = NULL;
     AVFilterContext *dst = link->dst;
     int ret;
 
     av_assert1(ff_framequeue_queued_frames(&link->fifo));
-    if (link->min_samples) {
-        int min = link->min_samples;
-        if (link->status_in)
-            min = FFMIN(min, ff_framequeue_queued_samples(&link->fifo));
-        ret = take_samples(link, min, link->max_samples, &frame);
-        if (ret < 0)
-            return ret;
-    } else {
-        frame = ff_framequeue_take(&link->fifo);
+    ret = link->min_samples ?
+          ff_inlink_consume_samples(link, link->min_samples, link->max_samples, &frame) :
+          ff_inlink_consume_frame(link, &frame);
+    av_assert1(ret);
+    if (ret < 0) {
+        av_assert1(!frame);
+        return ret;
     }
     /* The filter will soon have received a new frame, that may allow it to
        produce one or more: unblock its outputs. */
     filter_unblock(dst);
+    /* AVFilterPad.filter_frame() expect frame_count_out to have the value
+       before the frame; ff_filter_frame_framed() will re-increment it. */
+    link->frame_count_out--;
     ret = ff_filter_frame_framed(link, frame);
     if (ret < 0 && ret != link->status_out) {
         ff_avfilter_link_set_out_status(link, ret, AV_NOPTS_VALUE);
