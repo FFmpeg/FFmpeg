@@ -64,7 +64,7 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
-    uint8_t tmp[120];
+    uint64_t tmp[120/8];
     struct AVSHA *sha = (void*)tmp;
     clock_t last_t  = 0;
     static uint64_t i = 0;
