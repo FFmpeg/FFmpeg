@@ -274,7 +274,7 @@ static av_cold void decode_init_static(void)
         scale_factor_mult[i][0] = MULLx(norm, FIXR(1.0          * 2.0), FRAC_BITS);
         scale_factor_mult[i][1] = MULLx(norm, FIXR(0.7937005259 * 2.0), FRAC_BITS);
         scale_factor_mult[i][2] = MULLx(norm, FIXR(0.6299605249 * 2.0), FRAC_BITS);
-        ff_dlog(NULL, "%d: norm=%x s=%x %x %x\n", i, norm,
+        ff_dlog(NULL, "%d: norm=%x s=%"PRIx32" %"PRIx32" %"PRIx32"\n", i, norm,
                 scale_factor_mult[i][0],
                 scale_factor_mult[i][1],
                 scale_factor_mult[i][2]);

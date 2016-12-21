@@ -366,7 +366,7 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
         break;
     case MKBETAG('Y', 'C', 'G', '6'):
     case MKBETAG('Y', 'G', '1', '0'):
-        avpriv_report_missing_feature(avctx, "Tag 0x%08X", tag);
+        avpriv_report_missing_feature(avctx, "Tag 0x%08"PRIX32"", tag);
         return AVERROR_PATCHWELCOME;
     default:
         /* Old version does not have a real header, just size and type. */

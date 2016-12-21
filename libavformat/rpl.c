@@ -171,7 +171,7 @@ static int rpl_read_header(AVFormatContext *s)
             break;
         default:
             av_log(s, AV_LOG_WARNING,
-                   "RPL video format %i not supported yet!\n",
+                   "RPL video format %"PRIu32" not supported yet!\n",
                    vst->codecpar->codec_tag);
             vst->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
@@ -236,7 +236,7 @@ static int rpl_read_header(AVFormatContext *s)
     rpl->frames_per_chunk = read_line_and_int(pb, &error);  // video frames per chunk
     if (rpl->frames_per_chunk > 1 && vst->codecpar->codec_tag != 124)
         av_log(s, AV_LOG_WARNING,
-               "Don't know how to split frames for video format %i. "
+               "Don't know how to split frames for video format %"PRIu32". "
                "Video stream will be broken!\n", vst->codecpar->codec_tag);
 
     number_of_chunks = read_line_and_int(pb, &error);  // number of chunks in the file

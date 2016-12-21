@@ -205,7 +205,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     char tagbuf[32];
                     av_get_codec_tag_string(tagbuf, sizeof(tagbuf), par->codec_tag);
                     av_log(s, AV_LOG_ERROR,
-                           "Tag %s/0x%08x incompatible with output codec id '%d'\n",
+                           "Tag %s/0x%08"PRIx32" incompatible with output codec id '%d'\n",
                            tagbuf, par->codec_tag, par->codec_id);
                     ret = AVERROR_INVALIDDATA;
                     goto fail;

@@ -607,8 +607,8 @@ static int decode_tilehdr(WMAProDecodeCtx *s)
         int i;
         int offset = 0;
         for (i = 0; i < s->channel[c].num_subframes; i++) {
-            ff_dlog(s->avctx, "frame[%i] channel[%i] subframe[%i]"
-                    " len %i\n", s->frame_num, c, i,
+            ff_dlog(s->avctx, "frame[%"PRIi32"] channel[%i] subframe[%i]"
+                    " len %"PRIu16"\n", s->frame_num, c, i,
                     s->channel[c].subframe_len[i]);
             s->channel[c].subframe_offset[i] = offset;
             offset += s->channel[c].subframe_len[i];

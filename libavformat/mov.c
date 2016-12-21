@@ -634,7 +634,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ctype = avio_rl32(pb);
     type = avio_rl32(pb); /* component subtype */
 
-    av_log(c->fc, AV_LOG_TRACE, "ctype= %.4s (0x%08x)\n", (char*)&ctype, ctype);
+    av_log(c->fc, AV_LOG_TRACE, "ctype= %.4s (0x%08"PRIx32")\n", (char *)&ctype, ctype);
     av_log(c->fc, AV_LOG_TRACE, "stype= %.4s\n", (char*)&type);
 
     if     (type == MKTAG('v','i','d','e'))

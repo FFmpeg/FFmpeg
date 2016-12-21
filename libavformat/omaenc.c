@@ -84,7 +84,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
                          (par->block_align/8 - 1));
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "OMA: unsupported codec tag %d for write\n",
+        av_log(s, AV_LOG_ERROR, "OMA: unsupported codec tag %"PRIu32" for write\n",
                par->codec_tag);
     }
     for (i = 0; i < (EA3_HEADER_SIZE - 36)/4; i++)

@@ -319,7 +319,7 @@ int ff_rm_read_mdpr_codecdata(AVFormatContext *s, AVIOContext *pb,
         st->codecpar->codec_tag = avio_rl32(pb);
         st->codecpar->codec_id  = ff_codec_get_id(ff_rm_codec_tags,
                                                   st->codecpar->codec_tag);
-        av_log(s, AV_LOG_TRACE, "%X %X\n", st->codecpar->codec_tag, MKTAG('R', 'V', '2', '0'));
+        av_log(s, AV_LOG_TRACE, "%"PRIX32" %X\n", st->codecpar->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
             goto fail1;
         st->codecpar->width  = avio_rb16(pb);

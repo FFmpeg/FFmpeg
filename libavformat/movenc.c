@@ -1377,7 +1377,7 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
                                     track->par->codec_tag);
 
             av_log(s, AV_LOG_WARNING,
-                   "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
+                   "Unknown hldr_type for %s / 0x%04"PRIX32", writing dummy values\n",
                    tag_buf, track->par->codec_tag);
         }
         if (track->st) {
