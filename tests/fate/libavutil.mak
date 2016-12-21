@@ -23,6 +23,10 @@ fate-atomic: libavutil/tests/atomic$(EXESUF)
 fate-atomic: CMD = run libavutil/tests/atomic
 fate-atomic: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-audio_fifo
+fate-audio_fifo: libavutil/tests/audio_fifo$(EXESUF)
+fate-audio_fifo: CMD = run libavutil/tests/audio_fifo
+
 FATE_LIBAVUTIL += fate-avstring
 fate-avstring: libavutil/tests/avstring$(EXESUF)
 fate-avstring: CMD = run libavutil/tests/avstring
