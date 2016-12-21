@@ -847,10 +847,7 @@ static int psd_probe(AVProbeData *p)
     if ((color_mode <= 9) && (color_mode != 5) && (color_mode != 6))
         ret += 1;
 
-    if (ret)
-        return AVPROBE_SCORE_EXTENSION + ret;
-
-    return 0;
+    return AVPROBE_SCORE_EXTENSION + ret;
 }
 
 static int sgi_probe(AVProbeData *p)
