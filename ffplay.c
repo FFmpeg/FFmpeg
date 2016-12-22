@@ -322,6 +322,7 @@ static int subtitle_disable;
 static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
 static int seek_by_bytes = -1;
 static int display_disable;
+static int startup_volume = 100;
 static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
@@ -3105,7 +3106,13 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     init_clock(&is->audclk, &is->audioq.serial);
     init_clock(&is->extclk, &is->extclk.serial);
     is->audio_clock_serial = -1;
-    is->audio_volume = SDL_MIX_MAXVOLUME;
+    if (startup_volume < 0)
+        av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
+    if (startup_volume > 100)
+        av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
+    startup_volume = av_clip(startup_volume, 0, 100);
+    startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
+    is->audio_volume = startup_volume;
     is->muted = 0;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
@@ -3586,6 +3593,7 @@ static const OptionDef options[] = {
     { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { &seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
     { "nodisp", OPT_BOOL, { &display_disable }, "disable graphical display" },
+    { "volume", OPT_INT | HAS_ARG, { &startup_volume}, "set startup volume 0=min 100=max", "volume" },
     { "f", HAS_ARG, { .func_arg = opt_format }, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_frame_pix_fmt }, "set pixel format", "format" },
     { "stats", OPT_BOOL | OPT_EXPERT, { &show_status }, "show status", "" },
