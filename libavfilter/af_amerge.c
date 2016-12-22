@@ -23,6 +23,9 @@
  * Audio merging filter
  */
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -182,7 +185,9 @@ static int request_frame(AVFilterLink *outlink)
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++)
-        if (!s->in[i].nb_samples)
+        if (!s->in[i].nb_samples ||
+            /* detect EOF immediately */
+            (ctx->inputs[i]->status_in && !ctx->inputs[i]->status_out))
             if ((ret = ff_request_frame(ctx->inputs[i])) < 0)
                 return ret;
     return 0;
