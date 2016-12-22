@@ -457,7 +457,7 @@ static void postprocess_luma(AVFrame *frame, int w, int h, int depth)
     uint16_t *dsty = (uint16_t *)frame->data[0];
     int16_t *srcy  = (int16_t *)frame->data[0];
     ptrdiff_t stridey = frame->linesize[0] / 2;
-    const float factor = 1. / ((1 << depth) - 1);
+    const float factor = 1.0f / ((1 << depth) - 1);
     int i, j;
 
     for (j = 0; j < h; j++) {
@@ -502,8 +502,8 @@ static int decode_plane(AVCodecContext *avctx, int plane, AVPacket *avpkt, AVFra
     int i, ret;
 
     for (i = ctx->levels - 1; i >= 0; i--) {
-        ctx->scaling[plane][H][i] = 1000000. / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
-        ctx->scaling[plane][V][i] = 1000000. / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        ctx->scaling[plane][H][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        ctx->scaling[plane][V][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
     }
 
     bytestream2_skip(&ctx->gb, 4);
