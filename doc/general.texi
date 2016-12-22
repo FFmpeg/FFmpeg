@@ -450,6 +450,8 @@ library:
 @item raw PCM signed 24 bit little-endian  @tab X @tab X
 @item raw PCM signed 32 bit big-endian  @tab X @tab X
 @item raw PCM signed 32 bit little-endian  @tab X @tab X
+@item raw PCM signed 64 bit big-endian  @tab X @tab X
+@item raw PCM signed 64 bit little-endian  @tab X @tab X
 @item raw PCM unsigned 8 bit    @tab X @tab X
 @item raw PCM unsigned 16 bit big-endian  @tab X @tab X
 @item raw PCM unsigned 16 bit little-endian  @tab X @tab X
@@ -457,6 +459,8 @@ library:
 @item raw PCM unsigned 24 bit little-endian  @tab X @tab X
 @item raw PCM unsigned 32 bit big-endian  @tab X @tab X
 @item raw PCM unsigned 32 bit little-endian  @tab X @tab X
+@item raw PCM 16.8 floating point little-endian @tab   @tab X
+@item raw PCM 24.0 floating point little-endian @tab   @tab X
 @item raw PCM floating-point 32 bit big-endian  @tab X @tab X
 @item raw PCM floating-point 32 bit little-endian  @tab X @tab X
 @item raw PCM floating-point 64 bit big-endian  @tab X @tab X
