@@ -1288,6 +1288,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
         av_samples_copy(buf->extended_data, frame->extended_data, p, 0,
                         frame->nb_samples, link->channels, link->format);
         p += frame->nb_samples;
+        av_frame_free(&frame);
     }
     if (p < nb_samples) {
         unsigned n = nb_samples - p;
