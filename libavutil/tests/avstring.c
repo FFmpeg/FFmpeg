@@ -97,8 +97,10 @@ int main(void)
     #define TEST_D2STR(value, expected) \
         if((ptr = av_d2str(value)) == NULL){ \
             printf("error, received null pointer!\n"); \
-        } else if(strcmp(ptr, expected) != 0){ \
-            printf( "expected: %s, received: %s\n", expected, ptr); \
+        } else { \
+            if(strcmp(ptr, expected) != 0) \
+                printf( "expected: %s, received: %s\n", expected, ptr); \
+            av_free(ptr); \
         }
     TEST_D2STR(0         ,  "0.000000");
     TEST_D2STR(-1.2333234, "-1.233323");
