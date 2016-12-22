@@ -317,25 +317,21 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
+    /** dump the extradata */
+    av_log(avctx, AV_LOG_DEBUG, "extradata:\n");
+    for (i = 0; i < avctx->extradata_size; i++)
+        av_log(avctx, AV_LOG_DEBUG, "[%x] ", avctx->extradata[i]);
+    av_log(avctx, AV_LOG_DEBUG, "\n");
     if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 34) {
         s->decode_flags    = 0x10d6;
         channel_mask       = AV_RL32(edata_ptr+2);
         s->bits_per_sample = 16;
-        /** dump the extradata */
-        for (i = 0; i < avctx->extradata_size; i++)
-            ff_dlog(avctx, "[%x] ", avctx->extradata[i]);
-        ff_dlog(avctx, "\n");
 
      } else if (avctx->codec_id == AV_CODEC_ID_XMA1 && avctx->extradata_size >= 28) {
         s->decode_flags    = 0x10d6;
         s->bits_per_sample = 16;
         channel_mask       = 0;
-        /** dump the extradata */
-        for (i = 0; i < avctx->extradata_size; i++)
-            ff_dlog(avctx, "[%x] ", avctx->extradata[i]);
-        ff_dlog(avctx, "\n");
-
-     } else if (avctx->extradata_size >= 18) {
+     } else if (avctx->codec_id == AV_CODEC_ID_WMAPRO && avctx->extradata_size >= 18) {
         s->decode_flags    = AV_RL16(edata_ptr+14);
         channel_mask       = AV_RL32(edata_ptr+2);
         s->bits_per_sample = AV_RL16(edata_ptr);
@@ -344,12 +340,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
             avpriv_request_sample(avctx, "bits per sample is %d", s->bits_per_sample);
             return AVERROR_PATCHWELCOME;
         }
-
-        /** dump the extradata */
-        for (i = 0; i < avctx->extradata_size; i++)
-            ff_dlog(avctx, "[%x] ", avctx->extradata[i]);
-        ff_dlog(avctx, "\n");
-
     } else {
         avpriv_request_sample(avctx, "Unknown extradata size");
         return AVERROR_PATCHWELCOME;
