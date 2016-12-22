@@ -160,11 +160,11 @@ static int get_riff(AVFormatContext *s, AVIOContext *pb)
     return 0;
 }
 
-static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
+static int read_odml_index(AVFormatContext *s, int frame_num)
 {
     AVIContext *avi     = s->priv_data;
     AVIOContext *pb     = s->pb;
-    int longs_pre_entry = avio_rl16(pb);
+    int longs_per_entry = avio_rl16(pb);
     int index_sub_type  = avio_r8(pb);
     int index_type      = avio_r8(pb);
     int entries_in_use  = avio_rl32(pb);
@@ -179,9 +179,9 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
     int64_t filesize = avi->fsize;
 
     av_log(s, AV_LOG_TRACE,
-            "longs_pre_entry:%d index_type:%d entries_in_use:%d "
+            "longs_per_entry:%d index_type:%d entries_in_use:%d "
             "chunk_id:%X base:%16"PRIX64" frame_num:%d\n",
-            longs_pre_entry,
+            longs_per_entry,
             index_type,
             entries_in_use,
             chunk_id,
@@ -198,7 +198,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
 
     avio_rl32(pb);
 
-    if (index_type && longs_pre_entry != 2)
+    if (index_type && longs_per_entry != 2)
         return AVERROR_INVALIDDATA;
     if (index_type > 1)
         return AVERROR_INVALIDDATA;
@@ -253,7 +253,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num)
             if (avio_seek(pb, offset + 8, SEEK_SET) < 0)
                 return -1;
             avi->odml_depth++;
-            read_braindead_odml_indx(s, frame_num);
+            read_odml_index(s, frame_num);
             avi->odml_depth--;
             frame_num += duration;
 
@@ -950,7 +950,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             pos = avio_tell(pb);
             if (pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
                 avi->use_odml &&
-                read_braindead_odml_indx(s, 0) < 0 &&
+                read_odml_index(s, 0) < 0 &&
                 (s->error_recognition & AV_EF_EXPLODE))
                 goto fail;
             avio_seek(pb, pos + size, SEEK_SET);
