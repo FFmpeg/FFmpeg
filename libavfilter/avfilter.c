@@ -1178,10 +1178,10 @@ error:
     return AVERROR_PATCHWELCOME;
 }
 
-static int samples_ready(AVFilterLink *link)
+static int samples_ready(AVFilterLink *link, unsigned min)
 {
     return ff_framequeue_queued_frames(&link->fifo) &&
-           (ff_framequeue_queued_samples(&link->fifo) >= link->min_samples ||
+           (ff_framequeue_queued_samples(&link->fifo) >= min ||
             link->status_in);
 }
 
@@ -1194,7 +1194,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
 
     /* Note: this function relies on no format changes and must only be
        called with enough samples. */
-    av_assert1(samples_ready(link));
+    av_assert1(samples_ready(link, link->min_samples));
     frame0 = frame = ff_framequeue_peek(&link->fifo, 0);
     if (frame->nb_samples >= min && frame->nb_samples < max) {
         *rframe = ff_framequeue_take(&link->fifo);
@@ -1321,7 +1321,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
     unsigned i;
 
     for (i = 0; i < filter->nb_inputs; i++) {
-        if (samples_ready(filter->inputs[i])) {
+        if (samples_ready(filter->inputs[i], filter->inputs[i]->min_samples)) {
             return ff_filter_frame_to_filter(filter->inputs[i]);
         }
     }
