@@ -6203,11 +6203,16 @@ absolute value will be picked. For example direction 0, -PI or -2*PI radians
 will pick only pixels on same row and -PI/2 will pick only pixels on same
 column.
 
-@item blur
+@item blur, b
 If enabled, current pixel is compared with average value of all four
 surrounding pixels. The default is enabled. If disabled current pixel is
 compared with all four surrounding pixels. The pixel is considered banded
 if only all four differences with surrounding pixels are less than threshold.
+
+@item coupling, c
+If enabled, current pixel is changed if and only if all pixel components are banded,
+e.g. banding detection threshold is triggered for all color components.
+The default is disabled.
 @end table
 
 @anchor{decimate}
