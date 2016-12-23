@@ -1117,7 +1117,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             filter_frame = default_filter_frame;
     ret = filter_frame(link, frame);
     link->frame_count_out++;
-    ff_update_link_current_pts(link, frame->pts);
     return ret;
 
 fail:
@@ -1518,6 +1517,7 @@ int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
 
 static void consume_update(AVFilterLink *link, const AVFrame *frame)
 {
+    ff_update_link_current_pts(link, frame->pts);
     ff_inlink_process_commands(link, frame);
     link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
     link->frame_count_out++;
