@@ -337,6 +337,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     if (cat->options)
         av_dict_copy(&tmp, cat->options, 0);
 
+    av_dict_set_int(&tmp, "cur_file_no", fileno, 0);
     ret = avformat_open_input(&new_avf, file->url, NULL, &tmp);
     av_dict_free(&tmp);
     if (ret < 0 ||

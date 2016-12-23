@@ -44,6 +44,7 @@ extern const URLProtocol ff_ijklongurl_protocol;
 extern const URLProtocol ff_ijkmediadatasource_protocol;
 extern const URLProtocol ff_ijksegment_protocol;
 extern const URLProtocol ff_ijktcphook_protocol;
+extern const URLProtocol ff_ijkio_protocol;
 extern const URLProtocol ff_mmsh_protocol;
 extern const URLProtocol ff_mmst_protocol;
 extern const URLProtocol ff_md5_protocol;
