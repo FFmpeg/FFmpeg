@@ -163,19 +163,19 @@ static inline int asv2_decode_block(ASV1Context *a, int16_t block[64])
 
 static inline int decode_mb(ASV1Context *a, int16_t block[6][64])
 {
-    int i;
+    int i, ret;
 
     a->bdsp.clear_blocks(block[0]);
 
     if (a->avctx->codec_id == AV_CODEC_ID_ASV1) {
         for (i = 0; i < 6; i++) {
-            if (asv1_decode_block(a, block[i]) < 0)
-                return -1;
+            if ((ret = asv1_decode_block(a, block[i])) < 0)
+                return ret;
         }
     } else {
         for (i = 0; i < 6; i++) {
-            if (asv2_decode_block(a, block[i]) < 0)
-                return -1;
+            if ((ret = asv2_decode_block(a, block[i])) < 0)
+                return ret;
         }
     }
     return 0;
