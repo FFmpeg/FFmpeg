@@ -192,7 +192,7 @@ static int deband_8_coupling_c(AVFilterContext *ctx, void *arg, int jobnr, int n
     for (y = start; y < end; y++) {
         const int pos = y * s->planewidth[0];
 
-        for (x = 0; x < s->planewidth[p]; x++) {
+        for (x = 0; x < s->planewidth[0]; x++) {
             const int x_pos = s->x_pos[pos + x];
             const int y_pos = s->y_pos[pos + x];
             int avg[4], cmp[4] = { 0 }, src[4];
@@ -257,7 +257,7 @@ static int deband_16_coupling_c(AVFilterContext *ctx, void *arg, int jobnr, int 
     for (y = start; y < end; y++) {
         const int pos = y * s->planewidth[0];
 
-        for (x = 0; x < s->planewidth[p]; x++) {
+        for (x = 0; x < s->planewidth[0]; x++) {
             const int x_pos = s->x_pos[pos + x];
             const int y_pos = s->y_pos[pos + x];
             int avg[4], cmp[4] = { 0 }, src[4];
