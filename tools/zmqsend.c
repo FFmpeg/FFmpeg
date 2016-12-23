@@ -52,7 +52,8 @@ static void usage(void)
 int main(int argc, char **argv)
 {
     AVBPrint src;
-    char c, *src_buf, *recv_buf;
+    char *src_buf, *recv_buf;
+    int c;
     int recv_buf_size, ret = 0;
     void *zmq_ctx, *socket;
     const char *bind_address = "tcp://localhost:5555";
