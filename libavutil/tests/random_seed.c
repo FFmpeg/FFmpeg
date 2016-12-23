@@ -43,12 +43,13 @@ int main(void)
                         goto retry;
             }
             printf("seeds OK\n");
-            goto next;
+            break;
             retry:;
         }
-        printf("rsf %d: FAIL at %d with %X\n", rsf, j, seeds[j]);
-        return 1;
-        next:;
+        if (retry >= 3) {
+            printf("rsf %d: FAIL at %d with %X\n", rsf, j, seeds[j]);
+            return 1;
+        }
     }
     return 0;
- }
+}
