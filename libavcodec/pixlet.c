@@ -267,6 +267,8 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
         escape = av_mod_uintp2(16383, pfx);
         cnt1 = get_unary(b, 0, 8);
         if (cnt1 < 8) {
+            if (pfx < 1 || pfx > 25)
+                return AVERROR_INVALIDDATA;
             value = show_bits(b, pfx);
             if (value > 1) {
                 skip_bits(b, pfx);
