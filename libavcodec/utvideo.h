@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "huffyuvdsp.h"
 #include "huffyuvencdsp.h"
 
 enum {
@@ -68,6 +69,7 @@ typedef struct UtvideoContext {
     const AVClass *class;
     AVCodecContext *avctx;
     BswapDSPContext bdsp;
+    HuffYUVDSPContext hdspdec;
     HuffYUVEncDSPContext hdsp;
 
     uint32_t frame_info_size, flags, frame_info;
