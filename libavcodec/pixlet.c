@@ -246,7 +246,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
             value = 0;
         } else {
             xflag &= 1u;
-            tmp = c * ((yflag + 1) >> 1) + (c >> 1);
+            tmp = (int64_t)c * ((yflag + 1) >> 1) + (c >> 1);
             value = xflag + (tmp ^ -xflag);
         }
 
@@ -256,7 +256,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
             j = 0;
             dst += stride;
         }
-        state += d * yflag - (d * state >> 8);
+        state += (int64_t)d * yflag - (d * state >> 8);
 
         flag = 0;
 
