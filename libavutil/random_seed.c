@@ -87,7 +87,7 @@ static uint32_t get_generic_seed(void)
 
     for (;;) {
         clock_t t = clock();
-        if (last_t + 2*last_td + 1 >= t) {
+        if (last_t + 2*last_td + (CLOCKS_PER_SEC > 1000) >= t) {
             last_td = t - last_t;
             buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (last_td % 3294638521U);
         } else {
