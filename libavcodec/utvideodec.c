@@ -414,7 +414,7 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, int stride,
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
             c->hdspdec.add_hfyu_median_pred(bsrc, bsrc - stride,
-                                            bsrc, width, &B, &C);
+                                            bsrc, width, &A, &B);
             bsrc += stride;
         }
     }
@@ -462,14 +462,14 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride
             A        = bsrc[i];
         }
         c->hdspdec.add_hfyu_median_pred(bsrc + stride, bsrc - stride,
-                                        bsrc + stride, width, &B, &C);
+                                        bsrc + stride, width, &A, &B);
         bsrc += stride2;
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
             c->hdspdec.add_hfyu_median_pred(bsrc, bsrc - stride2,
-                                            bsrc, width, &B, &C);
+                                            bsrc, width, &A, &B);
             c->hdspdec.add_hfyu_median_pred(bsrc + stride, bsrc - stride,
-                                            bsrc + stride, width, &B, &C);
+                                            bsrc + stride, width, &A, &B);
             bsrc += stride2;
         }
     }
