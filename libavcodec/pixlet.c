@@ -479,8 +479,8 @@ static void postprocess_chroma(AVFrame *frame, int w, int h, int depth)
     int16_t *srcv  = (int16_t *)frame->data[2];
     ptrdiff_t strideu = frame->linesize[1] / 2;
     ptrdiff_t stridev = frame->linesize[2] / 2;
-    const int add = 1 << (depth - 1);
-    const int shift = 16 - depth;
+    const unsigned add = 1 << (depth - 1);
+    const unsigned shift = 16 - depth;
     int i, j;
 
     for (j = 0; j < h; j++) {
