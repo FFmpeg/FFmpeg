@@ -126,4 +126,12 @@ int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe);
  */
 int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts);
 
+/**
+ * Mark that a frame is wanted on the link.
+ * Unlike ff_filter_frame(), it must not be called when the link has a
+ * non-zero status, and thus does not acknowledge it.
+ * Also it cannot fail.
+ */
+void ff_inlink_request_frame(AVFilterLink *link);
+
 #endif /* AVFILTER_FILTERS_H */

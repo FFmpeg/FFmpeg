@@ -1638,6 +1638,14 @@ int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *fram
     return fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) >= 0.5;
 }
 
+void ff_inlink_request_frame(AVFilterLink *link)
+{
+    av_assert1(!link->status_in);
+    av_assert1(!link->status_out);
+    link->frame_wanted_out = 1;
+    ff_filter_set_ready(link->src, 100);
+}
+
 const AVClass *avfilter_get_class(void)
 {
     return &avfilter_class;
