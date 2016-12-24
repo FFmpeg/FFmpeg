@@ -36,6 +36,7 @@
 #include "framequeue.h"
 
 #include "avfilter.h"
+#include "buffersink.h"
 #include "formats.h"
 #include "internal.h"
 #include "thread.h"
@@ -1389,6 +1390,11 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
 
     while (graph->sink_links_count) {
         oldest = graph->sink_links[0];
+        if (oldest->dst->filter->activate) {
+            /* For now, buffersink is the only filter implementing activate. */
+            return av_buffersink_get_frame_flags(oldest->dst, NULL,
+                                                 AV_BUFFERSINK_FLAG_PEEK);
+        }
         r = ff_request_frame(oldest);
         if (r != AVERROR_EOF)
             break;
@@ -1403,6 +1409,7 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     }
     if (!graph->sink_links_count)
         return AVERROR_EOF;
+    av_assert1(!oldest->dst->filter->activate);
     av_assert1(oldest->age_index >= 0);
     frame_count = oldest->frame_count_out;
     while (frame_count == oldest->frame_count_out) {
