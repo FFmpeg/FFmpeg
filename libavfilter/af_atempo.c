@@ -914,8 +914,8 @@ static int yae_flush(ATempoContext *atempo,
 
     atempo->state = YAE_FLUSH_OUTPUT;
 
-    if (atempo->position[0] == frag->position[0] + frag->nsamples &&
-        atempo->position[1] == frag->position[1] + frag->nsamples) {
+    if (atempo->position[0] >= frag->position[0] + frag->nsamples &&
+        atempo->position[1] >= frag->position[1] + frag->nsamples) {
         // the current fragment is already flushed:
         return 0;
     }

@@ -239,6 +239,9 @@ FATE_VIDEO-$(call DEMDEC, MPEGTS, MPEG2VIDEO) += fate-mpeg2-field-enc fate-mpeg2
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an -vframes 30
 fate-mpeg2-ticket186: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/t.mpg -an
 
+FATE_VIDEO-$(call DEMDEC, MPEGPS, MPEG2VIDEO) += fate-mpeg2-ticket6024
+fate-mpeg2-ticket6024: CMD = framecrc -flags +bitexact -idct simple -flags +truncated -i $(TARGET_SAMPLES)/mpeg2/matrixbench_mpeg2.lq1.mpg -an
+
 FATE_VIDEO-$(call DEMDEC, MV, MVC1) += fate-mv-mvc1
 fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le
 

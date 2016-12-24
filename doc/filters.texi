@@ -3511,10 +3511,10 @@ sofalizer=sofa=/path/to/ClubFritz12.sofa:type=freq:radius=2:rotation=5
 @end example
 
 @item
-Similar as above but with custom speaker positions for front left, front right, rear left and rear right
+Similar as above but with custom speaker positions for front left, front right, back left and back right
 and also with custom gain:
 @example
-"sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=2:speakers=FL 45|FR 315|RL 135|RR 225:gain=28"
+"sofalizer=sofa=/path/to/ClubFritz6.sofa:type=freq:radius=2:speakers=FL 45|FR 315|BL 135|BR 225:gain=28"
 @end example
 @end itemize
 
@@ -6203,11 +6203,16 @@ absolute value will be picked. For example direction 0, -PI or -2*PI radians
 will pick only pixels on same row and -PI/2 will pick only pixels on same
 column.
 
-@item blur
+@item blur, b
 If enabled, current pixel is compared with average value of all four
 surrounding pixels. The default is enabled. If disabled current pixel is
 compared with all four surrounding pixels. The pixel is considered banded
 if only all four differences with surrounding pixels are less than threshold.
+
+@item coupling, c
+If enabled, current pixel is changed if and only if all pixel components are banded,
+e.g. banding detection threshold is triggered for all color components.
+The default is disabled.
 @end table
 
 @anchor{decimate}
@@ -7133,6 +7138,14 @@ DE=10.0 # display end
 FID=1.5 # fade in duration
 FOD=5 # fade out duration
 ffplay -f lavfi "color,drawtext=text=TEST:fontsize=50:fontfile=FreeSerif.ttf:fontcolor_expr=ff0000%@{eif\\\\: clip(255*(1*between(t\\, $DS + $FID\\, $DE - $FOD) + ((t - $DS)/$FID)*between(t\\, $DS\\, $DS + $FID) + (-(t - $DE)/$FOD)*between(t\\, $DE - $FOD\\, $DE) )\\, 0\\, 255) \\\\: x\\\\: 2 @}"
+@end example
+
+@item
+Horizontally align multiple separate texts. Note that @option{max_glyph_a}
+and the @option{fontsize} value are included in the @option{y} offset.
+@example
+drawtext=fontfile=FreeSans.ttf:text=DOG:fontsize=24:x=10:y=20+24-max_glyph_a,
+drawtext=fontfile=FreeSans.ttf:text=cow:fontsize=24:x=80:y=20+24-max_glyph_a
 @end example
 
 @end itemize
@@ -9696,7 +9709,7 @@ Macroblock size. Default @code{16}.
 @item search_param
 Motion estimation search parameter. Default @code{32}.
 
-@item vsmbc
+@item vsbmc
 Enable variable-size block motion compensation. Motion estimation is applied with smaller block sizes at object boundaries in order to make the them less blur. Default is @code{0} (disabled).
 @end table
 @end table

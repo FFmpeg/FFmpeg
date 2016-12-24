@@ -2220,6 +2220,8 @@ static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
 
     if (codec_tag &&
          (codec_tag != format &&
+          // AVID 1:1 samples with differing data format and codec tag exist
+          (codec_tag != AV_RL32("AV1x") || format != AV_RL32("AVup")) &&
           // prores is allowed to have differing data format and codec tag
           codec_tag != AV_RL32("apcn") && codec_tag != AV_RL32("apch") &&
           // so is dv (sigh)
@@ -4774,24 +4776,28 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     } else if (!memcmp(uuid, uuid_xmp, sizeof(uuid))) {
         uint8_t *buffer;
         size_t len = atom.size - sizeof(uuid);
-
-        buffer = av_mallocz(len + 1);
-        if (!buffer) {
-            return AVERROR(ENOMEM);
-        }
-        ret = avio_read(pb, buffer, len);
-        if (ret < 0) {
-            av_free(buffer);
-            return ret;
-        } else if (ret != len) {
-            av_free(buffer);
-            return AVERROR_INVALIDDATA;
-        }
         if (c->export_xmp) {
+            buffer = av_mallocz(len + 1);
+            if (!buffer) {
+                return AVERROR(ENOMEM);
+            }
+            ret = avio_read(pb, buffer, len);
+            if (ret < 0) {
+                av_free(buffer);
+                return ret;
+            } else if (ret != len) {
+                av_free(buffer);
+                return AVERROR_INVALIDDATA;
+            }
             buffer[len] = '\0';
             av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
+            av_free(buffer);
+        } else {
+            // skip all uuid atom, which makes it fast for long uuid-xmp file
+            ret = avio_skip(pb, len);
+            if (ret < 0)
+                return ret;
         }
-        av_free(buffer);
     } else if (!memcmp(uuid, uuid_spherical, sizeof(uuid))) {
         size_t len = atom.size - sizeof(uuid);
         ret = mov_parse_uuid_spherical(sc, pb, len);
@@ -5885,8 +5891,15 @@ static int mov_read_header(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
-            if (st->duration > 0)
+            if (st->duration > 0) {
+                if (sc->data_size > INT64_MAX / sc->time_scale / 8) {
+                    av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %"PRId64" * 8 * %d\n",
+                           sc->data_size, sc->time_scale);
+                    mov_read_close(s);
+                    return AVERROR_INVALIDDATA;
+                }
                 st->codecpar->bit_rate = sc->data_size * 8 * sc->time_scale / st->duration;
+            }
         }
     }
 
@@ -5895,6 +5908,12 @@ static int mov_read_header(AVFormatContext *s)
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
             if (sc->duration_for_fps > 0) {
+                if (sc->data_size > INT64_MAX / sc->time_scale / 8) {
+                    av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %"PRId64" * 8 * %d\n",
+                           sc->data_size, sc->time_scale);
+                    mov_read_close(s);
+                    return AVERROR_INVALIDDATA;
+                }
                 st->codecpar->bit_rate = sc->data_size * 8 * sc->time_scale /
                     sc->duration_for_fps;
             }

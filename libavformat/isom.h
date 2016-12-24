@@ -24,6 +24,9 @@
 #ifndef AVFORMAT_ISOM_H
 #define AVFORMAT_ISOM_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 

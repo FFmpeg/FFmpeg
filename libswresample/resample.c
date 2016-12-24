@@ -467,51 +467,8 @@ static int set_compensation(ResampleContext *c, int sample_delta, int compensati
     return 0;
 }
 
-static int swri_resample(ResampleContext *c,
-                         uint8_t *dst, const uint8_t *src, int *consumed,
-                         int src_size, int dst_size, int update_ctx)
-{
-    if (c->filter_length == 1 && c->phase_count == 1) {
-        int index= c->index;
-        int frac= c->frac;
-        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*index;
-        int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
-        int new_size = (src_size * (int64_t)c->src_incr - frac + c->dst_incr - 1) / c->dst_incr;
-
-        dst_size= FFMIN(dst_size, new_size);
-        c->dsp.resample_one(dst, src, dst_size, index2, incr);
-
-        index += dst_size * c->dst_incr_div;
-        index += (frac + dst_size * (int64_t)c->dst_incr_mod) / c->src_incr;
-        av_assert2(index >= 0);
-        *consumed= index;
-        if (update_ctx) {
-            c->frac   = (frac + dst_size * (int64_t)c->dst_incr_mod) % c->src_incr;
-            c->index = 0;
-        }
-    } else {
-        int64_t end_index = (1LL + src_size - c->filter_length) * c->phase_count;
-        int64_t delta_frac = (end_index - c->index) * c->src_incr - c->frac;
-        int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
-
-        dst_size = FFMIN(dst_size, delta_n);
-        if (dst_size > 0) {
-            /* resample_linear and resample_common should have same behavior
-             * when frac and dst_incr_mod are zero */
-            if (c->linear && (c->frac || c->dst_incr_mod))
-                *consumed = c->dsp.resample_linear(c, dst, src, dst_size, update_ctx);
-            else
-                *consumed = c->dsp.resample_common(c, dst, src, dst_size, update_ctx);
-        } else {
-            *consumed = 0;
-        }
-    }
-
-    return dst_size;
-}
-
 static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
-    int i, ret= -1;
+    int i;
     int av_unused mm_flags = av_get_cpu_flags();
     int need_emms = c->format == AV_SAMPLE_FMT_S16P && ARCH_X86_32 &&
                     (mm_flags & (AV_CPU_FLAG_MMX2 | AV_CPU_FLAG_SSE2)) == AV_CPU_FLAG_MMX2;
@@ -521,15 +478,50 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
         dst_size = FFMIN(dst_size, c->compensation_distance);
     src_size = FFMIN(src_size, max_src_size);
 
-    for(i=0; i<dst->ch_count; i++){
-        ret= swri_resample(c, dst->ch[i], src->ch[i],
-                           consumed, src_size, dst_size, i+1==dst->ch_count);
+    *consumed = 0;
+
+    if (c->filter_length == 1 && c->phase_count == 1) {
+        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*c->index;
+        int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
+        int new_size = (src_size * (int64_t)c->src_incr - c->frac + c->dst_incr - 1) / c->dst_incr;
+
+        dst_size = FFMAX(FFMIN(dst_size, new_size), 0);
+        if (dst_size > 0) {
+            for (i = 0; i < dst->ch_count; i++) {
+                c->dsp.resample_one(dst->ch[i], src->ch[i], dst_size, index2, incr);
+                if (i+1 == dst->ch_count) {
+                    c->index += dst_size * c->dst_incr_div;
+                    c->index += (c->frac + dst_size * (int64_t)c->dst_incr_mod) / c->src_incr;
+                    av_assert2(c->index >= 0);
+                    *consumed = c->index;
+                    c->frac   = (c->frac + dst_size * (int64_t)c->dst_incr_mod) % c->src_incr;
+                    c->index = 0;
+                }
+            }
+        }
+    } else {
+        int64_t end_index = (1LL + src_size - c->filter_length) * c->phase_count;
+        int64_t delta_frac = (end_index - c->index) * c->src_incr - c->frac;
+        int delta_n = (delta_frac + c->dst_incr - 1) / c->dst_incr;
+        int (*resample_func)(struct ResampleContext *c, void *dst,
+                             const void *src, int n, int update_ctx);
+
+        dst_size = FFMAX(FFMIN(dst_size, delta_n), 0);
+        if (dst_size > 0) {
+            /* resample_linear and resample_common should have same behavior
+             * when frac and dst_incr_mod are zero */
+            resample_func = (c->linear && (c->frac || c->dst_incr_mod)) ?
+                            c->dsp.resample_linear : c->dsp.resample_common;
+            for (i = 0; i < dst->ch_count; i++)
+                *consumed = resample_func(c, dst->ch[i], src->ch[i], dst_size, i+1 == dst->ch_count);
+        }
     }
+
     if(need_emms)
         emms_c();
 
     if (c->compensation_distance) {
-        c->compensation_distance -= ret;
+        c->compensation_distance -= dst_size;
         if (!c->compensation_distance) {
             c->dst_incr     = c->ideal_dst_incr;
             c->dst_incr_div = c->dst_incr / c->src_incr;
@@ -537,7 +529,7 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
         }
     }
 
-    return ret;
+    return dst_size;
 }
 
 static int64_t get_delay(struct SwrContext *s, int64_t base){

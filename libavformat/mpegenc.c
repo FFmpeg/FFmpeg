@@ -1146,6 +1146,8 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->next_packet = &stream->premux_packet;
     *stream->next_packet     =
     pkt_desc                 = av_mallocz(sizeof(PacketDesc));
+    if (!pkt_desc)
+        return AVERROR(ENOMEM);
     pkt_desc->pts            = pts;
     pkt_desc->dts            = dts;
     pkt_desc->unwritten_size =

@@ -281,12 +281,14 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (PGM,               pgm);
     REGISTER_ENCDEC (PGMYUV,            pgmyuv);
     REGISTER_DECODER(PICTOR,            pictor);
+    REGISTER_DECODER(PIXLET,            pixlet);
     REGISTER_ENCDEC (PNG,               png);
     REGISTER_ENCDEC (PPM,               ppm);
     REGISTER_ENCDEC (PRORES,            prores);
     REGISTER_ENCODER(PRORES_AW,         prores_aw);
     REGISTER_ENCODER(PRORES_KS,         prores_ks);
     REGISTER_DECODER(PRORES_LGPL,       prores_lgpl);
+    REGISTER_DECODER(PSD,               psd);
     REGISTER_DECODER(PTX,               ptx);
     REGISTER_DECODER(QDRAW,             qdraw);
     REGISTER_DECODER(QPEG,              qpeg);
@@ -476,6 +478,8 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (PCM_ALAW,          pcm_alaw);
     REGISTER_DECODER(PCM_BLURAY,        pcm_bluray);
     REGISTER_DECODER(PCM_DVD,           pcm_dvd);
+    REGISTER_DECODER(PCM_F16LE,         pcm_f16le);
+    REGISTER_DECODER(PCM_F24LE,         pcm_f24le);
     REGISTER_ENCDEC (PCM_F32BE,         pcm_f32be);
     REGISTER_ENCDEC (PCM_F32LE,         pcm_f32le);
     REGISTER_ENCDEC (PCM_F64BE,         pcm_f64be);

@@ -1339,6 +1339,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_PIXLET,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "pixlet",
+        .long_name = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* image codecs */
     {
@@ -1458,6 +1465,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "ppm",
         .long_name = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_PSD,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "psd",
+        .long_name = NULL_IF_CONFIG_SMALL("Photoshop PSD file"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
@@ -1739,6 +1753,20 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "pcm_dvd",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 20|24-bit big-endian"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_PCM_F16LE,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_f16le",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM 16.8 floating point little-endian"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_PCM_F24LE,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_f24le",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM 24.0 floating point little-endian"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
     {

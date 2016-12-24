@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "cpu.h"
 #include "cpu_internal.h"
@@ -44,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-static int cpu_flags = -1;
+static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
 
 static int get_cpu_flags(void)
 {
@@ -82,22 +83,23 @@ void av_force_cpu_flags(int arg){
         arg |= AV_CPU_FLAG_MMX;
     }
 
-    cpu_flags = arg;
+    atomic_store_explicit(&cpu_flags, arg, memory_order_relaxed);
 }
 
 int av_get_cpu_flags(void)
 {
-    int flags = cpu_flags;
+    int flags = atomic_load_explicit(&cpu_flags, memory_order_relaxed);
     if (flags == -1) {
         flags = get_cpu_flags();
-        cpu_flags = flags;
+        atomic_store_explicit(&cpu_flags, flags, memory_order_relaxed);
     }
     return flags;
 }
 
 void av_set_cpu_flags_mask(int mask)
 {
-    cpu_flags = get_cpu_flags() & mask;
+    atomic_store_explicit(&cpu_flags, get_cpu_flags() & mask,
+                          memory_order_relaxed);
 }
 
 int av_parse_cpu_flags(const char *s)

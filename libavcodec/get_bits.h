@@ -331,6 +331,7 @@ static inline void skip_bits1(GetBitContext *s)
  */
 static inline unsigned int get_bits_long(GetBitContext *s, int n)
 {
+    av_assert2(n>=0 && n<=32);
     if (!n) {
         return 0;
     } else if (n <= MIN_CACHE_BITS) {

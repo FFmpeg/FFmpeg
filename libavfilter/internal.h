@@ -29,6 +29,7 @@
 #include "avfiltergraph.h"
 #include "formats.h"
 #include "framepool.h"
+#include "framequeue.h"
 #include "thread.h"
 #include "version.h"
 #include "video.h"
@@ -147,6 +148,7 @@ struct AVFilterPad {
 struct AVFilterGraphInternal {
     void *thread;
     avfilter_execute_func *thread_execute;
+    FFFrameQueueGlobal frame_queues;
 };
 
 struct AVFilterInternal {
@@ -336,6 +338,8 @@ int ff_request_frame(AVFilterLink *link);
 
 int ff_request_frame_to_filter(AVFilterLink *link);
 
+int ff_filter_frame_to_filter(AVFilterLink *link);
+
 #define AVFILTER_DEFINE_CLASS(fname)            \
     static const AVClass fname##_class = {      \
         .class_name = #fname,                   \
@@ -375,6 +379,8 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
  * @return newly created filter context or NULL on failure
  */
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name);
+
+int ff_filter_activate(AVFilterContext *filter);
 
 /**
  * Remove a filter from a graph;

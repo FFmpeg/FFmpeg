@@ -62,6 +62,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { AV_CODEC_ID_VP9         , 0xC0 }, /* nonstandard, update when there is a standard value */
     { AV_CODEC_ID_FLAC        , 0xC1 }, /* nonstandard, update when there is a standard value */
     { AV_CODEC_ID_TSCC2       , 0xD0 }, /* nonstandard, camtasia uses it */
+    { AV_CODEC_ID_EVRC        , 0xD1 }, /* nonstandard, pvAuthor uses it */
     { AV_CODEC_ID_VORBIS      , 0xDD }, /* nonstandard, gpac uses it */
     { AV_CODEC_ID_DVD_SUBTITLE, 0xE0 }, /* nonstandard, see unsupported-embedded-subs-2.mp4 */
     { AV_CODEC_ID_QCELP       , 0xE1 },
@@ -274,6 +275,10 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_DXV, MKTAG('D', 'X', 'D', '3') },
     { AV_CODEC_ID_DXV, MKTAG('D', 'X', 'D', 'I') },
 
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '0', 'R', '0') },
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '0', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '0', 'R', 'G') },
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '0', 'Y', '2') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'R', 'G') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'R', 'A') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'G', '0') },
@@ -290,6 +295,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '5') },
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '6') },
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '7') },
+
+    { AV_CODEC_ID_PIXLET, MKTAG('p', 'x', 'l', 't') },
 
     { AV_CODEC_ID_NONE, 0 },
 };

@@ -822,6 +822,34 @@ static int png_probe(AVProbeData *p)
     return 0;
 }
 
+static int psd_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    int ret = 0;
+    uint16_t color_mode;
+
+    if (AV_RL32(b) == MKTAG('8','B','P','S')) {
+        ret += 1;
+    } else {
+        return 0;
+    }
+
+    if ((b[4] == 0) && (b[5] == 1)) {/* version 1 is PSD, version 2 is PSB */
+        ret += 1;
+    } else {
+        return 0;
+    }
+
+    if ((AV_RL32(b+6) == 0) && (AV_RL16(b+10) == 0))/* reserved must be 0 */
+        ret += 1;
+
+    color_mode = AV_RB16(b+24);
+    if ((color_mode <= 9) && (color_mode != 5) && (color_mode != 6))
+        ret += 1;
+
+    return AVPROBE_SCORE_EXTENSION + ret;
+}
+
 static int sgi_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -947,6 +975,7 @@ IMAGEAUTO_DEMUXER(pgmyuv,  AV_CODEC_ID_PGMYUV)
 IMAGEAUTO_DEMUXER(pictor,  AV_CODEC_ID_PICTOR)
 IMAGEAUTO_DEMUXER(png,     AV_CODEC_ID_PNG)
 IMAGEAUTO_DEMUXER(ppm,     AV_CODEC_ID_PPM)
+IMAGEAUTO_DEMUXER(psd,     AV_CODEC_ID_PSD)
 IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
 IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)

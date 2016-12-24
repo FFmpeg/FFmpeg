@@ -179,7 +179,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
     }
     *got_frame = 1;
 
-    return 0;
+    return avpkt->size;
 }
 
 AVCodec ff_screenpresso_decoder = {

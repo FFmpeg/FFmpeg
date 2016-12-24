@@ -293,6 +293,9 @@ static void left_predict(uint8_t *src, uint8_t *dst, int stride,
     }
 }
 
+#undef A
+#undef B
+
 /* Write data to a plane with median prediction */
 static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
                            int width, int height)

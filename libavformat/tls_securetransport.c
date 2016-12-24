@@ -375,6 +375,12 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     return print_tls_error(h, ret);
 }
 
+static int tls_get_file_handle(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    return ffurl_get_file_handle(c->tls_shared.tcp);
+}
+
 static const AVOption options[] = {
     TLS_COMMON_OPTIONS(TLSContext, tls_shared),
     { NULL }
@@ -393,6 +399,7 @@ const URLProtocol ff_tls_securetransport_protocol = {
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
+    .url_get_file_handle = tls_get_file_handle,
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,

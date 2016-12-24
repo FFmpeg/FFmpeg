@@ -182,6 +182,7 @@ SKIPHEADERS-$(CONFIG_OPENCL)           += opencl.h
 TESTPROGS = adler32                                                     \
             aes                                                         \
             atomic                                                      \
+            audio_fifo                                                  \
             avstring                                                    \
             base64                                                      \
             blowfish                                                    \

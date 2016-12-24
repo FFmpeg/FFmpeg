@@ -1309,8 +1309,8 @@ static void draw_bar(TestSourceContext *test, const uint8_t color[4],
 
     x = FFMIN(x, test->w - 1);
     y = FFMIN(y, test->h - 1);
-    w = FFMIN(w, test->w - x);
-    h = FFMIN(h, test->h - y);
+    w = FFMAX(FFMIN(w, test->w - x), 0);
+    h = FFMAX(FFMIN(h, test->h - y), 0);
 
     av_assert0(x + w <= test->w);
     av_assert0(y + h <= test->h);

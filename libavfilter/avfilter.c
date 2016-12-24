@@ -34,6 +34,9 @@
 #include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -135,6 +138,10 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 {
     AVFilterLink *link;
 
+    av_assert0(src->graph);
+    av_assert0(dst->graph);
+    av_assert0(src->graph == dst->graph);
+
     if (src->nb_outputs <= srcpad || dst->nb_inputs <= dstpad ||
         src->outputs[srcpad]      || dst->inputs[dstpad])
         return AVERROR(EINVAL);
@@ -160,6 +167,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->type    = src->output_pads[srcpad].type;
     av_assert0(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
+    ff_framequeue_init(&link->fifo, &src->graph->internal->frame_queues);
 
     return 0;
 }
@@ -170,6 +178,7 @@ void avfilter_link_free(AVFilterLink **link)
         return;
 
     av_frame_free(&(*link)->partial_buf);
+    ff_framequeue_free(&(*link)->fifo);
     ff_video_frame_pool_uninit((FFVideoFramePool**)&(*link)->video_frame_pool);
 
     av_freep(link);
@@ -180,16 +189,46 @@ int avfilter_link_get_channels(AVFilterLink *link)
     return link->channels;
 }
 
+static void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
+{
+    filter->ready = FFMAX(filter->ready, priority);
+}
+
+/**
+ * Clear frame_blocked_in on all outputs.
+ * This is necessary whenever something changes on input.
+ */
+static void filter_unblock(AVFilterContext *filter)
+{
+    unsigned i;
+
+    for (i = 0; i < filter->nb_outputs; i++)
+        filter->outputs[i]->frame_blocked_in = 0;
+}
+
+
 void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
 {
-    ff_avfilter_link_set_out_status(link, status, pts);
+    if (link->status_in == status)
+        return;
+    av_assert0(!link->status_in);
+    link->status_in = status;
+    link->status_in_pts = pts;
+    link->frame_wanted_out = 0;
+    link->frame_blocked_in = 0;
+    filter_unblock(link->dst);
+    ff_filter_set_ready(link->dst, 200);
 }
 
 void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts)
 {
-    link->status = status;
-    link->frame_wanted_in = link->frame_wanted_out = 0;
-    ff_update_link_current_pts(link, pts);
+    av_assert0(!link->frame_wanted_out);
+    av_assert0(!link->status_out);
+    link->status_out = status;
+    if (pts != AV_NOPTS_VALUE)
+        ff_update_link_current_pts(link, pts);
+    filter_unblock(link->dst);
+    ff_filter_set_ready(link->src, 200);
 }
 
 void avfilter_link_set_closed(AVFilterLink *link, int closed)
@@ -370,10 +409,23 @@ int ff_request_frame(AVFilterLink *link)
 {
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
-    if (link->status)
-        return link->status;
-    link->frame_wanted_in = 1;
+    if (link->status_out)
+        return link->status_out;
+    if (link->status_in) {
+        if (ff_framequeue_queued_frames(&link->fifo)) {
+            av_assert1(!link->frame_wanted_out);
+            av_assert1(link->dst->ready >= 300);
+            return 0;
+        } else {
+            /* Acknowledge status change. Filters using ff_request_frame() will
+               handle the change automatically. Filters can also check the
+               status directly but none do yet. */
+            ff_avfilter_link_set_out_status(link, link->status_in, link->status_in_pts);
+            return link->status_out;
+        }
+    }
     link->frame_wanted_out = 1;
+    ff_filter_set_ready(link->src, 100);
     return 0;
 }
 
@@ -382,22 +434,17 @@ int ff_request_frame_to_filter(AVFilterLink *link)
     int ret = -1;
 
     FF_TPRINTF_START(NULL, request_frame_to_filter); ff_tlog_link(NULL, link, 1);
-    link->frame_wanted_in = 0;
+    /* Assume the filter is blocked, let the method clear it if not */
+    link->frame_blocked_in = 1;
     if (link->srcpad->request_frame)
         ret = link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
         ret = ff_request_frame(link->src->inputs[0]);
-    if (ret == AVERROR_EOF && link->partial_buf) {
-        AVFrame *pbuf = link->partial_buf;
-        link->partial_buf = NULL;
-        ret = ff_filter_frame_framed(link, pbuf);
-        ff_avfilter_link_set_in_status(link, AVERROR_EOF, AV_NOPTS_VALUE);
-        link->frame_wanted_out = 0;
-        return ret;
-    }
     if (ret < 0) {
-        if (ret != AVERROR(EAGAIN) && ret != link->status)
+        if (ret != AVERROR(EAGAIN) && ret != link->status_in)
             ff_avfilter_link_set_in_status(link, ret, AV_NOPTS_VALUE);
+        if (ret == AVERROR_EOF)
+            ret = 0;
     }
     return ret;
 }
@@ -1056,11 +1103,6 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     AVFilterCommand *cmd= link->dst->command_queue;
     int64_t pts;
 
-    if (link->status) {
-        av_frame_free(&frame);
-        return link->status;
-    }
-
     if (!(filter_frame = dst->filter_frame))
         filter_frame = default_filter_frame;
 
@@ -1096,7 +1138,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         case AVMEDIA_TYPE_AUDIO:
             av_samples_copy(out->extended_data, frame->extended_data,
                             0, 0, frame->nb_samples,
-                            av_get_channel_layout_nb_channels(frame->channel_layout),
+                            av_frame_get_channels(frame),
                             frame->format);
             break;
         default:
@@ -1142,52 +1184,9 @@ fail:
     return ret;
 }
 
-static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
-{
-    int insamples = frame->nb_samples, inpos = 0, nb_samples;
-    AVFrame *pbuf = link->partial_buf;
-    int nb_channels = av_frame_get_channels(frame);
-    int ret = 0;
-
-    /* Handle framing (min_samples, max_samples) */
-    while (insamples) {
-        if (!pbuf) {
-            AVRational samples_tb = { 1, link->sample_rate };
-            pbuf = ff_get_audio_buffer(link, link->partial_buf_size);
-            if (!pbuf) {
-                av_log(link->dst, AV_LOG_WARNING,
-                       "Samples dropped due to memory allocation failure.\n");
-                return 0;
-            }
-            av_frame_copy_props(pbuf, frame);
-            pbuf->pts = frame->pts;
-            if (pbuf->pts != AV_NOPTS_VALUE)
-                pbuf->pts += av_rescale_q(inpos, samples_tb, link->time_base);
-            pbuf->nb_samples = 0;
-        }
-        nb_samples = FFMIN(insamples,
-                           link->partial_buf_size - pbuf->nb_samples);
-        av_samples_copy(pbuf->extended_data, frame->extended_data,
-                        pbuf->nb_samples, inpos,
-                        nb_samples, nb_channels, link->format);
-        inpos                   += nb_samples;
-        insamples               -= nb_samples;
-        pbuf->nb_samples += nb_samples;
-        if (pbuf->nb_samples >= link->min_samples) {
-            ret = ff_filter_frame_framed(link, pbuf);
-            pbuf = NULL;
-        } else {
-            if (link->frame_wanted_out)
-                link->frame_wanted_in = 1;
-        }
-    }
-    av_frame_free(&frame);
-    link->partial_buf = pbuf;
-    return ret;
-}
-
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
+    int ret;
     FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); ff_tlog_ref(NULL, frame, 1);
 
     /* Consistency checks */
@@ -1220,21 +1219,328 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
         }
     }
 
-    link->frame_wanted_out = 0;
+    link->frame_blocked_in = link->frame_wanted_out = 0;
     link->frame_count_in++;
-    /* Go directly to actual filtering if possible */
-    if (link->type == AVMEDIA_TYPE_AUDIO &&
-        link->min_samples &&
-        (link->partial_buf ||
-         frame->nb_samples < link->min_samples ||
-         frame->nb_samples > link->max_samples)) {
-        return ff_filter_frame_needs_framing(link, frame);
-    } else {
-        return ff_filter_frame_framed(link, frame);
+    filter_unblock(link->dst);
+    ret = ff_framequeue_add(&link->fifo, frame);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        return ret;
     }
+    ff_filter_set_ready(link->dst, 300);
+    return 0;
+
 error:
     av_frame_free(&frame);
     return AVERROR_PATCHWELCOME;
+}
+
+static int samples_ready(AVFilterLink *link)
+{
+    return ff_framequeue_queued_frames(&link->fifo) &&
+           (ff_framequeue_queued_samples(&link->fifo) >= link->min_samples ||
+            link->status_in);
+}
+
+static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
+                        AVFrame **rframe)
+{
+    AVFrame *frame0, *frame, *buf;
+    unsigned nb_samples, nb_frames, i, p;
+    int ret;
+
+    /* Note: this function relies on no format changes and must only be
+       called with enough samples. */
+    av_assert1(samples_ready(link));
+    frame0 = frame = ff_framequeue_peek(&link->fifo, 0);
+    if (frame->nb_samples >= min && frame->nb_samples < max) {
+        *rframe = ff_framequeue_take(&link->fifo);
+        return 0;
+    }
+    nb_frames = 0;
+    nb_samples = 0;
+    while (1) {
+        if (nb_samples + frame->nb_samples > max) {
+            if (nb_samples < min)
+                nb_samples = max;
+            break;
+        }
+        nb_samples += frame->nb_samples;
+        nb_frames++;
+        if (nb_frames == ff_framequeue_queued_frames(&link->fifo))
+            break;
+        frame = ff_framequeue_peek(&link->fifo, nb_frames);
+    }
+
+    buf = ff_get_audio_buffer(link, nb_samples);
+    if (!buf)
+        return AVERROR(ENOMEM);
+    ret = av_frame_copy_props(buf, frame0);
+    if (ret < 0) {
+        av_frame_free(&buf);
+        return ret;
+    }
+    buf->pts = frame0->pts;
+
+    p = 0;
+    for (i = 0; i < nb_frames; i++) {
+        frame = ff_framequeue_take(&link->fifo);
+        av_samples_copy(buf->extended_data, frame->extended_data, p, 0,
+                        frame->nb_samples, link->channels, link->format);
+        p += frame->nb_samples;
+        av_frame_free(&frame);
+    }
+    if (p < nb_samples) {
+        unsigned n = nb_samples - p;
+        frame = ff_framequeue_peek(&link->fifo, 0);
+        av_samples_copy(buf->extended_data, frame->extended_data, p, 0, n,
+                        link->channels, link->format);
+        frame->nb_samples -= n;
+        av_samples_copy(frame->extended_data, frame->extended_data, 0, n,
+                        frame->nb_samples, link->channels, link->format);
+        if (frame->pts != AV_NOPTS_VALUE)
+            frame->pts += av_rescale_q(n, av_make_q(1, link->sample_rate), link->time_base);
+        ff_framequeue_update_peeked(&link->fifo, 0);
+        ff_framequeue_skip_samples(&link->fifo, n);
+    }
+
+    *rframe = buf;
+    return 0;
+}
+
+int ff_filter_frame_to_filter(AVFilterLink *link)
+{
+    AVFrame *frame;
+    AVFilterContext *dst = link->dst;
+    int ret;
+
+    av_assert1(ff_framequeue_queued_frames(&link->fifo));
+    if (link->min_samples) {
+        int min = link->min_samples;
+        if (link->status_in)
+            min = FFMIN(min, ff_framequeue_queued_samples(&link->fifo));
+        ret = take_samples(link, min, link->max_samples, &frame);
+        if (ret < 0)
+            return ret;
+    } else {
+        frame = ff_framequeue_take(&link->fifo);
+    }
+    /* The filter will soon have received a new frame, that may allow it to
+       produce one or more: unblock its outputs. */
+    filter_unblock(dst);
+    ret = ff_filter_frame_framed(link, frame);
+    if (ret < 0 && ret != link->status_out) {
+        ff_avfilter_link_set_out_status(link, ret, AV_NOPTS_VALUE);
+    } else {
+        /* Run once again, to see if several frames were available, or if
+           the input status has also changed, or any other reason. */
+        ff_filter_set_ready(dst, 300);
+    }
+    return ret;
+}
+
+static int forward_status_change(AVFilterContext *filter, AVFilterLink *in)
+{
+    unsigned out = 0, progress = 0;
+    int ret;
+
+    av_assert0(!in->status_out);
+    if (!filter->nb_outputs) {
+        /* not necessary with the current API and sinks */
+        return 0;
+    }
+    while (!in->status_out) {
+        if (!filter->outputs[out]->status_in) {
+            progress++;
+            ret = ff_request_frame_to_filter(filter->outputs[out]);
+            if (ret < 0)
+                return ret;
+        }
+        if (++out == filter->nb_outputs) {
+            if (!progress) {
+                /* Every output already closed: input no longer interesting
+                   (example: overlay in shortest mode, other input closed). */
+                ff_avfilter_link_set_out_status(in, in->status_in, in->status_in_pts);
+                return 0;
+            }
+            progress = 0;
+            out = 0;
+        }
+    }
+    ff_filter_set_ready(filter, 200);
+    return 0;
+}
+
+#define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
+
+static int ff_filter_activate_default(AVFilterContext *filter)
+{
+    unsigned i;
+
+    for (i = 0; i < filter->nb_inputs; i++) {
+        if (samples_ready(filter->inputs[i])) {
+            return ff_filter_frame_to_filter(filter->inputs[i]);
+        }
+    }
+    for (i = 0; i < filter->nb_inputs; i++) {
+        if (filter->inputs[i]->status_in && !filter->inputs[i]->status_out) {
+            av_assert1(!ff_framequeue_queued_frames(&filter->inputs[i]->fifo));
+            return forward_status_change(filter, filter->inputs[i]);
+        }
+    }
+    for (i = 0; i < filter->nb_outputs; i++) {
+        if (filter->outputs[i]->frame_wanted_out &&
+            !filter->outputs[i]->frame_blocked_in) {
+            return ff_request_frame_to_filter(filter->outputs[i]);
+        }
+    }
+    return FFERROR_NOT_READY;
+}
+
+/*
+   Filter scheduling and activation
+
+   When a filter is activated, it must:
+   - if possible, output a frame;
+   - else, if relevant, forward the input status change;
+   - else, check outputs for wanted frames and forward the requests.
+
+   The following AVFilterLink fields are used for activation:
+
+   - frame_wanted_out:
+
+     This field indicates if a frame is needed on this input of the
+     destination filter. A positive value indicates that a frame is needed
+     to process queued frames or internal data or to satisfy the
+     application; a zero value indicates that a frame is not especially
+     needed but could be processed anyway; a negative value indicates that a
+     frame would just be queued.
+
+     It is set by filters using ff_request_frame() or ff_request_no_frame(),
+     when requested by the application through a specific API or when it is
+     set on one of the outputs.
+
+     It is cleared when a frame is sent from the source using
+     ff_filter_frame().
+
+     It is also cleared when a status change is sent from the source using
+     ff_avfilter_link_set_in_status().
+
+   - frame_blocked_in:
+
+     This field means that the source filter can not generate a frame as is.
+     Its goal is to avoid repeatedly calling the request_frame() method on
+     the same link.
+
+     It is set by the framework on all outputs of a filter before activating it.
+
+     It is automatically cleared by ff_filter_frame().
+
+     It is also automatically cleared by ff_avfilter_link_set_in_status().
+
+     It is also cleared on all outputs (using filter_unblock()) when
+     something happens on an input: processing a frame or changing the
+     status.
+
+   - fifo:
+
+     Contains the frames queued on a filter input. If it contains frames and
+     frame_wanted_out is not set, then the filter can be activated. If that
+     result in the filter not able to use these frames, the filter must set
+     frame_wanted_out to ask for more frames.
+
+   - status_in and status_in_pts:
+
+     Status (EOF or error code) of the link and timestamp of the status
+     change (in link time base, same as frames) as seen from the input of
+     the link. The status change is considered happening after the frames
+     queued in fifo.
+
+     It is set by the source filter using ff_avfilter_link_set_in_status().
+
+   - status_out:
+
+     Status of the link as seen from the output of the link. The status
+     change is considered having already happened.
+
+     It is set by the destination filter using
+     ff_avfilter_link_set_out_status().
+
+   Filters are activated according to the ready field, set using the
+   ff_filter_set_ready(). Eventually, a priority queue will be used.
+   ff_filter_set_ready() is called whenever anything could cause progress to
+   be possible. Marking a filter ready when it is not is not a problem,
+   except for the small overhead it causes.
+
+   Conditions that cause a filter to be marked ready are:
+
+   - frames added on an input link;
+
+   - changes in the input or output status of an input link;
+
+   - requests for a frame on an output link;
+
+   - after any actual processing using the legacy methods (filter_frame(),
+     and request_frame() to acknowledge status changes), to run once more
+     and check if enough input was present for several frames.
+
+   Exemples of scenarios to consider:
+
+   - buffersrc: activate if frame_wanted_out to notify the application;
+     activate when the application adds a frame to push it immediately.
+
+   - testsrc: activate only if frame_wanted_out to produce and push a frame.
+
+   - concat (not at stitch points): can process a frame on any output.
+     Activate if frame_wanted_out on output to forward on the corresponding
+     input. Activate when a frame is present on input to process it
+     immediately.
+
+   - framesync: needs at least one frame on each input; extra frames on the
+     wrong input will accumulate. When a frame is first added on one input,
+     set frame_wanted_out<0 on it to avoid getting more (would trigger
+     testsrc) and frame_wanted_out>0 on the other to allow processing it.
+
+   Activation of old filters:
+
+   In order to activate a filter implementing the legacy filter_frame() and
+   request_frame() methods, perform the first possible of the following
+   actions:
+
+   - If an input has frames in fifo and frame_wanted_out == 0, dequeue a
+     frame and call filter_frame().
+
+     Ratinale: filter frames as soon as possible instead of leaving them
+     queued; frame_wanted_out < 0 is not possible since the old API does not
+     set it nor provides any similar feedback; frame_wanted_out > 0 happens
+     when min_samples > 0 and there are not enough samples queued.
+
+   - If an input has status_in set but not status_out, try to call
+     request_frame() on one of the outputs in the hope that it will trigger
+     request_frame() on the input with status_in and acknowledge it. This is
+     awkward and fragile, filters with several inputs or outputs should be
+     updated to direct activation as soon as possible.
+
+   - If an output has frame_wanted_out > 0 and not frame_blocked_in, call
+     request_frame().
+
+     Rationale: checking frame_blocked_in is necessary to avoid requesting
+     repeatedly on a blocked input if another is not blocked (example:
+     [buffersrc1][testsrc1][buffersrc2][testsrc2]concat=v=2).
+
+     TODO: respect needs_fifo and remove auto-inserted fifos.
+
+ */
+
+int ff_filter_activate(AVFilterContext *filter)
+{
+    int ret;
+
+    filter->ready = 0;
+    ret = ff_filter_activate_default(filter);
+    if (ret == FFERROR_NOT_READY)
+        ret = 0;
+    return ret;
 }
 
 const AVClass *avfilter_get_class(void)

@@ -328,6 +328,7 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st,
         { "hevc",      AV_CODEC_ID_HEVC,       AVMEDIA_TYPE_VIDEO },
         { "loas",      AV_CODEC_ID_AAC_LATM,   AVMEDIA_TYPE_AUDIO },
         { "m4v",       AV_CODEC_ID_MPEG4,      AVMEDIA_TYPE_VIDEO },
+        { "mjpeg_2000",AV_CODEC_ID_JPEG2000,   AVMEDIA_TYPE_VIDEO },
         { "mp3",       AV_CODEC_ID_MP3,        AVMEDIA_TYPE_AUDIO },
         { "mpegvideo", AV_CODEC_ID_MPEG2VIDEO, AVMEDIA_TYPE_VIDEO },
         { "truehd",    AV_CODEC_ID_TRUEHD,     AVMEDIA_TYPE_AUDIO },
@@ -4217,8 +4218,11 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     int i;
     AVStream **streams;
 
-    if (s->nb_streams >= FFMIN(s->max_streams, INT_MAX/sizeof(*streams)))
+    if (s->nb_streams >= FFMIN(s->max_streams, INT_MAX/sizeof(*streams))) {
+        if (s->max_streams < INT_MAX/sizeof(*streams))
+            av_log(s, AV_LOG_ERROR, "Number of streams exceeds max_streams parameter (%d), see the documentation if you wish to increase it\n", s->max_streams);
         return NULL;
+    }
     streams = av_realloc_array(s->streams, s->nb_streams + 1, sizeof(*streams));
     if (!streams)
         return NULL;

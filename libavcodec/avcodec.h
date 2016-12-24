@@ -411,6 +411,8 @@ enum AVCodecID {
     AV_CODEC_ID_MAGICYUV,
     AV_CODEC_ID_SHEERVIDEO,
     AV_CODEC_ID_YLC,
+    AV_CODEC_ID_PSD,
+    AV_CODEC_ID_PIXLET,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -448,6 +450,8 @@ enum AVCodecID {
 
     AV_CODEC_ID_PCM_S64LE = 0x10800,
     AV_CODEC_ID_PCM_S64BE,
+    AV_CODEC_ID_PCM_F16LE,
+    AV_CODEC_ID_PCM_F24LE,
 
     /* various ADPCM codecs */
     AV_CODEC_ID_ADPCM_IMA_QT = 0x11000,

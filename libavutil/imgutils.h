@@ -193,7 +193,8 @@ int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *lo
 
 /**
  * Check if the given dimension of an image is valid, meaning that all
- * bytes of the image can be addressed with a signed int.
+ * bytes of a plane of an image with the specified pix_fmt can be addressed
+ * with a signed int.
  *
  * @param w the width of the picture
  * @param h the height of the picture

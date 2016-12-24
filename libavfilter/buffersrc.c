@@ -184,6 +184,7 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     if (!frame) {
         s->eof = 1;
+        ff_avfilter_link_set_in_status(ctx->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
         return 0;
     } else if (s->eof)
         return AVERROR(EINVAL);
@@ -235,9 +236,8 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         return ret;
     }
 
-    if ((flags & AV_BUFFERSRC_FLAG_PUSH))
-        if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
-            return ret;
+    if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
+        return ret;
 
     return 0;
 }

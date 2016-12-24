@@ -713,7 +713,7 @@ frame_end:
     }
 
     if (slice_ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-        return ret;
+        return slice_ret;
     else
         return get_consumed_bytes(s, buf_size);
 }

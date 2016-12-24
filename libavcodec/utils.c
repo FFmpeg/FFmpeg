@@ -2788,7 +2788,7 @@ static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = avcodec_decode_video2(avctx, avctx->internal->buffer_frame,
                                     &got_frame, pkt);
-        if (ret >= 0)
+        if (ret >= 0 && !(avctx->flags & AV_CODEC_FLAG_TRUNCATED))
             ret = pkt->size;
     } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         ret = avcodec_decode_audio4(avctx, avctx->internal->buffer_frame,
@@ -3500,6 +3500,8 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
     case AV_CODEC_ID_PCM_U32LE:
     case AV_CODEC_ID_PCM_F32BE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F24LE:
+    case AV_CODEC_ID_PCM_F16LE:
         return 32;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F64LE:

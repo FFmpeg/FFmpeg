@@ -150,6 +150,11 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
     }
 
     nacl = av_mallocz(sizeof(*nacl));
+    if (!nacl) {
+        fprintf(stderr, "Failed to allocate FFServerIPAddressACL\n");
+        goto bail;
+    }
+
     naclp = 0;
 
     acl.next = 0;

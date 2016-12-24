@@ -147,6 +147,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     AVCodecContext* ctx = avcodec_alloc_context3(NULL);
     if (!ctx)
         error("Failed memory allocation");
+
+    ctx->max_pixels = 4096 * 4096; //To reduce false positive OOM and hangs
+
     int res = avcodec_open2(ctx, c, NULL);
     if (res < 0)
         return res;

@@ -64,9 +64,10 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
-    uint8_t tmp[120];
+    uint64_t tmp[120/8];
     struct AVSHA *sha = (void*)tmp;
     clock_t last_t  = 0;
+    clock_t last_td = 0;
     static uint64_t i = 0;
     static uint32_t buffer[512] = { 0 };
     unsigned char digest[20];
@@ -86,11 +87,12 @@ static uint32_t get_generic_seed(void)
 
     for (;;) {
         clock_t t = clock();
-
-        if (last_t == t) {
-            buffer[i & 511]++;
+        if (last_t + 2*last_td + 1 >= t) {
+            last_td = t - last_t;
+            buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (last_td % 3294638521U);
         } else {
-            buffer[++i & 511] += (t - last_t) % 3294638521U;
+            last_td = t - last_t;
+            buffer[++i & 511] += last_td % 3294638521U;
             if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
                 break;
         }
