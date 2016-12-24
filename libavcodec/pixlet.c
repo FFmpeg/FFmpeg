@@ -504,8 +504,14 @@ static int decode_plane(AVCodecContext *avctx, int plane, AVPacket *avpkt, AVFra
     int i, ret;
 
     for (i = ctx->levels - 1; i >= 0; i--) {
-        ctx->scaling[plane][H][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
-        ctx->scaling[plane][V][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        int32_t h = sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        int32_t v = sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+
+        if (!h || !v)
+            return AVERROR_INVALIDDATA;
+
+        ctx->scaling[plane][H][i] = 1000000.0f / h;
+        ctx->scaling[plane][V][i] = 1000000.0f / v;
     }
 
     bytestream2_skip(&ctx->gb, 4);
