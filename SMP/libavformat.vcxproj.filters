@@ -727,6 +727,9 @@
     <ClCompile Include="..\libavformat\microdvdenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\mj2kdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\mlpdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
