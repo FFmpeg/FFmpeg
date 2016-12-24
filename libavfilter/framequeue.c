@@ -33,7 +33,7 @@ void ff_framequeue_global_init(FFFrameQueueGlobal *fqg)
 
 static void check_consistency(FFFrameQueue *fq)
 {
-#if ASSERT_LEVEL >= 2
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
     uint64_t nb_samples = 0;
     size_t i;
 
