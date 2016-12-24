@@ -408,6 +408,7 @@ int ff_request_frame(AVFilterLink *link)
 {
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
+    av_assert1(!link->dst->filter->activate);
     if (link->status_out)
         return link->status_out;
     if (link->status_in) {
