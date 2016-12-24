@@ -339,10 +339,6 @@ int ff_poll_frame(AVFilterLink *link);
  */
 int ff_request_frame(AVFilterLink *link);
 
-int ff_request_frame_to_filter(AVFilterLink *link);
-
-int ff_filter_frame_to_filter(AVFilterLink *link);
-
 #define AVFILTER_DEFINE_CLASS(fname)            \
     static const AVClass fname##_class = {      \
         .class_name = #fname,                   \

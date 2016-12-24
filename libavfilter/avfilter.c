@@ -429,7 +429,7 @@ int ff_request_frame(AVFilterLink *link)
     return 0;
 }
 
-int ff_request_frame_to_filter(AVFilterLink *link)
+static int ff_request_frame_to_filter(AVFilterLink *link)
 {
     int ret = -1;
 
@@ -1249,7 +1249,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
     return 0;
 }
 
-int ff_filter_frame_to_filter(AVFilterLink *link)
+static int ff_filter_frame_to_filter(AVFilterLink *link)
 {
     AVFrame *frame = NULL;
     AVFilterContext *dst = link->dst;
