@@ -343,21 +343,18 @@ static int read_highpass(AVCodecContext *avctx, uint8_t *ptr, int plane, AVFrame
 
 static void lowpass_prediction(int16_t *dst, int16_t *pred, int width, int height, ptrdiff_t stride)
 {
-    int16_t *next, val;
+    int16_t val;
     int i, j;
 
     memset(pred, 0, width * sizeof(*pred));
 
     for (i = 0; i < height; i++) {
-        val     = pred[0] + dst[0];
-        dst[0]  = val;
-        pred[0] = val;
-        next    = dst + 2;
-        for (j = 1; j < width; j++, next++) {
-            val       = pred[j] + next[-1];
-            next[-1]  = val;
-            pred[j]   = val;
-            next[-1] += next[-2];
+        val    = pred[0] + dst[0];
+        dst[0] = pred[0] = val;
+        for (j = 1; j < width; j++) {
+            val     = pred[j] + dst[j];
+            dst[j]  = pred[j] = val;
+            dst[j] += dst[j-1];
         }
         dst += stride;
     }
