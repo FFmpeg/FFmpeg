@@ -81,11 +81,11 @@ static void print_audio_bytes(const TestStruct *test_sample, void **data_planes,
 
 static int read_samples_from_audio_fifo(AVAudioFifo* afifo, void ***output, int nb_samples)
 {
-    int i, planes;
+    int i;
     int samples        = FFMIN(nb_samples, afifo->nb_samples);
-    int tot_elements   = !(planes = av_sample_fmt_is_planar(afifo->sample_fmt))
+    int tot_elements   = !av_sample_fmt_is_planar(afifo->sample_fmt)
                          ? samples : afifo->channels * samples;
-    void **data_planes = allocate_memory(sizeof(void*) * planes);
+    void **data_planes = allocate_memory(sizeof(void*) * afifo->nb_buffers);
     *output            = data_planes;
 
     for (i = 0; i < afifo->nb_buffers; ++i){
