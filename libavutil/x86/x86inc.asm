@@ -385,7 +385,14 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %ifnum %1
         %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
+                ; Reserve an additional register for storing the original stack pointer, but avoid using
+                ; eax/rax for this purpose since it can potentially get overwritten as a return value.
                 %assign regs_used (regs_used + 1)
+                %if ARCH_X86_64 && regs_used == 7
+                    %assign regs_used 8
+                %elif ARCH_X86_64 == 0 && regs_used == 1
+                    %assign regs_used 2
+                %endif
             %endif
             %if ARCH_X86_64 && regs_used < 5 + UNIX64 * 3
                 ; Ensure that we don't clobber any registers containing arguments. For UNIX64 we also preserve r6 (rax)
