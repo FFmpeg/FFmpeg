@@ -12,7 +12,15 @@ shortname=$1
 name=lib${shortname}
 comment=$2
 libs=$(eval echo \$extralibs_${shortname})
-requires=$(eval echo \$requires_${shortname})
+deps=$(eval echo \$${shortname}_deps)
+
+for dep in $deps; do
+    depname=lib${dep}
+    . ${depname}/${depname}.version
+    depversion=$(eval echo \$${depname}_VERSION)
+    requires="$requires ${depname} >= ${depversion}, "
+done
+
 requires=${requires%, }
 
 version=$(grep ${name}_VERSION= $name/${name}.version | cut -d= -f2)
