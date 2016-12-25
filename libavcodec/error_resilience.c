@@ -376,7 +376,7 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
 static void guess_mv(ERContext *s)
 {
     uint8_t *fixed = s->er_temp_buffer;
-#define MV_FROZEN    3
+#define MV_FROZEN    4
 #define MV_CHANGED   2
 #define MV_UNCHANGED 1
     const int mb_stride = s->mb_stride;
@@ -467,27 +467,19 @@ static void guess_mv(ERContext *s)
                     av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
                     j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (j == 0)
+                    if (mb_x > 0)
+                        j |= fixed[mb_xy - 1];
+                    if (mb_x + 1 < mb_width)
+                        j |= fixed[mb_xy + 1];
+                    if (mb_y > 0)
+                        j |= fixed[mb_xy - mb_stride];
+                    if (mb_y + 1 < mb_height)
+                        j |= fixed[mb_xy + mb_stride];
+
+                    if (!(j & MV_FROZEN))
                         continue;
 
-                    j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (j == 0 && pass > 1)
+                    if (!(j & MV_CHANGED) && pass > 1)
                         continue;
 
                     none_left = 0;
