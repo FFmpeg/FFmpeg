@@ -452,14 +452,14 @@ static void guess_mv(ERContext *s)
             for (mb_y = 0; mb_y < mb_height; mb_y++) {
                 for (mb_x = (mb_y ^ pass) & 1; mb_x < s->mb_width; mb_x+=2) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
-                    int mv_predictor[8][2] = { { 0 } };
-                    int ref[8]             = { 0 };
-                    int pred_count         = 0;
+                    int mv_predictor[8][2];
+                    int ref[8];
+                    int pred_count;
                     int j;
-                    int best_score         = 256 * 256 * 256 * 64;
-                    int best_pred          = 0;
-                    const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
-                    int prev_x = 0, prev_y = 0, prev_ref = 0;
+                    int best_score;
+                    int best_pred;
+                    int mot_index;
+                    int prev_x, prev_y, prev_ref;
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
@@ -483,6 +483,8 @@ static void guess_mv(ERContext *s)
                         continue;
 
                     none_left = 0;
+                    pred_count = 0;
+                    mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
                     if (mb_x > 0 && fixed[mb_xy - 1]) {
                         mv_predictor[pred_count][0] =
@@ -569,6 +571,9 @@ static void guess_mv(ERContext *s)
 
 skip_mean_and_median:
                     /* zero MV */
+                    mv_predictor[pred_count][0] =
+                    mv_predictor[pred_count][1] =
+                             ref[pred_count]    = 0;
                     pred_count++;
 
                     prev_x   = s->cur_pic.motion_val[0][mot_index][0];
@@ -581,6 +586,8 @@ skip_mean_and_median:
                              ref[pred_count]    = prev_ref;
                     pred_count++;
 
+                    best_pred = 0;
+                    best_score = 256 * 256 * 256 * 64;
                     for (j = 0; j < pred_count; j++) {
                         int *linesize = s->cur_pic.f->linesize;
                         int score = 0;
