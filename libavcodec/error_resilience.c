@@ -450,7 +450,7 @@ static void guess_mv(ERContext *s)
 
             changed = 0;
             for (mb_y = 0; mb_y < mb_height; mb_y++) {
-                for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+                for (mb_x = (mb_y ^ pass) & 1; mb_x < s->mb_width; mb_x+=2) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
                     int mv_predictor[8][2] = { { 0 } };
                     int ref[8]             = { 0 };
@@ -460,9 +460,6 @@ static void guess_mv(ERContext *s)
                     int best_pred          = 0;
                     const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
                     int prev_x = 0, prev_y = 0, prev_ref = 0;
-
-                    if ((mb_x ^ mb_y ^ pass) & 1)
-                        continue;
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
