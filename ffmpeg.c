@@ -2877,8 +2877,9 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
     av_assert0(ist && !ost->filter);
 
-    avcodec_parameters_to_context(ost->enc_ctx, ist->st->codecpar);
-    ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
+    ret = avcodec_parameters_to_context(ost->enc_ctx, ist->st->codecpar);
+    if (ret >= 0)
+        ret = av_opt_set_dict(ost->enc_ctx, &ost->encoder_opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL,
                "Error setting up codec context options.\n");
