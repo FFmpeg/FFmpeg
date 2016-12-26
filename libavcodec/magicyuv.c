@@ -57,6 +57,8 @@ typedef struct MagicYUVContext {
     int               nb_slices;
     int               planes;         // number of encoded planes in bitstream
     int               decorrelate;    // postprocessing work
+    int               color_matrix;   // video color matrix
+    int               flags;
     int               interlaced;     // video is interlaced
     uint8_t          *buf;            // pointer to AVPacket->data
     int               hshift[4];
@@ -568,8 +570,10 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
 
-    bytestream2_skip(&gbyte, 2);
-    s->interlaced = !!(bytestream2_get_byte(&gbyte) & 2);
+    bytestream2_skip(&gbyte, 1);
+    s->color_matrix = bytestream2_get_byte(&gbyte);
+    s->flags        = bytestream2_get_byte(&gbyte);
+    s->interlaced   = !!(s->flags & 2);
     bytestream2_skip(&gbyte, 3);
 
     width  = bytestream2_get_le32(&gbyte);
@@ -659,6 +663,16 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt == AV_PIX_FMT_GBRAP10) {
         FFSWAP(uint8_t*, p->data[0], p->data[1]);
         FFSWAP(int, p->linesize[0], p->linesize[1]);
+    } else {
+        switch (s->color_matrix) {
+        case 1:
+            p->colorspace = AVCOL_SPC_BT470BG;
+            break;
+        case 2:
+            p->colorspace = AVCOL_SPC_BT709;
+            break;
+        }
+        p->color_range = (s->flags & 4) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
     }
 
     *got_frame = 1;
