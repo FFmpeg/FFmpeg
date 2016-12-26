@@ -131,16 +131,11 @@ enum AVMatrixEncoding {
  *   5.0(side), 5.1, 5.1(side), 7.1, 7.1(wide), downmix);
  * - the name of a single channel (FL, FR, FC, LFE, BL, BR, FLC, FRC, BC,
  *   SL, SR, TC, TFL, TFC, TFR, TBL, TBC, TBR, DL, DR);
- * - a number of channels, in decimal, optionally followed by 'c', yielding
+ * - a number of channels, in decimal, followed by 'c', yielding
  *   the default channel layout for that number of channels (@see
  *   av_get_default_channel_layout);
  * - a channel layout mask, in hexadecimal starting with "0x" (see the
  *   AV_CH_* macros).
- *
- * @warning Starting from the next major bump the trailing character
- * 'c' to specify a number of channels will be required, while a
- * channel layout mask could also be specified as a decimal number
- * (if and only if not followed by "c").
  *
  * Example: "stereo+FC" = "2c+FC" = "2c+1c" = "0x7"
  */
