@@ -3234,9 +3234,11 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE &&
             timecode < track->end_timecode)
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
-        if (is_keyframe)
+        if (is_keyframe) {
+            ff_reduce_index(matroska->ctx, st->index);
             av_add_index_entry(st, cluster_pos, timecode, 0, 0,
                                AVINDEX_KEYFRAME);
+        }
     }
 
     if (matroska->skip_to_keyframe &&
