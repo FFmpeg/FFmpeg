@@ -403,7 +403,7 @@ void av_bsf_list_free(AVBSFList **lst)
 {
     int i;
 
-    if (*lst)
+    if (!*lst)
         return;
 
     for (i = 0; i < (*lst)->nb_bsfs; ++i)
