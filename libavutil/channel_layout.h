@@ -142,6 +142,20 @@ enum AVMatrixEncoding {
 uint64_t av_get_channel_layout(const char *name);
 
 /**
+ * Return a channel layout and the number of channels based on the specified name.
+ *
+ * This function is similar to (@see av_get_channel_layout), but can also parse
+ * unknown channel layout specifications.
+ *
+ * @param[in]  name             channel layout specification string
+ * @param[out] channel_layout   parsed channel layout (0 if unknown)
+ * @param[out] nb_channels      number of channels
+ *
+ * @return 0 on success, AVERROR(EINVAL) if the parsing fails.
+ */
+int av_get_extended_channel_layout(const char *name, uint64_t* channel_layout, int* nb_channels);
+
+/**
  * Return a description of a channel layout.
  * If nb_channels is <= 0, it is guessed from the channel_layout.
  *

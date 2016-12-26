@@ -725,13 +725,18 @@ layout for that number of channels (see the function
 default layout.
 
 @item
+a number of channels, in decimal, followed by 'C', yielding an unknown channel
+layout with the specified number of channels. Note that not all channel layout
+specification strings support unknown channel layouts.
+
+@item
 a channel layout mask, in hexadecimal starting with "0x" (see the
 @code{AV_CH_*} macros in @file{libavutil/channel_layout.h}.
 @end itemize
 
 Before libavutil version 53 the trailing character "c" to specify a number of
 channels was optional, but now it is required, while a channel layout mask can
-also be specified as a decimal number (if and only if not followed by "c").
+also be specified as a decimal number (if and only if not followed by "c" or "C").
 
 See also the function @code{av_get_channel_layout} defined in
 @file{libavutil/channel_layout.h}.
