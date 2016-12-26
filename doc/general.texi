@@ -1048,6 +1048,7 @@ following image formats are supported:
 @item PCM unsigned 32-bit little-endian  @tab  X  @tab  X
 @item PCM Zork               @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
+@item QDesign Music Codec 1  @tab     @tab  X
 @item QDesign Music Codec 2  @tab     @tab  X
     @tab There are still some distortions.
 @item RealAudio 1.0 (14.4K)  @tab  X  @tab  X

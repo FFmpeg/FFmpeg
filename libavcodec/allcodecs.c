@@ -449,6 +449,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(PAF_AUDIO,         paf_audio);
     REGISTER_DECODER(QCELP,             qcelp);
     REGISTER_DECODER(QDM2,              qdm2);
+    REGISTER_DECODER(QDMC,              qdmc);
     REGISTER_ENCDEC (RA_144,            ra_144);
     REGISTER_DECODER(RA_288,            ra_288);
     REGISTER_DECODER(RALF,              ralf);

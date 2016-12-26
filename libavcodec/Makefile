@@ -466,6 +466,7 @@ OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o                     \
                                           celp_filters.o acelp_vectors.o \
                                           acelp_filters.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
+OBJS-$(CONFIG_QDMC_DECODER)            += qdmc.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
