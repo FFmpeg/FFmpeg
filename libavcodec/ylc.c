@@ -455,6 +455,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
     ff_free_vlc(&s->vlc[1]);
     ff_free_vlc(&s->vlc[2]);
     ff_free_vlc(&s->vlc[3]);
+    av_freep(&s->table_bits);
+    s->table_bits_size = 0;
+    av_freep(&s->bitstream_bits);
+    s->bitstream_bits_size = 0;
 
     return 0;
 }
