@@ -3062,23 +3062,14 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     ost->st->disposition = ist->st->disposition;
 
     if (ist->st->nb_side_data) {
-        ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
-                                              sizeof(*ist->st->side_data));
-        if (!ost->st->side_data)
-            return AVERROR(ENOMEM);
-
-        ost->st->nb_side_data = 0;
         for (i = 0; i < ist->st->nb_side_data; i++) {
             const AVPacketSideData *sd_src = &ist->st->side_data[i];
-            AVPacketSideData *sd_dst = &ost->st->side_data[ost->st->nb_side_data];
+            uint8_t *dst_data;
 
-            sd_dst->data = av_malloc(sd_src->size);
-            if (!sd_dst->data)
+            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+            if (!dst_data)
                 return AVERROR(ENOMEM);
-            memcpy(sd_dst->data, sd_src->data, sd_src->size);
-            sd_dst->size = sd_src->size;
-            sd_dst->type = sd_src->type;
-            ost->st->nb_side_data++;
+            memcpy(dst_data, sd_src->data, sd_src->size);
         }
     }
 
