@@ -931,6 +931,10 @@ typedef struct HEVCContext {
     uint32_t max_mastering_luminance;
     uint32_t min_mastering_luminance;
 
+    /** content light level */
+    uint16_t max_content_light_level;
+    uint16_t max_frame_average_light_level;
+
 } HEVCContext;
 
 int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
