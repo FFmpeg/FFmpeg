@@ -185,7 +185,6 @@ static int hls_delete_old_segments(HLSContext *hls) {
     segment = hls->old_segments;
     while (segment) {
         playlist_duration -= segment->duration;
-        hls->initial_prog_date_time += segment->duration;
         previous_segment = segment;
         segment = previous_segment->next;
         if (playlist_duration <= -previous_segment->duration) {
@@ -414,6 +413,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 
     if (hls->max_nb_segments && hls->nb_entries >= hls->max_nb_segments) {
         en = hls->segments;
+        hls->initial_prog_date_time += en->duration;
         hls->segments = en->next;
         if (en && hls->flags & HLS_DELETE_SEGMENTS &&
                 !(hls->flags & HLS_SINGLE_FILE || hls->wrap)) {
