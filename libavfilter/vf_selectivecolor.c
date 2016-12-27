@@ -28,6 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavcodec/mathops.h" // for mid_pred(), which is a macro so no link dependency
 #include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
@@ -112,42 +113,14 @@ static const AVOption selectivecolor_options[] = {
 
 AVFILTER_DEFINE_CLASS(selectivecolor);
 
-static inline int get_mid_val(int r, int g, int b)
-{
-    if ((r < g && r > b) || (r < b && r > g)) return r;
-    if ((g < r && g > b) || (g < b && g > r)) return g;
-    if ((b < r && b > g) || (b < g && b > r)) return b;
-    return -1;
-}
-
 static int get_rgb_adjust_range(int r, int g, int b, int min_val, int max_val)
 {
-    // max - mid
-    const int mid_val = get_mid_val(r, g, b);
-    if (mid_val == -1) {
-        // XXX: can be simplified
-        if ((r != min_val && g == min_val && b == min_val) ||
-            (r == min_val && g != min_val && b == min_val) ||
-            (r == min_val && g == min_val && b != min_val))
-            return max_val - min_val;
-        return 0;
-    }
-    return max_val - mid_val;
+    return max_val - mid_pred(r, g, b);
 }
 
 static int get_cmy_adjust_range(int r, int g, int b, int min_val, int max_val)
 {
-    // mid - min
-    const int mid_val = get_mid_val(r, g, b);
-    if (mid_val == -1) {
-        // XXX: refactor with rgb
-        if ((r != max_val && g == max_val && b == max_val) ||
-            (r == max_val && g != max_val && b == max_val) ||
-            (r == max_val && g == max_val && b != max_val))
-            return max_val - min_val;
-        return 0;
-    }
-    return mid_val - min_val;
+    return mid_pred(r, g, b) - min_val;
 }
 
 #define DECLARE_ADJUST_RANGE_FUNCS(nbits)                                                   \
