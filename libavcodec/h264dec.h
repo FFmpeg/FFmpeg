@@ -553,7 +553,6 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                                    const H2645NAL *nal, void *logctx);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
-int ff_h264_decode_init(AVCodecContext *avctx);
 void ff_h264_decode_init_vlc(void);
 
 /**
