@@ -514,6 +514,11 @@ typedef struct H264Context {
      * the slice data */
     int field_started;
 
+    /* original AVCodecContext dimensions, used to handle container
+     * cropping */
+    int width_from_caller;
+    int height_from_caller;
+
     AVFrame *output_frame;
 
     int enable_er;
