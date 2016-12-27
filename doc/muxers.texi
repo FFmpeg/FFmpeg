@@ -443,12 +443,18 @@ This example will produce the playlist, @file{out.m3u8}, and segment files:
 
 @item use_localtime
 Use strftime on @var{filename} to expand the segment filename with localtime.
-The segment number (%d) is not available in this mode.
+The segment number is also available in this mode, but to use it, you need to specify second_level_segment_index
+hls_flag and %%d will be the specifier.
 @example
 ffmpeg -i in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
+@example
+ffmpeg -i in.nut -use_localtime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
+@end example
+This example will produce the playlist, @file{out.m3u8}, and segment files:
+@file{file-20160215-0001.ts}, @file{file-20160215-0002.ts}, etc.
 
 @item use_localtime_mkdir
 Used together with -use_localtime, it will create up to one subdirectory which
@@ -555,6 +561,9 @@ seeking. This flag should be used with the @code{hls_time} option.
 
 @item hls_flags program_date_time
 Generate @code{EXT-X-PROGRAM-DATE-TIME} tags.
+
+@item hls_flags second_level_segment_index
+Makes it possible to use segment indexes as %%d besides date/time values when use_localtime is on.
 
 @item hls_playlist_type event
 Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
