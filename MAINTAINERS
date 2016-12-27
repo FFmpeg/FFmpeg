@@ -176,7 +176,7 @@ Codecs:
   h263*                                 Michael Niedermayer
   h264*                                 Loren Merritt, Michael Niedermayer
   hap*                                  Tom Butterworth
-  huffyuv*                              Michael Niedermayer, Christophe Gisquet
+  huffyuv*                              Michael Niedermayer
   idcinvideo.c                          Mike Melanson
   interplayvideo.c                      Mike Melanson
   jni*, ffjni*                          Matthieu Bouron
@@ -223,7 +223,6 @@ Codecs:
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
-  rv4*                                  Christophe Gisquet
   s3tc*                                 Ivo van Poorten
   smc.c                                 Mike Melanson
   smvjpegdec.c                          Ash Hughes
@@ -237,7 +236,6 @@ Codecs:
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
-  vc1*                                  Christophe Gisquet
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
   vda_h264_dec.c                        Xidorn Quan
