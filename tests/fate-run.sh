@@ -24,6 +24,7 @@ size_tolerance=${14:-0}
 cmp_unit=${15:-2}
 gen=${16:-no}
 hwaccel=${17:-none}
+report_type=${18:-standard}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -212,13 +213,17 @@ if test -e "$ref" || test $cmp = "oneline" ; then
     esac
     cmperr=$?
     test $err = 0 && err=$cmperr
-    test $err = 0 || cat $cmpfile
+    if [ "$report_type" = "ignore" ]; then
+        test $err = 0 || echo "IGNORE  fate-${test}" && err=0
+    else
+        test $err = 0 || cat $cmpfile
+    fi
 else
     echo "reference file '$ref' not found"
     err=1
 fi
 
-if [ $err -eq 0 ]; then
+if [ $err -eq 0 ] && test $report_type = "standard" ; then
     unset cmpo erro
 else
     cmpo="$($base64 <$cmpfile)"

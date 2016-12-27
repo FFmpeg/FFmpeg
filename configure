@@ -348,6 +348,8 @@ Developer options (useful when working on Libav itself):
   --random-seed=VALUE      seed value for --enable/disable-random
   --disable-valgrind-backtrace do not print a backtrace under Valgrind
                            (only applies to --disable-optimizations builds)
+  --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
+                           in the name) of tests whose result is ignored
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1815,6 +1817,7 @@ CMDLINE_SET="
     host_ld
     host_ldflags
     host_os
+    ignore_tests
     ld
     logfile
     malloc_prefix
@@ -5192,6 +5195,13 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     echo
 done
 
+if test -n "$ignore_tests"; then
+    ignore_tests=$(echo $ignore_tests | tr ',' ' ')
+    echo "Ignored FATE tests:"
+    echo $ignore_tests | print_3_columns
+    echo
+fi
+
 license="LGPL version 2.1 or later"
 if enabled nonfree; then
     license="nonfree and unredistributable"
@@ -5316,6 +5326,7 @@ SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
 SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
 VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(LIBAV_SAMPLES)}
+IGNORE_TESTS=$ignore_tests
 EOF
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> avbuild/config.mak' $LIBRARY_LIST
