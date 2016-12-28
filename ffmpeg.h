@@ -224,6 +224,8 @@ typedef struct OptionsContext {
     int        nb_disposition;
     SpecifierOpt *program;
     int        nb_program;
+    SpecifierOpt *time_bases;
+    int        nb_time_bases;
 } OptionsContext;
 
 typedef struct InputFilter {
