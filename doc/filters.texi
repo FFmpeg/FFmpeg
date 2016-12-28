@@ -10422,6 +10422,24 @@ Specify the color of the padded area. For the syntax of this option,
 check the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{color} is "black".
+
+@item eval
+Specify when to evaluate  @var{width}, @var{height}, @var{x} and @var{y} expression.
+
+It accepts the following values:
+
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization or when
+a command is processed.
+
+@item frame
+Evaluate expressions for each incoming frame.
+
+@end table
+
+Default value is @samp{init}.
+
 @end table
 
 The value for the @var{width}, @var{height}, @var{x}, and @var{y}
