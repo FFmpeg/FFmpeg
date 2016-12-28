@@ -750,15 +750,18 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
 static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 {
     av_free(bin->data);
+    bin->size = 0;
+
     if (!(bin->data = av_mallocz(length + AV_INPUT_BUFFER_PADDING_SIZE)))
         return AVERROR(ENOMEM);
 
-    bin->size = length;
     bin->pos  = avio_tell(pb);
     if (avio_read(pb, bin->data, length) != length) {
         av_freep(&bin->data);
         return AVERROR(EIO);
     }
+
+    bin->size = length;
 
     return 0;
 }
