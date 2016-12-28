@@ -140,7 +140,7 @@ static void test_function(const TestStruct test_sample)
 
     ret = read_samples_from_audio_fifo(afifo, &output_data, test_sample.nb_samples_pch);
     if (ret < 0){
-        ERROR("ERROR: av_audio_fifo_write failed!");
+        ERROR("ERROR: av_audio_fifo_read failed!");
     }
     printf("read: %d\n", ret);
     print_audio_bytes(&test_sample, output_data, ret);
@@ -160,7 +160,7 @@ static void test_function(const TestStruct test_sample)
     for (i = 0; i < afifo->nb_samples; ++i){
         ret = av_audio_fifo_peek_at(afifo, output_data, 1, i);
         if (ret < 0){
-            ERROR("ERROR: av_audio_fifo_peek failed!");
+            ERROR("ERROR: av_audio_fifo_peek_at failed!");
         }
         printf("%d:\n", i);
         print_audio_bytes(&test_sample, output_data, ret);
