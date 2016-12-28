@@ -523,6 +523,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
+        h->field_started = 0;
         if (!h->first_field)
             h->cur_pic_ptr = NULL;
         ff_h264_sei_uninit(&h->sei);
