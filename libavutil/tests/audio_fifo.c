@@ -45,10 +45,19 @@ static const TestStruct test_struct[] = {
     {.format = AV_SAMPLE_FMT_FLTP , .nb_ch = 2, .data_planes = {data_FLT, data_FLT+6, }, .nb_samples_pch = 6 }
 };
 
+static void free_data_planes(AVAudioFifo *afifo, void **output_data)
+{
+    int i;
+    for (i = 0; i < afifo->nb_buffers; ++i){
+        av_freep(&output_data[i]);
+    }
+    av_freep(&output_data);
+}
+
 static void ERROR(const char *str)
 {
-        fprintf(stderr, "%s\n", str);
-        exit(1);
+    fprintf(stderr, "%s\n", str);
+    exit(1);
 }
 
 static void print_audio_bytes(const TestStruct *test_sample, void **data_planes, int nb_samples)
@@ -80,6 +89,8 @@ static int read_samples_from_audio_fifo(AVAudioFifo* afifo, void ***output, int 
     void **data_planes = av_malloc_array(afifo->nb_buffers, sizeof(void*));
     if (!data_planes)
         ERROR("failed to allocate memory!");
+    if (*output)
+        free_data_planes(afifo, *output);
     *output            = data_planes;
 
     for (i = 0; i < afifo->nb_buffers; ++i){
@@ -173,10 +184,7 @@ static void test_function(const TestStruct test_sample)
     }
 
     /* deallocate */
-    for (i = 0; i < afifo->nb_buffers; ++i){
-        av_freep(&output_data[i]);
-    }
-    av_freep(&output_data);
+    free_data_planes(afifo, output_data);
     av_audio_fifo_free(afifo);
 }
 
