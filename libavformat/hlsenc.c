@@ -194,7 +194,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
         }
     }
 
-    if (segment) {
+    if (segment && !hls->use_localtime_mkdir) {
         if (hls->segment_filename) {
             dirname = av_strdup(hls->segment_filename);
         } else {
@@ -211,15 +211,20 @@ static int hls_delete_old_segments(HLSContext *hls) {
     while (segment) {
         av_log(hls, AV_LOG_DEBUG, "deleting old segment %s\n",
                                   segment->filename);
-        path_size = strlen(dirname) + strlen(segment->filename) + 1;
+        path_size =  (hls->use_localtime_mkdir ? 0 : strlen(dirname)) + strlen(segment->filename) + 1;
         path = av_malloc(path_size);
         if (!path) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        av_strlcpy(path, dirname, path_size);
-        av_strlcat(path, segment->filename, path_size);
+        if (hls->use_localtime_mkdir)
+            av_strlcpy(path, segment->filename, path_size);
+        else { // segment->filename contains basename only
+            av_strlcpy(path, dirname, path_size);
+            av_strlcat(path, segment->filename, path_size);
+        }
+
         if (unlink(path) < 0) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                      path, strerror(errno));
