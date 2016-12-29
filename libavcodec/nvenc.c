@@ -544,9 +544,9 @@ static av_cold void set_vbr(AVCodecContext *avctx)
 
     if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
         rc->initialRCQP.qpIntra = av_clip(
-            qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset, 0, 51);
+            qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
         rc->initialRCQP.qpInterB = av_clip(
-            qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
+            qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
     } else {
         rc->initialRCQP.qpIntra = qp_inter_p;
         rc->initialRCQP.qpInterB = qp_inter_p;
