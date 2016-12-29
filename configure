@@ -5414,7 +5414,7 @@ cat > avbuild/config.sh <<EOF
 shared=$shared
 prefix=$prefix
 libdir=$libdir
-includedir=$incdir
+incdir=$incdir
 source_path=${source_path}
 LIBPREF=${LIBPREF}
 LIBSUF=${LIBSUF}
