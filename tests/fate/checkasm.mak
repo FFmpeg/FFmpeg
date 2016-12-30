@@ -19,5 +19,5 @@ $(FATE_CHECKASM): tests/checkasm/checkasm$(EXESUF)
 $(FATE_CHECKASM): CMD = run tests/checkasm/checkasm --test=$(@:fate-checkasm-%=%)
 $(FATE_CHECKASM): REF = /dev/null
 
-FATE += $(FATE_CHECKASM)
+FATE-$(CONFIG_STATIC) += $(FATE_CHECKASM)
 fate-checkasm: $(FATE_CHECKASM)
