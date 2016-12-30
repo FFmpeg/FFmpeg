@@ -1564,6 +1564,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
 	    av_log(s, AV_LOG_INFO, "We asked for %d and got %d\n",
                    lower_transport,
                    reply->transports[0].lower_transport);
+	    av_log(s, AV_LOG_INFO, "Mask is %d\n", rt->lower_transport_mask);
 	    reply->transports[0].lower_transport = lower_transport;
 	    rt->lower_transport = lower_transport;
         }
