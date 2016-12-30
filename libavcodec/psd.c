@@ -64,7 +64,7 @@ typedef struct PSDContext {
 
 static int decode_header(PSDContext * s)
 {
-    int signature, version, color_mode, compression;
+    int signature, version, color_mode;
     int64_t len_section;
     int ret = 0;
 
@@ -207,7 +207,7 @@ static int decode_header(PSDContext * s)
         return AVERROR_PATCHWELCOME;
         break;
     default:
-        av_log(s->avctx, AV_LOG_ERROR, "Unknown compression %d.\n", compression);
+        av_log(s->avctx, AV_LOG_ERROR, "Unknown compression %d.\n", s->compression);
         return AVERROR_INVALIDDATA;
     }
 
