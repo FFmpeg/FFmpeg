@@ -817,6 +817,10 @@ Set algorithm quality. Valid arguments are integers in the 0-9 range,
 with 0 meaning highest quality but slowest, and 9 meaning fastest
 while producing the worst quality.
 
+@item cutoff (@emph{--lowpass})
+Set lowpass cutoff frequency. If unspecified, the encoder dynamically
+adjusts the cutoff.
+
 @item reservoir
 Enable use of bit reservoir when set to 1. Default value is 1. LAME
 has this enabled by default, but can be overridden by use
