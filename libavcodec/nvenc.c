@@ -958,6 +958,21 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
 
+    if (ctx->bluray_compat) {
+        ctx->aud = 1;
+        avctx->refs = FFMIN(FFMAX(avctx->refs, 0), 6);
+        avctx->max_b_frames = FFMIN(avctx->max_b_frames, 3);
+        switch (avctx->codec->id) {
+        case AV_CODEC_ID_H264:
+            /* maximum level depends on used resolution */
+            break;
+        case AV_CODEC_ID_HEVC:
+            ctx->level = NV_ENC_LEVEL_HEVC_51;
+            ctx->tier = NV_ENC_TIER_HEVC_HIGH;
+            break;
+        }
+    }
+
     if (avctx->gop_size > 0) {
         if (avctx->max_b_frames >= 0) {
             /* 0 is intra-only, 1 is I/P only, 2 is one B-Frame, 3 two B-frames, and so on. */
