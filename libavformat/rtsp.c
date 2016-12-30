@@ -1573,6 +1573,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
         if (reply->transports[0].lower_transport != lower_transport) {
             av_log(s, AV_LOG_ERROR, "Nonmatching transport in server reply\n");
 	    reply->transports[0].lower_transport = lower_transport;
+	    rt->lower_transport = lower_transport;
         }
 
         switch(reply->transports[0].lower_transport) {
