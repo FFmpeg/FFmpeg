@@ -138,7 +138,8 @@ Set audio sampling rate (in Hz).
 Set number of audio channels.
 
 @item cutoff @var{integer} (@emph{encoding,audio})
-Set cutoff bandwidth.
+Set cutoff bandwidth. (Supported only by selected encoders, see
+their respective documentation sections.)
 
 @item frame_size @var{integer} (@emph{encoding,audio})
 Set audio frame size.
