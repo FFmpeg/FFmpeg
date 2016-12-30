@@ -756,7 +756,7 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
-    h264->outputAUD     = 1;
+    h264->outputAUD     = ctx->aud;
 
     if (avctx->refs >= 0) {
         /* 0 means "let the hardware decide" */
@@ -840,7 +840,7 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
-    hevc->outputAUD     = 1;
+    hevc->outputAUD     = ctx->aud;
 
     if (avctx->refs >= 0) {
         /* 0 means "let the hardware decide" */
