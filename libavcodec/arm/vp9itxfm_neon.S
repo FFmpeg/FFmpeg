@@ -37,8 +37,8 @@ idct_coeffs:
 endconst
 
 const iadst16_coeffs, align=4
-        .short  16364, 804, 15893, 3981, 14811, 7005, 13160, 9760
-        .short  11003, 12140, 8423, 14053, 5520, 15426, 2404, 16207
+        .short  16364, 804, 15893, 3981, 11003, 12140, 8423, 14053
+        .short  14811, 7005, 13160, 9760, 5520, 15426, 2404, 16207
 endconst
 
 @ Do four 4x4 transposes, using q registers for the subtransposes that don't
@@ -678,19 +678,19 @@ function iadst16
         vld1.16         {q0-q1}, [r12,:128]
 
         mbutterfly_l    q3,  q2,  d31, d16, d0[1], d0[0] @ q3  = t1,   q2  = t0
-        mbutterfly_l    q5,  q4,  d23, d24, d2[1], d2[0] @ q5  = t9,   q4  = t8
+        mbutterfly_l    q5,  q4,  d23, d24, d1[1], d1[0] @ q5  = t9,   q4  = t8
         butterfly_n     d31, d24, q3,  q5,  q6,  q5      @ d31 = t1a,  d24 = t9a
         mbutterfly_l    q7,  q6,  d29, d18, d0[3], d0[2] @ q7  = t3,   q6  = t2
         butterfly_n     d16, d23, q2,  q4,  q3,  q4      @ d16 = t0a,  d23 = t8a
 
-        mbutterfly_l    q3,  q2,  d21, d26, d2[3], d2[2] @ q3  = t11,  q2  = t10
+        mbutterfly_l    q3,  q2,  d21, d26, d1[3], d1[2] @ q3  = t11,  q2  = t10
         butterfly_n     d29, d26, q7,  q3,  q4,  q3      @ d29 = t3a,  d26 = t11a
-        mbutterfly_l    q5,  q4,  d27, d20, d1[1], d1[0] @ q5  = t5,   q4  = t4
+        mbutterfly_l    q5,  q4,  d27, d20, d2[1], d2[0] @ q5  = t5,   q4  = t4
         butterfly_n     d18, d21, q6,  q2,  q3,  q2      @ d18 = t2a,  d21 = t10a
 
         mbutterfly_l    q7,  q6,  d19, d28, d3[1], d3[0] @ q7  = t13,  q6  = t12
         butterfly_n     d20, d28, q5,  q7,  q2,  q7      @ d20 = t5a,  d28 = t13a
-        mbutterfly_l    q3,  q2,  d25, d22, d1[3], d1[2] @ q3  = t7,   q2  = t6
+        mbutterfly_l    q3,  q2,  d25, d22, d2[3], d2[2] @ q3  = t7,   q2  = t6
         butterfly_n     d27, d19, q4,  q6,  q5,  q6      @ d27 = t4a,  d19 = t12a
 
         mbutterfly_l    q5,  q4,  d17, d30, d3[3], d3[2] @ q5  = t15,  q4  = t14
