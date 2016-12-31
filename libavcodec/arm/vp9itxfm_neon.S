@@ -22,7 +22,7 @@
 #include "neon.S"
 
 const itxfm4_coeffs, align=4
-        .short  11585, 6270, 15137, 0
+        .short  11585, 0, 6270, 15137
 iadst4_coeffs:
         .short  5283, 15212, 9929, 13377
 endconst
@@ -30,8 +30,8 @@ endconst
 const iadst8_coeffs, align=4
         .short  16305, 1606, 14449, 7723, 10394, 12665, 4756, 15679
 idct_coeffs:
-        .short  11585, 6270, 15137, 3196, 16069, 13623, 9102, 1606
-        .short  16305, 12665, 10394, 7723, 14449, 15679, 4756, 0
+        .short  11585, 0, 6270, 15137, 3196, 16069, 13623, 9102
+        .short  1606, 16305, 12665, 10394, 7723, 14449, 15679, 4756
         .short  804, 16364, 12140, 11003, 7005, 14811, 15426, 5520
         .short  3981, 15893, 14053, 8423, 9760, 13160, 16207, 2404
 endconst
@@ -224,14 +224,14 @@ endconst
 .endm
 
 .macro idct4 c0, c1, c2, c3
-        vmull.s16       q13,  \c1,  d0[2]
-        vmull.s16       q11,  \c1,  d0[1]
+        vmull.s16       q13,  \c1,  d0[3]
+        vmull.s16       q11,  \c1,  d0[2]
         vadd.i16        d16,  \c0,  \c2
         vsub.i16        d17,  \c0,  \c2
-        vmlal.s16       q13,  \c3,  d0[1]
+        vmlal.s16       q13,  \c3,  d0[2]
         vmull.s16       q9,   d16,  d0[0]
         vmull.s16       q10,  d17,  d0[0]
-        vmlsl.s16       q11,  \c3,  d0[2]
+        vmlsl.s16       q11,  \c3,  d0[3]
         vrshrn.s32      d26,  q13,  #14
         vrshrn.s32      d18,  q9,   #14
         vrshrn.s32      d20,  q10,  #14
@@ -350,9 +350,9 @@ itxfm_func4x4 iwht,  iwht
 
 .macro idct8
         dmbutterfly0    d16, d17, d24, d25, q8,  q12, q2, q4, d4, d5, d8, d9, q3, q2, q5, q4 @ q8 = t0a, q12 = t1a
-        dmbutterfly     d20, d21, d28, d29, d0[1], d0[2], q2,  q3,  q4,  q5 @ q10 = t2a, q14 = t3a
-        dmbutterfly     d18, d19, d30, d31, d0[3], d1[0], q2,  q3,  q4,  q5 @ q9  = t4a, q15 = t7a
-        dmbutterfly     d26, d27, d22, d23, d1[1], d1[2], q2,  q3,  q4,  q5 @ q13 = t5a, q11 = t6a
+        dmbutterfly     d20, d21, d28, d29, d0[2], d0[3], q2,  q3,  q4,  q5 @ q10 = t2a, q14 = t3a
+        dmbutterfly     d18, d19, d30, d31, d1[0], d1[1], q2,  q3,  q4,  q5 @ q9  = t4a, q15 = t7a
+        dmbutterfly     d26, d27, d22, d23, d1[2], d1[3], q2,  q3,  q4,  q5 @ q13 = t5a, q11 = t6a
 
         butterfly       q2,  q14, q8,  q14 @ q2 = t0, q14 = t3
         butterfly       q3,  q10, q12, q10 @ q3 = t1, q10 = t2
@@ -386,8 +386,8 @@ itxfm_func4x4 iwht,  iwht
         vneg.s16        q15, q15          @ q15 = out[7]
         butterfly       q8,  q9,  q11, q9 @ q8 = out[0], q9 = t2
 
-        dmbutterfly_l   q10, q11, q5,  q7,  d4,  d5,  d6,  d7,  d0[1], d0[2] @ q10,q11 = t5a, q5,q7 = t4a
-        dmbutterfly_l   q2,  q3,  q13, q14, d12, d13, d8,  d9,  d0[2], d0[1] @ q2,q3 = t6a, q13,q14 = t7a
+        dmbutterfly_l   q10, q11, q5,  q7,  d4,  d5,  d6,  d7,  d0[2], d0[3] @ q10,q11 = t5a, q5,q7 = t4a
+        dmbutterfly_l   q2,  q3,  q13, q14, d12, d13, d8,  d9,  d0[3], d0[2] @ q2,q3 = t6a, q13,q14 = t7a
 
         dbutterfly_n    d28, d29, d8,  d9,  q10, q11, q13, q14, q4,  q6,  q10, q11 @ q14 = out[6], q4 = t7
 
@@ -594,13 +594,13 @@ endfunc
 
 function idct16
         mbutterfly0     d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
-        mbutterfly      d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
-        mbutterfly      d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
-        mbutterfly      d26, d22, d1[1], d1[2], q2,  q3  @ d26 = t5a,  d22 = t6a
-        mbutterfly      d17, d31, d1[3], d2[0], q2,  q3  @ d17 = t8a,  d31 = t15a
-        mbutterfly      d25, d23, d2[1], d2[2], q2,  q3  @ d25 = t9a,  d23 = t14a
-        mbutterfly      d21, d27, d2[3], d3[0], q2,  q3  @ d21 = t10a, d27 = t13a
-        mbutterfly      d29, d19, d3[1], d3[2], q2,  q3  @ d29 = t11a, d19 = t12a
+        mbutterfly      d20, d28, d0[2], d0[3], q2,  q3  @ d20 = t2a,  d28 = t3a
+        mbutterfly      d18, d30, d1[0], d1[1], q2,  q3  @ d18 = t4a,  d30 = t7a
+        mbutterfly      d26, d22, d1[2], d1[3], q2,  q3  @ d26 = t5a,  d22 = t6a
+        mbutterfly      d17, d31, d2[0], d2[1], q2,  q3  @ d17 = t8a,  d31 = t15a
+        mbutterfly      d25, d23, d2[2], d2[3], q2,  q3  @ d25 = t9a,  d23 = t14a
+        mbutterfly      d21, d27, d3[0], d3[1], q2,  q3  @ d21 = t10a, d27 = t13a
+        mbutterfly      d29, d19, d3[2], d3[3], q2,  q3  @ d29 = t11a, d19 = t12a
 
         butterfly       d4,  d28, d16, d28               @ d4  = t0,   d28 = t3
         butterfly       d5,  d20, d24, d20               @ d5  = t1,   d20 = t2
@@ -612,20 +612,20 @@ function idct16
         butterfly       d29, d23, d31, d23               @ d29 = t15,  d23 = t14
 
         mbutterfly0     d22, d26, d22, d26, d18, d30, q9,  q15  @ d22 = t6a, d26 = t5a
-        mbutterfly      d23, d25, d0[1], d0[2], q9,  q15        @ d23 = t9a,  d25 = t14a
-        mbutterfly      d27, d21, d0[1], d0[2], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
+        mbutterfly      d23, d25, d0[2], d0[3], q9,  q15        @ d23 = t9a,  d25 = t14a
+        mbutterfly      d27, d21, d0[2], d0[3], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
         idct16_end
 endfunc
 
 function idct16_half
         mbutterfly0_h   d16, d24, d16, d24, d4, d6,  q2,  q3 @ d16 = t0a,  d24 = t1a
-        mbutterfly_h1   d20, d28, d0[1], d0[2], q2,  q3  @ d20 = t2a,  d28 = t3a
-        mbutterfly_h1   d18, d30, d0[3], d1[0], q2,  q3  @ d18 = t4a,  d30 = t7a
-        mbutterfly_h2   d26, d22, d1[1], d1[2], q2,  q3  @ d26 = t5a,  d22 = t6a
-        mbutterfly_h1   d17, d31, d1[3], d2[0], q2,  q3  @ d17 = t8a,  d31 = t15a
-        mbutterfly_h2   d25, d23, d2[1], d2[2], q2,  q3  @ d25 = t9a,  d23 = t14a
-        mbutterfly_h1   d21, d27, d2[3], d3[0], q2,  q3  @ d21 = t10a, d27 = t13a
-        mbutterfly_h2   d29, d19, d3[1], d3[2], q2,  q3  @ d29 = t11a, d19 = t12a
+        mbutterfly_h1   d20, d28, d0[2], d0[3], q2,  q3  @ d20 = t2a,  d28 = t3a
+        mbutterfly_h1   d18, d30, d1[0], d1[1], q2,  q3  @ d18 = t4a,  d30 = t7a
+        mbutterfly_h2   d26, d22, d1[2], d1[3], q2,  q3  @ d26 = t5a,  d22 = t6a
+        mbutterfly_h1   d17, d31, d2[0], d2[1], q2,  q3  @ d17 = t8a,  d31 = t15a
+        mbutterfly_h2   d25, d23, d2[2], d2[3], q2,  q3  @ d25 = t9a,  d23 = t14a
+        mbutterfly_h1   d21, d27, d3[0], d3[1], q2,  q3  @ d21 = t10a, d27 = t13a
+        mbutterfly_h2   d29, d19, d3[2], d3[3], q2,  q3  @ d29 = t11a, d19 = t12a
 
         butterfly       d4,  d28, d16, d28               @ d4  = t0,   d28 = t3
         butterfly       d5,  d20, d24, d20               @ d5  = t1,   d20 = t2
@@ -637,19 +637,19 @@ function idct16_half
         butterfly       d29, d23, d31, d23               @ d29 = t15,  d23 = t14
 
         mbutterfly0     d22, d26, d22, d26, d18, d30, q9,  q15  @ d22 = t6a, d26 = t5a
-        mbutterfly      d23, d25, d0[1], d0[2], q9,  q15        @ d23 = t9a,  d25 = t14a
-        mbutterfly      d27, d21, d0[1], d0[2], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
+        mbutterfly      d23, d25, d0[2], d0[3], q9,  q15        @ d23 = t9a,  d25 = t14a
+        mbutterfly      d27, d21, d0[2], d0[3], q9,  q15, neg=1 @ d27 = t13a, d21 = t10a
         idct16_end
 endfunc
 
 function idct16_quarter
-        vmull.s16       q12, d19, d3[2]
-        vmull.s16       q2,  d17, d1[3]
-        vmull.s16       q3,  d18, d1[0]
-        vmull.s16       q15, d18, d0[3]
+        vmull.s16       q12, d19, d3[3]
+        vmull.s16       q2,  d17, d2[0]
+        vmull.s16       q3,  d18, d1[1]
+        vmull.s16       q15, d18, d1[0]
         vneg.s32        q12, q12
-        vmull.s16       q14, d17, d2[0]
-        vmull.s16       q13, d19, d3[1]
+        vmull.s16       q14, d17, d2[1]
+        vmull.s16       q13, d19, d3[2]
         vmull.s16       q11, d16, d0[0]
         vrshrn.s32      d24, q12, #14
         vrshrn.s32      d16, q2,  #14
@@ -659,8 +659,8 @@ function idct16_quarter
         vrshrn.s32      d17, q13, #14
         vrshrn.s32      d28, q11, #14
 
-        mbutterfly_l    q10, q11, d17, d24, d0[1], d0[2]
-        mbutterfly_l    q9,  q15, d29, d16, d0[1], d0[2]
+        mbutterfly_l    q10, q11, d17, d24, d0[2], d0[3]
+        mbutterfly_l    q9,  q15, d29, d16, d0[2], d0[3]
         vneg.s32        q11, q11
         vrshrn.s32      d27, q10, #14
         vrshrn.s32      d21, q11, #14
@@ -697,16 +697,16 @@ function iadst16
         movrel          r12, idct_coeffs
         vld1.16         {q0}, [r12,:128]
         butterfly_n     d22, d30, q3,  q5,  q6,  q5      @ d22 = t7a,  d30 = t15a
-        mbutterfly_l    q7,  q6,  d23, d24, d0[3], d1[0] @ q7  = t9,   q6  = t8
+        mbutterfly_l    q7,  q6,  d23, d24, d1[0], d1[1] @ q7  = t9,   q6  = t8
         butterfly_n     d25, d17, q2,  q4,  q3,  q4      @ d25 = t6a,  d17 = t14a
 
-        mbutterfly_l    q2,  q3,  d28, d19, d1[0], d0[3] @ q2  = t12,  q3  = t13
+        mbutterfly_l    q2,  q3,  d28, d19, d1[1], d1[0] @ q2  = t12,  q3  = t13
         butterfly_n     d23, d19, q6,  q2,  q4,  q2      @ d23 = t8a,  d19 = t12a
-        mbutterfly_l    q5,  q4,  d21, d26, d1[1], d1[2] @ q5  = t11,  q4  = t10
+        mbutterfly_l    q5,  q4,  d21, d26, d1[2], d1[3] @ q5  = t11,  q4  = t10
         butterfly_r     d4,  d27, d16, d27               @ d4  = t4,   d27 = t0
         butterfly_n     d24, d28, q7,  q3,  q6,  q3      @ d24 = t9a,  d28 = t13a
 
-        mbutterfly_l    q6,  q7,  d30, d17, d1[2], d1[1] @ q6  = t14,  q7  = t15
+        mbutterfly_l    q6,  q7,  d30, d17, d1[3], d1[2] @ q6  = t14,  q7  = t15
         butterfly_r     d5,  d20, d31, d20               @ d5  = t5,   d20 = t1
         butterfly_n     d21, d17, q4,  q6,  q3,  q6      @ d21 = t10a, d17 = t14a
         butterfly_n     d26, d30, q5,  q7,  q4,  q7      @ d26 = t11a, d30 = t15a
@@ -714,15 +714,15 @@ function iadst16
         butterfly_r     d6,  d25, d18, d25               @ d6  = t6,   d25 = t2
         butterfly_r     d7,  d22, d29, d22               @ d7  = t7,   d22 = t3
 
-        mbutterfly_l    q5,  q4,  d19, d28, d0[1], d0[2] @ q5  = t13,  q4  = t12
-        mbutterfly_l    q6,  q7,  d30, d17, d0[2], d0[1] @ q6  = t14,  q7  = t15
+        mbutterfly_l    q5,  q4,  d19, d28, d0[2], d0[3] @ q5  = t13,  q4  = t12
+        mbutterfly_l    q6,  q7,  d30, d17, d0[3], d0[2] @ q6  = t14,  q7  = t15
 
         butterfly_n     d18, d30, q4,  q6,  q8,  q6      @ d18 = out[2],   d30 = t14a
         butterfly_n     d29, d17, q5,  q7,  q6,  q7      @ d29 = -out[13], d17 = t15a
         vneg.s16        d29, d29                         @ d29 = out[13]
 
-        mbutterfly_l    q5,  q4,  d4,  d5,  d0[1], d0[2] @ q5  = t5a,  q4  = t4a
-        mbutterfly_l    q6,  q7,  d7,  d6,  d0[2], d0[1] @ q6  = t6a,  q7  = t7a
+        mbutterfly_l    q5,  q4,  d4,  d5,  d0[2], d0[3] @ q5  = t5a,  q4  = t4a
+        mbutterfly_l    q6,  q7,  d7,  d6,  d0[3], d0[2] @ q6  = t6a,  q7  = t7a
 
         butterfly       d2,  d6,  d27, d25               @ d2 = out[0], d6 = t2a
         butterfly       d3,  d7,  d23, d21               @ d3 =-out[1], d7 = t10
@@ -1194,10 +1194,10 @@ endfunc
         butterfly       d11, d29, d29, d31 @ d11 = t31a, d29 = t28a
         butterfly       d22, d27, d24, d27 @ d22 = t30,  d27 = t29
 
-        mbutterfly      d27, d20, d0[1], d0[2], q12, q15        @ d27 = t18a, d20 = t29a
-        mbutterfly      d29, d9,  d0[1], d0[2], q12, q15        @ d29 = t19,  d9  = t28
-        mbutterfly      d28, d10, d0[1], d0[2], q12, q15, neg=1 @ d28 = t27,  d10 = t20
-        mbutterfly      d26, d21, d0[1], d0[2], q12, q15, neg=1 @ d26 = t26a, d21 = t21a
+        mbutterfly      d27, d20, d0[2], d0[3], q12, q15        @ d27 = t18a, d20 = t29a
+        mbutterfly      d29, d9,  d0[2], d0[3], q12, q15        @ d29 = t19,  d5  = t28
+        mbutterfly      d28, d10, d0[2], d0[3], q12, q15, neg=1 @ d28 = t27,  d6  = t20
+        mbutterfly      d26, d21, d0[2], d0[3], q12, q15, neg=1 @ d26 = t26a, d21 = t21a
 
         butterfly       d31, d24, d11, d8  @ d31 = t31,  d24 = t24
         butterfly       d30, d25, d22, d23 @ d30 = t30a, d25 = t25a
@@ -1235,10 +1235,10 @@ function idct32_odd
         butterfly       d29, d23, d31, d23 @ d29 = t31, d23 = t30
         butterfly       d31, d27, d19, d27 @ d31 = t28, d27 = t29
 
-        mbutterfly      d23, d24, d0[3], d1[0], q8, q9        @ d23 = t17a, d24 = t30a
-        mbutterfly      d27, d20, d0[3], d1[0], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
-        mbutterfly      d21, d26, d1[1], d1[2], q8, q9        @ d21 = t21a, d26 = t26a
-        mbutterfly      d25, d22, d1[1], d1[2], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
+        mbutterfly      d23, d24, d1[0], d1[1], q8, q9        @ d23 = t17a, d24 = t30a
+        mbutterfly      d27, d20, d1[0], d1[1], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
+        mbutterfly      d21, d26, d1[2], d1[3], q8, q9        @ d21 = t21a, d26 = t26a
+        mbutterfly      d25, d22, d1[2], d1[3], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
         idct32_end
 endfunc
 
@@ -1261,10 +1261,10 @@ function idct32_odd_half
         butterfly       d29, d23, d31, d23 @ d29 = t31, d23 = t30
         butterfly       d31, d27, d19, d27 @ d31 = t28, d27 = t29
 
-        mbutterfly      d23, d24, d0[3], d1[0], q8, q9        @ d23 = t17a, d24 = t30a
-        mbutterfly      d27, d20, d0[3], d1[0], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
-        mbutterfly      d21, d26, d1[1], d1[2], q8, q9        @ d21 = t21a, d26 = t26a
-        mbutterfly      d25, d22, d1[1], d1[2], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
+        mbutterfly      d23, d24, d1[0], d1[1], q8, q9        @ d23 = t17a, d24 = t30a
+        mbutterfly      d27, d20, d1[0], d1[1], q8, q9, neg=1 @ d27 = t29a, d20 = t18a
+        mbutterfly      d21, d26, d1[2], d1[3], q8, q9        @ d21 = t21a, d26 = t26a
+        mbutterfly      d25, d22, d1[2], d1[3], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
 
         idct32_end
 endfunc
@@ -1291,17 +1291,17 @@ function idct32_odd_quarter
         vrshrn.s32      d10, q10, #14
         vrshrn.s32      d30, q12, #14
 
-        mbutterfly_l    q8,  q9,  d29, d8,  d0[3], d1[0]
-        mbutterfly_l    q13, q10, d31, d9,  d0[3], d1[0]
+        mbutterfly_l    q8,  q9,  d29, d8,  d1[0], d1[1]
+        mbutterfly_l    q13, q10, d31, d9,  d1[0], d1[1]
         vrshrn.s32      d23, q8,  #14
         vrshrn.s32      d24, q9,  #14
         vneg.s32        q10, q10
         vrshrn.s32      d27, q13, #14
         vrshrn.s32      d20, q10, #14
-        mbutterfly_l    q8,  q9,  d30, d10, d1[1], d1[2]
+        mbutterfly_l    q8,  q9,  d30, d10, d1[2], d1[3]
         vrshrn.s32      d21, q8,  #14
         vrshrn.s32      d26, q9,  #14
-        mbutterfly_l    q8,  q9,  d28, d11, d1[1], d1[2]
+        mbutterfly_l    q8,  q9,  d28, d11, d1[2], d1[3]
         vrshrn.s32      d25, q8,  #14
         vneg.s32        q9,  q9
         vrshrn.s32      d22, q9,  #14
