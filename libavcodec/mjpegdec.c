@@ -2308,7 +2308,7 @@ the_end:
             }
         }
     }
-    if (s->flipped) {
+    if (s->flipped && !s->rgb) {
         int j;
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (index=0; index<4; index++) {
