@@ -37,8 +37,8 @@ idct_coeffs:
 endconst
 
 const iadst16_coeffs, align=4
-        .short  16364, 804, 15893, 3981, 14811, 7005, 13160, 9760
-        .short  11003, 12140, 8423, 14053, 5520, 15426, 2404, 16207
+        .short  16364, 804, 15893, 3981, 11003, 12140, 8423, 14053
+        .short  14811, 7005, 13160, 9760, 5520, 15426, 2404, 16207
 endconst
 
 // out1 = ((in1 + in2) * v0[0] + (1 << 13)) >> 14
@@ -628,19 +628,19 @@ function iadst16
         ld1             {v0.8h,v1.8h}, [x11]
 
         dmbutterfly_l   v6,  v7,  v4,  v5,  v31, v16, v0.h[1], v0.h[0]   // v6,v7   = t1,   v4,v5   = t0
-        dmbutterfly_l   v10, v11, v8,  v9,  v23, v24, v1.h[1], v1.h[0]   // v10,v11 = t9,   v8,v9   = t8
+        dmbutterfly_l   v10, v11, v8,  v9,  v23, v24, v0.h[5], v0.h[4]   // v10,v11 = t9,   v8,v9   = t8
         dbutterfly_n    v31, v24, v6,  v7,  v10, v11, v12, v13, v10, v11 // v31     = t1a,  v24     = t9a
         dmbutterfly_l   v14, v15, v12, v13, v29, v18, v0.h[3], v0.h[2]   // v14,v15 = t3,   v12,v13 = t2
         dbutterfly_n    v16, v23, v4,  v5,  v8,  v9,  v6,  v7,  v8,  v9  // v16     = t0a,  v23     = t8a
 
-        dmbutterfly_l   v6,  v7,  v4,  v5,  v21, v26, v1.h[3], v1.h[2]   // v6,v7   = t11,  v4,v5   = t10
+        dmbutterfly_l   v6,  v7,  v4,  v5,  v21, v26, v0.h[7], v0.h[6]   // v6,v7   = t11,  v4,v5   = t10
         dbutterfly_n    v29, v26, v14, v15, v6,  v7,  v8,  v9,  v6,  v7  // v29     = t3a,  v26     = t11a
-        dmbutterfly_l   v10, v11, v8,  v9,  v27, v20, v0.h[5], v0.h[4]   // v10,v11 = t5,   v8,v9   = t4
+        dmbutterfly_l   v10, v11, v8,  v9,  v27, v20, v1.h[1], v1.h[0]   // v10,v11 = t5,   v8,v9   = t4
         dbutterfly_n    v18, v21, v12, v13, v4,  v5,  v6,  v7,  v4,  v5  // v18     = t2a,  v21     = t10a
 
         dmbutterfly_l   v14, v15, v12, v13, v19, v28, v1.h[5], v1.h[4]   // v14,v15 = t13,  v12,v13 = t12
         dbutterfly_n    v20, v28, v10, v11, v14, v15, v4,  v5,  v14, v15 // v20     = t5a,  v28     = t13a
-        dmbutterfly_l   v6,  v7,  v4,  v5,  v25, v22, v0.h[7], v0.h[6]   // v6,v7   = t7,   v4,v5   = t6
+        dmbutterfly_l   v6,  v7,  v4,  v5,  v25, v22, v1.h[3], v1.h[2]   // v6,v7   = t7,   v4,v5   = t6
         dbutterfly_n    v27, v19, v8,  v9,  v12, v13, v10, v11, v12, v13 // v27     = t4a,  v19     = t12a
 
         dmbutterfly_l   v10, v11, v8,  v9,  v17, v30, v1.h[7], v1.h[6]   // v10,v11 = t15,  v8,v9   = t14
