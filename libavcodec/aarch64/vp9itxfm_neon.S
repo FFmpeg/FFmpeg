@@ -22,7 +22,7 @@
 #include "neon.S"
 
 const itxfm4_coeffs, align=4
-        .short  11585, 6270, 15137, 0
+        .short  11585, 0, 6270, 15137
 iadst4_coeffs:
         .short  5283, 15212, 9929, 13377
 endconst
@@ -30,8 +30,8 @@ endconst
 const iadst8_coeffs, align=4
         .short  16305, 1606, 14449, 7723, 10394, 12665, 4756, 15679
 idct_coeffs:
-        .short  11585, 6270, 15137, 3196, 16069, 13623, 9102, 1606
-        .short  16305, 12665, 10394, 7723, 14449, 15679, 4756, 0
+        .short  11585, 0, 6270, 15137, 3196, 16069, 13623, 9102
+        .short  1606, 16305, 12665, 10394, 7723, 14449, 15679, 4756
         .short  804, 16364, 12140, 11003, 7005, 14811, 15426, 5520
         .short  3981, 15893, 14053, 8423, 9760, 13160, 16207, 2404
 endconst
@@ -192,14 +192,14 @@ endconst
 .endm
 
 .macro idct4 c0, c1, c2, c3
-        smull           v22.4s,    \c1\().4h, v0.h[2]
-        smull           v20.4s,    \c1\().4h, v0.h[1]
+        smull           v22.4s,    \c1\().4h, v0.h[3]
+        smull           v20.4s,    \c1\().4h, v0.h[2]
         add             v16.4h,    \c0\().4h, \c2\().4h
         sub             v17.4h,    \c0\().4h, \c2\().4h
-        smlal           v22.4s,    \c3\().4h, v0.h[1]
+        smlal           v22.4s,    \c3\().4h, v0.h[2]
         smull           v18.4s,    v16.4h,    v0.h[0]
         smull           v19.4s,    v17.4h,    v0.h[0]
-        smlsl           v20.4s,    \c3\().4h, v0.h[2]
+        smlsl           v20.4s,    \c3\().4h, v0.h[3]
         rshrn           v22.4h,    v22.4s,    #14
         rshrn           v18.4h,    v18.4s,    #14
         rshrn           v19.4h,    v19.4s,    #14
@@ -326,9 +326,9 @@ itxfm_func4x4 iwht,  iwht
 
 .macro idct8
         dmbutterfly0    v16, v20, v16, v20, v2, v3, v4, v5, v6, v7 // v16 = t0a, v20 = t1a
-        dmbutterfly     v18, v22, v0.h[1], v0.h[2], v2, v3, v4, v5 // v18 = t2a, v22 = t3a
-        dmbutterfly     v17, v23, v0.h[3], v0.h[4], v2, v3, v4, v5 // v17 = t4a, v23 = t7a
-        dmbutterfly     v21, v19, v0.h[5], v0.h[6], v2, v3, v4, v5 // v21 = t5a, v19 = t6a
+        dmbutterfly     v18, v22, v0.h[2], v0.h[3], v2, v3, v4, v5 // v18 = t2a, v22 = t3a
+        dmbutterfly     v17, v23, v0.h[4], v0.h[5], v2, v3, v4, v5 // v17 = t4a, v23 = t7a
+        dmbutterfly     v21, v19, v0.h[6], v0.h[7], v2, v3, v4, v5 // v21 = t5a, v19 = t6a
 
         butterfly_8h    v24, v25, v16, v22 // v24 = t0, v25 = t3
         butterfly_8h    v28, v29, v17, v21 // v28 = t4, v29 = t5a
@@ -361,8 +361,8 @@ itxfm_func4x4 iwht,  iwht
         dmbutterfly0    v19, v20, v6, v7, v24, v26, v27, v28, v29, v30   // v19 = -out[3], v20 = out[4]
         neg             v19.8h,   v19.8h  // v19 = out[3]
 
-        dmbutterfly_l   v26, v27, v28, v29, v5,  v3,  v0.h[1], v0.h[2]   // v26,v27 = t5a, v28,v29 = t4a
-        dmbutterfly_l   v2,  v3,  v4,  v5,  v31, v25, v0.h[2], v0.h[1]   // v2,v3   = t6a, v4,v5   = t7a
+        dmbutterfly_l   v26, v27, v28, v29, v5,  v3,  v0.h[2], v0.h[3]   // v26,v27 = t5a, v28,v29 = t4a
+        dmbutterfly_l   v2,  v3,  v4,  v5,  v31, v25, v0.h[3], v0.h[2]   // v2,v3   = t6a, v4,v5   = t7a
 
         dbutterfly_n    v17, v30, v28, v29, v2,  v3,  v6,  v7,  v24, v25 // v17 = -out[1], v30 = t6
         dbutterfly_n    v22, v31, v26, v27, v4,  v5,  v6,  v7,  v24, v25 // v22 = out[6],  v31 = t7
@@ -543,13 +543,13 @@ endfunc
 
 function idct16
         dmbutterfly0    v16, v24, v16, v24, v2, v3, v4, v5, v6, v7 // v16 = t0a,  v24 = t1a
-        dmbutterfly     v20, v28, v0.h[1], v0.h[2], v2, v3, v4, v5 // v20 = t2a,  v28 = t3a
-        dmbutterfly     v18, v30, v0.h[3], v0.h[4], v2, v3, v4, v5 // v18 = t4a,  v30 = t7a
-        dmbutterfly     v26, v22, v0.h[5], v0.h[6], v2, v3, v4, v5 // v26 = t5a,  v22 = t6a
-        dmbutterfly     v17, v31, v0.h[7], v1.h[0], v2, v3, v4, v5 // v17 = t8a,  v31 = t15a
-        dmbutterfly     v25, v23, v1.h[1], v1.h[2], v2, v3, v4, v5 // v25 = t9a,  v23 = t14a
-        dmbutterfly     v21, v27, v1.h[3], v1.h[4], v2, v3, v4, v5 // v21 = t10a, v27 = t13a
-        dmbutterfly     v29, v19, v1.h[5], v1.h[6], v2, v3, v4, v5 // v29 = t11a, v19 = t12a
+        dmbutterfly     v20, v28, v0.h[2], v0.h[3], v2, v3, v4, v5 // v20 = t2a,  v28 = t3a
+        dmbutterfly     v18, v30, v0.h[4], v0.h[5], v2, v3, v4, v5 // v18 = t4a,  v30 = t7a
+        dmbutterfly     v26, v22, v0.h[6], v0.h[7], v2, v3, v4, v5 // v26 = t5a,  v22 = t6a
+        dmbutterfly     v17, v31, v1.h[0], v1.h[1], v2, v3, v4, v5 // v17 = t8a,  v31 = t15a
+        dmbutterfly     v25, v23, v1.h[2], v1.h[3], v2, v3, v4, v5 // v25 = t9a,  v23 = t14a
+        dmbutterfly     v21, v27, v1.h[4], v1.h[5], v2, v3, v4, v5 // v21 = t10a, v27 = t13a
+        dmbutterfly     v29, v19, v1.h[6], v1.h[7], v2, v3, v4, v5 // v29 = t11a, v19 = t12a
 
         butterfly_8h    v4,  v28, v16, v28               // v4  = t0,   v28 = t3
         butterfly_8h    v5,  v20, v24, v20               // v5  = t1,   v20 = t2
@@ -561,20 +561,20 @@ function idct16
         butterfly_8h    v29, v23, v31, v23               // v29 = t15,  v23 = t14
 
         dmbutterfly0    v22, v26, v22, v26, v2, v3, v18, v19, v30, v31        // v22 = t6a,  v26 = t5a
-        dmbutterfly     v23, v25, v0.h[1], v0.h[2], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
-        dmbutterfly     v27, v21, v0.h[1], v0.h[2], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
+        dmbutterfly     v23, v25, v0.h[2], v0.h[3], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
+        dmbutterfly     v27, v21, v0.h[2], v0.h[3], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
         idct16_end
 endfunc
 
 function idct16_half
         dmbutterfly0_h  v16, v24, v16, v24, v2, v3, v4, v5, v6, v7 // v16 = t0a,  v24 = t1a
-        dmbutterfly_h1  v20, v28, v0.h[1], v0.h[2], v2, v3, v4, v5 // v20 = t2a,  v28 = t3a
-        dmbutterfly_h1  v18, v30, v0.h[3], v0.h[4], v2, v3, v4, v5 // v18 = t4a,  v30 = t7a
-        dmbutterfly_h2  v26, v22, v0.h[5], v0.h[6], v2, v3, v4, v5 // v26 = t5a,  v22 = t6a
-        dmbutterfly_h1  v17, v31, v0.h[7], v1.h[0], v2, v3, v4, v5 // v17 = t8a,  v31 = t15a
-        dmbutterfly_h2  v25, v23, v1.h[1], v1.h[2], v2, v3, v4, v5 // v25 = t9a,  v23 = t14a
-        dmbutterfly_h1  v21, v27, v1.h[3], v1.h[4], v2, v3, v4, v5 // v21 = t10a, v27 = t13a
-        dmbutterfly_h2  v29, v19, v1.h[5], v1.h[6], v2, v3, v4, v5 // v29 = t11a, v19 = t12a
+        dmbutterfly_h1  v20, v28, v0.h[2], v0.h[3], v2, v3, v4, v5 // v20 = t2a,  v28 = t3a
+        dmbutterfly_h1  v18, v30, v0.h[4], v0.h[5], v2, v3, v4, v5 // v18 = t4a,  v30 = t7a
+        dmbutterfly_h2  v26, v22, v0.h[6], v0.h[7], v2, v3, v4, v5 // v26 = t5a,  v22 = t6a
+        dmbutterfly_h1  v17, v31, v1.h[0], v1.h[1], v2, v3, v4, v5 // v17 = t8a,  v31 = t15a
+        dmbutterfly_h2  v25, v23, v1.h[2], v1.h[3], v2, v3, v4, v5 // v25 = t9a,  v23 = t14a
+        dmbutterfly_h1  v21, v27, v1.h[4], v1.h[5], v2, v3, v4, v5 // v21 = t10a, v27 = t13a
+        dmbutterfly_h2  v29, v19, v1.h[6], v1.h[7], v2, v3, v4, v5 // v29 = t11a, v19 = t12a
 
         butterfly_8h    v4,  v28, v16, v28               // v4  = t0,   v28 = t3
         butterfly_8h    v5,  v20, v24, v20               // v5  = t1,   v20 = t2
@@ -586,20 +586,20 @@ function idct16_half
         butterfly_8h    v29, v23, v31, v23               // v29 = t15,  v23 = t14
 
         dmbutterfly0    v22, v26, v22, v26, v2, v3, v18, v19, v30, v31        // v22 = t6a,  v26 = t5a
-        dmbutterfly     v23, v25, v0.h[1], v0.h[2], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
-        dmbutterfly     v27, v21, v0.h[1], v0.h[2], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
+        dmbutterfly     v23, v25, v0.h[2], v0.h[3], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
+        dmbutterfly     v27, v21, v0.h[2], v0.h[3], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
         idct16_end
 endfunc
 
 function idct16_quarter
-        dsmull_h        v24, v25, v19, v1.h[6]
-        dsmull_h        v4,  v5,  v17, v0.h[7]
-        dsmull_h        v7,  v6,  v18, v0.h[4]
-        dsmull_h        v30, v31, v18, v0.h[3]
+        dsmull_h        v24, v25, v19, v1.h[7]
+        dsmull_h        v4,  v5,  v17, v1.h[0]
+        dsmull_h        v7,  v6,  v18, v0.h[5]
+        dsmull_h        v30, v31, v18, v0.h[4]
         neg             v24.4s,  v24.4s
         neg             v25.4s,  v25.4s
-        dsmull_h        v29, v28, v17, v1.h[0]
-        dsmull_h        v26, v27, v19, v1.h[5]
+        dsmull_h        v29, v28, v17, v1.h[1]
+        dsmull_h        v26, v27, v19, v1.h[6]
         dsmull_h        v22, v23, v16, v0.h[0]
         drshrn_h        v24, v24, v25, #14
         drshrn_h        v16, v4,  v5,  #14
@@ -609,8 +609,8 @@ function idct16_quarter
         drshrn_h        v17, v26, v27, #14
         drshrn_h        v28, v22, v23, #14
 
-        dmbutterfly_l   v20, v21, v22, v23, v17, v24, v0.h[1], v0.h[2]
-        dmbutterfly_l   v18, v19, v30, v31, v29, v16, v0.h[1], v0.h[2]
+        dmbutterfly_l   v20, v21, v22, v23, v17, v24, v0.h[2], v0.h[3]
+        dmbutterfly_l   v18, v19, v30, v31, v29, v16, v0.h[2], v0.h[3]
         neg             v22.4s,  v22.4s
         neg             v23.4s,  v23.4s
         drshrn_h        v27, v20, v21, #14
@@ -646,16 +646,16 @@ function iadst16
         dmbutterfly_l   v10, v11, v8,  v9,  v17, v30, v1.h[7], v1.h[6]   // v10,v11 = t15,  v8,v9   = t14
         ld1             {v0.8h}, [x10]
         dbutterfly_n    v22, v30, v6,  v7,  v10, v11, v12, v13, v10, v11 // v22     = t7a,  v30     = t15a
-        dmbutterfly_l   v14, v15, v12, v13, v23, v24, v0.h[3], v0.h[4]   // v14,v15 = t9,   v12,v13 = t8
+        dmbutterfly_l   v14, v15, v12, v13, v23, v24, v0.h[4], v0.h[5]   // v14,v15 = t9,   v12,v13 = t8
         dbutterfly_n    v25, v17, v4,  v5,  v8,  v9,  v6,  v7,  v8,  v9  // v25     = t6a,  v17     = t14a
 
-        dmbutterfly_l   v4,  v5,  v6,  v7,  v28, v19, v0.h[4], v0.h[3]   // v4,v5   = t12,  v6,v7   = t13
+        dmbutterfly_l   v4,  v5,  v6,  v7,  v28, v19, v0.h[5], v0.h[4]   // v4,v5   = t12,  v6,v7   = t13
         dbutterfly_n    v23, v19, v12, v13, v4,  v5,  v8,  v9,  v4,  v5  // v23     = t8a,  v19     = t12a
-        dmbutterfly_l   v10, v11, v8,  v9,  v21, v26, v0.h[5], v0.h[6]   // v10,v11 = t11,  v8,v9   = t10
+        dmbutterfly_l   v10, v11, v8,  v9,  v21, v26, v0.h[6], v0.h[7]   // v10,v11 = t11,  v8,v9   = t10
         butterfly_8h_r  v4,  v27, v16, v27               // v4  = t4,   v27 = t0
         dbutterfly_n    v24, v28, v14, v15, v6,  v7,  v12, v13, v6,  v7  // v24     = t9a,  v28     = t13a
 
-        dmbutterfly_l   v12, v13, v14, v15, v30, v17, v0.h[6], v0.h[5]   // v12,v13 = t14,  v14,v15 = t15
+        dmbutterfly_l   v12, v13, v14, v15, v30, v17, v0.h[7], v0.h[6]   // v12,v13 = t14,  v14,v15 = t15
         butterfly_8h_r  v5,  v20, v31, v20               // v5  = t5, v20 = t1
         dbutterfly_n    v21, v17, v8,  v9,  v12, v13, v6,  v7,  v12, v13 // v21     = t10a, v17     = t14a
         dbutterfly_n    v26, v30, v10, v11, v14, v15, v8,  v9,  v14, v15 // v26     = t11a, v30     = t15a
@@ -663,15 +663,15 @@ function iadst16
         butterfly_8h_r  v6,  v25, v18, v25               // v6  = t6, v25 = t2
         butterfly_8h_r  v7,  v22, v29, v22               // v7  = t7, v22 = t3
 
-        dmbutterfly_l   v10, v11, v8,  v9,  v19, v28, v0.h[1], v0.h[2]   // v10,v11 = t13,  v8,v9   = t12
-        dmbutterfly_l   v12, v13, v14, v15, v30, v17, v0.h[2], v0.h[1]   // v12,v13 = t14,  v14,v15 = t15
+        dmbutterfly_l   v10, v11, v8,  v9,  v19, v28, v0.h[2], v0.h[3]   // v10,v11 = t13,  v8,v9   = t12
+        dmbutterfly_l   v12, v13, v14, v15, v30, v17, v0.h[3], v0.h[2]   // v12,v13 = t14,  v14,v15 = t15
 
         dbutterfly_n    v18, v30, v8,  v9,  v12, v13, v16, v17, v12, v13 // v18   = out[2], v30     = t14a
         dbutterfly_n    v29, v17, v10, v11, v14, v15, v12, v13, v14, v15 // v29 = -out[13], v17     = t15a
         neg             v29.8h, v29.8h                   // v29 = out[13]
 
-        dmbutterfly_l   v10, v11, v8,  v9,  v4,  v5,  v0.h[1], v0.h[2]   // v10,v11 = t5a,  v8,v9   = t4a
-        dmbutterfly_l   v12, v13, v14, v15, v7,  v6,  v0.h[2], v0.h[1]   // v12,v13 = t6a,  v14,v15 = t7a
+        dmbutterfly_l   v10, v11, v8,  v9,  v4,  v5,  v0.h[2], v0.h[3]   // v10,v11 = t5a,  v8,v9   = t4a
+        dmbutterfly_l   v12, v13, v14, v15, v7,  v6,  v0.h[3], v0.h[2]   // v12,v13 = t6a,  v14,v15 = t7a
 
         butterfly_8h    v2,  v6,  v27, v25               // v2 = out[0], v6 = t2a
         butterfly_8h    v3,  v7,  v23, v21               // v3 =-out[1], v7 = t10
@@ -1101,10 +1101,10 @@ endfunc
         butterfly_8h    v7,  v3,  v29, v31 // v7  = t31a, v3  = t28a
         butterfly_8h    v22, v27, v24, v27 // v22 = t30,  v27 = t29
 
-        dmbutterfly     v27, v20, v0.h[1], v0.h[2], v24, v25, v30, v31        // v27 = t18a, v20 = t29a
-        dmbutterfly     v3,  v5,  v0.h[1], v0.h[2], v24, v25, v30, v31        // v3  = t19,  v5  = t28
-        dmbutterfly     v28, v6,  v0.h[1], v0.h[2], v24, v25, v30, v31, neg=1 // v28 = t27,  v6  = t20
-        dmbutterfly     v26, v21, v0.h[1], v0.h[2], v24, v25, v30, v31, neg=1 // v26 = t26a, v21 = t21a
+        dmbutterfly     v27, v20, v0.h[2], v0.h[3], v24, v25, v30, v31        // v27 = t18a, v20 = t29a
+        dmbutterfly     v3,  v5,  v0.h[2], v0.h[3], v24, v25, v30, v31        // v3  = t19,  v5  = t28
+        dmbutterfly     v28, v6,  v0.h[2], v0.h[3], v24, v25, v30, v31, neg=1 // v28 = t27,  v6  = t20
+        dmbutterfly     v26, v21, v0.h[2], v0.h[3], v24, v25, v30, v31, neg=1 // v26 = t26a, v21 = t21a
 
         butterfly_8h    v31, v24, v7,  v4  // v31 = t31,  v24 = t24
         butterfly_8h    v30, v25, v22, v23 // v30 = t30a, v25 = t25a
@@ -1141,10 +1141,10 @@ function idct32_odd
         butterfly_8h    v29, v23, v31, v23 // v29 = t31, v23 = t30
         butterfly_8h    v31, v27, v19, v27 // v31 = t28, v27 = t29
 
-        dmbutterfly     v23, v24, v0.h[3], v0.h[4], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
-        dmbutterfly     v27, v20, v0.h[3], v0.h[4], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
-        dmbutterfly     v21, v26, v0.h[5], v0.h[6], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
-        dmbutterfly     v25, v22, v0.h[5], v0.h[6], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
+        dmbutterfly     v23, v24, v0.h[4], v0.h[5], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
+        dmbutterfly     v27, v20, v0.h[4], v0.h[5], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
+        dmbutterfly     v21, v26, v0.h[6], v0.h[7], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
+        dmbutterfly     v25, v22, v0.h[6], v0.h[7], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
         idct32_end
 endfunc
 
@@ -1167,10 +1167,10 @@ function idct32_odd_half
         butterfly_8h    v29, v23, v31, v23 // v29 = t31, v23 = t30
         butterfly_8h    v31, v27, v19, v27 // v31 = t28, v27 = t29
 
-        dmbutterfly     v23, v24, v0.h[3], v0.h[4], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
-        dmbutterfly     v27, v20, v0.h[3], v0.h[4], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
-        dmbutterfly     v21, v26, v0.h[5], v0.h[6], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
-        dmbutterfly     v25, v22, v0.h[5], v0.h[6], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
+        dmbutterfly     v23, v24, v0.h[4], v0.h[5], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
+        dmbutterfly     v27, v20, v0.h[4], v0.h[5], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
+        dmbutterfly     v21, v26, v0.h[6], v0.h[7], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
+        dmbutterfly     v25, v22, v0.h[6], v0.h[7], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
         idct32_end
 endfunc
 
@@ -1198,18 +1198,18 @@ function idct32_odd_quarter
         drshrn_h        v6,  v20, v21, #14
         drshrn_h        v30, v24, v25, #14
 
-        dmbutterfly_l   v16, v17, v18, v19, v29, v4,  v0.h[3], v0.h[4]
-        dmbutterfly_l   v27, v26, v20, v21, v31, v5,  v0.h[3], v0.h[4]
+        dmbutterfly_l   v16, v17, v18, v19, v29, v4,  v0.h[4], v0.h[5]
+        dmbutterfly_l   v27, v26, v20, v21, v31, v5,  v0.h[4], v0.h[5]
         drshrn_h        v23, v16, v17, #14
         drshrn_h        v24, v18, v19, #14
         neg             v20.4s, v20.4s
         neg             v21.4s, v21.4s
         drshrn_h        v27, v27, v26, #14
         drshrn_h        v20, v20, v21, #14
-        dmbutterfly_l   v16, v17, v18, v19, v30, v6,  v0.h[5], v0.h[6]
+        dmbutterfly_l   v16, v17, v18, v19, v30, v6,  v0.h[6], v0.h[7]
         drshrn_h        v21, v16, v17, #14
         drshrn_h        v26, v18, v19, #14
-        dmbutterfly_l   v16, v17, v18, v19, v28, v7,  v0.h[5], v0.h[6]
+        dmbutterfly_l   v16, v17, v18, v19, v28, v7,  v0.h[6], v0.h[7]
         drshrn_h        v25, v16, v17, #14
         neg             v18.4s, v18.4s
         neg             v19.4s, v19.4s
