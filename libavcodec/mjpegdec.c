@@ -2383,7 +2383,7 @@ the_end:
             }
         }
     }
-    if (s->flipped) {
+    if (s->flipped && !s->rgb) {
         int j;
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
