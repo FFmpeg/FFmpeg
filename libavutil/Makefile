@@ -181,6 +181,7 @@ SKIPHEADERS-$(CONFIG_OPENCL)           += opencl.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
+            aes_ctr                                                     \
             atomic                                                      \
             audio_fifo                                                  \
             avstring                                                    \
