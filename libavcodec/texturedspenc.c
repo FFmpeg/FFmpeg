@@ -255,11 +255,11 @@ static void optimize_colors(const uint8_t *block, ptrdiff_t stride,
 
         muv = minv = maxv = bp[0];
         for (y = 0; y < 4; y++) {
-            for (x = 4; x < 4; x += 4) {
+            for (x = 0; x < 4; x++) {
                 muv += bp[x * 4 + y * stride];
-                if (bp[x] < minv)
+                if (bp[x * 4 + y * stride] < minv)
                     minv = bp[x * 4 + y * stride];
-                else if (bp[x] > maxv)
+                else if (bp[x * 4 + y * stride] > maxv)
                     maxv = bp[x * 4 + y * stride];
             }
         }
