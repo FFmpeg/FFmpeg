@@ -388,6 +388,11 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
                ctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
+    if (ctx->block_align <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid block alignment %d.\n", ctx->block_align);
+        return AVERROR_INVALIDDATA;
+    }
+
     flags                = AV_RL32(ctx->extradata + 18);
     s->spillover_bitsize = 3 + av_ceil_log2(ctx->block_align);
     s->do_apf            =    flags & 0x1;
