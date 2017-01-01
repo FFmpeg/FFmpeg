@@ -367,6 +367,16 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
+static HLSSegment *find_segment_by_filename(HLSSegment *segment, const char *filename)
+{
+    while (segment) {
+        if (!av_strcasecmp(segment->filename,filename))
+            return segment;
+        segment = segment->next;
+    }
+    return (HLSSegment *) NULL;
+}
+
 /* Create a new segment and append it to the segment list */
 static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double duration,
                               int64_t pos, int64_t size)
@@ -382,6 +392,10 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 
     if (hls->use_localtime_mkdir) {
         filename = hls->avf->filename;
+    }
+    if (find_segment_by_filename(hls->segments, filename)
+        || find_segment_by_filename(hls->old_segments, en->filename)) {
+        av_log(hls, AV_LOG_WARNING, "Duplicated segment filename detected: %s\n", filename);
     }
     av_strlcpy(en->filename, filename, sizeof(en->filename));
 
@@ -659,38 +673,6 @@ fail:
     return ret;
 }
 
-static HLSSegment *find_segment_by_filename(HLSSegment *segment, const char *filename)
-{
-    /* filename may contain rel/abs path, but segments store only basename */
-    char *p = NULL, *dirname = NULL, *path = NULL;
-    int path_size;
-    HLSSegment *ret_segment = NULL;
-    dirname = av_strdup(filename);
-    if (!dirname)
-        return NULL;
-    p = (char *)av_basename(dirname); // av_dirname would return . in case of no dir
-    *p = '\0'; // maybe empty
-
-    while (segment) {
-        path_size = strlen(dirname) + strlen(segment->filename) + 1;
-        path = av_malloc(path_size);
-        if (!path)
-            goto end;
-        av_strlcpy(path, dirname, path_size);
-        av_strlcat(path, segment->filename, path_size);
-        if (!strcmp(path,filename)) {
-            ret_segment = segment;
-            av_free(path);
-            goto end;
-        }
-        av_free(path);
-        segment = segment->next;
-    }
-end:
-    av_free(dirname);
-    return ret_segment;
-}
-
 static int hls_start(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
@@ -735,10 +717,6 @@ static int hls_start(AVFormatContext *s)
                     return AVERROR(EINVAL);
                 }
                 av_free(filename);
-            }
-            if (find_segment_by_filename(c->segments, oc->filename)
-                || find_segment_by_filename(c->old_segments, oc->filename)) {
-                av_log(c, AV_LOG_WARNING, "Duplicated segment filename detected: %s\n", oc->filename);
             }
             if (c->use_localtime_mkdir) {
                 const char *dir;
