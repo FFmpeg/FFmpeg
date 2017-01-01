@@ -829,13 +829,23 @@ fail:
     return err;
 }
 
+static const char * get_default_pattern_localtime_fmt(void)
+{
+    char b[21];
+    time_t t = time(NULL);
+    struct tm *p, tmbuf;
+    p = localtime_r(&t, &tmbuf);
+    // no %s support when strftime returned error or left format string unchanged
+    return (!strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%I%S.ts" : "-%s.ts";
+}
+
 static int hls_write_header(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     int ret, i;
     char *p;
     const char *pattern = "%d.ts";
-    const char *pattern_localtime_fmt = "-%s.ts";
+    const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt();
     const char *vtt_pattern = "%d.vtt";
     AVDictionary *options = NULL;
     int basename_size;
