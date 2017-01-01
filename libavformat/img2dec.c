@@ -755,6 +755,8 @@ static int jpeg_probe(AVProbeData *p)
 
     if (state == EOI)
         return AVPROBE_SCORE_EXTENSION + 1;
+    if (state == SOS)
+        return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return AVPROBE_SCORE_EXTENSION / 8;
 }
 
