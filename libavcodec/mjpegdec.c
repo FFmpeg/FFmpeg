@@ -1670,6 +1670,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
     if (id == AV_RB32("JFIF")) {
         int t_w, t_h, v1, v2;
+        if (len < 8)
+            goto out;
         skip_bits(&s->gb, 8); /* the trailing zero-byte */
         v1 = get_bits(&s->gb, 8);
         v2 = get_bits(&s->gb, 8);
