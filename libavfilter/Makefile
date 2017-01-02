@@ -280,6 +280,7 @@ OBJS-$(CONFIG_SHUFFLEFRAMES_FILTER)          += vf_shuffleframes.o
 OBJS-$(CONFIG_SHUFFLEPLANES_FILTER)          += vf_shuffleplanes.o
 OBJS-$(CONFIG_SIDEDATA_FILTER)               += f_sidedata.o
 OBJS-$(CONFIG_SIGNALSTATS_FILTER)            += vf_signalstats.o
+OBJS-$(CONFIG_SIGNATURE_FILTER)              += vf_signature.o
 OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SOBEL_FILTER)                  += vf_convolution.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o

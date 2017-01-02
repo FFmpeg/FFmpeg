@@ -30,6 +30,7 @@ version <next>:
 - Support MOV with multiple sample description tables
 - XPM decoder
 - Removed the legacy X11 screen grabber, use XCB instead
+- MPEG-7 Video Signature filter
 
 
 version 3.2:
