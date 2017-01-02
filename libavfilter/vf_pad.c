@@ -210,11 +210,15 @@ static int config_output(AVFilterLink *outlink)
 static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     PadContext *s = inlink->dst->priv;
-
-    AVFrame *frame = ff_get_video_buffer(inlink->dst->outputs[0],
-                                         w + (s->w - s->in_w),
-                                         h + (s->h - s->in_h) + (s->x > 0));
+    AVFrame *frame;
     int plane;
+
+    if (s->inlink_w <= 0)
+        return NULL;
+
+    frame = ff_get_video_buffer(inlink->dst->outputs[0],
+                                w + (s->w - s->in_w),
+                                h + (s->h - s->in_h) + (s->x > 0));
 
     if (!frame)
         return NULL;
