@@ -1123,18 +1123,14 @@ endfunc
 .endm
 
 function idct32_odd
-        ld1             {v0.8h,v1.8h}, [x11]
-
-        dmbutterfly     v16, v31, v0.h[0], v0.h[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
-        dmbutterfly     v24, v23, v0.h[2], v0.h[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
-        dmbutterfly     v20, v27, v0.h[4], v0.h[5], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
-        dmbutterfly     v28, v19, v0.h[6], v0.h[7], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
-        dmbutterfly     v18, v29, v1.h[0], v1.h[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
-        dmbutterfly     v26, v21, v1.h[2], v1.h[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
-        dmbutterfly     v22, v25, v1.h[4], v1.h[5], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
-        dmbutterfly     v30, v17, v1.h[6], v1.h[7], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
-
-        ld1             {v0.8h}, [x10]
+        dmbutterfly     v16, v31, v8.h[0], v8.h[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
+        dmbutterfly     v24, v23, v8.h[2], v8.h[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
+        dmbutterfly     v20, v27, v8.h[4], v8.h[5], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
+        dmbutterfly     v28, v19, v8.h[6], v8.h[7], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
+        dmbutterfly     v18, v29, v9.h[0], v9.h[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
+        dmbutterfly     v26, v21, v9.h[2], v9.h[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
+        dmbutterfly     v22, v25, v9.h[4], v9.h[5], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
+        dmbutterfly     v30, v17, v9.h[6], v9.h[7], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
 
         butterfly_8h    v4,  v24, v16, v24 // v4  = t16, v24 = t17
         butterfly_8h    v5,  v20, v28, v20 // v5  = t19, v20 = t18
@@ -1153,18 +1149,14 @@ function idct32_odd
 endfunc
 
 function idct32_odd_half
-        ld1             {v0.8h,v1.8h}, [x11]
-
-        dmbutterfly_h1  v16, v31, v0.h[0], v0.h[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
-        dmbutterfly_h2  v24, v23, v0.h[2], v0.h[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
-        dmbutterfly_h1  v20, v27, v0.h[4], v0.h[5], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
-        dmbutterfly_h2  v28, v19, v0.h[6], v0.h[7], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
-        dmbutterfly_h1  v18, v29, v1.h[0], v1.h[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
-        dmbutterfly_h2  v26, v21, v1.h[2], v1.h[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
-        dmbutterfly_h1  v22, v25, v1.h[4], v1.h[5], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
-        dmbutterfly_h2  v30, v17, v1.h[6], v1.h[7], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
-
-        ld1             {v0.8h}, [x10]
+        dmbutterfly_h1  v16, v31, v8.h[0], v8.h[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
+        dmbutterfly_h2  v24, v23, v8.h[2], v8.h[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
+        dmbutterfly_h1  v20, v27, v8.h[4], v8.h[5], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
+        dmbutterfly_h2  v28, v19, v8.h[6], v8.h[7], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
+        dmbutterfly_h1  v18, v29, v9.h[0], v9.h[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
+        dmbutterfly_h2  v26, v21, v9.h[2], v9.h[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
+        dmbutterfly_h1  v22, v25, v9.h[4], v9.h[5], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
+        dmbutterfly_h2  v30, v17, v9.h[6], v9.h[7], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
 
         butterfly_8h    v4,  v24, v16, v24 // v4  = t16, v24 = t17
         butterfly_8h    v5,  v20, v28, v20 // v5  = t19, v20 = t18
@@ -1183,18 +1175,14 @@ function idct32_odd_half
 endfunc
 
 function idct32_odd_quarter
-        ld1             {v0.8h,v1.8h}, [x11]
-
-        dsmull_h        v4,  v5,  v16, v0.h[0]
-        dsmull_h        v28, v29, v19, v0.h[7]
-        dsmull_h        v30, v31, v16, v0.h[1]
-        dsmull_h        v22, v23, v17, v1.h[6]
-        dsmull_h        v7,  v6,  v17, v1.h[7]
-        dsmull_h        v26, v27, v19, v0.h[6]
-        dsmull_h        v20, v21, v18, v1.h[0]
-        dsmull_h        v24, v25, v18, v1.h[1]
-
-        ld1             {v0.8h}, [x10]
+        dsmull_h        v4,  v5,  v16, v8.h[0]
+        dsmull_h        v28, v29, v19, v8.h[7]
+        dsmull_h        v30, v31, v16, v8.h[1]
+        dsmull_h        v22, v23, v17, v9.h[6]
+        dsmull_h        v7,  v6,  v17, v9.h[7]
+        dsmull_h        v26, v27, v19, v8.h[6]
+        dsmull_h        v20, v21, v18, v9.h[0]
+        dsmull_h        v24, v25, v18, v9.h[1]
 
         neg             v28.4s, v28.4s
         neg             v29.4s, v29.4s
@@ -1240,12 +1228,8 @@ endfunc
 // x1 = unused
 // x2 = src
 // x9 = double input stride
-// x10 = idct_coeffs
-// x11 = idct_coeffs + 32
 function idct32_1d_8x32_pass1\suffix\()_neon
         mov             x14, x30
-        ld1             {v0.8h,v1.8h}, [x10]
-
         movi            v2.8h, #0
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
@@ -1278,14 +1262,14 @@ function idct32_1d_8x32_pass1\suffix\()_neon
 .macro store_rev a, b
         // There's no rev128 instruction, but we reverse each 64 bit
         // half, and then flip them using an ext with 8 bytes offset.
-        rev64           v1.8h, \b
+        rev64           v3.8h, \b
         st1             {\a},  [x0], #16
-        rev64           v0.8h, \a
-        ext             v1.16b, v1.16b, v1.16b, #8
+        rev64           v2.8h, \a
+        ext             v3.16b, v3.16b, v3.16b, #8
         st1             {\b},  [x0], #16
-        ext             v0.16b, v0.16b, v0.16b, #8
-        st1             {v1.8h},  [x0], #16
-        st1             {v0.8h},  [x0], #16
+        ext             v2.16b, v2.16b, v2.16b, #8
+        st1             {v3.8h},  [x0], #16
+        st1             {v2.8h},  [x0], #16
 .endm
         store_rev       v16.8h, v24.8h
         store_rev       v17.8h, v25.8h
@@ -1339,20 +1323,20 @@ function idct32_1d_8x32_pass1\suffix\()_neon
         // subtracted from the output.
 .macro store_rev a, b
         ld1             {v4.8h},  [x0]
-        rev64           v1.8h, \b
+        rev64           v3.8h, \b
         add             v4.8h, v4.8h, \a
-        rev64           v0.8h, \a
+        rev64           v2.8h, \a
         st1             {v4.8h},  [x0], #16
-        ext             v1.16b, v1.16b, v1.16b, #8
+        ext             v3.16b, v3.16b, v3.16b, #8
         ld1             {v5.8h},  [x0]
-        ext             v0.16b, v0.16b, v0.16b, #8
+        ext             v2.16b, v2.16b, v2.16b, #8
         add             v5.8h, v5.8h, \b
         st1             {v5.8h},  [x0], #16
         ld1             {v6.8h},  [x0]
-        sub             v6.8h, v6.8h, v1.8h
+        sub             v6.8h, v6.8h, v3.8h
         st1             {v6.8h},  [x0], #16
         ld1             {v7.8h},  [x0]
-        sub             v7.8h, v7.8h, v0.8h
+        sub             v7.8h, v7.8h, v2.8h
         st1             {v7.8h},  [x0], #16
 .endm
 
@@ -1376,12 +1360,8 @@ endfunc
 // x2 = src (temp buffer)
 // x7 = negative double temp buffer stride
 // x9 = double temp buffer stride
-// x10 = idct_coeffs
-// x11 = idct_coeffs + 32
 function idct32_1d_8x32_pass2\suffix\()_neon
         mov             x14, x30
-        ld1             {v0.8h,v1.8h}, [x10]
-
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
 .ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
@@ -1454,15 +1434,15 @@ function idct32_1d_8x32_pass2\suffix\()_neon
         sub             v6.8h, v6.8h, \c
         sub             v7.8h, v7.8h, \d
 .endif
-        ld1             {v0.8b}, [x0], x1
-        ld1             {v1.8b}, [x0], x1
+        ld1             {v10.8b}, [x0], x1
+        ld1             {v11.8b}, [x0], x1
         srshr           v4.8h, v4.8h, #6
         ld1             {v2.8b}, [x0], x1
         srshr           v5.8h, v5.8h, #6
-        uaddw           v4.8h, v4.8h, v0.8b
+        uaddw           v4.8h, v4.8h, v10.8b
         ld1             {v3.8b}, [x0], x1
         srshr           v6.8h, v6.8h, #6
-        uaddw           v5.8h, v5.8h, v1.8b
+        uaddw           v5.8h, v5.8h, v11.8b
         srshr           v7.8h, v7.8h, #6
         sub             x0,  x0,  x1, lsl #2
         uaddw           v6.8h, v6.8h, v2.8b
@@ -1503,13 +1483,10 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
         b.eq            idct32x32_dc_add_neon
 
         movrel          x10, idct_coeffs
-        add             x11, x10, #32
         movrel          x12, min_eob_idct_idct_32, 2
 
         mov             x15, x30
 
-        stp             d14, d15, [sp, #-0x10]!
-        stp             d12, d13, [sp, #-0x10]!
         stp             d10, d11, [sp, #-0x10]!
         stp             d8,  d9,  [sp, #-0x10]!
 
@@ -1522,6 +1499,9 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
         // Double stride of the input, since we only read every other line
         mov             x9,  #128
         neg             x7,  x9
+
+        ld1             {v0.8h,v1.8h}, [x10], #32
+        ld1             {v8.8h,v9.8h}, [x10]
 
         cmp             w3,  #34
         b.le            idct32x32_quarter_add_neon
@@ -1565,8 +1545,6 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
 
         ldp             d8,  d9,  [sp], 0x10
         ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
 
         br              x15
 endfunc
@@ -1592,8 +1570,6 @@ function idct32x32_\size\()_add_neon
 
         ldp             d8,  d9,  [sp], 0x10
         ldp             d10, d11, [sp], 0x10
-        ldp             d12, d13, [sp], 0x10
-        ldp             d14, d15, [sp], 0x10
 
         br              x15
 endfunc
