@@ -155,7 +155,7 @@ cglobal vc1_%2_hor_16b_shift2, 4, 5, 0, dst, stride, src, rnd, h
     mov                hq, 8
     sub              srcq, 2
     sub              rndd, (-1+9+9-1) * 1024 ; add -1024 bias
-    LOAD_ROUNDER_MMX rndq
+    LOAD_ROUNDER_MMX rndd
     mova               m5, [pw_9]
     mova               m6, [pw_128]
     pxor               m0, m0
