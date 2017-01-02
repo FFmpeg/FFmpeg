@@ -60,6 +60,8 @@ typedef struct PSDContext {
 
     enum PsdCompr compression;
     enum PsdColorMode color_mode;
+
+    uint8_t palette[AVPALETTE_SIZE];
 } PSDContext;
 
 static int decode_header(PSDContext * s)
@@ -158,6 +160,14 @@ static int decode_header(PSDContext * s)
     if (bytestream2_get_bytes_left(&s->gb) < (len_section + 4)) { /* section and len next section */
         av_log(s->avctx, AV_LOG_ERROR, "Incomplete file.\n");
         return AVERROR_INVALIDDATA;
+    }
+    if (len_section) {
+        int i,j;
+        memset(s->palette, 0xff, AVPALETTE_SIZE);
+        for (j = HAVE_BIGENDIAN; j < 3 + HAVE_BIGENDIAN; j++)
+            for (i = 0; i < FFMIN(256, len_section / 3); i++)
+                s->palette[i * 4 + (HAVE_BIGENDIAN ? j : 2 - j)] = bytestream2_get_byteu(&s->gb);
+        len_section -= i * 3;
     }
     bytestream2_skip(&s->gb, len_section);
 
@@ -309,6 +319,15 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     s->uncompressed_size = s->line_size * s->height * s->channel_count;
 
     switch (s->color_mode) {
+    case PSD_INDEXED:
+        if (s->channel_depth != 8 || s->channel_count != 1) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid indexed file (channel_depth %d, channel_count %d)\n",
+                   s->channel_depth, s->channel_count);
+            return AVERROR_INVALIDDATA;
+        }
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
+        break;
     case PSD_RGB:
         if (s->channel_count == 3) {
             if (s->channel_depth == 8) {
@@ -414,6 +433,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 ptr_data += s->width * s->pixel_size;
             }
         }
+    }
+
+    if (s->color_mode == PSD_INDEXED) {
+        picture->palette_has_changed = 1;
+        memcpy(picture->data[1], s->palette, AVPALETTE_SIZE);
     }
 
     av_freep(&s->tmp);
