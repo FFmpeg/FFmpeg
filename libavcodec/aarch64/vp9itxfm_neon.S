@@ -379,12 +379,11 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         // idct, so those always need to be loaded.
 .ifc \txfm1\()_\txfm2,idct_idct
         movrel          x4,  idct_coeffs
-        ld1             {v0.8h}, [x4]
 .else
         movrel          x4, iadst8_coeffs
         ld1             {v1.8h}, [x4], #16
-        ld1             {v0.8h}, [x4]
 .endif
+        ld1             {v0.8h}, [x4]
 
         movi            v2.16b, #0
         movi            v3.16b, #0
