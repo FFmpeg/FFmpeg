@@ -205,41 +205,41 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
 
     switch(pool->type) {
     case AVMEDIA_TYPE_VIDEO:
-    desc = av_pix_fmt_desc_get(pool->format);
-    if (!desc) {
-        goto fail;
-    }
-
-    frame->width = pool->width;
-    frame->height = pool->height;
-    frame->format = pool->format;
-
-    for (i = 0; i < 4; i++) {
-        frame->linesize[i] = pool->linesize[i];
-        if (!pool->pools[i])
-            break;
-
-        frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
-        if (!frame->buf[i]) {
+        desc = av_pix_fmt_desc_get(pool->format);
+        if (!desc) {
             goto fail;
         }
 
-        frame->data[i] = frame->buf[i]->data;
-    }
+        frame->width = pool->width;
+        frame->height = pool->height;
+        frame->format = pool->format;
 
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
-        enum AVPixelFormat format =
-            pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+        for (i = 0; i < 4; i++) {
+            frame->linesize[i] = pool->linesize[i];
+            if (!pool->pools[i])
+                break;
 
-        av_assert0(frame->data[1] != NULL);
-        if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0) {
-            goto fail;
+            frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
+            if (!frame->buf[i]) {
+                goto fail;
+            }
+
+            frame->data[i] = frame->buf[i]->data;
         }
-    }
 
-    frame->extended_data = frame->data;
-    break;
+        if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+            desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+            enum AVPixelFormat format =
+                pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+
+            av_assert0(frame->data[1] != NULL);
+            if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0) {
+                goto fail;
+            }
+        }
+
+        frame->extended_data = frame->data;
+        break;
     case AVMEDIA_TYPE_AUDIO:
         frame->nb_samples = pool->nb_samples;
         av_frame_set_channels(frame, pool->channels);
