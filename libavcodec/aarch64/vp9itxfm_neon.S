@@ -255,7 +255,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
         cmp             w3,  #1
         b.ne            1f
         // DC-only for idct/idct
-        ld1r            {v2.4h},  [x2]
+        ld1             {v2.h}[0], [x2]
         smull           v2.4s,  v2.4h, v0.h[0]
         rshrn           v2.4h,  v2.4s, #14
         smull           v2.4s,  v2.4h, v0.h[0]
@@ -287,8 +287,8 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
 
         \txfm2\()4      v4,  v5,  v6,  v7
 2:
-        ld1r            {v0.2s},   [x0], x1
-        ld1r            {v1.2s},   [x0], x1
+        ld1             {v0.s}[0],   [x0], x1
+        ld1             {v1.s}[0],   [x0], x1
 .ifnc \txfm1,iwht
         srshr           v4.4h,  v4.4h,  #4
         srshr           v5.4h,  v5.4h,  #4
@@ -297,8 +297,8 @@ function ff_vp9_\txfm1\()_\txfm2\()_4x4_add_neon, export=1
 .endif
         uaddw           v4.8h,  v4.8h,  v0.8b
         uaddw           v5.8h,  v5.8h,  v1.8b
-        ld1r            {v2.2s},   [x0], x1
-        ld1r            {v3.2s},   [x0], x1
+        ld1             {v2.s}[0],   [x0], x1
+        ld1             {v3.s}[0],   [x0], x1
         sqxtun          v0.8b,  v4.8h
         sqxtun          v1.8b,  v5.8h
         sub             x0,  x0,  x1, lsl #2
@@ -394,7 +394,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         cmp             w3,  #1
         b.ne            1f
         // DC-only for idct/idct
-        ld1r            {v2.4h},  [x2]
+        ld1             {v2.h}[0],  [x2]
         smull           v2.4s,  v2.4h, v0.h[0]
         rshrn           v2.4h,  v2.4s, #14
         smull           v2.4s,  v2.4h, v0.h[0]
@@ -485,7 +485,7 @@ function idct16x16_dc_add_neon
 
         movi            v1.4h, #0
 
-        ld1r            {v2.4h}, [x2]
+        ld1             {v2.h}[0], [x2]
         smull           v2.4s,  v2.4h, v0.h[0]
         rshrn           v2.4h,  v2.4s, #14
         smull           v2.4s,  v2.4h, v0.h[0]
@@ -1044,7 +1044,7 @@ function idct32x32_dc_add_neon
 
         movi            v1.4h, #0
 
-        ld1r            {v2.4h}, [x2]
+        ld1             {v2.h}[0], [x2]
         smull           v2.4s,  v2.4h,  v0.h[0]
         rshrn           v2.4h,  v2.4s,  #14
         smull           v2.4s,  v2.4h,  v0.h[0]
