@@ -385,10 +385,10 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
 .endif
         ld1             {v0.8h}, [x4]
 
-        movi            v2.16b, #0
-        movi            v3.16b, #0
-        movi            v4.16b, #0
-        movi            v5.16b, #0
+        movi            v2.8h, #0
+        movi            v3.8h, #0
+        movi            v4.8h, #0
+        movi            v5.8h, #0
 
 .ifc \txfm1\()_\txfm2,idct_idct
         cmp             w3,  #1
@@ -411,11 +411,11 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
         b               2f
 .endif
 1:
-        ld1             {v16.16b,v17.16b,v18.16b,v19.16b},  [x2], #64
-        ld1             {v20.16b,v21.16b,v22.16b,v23.16b},  [x2], #64
+        ld1             {v16.8h,v17.8h,v18.8h,v19.8h},  [x2], #64
+        ld1             {v20.8h,v21.8h,v22.8h,v23.8h},  [x2], #64
         sub             x2,  x2,  #128
-        st1             {v2.16b,v3.16b,v4.16b,v5.16b},  [x2], #64
-        st1             {v2.16b,v3.16b,v4.16b,v5.16b},  [x2], #64
+        st1             {v2.8h,v3.8h,v4.8h,v5.8h},      [x2], #64
+        st1             {v2.8h,v3.8h,v4.8h,v5.8h},      [x2], #64
 
         \txfm1\()8
 
