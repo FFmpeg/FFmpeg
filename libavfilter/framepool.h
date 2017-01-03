@@ -41,12 +41,30 @@ typedef struct FFFramePool FFFramePool;
  * @param height height of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignement of each frame in this pool
- * @return newly created frame pool on success, NULL on error.
+ * @return newly created video frame pool on success, NULL on error.
  */
 FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
                                       int width,
                                       int height,
                                       enum AVPixelFormat format,
+                                      int align);
+
+/**
+ * Allocate and initialize an audio frame pool.
+ *
+ * @param alloc a function that will be used to allocate new frame buffers when
+ * the pool is empty. May be NULL, then the default allocator will be used
+ * (av_buffer_alloc()).
+ * @param channels channels of each frame in this pool
+ * @param nb_samples number of samples of each frame in this pool
+ * @param format format of each frame in this pool
+ * @param align buffers alignement of each frame in this pool
+ * @return newly created audio frame pool on success, NULL on error.
+ */
+FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(int size),
+                                      int channels,
+                                      int samples,
+                                      enum AVSampleFormat format,
                                       int align);
 
 /**
@@ -71,6 +89,22 @@ int ff_frame_pool_get_video_config(FFFramePool *pool,
                                    int *height,
                                    enum AVPixelFormat *format,
                                    int *align);
+
+/**
+ * Get the audio frame pool configuration.
+ *
+ * @param channels channels of each frame in this pool
+ * @param nb_samples number of samples of each frame in this pool
+ * @param format format of each frame in this pool
+ * @param align buffers alignement of each frame in this pool
+ * @return 0 on success, a negative AVERROR otherwise.
+ */
+int ff_frame_pool_get_audio_config(FFFramePool *pool,
+                                   int *channels,
+                                   int *nb_samples,
+                                   enum AVSampleFormat *format,
+                                   int *align);
+
 
 /**
  * Allocate a new AVFrame, reussing old buffers from the pool when available.
