@@ -225,7 +225,7 @@ endconst
         add             v21.4s,    v17.4s,    v19.4s
         rshrn           \c0\().4h, v20.4s,    #14
         add             v16.4s,    v16.4s,    v17.4s
-        rshrn           \c1\().4h, v21.4s,     #14
+        rshrn           \c1\().4h, v21.4s,    #14
         sub             v16.4s,    v16.4s,    v19.4s
         rshrn           \c2\().4h, v18.4s,    #14
         rshrn           \c3\().4h, v16.4s,    #14
@@ -1313,8 +1313,8 @@ function idct32_1d_8x32_pass1\suffix\()_neon
 
         bl              idct32_odd\suffix
 
-        transpose_8x8H v31, v30, v29, v28, v27, v26, v25, v24, v2, v3
-        transpose_8x8H v23, v22, v21, v20, v19, v18, v17, v16, v2, v3
+        transpose_8x8H  v31, v30, v29, v28, v27, v26, v25, v24, v2, v3
+        transpose_8x8H  v23, v22, v21, v20, v19, v18, v17, v16, v2, v3
 
         // Store the registers a, b horizontally,
         // adding into the output first, and the mirrored,
