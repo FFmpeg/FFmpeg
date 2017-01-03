@@ -412,13 +412,12 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
 .ifc \txfm1\()_\txfm2,idct_idct
         movrel          r12, idct_coeffs
         vpush           {q4-q5}
-        vld1.16         {q0}, [r12,:128]
 .else
         movrel          r12, iadst8_coeffs
         vld1.16         {q1}, [r12,:128]!
         vpush           {q4-q7}
-        vld1.16         {q0}, [r12,:128]
 .endif
+        vld1.16         {q0}, [r12,:128]
 
         vmov.i16        q2, #0
         vmov.i16        q3, #0
