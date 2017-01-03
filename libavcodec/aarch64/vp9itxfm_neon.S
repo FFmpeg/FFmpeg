@@ -41,8 +41,8 @@ const iadst16_coeffs, align=4
         .short  11003, 12140, 8423, 14053, 5520, 15426, 2404, 16207
 endconst
 
-// out1 = ((in1 + in2) * d0[0] + (1 << 13)) >> 14
-// out2 = ((in1 - in2) * d0[0] + (1 << 13)) >> 14
+// out1 = ((in1 + in2) * v0[0] + (1 << 13)) >> 14
+// out2 = ((in1 - in2) * v0[0] + (1 << 13)) >> 14
 // in/out are .8h registers; this can do with 4 temp registers, but is
 // more efficient if 6 temp registers are available.
 .macro dmbutterfly0 out1, out2, in1, in2, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, neg=0
