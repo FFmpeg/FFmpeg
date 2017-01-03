@@ -220,9 +220,8 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
                 break;
 
             frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
-            if (!frame->buf[i]) {
+            if (!frame->buf[i])
                 goto fail;
-            }
 
             frame->data[i] = frame->buf[i]->data;
         }
@@ -233,9 +232,8 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
                 pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
 
             av_assert0(frame->data[1] != NULL);
-            if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0) {
+            if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0)
                 goto fail;
-            }
         }
 
         frame->extended_data = frame->data;
