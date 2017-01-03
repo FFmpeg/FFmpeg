@@ -890,6 +890,10 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
             av_free(par->extradata);
             par->extradata = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!par->extradata) {
+                par->extradata_size = 0;
+                return AVERROR(ENOMEM);
+            }
             memcpy(par->extradata, side, side_size);
             par->extradata_size = side_size;
             flv_write_codec_header(s, par);
