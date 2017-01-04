@@ -222,8 +222,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioPhaseMeterContext *s = ctx->priv;
+    int i;
 
     av_frame_free(&s->out);
+    for (i = 0; i < ctx->nb_outputs; i++)
+        av_freep(&ctx->output_pads[i].name);
 }
 
 static av_cold int init(AVFilterContext *ctx)
