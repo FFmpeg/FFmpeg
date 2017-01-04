@@ -800,6 +800,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         vseq->seq_fields.bits.direct_8x8_inference_flag = 1;
         vseq->seq_fields.bits.log2_max_frame_num_minus4 = 4;
         vseq->seq_fields.bits.pic_order_cnt_type = 0;
+        vseq->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 =
+            av_clip(av_log2(avctx->max_b_frames + 1) - 2, 0, 12);
 
         if (avctx->width  != ctx->surface_width ||
             avctx->height != ctx->surface_height) {
