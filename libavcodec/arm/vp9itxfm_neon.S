@@ -542,16 +542,23 @@ function idct16x16_dc_add_neon
 
         vrshr.s16       q8,  q8,  #6
 
+        mov             r3,  r0
         mov             r12, #16
 1:
         @ Loop to add the constant from q8 into all 16x16 outputs
-        vld1.8          {q3},  [r0,:128]
-        vaddw.u8        q10, q8,  d6
-        vaddw.u8        q11, q8,  d7
-        vqmovun.s16     d6,  q10
-        vqmovun.s16     d7,  q11
-        vst1.8          {q3},  [r0,:128], r1
-        subs            r12, r12, #1
+        subs            r12, r12, #2
+        vld1.8          {q2},  [r0,:128], r1
+        vaddw.u8        q10, q8,  d4
+        vld1.8          {q3},  [r0,:128], r1
+        vaddw.u8        q11, q8,  d5
+        vaddw.u8        q12, q8,  d6
+        vaddw.u8        q13, q8,  d7
+        vqmovun.s16     d4,  q10
+        vqmovun.s16     d5,  q11
+        vqmovun.s16     d6,  q12
+        vst1.8          {q2},  [r3,:128], r1
+        vqmovun.s16     d7,  q13
+        vst1.8          {q3},  [r3,:128], r1
         bne             1b
 
         bx              lr
@@ -1147,20 +1154,31 @@ function idct32x32_dc_add_neon
 
         vrshr.s16       q8,  q8,  #6
 
+        mov             r3,  r0
         mov             r12, #32
 1:
         @ Loop to add the constant from q8 into all 32x32 outputs
-        vld1.8          {q2-q3},  [r0,:128]
-        vaddw.u8        q10, q8,  d4
-        vaddw.u8        q11, q8,  d5
-        vaddw.u8        q12, q8,  d6
-        vaddw.u8        q13, q8,  d7
-        vqmovun.s16     d4,  q10
-        vqmovun.s16     d5,  q11
-        vqmovun.s16     d6,  q12
-        vqmovun.s16     d7,  q13
-        vst1.8          {q2-q3},  [r0,:128], r1
-        subs            r12, r12, #1
+        subs            r12, r12, #2
+        vld1.8          {q0-q1},  [r0,:128], r1
+        vaddw.u8        q9,  q8,  d0
+        vaddw.u8        q10, q8,  d1
+        vld1.8          {q2-q3},  [r0,:128], r1
+        vaddw.u8        q11, q8,  d2
+        vaddw.u8        q12, q8,  d3
+        vaddw.u8        q13, q8,  d4
+        vaddw.u8        q14, q8,  d5
+        vaddw.u8        q15, q8,  d6
+        vqmovun.s16     d0,  q9
+        vaddw.u8        q9,  q8,  d7
+        vqmovun.s16     d1,  q10
+        vqmovun.s16     d2,  q11
+        vqmovun.s16     d3,  q12
+        vqmovun.s16     d4,  q13
+        vqmovun.s16     d5,  q14
+        vst1.8          {q0-q1},  [r3,:128], r1
+        vqmovun.s16     d6,  q15
+        vqmovun.s16     d7,  q9
+        vst1.8          {q2-q3},  [r3,:128], r1
         bne             1b
 
         bx              lr
