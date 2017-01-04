@@ -635,50 +635,33 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
         }
     }
 
-    if (ctx->input_order == 0) {
-        // First frame is always an IDR frame.
-        av_assert0(!ctx->pic_start && !ctx->pic_end);
-
-        pic = vaapi_encode_alloc();
-        if (!pic)
-            return AVERROR(ENOMEM);
-
-        pic->type = PICTURE_TYPE_IDR;
-        pic->display_order = 0;
-        pic->encode_order  = 0;
-
-        ctx->pic_start = ctx->pic_end = pic;
-
-        *pic_out = pic;
-        return 0;
-    }
-
     pic = vaapi_encode_alloc();
     if (!pic)
         return AVERROR(ENOMEM);
 
-    if (ctx->p_per_i == 0 || ctx->p_counter == ctx->p_per_i) {
-        if (ctx->i_per_idr == 0 || ctx->i_counter == ctx->i_per_idr) {
-            pic->type = PICTURE_TYPE_IDR;
-            ctx->i_counter = 0;
-        } else {
-            pic->type = PICTURE_TYPE_I;
-            ++ctx->i_counter;
-        }
+    if (ctx->input_order == 0 || ctx->gop_counter >= avctx->gop_size) {
+        pic->type = PICTURE_TYPE_IDR;
+        ctx->gop_counter = 1;
+        ctx->p_counter = 0;
+    } else if (ctx->p_counter >= ctx->p_per_i) {
+        pic->type = PICTURE_TYPE_I;
+        ++ctx->gop_counter;
         ctx->p_counter = 0;
     } else {
         pic->type = PICTURE_TYPE_P;
         pic->refs[0] = ctx->pic_end;
         pic->nb_refs = 1;
+        ++ctx->gop_counter;
         ++ctx->p_counter;
     }
     start = end = pic;
 
     if (pic->type != PICTURE_TYPE_IDR) {
         // If that was not an IDR frame, add B-frames display-before and
-        // encode-after it.
+        // encode-after it, but not exceeding the GOP size.
 
-        for (i = 0; i < ctx->b_per_p; i++) {
+        for (i = 0; i < ctx->b_per_p &&
+             ctx->gop_counter < avctx->gop_size; i++) {
             pic = vaapi_encode_alloc();
             if (!pic)
                 goto fail;
@@ -692,23 +675,32 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
             pic->display_order = ctx->input_order + ctx->b_per_p - i - 1;
             pic->encode_order  = pic->display_order + 1;
             start = pic;
+
+            ++ctx->gop_counter;
         }
     }
 
-    for (i = 0, pic = start; pic; i++, pic = pic->next) {
-        pic->display_order = ctx->input_order + i;
-        if (end->type == PICTURE_TYPE_IDR)
-            pic->encode_order = ctx->input_order + i;
-        else if (pic == end)
-            pic->encode_order = ctx->input_order;
-        else
-            pic->encode_order = ctx->input_order + i + 1;
+    if (ctx->input_order == 0) {
+        pic->display_order = 0;
+        pic->encode_order  = 0;
+
+        ctx->pic_start = ctx->pic_end = pic;
+
+    } else {
+        for (i = 0, pic = start; pic; i++, pic = pic->next) {
+            pic->display_order = ctx->input_order + i;
+            if (end->type == PICTURE_TYPE_IDR)
+                pic->encode_order = ctx->input_order + i;
+            else if (pic == end)
+                pic->encode_order = ctx->input_order;
+            else
+                pic->encode_order = ctx->input_order + i + 1;
+        }
+
+        av_assert0(ctx->pic_end);
+        ctx->pic_end->next = start;
+        ctx->pic_end = end;
     }
-
-    av_assert0(ctx->pic_end);
-    ctx->pic_end->next = start;
-    ctx->pic_end = end;
-
     *pic_out = start;
 
     av_log(avctx, AV_LOG_DEBUG, "Pictures:");
@@ -1249,8 +1241,9 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     ctx->recon_frames->sw_format = recon_format;
     ctx->recon_frames->width     = ctx->surface_width;
     ctx->recon_frames->height    = ctx->surface_height;
-    ctx->recon_frames->initial_pool_size =
-        avctx->max_b_frames + 3;
+    // At most three IDR/I/P frames and two runs of B frames can be in
+    // flight at any one time.
+    ctx->recon_frames->initial_pool_size = 3 + 2 * avctx->max_b_frames;
 
     err = av_hwframe_ctx_init(ctx->recon_frames_ref);
     if (err < 0) {
@@ -1364,7 +1357,6 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->output_order = - ctx->output_delay - 1;
 
     // Currently we never generate I frames, only IDR.
-    ctx->i_per_idr = 0;
     ctx->p_per_i = ((avctx->gop_size + avctx->max_b_frames) /
                     (avctx->max_b_frames + 1));
     ctx->b_per_p = avctx->max_b_frames;

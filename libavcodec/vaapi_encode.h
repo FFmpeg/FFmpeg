@@ -190,11 +190,9 @@ typedef struct VAAPIEncodeContext {
     int64_t         ts_ring[MAX_REORDER_DELAY * 3];
 
     // Frame type decision.
-    int i_per_idr;
     int p_per_i;
     int b_per_p;
-    int idr_counter;
-    int i_counter;
+    int gop_counter;
     int p_counter;
     int end_of_stream;
 
