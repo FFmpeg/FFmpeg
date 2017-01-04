@@ -490,7 +490,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
         filename = hls->avf->filename;
     }
     if (find_segment_by_filename(hls->segments, filename)
-        || find_segment_by_filename(hls->old_segments, en->filename)) {
+        || find_segment_by_filename(hls->old_segments, filename)) {
         av_log(hls, AV_LOG_WARNING, "Duplicated segment filename detected: %s\n", filename);
     }
     av_strlcpy(en->filename, filename, sizeof(en->filename));
