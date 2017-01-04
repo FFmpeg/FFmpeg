@@ -495,16 +495,23 @@ function idct16x16_dc_add_neon
 
         srshr           v2.8h, v2.8h, #6
 
+        mov             x3, x0
         mov             x4, #16
 1:
         // Loop to add the constant from v2 into all 16x16 outputs
-        ld1             {v3.16b},  [x0]
-        uaddw           v4.8h,  v2.8h,  v3.8b
-        uaddw2          v5.8h,  v2.8h,  v3.16b
-        sqxtun          v4.8b,  v4.8h
-        sqxtun2         v4.16b, v5.8h
-        st1             {v4.16b},  [x0], x1
-        subs            x4,  x4,  #1
+        subs            x4,  x4,  #2
+        ld1             {v3.16b},  [x0], x1
+        ld1             {v4.16b},  [x0], x1
+        uaddw           v16.8h, v2.8h,  v3.8b
+        uaddw2          v17.8h, v2.8h,  v3.16b
+        uaddw           v18.8h, v2.8h,  v4.8b
+        uaddw2          v19.8h, v2.8h,  v4.16b
+        sqxtun          v3.8b,  v16.8h
+        sqxtun2         v3.16b, v17.8h
+        sqxtun          v4.8b,  v18.8h
+        sqxtun2         v4.16b, v19.8h
+        st1             {v3.16b},  [x3], x1
+        st1             {v4.16b},  [x3], x1
         b.ne            1b
 
         ret
@@ -1054,20 +1061,31 @@ function idct32x32_dc_add_neon
 
         srshr           v0.8h, v2.8h, #6
 
+        mov             x3, x0
         mov             x4, #32
 1:
         // Loop to add the constant v0 into all 32x32 outputs
-        ld1             {v1.16b,v2.16b},  [x0]
-        uaddw           v3.8h,  v0.8h,  v1.8b
-        uaddw2          v4.8h,  v0.8h,  v1.16b
-        uaddw           v5.8h,  v0.8h,  v2.8b
-        uaddw2          v6.8h,  v0.8h,  v2.16b
-        sqxtun          v3.8b,  v3.8h
-        sqxtun2         v3.16b, v4.8h
-        sqxtun          v4.8b,  v5.8h
-        sqxtun2         v4.16b, v6.8h
-        st1             {v3.16b,v4.16b},  [x0], x1
-        subs            x4,  x4,  #1
+        subs            x4,  x4,  #2
+        ld1             {v1.16b,v2.16b},  [x0], x1
+        uaddw           v16.8h, v0.8h,  v1.8b
+        uaddw2          v17.8h, v0.8h,  v1.16b
+        ld1             {v3.16b,v4.16b},  [x0], x1
+        uaddw           v18.8h, v0.8h,  v2.8b
+        uaddw2          v19.8h, v0.8h,  v2.16b
+        uaddw           v20.8h, v0.8h,  v3.8b
+        uaddw2          v21.8h, v0.8h,  v3.16b
+        uaddw           v22.8h, v0.8h,  v4.8b
+        uaddw2          v23.8h, v0.8h,  v4.16b
+        sqxtun          v1.8b,  v16.8h
+        sqxtun2         v1.16b, v17.8h
+        sqxtun          v2.8b,  v18.8h
+        sqxtun2         v2.16b, v19.8h
+        sqxtun          v3.8b,  v20.8h
+        sqxtun2         v3.16b, v21.8h
+        st1             {v1.16b,v2.16b},  [x3], x1
+        sqxtun          v4.8b,  v22.8h
+        sqxtun2         v4.16b, v23.8h
+        st1             {v3.16b,v4.16b},  [x3], x1
         b.ne            1b
 
         ret
