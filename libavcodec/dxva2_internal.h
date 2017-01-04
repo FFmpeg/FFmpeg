@@ -96,8 +96,6 @@ typedef union {
 #define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (ctx->d3d11va.cfg->ConfigResidDiffAccelerator)
 #endif
 
-void *ff_dxva2_get_surface(const AVFrame *frame);
-
 unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
                                     const AVDXVAContext *,
                                     const AVFrame *frame);
