@@ -69,25 +69,6 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %.c %.h %.pc %.ver %.version: TAG = GEN
 
-AVPROGS-$(CONFIG_AVCONV)   += avconv
-AVPROGS-$(CONFIG_AVPLAY)   += avplay
-AVPROGS-$(CONFIG_AVPROBE)  += avprobe
-
-AVPROGS    := $(AVPROGS-yes:%=%$(EXESUF))
-PROGS      += $(AVPROGS)
-
-AVBASENAMES = avconv avplay avprobe
-ALLAVPROGS  = $(AVBASENAMES:%=%$(EXESUF))
-
-$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
-
-OBJS-avconv                   += avconv_opt.o avconv_filter.o
-OBJS-avconv-$(CONFIG_LIBMFX)  += avconv_qsv.o
-OBJS-avconv-$(CONFIG_VAAPI)   += avconv_vaapi.o
-OBJS-avconv-$(CONFIG_VDA)     += avconv_vda.o
-OBJS-avconv-$(HAVE_DXVA2_LIB) += avconv_dxva2.o
-OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
-
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 
@@ -114,8 +95,6 @@ include $(SRC_PATH)/avbuild/common.mak
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
-
-all: $(AVPROGS)
 
 $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(EXTRALIBS) $(ELIBS)
@@ -153,21 +132,11 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
+include $(SRC_PATH)/avtools/Makefile
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/doc/examples/Makefile
 
-define DOPROG
-OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
-$(1)$(EXESUF): $$(OBJS-$(1))
-$$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
-$(1)$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
-$(1)$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
--include $$(OBJS-$(1):.o=.d)
-endef
-
-$(foreach P,$(AVPROGS-yes),$(eval $(call DOPROG,$(P))))
-
-$(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
+$(PROGS): %$(EXESUF): $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 VERSION_SH  = $(SRC_PATH)/avbuild/version.sh
@@ -176,7 +145,7 @@ GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) avbuild/config.mak
 .version: M=@
 
-cmdutils.o libavutil/utils.o: avversion.h
+libavutil/utils.o: avversion.h
 avversion.h .version:
 	$(M)$(VERSION_SH) $(SRC_PATH) avversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
@@ -184,35 +153,20 @@ avversion.h .version:
 # force version.sh to run whenever version might have changed
 -include .version
 
-ifdef AVPROGS
-install: install-progs install-data
-endif
-
 install: install-libs install-headers
 
 install-libs: install-libs-yes
-
-install-progs-yes:
-install-progs-$(CONFIG_SHARED): install-libs
-
-install-progs: install-progs-yes $(AVPROGS)
-	$(Q)mkdir -p "$(BINDIR)"
-	$(INSTALL) -c -m 755 $(AVPROGS) "$(BINDIR)"
 
 install-data: $(DATA_FILES)
 	$(Q)mkdir -p "$(DATADIR)"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 
-uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
-
-uninstall-progs:
-	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))
+uninstall: uninstall-libs uninstall-headers uninstall-data
 
 uninstall-data:
 	$(RM) -r "$(DATADIR)"
 
 clean::
-	$(RM) $(ALLAVPROGS)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) -rf coverage.info lcov
 
