@@ -61,15 +61,15 @@ typedef struct DCAEncContext {
     int32_t lfe_peak_cb;
     const int8_t *channel_order_tab;  ///< channel reordering table, lfe and non lfe
 
-    int32_t history[512][MAX_CHANNELS]; /* This is a circular buffer */
-    int32_t subband[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
-    int32_t quantized[SUBBAND_SAMPLES][DCAENC_SUBBANDS][MAX_CHANNELS];
-    int32_t peak_cb[DCAENC_SUBBANDS][MAX_CHANNELS];
+    int32_t history[MAX_CHANNELS][512]; /* This is a circular buffer */
+    int32_t subband[MAX_CHANNELS][DCAENC_SUBBANDS][SUBBAND_SAMPLES];
+    int32_t quantized[MAX_CHANNELS][DCAENC_SUBBANDS][SUBBAND_SAMPLES];
+    int32_t peak_cb[MAX_CHANNELS][DCAENC_SUBBANDS];
     int32_t downsampled_lfe[DCA_LFE_SAMPLES];
     int32_t masking_curve_cb[SUBSUBFRAMES][256];
-    int abits[DCAENC_SUBBANDS][MAX_CHANNELS];
-    int scale_factor[DCAENC_SUBBANDS][MAX_CHANNELS];
-    softfloat quant[DCAENC_SUBBANDS][MAX_CHANNELS];
+    int abits[MAX_CHANNELS][DCAENC_SUBBANDS];
+    int scale_factor[MAX_CHANNELS][DCAENC_SUBBANDS];
+    softfloat quant[MAX_CHANNELS][DCAENC_SUBBANDS];
     int32_t eff_masking_curve_cb[256];
     int32_t band_masking_cb[32];
     int32_t worst_quantization_noise;
@@ -259,8 +259,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
         int hist_start = 0;
         const int chi = c->channel_order_tab[ch];
 
-        for (i = 0; i < 512; i++)
-            hist[i] = c->history[i][ch];
+        memcpy(hist, &c->history[ch][0], 512 * sizeof(int32_t));
 
         for (subs = 0; subs < SUBBAND_SAMPLES; subs++) {
             int32_t accum[64];
@@ -268,8 +267,7 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
             int band;
 
             /* Calculate the convolutions at once */
-            for (i = 0; i < 64; i++)
-                accum[i] = 0;
+            memset(accum, 0, 64 * sizeof(int32_t));
 
             for (k = 0, i = hist_start, j = 0;
                     i < 512; k = (k + 1) & 63, i++, j++)
@@ -289,12 +287,13 @@ static void subband_transform(DCAEncContext *c, const int32_t *input)
                     resp += mul32(accum[i], cos_t(s << 3)) >> 3;
                 }
 
-                c->subband[subs][band][ch] = ((band + 1) & 2) ? -resp : resp;
+                c->subband[ch][band][subs] = ((band + 1) & 2) ? -resp : resp;
             }
 
             /* Copy in 32 new samples from input */
             for (i = 0; i < 32; i++)
                 hist[i + hist_start] = input[(subs * 32 + i) * c->channels + chi];
+
             hist_start = (hist_start + 32) & 511;
         }
     }
@@ -309,8 +308,7 @@ static void lfe_downsample(DCAEncContext *c, const int32_t *input)
     int32_t accum;
     int hist_start = 0;
 
-    for (i = 0; i < 512; i++)
-        hist[i] = c->history[i][c->channels - 1];
+    memcpy(hist, &c->history[c->channels - 1][0], 512 * sizeof(int32_t));
 
     for (lfes = 0; lfes < DCA_LFE_SAMPLES; lfes++) {
         /* Calculate the convolution */
@@ -516,7 +514,7 @@ static void calc_masking(DCAEncContext *c, const int32_t *input)
             const int chi = c->channel_order_tab[ch];
 
             for (i = 0, k = 128 + 256 * ssf; k < 512; i++, k++)
-                data[i] = c->history[k][ch];
+                data[i] = c->history[ch][k];
             for (k -= 512; i < 512; i++, k++)
                 data[i] = input[k * c->channels + chi];
             adjust_jnd(c->samplerate_index, data, c->masking_curve_cb[ssf]);
@@ -541,17 +539,17 @@ static void find_peaks(DCAEncContext *c)
 {
     int band, ch;
 
-    for (band = 0; band < 32; band++)
-        for (ch = 0; ch < c->fullband_channels; ch++) {
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < 32; band++) {
             int sample;
             int32_t m = 0;
 
             for (sample = 0; sample < SUBBAND_SAMPLES; sample++) {
-                int32_t s = abs(c->subband[sample][band][ch]);
+                int32_t s = abs(c->subband[ch][band][sample]);
                 if (m < s)
                     m = s;
             }
-            c->peak_cb[band][ch] = get_cb(m);
+            c->peak_cb[ch][band] = get_cb(m);
         }
 
     if (c->lfe_channel) {
@@ -581,27 +579,27 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
     /* attempt to guess the bit distribution based on the prevoius frame */
     for (ch = 0; ch < c->fullband_channels; ch++) {
         for (band = 0; band < 32; band++) {
-            int snr_cb = c->peak_cb[band][ch] - c->band_masking_cb[band] - noise;
+            int snr_cb = c->peak_cb[ch][band] - c->band_masking_cb[band] - noise;
 
             if (snr_cb >= 1312) {
-                c->abits[band][ch] = 26;
+                c->abits[ch][band] = 26;
                 ret |= USED_26ABITS;
             } else if (snr_cb >= 222) {
-                c->abits[band][ch] = 8 + mul32(snr_cb - 222, 69000000);
+                c->abits[ch][band] = 8 + mul32(snr_cb - 222, 69000000);
                 ret |= USED_NABITS;
             } else if (snr_cb >= 0) {
-                c->abits[band][ch] = 2 + mul32(snr_cb, 106000000);
+                c->abits[ch][band] = 2 + mul32(snr_cb, 106000000);
                 ret |= USED_NABITS;
             } else {
-                c->abits[band][ch] = 1;
+                c->abits[ch][band] = 1;
                 ret |= USED_1ABITS;
             }
         }
     }
 
-    for (band = 0; band < 32; band++)
-        for (ch = 0; ch < c->fullband_channels; ch++) {
-            c->consumed_bits += bit_consumption[c->abits[band][ch]];
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < 32; band++) {
+            c->consumed_bits += bit_consumption[c->abits[ch][band]];
         }
 
     return ret;
@@ -653,7 +651,7 @@ static void shift_history(DCAEncContext *c, const int32_t *input)
         for (ch = 0; ch < c->channels; ch++) {
             const int chi = c->channel_order_tab[ch];
 
-            c->history[k][ch] = input[k * c->channels + chi];
+            c->history[ch][k] = input[k * c->channels + chi];
         }
 }
 
@@ -702,11 +700,11 @@ static void calc_scales(DCAEncContext *c)
 {
     int band, ch;
 
-    for (band = 0; band < 32; band++)
-        for (ch = 0; ch < c->fullband_channels; ch++)
-            c->scale_factor[band][ch] = calc_one_scale(c->peak_cb[band][ch],
-                                                       c->abits[band][ch],
-                                                       &c->quant[band][ch]);
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < 32; band++)
+            c->scale_factor[ch][band] = calc_one_scale(c->peak_cb[ch][band],
+                                                       c->abits[ch][band],
+                                                       &c->quant[ch][band]);
 
     if (c->lfe_channel)
         c->lfe_scale_factor = calc_one_scale(c->lfe_peak_cb, 11, &c->lfe_quant);
@@ -716,10 +714,10 @@ static void quantize_all(DCAEncContext *c)
 {
     int sample, band, ch;
 
-    for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
+    for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < 32; band++)
-            for (ch = 0; ch < c->fullband_channels; ch++)
-                c->quantized[sample][band][ch] = quantize_value(c->subband[sample][band][ch], c->quant[band][ch]);
+            for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
+                c->quantized[ch][band][sample] = quantize_value(c->subband[ch][band][sample], c->quant[ch][band]);
 }
 
 static void put_frame_header(DCAEncContext *c)
@@ -853,22 +851,22 @@ static void put_primary_audio_header(DCAEncContext *c)
 
 static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
 {
-    if (c->abits[band][ch] <= 7) {
+    if (c->abits[ch][band] <= 7) {
         int sum, i, j;
         for (i = 0; i < 8; i += 4) {
             sum = 0;
             for (j = 3; j >= 0; j--) {
-                sum *= ff_dca_quant_levels[c->abits[band][ch]];
-                sum += c->quantized[ss * 8 + i + j][band][ch];
-                sum += (ff_dca_quant_levels[c->abits[band][ch]] - 1) / 2;
+                sum *= ff_dca_quant_levels[c->abits[ch][band]];
+                sum += c->quantized[ch][band][ss * 8 + i + j];
+                sum += (ff_dca_quant_levels[c->abits[ch][band]] - 1) / 2;
             }
-            put_bits(&c->pb, bit_consumption[c->abits[band][ch]] / 4, sum);
+            put_bits(&c->pb, bit_consumption[c->abits[ch][band]] / 4, sum);
         }
     } else {
         int i;
         for (i = 0; i < 8; i++) {
-            int bits = bit_consumption[c->abits[band][ch]] / 16;
-            put_sbits(&c->pb, bits, c->quantized[ss * 8 + i][band][ch]);
+            int bits = bit_consumption[c->abits[ch][band]] / 16;
+            put_sbits(&c->pb, bits, c->quantized[ch][band][ss * 8 + i]);
         }
     }
 }
@@ -892,7 +890,7 @@ static void put_subframe(DCAEncContext *c, int subframe)
     /* Bit allocation index */
     for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < DCAENC_SUBBANDS; band++)
-            put_bits(&c->pb, 5, c->abits[band][ch]);
+            put_bits(&c->pb, 5, c->abits[ch][band]);
 
     if (SUBSUBFRAMES > 1) {
         /* Transition mode: none for each channel and subband */
@@ -904,7 +902,7 @@ static void put_subframe(DCAEncContext *c, int subframe)
     /* Scale factors */
     for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < DCAENC_SUBBANDS; band++)
-            put_bits(&c->pb, 7, c->scale_factor[band][ch]);
+            put_bits(&c->pb, 7, c->scale_factor[ch][band]);
 
     /* Joint subband scale factor codebook select: not transmitted */
     /* Scale factors for joint subband coding: not transmitted */
