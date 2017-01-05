@@ -3679,5 +3679,10 @@ const OptionDef options[] = {
         "set VAAPI hardware device (DRM path or X11 display name)", "device" },
 #endif
 
+#if CONFIG_QSV
+    { "qsv_device", HAS_ARG | OPT_STRING | OPT_EXPERT, { &qsv_device },
+        "set QSV hardware device (DirectX adapter index, DRM path or X11 display name)", "device"},
+#endif
+
     { NULL, },
 };
