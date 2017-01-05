@@ -567,7 +567,7 @@ and remove the @code{#EXT-X-ENDLIST} from the old segment list.
 Round the duration info in the playlist file segment info to integer
 values, instead of using floating point.
 
-@item discont_starts
+@item discont_start
 Add the @code{#EXT-X-DISCONTINUITY} tag to the playlist, before the
 first segment's information.
 
