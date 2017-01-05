@@ -446,11 +446,18 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
         strlen(hls->current_segment_final_filename_fmt)) {
         char * old_filename = av_strdup(hls->avf->filename);  // %%s will be %s after strftime
+        if (!old_filename) {
+            av_free(en);
+            return AVERROR(ENOMEM);
+        }
         av_strlcpy(hls->avf->filename, hls->current_segment_final_filename_fmt, sizeof(hls->avf->filename));
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
             char * filename = av_strdup(hls->avf->filename);  // %%s will be %s after strftime
-            if (!filename)
+            if (!filename) {
+                av_free(old_filename);
+                av_free(en);
                 return AVERROR(ENOMEM);
+            }
             if (replace_int_data_in_filename(hls->avf->filename, sizeof(hls->avf->filename),
                 filename, 's', pos + size) < 1) {
                 av_log(hls, AV_LOG_ERROR,
@@ -459,14 +466,18 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                        filename);
                 av_free(filename);
                 av_free(old_filename);
+                av_free(en);
                 return AVERROR(EINVAL);
             }
             av_free(filename);
         }
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
             char * filename = av_strdup(hls->avf->filename);  // %%t will be %t after strftime
-            if (!filename)
+            if (!filename) {
+                av_free(old_filename);
+                av_free(en);
                 return AVERROR(ENOMEM);
+            }
             if (replace_int_data_in_filename(hls->avf->filename, sizeof(hls->avf->filename),
                 filename, 't',  (int64_t)round(1000000 * duration)) < 1) {
                 av_log(hls, AV_LOG_ERROR,
@@ -475,6 +486,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                        filename);
                 av_free(filename);
                 av_free(old_filename);
+                av_free(en);
                 return AVERROR(EINVAL);
             }
             av_free(filename);
