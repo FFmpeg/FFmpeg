@@ -121,8 +121,6 @@ all: $(AVPROGS)
 $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(EXTRALIBS) $(ELIBS)
 
-tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
-
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
