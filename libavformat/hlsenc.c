@@ -956,7 +956,7 @@ static const char * get_default_pattern_localtime_fmt(void)
     struct tm *p, tmbuf;
     p = localtime_r(&t, &tmbuf);
     // no %s support when strftime returned error or left format string unchanged
-    return (!strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%I%S.ts" : "-%s.ts";
+    return (!strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
 }
 
 static int hls_write_header(AVFormatContext *s)
