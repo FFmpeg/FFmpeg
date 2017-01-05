@@ -99,9 +99,11 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
     case 2:                                                 \
         v = *(const uint16_t *)ptr;                         \
         break;                                              \
-    default:                                                \
+    case 4:                                                 \
         v = *(const uint32_t *)ptr;                         \
         break;                                              \
+    default:                                                \
+        av_assert1(0);                                      \
     }                                                       \
 }
 
