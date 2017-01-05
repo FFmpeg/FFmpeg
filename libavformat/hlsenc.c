@@ -285,8 +285,8 @@ static int hls_delete_old_segments(HLSContext *hls) {
                                      path, strerror(errno));
         }
 
-        if (segment->sub_filename[0] != '\0') {
-            sub_path_size = strlen(dirname) + strlen(segment->sub_filename) + 1;
+        if ((segment->sub_filename[0] != '\0')) {
+            sub_path_size = strlen(segment->sub_filename) + 1 + (dirname ? strlen(dirname) : 0);
             sub_path = av_malloc(sub_path_size);
             if (!sub_path) {
                 ret = AVERROR(ENOMEM);
