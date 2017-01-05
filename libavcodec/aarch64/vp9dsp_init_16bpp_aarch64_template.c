@@ -203,8 +203,70 @@ static av_cold void vp9dsp_itxfm_init_aarch64(VP9DSPContext *dsp)
     }
 }
 
+#define define_loop_filter(dir, wd, size, bpp) \
+void ff_vp9_loop_filter_##dir##_##wd##_##size##_##bpp##_neon(uint8_t *dst, ptrdiff_t stride, int E, int I, int H)
+
+#define define_loop_filters(wd, size, bpp) \
+    define_loop_filter(h, wd, size, bpp);  \
+    define_loop_filter(v, wd, size, bpp)
+
+define_loop_filters(4,  8,  BPP);
+define_loop_filters(8,  8,  BPP);
+define_loop_filters(16, 8,  BPP);
+
+define_loop_filters(16, 16, BPP);
+
+define_loop_filters(44, 16, BPP);
+define_loop_filters(48, 16, BPP);
+define_loop_filters(84, 16, BPP);
+define_loop_filters(88, 16, BPP);
+
+static av_cold void vp9dsp_loopfilter_init_aarch64(VP9DSPContext *dsp)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
+#define init_lpf_func_8(idx1, idx2, dir, wd, bpp) \
+    dsp->loop_filter_8[idx1][idx2] = ff_vp9_loop_filter_##dir##_##wd##_8_##bpp##_neon
+
+#define init_lpf_func_16(idx, dir, bpp) \
+    dsp->loop_filter_16[idx] = ff_vp9_loop_filter_##dir##_16_16_##bpp##_neon
+
+#define init_lpf_func_mix2(idx1, idx2, idx3, dir, wd, bpp) \
+    dsp->loop_filter_mix2[idx1][idx2][idx3] = ff_vp9_loop_filter_##dir##_##wd##_16_##bpp##_neon
+
+#define init_lpf_funcs_8_wd(idx, wd, bpp) \
+    init_lpf_func_8(idx, 0, h, wd, bpp);  \
+    init_lpf_func_8(idx, 1, v, wd, bpp)
+
+#define init_lpf_funcs_16(bpp)   \
+    init_lpf_func_16(0, h, bpp); \
+    init_lpf_func_16(1, v, bpp)
+
+#define init_lpf_funcs_mix2_wd(idx1, idx2, wd, bpp) \
+    init_lpf_func_mix2(idx1, idx2, 0, h, wd, bpp);  \
+    init_lpf_func_mix2(idx1, idx2, 1, v, wd, bpp)
+
+#define init_lpf_funcs_8(bpp)        \
+    init_lpf_funcs_8_wd(0, 4,  bpp); \
+    init_lpf_funcs_8_wd(1, 8,  bpp); \
+    init_lpf_funcs_8_wd(2, 16, bpp)
+
+#define init_lpf_funcs_mix2(bpp)           \
+    init_lpf_funcs_mix2_wd(0, 0, 44, bpp); \
+    init_lpf_funcs_mix2_wd(0, 1, 48, bpp); \
+    init_lpf_funcs_mix2_wd(1, 0, 84, bpp); \
+    init_lpf_funcs_mix2_wd(1, 1, 88, bpp)
+
+        init_lpf_funcs_8(BPP);
+        init_lpf_funcs_16(BPP);
+        init_lpf_funcs_mix2(BPP);
+    }
+}
+
 av_cold void INIT_FUNC(VP9DSPContext *dsp)
 {
     vp9dsp_mc_init_aarch64(dsp);
+    vp9dsp_loopfilter_init_aarch64(dsp);
     vp9dsp_itxfm_init_aarch64(dsp);
 }
