@@ -12285,7 +12285,7 @@ Set the size of the box used to represent one palette color entry. Default is
 
 @section shuffleframes
 
-Reorder and/or duplicate video frames.
+Reorder and/or duplicate and/or drop video frames.
 
 It accepts the following parameters:
 
@@ -12294,6 +12294,7 @@ It accepts the following parameters:
 Set the destination indexes of input frames.
 This is space or '|' separated list of indexes that maps input frames to output
 frames. Number of indexes also sets maximal value that each index may have.
+'-1' index have special meaning and that is to drop frame.
 @end table
 
 The first frame has the index 0. The default is to keep the input unchanged.
