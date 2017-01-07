@@ -1335,3 +1335,25 @@ av_cold void ff_dca_init_vlcs(void)
 
     vlcs_initialized = 1;
 }
+
+uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t table)
+{
+    uint8_t i, id;
+    uint32_t sum = 0;
+    for (i = 0; i < n; i++) {
+        id = values[i] - bitalloc_offsets[table];
+        av_assert0(id < bitalloc_sizes[table]);
+        sum += bitalloc_bits[table][sel][id];
+    }
+    return sum;
+}
+
+void ff_dca_vlc_enc_quant(PutBitContext *pb, int *values, uint8_t n, uint8_t sel, uint8_t table)
+{
+    uint8_t i, id;
+    for (i = 0; i < n; i++) {
+        id = values[i] - bitalloc_offsets[table];
+        av_assert0(id < bitalloc_sizes[table]);
+        put_bits(pb, bitalloc_bits[table][sel][id], bitalloc_codes[table][sel][id]);
+    }
+}

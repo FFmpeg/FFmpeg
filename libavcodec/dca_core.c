@@ -92,14 +92,6 @@ static const uint8_t block_code_nbits[7] = {
     7, 10, 12, 13, 15, 17, 19
 };
 
-static const uint8_t quant_index_sel_nbits[DCA_CODE_BOOKS] = {
-    1, 2, 2, 2, 2, 3, 3, 3, 3, 3
-};
-
-static const uint8_t quant_index_group_size[DCA_CODE_BOOKS] = {
-    1, 3, 3, 3, 3, 7, 7, 7, 7, 7
-};
-
 static int dca_get_vlc(GetBitContext *s, DCAVLC *v, int i)
 {
     return get_vlc2(s, v->vlc[i].table, v->vlc[i].bits, v->max_depth) + v->offset;
@@ -400,12 +392,12 @@ static int parse_coding_header(DCACoreDecoder *s, enum HeaderType header, int xc
     // Quantization index codebook select
     for (n = 0; n < DCA_CODE_BOOKS; n++)
         for (ch = xch_base; ch < s->nchannels; ch++)
-            s->quant_index_sel[ch][n] = get_bits(&s->gb, quant_index_sel_nbits[n]);
+            s->quant_index_sel[ch][n] = get_bits(&s->gb, ff_dca_quant_index_sel_nbits[n]);
 
     // Scale factor adjustment index
     for (n = 0; n < DCA_CODE_BOOKS; n++)
         for (ch = xch_base; ch < s->nchannels; ch++)
-            if (s->quant_index_sel[ch][n] < quant_index_group_size[n])
+            if (s->quant_index_sel[ch][n] < ff_dca_quant_index_group_size[n])
                 s->scale_factor_adj[ch][n] = ff_dca_scale_factor_adj[get_bits(&s->gb, 2)];
 
     if (header == HEADER_XXCH) {
@@ -663,7 +655,7 @@ static inline int extract_audio(DCACoreDecoder *s, int32_t *audio, int abits, in
 
     if (abits <= DCA_CODE_BOOKS) {
         int sel = s->quant_index_sel[ch][abits - 1];
-        if (sel < quant_index_group_size[abits - 1]) {
+        if (sel < ff_dca_quant_index_group_size[abits - 1]) {
             // Huffman codes
             return parse_huffman_codes(s, audio, abits, sel);
         }
@@ -1562,7 +1554,7 @@ static int parse_x96_coding_header(DCACoreDecoder *s, int exss, int xch_base)
     // Quantization index codebook select
     for (n = 0; n < 6 + 4 * s->x96_high_res; n++)
         for (ch = xch_base; ch < s->x96_nchannels; ch++)
-            s->quant_index_sel[ch][n] = get_bits(&s->gb, quant_index_sel_nbits[n]);
+            s->quant_index_sel[ch][n] = get_bits(&s->gb, ff_dca_quant_index_sel_nbits[n]);
 
     if (exss) {
         // Reserved

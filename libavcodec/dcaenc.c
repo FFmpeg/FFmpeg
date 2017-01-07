@@ -70,6 +70,7 @@ typedef struct DCAEncContext {
     int abits[MAX_CHANNELS][DCAENC_SUBBANDS];
     int scale_factor[MAX_CHANNELS][DCAENC_SUBBANDS];
     softfloat quant[MAX_CHANNELS][DCAENC_SUBBANDS];
+    int32_t quant_index_sel[MAX_CHANNELS][DCA_CODE_BOOKS];
     int32_t eff_masking_curve_cb[256];
     int32_t band_masking_cb[32];
     int32_t worst_quantization_noise;
@@ -109,7 +110,7 @@ static int encode_init(AVCodecContext *avctx)
 {
     DCAEncContext *c = avctx->priv_data;
     uint64_t layout = avctx->channel_layout;
-    int i, min_frame_bits;
+    int i, j, min_frame_bits;
 
     c->fullband_channels = c->channels = avctx->channels;
     c->lfe_channel = (avctx->channels == 3 || avctx->channels == 6);
@@ -140,6 +141,12 @@ static int encode_init(AVCodecContext *avctx)
         c->channel_order_tab = channel_reorder_lfe[c->channel_config];
     } else {
         c->channel_order_tab = channel_reorder_nolfe[c->channel_config];
+    }
+
+    for (i = 0; i < MAX_CHANNELS; i++) {
+        for (j = 0; j < DCA_CODE_BOOKS; j++) {
+            c->quant_index_sel[i][j] = ff_dca_quant_index_group_size[j];
+        }
     }
 
     for (i = 0; i < 9; i++) {
@@ -568,9 +575,109 @@ static const int snr_fudge = 128;
 #define USED_NABITS 2
 #define USED_26ABITS 4
 
+static int32_t quantize_value(int32_t value, softfloat quant)
+{
+    int32_t offset = 1 << (quant.e - 1);
+
+    value = mul32(value, quant.m) + offset;
+    value = value >> quant.e;
+    return value;
+}
+
+static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
+{
+    int32_t peak;
+    int our_nscale, try_remove;
+    softfloat our_quant;
+
+    av_assert0(peak_cb <= 0);
+    av_assert0(peak_cb >= -2047);
+
+    our_nscale = 127;
+    peak = cb_to_level[-peak_cb];
+
+    for (try_remove = 64; try_remove > 0; try_remove >>= 1) {
+        if (scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e <= 17)
+            continue;
+        our_quant.m = mul32(scalefactor_inv[our_nscale - try_remove].m, stepsize_inv[abits].m);
+        our_quant.e = scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e - 17;
+        if ((ff_dca_quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
+            continue;
+        our_nscale -= try_remove;
+    }
+
+    if (our_nscale >= 125)
+        our_nscale = 124;
+
+    quant->m = mul32(scalefactor_inv[our_nscale].m, stepsize_inv[abits].m);
+    quant->e = scalefactor_inv[our_nscale].e + stepsize_inv[abits].e - 17;
+    av_assert0((ff_dca_quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
+
+    return our_nscale;
+}
+
+static void quantize_all(DCAEncContext *c)
+{
+    int sample, band, ch;
+
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < 32; band++)
+            for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
+                c->quantized[ch][band][sample] = quantize_value(c->subband[ch][band][sample], c->quant[ch][band]);
+}
+
+static void accumulate_huff_bit_consumption(int abits, int32_t *quantized, uint32_t *result)
+{
+    uint8_t sel, id = abits - 1;
+    for (sel = 0; sel < ff_dca_quant_index_group_size[id]; sel++)
+        result[sel] += ff_dca_vlc_calc_quant_bits(quantized, SUBBAND_SAMPLES, sel, id);
+}
+
+static uint32_t set_best_code(uint32_t vlc_bits[DCA_CODE_BOOKS][7], uint32_t clc_bits[DCA_CODE_BOOKS], int32_t res[DCA_CODE_BOOKS])
+{
+    uint8_t i, sel;
+    uint32_t best_sel_bits[DCA_CODE_BOOKS];
+    int32_t best_sel_id[DCA_CODE_BOOKS];
+    uint32_t t, bits = 0;
+
+    for (i = 0; i < DCA_CODE_BOOKS; i++) {
+
+        av_assert0(!((!!vlc_bits[i][0]) ^ (!!clc_bits[i])));
+        if (vlc_bits[i][0] == 0) {
+            /* do not transmit adjustment index for empty codebooks */
+            res[i] = ff_dca_quant_index_group_size[i];
+            /* and skip it */
+            continue;
+        }
+
+        best_sel_bits[i] = vlc_bits[i][0];
+        best_sel_id[i] = 0;
+        for (sel = 0; sel < ff_dca_quant_index_group_size[i]; sel++) {
+            if (best_sel_bits[i] > vlc_bits[i][sel] && vlc_bits[i][sel]) {
+                best_sel_bits[i] = vlc_bits[i][sel];
+                best_sel_id[i] = sel;
+            }
+        }
+
+        /* 2 bits to transmit scale factor adjustment index */
+        t = best_sel_bits[i] + 2;
+        if (t < clc_bits[i]) {
+            res[i] = best_sel_id[i];
+            bits += t;
+        } else {
+            res[i] = ff_dca_quant_index_group_size[i];
+            bits += clc_bits[i];
+        }
+    }
+    return bits;
+}
+
 static int init_quantization_noise(DCAEncContext *c, int noise)
 {
     int ch, band, ret = 0;
+    uint32_t huff_bit_count_accum[MAX_CHANNELS][DCA_CODE_BOOKS][7];
+    uint32_t clc_bit_count_accum[MAX_CHANNELS][DCA_CODE_BOOKS];
+    uint32_t bits_counter = 0;
 
     c->consumed_bits = 132 + 493 * c->fullband_channels;
     if (c->lfe_channel)
@@ -597,10 +704,36 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
         }
     }
 
-    for (ch = 0; ch < c->fullband_channels; ch++)
+    /* Recalc scale_factor each time to get bits consumption in case of Huffman coding.
+       It is suboptimal solution */
+    /* TODO: May be cache scaled values */
+    for (ch = 0; ch < c->fullband_channels; ch++) {
         for (band = 0; band < 32; band++) {
-            c->consumed_bits += bit_consumption[c->abits[ch][band]];
+            c->scale_factor[ch][band] = calc_one_scale(c->peak_cb[ch][band],
+                                                       c->abits[ch][band],
+                                                       &c->quant[ch][band]);
         }
+    }
+    quantize_all(c);
+
+    memset(huff_bit_count_accum, 0, MAX_CHANNELS * DCA_CODE_BOOKS * 7 * sizeof(uint32_t));
+    memset(clc_bit_count_accum, 0, MAX_CHANNELS * DCA_CODE_BOOKS * sizeof(uint32_t));
+    for (ch = 0; ch < c->fullband_channels; ch++) {
+        for (band = 0; band < 32; band++) {
+            if (c->abits[ch][band] && c->abits[ch][band] <= DCA_CODE_BOOKS) {
+                accumulate_huff_bit_consumption(c->abits[ch][band], c->quantized[ch][band], huff_bit_count_accum[ch][c->abits[ch][band] - 1]);
+                clc_bit_count_accum[ch][c->abits[ch][band] - 1] += bit_consumption[c->abits[ch][band]];
+            } else {
+                bits_counter += bit_consumption[c->abits[ch][band]];
+            }
+        }
+    }
+
+    for (ch = 0; ch < c->fullband_channels; ch++) {
+        bits_counter += set_best_code(huff_bit_count_accum[ch], clc_bit_count_accum[ch], c->quant_index_sel[ch]);
+    }
+
+    c->consumed_bits += bits_counter;
 
     return ret;
 }
@@ -655,69 +788,10 @@ static void shift_history(DCAEncContext *c, const int32_t *input)
         }
 }
 
-static int32_t quantize_value(int32_t value, softfloat quant)
+static void calc_lfe_scales(DCAEncContext *c)
 {
-    int32_t offset = 1 << (quant.e - 1);
-
-    value = mul32(value, quant.m) + offset;
-    value = value >> quant.e;
-    return value;
-}
-
-static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
-{
-    int32_t peak;
-    int our_nscale, try_remove;
-    softfloat our_quant;
-
-    av_assert0(peak_cb <= 0);
-    av_assert0(peak_cb >= -2047);
-
-    our_nscale = 127;
-    peak = cb_to_level[-peak_cb];
-
-    for (try_remove = 64; try_remove > 0; try_remove >>= 1) {
-        if (scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e <= 17)
-            continue;
-        our_quant.m = mul32(scalefactor_inv[our_nscale - try_remove].m, stepsize_inv[abits].m);
-        our_quant.e = scalefactor_inv[our_nscale - try_remove].e + stepsize_inv[abits].e - 17;
-        if ((ff_dca_quant_levels[abits] - 1) / 2 < quantize_value(peak, our_quant))
-            continue;
-        our_nscale -= try_remove;
-    }
-
-    if (our_nscale >= 125)
-        our_nscale = 124;
-
-    quant->m = mul32(scalefactor_inv[our_nscale].m, stepsize_inv[abits].m);
-    quant->e = scalefactor_inv[our_nscale].e + stepsize_inv[abits].e - 17;
-    av_assert0((ff_dca_quant_levels[abits] - 1) / 2 >= quantize_value(peak, *quant));
-
-    return our_nscale;
-}
-
-static void calc_scales(DCAEncContext *c)
-{
-    int band, ch;
-
-    for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < 32; band++)
-            c->scale_factor[ch][band] = calc_one_scale(c->peak_cb[ch][band],
-                                                       c->abits[ch][band],
-                                                       &c->quant[ch][band]);
-
     if (c->lfe_channel)
         c->lfe_scale_factor = calc_one_scale(c->lfe_peak_cb, 11, &c->lfe_quant);
-}
-
-static void quantize_all(DCAEncContext *c)
-{
-    int sample, band, ch;
-
-    for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < 32; band++)
-            for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
-                c->quantized[ch][band][sample] = quantize_value(c->subband[ch][band][sample], c->quant[ch][band]);
 }
 
 static void put_frame_header(DCAEncContext *c)
@@ -805,9 +879,6 @@ static void put_frame_header(DCAEncContext *c)
 
 static void put_primary_audio_header(DCAEncContext *c)
 {
-    static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
-    static const int thr[11]    = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
-
     int ch, i;
     /* Number of subframes */
     put_bits(&c->pb, 4, SUBFRAMES - 1);
@@ -839,35 +910,50 @@ static void put_primary_audio_header(DCAEncContext *c)
     for (ch = 0; ch < c->fullband_channels; ch++)
         put_bits(&c->pb, 3, 6);
 
-    /* Quantization index codebook select: dummy data
-       to avoid transmission of scale factor adjustment */
-    for (i = 1; i < 11; i++)
+    /* Quantization index codebook select */
+    for (i = 0; i < DCA_CODE_BOOKS; i++)
         for (ch = 0; ch < c->fullband_channels; ch++)
-            put_bits(&c->pb, bitlen[i], thr[i]);
+            put_bits(&c->pb, ff_dca_quant_index_sel_nbits[i], c->quant_index_sel[ch][i]);
 
-    /* Scale factor adjustment index: not transmitted */
+    /* Scale factor adjustment index: transmitted in case of Huffman coding */
+    for (i = 0; i < DCA_CODE_BOOKS; i++)
+        for (ch = 0; ch < c->fullband_channels; ch++)
+            if (c->quant_index_sel[ch][i] < ff_dca_quant_index_group_size[i])
+                put_bits(&c->pb, 2, 0);
+
     /* Audio header CRC check word: not transmitted */
 }
 
 static void put_subframe_samples(DCAEncContext *c, int ss, int band, int ch)
 {
-    if (c->abits[ch][band] <= 7) {
-        int sum, i, j;
-        for (i = 0; i < 8; i += 4) {
-            sum = 0;
-            for (j = 3; j >= 0; j--) {
-                sum *= ff_dca_quant_levels[c->abits[ch][band]];
-                sum += c->quantized[ch][band][ss * 8 + i + j];
-                sum += (ff_dca_quant_levels[c->abits[ch][band]] - 1) / 2;
+    int i, j, sum, bits, sel;
+    if (c->abits[ch][band] <= DCA_CODE_BOOKS) {
+        av_assert0(c->abits[ch][band] > 0);
+        sel = c->quant_index_sel[ch][c->abits[ch][band] - 1];
+        // Huffman codes
+        if (sel < ff_dca_quant_index_group_size[c->abits[ch][band] - 1]) {
+            ff_dca_vlc_enc_quant(&c->pb, &c->quantized[ch][band][ss * 8], 8, sel, c->abits[ch][band] - 1);
+            return;
+        }
+
+        // Block codes
+        if (c->abits[ch][band] <= 7) {
+            for (i = 0; i < 8; i += 4) {
+                sum = 0;
+                for (j = 3; j >= 0; j--) {
+                    sum *= ff_dca_quant_levels[c->abits[ch][band]];
+                    sum += c->quantized[ch][band][ss * 8 + i + j];
+                    sum += (ff_dca_quant_levels[c->abits[ch][band]] - 1) / 2;
+                }
+                put_bits(&c->pb, bit_consumption[c->abits[ch][band]] / 4, sum);
             }
-            put_bits(&c->pb, bit_consumption[c->abits[ch][band]] / 4, sum);
+            return;
         }
-    } else {
-        int i;
-        for (i = 0; i < 8; i++) {
-            int bits = bit_consumption[c->abits[ch][band]] / 16;
-            put_sbits(&c->pb, bits, c->quantized[ch][band][ss * 8 + i]);
-        }
+    }
+
+    for (i = 0; i < 8; i++) {
+        bits = bit_consumption[c->abits[ch][band]] / 16;
+        put_sbits(&c->pb, bits, c->quantized[ch][band][ss * 8 + i]);
     }
 }
 
@@ -947,8 +1033,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     calc_masking(c, samples);
     find_peaks(c);
     assign_bits(c);
-    calc_scales(c);
-    quantize_all(c);
+    calc_lfe_scales(c);
     shift_history(c, samples);
 
     init_put_bits(&c->pb, avpkt->data, avpkt->size);

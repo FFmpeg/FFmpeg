@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "dcahuff.h"
+
 extern const uint32_t ff_dca_bit_rates[32];
 
 extern const uint8_t ff_dca_channels[16];
@@ -30,6 +32,9 @@ extern const uint8_t ff_dca_channels[16];
 extern const uint8_t ff_dca_bits_per_sample[8];
 
 extern const uint8_t ff_dca_dmix_primary_nch[8];
+
+extern const uint8_t ff_dca_quant_index_sel_nbits[DCA_CODE_BOOKS];
+extern const uint8_t ff_dca_quant_index_group_size[DCA_CODE_BOOKS];
 
 extern const int16_t ff_dca_adpcm_vb[4096][4];
 
