@@ -396,7 +396,7 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, int stride,
 
         // first line - left neighbour prediction
         bsrc[0] += 0x80;
-        c->hdspdec.add_hfyu_left_pred(bsrc, bsrc, width, 0);
+        c->llviddsp.add_left_pred(bsrc, bsrc, width, 0);
         bsrc += stride;
         if (slice_height <= 1)
             continue;
@@ -413,7 +413,7 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, int stride,
         bsrc += stride;
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
-            c->hdspdec.add_hfyu_median_pred(bsrc, bsrc - stride,
+            c->llviddsp.add_median_pred(bsrc, bsrc - stride,
                                             bsrc, width, &A, &B);
             bsrc += stride;
         }
@@ -446,8 +446,8 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride
 
         // first line - left neighbour prediction
         bsrc[0] += 0x80;
-        A = c->hdspdec.add_hfyu_left_pred(bsrc, bsrc, width, 0);
-        c->hdspdec.add_hfyu_left_pred(bsrc + stride, bsrc + stride, width, A);
+        A = c->llviddsp.add_left_pred(bsrc, bsrc, width, 0);
+        c->llviddsp.add_left_pred(bsrc + stride, bsrc + stride, width, A);
         bsrc += stride2;
         if (slice_height <= 1)
             continue;
@@ -461,14 +461,14 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride
             C        = B;
             A        = bsrc[i];
         }
-        c->hdspdec.add_hfyu_median_pred(bsrc + stride, bsrc - stride,
+        c->llviddsp.add_median_pred(bsrc + stride, bsrc - stride,
                                         bsrc + stride, width, &A, &B);
         bsrc += stride2;
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
-            c->hdspdec.add_hfyu_median_pred(bsrc, bsrc - stride2,
+            c->llviddsp.add_median_pred(bsrc, bsrc - stride2,
                                             bsrc, width, &A, &B);
-            c->hdspdec.add_hfyu_median_pred(bsrc + stride, bsrc - stride,
+            c->llviddsp.add_median_pred(bsrc + stride, bsrc - stride,
                                             bsrc + stride, width, &A, &B);
             bsrc += stride2;
         }
@@ -827,7 +827,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
 
     ff_bswapdsp_init(&c->bdsp);
-    ff_huffyuvdsp_init(&c->hdspdec);
+    ff_llviddsp_init(&c->llviddsp, avctx);
 
     if (avctx->extradata_size >= 16) {
         av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",

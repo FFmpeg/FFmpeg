@@ -26,6 +26,14 @@
 #include "libavutil/cpu.h"
 
 typedef struct LLVidDSPContext {
+    void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
+                      intptr_t w);
+    void (*add_median_pred)(uint8_t *dst, const uint8_t *top,
+                            const uint8_t *diff, intptr_t w,
+                            int *left, int *left_top);
+    int (*add_left_pred)(uint8_t *dst, const uint8_t *src,
+                         intptr_t w, int left);
+
     void (*add_int16)(uint16_t *dst/*align 16*/, const uint16_t *src/*align 16*/, unsigned mask, int w);
     void (*diff_int16)(uint16_t *dst/*align 16*/, const uint16_t *src1/*align 16*/, const uint16_t *src2/*align 1*/, unsigned mask, int w);
 
@@ -36,5 +44,6 @@ typedef struct LLVidDSPContext {
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
 void ff_llviddsp_init_x86(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
+void ff_llviddsp_init_ppc(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
 
 #endif //AVCODEC_LOSSLESS_VIDEODSP_H

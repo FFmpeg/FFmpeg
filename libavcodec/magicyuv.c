@@ -70,7 +70,6 @@ typedef struct MagicYUVContext {
     int (*huff_build)(VLC *vlc, uint8_t *len);
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
                              int j, int threadnr);
-    HuffYUVDSPContext hdsp;
     LLVidDSPContext   llviddsp;
 } MagicYUVContext;
 
@@ -353,24 +352,24 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         switch (pred) {
         case LEFT:
             dst = p->data[i] + j * sheight * stride;
-            s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+            s->llviddsp.add_left_pred(dst, dst, width, 0);
             dst += stride;
             if (interlaced) {
-                s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+                s->llviddsp.add_left_pred(dst, dst, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
-                s->hdsp.add_hfyu_left_pred(dst, dst, width, dst[-fake_stride]);
+                s->llviddsp.add_left_pred(dst, dst, width, dst[-fake_stride]);
                 dst += stride;
             }
             break;
         case GRADIENT:
             dst = p->data[i] + j * sheight * stride;
-            s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+            s->llviddsp.add_left_pred(dst, dst, width, 0);
             left = lefttop = 0;
             dst += stride;
             if (interlaced) {
-                s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+                s->llviddsp.add_left_pred(dst, dst, width, 0);
                 left = lefttop = 0;
                 dst += stride;
             }
@@ -390,15 +389,15 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         case MEDIAN:
             dst = p->data[i] + j * sheight * stride;
             lefttop = left = dst[0];
-            s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+            s->llviddsp.add_left_pred(dst, dst, width, 0);
             dst += stride;
             if (interlaced) {
                 lefttop = left = dst[0];
-                s->hdsp.add_hfyu_left_pred(dst, dst, width, 0);
+                s->llviddsp.add_left_pred(dst, dst, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
-                s->hdsp.add_hfyu_median_pred(dst, dst - fake_stride,
+                s->llviddsp.add_median_pred(dst, dst - fake_stride,
                                              dst, width, &left, &lefttop);
                 lefttop = left = dst[0];
                 dst += stride;
@@ -417,8 +416,8 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         uint8_t *r = p->data[2] + j * s->slice_height * p->linesize[2];
 
         for (i = 0; i < height; i++) {
-            s->hdsp.add_bytes(b, g, width);
-            s->hdsp.add_bytes(r, g, width);
+            s->llviddsp.add_bytes(b, g, width);
+            s->llviddsp.add_bytes(r, g, width);
             b += p->linesize[0];
             g += p->linesize[1];
             r += p->linesize[2];
@@ -698,7 +697,6 @@ static int magy_init_thread_copy(AVCodecContext *avctx)
 static av_cold int magy_decode_init(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
-    ff_huffyuvdsp_init(&s->hdsp);
     ff_llviddsp_init(&s->llviddsp, avctx);
     return 0;
 }

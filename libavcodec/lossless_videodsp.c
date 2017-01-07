@@ -21,6 +21,64 @@
 #include "lossless_videodsp.h"
 #include "libavcodec/mathops.h"
 
+// 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
+#define pb_7f (~0UL / 255 * 0x7f)
+#define pb_80 (~0UL / 255 * 0x80)
+
+static void add_bytes_c(uint8_t *dst, uint8_t *src, intptr_t w)
+{
+    long i;
+
+    for (i = 0; i <= w - (int) sizeof(long); i += sizeof(long)) {
+        long a = *(long *) (src + i);
+        long b = *(long *) (dst + i);
+        *(long *) (dst + i) = ((a & pb_7f) + (b & pb_7f)) ^ ((a ^ b) & pb_80);
+    }
+    for (; i < w; i++)
+        dst[i + 0] += src[i + 0];
+}
+
+static void add_median_pred_c(uint8_t *dst, const uint8_t *src1,
+                              const uint8_t *diff, intptr_t w,
+                              int *left, int *left_top)
+{
+    int i;
+    uint8_t l, lt;
+
+    l  = *left;
+    lt = *left_top;
+
+    for (i = 0; i < w; i++) {
+        l      = mid_pred(l, src1[i], (l + src1[i] - lt) & 0xFF) + diff[i];
+        lt     = src1[i];
+        dst[i] = l;
+    }
+
+    *left     = l;
+    *left_top = lt;
+}
+
+static int add_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
+                           int acc)
+{
+    int i;
+
+    for (i = 0; i < w - 1; i++) {
+        acc   += src[i];
+        dst[i] = acc;
+        i++;
+        acc   += src[i];
+        dst[i] = acc;
+    }
+
+    for (; i < w; i++) {
+        acc   += src[i];
+        dst[i] = acc;
+    }
+
+    return acc;
+}
+
 static void add_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w){
     long i;
     unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
@@ -117,6 +175,10 @@ static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsign
 
 void ff_llviddsp_init(LLVidDSPContext *c, AVCodecContext *avctx)
 {
+    c->add_bytes                  = add_bytes_c;
+    c->add_median_pred            = add_median_pred_c;
+    c->add_left_pred              = add_left_pred_c;
+
     c->add_int16 = add_int16_c;
     c->diff_int16= diff_int16_c;
     c->add_hfyu_left_pred_int16   = add_hfyu_left_pred_int16_c;
