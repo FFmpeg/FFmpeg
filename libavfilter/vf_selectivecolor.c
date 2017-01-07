@@ -19,6 +19,7 @@
  */
 
 /**
+ * @see http://blog.pkh.me/p/22-understanding-selective-coloring-in-adobe-photoshop.html
  * @todo
  * - use integers so it can be made bitexact and a FATE test can be added
  */
