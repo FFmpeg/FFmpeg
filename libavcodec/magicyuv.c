@@ -221,24 +221,24 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         switch (pred) {
         case LEFT:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
             dst += stride;
             if (interlaced) {
-                s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
-                s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, dst[-fake_stride]);
+                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, dst[-fake_stride]);
                 dst += stride;
             }
             break;
         case GRADIENT:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
             left = lefttop = 0;
             dst += stride;
             if (interlaced) {
-                s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
                 left = lefttop = 0;
                 dst += stride;
             }
@@ -258,11 +258,11 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         case MEDIAN:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
             lefttop = left = dst[0];
-            s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
             dst += stride;
             if (interlaced) {
                 lefttop = left = dst[0];
-                s->llviddsp.add_hfyu_left_pred_int16(dst, dst, 1023, width, 0);
+                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {

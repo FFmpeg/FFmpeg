@@ -34,7 +34,8 @@ typedef struct LLVidDSPContext {
     int (*add_left_pred)(uint8_t *dst, const uint8_t *src,
                          intptr_t w, int left);
 
-    int  (*add_hfyu_left_pred_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned left);
+    int  (*add_left_pred_int16)(uint16_t *dst, const uint16_t *src,
+                                unsigned mask, int w, unsigned left);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp);

@@ -882,7 +882,7 @@ static int left_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *src, int
     if (s->bps <= 8) {
         return s->llviddsp.add_left_pred(dst, src, w, acc);
     } else {
-        return s->llviddsp.add_hfyu_left_pred_int16((      uint16_t *)dst, (const uint16_t *)src, s->n-1, w, acc);
+        return s->llviddsp.add_left_pred_int16((      uint16_t *)dst, (const uint16_t *)src, s->n-1, w, acc);
     }
 }
 

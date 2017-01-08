@@ -79,7 +79,7 @@ static int add_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
     return acc;
 }
 
-static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
+static int add_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
     int i;
 
     for(i=0; i<w-1; i++){
@@ -105,7 +105,7 @@ void ff_llviddsp_init(LLVidDSPContext *c)
     c->add_median_pred            = add_median_pred_c;
     c->add_left_pred              = add_left_pred_c;
 
-    c->add_hfyu_left_pred_int16   = add_hfyu_left_pred_int16_c;
+    c->add_left_pred_int16        = add_left_pred_int16_c;
 
     if (ARCH_X86)
         ff_llviddsp_init_x86(c);
