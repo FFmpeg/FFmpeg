@@ -128,14 +128,6 @@ static int alloc_table(VLC *vlc, int size, int use_static)
     return index;
 }
 
-static av_always_inline uint32_t bitswap_32(uint32_t x)
-{
-    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
-           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
-           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
-           (uint32_t)ff_reverse[ x >> 24];
-}
-
 typedef struct VLCcode {
     uint8_t bits;
     uint16_t symbol;
