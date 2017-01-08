@@ -41,12 +41,9 @@ int  ff_add_left_pred_sse4(uint8_t *dst, const uint8_t *src,
 
 void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 void ff_add_int16_sse2(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
-void ff_diff_int16_mmx (uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
-void ff_diff_int16_sse2(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w);
 int ff_add_hfyu_left_pred_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
 int ff_add_hfyu_left_pred_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
 void ff_add_hfyu_median_pred_int16_mmxext(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
-void ff_sub_hfyu_median_pred_int16_mmxext(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
 
 #if HAVE_INLINE_ASM && HAVE_7REGS && ARCH_X86_32
 static void add_median_pred_cmov(uint8_t *dst, const uint8_t *top,
@@ -98,9 +95,7 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
 
     if (ARCH_X86_32 && EXTERNAL_MMX(cpu_flags)) {
         c->add_bytes = ff_add_bytes_mmx;
-
         c->add_int16 = ff_add_int16_mmx;
-        c->diff_int16 = ff_diff_int16_mmx;
     }
 
     if (ARCH_X86_32 && EXTERNAL_MMXEXT(cpu_flags)) {
@@ -111,7 +106,6 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
 
     if (EXTERNAL_MMXEXT(cpu_flags) && pix_desc && pix_desc->comp[0].depth<16) {
         c->add_hfyu_median_pred_int16 = ff_add_hfyu_median_pred_int16_mmxext;
-        c->sub_hfyu_median_pred_int16 = ff_sub_hfyu_median_pred_int16_mmxext;
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -119,7 +113,6 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c, AVCodecContext *avctx)
         c->add_median_pred = ff_add_median_pred_sse2;
 
         c->add_int16 = ff_add_int16_sse2;
-        c->diff_int16 = ff_diff_int16_sse2;
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {

@@ -1015,7 +1015,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_huffyuvencdsp_init(&s->hdsp);
+    ff_huffyuvencdsp_init(&s->hdsp, avctx);
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS

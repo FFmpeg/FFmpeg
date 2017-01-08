@@ -288,25 +288,6 @@ cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
 .unaligned:
     INT16_LOOP u, add
 
-%if ARCH_X86_32
-INIT_MMX mmx
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
-    INT16_LOOP a, sub
-%endif
-
-INIT_XMM sse2
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
-    test src1q, mmsize-1
-    jnz .unaligned
-    test src2q, mmsize-1
-    jnz .unaligned
-    test dstq, mmsize-1
-    jnz .unaligned
-    INT16_LOOP a, sub
-.unaligned:
-    INT16_LOOP u, sub
-
-
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
     add     wd, wd
     add     srcq, wq
@@ -442,43 +423,4 @@ cglobal add_hfyu_median_pred_int16, 7,7,0, dst, top, diff, mask, w, left, left_t
     mov [leftq], r2d
     movzx   r2d, word [topq-2]
     mov [left_topq], r2d
-    RET
-
-cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
-    add      wd, wd
-    movd    mm7, maskd
-    SPLATW  mm7, mm7
-    movq    mm0, [src1q]
-    movq    mm2, [src2q]
-    psllq   mm0, 16
-    psllq   mm2, 16
-    movd    mm6, [left_topq]
-    por     mm0, mm6
-    movd    mm6, [leftq]
-    por     mm2, mm6
-    xor     maskq, maskq
-.loop:
-    movq    mm1, [src1q + maskq]
-    movq    mm3, [src2q + maskq]
-    movq    mm4, mm2
-    psubw   mm2, mm0
-    paddw   mm2, mm1
-    pand    mm2, mm7
-    movq    mm5, mm4
-    pmaxsw  mm4, mm1
-    pminsw  mm1, mm5
-    pminsw  mm4, mm2
-    pmaxsw  mm4, mm1
-    psubw   mm3, mm4
-    pand    mm3, mm7
-    movq    [dstq + maskq], mm3
-    add     maskq, 8
-    movq    mm0, [src1q + maskq - 2]
-    movq    mm2, [src2q + maskq - 2]
-    cmp     maskq, wq
-        jb .loop
-    movzx maskd, word [src1q + wq - 2]
-    mov [left_topq], maskd
-    movzx maskd, word [src2q + wq - 2]
-    mov [leftq], maskd
     RET

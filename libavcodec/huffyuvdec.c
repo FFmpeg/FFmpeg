@@ -298,6 +298,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return ret;
 
     ff_huffyuvdsp_init(&s->hdsp);
+    ff_llviddsp_init(&s->llviddsp, avctx);
     memset(s->vlc, 0, 4 * sizeof(VLC));
 
     s->interlaced = avctx->height > 288;

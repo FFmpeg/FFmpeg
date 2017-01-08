@@ -43,7 +43,7 @@ static inline void diff_bytes(HYuvContext *s, uint8_t *dst,
     if (s->bps <= 8) {
         s->hencdsp.diff_bytes(dst, src0, src1, w);
     } else {
-        s->llviddsp.diff_int16((uint16_t *)dst, (const uint16_t *)src0, (const uint16_t *)src1, s->n - 1, w);
+        s->hencdsp.diff_int16((uint16_t *)dst, (const uint16_t *)src0, (const uint16_t *)src1, s->n - 1, w);
     }
 }
 
@@ -84,7 +84,7 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
                 dst16[i] = temp - left;
                 left   = temp;
             }
-            s->llviddsp.diff_int16(dst16 + 16, src16 + 16, src16 + 15, s->n - 1, w - 16);
+            s->hencdsp.diff_int16(dst16 + 16, src16 + 16, src16 + 15, s->n - 1, w - 16);
             return src16[w-1];
         }
     }
@@ -158,7 +158,7 @@ static void sub_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->hencdsp.sub_hfyu_median_pred(dst, src1, src2, w , left, left_top);
     } else {
-        s->llviddsp.sub_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src1, (const uint16_t *)src2, s->n - 1, w , left, left_top);
+        s->hencdsp.sub_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src1, (const uint16_t *)src2, s->n - 1, w , left, left_top);
     }
 }
 
@@ -217,7 +217,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
     ff_huffyuv_common_init(avctx);
-    ff_huffyuvencdsp_init(&s->hencdsp);
+    ff_huffyuvencdsp_init(&s->hencdsp, avctx);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
     if (s->flags&AV_CODEC_FLAG_PASS1) {

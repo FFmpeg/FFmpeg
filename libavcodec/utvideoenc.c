@@ -120,7 +120,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     ff_bswapdsp_init(&c->bdsp);
-    ff_huffyuvencdsp_init(&c->hdsp);
+    ff_huffyuvencdsp_init(&c->hdsp, avctx);
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
