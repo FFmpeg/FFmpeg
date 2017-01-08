@@ -725,7 +725,7 @@ static av_cold int lag_decode_init(AVCodecContext *avctx)
     LagarithContext *l = avctx->priv_data;
     l->avctx = avctx;
 
-    ff_llviddsp_init(&l->llviddsp, avctx);
+    ff_llviddsp_init(&l->llviddsp);
 
     return 0;
 }

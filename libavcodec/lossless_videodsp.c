@@ -79,36 +79,6 @@ static int add_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
     return acc;
 }
 
-static void add_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w){
-    long i;
-    unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
-    unsigned long pw_msb = pw_lsb +  0x0001000100010001ULL;
-    for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
-        long a = *(long*)(src+i);
-        long b = *(long*)(dst+i);
-        *(long*)(dst+i) = ((a&pw_lsb) + (b&pw_lsb)) ^ ((a^b)&pw_msb);
-    }
-    for(; i<w; i++)
-        dst[i] = (dst[i] + src[i]) & mask;
-}
-
-static void add_hfyu_median_pred_int16_c(uint16_t *dst, const uint16_t *src, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top){
-    int i;
-    uint16_t l, lt;
-
-    l  = *left;
-    lt = *left_top;
-
-    for(i=0; i<w; i++){
-        l  = (mid_pred(l, src[i], (l + src[i] - lt) & mask) + diff[i]) & mask;
-        lt = src[i];
-        dst[i] = l;
-    }
-
-    *left     = l;
-    *left_top = lt;
-}
-
 static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
     int i;
 
@@ -129,16 +99,14 @@ static int add_hfyu_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsign
 }
 
 
-void ff_llviddsp_init(LLVidDSPContext *c, AVCodecContext *avctx)
+void ff_llviddsp_init(LLVidDSPContext *c)
 {
     c->add_bytes                  = add_bytes_c;
     c->add_median_pred            = add_median_pred_c;
     c->add_left_pred              = add_left_pred_c;
 
-    c->add_int16 = add_int16_c;
     c->add_hfyu_left_pred_int16   = add_hfyu_left_pred_int16_c;
-    c->add_hfyu_median_pred_int16 = add_hfyu_median_pred_int16_c;
 
     if (ARCH_X86)
-        ff_llviddsp_init_x86(c, avctx);
+        ff_llviddsp_init_x86(c);
 }

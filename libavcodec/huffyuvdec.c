@@ -297,8 +297,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ff_huffyuvdsp_init(&s->hdsp);
-    ff_llviddsp_init(&s->llviddsp, avctx);
+    ff_huffyuvdsp_init(&s->hdsp, avctx);
+    ff_llviddsp_init(&s->llviddsp);
     memset(s->vlc, 0, 4 * sizeof(VLC));
 
     s->interlaced = avctx->height > 288;
@@ -891,7 +891,7 @@ static void add_bytes(HYuvContext *s, uint8_t *dst, uint8_t *src, int w)
     if (s->bps <= 8) {
         s->llviddsp.add_bytes(dst, src, w);
     } else {
-        s->llviddsp.add_int16((uint16_t*)dst, (const uint16_t*)src, s->n - 1, w);
+        s->hdsp.add_int16((uint16_t*)dst, (const uint16_t*)src, s->n - 1, w);
     }
 }
 
@@ -900,7 +900,7 @@ static void add_median_prediction(HYuvContext *s, uint8_t *dst, const uint8_t *s
     if (s->bps <= 8) {
         s->llviddsp.add_median_pred(dst, src, diff, w, left, left_top);
     } else {
-        s->llviddsp.add_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
+        s->hdsp.add_hfyu_median_pred_int16((uint16_t *)dst, (const uint16_t *)src, (const uint16_t *)diff, s->n-1, w, left, left_top);
     }
 }
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,

@@ -34,14 +34,11 @@ typedef struct LLVidDSPContext {
     int (*add_left_pred)(uint8_t *dst, const uint8_t *src,
                          intptr_t w, int left);
 
-    void (*add_int16)(uint16_t *dst/*align 16*/, const uint16_t *src/*align 16*/, unsigned mask, int w);
-
-    void (*add_hfyu_median_pred_int16)(uint16_t *dst, const uint16_t *top, const uint16_t *diff, unsigned mask, int w, int *left, int *left_top);
     int  (*add_hfyu_left_pred_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned left);
 } LLVidDSPContext;
 
-void ff_llviddsp_init(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
-void ff_llviddsp_init_x86(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
-void ff_llviddsp_init_ppc(LLVidDSPContext *llviddsp, AVCodecContext *avctx);
+void ff_llviddsp_init(LLVidDSPContext *llviddsp);
+void ff_llviddsp_init_x86(LLVidDSPContext *llviddsp);
+void ff_llviddsp_init_ppc(LLVidDSPContext *llviddsp);
 
 #endif //AVCODEC_LOSSLESS_VIDEODSP_H

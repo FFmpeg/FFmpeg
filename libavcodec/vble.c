@@ -185,7 +185,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     /* Stash for later use */
     ctx->avctx = avctx;
-    ff_llviddsp_init(&ctx->llviddsp, avctx);
+    ff_llviddsp_init(&ctx->llviddsp);
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;

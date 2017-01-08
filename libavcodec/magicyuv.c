@@ -697,7 +697,7 @@ static int magy_init_thread_copy(AVCodecContext *avctx)
 static av_cold int magy_decode_init(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
-    ff_llviddsp_init(&s->llviddsp, avctx);
+    ff_llviddsp_init(&s->llviddsp);
     return 0;
 }
 

@@ -51,7 +51,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, intptr_t w)
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_llviddsp_init_ppc(LLVidDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_llviddsp_init_ppc(LLVidDSPContext *c)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

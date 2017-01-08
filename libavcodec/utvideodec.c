@@ -827,7 +827,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
 
     ff_bswapdsp_init(&c->bdsp);
-    ff_llviddsp_init(&c->llviddsp, avctx);
+    ff_llviddsp_init(&c->llviddsp);
 
     if (avctx->extradata_size >= 16) {
         av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
