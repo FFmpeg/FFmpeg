@@ -708,8 +708,15 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(ctx->inputs[0]);
 
-    if (ret == AVERROR_EOF && !ctx->is_disabled && s->delay)
-        ret = flush_buffer(s, ctx->inputs[0], outlink);
+    if (ret == AVERROR_EOF && !ctx->is_disabled && s->delay) {
+        if (!cqueue_empty(s->gain_history_smoothed[0])) {
+            ret = flush_buffer(s, ctx->inputs[0], outlink);
+        } else if (s->queue.available) {
+            AVFrame *out = ff_bufqueue_get(&s->queue);
+
+            ret = ff_filter_frame(outlink, out);
+        }
+    }
 
     return ret;
 }
