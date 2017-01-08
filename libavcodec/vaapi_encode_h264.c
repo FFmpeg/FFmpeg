@@ -1190,9 +1190,19 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
     switch (avctx->profile) {
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
         ctx->va_profile = VAProfileH264ConstrainedBaseline;
+        if (avctx->max_b_frames != 0) {
+            avctx->max_b_frames = 0;
+            av_log(avctx, AV_LOG_WARNING, "H.264 constrained baseline profile "
+                   "doesn't support encoding with B frames, disabling them.\n");
+        }
         break;
     case FF_PROFILE_H264_BASELINE:
         ctx->va_profile = VAProfileH264Baseline;
+        if (avctx->max_b_frames != 0) {
+            avctx->max_b_frames = 0;
+            av_log(avctx, AV_LOG_WARNING, "H.264 baseline profile "
+                   "doesn't support encoding with B frames, disabling them.\n");
+        }
         break;
     case FF_PROFILE_H264_MAIN:
         ctx->va_profile = VAProfileH264Main;
