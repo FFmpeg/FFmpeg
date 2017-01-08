@@ -91,6 +91,7 @@ OBJS-$(CONFIG_JPEGTABLES)              += jpegtables.o
 OBJS-$(CONFIG_LIBXVID)                 += libxvid_rc.o
 OBJS-$(CONFIG_LLAUDDSP)                += lossless_audiodsp.o
 OBJS-$(CONFIG_LLVIDDSP)                += lossless_videodsp.o
+OBJS-$(CONFIG_LLVIDENCDSP)             += lossless_videoencdsp.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_LZF)                     += lzf.o
