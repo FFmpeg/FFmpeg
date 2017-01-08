@@ -62,4 +62,13 @@ void ff_free_vlc(VLC *vlc);
         init_vlc(vlc, bits, a, b, c, d, e, f, g, INIT_VLC_USE_NEW_STATIC); \
     } while (0)
 
+#define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)    \
+    do {                                                                   \
+        static VLC_TYPE table[static_size][2];                             \
+        (vlc)->table           = table;                                    \
+        (vlc)->table_allocated = static_size;                              \
+        init_vlc(vlc, bits, a, b, c, d, e, f, g,                           \
+            INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);                        \
+    } while (0)
+
 #endif /* AVCODEC_VLC_H */
