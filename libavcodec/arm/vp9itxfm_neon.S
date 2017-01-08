@@ -530,7 +530,7 @@ function idct16x16_dc_add_neon
         movrel          r12, idct_coeffs
         vld1.16         {d0}, [r12,:64]
 
-        vmov.i16        q2, #0
+        vmov.i16        q2,  #0
 
         vld1.16         {d16[]}, [r2,:16]
         vmull.s16       q8,  d16, d0[0]
@@ -793,7 +793,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         push            {lr}
 
         mov             r12, #32
-        vmov.s16        q2, #0
+        vmov.s16        q2,  #0
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64]
         vst1.16         {d4},  [r2,:64], r12
@@ -1142,7 +1142,7 @@ function idct32x32_dc_add_neon
         movrel          r12, idct_coeffs
         vld1.16         {d0}, [r12,:64]
 
-        vmov.i16        q2, #0
+        vmov.i16        q2,  #0
 
         vld1.16         {d16[]}, [r2,:16]
         vmull.s16       q8,  d16, d0[0]
@@ -1330,7 +1330,7 @@ function idct32_1d_4x32_pass1\suffix\()_neon
 
         @ Double stride of the input, since we only read every other line
         mov             r12, #128
-        vmov.s16        d4, #0
+        vmov.s16        d4,  #0
 
         @ d16 = IN(0), d17 = IN(2) ... d31 = IN(30)
 .ifb \suffix
@@ -1394,7 +1394,7 @@ function idct32_1d_4x32_pass1\suffix\()_neon
 .endif
         add             r2,  r2,  #64
 
-        vmov.s16        d8, #0
+        vmov.s16        d8,  #0
         @ d16 = IN(1), d17 = IN(3) ... d31 = IN(31)
 .ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
@@ -1533,9 +1533,9 @@ function idct32_1d_4x32_pass2\suffix\()_neon
 .endif
         vld1.32         {d12[]},  [r0,:32], r1
         vld1.32         {d12[1]}, [r0,:32], r1
-        vrshr.s16       q4, q4, #6
+        vrshr.s16       q4,  q4,  #6
         vld1.32         {d13[]},  [r0,:32], r1
-        vrshr.s16       q5, q5, #6
+        vrshr.s16       q5,  q5,  #6
         vld1.32         {d13[1]}, [r0,:32], r1
         sub             r0,  r0,  r1, lsl #2
         vaddw.u8        q4,  q4,  d12

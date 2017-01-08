@@ -380,7 +380,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_8x8_add_neon, export=1
 .ifc \txfm1\()_\txfm2,idct_idct
         movrel          x4,  idct_coeffs
 .else
-        movrel          x4, iadst8_coeffs
+        movrel          x4,  iadst8_coeffs
         ld1             {v1.8h}, [x4], #16
 .endif
         ld1             {v0.8h}, [x4]
@@ -480,23 +480,23 @@ itxfm_func8x8 iadst, iadst
 
 
 function idct16x16_dc_add_neon
-        movrel          x4, idct_coeffs
+        movrel          x4,  idct_coeffs
         ld1             {v0.4h}, [x4]
 
-        movi            v1.4h, #0
+        movi            v1.4h,  #0
 
         ld1             {v2.h}[0], [x2]
-        smull           v2.4s,  v2.4h, v0.h[0]
-        rshrn           v2.4h,  v2.4s, #14
-        smull           v2.4s,  v2.4h, v0.h[0]
-        rshrn           v2.4h,  v2.4s, #14
+        smull           v2.4s,  v2.4h,  v0.h[0]
+        rshrn           v2.4h,  v2.4s,  #14
+        smull           v2.4s,  v2.4h,  v0.h[0]
+        rshrn           v2.4h,  v2.4s,  #14
         dup             v2.8h,  v2.h[0]
         st1             {v1.h}[0], [x2]
 
-        srshr           v2.8h, v2.8h, #6
+        srshr           v2.8h,  v2.8h,  #6
 
-        mov             x3, x0
-        mov             x4, #16
+        mov             x3,  x0
+        mov             x4,  #16
 1:
         // Loop to add the constant from v2 into all 16x16 outputs
         subs            x4,  x4,  #2
@@ -869,7 +869,7 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 .ifc \txfm1,idct
         ld1             {v0.8h,v1.8h}, [x10]
 .endif
-        mov             x9, #32
+        mov             x9,  #32
 
 .ifc \txfm1\()_\txfm2,idct_idct
         cmp             w3,  #10
@@ -1046,10 +1046,10 @@ idct16_partial quarter
 idct16_partial half
 
 function idct32x32_dc_add_neon
-        movrel          x4, idct_coeffs
+        movrel          x4,  idct_coeffs
         ld1             {v0.4h}, [x4]
 
-        movi            v1.4h, #0
+        movi            v1.4h,  #0
 
         ld1             {v2.h}[0], [x2]
         smull           v2.4s,  v2.4h,  v0.h[0]
@@ -1059,10 +1059,10 @@ function idct32x32_dc_add_neon
         dup             v2.8h,  v2.h[0]
         st1             {v1.h}[0], [x2]
 
-        srshr           v0.8h, v2.8h, #6
+        srshr           v0.8h,  v2.8h,  #6
 
-        mov             x3, x0
-        mov             x4, #32
+        mov             x3,  x0
+        mov             x4,  #32
 1:
         // Loop to add the constant v0 into all 32x32 outputs
         subs            x4,  x4,  #2
@@ -1230,7 +1230,7 @@ endfunc
 // x9 = double input stride
 function idct32_1d_8x32_pass1\suffix\()_neon
         mov             x14, x30
-        movi            v2.8h, #0
+        movi            v2.8h,  #0
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
 .ifb \suffix
@@ -1295,7 +1295,7 @@ function idct32_1d_8x32_pass1\suffix\()_neon
 .endif
         add             x2,  x2,  #64
 
-        movi            v2.8h, #0
+        movi            v2.8h,  #0
         // v16 = IN(1), v17 = IN(3) ... v31 = IN(31)
 .ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
