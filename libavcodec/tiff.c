@@ -408,7 +408,7 @@ static int tiff_unpack_lzma(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
                             const uint8_t *src, int size, int width, int lines,
                             int strip_start, int is_yuv)
 {
-    uint64_t outlen = width * lines;
+    uint64_t outlen = width * (uint64_t)lines;
     int ret, line;
     uint8_t *buf = av_malloc(outlen);
     if (!buf)
