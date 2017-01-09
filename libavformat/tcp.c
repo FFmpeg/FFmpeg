@@ -140,6 +140,15 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
+    /* Set the socket's send or receive buffer sizes, if specified.
+       If unspecified or setting fails, system default is used. */
+    if (s->recv_buffer_size > 0) {
+        setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+    }
+    if (s->send_buffer_size > 0) {
+        setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
+    }
+
     if (s->listen == 2) {
         // multi-client
         if ((ret = ff_listen(fd, cur_ai->ai_addr, cur_ai->ai_addrlen)) < 0)
@@ -164,14 +173,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
     s->fd = fd;
-    /* Set the socket's send or receive buffer sizes, if specified.
-       If unspecified or setting fails, system default is used. */
-    if (s->recv_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
-    }
-    if (s->send_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
-    }
 
     freeaddrinfo(ai);
     return 0;
