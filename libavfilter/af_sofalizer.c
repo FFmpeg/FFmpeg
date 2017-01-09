@@ -703,6 +703,8 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     FFTContext *fft = s->fft[jobnr];
     const int n_conv = s->n_conv;
     const int n_fft = s->n_fft;
+    const float fft_scale = 1.0f / s->n_fft;
+    FFTComplex *hrtf_offset;
     int wr = *write;
     int n_read;
     int i, j;
@@ -736,6 +738,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
         /* outer loop: go through all input channels to be convolved */
         offset = i * n_fft; /* no. samples already processed */
+        hrtf_offset = hrtf + offset;
 
         /* fill FFT input with 0 (we want to zero-pad) */
         memset(fft_in, 0, sizeof(FFTComplex) * n_fft);
@@ -750,14 +753,15 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         av_fft_permute(fft, fft_in);
         av_fft_calc(fft, fft_in);
         for (j = 0; j < n_fft; j++) {
+            const FFTComplex *hcomplex = hrtf_offset + j;
             const float re = fft_in[j].re;
             const float im = fft_in[j].im;
 
             /* complex multiplication of input signal and HRTFs */
             /* output channel (real): */
-            fft_in[j].re = re * (hrtf + offset + j)->re - im * (hrtf + offset + j)->im;
+            fft_in[j].re = re * hcomplex->re - im * hcomplex->im;
             /* output channel (imag): */
-            fft_in[j].im = re * (hrtf + offset + j)->im + im * (hrtf + offset + j)->re;
+            fft_in[j].im = re * hcomplex->im + im * hcomplex->re;
         }
 
         /* transform output signal of current channel back to time domain */
@@ -766,14 +770,14 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
         for (j = 0; j < in->nb_samples; j++) {
             /* write output signal of current channel to output buffer */
-            dst[2 * j] += fft_in[j].re / (float)n_fft;
+            dst[2 * j] += fft_in[j].re * fft_scale;
         }
 
         for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
             /* write the rest of output signal to overflow buffer */
             int write_pos = (wr + j) & modulo;
 
-            *(ringbuffer + write_pos) += fft_in[in->nb_samples + j].re / (float)n_fft;
+            *(ringbuffer + write_pos) += fft_in[in->nb_samples + j].re * fft_scale;
         }
     }
 
@@ -781,7 +785,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     for (i = 0; i < out->nb_samples; i++) {
         /* clippings counter */
         if (fabs(*dst) > 1) { /* if current output sample > 1 */
-            *n_clippings = *n_clippings + 1;
+            n_clippings[0]++;
         }
 
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
