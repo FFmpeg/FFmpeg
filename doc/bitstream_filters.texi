@@ -277,4 +277,9 @@ was split from its visible counterpart.
 
 Split VP9 superframes into single frames.
 
+@section vp9_raw_reorder
+
+Given a VP9 stream with correct timestamps but possibly out of order,
+insert additional show-existing-frame packets to correct the ordering.
+
 @c man end BITSTREAM FILTERS
