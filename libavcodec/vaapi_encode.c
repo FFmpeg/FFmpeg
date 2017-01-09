@@ -320,6 +320,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
             err = AVERROR(ENOMEM);
             goto fail;
         }
+        slice->index = i;
         pic->slices[i] = slice;
 
         if (ctx->codec->slice_params_size > 0) {
