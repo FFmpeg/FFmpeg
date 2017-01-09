@@ -334,8 +334,10 @@ static void check_itxfm(void)
                 // skip testing sub-IDCTs for WHT or ADST since they don't
                 // implement it in any of the SIMD functions. If they do,
                 // consider changing this to ensure we have complete test
-                // coverage
-                for (sub = (txtp == 0 && tx < 4) ? 1 : sz; sub <= sz; sub <<= 1) {
+                // coverage. Test sub=1 for dc-only, then 2, 4, 8, 12, etc,
+                // since the arm version can distinguish them at that level.
+                for (sub = (txtp == 0 && tx < 4) ? 1 : sz; sub <= sz;
+                     sub < 4 ? (sub <<= 1) : (sub += 4)) {
                     if (check_func(dsp.itxfm_add[tx][txtp],
                                    "vp9_inv_%s_%dx%d_sub%d_add_%d",
                                    tx == 4 ? "wht_wht" : txtp_types[txtp],
