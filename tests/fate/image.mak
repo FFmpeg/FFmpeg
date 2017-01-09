@@ -309,6 +309,9 @@ fate-psd-lena-rgb-rle-127x127-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-r
 FATE_PSD += fate-psd-lena-rgba-rle-128x128-8b
 fate-psd-lena-rgba-rle-128x128-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgba_rle_128x128_8b.psd
 
+FATE_PSD += fate-psd-lena-256c
+fate-psd-lena-256c: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-256c.psd
+
 FATE_PSD-$(call DEMDEC, IMAGE2, PSD) += $(FATE_PSD)
 
 FATE_IMAGE += $(FATE_PSD-yes)
