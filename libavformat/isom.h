@@ -234,6 +234,7 @@ typedef struct MOVContext {
     unsigned int nb_chapter_tracks;
     int use_absolute_path;
     int ignore_editlist;
+    int advanced_editlist;
     int ignore_chapters;
     int seek_individually;
     int64_t next_root_atom; ///< offset of the next root atom

@@ -3309,7 +3309,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
 
     if (sc->elst_count) {
-        int i, edit_start_index = 0;
+        int i, edit_start_index = 0, multiple_edits = 0;
         int64_t empty_duration = 0; // empty duration of the first edit list entry
         int64_t start_time = 0; // start time of the media
 
@@ -3322,15 +3322,28 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 edit_start_index = 1;
             } else if (i == edit_start_index && e->time >= 0) {
                 start_time = e->time;
+            } else {
+                multiple_edits = 1;
             }
         }
+
+        if (multiple_edits && !mov->advanced_editlist)
+            av_log(mov->fc, AV_LOG_WARNING, "multiple edit list entries, "
+                   "Use -advanced_editlist to correctly decode otherwise "
+                   "a/v desync might occur\n");
 
         /* adjust first dts according to edit list */
         if ((empty_duration || start_time) && mov->time_scale > 0) {
             if (empty_duration)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
             sc->time_offset = start_time - empty_duration;
+            if (!mov->advanced_editlist)
+                current_dts = -sc->time_offset;
         }
+
+        if (!multiple_edits && !mov->advanced_editlist &&
+            st->codecpar->codec_id == AV_CODEC_ID_AAC && start_time > 0)
+            sc->start_pad = start_time;
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
@@ -3564,8 +3577,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         }
     }
 
-    // Fix index according to edit lists.
-    mov_fix_index(mov, st);
+    if (!mov->ignore_editlist && mov->advanced_editlist) {
+        // Fix index according to edit lists.
+        mov_fix_index(mov, st);
+    }
 }
 
 static int test_same_origin(const char *src, const char *ref) {
@@ -6478,7 +6493,11 @@ static const AVOption mov_options[] = {
         "Seek each stream individually to the to the closest point",
         OFFSET(seek_individually), AV_OPT_TYPE_BOOL, { .i64 = 1 },
         0, 1, FLAGS},
-    {"ignore_editlist", "", OFFSET(ignore_editlist), AV_OPT_TYPE_BOOL, {.i64 = 0},
+    {"ignore_editlist", "Ignore the edit list atom.", OFFSET(ignore_editlist), AV_OPT_TYPE_BOOL, {.i64 = 0},
+        0, 1, FLAGS},
+    {"advanced_editlist",
+        "Modify the AVIndex according to the editlists. Use this option to decode in the order specified by the edits.",
+        OFFSET(advanced_editlist), AV_OPT_TYPE_BOOL, {.i64 = 1},
         0, 1, FLAGS},
     {"ignore_chapters", "", OFFSET(ignore_chapters), AV_OPT_TYPE_BOOL, {.i64 = 0},
         0, 1, FLAGS},
