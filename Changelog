@@ -6,6 +6,7 @@ version <next>:
 - Intel QSV-accelerated VP8 and VC-1 decoding
 - VAAPI-accelerated VP8 and HEVC decoding
 - VAAPI-accelerated deinterlacing
+- config.log and other configuration files moved into avbuild/ directory
 
 
 version 12:
