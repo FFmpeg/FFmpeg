@@ -103,7 +103,7 @@ static av_cold void vp9dsp_mc_init_aarch64(VP9DSPContext *dsp, int bpp)
     if (bpp != 8)
         return;
 
-#define init_fpel(idx1, idx2, sz, type, suffix) \
+#define init_fpel(idx1, idx2, sz, type, suffix)      \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = \
     dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = \
@@ -128,7 +128,7 @@ static av_cold void vp9dsp_mc_init_aarch64(VP9DSPContext *dsp, int bpp)
 #define init_mc_func(idx1, idx2, op, filter, fname, dir, mx, my, sz, pfx) \
     dsp->mc[idx1][filter][idx2][mx][my] = pfx##op##_##fname##sz##_##dir##_neon
 
-#define init_mc_funcs(idx, dir, mx, my, sz, pfx) \
+#define init_mc_funcs(idx, dir, mx, my, sz, pfx)                                   \
     init_mc_func(idx, 0, put, FILTER_8TAP_REGULAR, regular, dir, mx, my, sz, pfx); \
     init_mc_func(idx, 0, put, FILTER_8TAP_SHARP,   sharp,   dir, mx, my, sz, pfx); \
     init_mc_func(idx, 0, put, FILTER_8TAP_SMOOTH,  smooth,  dir, mx, my, sz, pfx); \
@@ -136,7 +136,7 @@ static av_cold void vp9dsp_mc_init_aarch64(VP9DSPContext *dsp, int bpp)
     init_mc_func(idx, 1, avg, FILTER_8TAP_SHARP,   sharp,   dir, mx, my, sz, pfx); \
     init_mc_func(idx, 1, avg, FILTER_8TAP_SMOOTH,  smooth,  dir, mx, my, sz, pfx)
 
-#define init_mc_funcs_dirs(idx, sz) \
+#define init_mc_funcs_dirs(idx, sz)            \
     init_mc_funcs(idx, h,  1, 0, sz, ff_vp9_); \
     init_mc_funcs(idx, v,  0, 1, sz, ff_vp9_); \
     init_mc_funcs(idx, hv, 1, 1, sz,)
