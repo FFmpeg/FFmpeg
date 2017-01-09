@@ -125,16 +125,16 @@ endconst
         vmlal.s16       \out4, \in4, \coef1
 .endm
 
-@ in1 = (in1 * coef1 - in2 * coef2 + (1 << 13)) >> 14
-@ in2 = (in1 * coef2 + in2 * coef1 + (1 << 13)) >> 14
-@ in are 2 d registers, tmp are 2 q registers
-.macro mbutterfly in1, in2, coef1, coef2, tmp1, tmp2, neg=0
-        mbutterfly_l    \tmp1, \tmp2, \in1, \in2, \coef1, \coef2
+@ inout1 = (inout1 * coef1 - inout2 * coef2 + (1 << 13)) >> 14
+@ inout2 = (inout1 * coef2 + inout2 * coef1 + (1 << 13)) >> 14
+@ inout are 2 d registers, tmp are 2 q registers
+.macro mbutterfly inout1, inout2, coef1, coef2, tmp1, tmp2, neg=0
+        mbutterfly_l    \tmp1, \tmp2, \inout1, \inout2, \coef1, \coef2
 .if \neg > 0
         vneg.s32        \tmp2, \tmp2
 .endif
-        vrshrn.s32      \in1, \tmp1,  #14
-        vrshrn.s32      \in2, \tmp2,  #14
+        vrshrn.s32      \inout1, \tmp1,  #14
+        vrshrn.s32      \inout2, \tmp2,  #14
 .endm
 
 @ inout1,inout2 = (inout1,inout2 * coef1 - inout3,inout4 * coef2 + (1 << 13)) >> 14
