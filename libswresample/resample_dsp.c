@@ -70,4 +70,5 @@ void swri_resample_dsp_init(ResampleContext *c)
 
     if (ARCH_X86) swri_resample_dsp_x86_init(c);
     else if (ARCH_ARM) swri_resample_dsp_arm_init(c);
+    else if (ARCH_AARCH64) swri_resample_dsp_aarch64_init(c);
 }
