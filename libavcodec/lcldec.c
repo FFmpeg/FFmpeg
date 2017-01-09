@@ -622,13 +622,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#if HAVE_THREADS
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    return decode_init(avctx);
-}
-#endif
-
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -650,7 +643,6 @@ AVCodec ff_mszh_decoder = {
     .id             = AV_CODEC_ID_MSZH,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
@@ -666,7 +658,6 @@ AVCodec ff_zlib_decoder = {
     .id             = AV_CODEC_ID_ZLIB,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

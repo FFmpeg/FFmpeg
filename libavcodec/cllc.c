@@ -483,19 +483,6 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-#if HAVE_THREADS
-static int cllc_init_thread_copy(AVCodecContext *avctx)
-{
-    CLLCContext *ctx = avctx->priv_data;
-
-    ctx->avctx            = avctx;
-    ctx->swapped_buf      = NULL;
-    ctx->swapped_buf_size = 0;
-
-    return 0;
-}
-#endif
-
 static av_cold int cllc_decode_close(AVCodecContext *avctx)
 {
     CLLCContext *ctx = avctx->priv_data;
@@ -526,7 +513,6 @@ AVCodec ff_cllc_decoder = {
     .id             = AV_CODEC_ID_CLLC,
     .priv_data_size = sizeof(CLLCContext),
     .init           = cllc_decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(cllc_init_thread_copy),
     .decode         = cllc_decode_frame,
     .close          = cllc_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

@@ -409,13 +409,15 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
     }
     avctx->ticks_per_frame = 2;
 
-    if (avctx->extradata_size > 0 && avctx->extradata) {
-        ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
-                                       &h->ps, &h->is_avc, &h->nal_length_size,
-                                       avctx->err_recognition, avctx);
-        if (ret < 0) {
-            h264_decode_end(avctx);
-            return ret;
+    if (!avctx->internal->is_copy) {
+        if (avctx->extradata_size > 0 && avctx->extradata) {
+            ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
+                                           &h->ps, &h->is_avc, &h->nal_length_size,
+                                           avctx->err_recognition, avctx);
+            if (ret < 0) {
+                h264_decode_end(avctx);
+                return ret;
+            }
         }
     }
 
@@ -437,27 +439,6 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
 
     return 0;
 }
-
-#if HAVE_THREADS
-static int decode_init_thread_copy(AVCodecContext *avctx)
-{
-    H264Context *h = avctx->priv_data;
-    int ret;
-
-    if (!avctx->internal->is_copy)
-        return 0;
-
-    memset(h, 0, sizeof(*h));
-
-    ret = h264_init_context(avctx, h);
-    if (ret < 0)
-        return ret;
-
-    h->context_initialized = 0;
-
-    return 0;
-}
-#endif
 
 /**
  * instantaneous decoder refresh.
@@ -1081,7 +1062,6 @@ AVCodec ff_h264_decoder = {
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = flush_dpb,
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),
     .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class            = &h264_class,

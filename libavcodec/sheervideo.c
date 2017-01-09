@@ -2063,19 +2063,6 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-#if HAVE_THREADS
-static int decode_init_thread_copy(AVCodecContext *avctx)
-{
-    SheerVideoContext *s = avctx->priv_data;
-
-    s->format = 0;
-    memset(&s->vlc[0], 0, sizeof(s->vlc[0]));
-    memset(&s->vlc[1], 0, sizeof(s->vlc[1]));
-
-    return 0;
-}
-#endif
-
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     SheerVideoContext *s = avctx->priv_data;
@@ -2092,7 +2079,6 @@ AVCodec ff_sheervideo_decoder = {
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_SHEERVIDEO,
     .priv_data_size   = sizeof(SheerVideoContext),
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .close            = decode_end,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

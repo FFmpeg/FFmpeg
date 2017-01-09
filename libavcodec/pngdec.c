@@ -1771,9 +1771,7 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    if (!avctx->internal->is_copy) {
-        ff_pngdsp_init(&s->dsp);
-    }
+    ff_pngdsp_init(&s->dsp);
 
     return 0;
 }
@@ -1808,7 +1806,6 @@ AVCodec ff_apng_decoder = {
     .init           = png_dec_init,
     .close          = png_dec_end,
     .decode         = decode_frame_apng,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(png_dec_init),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
@@ -1826,7 +1823,6 @@ AVCodec ff_png_decoder = {
     .init           = png_dec_init,
     .close          = png_dec_end,
     .decode         = decode_frame_png,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(png_dec_init),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM | FF_CODEC_CAP_INIT_THREADSAFE |

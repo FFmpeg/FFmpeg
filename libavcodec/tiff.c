@@ -2165,7 +2165,6 @@ AVCodec ff_tiff_decoder = {
     .init           = tiff_init,
     .close          = tiff_end,
     .decode         = decode_frame,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(tiff_init),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class     = &tiff_decoder_class,

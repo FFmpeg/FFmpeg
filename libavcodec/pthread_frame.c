@@ -703,7 +703,10 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         av_freep(&p->released_buffers);
 
         if (i && p->avctx) {
+            if (codec->priv_class)
+                av_opt_free(p->avctx->priv_data);
             av_freep(&p->avctx->priv_data);
+
             av_freep(&p->avctx->slice_offset);
         }
 
@@ -809,27 +812,29 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         copy->internal->thread_ctx = p;
         copy->internal->last_pkt_props = &p->avpkt;
 
-        if (!i) {
-            src = copy;
-
-            if (codec->init)
-                err = codec->init(copy);
-
-            update_context_from_thread(avctx, copy, 1);
-        } else {
-            copy->priv_data = av_malloc(codec->priv_data_size);
+        if (i) {
+            copy->priv_data = av_mallocz(codec->priv_data_size);
             if (!copy->priv_data) {
                 err = AVERROR(ENOMEM);
                 goto error;
             }
-            memcpy(copy->priv_data, src->priv_data, codec->priv_data_size);
-            copy->internal->is_copy = 1;
 
-            if (codec->init_thread_copy)
-                err = codec->init_thread_copy(copy);
+            if (codec->priv_class) {
+                *(const AVClass **)copy->priv_data = codec->priv_class;
+                err = av_opt_copy(copy->priv_data, src->priv_data);
+                if (err < 0)
+                    goto error;
+            }
+            copy->internal->is_copy = 1;
         }
 
+        if (codec->init)
+            err = codec->init(copy);
+
         if (err) goto error;
+
+        if (!i)
+            update_context_from_thread(avctx, copy, 1);
 
         atomic_init(&p->debug_threads, (copy->debug & FF_DEBUG_THREADS) != 0);
 

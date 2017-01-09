@@ -453,24 +453,6 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-#if HAVE_THREADS
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    YLCContext *s = avctx->priv_data;
-
-    memset(&s->vlc[0], 0, sizeof(VLC));
-    memset(&s->vlc[1], 0, sizeof(VLC));
-    memset(&s->vlc[2], 0, sizeof(VLC));
-    memset(&s->vlc[3], 0, sizeof(VLC));
-    s->table_bits = NULL;
-    s->table_bits_size = 0;
-    s->bitstream_bits = NULL;
-    s->bitstream_bits_size = 0;
-
-    return 0;
-}
-#endif
-
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     YLCContext *s = avctx->priv_data;
@@ -494,7 +476,6 @@ AVCodec ff_ylc_decoder = {
     .id             = AV_CODEC_ID_YLC,
     .priv_data_size = sizeof(YLCContext),
     .init           = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,

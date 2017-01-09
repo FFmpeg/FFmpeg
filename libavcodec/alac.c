@@ -601,15 +601,6 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-#if HAVE_THREADS
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    ALACContext *alac = avctx->priv_data;
-    alac->avctx = avctx;
-    return allocate_buffers(alac);
-}
-#endif
-
 static const AVOption options[] = {
     { "extra_bits_bug", "Force non-standard decoding process",
       offsetof(ALACContext, extra_bit_bug), AV_OPT_TYPE_BOOL, { .i64 = 0 },
@@ -633,7 +624,6 @@ AVCodec ff_alac_decoder = {
     .init           = alac_decode_init,
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_class     = &alac_class
 };

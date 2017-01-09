@@ -389,13 +389,6 @@ error:
     return ret;
 }
 
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    TTAContext *s = avctx->priv_data;
-    s->avctx = avctx;
-    return allocate_buffers(avctx);
-}
-
 static av_cold int tta_decode_close(AVCodecContext *avctx) {
     TTAContext *s = avctx->priv_data;
 
@@ -430,7 +423,6 @@ AVCodec ff_tta_decoder = {
     .init           = tta_decode_init,
     .close          = tta_decode_close,
     .decode         = tta_decode_frame,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .priv_class     = &tta_decoder_class,
 };

@@ -347,9 +347,6 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_frame_free(&s->last_frame.f);
     av_frame_free(&s->golden_frame.f);
 
-    if (avctx->internal->is_copy)
-        return 0;
-
     for (i = 0; i < 16; i++) {
         ff_free_vlc(&s->dc_vlc[i]);
         ff_free_vlc(&s->ac_vlc_1[i]);
@@ -2601,23 +2598,6 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     }
 
     if (s != s1) {
-        if (!s->current_frame.f)
-            return AVERROR(ENOMEM);
-        // init tables if the first frame hasn't been decoded
-        if (!s->current_frame.f->data[0]) {
-            int y_fragment_count, c_fragment_count;
-            s->avctx = dst;
-            err = allocate_tables(dst);
-            if (err)
-                return err;
-            y_fragment_count = s->fragment_width[0] * s->fragment_height[0];
-            c_fragment_count = s->fragment_width[1] * s->fragment_height[1];
-            memcpy(s->motion_val[0], s1->motion_val[0],
-                   y_fragment_count * sizeof(*s->motion_val[0]));
-            memcpy(s->motion_val[1], s1->motion_val[1],
-                   c_fragment_count * sizeof(*s->motion_val[1]));
-        }
-
         // copy previous frame data
         if ((err = ref_frames(s, s1)) < 0)
             return err;
@@ -2926,28 +2906,6 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
     }
     return 0;
 }
-
-#if HAVE_THREADS
-static int vp3_init_thread_copy(AVCodecContext *avctx)
-{
-    Vp3DecodeContext *s = avctx->priv_data;
-
-    s->superblock_coding      = NULL;
-    s->all_fragments          = NULL;
-    s->coded_fragment_list[0] = NULL;
-    s-> kf_coded_fragment_list= NULL;
-    s->nkf_coded_fragment_list= NULL;
-    s->dct_tokens_base        = NULL;
-    s->superblock_fragments   = NULL;
-    s->macroblock_coding      = NULL;
-    s->motion_val[0]          = NULL;
-    s->motion_val[1]          = NULL;
-    s->edge_emu_buffer        = NULL;
-    s->dc_pred_row            = NULL;
-
-    return init_frames(s);
-}
-#endif
 
 #if CONFIG_THEORA_DECODER
 static const enum AVPixelFormat theora_pix_fmts[4] = {
@@ -3262,7 +3220,6 @@ AVCodec ff_theora_decoder = {
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp3_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
@@ -3280,7 +3237,6 @@ AVCodec ff_vp3_decoder = {
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp3_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };
@@ -3298,7 +3254,6 @@ AVCodec ff_vp4_decoder = {
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DRAW_HORIZ_BAND |
                              AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp3_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
     .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

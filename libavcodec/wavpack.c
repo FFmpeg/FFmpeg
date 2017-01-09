@@ -1009,20 +1009,6 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
 }
 
 #if HAVE_THREADS
-static int init_thread_copy(AVCodecContext *avctx)
-{
-    WavpackContext *s = avctx->priv_data;
-    s->avctx = avctx;
-
-    s->curr_frame.f = av_frame_alloc();
-    s->prev_frame.f = av_frame_alloc();
-
-    if (!s->curr_frame.f || !s->prev_frame.f)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     WavpackContext *fsrc = src->priv_data;
@@ -1714,7 +1700,6 @@ AVCodec ff_wavpack_decoder = {
     .close          = wavpack_decode_end,
     .decode         = wavpack_decode_frame,
     .flush          = wavpack_decode_flush,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,

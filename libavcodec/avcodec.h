@@ -2635,12 +2635,6 @@ typedef struct AVCodec {
      * @{
      */
     /**
-     * If defined, called on thread contexts when they are created.
-     * If the codec allocates writable tables in init(), re-allocate them here.
-     * priv_data will be set to a copy of the original.
-     */
-    int (*init_thread_copy)(AVCodecContext *);
-    /**
      * Copy necessary context variables from a previous thread context to the current one.
      * If not defined, the next thread will start automatically; otherwise, the codec
      * must call ff_thread_finish_setup().

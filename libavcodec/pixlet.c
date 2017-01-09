@@ -675,28 +675,12 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     return pktsize;
 }
 
-#if HAVE_THREADS
-static int pixlet_init_thread_copy(AVCodecContext *avctx)
-{
-    PixletContext *ctx = avctx->priv_data;
-
-    ctx->filter[0]  = NULL;
-    ctx->filter[1]  = NULL;
-    ctx->prediction = NULL;
-    ctx->w = 0;
-    ctx->h = 0;
-
-    return 0;
-}
-#endif /* HAVE_THREADS */
-
 AVCodec ff_pixlet_decoder = {
     .name             = "pixlet",
     .long_name        = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_PIXLET,
     .init             = pixlet_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(pixlet_init_thread_copy),
     .close            = pixlet_close,
     .decode           = pixlet_decode_frame,
     .priv_data_size   = sizeof(PixletContext),

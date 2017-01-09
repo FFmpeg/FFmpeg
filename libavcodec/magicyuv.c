@@ -749,21 +749,6 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-#if HAVE_THREADS
-static int magy_init_thread_copy(AVCodecContext *avctx)
-{
-    MagicYUVContext *s = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->slices); i++) {
-        s->slices[i] = NULL;
-        s->slices_size[i] = 0;
-    }
-
-    return 0;
-}
-#endif
-
 static av_cold int magy_decode_init(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
@@ -792,7 +777,6 @@ AVCodec ff_magicyuv_decoder = {
     .id               = AV_CODEC_ID_MAGICYUV,
     .priv_data_size   = sizeof(MagicYUVContext),
     .init             = magy_decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(magy_init_thread_copy),
     .close            = magy_decode_end,
     .decode           = magy_decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 |

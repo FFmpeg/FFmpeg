@@ -1863,20 +1863,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#if HAVE_THREADS
-static int decode_init_thread_copy(AVCodecContext *avctx)
-{
-    EXRContext *s = avctx->priv_data;
-
-    // allocate thread data, used for non EXR_RAW compression types
-    s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
-    if (!s->thread_data)
-        return AVERROR_INVALIDDATA;
-
-    return 0;
-}
-#endif
-
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
@@ -1956,7 +1942,6 @@ AVCodec ff_exr_decoder = {
     .id               = AV_CODEC_ID_EXR,
     .priv_data_size   = sizeof(EXRContext),
     .init             = decode_init,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .close            = decode_end,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |

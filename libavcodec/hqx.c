@@ -520,9 +520,6 @@ static av_cold int hqx_decode_close(AVCodecContext *avctx)
     int i;
     HQXContext *ctx = avctx->priv_data;
 
-    if (avctx->internal->is_copy)
-        return 0;
-
     ff_free_vlc(&ctx->cbp_vlc);
     for (i = 0; i < 3; i++) {
         ff_free_vlc(&ctx->dc_vlc[i]);

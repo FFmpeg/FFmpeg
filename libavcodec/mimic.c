@@ -128,8 +128,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
         av_frame_free(&ctx->frames[i].f);
     }
 
-    if (!avctx->internal->is_copy)
-        ff_free_vlc(&ctx->vlc);
+    ff_free_vlc(&ctx->vlc);
 
     return 0;
 }
@@ -449,24 +448,6 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-#if HAVE_THREADS
-static av_cold int mimic_init_thread_copy(AVCodecContext *avctx)
-{
-    MimicContext *ctx = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
-        ctx->frames[i].f = av_frame_alloc();
-        if (!ctx->frames[i].f) {
-            mimic_decode_end(avctx);
-            return AVERROR(ENOMEM);
-        }
-    }
-
-    return 0;
-}
-#endif
-
 AVCodec ff_mimic_decoder = {
     .name                  = "mimic",
     .long_name             = NULL_IF_CONFIG_SMALL("Mimic"),
@@ -478,6 +459,5 @@ AVCodec ff_mimic_decoder = {
     .decode                = mimic_decode_frame,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mimic_decode_update_thread_context),
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(mimic_init_thread_copy),
     .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

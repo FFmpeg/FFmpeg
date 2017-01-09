@@ -144,21 +144,6 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
     return 0;
 }
 
-static av_cold int dnxhd_decode_init_thread_copy(AVCodecContext *avctx)
-{
-    DNXHDContext *ctx = avctx->priv_data;
-
-    ctx->avctx = avctx;
-    // make sure VLC tables will be loaded when cid is parsed
-    ctx->cid = -1;
-
-    ctx->rows = av_mallocz_array(avctx->thread_count, sizeof(RowContext));
-    if (!ctx->rows)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static int dnxhd_get_profile(int cid)
 {
     switch(cid) {
@@ -740,6 +725,5 @@ AVCodec ff_dnxhd_decoder = {
     .decode         = dnxhd_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_SLICE_THREADS,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(dnxhd_decode_init_thread_copy),
     .profiles       = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
 };
