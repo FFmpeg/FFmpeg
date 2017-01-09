@@ -1526,8 +1526,6 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     if(!intra_vlcs[0].cbppattern[0].bits)
         rv34_init_tables();
 
-    avctx->internal->allocate_progress = 1;
-
     return 0;
 }
 

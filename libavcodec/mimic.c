@@ -139,8 +139,6 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     MimicContext *ctx = avctx->priv_data;
     int ret, i;
 
-    avctx->internal->allocate_progress = 1;
-
     ctx->prev_index = 0;
     ctx->cur_index  = 15;
 
@@ -481,4 +479,5 @@ AVCodec ff_mimic_decoder = {
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mimic_decode_update_thread_context),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(mimic_init_thread_copy),
+    .caps_internal         = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

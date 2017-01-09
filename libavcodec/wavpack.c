@@ -1061,8 +1061,6 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
     s->fdec_num = 0;
 
-    avctx->internal->allocate_progress = 1;
-
     s->curr_frame.f = av_frame_alloc();
     s->prev_frame.f = av_frame_alloc();
 
@@ -1719,5 +1717,6 @@ AVCodec ff_wavpack_decoder = {
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
-                      AV_CODEC_CAP_SLICE_THREADS
+                      AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_ALLOCATE_PROGRESS,
 };

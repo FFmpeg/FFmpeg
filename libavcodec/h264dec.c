@@ -424,8 +424,6 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
         h->avctx->has_b_frames = h->ps.sps->num_reorder_frames;
     }
 
-    avctx->internal->allocate_progress = 1;
-
     ff_h264_flush_change(h);
 
     if (h->enable_er < 0 && (avctx->active_thread_type & FF_THREAD_SLICE))
@@ -1080,7 +1078,8 @@ AVCodec ff_h264_decoder = {
 #endif
                                NULL
                            },
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING |
+                             FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),

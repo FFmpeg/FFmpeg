@@ -201,7 +201,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         p->result = codec->decode(avctx, p->frame, &p->got_frame, &p->avpkt);
 
         if ((p->result < 0 || !p->got_frame) && p->frame->buf[0]) {
-            if (avctx->internal->allocate_progress)
+            if (avctx->codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS)
                 av_log(avctx, AV_LOG_ERROR, "A frame threaded decoder did not "
                        "free the frame on failure. This is a bug, please report it.\n");
             av_frame_unref(p->frame);
@@ -903,7 +903,7 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
         return -1;
     }
 
-    if (avctx->internal->allocate_progress) {
+    if (avctx->codec->caps_internal & FF_CODEC_CAP_ALLOCATE_PROGRESS) {
         atomic_int *progress;
         f->progress = av_buffer_alloc(2 * sizeof(*progress));
         if (!f->progress) {
