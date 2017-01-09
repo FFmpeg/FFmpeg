@@ -505,6 +505,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_ENCODER(MJPEG_VAAPI,       mjpeg_vaapi);
     REGISTER_ENCODER(MPEG2_QSV,         mpeg2_qsv);
+    REGISTER_ENCODER(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_ENCODER(MPEG4_OMX,         mpeg4_omx);
 #if FF_API_NVENC_OLD_NAME
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);

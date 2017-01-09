@@ -35,8 +35,8 @@ enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
     MAX_PICTURE_REFERENCES = 2,
-    MAX_PICTURE_SLICES     = 1,
-    MAX_PARAM_BUFFERS      = 16,
+    MAX_PICTURE_SLICES     = 112,
+    MAX_PARAM_BUFFERS      = 128,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
 };
@@ -49,6 +49,7 @@ enum {
 };
 
 typedef struct VAAPIEncodeSlice {
+    int             index;
     void           *priv_data;
     void           *codec_slice_params;
 } VAAPIEncodeSlice;
