@@ -141,6 +141,11 @@ typedef struct HLSContext {
     char current_segment_final_filename_fmt[1024]; // when renaming segments
 } HLSContext;
 
+static int get_int_from_double(double val)
+{
+    return (int)((val - (int)val) >= 0.001) ? (int)(val + 1) : (int)val;
+}
+
 static int mkdir_p(const char *path) {
     int ret = 0;
     char *temp = av_strdup(path);
@@ -668,8 +673,8 @@ static int hls_window(AVFormatContext *s, int last)
         goto fail;
 
     for (en = hls->segments; en; en = en->next) {
-        if (target_duration < en->duration)
-            target_duration = ceil(en->duration);
+        if (target_duration <= en->duration)
+            target_duration = get_int_from_double(en->duration);
     }
 
     hls->discontinuity_set = 0;
