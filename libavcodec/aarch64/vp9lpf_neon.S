@@ -338,20 +338,28 @@
 
         uxtl_sz         v0.8h,  v1.8h,  v22, \sz    // p1
         uxtl_sz         v2.8h,  v3.8h,  v25, \sz    // q1
+.if \wd >= 8
+        mov             x5,  v6.d[0]
+.ifc \sz, .16b
+        mov             x6,  v6.d[1]
+.endif
+.endif
         saddw_sz        v0.8h,  v1.8h,  v0.8h,  v1.8h,  \tmp3, \sz // p1 + f
         ssubw_sz        v2.8h,  v3.8h,  v2.8h,  v3.8h,  \tmp3, \sz // q1 - f
         sqxtun_sz       v0,  v0.8h,  v1.8h, \sz     // out p1
         sqxtun_sz       v2,  v2.8h,  v3.8h, \sz     // out q1
+.if \wd >= 8
+.ifc \sz, .16b
+        adds            x5,  x5,  x6
+.endif
+.endif
         bit             v22\sz, v0\sz,  v5\sz       // if (!hev && fm && !flat8in)
         bit             v25\sz, v2\sz,  v5\sz
 
         // If no pixels need flat8in, jump to flat8out
         // (or to a writeout of the inner 4 pixels, for wd=8)
 .if \wd >= 8
-        mov             x5,  v6.d[0]
 .ifc \sz, .16b
-        mov             x6,  v6.d[1]
-        adds            x5,  x5,  x6
         b.eq            6f
 .else
         cbz             x5,  6f
