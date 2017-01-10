@@ -103,6 +103,8 @@ typedef struct HLSContext {
     int64_t recording_time;
     int has_video;
     int has_subtitle;
+    int new_start;
+    double dpp;           // duration per packet
     int64_t start_pts;
     int64_t end_pts;
     double duration;      // last segment duration computed so far, in seconds
@@ -418,6 +420,7 @@ static int hls_mux_init(AVFormatContext *s)
         st->time_base = s->streams[i]->time_base;
     }
     hls->start_pos = 0;
+    hls->new_start = 1;
 
     return 0;
 }
@@ -1216,10 +1219,18 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->pts == AV_NOPTS_VALUE)
         is_ref_pkt = can_split = 0;
 
-    if (is_ref_pkt)
-        hls->duration = (double)(pkt->pts - hls->end_pts)
-                                   * st->time_base.num / st->time_base.den;
+    if (is_ref_pkt) {
+        if (hls->new_start) {
+            hls->new_start = 0;
+            hls->duration = (double)(pkt->pts - hls->end_pts)
+                                       * st->time_base.num / st->time_base.den;
+            hls->dpp = (double)(pkt->duration) * st->time_base.num / st->time_base.den;
+            av_log(s, AV_LOG_ERROR, "hls->dpp = [%lf]\n", hls->dpp);
+        } else {
+            hls->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
+        }
 
+    }
     if (can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
@@ -1289,7 +1300,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
     if (oc->pb) {
         hls->size = avio_tell(hls->avf->pb) - hls->start_pos;
         ff_format_io_close(s, &oc->pb);
-        hls_append_segment(s, hls, hls->duration, hls->start_pos, hls->size);
+        /* after av_write_trailer, then duration + 1 duration per packet */
+        hls_append_segment(s, hls, hls->duration + hls->dpp, hls->start_pos, hls->size);
     }
 
     if (vtt_oc) {
