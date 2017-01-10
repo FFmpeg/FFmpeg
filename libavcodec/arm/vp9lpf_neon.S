@@ -182,16 +182,20 @@
 
         vmovl.u8        q0,  d22                @ p1
         vmovl.u8        q1,  d25                @ q1
+.if \wd >= 8
+        vmov            r2,  r3,  d6
+.endif
         vaddw.s8        q0,  q0,  \tmp3         @ p1 + f
         vsubw.s8        q1,  q1,  \tmp3         @ q1 - f
+.if \wd >= 8
+        orrs            r2,  r2,  r3
+.endif
         vqmovun.s16     d0,  q0                 @ out p1
         vqmovun.s16     d2,  q1                 @ out q1
         vbit            d22, d0,  d5            @ if (!hev && fm && !flat8in)
         vbit            d25, d2,  d5
 
 .if \wd >= 8
-        vmov            r2,  r3,  d6
-        orrs            r2,  r2,  r3
         @ If no pixels need flat8in, jump to flat8out
         @ (or to a writeout of the inner 4 pixels, for wd=8)
         beq             6f
