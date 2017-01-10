@@ -633,6 +633,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
 
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
+    av_dict_set(&tmp, "seekable", "1", 0);
 
     if (av_strstart(url, "crypto", NULL)) {
         if (url[6] == '+' || url[6] == ':')
@@ -1793,7 +1794,7 @@ static int hls_close(AVFormatContext *s)
     return 0;
 }
 
-static int hls_read_header(AVFormatContext *s)
+static int hls_read_header(AVFormatContext *s, AVDictionary **options)
 {
     void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
     HLSContext *c = s->priv_data;
@@ -1807,6 +1808,9 @@ static int hls_read_header(AVFormatContext *s)
     c->first_packet = 1;
     c->first_timestamp = AV_NOPTS_VALUE;
     c->cur_timestamp = AV_NOPTS_VALUE;
+
+    if (options && *options)
+        av_dict_copy(&c->avio_opts, *options, 0);
 
     if (u) {
         // get the previous user agent & set back to null if string size is zero
@@ -2383,7 +2387,7 @@ AVInputFormat ff_hls_demuxer = {
     .priv_data_size = sizeof(HLSContext),
     .flags          = AVFMT_NOGENSEARCH,
     .read_probe     = hls_probe,
-    .read_header    = hls_read_header,
+    .read_header2   = hls_read_header,
     .read_packet    = hls_read_packet,
     .read_close     = hls_close,
     .read_seek      = hls_read_seek,
