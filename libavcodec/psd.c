@@ -319,6 +319,12 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     switch (s->color_mode) {
     case PSD_BITMAP:
+        if (s->channel_depth != 1 || s->channel_count != 1) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                    "Invalid bitmap file (channel_depth %d, channel_count %d)\n",
+                    s->channel_depth, s->channel_count);
+            return AVERROR_INVALIDDATA;
+        }
         s->line_size = s->width + 7 >> 3;
         avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
         break;
