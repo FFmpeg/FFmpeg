@@ -417,7 +417,7 @@
         mov             x5,  v2.d[0]
 .ifc \sz, .16b
         mov             x6,  v2.d[1]
-        adds             x5,  x5,  x6
+        adds            x5,  x5,  x6
         b.ne            1f
 .else
         cbnz            x5,  1f
@@ -430,7 +430,7 @@
         mov             x5,  v7.d[0]
 .ifc \sz, .16b
         mov             x6,  v7.d[1]
-        adds             x5,  x5,  x6
+        adds            x5,  x5,  x6
         b.ne            1f
 .else
         cbnz            x5,  1f
