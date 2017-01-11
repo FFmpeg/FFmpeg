@@ -3092,5 +3092,5 @@ AVCodec ff_hevc_decoder = {
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
-    .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING,
+    .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_INIT_THREADSAFE,
 };
