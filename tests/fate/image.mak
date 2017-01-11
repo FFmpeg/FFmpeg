@@ -312,6 +312,12 @@ fate-psd-lena-rgba-rle-128x128-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-
 FATE_PSD += fate-psd-lena-256c
 fate-psd-lena-256c: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-256c.psd
 
+FATE_PSD += fate-psd-lena-bitmap
+fate-psd-lena-bitmap: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-bitmap.psd
+
+FATE_PSD += fate-psd-duo-tone-color
+fate-psd-duo-tone-color: CMD = framecrc -i $(TARGET_SAMPLES)/psd/duotone-color.psd
+
 FATE_PSD-$(call DEMDEC, IMAGE2, PSD) += $(FATE_PSD)
 
 FATE_IMAGE += $(FATE_PSD-yes)
