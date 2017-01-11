@@ -484,11 +484,14 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = avpriv_dv_get_packet(c->dv_demux, pkt);
 
     if (size < 0) {
+        int ret;
+
         if (!c->dv_demux->sys)
             return AVERROR(EIO);
         size = c->dv_demux->sys->frame_size;
-        if (avio_read(s->pb, c->buf, size) <= 0)
-            return AVERROR(EIO);
+        ret = avio_read(s->pb, c->buf, size);
+        if (ret <= 0)
+            return ret;
 
         size = avpriv_dv_produce_packet(c->dv_demux, pkt, c->buf, size);
     }
