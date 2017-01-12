@@ -292,7 +292,7 @@
 .if \mix != 0
         sxtl            v1.8h,  v1.8b
 .endif
-        cmhi            v5\sz,  v5\sz,  v3\sz  // hev
+        cmhs            v5\sz,  v3\sz,  v5\sz  // !hev
 .if \wd == 8
         // If a 4/8 or 8/4 mix is used, clear the relevant half of v6
 .if \mix != 0
@@ -306,11 +306,10 @@
 .elseif \wd == 8
         bic             v4\sz,  v4\sz,  v6\sz  // fm && !flat8in
 .endif
-        mvn             v5\sz,  v5\sz          // !hev
+        and             v5\sz,  v5\sz,  v4\sz  // !hev && fm && !flat8in
 .if \wd == 16
         and             v7\sz,  v7\sz,  v6\sz  // flat8out && flat8in && fm
 .endif
-        and             v5\sz,  v5\sz,  v4\sz  // !hev && fm && !flat8in
 
         mul_sz          \tmp3\().8h,  \tmp4\().8h,  \tmp3\().8h, \tmp4\().8h,  \tmp5\().8h,  \tmp5\().8h, \sz // 3 * (q0 - p0)
         bic             \tmp1\sz,  \tmp1\sz,  v5\sz    // if (!hev) av_clip_int8 = 0

@@ -141,7 +141,7 @@
 .if \wd == 8
         vcle.u8         d6,  d6,  d0            @ flat8in
 .endif
-        vcgt.u8         d5,  d5,  d3            @ hev
+        vcle.u8         d5,  d5,  d3            @ !hev
 .if \wd == 8
         vand            d6,  d6,  d4            @ flat8in && fm
 .endif
@@ -151,11 +151,10 @@
 .elseif \wd == 8
         vbic            d4,  d4,  d6            @ fm && !flat8in
 .endif
-        vmvn            d5,  d5                 @ !hev
+        vand            d5,  d5,  d4            @ !hev && fm && !flat8in
 .if \wd == 16
         vand            d7,  d7,  d6            @ flat8out && flat8in && fm
 .endif
-        vand            d5,  d5,  d4            @ !hev && fm && !flat8in
 
         vmul.s16        \tmpq2,  \tmpq2, \tmpq3 @ 3 * (q0 - p0)
         vbic            \tmp1,   \tmp1,   d5    @ if (!hev) av_clip_int8 = 0
