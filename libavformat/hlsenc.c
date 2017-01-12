@@ -460,16 +460,10 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 
     if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
         strlen(hls->current_segment_final_filename_fmt)) {
-        char * old_filename = av_strdup(hls->avf->filename);  // %%s will be %s after strftime
-        if (!old_filename) {
-            av_free(en);
-            return AVERROR(ENOMEM);
-        }
         av_strlcpy(hls->avf->filename, hls->current_segment_final_filename_fmt, sizeof(hls->avf->filename));
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
             char * filename = av_strdup(hls->avf->filename);  // %%s will be %s after strftime
             if (!filename) {
-                av_free(old_filename);
                 av_free(en);
                 return AVERROR(ENOMEM);
             }
@@ -480,7 +474,6 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                         "you can try to remove second_level_segment_size flag\n",
                        filename);
                 av_free(filename);
-                av_free(old_filename);
                 av_free(en);
                 return AVERROR(EINVAL);
             }
@@ -489,7 +482,6 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
             char * filename = av_strdup(hls->avf->filename);  // %%t will be %t after strftime
             if (!filename) {
-                av_free(old_filename);
                 av_free(en);
                 return AVERROR(ENOMEM);
             }
@@ -500,14 +492,11 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                         "you can try to remove second_level_segment_time flag\n",
                        filename);
                 av_free(filename);
-                av_free(old_filename);
                 av_free(en);
                 return AVERROR(EINVAL);
             }
             av_free(filename);
         }
-        ff_rename(old_filename, hls->avf->filename, hls);
-        av_free(old_filename);
     }
 
 
@@ -1268,14 +1257,22 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
+        char *old_filename = av_strdup(hls->avf->filename);
+
+        if (!old_filename) {
+            return AVERROR(ENOMEM);
+        }
+
         av_write_frame(oc, NULL); /* Flush any buffered data */
 
         new_start_pos = avio_tell(hls->avf->pb);
         hls->size = new_start_pos - hls->start_pos;
         ret = hls_append_segment(s, hls, hls->duration, hls->start_pos, hls->size);
         hls->start_pos = new_start_pos;
-        if (ret < 0)
+        if (ret < 0) {
+            av_free(old_filename);
             return ret;
+        }
 
         hls->end_pts = pkt->pts;
         hls->duration = 0;
@@ -1290,6 +1287,10 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (hls->start_pos >= hls->max_seg_size) {
                 hls->sequence++;
                 ff_format_io_close(s, &oc->pb);
+                if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
+                     strlen(hls->current_segment_final_filename_fmt)) {
+                    ff_rename(old_filename, hls->avf->filename, hls);
+                }
                 if (hls->vtt_avf)
                     ff_format_io_close(s, &hls->vtt_avf->pb);
                 ret = hls_start(s);
@@ -1301,22 +1302,30 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             hls->number++;
         } else {
             ff_format_io_close(s, &oc->pb);
+            if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
+                strlen(hls->current_segment_final_filename_fmt)) {
+                ff_rename(old_filename, hls->avf->filename, hls);
+            }
             if (hls->vtt_avf)
                 ff_format_io_close(s, &hls->vtt_avf->pb);
 
             ret = hls_start(s);
         }
 
-        if (ret < 0)
+        if (ret < 0) {
+            av_free(old_filename);
             return ret;
+        }
 
         if( st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE )
             oc = hls->vtt_avf;
         else
         oc = hls->avf;
 
-        if ((ret = hls_window(s, 0)) < 0)
+        if ((ret = hls_window(s, 0)) < 0) {
+            av_free(old_filename);
             return ret;
+        }
     }
 
     ret = ff_write_chained(oc, stream_index, pkt, s, 0);
@@ -1329,6 +1338,12 @@ static int hls_write_trailer(struct AVFormatContext *s)
     HLSContext *hls = s->priv_data;
     AVFormatContext *oc = hls->avf;
     AVFormatContext *vtt_oc = hls->vtt_avf;
+    char *old_filename = av_strdup(hls->avf->filename);
+
+    if (!old_filename) {
+        return AVERROR(ENOMEM);
+    }
+
 
     av_write_trailer(oc);
     if (oc->pb) {
@@ -1336,6 +1351,11 @@ static int hls_write_trailer(struct AVFormatContext *s)
         ff_format_io_close(s, &oc->pb);
         /* after av_write_trailer, then duration + 1 duration per packet */
         hls_append_segment(s, hls, hls->duration + hls->dpp, hls->start_pos, hls->size);
+    }
+
+    if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
+         strlen(hls->current_segment_final_filename_fmt)) {
+         ff_rename(old_filename, hls->avf->filename, hls);
     }
 
     if (vtt_oc) {
@@ -1358,6 +1378,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
     hls_free_segments(hls->segments);
     hls_free_segments(hls->old_segments);
+    av_free(old_filename);
     return 0;
 }
 
