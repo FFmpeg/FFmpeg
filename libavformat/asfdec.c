@@ -1485,7 +1485,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             asf->return_subpayload = 0;
             return 0;
         }
-        for (i = 0; i < s->nb_streams; i++) {
+        for (i = 0; i < asf->nb_streams; i++) {
             ASFPacket *asf_pkt = &asf->asf_st[i]->pkt;
             if (asf_pkt && !asf_pkt->size_left && asf_pkt->data_size) {
                 if (asf->asf_st[i]->span > 1 &&
