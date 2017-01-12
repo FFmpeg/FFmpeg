@@ -58,6 +58,7 @@ typedef struct {
     AVFrame *decoded_frame;
     int nb_sinks;
     AVPacket subcc_packet;
+    AVRational video_time_base;
 } LavfiContext;
 
 static int *create_all_formats(int n)
@@ -317,6 +318,8 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         st->codecpar->codec_type = link->type;
         avpriv_set_pts_info(st, 64, link->time_base.num, link->time_base.den);
         if (link->type == AVMEDIA_TYPE_VIDEO) {
+            lavfi->video_time_base = link->time_base;
+
             st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
             st->codecpar->format     = link->format;
             st->codecpar->width      = link->w;
@@ -373,8 +376,13 @@ static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
     if ((ret = av_new_packet(&lavfi->subcc_packet, sd->size)) < 0)
         return ret;
     memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
+
+    AVRational time_base = lavfi->video_time_base;
+    double adjust_factor = time_base.den / (90000.0 * time_base.num);
+    double pts = frame->pts / adjust_factor;
+
     lavfi->subcc_packet.stream_index = stream_idx;
-    lavfi->subcc_packet.pts = frame->pts;
+    lavfi->subcc_packet.pts = (int)pts;
     lavfi->subcc_packet.pos = av_frame_get_pkt_pos(frame);
     return 0;
 }
