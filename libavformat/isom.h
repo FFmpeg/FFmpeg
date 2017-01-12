@@ -121,6 +121,11 @@ typedef struct MOVFragmentIndex {
     MOVFragmentIndexItem *items;
 } MOVFragmentIndex;
 
+typedef struct MOVIndexRange {
+    int64_t start;
+    int64_t end;
+} MOVIndexRange;
+
 typedef struct MOVStreamContext {
     AVIOContext *pb;
     int pb_is_copied;
@@ -152,6 +157,9 @@ typedef struct MOVStreamContext {
     int time_scale;
     int64_t time_offset;  ///< time offset of the edit list entries
     int current_sample;
+    int64_t current_index;
+    MOVIndexRange* index_ranges;
+    MOVIndexRange* current_index_range;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
     int dv_audio_container;
@@ -198,6 +206,7 @@ typedef struct MOVStreamContext {
         uint8_t auxiliary_info_default_size;
         uint8_t* auxiliary_info_sizes;
         size_t auxiliary_info_sizes_count;
+        int64_t auxiliary_info_index;
         struct AVAESCTR* aes_ctr;
     } cenc;
 } MOVStreamContext;
