@@ -213,22 +213,27 @@ static int compare_ocl_device_desc(const void *a, const void *b)
 
 int opt_opencl_bench(void *optctx, const char *opt, const char *arg)
 {
-    int i, j, nb_devices = 0, count = 0;
+    int i, j, nb_devices = 0, count = 0, ret = 0;
     int64_t score = 0;
     AVOpenCLDeviceList *device_list;
     AVOpenCLDeviceNode *device_node = NULL;
     OpenCLDeviceBenchmark *devices = NULL;
     cl_platform_id platform;
 
-    av_opencl_get_device_list(&device_list);
+    ret = av_opencl_get_device_list(&device_list);
+    if (ret < 0) {
+        return ret;
+    }
     for (i = 0; i < device_list->platform_num; i++)
         nb_devices += device_list->platform_node[i]->device_num;
     if (!nb_devices) {
         av_log(NULL, AV_LOG_ERROR, "No OpenCL device detected!\n");
+        av_opencl_free_device_list(&device_list);
         return AVERROR(EINVAL);
     }
     if (!(devices = av_malloc_array(nb_devices, sizeof(OpenCLDeviceBenchmark)))) {
         av_log(NULL, AV_LOG_ERROR, "Could not allocate buffer\n");
+        av_opencl_free_device_list(&device_list);
         return AVERROR(ENOMEM);
     }
 
