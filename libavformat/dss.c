@@ -265,9 +265,6 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto error_eof;
     }
 
-    if (pkt->data[0] == 0xff)
-        return AVERROR_INVALIDDATA;
-
     return pkt->size;
 
 error_eof:
