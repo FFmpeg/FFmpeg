@@ -420,6 +420,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     if (s->clippings > 0)
         av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
+    s->clippings = 0;
 
     if (buf != out_buf)
         av_frame_free(&buf);
