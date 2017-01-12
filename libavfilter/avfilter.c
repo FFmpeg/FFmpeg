@@ -1112,10 +1112,9 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     ff_inlink_process_commands(link, frame);
     dstctx->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
 
-        /* TODO reindent */
-        if (dstctx->is_disabled &&
-            (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
-            filter_frame = default_filter_frame;
+    if (dstctx->is_disabled &&
+        (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
+        filter_frame = default_filter_frame;
     ret = filter_frame(link, frame);
     link->frame_count_out++;
     return ret;
