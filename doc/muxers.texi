@@ -416,9 +416,34 @@ This option is useful to avoid to fill the disk with many segment
 files, and limits the maximum number of segment files written to disk
 to @var{wrap}.
 
+
+@item hls_start_number_source
+Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) according to the specified source.
+Unless @code{hls_flags single_file} is set, it also specifies source of starting sequence numbers of
+segment and subtitle filenames. In any case, if @code{hls_flags append_list}
+is set and read playlist sequence number is greater than the specified start sequence number,
+then that value will be used as start value.
+
+It accepts the following values:
+
+@table @option
+
+@item generic (default)
+Set the starting sequence numbers according to @var{start_number} option value.
+
+@item epoch
+The start number will be the seconds since epoch (1970-01-01 00:00:00)
+
+@item datetime
+The start number will be based on the current date/time as YYYYmmddHHMMSS. e.g. 20161231235759.
+
+@end table
+
 @item start_number @var{number}
-Start the playlist sequence number from @var{number}. Default value is
-0.
+Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) from the specified @var{number}
+when @var{hls_start_number_source} value is @var{generic}. (This is the default case.)
+Unless @code{hls_flags single_file} is set, it also specifies starting sequence numbers of segment and subtitle filenames.
+Default value is 0.
 
 @item hls_allow_cache @var{allowcache}
 Explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments.
