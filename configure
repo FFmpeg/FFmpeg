@@ -6320,9 +6320,9 @@ EOF
     check_func strtoll || add_cflags -Dstrtoll=_strtoi64
     check_func strtoull || add_cflags -Dstrtoull=_strtoui64
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
-    # this flag should be re-checked on newer compiler releases and put under a
-    # version check once its fixed
-    check_cflags -d2SSAOptimizer-
+    # Issue has been fixed in MSVC v19.00.24218.
+    check_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
+        check_cflags -d2SSAOptimizer-
 fi
 
 for pfx in "" host_; do
