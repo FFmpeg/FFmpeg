@@ -1317,11 +1317,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
 
-        if( st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE )
-            oc = hls->vtt_avf;
-        else
-        oc = hls->avf;
-
         if ((ret = hls_window(s, 0)) < 0) {
             av_free(old_filename);
             return ret;
