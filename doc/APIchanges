@@ -13,6 +13,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-xx-xx - xxxxxxx - lavf 57.11.0 - avio.h
+  Add avio_context_free(). From now on it must be used for freeing AVIOContext.
+
 2017-02-01 - xxxxxxx - lavc - avcodec.h
   Deprecate AVCodecContext.refcounted_frames. This was useful for deprecated
   API only (avcodec_decode_video2/avcodec_decode_audio4). The new decode APIs
