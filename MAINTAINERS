@@ -260,7 +260,8 @@ Codecs:
 
 Hardware acceleration:
   crystalhd.c                           Philip Langdale
-  dxva2*                                Hendrik Leppkes, Laurent Aimar
+  dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
+  d3d11va*                              Steve Lhomme
   mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
   vaapi_encode*                         Mark Thompson
