@@ -178,6 +178,7 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
     nvel->cu_device_compute_capability = cuDeviceComputeCapability;
     nvel->cu_ctx_create                = cuCtxCreate_v2;
     nvel->cu_ctx_pop_current           = cuCtxPopCurrent_v2;
+    nvel->cu_ctx_push_current          = cuCtxPushCurrent_v2;
     nvel->cu_ctx_destroy               = cuCtxDestroy_v2;
 #else
     LOAD_LIBRARY(nvel->cuda, CUDA_LIBNAME);
@@ -190,6 +191,7 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
                 "cuDeviceComputeCapability");
     LOAD_SYMBOL(nvel->cu_ctx_create, nvel->cuda, "cuCtxCreate_v2");
     LOAD_SYMBOL(nvel->cu_ctx_pop_current, nvel->cuda, "cuCtxPopCurrent_v2");
+    LOAD_SYMBOL(nvel->cu_ctx_push_current, nvel->cuda, "cuCtxPushCurrent_v2");
     LOAD_SYMBOL(nvel->cu_ctx_destroy, nvel->cuda, "cuCtxDestroy_v2");
 #endif
 
@@ -1522,9 +1524,11 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *frame, int *got_packet)
 {
     NVENCContext *ctx               = avctx->priv_data;
+    NVENCLibraryContext *nvel       = &ctx->nvel;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
     NV_ENC_PIC_PARAMS params        = { 0 };
     NVENCFrame         *nvenc_frame = NULL;
+    CUcontext dummy;
     int enc_ret, ret;
 
     params.version = NV_ENC_PIC_PARAMS_VER;
@@ -1570,7 +1574,10 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
 
+    nvel->cu_ctx_push_current(ctx->cu_context);
     enc_ret = nv->nvEncEncodePicture(ctx->nvenc_ctx, &params);
+    nvel->cu_ctx_pop_current(&dummy);
+
     if (enc_ret != NV_ENC_SUCCESS &&
         enc_ret != NV_ENC_ERR_NEED_MORE_INPUT)
         return nvenc_print_error(avctx, enc_ret, "Error encoding the frame");
