@@ -338,7 +338,7 @@ static void signal_init_ts(void)
 static void finish(void)
 {
     av_write_trailer(ctx);
-    av_free(ctx->pb);
+    avio_context_free(&ctx->pb);
     avformat_free_context(ctx);
     ctx = NULL;
 }

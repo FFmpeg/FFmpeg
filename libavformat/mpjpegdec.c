@@ -102,7 +102,7 @@ static int mpjpeg_read_probe(AVProbeData *p)
         }
     }
 
-    av_free(pb);
+    avio_context_free(&pb);
 
     return ret;
 }

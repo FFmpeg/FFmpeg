@@ -143,8 +143,8 @@ static void hds_free(AVFormatContext *s)
             ff_format_io_close(s, &os->out);
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
-        if (os->ctx && os->ctx->pb)
-            av_free(os->ctx->pb);
+        if (os->ctx)
+            avio_context_free(&os->ctx->pb);
         if (os->ctx)
             avformat_free_context(os->ctx);
         av_free(os->metadata);

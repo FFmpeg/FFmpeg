@@ -184,10 +184,10 @@ static int open_null_ctx(AVIOContext **ctx)
     return 0;
 }
 
-static void close_null_ctx(AVIOContext *pb)
+static void close_null_ctx(AVIOContext **pb)
 {
-    av_free(pb->buffer);
-    av_free(pb);
+    av_free((*pb)->buffer);
+    avio_context_free(pb);
 }
 
 static void seg_free_context(SegmentContext *seg)
@@ -259,7 +259,7 @@ static int seg_write_header(AVFormatContext *s)
     }
 
     if (!seg->write_header_trailer) {
-        close_null_ctx(oc->pb);
+        close_null_ctx(&oc->pb);
         if ((ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL)) < 0)
             goto fail;
     }
@@ -353,7 +353,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
         if ((ret = open_null_ctx(&oc->pb)) < 0)
             goto fail;
         ret = av_write_trailer(oc);
-        close_null_ctx(oc->pb);
+        close_null_ctx(&oc->pb);
     } else {
         ret = segment_end(oc, 1);
     }

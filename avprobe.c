@@ -1178,7 +1178,7 @@ int main(int argc, char **argv)
     ret = probe_file(input_filename);
     probe_footer();
     avio_flush(probe_out);
-    av_freep(&probe_out);
+    avio_context_free(&probe_out);
     av_freep(&buffer);
     uninit_opts();
     avformat_network_deinit();

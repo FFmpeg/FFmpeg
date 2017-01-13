@@ -901,7 +901,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt)
         return 1;
 
 error:
-        av_freep(&pb);
+        avio_context_free(&pb);
     }
     return 0;
 }
@@ -1576,7 +1576,7 @@ static int avi_read_close(AVFormatContext *s)
         AVIStream *ast = st->priv_data;
         if (ast) {
             if (ast->sub_ctx) {
-                av_freep(&ast->sub_ctx->pb);
+                avio_context_free(&ast->sub_ctx->pb);
                 avformat_close_input(&ast->sub_ctx);
             }
             av_free(ast->sub_buffer);

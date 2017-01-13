@@ -313,7 +313,7 @@ static void wtvfile_close(AVIOContext *pb)
     av_free(wf->sectors);
     av_free(wf);
     av_free(pb->buffer);
-    av_free(pb);
+    avio_context_free(&pb);
 }
 
 /*
