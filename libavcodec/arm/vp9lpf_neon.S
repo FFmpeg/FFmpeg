@@ -78,8 +78,7 @@
 
         vdup.u8         d3,  r3          @ H
         vmov            r2,  r3,  d4
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels need filtering, just exit as soon as possible
         beq             9f
 
@@ -192,8 +191,7 @@
 
 .if \wd >= 8
         vmov            r2,  r3,  d6
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels need flat8in, jump to flat8out
         @ (or to a writeout of the inner 4 pixels, for wd=8)
         beq             6f
@@ -248,14 +246,12 @@
 6:
         vorr            d2,  d6,  d7
         vmov            r2,  r3,  d2
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels needed flat8in nor flat8out, jump to a
         @ writeout of the inner 4 pixels
         beq             7f
         vmov            r2,  r3,  d7
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels need flat8out, jump to a writeout of the inner 6 pixels
         beq             8f
 
