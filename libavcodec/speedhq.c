@@ -224,7 +224,7 @@ static inline int decode_dct_block(const SHQContext *s, GetBitContext *gb, int l
 {
     const int *quant_matrix = s->quant_matrix;
     const uint8_t *scantable = s->intra_scantable.permutated;
-    int16_t block[64];
+    LOCAL_ALIGNED_16(int16_t, block, [64]);
     int dc_offset;
 
     s->bdsp.clear_block(block);
