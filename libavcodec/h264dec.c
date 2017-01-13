@@ -1037,6 +1037,59 @@ static int is_extra(const uint8_t *buf, int buf_size)
     return 1;
 }
 
+static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *got_frame)
+{
+    int ret;
+
+    if (((h->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) ||
+         (h->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL) ||
+         out->recovered)) {
+
+        if (!out->recovered)
+            out->f->flags |= AV_FRAME_FLAG_CORRUPT;
+
+        if (!h->avctx->hwaccel &&
+            (out->field_poc[0] == INT_MAX ||
+             out->field_poc[1] == INT_MAX)
+           ) {
+            int p;
+            AVFrame *f = out->f;
+            int field = out->field_poc[0] == INT_MAX;
+            uint8_t *dst_data[4];
+            int linesizes[4];
+            const uint8_t *src_data[4];
+
+            av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
+
+            for (p = 0; p<4; p++) {
+                dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
+                src_data[p] = f->data[p] +  field   *f->linesize[p];
+                linesizes[p] = 2*f->linesize[p];
+            }
+
+            av_image_copy(dst_data, linesizes, src_data, linesizes,
+                          f->format, f->width, f->height>>1);
+        }
+
+        ret = output_frame(h, dst, out);
+        if (ret < 0)
+            return ret;
+
+        *got_frame = 1;
+
+        if (CONFIG_MPEGVIDEO) {
+            ff_print_debug_info2(h->avctx, dst, NULL,
+                                 out->mb_type,
+                                 out->qscale_table,
+                                 out->motion_val,
+                                 NULL,
+                                 h->mb_width, h->mb_height, h->mb_stride, 1);
+        }
+    }
+
+    return 0;
+}
+
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -1074,7 +1127,6 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         h->cur_pic_ptr = NULL;
         h->first_field = 0;
 
-        // FIXME factorize this with the output code below
         out     = h->delayed_pic[0];
         out_idx = 0;
         for (i = 1;
@@ -1092,10 +1144,9 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
         if (out) {
             out->reference &= ~DELAYED_PIC_REF;
-            ret = output_frame(h, pict, out);
+            ret = finalize_frame(h, pict, out, got_frame);
             if (ret < 0)
                 return ret;
-            *got_frame = 1;
         }
 
         return buf_index;
@@ -1141,48 +1192,10 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
             return ret;
 
         /* Wait for second field. */
-        *got_frame = 0;
-        if (h->next_output_pic && ((avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) ||
-                                   (avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL) ||
-                                   h->next_output_pic->recovered)) {
-            if (!h->next_output_pic->recovered)
-                h->next_output_pic->f->flags |= AV_FRAME_FLAG_CORRUPT;
-
-            if (!h->avctx->hwaccel &&
-                 (h->next_output_pic->field_poc[0] == INT_MAX ||
-                  h->next_output_pic->field_poc[1] == INT_MAX)
-            ) {
-                int p;
-                AVFrame *f = h->next_output_pic->f;
-                int field = h->next_output_pic->field_poc[0] == INT_MAX;
-                uint8_t *dst_data[4];
-                int linesizes[4];
-                const uint8_t *src_data[4];
-
-                av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
-
-                for (p = 0; p<4; p++) {
-                    dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
-                    src_data[p] = f->data[p] +  field   *f->linesize[p];
-                    linesizes[p] = 2*f->linesize[p];
-                }
-
-                av_image_copy(dst_data, linesizes, src_data, linesizes,
-                              f->format, f->width, f->height>>1);
-            }
-
-            ret = output_frame(h, pict, h->next_output_pic);
+        if (h->next_output_pic) {
+            ret = finalize_frame(h, pict, h->next_output_pic, got_frame);
             if (ret < 0)
                 return ret;
-            *got_frame = 1;
-            if (CONFIG_MPEGVIDEO) {
-                ff_print_debug_info2(h->avctx, pict, NULL,
-                                    h->next_output_pic->mb_type,
-                                    h->next_output_pic->qscale_table,
-                                    h->next_output_pic->motion_val,
-                                    NULL,
-                                    h->mb_width, h->mb_height, h->mb_stride, 1);
-            }
         }
     }
 
