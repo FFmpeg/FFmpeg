@@ -247,6 +247,7 @@ OBJS-$(CONFIG_PSNR_FILTER)                   += vf_psnr.o dualinput.o framesync.
 OBJS-$(CONFIG_PULLUP_FILTER)                 += vf_pullup.o
 OBJS-$(CONFIG_QP_FILTER)                     += vf_qp.o
 OBJS-$(CONFIG_RANDOM_FILTER)                 += vf_random.o
+OBJS-$(CONFIG_READEIA608_FILTER)             += vf_readeia608.o
 OBJS-$(CONFIG_READVITC_FILTER)               += vf_readvitc.o
 OBJS-$(CONFIG_REALTIME_FILTER)               += f_realtime.o
 OBJS-$(CONFIG_REMAP_FILTER)                  += vf_remap.o framesync.o

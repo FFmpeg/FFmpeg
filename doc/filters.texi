@@ -11253,6 +11253,76 @@ less than @code{0}, the filter will try to use a good random seed on a
 best effort basis.
 @end table
 
+@section readeia608
+
+Read closed captioning (EIA-608) information from the top lines of a video frame.
+
+This filter adds frame metadata for @code{lavfi.readeia608.X.cc} and
+@code{lavfi.readeia608.X.line}, where @code{X} is the number of the identified line
+with EIA-608 data (starting from 0). A description of each metadata value follows:
+
+@table @option
+@item lavfi.readeia608.X.cc
+The two bytes stored as EIA-608 data (printed in hexadecimal).
+
+@item lavfi.readeia608.X.line
+The number of the line on which the EIA-608 data was identified and read.
+@end table
+
+This filter accepts the following options:
+
+@table @option
+@item scan_min
+Set the line to start scanning for EIA-608 data. Default is @code{0}.
+
+@item scan_max
+Set the line to end scanning for EIA-608 data. Default is @code{29}.
+
+@item mac
+Set minimal acceptable amplitude change for sync codes detection.
+Default is @code{0.2}. Allowed range is @code{[0.001 - 1]}.
+
+@item spw
+Set the ratio of width reserved for sync code detection.
+Default is @code{0.27}. Allowed range is @code{[0.01 - 0.7]}.
+
+@item mhd
+Set the max peaks height difference for sync code detection.
+Default is @code{0.1}. Allowed range is @code{[0.0 - 0.5]}.
+
+@item mpd
+Set max peaks period difference for sync code detection.
+Default is @code{0.1}. Allowed range is @code{[0.0 - 0.5]}.
+
+@item msd
+Set the first two max start code bits differences.
+Default is @code{0.02}. Allowed range is @code{[0.0 - 0.5]}.
+
+@item bhd
+Set the minimum ratio of bits height compared to 3rd start code bit.
+Default is @code{0.75}. Allowed range is @code{[0.01 - 1]}.
+
+@item th_w
+Set the white color threshold. Default is @code{0.35}. Allowed range is @code{[0.1 - 1]}.
+
+@item th_b
+Set the black color threshold. Default is @code{0.15}. Allowed range is @code{[0.0 - 0.5]}.
+
+@item chp
+Enable checking the parity bit. In the event of a parity error, the filter will output
+@code{0x00} for that character. Default is false.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Output a csv with presentation time and the first two lines of identified EIA-608 captioning data.
+@example
+ffprobe -f lavfi -i movie=captioned_video.mov,readeia608 -show_entries frame=pkt_pts_time:frame_tags=lavfi.readeia608.0.cc,lavfi.readeia608.1.cc -of csv
+@end example
+@end itemize
+
 @section readvitc
 
 Read vertical interval timecode (VITC) information from the top lines of a
