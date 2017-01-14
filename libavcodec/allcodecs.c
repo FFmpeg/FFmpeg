@@ -702,6 +702,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER(PNM,                pnm);
     REGISTER_PARSER(RV30,               rv30);
     REGISTER_PARSER(RV40,               rv40);
+    REGISTER_PARSER(SIPR,               sipr);
     REGISTER_PARSER(TAK,                tak);
     REGISTER_PARSER(VC1,                vc1);
     REGISTER_PARSER(VORBIS,             vorbis);

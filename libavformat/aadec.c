@@ -184,11 +184,13 @@ static int aa_read_header(AVFormatContext *s)
         st->codecpar->block_align = 19;
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 8500;
+        st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     } else if (!strcmp(codec_name, "acelp16")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 20;
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 16000;
+        st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     }
 
     /* determine, and jump to audio start offset */
