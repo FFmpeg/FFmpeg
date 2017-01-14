@@ -51,13 +51,6 @@
 // see the arm version instead.
 
 
-.macro uabdl_sz dst1, dst2, in1, in2, sz
-        uabdl           \dst1,  \in1\().8b,  \in2\().8b
-.ifc \sz, .16b
-        uabdl2          \dst2,  \in1\().16b, \in2\().16b
-.endif
-.endm
-
 .macro add_sz dst1, dst2, in1, in2, in3, in4, sz
         add             \dst1,  \in1,  \in3
 .ifc \sz, .16b
@@ -83,20 +76,6 @@
         usubw           \dst1,  \in1, \in3\().8b
 .ifc \sz, .16b
         usubw2          \dst2,  \in2, \in3\().16b
-.endif
-.endm
-
-.macro cmhs_sz dst1, dst2, in1, in2, in3, in4, sz
-        cmhs            \dst1,  \in1,  \in3
-.ifc \sz, .16b
-        cmhs            \dst2,  \in2,  \in4
-.endif
-.endm
-
-.macro xtn_sz dst, in1, in2, sz
-        xtn             \dst\().8b,  \in1
-.ifc \sz, .16b
-        xtn2            \dst\().16b, \in2
 .endif
 .endm
 
@@ -179,20 +158,20 @@
 // tmpq2 == tmp3 + tmp4, etc.
 .macro loop_filter wd, sz, mix, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8
 .if \mix == 0
-        dup             v0.8h,  w2        // E
-        dup             v1.8h,  w2        // E
+        dup             v0\sz,  w2        // E
         dup             v2\sz,  w3        // I
         dup             v3\sz,  w4        // H
 .else
-        dup             v0.8h,  w2        // E
+        dup             v0.8b,  w2        // E
         dup             v2.8b,  w3        // I
         dup             v3.8b,  w4        // H
+        lsr             w5,     w2,  #8
         lsr             w6,     w3,  #8
         lsr             w7,     w4,  #8
-        ushr            v1.8h,  v0.8h, #8 // E
+        dup             v1.8b,  w5        // E
         dup             v4.8b,  w6        // I
-        bic             v0.8h,  #255, lsl 8 // E
         dup             v5.8b,  w7        // H
+        trn1            v0.2d,  v0.2d,  v1.2d
         trn1            v2.2d,  v2.2d,  v4.2d
         trn1            v3.2d,  v3.2d,  v5.2d
 .endif
@@ -206,16 +185,15 @@
         umax            v4\sz,  v4\sz,  v5\sz
         umax            v5\sz,  v6\sz,  v7\sz
         umax            \tmp1\sz, \tmp1\sz, \tmp2\sz
-        uabdl_sz        v6.8h,  v7.8h,  v23, v24, \sz // abs(p0 - q0)
+        uabd            v6\sz,  v23\sz, v24\sz        // abs(p0 - q0)
         umax            v4\sz,  v4\sz,  v5\sz
-        add_sz          v6.8h,  v7.8h,  v6.8h,  v7.8h,  v6.8h,  v7.8h, \sz // abs(p0 - q0) * 2
+        uqadd           v6\sz,  v6\sz,  v6\sz         // abs(p0 - q0) * 2
         uabd            v5\sz,  v22\sz, v25\sz        // abs(p1 - q1)
         umax            v4\sz,  v4\sz,  \tmp1\sz      // max(abs(p3 - p2), ..., abs(q2 - q3))
         ushr            v5\sz,  v5\sz,  #1
         cmhs            v4\sz,  v2\sz,  v4\sz         // max(abs()) <= I
-        uaddw_sz        v6.8h,  v7.8h,  v6.8h,  v7.8h,  v5, \sz // abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
-        cmhs_sz         v6.8h,  v7.8h,  v0.8h,  v1.8h,  v6.8h,  v7.8h, \sz
-        xtn_sz          v5,     v6.8h,  v7.8h,  \sz
+        uqadd           v6\sz,  v6\sz,  v5\sz         // abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
+        cmhs            v5\sz,  v0\sz,  v6\sz
         and             v4\sz,  v4\sz,  v5\sz         // fm
 
         // If no pixels need filtering, just exit as soon as possible
