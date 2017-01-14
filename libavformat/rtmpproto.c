@@ -94,8 +94,8 @@ typedef struct RTMPContext {
     int           flv_nb_packets;             ///< number of flv packets published
     RTMPPacket    out_pkt;                    ///< rtmp packet, created from flv a/v or metadata (for output)
     uint32_t      client_report_size;         ///< number of bytes after which client should report to server
-    uint32_t      bytes_read;                 ///< number of bytes read from server
-    uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
+    uint64_t      bytes_read;                 ///< number of bytes read from server
+    uint64_t      last_bytes_read;            ///< number of bytes read last reported to server
     uint32_t      last_timestamp;             ///< last timestamp received in a packet
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
     int           has_audio;                  ///< presence of audio data
