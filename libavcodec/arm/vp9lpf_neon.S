@@ -51,7 +51,7 @@
 @ and d28-d31 as temp registers, or d8-d15.
 @ tmp1,tmp2 = tmpq1, tmp3,tmp4 = tmpq2, tmp5,tmp6 = tmpq3, tmp7,tmp8 = tmpq4
 .macro loop_filter wd, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmpq1, tmpq2, tmpq3, tmpq4
-        vdup.u16        q0,  r2 @ E
+        vdup.u8         d0,  r2 @ E
         vdup.u8         d2,  r3 @ I
         ldr             r3,  [sp]
 
@@ -64,16 +64,15 @@
         vmax.u8         d4,  d4,  d5
         vmax.u8         d5,  d6,  d7
         vmax.u8         \tmp1,  \tmp1,  \tmp2
-        vabdl.u8        q3,  d23, d24    @ abs(p0 - q0)
+        vabd.u8         d6,  d23, d24    @ abs(p0 - q0)
         vmax.u8         d4,  d4,  d5
-        vadd.u16        q3,  q3,  q3     @ abs(p0 - q0) * 2
+        vqadd.u8        d6,  d6,  d6     @ abs(p0 - q0) * 2
         vabd.u8         d5,  d22, d25    @ abs(p1 - q1)
         vmax.u8         d4,  d4,  \tmp1  @ max(abs(p3 - p2), ..., abs(q2 - q3))
         vshr.u8         d5,  d5,  #1
         vcle.u8         d4,  d4,  d2     @ max(abs()) <= I
-        vaddw.u8        q3,  q3,  d5     @ abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
-        vcle.u16        q3,  q3,  q0
-        vmovn.u16       d5,  q3
+        vqadd.u8        d6,  d6,  d5     @ abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
+        vcle.u8         d5,  d6,  d0
         vand            d4,  d4,  d5     @ fm
 
         vdup.u8         d3,  r3          @ H
