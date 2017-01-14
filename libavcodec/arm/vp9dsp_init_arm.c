@@ -195,6 +195,8 @@ define_loop_filters(8, 8);
 define_loop_filters(16, 8);
 define_loop_filters(16, 16);
 
+define_loop_filters(44, 16);
+
 #define lf_mix_fn(dir, wd1, wd2, stridea)                                                         \
 static void loop_filter_##dir##_##wd1##wd2##_16_neon(uint8_t *dst,                                \
                                                      ptrdiff_t stride,                            \
@@ -208,7 +210,6 @@ static void loop_filter_##dir##_##wd1##wd2##_16_neon(uint8_t *dst,              
     lf_mix_fn(h, wd1, wd2, stride) \
     lf_mix_fn(v, wd1, wd2, sizeof(uint8_t))
 
-lf_mix_fns(4, 4)
 lf_mix_fns(4, 8)
 lf_mix_fns(8, 4)
 lf_mix_fns(8, 8)
@@ -228,8 +229,8 @@ static av_cold void vp9dsp_loopfilter_init_arm(VP9DSPContext *dsp)
         dsp->loop_filter_16[0] = ff_vp9_loop_filter_h_16_16_neon;
         dsp->loop_filter_16[1] = ff_vp9_loop_filter_v_16_16_neon;
 
-        dsp->loop_filter_mix2[0][0][0] = loop_filter_h_44_16_neon;
-        dsp->loop_filter_mix2[0][0][1] = loop_filter_v_44_16_neon;
+        dsp->loop_filter_mix2[0][0][0] = ff_vp9_loop_filter_h_44_16_neon;
+        dsp->loop_filter_mix2[0][0][1] = ff_vp9_loop_filter_v_44_16_neon;
         dsp->loop_filter_mix2[0][1][0] = loop_filter_h_48_16_neon;
         dsp->loop_filter_mix2[0][1][1] = loop_filter_v_48_16_neon;
         dsp->loop_filter_mix2[1][0][0] = loop_filter_h_84_16_neon;
