@@ -1248,11 +1248,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             uint32_t color_space = av_le2ne32(par->codec_tag);
             put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
         }
-        if (s->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
-            ret = mkv_write_video_color(pb, par, st);
-            if (ret < 0)
-                return ret;
-        }
+        ret = mkv_write_video_color(pb, par, st);
+        if (ret < 0)
+            return ret;
         end_ebml_master(pb, subinfo);
         break;
 
