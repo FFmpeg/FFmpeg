@@ -93,9 +93,9 @@ typedef struct PerThreadContext {
      * Array of frames passed to ff_thread_release_buffer().
      * Frames are released after all threads referencing them are finished.
      */
-    AVFrame *released_buffers;
-    int  num_released_buffers;
-    int      released_buffers_allocated;
+    AVFrame **released_buffers;
+    int   num_released_buffers;
+    int       released_buffers_allocated;
 
     AVFrame *requested_frame;       ///< AVFrame the codec passed to get_buffer()
     int      requested_flags;       ///< flags passed to get_buffer() for requested_frame
@@ -370,7 +370,7 @@ static void release_delayed_buffers(PerThreadContext *p)
         // fix extended data in case the caller screwed it up
         av_assert0(p->avctx->codec_type == AVMEDIA_TYPE_VIDEO ||
                    p->avctx->codec_type == AVMEDIA_TYPE_AUDIO);
-        f = &p->released_buffers[--p->num_released_buffers];
+        f = p->released_buffers[--p->num_released_buffers];
         f->extended_data = f->data;
         av_frame_unref(f);
 
@@ -654,7 +654,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
 {
     FrameThreadContext *fctx = avctx->internal->thread_ctx;
     const AVCodec *codec = avctx->codec;
-    int i;
+    int i, j;
 
     park_frame_worker_threads(fctx, thread_count);
 
@@ -700,6 +700,9 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_destroy(&p->progress_cond);
         pthread_cond_destroy(&p->output_cond);
         av_packet_unref(&p->avpkt);
+
+        for (j = 0; j < p->released_buffers_allocated; j++)
+            av_frame_free(&p->released_buffers[j]);
         av_freep(&p->released_buffers);
 
         if (p->avctx) {
@@ -988,7 +991,7 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
     PerThreadContext *p = avctx->internal->thread_ctx;
     FrameThreadContext *fctx;
-    AVFrame *dst, *tmp;
+    AVFrame *dst;
     int ret = 0;
     int can_direct_free = !(avctx->active_thread_type & FF_THREAD_FRAME) ||
                           THREAD_SAFE_CALLBACKS(avctx);
@@ -1011,20 +1014,22 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
     fctx = p->parent;
     pthread_mutex_lock(&fctx->buffer_mutex);
 
-    if (p->num_released_buffers + 1 >= INT_MAX / sizeof(*p->released_buffers)) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    tmp = av_fast_realloc(p->released_buffers, &p->released_buffers_allocated,
-                          (p->num_released_buffers + 1) *
-                          sizeof(*p->released_buffers));
-    if (!tmp) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    p->released_buffers = tmp;
+    if (p->num_released_buffers == p->released_buffers_allocated) {
+        AVFrame **tmp = av_realloc_array(p->released_buffers, p->released_buffers_allocated + 1,
+                                         sizeof(*p->released_buffers));
+        if (tmp) {
+            tmp[p->released_buffers_allocated] = av_frame_alloc();
+            p->released_buffers = tmp;
+        }
 
-    dst = &p->released_buffers[p->num_released_buffers];
+        if (!tmp || !tmp[p->released_buffers_allocated]) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        p->released_buffers_allocated++;
+    }
+
+    dst = p->released_buffers[p->num_released_buffers];
     av_frame_move_ref(dst, f->f);
 
     p->num_released_buffers++;
