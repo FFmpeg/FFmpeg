@@ -702,7 +702,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         av_packet_unref(&p->avpkt);
         av_freep(&p->released_buffers);
 
-        if (i && p->avctx) {
+        if (p->avctx) {
             if (codec->priv_class)
                 av_opt_free(p->avctx->priv_data);
             av_freep(&p->avctx->priv_data);
@@ -812,7 +812,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         copy->internal->thread_ctx = p;
         copy->internal->last_pkt_props = &p->avpkt;
 
-        if (i) {
+        if (codec->priv_data_size) {
             copy->priv_data = av_mallocz(codec->priv_data_size);
             if (!copy->priv_data) {
                 err = AVERROR(ENOMEM);
@@ -825,8 +825,10 @@ int ff_frame_thread_init(AVCodecContext *avctx)
                 if (err < 0)
                     goto error;
             }
-            copy->internal->is_copy = 1;
         }
+
+        if (i)
+            copy->internal->is_copy = 1;
 
         if (codec->init)
             err = codec->init(copy);
