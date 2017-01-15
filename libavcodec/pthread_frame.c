@@ -322,7 +322,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
  */
 static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
 {
-#define copy_fields(s, e) memcpy(&dst->s, &src->s, (char*)&dst->e - (char*)&dst->s);
     dst->flags          = src->flags;
 
     dst->draw_horiz_band= src->draw_horiz_band;
@@ -336,7 +335,9 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
     dst->flags2      = src->flags2;
     dst->export_side_data = src->export_side_data;
 
-    copy_fields(skip_loop_filter, subtitle_header);
+    dst->skip_loop_filter = src->skip_loop_filter;
+    dst->skip_idct        = src->skip_idct;
+    dst->skip_frame       = src->skip_frame;
 
     dst->frame_number     = src->frame_number;
     dst->reordered_opaque = src->reordered_opaque;
@@ -354,7 +355,6 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
     }
     dst->slice_count = src->slice_count;
     return 0;
-#undef copy_fields
 }
 
 /// Releases the buffers that this decoding thread was the last user of.
