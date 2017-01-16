@@ -97,6 +97,7 @@
     <YASM Include="..\libavcodec\x86\idctdsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
+    <YASM Include="..\libavcodec\x86\lossless_videoencdsp.asm" />
     <YASM Include="..\libavcodec\x86\me_cmp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
     <YASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
@@ -628,6 +629,7 @@
     <ClCompile Include="..\libavcodec\ptx.c" />
     <ClCompile Include="..\libavcodec\qcelpdec.c" />
     <ClCompile Include="..\libavcodec\qdm2.c" />
+    <ClCompile Include="..\libavcodec\qdmc.c" />
     <ClCompile Include="..\libavcodec\qdrw.c" />
     <ClCompile Include="..\libavcodec\qpeg.c" />
     <ClCompile Include="..\libavcodec\qtrle.c" />
@@ -676,6 +678,7 @@
     <ClCompile Include="..\libavcodec\snow_dwt.c" />
     <ClCompile Include="..\libavcodec\snowenc.c" />
     <ClCompile Include="..\libavcodec\sonic.c" />
+    <ClCompile Include="..\libavcodec\speedhq.c" />
     <ClCompile Include="..\libavcodec\sp5xdec.c" />
     <ClCompile Include="..\libavcodec\srtdec.c" />
     <ClCompile Include="..\libavcodec\srtenc.c" />
@@ -901,8 +904,9 @@
     <ClCompile Include="..\libavcodec\x86\hpeldsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\lossless_audiodsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\lossless_videodsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\lossless_videoencdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\huffyuvdsp_init.c" />
-    <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_mmx.c" />
+    <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\idctdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\me_cmp_init.c" />
     <ClCompile Include="..\libavcodec\x86\mpegvideoenc.c" />
@@ -982,6 +986,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\lossless_videodsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_lossless_videodsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\lossless_videoencdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_lossless_videoencdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\me_cmp.c">
       <ObjectFileName>$(IntDir)\libavcodec_me_cmp.obj</ObjectFileName>

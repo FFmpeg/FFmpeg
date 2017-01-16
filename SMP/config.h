@@ -23,7 +23,7 @@
 #define SMP_CONFIG_H
 #define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "GPL version 3 or later"
-#define CONFIG_THIS_YEAR 2016
+#define CONFIG_THIS_YEAR 2017
 #define FFMPEG_DATADIR "."
 #define AVCONV_DATADIR "."
 #if defined(__INTEL_COMPILER)
@@ -691,6 +691,7 @@
 #define CONFIG_LIBX262 0
 #define CONFIG_LLAUDDSP 1
 #define CONFIG_LLVIDDSP 1
+#define CONFIG_LLVIDENCDSP 1
 #define CONFIG_LPC 1
 #define CONFIG_LZF 1
 #define CONFIG_ME_CMP 1
@@ -919,6 +920,7 @@
 #define CONFIG_SMVJPEG_DECODER 1
 #define CONFIG_SNOW_DECODER 1
 #define CONFIG_SP5X_DECODER 1
+#define CONFIG_SPEEDHQ_DECODER 1
 #define CONFIG_SUNRAST_DECODER 1
 #define CONFIG_SVQ1_DECODER 1
 #define CONFIG_SVQ3_DECODER 1
@@ -1043,6 +1045,7 @@
 #define CONFIG_PAF_AUDIO_DECODER 1
 #define CONFIG_QCELP_DECODER 1
 #define CONFIG_QDM2_DECODER 1
+#define CONFIG_QDMC_DECODER 1
 #define CONFIG_RA_144_DECODER 1
 #define CONFIG_RA_288_DECODER 1
 #define CONFIG_RALF_DECODER 1

@@ -118,6 +118,7 @@ EXPORTS
     avio_find_protocol_name
     avio_flush
     avio_free_directory_entry
+    avio_get_dyn_buf
     avio_get_str
     avio_get_str16be
     avio_get_str16le

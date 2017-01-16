@@ -118,6 +118,9 @@
     <YASM Include="..\libavcodec\x86\lossless_videodsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\lossless_videoencdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\me_cmp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -1707,6 +1710,9 @@
     <ClCompile Include="..\libavcodec\qdm2.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\qdmc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\qdrw.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1849,6 +1855,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\sonic.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\speedhq.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\sp5xdec.c">
@@ -2526,10 +2535,13 @@
     <ClCompile Include="..\libavcodec\x86\lossless_videodsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\lossless_videoencdsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\huffyuvdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_mmx.c">
+    <ClCompile Include="..\libavcodec\x86\huffyuvencdsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\idctdsp_init.c">
@@ -2698,6 +2710,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\lossless_videodsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\lossless_videoencdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\me_cmp.c">
