@@ -154,7 +154,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         ctx->group.isBlocking = 1;
         res = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group);
     } else if (ctx->peerId)
-        res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication);
+        res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication, 1);
     else if (ctx->p2pPublishing)
         res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
     else if (flags & AVIO_FLAG_WRITE)
@@ -188,9 +188,8 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
 
     res = RTMFP_Read((ctx->peerId)? ctx->peerId : "", ctx->id, buf, size);
     //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
-    if (res < 0)
-        return AVERROR_UNKNOWN;
-    return res;
+
+    return (res < 0)? AVERROR_UNKNOWN : res;
 }
 
 /*static int rtmp_read_pause(URLContext *s, int pause)
@@ -246,7 +245,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-//define RTMFP_CLASS(flavor)
 static const AVClass librtmfp_class = {
     .class_name = "librtmfp protocol",
     .item_name  = av_default_item_name,
@@ -254,7 +252,6 @@ static const AVClass librtmfp_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-//RTMP_CLASS(rtmp)
 URLProtocol ff_librtmfp_protocol = {
     .name                = "rtmfp",
     .url_open            = rtmfp_open,
