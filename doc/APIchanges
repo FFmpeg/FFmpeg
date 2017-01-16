@@ -13,6 +13,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-02-01 - xxxxxxx - lavc - avcodec.h
+  Deprecate AVCodecContext.refcounted_frames. This was useful for deprecated
+  API only (avcodec_decode_video2/avcodec_decode_audio4). The new decode APIs
+  (avcodec_send_packet/avcodec_receive_frame) always work with reference
+  counted frames.
+
 2016-xx-xx - xxxxxxx - lavc 57.31.0 - avcodec.h
   Add AVCodecContext.apply_cropping to control whether cropping
   is handled by libavcodec or the caller.

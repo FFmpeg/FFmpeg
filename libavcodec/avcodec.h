@@ -2327,7 +2327,7 @@ typedef struct AVCodecContext {
      * - encoding: unused
      * - decoding: set by the caller before avcodec_open2().
      */
-    int refcounted_frames;
+    attribute_deprecated int refcounted_frames;
 
     /* - encoding parameters */
     float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0)
