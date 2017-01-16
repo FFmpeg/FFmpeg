@@ -1,6 +1,8 @@
 /adler32
 /aes
+/aes_ctr
 /atomic
+/audio_fifo
 /avstring
 /base64
 /blowfish
@@ -21,6 +23,7 @@
 /float_dsp
 /hash
 /hmac
+/imgutils
 /lfg
 /lls
 /log
