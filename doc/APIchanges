@@ -15,6 +15,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-01-12 - xxxxxxx - lavfi 6.69.100- buffersink.h
+  Add av_buffersink_get_*() functions.
+
+2017-01-06 - xxxxxxx - lavf 57.62.100- avio.h
+  Add avio_get_dyn_buf()
+
 2016-12-10 - xxxxxxx - lavu xx.xx.100- imgutils.h
   Add av_image_check_size2()
 

@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "put_bits.h"
 
 #define DCA_CODE_BOOKS      10
 
@@ -55,5 +56,7 @@ extern VLC  ff_dca_vlc_grid_3;
 extern VLC  ff_dca_vlc_rsd;
 
 av_cold void ff_dca_init_vlcs(void);
+uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t abits);
+void ff_dca_vlc_enc_quant(PutBitContext *pb, int *values, uint8_t n, uint8_t sel, uint8_t abits);
 
 #endif /* AVCODEC_DCAHUFF_H */

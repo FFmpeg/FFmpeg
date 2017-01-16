@@ -12,6 +12,8 @@ version <next>:
 - 16.8 floating point pcm decoder
 - 24.0 floating point pcm decoder
 - Apple Pixlet decoder
+- QDMC audio decoder
+- NewTek SpeedHQ decoder
 
 version 3.2:
 - libopenmpt demuxer

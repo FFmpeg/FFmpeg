@@ -125,16 +125,16 @@ endconst
         vmlal.s16       \out4, \in4, \coef1
 .endm
 
-@ in1 = (in1 * coef1 - in2 * coef2 + (1 << 13)) >> 14
-@ in2 = (in1 * coef2 + in2 * coef1 + (1 << 13)) >> 14
-@ in are 2 d registers, tmp are 2 q registers
-.macro mbutterfly in1, in2, coef1, coef2, tmp1, tmp2, neg=0
-        mbutterfly_l    \tmp1, \tmp2, \in1, \in2, \coef1, \coef2
+@ inout1 = (inout1 * coef1 - inout2 * coef2 + (1 << 13)) >> 14
+@ inout2 = (inout1 * coef2 + inout2 * coef1 + (1 << 13)) >> 14
+@ inout are 2 d registers, tmp are 2 q registers
+.macro mbutterfly inout1, inout2, coef1, coef2, tmp1, tmp2, neg=0
+        mbutterfly_l    \tmp1, \tmp2, \inout1, \inout2, \coef1, \coef2
 .if \neg > 0
         vneg.s32        \tmp2, \tmp2
 .endif
-        vrshrn.s32      \in1, \tmp1,  #14
-        vrshrn.s32      \in2, \tmp2,  #14
+        vrshrn.s32      \inout1, \tmp1,  #14
+        vrshrn.s32      \inout2, \tmp2,  #14
 .endm
 
 @ inout1,inout2 = (inout1,inout2 * coef1 - inout3,inout4 * coef2 + (1 << 13)) >> 14
@@ -659,9 +659,8 @@ endfunc
 @ Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
 @ transpose into a horizontal 16x4 slice and store.
 @ r0 = dst (temp buffer)
-@ r1 = unused
+@ r1 = slice offset
 @ r2 = src
-@ r3 = slice offset
 function \txfm\()16_1d_4x16_pass1_neon
         mov             r12, #32
         vmov.s16        q2, #0
@@ -678,14 +677,14 @@ function \txfm\()16_1d_4x16_pass1_neon
         transpose16_q_4x_4x4 q8,  q9,  q10, q11, q12, q13, q14, q15, d16, d17, d18, d19, d20, d21, d22, d23, d24, d25, d26, d27, d28, d29, d30, d31
 
         @ Store the transposed 4x4 blocks horizontally.
-        cmp             r3,  #12
+        cmp             r1,  #12
         beq             1f
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
         vst1.16         {d\i}, [r0,:64]!
 .endr
         bx              lr
 1:
-        @ Special case: For the last input column (r3 == 12),
+        @ Special case: For the last input column (r1 == 12),
         @ which would be stored as the last row in the temp buffer,
         @ don't store the first 4x4 block, but keep it in registers
         @ for the first slice of the second pass (where it is the
@@ -781,25 +780,30 @@ endfunc
 itxfm16_1d_funcs idct
 itxfm16_1d_funcs iadst
 
+@ This is the minimum eob value for each subpartition, in increments of 4
+const min_eob_idct_idct_16, align=4
+        .short  0, 10, 38, 89
+endconst
+
 .macro itxfm_func16x16 txfm1, txfm2
 function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
 .ifc \txfm1\()_\txfm2,idct_idct
         cmp             r3,  #1
         beq             idct16x16_dc_add_neon
 .endif
-        push            {r4-r7,lr}
+        push            {r4-r8,lr}
 .ifnc \txfm1\()_\txfm2,idct_idct
         vpush           {q4-q7}
+.else
+        movrel          r8,  min_eob_idct_idct_16 + 2
 .endif
-        mov             r7,  sp
 
         @ Align the stack, allocate a temp buffer
-T       mov             r12, sp
-T       bic             r12, r12, #15
-T       sub             r12, r12, #512
-T       mov             sp,  r12
-A       bic             sp,  sp,  #15
-A       sub             sp,  sp,  #512
+T       mov             r7,  sp
+T       and             r7,  r7,  #15
+A       and             r7,  sp,  #15
+        add             r7,  r7,  #512
+        sub             sp,  sp,  r7
 
         mov             r4,  r0
         mov             r5,  r1
@@ -812,11 +816,37 @@ A       sub             sp,  sp,  #512
 
 .irp i, 0, 4, 8, 12
         add             r0,  sp,  #(\i*32)
+.ifc \txfm1\()_\txfm2,idct_idct
+.if \i > 0
+        ldrh_post       r1,  r8,  #2
+        cmp             r3,  r1
+        it              le
+        movle           r1,  #(16 - \i)/4
+        ble             1f
+.endif
+.endif
+        mov             r1,  #\i
         add             r2,  r6,  #(\i*2)
-        mov             r3,  #\i
         bl              \txfm1\()16_1d_4x16_pass1_neon
 .endr
-.ifc \txfm2,idct
+
+.ifc \txfm1\()_\txfm2,idct_idct
+        b               3f
+1:
+        @ For all-zero slices in pass 1, set d28-d31 to zero, for the in-register
+        @ passthrough of coefficients to pass 2 and clear the end of the temp buffer
+        vmov.i16        q14, #0
+        vmov.i16        q15, #0
+2:
+        subs            r1,  r1,  #1
+.rept 4
+        vst1.16         {q14-q15}, [r0,:128]!
+.endr
+        bne             2b
+3:
+.endif
+
+.ifc \txfm1\()_\txfm2,iadst_idct
         movrel          r12, idct_coeffs
         vld1.16         {q0-q1}, [r12,:128]
 .endif
@@ -828,11 +858,11 @@ A       sub             sp,  sp,  #512
         bl              \txfm2\()16_1d_4x16_pass2_neon
 .endr
 
-        mov             sp,  r7
+        add             sp,  sp,  r7
 .ifnc \txfm1\()_\txfm2,idct_idct
         vpop            {q4-q7}
 .endif
-        pop             {r4-r7,pc}
+        pop             {r4-r8,pc}
 endfunc
 .endm
 
@@ -1019,10 +1049,10 @@ function idct32_1d_4x32_pass1_neon
 .endr
 .endm
 
-        store_rev 31, 27, 23, 19
-        store_rev 30, 26, 22, 18
-        store_rev 29, 25, 21, 17
-        store_rev 28, 24, 20, 16
+        store_rev       31, 27, 23, 19
+        store_rev       30, 26, 22, 18
+        store_rev       29, 25, 21, 17
+        store_rev       28, 24, 20, 16
 .purgem store_rev
         bx              lr
 endfunc
@@ -1112,20 +1142,23 @@ function idct32_1d_4x32_pass2_neon
         bx              lr
 endfunc
 
+const min_eob_idct_idct_32, align=4
+        .short  0, 9, 34, 70, 135, 240, 336, 448
+endconst
+
 function ff_vp9_idct_idct_32x32_add_neon, export=1
         cmp             r3,  #1
         beq             idct32x32_dc_add_neon
-        push            {r4-r7,lr}
+        push            {r4-r8,lr}
         vpush           {q4-q7}
-        mov             r7,  sp
+        movrel          r8,  min_eob_idct_idct_32 + 2
 
         @ Align the stack, allocate a temp buffer
-T       mov             r12, sp
-T       bic             r12, r12, #15
-T       sub             r12, r12, #2048
-T       mov             sp,  r12
-A       bic             sp,  sp,  #15
-A       sub             sp,  sp,  #2048
+T       mov             r7,  sp
+T       and             r7,  r7,  #15
+A       and             r7,  sp,  #15
+        add             r7,  r7,  #2048
+        sub             sp,  sp,  r7
 
         mov             r4,  r0
         mov             r5,  r1
@@ -1133,9 +1166,29 @@ A       sub             sp,  sp,  #2048
 
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             r0,  sp,  #(\i*64)
+.if \i > 0
+        ldrh_post       r1,  r8,  #2
+        cmp             r3,  r1
+        it              le
+        movle           r1,  #(32 - \i)/2
+        ble             1f
+.endif
         add             r2,  r6,  #(\i*2)
         bl              idct32_1d_4x32_pass1_neon
 .endr
+        b               3f
+
+1:
+        @ Write zeros to the temp buffer for pass 2
+        vmov.i16        q14, #0
+        vmov.i16        q15, #0
+2:
+        subs            r1,  r1,  #1
+.rept 4
+        vst1.16         {q14-q15}, [r0,:128]!
+.endr
+        bne             2b
+3:
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             r0,  r4,  #(\i)
         mov             r1,  r5
@@ -1143,7 +1196,7 @@ A       sub             sp,  sp,  #2048
         bl              idct32_1d_4x32_pass2_neon
 .endr
 
-        mov             sp,  r7
+        add             sp,  sp,  r7
         vpop            {q4-q7}
-        pop             {r4-r7,pc}
+        pop             {r4-r8,pc}
 endfunc

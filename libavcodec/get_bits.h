@@ -229,6 +229,20 @@ static inline int get_xbits(GetBitContext *s, int n)
     return (NEG_USR32(sign ^ cache, n) ^ sign) - sign;
 }
 
+static inline int get_xbits_le(GetBitContext *s, int n)
+{
+    register int sign;
+    register int32_t cache;
+    OPEN_READER(re, s);
+    av_assert2(n>0 && n<=25);
+    UPDATE_CACHE_LE(re, s);
+    cache = GET_CACHE(re, s);
+    sign  = sign_extend(~cache, n) >> 31;
+    LAST_SKIP_BITS(re, s, n);
+    CLOSE_READER(re, s);
+    return (zero_extend(sign ^ cache, n) ^ sign) - sign;
+}
+
 static inline int get_sbits(GetBitContext *s, int n)
 {
     register int tmp;

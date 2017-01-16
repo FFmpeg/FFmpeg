@@ -157,7 +157,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
         if (buf[i] == '\n') {
             if (*rows == INT_MAX) {
                 av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of rows in the file\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
             ++(*rows);
             *cols = FFMAX(*cols, w);
@@ -171,10 +172,13 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
     if (*rows > (SIZE_MAX / sizeof(int) / *cols)) {
         av_log(log_ctx, AV_LOG_ERROR, "File with size %dx%d is too big\n",
                *rows, *cols);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
-    if (!(*values = av_mallocz_array(sizeof(int) * *rows, *cols)))
-        return AVERROR(ENOMEM);
+    if (!(*values = av_mallocz_array(sizeof(int) * *rows, *cols))) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     /* fill *values */
     p    = buf;
@@ -188,6 +192,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
                 (*values)[*cols*i + j] = !!av_isgraph(*(p++));
         }
     }
+
+end:
     av_file_unmap(buf, size);
 
 #ifdef DEBUG

@@ -96,10 +96,15 @@ static int query_formats(AVFilterContext *ctx)
             av_get_channel_layout_string(buf, sizeof(buf), 0, inlayout[i]);
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
-        s->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
-        if (outlayout & inlayout[i])
+        s->in[i].nb_ch = FF_LAYOUT2COUNT(inlayout[i]);
+        if (s->in[i].nb_ch) {
             overlap++;
-        outlayout |= inlayout[i];
+        } else {
+            s->in[i].nb_ch = av_get_channel_layout_nb_channels(inlayout[i]);
+            if (outlayout & inlayout[i])
+                overlap++;
+            outlayout |= inlayout[i];
+        }
         nb_ch += s->in[i].nb_ch;
     }
     if (nb_ch > SWR_CH_MAX) {

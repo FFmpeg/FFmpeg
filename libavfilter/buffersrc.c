@@ -173,6 +173,20 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     return ret;
 }
 
+static int push_frame(AVFilterGraph *graph)
+{
+    int ret;
+
+    while (1) {
+        ret = ff_filter_graph_run_once(graph);
+        if (ret == AVERROR(EAGAIN))
+            break;
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
                                            AVFrame *frame, int flags)
 {
@@ -185,6 +199,11 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
     if (!frame) {
         s->eof = 1;
         ff_avfilter_link_set_in_status(ctx->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
+        if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
+            ret = push_frame(ctx->graph);
+            if (ret < 0)
+                return ret;
+        }
         return 0;
     } else if (s->eof)
         return AVERROR(EINVAL);
@@ -238,6 +257,12 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
         return ret;
+
+    if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
+        ret = push_frame(ctx->graph);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }

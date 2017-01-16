@@ -30,7 +30,7 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/huffyuvdsp.h"
+#include "libavcodec/lossless_videodsp.h"
 
 #if HAVE_ALTIVEC
 static void add_bytes_altivec(uint8_t *dst, uint8_t *src, intptr_t w)
@@ -51,7 +51,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, intptr_t w)
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c)
+av_cold void ff_llviddsp_init_ppc(LLVidDSPContext *c)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

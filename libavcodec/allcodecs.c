@@ -316,6 +316,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(SMVJPEG,           smvjpeg);
     REGISTER_ENCDEC (SNOW,              snow);
     REGISTER_DECODER(SP5X,              sp5x);
+    REGISTER_DECODER(SPEEDHQ,           speedhq);
     REGISTER_ENCDEC (SUNRAST,           sunrast);
     REGISTER_ENCDEC (SVQ1,              svq1);
     REGISTER_DECODER(SVQ3,              svq3);
@@ -449,6 +450,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(PAF_AUDIO,         paf_audio);
     REGISTER_DECODER(QCELP,             qcelp);
     REGISTER_DECODER(QDM2,              qdm2);
+    REGISTER_DECODER(QDMC,              qdmc);
     REGISTER_ENCDEC (RA_144,            ra_144);
     REGISTER_DECODER(RA_288,            ra_288);
     REGISTER_DECODER(RALF,              ralf);

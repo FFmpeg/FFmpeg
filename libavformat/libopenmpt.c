@@ -82,6 +82,11 @@ static int read_header_openmpt(AVFormatContext *s)
     if (!buf)
         return AVERROR(ENOMEM);
     size = avio_read(s->pb, buf, size);
+    if (size < 0) {
+        av_log(s, AV_LOG_ERROR, "Reading input buffer failed.\n");
+        av_freep(&buf);
+        return size;
+    }
 
     openmpt->module = openmpt_module_create_from_memory(buf, size, openmpt_logfunc, s, NULL);
     av_freep(&buf);

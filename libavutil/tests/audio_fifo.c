@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include "libavutil/mem.h"
 #include "libavutil/audio_fifo.c"
 
 #define MAX_CHANNELS    32
@@ -28,7 +29,7 @@ typedef struct TestStruct {
     const enum AVSampleFormat format;
     const int nb_ch;
     void const *data_planes[MAX_CHANNELS];
-    int nb_samples_pch;
+    const int nb_samples_pch;
 } TestStruct;
 
 static const uint8_t data_U8 [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11                        };
@@ -44,19 +45,19 @@ static const TestStruct test_struct[] = {
     {.format = AV_SAMPLE_FMT_FLTP , .nb_ch = 2, .data_planes = {data_FLT, data_FLT+6, }, .nb_samples_pch = 6 }
 };
 
-static void ERROR(const char *str)
+static void free_data_planes(AVAudioFifo *afifo, void **output_data)
 {
-        fprintf(stderr, "%s\n", str);
-        exit(1);
+    int i;
+    for (i = 0; i < afifo->nb_buffers; ++i){
+        av_freep(&output_data[i]);
+    }
+    av_freep(&output_data);
 }
 
-static void* allocate_memory(size_t size)
+static void ERROR(const char *str)
 {
-    void *ptr = malloc(size);
-    if (ptr == NULL){
-        ERROR("failed to allocate memory!");
-    }
-    return ptr;
+    fprintf(stderr, "%s\n", str);
+    exit(1);
 }
 
 static void print_audio_bytes(const TestStruct *test_sample, void **data_planes, int nb_samples)
@@ -85,65 +86,71 @@ static int read_samples_from_audio_fifo(AVAudioFifo* afifo, void ***output, int 
     int samples        = FFMIN(nb_samples, afifo->nb_samples);
     int tot_elements   = !av_sample_fmt_is_planar(afifo->sample_fmt)
                          ? samples : afifo->channels * samples;
-    void **data_planes = allocate_memory(sizeof(void*) * afifo->nb_buffers);
+    void **data_planes = av_malloc_array(afifo->nb_buffers, sizeof(void*));
+    if (!data_planes)
+        ERROR("failed to allocate memory!");
+    if (*output)
+        free_data_planes(afifo, *output);
     *output            = data_planes;
 
     for (i = 0; i < afifo->nb_buffers; ++i){
-        data_planes[i] = allocate_memory(afifo->sample_size * tot_elements);
+        data_planes[i] = av_malloc_array(tot_elements, afifo->sample_size);
+        if (!data_planes[i])
+            ERROR("failed to allocate memory!");
     }
 
     return av_audio_fifo_read(afifo, *output, nb_samples);
 }
 
-static int write_samples_to_audio_fifo(AVAudioFifo* afifo, const TestStruct test_sample,
+static int write_samples_to_audio_fifo(AVAudioFifo* afifo, const TestStruct *test_sample,
                                        int nb_samples, int offset)
 {
     int offset_size, i;
     void *data_planes[MAX_CHANNELS];
 
-    if(nb_samples > test_sample.nb_samples_pch - offset){
+    if(nb_samples > test_sample->nb_samples_pch - offset){
         return 0;
     }
-    if(offset >= test_sample.nb_samples_pch){
+    if(offset >= test_sample->nb_samples_pch){
         return 0;
     }
     offset_size  = offset * afifo->sample_size;
 
     for (i = 0; i < afifo->nb_buffers ; ++i){
-        data_planes[i] = (uint8_t*)test_sample.data_planes[i] + offset_size;
+        data_planes[i] = (uint8_t*)test_sample->data_planes[i] + offset_size;
     }
 
     return av_audio_fifo_write(afifo, data_planes, nb_samples);
 }
 
-static void test_function(const TestStruct test_sample)
+static void test_function(const TestStruct *test_sample)
 {
     int ret, i;
     void **output_data  = NULL;
-    AVAudioFifo *afifo  = av_audio_fifo_alloc(test_sample.format, test_sample.nb_ch,
-                                            test_sample.nb_samples_pch);
+    AVAudioFifo *afifo  = av_audio_fifo_alloc(test_sample->format, test_sample->nb_ch,
+                                            test_sample->nb_samples_pch);
     if (!afifo) {
         ERROR("ERROR: av_audio_fifo_alloc returned NULL!");
     }
-    ret = write_samples_to_audio_fifo(afifo, test_sample, test_sample.nb_samples_pch, 0);
+    ret = write_samples_to_audio_fifo(afifo, test_sample, test_sample->nb_samples_pch, 0);
     if (ret < 0){
         ERROR("ERROR: av_audio_fifo_write failed!");
     }
     printf("written: %d\n", ret);
 
-    ret = write_samples_to_audio_fifo(afifo, test_sample, test_sample.nb_samples_pch, 0);
+    ret = write_samples_to_audio_fifo(afifo, test_sample, test_sample->nb_samples_pch, 0);
     if (ret < 0){
         ERROR("ERROR: av_audio_fifo_write failed!");
     }
     printf("written: %d\n", ret);
     printf("remaining samples in audio_fifo: %d\n\n", av_audio_fifo_size(afifo));
 
-    ret = read_samples_from_audio_fifo(afifo, &output_data, test_sample.nb_samples_pch);
+    ret = read_samples_from_audio_fifo(afifo, &output_data, test_sample->nb_samples_pch);
     if (ret < 0){
-        ERROR("ERROR: av_audio_fifo_write failed!");
+        ERROR("ERROR: av_audio_fifo_read failed!");
     }
     printf("read: %d\n", ret);
-    print_audio_bytes(&test_sample, output_data, ret);
+    print_audio_bytes(test_sample, output_data, ret);
     printf("remaining samples in audio_fifo: %d\n\n", av_audio_fifo_size(afifo));
 
     /* test av_audio_fifo_peek */
@@ -152,7 +159,7 @@ static void test_function(const TestStruct test_sample)
         ERROR("ERROR: av_audio_fifo_peek failed!");
     }
     printf("peek:\n");
-    print_audio_bytes(&test_sample, output_data, ret);
+    print_audio_bytes(test_sample, output_data, ret);
     printf("\n");
 
     /* test av_audio_fifo_peek_at */
@@ -160,10 +167,10 @@ static void test_function(const TestStruct test_sample)
     for (i = 0; i < afifo->nb_samples; ++i){
         ret = av_audio_fifo_peek_at(afifo, output_data, 1, i);
         if (ret < 0){
-            ERROR("ERROR: av_audio_fifo_peek failed!");
+            ERROR("ERROR: av_audio_fifo_peek_at failed!");
         }
         printf("%d:\n", i);
-        print_audio_bytes(&test_sample, output_data, ret);
+        print_audio_bytes(test_sample, output_data, ret);
     }
     printf("\n");
 
@@ -177,10 +184,7 @@ static void test_function(const TestStruct test_sample)
     }
 
     /* deallocate */
-    for (i = 0; i < afifo->nb_buffers; ++i){
-        free(output_data[i]);
-    }
-    free(output_data);
+    free_data_planes(afifo, output_data);
     av_audio_fifo_free(afifo);
 }
 
@@ -190,7 +194,7 @@ int main(void)
 
     for (t = 0; t < tests; ++t){
         printf("\nTEST: %d\n\n", t+1);
-        test_function(test_struct[t]);
+        test_function(&test_struct[t]);
     }
     return 0;
 }

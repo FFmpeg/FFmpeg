@@ -1277,6 +1277,23 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size)
     return url_open_dyn_buf_internal(s, max_packet_size);
 }
 
+int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
+{
+    DynBuffer *d;
+
+    if (!s) {
+        *pbuffer = NULL;
+        return 0;
+    }
+
+    avio_flush(s);
+
+    d = s->opaque;
+    *pbuffer = d->buffer;
+
+    return d->size;
+}
+
 int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;

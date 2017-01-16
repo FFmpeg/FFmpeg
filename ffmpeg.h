@@ -224,6 +224,8 @@ typedef struct OptionsContext {
     int        nb_disposition;
     SpecifierOpt *program;
     int        nb_program;
+    SpecifierOpt *time_bases;
+    int        nb_time_bases;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -602,6 +604,9 @@ extern const OptionDef options[];
 extern const HWAccel hwaccels[];
 extern int hwaccel_lax_profile_check;
 extern AVBufferRef *hw_device_ctx;
+#if CONFIG_QSV
+extern char *qsv_device;
+#endif
 
 
 void term_init(void);

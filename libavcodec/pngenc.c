@@ -22,7 +22,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "huffyuvencdsp.h"
+#include "lossless_videoencdsp.h"
 #include "png.h"
 #include "apng.h"
 
@@ -47,7 +47,7 @@ typedef struct APNGFctlChunk {
 
 typedef struct PNGEncContext {
     AVClass *class;
-    HuffYUVEncDSPContext hdsp;
+    LLVidEncDSPContext llvidencdsp;
 
     uint8_t *bytestream;
     uint8_t *bytestream_start;
@@ -159,7 +159,7 @@ static void sub_left_prediction(PNGEncContext *c, uint8_t *dst, const uint8_t *s
     for (x = 0; x < unaligned_w; x++)
         *dst++ = *src1++ - *src2++;
     size -= unaligned_w;
-    c->hdsp.diff_bytes(dst, src1, src2, size);
+    c->llvidencdsp.diff_bytes(dst, src1, src2, size);
 }
 
 static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
@@ -175,7 +175,7 @@ static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
         sub_left_prediction(c, dst, src, bpp, size);
         break;
     case PNG_FILTER_VALUE_UP:
-        c->hdsp.diff_bytes(dst, src, top, size);
+        c->llvidencdsp.diff_bytes(dst, src, top, size);
         break;
     case PNG_FILTER_VALUE_AVG:
         for (i = 0; i < bpp; i++)
@@ -1015,7 +1015,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_huffyuvencdsp_init(&s->hdsp);
+    ff_llvidencdsp_init(&s->llvidencdsp);
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS

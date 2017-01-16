@@ -75,11 +75,18 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
 }
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
 typedef struct PadContext {
     const AVClass *class;
     int w, h;               ///< output dimensions, a value of 0 will result in the input size
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
+    int inlink_w, inlink_h;
 
     char *w_expr;           ///< width  expression string
     char *h_expr;           ///< height expression string
@@ -88,6 +95,8 @@ typedef struct PadContext {
     uint8_t rgba_color[4];  ///< color for the padding area
     FFDrawContext draw;
     FFDrawColor color;
+
+    int eval_mode;          ///< expression evaluation mode
 } PadContext;
 
 static int config_input(AVFilterLink *inlink)
@@ -163,6 +172,8 @@ static int config_input(AVFilterLink *inlink)
     s->y    = ff_draw_round_to_sub(&s->draw, 1, -1, s->y);
     s->in_w = ff_draw_round_to_sub(&s->draw, 0, -1, inlink->w);
     s->in_h = ff_draw_round_to_sub(&s->draw, 1, -1, inlink->h);
+    s->inlink_w = inlink->w;
+    s->inlink_h = inlink->h;
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d -> w:%d h:%d x:%d y:%d color:0x%02X%02X%02X%02X\n",
            inlink->w, inlink->h, s->w, s->h, s->x, s->y,
@@ -199,11 +210,15 @@ static int config_output(AVFilterLink *outlink)
 static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     PadContext *s = inlink->dst->priv;
-
-    AVFrame *frame = ff_get_video_buffer(inlink->dst->outputs[0],
-                                         w + (s->w - s->in_w),
-                                         h + (s->h - s->in_h) + (s->x > 0));
+    AVFrame *frame;
     int plane;
+
+    if (s->inlink_w <= 0)
+        return NULL;
+
+    frame = ff_get_video_buffer(inlink->dst->outputs[0],
+                                w + (s->w - s->in_w),
+                                h + (s->h - s->in_h) + (s->x > 0));
 
     if (!frame)
         return NULL;
@@ -290,8 +305,35 @@ static int frame_needs_copy(PadContext *s, AVFrame *frame)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     PadContext *s = inlink->dst->priv;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
-    int needs_copy = frame_needs_copy(s, in);
+    int needs_copy;
+    if(s->eval_mode == EVAL_MODE_FRAME && (
+           in->width  != s->inlink_w
+        || in->height != s->inlink_h
+        || in->format != outlink->format
+        || in->sample_aspect_ratio.den != outlink->sample_aspect_ratio.den || in->sample_aspect_ratio.num != outlink->sample_aspect_ratio.num)) {
+        int ret;
+
+        inlink->dst->inputs[0]->format = in->format;
+        inlink->dst->inputs[0]->w      = in->width;
+        inlink->dst->inputs[0]->h      = in->height;
+
+        inlink->dst->inputs[0]->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
+        inlink->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
+
+
+        if ((ret = config_input(inlink)) < 0) {
+            s->inlink_w = -1;
+            return ret;
+        }
+        if ((ret = config_output(outlink)) < 0) {
+            s->inlink_w = -1;
+            return ret;
+        }
+    }
+
+    needs_copy = frame_needs_copy(s, in);
 
     if (needs_copy) {
         av_log(inlink->dst, AV_LOG_DEBUG, "Direct padding impossible allocating new frame\n");
@@ -364,6 +406,9 @@ static const AVOption pad_options[] = {
     { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "color",  "set the color of the padded area border", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
+    { "eval",   "specify when to evaluate expressions",    OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions during initialization and per-frame", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { NULL }
 };
 

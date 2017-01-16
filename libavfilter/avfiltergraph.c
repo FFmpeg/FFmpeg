@@ -36,6 +36,7 @@
 #include "framequeue.h"
 
 #include "avfilter.h"
+#include "buffersink.h"
 #include "formats.h"
 #include "internal.h"
 #include "thread.h"
@@ -528,7 +529,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_scaler_%d",
                              scaler_count++);
 
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
@@ -543,7 +544,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_resampler_%d",
                              resampler_count++);
                     scale_args[0] = '\0';
                     if (graph->aresample_swr_opts)
@@ -1240,7 +1241,7 @@ static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
                    avfilter_get_by_name("fifo") :
                    avfilter_get_by_name("afifo");
 
-            snprintf(name, sizeof(name), "auto-inserted fifo %d", fifo_count++);
+            snprintf(name, sizeof(name), "auto_fifo_%d", fifo_count++);
 
             ret = avfilter_graph_create_filter(&fifo_ctx, fifo, name, NULL,
                                                NULL, graph);
@@ -1389,6 +1390,11 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
 
     while (graph->sink_links_count) {
         oldest = graph->sink_links[0];
+        if (oldest->dst->filter->activate) {
+            /* For now, buffersink is the only filter implementing activate. */
+            return av_buffersink_get_frame_flags(oldest->dst, NULL,
+                                                 AV_BUFFERSINK_FLAG_PEEK);
+        }
         r = ff_request_frame(oldest);
         if (r != AVERROR_EOF)
             break;
@@ -1403,6 +1409,7 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     }
     if (!graph->sink_links_count)
         return AVERROR_EOF;
+    av_assert1(!oldest->dst->filter->activate);
     av_assert1(oldest->age_index >= 0);
     frame_count = oldest->frame_count_out;
     while (frame_count == oldest->frame_count_out) {

@@ -95,7 +95,6 @@ static const softfloat scalefactor_inv[128] = {
 
 /* manually derived from
  * Table B.5: Selection of quantization levels and codebooks
- * FIXME: will become invalid when Huffman codes are introduced.
  */
 static const int bit_consumption[27] = {
     -8, 28, 40, 48, 52, 60, 68, 76, 80, 96,

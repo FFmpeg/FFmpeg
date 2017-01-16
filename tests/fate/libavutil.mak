@@ -8,6 +8,11 @@ fate-aes: libavutil/tests/aes$(EXESUF)
 fate-aes: CMD = run libavutil/tests/aes
 fate-aes: REF = /dev/null
 
+FATE_LIBAVUTIL += fate-aes_ctr
+fate-aes_ctr: libavutil/tests/aes_ctr$(EXESUF)
+fate-aes_ctr: CMD = run libavutil/tests/aes_ctr
+fate-aes_ctr: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-camellia
 fate-camellia: libavutil/tests/camellia$(EXESUF)
 fate-camellia: CMD = run libavutil/tests/camellia

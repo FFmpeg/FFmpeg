@@ -19,6 +19,7 @@
  */
 
 /**
+ * @see http://blog.pkh.me/p/22-understanding-selective-coloring-in-adobe-photoshop.html
  * @todo
  * - use integers so it can be made bitexact and a FATE test can be added
  */
@@ -28,6 +29,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavcodec/mathops.h" // for mid_pred(), which is a macro so no link dependency
 #include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
@@ -63,12 +65,12 @@ static const char *color_names[NB_RANGES] = {
     "red", "yellow", "green", "cyan", "blue", "magenta", "white", "neutral", "black"
 };
 
-typedef int (*get_adjust_range_func)(int r, int g, int b, int min_val, int max_val);
+typedef int (*get_range_scale_func)(int r, int g, int b, int min_val, int max_val);
 
 struct process_range {
     int range_id;
     uint32_t mask;
-    get_adjust_range_func get_adjust_range;
+    get_range_scale_func get_scale;
 };
 
 typedef struct ThreadData {
@@ -112,66 +114,38 @@ static const AVOption selectivecolor_options[] = {
 
 AVFILTER_DEFINE_CLASS(selectivecolor);
 
-static inline int get_mid_val(int r, int g, int b)
+static int get_rgb_scale(int r, int g, int b, int min_val, int max_val)
 {
-    if ((r < g && r > b) || (r < b && r > g)) return r;
-    if ((g < r && g > b) || (g < b && g > r)) return g;
-    if ((b < r && b > g) || (b < g && b > r)) return b;
-    return -1;
+    return max_val - mid_pred(r, g, b);
 }
 
-static int get_rgb_adjust_range(int r, int g, int b, int min_val, int max_val)
+static int get_cmy_scale(int r, int g, int b, int min_val, int max_val)
 {
-    // max - mid
-    const int mid_val = get_mid_val(r, g, b);
-    if (mid_val == -1) {
-        // XXX: can be simplified
-        if ((r != min_val && g == min_val && b == min_val) ||
-            (r == min_val && g != min_val && b == min_val) ||
-            (r == min_val && g == min_val && b != min_val))
-            return max_val - min_val;
-        return 0;
-    }
-    return max_val - mid_val;
+    return mid_pred(r, g, b) - min_val;
 }
 
-static int get_cmy_adjust_range(int r, int g, int b, int min_val, int max_val)
-{
-    // mid - min
-    const int mid_val = get_mid_val(r, g, b);
-    if (mid_val == -1) {
-        // XXX: refactor with rgb
-        if ((r != max_val && g == max_val && b == max_val) ||
-            (r == max_val && g != max_val && b == max_val) ||
-            (r == max_val && g == max_val && b != max_val))
-            return max_val - min_val;
-        return 0;
-    }
-    return mid_val - min_val;
-}
-
-#define DECLARE_ADJUST_RANGE_FUNCS(nbits)                                                   \
-static int get_neutrals_adjust_range##nbits(int r, int g, int b, int min_val, int max_val)  \
+#define DECLARE_RANGE_SCALE_FUNCS(nbits)                                                    \
+static int get_neutrals_scale##nbits(int r, int g, int b, int min_val, int max_val)         \
 {                                                                                           \
     /* 1 - (|max-0.5| + |min-0.5|) */                                                       \
     return (((1<<nbits)-1)*2 - (  abs((max_val<<1) - ((1<<nbits)-1))                        \
                                 + abs((min_val<<1) - ((1<<nbits)-1))) + 1) >> 1;            \
 }                                                                                           \
                                                                                             \
-static int get_whites_adjust_range##nbits(int r, int g, int b, int min_val, int max_val)    \
+static int get_whites_scale##nbits(int r, int g, int b, int min_val, int max_val)           \
 {                                                                                           \
     /* (min - 0.5) * 2 */                                                                   \
     return (min_val<<1) - ((1<<nbits)-1);                                                   \
 }                                                                                           \
                                                                                             \
-static int get_blacks_adjust_range##nbits(int r, int g, int b, int min_val, int max_val)    \
+static int get_blacks_scale##nbits(int r, int g, int b, int min_val, int max_val)           \
 {                                                                                           \
     /* (0.5 - max) * 2 */                                                                   \
     return ((1<<nbits)-1) - (max_val<<1);                                                   \
 }                                                                                           \
 
-DECLARE_ADJUST_RANGE_FUNCS(8)
-DECLARE_ADJUST_RANGE_FUNCS(16)
+DECLARE_RANGE_SCALE_FUNCS(8)
+DECLARE_RANGE_SCALE_FUNCS(16)
 
 static int register_range(SelectiveColorContext *s, int range_id)
 {
@@ -194,14 +168,14 @@ static int register_range(SelectiveColorContext *s, int range_id)
 
         pr->range_id = range_id;
         pr->mask = 1 << range_id;
-        if      (pr->mask & (1<<RANGE_REDS  | 1<<RANGE_GREENS   | 1<<RANGE_BLUES))   pr->get_adjust_range = get_rgb_adjust_range;
-        else if (pr->mask & (1<<RANGE_CYANS | 1<<RANGE_MAGENTAS | 1<<RANGE_YELLOWS)) pr->get_adjust_range = get_cmy_adjust_range;
-        else if (!s->is_16bit && (pr->mask & 1<<RANGE_WHITES))                       pr->get_adjust_range = get_whites_adjust_range8;
-        else if (!s->is_16bit && (pr->mask & 1<<RANGE_NEUTRALS))                     pr->get_adjust_range = get_neutrals_adjust_range8;
-        else if (!s->is_16bit && (pr->mask & 1<<RANGE_BLACKS))                       pr->get_adjust_range = get_blacks_adjust_range8;
-        else if ( s->is_16bit && (pr->mask & 1<<RANGE_WHITES))                       pr->get_adjust_range = get_whites_adjust_range16;
-        else if ( s->is_16bit && (pr->mask & 1<<RANGE_NEUTRALS))                     pr->get_adjust_range = get_neutrals_adjust_range16;
-        else if ( s->is_16bit && (pr->mask & 1<<RANGE_BLACKS))                       pr->get_adjust_range = get_blacks_adjust_range16;
+        if      (pr->mask & (1<<RANGE_REDS  | 1<<RANGE_GREENS   | 1<<RANGE_BLUES))   pr->get_scale = get_rgb_scale;
+        else if (pr->mask & (1<<RANGE_CYANS | 1<<RANGE_MAGENTAS | 1<<RANGE_YELLOWS)) pr->get_scale = get_cmy_scale;
+        else if (!s->is_16bit && (pr->mask & 1<<RANGE_WHITES))                       pr->get_scale = get_whites_scale8;
+        else if (!s->is_16bit && (pr->mask & 1<<RANGE_NEUTRALS))                     pr->get_scale = get_neutrals_scale8;
+        else if (!s->is_16bit && (pr->mask & 1<<RANGE_BLACKS))                       pr->get_scale = get_blacks_scale8;
+        else if ( s->is_16bit && (pr->mask & 1<<RANGE_WHITES))                       pr->get_scale = get_whites_scale16;
+        else if ( s->is_16bit && (pr->mask & 1<<RANGE_NEUTRALS))                     pr->get_scale = get_neutrals_scale16;
+        else if ( s->is_16bit && (pr->mask & 1<<RANGE_BLACKS))                       pr->get_scale = get_blacks_scale16;
         else
             av_assert0(0);
     }
@@ -329,14 +303,14 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static inline int comp_adjust(int adjust_range, float value, float adjust, float k, int correction_method)
+static inline int comp_adjust(int scale, float value, float adjust, float k, int correction_method)
 {
     const float min = -value;
     const float max = 1. - value;
     float res = (-1. - adjust) * k - adjust;
     if (correction_method == CORRECTION_METHOD_RELATIVE)
         res *= max;
-    return lrint(av_clipf(res, min, max) * adjust_range);
+    return lrint(av_clipf(res, min, max) * scale);
 }
 
 #define DECLARE_SELECTIVE_COLOR_FUNC(nbits)                                                             \
@@ -391,18 +365,18 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
                 const struct process_range *pr = &s->process_ranges[i];                                 \
                                                                                                         \
                 if (range_flag & pr->mask) {                                                            \
-                    const int adjust_range = pr->get_adjust_range(r, g, b, min_color, max_color);       \
+                    const int scale = pr->get_scale(r, g, b, min_color, max_color);                     \
                                                                                                         \
-                    if (adjust_range > 0) {                                                             \
+                    if (scale > 0) {                                                                    \
                         const float *cmyk_adjust = s->cmyk_adjust[pr->range_id];                        \
                         const float adj_c = cmyk_adjust[0];                                             \
                         const float adj_m = cmyk_adjust[1];                                             \
                         const float adj_y = cmyk_adjust[2];                                             \
                         const float k = cmyk_adjust[3];                                                 \
                                                                                                         \
-                        adjust_r += comp_adjust(adjust_range, rnorm, adj_c, k, correction_method);      \
-                        adjust_g += comp_adjust(adjust_range, gnorm, adj_m, k, correction_method);      \
-                        adjust_b += comp_adjust(adjust_range, bnorm, adj_y, k, correction_method);      \
+                        adjust_r += comp_adjust(scale, rnorm, adj_c, k, correction_method);             \
+                        adjust_g += comp_adjust(scale, gnorm, adj_m, k, correction_method);             \
+                        adjust_b += comp_adjust(scale, bnorm, adj_y, k, correction_method);             \
                     }                                                                                   \
                 }                                                                                       \
             }                                                                                           \

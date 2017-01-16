@@ -103,7 +103,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
 static double white_filter(double white, double *buf)
 {
     return white;
-};
+}
 
 static double pink_filter(double white, double *buf)
 {

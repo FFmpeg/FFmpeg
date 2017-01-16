@@ -1,5 +1,5 @@
 /*
- * SIMD-optimized HuffYUV encoding functions
+ * SIMD-optimized lossless video encoding functions
  * Copyright (c) 2000, 2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -26,7 +26,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/huffyuvencdsp.h"
+#include "libavcodec/lossless_videoencdsp.h"
 #include "libavcodec/mathops.h"
 
 void ff_diff_bytes_mmx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
@@ -38,9 +38,9 @@ void ff_diff_bytes_avx2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 
 #if HAVE_INLINE_ASM
 
-static void sub_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
-                                        const uint8_t *src2, intptr_t w,
-                                        int *left, int *left_top)
+static void sub_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
+                                   const uint8_t *src2, intptr_t w,
+                                   int *left, int *left_top)
 {
     x86_reg i = 0;
     uint8_t l, lt;
@@ -80,7 +80,7 @@ static void sub_hfyu_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c)
+av_cold void ff_llvidencdsp_init_x86(LLVidEncDSPContext *c)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
 
@@ -90,7 +90,7 @@ av_cold void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c)
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMXEXT(cpu_flags)) {
-        c->sub_hfyu_median_pred = sub_hfyu_median_pred_mmxext;
+        c->sub_median_pred = sub_median_pred_mmxext;
     }
 #endif /* HAVE_INLINE_ASM */
 

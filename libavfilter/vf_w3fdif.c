@@ -43,6 +43,7 @@ typedef struct W3FDIFContext {
     AVFrame *prev, *cur, *next;  ///< previous, current, next frames
     int32_t **work_line;  ///< lines we are calculating
     int nb_threads;
+    int max;
 
     W3FDIFDSPContext dsp;
 } W3FDIFContext;
@@ -75,6 +76,11 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_NONE
     };
 
@@ -148,7 +154,7 @@ static void filter_complex_high(int32_t *work_line,
     }
 }
 
-static void filter_scale(uint8_t *out_pixel, const int32_t *work_pixel, int linesize)
+static void filter_scale(uint8_t *out_pixel, const int32_t *work_pixel, int linesize, int max)
 {
     int j;
 
@@ -156,12 +162,111 @@ static void filter_scale(uint8_t *out_pixel, const int32_t *work_pixel, int line
         *out_pixel = av_clip(*work_pixel, 0, 255 * 256 * 128) >> 15;
 }
 
+static void filter16_simple_low(int32_t *work_line,
+                                uint8_t *in_lines_cur8[2],
+                                const int16_t *coef, int linesize)
+{
+    uint16_t *in_lines_cur[2] = { (uint16_t *)in_lines_cur8[0], (uint16_t *)in_lines_cur8[1] };
+    int i;
+
+    linesize /= 2;
+    for (i = 0; i < linesize; i++) {
+        *work_line    = *in_lines_cur[0]++ * coef[0];
+        *work_line++ += *in_lines_cur[1]++ * coef[1];
+    }
+}
+
+static void filter16_complex_low(int32_t *work_line,
+                                 uint8_t *in_lines_cur8[4],
+                                 const int16_t *coef, int linesize)
+{
+    uint16_t *in_lines_cur[4] = { (uint16_t *)in_lines_cur8[0],
+                                  (uint16_t *)in_lines_cur8[1],
+                                  (uint16_t *)in_lines_cur8[2],
+                                  (uint16_t *)in_lines_cur8[3] };
+    int i;
+
+    linesize /= 2;
+    for (i = 0; i < linesize; i++) {
+        *work_line    = *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line++ += *in_lines_cur[3]++ * coef[3];
+    }
+}
+
+static void filter16_simple_high(int32_t *work_line,
+                                 uint8_t *in_lines_cur8[3],
+                                 uint8_t *in_lines_adj8[3],
+                                 const int16_t *coef, int linesize)
+{
+    uint16_t *in_lines_cur[3] = { (uint16_t *)in_lines_cur8[0],
+                                  (uint16_t *)in_lines_cur8[1],
+                                  (uint16_t *)in_lines_cur8[2] };
+    uint16_t *in_lines_adj[3] = { (uint16_t *)in_lines_adj8[0],
+                                  (uint16_t *)in_lines_adj8[1],
+                                  (uint16_t *)in_lines_adj8[2] };
+    int i;
+
+    linesize /= 2;
+    for (i = 0; i < linesize; i++) {
+        *work_line   += *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_adj[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_adj[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line++ += *in_lines_adj[2]++ * coef[2];
+    }
+}
+
+static void filter16_complex_high(int32_t *work_line,
+                                  uint8_t *in_lines_cur8[5],
+                                  uint8_t *in_lines_adj8[5],
+                                  const int16_t *coef, int linesize)
+{
+    uint16_t *in_lines_cur[5] = { (uint16_t *)in_lines_cur8[0],
+                                  (uint16_t *)in_lines_cur8[1],
+                                  (uint16_t *)in_lines_cur8[2],
+                                  (uint16_t *)in_lines_cur8[3],
+                                  (uint16_t *)in_lines_cur8[4] };
+    uint16_t *in_lines_adj[5] = { (uint16_t *)in_lines_adj8[0],
+                                  (uint16_t *)in_lines_adj8[1],
+                                  (uint16_t *)in_lines_adj8[2],
+                                  (uint16_t *)in_lines_adj8[3],
+                                  (uint16_t *)in_lines_adj8[4] };
+    int i;
+
+    linesize /= 2;
+    for (i = 0; i < linesize; i++) {
+        *work_line   += *in_lines_cur[0]++ * coef[0];
+        *work_line   += *in_lines_adj[0]++ * coef[0];
+        *work_line   += *in_lines_cur[1]++ * coef[1];
+        *work_line   += *in_lines_adj[1]++ * coef[1];
+        *work_line   += *in_lines_cur[2]++ * coef[2];
+        *work_line   += *in_lines_adj[2]++ * coef[2];
+        *work_line   += *in_lines_cur[3]++ * coef[3];
+        *work_line   += *in_lines_adj[3]++ * coef[3];
+        *work_line   += *in_lines_cur[4]++ * coef[4];
+        *work_line++ += *in_lines_adj[4]++ * coef[4];
+    }
+}
+
+static void filter16_scale(uint8_t *out_pixel8, const int32_t *work_pixel, int linesize, int max)
+{
+    uint16_t *out_pixel = (uint16_t *)out_pixel8;
+    int j;
+
+    linesize /= 2;
+    for (j = 0; j < linesize; j++, out_pixel++, work_pixel++)
+        *out_pixel = av_clip(*work_pixel, 0, max) >> 15;
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     W3FDIFContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int ret, i;
+    int ret, i, depth;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
@@ -181,14 +286,24 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
 
-    s->dsp.filter_simple_low   = filter_simple_low;
-    s->dsp.filter_complex_low  = filter_complex_low;
-    s->dsp.filter_simple_high  = filter_simple_high;
-    s->dsp.filter_complex_high = filter_complex_high;
-    s->dsp.filter_scale        = filter_scale;
+    depth = desc->comp[0].depth;
+    s->max = ((1 << depth) - 1) * 256 * 128;
+    if (depth <= 8) {
+        s->dsp.filter_simple_low   = filter_simple_low;
+        s->dsp.filter_complex_low  = filter_complex_low;
+        s->dsp.filter_simple_high  = filter_simple_high;
+        s->dsp.filter_complex_high = filter_complex_high;
+        s->dsp.filter_scale        = filter_scale;
+    } else {
+        s->dsp.filter_simple_low   = filter16_simple_low;
+        s->dsp.filter_complex_low  = filter16_complex_low;
+        s->dsp.filter_simple_high  = filter16_simple_high;
+        s->dsp.filter_complex_high = filter16_complex_high;
+        s->dsp.filter_scale        = filter16_scale;
+    }
 
     if (ARCH_X86)
-        ff_w3fdif_init_x86(&s->dsp);
+        ff_w3fdif_init_x86(&s->dsp, depth);
 
     return 0;
 }
@@ -247,6 +362,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const int dst_line_stride = out->linesize[plane];
     const int start = (height * jobnr) / nb_jobs;
     const int end = (height * (jobnr+1)) / nb_jobs;
+    const int max = s->max;
     int j, y_in, y_out;
 
     /* copy unchanged the lines of the field */
@@ -319,7 +435,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         work_pixel = s->work_line[jobnr];
         out_pixel = out_line;
 
-        s->dsp.filter_scale(out_pixel, work_pixel, linesize);
+        s->dsp.filter_scale(out_pixel, work_pixel, linesize, max);
 
         /* move on to next line */
         y_out += 2;

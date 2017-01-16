@@ -1385,6 +1385,6 @@ AVCodec ff_cinepak_encoder = {
     .encode2        = cinepak_encode_frame,
     .close          = cinepak_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
-    .long_name      = NULL_IF_CONFIG_SMALL("Cinepak / CVID"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Cinepak"),
     .priv_class     = &cinepak_class,
 };

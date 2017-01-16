@@ -376,7 +376,7 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
 static void guess_mv(ERContext *s)
 {
     uint8_t *fixed = s->er_temp_buffer;
-#define MV_FROZEN    3
+#define MV_FROZEN    4
 #define MV_CHANGED   2
 #define MV_UNCHANGED 1
     const int mb_stride = s->mb_stride;
@@ -450,19 +450,16 @@ static void guess_mv(ERContext *s)
 
             changed = 0;
             for (mb_y = 0; mb_y < mb_height; mb_y++) {
-                for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+                for (mb_x = (mb_y ^ pass) & 1; mb_x < s->mb_width; mb_x+=2) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
-                    int mv_predictor[8][2] = { { 0 } };
-                    int ref[8]             = { 0 };
-                    int pred_count         = 0;
+                    int mv_predictor[8][2];
+                    int ref[8];
+                    int pred_count;
                     int j;
-                    int best_score         = 256 * 256 * 256 * 64;
-                    int best_pred          = 0;
-                    const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
-                    int prev_x = 0, prev_y = 0, prev_ref = 0;
-
-                    if ((mb_x ^ mb_y ^ pass) & 1)
-                        continue;
+                    int best_score;
+                    int best_pred;
+                    int mot_index;
+                    int prev_x, prev_y, prev_ref;
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
@@ -470,30 +467,24 @@ static void guess_mv(ERContext *s)
                     av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
                     j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (j == 0)
+                    if (mb_x > 0)
+                        j |= fixed[mb_xy - 1];
+                    if (mb_x + 1 < mb_width)
+                        j |= fixed[mb_xy + 1];
+                    if (mb_y > 0)
+                        j |= fixed[mb_xy - mb_stride];
+                    if (mb_y + 1 < mb_height)
+                        j |= fixed[mb_xy + mb_stride];
+
+                    if (!(j & MV_FROZEN))
                         continue;
 
-                    j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (j == 0 && pass > 1)
+                    if (!(j & MV_CHANGED) && pass > 1)
                         continue;
 
                     none_left = 0;
+                    pred_count = 0;
+                    mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
                     if (mb_x > 0 && fixed[mb_xy - 1]) {
                         mv_predictor[pred_count][0] =
@@ -580,6 +571,9 @@ static void guess_mv(ERContext *s)
 
 skip_mean_and_median:
                     /* zero MV */
+                    mv_predictor[pred_count][0] =
+                    mv_predictor[pred_count][1] =
+                             ref[pred_count]    = 0;
                     pred_count++;
 
                     prev_x   = s->cur_pic.motion_val[0][mot_index][0];
@@ -592,6 +586,8 @@ skip_mean_and_median:
                              ref[pred_count]    = prev_ref;
                     pred_count++;
 
+                    best_pred = 0;
+                    best_score = 256 * 256 * 256 * 64;
                     for (j = 0; j < pred_count; j++) {
                         int *linesize = s->cur_pic.f->linesize;
                         int score = 0;

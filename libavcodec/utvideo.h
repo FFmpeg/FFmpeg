@@ -30,8 +30,8 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
-#include "huffyuvdsp.h"
-#include "huffyuvencdsp.h"
+#include "lossless_videodsp.h"
+#include "lossless_videoencdsp.h"
 
 enum {
     PRED_NONE = 0,
@@ -70,8 +70,8 @@ typedef struct UtvideoContext {
     const AVClass *class;
     AVCodecContext *avctx;
     BswapDSPContext bdsp;
-    HuffYUVDSPContext hdspdec;
-    HuffYUVEncDSPContext hdsp;
+    LLVidDSPContext llviddsp;
+    LLVidEncDSPContext llvidencdsp;
 
     uint32_t frame_info_size, flags, frame_info;
     int      planes;

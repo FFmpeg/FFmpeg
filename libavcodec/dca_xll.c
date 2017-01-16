@@ -143,7 +143,7 @@ static int chs_parse_header(DCAXllDecoder *s, DCAXllChSet *c, DCAExssAsset *asse
 
     // Storage unit width
     c->storage_bit_res = get_bits(&s->gb, 5) + 1;
-    if (c->storage_bit_res != 16 && c->storage_bit_res != 24) {
+    if (c->storage_bit_res != 16 && c->storage_bit_res != 20 && c->storage_bit_res != 24) {
         avpriv_request_sample(s->avctx, "%d-bit XLL storage resolution", c->storage_bit_res);
         return AVERROR_PATCHWELCOME;
     }
@@ -1415,9 +1415,12 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
     switch (p->storage_bit_res) {
     case 16:
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+        shift = 16 - p->pcm_bit_res;
         break;
+    case 20:
     case 24:
         avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+        shift = 24 - p->pcm_bit_res;
         break;
     default:
         return AVERROR(EINVAL);
@@ -1438,7 +1441,6 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
                                        s->output_mask);
     }
 
-    shift = p->storage_bit_res - p->pcm_bit_res;
     for (i = 0; i < avctx->channels; i++) {
         int32_t *samples = s->output_samples[ch_remap[i]];
         if (frame->format == AV_SAMPLE_FMT_S16P) {

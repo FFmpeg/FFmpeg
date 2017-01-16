@@ -38,6 +38,7 @@
 #include "time.h"
 #include "avstring.h"
 #include "timer.h"
+#include "reverse.h"
 
 typedef struct Parser {
     const AVClass *class;

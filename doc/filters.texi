@@ -10422,6 +10422,24 @@ Specify the color of the padded area. For the syntax of this option,
 check the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{color} is "black".
+
+@item eval
+Specify when to evaluate  @var{width}, @var{height}, @var{x} and @var{y} expression.
+
+It accepts the following values:
+
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization or when
+a command is processed.
+
+@item frame
+Evaluate expressions for each incoming frame.
+
+@end table
+
+Default value is @samp{init}.
+
 @end table
 
 The value for the @var{width}, @var{height}, @var{x}, and @var{y}
@@ -12267,7 +12285,7 @@ Set the size of the box used to represent one palette color entry. Default is
 
 @section shuffleframes
 
-Reorder and/or duplicate video frames.
+Reorder and/or duplicate and/or drop video frames.
 
 It accepts the following parameters:
 
@@ -12276,6 +12294,7 @@ It accepts the following parameters:
 Set the destination indexes of input frames.
 This is space or '|' separated list of indexes that maps input frames to output
 frames. Number of indexes also sets maximal value that each index may have.
+'-1' index have special meaning and that is to drop frame.
 @end table
 
 The first frame has the index 0. The default is to keep the input unchanged.
@@ -12554,20 +12573,20 @@ in [-30,0] will filter edges. Default value is 0.
 @item chroma_radius, cr
 Set the chroma radius. The option value must be a float number in
 the range [0.1,5.0] that specifies the variance of the gaussian filter
-used to blur the image (slower if larger). Default value is 1.0.
+used to blur the image (slower if larger). Default value is @option{luma_radius}.
 
 @item chroma_strength, cs
 Set the chroma strength. The option value must be a float number
 in the range [-1.0,1.0] that configures the blurring. A value included
 in [0.0,1.0] will blur the image whereas a value included in
-[-1.0,0.0] will sharpen the image. Default value is 1.0.
+[-1.0,0.0] will sharpen the image. Default value is @option{luma_strength}.
 
 @item chroma_threshold, ct
 Set the chroma threshold used as a coefficient to determine
 whether a pixel should be blurred or not. The option value must be an
 integer in the range [-30,30]. A value of 0 will filter all the image,
 a value included in [0,30] will filter flat areas and a value included
-in [-30,0] will filter edges. Default value is 0.
+in [-30,0] will filter edges. Default value is @option{luma_threshold}.
 @end table
 
 If a chroma option is not explicitly set, the corresponding luma value

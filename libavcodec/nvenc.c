@@ -544,9 +544,9 @@ static av_cold void set_vbr(AVCodecContext *avctx)
 
     if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
         rc->initialRCQP.qpIntra = av_clip(
-            qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset, 0, 51);
+            qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
         rc->initialRCQP.qpInterB = av_clip(
-            qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
+            qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
     } else {
         rc->initialRCQP.qpIntra = qp_inter_p;
         rc->initialRCQP.qpInterB = qp_inter_p;
@@ -695,7 +695,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_VERBOSE, "Temporal AQ enabled.\n");
     }
 
-    if (ctx->rc_lookahead) {
+    if (ctx->rc_lookahead > 0) {
         int lkd_bound = FFMIN(ctx->nb_surfaces, ctx->async_depth) -
                         ctx->encode_config.frameIntervalP - 4;
 
@@ -756,7 +756,7 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     h264->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
-    h264->outputAUD     = 1;
+    h264->outputAUD     = ctx->aud;
 
     if (avctx->refs >= 0) {
         /* 0 means "let the hardware decide" */
@@ -840,7 +840,7 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->disableSPSPPS = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 1 : 0;
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
-    hevc->outputAUD     = 1;
+    hevc->outputAUD     = ctx->aud;
 
     if (avctx->refs >= 0) {
         /* 0 means "let the hardware decide" */
@@ -957,6 +957,21 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
+
+    if (ctx->bluray_compat) {
+        ctx->aud = 1;
+        avctx->refs = FFMIN(FFMAX(avctx->refs, 0), 6);
+        avctx->max_b_frames = FFMIN(avctx->max_b_frames, 3);
+        switch (avctx->codec->id) {
+        case AV_CODEC_ID_H264:
+            /* maximum level depends on used resolution */
+            break;
+        case AV_CODEC_ID_HEVC:
+            ctx->level = NV_ENC_LEVEL_HEVC_51;
+            ctx->tier = NV_ENC_TIER_HEVC_HIGH;
+            break;
+        }
+    }
 
     if (avctx->gop_size > 0) {
         if (avctx->max_b_frames >= 0) {

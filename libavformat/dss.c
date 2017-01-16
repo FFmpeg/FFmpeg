@@ -42,7 +42,6 @@
 #define DSS_COMMENT_SIZE              64
 
 #define DSS_BLOCK_SIZE                512
-#define DSS_HEADER_SIZE              (DSS_BLOCK_SIZE * 2)
 #define DSS_AUDIO_BLOCK_HEADER_SIZE   6
 #define DSS_FRAME_SIZE                42
 
@@ -56,11 +55,13 @@ typedef struct DSSDemuxContext {
     int8_t *dss_sp_buf;
 
     int packet_size;
+    int dss_header_size;
 } DSSDemuxContext;
 
 static int dss_probe(AVProbeData *p)
 {
-    if (AV_RL32(p->buf) != MKTAG(0x2, 'd', 's', 's'))
+    if (   AV_RL32(p->buf) != MKTAG(0x2, 'd', 's', 's')
+        && AV_RL32(p->buf) != MKTAG(0x3, 'd', 's', 's'))
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -120,11 +121,14 @@ static int dss_read_header(AVFormatContext *s)
     DSSDemuxContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int ret;
+    int ret, version;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
+
+    version = avio_r8(pb);
+    ctx->dss_header_size = version * DSS_BLOCK_SIZE;
 
     ret = dss_read_metadata_string(s, DSS_HEAD_OFFSET_AUTHOR,
                                    DSS_AUTHOR_SIZE, "author");
@@ -164,7 +168,7 @@ static int dss_read_header(AVFormatContext *s)
 
     /* Jump over header */
 
-    if (avio_seek(pb, DSS_HEADER_SIZE, SEEK_SET) != DSS_HEADER_SIZE)
+    if (avio_seek(pb, ctx->dss_header_size, SEEK_SET) != ctx->dss_header_size)
         return AVERROR(EIO);
 
     ctx->counter = 0;
@@ -260,9 +264,6 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = AVERROR(EAGAIN);
         goto error_eof;
     }
-
-    if (pkt->data[0] == 0xff)
-        return AVERROR_INVALIDDATA;
 
     return pkt->size;
 
@@ -361,7 +362,7 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
     if (seekto < 0)
         seekto = 0;
 
-    seekto += DSS_HEADER_SIZE;
+    seekto += ctx->dss_header_size;
 
     ret = avio_seek(s->pb, seekto, SEEK_SET);
     if (ret < 0)

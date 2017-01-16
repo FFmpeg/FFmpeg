@@ -365,7 +365,7 @@ static int oma_read_header(AVFormatContext *s)
         st->codecpar->channels    = 2;
         st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
         st->codecpar->sample_rate = samplerate;
-        st->codecpar->bit_rate    = st->codecpar->sample_rate * framesize * 8 / 1024;
+        st->codecpar->bit_rate    = st->codecpar->sample_rate * framesize / (1024 / 8);
 
         /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
@@ -398,7 +398,7 @@ static int oma_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
         st->codecpar->sample_rate = samplerate;
-        st->codecpar->bit_rate    = samplerate * framesize * 8 / 2048;
+        st->codecpar->bit_rate    = samplerate * framesize / (2048 / 8);
         avpriv_set_pts_info(st, 64, 1, samplerate);
         break;
     case OMA_CODECID_MP3:

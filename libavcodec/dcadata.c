@@ -50,6 +50,14 @@ const uint8_t ff_dca_dmix_primary_nch[8] = {
     1, 2, 2, 3, 3, 4, 4, 0
 };
 
+const uint8_t ff_dca_quant_index_sel_nbits[DCA_CODE_BOOKS] = {
+    1, 2, 2, 2, 2, 3, 3, 3, 3, 3
+};
+
+const uint8_t ff_dca_quant_index_group_size[DCA_CODE_BOOKS] = {
+    1, 3, 3, 3, 3, 7, 7, 7, 7, 7
+};
+
 /* ADPCM data */
 
 /* 16 bits signed fractional Q13 binary codes */

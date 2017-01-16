@@ -422,7 +422,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     int ret;
     char name[255];
 
-    snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
+    snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
                                        name, NULL, NULL, fg->graph);
@@ -443,7 +443,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
             av_strlcatf(args, sizeof(args), ":%s=%s", e->key, e->value);
         }
 
-        snprintf(name, sizeof(name), "scaler for output stream %d:%d",
+        snprintf(name, sizeof(name), "scaler_out_%d_%d",
                  ost->file_index, ost->index);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 name, args, NULL, fg->graph)) < 0)
@@ -457,7 +457,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     if ((pix_fmts = choose_pix_fmts(ofilter))) {
         AVFilterContext *filter;
-        snprintf(name, sizeof(name), "pixel format for output stream %d:%d",
+        snprintf(name, sizeof(name), "format_out_%d_%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&filter,
                                            avfilter_get_by_name("format"),
@@ -478,7 +478,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 
         snprintf(args, sizeof(args), "fps=%d/%d", ost->frame_rate.num,
                  ost->frame_rate.den);
-        snprintf(name, sizeof(name), "fps for output stream %d:%d",
+        snprintf(name, sizeof(name), "fps_out_%d_%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&fps, avfilter_get_by_name("fps"),
                                            name, args, NULL, fg->graph);
@@ -492,7 +492,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         pad_idx = 0;
     }
 
-    snprintf(name, sizeof(name), "trim for output stream %d:%d",
+    snprintf(name, sizeof(name), "trim_out_%d_%d",
              ost->file_index, ost->index);
     ret = insert_trim(of->start_time, of->recording_time,
                       &last_filter, &pad_idx, name);
@@ -517,7 +517,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     char name[255];
     int ret;
 
-    snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
+    snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("abuffersink"),
                                        name, NULL, NULL, fg->graph);
@@ -584,7 +584,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         av_freep(&sample_rates);
         av_freep(&channel_layouts);
 
-        snprintf(name, sizeof(name), "audio format for output stream %d:%d",
+        snprintf(name, sizeof(name), "format_out_%d_%d",
                  ost->file_index, ost->index);
         ret = avfilter_graph_create_filter(&format,
                                            avfilter_get_by_name("aformat"),
@@ -792,7 +792,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (ist->framerate.num) {
         AVFilterContext *setpts;
 
-        snprintf(name, sizeof(name), "force CFR for input from stream %d:%d",
+        snprintf(name, sizeof(name), "forcecfr_in_%d_%d",
                  ist->file_index, ist->st->index);
         if ((ret = avfilter_graph_create_filter(&setpts,
                                                 avfilter_get_by_name("setpts"),
@@ -809,7 +809,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if (do_deinterlace) {
         AVFilterContext *yadif;
 
-        snprintf(name, sizeof(name), "deinterlace input from stream %d:%d",
+        snprintf(name, sizeof(name), "deinterlace_in_%d_%d",
                  ist->file_index, ist->st->index);
         if ((ret = avfilter_graph_create_filter(&yadif,
                                                 avfilter_get_by_name("yadif"),
@@ -823,7 +823,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
         last_filter = yadif;
     }
 
-    snprintf(name, sizeof(name), "trim for input stream %d:%d",
+    snprintf(name, sizeof(name), "trim_in_%d_%d",
              ist->file_index, ist->st->index);
     if (copy_ts) {
         tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
@@ -872,7 +872,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
                    ifilter->channel_layout);
     else
         av_bprintf(&args, ":channels=%d", ifilter->channels);
-    snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
+    snprintf(name, sizeof(name), "graph_%d_in_%d_%d", fg->index,
              ist->file_index, ist->st->index);
 
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, abuffer_filt,
@@ -887,7 +887,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     av_log(NULL, AV_LOG_INFO, opt_name " is forwarded to lavfi "            \
            "similarly to -af " filter_name "=%s.\n", arg);                  \
                                                                             \
-    snprintf(name, sizeof(name), "graph %d %s for input stream %d:%d",      \
+    snprintf(name, sizeof(name), "graph_%d_%s_in_%d_%d",      \
                 fg->index, filter_name, ist->file_index, ist->st->index);   \
     ret = avfilter_graph_create_filter(&filt_ctx,                           \
                                        avfilter_get_by_name(filter_name),   \
@@ -1079,15 +1079,15 @@ int configure_filtergraph(FilterGraph *fg)
      * make sure they stay the same if the filtergraph is reconfigured later */
     for (i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
-        AVFilterLink *link = ofilter->filter->inputs[0];
+        AVFilterContext *sink = ofilter->filter;
 
-        ofilter->format = link->format;
+        ofilter->format = av_buffersink_get_format(sink);
 
-        ofilter->width  = link->w;
-        ofilter->height = link->h;
+        ofilter->width  = av_buffersink_get_w(sink);
+        ofilter->height = av_buffersink_get_h(sink);
 
-        ofilter->sample_rate    = link->sample_rate;
-        ofilter->channel_layout = link->channel_layout;
+        ofilter->sample_rate    = av_buffersink_get_sample_rate(sink);
+        ofilter->channel_layout = av_buffersink_get_channel_layout(sink);
     }
 
     fg->reconfiguration = 1;

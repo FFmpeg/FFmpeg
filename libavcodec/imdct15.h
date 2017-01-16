@@ -21,18 +21,23 @@
 
 #include <stddef.h>
 
-#include "avfft.h"
+#include "fft.h"
 
 typedef struct IMDCT15Context {
     int fft_n;
     int len2;
     int len4;
+    int *pfa_prereindex;
+    int *pfa_postreindex;
+
+    FFTContext ptwo_fft;
 
     FFTComplex *tmp;
 
     FFTComplex *twiddle_exptab;
 
-    FFTComplex *exptab[6];
+    /* 0 - 18: fft15 twiddles, 19 - 20: fft5 twiddles */
+    FFTComplex exptab[21];
 
     /**
      * Calculate the middle half of the iMDCT
@@ -50,8 +55,5 @@ int ff_imdct15_init(IMDCT15Context **s, int N);
  * Free an iMDCT.
  */
 void ff_imdct15_uninit(IMDCT15Context **s);
-
-
-void ff_imdct15_init_aarch64(IMDCT15Context *s);
 
 #endif /* AVCODEC_IMDCT15_H */

@@ -364,9 +364,7 @@ static int dxva2_hevc_start_frame(AVCodecContext *avctx,
     AVDXVAContext *ctx = avctx->hwaccel_context;
     struct hevc_dxva2_picture_context *ctx_pic = h->ref->hwaccel_picture_private;
 
-    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
+    if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
     av_assert0(ctx_pic);
 

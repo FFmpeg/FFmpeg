@@ -37,6 +37,8 @@ enum QuickdrawOpcodes {
     PACKBITSRGN,
     DIRECTBITSRECT,
     DIRECTBITSRGN,
+    SHORTCOMMENT = 0x00A0,
+    LONGCOMMENT,
 
     EOP = 0x00FF,
 };
@@ -296,6 +298,10 @@ static int decode_frame(AVCodecContext *avctx,
             if (ret < 0)
                 return ret;
             *got_frame = 1;
+            break;
+        case LONGCOMMENT:
+            bytestream2_get_be16(&gbc);
+            bytestream2_skip(&gbc, bytestream2_get_be16(&gbc));
             break;
         default:
             av_log(avctx, AV_LOG_TRACE, "Unknown 0x%04X opcode\n", opcode);

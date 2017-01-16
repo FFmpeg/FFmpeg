@@ -403,7 +403,7 @@ void av_bsf_list_free(AVBSFList **lst)
 {
     int i;
 
-    if (*lst)
+    if (!*lst)
         return;
 
     for (i = 0; i < (*lst)->nb_bsfs; ++i)
@@ -514,8 +514,10 @@ int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
     if (!lst)
         return AVERROR(ENOMEM);
 
-    if (!(dup = buf = av_strdup(str)))
-        return AVERROR(ENOMEM);
+    if (!(dup = buf = av_strdup(str))) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     while (1) {
         bsf_str = av_strtok(buf, ",", &saveptr);

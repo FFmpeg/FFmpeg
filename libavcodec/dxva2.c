@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "dxva2_internal.h"
 
-void *ff_dxva2_get_surface(const AVFrame *frame)
+static void *get_surface(const AVFrame *frame)
 {
     return frame->data[3];
 }
@@ -38,23 +38,22 @@ unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
                                     const AVDXVAContext *ctx,
                                     const AVFrame *frame)
 {
-    void *surface = ff_dxva2_get_surface(frame);
+    void *surface = get_surface(frame);
     unsigned i;
 
-    for (i = 0; i < DXVA_CONTEXT_COUNT(avctx, ctx); i++) {
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD && ctx->d3d11va.surface[i] == surface)
-        {
-            D3D11_VIDEO_DECODER_OUTPUT_VIEW_DESC viewDesc;
-            ID3D11VideoDecoderOutputView_GetDesc(ctx->d3d11va.surface[i], &viewDesc);
-            return viewDesc.Texture2D.ArraySlice;
-        }
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        D3D11_VIDEO_DECODER_OUTPUT_VIEW_DESC viewDesc;
+        ID3D11VideoDecoderOutputView_GetDesc((ID3D11VideoDecoderOutputView*) surface, &viewDesc);
+        return viewDesc.Texture2D.ArraySlice;
+    }
 #endif
 #if CONFIG_DXVA2
+    for (i = 0; i < DXVA_CONTEXT_COUNT(avctx, ctx); i++) {
         if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD && ctx->dxva2.surface[i] == surface)
             return i;
-#endif
     }
+#endif
 
     assert(0);
     return 0;
@@ -159,14 +158,14 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
             if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
                 WaitForSingleObjectEx(D3D11VA_CONTEXT(ctx)->context_mutex, INFINITE, FALSE);
             hr = ID3D11VideoContext_DecoderBeginFrame(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder,
-                                                      ff_dxva2_get_surface(frame),
+                                                      get_surface(frame),
                                                       0, NULL);
         }
 #endif
 #if CONFIG_DXVA2
         if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD)
             hr = IDirectXVideoDecoder_BeginFrame(DXVA2_CONTEXT(ctx)->decoder,
-                                                 ff_dxva2_get_surface(frame),
+                                                 get_surface(frame),
                                                  NULL);
 #endif
         if (hr != E_PENDING || ++runs > 50)

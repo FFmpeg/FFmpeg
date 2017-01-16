@@ -246,7 +246,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
             value = 0;
         } else {
             xflag &= 1u;
-            tmp = c * ((yflag + 1) >> 1) + (c >> 1);
+            tmp = (int64_t)c * ((yflag + 1) >> 1) + (c >> 1);
             value = xflag + (tmp ^ -xflag);
         }
 
@@ -256,7 +256,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
             j = 0;
             dst += stride;
         }
-        state += d * yflag - (d * state >> 8);
+        state += (int64_t)d * yflag - (d * state >> 8);
 
         flag = 0;
 
@@ -343,21 +343,18 @@ static int read_highpass(AVCodecContext *avctx, uint8_t *ptr, int plane, AVFrame
 
 static void lowpass_prediction(int16_t *dst, int16_t *pred, int width, int height, ptrdiff_t stride)
 {
-    int16_t *next, val;
+    int16_t val;
     int i, j;
 
     memset(pred, 0, width * sizeof(*pred));
 
     for (i = 0; i < height; i++) {
-        val     = pred[0] + dst[0];
-        dst[0]  = val;
-        pred[0] = val;
-        next    = dst + 2;
-        for (j = 1; j < width; j++, next++) {
-            val       = pred[j] + next[-1];
-            next[-1]  = val;
-            pred[j]   = val;
-            next[-1] += next[-2];
+        val    = pred[0] + dst[0];
+        dst[0] = pred[0] = val;
+        for (j = 1; j < width; j++) {
+            val     = pred[j] + dst[j];
+            dst[j]  = pred[j] = val;
+            dst[j] += dst[j-1];
         }
         dst += stride;
     }
@@ -479,8 +476,8 @@ static void postprocess_chroma(AVFrame *frame, int w, int h, int depth)
     int16_t *srcv  = (int16_t *)frame->data[2];
     ptrdiff_t strideu = frame->linesize[1] / 2;
     ptrdiff_t stridev = frame->linesize[2] / 2;
-    const int add = 1 << (depth - 1);
-    const int shift = 16 - depth;
+    const unsigned add = 1 << (depth - 1);
+    const unsigned shift = 16 - depth;
     int i, j;
 
     for (j = 0; j < h; j++) {
@@ -504,8 +501,14 @@ static int decode_plane(AVCodecContext *avctx, int plane, AVPacket *avpkt, AVFra
     int i, ret;
 
     for (i = ctx->levels - 1; i >= 0; i--) {
-        ctx->scaling[plane][H][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
-        ctx->scaling[plane][V][i] = 1000000.0f / sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        int32_t h = sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+        int32_t v = sign_extend(bytestream2_get_be32(&ctx->gb), 32);
+
+        if (!h || !v)
+            return AVERROR_INVALIDDATA;
+
+        ctx->scaling[plane][H][i] = 1000000.0f / h;
+        ctx->scaling[plane][V][i] = 1000000.0f / v;
     }
 
     bytestream2_skip(&ctx->gb, 4);

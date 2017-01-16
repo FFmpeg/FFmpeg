@@ -170,8 +170,10 @@ static av_cold int init(AVFilterContext *ctx)
             return ret;
         }
 
-        if (!(flite->text = av_malloc(textbuf_size+1)))
+        if (!(flite->text = av_malloc(textbuf_size+1))) {
+            av_file_unmap(textbuf, textbuf_size);
             return AVERROR(ENOMEM);
+        }
         memcpy(flite->text, textbuf, textbuf_size);
         flite->text[textbuf_size] = 0;
         av_file_unmap(textbuf, textbuf_size);

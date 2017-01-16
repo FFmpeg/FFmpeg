@@ -309,6 +309,9 @@ int ff_poll_frame(AVFilterLink *link);
 /**
  * Request an input frame from the filter at the other end of the link.
  *
+ * This function must not be used by filters using the activate callback,
+ * use ff_link_set_frame_wanted() instead.
+ *
  * The input filter may pass the request on to its inputs, fulfill the
  * request from an internal buffer or any other means specific to its function.
  *
@@ -335,10 +338,6 @@ int ff_poll_frame(AVFilterLink *link);
  *             currently and can neither guarantee that EOF has been reached.
  */
 int ff_request_frame(AVFilterLink *link);
-
-int ff_request_frame_to_filter(AVFilterLink *link);
-
-int ff_filter_frame_to_filter(AVFilterLink *link);
 
 #define AVFILTER_DEFINE_CLASS(fname)            \
     static const AVClass fname##_class = {      \

@@ -29,14 +29,14 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "huffyuvdsp.h"
 #include "internal.h"
+#include "lossless_videodsp.h"
 #include "mathops.h"
 #include "thread.h"
 
 typedef struct VBLEContext {
     AVCodecContext *avctx;
-    HuffYUVDSPContext hdsp;
+    LLVidDSPContext llviddsp;
 
     int            size;
     uint8_t        *val; ///< This array first holds the lengths of vlc symbols and then their value.
@@ -102,8 +102,8 @@ static void vble_restore_plane(VBLEContext *ctx, AVFrame *pic,
         if (i) {
             left = 0;
             left_top = dst[-stride];
-            ctx->hdsp.add_hfyu_median_pred(dst, dst - stride, val,
-                                           width, &left, &left_top);
+            ctx->llviddsp.add_median_pred(dst, dst - stride, val,
+                                          width, &left, &left_top);
         } else {
             dst[0] = val[0];
             for (j = 1; j < width; j++)
@@ -185,7 +185,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     /* Stash for later use */
     ctx->avctx = avctx;
-    ff_huffyuvdsp_init(&ctx->hdsp);
+    ff_llviddsp_init(&ctx->llviddsp);
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;
