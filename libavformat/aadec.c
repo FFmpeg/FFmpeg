@@ -102,16 +102,8 @@ static int aa_read_header(AVFormatContext *s)
         avio_skip(pb, 1); // unidentified integer
         nkey = avio_rb32(pb); // key string length
         nval = avio_rb32(pb); // value string length
-        if (nkey > sizeof(key)) {
-            avio_skip(pb, nkey);
-        } else {
-            avio_read(pb, key, nkey); // key string
-        }
-        if (nval > sizeof(val)) {
-            avio_skip(pb, nval);
-        } else {
-            avio_read(pb, val, nval); // value string
-        }
+        avio_get_str(pb, nkey, key, sizeof(key));
+        avio_get_str(pb, nval, val, sizeof(val));
         if (!strcmp(key, "codec")) {
             av_log(s, AV_LOG_DEBUG, "Codec is <%s>\n", val);
             strncpy(codec_name, val, sizeof(codec_name) - 1);
