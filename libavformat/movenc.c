@@ -91,6 +91,7 @@ static const AVOption options[] = {
     { "encryption_scheme",    "Configures the encryption scheme, allowed values are none, cenc-aes-ctr", offsetof(MOVMuxContext, encryption_scheme_str),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_key", "The media encryption key (hex)", offsetof(MOVMuxContext, encryption_key), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
+    { "encryption_key_fromenv", "Read the encryption key from a environment variable", offsetof(MOVMuxContext, encryption_key_fromenv), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = AV_OPT_FLAG_ENCODING_PARAM},
     { "use_stream_ids_as_track_ids", "use stream ids as track ids", offsetof(MOVMuxContext, use_stream_ids_as_track_ids), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "write_tmcd", "force or disable writing tmcd", offsetof(MOVMuxContext, write_tmcd), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
@@ -5420,6 +5421,52 @@ static void enable_tracks(AVFormatContext *s)
     }
 }
 
+
+static int hexchar2int(char c) {
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+static int parse_hex(const char *val, uint8_t **dst)
+{
+    int *lendst = (int *)(dst + 1);
+    uint8_t *bin, *ptr;
+    int len;
+
+    av_freep(dst);
+    *lendst = 0;
+
+    if (!val || !(len = strlen(val)))
+        return 0;
+
+    if (len & 1)
+        return AVERROR(EINVAL);
+    len /= 2;
+
+    ptr = bin = av_malloc(len);
+    if (!ptr)
+        return AVERROR(ENOMEM);
+    while (*val) {
+        int a = hexchar2int(*val++);
+        int b = hexchar2int(*val++);
+        if (a < 0 || b < 0) {
+            av_free(bin);
+            return AVERROR(EINVAL);
+        }
+        *ptr++ = (a << 4) | b;
+    }
+    *dst    = bin;
+    *lendst = len;
+
+    return 0;
+}
+
+
 static void mov_free(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -5657,6 +5704,26 @@ static int mov_init(AVFormatContext *s)
     mov->tracks = av_mallocz_array((mov->nb_streams + 1), sizeof(*mov->tracks));
     if (!mov->tracks)
         return AVERROR(ENOMEM);
+
+
+    if (mov->encryption_key_fromenv != NULL) {
+
+
+        av_log(s, AV_LOG_DEBUG, "Reading encryption key from environment variable %s\n",mov->encryption_key_fromenv);
+        const char* env_encryption_key = getenv(mov->encryption_key_fromenv);
+
+
+        if (env_encryption_key == NULL) {
+            av_log(s, AV_LOG_ERROR, "Environment variable %s not defined / encryption key not found\n",mov->encryption_key_fromenv);
+            return AVERROR(EINVAL);
+        }
+        av_log(s, AV_LOG_ERROR, "Using encryption key %s\n",env_encryption_key);
+        av_opt_set(mov, "encryption_key", env_encryption_key, 0);
+        av_log(s, AV_LOG_DEBUG, "Parsed encryption key, len %d\n",mov->encryption_key_len);
+    }
+
+
+
 
     if (mov->encryption_scheme_str != NULL && strcmp(mov->encryption_scheme_str, "none") != 0) {
         if (strcmp(mov->encryption_scheme_str, "cenc-aes-ctr") == 0) {
