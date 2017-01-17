@@ -45,6 +45,25 @@
 #include "internal.h"
 #include "thread.h"
 
+typedef struct FramePool {
+    /**
+     * Pools for each data plane. For audio all the planes have the same size,
+     * so only pools[0] is used.
+     */
+    AVBufferPool *pools[4];
+
+    /*
+     * Pool parameters
+     */
+    int format;
+    int width, height;
+    int stride_align[AV_NUM_DATA_POINTERS];
+    int linesize[4];
+    int planes;
+    int channels;
+    int samples;
+} FramePool;
+
 static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     int size = 0, ret;
@@ -1504,10 +1523,61 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     return ret;
 }
 
+static void frame_pool_free(void *opaque, uint8_t *data)
+{
+    FramePool *pool = (FramePool*)data;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
+        av_buffer_pool_uninit(&pool->pools[i]);
+
+    av_freep(&data);
+}
+
+static AVBufferRef *frame_pool_alloc(void)
+{
+    FramePool *pool = av_mallocz(sizeof(*pool));
+    AVBufferRef *buf;
+
+    if (!pool)
+        return NULL;
+
+    buf = av_buffer_create((uint8_t*)pool, sizeof(*pool),
+                           frame_pool_free, NULL, 0);
+    if (!buf) {
+        av_freep(&pool);
+        return NULL;
+    }
+
+    return buf;
+}
+
 static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
 {
-    FramePool *pool = avctx->internal->pool;
-    int i, ret;
+    FramePool *pool = avctx->internal->pool ?
+                      (FramePool*)avctx->internal->pool->data : NULL;
+    AVBufferRef *pool_buf;
+    int i, ret, ch, planes;
+
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        int planar = av_sample_fmt_is_planar(frame->format);
+        ch     = frame->channels;
+        planes = planar ? ch : 1;
+    }
+
+    if (pool && pool->format == frame->format) {
+        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+            pool->width == frame->width && pool->height == frame->height)
+            return 0;
+        if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && pool->planes == planes &&
+            pool->channels == ch && frame->nb_samples == pool->samples)
+            return 0;
+    }
+
+    pool_buf = frame_pool_alloc();
+    if (!pool_buf)
+        return AVERROR(ENOMEM);
+    pool = (FramePool*)pool_buf->data;
 
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO: {
@@ -1518,10 +1588,6 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         int h = frame->height;
         int tmpsize, unaligned;
 
-        if (pool->format == frame->format &&
-            pool->width == frame->width && pool->height == frame->height)
-            return 0;
-
         avcodec_align_dimensions2(avctx, &w, &h, pool->stride_align);
 
         do {
@@ -1529,7 +1595,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
             // that linesize[0] == 2*linesize[1] in the MPEG-encoder for 4:2:2
             ret = av_image_fill_linesizes(linesize, avctx->pix_fmt, w);
             if (ret < 0)
-                return ret;
+                goto fail;
             // increase alignment of w for next try (rhs gives the lowest bit set in w)
             w += w & ~(w - 1);
 
@@ -1540,15 +1606,16 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
 
         tmpsize = av_image_fill_pointers(data, avctx->pix_fmt, h,
                                          NULL, linesize);
-        if (tmpsize < 0)
-            return tmpsize;
+        if (tmpsize < 0) {
+            ret = tmpsize;
+            goto fail;
+        }
 
         for (i = 0; i < 3 && data[i + 1]; i++)
             size[i] = data[i + 1] - data[i];
         size[i] = tmpsize - (data[i] - data[0]);
 
         for (i = 0; i < 4; i++) {
-            av_buffer_pool_uninit(&pool->pools[i]);
             pool->linesize[i] = linesize[i];
             if (size[i]) {
                 pool->pools[i] = av_buffer_pool_init(size[i] + 16 + STRIDE_ALIGN - 1,
@@ -1568,15 +1635,6 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_AUDIO: {
-        int ch     = frame->channels; //av_get_channel_layout_nb_channels(frame->channel_layout);
-        int planar = av_sample_fmt_is_planar(frame->format);
-        int planes = planar ? ch : 1;
-
-        if (pool->format == frame->format && pool->planes == planes &&
-            pool->channels == ch && frame->nb_samples == pool->samples)
-            return 0;
-
-        av_buffer_pool_uninit(&pool->pools[0]);
         ret = av_samples_get_buffer_size(&pool->linesize[0], ch,
                                          frame->nb_samples, frame->format, 0);
         if (ret < 0)
@@ -1596,19 +1654,19 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         }
     default: av_assert0(0);
     }
+
+    av_buffer_unref(&avctx->internal->pool);
+    avctx->internal->pool = pool_buf;
+
     return 0;
 fail:
-    for (i = 0; i < 4; i++)
-        av_buffer_pool_uninit(&pool->pools[i]);
-    pool->format = -1;
-    pool->planes = pool->channels = pool->samples = 0;
-    pool->width  = pool->height = 0;
+    av_buffer_unref(&pool_buf);
     return ret;
 }
 
 static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
-    FramePool *pool = avctx->internal->pool;
+    FramePool *pool = (FramePool*)avctx->internal->pool->data;
     int planes = pool->planes;
     int i;
 
@@ -1653,7 +1711,7 @@ fail:
 
 static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
 {
-    FramePool *pool = s->internal->pool;
+    FramePool *pool = (FramePool*)s->internal->pool->data;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pic->format);
     int i;
 

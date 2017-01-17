@@ -583,12 +583,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
     avctx->internal = avci;
 
-    avci->pool = av_mallocz(sizeof(*avci->pool));
-    if (!avci->pool) {
-        ret = AVERROR(ENOMEM);
-        goto free_and_end;
-    }
-
     avci->to_free = av_frame_alloc();
     if (!avci->to_free) {
         ret = AVERROR(ENOMEM);
@@ -1076,7 +1070,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_packet_free(&avci->ds.in_pkt);
         ff_decode_bsfs_uninit(avctx);
 
-        av_freep(&avci->pool);
+        av_buffer_unref(&avci->pool);
     }
     av_freep(&avci);
     avctx->internal = NULL;
@@ -1111,7 +1105,6 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         return 0;
 
     if (avcodec_is_open(avctx)) {
-        FramePool *pool = avctx->internal->pool;
         if (CONFIG_FRAME_THREAD_ENCODER &&
             avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
             ff_frame_thread_encoder_free(avctx);
@@ -1130,9 +1123,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_packet_free(&avctx->internal->ds.in_pkt);
 
-        for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
-            av_buffer_pool_uninit(&pool->pools[i]);
-        av_freep(&avctx->internal->pool);
+        av_buffer_unref(&avctx->internal->pool);
 
         if (avctx->hwaccel && avctx->hwaccel->uninit)
             avctx->hwaccel->uninit(avctx);

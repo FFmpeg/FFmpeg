@@ -296,6 +296,17 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
         }
 
         dst->hwaccel_flags = src->hwaccel_flags;
+
+        if (!!dst->internal->pool != !!src->internal->pool ||
+            (dst->internal->pool && dst->internal->pool->data != src->internal->pool->data)) {
+            av_buffer_unref(&dst->internal->pool);
+
+            if (src->internal->pool) {
+                dst->internal->pool = av_buffer_ref(src->internal->pool);
+                if (!dst->internal->pool)
+                    return AVERROR(ENOMEM);
+            }
+        }
     }
 
     if (for_user) {
@@ -714,6 +725,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
         }
 
         if (p->avctx) {
+            av_buffer_unref(&p->avctx->internal->pool);
             av_freep(&p->avctx->internal);
             av_buffer_unref(&p->avctx->hw_frames_ctx);
         }

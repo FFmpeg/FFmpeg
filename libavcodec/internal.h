@@ -108,25 +108,6 @@
 #   define STRIDE_ALIGN 8
 #endif
 
-typedef struct FramePool {
-    /**
-     * Pools for each data plane. For audio all the planes have the same size,
-     * so only pools[0] is used.
-     */
-    AVBufferPool *pools[4];
-
-    /*
-     * Pool parameters
-     */
-    int format;
-    int width, height;
-    int stride_align[AV_NUM_DATA_POINTERS];
-    int linesize[4];
-    int planes;
-    int channels;
-    int samples;
-} FramePool;
-
 typedef struct DecodeSimpleContext {
     AVPacket *in_pkt;
     AVFrame  *out_frame;
@@ -154,7 +135,7 @@ typedef struct AVCodecInternal {
 
     AVFrame *to_free;
 
-    FramePool *pool;
+    AVBufferRef *pool;
 
     void *thread_ctx;
 
