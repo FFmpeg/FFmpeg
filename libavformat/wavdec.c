@@ -567,6 +567,9 @@ break_loop:
                st->codecpar->block_align == st->codecpar->channels * 4 &&
                st->codecpar->bits_per_coded_sample == 24) {
         st->codecpar->codec_id = AV_CODEC_ID_PCM_F24LE;
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_XMA1 ||
+               st->codecpar->codec_id == AV_CODEC_ID_XMA2) {
+        st->codecpar->block_align = 2048;
     }
 
     ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
