@@ -966,6 +966,39 @@ static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *g
     return 0;
 }
 
+static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
+                                   int *got_frame, int buf_index)
+{
+    int ret, i, out_idx;
+    H264Picture *out = h->delayed_pic[0];
+
+    h->cur_pic_ptr = NULL;
+    h->first_field = 0;
+
+    out_idx = 0;
+    for (i = 1;
+         h->delayed_pic[i] &&
+         !h->delayed_pic[i]->f->key_frame &&
+         !h->delayed_pic[i]->mmco_reset;
+         i++)
+        if (h->delayed_pic[i]->poc < out->poc) {
+            out     = h->delayed_pic[i];
+            out_idx = i;
+        }
+
+    for (i = out_idx; h->delayed_pic[i]; i++)
+        h->delayed_pic[i] = h->delayed_pic[i + 1];
+
+    if (out) {
+        out->reference &= ~DELAYED_PIC_REF;
+        ret = finalize_frame(h, dst_frame, out, got_frame);
+        if (ret < 0)
+            return ret;
+    }
+
+    return buf_index;
+}
+
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -973,9 +1006,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     H264Context *h     = avctx->priv_data;
     AVFrame *pict      = data;
-    int buf_index      = 0;
-    H264Picture *out;
-    int i, out_idx;
+    int buf_index;
     int ret;
 
     h->flags = avctx->flags;
@@ -997,36 +1028,9 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
     /* end of stream, output what is still in the buffers */
-    if (buf_size == 0) {
- out:
+    if (buf_size == 0)
+        return send_next_delayed_frame(h, pict, got_frame, 0);
 
-        h->cur_pic_ptr = NULL;
-        h->first_field = 0;
-
-        out     = h->delayed_pic[0];
-        out_idx = 0;
-        for (i = 1;
-             h->delayed_pic[i] &&
-             !h->delayed_pic[i]->f->key_frame &&
-             !h->delayed_pic[i]->mmco_reset;
-             i++)
-            if (h->delayed_pic[i]->poc < out->poc) {
-                out     = h->delayed_pic[i];
-                out_idx = i;
-            }
-
-        for (i = out_idx; h->delayed_pic[i]; i++)
-            h->delayed_pic[i] = h->delayed_pic[i + 1];
-
-        if (out) {
-            out->reference &= ~DELAYED_PIC_REF;
-            ret = finalize_frame(h, pict, out, got_frame);
-            if (ret < 0)
-                return ret;
-        }
-
-        return buf_index;
-    }
     if (h->is_avc && av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, NULL)) {
         int side_size;
         uint8_t *side = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
@@ -1048,7 +1052,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     if (!h->cur_pic_ptr && h->nal_unit_type == H264_NAL_END_SEQUENCE) {
         av_assert0(buf_index <= buf_size);
-        goto out;
+        return send_next_delayed_frame(h, pict, got_frame, buf_index);
     }
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
