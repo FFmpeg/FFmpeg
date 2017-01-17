@@ -215,6 +215,9 @@ FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-mixed-nal-coding
 # this sample has invalid extradata that is not escaped
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
 
+# this sample contains field-coded frames, with both fields in a single packet
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-twofields-packet
+
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF H264_MUXER) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call DEMDEC, FLV, H264) += fate-h264-brokensps-2580
@@ -431,6 +434,7 @@ fate-h264-intra-refresh-recovery:                 CMD = framecrc -i $(TARGET_SAM
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
 fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
+fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -an -frames 30
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
