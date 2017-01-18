@@ -254,25 +254,15 @@ fail:
     return (ret < 0) ? ret : AVERROR(ENOMEM);
 }
 
-static inline int pic_is_unused(H264Context *h, H264Picture *pic)
-{
-    if (!pic->f->buf[0])
-        return 1;
-    return 0;
-}
-
 static int find_unused_picture(H264Context *h)
 {
     int i;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        if (pic_is_unused(h, &h->DPB[i]))
-            break;
+        if (!h->DPB[i].f->buf[0])
+            return i;
     }
-    if (i == H264_MAX_PICTURE_COUNT)
-        return AVERROR_INVALIDDATA;
-
-    return i;
+    return AVERROR_INVALIDDATA;
 }
 
 
