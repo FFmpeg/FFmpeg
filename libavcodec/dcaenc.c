@@ -67,6 +67,7 @@ typedef struct DCAEncContext {
     int32_t peak_cb[MAX_CHANNELS][DCAENC_SUBBANDS];
     int32_t downsampled_lfe[DCA_LFE_SAMPLES];
     int32_t masking_curve_cb[SUBSUBFRAMES][256];
+    int32_t bit_allocation_sel[MAX_CHANNELS];
     int abits[MAX_CHANNELS][DCAENC_SUBBANDS];
     int scale_factor[MAX_CHANNELS][DCAENC_SUBBANDS];
     softfloat quant[MAX_CHANNELS][DCAENC_SUBBANDS];
@@ -147,6 +148,8 @@ static int encode_init(AVCodecContext *avctx)
         for (j = 0; j < DCA_CODE_BOOKS; j++) {
             c->quant_index_sel[i][j] = ff_dca_quant_index_group_size[j];
         }
+        /* 6 - no Huffman */
+        c->bit_allocation_sel[i] = 6;
     }
 
     for (i = 0; i < 9; i++) {
@@ -672,6 +675,33 @@ static uint32_t set_best_code(uint32_t vlc_bits[DCA_CODE_BOOKS][7], uint32_t clc
     return bits;
 }
 
+static uint32_t set_best_abits_code(int abits[DCAENC_SUBBANDS], int bands, int32_t *res)
+{
+    uint8_t i;
+    uint32_t t;
+    int32_t best_sel = 6;
+    int32_t best_bits = bands * 5;
+
+    /* Check do we have subband which cannot be encoded by Huffman tables */
+    for (i = 0; i < bands; i++) {
+        if (abits[i] > 12) {
+            *res = best_sel;
+            return best_bits;
+        }
+    }
+
+    for (i = 0; i < DCA_BITALLOC_12_COUNT; i++) {
+        t = ff_dca_vlc_calc_alloc_bits(abits, bands, i);
+        if (t < best_bits) {
+            best_bits = t;
+            best_sel = i;
+        }
+    }
+
+    *res = best_sel;
+    return best_bits;
+}
+
 static int init_quantization_noise(DCAEncContext *c, int noise)
 {
     int ch, band, ret = 0;
@@ -679,7 +709,7 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
     uint32_t clc_bit_count_accum[MAX_CHANNELS][DCA_CODE_BOOKS];
     uint32_t bits_counter = 0;
 
-    c->consumed_bits = 132 + 493 * c->fullband_channels;
+    c->consumed_bits = 132 + 333 * c->fullband_channels;
     if (c->lfe_channel)
         c->consumed_bits += 72;
 
@@ -702,6 +732,7 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
                 ret |= USED_1ABITS;
             }
         }
+        c->consumed_bits += set_best_abits_code(c->abits[ch], 32, &c->bit_allocation_sel[ch]);
     }
 
     /* Recalc scale_factor each time to get bits consumption in case of Huffman coding.
@@ -908,7 +939,7 @@ static void put_primary_audio_header(DCAEncContext *c)
 
     /* Bit allocation quantizer select: linear 5-bit */
     for (ch = 0; ch < c->fullband_channels; ch++)
-        put_bits(&c->pb, 3, 6);
+        put_bits(&c->pb, 3, c->bit_allocation_sel[ch]);
 
     /* Quantization index codebook select */
     for (i = 0; i < DCA_CODE_BOOKS; i++)
@@ -974,9 +1005,15 @@ static void put_subframe(DCAEncContext *c, int subframe)
 
     /* Prediction VQ address: not transmitted */
     /* Bit allocation index */
-    for (ch = 0; ch < c->fullband_channels; ch++)
-        for (band = 0; band < DCAENC_SUBBANDS; band++)
-            put_bits(&c->pb, 5, c->abits[ch][band]);
+    for (ch = 0; ch < c->fullband_channels; ch++) {
+        if (c->bit_allocation_sel[ch] == 6) {
+            for (band = 0; band < DCAENC_SUBBANDS; band++) {
+                put_bits(&c->pb, 5, c->abits[ch][band]);
+            }
+        } else {
+            ff_dca_vlc_enc_alloc(&c->pb, c->abits[ch], DCAENC_SUBBANDS, c->bit_allocation_sel[ch]);
+        }
+    }
 
     if (SUBSUBFRAMES > 1) {
         /* Transition mode: none for each channel and subband */
