@@ -338,6 +338,9 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
         goto fail;
     }
 
+    if (ctx->device != idx && ctx->device != ANY_DEVICE)
+        return -1;
+
     cu_res = dl_fn->cuda_dl->cuCtxCreate(&ctx->cu_context_internal, 0, cu_device);
     if (cu_res != CUDA_SUCCESS) {
         av_log(avctx, AV_LOG_FATAL, "Failed creating CUDA context for NVENC: 0x%x\n", (int)cu_res);
@@ -362,7 +365,7 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
 
     dl_fn->nvenc_device_count++;
 
-    if (ctx->device == dl_fn->nvenc_device_count - 1 || ctx->device == ANY_DEVICE)
+    if (ctx->device == idx || ctx->device == ANY_DEVICE)
         return 0;
 
 fail3:
@@ -451,7 +454,7 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
             return AVERROR_EXTERNAL;
         }
 
-        av_log(avctx, AV_LOG_FATAL, "Requested GPU %d, but only %d GPUs are available!\n", ctx->device, dl_fn->nvenc_device_count);
+        av_log(avctx, AV_LOG_FATAL, "Requested GPU %d, but only %d GPUs are available!\n", ctx->device, nb_devices);
         return AVERROR(EINVAL);
     }
 
