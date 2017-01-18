@@ -1248,7 +1248,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             hls->duration = (double)(pkt->pts - hls->end_pts)
                                        * st->time_base.num / st->time_base.den;
             hls->dpp = (double)(pkt->duration) * st->time_base.num / st->time_base.den;
-            av_log(s, AV_LOG_ERROR, "hls->dpp = [%lf]\n", hls->dpp);
         } else {
             hls->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
         }
