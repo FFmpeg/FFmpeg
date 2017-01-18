@@ -6750,6 +6750,10 @@ option, check the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{boxcolor} is "white".
 
+@item line_spacing
+Set the line spacing in pixels of the border to be drawn around the box using @var{box}.
+The default value of @var{line_spacing} is 0.
+
 @item borderw
 Set the width of the border to be drawn around the text using @var{bordercolor}.
 The default value of @var{borderw} is 0.

@@ -158,6 +158,7 @@ typedef struct DrawTextContext {
     int borderw;                    ///< border width
     unsigned int fontsize;          ///< font size to use
 
+    int line_spacing;               ///< lines spacing in pixels
     short int draw_box;             ///< draw box around text - true or false
     int boxborderw;                 ///< box border width
     int use_kerning;                ///< font kerning is used - true/false
@@ -209,6 +210,7 @@ static const AVOption drawtext_options[]= {
     {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_BOOL,   {.i64=0},     0,        1       , FLAGS},
     {"boxborderw",  "set box border width", OFFSET(boxborderw),         AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX , FLAGS},
+    {"line_spacing",  "set line spacing in pixels", OFFSET(line_spacing),   AV_OPT_TYPE_INT,    {.i64=0},     INT_MIN,  INT_MAX,FLAGS},
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
     {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
     {"y",           "set y expression",     OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
@@ -1250,7 +1252,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
         if (is_newline(code)) {
 
             max_text_line_w = FFMAX(max_text_line_w, x);
-            y += s->max_glyph_h;
+            y += s->max_glyph_h + s->line_spacing;
             x = 0;
             continue;
         }
