@@ -1635,7 +1635,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
                 num_bits_prev_frame);
 
         /** check for packet loss */
-        if (avctx->codec_id != AV_CODEC_ID_XMA2 && !s->packet_loss &&
+        if (avctx->codec_id == AV_CODEC_ID_WMAPRO && !s->packet_loss &&
             ((s->packet_sequence_number + 1) & 0xF) != packet_sequence_number) {
             s->packet_loss = 1;
             av_log(avctx, AV_LOG_ERROR,
@@ -1764,19 +1764,32 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
         s->xma[s->current_stream].packet_loss) {
         int bret;
 
-        if (s->xma[0].skip_packets == 0) {
+        if (s->xma[s->current_stream].skip_packets == 0) {
+            ;
+        } else if (s->xma[0].skip_packets == 0 && avctx->channels >= 2) {
             s->current_stream = 0;
-        } else if (s->xma[1].skip_packets == 0) {
+        } else if (s->xma[1].skip_packets == 0 && avctx->channels >= 4) {
             s->current_stream = 1;
-        } else if (s->xma[2].skip_packets == 0) {
+        } else if (s->xma[2].skip_packets == 0 && avctx->channels >= 6) {
             s->current_stream = 2;
-        } else if (s->xma[3].skip_packets == 0) {
+        } else if (s->xma[3].skip_packets == 0 && avctx->channels == 8) {
             s->current_stream = 3;
         } else {
-            s->current_stream++;
-            if (s->current_stream >= avctx->channels / 2)
-                s->current_stream = 0;
+            int min[2];
+
+            min[0] = s->xma[0].skip_packets;
+            min[1] = i = 0;
+
+            for (i = 1; i < avctx->channels / 2; i++) {
+                if (s->xma[i].skip_packets < min[0]) {
+                    min[1] = i;
+                    min[0] = s->xma[i].skip_packets;
+                }
+            }
+
+            s->current_stream = min[1];
         }
+
         for (i = 0; i < avctx->channels / 2; i++) {
             s->xma[i].skip_packets = FFMAX(0, s->xma[i].skip_packets - 1);
         }
