@@ -672,6 +672,7 @@ OBJS-$(CONFIG_TSCC_DECODER)            += tscc.o msrledec.o
 OBJS-$(CONFIG_TSCC2_DECODER)           += tscc2.o
 OBJS-$(CONFIG_TTA_DECODER)             += tta.o ttadata.o ttadsp.o
 OBJS-$(CONFIG_TTA_ENCODER)             += ttaenc.o ttaencdsp.o ttadata.o
+OBJS-$(CONFIG_TTML_ENCODER)            += ttmlenc.o ass_split.o
 OBJS-$(CONFIG_TWINVQ_DECODER)          += twinvqdec.o twinvq.o metasound_data.o
 OBJS-$(CONFIG_TXD_DECODER)             += txd.o
 OBJS-$(CONFIG_ULTI_DECODER)            += ulti.o

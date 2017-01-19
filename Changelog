@@ -78,6 +78,7 @@ version <next>:
 - Simbiosis IMX decoder
 - Simbiosis IMX demuxer
 - Digital Pictures SGA demuxer and decoders
+- TTML subtitle encoder
 
 
 version 4.3:

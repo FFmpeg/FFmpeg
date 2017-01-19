@@ -691,6 +691,7 @@ extern AVCodec ff_subviewer_decoder;
 extern AVCodec ff_subviewer1_decoder;
 extern AVCodec ff_text_encoder;
 extern AVCodec ff_text_decoder;
+extern AVCodec ff_ttml_encoder;
 extern AVCodec ff_vplayer_decoder;
 extern AVCodec ff_webvtt_encoder;
 extern AVCodec ff_webvtt_decoder;
