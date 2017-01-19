@@ -482,8 +482,8 @@ static void postprocess_chroma(AVFrame *frame, int w, int h, int depth)
 
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
-            dstu[i] = av_clip(add + srcu[i], 0, 32767) << shift;
-            dstv[i] = av_clip(add + srcv[i], 0, 32767) << shift;
+            dstu[i] = av_clip_uintp2(add + srcu[i], depth) << shift;
+            dstv[i] = av_clip_uintp2(add + srcv[i], depth) << shift;
         }
         dstu += strideu;
         dstv += stridev;
