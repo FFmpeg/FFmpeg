@@ -709,4 +709,5 @@ void avcodec_register_all(void)
     REGISTER_PARSER(VP3,                vp3);
     REGISTER_PARSER(VP8,                vp8);
     REGISTER_PARSER(VP9,                vp9);
+    REGISTER_PARSER(XMA,                xma);
 }
