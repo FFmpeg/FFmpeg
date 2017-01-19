@@ -1861,13 +1861,8 @@ static av_cold int xma_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-/**
- *@brief Clear decoder buffers (for seeking).
- *@param avctx codec context
- */
-static void flush(AVCodecContext *avctx)
+static void flush(WMAProDecodeCtx *s)
 {
-    WMAProDecodeCtx *s = avctx->priv_data;
     int i;
     /** reset output buffer as a part of it is used during the windowing of a
         new frame */
@@ -1875,6 +1870,30 @@ static void flush(AVCodecContext *avctx)
         memset(s->channel[i].out, 0, s->samples_per_frame *
                sizeof(*s->channel[i].out));
     s->packet_loss = 1;
+    s->skip_packets = 0;
+}
+
+
+/**
+ *@brief Clear decoder buffers (for seeking).
+ *@param avctx codec context
+ */
+static void wmapro_flush(AVCodecContext *avctx)
+{
+    WMAProDecodeCtx *s = avctx->priv_data;
+
+    flush(s);
+}
+
+static void xma_flush(AVCodecContext *avctx)
+{
+    XMADecodeCtx *s = avctx->priv_data;
+    int i;
+    for (i = 0; i < (avctx->channels + 1) / 2; i++)
+        flush(&s->xma[i]);
+
+    memset(s->offset, 0, sizeof(s->offset));
+    s->current_stream = 0;
 }
 
 
@@ -1891,7 +1910,7 @@ AVCodec ff_wmapro_decoder = {
     .close          = wmapro_decode_end,
     .decode         = wmapro_decode_packet,
     .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
-    .flush          = flush,
+    .flush          = wmapro_flush,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -1919,6 +1938,7 @@ AVCodec ff_xma2_decoder = {
     .init           = xma_decode_init,
     .close          = xma_decode_end,
     .decode         = xma_decode_packet,
+    .flush          = xma_flush,
     .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
