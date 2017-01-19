@@ -3372,6 +3372,7 @@ set_ccvars CC
 
 probe_cc hostcc "$host_cc"
 host_cflags_filter=$_flags_filter
+host_cflags_speed=$_cflags_speed
 add_host_cflags  $_flags $_cflags
 set_ccvars HOSTCC
 
@@ -3759,7 +3760,7 @@ EOF
 add_host_cppflags -D_ISOC99_SOURCE
 check_host_cflags -std=c99
 check_host_cflags -Wall
-check_host_cflags -O3
+check_host_cflags $host_cflags_speed
 
 check_64bit(){
     arch32=$1
