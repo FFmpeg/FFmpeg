@@ -275,6 +275,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (SBG,              sbg);
     REGISTER_DEMUXER (SDP,              sdp);
     REGISTER_DEMUXER (SDR2,             sdr2);
+    REGISTER_DEMUXER (SDS,              sds);
 #if CONFIG_RTPDEC
     ff_register_rtp_dynamic_payload_handlers();
     ff_register_rdt_dynamic_payload_handlers();

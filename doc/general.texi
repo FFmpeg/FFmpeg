@@ -387,6 +387,7 @@ library:
     @tab Audio format used on the PS3.
 @item Mirillis FIC video        @tab   @tab X
     @tab No cursor rendering.
+@item MIDI Sample Dump Standard @tab   @tab X
 @item MIME multipart JPEG       @tab X @tab
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
