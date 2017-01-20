@@ -680,11 +680,11 @@ again:
                 break;
 
             if (h->current_slice == 1) {
-            if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
-                i >= nals_needed && !h->setup_finished && h->cur_pic_ptr) {
-                ff_thread_finish_setup(avctx);
-                h->setup_finished = 1;
-            }
+                if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
+                    i >= nals_needed && !h->setup_finished && h->cur_pic_ptr) {
+                    ff_thread_finish_setup(avctx);
+                    h->setup_finished = 1;
+                }
 
                 if (h->avctx->hwaccel &&
                     (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
