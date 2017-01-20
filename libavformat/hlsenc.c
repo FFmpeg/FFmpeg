@@ -300,6 +300,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_dict_set(&options, "method", "DELETE", 0);
             if ((ret = hls->avf->io_open(hls->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0)
                 goto fail;
+            ff_format_io_close(hls->avf, &out);
         } else if (unlink(path) < 0) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                      path, strerror(errno));
@@ -322,6 +323,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
                     av_free(sub_path);
                     goto fail;
                 }
+                ff_format_io_close(hls->avf, &out);
             } else if (unlink(sub_path) < 0) {
                 av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                          sub_path, strerror(errno));
