@@ -1755,8 +1755,9 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
     if (got_stream_frame_ptr) {
         memcpy(&s->samples[s->current_stream * 2 + 0][s->offset[s->current_stream] * 512],
                s->frames[s->current_stream]->extended_data[0], 512 * 4);
-        memcpy(&s->samples[s->current_stream * 2 + 1][s->offset[s->current_stream] * 512],
-               s->frames[s->current_stream]->extended_data[1], 512 * 4);
+        if (avctx->channels > 1)
+            memcpy(&s->samples[s->current_stream * 2 + 1][s->offset[s->current_stream] * 512],
+                   s->frames[s->current_stream]->extended_data[1], 512 * 4);
         s->offset[s->current_stream]++;
     }
 
@@ -1794,7 +1795,7 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
             s->xma[i].skip_packets = FFMAX(0, s->xma[i].skip_packets - 1);
         }
 
-        for (i = 0; i < avctx->channels / 2; i++) {
+        for (i = 0; i < (avctx->channels + 1) / 2; i++) {
             offset = FFMIN(offset, s->offset[i]);
         }
 
@@ -1803,13 +1804,15 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
             if ((bret = ff_get_buffer(avctx, frame, 0)) < 0)
                 return bret;
 
-            for (i = 0; i < avctx->channels / 2; i++) {
+            for (i = 0; i < (avctx->channels + 1) / 2; i++) {
                 memcpy(frame->extended_data[i * 2 + 0], s->samples[i * 2 + 0], frame->nb_samples * 4);
-                memcpy(frame->extended_data[i * 2 + 1], s->samples[i * 2 + 1], frame->nb_samples * 4);
+                if (avctx->channels > 1)
+                    memcpy(frame->extended_data[i * 2 + 1], s->samples[i * 2 + 1], frame->nb_samples * 4);
                 s->offset[i] -= offset;
                 if (s->offset[i]) {
                     memmove(s->samples[i * 2 + 0], s->samples[i * 2 + 0] + frame->nb_samples, s->offset[i] * 4 * 512);
-                    memmove(s->samples[i * 2 + 1], s->samples[i * 2 + 1] + frame->nb_samples, s->offset[i] * 4 * 512);
+                    if (avctx->channels > 1)
+                        memmove(s->samples[i * 2 + 1], s->samples[i * 2 + 1] + frame->nb_samples, s->offset[i] * 4 * 512);
                 }
             }
 
