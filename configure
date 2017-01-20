@@ -4183,9 +4183,7 @@ EOF
 sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
-check_cc <<EOF && enable_weak inline_asm
-void foo(void) { __asm__ volatile ("" ::); }
-EOF
+check_inline_asm inline_asm '"" ::'
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
