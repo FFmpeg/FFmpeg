@@ -620,19 +620,21 @@ do_check_deps(){
 
         eval dep_all="\$${cfg}_deps"
         eval dep_any="\$${cfg}_deps_any"
+        eval dep_con="\$${cfg}_conflict"
         eval dep_sel="\$${cfg}_select"
         eval dep_sgs="\$${cfg}_suggest"
         eval dep_ifa="\$${cfg}_if"
         eval dep_ifn="\$${cfg}_if_any"
 
-        pushvar cfg dep_all dep_any dep_sel dep_sgs dep_ifa dep_ifn
-        do_check_deps $dep_all $dep_any $dep_sel $dep_sgs $dep_ifa $dep_ifn
-        popvar cfg dep_all dep_any dep_sel dep_sgs dep_ifa dep_ifn
+        pushvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
+        check_deps $dep_all $dep_any $dep_con $dep_sel $dep_sgs $dep_ifa $dep_ifn
+        popvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
 
         [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
         [ -n "$dep_ifn" ] && { enabled_any $dep_ifn && enable_weak $cfg; }
         enabled_all  $dep_all || disable $cfg
         enabled_any  $dep_any || disable $cfg
+        disabled_all $dep_con || disable $cfg
         disabled_any $dep_sel && disable $cfg
 
         if enabled $cfg; then
@@ -1922,7 +1924,8 @@ simd_align_32_if_any="avx"
 
 # system capabilities
 symver_if_any="symver_asm_label symver_gnu_asm"
-valgrind_backtrace_deps="!optimizations valgrind_valgrind_h"
+valgrind_backtrace_conflict="optimizations"
+valgrind_backtrace_deps="valgrind_valgrind_h"
 
 # threading support
 atomics_gcc_if="sync_val_compare_and_swap"
@@ -2422,10 +2425,10 @@ xcbgrab_indev_deps="libxcb"
 xcbgrab_indev_suggest="libxcb_shm libxcb_xfixes"
 
 # protocols
-ffrtmpcrypt_protocol_deps="!librtmp_protocol"
+ffrtmpcrypt_protocol_conflict="librtmp_protocol"
 ffrtmpcrypt_protocol_deps_any="gmp openssl"
 ffrtmpcrypt_protocol_select="tcp_protocol"
-ffrtmphttp_protocol_deps="!librtmp_protocol"
+ffrtmphttp_protocol_conflict="librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
 gopher_protocol_select="network"
 http_protocol_select="tcp_protocol"
@@ -2439,10 +2442,10 @@ librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
-rtmp_protocol_deps="!librtmp_protocol"
+rtmp_protocol_conflict="librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
 rtmpe_protocol_select="ffrtmpcrypt_protocol"
-rtmps_protocol_deps="!librtmp_protocol"
+rtmps_protocol_conflict="librtmp_protocol"
 rtmps_protocol_select="tls_protocol"
 rtmpt_protocol_select="ffrtmphttp_protocol"
 rtmpte_protocol_select="ffrtmpcrypt_protocol ffrtmphttp_protocol"
@@ -2454,7 +2457,8 @@ srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_gnutls_protocol_deps="gnutls"
 tls_gnutls_protocol_select="tcp_protocol"
-tls_openssl_protocol_deps="openssl !tls_gnutls_protocol"
+tls_openssl_protocol_conflict="tls_gnutls_protocol"
+tls_openssl_protocol_deps="openssl"
 tls_openssl_protocol_select="tcp_protocol"
 tls_protocol_deps_any="tls_gnutls_protocol tls_openssl_protocol"
 udp_protocol_select="network"
