@@ -4115,25 +4115,24 @@ test -n "$libc_type" && enable libc_$libc_type
 probe_libc host_
 test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
+# hacks for compiler/libc/os combinations
+
 case $libc_type in
     bionic)
         add_compat strtod.o strtod=avpriv_strtod
         ;;
+    glibc)
+        if enabled tms470; then
+            CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
+            add_cppflags -D__USER_LABEL_PREFIX__=
+            add_cppflags -D__builtin_memset=memset
+            add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
+            add_cflags   -pds=48    # incompatible redefinition of macro
+        elif enabled ccc; then
+            add_ldflags -Wl,-z,now  # calls to libots crash without this
+        fi
+        ;;
 esac
-
-# hacks for compiler/libc/os combinations
-
-if enabled_all tms470 libc_glibc; then
-    CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
-    add_cppflags -D__USER_LABEL_PREFIX__=
-    add_cppflags -D__builtin_memset=memset
-    add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
-    add_cflags   -pds=48    # incompatible redefinition of macro
-fi
-
-if enabled_all ccc libc_glibc; then
-    add_ldflags -Wl,-z,now  # calls to libots crash without this
-fi
 
 check_compile_assert flt_lim "float.h limits.h" "DBL_MAX == (double)DBL_MAX" ||
     add_cppflags '-I\$(SRC_PATH)/compat/float'
