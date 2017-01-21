@@ -876,6 +876,8 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         for (j = 0; j < outlink->in_samplerates->nb_formats; j++) {
             int diff = abs(sample_rate - outlink->in_samplerates->formats[j]);
 
+            av_assert0(diff < INT_MAX); // This would lead to the use of uninitialized best_diff but is only possible with invalid sample rates
+
             if (diff < best_diff) {
                 best_diff = diff;
                 best_idx  = j;
