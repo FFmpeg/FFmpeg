@@ -152,12 +152,12 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     ThreadData *td = arg;
     const int height = td->height;
     const int width = td->width;
-    const int64_t numpixels = width * height;
-    const int slice_start = (numpixels *  jobnr   ) / nb_jobs;
-    const int slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
+    const int64_t numpixels = width * (int64_t)height;
+    const unsigned slice_start = (numpixels *  jobnr   ) / nb_jobs;
+    const unsigned slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
     const float postscale = s->postscale * s->postscaleV;
     float *buffer = s->buffer;
-    int i;
+    unsigned i;
 
     for (i = slice_start; i < slice_end; i++)
         buffer[i] *= postscale;
