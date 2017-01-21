@@ -1255,6 +1255,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                     if (!text)
                         continue;
                     drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
+                    av_free(text);
                 }
             }
         }
