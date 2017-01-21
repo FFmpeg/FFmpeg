@@ -156,25 +156,14 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     VASliceParameterBufferMPEG4 slice_param;
     int err;
 
-    /* video_plane_with_short_video_header() contains all GOBs
-     * in-order, and this is what VA API (Intel backend) expects: only
-     * a single slice param. So fake macroblock_number for Libav so
-     * that we don't call vaapi_mpeg4_decode_slice() again
-     */
-    if (avctx->codec->id == AV_CODEC_ID_H263)
-        size = s->gb.buffer_end - buffer;
-
     slice_param = (VASliceParameterBufferMPEG4) {
         .slice_data_size   = size,
         .slice_data_offset = 0,
         .slice_data_flag   = VA_SLICE_DATA_FLAG_ALL,
         .macroblock_offset = get_bits_count(&s->gb) % 8,
-        .macroblock_number = s->mb_y * s->mb_width + s->mb_x,
+        .macroblock_number = 0,
         .quant_scale       = s->qscale,
     };
-
-    if (avctx->codec->id == AV_CODEC_ID_H263)
-        s->mb_y = s->mb_height;
 
     err = ff_vaapi_decode_make_slice_buffer(avctx, pic,
                                             &slice_param, sizeof(slice_param),
