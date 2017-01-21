@@ -1635,13 +1635,11 @@ static int query_formats(AVFilterContext *ctx)
         return ret;
 
     in_formats = ff_make_format_list(sample_fmts_in);
-    out_formats = ff_make_format_list(sample_fmts_out);
-    if (!in_formats || !out_formats)
-        return AVERROR(ENOMEM);
-
     ret = ff_formats_ref(in_formats, &inlink->out_formats);
     if (ret < 0)
         return ret;
+
+    out_formats = ff_make_format_list(sample_fmts_out);
     ret = ff_formats_ref(out_formats, &outlink->in_formats);
     if (ret < 0)
         return ret;
