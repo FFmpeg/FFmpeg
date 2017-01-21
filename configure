@@ -3964,7 +3964,7 @@ case $target_os in
         ln_s="cp -f"
         objformat="aout"
         add_cppflags -D_GNU_SOURCE
-        add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
+        add_ldflags -Zomf -Zbin-files -Zargs-wild -Zhigh-mem -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         LIBSUF="_s.a"
         SLIBPREF=""
