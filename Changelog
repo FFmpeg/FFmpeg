@@ -16,6 +16,7 @@ version <next>:
 - NewTek SpeedHQ decoder
 - MIDI Sample Dump Standard demuxer
 - readeia608 filter
+- Sample Dump eXchange demuxer
 
 version 3.2:
 - libopenmpt demuxer
