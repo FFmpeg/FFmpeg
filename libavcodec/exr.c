@@ -59,6 +59,8 @@ enum ExrCompr {
     EXR_PXR24,
     EXR_B44,
     EXR_B44A,
+    EXR_DWA,
+    EXR_DWB,
     EXR_UNKN,
 };
 
@@ -1301,8 +1303,9 @@ static int check_header_variable(EXRContext *s,
     return var_size;
 }
 
-static int decode_header(EXRContext *s)
+static int decode_header(EXRContext *s, AVFrame *frame)
 {
+    AVDictionary *metadata = NULL;
     int magic_number, version, i, flags, sar = 0;
     int layer_match = 0;
 
@@ -1575,6 +1578,14 @@ static int decode_header(EXRContext *s)
             }
 
             continue;
+        } else if ((var_size = check_header_variable(s, "writer",
+                                                     "string", 1)) >= 0) {
+            uint8_t key[256] = { 0 };
+
+            bytestream2_get_buffer(&s->gb, key, FFMIN(sizeof(key) - 1, var_size));
+            av_dict_set(&metadata, "writer", key, 0);
+
+            continue;
         }
 
         // Check if there are enough bytes for a header
@@ -1610,6 +1621,8 @@ static int decode_header(EXRContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    av_frame_set_metadata(frame, metadata);
+
     // aaand we are done
     bytestream2_skip(&s->gb, 1);
     return 0;
@@ -1629,7 +1642,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
-    if ((ret = decode_header(s)) < 0)
+    if ((ret = decode_header(s, picture)) < 0)
         return ret;
 
     switch (s->pixel_type) {

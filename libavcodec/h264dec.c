@@ -467,130 +467,6 @@ static int decode_init_thread_copy(AVCodecContext *avctx)
 #endif
 
 /**
- * Run setup operations that must be run after slice header decoding.
- * This includes finding the next displayed frame.
- *
- * @param h h264 master context
- * @param setup_finished enough NALs have been read that we can call
- * ff_thread_finish_setup()
- */
-static void decode_postinit(H264Context *h, int setup_finished)
-{
-    const SPS *sps = h->ps.sps;
-    H264Picture *out = h->cur_pic_ptr;
-    H264Picture *cur = h->cur_pic_ptr;
-    int i, pics, out_of_order, out_idx;
-
-    if (h->next_output_pic)
-        return;
-
-    if (cur->field_poc[0] == INT_MAX || cur->field_poc[1] == INT_MAX) {
-        /* FIXME: if we have two PAFF fields in one packet, we can't start
-         * the next thread here. If we have one field per packet, we can.
-         * The check in decode_nal_units() is not good enough to find this
-         * yet, so we assume the worst for now. */
-        // if (setup_finished)
-        //    ff_thread_finish_setup(h->avctx);
-        if (cur->field_poc[0] == INT_MAX && cur->field_poc[1] == INT_MAX)
-            return;
-        if (h->avctx->hwaccel || h->missing_fields <=1)
-            return;
-    }
-
-    cur->mmco_reset = h->mmco_reset;
-    h->mmco_reset = 0;
-
-    // FIXME do something with unavailable reference frames
-
-    /* Sort B-frames into display order */
-    if (sps->bitstream_restriction_flag ||
-        h->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
-        h->avctx->has_b_frames = FFMAX(h->avctx->has_b_frames, sps->num_reorder_frames);
-    }
-
-    for (i = 0; 1; i++) {
-        if(i == MAX_DELAYED_PIC_COUNT || cur->poc < h->last_pocs[i]){
-            if(i)
-                h->last_pocs[i-1] = cur->poc;
-            break;
-        } else if(i) {
-            h->last_pocs[i-1]= h->last_pocs[i];
-        }
-    }
-    out_of_order = MAX_DELAYED_PIC_COUNT - i;
-    if(   cur->f->pict_type == AV_PICTURE_TYPE_B
-       || (h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > INT_MIN && h->last_pocs[MAX_DELAYED_PIC_COUNT-1] - h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > 2))
-        out_of_order = FFMAX(out_of_order, 1);
-    if (out_of_order == MAX_DELAYED_PIC_COUNT) {
-        av_log(h->avctx, AV_LOG_VERBOSE, "Invalid POC %d<%d\n", cur->poc, h->last_pocs[0]);
-        for (i = 1; i < MAX_DELAYED_PIC_COUNT; i++)
-            h->last_pocs[i] = INT_MIN;
-        h->last_pocs[0] = cur->poc;
-        cur->mmco_reset = 1;
-    } else if(h->avctx->has_b_frames < out_of_order && !sps->bitstream_restriction_flag){
-        int loglevel = h->avctx->frame_number > 1 ? AV_LOG_WARNING : AV_LOG_VERBOSE;
-        av_log(h->avctx, loglevel, "Increasing reorder buffer to %d\n", out_of_order);
-        h->avctx->has_b_frames = out_of_order;
-    }
-
-    pics = 0;
-    while (h->delayed_pic[pics])
-        pics++;
-
-    av_assert0(pics <= MAX_DELAYED_PIC_COUNT);
-
-    h->delayed_pic[pics++] = cur;
-    if (cur->reference == 0)
-        cur->reference = DELAYED_PIC_REF;
-
-    out     = h->delayed_pic[0];
-    out_idx = 0;
-    for (i = 1; h->delayed_pic[i] &&
-                !h->delayed_pic[i]->f->key_frame &&
-                !h->delayed_pic[i]->mmco_reset;
-         i++)
-        if (h->delayed_pic[i]->poc < out->poc) {
-            out     = h->delayed_pic[i];
-            out_idx = i;
-        }
-    if (h->avctx->has_b_frames == 0 &&
-        (h->delayed_pic[0]->f->key_frame || h->delayed_pic[0]->mmco_reset))
-        h->next_outputed_poc = INT_MIN;
-    out_of_order = out->poc < h->next_outputed_poc;
-
-    if (out_of_order || pics > h->avctx->has_b_frames) {
-        out->reference &= ~DELAYED_PIC_REF;
-        for (i = out_idx; h->delayed_pic[i]; i++)
-            h->delayed_pic[i] = h->delayed_pic[i + 1];
-    }
-    if (!out_of_order && pics > h->avctx->has_b_frames) {
-        h->next_output_pic = out;
-        if (out_idx == 0 && h->delayed_pic[0] && (h->delayed_pic[0]->f->key_frame || h->delayed_pic[0]->mmco_reset)) {
-            h->next_outputed_poc = INT_MIN;
-        } else
-            h->next_outputed_poc = out->poc;
-    } else {
-        av_log(h->avctx, AV_LOG_DEBUG, "no picture %s\n", out_of_order ? "ooo" : "");
-    }
-
-    if (h->next_output_pic) {
-        if (h->next_output_pic->recovered) {
-            // We have reached an recovery point and all frames after it in
-            // display order are "recovered".
-            h->frame_recovered |= FRAME_RECOVERED_SEI;
-        }
-        h->next_output_pic->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
-    }
-
-    if (setup_finished && !h->avctx->hwaccel) {
-        ff_thread_finish_setup(h->avctx);
-
-        if (h->avctx->active_thread_type & FF_THREAD_FRAME)
-            h->setup_finished = 1;
-    }
-}
-
-/**
  * instantaneous decoder refresh.
  */
 static void idr(H264Context *h)
@@ -804,8 +680,11 @@ again:
                 break;
 
             if (h->current_slice == 1) {
-                if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS))
-                    decode_postinit(h, i >= nals_needed);
+                if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
+                    i >= nals_needed && !h->setup_finished && h->cur_pic_ptr) {
+                    ff_thread_finish_setup(avctx);
+                    h->setup_finished = 1;
+                }
 
                 if (h->avctx->hwaccel &&
                     (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
@@ -1037,6 +916,89 @@ static int is_extra(const uint8_t *buf, int buf_size)
     return 1;
 }
 
+static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *got_frame)
+{
+    int ret;
+
+    if (((h->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) ||
+         (h->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL) ||
+         out->recovered)) {
+
+        if (!h->avctx->hwaccel &&
+            (out->field_poc[0] == INT_MAX ||
+             out->field_poc[1] == INT_MAX)
+           ) {
+            int p;
+            AVFrame *f = out->f;
+            int field = out->field_poc[0] == INT_MAX;
+            uint8_t *dst_data[4];
+            int linesizes[4];
+            const uint8_t *src_data[4];
+
+            av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
+
+            for (p = 0; p<4; p++) {
+                dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
+                src_data[p] = f->data[p] +  field   *f->linesize[p];
+                linesizes[p] = 2*f->linesize[p];
+            }
+
+            av_image_copy(dst_data, linesizes, src_data, linesizes,
+                          f->format, f->width, f->height>>1);
+        }
+
+        ret = output_frame(h, dst, out);
+        if (ret < 0)
+            return ret;
+
+        *got_frame = 1;
+
+        if (CONFIG_MPEGVIDEO) {
+            ff_print_debug_info2(h->avctx, dst, NULL,
+                                 out->mb_type,
+                                 out->qscale_table,
+                                 out->motion_val,
+                                 NULL,
+                                 h->mb_width, h->mb_height, h->mb_stride, 1);
+        }
+    }
+
+    return 0;
+}
+
+static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
+                                   int *got_frame, int buf_index)
+{
+    int ret, i, out_idx;
+    H264Picture *out = h->delayed_pic[0];
+
+    h->cur_pic_ptr = NULL;
+    h->first_field = 0;
+
+    out_idx = 0;
+    for (i = 1;
+         h->delayed_pic[i] &&
+         !h->delayed_pic[i]->f->key_frame &&
+         !h->delayed_pic[i]->mmco_reset;
+         i++)
+        if (h->delayed_pic[i]->poc < out->poc) {
+            out     = h->delayed_pic[i];
+            out_idx = i;
+        }
+
+    for (i = out_idx; h->delayed_pic[i]; i++)
+        h->delayed_pic[i] = h->delayed_pic[i + 1];
+
+    if (out) {
+        out->reference &= ~DELAYED_PIC_REF;
+        ret = finalize_frame(h, dst_frame, out, got_frame);
+        if (ret < 0)
+            return ret;
+    }
+
+    return buf_index;
+}
+
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -1044,9 +1006,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     H264Context *h     = avctx->priv_data;
     AVFrame *pict      = data;
-    int buf_index      = 0;
-    H264Picture *out;
-    int i, out_idx;
+    int buf_index;
     int ret;
 
     h->flags = avctx->flags;
@@ -1068,38 +1028,9 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
 
     /* end of stream, output what is still in the buffers */
-    if (buf_size == 0) {
- out:
+    if (buf_size == 0)
+        return send_next_delayed_frame(h, pict, got_frame, 0);
 
-        h->cur_pic_ptr = NULL;
-        h->first_field = 0;
-
-        // FIXME factorize this with the output code below
-        out     = h->delayed_pic[0];
-        out_idx = 0;
-        for (i = 1;
-             h->delayed_pic[i] &&
-             !h->delayed_pic[i]->f->key_frame &&
-             !h->delayed_pic[i]->mmco_reset;
-             i++)
-            if (h->delayed_pic[i]->poc < out->poc) {
-                out     = h->delayed_pic[i];
-                out_idx = i;
-            }
-
-        for (i = out_idx; h->delayed_pic[i]; i++)
-            h->delayed_pic[i] = h->delayed_pic[i + 1];
-
-        if (out) {
-            out->reference &= ~DELAYED_PIC_REF;
-            ret = output_frame(h, pict, out);
-            if (ret < 0)
-                return ret;
-            *got_frame = 1;
-        }
-
-        return buf_index;
-    }
     if (h->is_avc && av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, NULL)) {
         int side_size;
         uint8_t *side = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
@@ -1121,7 +1052,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     if (!h->cur_pic_ptr && h->nal_unit_type == H264_NAL_END_SEQUENCE) {
         av_assert0(buf_index <= buf_size);
-        goto out;
+        return send_next_delayed_frame(h, pict, got_frame, buf_index);
     }
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
@@ -1134,55 +1065,14 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) ||
         (h->mb_y >= h->mb_height && h->mb_height)) {
-        if (avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)
-            decode_postinit(h, 1);
-
         if ((ret = ff_h264_field_end(h, &h->slice_ctx[0], 0)) < 0)
             return ret;
 
         /* Wait for second field. */
-        *got_frame = 0;
-        if (h->next_output_pic && ((avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) ||
-                                   (avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL) ||
-                                   h->next_output_pic->recovered)) {
-            if (!h->next_output_pic->recovered)
-                h->next_output_pic->f->flags |= AV_FRAME_FLAG_CORRUPT;
-
-            if (!h->avctx->hwaccel &&
-                 (h->next_output_pic->field_poc[0] == INT_MAX ||
-                  h->next_output_pic->field_poc[1] == INT_MAX)
-            ) {
-                int p;
-                AVFrame *f = h->next_output_pic->f;
-                int field = h->next_output_pic->field_poc[0] == INT_MAX;
-                uint8_t *dst_data[4];
-                int linesizes[4];
-                const uint8_t *src_data[4];
-
-                av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
-
-                for (p = 0; p<4; p++) {
-                    dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
-                    src_data[p] = f->data[p] +  field   *f->linesize[p];
-                    linesizes[p] = 2*f->linesize[p];
-                }
-
-                av_image_copy(dst_data, linesizes, src_data, linesizes,
-                              f->format, f->width, f->height>>1);
-            }
-
-            ret = output_frame(h, pict, h->next_output_pic);
+        if (h->next_output_pic) {
+            ret = finalize_frame(h, pict, h->next_output_pic, got_frame);
             if (ret < 0)
                 return ret;
-            *got_frame = 1;
-            if (CONFIG_MPEGVIDEO) {
-                ff_print_debug_info2(h->avctx, pict, NULL,
-                                    h->next_output_pic->mb_type,
-                                    h->next_output_pic->qscale_table,
-                                    h->next_output_pic->motion_val,
-                                    NULL,
-                                    h->mb_width, h->mb_height, h->mb_stride, 1);
-            }
         }
     }
 

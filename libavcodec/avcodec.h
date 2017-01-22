@@ -89,7 +89,7 @@
  * - Send valid input:
  *   - For decoding, call avcodec_send_packet() to give the decoder raw
  *     compressed data in an AVPacket.
- *   - For encoding, call avcodec_send_frame() to give the decoder an AVFrame
+ *   - For encoding, call avcodec_send_frame() to give the encoder an AVFrame
  *     containing uncompressed audio or video.
  *   In both cases, it is recommended that AVPackets and AVFrames are
  *   refcounted, or libavcodec might have to copy the input data. (libavformat

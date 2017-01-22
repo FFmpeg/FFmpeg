@@ -325,18 +325,25 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
     }
 
     cu_res = dl_fn->cuda_dl->cuDeviceGetName(name, sizeof(name), cu_device);
-    if (cu_res != CUDA_SUCCESS)
+    if (cu_res != CUDA_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "cuDeviceGetName failed on device %d\n", idx);
         return -1;
+    }
 
     cu_res = dl_fn->cuda_dl->cuDeviceComputeCapability(&major, &minor, cu_device);
-    if (cu_res != CUDA_SUCCESS)
+    if (cu_res != CUDA_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "cuDeviceComputeCapability failed on device %d\n", idx);
         return -1;
+    }
 
     av_log(avctx, loglevel, "[ GPU #%d - < %s > has Compute SM %d.%d ]\n", idx, name, major, minor);
     if (((major << 4) | minor) < NVENC_CAP) {
         av_log(avctx, loglevel, "does not support NVENC\n");
         goto fail;
     }
+
+    if (ctx->device != idx && ctx->device != ANY_DEVICE)
+        return -1;
 
     cu_res = dl_fn->cuda_dl->cuCtxCreate(&ctx->cu_context_internal, 0, cu_device);
     if (cu_res != CUDA_SUCCESS) {
@@ -362,7 +369,7 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
 
     dl_fn->nvenc_device_count++;
 
-    if (ctx->device == dl_fn->nvenc_device_count - 1 || ctx->device == ANY_DEVICE)
+    if (ctx->device == idx || ctx->device == ANY_DEVICE)
         return 0;
 
 fail3:
@@ -451,7 +458,7 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
             return AVERROR_EXTERNAL;
         }
 
-        av_log(avctx, AV_LOG_FATAL, "Requested GPU %d, but only %d GPUs are available!\n", ctx->device, dl_fn->nvenc_device_count);
+        av_log(avctx, AV_LOG_FATAL, "Requested GPU %d, but only %d GPUs are available!\n", ctx->device, nb_devices);
         return AVERROR(EINVAL);
     }
 

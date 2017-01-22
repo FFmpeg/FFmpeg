@@ -930,6 +930,9 @@ typedef struct AVStream {
      * Decoding: duration of the stream, in stream time base.
      * If a source file does not specify a duration, but does specify
      * a bitrate, this value will be estimated from bitrate and file size.
+     *
+     * Encoding: May be set by the caller before avformat_write_header() to
+     * provide a hint to the muxer about the estimated duration.
      */
     int64_t duration;
 

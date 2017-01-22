@@ -1619,9 +1619,39 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             }
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        const uint8_t *p = buf, *buf_end = p + size;
+        uint32_t state = -1;
+        int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
         int ret = check_hevc_startcode(s, st, pkt);
         if (ret < 0)
             return ret;
+
+        if (extradd && AV_RB24(st->codecpar->extradata) > 1)
+            extradd = 0;
+
+        do {
+            p = avpriv_find_start_code(p, buf_end, &state);
+            av_log(s, AV_LOG_TRACE, "nal %d\n", (state & 0x7e)>>1);
+            if ((state & 0x7e) == 2*32)
+                extradd = 0;
+        } while (p < buf_end && (state & 0x7e) != 2*35 &&
+                 (state & 0x7e) >= 2*32);
+
+        if ((state & 0x7e) < 2*16 && (state & 0x7e) >= 2*24)
+            extradd = 0;
+        if ((state & 0x7e) != 2*35) { // AUD NAL
+            data = av_malloc(pkt->size + 7 + extradd);
+            if (!data)
+                return AVERROR(ENOMEM);
+            memcpy(data + 7, st->codecpar->extradata, extradd);
+            memcpy(data + 7 + extradd, pkt->data, pkt->size);
+            AV_WB32(data, 0x00000001);
+            data[4] = 2*35;
+            data[5] = 1;
+            data[6] = 0x50; // any slice type (0x4) + rbsp stop one bit
+            buf     = data;
+            size    = pkt->size + 7 + extradd;
+        }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
         if (pkt->size < 2) {
             av_log(s, AV_LOG_ERROR, "Opus packet too short\n");

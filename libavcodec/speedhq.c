@@ -135,7 +135,7 @@ static const uint8_t speedhq_run[121] = {
 static RLTable ff_rl_speedhq = {
     121,
     121,
-    speedhq_vlc,
+    (const uint16_t (*)[])speedhq_vlc,
     speedhq_run,
     speedhq_level,
 };

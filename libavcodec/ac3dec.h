@@ -177,6 +177,10 @@ typedef struct AC3DecodeContext {
     int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin                      (endmant)
 ///@}
 
+///@name Consistent noise generation
+    int consistent_noise_generation;        ///< seed noise generation with AC-3 frame on decode
+///@}
+
 ///@name Rematrixing
     int num_rematrixing_bands;              ///< number of rematrixing bands            (nrematbnd)
     int rematrixing_flags[4];               ///< rematrixing flags                      (rematflg)

@@ -245,6 +245,8 @@ static int hls_delete_old_segments(HLSContext *hls) {
     int ret = 0, path_size, sub_path_size;
     char *dirname = NULL, *p, *sub_path;
     char *path = NULL;
+    AVDictionary *options = NULL;
+    AVIOContext *out = NULL;
 
     segment = hls->segments;
     while (segment) {
@@ -294,7 +296,12 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_strlcat(path, segment->filename, path_size);
         }
 
-        if (unlink(path) < 0) {
+        if (hls->method) {
+            av_dict_set(&options, "method", "DELETE", 0);
+            if ((ret = hls->avf->io_open(hls->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0)
+                goto fail;
+            ff_format_io_close(hls->avf, &out);
+        } else if (unlink(path) < 0) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                      path, strerror(errno));
         }
@@ -309,7 +316,15 @@ static int hls_delete_old_segments(HLSContext *hls) {
 
             av_strlcpy(sub_path, dirname, sub_path_size);
             av_strlcat(sub_path, segment->sub_filename, sub_path_size);
-            if (unlink(sub_path) < 0) {
+
+            if (hls->method) {
+                av_dict_set(&options, "method", "DELETE", 0);
+                if ((ret = hls->avf->io_open(hls->avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
+                    av_free(sub_path);
+                    goto fail;
+                }
+                ff_format_io_close(hls->avf, &out);
+            } else if (unlink(sub_path) < 0) {
                 av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
                                          sub_path, strerror(errno));
             }
@@ -1248,7 +1263,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             hls->duration = (double)(pkt->pts - hls->end_pts)
                                        * st->time_base.num / st->time_base.den;
             hls->dpp = (double)(pkt->duration) * st->time_base.num / st->time_base.den;
-            av_log(s, AV_LOG_ERROR, "hls->dpp = [%lf]\n", hls->dpp);
         } else {
             hls->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
         }

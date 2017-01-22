@@ -33,6 +33,7 @@
  */
 const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_AAC,             MKTAG('a','a','c',' ') },
+    { AV_CODEC_ID_AAC,             MKTAG('a','a','c','l') },
     { AV_CODEC_ID_AC3,             MKTAG('a','c','-','3') },
     { AV_CODEC_ID_ADPCM_IMA_QT,    MKTAG('i','m','a','4') },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('m','s', 0, 17 ) },

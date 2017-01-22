@@ -567,6 +567,9 @@ break_loop:
                st->codecpar->block_align == st->codecpar->channels * 4 &&
                st->codecpar->bits_per_coded_sample == 24) {
         st->codecpar->codec_id = AV_CODEC_ID_PCM_F24LE;
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_XMA1 ||
+               st->codecpar->codec_id == AV_CODEC_ID_XMA2) {
+        st->codecpar->block_align = 2048;
     }
 
     ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
@@ -716,6 +719,7 @@ static int wav_read_seek(AVFormatContext *s,
     case AV_CODEC_ID_MP3:
     case AV_CODEC_ID_AC3:
     case AV_CODEC_ID_DTS:
+    case AV_CODEC_ID_XMA2:
         /* use generic seeking with dynamically generated indexes */
         return -1;
     default:
