@@ -157,6 +157,7 @@ int vaapi_decode_init(AVCodecContext *avctx)
     if (!ctx)
         return AVERROR(ENOMEM);
     ctx->class = &vaapi_class;
+    ist->hwaccel_ctx = ctx;
 
     ctx->device_ref = av_buffer_ref(hw_device_ctx);
     ctx->device = (AVHWDeviceContext*)ctx->device_ref->data;
@@ -202,7 +203,6 @@ int vaapi_decode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    ist->hwaccel_ctx           = ctx;
     ist->hwaccel_uninit        = &vaapi_decode_uninit;
     ist->hwaccel_get_buffer    = &vaapi_get_buffer;
     ist->hwaccel_retrieve_data = &vaapi_retrieve_data;
