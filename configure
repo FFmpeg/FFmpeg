@@ -1124,6 +1124,14 @@ require_header(){
     check_header "$header" "$@" || die "ERROR: $header not found"
 }
 
+require_cpp_condition(){
+    log require "$@"
+    header="$1"
+    condition="$2"
+    shift 2
+    check_cpp_condition "$header" "$condition" "$@" || die "ERROR: $condition not satisfied"
+}
+
 require_pkg_config(){
     log require_pkg_config "$@"
     pkg_version="$1"
@@ -4705,13 +4713,11 @@ enabled libvpx            && require_pkg_config "vpx >= 1.3.0" vpx/vpx_codec.h v
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion
 enabled libx264           && require_pkg_config x264 "stdint.h x264.h" x264_encoder_encode &&
-                             { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                               die "ERROR: libx264 version must be >= 0.118."; } &&
+                             require_cpp_condition x264.h "X264_BUILD >= 118" &&
                              { check_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
-                             { check_cpp_condition x265.h "X265_BUILD >= 57" ||
-                               die "ERROR: libx265 version must be >= 57."; }
+                             require_cpp_condition x265.h "X265_BUILD >= 57"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
@@ -4737,8 +4743,7 @@ enabled gnutls            && check_lib gmp gmp.h mpz_export -lgmp
 
 if enabled nvenc; then
     require_header nvEncodeAPI.h
-    check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6" ||
-        die "ERROR: NVENC API version 5 or older is not supported"
+    require_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
 fi
 
 if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
