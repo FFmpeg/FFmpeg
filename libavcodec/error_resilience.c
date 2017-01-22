@@ -497,196 +497,196 @@ static void guess_mv(ERContext *s)
                 av_assert2(fixed[mb_xy] != MV_FROZEN);
 
 
-                    av_assert1(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
-                    av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
+                av_assert1(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
+                av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
-                    j = 0;
-                    if (mb_x > 0)
-                        j |= fixed[mb_xy - 1];
-                    if (mb_x + 1 < mb_width)
-                        j |= fixed[mb_xy + 1];
-                    if (mb_y > 0)
-                        j |= fixed[mb_xy - mb_stride];
-                    if (mb_y + 1 < mb_height)
-                        j |= fixed[mb_xy + mb_stride];
+                j = 0;
+                if (mb_x > 0)
+                    j |= fixed[mb_xy - 1];
+                if (mb_x + 1 < mb_width)
+                    j |= fixed[mb_xy + 1];
+                if (mb_y > 0)
+                    j |= fixed[mb_xy - mb_stride];
+                if (mb_y + 1 < mb_height)
+                    j |= fixed[mb_xy + mb_stride];
 
-                    av_assert2(j & MV_FROZEN);
+                av_assert2(j & MV_FROZEN);
 
-                    if (!(j & MV_CHANGED) && pass > 1)
-                        continue;
+                if (!(j & MV_CHANGED) && pass > 1)
+                    continue;
 
-                    none_left = 0;
-                    pred_count = 0;
-                    mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
+                none_left = 0;
+                pred_count = 0;
+                mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
-                    if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index - mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index - mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy - 1)];
-                        pred_count++;
+                if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index - mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index - mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy - 1)];
+                    pred_count++;
+                }
+                if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index + mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index + mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy + 1)];
+                    pred_count++;
+                }
+                if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy - s->mb_stride)];
+                    pred_count++;
+                }
+                if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy + s->mb_stride)];
+                    pred_count++;
+                }
+                if (pred_count == 0)
+                    continue;
+
+                if (pred_count > 1) {
+                    int sum_x = 0, sum_y = 0, sum_r = 0;
+                    int max_x, max_y, min_x, min_y, max_r, min_r;
+
+                    for (j = 0; j < pred_count; j++) {
+                        sum_x += mv_predictor[j][0];
+                        sum_y += mv_predictor[j][1];
+                        sum_r += ref[j];
+                        if (j && ref[j] != ref[j - 1])
+                            goto skip_mean_and_median;
                     }
-                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index + mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index + mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy + 1)];
-                        pred_count++;
+
+                    /* mean */
+                    mv_predictor[pred_count][0] = sum_x / j;
+                    mv_predictor[pred_count][1] = sum_y / j;
+                             ref[pred_count]    = sum_r / j;
+
+                    /* median */
+                    if (pred_count >= 3) {
+                        min_y = min_x = min_r =  99999;
+                        max_y = max_x = max_r = -99999;
+                    } else {
+                        min_x = min_y = max_x = max_y = min_r = max_r = 0;
                     }
-                    if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy - s->mb_stride)];
-                        pred_count++;
+                    for (j = 0; j < pred_count; j++) {
+                        max_x = FFMAX(max_x, mv_predictor[j][0]);
+                        max_y = FFMAX(max_y, mv_predictor[j][1]);
+                        max_r = FFMAX(max_r, ref[j]);
+                        min_x = FFMIN(min_x, mv_predictor[j][0]);
+                        min_y = FFMIN(min_y, mv_predictor[j][1]);
+                        min_r = FFMIN(min_r, ref[j]);
                     }
-                    if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride] > 1) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy + s->mb_stride)];
-                        pred_count++;
+                    mv_predictor[pred_count + 1][0] = sum_x - max_x - min_x;
+                    mv_predictor[pred_count + 1][1] = sum_y - max_y - min_y;
+                             ref[pred_count + 1]    = sum_r - max_r - min_r;
+
+                    if (pred_count == 4) {
+                        mv_predictor[pred_count + 1][0] /= 2;
+                        mv_predictor[pred_count + 1][1] /= 2;
+                                 ref[pred_count + 1]    /= 2;
                     }
-                    if (pred_count == 0)
-                        continue;
-
-                    if (pred_count > 1) {
-                        int sum_x = 0, sum_y = 0, sum_r = 0;
-                        int max_x, max_y, min_x, min_y, max_r, min_r;
-
-                        for (j = 0; j < pred_count; j++) {
-                            sum_x += mv_predictor[j][0];
-                            sum_y += mv_predictor[j][1];
-                            sum_r += ref[j];
-                            if (j && ref[j] != ref[j - 1])
-                                goto skip_mean_and_median;
-                        }
-
-                        /* mean */
-                        mv_predictor[pred_count][0] = sum_x / j;
-                        mv_predictor[pred_count][1] = sum_y / j;
-                                 ref[pred_count]    = sum_r / j;
-
-                        /* median */
-                        if (pred_count >= 3) {
-                            min_y = min_x = min_r =  99999;
-                            max_y = max_x = max_r = -99999;
-                        } else {
-                            min_x = min_y = max_x = max_y = min_r = max_r = 0;
-                        }
-                        for (j = 0; j < pred_count; j++) {
-                            max_x = FFMAX(max_x, mv_predictor[j][0]);
-                            max_y = FFMAX(max_y, mv_predictor[j][1]);
-                            max_r = FFMAX(max_r, ref[j]);
-                            min_x = FFMIN(min_x, mv_predictor[j][0]);
-                            min_y = FFMIN(min_y, mv_predictor[j][1]);
-                            min_r = FFMIN(min_r, ref[j]);
-                        }
-                        mv_predictor[pred_count + 1][0] = sum_x - max_x - min_x;
-                        mv_predictor[pred_count + 1][1] = sum_y - max_y - min_y;
-                                 ref[pred_count + 1]    = sum_r - max_r - min_r;
-
-                        if (pred_count == 4) {
-                            mv_predictor[pred_count + 1][0] /= 2;
-                            mv_predictor[pred_count + 1][1] /= 2;
-                                     ref[pred_count + 1]    /= 2;
-                        }
-                        pred_count += 2;
-                    }
+                    pred_count += 2;
+                }
 
 skip_mean_and_median:
-                    /* zero MV */
-                    mv_predictor[pred_count][0] =
-                    mv_predictor[pred_count][1] =
-                             ref[pred_count]    = 0;
-                    pred_count++;
+                /* zero MV */
+                mv_predictor[pred_count][0] =
+                mv_predictor[pred_count][1] =
+                         ref[pred_count]    = 0;
+                pred_count++;
 
-                    prev_x   = s->cur_pic.motion_val[0][mot_index][0];
-                    prev_y   = s->cur_pic.motion_val[0][mot_index][1];
-                    prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
+                prev_x   = s->cur_pic.motion_val[0][mot_index][0];
+                prev_y   = s->cur_pic.motion_val[0][mot_index][1];
+                prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
 
-                    /* last MV */
-                    mv_predictor[pred_count][0] = prev_x;
-                    mv_predictor[pred_count][1] = prev_y;
-                             ref[pred_count]    = prev_ref;
-                    pred_count++;
+                /* last MV */
+                mv_predictor[pred_count][0] = prev_x;
+                mv_predictor[pred_count][1] = prev_y;
+                         ref[pred_count]    = prev_ref;
+                pred_count++;
 
-                    best_pred = 0;
-                    best_score = 256 * 256 * 256 * 64;
-                    for (j = 0; j < pred_count; j++) {
-                        int *linesize = s->cur_pic.f->linesize;
-                        int score = 0;
-                        uint8_t *src = s->cur_pic.f->data[0] +
-                                       mb_x * 16 + mb_y * 16 * linesize[0];
+                best_pred = 0;
+                best_score = 256 * 256 * 256 * 64;
+                for (j = 0; j < pred_count; j++) {
+                    int *linesize = s->cur_pic.f->linesize;
+                    int score = 0;
+                    uint8_t *src = s->cur_pic.f->data[0] +
+                                   mb_x * 16 + mb_y * 16 * linesize[0];
 
-                        s->cur_pic.motion_val[0][mot_index][0] =
-                            s->mv[0][0][0] = mv_predictor[j][0];
-                        s->cur_pic.motion_val[0][mot_index][1] =
-                            s->mv[0][0][1] = mv_predictor[j][1];
+                    s->cur_pic.motion_val[0][mot_index][0] =
+                        s->mv[0][0][0] = mv_predictor[j][0];
+                    s->cur_pic.motion_val[0][mot_index][1] =
+                        s->mv[0][0][1] = mv_predictor[j][1];
 
-                        // predictor intra or otherwise not available
-                        if (ref[j] < 0)
-                            continue;
+                    // predictor intra or otherwise not available
+                    if (ref[j] < 0)
+                        continue;
 
-                        s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
-                                     MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
-
-                        if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * linesize[0] - 1] -
-                                               src[k * linesize[0]]);
-                        }
-                        if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * linesize[0] + 15] -
-                                               src[k * linesize[0] + 16]);
-                        }
-                        if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k - linesize[0]] - src[k]);
-                        }
-                        if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] > 1) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k + linesize[0] * 15] -
-                                               src[k + linesize[0] * 16]);
-                        }
-
-                        if (score <= best_score) { // <= will favor the last MV
-                            best_score = score;
-                            best_pred  = j;
-                        }
-                    }
-                    score_sum += best_score;
-                    s->mv[0][0][0] = mv_predictor[best_pred][0];
-                    s->mv[0][0][1] = mv_predictor[best_pred][1];
-
-                    for (i = 0; i < mot_step; i++)
-                        for (j = 0; j < mot_step; j++) {
-                            s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
-                            s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
-                        }
-
-                    s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
+                    s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
                                  MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
 
+                    if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k * linesize[0] - 1] -
+                                           src[k * linesize[0]]);
+                    }
+                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k * linesize[0] + 15] -
+                                           src[k * linesize[0] + 16]);
+                    }
+                    if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k - linesize[0]] - src[k]);
+                    }
+                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k + linesize[0] * 15] -
+                                           src[k + linesize[0] * 16]);
+                    }
 
-                    if (s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y) {
-                        fixed[mb_xy] = MV_CHANGED;
-                        changed++;
-                    } else
-                        fixed[mb_xy] = MV_UNCHANGED;
+                    if (score <= best_score) { // <= will favor the last MV
+                        best_score = score;
+                        best_pred  = j;
+                    }
+                }
+                score_sum += best_score;
+                s->mv[0][0][0] = mv_predictor[best_pred][0];
+                s->mv[0][0][1] = mv_predictor[best_pred][1];
+
+                for (i = 0; i < mot_step; i++)
+                    for (j = 0; j < mot_step; j++) {
+                        s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
+                        s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
+                    }
+
+                s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
+                             MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
+
+
+                if (s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y) {
+                    fixed[mb_xy] = MV_CHANGED;
+                    changed++;
+                } else
+                    fixed[mb_xy] = MV_UNCHANGED;
             }
         }
 
