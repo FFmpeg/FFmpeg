@@ -1117,6 +1117,13 @@ require(){
     check_lib $name "$headers" $func "$@" || die "ERROR: $name_version not found"
 }
 
+require_header(){
+    log require "$@"
+    header="$1"
+    shift
+    check_header "$header" "$@" || die "ERROR: $header not found"
+}
+
 require_pkg_config(){
     log require_pkg_config "$@"
     pkg_version="$1"
@@ -4636,10 +4643,10 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth          && { check_header avisynth/avisynth_c.h || die "ERROR: avisynth/avisynth_c.h header not found"; }
+enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require avxsynth "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl
 enabled cuda              && require cuda cuda.h cuInit -lcuda
-enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled frei0r            && require_header frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
@@ -4717,7 +4724,7 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
-enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
+enabled omx               && require_header OMX_Core.h
 enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
                                  check_pkg_config openssl openssl/ssl.h SSL_library_init; } && {
                                add_cflags $openssl_cflags && add_extralibs $openssl_extralibs; } ||
@@ -4729,7 +4736,7 @@ enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_
 enabled gnutls            && check_lib gmp gmp.h mpz_export -lgmp
 
 if enabled nvenc; then
-    check_header nvEncodeAPI.h || die "ERROR: nvEncodeAPI.h not found."
+    require_header nvEncodeAPI.h
     check_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6" ||
         die "ERROR: NVENC API version 5 or older is not supported"
 fi
