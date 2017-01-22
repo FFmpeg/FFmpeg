@@ -93,8 +93,8 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
     s->hd = NULL;
-    err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+    err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
+                               &h->interrupt_callback, NULL, h->protocol_whitelist, h->protocol_blacklist, h);
     if (err < 0)
         goto fail;
 
@@ -114,7 +114,7 @@ static int gopher_read(URLContext *h, uint8_t *buf, int size)
 }
 
 
-URLProtocol ff_gopher_protocol = {
+const URLProtocol ff_gopher_protocol = {
     .name           = "gopher",
     .url_open       = gopher_open,
     .url_read       = gopher_read,

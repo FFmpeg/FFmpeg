@@ -24,6 +24,9 @@
 #include <stdint.h>
 #include <msa.h>
 
+#define ALIGNMENT           16
+#define ALLOC_ALIGNED(align) __attribute__ ((aligned((align) << 1)))
+
 #define LD_B(RTYPE, psrc) *((RTYPE *)(psrc))
 #define LD_UB(...) LD_B(v16u8, __VA_ARGS__)
 #define LD_SB(...) LD_B(v16i8, __VA_ARGS__)
@@ -82,12 +85,12 @@
     #else  // !(__mips == 64)
         #define LD(psrc)                                              \
         ( {                                                           \
-            uint8_t *psrc_m = (uint8_t *) (psrc);                     \
+            uint8_t *psrc_ld_m = (uint8_t *) (psrc);                  \
             uint32_t val0_m, val1_m;                                  \
             uint64_t val_m = 0;                                       \
                                                                       \
-            val0_m = LW(psrc_m);                                      \
-            val1_m = LW(psrc_m + 4);                                  \
+            val0_m = LW(psrc_ld_m);                                   \
+            val1_m = LW(psrc_ld_m + 4);                               \
                                                                       \
             val_m = (uint64_t) (val1_m);                              \
             val_m = (uint64_t) ((val_m << 32) & 0xFFFFFFFF00000000);  \
@@ -169,12 +172,12 @@
     #else  // !(__mips == 64)
         #define LD(psrc)                                              \
         ( {                                                           \
-            uint8_t *psrc_m1 = (uint8_t *) (psrc);                    \
+            uint8_t *psrc_ld_m = (uint8_t *) (psrc);                  \
             uint32_t val0_m, val1_m;                                  \
             uint64_t val_m = 0;                                       \
                                                                       \
-            val0_m = LW(psrc_m1);                                     \
-            val1_m = LW(psrc_m1 + 4);                                 \
+            val0_m = LW(psrc_ld_m);                                   \
+            val1_m = LW(psrc_ld_m + 4);                               \
                                                                       \
             val_m = (uint64_t) (val1_m);                              \
             val_m = (uint64_t) ((val_m << 32) & 0xFFFFFFFF00000000);  \
@@ -506,6 +509,14 @@
 {                                       \
     ST_SW(in0, (pdst));                 \
     ST_SW(in1, (pdst) + stride);        \
+}
+#define ST_SW8(in0, in1, in2, in3, in4, in5, in6, in7,  \
+               pdst, stride)                            \
+{                                                       \
+    ST_SW2(in0, in1, (pdst), stride);                   \
+    ST_SW2(in2, in3, (pdst) + 2 * stride, stride);      \
+    ST_SW2(in4, in5, (pdst) + 4 * stride, stride);      \
+    ST_SW2(in6, in7, (pdst) + 6 * stride, stride);      \
 }
 
 /* Description : Store as 2x4 byte block to destination memory from input vector
@@ -2380,6 +2391,35 @@
     out5 = in2 - in5;                                                \
     out6 = in1 - in6;                                                \
     out7 = in0 - in7;                                                \
+}
+
+/* Description : Butterfly of 16 input vectors
+   Arguments   : Inputs  - in0 ...  in15
+                 Outputs - out0 .. out15
+   Details     : Butterfly operation
+*/
+#define BUTTERFLY_16(in0, in1, in2, in3, in4, in5, in6, in7,                \
+                     in8, in9,  in10, in11, in12, in13, in14, in15,         \
+                     out0, out1, out2, out3, out4, out5, out6, out7,        \
+                     out8, out9, out10, out11, out12, out13, out14, out15)  \
+{                                                                           \
+    out0 = in0 + in15;                                                      \
+    out1 = in1 + in14;                                                      \
+    out2 = in2 + in13;                                                      \
+    out3 = in3 + in12;                                                      \
+    out4 = in4 + in11;                                                      \
+    out5 = in5 + in10;                                                      \
+    out6 = in6 + in9;                                                       \
+    out7 = in7 + in8;                                                       \
+                                                                            \
+    out8 = in7 - in8;                                                       \
+    out9 = in6 - in9;                                                       \
+    out10 = in5 - in10;                                                     \
+    out11 = in4 - in11;                                                     \
+    out12 = in3 - in12;                                                     \
+    out13 = in2 - in13;                                                     \
+    out14 = in1 - in14;                                                     \
+    out15 = in0 - in15;                                                     \
 }
 
 /* Description : Transposes input 4x4 byte block

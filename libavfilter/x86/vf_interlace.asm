@@ -37,7 +37,7 @@ cglobal lowpass_line, 5, 5, 7
 
     pcmpeqb m6, m6
 
-.loop
+.loop:
     mova m0, [r3+r1]
     mova m1, [r3+r1+mmsize]
     pavgb m0, [r4+r1]

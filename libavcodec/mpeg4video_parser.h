@@ -1,5 +1,5 @@
 /*
- * MPEG4 video parser prototypes
+ * MPEG-4 video parser prototypes
  * Copyright (c) 2003 Fabrice Bellard
  * Copyright (c) 2003 Michael Niedermayer
  *

@@ -33,7 +33,7 @@ av_cold void ff_idctdsp_init_armv6(IDCTDSPContext *c, AVCodecContext *avctx,
                                    unsigned high_bit_depth)
 {
     if (!avctx->lowres && !high_bit_depth) {
-        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & CODEC_FLAG_BITEXACT)) ||
+        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & AV_CODEC_FLAG_BITEXACT)) ||
             avctx->idct_algo == FF_IDCT_SIMPLEARMV6) {
             c->idct_put  = ff_simple_idct_put_armv6;
             c->idct_add  = ff_simple_idct_add_armv6;

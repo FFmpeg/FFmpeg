@@ -296,5 +296,5 @@ AVCodec ff_sgi_decoder = {
     .priv_data_size = sizeof(SgiState),
     .decode         = decode_frame,
     .init           = sgi_decode_init,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

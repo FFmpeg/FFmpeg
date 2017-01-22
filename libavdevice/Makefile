@@ -9,6 +9,8 @@ OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
           utils.o                                                       \
 
+OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
+
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o timefilter.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa_enc.o alsa.o
@@ -38,7 +40,7 @@ OBJS-$(CONFIG_PULSE_INDEV)               += pulse_audio_dec.o \
 OBJS-$(CONFIG_PULSE_OUTDEV)              += pulse_audio_enc.o \
                                             pulse_audio_common.o
 OBJS-$(CONFIG_QTKIT_INDEV)               += qtkit.o
-OBJS-$(CONFIG_SDL_OUTDEV)                += sdl.o
+OBJS-$(CONFIG_SDL2_OUTDEV)               += sdl2.o
 OBJS-$(CONFIG_SNDIO_INDEV)               += sndio_dec.o sndio.o
 OBJS-$(CONFIG_SNDIO_OUTDEV)              += sndio_enc.o sndio.o
 OBJS-$(CONFIG_V4L2_INDEV)                += v4l2.o v4l2-common.o timefilter.o
@@ -53,13 +55,12 @@ OBJS-$(CONFIG_XV_OUTDEV)                 += xv.o
 OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
-OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
-
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)             += avdeviceres.o
 
+SKIPHEADERS                              += decklink_common.h
 SKIPHEADERS-$(CONFIG_DECKLINK)           += decklink_enc.h decklink_dec.h \
-                                            decklink_common.h decklink_common_c.h
+                                            decklink_common_c.h
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
 SKIPHEADERS-$(CONFIG_FBDEV_INDEV)        += fbdev_common.h
 SKIPHEADERS-$(CONFIG_FBDEV_OUTDEV)       += fbdev_common.h
@@ -69,4 +70,4 @@ SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio.h
 
-TESTPROGS = timefilter
+TESTPROGS-$(CONFIG_JACK_INDEV)           += timefilter

@@ -4,6 +4,7 @@ include config.mak
 vpath %.c    $(SRC_PATH)
 vpath %.cpp  $(SRC_PATH)
 vpath %.h    $(SRC_PATH)
+vpath %.inc  $(SRC_PATH)
 vpath %.m    $(SRC_PATH)
 vpath %.S    $(SRC_PATH)
 vpath %.asm  $(SRC_PATH)
@@ -29,12 +30,18 @@ $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog)-$(CONFIG_OPENCL) += cmdutils_opencl.o))
 
 OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
-OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
+OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += ffmpeg_videotoolbox.o
+OBJS-ffmpeg-$(CONFIG_LIBMFX)  += ffmpeg_qsv.o
+OBJS-ffmpeg-$(CONFIG_VAAPI)   += ffmpeg_vaapi.o
+ifndef CONFIG_VIDEOTOOLBOX
+OBJS-ffmpeg-$(CONFIG_VDA)     += ffmpeg_videotoolbox.o
+endif
+OBJS-ffmpeg-$(CONFIG_CUVID)   += ffmpeg_cuvid.o
 OBJS-ffmpeg-$(HAVE_DXVA2_LIB) += ffmpeg_dxva2.o
-OBJS-ffmpeg-$(CONFIG_VDA)     += ffmpeg_vda.o
+OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 OBJS-ffserver                 += ffserver_config.o
 
-TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64
+TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher uncoded_frame
 TOOLS-$(CONFIG_ZLIB) += cws2fws
@@ -54,12 +61,14 @@ FFLIBS := avutil
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
 EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/Makefile $(SRC_PATH)/doc/examples/README
 
-SKIPHEADERS = cmdutils_common_opts.h compat/w32pthreads.h
+SKIPHEADERS = cmdutils_common_opts.h                                    \
+              compat/w32pthreads.h
 
 include $(SRC_PATH)/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
+FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
 
 all: $(AVPROGS)
 
@@ -80,7 +89,7 @@ SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
                ARMV5TE-OBJS ARMV6-OBJS ARMV8-OBJS VFP-OBJS NEON-OBJS     \
                ALTIVEC-OBJS MMX-OBJS YASM-OBJS                           \
-               MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSPR1-OBJS MSA-OBJS       \
+               MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSP-OBJS MSA-OBJS         \
                MMI-OBJS OBJS SLIBOBJS HOSTOBJS TESTOBJS
 
 define RESET
@@ -171,11 +180,15 @@ clean::
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
 	$(RM) -r coverage-html
-	$(RM) -rf coverage.info lcov
+	$(RM) -rf coverage.info coverage.info.in lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h
+	$(RM) config.* .config libavutil/avconfig.h .version mapfile avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h libavcodec/bsf_list.c libavformat/protocol_list.c
+ifeq ($(SRC_LINK),src)
+	$(RM) src
+endif
+	$(RM) -rf doc/examples/pc-uninstalled
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)

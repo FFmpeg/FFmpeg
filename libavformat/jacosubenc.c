@@ -21,10 +21,10 @@
 
 static int jacosub_write_header(AVFormatContext *s)
 {
-    const AVCodecContext *avctx = s->streams[0]->codec;
+    const AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (avctx->extradata_size) {
-        avio_write(s->pb, avctx->extradata, avctx->extradata_size - 1);
+    if (par->extradata_size) {
+        avio_write(s->pb, par->extradata, par->extradata_size - 1);
         avio_flush(s->pb);
     }
     return 0;

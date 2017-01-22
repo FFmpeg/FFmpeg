@@ -33,7 +33,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
-#include <libavfilter/avcodec.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -66,7 +65,7 @@ static int open_input_file(const char *filename)
     /* select the audio stream */
     ret = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, &dec, 0);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Cannot find a audio stream in the input file\n");
+        av_log(NULL, AV_LOG_ERROR, "Cannot find an audio stream in the input file\n");
         return ret;
     }
     audio_stream_index = ret;
@@ -274,10 +273,10 @@ int main(int argc, char **argv)
             }
 
             if (packet.size <= 0)
-                av_free_packet(&packet0);
+                av_packet_unref(&packet0);
         } else {
             /* discard non-wanted packets */
-            av_free_packet(&packet0);
+            av_packet_unref(&packet0);
         }
     }
 end:

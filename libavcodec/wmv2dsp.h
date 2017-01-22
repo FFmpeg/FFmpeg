@@ -33,5 +33,6 @@ typedef struct WMV2DSPContext {
 } WMV2DSPContext;
 
 void ff_wmv2dsp_init(WMV2DSPContext *c);
+void ff_wmv2dsp_init_mips(WMV2DSPContext *c);
 
 #endif /* AVCODEC_WMV2DSP_H */

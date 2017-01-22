@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 tables
+ * MPEG-1/2 tables
  * copyright (c) 2000,2001 Fabrice Bellard
  * copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * MPEG1/2 tables.
+ * MPEG-1/2 tables.
  */
 
 #include "mpeg12data.h"
@@ -303,26 +303,6 @@ const uint8_t ff_mpeg12_mbMotionVectorTable[17][2] = {
 { 0xe, 10 },
 { 0xd, 10 },
 { 0xc, 10 },
-};
-
-const AVRational ff_mpeg12_frame_rate_tab[16] = {
-    {    0,    0},
-    {24000, 1001},
-    {   24,    1},
-    {   25,    1},
-    {30000, 1001},
-    {   30,    1},
-    {   50,    1},
-    {60000, 1001},
-    {   60,    1},
-  // Xing's 15fps: (9)
-    {   15,    1},
-  // libmpeg3's "Unofficial economy rates": (10-13)
-    {    5,    1},
-    {   10,    1},
-    {   12,    1},
-    {   15,    1},
-    {    0,    0},
 };
 
 const AVRational ff_mpeg2_frame_rate_tab[] = {

@@ -364,28 +364,24 @@ static int cmp_intervals(const void *a, const void *b)
 {
     const Interval *i1 = a;
     const Interval *i2 = b;
-    int64_t ts_diff = i1->start_ts - i2->start_ts;
-    int ret;
-
-    ret = ts_diff > 0 ? 1 : ts_diff < 0 ? -1 : 0;
-    return ret == 0 ? i1->index - i2->index : ret;
+    return 2 * FFDIFFSIGN(i1->start_ts, i2->start_ts) + FFDIFFSIGN(i1->index, i2->index);
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    SendCmdContext *sendcmd = ctx->priv;
+    SendCmdContext *s = ctx->priv;
     int ret, i, j;
 
-    if ((!!sendcmd->commands_filename + !!sendcmd->commands_str) != 1) {
+    if ((!!s->commands_filename + !!s->commands_str) != 1) {
         av_log(ctx, AV_LOG_ERROR,
                "One and only one of the filename or commands options must be specified\n");
         return AVERROR(EINVAL);
     }
 
-    if (sendcmd->commands_filename) {
+    if (s->commands_filename) {
         uint8_t *file_buf, *buf;
         size_t file_bufsize;
-        ret = av_file_map(sendcmd->commands_filename,
+        ret = av_file_map(s->commands_filename,
                           &file_buf, &file_bufsize, 0, ctx);
         if (ret < 0)
             return ret;
@@ -399,24 +395,24 @@ static av_cold int init(AVFilterContext *ctx)
         memcpy(buf, file_buf, file_bufsize);
         buf[file_bufsize] = 0;
         av_file_unmap(file_buf, file_bufsize);
-        sendcmd->commands_str = buf;
+        s->commands_str = buf;
     }
 
-    if ((ret = parse_intervals(&sendcmd->intervals, &sendcmd->nb_intervals,
-                               sendcmd->commands_str, ctx)) < 0)
+    if ((ret = parse_intervals(&s->intervals, &s->nb_intervals,
+                               s->commands_str, ctx)) < 0)
         return ret;
 
-    if (sendcmd->nb_intervals == 0) {
+    if (s->nb_intervals == 0) {
         av_log(ctx, AV_LOG_ERROR, "No commands were specified\n");
         return AVERROR(EINVAL);
     }
 
-    qsort(sendcmd->intervals, sendcmd->nb_intervals, sizeof(Interval), cmp_intervals);
+    qsort(s->intervals, s->nb_intervals, sizeof(Interval), cmp_intervals);
 
     av_log(ctx, AV_LOG_DEBUG, "Parsed commands:\n");
-    for (i = 0; i < sendcmd->nb_intervals; i++) {
+    for (i = 0; i < s->nb_intervals; i++) {
         AVBPrint pbuf;
-        Interval *interval = &sendcmd->intervals[i];
+        Interval *interval = &s->intervals[i];
         av_log(ctx, AV_LOG_VERBOSE, "start_time:%f end_time:%f index:%d\n",
                (double)interval->start_ts/1000000, (double)interval->end_ts/1000000, interval->index);
         for (j = 0; j < interval->nb_commands; j++) {
@@ -432,11 +428,11 @@ static av_cold int init(AVFilterContext *ctx)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    SendCmdContext *sendcmd = ctx->priv;
+    SendCmdContext *s = ctx->priv;
     int i, j;
 
-    for (i = 0; i < sendcmd->nb_intervals; i++) {
-        Interval *interval = &sendcmd->intervals[i];
+    for (i = 0; i < s->nb_intervals; i++) {
+        Interval *interval = &s->intervals[i];
         for (j = 0; j < interval->nb_commands; j++) {
             Command *cmd = &interval->commands[j];
             av_freep(&cmd->target);
@@ -445,13 +441,13 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
         av_freep(&interval->commands);
     }
-    av_freep(&sendcmd->intervals);
+    av_freep(&s->intervals);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
     AVFilterContext *ctx = inlink->dst;
-    SendCmdContext *sendcmd = ctx->priv;
+    SendCmdContext *s = ctx->priv;
     int64_t ts;
     int i, j, ret;
 
@@ -462,8 +458,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 
 #define WITHIN_INTERVAL(ts, start_ts, end_ts) ((ts) >= (start_ts) && (ts) < (end_ts))
 
-    for (i = 0; i < sendcmd->nb_intervals; i++) {
-        Interval *interval = &sendcmd->intervals[i];
+    for (i = 0; i < s->nb_intervals; i++) {
+        Interval *interval = &s->intervals[i];
         int flags = 0;
 
         if (!interval->enabled && WITHIN_INTERVAL(ts, interval->start_ts, interval->end_ts)) {

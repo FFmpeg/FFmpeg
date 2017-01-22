@@ -132,13 +132,13 @@ static double get_f64l(uint8_t *p)
 
 static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 {
-    int i, j;
+    uint64_t i, j;
     uint64_t sse = 0;
     double sse_d = 0.0;
     uint8_t buf[2][SIZE];
     int64_t max    = (1LL << (8 * len)) - 1;
-    int size0      = 0;
-    int size1      = 0;
+    uint64_t size0   = 0;
+    uint64_t size1   = 0;
     uint64_t maxdist = 0;
     double maxdist_d = 0.0;
     int noseek;
@@ -190,7 +190,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
                     b = buf[1][j];
                 }
                 sse += (a - b) * (a - b);
-                dist = abs(a - b);
+                dist = llabs(a - b);
                 if (dist > maxdist)
                     maxdist = dist;
                 break;
@@ -233,7 +233,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
         else
             psnr = 1000 * F - 1; // floating point free infinity :)
 
-        printf("stddev:%5d.%02d PSNR:%3d.%02d MAXDIFF:%5"PRIu64" bytes:%9d/%9d\n",
+        printf("stddev:%5d.%02d PSNR:%3d.%02d MAXDIFF:%5"PRIu64" bytes:%9"PRIu64"/%9"PRIu64"\n",
                (int)(dev / F), (int)(dev % F),
                (int)(psnr / F), (int)(psnr % F),
                maxdist, size0, size1);
@@ -254,7 +254,7 @@ static int run_psnr(FILE *f[2], int len, int shift, int skip_bytes)
 
         maxdist = maxdist_d * scale;
 
-        printf("stddev:%10.2f PSNR:%s MAXDIFF:%10"PRIu64" bytes:%9d/%9d\n",
+        printf("stddev:%10.2f PSNR:%s MAXDIFF:%10"PRIu64" bytes:%9"PRIu64"/%9"PRIu64"\n",
                dev * scale, psnr_str, maxdist, size0, size1);
         return psnr;
     }

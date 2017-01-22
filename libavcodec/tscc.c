@@ -32,7 +32,6 @@
  *  then this coded picture is packed with ZLib
  *
  * Supports: BGR8,BGR555,BGR24 - only BGR8 and BGR555 tested
- *
  */
 
 #include <stdio.h>
@@ -94,16 +93,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
                          c->decomp_size - c->zstream.avail_out);
-        ff_msrle_decode(avctx, (AVPicture*)frame, c->bpp, &c->gb);
+        ff_msrle_decode(avctx, frame, c->bpp, &c->gb);
     }
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
-        if (pal) {
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(c->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
         memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
@@ -184,5 +186,5 @@ AVCodec ff_tscc_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

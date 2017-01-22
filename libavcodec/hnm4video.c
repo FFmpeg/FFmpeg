@@ -510,5 +510,5 @@ AVCodec ff_hnm4_video_decoder = {
     .init           = hnm_decode_init,
     .close          = hnm_decode_end,
     .decode         = hnm_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

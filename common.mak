@@ -18,7 +18,7 @@ ifndef SUBDIR
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC CXX HOSTCC HOSTLD AS YASM AR LD STRIP CP WINDRES
+BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS YASM AR LD STRIP CP WINDRES
 SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
 
 MSG    = $@
@@ -32,12 +32,14 @@ endif
 ALLFFLIBS = avcodec avdevice avfilter avformat avresample avutil postproc swscale swresample
 
 # NASM requires -I path terminated with /
-IFLAGS     := -I. -I$(SRC_PATH)/
+IFLAGS     := -I. -I$(SRC_LINK)/
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
+OBJCFLAGS  += $(EOBJCFLAGS)
+OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
-CXXFLAGS   += $(CPPFLAGS) $(CFLAGS)
+CXXFLAGS   := $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS)
 YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
@@ -45,12 +47,13 @@ LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
-       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $<
+       $($(1)) $($(1)FLAGS) $($(1)_DEPFLAGS) $($(1)_C) $($(1)_O) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
 endef
 
 COMPILE_C = $(call COMPILE,CC)
 COMPILE_CXX = $(call COMPILE,CXX)
 COMPILE_S = $(call COMPILE,AS)
+COMPILE_M = $(call COMPILE,OBJCC)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 
 %.o: %.c
@@ -60,10 +63,10 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 	$(COMPILE_CXX)
 
 %.o: %.m
-	$(COMPILE_C)
+	$(COMPILE_M)
 
 %.s: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -S -o $@ $<
+	$(CC) $(CCFLAGS) -S -o $@ $<
 
 %.o: %.S
 	$(COMPILE_S)
@@ -80,10 +83,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
-%.ver: %.v
-	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
-
-%.c %.h: TAG = GEN
+%.c %.h %.ver: TAG = GEN
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
 %.h:
@@ -109,8 +109,8 @@ FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
 
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
 SLIBOBJS  := $(sort $(SLIBOBJS:%=$(SUBDIR)%))
-TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)%) $(TESTPROGS:%=$(SUBDIR)%-test.o)
-TESTPROGS := $(TESTPROGS:%=$(SUBDIR)%-test$(EXESUF))
+TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)tests/%) $(TESTPROGS:%=$(SUBDIR)tests/%.o)
+TESTPROGS := $(TESTPROGS:%=$(SUBDIR)tests/%$(EXESUF))
 HOSTOBJS  := $(HOSTPROGS:%=$(SUBDIR)%.o)
 HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
 TOOLS     += $(TOOLS-yes)
@@ -118,8 +118,9 @@ TOOLOBJS  := $(TOOLS:%=tools/%.o)
 TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
 HEADERS   += $(HEADERS-yes)
 
-PATH_LIBNAME = $(foreach NAME,$(1),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
-DEP_LIBS := $(foreach lib,$(FFLIBS),$(call PATH_LIBNAME,$(lib)))
+PATH_LIBNAME = $(foreach NAME,$(1),lib$(NAME)/$($(2)LIBNAME))
+DEP_LIBS := $(foreach lib,$(FFLIBS),$(call PATH_LIBNAME,$(lib),$(CONFIG_SHARED:yes=S)))
+STATIC_DEP_LIBS := $(foreach lib,$(FFLIBS),$(call PATH_LIBNAME,$(lib)))
 
 SRC_DIR    := $(SRC_PATH)/lib$(NAME)
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
@@ -146,15 +147,13 @@ $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.o *~ *.h.c *.map *.ver *.ho *.gcno *.gcda *$(DEFAULT_YASMD).asm
+CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.ho *$(DEFAULT_YASMD).asm
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
 clean::
-	$(RM) $(OBJS) $(OBJS:.o=.d) $(OBJS:.o=$(DEFAULT_YASMD).d)
-	$(RM) $(HOSTPROGS)
-	$(RM) $(TOOLS)
+	$(RM) $(HOSTPROGS) $(TESTPROGS) $(TOOLS)
 endef
 
 $(eval $(RULES))

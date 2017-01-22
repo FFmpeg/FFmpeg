@@ -247,7 +247,7 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
     s->compression_level = AV_RL16(avctx->extradata + 2);
     s->flags             = AV_RL16(avctx->extradata + 4);
 
-    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n",
+    av_log(avctx, AV_LOG_VERBOSE, "Compression Level: %d - Flags: %d\n",
            s->compression_level, s->flags);
     if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE ||
         !s->compression_level ||
@@ -339,10 +339,10 @@ static inline void range_dec_normalize(APEContext *ctx)
 }
 
 /**
- * Calculate culmulative frequency for next symbol. Does NO update!
+ * Calculate cumulative frequency for next symbol. Does NO update!
  * @param ctx decoder context
  * @param tot_f is the total frequency or (code_value)1<<shift
- * @return the culmulative frequency
+ * @return the cumulative frequency
  */
 static inline int range_decode_culfreq(APEContext *ctx, int tot_f)
 {
@@ -892,6 +892,9 @@ static void long_filter_high_3800(int32_t *buffer, int order, int shift, int len
     int32_t dotprod, sign;
     int32_t coeffs[256], delay[256];
 
+    if (order >= length)
+        return;
+
     memset(coeffs, 0, order * sizeof(*coeffs));
     for (i = 0; i < order; i++)
         delay[i] = buffer[i];
@@ -1281,8 +1284,16 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             /* Update the adaption coefficients */
             absres = FFABS(res);
             if (absres)
-                *f->adaptcoeffs = ((res & (-1<<31)) ^ (-1<<30)) >>
-                                  (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
+                *f->adaptcoeffs = APESIGN(res) *
+                                  (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
+                /* equivalent to the following code
+                    if (absres <= f->avg * 4 / 3)
+                        *f->adaptcoeffs = APESIGN(res) * 8;
+                    else if (absres <= f->avg * 3)
+                        *f->adaptcoeffs = APESIGN(res) * 16;
+                    else
+                        *f->adaptcoeffs = APESIGN(res) * 32;
+                */
             else
                 *f->adaptcoeffs = 0;
 
@@ -1369,7 +1380,7 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
 
-    if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
+    if ((ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) == APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, so we're done. */
         av_log(ctx->avctx, AV_LOG_DEBUG, "pure silence stereo\n");
         return;
@@ -1570,7 +1581,8 @@ AVCodec ff_ape_decoder = {
     .init           = ape_decode_init,
     .close          = ape_decode_close,
     .decode         = ape_decode_frame,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_DR1,
     .flush          = ape_flush,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_S16P,

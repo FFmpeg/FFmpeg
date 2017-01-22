@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 codec.
+ * H.264 / AVC / MPEG-4 part10 codec.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -33,11 +33,10 @@
 #include "cabac_functions.h"
 #include "error_resilience.h"
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "h264data.h"
 #include "h264chroma.h"
 #include "h264_mvpred.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "mpegutils.h"
 #include "rectangle.h"
@@ -157,70 +156,34 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     int err = 0;
     h->mb_y = 0;
 
+#if FF_API_CAP_VDPAU
     if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_set_reference_frames(h);
+#endif
 
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (!h->droppable) {
-            err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
-            h->prev_poc_msb = h->poc_msb;
-            h->prev_poc_lsb = h->poc_lsb;
+            err = ff_h264_execute_ref_pic_marking(h);
+            h->poc.prev_poc_msb = h->poc.poc_msb;
+            h->poc.prev_poc_lsb = h->poc.poc_lsb;
         }
-        h->prev_frame_num_offset = h->frame_num_offset;
-        h->prev_frame_num        = h->frame_num;
+        h->poc.prev_frame_num_offset = h->poc.frame_num_offset;
+        h->poc.prev_frame_num        = h->poc.frame_num;
     }
 
     if (avctx->hwaccel) {
-        if (avctx->hwaccel->end_frame(avctx) < 0)
+        err = avctx->hwaccel->end_frame(avctx);
+        if (err < 0)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     }
 
+#if FF_API_CAP_VDPAU
     if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_picture_complete(h);
-
-#if CONFIG_ERROR_RESILIENCE
-    av_assert0(sl == h->slice_ctx);
-    /*
-     * FIXME: Error handling code does not seem to support interlaced
-     * when slices span multiple rows
-     * The ff_er_add_slice calls don't work right for bottom
-     * fields; they cause massive erroneous error concealing
-     * Error marking covers both fields (top and bottom).
-     * This causes a mismatched s->error_count
-     * and a bad error table. Further, the error count goes to
-     * INT_MAX when called for bottom field, because mb_y is
-     * past end by one (callers fault) and resync_mb_y != 0
-     * causes problems for the first MB line, too.
-     */
-    if (!FIELD_PICTURE(h) && h->current_slice && !h->sps.new && h->enable_er) {
-        int use_last_pic = h->last_pic_for_ec.f->buf[0] && !sl->ref_count[0];
-
-        ff_h264_set_erpic(&sl->er.cur_pic, h->cur_pic_ptr);
-
-        if (use_last_pic) {
-            ff_h264_set_erpic(&sl->er.last_pic, &h->last_pic_for_ec);
-            sl->ref_list[0][0].parent = &h->last_pic_for_ec;
-            memcpy(sl->ref_list[0][0].data, h->last_pic_for_ec.f->data, sizeof(sl->ref_list[0][0].data));
-            memcpy(sl->ref_list[0][0].linesize, h->last_pic_for_ec.f->linesize, sizeof(sl->ref_list[0][0].linesize));
-            sl->ref_list[0][0].reference = h->last_pic_for_ec.reference;
-        } else if (sl->ref_count[0]) {
-            ff_h264_set_erpic(&sl->er.last_pic, sl->ref_list[0][0].parent);
-        } else
-            ff_h264_set_erpic(&sl->er.last_pic, NULL);
-
-        if (sl->ref_count[1])
-            ff_h264_set_erpic(&sl->er.next_pic, sl->ref_list[1][0].parent);
-
-        sl->er.ref_count = sl->ref_count[0];
-
-        ff_er_frame_end(&sl->er);
-        if (use_last_pic)
-            memset(&sl->ref_list[0][0], 0, sizeof(sl->ref_list[0][0]));
-    }
-#endif /* CONFIG_ERROR_RESILIENCE */
+#endif
 
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,

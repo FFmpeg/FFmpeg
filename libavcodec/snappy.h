@@ -38,14 +38,23 @@
 #include "bytestream.h"
 
 /**
- * Decompress an input buffer using Snappy algorithm. Caller is
- * responsible of freeing the memory allocated in buf.
+ * Get the uncompressed length of an input buffer compressed using the Snappy
+ * algorithm. The GetByteContext is not advanced.
  *
  * @param gb    input GetByteContext.
- * @param buf   output buffer pointer.
- * @param size  output buffer size.
+ * @return      A positive length on success, AVERROR otherwise.
+ */
+ int64_t ff_snappy_peek_uncompressed_length(GetByteContext *gb);
+
+/**
+ * Decompress an input buffer using Snappy algorithm.
+ *
+ * @param gb    input GetByteContext.
+ * @param buf   input buffer pointer.
+ * @param size  input/output on input, the size of buffer, on output, the size
+ *              of the uncompressed data.
  * @return      0 if success, AVERROR otherwise.
  */
-int ff_snappy_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size);
+int ff_snappy_uncompress(GetByteContext *gb, uint8_t *buf, int64_t *size);
 
 #endif /* AVCODEC_SNAPPY_H */

@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "cpu.h"
 #include "cpu_internal.h"
@@ -30,7 +31,7 @@
 #endif
 #include <sched.h>
 #endif
-#if HAVE_GETPROCESSAFFINITYMASK
+#if HAVE_GETPROCESSAFFINITYMASK || HAVE_WINRT
 #include <windows.h>
 #endif
 #if HAVE_SYSCTL
@@ -44,7 +45,20 @@
 #include <unistd.h>
 #endif
 
-static int flags, checked;
+static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
+
+static int get_cpu_flags(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_flags_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_flags_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_flags_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_flags_x86();
+    return 0;
+}
 
 void av_force_cpu_flags(int arg){
     if (   (arg & ( AV_CPU_FLAG_3DNOW    |
@@ -69,33 +83,23 @@ void av_force_cpu_flags(int arg){
         arg |= AV_CPU_FLAG_MMX;
     }
 
-    flags   = arg;
-    checked = arg != -1;
+    atomic_store_explicit(&cpu_flags, arg, memory_order_relaxed);
 }
 
 int av_get_cpu_flags(void)
 {
-    if (checked)
-        return flags;
-
-    if (ARCH_AARCH64)
-        flags = ff_get_cpu_flags_aarch64();
-    if (ARCH_ARM)
-        flags = ff_get_cpu_flags_arm();
-    if (ARCH_PPC)
-        flags = ff_get_cpu_flags_ppc();
-    if (ARCH_X86)
-        flags = ff_get_cpu_flags_x86();
-
-    checked = 1;
+    int flags = atomic_load_explicit(&cpu_flags, memory_order_relaxed);
+    if (flags == -1) {
+        flags = get_cpu_flags();
+        atomic_store_explicit(&cpu_flags, flags, memory_order_relaxed);
+    }
     return flags;
 }
 
 void av_set_cpu_flags_mask(int mask)
 {
-    checked       = 0;
-    flags         = av_get_cpu_flags() & mask;
-    checked       = 1;
+    atomic_store_explicit(&cpu_flags, get_cpu_flags() & mask,
+                          memory_order_relaxed);
 }
 
 int av_parse_cpu_flags(const char *s)
@@ -118,6 +122,7 @@ int av_parse_cpu_flags(const char *s)
 #define CPUFLAG_FMA4     (AV_CPU_FLAG_FMA4     | CPUFLAG_AVX)
 #define CPUFLAG_AVX2     (AV_CPU_FLAG_AVX2     | CPUFLAG_AVX)
 #define CPUFLAG_BMI2     (AV_CPU_FLAG_BMI2     | AV_CPU_FLAG_BMI1)
+#define CPUFLAG_AESNI    (AV_CPU_FLAG_AESNI    | CPUFLAG_SSE42)
     static const AVOption cpuflags_opts[] = {
         { "flags"   , NULL, 0, AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT64_MIN, INT64_MAX, .unit = "flags" },
 #if   ARCH_PPC
@@ -145,11 +150,13 @@ int av_parse_cpu_flags(const char *s)
         { "3dnow"   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CPUFLAG_3DNOW        },    .unit = "flags" },
         { "3dnowext", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CPUFLAG_3DNOWEXT     },    .unit = "flags" },
         { "cmov",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_CMOV     },    .unit = "flags" },
+        { "aesni"   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CPUFLAG_AESNI        },    .unit = "flags" },
 #elif ARCH_ARM
         { "armv5te",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV5TE  },    .unit = "flags" },
         { "armv6",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6    },    .unit = "flags" },
         { "armv6t2",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6T2  },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
+        { "vfp_vm",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP_VM   },    .unit = "flags" },
         { "vfpv3",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFPV3    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
 #elif ARCH_AARCH64
@@ -205,6 +212,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
         { "3dnow"   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_3DNOW    },    .unit = "flags" },
         { "3dnowext", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_3DNOWEXT },    .unit = "flags" },
         { "cmov",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_CMOV     },    .unit = "flags" },
+        { "aesni",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_AESNI    },    .unit = "flags" },
 
 #define CPU_FLAG_P2 AV_CPU_FLAG_CMOV | AV_CPU_FLAG_MMX
 #define CPU_FLAG_P3 CPU_FLAG_P2 | AV_CPU_FLAG_MMX2 | AV_CPU_FLAG_SSE
@@ -227,6 +235,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
         { "armv6",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6    },    .unit = "flags" },
         { "armv6t2",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ARMV6T2  },    .unit = "flags" },
         { "vfp",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP      },    .unit = "flags" },
+        { "vfp_vm",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFP_VM   },    .unit = "flags" },
         { "vfpv3",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_VFPV3    },    .unit = "flags" },
         { "neon",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_NEON     },    .unit = "flags" },
         { "setend",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_SETEND   },    .unit = "flags" },
@@ -253,6 +262,9 @@ int av_cpu_count(void)
     static volatile int printed;
 
     int nb_cpus = 1;
+#if HAVE_WINRT
+    SYSTEM_INFO sysinfo;
+#endif
 #if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
     cpu_set_t cpuset;
 
@@ -274,6 +286,9 @@ int av_cpu_count(void)
     nb_cpus = sysconf(_SC_NPROC_ONLN);
 #elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
     nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+#elif HAVE_WINRT
+    GetNativeSystemInfo(&sysinfo);
+    nb_cpus = sysinfo.dwNumberOfProcessors;
 #endif
 
     if (!printed) {
@@ -283,128 +298,3 @@ int av_cpu_count(void)
 
     return nb_cpus;
 }
-
-#ifdef TEST
-
-#include <stdio.h>
-#include "avstring.h"
-
-#if !HAVE_GETOPT
-#include "compat/getopt.c"
-#endif
-
-static const struct {
-    int flag;
-    const char *name;
-} cpu_flag_tab[] = {
-#if   ARCH_AARCH64
-    { AV_CPU_FLAG_ARMV8,     "armv8"      },
-    { AV_CPU_FLAG_NEON,      "neon"       },
-    { AV_CPU_FLAG_VFP,       "vfp"        },
-#elif ARCH_ARM
-    { AV_CPU_FLAG_ARMV5TE,   "armv5te"    },
-    { AV_CPU_FLAG_ARMV6,     "armv6"      },
-    { AV_CPU_FLAG_ARMV6T2,   "armv6t2"    },
-    { AV_CPU_FLAG_VFP,       "vfp"        },
-    { AV_CPU_FLAG_VFPV3,     "vfpv3"      },
-    { AV_CPU_FLAG_NEON,      "neon"       },
-    { AV_CPU_FLAG_SETEND,    "setend"     },
-#elif ARCH_PPC
-    { AV_CPU_FLAG_ALTIVEC,   "altivec"    },
-#elif ARCH_X86
-    { AV_CPU_FLAG_MMX,       "mmx"        },
-    { AV_CPU_FLAG_MMXEXT,    "mmxext"     },
-    { AV_CPU_FLAG_SSE,       "sse"        },
-    { AV_CPU_FLAG_SSE2,      "sse2"       },
-    { AV_CPU_FLAG_SSE2SLOW,  "sse2slow"   },
-    { AV_CPU_FLAG_SSE3,      "sse3"       },
-    { AV_CPU_FLAG_SSE3SLOW,  "sse3slow"   },
-    { AV_CPU_FLAG_SSSE3,     "ssse3"      },
-    { AV_CPU_FLAG_ATOM,      "atom"       },
-    { AV_CPU_FLAG_SSE4,      "sse4.1"     },
-    { AV_CPU_FLAG_SSE42,     "sse4.2"     },
-    { AV_CPU_FLAG_AVX,       "avx"        },
-    { AV_CPU_FLAG_AVXSLOW,   "avxslow"    },
-    { AV_CPU_FLAG_XOP,       "xop"        },
-    { AV_CPU_FLAG_FMA3,      "fma3"       },
-    { AV_CPU_FLAG_FMA4,      "fma4"       },
-    { AV_CPU_FLAG_3DNOW,     "3dnow"      },
-    { AV_CPU_FLAG_3DNOWEXT,  "3dnowext"   },
-    { AV_CPU_FLAG_CMOV,      "cmov"       },
-    { AV_CPU_FLAG_AVX2,      "avx2"       },
-    { AV_CPU_FLAG_BMI1,      "bmi1"       },
-    { AV_CPU_FLAG_BMI2,      "bmi2"       },
-#endif
-    { 0 }
-};
-
-static void print_cpu_flags(int cpu_flags, const char *type)
-{
-    int i;
-
-    printf("cpu_flags(%s) = 0x%08X\n", type, cpu_flags);
-    printf("cpu_flags_str(%s) =", type);
-    for (i = 0; cpu_flag_tab[i].flag; i++)
-        if (cpu_flags & cpu_flag_tab[i].flag)
-            printf(" %s", cpu_flag_tab[i].name);
-    printf("\n");
-}
-
-
-int main(int argc, char **argv)
-{
-    int cpu_flags_raw = av_get_cpu_flags();
-    int cpu_flags_eff;
-    int cpu_count = av_cpu_count();
-    char threads[5] = "auto";
-    int i;
-
-    for(i = 0; cpu_flag_tab[i].flag; i++) {
-        unsigned tmp = 0;
-        if (av_parse_cpu_caps(&tmp, cpu_flag_tab[i].name) < 0) {
-            fprintf(stderr, "Table missing %s\n", cpu_flag_tab[i].name);
-            return 4;
-        }
-    }
-
-    if (cpu_flags_raw < 0)
-        return 1;
-
-    for (;;) {
-        int c = getopt(argc, argv, "c:t:");
-        if (c == -1)
-            break;
-        switch (c) {
-        case 'c':
-        {
-            unsigned flags = av_get_cpu_flags();
-            if (av_parse_cpu_caps(&flags, optarg) < 0)
-                return 2;
-
-            av_force_cpu_flags(flags);
-            break;
-        }
-        case 't':
-        {
-            int len = av_strlcpy(threads, optarg, sizeof(threads));
-            if (len >= sizeof(threads)) {
-                fprintf(stderr, "Invalid thread count '%s'\n", optarg);
-                return 2;
-            }
-        }
-        }
-    }
-
-    cpu_flags_eff = av_get_cpu_flags();
-
-    if (cpu_flags_eff < 0)
-        return 3;
-
-    print_cpu_flags(cpu_flags_raw, "raw");
-    print_cpu_flags(cpu_flags_eff, "effective");
-    printf("threads = %s (cpu_count = %d)\n", threads, cpu_count);
-
-    return 0;
-}
-
-#endif

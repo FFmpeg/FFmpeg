@@ -914,8 +914,8 @@ static int yae_flush(ATempoContext *atempo,
 
     atempo->state = YAE_FLUSH_OUTPUT;
 
-    if (atempo->position[0] == frag->position[0] + frag->nsamples &&
-        atempo->position[1] == frag->position[1] + frag->nsamples) {
+    if (atempo->position[0] >= frag->position[0] + frag->nsamples &&
+        atempo->position[1] >= frag->position[1] + frag->nsamples) {
         // the current fragment is already flushed:
         return 0;
     }
@@ -1014,7 +1014,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts) {
         return AVERROR(ENOMEM);
     }
@@ -1044,11 +1044,8 @@ static int config_props(AVFilterLink *inlink)
 
     enum AVSampleFormat format = inlink->format;
     int sample_rate = (int)inlink->sample_rate;
-    int channels = av_get_channel_layout_nb_channels(inlink->channel_layout);
 
-    ctx->outputs[0]->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
-    return yae_reset(atempo, format, sample_rate, channels);
+    return yae_reset(atempo, format, sample_rate, inlink->channels);
 }
 
 static int push_samples(ATempoContext *atempo,

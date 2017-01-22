@@ -40,7 +40,7 @@
  *     used to set the encoding mode.
  *
  * Rate Control
- *     VBR mode is turned on by setting CODEC_FLAG_QSCALE in avctx->flags.
+ *     VBR mode is turned on by setting AV_CODEC_FLAG_QSCALE in avctx->flags.
  *     avctx->global_quality is used to set the encoding quality.
  *     For CBR mode, avctx->bit_rate can be used to set the constant bitrate.
  *     Alternatively, the 'cbr_quality' option can be set from 0 to 10 to set
@@ -125,10 +125,10 @@ static av_cold void print_enc_params(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_DEBUG, "  quality: %f\n", s->vbr_quality);
     } else if (s->abr) {
         av_log(avctx, AV_LOG_DEBUG, "rate control: ABR\n");
-        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %d bps\n", avctx->bit_rate);
+        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", (int64_t)avctx->bit_rate);
     } else {
         av_log(avctx, AV_LOG_DEBUG, "rate control: CBR\n");
-        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %d bps\n", avctx->bit_rate);
+        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", (int64_t)avctx->bit_rate);
     }
     av_log(avctx, AV_LOG_DEBUG, "complexity: %d\n",
            avctx->compression_level);
@@ -177,7 +177,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     speex_init_header(&s->header, avctx->sample_rate, avctx->channels, mode);
 
     /* rate control method and parameters */
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /* VBR */
         s->header.vbr = 1;
         s->vad = 1; /* VAD is always implicitly activated for VBR */
@@ -216,7 +216,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->vad)
         speex_encoder_ctl(s->enc_state, SPEEX_SET_VAD, &s->vad);
 
-    /* Activiting Discontinuous Transmission */
+    /* Activating Discontinuous Transmission */
     if (s->dtx) {
         speex_encoder_ctl(s->enc_state, SPEEX_SET_DTX, &s->dtx);
         if (!(s->abr || s->vad || s->header.vbr))
@@ -244,8 +244,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
              below with speex_header_free() */
     header_data = speex_header_to_packet(&s->header, &header_size);
 
-    /* allocate extradata and coded_frame */
-    avctx->extradata   = av_malloc(header_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    /* allocate extradata */
+    avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         speex_header_free(header_data);
         speex_encoder_destroy(s->enc_state);
@@ -294,7 +294,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     /* write output if all frames for the packet have been encoded */
     if (s->pkt_frame_count == s->frames_per_packet) {
         s->pkt_frame_count = 0;
-        if ((ret = ff_alloc_packet2(avctx, avpkt, speex_bits_nbytes(&s->bits))) < 0)
+        if ((ret = ff_alloc_packet2(avctx, avpkt, speex_bits_nbytes(&s->bits), 0)) < 0)
             return ret;
         ret = speex_bits_write(&s->bits, avpkt->data, avpkt->size);
         speex_bits_reset(&s->bits);
@@ -356,7 +356,7 @@ AVCodec ff_libspeex_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO,

@@ -64,7 +64,7 @@ av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
     int cpu_flags = av_get_cpu_flags();
 
     if (!avctx->lowres && !high_bit_depth) {
-        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & CODEC_FLAG_BITEXACT)) ||
+        if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & AV_CODEC_FLAG_BITEXACT)) ||
             avctx->idct_algo == FF_IDCT_ARM) {
             c->idct_put  = j_rev_dct_arm_put;
             c->idct_add  = j_rev_dct_arm_add;

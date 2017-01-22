@@ -37,11 +37,14 @@ static const struct {
     {"<b>", "{\\b1}"}, {"</b>", "{\\b0}"},
     {"<u>", "{\\u1}"}, {"</u>", "{\\u0}"},
     {"{", "\\{"}, {"}", "\\}"}, // escape to avoid ASS markup conflicts
+    {"&gt;", ">"}, {"&lt;", "<"},
+    {"&lrm;", ""}, {"&rlm;", ""}, // FIXME: properly honor bidi marks
+    {"&amp;", "&"}, {"&nbsp;", "\\h"},
 };
 
 static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
 {
-    int i, skip = 0;
+    int i, again = 0, skip = 0;
 
     while (*p) {
 
@@ -51,12 +54,18 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
             if (!strncmp(p, from, len)) {
                 av_bprintf(buf, "%s", webvtt_tag_replace[i].to);
                 p += len;
+                again = 1;
                 break;
             }
         }
         if (!*p)
             break;
 
+        if (again) {
+            again = 0;
+            skip = 0;
+            continue;
+        }
         if (*p == '<')
             skip = 1;
         else if (*p == '>')
@@ -76,15 +85,12 @@ static int webvtt_decode_frame(AVCodecContext *avctx,
     int ret = 0;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    FFASSDecoderContext *s = avctx->priv_data;
     AVBPrint buf;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (ptr && avpkt->size > 0 && !webvtt_event_to_ass(&buf, ptr)) {
-        int ts_start     = av_rescale_q(avpkt->pts, avctx->time_base, (AVRational){1,100});
-        int ts_duration  = avpkt->duration != -1 ?
-                           av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
-        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
-    }
+    if (ptr && avpkt->size > 0 && !webvtt_event_to_ass(&buf, ptr))
+        ret = ff_ass_add_rect(sub, buf.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;
@@ -99,4 +105,6 @@ AVCodec ff_webvtt_decoder = {
     .id             = AV_CODEC_ID_WEBVTT,
     .decode         = webvtt_decode_frame,
     .init           = ff_ass_subtitle_header_default,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

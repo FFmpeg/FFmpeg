@@ -106,11 +106,11 @@ static int dxa_read_header(AVFormatContext *s)
         ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
-        ret = ff_get_wav_header(pb, ast->codec, fsize, 0);
+        ret = ff_get_wav_header(s, pb, ast->codecpar, fsize, 0);
         if (ret < 0)
             return ret;
-        if (ast->codec->sample_rate > 0)
-            avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+        if (ast->codecpar->sample_rate > 0)
+            avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
         // find 'data' chunk
         while(avio_tell(pb) < c->vidpos && !avio_feof(pb)){
             tag = avio_rl32(pb);
@@ -119,18 +119,18 @@ static int dxa_read_header(AVFormatContext *s)
             avio_skip(pb, fsize);
         }
         c->bpc = (fsize + c->frames - 1) / c->frames;
-        if(ast->codec->block_align)
-            c->bpc = ((c->bpc + ast->codec->block_align - 1) / ast->codec->block_align) * ast->codec->block_align;
+        if(ast->codecpar->block_align)
+            c->bpc = ((c->bpc + ast->codecpar->block_align - 1) / ast->codecpar->block_align) * ast->codecpar->block_align;
         c->bytes_left = fsize;
         c->wavpos = avio_tell(pb);
         avio_seek(pb, c->vidpos, SEEK_SET);
     }
 
     /* now we are ready: build format streams */
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_DXA;
-    st->codec->width      = w;
-    st->codec->height     = h;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_DXA;
+    st->codecpar->width      = w;
+    st->codecpar->height     = h;
     av_reduce(&den, &num, den, num, (1UL<<31)-1);
     avpriv_set_pts_info(st, 33, num, den);
     /* flags & 0x80 means that image is interlaced,
@@ -138,7 +138,7 @@ static int dxa_read_header(AVFormatContext *s)
      * either way set true height
      */
     if(flags & 0xC0){
-        st->codec->height >>= 1;
+        st->codecpar->height >>= 1;
     }
     c->readvid = !c->has_sound;
     c->vidpos  = avio_tell(pb);
@@ -207,7 +207,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             memcpy(pkt->data + pal_size, buf, DXA_EXTRA_SIZE);
             ret = avio_read(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
             if(ret != size){
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return AVERROR(EIO);
             }
             if(pal_size) memcpy(pkt->data, pal, pal_size);

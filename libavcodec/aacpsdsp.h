@@ -18,37 +18,40 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBAVCODEC_AACPSDSP_H
-#define LIBAVCODEC_AACPSDSP_H
+#ifndef AVCODEC_AACPSDSP_H
+#define AVCODEC_AACPSDSP_H
+
+#include "aac_defines.h"
 
 #define PS_QMF_TIME_SLOTS 32
 #define PS_AP_LINKS 3
 #define PS_MAX_AP_DELAY 5
 
 typedef struct PSDSPContext {
-    void (*add_squares)(float *dst, const float (*src)[2], int n);
-    void (*mul_pair_single)(float (*dst)[2], float (*src0)[2], float *src1,
+    void (*add_squares)(INTFLOAT *dst, const INTFLOAT (*src)[2], int n);
+    void (*mul_pair_single)(INTFLOAT (*dst)[2], INTFLOAT (*src0)[2], INTFLOAT *src1,
                             int n);
-    void (*hybrid_analysis)(float (*out)[2], float (*in)[2],
-                            const float (*filter)[8][2],
+    void (*hybrid_analysis)(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
+                            const INTFLOAT (*filter)[8][2],
                             int stride, int n);
-    void (*hybrid_analysis_ileave)(float (*out)[32][2], float L[2][38][64],
+    void (*hybrid_analysis_ileave)(INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
                                    int i, int len);
-    void (*hybrid_synthesis_deint)(float out[2][38][64], float (*in)[32][2],
+    void (*hybrid_synthesis_deint)(INTFLOAT out[2][38][64], INTFLOAT (*in)[32][2],
                                    int i, int len);
-    void (*decorrelate)(float (*out)[2], float (*delay)[2],
-                        float (*ap_delay)[PS_QMF_TIME_SLOTS+PS_MAX_AP_DELAY][2],
-                        const float phi_fract[2], const float (*Q_fract)[2],
-                        const float *transient_gain,
-                        float g_decay_slope,
+    void (*decorrelate)(INTFLOAT (*out)[2], INTFLOAT (*delay)[2],
+                        INTFLOAT (*ap_delay)[PS_QMF_TIME_SLOTS+PS_MAX_AP_DELAY][2],
+                        const INTFLOAT phi_fract[2], const INTFLOAT (*Q_fract)[2],
+                        const INTFLOAT *transient_gain,
+                        INTFLOAT g_decay_slope,
                         int len);
-    void (*stereo_interpolate[2])(float (*l)[2], float (*r)[2],
-                                  float h[2][4], float h_step[2][4],
+    void (*stereo_interpolate[2])(INTFLOAT (*l)[2], INTFLOAT (*r)[2],
+                                  INTFLOAT h[2][4], INTFLOAT h_step[2][4],
                                   int len);
 } PSDSPContext;
 
-void ff_psdsp_init(PSDSPContext *s);
+void AAC_RENAME(ff_psdsp_init)(PSDSPContext *s);
 void ff_psdsp_init_arm(PSDSPContext *s);
 void ff_psdsp_init_mips(PSDSPContext *s);
+void ff_psdsp_init_x86(PSDSPContext *s);
 
-#endif /* LIBAVCODEC_AACPSDSP_H */
+#endif /* AVCODEC_AACPSDSP_H */

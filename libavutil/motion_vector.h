@@ -45,6 +45,13 @@ typedef struct AVMotionVector {
      * Currently unused.
      */
     uint64_t flags;
+    /**
+     * Motion vector
+     * src_x = dst_x + motion_x / motion_scale
+     * src_y = dst_y + motion_y / motion_scale
+     */
+    int32_t motion_x, motion_y;
+    uint16_t motion_scale;
 } AVMotionVector;
 
 #endif /* AVUTIL_MOTION_VECTOR_H */

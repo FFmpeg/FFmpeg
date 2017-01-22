@@ -50,7 +50,7 @@
 #endif
 
 // using regr as temporary and for the output result
-// first argument is unmodifed and second is trashed
+// first argument is unmodified and second is trashed
 // regfe is supposed to contain 0xfefefefefefefefe
 #define PAVGB_MMX_NO_RND(rega, regb, regr, regfe)                \
     "movq   "#rega", "#regr"            \n\t"                    \

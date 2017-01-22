@@ -25,6 +25,7 @@
 #include "config.h"
 #include "libavutil/rational.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavformat/internal.h"
@@ -151,7 +152,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     ioctl(video_fd, VIDIOCSAUDIO, &audio);
 
     ioctl(video_fd, VIDIOCGPICT, &pict);
-    av_dlog(s1, "v4l: colour=%d hue=%d brightness=%d constrast=%d whiteness=%d\n",
+    ff_dlog(s1, "v4l: colour=%d hue=%d brightness=%d constrast=%d whiteness=%d\n",
             pict.colour, pict.hue, pict.brightness, pict.contrast, pict.whiteness);
     /* try to choose a suitable video format */
     pict.palette = desired_palette;

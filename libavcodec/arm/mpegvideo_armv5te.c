@@ -29,7 +29,7 @@ void ff_dct_unquantize_h263_armv5te(int16_t *block, int qmul, int qadd, int coun
 
 #ifdef ENABLE_ARM_TESTS
 /**
- * h263 dequantizer supplementary function, it is performance critical and needs to
+ * H.263 dequantizer supplementary function, it is performance critical and needs to
  * have optimized implementations for each architecture. Is also used as a reference
  * implementation in regression tests
  */

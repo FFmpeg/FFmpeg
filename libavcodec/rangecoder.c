@@ -28,16 +28,16 @@
  *     G. N. N. Martin                  Presented in March 1979 to the Video &
  *                                      Data Recording Conference,
  *     IBM UK Scientific Center         held in Southampton July 24-27 1979."
- *
  */
 
 #include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "rangecoder.h"
-#include "bytestream.h"
 
 av_cold void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
 {
@@ -56,7 +56,8 @@ av_cold void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf,
     /* cast to avoid compiler warning */
     ff_init_range_encoder(c, (uint8_t *)buf, buf_size);
 
-    c->low = bytestream_get_be16((const uint8_t **)&c->bytestream);
+    c->low         = AV_RB16(c->bytestream);
+    c->bytestream += 2;
 }
 
 void ff_build_rac_states(RangeCoder *c, int factor, int max_p)
@@ -113,48 +114,3 @@ int ff_rac_terminate(RangeCoder *c)
 
     return c->bytestream - c->bytestream_start;
 }
-
-#ifdef TEST
-#define SIZE 10240
-
-#include "libavutil/lfg.h"
-#include "libavutil/log.h"
-
-static uint8_t b[9 * SIZE];
-static uint8_t r[9 * SIZE];
-
-int main(void)
-{
-    RangeCoder c;
-    int i;
-    uint8_t state[10];
-    AVLFG prng;
-
-    av_lfg_init(&prng, 1);
-
-    ff_init_range_encoder(&c, b, SIZE);
-    ff_build_rac_states(&c, (1LL << 32) / 20, 128 + 64 + 32 + 16);
-
-    memset(state, 128, sizeof(state));
-
-    for (i = 0; i < SIZE; i++)
-        r[i] = av_lfg_get(&prng) % 7;
-
-    for (i = 0; i < SIZE; i++)
-        put_rac(&c, state, r[i] & 1);
-
-    ff_rac_terminate(&c);
-
-    ff_init_range_decoder(&c, b, SIZE);
-
-    memset(state, 128, sizeof(state));
-
-    for (i = 0; i < SIZE; i++)
-        if ((r[i] & 1) != get_rac(&c, state)) {
-            av_log(NULL, AV_LOG_ERROR, "rac failure at %d\n", i);
-            return 1;
-        }
-
-    return 0;
-}
-#endif /* TEST */

@@ -3792,7 +3792,7 @@ MC_COPY(64);
 #undef MC_COPY
 
 #define MC(PEL, DIR, WIDTH, TAP, DIR1, FILT_DIR)                            \
-void ff_hevc_put_hevc_##PEL##_##DIR####WIDTH##_8_msa(int16_t *dst,          \
+void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,            \
                                                      uint8_t *src,          \
                                                      ptrdiff_t src_stride,  \
                                                      int height,            \
@@ -3843,7 +3843,7 @@ MC(epel, v, 32, 4, vt, my);
 #undef MC
 
 #define MC_HV(PEL, DIR, WIDTH, TAP, DIR1)                                     \
-void ff_hevc_put_hevc_##PEL##_##DIR####WIDTH##_8_msa(int16_t *dst,            \
+void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,              \
                                                      uint8_t *src,            \
                                                      ptrdiff_t src_stride,    \
                                                      int height,              \

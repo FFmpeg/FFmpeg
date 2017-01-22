@@ -32,20 +32,18 @@
 #include <stdlib.h>
 
 #include "libavutil/channel_layout.h"
-#include "avcodec.h"
-#include "internal.h"
-#include "mathops.h"
 
 #define BITSTREAM_READER_LE
-#include "get_bits.h"
+#include "avcodec.h"
 #include "bytestream.h"
+#include "get_bits.h"
+#include "internal.h"
+#include "mathops.h"
 
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000
 
-/*
- * Decoder context
- */
+
 typedef struct SmackVContext {
     AVCodecContext *avctx;
     AVFrame *pic;
@@ -131,8 +129,12 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
 /**
  * Decode header tree
  */
-static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx)
+static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx, int length)
 {
+    if(length > 500) { // Larger length can cause segmentation faults due to too deep recursion.
+        av_log(NULL, AV_LOG_ERROR, "length too long\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (hc->current + 1 >= hc->length) {
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
         return AVERROR_INVALIDDATA;
@@ -161,12 +163,12 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
         int r = 0, r_new, t;
 
         t = hc->current++;
-        r = smacker_decode_bigtree(gb, hc, ctx);
+        r = smacker_decode_bigtree(gb, hc, ctx, length + 1);
         if(r < 0)
             return r;
         hc->values[t] = SMK_NODE | r;
         r++;
-        r_new = smacker_decode_bigtree(gb, hc, ctx);
+        r_new = smacker_decode_bigtree(gb, hc, ctx, length + 1);
         if (r_new < 0)
             return r_new;
         return r + r_new;
@@ -277,7 +279,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         goto error;
     }
 
-    if (smacker_decode_bigtree(gb, &huff, &ctx) < 0)
+    if (smacker_decode_bigtree(gb, &huff, &ctx, 0) < 0)
         err = -1;
     skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
@@ -316,7 +318,9 @@ static int decode_header_trees(SmackVContext *smk) {
     full_size = AV_RL32(smk->avctx->extradata + 8);
     type_size = AV_RL32(smk->avctx->extradata + 12);
 
-    init_get_bits8(&gb, smk->avctx->extradata + 16, smk->avctx->extradata_size - 16);
+    ret = init_get_bits8(&gb, smk->avctx->extradata + 16, smk->avctx->extradata_size - 16);
+    if (ret < 0)
+        return ret;
 
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MMAP tree\n");
@@ -547,12 +551,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 }
 
 
-
-/*
- *
- * Uninit smacker decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     SmackVContext * const smk = avctx->priv_data;
@@ -568,11 +566,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 
-/*
- *
- * Init smacker decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     SmackVContext * const c = avctx->priv_data;
@@ -668,6 +661,10 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
+    if (unp_size % (avctx->channels * (bits + 1))) {
+        av_log(avctx, AV_LOG_ERROR, "unp_size %d is odd\n", unp_size);
+        return AVERROR(EINVAL);
+    }
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples  = (int16_t *)frame->data[0];
@@ -813,7 +810,7 @@ AVCodec ff_smacker_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 AVCodec ff_smackaud_decoder = {
@@ -823,5 +820,5 @@ AVCodec ff_smackaud_decoder = {
     .id             = AV_CODEC_ID_SMACKAUDIO,
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

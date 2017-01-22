@@ -87,7 +87,7 @@ typedef struct Picture {
     int reference;
     int shared;
 
-    uint64_t error[AV_NUM_DATA_POINTERS];
+    uint64_t encoding_error[AV_NUM_DATA_POINTERS];
 } Picture;
 
 /**

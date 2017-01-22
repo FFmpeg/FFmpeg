@@ -163,19 +163,19 @@ static inline int asv2_decode_block(ASV1Context *a, int16_t block[64])
 
 static inline int decode_mb(ASV1Context *a, int16_t block[6][64])
 {
-    int i;
+    int i, ret;
 
     a->bdsp.clear_blocks(block[0]);
 
     if (a->avctx->codec_id == AV_CODEC_ID_ASV1) {
         for (i = 0; i < 6; i++) {
-            if (asv1_decode_block(a, block[i]) < 0)
-                return -1;
+            if ((ret = asv1_decode_block(a, block[i])) < 0)
+                return ret;
         }
     } else {
         for (i = 0; i < 6; i++) {
-            if (asv2_decode_block(a, block[i]) < 0)
-                return -1;
+            if ((ret = asv2_decode_block(a, block[i])) < 0)
+                return ret;
         }
     }
     return 0;
@@ -195,7 +195,7 @@ static inline void idct_put(ASV1Context *a, AVFrame *frame, int mb_x, int mb_y)
     a->idsp.idct_put(dest_y + 8 * linesize,     linesize, block[2]);
     a->idsp.idct_put(dest_y + 8 * linesize + 8, linesize, block[3]);
 
-    if (!(a->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(a->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         a->idsp.idct_put(dest_cb, frame->linesize[1], block[4]);
         a->idsp.idct_put(dest_cr, frame->linesize[2], block[5]);
     }
@@ -322,7 +322,7 @@ AVCodec ff_asv1_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -336,6 +336,6 @@ AVCodec ff_asv2_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

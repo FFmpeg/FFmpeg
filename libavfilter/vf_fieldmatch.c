@@ -124,12 +124,12 @@ static const AVOption fieldmatch_options[] = {
         { "pc_n_ub", "2-way match + 3rd match on combed + 4th/5th matches if still combed (p/c + u + u/b)",  0, AV_OPT_TYPE_CONST, {.i64=MODE_PC_N_UB}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "pcn",     "3-way match (p/c/n)",                                                                  0, AV_OPT_TYPE_CONST, {.i64=MODE_PCN},     INT_MIN, INT_MAX, FLAGS, "mode" },
         { "pcn_ub",  "3-way match + 4th/5th matches on combed (p/c/n + u/b)",                                0, AV_OPT_TYPE_CONST, {.i64=MODE_PCN_UB},  INT_MIN, INT_MAX, FLAGS, "mode" },
-    { "ppsrc", "mark main input as a pre-processed input and activate clean source input stream", OFFSET(ppsrc), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "ppsrc", "mark main input as a pre-processed input and activate clean source input stream", OFFSET(ppsrc), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "field", "set the field to match from", OFFSET(field), AV_OPT_TYPE_INT, {.i64=FM_PARITY_AUTO}, -1, 1, FLAGS, "field" },
         { "auto",   "automatic (same value as 'order')",    0, AV_OPT_TYPE_CONST, {.i64=FM_PARITY_AUTO},    INT_MIN, INT_MAX, FLAGS, "field" },
         { "bottom", "bottom field",                         0, AV_OPT_TYPE_CONST, {.i64=FM_PARITY_BOTTOM},  INT_MIN, INT_MAX, FLAGS, "field" },
         { "top",    "top field",                            0, AV_OPT_TYPE_CONST, {.i64=FM_PARITY_TOP},     INT_MIN, INT_MAX, FLAGS, "field" },
-    { "mchroma", "set whether or not chroma is included during the match comparisons", OFFSET(mchroma), AV_OPT_TYPE_INT, {.i64=1}, 0, 1,  FLAGS },
+    { "mchroma", "set whether or not chroma is included during the match comparisons", OFFSET(mchroma), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1,  FLAGS },
     { "y0", "define an exclusion band which excludes the lines between y0 and y1 from the field matching decision", OFFSET(y0), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "y1", "define an exclusion band which excludes the lines between y0 and y1 from the field matching decision", OFFSET(y1), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "scthresh", "set scene change detection threshold", OFFSET(scthresh_flt), AV_OPT_TYPE_DOUBLE, {.dbl=12}, 0, 100, FLAGS },
@@ -142,7 +142,7 @@ static const AVOption fieldmatch_options[] = {
         { "pcn",   "calculate p/c/n",       0, AV_OPT_TYPE_CONST, {.i64=COMBDBG_PCN},   INT_MIN, INT_MAX, FLAGS, "dbglvl" },
         { "pcnub", "calculate p/c/n/u/b",   0, AV_OPT_TYPE_CONST, {.i64=COMBDBG_PCNUB}, INT_MIN, INT_MAX, FLAGS, "dbglvl" },
     { "cthresh", "set the area combing threshold used for combed frame detection",       OFFSET(cthresh), AV_OPT_TYPE_INT, {.i64= 9}, -1, 0xff, FLAGS },
-    { "chroma",  "set whether or not chroma is considered in the combed frame decision", OFFSET(chroma),  AV_OPT_TYPE_INT, {.i64= 0},  0,    1, FLAGS },
+    { "chroma",  "set whether or not chroma is considered in the combed frame decision", OFFSET(chroma),  AV_OPT_TYPE_BOOL,{.i64= 0},  0,    1, FLAGS },
     { "blockx",  "set the x-axis size of the window used during combed frame detection", OFFSET(blockx),  AV_OPT_TYPE_INT, {.i64=16},  4, 1<<9, FLAGS },
     { "blocky",  "set the y-axis size of the window used during combed frame detection", OFFSET(blocky),  AV_OPT_TYPE_INT, {.i64=16},  4, 1<<9, FLAGS },
     { "combpel", "set the number of combed pixels inside any of the blocky by blockx size blocks on the frame for the frame to be detected as combed", OFFSET(combpel), AV_OPT_TYPE_INT, {.i64=80}, 0, INT_MAX, FLAGS },
@@ -153,12 +153,12 @@ AVFILTER_DEFINE_CLASS(fieldmatch);
 
 static int get_width(const FieldMatchContext *fm, const AVFrame *f, int plane)
 {
-    return plane ? FF_CEIL_RSHIFT(f->width, fm->hsub) : f->width;
+    return plane ? AV_CEIL_RSHIFT(f->width, fm->hsub) : f->width;
 }
 
 static int get_height(const FieldMatchContext *fm, const AVFrame *f, int plane)
 {
-    return plane ? FF_CEIL_RSHIFT(f->height, fm->vsub) : f->height;
+    return plane ? AV_CEIL_RSHIFT(f->height, fm->vsub) : f->height;
 }
 
 static int64_t luma_abs_diff(const AVFrame *f1, const AVFrame *f2)
@@ -270,8 +270,8 @@ static int calc_combed_score(const FieldMatchContext *fm, const AVFrame *src)
         uint8_t *cmkp  = fm->cmask_data[0];
         uint8_t *cmkpU = fm->cmask_data[1];
         uint8_t *cmkpV = fm->cmask_data[2];
-        const int width  = FF_CEIL_RSHIFT(src->width,  fm->hsub);
-        const int height = FF_CEIL_RSHIFT(src->height, fm->vsub);
+        const int width  = AV_CEIL_RSHIFT(src->width,  fm->hsub);
+        const int height = AV_CEIL_RSHIFT(src->height, fm->vsub);
         const int cmk_linesize   = fm->cmask_linesize[0] << 1;
         const int cmk_linesizeUV = fm->cmask_linesize[2];
         uint8_t *cmkpp  = cmkp - (cmk_linesize>>1);
@@ -608,10 +608,13 @@ static void copy_fields(const FieldMatchContext *fm, AVFrame *dst,
                         const AVFrame *src, int field)
 {
     int plane;
-    for (plane = 0; plane < 4 && src->data[plane] && src->linesize[plane]; plane++)
+    for (plane = 0; plane < 4 && src->data[plane] && src->linesize[plane]; plane++) {
+        const int plane_h = get_height(fm, src, plane);
+        const int nb_copy_fields = (plane_h >> 1) + (field ? 0 : (plane_h & 1));
         av_image_copy_plane(dst->data[plane] + field*dst->linesize[plane], dst->linesize[plane] << 1,
                             src->data[plane] + field*src->linesize[plane], src->linesize[plane] << 1,
-                            get_width(fm, src, plane), get_height(fm, src, plane) / 2);
+                            get_width(fm, src, plane), nb_copy_fields);
+    }
 }
 
 static AVFrame *create_weave_frame(AVFilterContext *ctx, int match, int field,
@@ -737,7 +740,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* scene change check */
     if (fm->combmatch == COMBMATCH_SC) {
-        if (fm->lastn == outlink->frame_count - 1) {
+        if (fm->lastn == outlink->frame_count_in - 1) {
             if (fm->lastscdiff > fm->scthresh)
                 sc = 1;
         } else if (luma_abs_diff(fm->prv, fm->src) > fm->scthresh) {
@@ -745,7 +748,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         if (!sc) {
-            fm->lastn = outlink->frame_count;
+            fm->lastn = outlink->frame_count_in;
             fm->lastscdiff = luma_abs_diff(fm->src, fm->nxt);
             sc = fm->lastscdiff > fm->scthresh;
         }
@@ -804,7 +807,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst->interlaced_frame = combs[match] >= fm->combpel;
     if (dst->interlaced_frame) {
         av_log(ctx, AV_LOG_WARNING, "Frame #%"PRId64" at %s is still interlaced\n",
-               outlink->frame_count, av_ts2timestr(in->pts, &inlink->time_base));
+               outlink->frame_count_in, av_ts2timestr(in->pts, &inlink->time_base));
         dst->top_field_first = field;
     }
 
@@ -953,7 +956,6 @@ static int config_output(AVFilterLink *outlink)
     const AVFilterLink *inlink =
         ctx->inputs[fm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
 
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->time_base = inlink->time_base;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = inlink->frame_rate;

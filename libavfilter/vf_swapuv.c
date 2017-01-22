@@ -23,18 +23,35 @@
  * swap UV filter
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/version.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 
+typedef struct SwapUVContext {
+    const AVClass *class;
+} SwapUVContext;
+
+static const AVOption swapuv_options[] = {
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(swapuv);
+
 static void do_swap(AVFrame *frame)
 {
     FFSWAP(uint8_t*,     frame->data[1],     frame->data[2]);
     FFSWAP(int,          frame->linesize[1], frame->linesize[2]);
-    FFSWAP(uint64_t,     frame->error[1],    frame->error[2]);
     FFSWAP(AVBufferRef*, frame->buf[1],      frame->buf[2]);
+
+#if FF_API_ERROR_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    FFSWAP(uint64_t,     frame->error[1],    frame->error[2]);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static AVFrame *get_video_buffer(AVFilterLink *link, int w, int h)
@@ -56,10 +73,10 @@ static int is_planar_yuv(const AVPixFmtDescriptor *desc)
 
     if (desc->flags & ~(AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_ALPHA) ||
         desc->nb_components < 3 ||
-        (desc->comp[1].depth_minus1 != desc->comp[2].depth_minus1))
+        (desc->comp[1].depth != desc->comp[2].depth))
         return 0;
     for (i = 0; i < desc->nb_components; i++) {
-        if (desc->comp[i].offset_plus1 != 1 ||
+        if (desc->comp[i].offset != 0 ||
             desc->comp[i].shift != 0 ||
             desc->comp[i].plane != i)
             return 0;
@@ -71,12 +88,12 @@ static int is_planar_yuv(const AVPixFmtDescriptor *desc)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
-    int fmt;
+    int fmt, ret;
 
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (is_planar_yuv(desc))
-            ff_add_format(&formats, fmt);
+        if (is_planar_yuv(desc) && (ret = ff_add_format(&formats, fmt)) < 0)
+            return ret;
     }
 
     return ff_set_common_formats(ctx, formats);
@@ -104,6 +121,9 @@ AVFilter ff_vf_swapuv = {
     .name          = "swapuv",
     .description   = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .query_formats = query_formats,
+    .priv_size     = sizeof(SwapUVContext),
+    .priv_class    = &swapuv_class,
     .inputs        = swapuv_inputs,
     .outputs       = swapuv_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

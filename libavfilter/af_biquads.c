@@ -94,7 +94,7 @@ typedef struct ChanCache {
     double o1, o2;
 } ChanCache;
 
-typedef struct {
+typedef struct BiquadsContext {
     const AVClass *class;
 
     enum FilterType filter_type;
@@ -110,8 +110,9 @@ typedef struct {
     double b0, b1, b2;
 
     ChanCache *cache;
+    int clippings;
 
-    void (*filter)(const void *ibuf, void *obuf, int len,
+    void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
                    double b0, double b1, double b2, double a1, double a2);
 } BiquadsContext;
@@ -144,7 +145,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
@@ -165,7 +166,8 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 #define BIQUAD_FILTER(name, type, min, max, need_clipping)                    \
-static void biquad_## name (const void *input, void *output, int len,         \
+static void biquad_## name (BiquadsContext *s,                                \
+                            const void *input, void *output, int len,         \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
                             double b0, double b1, double b2,                  \
@@ -185,10 +187,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
         if (need_clipping && o2 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o2 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o2;                                                     \
@@ -197,10 +199,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
         if (need_clipping && o1 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o1 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o1;                                                     \
@@ -213,10 +215,10 @@ static void biquad_## name (const void *input, void *output, int len,         \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
         if (need_clipping && o0 < min) {                                      \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o0 > max) {                               \
-            av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
+            s->clippings++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o0;                                                     \
@@ -391,8 +393,9 @@ static int config_output(AVFilterLink *outlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
-    BiquadsContext *s       = inlink->dst->priv;
-    AVFilterLink *outlink   = inlink->dst->outputs[0];
+    AVFilterContext  *ctx = inlink->dst;
+    BiquadsContext *s     = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out_buf;
     int nb_samples = buf->nb_samples;
     int ch;
@@ -401,17 +404,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = buf;
     } else {
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
-        if (!out_buf)
+        if (!out_buf) {
+            av_frame_free(&buf);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy_props(out_buf, buf);
     }
 
     for (ch = 0; ch < av_frame_get_channels(buf); ch++)
-        s->filter(buf->extended_data[ch],
+        s->filter(s, buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2,
                   &s->cache[ch].o1, &s->cache[ch].o2,
                   s->b0, s->b1, s->b2, s->a1, s->a2);
+
+    if (s->clippings > 0)
+        av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
+    s->clippings = 0;
 
     if (buf != out_buf)
         av_frame_free(&buf);
@@ -534,7 +543,7 @@ static const AVOption bandpass_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
-    {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
+    {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {NULL}
 };
 

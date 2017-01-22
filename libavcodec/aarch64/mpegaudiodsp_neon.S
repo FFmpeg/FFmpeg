@@ -142,7 +142,7 @@ function ff_mpadsp_apply_window_\type\()_neon, export=1
         sub             x10, x10, #4<<2
         b.gt            1b
 
-// comuting samples[16]
+// computing samples[16]
         add             x6,  x1,  #32<<2
         ld1             {v0.2s},  [x6],  x9
         ld1             {v1.2s},  [x0],  x9

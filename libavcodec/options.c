@@ -89,7 +89,7 @@ static const AVClass av_codec_context_class = {
     .get_category            = get_category,
 };
 
-int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
+static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
 {
     int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
@@ -146,6 +146,13 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     return 0;
 }
 
+#if FF_API_GET_CONTEXT_DEFAULTS
+int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
+{
+    return init_context_defaults(s, codec);
+}
+#endif
+
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 {
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
@@ -153,7 +160,7 @@ AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     if (!avctx)
         return NULL;
 
-    if(avcodec_get_context_defaults3(avctx, codec) < 0){
+    if (init_context_defaults(avctx, codec) < 0) {
         av_free(avctx);
         return NULL;
     }
@@ -179,6 +186,7 @@ void avcodec_free_context(AVCodecContext **pavctx)
     av_freep(pavctx);
 }
 
+#if FF_API_COPY_CONTEXT
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
     const AVCodec *orig_codec = dest->codec;
@@ -213,7 +221,11 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
     dest->internal        = NULL;
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     dest->coded_frame     = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* reallocate values that should be allocated separately */
     dest->extradata       = NULL;
@@ -221,6 +233,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
+    dest->hw_frames_ctx   = NULL;
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
@@ -232,7 +245,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
             memset(((uint8_t *) dest->obj) + size, 0, pad); \
     }
     alloc_and_copy_or_fail(extradata,    src->extradata_size,
-                           FF_INPUT_BUFFER_PADDING_SIZE);
+                           AV_INPUT_BUFFER_PADDING_SIZE);
     dest->extradata_size  = src->extradata_size;
     alloc_and_copy_or_fail(intra_matrix, 64 * sizeof(int16_t), 0);
     alloc_and_copy_or_fail(inter_matrix, 64 * sizeof(int16_t), 0);
@@ -241,19 +254,27 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     av_assert0(dest->subtitle_header_size == src->subtitle_header_size);
 #undef alloc_and_copy_or_fail
 
+    if (src->hw_frames_ctx) {
+        dest->hw_frames_ctx = av_buffer_ref(src->hw_frames_ctx);
+        if (!dest->hw_frames_ctx)
+            goto fail;
+    }
+
     return 0;
 
 fail:
+    av_freep(&dest->subtitle_header);
     av_freep(&dest->rc_override);
     av_freep(&dest->intra_matrix);
     av_freep(&dest->inter_matrix);
     av_freep(&dest->extradata);
-    av_freep(&dest->subtitle_header);
+    av_buffer_unref(&dest->hw_frames_ctx);
     dest->subtitle_header_size = 0;
     dest->extradata_size = 0;
     av_opt_free(dest);
     return AVERROR(ENOMEM);
 }
+#endif
 
 const AVClass *avcodec_get_class(void)
 {
@@ -318,7 +339,6 @@ static int dummy_init(AVCodecContext *ctx)
     //TODO: this code should set every possible pointer that could be set by codec and is not an option;
     ctx->extradata_size = 8;
     ctx->extradata = av_malloc(ctx->extradata_size);
-    ctx->coded_frame = av_frame_alloc();
     return 0;
 }
 
@@ -326,7 +346,6 @@ static int dummy_close(AVCodecContext *ctx)
 {
     av_freep(&ctx->extradata);
     ctx->extradata_size = 0;
-    av_frame_free(&ctx->coded_frame);
     return 0;
 }
 
@@ -370,7 +389,7 @@ static const AVClass dummy_v2_class = {
 };
 
 /* codec with options */
-AVCodec dummy_v1_encoder = {
+static AVCodec dummy_v1_encoder = {
     .name             = "dummy_v1_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 1,
@@ -382,7 +401,7 @@ AVCodec dummy_v1_encoder = {
 };
 
 /* codec with options, different class */
-AVCodec dummy_v2_encoder = {
+static AVCodec dummy_v2_encoder = {
     .name             = "dummy_v2_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 2,
@@ -394,7 +413,7 @@ AVCodec dummy_v2_encoder = {
 };
 
 /* codec with priv data, but no class */
-AVCodec dummy_v3_encoder = {
+static AVCodec dummy_v3_encoder = {
     .name             = "dummy_v3_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 3,
@@ -405,7 +424,7 @@ AVCodec dummy_v3_encoder = {
 };
 
 /* codec without priv data */
-AVCodec dummy_v4_encoder = {
+static AVCodec dummy_v4_encoder = {
     .name             = "dummy_v4_codec",
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_NONE - 4,

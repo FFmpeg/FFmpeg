@@ -34,7 +34,8 @@ enum PatternType {
     PT_GLOB_SEQUENCE,
     PT_GLOB,
     PT_SEQUENCE,
-    PT_NONE
+    PT_NONE,
+    PT_DEFAULT
 };
 
 typedef struct VideoDemuxData {
@@ -61,6 +62,13 @@ typedef struct VideoDemuxData {
     int frame_size;
     int ts_from_file;
 } VideoDemuxData;
+
+typedef struct IdStrMap {
+    enum AVCodecID id;
+    const char *str;
+} IdStrMap;
+
+extern const IdStrMap ff_img_tags[];
 
 extern const AVOption ff_img_options[];
 

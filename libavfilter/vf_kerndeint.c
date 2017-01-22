@@ -50,10 +50,10 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption kerndeint_options[] = {
     { "thresh", "set the threshold", OFFSET(thresh), AV_OPT_TYPE_INT, {.i64=10}, 0, 255, FLAGS },
-    { "map",    "set the map", OFFSET(map), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "order",  "set the order", OFFSET(order), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "sharp",  "enable sharpening", OFFSET(sharp), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "twoway", "enable twoway", OFFSET(twoway), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "map",    "set the map",    OFFSET(map),    AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "order",  "set the order",  OFFSET(order),  AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "sharp",  "set sharpening", OFFSET(sharp),  AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
+    { "twoway", "set twoway",     OFFSET(twoway), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -152,7 +152,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     outpic->interlaced_frame = 0;
 
     for (plane = 0; plane < 4 && inpic->data[plane] && inpic->linesize[plane]; plane++) {
-        h = plane == 0 ? inlink->h : FF_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
+        h = plane == 0 ? inlink->h : AV_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
         bwidth = kerndeint->tmp_bwidth[plane];
 
         srcp_saved        = inpic->data[plane];

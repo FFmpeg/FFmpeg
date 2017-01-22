@@ -108,10 +108,10 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
             ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    if (!(data = av_buffer_alloc(len + FF_INPUT_BUFFER_PADDING_SIZE))) {
+    if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
         RETURN_ERROR(AVERROR(ENOMEM));
     }
-    memset(data->data + len, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     if (avio_read(pb, data->data, len) != len) {
         av_log(s, AV_LOG_ERROR, "Error reading attached picture data.\n");
         if (s->error_recognition & AV_EF_EXPLODE)
@@ -132,10 +132,10 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
     st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = id;
-    st->codec->width      = width;
-    st->codec->height     = height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = id;
+    st->codecpar->width      = width;
+    st->codecpar->height     = height;
     av_dict_set(&st->metadata, "comment", ff_id3v2_picture_types[type], 0);
     if (desc)
         av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);

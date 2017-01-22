@@ -58,7 +58,7 @@ static int yop_read_header(AVFormatContext *s)
     YopDecContext *yop = s->priv_data;
     AVIOContext *pb  = s->pb;
 
-    AVCodecContext *audio_dec, *video_dec;
+    AVCodecParameters *audio_par, *video_par;
     AVStream *audio_stream, *video_stream;
 
     int frame_rate, ret;
@@ -69,39 +69,39 @@ static int yop_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     // Extra data that will be passed to the decoder
-    if (ff_alloc_extradata(video_stream->codec, 8))
+    if (ff_alloc_extradata(video_stream->codecpar, 8))
         return AVERROR(ENOMEM);
 
     // Audio
-    audio_dec               = audio_stream->codec;
-    audio_dec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    audio_dec->codec_id     = AV_CODEC_ID_ADPCM_IMA_APC;
-    audio_dec->channels     = 1;
-    audio_dec->channel_layout = AV_CH_LAYOUT_MONO;
-    audio_dec->sample_rate  = 22050;
+    audio_par                 = audio_stream->codecpar;
+    audio_par->codec_type     = AVMEDIA_TYPE_AUDIO;
+    audio_par->codec_id       = AV_CODEC_ID_ADPCM_IMA_APC;
+    audio_par->channels       = 1;
+    audio_par->channel_layout = AV_CH_LAYOUT_MONO;
+    audio_par->sample_rate    = 22050;
 
     // Video
-    video_dec               = video_stream->codec;
-    video_dec->codec_type   = AVMEDIA_TYPE_VIDEO;
-    video_dec->codec_id     = AV_CODEC_ID_YOP;
+    video_par               = video_stream->codecpar;
+    video_par->codec_type   = AVMEDIA_TYPE_VIDEO;
+    video_par->codec_id     = AV_CODEC_ID_YOP;
 
     avio_skip(pb, 6);
 
     frame_rate              = avio_r8(pb);
     yop->frame_size         = avio_r8(pb) * 2048;
-    video_dec->width        = avio_rl16(pb);
-    video_dec->height       = avio_rl16(pb);
+    video_par->width        = avio_rl16(pb);
+    video_par->height       = avio_rl16(pb);
 
     video_stream->sample_aspect_ratio = (AVRational){1, 2};
 
-    ret = avio_read(pb, video_dec->extradata, 8);
+    ret = avio_read(pb, video_par->extradata, 8);
     if (ret < 8)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    yop->palette_size       = video_dec->extradata[0] * 3 + 4;
-    yop->audio_block_length = AV_RL16(video_dec->extradata + 6);
+    yop->palette_size       = video_par->extradata[0] * 3 + 4;
+    yop->audio_block_length = AV_RL16(video_par->extradata + 6);
 
-    video_dec->bit_rate     = 8 * (yop->frame_size - yop->audio_block_length) * frame_rate;
+    video_par->bit_rate     = 8 * (yop->frame_size - yop->audio_block_length) * frame_rate;
 
     // 1840 samples per frame, 1 nibble per sample; hence 1840/2 = 920
     if (yop->audio_block_length < 920 ||
@@ -132,11 +132,6 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
         *pkt                   =  yop->video_packet;
         yop->video_packet.data =  NULL;
         yop->video_packet.buf  =  NULL;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-        yop->video_packet.destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         yop->video_packet.size =  0;
         pkt->data[0]           =  yop->odd_frame;
         pkt->flags             |= AV_PKT_FLAG_KEY;
@@ -178,14 +173,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return yop->audio_block_length;
 
 err_out:
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     return ret;
 }
 
 static int yop_read_close(AVFormatContext *s)
 {
     YopDecContext *yop = s->priv_data;
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     return 0;
 }
 
@@ -210,7 +205,7 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     if (avio_seek(s->pb, frame_pos, SEEK_SET) < 0)
         return -1;
 
-    av_free_packet(&yop->video_packet);
+    av_packet_unref(&yop->video_packet);
     yop->odd_frame = timestamp & 1;
 
     return 0;

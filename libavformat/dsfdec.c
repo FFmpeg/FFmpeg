@@ -99,29 +99,33 @@ static int dsf_read_header(AVFormatContext *s)
 
     channel_type = avio_rl32(pb);
     if (channel_type < FF_ARRAY_ELEMS(dsf_channel_layout))
-        st->codec->channel_layout = dsf_channel_layout[channel_type];
-    if (!st->codec->channel_layout)
+        st->codecpar->channel_layout = dsf_channel_layout[channel_type];
+    if (!st->codecpar->channel_layout)
         avpriv_request_sample(s, "channel type %i", channel_type);
 
-    st->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    st->codec->channels     = avio_rl32(pb);
-    st->codec->sample_rate  = avio_rl32(pb) / 8;
+    st->codecpar->codec_type   = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->channels     = avio_rl32(pb);
+    st->codecpar->sample_rate  = avio_rl32(pb) / 8;
+
+    if (st->codecpar->channels <= 0)
+        return AVERROR_INVALIDDATA;
 
     switch(avio_rl32(pb)) {
-    case 1: st->codec->codec_id = AV_CODEC_ID_DSD_LSBF_PLANAR; break;
-    case 8: st->codec->codec_id = AV_CODEC_ID_DSD_MSBF_PLANAR; break;
+    case 1: st->codecpar->codec_id = AV_CODEC_ID_DSD_LSBF_PLANAR; break;
+    case 8: st->codecpar->codec_id = AV_CODEC_ID_DSD_MSBF_PLANAR; break;
     default:
         avpriv_request_sample(s, "unknown most significant bit");
         return AVERROR_INVALIDDATA;
     }
 
     avio_skip(pb, 8);
-    st->codec->block_align = avio_rl32(pb);
-    if (st->codec->block_align > INT_MAX / st->codec->channels) {
+    st->codecpar->block_align = avio_rl32(pb);
+    if (st->codecpar->block_align > INT_MAX / st->codecpar->channels) {
         avpriv_request_sample(s, "block_align overflow");
         return AVERROR_INVALIDDATA;
     }
-    st->codec->block_align *= st->codec->channels;
+    st->codecpar->block_align *= st->codecpar->channels;
+    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate * 8LL;
     avio_skip(pb, 4);
 
     /* data chunk */
@@ -145,7 +149,7 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     pkt->stream_index = 0;
-    return av_get_packet(pb, pkt, FFMIN(dsf->data_end - pos, st->codec->block_align));
+    return av_get_packet(pb, pkt, FFMIN(dsf->data_end - pos, st->codecpar->block_align));
 }
 
 AVInputFormat ff_dsf_demuxer = {

@@ -141,7 +141,9 @@ char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)
 static int check_fps(int fps)
 {
     int i;
-    static const int supported_fps[] = {24, 25, 30, 48, 50, 60};
+    static const int supported_fps[] = {
+        24, 25, 30, 48, 50, 60, 100, 120, 150,
+    };
 
     for (i = 0; i < FF_ARRAY_ELEMS(supported_fps); i++)
         if (fps == supported_fps[i])
@@ -151,7 +153,7 @@ static int check_fps(int fps)
 
 static int check_timecode(void *log_ctx, AVTimecode *tc)
 {
-    if (tc->fps <= 0) {
+    if ((int)tc->fps <= 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate must be specified\n");
         return AVERROR(EINVAL);
     }
@@ -160,9 +162,8 @@ static int check_timecode(void *log_ctx, AVTimecode *tc)
         return AVERROR(EINVAL);
     }
     if (check_fps(tc->fps) < 0) {
-        av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate %d/%d not supported\n",
+        av_log(log_ctx, AV_LOG_WARNING, "Using non-standard frame rate %d/%d\n",
                tc->rate.num, tc->rate.den);
-        return AVERROR_PATCHWELCOME;
     }
     return 0;
 }

@@ -86,14 +86,14 @@ static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
     double cfreq;
     int ret;
 
-    if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         /* variable bitrate
          * NOTE: we use the oggenc range of -1 to 10 for global_quality for
          *       user convenience, but libvorbis uses -0.1 to 1.0.
          */
         float q = avctx->global_quality / (float)FF_QP2LAMBDA;
         /* default to 3 if the user did not set quality or bitrate */
-        if (!(avctx->flags & CODEC_FLAG_QSCALE))
+        if (!(avctx->flags & AV_CODEC_FLAG_QSCALE))
             q = 3.0;
         if ((ret = vorbis_encode_setup_vbr(vi, avctx->channels,
                                            avctx->sample_rate,
@@ -218,7 +218,7 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
     }
 
     vorbis_comment_init(&s->vc);
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT))
+    if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
         vorbis_comment_add_tag(&s->vc, "encoder", LIBAVCODEC_IDENT);
 
     if ((ret = vorbis_analysis_headerout(&s->vd, &s->vc, &header, &header_comm,
@@ -231,7 +231,7 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
                                 xiph_len(header_comm.bytes) +
                                 header_code.bytes;
     p = avctx->extradata = av_malloc(avctx->extradata_size +
-                                     FF_INPUT_BUFFER_PADDING_SIZE);
+                                     AV_INPUT_BUFFER_PADDING_SIZE);
     if (!p) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -338,7 +338,7 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     av_fifo_generic_read(s->pkt_fifo, &op, sizeof(ogg_packet), NULL);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, op.bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, op.bytes, 0)) < 0)
         return ret;
     av_fifo_generic_read(s->pkt_fifo, avpkt->data, op.bytes, NULL);
 
@@ -372,7 +372,7 @@ AVCodec ff_libvorbis_encoder = {
     .init           = libvorbis_encode_init,
     .encode2        = libvorbis_encode_frame,
     .close          = libvorbis_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &vorbis_class,

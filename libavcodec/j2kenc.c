@@ -17,7 +17,45 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * **********************************************************************************************************************
+ *
+ *
+ *
+ * This source code incorporates work covered by the following copyright and
+ * permission notice:
+ *
+ * Copyright (c) 2002-2007, Communications and Remote Sensing Laboratory, Universite catholique de Louvain (UCL), Belgium
+ * Copyright (c) 2002-2007, Professor Benoit Macq
+ * Copyright (c) 2001-2003, David Janssens
+ * Copyright (c) 2002-2003, Yannick Verschueren
+ * Copyright (c) 2003-2007, Francois-Olivier Devaux and Antonin Descampe
+ * Copyright (c) 2005, Herve Drolon, FreeImage Team
+ * Copyright (c) 2007, Callum Lerwick <seg@haxxed.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS `AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
 
 /**
  * JPEG2000 image encoder
@@ -88,6 +126,7 @@ typedef struct {
     Jpeg2000Tile *tile;
 
     int format;
+    int pred;
 } Jpeg2000EncoderContext;
 
 
@@ -319,10 +358,9 @@ static int put_qcd(Jpeg2000EncoderContext *s, int compno)
 
 static int put_com(Jpeg2000EncoderContext *s, int compno)
 {
-    int i;
     int size = 4 + strlen(LIBAVCODEC_IDENT);
 
-    if (s->avctx->flags & CODEC_FLAG_BITEXACT)
+    if (s->avctx->flags & AV_CODEC_FLAG_BITEXACT)
         return 0;
 
     if (s->buf_end - s->buf < size + 2)
@@ -956,7 +994,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     Jpeg2000EncoderContext *s = avctx->priv_data;
     uint8_t *chunkstart, *jp2cstart, *jp2hstart;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     // init:
@@ -1070,6 +1108,13 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     s->avctx = avctx;
     av_log(s->avctx, AV_LOG_DEBUG, "init\n");
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->pred = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     // defaults:
     // TODO: implement setting non-standard precinct size
     memset(codsty->log2_prec_widths , 15, sizeof(codsty->log2_prec_widths ));
@@ -1078,7 +1123,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     codsty->nreslevels       = 7;
     codsty->log2_cblk_width  = 4;
     codsty->log2_cblk_height = 4;
-    codsty->transform        = avctx->prediction_method ? FF_DWT53 : FF_DWT97_INT;
+    codsty->transform        = s->pred ? FF_DWT53 : FF_DWT97_INT;
 
     qntsty->nguardbits       = 1;
 
@@ -1140,6 +1185,9 @@ static const AVOption options[] = {
     { "jp2",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = CODEC_JP2   }, 0,         0,           VE, "format"      },
     { "tile_width",    "Tile Width",        OFFSET(tile_width),    AV_OPT_TYPE_INT,   { .i64 = 256         }, 1,     1<<30,           VE, },
     { "tile_height",   "Tile Height",       OFFSET(tile_height),   AV_OPT_TYPE_INT,   { .i64 = 256         }, 1,     1<<30,           VE, },
+    { "pred",          "DWT Type",          OFFSET(pred),          AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE, "pred"        },
+    { "dwt97int",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
+    { "dwt53",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = 0           }, INT_MIN, INT_MAX,       VE, "pred"        },
 
     { NULL }
 };
@@ -1160,7 +1208,6 @@ AVCodec ff_jpeg2000_encoder = {
     .init           = j2kenc_init,
     .encode2        = encode_frame,
     .close          = j2kenc_destroy,
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_YUV444P, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,

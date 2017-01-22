@@ -49,7 +49,7 @@
 #include "atrac3data.h"
 
 #define JOINT_STEREO    0x12
-#define STEREO          0x2
+#define SINGLE          0x2
 
 #define SAMPLES_PER_FRAME 1024
 #define MDCT_SIZE          512
@@ -567,7 +567,7 @@ static void channel_weighting(float *su1, float *su2, int *p3)
  * @param snd           the channel unit to be used
  * @param output        the decoded samples before IQMF in float representation
  * @param channel_num   channel number
- * @param coding_mode   the coding mode (JOINT_STEREO or regular stereo/mono)
+ * @param coding_mode   the coding mode (JOINT_STEREO or single channels)
  */
 static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
                                      ChannelUnit *snd, float *output,
@@ -702,7 +702,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
         channel_weighting(out_samples[0], out_samples[1], q->weighting_delay);
     } else {
-        /* normal stereo mode or mono */
+        /* single channels */
         /* Decode the channel sound units. */
         for (i = 0; i < avctx->channels; i++) {
             /* Set the bitstream reader at the start of a channel sound unit. */
@@ -762,7 +762,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 
     ret = decode_frame(avctx, databuf, (float **)frame->extended_data);
     if (ret) {
-        av_log(NULL, AV_LOG_ERROR, "Frame decoding error!\n");
+        av_log(avctx, AV_LOG_ERROR, "Frame decoding error!\n");
         return ret;
     }
 
@@ -797,7 +797,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
 
-    if (avctx->channels <= 0 || avctx->channels > 2) {
+    if (avctx->channels <= 0 || avctx->channels > 6) {
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
         return AVERROR(EINVAL);
     }
@@ -823,7 +823,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         samples_per_frame    = SAMPLES_PER_FRAME * avctx->channels;
         version              = 4;
         delay                = 0x88E;
-        q->coding_mode       = q->coding_mode ? JOINT_STEREO : STEREO;
+        q->coding_mode       = q->coding_mode ? JOINT_STEREO : SINGLE;
         q->scrambled_stream  = 0;
 
         if (avctx->block_align !=  96 * avctx->channels * frame_factor &&
@@ -843,7 +843,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->scrambled_stream    = 1;
 
     } else {
-        av_log(NULL, AV_LOG_ERROR, "Unknown extradata size %d.\n",
+        av_log(avctx, AV_LOG_ERROR, "Unknown extradata size %d.\n",
                avctx->extradata_size);
         return AVERROR(EINVAL);
     }
@@ -855,8 +855,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (samples_per_frame != SAMPLES_PER_FRAME &&
-        samples_per_frame != SAMPLES_PER_FRAME * 2) {
+    if (samples_per_frame != SAMPLES_PER_FRAME * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "Unknown amount of samples per frame %d.\n",
                samples_per_frame);
         return AVERROR_INVALIDDATA;
@@ -868,8 +867,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (q->coding_mode == STEREO)
-        av_log(avctx, AV_LOG_DEBUG, "Normal stereo detected.\n");
+    if (q->coding_mode == SINGLE)
+        av_log(avctx, AV_LOG_DEBUG, "Single channels detected.\n");
     else if (q->coding_mode == JOINT_STEREO) {
         if (avctx->channels != 2) {
             av_log(avctx, AV_LOG_ERROR, "Invalid coding mode\n");
@@ -886,7 +885,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
 
     q->decoded_bytes_buffer = av_mallocz(FFALIGN(avctx->block_align, 4) +
-                                         FF_INPUT_BUFFER_PADDING_SIZE);
+                                         AV_INPUT_BUFFER_PADDING_SIZE);
     if (!q->decoded_bytes_buffer)
         return AVERROR(ENOMEM);
 
@@ -914,7 +913,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
-    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     q->units = av_mallocz_array(avctx->channels, sizeof(*q->units));
     if (!q->units || !q->fdsp) {
@@ -934,7 +933,7 @@ AVCodec ff_atrac3_decoder = {
     .init             = atrac3_decode_init,
     .close            = atrac3_decode_close,
     .decode           = atrac3_decode_frame,
-    .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
 };

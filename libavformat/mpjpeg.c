@@ -33,10 +33,7 @@ typedef struct MPJPEGContext {
 static int mpjpeg_write_header(AVFormatContext *s)
 {
     MPJPEGContext *mpj = s->priv_data;
-    uint8_t buf1[256];
-
-    snprintf(buf1, sizeof(buf1), "--%s\r\n", mpj->boundary_tag);
-    avio_write(s->pb, buf1, strlen(buf1));
+    avio_printf(s->pb, "--%s\r\n", mpj->boundary_tag);
     avio_flush(s->pb);
     return 0;
 }
@@ -44,17 +41,12 @@ static int mpjpeg_write_header(AVFormatContext *s)
 static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MPJPEGContext *mpj = s->priv_data;
-    uint8_t buf1[256];
-
-    snprintf(buf1, sizeof(buf1), "Content-type: image/jpeg\r\n");
-    avio_write(s->pb, buf1, strlen(buf1));
-
-    snprintf(buf1, sizeof(buf1), "Content-length: %d\r\n\r\n", pkt->size);
-    avio_write(s->pb, buf1, strlen(buf1));
+    avio_printf(s->pb, "Content-type: image/jpeg\r\n");
+    avio_printf(s->pb, "Content-length: %d\r\n\r\n",
+                pkt->size);
     avio_write(s->pb, pkt->data, pkt->size);
 
-    snprintf(buf1, sizeof(buf1), "\r\n--%s\r\n", mpj->boundary_tag);
-    avio_write(s->pb, buf1, strlen(buf1));
+    avio_printf(s->pb, "\r\n--%s\r\n", mpj->boundary_tag);
     return 0;
 }
 

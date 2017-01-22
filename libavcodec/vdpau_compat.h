@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#include "h264.h"
+#include "h264dec.h"
 #include "mpeg4video.h"
 
 void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf,

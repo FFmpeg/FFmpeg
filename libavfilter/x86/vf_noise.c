@@ -32,22 +32,22 @@ static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
     noise += shift;
 
     __asm__ volatile(
-            "mov %3, %%"REG_a"               \n\t"
+            "mov %3, %%"FF_REG_a"            \n\t"
             "pcmpeqb %%mm7, %%mm7            \n\t"
             "psllw $15, %%mm7                \n\t"
             "packsswb %%mm7, %%mm7           \n\t"
             ".p2align 4                      \n\t"
             "1:                              \n\t"
-            "movq (%0, %%"REG_a"), %%mm0     \n\t"
-            "movq (%1, %%"REG_a"), %%mm1     \n\t"
+            "movq (%0, %%"FF_REG_a"), %%mm0  \n\t"
+            "movq (%1, %%"FF_REG_a"), %%mm1  \n\t"
             "pxor %%mm7, %%mm0               \n\t"
             "paddsb %%mm1, %%mm0             \n\t"
             "pxor %%mm7, %%mm0               \n\t"
-            "movq %%mm0, (%2, %%"REG_a")     \n\t"
-            "add $8, %%"REG_a"               \n\t"
+            "movq %%mm0, (%2, %%"FF_REG_a")  \n\t"
+            "add $8, %%"FF_REG_a"            \n\t"
             " js 1b                          \n\t"
             :: "r" (src+mmx_len), "r" (noise+mmx_len), "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"REG_a
+            : "%"FF_REG_a
     );
     if (mmx_len != len)
         ff_line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);
@@ -60,13 +60,13 @@ static void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
     x86_reg mmx_len = len & (~7);
 
     __asm__ volatile(
-            "mov %5, %%"REG_a"              \n\t"
+            "mov %5, %%"FF_REG_a"           \n\t"
             ".p2align 4                     \n\t"
             "1:                             \n\t"
-            "movq (%1, %%"REG_a"), %%mm1    \n\t"
-            "movq (%0, %%"REG_a"), %%mm0    \n\t"
-            "paddb (%2, %%"REG_a"), %%mm1   \n\t"
-            "paddb (%3, %%"REG_a"), %%mm1   \n\t"
+            "movq (%1, %%"FF_REG_a"), %%mm1 \n\t"
+            "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
+            "paddb (%2, %%"FF_REG_a"), %%mm1\n\t"
+            "paddb (%3, %%"FF_REG_a"), %%mm1\n\t"
             "movq %%mm0, %%mm2              \n\t"
             "movq %%mm1, %%mm3              \n\t"
             "punpcklbw %%mm0, %%mm0         \n\t"
@@ -82,12 +82,12 @@ static void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
             "psrlw $8, %%mm1                \n\t"
             "psrlw $8, %%mm3                \n\t"
             "packuswb %%mm3, %%mm1          \n\t"
-            "movq %%mm1, (%4, %%"REG_a")    \n\t"
-            "add $8, %%"REG_a"              \n\t"
+            "movq %%mm1, (%4, %%"FF_REG_a") \n\t"
+            "add $8, %%"FF_REG_a"           \n\t"
             " js 1b                         \n\t"
             :: "r" (src+mmx_len), "r" (shift[0]+mmx_len), "r" (shift[1]+mmx_len), "r" (shift[2]+mmx_len),
                "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"REG_a
+            : "%"FF_REG_a
         );
 
     if (mmx_len != len){
@@ -104,22 +104,22 @@ static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
     noise += shift;
 
     __asm__ volatile(
-            "mov %3, %%"REG_a"                \n\t"
+            "mov %3, %%"FF_REG_a"             \n\t"
             "pcmpeqb %%mm7, %%mm7             \n\t"
             "psllw $15, %%mm7                 \n\t"
             "packsswb %%mm7, %%mm7            \n\t"
             ".p2align 4                       \n\t"
             "1:                               \n\t"
-            "movq (%0, %%"REG_a"), %%mm0      \n\t"
-            "movq (%1, %%"REG_a"), %%mm1      \n\t"
+            "movq (%0, %%"FF_REG_a"), %%mm0   \n\t"
+            "movq (%1, %%"FF_REG_a"), %%mm1   \n\t"
             "pxor %%mm7, %%mm0                \n\t"
             "paddsb %%mm1, %%mm0              \n\t"
             "pxor %%mm7, %%mm0                \n\t"
-            "movntq %%mm0, (%2, %%"REG_a")    \n\t"
-            "add $8, %%"REG_a"                \n\t"
+            "movntq %%mm0, (%2, %%"FF_REG_a") \n\t"
+            "add $8, %%"FF_REG_a"             \n\t"
             " js 1b                           \n\t"
             :: "r" (src+mmx_len), "r" (noise+mmx_len), "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"REG_a
+            : "%"FF_REG_a
             );
     if (mmx_len != len)
         ff_line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);

@@ -222,5 +222,5 @@ AVCodec ff_rl2_decoder = {
     .init           = rl2_decode_init,
     .close          = rl2_decode_end,
     .decode         = rl2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -41,7 +41,7 @@
 // see Ref 2.2.1.8
 #define USERAGENT  "User-Agent: NSPlayer/4.1.0.3856\r\n"
 // see Ref 2.2.1.4.33
-// the guid value can be changed to any valid value.
+// the GUID value can be changed to any valid value.
 #define CLIENTGUID "Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"
 
 // see Ref 2.2.3 for packet type define:
@@ -246,6 +246,14 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
              host, port, mmsh->request_seq++);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
+    if (!mms->mms_hd->protocol_whitelist && h->protocol_whitelist) {
+        mms->mms_hd->protocol_whitelist = av_strdup(h->protocol_whitelist);
+        if (!mms->mms_hd->protocol_whitelist) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     err = ffurl_connect(mms->mms_hd, NULL);
     if (err) {
         goto fail;
@@ -401,7 +409,7 @@ static int64_t mmsh_seek(URLContext *h, int64_t pos, int whence)
     return AVERROR(ENOSYS);
 }
 
-URLProtocol ff_mmsh_protocol = {
+const URLProtocol ff_mmsh_protocol = {
     .name           = "mmsh",
     .url_open       = mmsh_open,
     .url_read       = mmsh_read,
@@ -410,4 +418,5 @@ URLProtocol ff_mmsh_protocol = {
     .url_read_seek  = mmsh_read_seek,
     .priv_data_size = sizeof(MMSHContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "http,tcp",
 };

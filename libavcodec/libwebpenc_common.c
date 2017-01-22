@@ -167,8 +167,8 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
                         int sse = 0;
                         for (p = 0; p < 3; p++) {
                             int bs2 = bs >> !!p;
-                            int w = FF_CEIL_RSHIFT(frame->width , !!p);
-                            int h = FF_CEIL_RSHIFT(frame->height, !!p);
+                            int w = AV_CEIL_RSHIFT(frame->width , !!p);
+                            int h = AV_CEIL_RSHIFT(frame->height, !!p);
                             int xs = x >> !!p;
                             int ys = y >> !!p;
                             for (y2 = ys; y2 < FFMIN(ys + bs2, h); y2++) {
@@ -183,8 +183,8 @@ int ff_libwebp_get_frame(AVCodecContext *avctx, LibWebPContextCommon *s,
                         if (!skip)
                             for (p = 0; p < 3; p++) {
                                 int bs2 = bs >> !!p;
-                                int w = FF_CEIL_RSHIFT(frame->width , !!p);
-                                int h = FF_CEIL_RSHIFT(frame->height, !!p);
+                                int w = AV_CEIL_RSHIFT(frame->width , !!p);
+                                int h = AV_CEIL_RSHIFT(frame->height, !!p);
                                 int xs = x >> !!p;
                                 int ys = y >> !!p;
                                 for (y2 = ys; y2 < FFMIN(ys + bs2, h); y2++) {

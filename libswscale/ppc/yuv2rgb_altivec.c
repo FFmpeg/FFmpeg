@@ -89,7 +89,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "config.h"
 #include "libswscale/rgb2rgb.h"
@@ -142,7 +141,6 @@ typedef signed char   sbyte;
  *           brgb|rgbr|gbrg|brgb
  *           1001 0010 0100 1001
  *           a67b 89cA BdCD eEFf
- *
  */
 static const vector unsigned char
     perm_rgb_0 = { 0x00, 0x01, 0x10, 0x02, 0x03, 0x11, 0x04, 0x05,
@@ -222,6 +220,7 @@ static const vector unsigned char
  * optimized for JPEG decoding.
  */
 
+#if HAVE_BIGENDIAN
 #define vec_unh(x)                                                      \
     (vector signed short)                                               \
         vec_perm(x, (__typeof__(x)) { 0 },                              \
@@ -235,6 +234,10 @@ static const vector unsigned char
                  ((vector unsigned char) {                              \
                      0x10, 0x08, 0x10, 0x09, 0x10, 0x0A, 0x10, 0x0B,    \
                      0x10, 0x0C, 0x10, 0x0D, 0x10, 0x0E, 0x10, 0x0F }))
+#else
+#define vec_unh(x)(vector signed short) vec_mergeh(x,(__typeof__(x)) { 0 })
+#define vec_unl(x)(vector signed short) vec_mergel(x,(__typeof__(x)) { 0 })
+#endif
 
 #define vec_clip_s16(x)                                                 \
     vec_max(vec_min(x, ((vector signed short) {                         \

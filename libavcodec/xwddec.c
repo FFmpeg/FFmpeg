@@ -141,7 +141,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (bytestream2_get_bytes_left(&gb) < ncolors * XWD_CMAP_SIZE + avctx->height * lsize) {
+    if (bytestream2_get_bytes_left(&gb) < ncolors * XWD_CMAP_SIZE + (uint64_t)avctx->height * lsize) {
         av_log(avctx, AV_LOG_ERROR, "input buffer too small\n");
         return AVERROR_INVALIDDATA;
     }
@@ -249,5 +249,5 @@ AVCodec ff_xwd_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XWD,
     .decode         = xwd_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

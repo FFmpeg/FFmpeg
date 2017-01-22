@@ -4,6 +4,7 @@
  * Copyright (C) 2004 Benjamin Zores
  * Copyright (C) 2006 Benjamin Larsson
  * Copyright (C) 2007 Konstantin Shishkov
+ * Copyright (C) 2016 foo86
  *
  * This file is part of FFmpeg.
  *
@@ -27,280 +28,139 @@
 
 #include <stdint.h>
 
-#include "libavutil/float_dsp.h"
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 
-#include "avcodec.h"
-#include "dcadsp.h"
-#include "fmtconvert.h"
-#include "get_bits.h"
+enum DCASpeaker {
+    DCA_SPEAKER_C,    DCA_SPEAKER_L,    DCA_SPEAKER_R,    DCA_SPEAKER_Ls,
+    DCA_SPEAKER_Rs,   DCA_SPEAKER_LFE1, DCA_SPEAKER_Cs,   DCA_SPEAKER_Lsr,
+    DCA_SPEAKER_Rsr,  DCA_SPEAKER_Lss,  DCA_SPEAKER_Rss,  DCA_SPEAKER_Lc,
+    DCA_SPEAKER_Rc,   DCA_SPEAKER_Lh,   DCA_SPEAKER_Ch,   DCA_SPEAKER_Rh,
+    DCA_SPEAKER_LFE2, DCA_SPEAKER_Lw,   DCA_SPEAKER_Rw,   DCA_SPEAKER_Oh,
+    DCA_SPEAKER_Lhs,  DCA_SPEAKER_Rhs,  DCA_SPEAKER_Chr,  DCA_SPEAKER_Lhr,
+    DCA_SPEAKER_Rhr,  DCA_SPEAKER_Cl,   DCA_SPEAKER_Ll,   DCA_SPEAKER_Rl,
+    DCA_SPEAKER_RSV1, DCA_SPEAKER_RSV2, DCA_SPEAKER_RSV3, DCA_SPEAKER_RSV4,
 
-#define DCA_PRIM_CHANNELS_MAX  (7)
-#define DCA_ABITS_MAX         (32)      /* Should be 28 */
-#define DCA_SUBSUBFRAMES_MAX   (4)
-#define DCA_SUBFRAMES_MAX     (16)
-#define DCA_BLOCKS_MAX        (16)
-#define DCA_LFE_MAX            (3)
-#define DCA_CHSETS_MAX         (4)
-#define DCA_CHSET_CHANS_MAX    (8)
-
-#define DCA_PRIM_CHANNELS_MAX  (7)
-#define DCA_ABITS_MAX         (32)      /* Should be 28 */
-#define DCA_SUBSUBFRAMES_MAX   (4)
-#define DCA_SUBFRAMES_MAX     (16)
-#define DCA_BLOCKS_MAX        (16)
-#define DCA_LFE_MAX            (3)
-#define DCA_XLL_FBANDS_MAX     (4)
-#define DCA_XLL_SEGMENTS_MAX  (16)
-#define DCA_XLL_CHSETS_MAX    (16)
-#define DCA_XLL_CHANNELS_MAX  (16)
-#define DCA_XLL_AORDER_MAX    (15)
-
-/* Arbitrary limit; not sure what the maximum really is, but much larger. */
-#define DCA_XLL_DMIX_NCOEFFS_MAX (18)
-
-#define DCA_MAX_FRAME_SIZE       16384
-#define DCA_MAX_EXSS_HEADER_SIZE  4096
-
-#define DCA_BUFFER_PADDING_SIZE   1024
-
-enum DCAExtensionMask {
-    DCA_EXT_CORE       = 0x001, ///< core in core substream
-    DCA_EXT_XXCH       = 0x002, ///< XXCh channels extension in core substream
-    DCA_EXT_X96        = 0x004, ///< 96/24 extension in core substream
-    DCA_EXT_XCH        = 0x008, ///< XCh channel extension in core substream
-    DCA_EXT_EXSS_CORE  = 0x010, ///< core in ExSS (extension substream)
-    DCA_EXT_EXSS_XBR   = 0x020, ///< extended bitrate extension in ExSS
-    DCA_EXT_EXSS_XXCH  = 0x040, ///< XXCh channels extension in ExSS
-    DCA_EXT_EXSS_X96   = 0x080, ///< 96/24 extension in ExSS
-    DCA_EXT_EXSS_LBR   = 0x100, ///< low bitrate component in ExSS
-    DCA_EXT_EXSS_XLL   = 0x200, ///< lossless extension in ExSS
+    DCA_SPEAKER_COUNT
 };
 
-typedef struct XllChSetSubHeader {
-    int channels;               ///< number of channels in channel set, at most 16
-    int residual_encode;        ///< residual channel encoding
-    int bit_resolution;         ///< input sample bit-width
-    int bit_width;              ///< original input sample bit-width
-    int sampling_frequency;     ///< sampling frequency
-    int samp_freq_interp;       ///< sampling frequency interpolation multiplier
-    int replacement_set;        ///< replacement channel set group
-    int active_replace_set;     ///< current channel set is active channel set
-    int primary_ch_set;
-    int downmix_coeff_code_embedded;
-    int downmix_embedded;
-    int downmix_type;
-    int hier_chset;             ///< hierarchical channel set
-    int downmix_ncoeffs;
-    int downmix_coeffs[DCA_XLL_DMIX_NCOEFFS_MAX];
-    int ch_mask_enabled;
-    int ch_mask;
-    int mapping_coeffs_present;
-    int num_freq_bands;
+enum DCASpeakerMask {
+    DCA_SPEAKER_MASK_C     = 0x00000001,
+    DCA_SPEAKER_MASK_L     = 0x00000002,
+    DCA_SPEAKER_MASK_R     = 0x00000004,
+    DCA_SPEAKER_MASK_Ls    = 0x00000008,
+    DCA_SPEAKER_MASK_Rs    = 0x00000010,
+    DCA_SPEAKER_MASK_LFE1  = 0x00000020,
+    DCA_SPEAKER_MASK_Cs    = 0x00000040,
+    DCA_SPEAKER_MASK_Lsr   = 0x00000080,
+    DCA_SPEAKER_MASK_Rsr   = 0x00000100,
+    DCA_SPEAKER_MASK_Lss   = 0x00000200,
+    DCA_SPEAKER_MASK_Rss   = 0x00000400,
+    DCA_SPEAKER_MASK_Lc    = 0x00000800,
+    DCA_SPEAKER_MASK_Rc    = 0x00001000,
+    DCA_SPEAKER_MASK_Lh    = 0x00002000,
+    DCA_SPEAKER_MASK_Ch    = 0x00004000,
+    DCA_SPEAKER_MASK_Rh    = 0x00008000,
+    DCA_SPEAKER_MASK_LFE2  = 0x00010000,
+    DCA_SPEAKER_MASK_Lw    = 0x00020000,
+    DCA_SPEAKER_MASK_Rw    = 0x00040000,
+    DCA_SPEAKER_MASK_Oh    = 0x00080000,
+    DCA_SPEAKER_MASK_Lhs   = 0x00100000,
+    DCA_SPEAKER_MASK_Rhs   = 0x00200000,
+    DCA_SPEAKER_MASK_Chr   = 0x00400000,
+    DCA_SPEAKER_MASK_Lhr   = 0x00800000,
+    DCA_SPEAKER_MASK_Rhr   = 0x01000000,
+    DCA_SPEAKER_MASK_Cl    = 0x02000000,
+    DCA_SPEAKER_MASK_Ll    = 0x04000000,
+    DCA_SPEAKER_MASK_Rl    = 0x08000000,
+};
 
-    /* m_nOrigChanOrder */
-    uint8_t orig_chan_order[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-    uint8_t orig_chan_order_inv[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-    /* Coefficients for channel pairs (at most 8), m_anPWChPairsCoeffs */
-    int8_t pw_ch_pairs_coeffs[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX/2];
-    /* m_nCurrHighestLPCOrder */
-    uint8_t adapt_order_max[DCA_XLL_FBANDS_MAX];
-    /* m_pnAdaptPredOrder */
-    uint8_t adapt_order[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-    /* m_pnFixedPredOrder */
-    uint8_t fixed_order[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-    /* m_pnLPCReflCoeffsQInd, unsigned version */
-    uint8_t lpc_refl_coeffs_q_ind[DCA_XLL_FBANDS_MAX]
-                                 [DCA_XLL_CHANNELS_MAX][DCA_XLL_AORDER_MAX];
+#define DCA_SPEAKER_LAYOUT_MONO         (DCA_SPEAKER_MASK_C)
+#define DCA_SPEAKER_LAYOUT_STEREO       (DCA_SPEAKER_MASK_L | DCA_SPEAKER_MASK_R)
+#define DCA_SPEAKER_LAYOUT_2POINT1      (DCA_SPEAKER_LAYOUT_STEREO | DCA_SPEAKER_MASK_LFE1)
+#define DCA_SPEAKER_LAYOUT_3_0          (DCA_SPEAKER_LAYOUT_STEREO | DCA_SPEAKER_MASK_C)
+#define DCA_SPEAKER_LAYOUT_2_1          (DCA_SPEAKER_LAYOUT_STEREO | DCA_SPEAKER_MASK_Cs)
+#define DCA_SPEAKER_LAYOUT_3_1          (DCA_SPEAKER_LAYOUT_3_0 | DCA_SPEAKER_MASK_Cs)
+#define DCA_SPEAKER_LAYOUT_2_2          (DCA_SPEAKER_LAYOUT_STEREO | DCA_SPEAKER_MASK_Ls | DCA_SPEAKER_MASK_Rs)
+#define DCA_SPEAKER_LAYOUT_5POINT0      (DCA_SPEAKER_LAYOUT_3_0 | DCA_SPEAKER_MASK_Ls | DCA_SPEAKER_MASK_Rs)
+#define DCA_SPEAKER_LAYOUT_5POINT1      (DCA_SPEAKER_LAYOUT_5POINT0 | DCA_SPEAKER_MASK_LFE1)
+#define DCA_SPEAKER_LAYOUT_7POINT0_WIDE (DCA_SPEAKER_LAYOUT_5POINT0 | DCA_SPEAKER_MASK_Lw | DCA_SPEAKER_MASK_Rw)
+#define DCA_SPEAKER_LAYOUT_7POINT1_WIDE (DCA_SPEAKER_LAYOUT_7POINT0_WIDE | DCA_SPEAKER_MASK_LFE1)
 
-    int lsb_fsize[DCA_XLL_FBANDS_MAX];
-    int8_t scalable_lsbs[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-    int8_t bit_width_adj_per_ch[DCA_XLL_FBANDS_MAX][DCA_XLL_CHANNELS_MAX];
-} XllChSetSubHeader;
+#define DCA_HAS_STEREO(mask) \
+    ((mask & DCA_SPEAKER_LAYOUT_STEREO) == DCA_SPEAKER_LAYOUT_STEREO)
 
-typedef struct XllNavi {
-    GetBitContext gb;  // Context for parsing the data segments
-    unsigned band_size[DCA_XLL_FBANDS_MAX];
-    unsigned segment_size[DCA_XLL_FBANDS_MAX][DCA_XLL_SEGMENTS_MAX];
-    unsigned chset_size[DCA_XLL_FBANDS_MAX][DCA_XLL_SEGMENTS_MAX][DCA_XLL_CHSETS_MAX];
-} XllNavi;
+enum DCASpeakerPair {
+    DCA_SPEAKER_PAIR_C      = 0x0001,
+    DCA_SPEAKER_PAIR_LR     = 0x0002,
+    DCA_SPEAKER_PAIR_LsRs   = 0x0004,
+    DCA_SPEAKER_PAIR_LFE1   = 0x0008,
+    DCA_SPEAKER_PAIR_Cs     = 0x0010,
+    DCA_SPEAKER_PAIR_LhRh   = 0x0020,
+    DCA_SPEAKER_PAIR_LsrRsr = 0x0040,
+    DCA_SPEAKER_PAIR_Ch     = 0x0080,
+    DCA_SPEAKER_PAIR_Oh     = 0x0100,
+    DCA_SPEAKER_PAIR_LcRc   = 0x0200,
+    DCA_SPEAKER_PAIR_LwRw   = 0x0400,
+    DCA_SPEAKER_PAIR_LssRss = 0x0800,
+    DCA_SPEAKER_PAIR_LFE2   = 0x1000,
+    DCA_SPEAKER_PAIR_LhsRhs = 0x2000,
+    DCA_SPEAKER_PAIR_Chr    = 0x4000,
+    DCA_SPEAKER_PAIR_LhrRhr = 0x8000
+};
 
-typedef struct QMF64_table {
-    float dct4_coeff[32][32];
-    float dct2_coeff[32][32];
-    float rcos[32];
-    float rsin[32];
-} QMF64_table;
+/**
+ * Return number of individual channels in DCASpeakerPair mask
+ */
+static inline int ff_dca_count_chs_for_mask(unsigned int mask)
+{
+    return av_popcount((mask & 0xffff) | ((mask & 0xae66) << 16));
+}
 
-typedef struct DCAContext {
-    const AVClass *class;       ///< class for AVOptions
-    AVCodecContext *avctx;
-    /* Frame header */
-    int frame_type;             ///< type of the current frame
-    int samples_deficit;        ///< deficit sample count
-    int crc_present;            ///< crc is present in the bitstream
-    int sample_blocks;          ///< number of PCM sample blocks
-    int frame_size;             ///< primary frame byte size
-    int amode;                  ///< audio channels arrangement
-    int sample_rate;            ///< audio sampling rate
-    int bit_rate;               ///< transmission bit rate
-    int bit_rate_index;         ///< transmission bit rate index
+enum DCARepresentationType {
+    DCA_REPR_TYPE_LtRt = 2,
+    DCA_REPR_TYPE_LhRh = 3
+};
 
-    int dynrange;               ///< embedded dynamic range flag
-    int timestamp;              ///< embedded time stamp flag
-    int aux_data;               ///< auxiliary data flag
-    int hdcd;                   ///< source material is mastered in HDCD
-    int ext_descr;              ///< extension audio descriptor flag
-    int ext_coding;             ///< extended coding flag
-    int aspf;                   ///< audio sync word insertion flag
-    int lfe;                    ///< low frequency effects flag
-    int predictor_history;      ///< predictor history flag
-    int header_crc;             ///< header crc check bytes
-    int multirate_inter;        ///< multirate interpolator switch
-    int version;                ///< encoder software revision
-    int copy_history;           ///< copy history
-    int source_pcm_res;         ///< source pcm resolution
-    int front_sum;              ///< front sum/difference flag
-    int surround_sum;           ///< surround sum/difference flag
-    int dialog_norm;            ///< dialog normalisation parameter
+enum DCAExtensionMask {
+    DCA_CSS_CORE   = 0x001,
+    DCA_CSS_XXCH   = 0x002,
+    DCA_CSS_X96    = 0x004,
+    DCA_CSS_XCH    = 0x008,
+    DCA_CSS_MASK   = 0x00f,
+    DCA_EXSS_CORE  = 0x010,
+    DCA_EXSS_XBR   = 0x020,
+    DCA_EXSS_XXCH  = 0x040,
+    DCA_EXSS_X96   = 0x080,
+    DCA_EXSS_LBR   = 0x100,
+    DCA_EXSS_XLL   = 0x200,
+    DCA_EXSS_RSV1  = 0x400,
+    DCA_EXSS_RSV2  = 0x800,
+    DCA_EXSS_MASK  = 0xff0,
+};
 
-    /* Primary audio coding header */
-    int subframes;              ///< number of subframes
-    int total_channels;         ///< number of channels including extensions
-    int prim_channels;          ///< number of primary audio channels
-    int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
-    int vq_start_subband[DCA_PRIM_CHANNELS_MAX];    ///< high frequency vq start subband
-    int joint_intensity[DCA_PRIM_CHANNELS_MAX];     ///< joint intensity coding index
-    int transient_huffman[DCA_PRIM_CHANNELS_MAX];   ///< transient mode code book
-    int scalefactor_huffman[DCA_PRIM_CHANNELS_MAX]; ///< scale factor code book
-    int bitalloc_huffman[DCA_PRIM_CHANNELS_MAX];    ///< bit allocation quantizer select
-    int quant_index_huffman[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX]; ///< quantization index codebook select
-    float scalefactor_adj[DCA_PRIM_CHANNELS_MAX][DCA_ABITS_MAX];   ///< scale factor adjustment
+enum DCADownMixType {
+    DCA_DMIX_TYPE_1_0,
+    DCA_DMIX_TYPE_LoRo,
+    DCA_DMIX_TYPE_LtRt,
+    DCA_DMIX_TYPE_3_0,
+    DCA_DMIX_TYPE_2_1,
+    DCA_DMIX_TYPE_2_2,
+    DCA_DMIX_TYPE_3_1,
 
-    /* Primary audio coding side information */
-    int subsubframes[DCA_SUBFRAMES_MAX];                         ///< number of subsubframes
-    int partial_samples[DCA_SUBFRAMES_MAX];                      ///< partial subsubframe samples count
-    int prediction_mode[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];    ///< prediction mode (ADPCM used or not)
-    int prediction_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];      ///< prediction VQ coefs
-    int bitalloc[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];           ///< bit allocation index
-    int transition_mode[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];    ///< transition mode (transients)
-    int32_t scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][2];///< scale factors (2 if transient)
-    int joint_huff[DCA_PRIM_CHANNELS_MAX];                       ///< joint subband scale factors codebook
-    int joint_scale_factor[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS]; ///< joint subband scale factors
-    float downmix_coef[DCA_PRIM_CHANNELS_MAX + 1][2];            ///< stereo downmix coefficients
-    int dynrange_coef;                                           ///< dynamic range coefficient
-
-    /* Core substream's embedded downmix coefficients (cf. ETSI TS 102 114 V1.4.1)
-     * Input:  primary audio channels (incl. LFE if present)
-     * Output: downmix audio channels (up to 4, no LFE) */
-    uint8_t  core_downmix;                                       ///< embedded downmix coefficients available
-    uint8_t  core_downmix_amode;                                 ///< audio channel arrangement of embedded downmix
-    uint16_t core_downmix_codes[DCA_PRIM_CHANNELS_MAX + 1][4];   ///< embedded downmix coefficients (9-bit codes)
-
-    int32_t  high_freq_vq[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS];  ///< VQ encoded high frequency subbands
-
-    float lfe_data[2 * DCA_LFE_MAX * (DCA_BLOCKS_MAX + 4)];      ///< Low frequency effect data
-    int lfe_scale_factor;
-
-    /* Subband samples history (for ADPCM) */
-    DECLARE_ALIGNED(16, float, subband_samples_hist)[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
-    /* Half size is sufficient for core decoding, but for 96 kHz data
-     * we need QMF with 64 subbands and 1024 samples. */
-    DECLARE_ALIGNED(32, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][1024];
-    DECLARE_ALIGNED(32, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][64];
-    int hist_index[DCA_PRIM_CHANNELS_MAX];
-    DECLARE_ALIGNED(32, float, raXin)[32];
-
-    int output;                 ///< type of output
-
-    DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
-    float *samples_chanptr[DCA_PRIM_CHANNELS_MAX + 1];
-    float *extra_channels[DCA_PRIM_CHANNELS_MAX + 1];
-    uint8_t *extra_channels_buffer;
-    unsigned int extra_channels_buffer_size;
-
-    uint8_t dca_buffer[DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE + DCA_BUFFER_PADDING_SIZE];
-    int dca_buffer_size;        ///< how much data is in the dca_buffer
-
-    const int8_t *channel_order_tab;  ///< channel reordering table, lfe and non lfe
-    GetBitContext gb;
-    /* Current position in DCA frame */
-    int current_subframe;
-    int current_subsubframe;
-
-    int core_ext_mask;          ///< present extensions in the core substream
-    int exss_ext_mask;          ///< Non-core extensions
-
-    /* XCh extension information */
-    int xch_present;            ///< XCh extension present and valid
-    int xch_base_channel;       ///< index of first (only) channel containing XCH data
-    int xch_disable;            ///< whether the XCh extension should be decoded or not
-
-    /* XXCH extension information */
-    int xxch_chset;
-    int xxch_nbits_spk_mask;
-    uint32_t xxch_core_spkmask;
-    uint32_t xxch_spk_masks[4]; /* speaker masks, last element is core mask */
-    int xxch_chset_nch[4];
-    float xxch_dmix_sf[DCA_CHSETS_MAX];
-
-    uint32_t xxch_dmix_embedded;  /* lower layer has mix pre-embedded, per chset */
-    float xxch_dmix_coeff[DCA_PRIM_CHANNELS_MAX][32]; /* worst case sizing */
-
-    int8_t xxch_order_tab[32];
-    int8_t lfe_index;
-
-    /* XLL extension information */
-    int xll_disable;
-    int xll_nch_sets;           ///< number of channel sets per frame
-    int xll_channels;           ///< total number of channels (in all channel sets)
-    int xll_residual_channels;  ///< number of residual channels
-    int xll_segments;           ///< number of segments per frame
-    int xll_log_smpl_in_seg;    ///< supposedly this is "nBits4SamplLoci"
-    int xll_smpl_in_seg;        ///< samples in segment per one frequency band for the first channel set
-    int xll_bits4seg_size;      ///< number of bits used to read segment size
-    int xll_banddata_crc;       ///< presence of CRC16 within each frequency band
-    int xll_scalable_lsb;
-    int xll_bits4ch_mask;       ///< channel position mask
-    int xll_fixed_lsb_width;
-    XllChSetSubHeader xll_chsets[DCA_XLL_CHSETS_MAX];
-    XllNavi xll_navi;
-    int *xll_sample_buf;
-    unsigned int xll_sample_buf_size;
-
-    /* ExSS header parser */
-    int static_fields;          ///< static fields present
-    int mix_metadata;           ///< mixing metadata present
-    int num_mix_configs;        ///< number of mix out configurations
-    int mix_config_num_ch[4];   ///< number of channels in each mix out configuration
-
-    int profile;
-    int one2one_map_chtospkr;
-
-    int debug_flag;             ///< used for suppressing repeated error messages output
-    AVFloatDSPContext *fdsp;
-    FFTContext imdct;
-    SynthFilterContext synth;
-    DCADSPContext dcadsp;
-    QMF64_table *qmf64_table;
-    FmtConvertContext fmt_conv;
-} DCAContext;
+    DCA_DMIX_TYPE_COUNT
+};
 
 extern av_export const uint32_t avpriv_dca_sample_rates[16];
+
+extern const uint32_t ff_dca_sampling_freqs[16];
+extern const uint8_t ff_dca_freq_ranges[16];
 
 /**
  * Convert bitstream to one representation based on sync marker
  */
 int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
-                             int max_size);
-
-int ff_dca_xbr_parse_frame(DCAContext *s);
-int ff_dca_xxch_decode_frame(DCAContext *s);
-
-void ff_dca_exss_parse_header(DCAContext *s);
-
-int ff_dca_xll_decode_header(DCAContext *s);
-int ff_dca_xll_decode_navi(DCAContext *s, int asset_end);
-int ff_dca_xll_decode_audio(DCAContext *s, AVFrame *frame);
+                                 int max_size);
 
 #endif /* AVCODEC_DCA_H */

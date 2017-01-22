@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_file}@} ... @{[@var{output_file_options}] @file{output_file}@} ...
+ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_url}@} ... @{[@var{output_file_options}] @file{output_url}@} ...
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -24,10 +24,10 @@ rates and resize video on the fly with a high quality polyphase filter.
 @command{ffmpeg} reads from an arbitrary number of input "files" (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
 @code{-i} option, and writes to an arbitrary number of output "files", which are
-specified by a plain output filename. Anything found on the command line which
-cannot be interpreted as an option is considered to be an output filename.
+specified by a plain output url. Anything found on the command line which
+cannot be interpreted as an option is considered to be an output url.
 
-Each input or output file can, in principle, contain any number of streams of
+Each input or output url can, in principle, contain any number of streams of
 different types (video/audio/subtitle/attachment/data). The allowed number and/or
 types of streams may be limited by the container format. Selecting which
 streams from which inputs will go into which output is either done automatically
@@ -223,7 +223,7 @@ with the highest resolution, for audio, it is the stream with the most channels,
 subtitles, it is the first subtitle stream. In the case where several streams of
 the same type rate equally, the stream with the lowest index is chosen.
 
-You can disable some of those defaults by using the @code{-vn/-an/-sn} options. For
+You can disable some of those defaults by using the @code{-vn/-an/-sn/-dn} options. For
 full manual control, use the @code{-map} option, which disables the defaults just
 described.
 
@@ -243,8 +243,8 @@ Force input or output file format. The format is normally auto detected for inpu
 files and guessed from the file extension for output files, so this option is not
 needed in most cases.
 
-@item -i @var{filename} (@emph{input})
-input file name
+@item -i @var{url} (@emph{input})
+input file url
 
 @item -y (@emph{global})
 Overwrite output files without asking.
@@ -252,6 +252,10 @@ Overwrite output files without asking.
 @item -n (@emph{global})
 Do not overwrite output files, and exit immediately if a specified
 output file already exists.
+
+@item -stream_loop @var{number} (@emph{input})
+Set number of times input stream shall be looped. Loop 0 means no loop,
+loop -1 means infinite loop.
 
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 @itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
@@ -277,35 +281,45 @@ libx264, and the 138th audio, which will be encoded with libvorbis.
 When used as an input option (before @code{-i}), limit the @var{duration} of
 data read from the input file.
 
-When used as an output option (before an output filename), stop writing the
+When used as an output option (before an output url), stop writing the
 output after its duration reaches @var{duration}.
 
-@var{duration} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
+@var{duration} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -to @var{position} (@emph{output})
 Stop writing the output at @var{position}.
-@var{position} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
+@var{position} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -fs @var{limit_size} (@emph{output})
-Set the file size limit, expressed in bytes.
+Set the file size limit, expressed in bytes. No further chunk of bytes is written
+after the limit is exceeded. The size of the output file is slightly more than the
+requested file size.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
-@var{position}. Note the in most formats it is not possible to seek exactly, so
-@command{ffmpeg} will seek to the closest seek point before @var{position}.
+@var{position}. Note that in most formats it is not possible to seek exactly,
+so @command{ffmpeg} will seek to the closest seek point before @var{position}.
 When transcoding and @option{-accurate_seek} is enabled (the default), this
 extra segment between the seek point and @var{position} will be decoded and
 discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it
 will be preserved.
 
-When used as an output option (before an output filename), decodes but discards
+When used as an output option (before an output url), decodes but discards
 input until the timestamps reach @var{position}.
 
-@var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
+@var{position} must be a time duration specification,
+see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
+
+@item -sseof @var{position} (@emph{input/output})
+
+Like the @code{-ss} option but relative to the "end of file". That is negative
+values are earlier in the file, 0 is at EOF.
 
 @item -itsoffset @var{offset} (@emph{input})
 Set the input time offset.
@@ -320,15 +334,15 @@ the time duration specified in @var{offset}.
 @item -timestamp @var{date} (@emph{output})
 Set the recording timestamp in the container.
 
-@var{date} must be a time duration specification,
+@var{date} must be a date specification,
 see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
 @item -metadata[:metadata_specifier] @var{key}=@var{value} (@emph{output,per-metadata})
 Set a metadata key/value pair.
 
 An optional @var{metadata_specifier} may be given to set metadata
-on streams or chapters. See @code{-map_metadata} documentation for
-details.
+on streams, chapters or programs. See @code{-map_metadata}
+documentation for details.
 
 This option overrides metadata set with @code{-map_metadata}. It is
 also possible to delete metadata by using an empty value.
@@ -342,6 +356,45 @@ To set the language of the first audio stream:
 @example
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
+
+@item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
+Sets the disposition for a stream.
+
+This option overrides the disposition copied from the input stream. It is also
+possible to delete the disposition by setting it to 0.
+
+The following dispositions are recognized:
+@table @option
+@item default
+@item dub
+@item original
+@item comment
+@item lyrics
+@item karaoke
+@item forced
+@item hearing_impaired
+@item visual_impaired
+@item clean_effects
+@item captions
+@item descriptions
+@item metadata
+@end table
+
+For example, to make the second audio stream the default stream:
+@example
+ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+@end example
+
+To make the second subtitle stream the default stream and remove the default
+disposition from the first subtitle stream:
+@example
+ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
+@end example
+
+@item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
+
+Creates a program with the specified @var{title}, @var{program_num} and adds the specified
+@var{stream}(s) to it.
 
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
@@ -395,6 +448,11 @@ want to create filtergraphs with multiple inputs and/or outputs.
 This option is similar to @option{-filter}, the only difference is that its
 argument is the name of the file from which a filtergraph description is to be
 read.
+
+@item -filter_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter pipeline. Each pipeline
+will produce a thread pool with this many threads available for parallel processing.
+The default is the number of available CPUs.
 
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
@@ -663,6 +721,16 @@ Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item qsv
+Use the Intel QuickSync Video acceleration for video transcoding.
+
+Unlike most other values, this option does not enable accelerated decoding (that
+is used automatically whenever a qsv decoder is selected), but accelerated
+transcoding, without copying the frames into the system memory.
+
+For it to work, both the decoder and the encoder must support QSV acceleration
+and no filters must be used.
 @end table
 
 This option has no effect if the selected hwaccel is not available or not
@@ -689,7 +757,25 @@ is not specified, the value of the @var{DISPLAY} environment variable is used
 @item dxva2
 For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
+
+@item qsv
+For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
+are:
+@table @option
+@item auto
+@item sw
+@item hw
+@item auto_any
+@item hw_any
+@item hw2
+@item hw3
+@item hw4
 @end table
+@end table
+
+@item -hwaccels
+List all hardware acceleration methods supported in this build of ffmpeg.
+
 @end table
 
 @section Audio Options
@@ -961,7 +1047,7 @@ Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
 @item -re (@emph{input})
-Read input at native frame rate. Mainly used to simulate a grab device.
+Read input at native frame rate. Mainly used to simulate a grab device,
 or live input stream (e.g. when reading from a file). Should not be used
 with actual grab devices or live input streams (where it can cause packet
 loss).
@@ -1082,7 +1168,7 @@ may be reassigned to a different value.
 For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
 @example
-ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
+ffmpeg -i inurl -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
@@ -1154,6 +1240,11 @@ To generate 5 seconds of pure red video using lavfi @code{color} source:
 ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
 
+@item -filter_complex_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter_complex graph.
+Similar to filter_threads but used for @code{-filter_complex} graphs only.
+The default is the number of available CPUs.
+
 @item -lavfi @var{filtergraph} (@emph{global})
 Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
 outputs. Equivalent to @option{-filter_complex}.
@@ -1193,9 +1284,9 @@ The option is intended for cases where features are needed that cannot be
 specified to @command{ffserver} but can be to @command{ffmpeg}.
 
 @item -sdp_file @var{file} (@emph{global})
-Print sdp information to @var{file}.
+Print sdp information for an output stream to @var{file}.
 This allows dumping sdp information when at least one output isn't an
-rtp stream.
+rtp stream. (Requires at least one of the output formats to be rtp).
 
 @item -discard (@emph{input})
 Allows discarding specific streams or frames of streams at the demuxer.
@@ -1221,8 +1312,25 @@ Discard all frames excepts keyframes.
 Discard all frames.
 @end table
 
+@item -abort_on @var{flags} (@emph{global})
+Stop and abort on various conditions. The following flags are available:
+
+@table @option
+@item empty_output
+No packets were passed to the muxer, the output is empty.
+@end table
+
 @item -xerror (@emph{global})
 Stop and exit on error
+
+@item -max_muxing_queue_size @var{packets} (@emph{output,per-stream})
+When transcoding audio and/or video streams, ffmpeg will not begin writing into
+the output until it has one packet for each such stream. While waiting for that
+to happen, packets for other streams are buffered. This option sets the size of
+this buffer, in packets, for the matching output stream.
+
+The default value of this option should be high enough for most uses, so only
+touch this option if you are sure that you need it.
 
 @end table
 

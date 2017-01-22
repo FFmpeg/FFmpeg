@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-2003 The FFmpeg Project
+ * Copyright (c) 2001-2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -41,5 +41,6 @@ extern const int8_t  ff_adpcm_AdaptCoeff2[];
 extern const int16_t ff_adpcm_yamaha_indexscale[];
 extern const int8_t  ff_adpcm_yamaha_difflookup[];
 extern const int16_t ff_adpcm_afc_coeffs[2][16];
+extern const int16_t ff_adpcm_mtaf_stepsize[32][16];
 
 #endif /* AVCODEC_ADPCM_DATA_H */

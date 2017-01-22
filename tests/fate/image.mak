@@ -37,7 +37,54 @@ endef
 
 DDS_OPTS_pal     = -sws_flags +accurate_rnd+bitexact -pix_fmt rgba
 DDS_OPTS_pal-ati = -sws_flags +accurate_rnd+bitexact -pix_fmt rgba
-DDS_FMT = argb argb-aexp dx10-bc1 dx10-bc1a dx10-bc2 dx10-bc3 dx10-bc4 dx10-bc5 dxt1 dxt1a dxt1-normalmap dxt2 dxt3 dxt4 dxt5 dxt5-aexp dxt5-normalmap dxt5-normalmap-ati dxt5-rbxg dxt5-rgxb dxt5-rxbg dxt5-rxgb dxt5-xgbr dxt5-xgxr dxt5-xrbg dxt5-ycocg dxt5-ycocg-scaled pal pal-ati rgb16 rgb24 rgtc1s rgtc1u rgtc2s rgtc2u rgtc2u-xy uyvy xbgr xrgb y ya ycocg yuyv
+DDS_FMT          = alpha8                                               \
+                   argb                                                 \
+                   argb-aexp                                            \
+                   dx10-bc1                                             \
+                   dx10-bc1a                                            \
+                   dx10-bc2                                             \
+                   dx10-bc3                                             \
+                   dx10-bc4                                             \
+                   dx10-bc5                                             \
+                   dxt1                                                 \
+                   dxt1a                                                \
+                   dxt1-normalmap                                       \
+                   dxt2                                                 \
+                   dxt3                                                 \
+                   dxt4                                                 \
+                   dxt5                                                 \
+                   dxt5-aexp                                            \
+                   dxt5-normalmap                                       \
+                   dxt5-normalmap-ati                                   \
+                   dxt5-rbxg                                            \
+                   dxt5-rgxb                                            \
+                   dxt5-rxbg                                            \
+                   dxt5-rxgb                                            \
+                   dxt5-xgbr                                            \
+                   dxt5-xgxr                                            \
+                   dxt5-xrbg                                            \
+                   dxt5-ycocg                                           \
+                   dxt5-ycocg-scaled                                    \
+                   monob                                                \
+                   pal                                                  \
+                   pal-ati                                              \
+                   rgb1555                                              \
+                   rgb16                                                \
+                   rgb24                                                \
+                   rgb555                                               \
+                   rgba                                                 \
+                   rgtc1s                                               \
+                   rgtc1u                                               \
+                   rgtc2s                                               \
+                   rgtc2u                                               \
+                   rgtc2u-xy                                            \
+                   uyvy                                                 \
+                   xbgr                                                 \
+                   xrgb                                                 \
+                   y                                                    \
+                   ya                                                   \
+                   ycocg                                                \
+                   yuyv
 $(foreach FMT,$(DDS_FMT),$(eval $(call FATE_IMGSUITE_DDS,$(FMT))))
 
 FATE_DDS-$(call DEMDEC, IMAGE2, DDS) += $(FATE_DDS)
@@ -65,10 +112,155 @@ fate-exr-slice-zip16: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_slice_zip16.e
 FATE_EXR += fate-exr-slice-pxr24
 fate-exr-slice-pxr24: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_slice_pxr24.exr -pix_fmt rgb48le
 
+FATE_EXR += fate-exr-rgb-scanline-pxr24-float-12x8
+fate-exr-rgb-scanline-pxr24-float-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_float_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgba-multiscanline-half-b44
+fate-exr-rgba-multiscanline-half-b44: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_multiscanline_half_b44.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-float-b44
+fate-exr-rgb-scanline-float-b44: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_float_b44.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-half-b44-12x8
+fate-exr-rgb-scanline-half-b44-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_b44_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-half-b44-13x9
+fate-exr-rgb-scanline-half-b44-13x9: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_b44_13x9.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-float-raw-12x8
+fate-exr-rgb-tile-float-raw-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_float_raw_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-float-raw-150x130
+fate-exr-rgb-tile-float-raw-150x130: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_float_raw_150x130.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-half-raw-12x8
+fate-exr-rgb-tile-half-raw-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_half_raw_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44-13x9-l1
+fate-exr-rgba-scanline-float-half-b44-13x9-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44_13x9.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44-13x9-l2
+fate-exr-rgba-scanline-float-half-b44-13x9-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44_13x9.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44-12x8-l1
+fate-exr-rgba-scanline-float-half-b44-12x8-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44-12x8-l2
+fate-exr-rgba-scanline-float-half-b44-12x8-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44a-12x8-l1
+fate-exr-rgba-scanline-float-half-b44a-12x8-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44a_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44a-12x8-l2
+fate-exr-rgba-scanline-float-half-b44a-12x8-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44a_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44a-13x9-l1
+fate-exr-rgba-scanline-float-half-b44a-13x9-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44a_13x9.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgba-scanline-float-half-b44a-13x9-l2
+fate-exr-rgba-scanline-float-half-b44a-13x9-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgba_scanline_float_half_b44a_13x9.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-pxr24-float-half-l1
+fate-exr-rgb-tile-pxr24-float-half-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_pxr24_float_half.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-pxr24-float-half-l2
+fate-exr-rgb-tile-pxr24-float-half-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_pxr24_float_half.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-pxr24-half-float-l1
+fate-exr-rgb-tile-pxr24-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_pxr24_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-pxr24-half-float-l2
+fate-exr-rgb-tile-pxr24-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_pxr24_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-half-float-b44-12x8-l1
+fate-exr-rgb-tile-half-float-b44-12x8-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_half_float_b44_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-half-float-b44-12x8-l2
+fate-exr-rgb-tile-half-float-b44-12x8-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_half_float_b44_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-zip-half-float-l1
+fate-exr-rgb-tile-zip-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_zip_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-zip-half-float-l2
+fate-exr-rgb-tile-zip-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_zip_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-zip1-half-float-l1
+fate-exr-rgb-tile-zip1-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_zip1_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-zip1-half-float-l2
+fate-exr-rgb-tile-zip1-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_zip1_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-rle-half-float-l1
+fate-exr-rgb-tile-rle-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_rle_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-rle-half-float-l2
+fate-exr-rgb-tile-rle-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_rle_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-tile-raw-half-float-l1
+fate-exr-rgb-tile-raw-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_tile_raw_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-tile-raw-half-float-l2
+fate-exr-rgb-tile-raw-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_tile_raw_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-b44-half-float-12x8-l1
+fate-exr-rgb-scanline-b44-half-float-12x8-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_b44_half_float_12x8.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-b44-half-float-12x8-l2
+fate-exr-rgb-scanline-b44-half-float-12x8-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_b44_half_float_12x8.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-half-float-l1
+fate-exr-rgb-scanline-pxr24-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-half-float-l2
+fate-exr-rgb-scanline-pxr24-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-float-half-l1
+fate-exr-rgb-scanline-pxr24-float-half-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_float_half.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-float-half-l2
+fate-exr-rgb-scanline-pxr24-float-half-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_float_half.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-half-uint32-13x9
+fate-exr-rgb-scanline-pxr24-half-uint32-13x9: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_half_uint32_13x9.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-zip-half-float-l1
+fate-exr-rgb-scanline-zip-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-zip-half-float-l2
+fate-exr-rgb-scanline-zip-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-zip1-half-float-l1
+fate-exr-rgb-scanline-zip1-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip1_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-zip1-half-float-l2
+fate-exr-rgb-scanline-zip1-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip1_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-rle-half-float-l1
+fate-exr-rgb-scanline-rle-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_rle_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-rle-half-float-l2
+fate-exr-rgb-scanline-rle-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_rle_half_float.exr -pix_fmt rgba64le
+
+FATE_EXR += fate-exr-rgb-scanline-raw-half-float-l1
+fate-exr-rgb-scanline-raw-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_raw_half_float.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-raw-half-float-l2
+fate-exr-rgb-scanline-raw-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_raw_half_float.exr -pix_fmt rgba64le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)
 fate-exr: $(FATE_EXR-yes)
+
+FATE_JPG += fate-jpg-12bpp
+fate-jpg-12bpp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/12bpp.jpg -f rawvideo -pix_fmt gray16le -vf setsar=sar=sar
+
+FATE_JPG += fate-jpg-jfif
+fate-jpg-jfif: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/20242.jpg
+
+FATE_JPG-$(call DEMDEC, IMAGE2, MJPEG) += $(FATE_JPG)
+FATE_IMAGE += $(FATE_JPG-yes)
+fate-jpg: $(FATE_JPG-yes)
 
 FATE_IMAGE-$(call DEMDEC, IMAGE2, QDRAW) += fate-pict
 fate-pict: CMD = framecrc -i $(TARGET_SAMPLES)/quickdraw/TRU256.PCT -pix_fmt rgb24
@@ -84,8 +276,11 @@ FATE_PNG += fate-png-$(1)
 fate-png-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-$(1).png -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
 endef
 
-PNG_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba ya8 ya16
+PNG_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64 ya8 ya16
 $(foreach CLSP,$(PNG_COLORSPACES),$(eval $(call FATE_IMGSUITE_PNG,$(CLSP))))
+
+FATE_PNG += fate-png-int-rgb24
+fate-png-int-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
 
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_IMAGE += $(FATE_PNG-yes)
@@ -94,35 +289,50 @@ fate-png: $(FATE_PNG-yes)
 FATE_IMAGE-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(TARGET_SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 
-FATE_SGI += fate-sgi-gray
-fate-sgi-gray: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_gray.sgi -pix_fmt gray
+define FATE_IMGSUITE_PSD
+FATE_PSD += fate-psd-$(1)
+fate-psd-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-$(1).psd -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24
+endef
 
-FATE_SGI += fate-sgi-gray16
-fate-sgi-gray16: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_gray16.sgi -pix_fmt gray16le
+PSD_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64 ya8 ya16
+$(foreach CLSP,$(PSD_COLORSPACES),$(eval $(call FATE_IMGSUITE_PSD,$(CLSP))))
 
-FATE_SGI += fate-sgi-rgb24
-fate-sgi-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_rgb24.sgi -pix_fmt rgb24
+FATE_PSD += fate-psd-lena-127x127-rgb24
+fate-psd-lena-127x127-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-127x127_rgb24.psd
 
-FATE_SGI += fate-sgi-rgb24-rle
-fate-sgi-rgb24-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/uvmap_rgb24_rle.sgi -pix_fmt rgb24
+FATE_PSD += fate-psd-lena-rgb-rle-127x127-16b
+fate-psd-lena-rgb-rle-127x127-16b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgb_rle_127x127_16b.psd
 
-FATE_SGI += fate-sgi-rgb48
-fate-sgi-rgb48: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_rgb48.sgi -pix_fmt rgb48be
+FATE_PSD += fate-psd-lena-rgb-rle-127x127-8b
+fate-psd-lena-rgb-rle-127x127-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgb_rle_127x127_8b.psd
 
-FATE_SGI += fate-sgi-rgb48-rle
-fate-sgi-rgb48-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/uvmap_rgb48_rle.sgi -pix_fmt rgb48be
+FATE_PSD += fate-psd-lena-rgba-rle-128x128-8b
+fate-psd-lena-rgba-rle-128x128-8b: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-rgba_rle_128x128_8b.psd
 
-FATE_SGI += fate-sgi-rgba
-fate-sgi-rgba: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_rgba.sgi -pix_fmt rgba
+FATE_PSD += fate-psd-lena-256c
+fate-psd-lena-256c: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-256c.psd
 
-FATE_SGI += fate-sgi-rgba64
-fate-sgi-rgba64: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/lena_rgba64.sgi -pix_fmt rgba64be
+FATE_PSD += fate-psd-lena-bitmap
+fate-psd-lena-bitmap: CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-bitmap.psd
 
-FATE_SGI += fate-sgi-rgba64-rle
-fate-sgi-rgba64-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/maya_rgba64_rle.sgi -pix_fmt rgba64be
+FATE_PSD += fate-psd-duo-tone-color
+fate-psd-duo-tone-color: CMD = framecrc -i $(TARGET_SAMPLES)/psd/duotone-color.psd
+
+FATE_PSD-$(call DEMDEC, IMAGE2, PSD) += $(FATE_PSD)
+
+FATE_IMAGE += $(FATE_PSD-yes)
+fate-psd: $(FATE_PSD-yes)
+
+define FATE_IMGSUITE_SGI
+FATE_SGI += fate-sgi-$(1) fate-sgi-$(1)-rle
+fate-sgi-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/sgi/libav_$(1).sgi -sws_flags +accurate_rnd+bitexact
+fate-sgi-$(1)-rle: CMD = framecrc -i $(TARGET_SAMPLES)/sgi/libav_$(1)_rle.sgi -sws_flags +accurate_rnd+bitexact
+endef
+
+SGI_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64
+$(foreach CLSP,$(SGI_COLORSPACES),$(eval $(call FATE_IMGSUITE_SGI,$(CLSP))))
 
 FATE_SGI-$(call DEMDEC, IMAGE2, SGI) += $(FATE_SGI)
-
 FATE_IMAGE += $(FATE_SGI-yes)
 fate-sgi: $(FATE_SGI-yes)
 
@@ -194,6 +404,28 @@ FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
 
 FATE_IMAGE += $(FATE_TIFF-yes)
 fate-tiff: $(FATE_TIFF-yes)
+
+FATE_WEBP += fate-webp-rgb-lossless
+fate-webp-rgb-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lossless.webp
+
+FATE_WEBP += fate-webp-rgb-lena-lossless
+fate-webp-rgb-lena-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lena_lossless.webp
+
+FATE_WEBP += fate-webp-rgb-lena-lossless-rgb24
+fate-webp-rgb-lena-lossless-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lena_lossless.webp -pix_fmt rgb24
+
+FATE_WEBP += fate-webp-rgba-lossless
+fate-webp-rgba-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_lossless.webp
+
+FATE_WEBP += fate-webp-rgb-lossy-q80
+fate-webp-rgb-lossy-q80: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_q80.webp
+
+FATE_WEBP += fate-webp-rgba-lossy-q80
+fate-webp-rgba-lossy-q80: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgba_q80.webp
+
+FATE_WEBP-$(call DEMDEC, IMAGE2, WEBP) += $(FATE_WEBP)
+FATE_IMAGE += $(FATE_WEBP-yes)
+fate-webp: $(FATE_WEBP-yes)
 
 FATE_IMAGE-$(call DEMDEC, IMAGE2, XFACE) += fate-xface
 fate-xface: CMD = framecrc -i $(TARGET_SAMPLES)/xface/lena.xface

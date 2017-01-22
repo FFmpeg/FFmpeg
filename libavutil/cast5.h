@@ -48,6 +48,7 @@ struct AVCAST5 *av_cast5_alloc(void);
   * @param ctx an AVCAST5 context
   * @param key a key of 5,6,...16 bytes used for encryption/decryption
   * @param key_bits number of keybits: possible are 40,48,...,128
+  * @return 0 on success, less than 0 on failure
  */
 int av_cast5_init(struct AVCAST5 *ctx, const uint8_t *key, int key_bits);
 

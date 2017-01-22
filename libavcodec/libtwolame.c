@@ -81,7 +81,7 @@ static av_cold int twolame_encode_init(AVCodecContext *avctx)
     if (!avctx->bit_rate)
         avctx->bit_rate = avctx->sample_rate < 28000 ? 160000 : 384000;
 
-    if (avctx->flags & CODEC_FLAG_QSCALE || !avctx->bit_rate) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         twolame_set_VBR(s->glopts, TRUE);
         twolame_set_VBR_level(s->glopts,
                               avctx->global_quality / (float) FF_QP2LAMBDA);
@@ -106,7 +106,7 @@ static int twolame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     TWOLAMEContext *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE, 0)) < 0)
         return ret;
 
     if (frame) {
@@ -211,7 +211,7 @@ AVCodec ff_libtwolame_encoder = {
     .init           = twolame_encode_init,
     .encode2        = twolame_encode_frame,
     .close          = twolame_encode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .defaults       = twolame_defaults,
     .priv_class     = &twolame_class,
     .sample_fmts    = (const enum AVSampleFormat[]) {

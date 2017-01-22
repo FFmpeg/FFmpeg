@@ -77,6 +77,9 @@ ELF     .section .note.GNU-stack,"",%progbits @ Mark stack as non-executable
         put_pic         %(.Lpic_idx - 1)
         .noaltmacro
       .endif
+      .if .Lpic_gp
+        .unreq          gp
+      .endif
 ELF     .size   \name, . - \name
 FUNC    .endfunc
         .purgem endfunc

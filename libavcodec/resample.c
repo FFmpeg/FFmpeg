@@ -33,6 +33,7 @@
 #include "libavutil/samplefmt.h"
 
 #if FF_API_AVCODEC_RESAMPLE
+FF_DISABLE_DEPRECATION_WARNINGS
 
 #define MAX_CHANNELS 8
 
@@ -290,12 +291,6 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     short *output_bak = NULL;
     int lenout;
 
-    if (s->input_channels == s->output_channels && s->ratio == 1.0 && 0) {
-        /* nothing to do */
-        memcpy(output, input, nb_samples * s->input_channels * sizeof(short));
-        return nb_samples;
-    }
-
     if (s->sample_fmt[0] != AV_SAMPLE_FMT_S16) {
         int istride[1] = { s->sample_size[0] };
         int ostride[1] = { 2 };
@@ -440,4 +435,5 @@ void audio_resample_close(ReSampleContext *s)
     av_free(s);
 }
 
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif

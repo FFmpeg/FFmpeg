@@ -34,9 +34,9 @@
 #ifndef CONFIG_RESAMPLE_HP
 #define FILTER_SHIFT 15
 
-#define FELEM int16_t
-#define FELEM2 int32_t
-#define FELEML int64_t
+typedef int16_t FELEM;
+typedef int32_t FELEM2;
+typedef int64_t FELEML;
 #define FELEM_MAX INT16_MAX
 #define FELEM_MIN INT16_MIN
 #define WINDOW_TYPE 9
@@ -52,9 +52,9 @@
 #else
 #define FILTER_SHIFT 0
 
-#define FELEM double
-#define FELEM2 double
-#define FELEML double
+typedef double FELEM;
+typedef double FELEM2;
+typedef double FELEML;
 #define WINDOW_TYPE 24
 #endif
 

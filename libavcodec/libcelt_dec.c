@@ -136,5 +136,5 @@ AVCodec ff_libcelt_decoder = {
     .init           = libcelt_dec_init,
     .close          = libcelt_dec_close,
     .decode         = libcelt_dec_decode,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

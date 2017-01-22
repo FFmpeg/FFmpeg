@@ -22,7 +22,7 @@
 
 /**
  * @file
- * DSP functions (inverse transforms, motion compensation, wavelet recompostions)
+ * DSP functions (inverse transforms, motion compensation, wavelet recompositions)
  * for Indeo Video Interactive codecs.
  */
 
@@ -552,8 +552,8 @@ void ff_ivi_inverse_slant_8x8(const int32_t *in, int16_t *out, uint32_t pitch, c
         } else
             dst[0] = dst[8] = dst[16] = dst[24] = dst[32] = dst[40] = dst[48] = dst[56] = 0;
 
-            src++;
-            dst++;
+        src++;
+        dst++;
     }
 #undef COMPENSATE
 
@@ -592,8 +592,8 @@ void ff_ivi_inverse_slant_4x4(const int32_t *in, int16_t *out, uint32_t pitch, c
         } else
             dst[0] = dst[4] = dst[8] = dst[12] = 0;
 
-            src++;
-            dst++;
+        src++;
+        dst++;
     }
 #undef COMPENSATE
 

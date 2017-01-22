@@ -23,7 +23,7 @@ TestContext AVOptions:
   -rational          <rational>   E....... set rational (from 0 to 10) (default 1/1)
   -string            <string>     E....... set string (default "default")
   -escape            <string>     E....... set escape str (default "\=,")
-  -flags             <flags>      E....... set flags (default 1)
+  -flags             <flags>      E....... set flags (default cool)
      cool                         E....... set cool flag
      lame                         E....... set lame flag
      mu                           E....... set mu flag
@@ -31,7 +31,7 @@ TestContext AVOptions:
   -pix_fmt           <pix_fmt>    E....... set pixfmt (default 0bgr)
   -sample_fmt        <sample_fmt> E....... set samplefmt (default s16)
   -video_rate        <video_rate> E....... set videorate (default "25")
-  -duration          <duration>   E....... set duration (default 1000)
+  -duration          <duration>   E....... set duration (default 0.001)
   -color             <color>      E....... set color (default "pink")
   -cl                <channel_layout> E....... set channel layout (default 0x137)
   -bin               <binary>     E....... set binary value
@@ -40,6 +40,9 @@ TestContext AVOptions:
   -num64             <int64>      E....... set num 64bit (from 0 to 100) (default 1)
   -flt               <float>      E....... set float (from 0 to 100) (default 0.333333)
   -dbl               <double>     E....... set double (from 0 to 100) (default 0.333333)
+  -bool1             <boolean>    E....... set boolean value (default auto)
+  -bool2             <boolean>    E....... set boolean value (default true)
+  -bool3             <boolean>    E....... set boolean value (default false)
 
 Testing av_opt_is_set_to_default()
 name:       num default:1 error:
@@ -64,6 +67,9 @@ name:      bin2 default:1 error:
 name:     num64 default:0 error:
 name:       flt default:0 error:
 name:       dbl default:0 error:
+name:     bool1 default:0 error:
+name:     bool2 default:0 error:
+name:     bool3 default:1 error:
 name:       num default:1 error:
 name:    toggle default:1 error:
 name:  rational default:1 error:
@@ -86,9 +92,12 @@ name:      bin2 default:1 error:
 name:     num64 default:1 error:
 name:       flt default:1 error:
 name:       dbl default:1 error:
+name:     bool1 default:1 error:
+name:     bool2 default:1 error:
+name:     bool3 default:1 error:
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false
 Setting entry with key 'num' to value '0'
 Setting entry with key 'toggle' to value '1'
 Setting entry with key 'rational' to value '1/1'
@@ -99,7 +108,7 @@ Setting entry with key 'size' to value '200x300'
 Setting entry with key 'pix_fmt' to value '0bgr'
 Setting entry with key 'sample_fmt' to value 's16'
 Setting entry with key 'video_rate' to value '25/1'
-Setting entry with key 'duration' to value '0:00:00.001000'
+Setting entry with key 'duration' to value '0.001'
 Setting entry with key 'color' to value '0xffc0cbff'
 Setting entry with key 'cl' to value '0x137'
 Setting entry with key 'bin' to value '62696E00'
@@ -108,7 +117,10 @@ Setting entry with key 'bin2' to value ''
 Setting entry with key 'num64' to value '1'
 Setting entry with key 'flt' to value '0.333333'
 Setting entry with key 'dbl' to value '0.333333'
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0:00:00.001000,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333
+Setting entry with key 'bool1' to value 'auto'
+Setting entry with key 'bool2' to value 'true'
+Setting entry with key 'bool3' to value 'false'
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false
 
 Testing av_set_options_string()
 Setting options string ''
@@ -323,6 +335,12 @@ Setting options string 'dbl=101'
 Setting entry with key 'dbl' to value '101'
 Value 101.000000 for parameter 'dbl' out of range [0 - 100]
 Error 'dbl=101'
+Setting options string 'bool1=true'
+Setting entry with key 'bool1' to value 'true'
+OK    'bool1=true'
+Setting options string 'bool2=auto'
+Setting entry with key 'bool2' to value 'auto'
+OK    'bool2=auto'
 
 Testing av_opt_set_from_string()
 Setting options string ''

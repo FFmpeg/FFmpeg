@@ -31,11 +31,11 @@ static int framecrc_write_header(struct AVFormatContext *s)
     int i;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        AVCodecContext *avctx = st->codec;
-        if (avctx->extradata) {
-            uint32_t crc = av_adler32_update(0, avctx->extradata, avctx->extradata_size);
+        AVCodecParameters *par = st->codecpar;
+        if (par->extradata) {
+            uint32_t crc = av_adler32_update(0, par->extradata, par->extradata_size);
             avio_printf(s->pb, "#extradata %d: %8d, 0x%08"PRIx32"\n",
-                        i, avctx->extradata_size, crc);
+                        i, par->extradata_size, crc);
         }
     }
 
@@ -47,7 +47,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
     char buf[256];
 
-    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8d, %8d, 0x%08"PRIx32,
+    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, 0x%08"PRIx32,
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size, crc);
     if (pkt->flags != AV_PKT_FLAG_KEY)
         av_strlcatf(buf, sizeof(buf), ", F=0x%0X", pkt->flags);

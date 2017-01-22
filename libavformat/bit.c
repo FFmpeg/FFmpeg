@@ -55,11 +55,11 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id=AV_CODEC_ID_G729;
-    st->codec->sample_rate=8000;
-    st->codec->block_align = 16;
-    st->codec->channels=1;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id=AV_CODEC_ID_G729;
+    st->codecpar->sample_rate=8000;
+    st->codecpar->block_align = 16;
+    st->codecpar->channels=1;
 
     avpriv_set_pts_info(st, 64, 1, 100);
     return 0;
@@ -117,16 +117,16 @@ AVInputFormat ff_bit_demuxer = {
 #if CONFIG_MUXERS
 static int write_header(AVFormatContext *s)
 {
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if ((enc->codec_id != AV_CODEC_ID_G729) || enc->channels != 1) {
+    if ((par->codec_id != AV_CODEC_ID_G729) || par->channels != 1) {
         av_log(s, AV_LOG_ERROR,
                "only codec g729 with 1 channel is supported by this format\n");
         return AVERROR(EINVAL);
     }
 
-    enc->bits_per_coded_sample = 16;
-    enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
+    par->bits_per_coded_sample = 16;
+    par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
 
     return 0;
 }

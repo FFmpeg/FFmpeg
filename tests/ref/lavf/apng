@@ -1,0 +1,9 @@
+a4c46fad7716ad094eb3c78b74ca0244 *./tests/data/lavf/lavf.apng
+6209864 ./tests/data/lavf/lavf.apng
+./tests/data/lavf/lavf.apng CRC=0x87b3c15f
+a4c46fad7716ad094eb3c78b74ca0244 *./tests/data/lavf/lavf.copy.apng
+6209864 ./tests/data/lavf/lavf.copy.apng
+./tests/data/lavf/lavf.copy.apng CRC=0x87b3c15f
+c5900fdd1b2fc30b985793f5226fd0c4 *./tests/data/lavf/lavf.png
+248854 ./tests/data/lavf/lavf.png
+./tests/data/lavf/lavf.png CRC=0xd8c7b7a1

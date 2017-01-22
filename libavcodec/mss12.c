@@ -581,8 +581,8 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_width  = AV_RB32(avctx->extradata + 20);
-    avctx->coded_height = AV_RB32(avctx->extradata + 24);
+    avctx->coded_width  = FFMAX(AV_RB32(avctx->extradata + 20), avctx->width);
+    avctx->coded_height = FFMAX(AV_RB32(avctx->extradata + 24), avctx->height);
     if (avctx->coded_width > 4096 || avctx->coded_height > 4096) {
         av_log(avctx, AV_LOG_ERROR, "Frame dimensions %dx%d too large",
                avctx->coded_width, avctx->coded_height);

@@ -1,6 +1,6 @@
 /*
  * Interplay MVE Video Decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -38,11 +38,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/intreadwrite.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#include "hpeldsp.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "internal.h"
 
 #define PALETTE_COUNT 256
@@ -949,7 +951,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
         }
     }
     if (bytestream2_get_bytes_left(&s->stream_ptr) > 1) {
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(s->avctx, AV_LOG_DEBUG,
                "decode finished with %d bytes left over\n",
                bytestream2_get_bytes_left(&s->stream_ptr));
     }
@@ -987,12 +989,15 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret;
 
+    if (buf_size < 2)
+        return AVERROR_INVALIDDATA;
+
     /* decoding map contains 4 bits of information per 8x8 block */
-    s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
+    s->decoding_map_size = AV_RL16(avpkt->data);
 
     /* compressed buffer needs to be large enough to at least hold an entire
      * decoding map */
-    if (buf_size < s->decoding_map_size)
+    if (buf_size < s->decoding_map_size + 2)
         return buf_size;
 
     if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
@@ -1000,18 +1005,21 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
         av_frame_unref(s->second_last_frame);
     }
 
-    s->decoding_map = buf;
-    bytestream2_init(&s->stream_ptr, buf + s->decoding_map_size,
+    s->decoding_map = buf + 2;
+    bytestream2_init(&s->stream_ptr, buf + 2 + s->decoding_map_size,
                      buf_size - s->decoding_map_size);
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
     if (!s->is_16bpp) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-        if (pal) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
     }
 
@@ -1048,5 +1056,5 @@ AVCodec ff_interplay_video_decoder = {
     .init           = ipvideo_decode_init,
     .close          = ipvideo_decode_end,
     .decode         = ipvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_PARAM_CHANGE,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
 };

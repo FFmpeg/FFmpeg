@@ -66,6 +66,7 @@ typedef struct LutContext {
     int hsub, vsub;
     double var_values[VAR_VARS_NB];
     int is_rgb, is_yuv;
+    int is_planar;
     int is_16bit;
     int step;
     int negate_alpha; /* only used by negate */
@@ -125,7 +126,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 #define RGB_FORMATS                             \
     AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,         \
     AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,         \
-    AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24
+    AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,        \
+    AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE,     \
+    AV_PIX_FMT_GBRP,         AV_PIX_FMT_GBRAP,        \
+    AV_PIX_FMT_GBRP9LE,      AV_PIX_FMT_GBRP10LE,     \
+    AV_PIX_FMT_GBRP12LE,     AV_PIX_FMT_GBRP14LE,     \
+    AV_PIX_FMT_GBRP16LE,     AV_PIX_FMT_GBRAP12LE,    \
+    AV_PIX_FMT_GBRAP16LE
 
 static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
@@ -186,9 +193,9 @@ static double compute_gammaval709(void *opaque, double gamma)
 }
 
 static double (* const funcs1[])(void *, double) = {
-    (void *)clip,
-    (void *)compute_gammaval,
-    (void *)compute_gammaval709,
+    clip,
+    compute_gammaval,
+    compute_gammaval709,
     NULL
 };
 
@@ -213,7 +220,7 @@ static int config_props(AVFilterLink *inlink)
 
     s->var_values[VAR_W] = inlink->w;
     s->var_values[VAR_H] = inlink->h;
-    s->is_16bit = desc->comp[0].depth_minus1 > 7;
+    s->is_16bit = desc->comp[0].depth > 8;
 
     switch (inlink->format) {
     case AV_PIX_FMT_YUV410P:
@@ -251,27 +258,36 @@ static int config_props(AVFilterLink *inlink)
     case AV_PIX_FMT_YUVA420P16LE:
     case AV_PIX_FMT_YUVA422P16LE:
     case AV_PIX_FMT_YUVA444P16LE:
-        min[Y] = 16 * (1 << (desc->comp[0].depth_minus1 - 7));
-        min[U] = 16 * (1 << (desc->comp[1].depth_minus1 - 7));
-        min[V] = 16 * (1 << (desc->comp[2].depth_minus1 - 7));
+        min[Y] = 16 * (1 << (desc->comp[0].depth - 8));
+        min[U] = 16 * (1 << (desc->comp[1].depth - 8));
+        min[V] = 16 * (1 << (desc->comp[2].depth - 8));
         min[A] = 0;
-        max[Y] = 235 * (1 << (desc->comp[0].depth_minus1 - 7));
-        max[U] = 240 * (1 << (desc->comp[1].depth_minus1 - 7));
-        max[V] = 240 * (1 << (desc->comp[2].depth_minus1 - 7));
-        max[A] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
+        max[Y] = 235 * (1 << (desc->comp[0].depth - 8));
+        max[U] = 240 * (1 << (desc->comp[1].depth - 8));
+        max[V] = 240 * (1 << (desc->comp[2].depth - 8));
+        max[A] = (1 << desc->comp[3].depth) - 1;
+        break;
+    case AV_PIX_FMT_RGB48LE:
+    case AV_PIX_FMT_RGBA64LE:
+        min[0] = min[1] = min[2] = min[3] = 0;
+        max[0] = max[1] = max[2] = max[3] = 65535;
         break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
-        max[0] = max[1] = max[2] = max[3] = 255;
+        max[0] = max[1] = max[2] = max[3] = 255 * (1 << (desc->comp[0].depth - 8));
     }
 
     s->is_yuv = s->is_rgb = 0;
+    s->is_planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
     if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) s->is_yuv = 1;
     else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) s->is_rgb = 1;
 
     if (s->is_rgb) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         s->step = av_get_bits_per_pixel(desc) >> 3;
+        if (s->is_16bit) {
+            s->step = s->step >> 1;
+        }
     }
 
     for (color = 0; color < desc->nb_components; color++) {
@@ -294,7 +310,7 @@ static int config_props(AVFilterLink *inlink)
         s->var_values[VAR_MAXVAL] = max[color];
         s->var_values[VAR_MINVAL] = min[color];
 
-        for (val = 0; val < (1 << (desc->comp[0].depth_minus1 + 1)); val++) {
+        for (val = 0; val < (1 << desc->comp[0].depth); val++) {
             s->var_values[VAR_VAL] = val;
             s->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
             s->var_values[VAR_NEGVAL] =
@@ -336,7 +352,44 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    if (s->is_rgb) {
+    if (s->is_rgb && s->is_16bit && !s->is_planar) {
+        /* packed, 16-bit */
+        uint16_t *inrow, *outrow, *inrow0, *outrow0;
+        const int w = inlink->w;
+        const int h = in->height;
+        const uint16_t (*tab)[256*256] = (const uint16_t (*)[256*256])s->lut;
+        const int in_linesize  =  in->linesize[0] / 2;
+        const int out_linesize = out->linesize[0] / 2;
+        const int step = s->step;
+
+        inrow0  = (uint16_t*) in ->data[0];
+        outrow0 = (uint16_t*) out->data[0];
+
+        for (i = 0; i < h; i ++) {
+            inrow  = inrow0;
+            outrow = outrow0;
+            for (j = 0; j < w; j++) {
+
+                switch (step) {
+#if HAVE_BIGENDIAN
+                case 4:  outrow[3] = av_bswap16(tab[3][av_bswap16(inrow[3])]); // Fall-through
+                case 3:  outrow[2] = av_bswap16(tab[2][av_bswap16(inrow[2])]); // Fall-through
+                case 2:  outrow[1] = av_bswap16(tab[1][av_bswap16(inrow[1])]); // Fall-through
+                default: outrow[0] = av_bswap16(tab[0][av_bswap16(inrow[0])]);
+#else
+                case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
+                case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
+                case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
+                default: outrow[0] = tab[0][inrow[0]];
+#endif
+                }
+                outrow += step;
+                inrow  += step;
+            }
+            inrow0  += in_linesize;
+            outrow0 += out_linesize;
+        }
+    } else if (s->is_rgb && !s->is_planar) {
         /* packed */
         uint8_t *inrow, *outrow, *inrow0, *outrow0;
         const int w = inlink->w;
@@ -366,14 +419,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             outrow0 += out_linesize;
         }
     } else if (s->is_16bit) {
-        // planar yuv >8 bit depth
+        // planar >8 bit depth
         uint16_t *inrow, *outrow;
 
         for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
-            int h = FF_CEIL_RSHIFT(inlink->h, vsub);
-            int w = FF_CEIL_RSHIFT(inlink->w, hsub);
+            int h = AV_CEIL_RSHIFT(inlink->h, vsub);
+            int w = AV_CEIL_RSHIFT(inlink->w, hsub);
             const uint16_t *tab = s->lut[plane];
             const int in_linesize  =  in->linesize[plane] / 2;
             const int out_linesize = out->linesize[plane] / 2;
@@ -400,8 +453,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
-            int h = FF_CEIL_RSHIFT(inlink->h, vsub);
-            int w = FF_CEIL_RSHIFT(inlink->w, hsub);
+            int h = AV_CEIL_RSHIFT(inlink->h, vsub);
+            int w = AV_CEIL_RSHIFT(inlink->w, hsub);
             const uint16_t *tab = s->lut[plane];
             const int in_linesize  =  in->linesize[plane];
             const int out_linesize = out->linesize[plane];
@@ -503,7 +556,7 @@ DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input vid
 #if CONFIG_NEGATE_FILTER
 
 static const AVOption negate_options[] = {
-    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 

@@ -88,5 +88,5 @@ AVCodec ff_y41p_decoder = {
     .id           = AV_CODEC_ID_Y41P,
     .init         = y41p_decode_init,
     .decode       = y41p_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

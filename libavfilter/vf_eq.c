@@ -98,7 +98,7 @@ static void check_values(EQParameters *param, EQContext *eq)
 {
     if (param->contrast == 1.0 && param->brightness == 0.0 && param->gamma == 1.0)
         param->adjust = NULL;
-    else if (param->gamma == 1.0)
+    else if (param->gamma == 1.0 && fabs(param->contrast) < 7.9)
         param->adjust = eq->process;
     else
         param->adjust = apply_lut;
@@ -106,7 +106,7 @@ static void check_values(EQParameters *param, EQContext *eq)
 
 static void set_contrast(EQContext *eq)
 {
-    eq->contrast = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq), -2.0, 2.0);
+    eq->contrast = av_clipf(av_expr_eval(eq->contrast_pexpr, eq->var_values, eq), -1000.0, 1000.0);
     eq->param[0].contrast = eq->contrast;
     eq->param[0].lut_clean = 0;
     check_values(&eq->param[0], eq);
@@ -265,7 +265,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
     desc = av_pix_fmt_desc_get(inlink->format);
 
-    eq->var_values[VAR_N]   = inlink->frame_count;
+    eq->var_values[VAR_N]   = inlink->frame_count_out;
     eq->var_values[VAR_POS] = pos == -1 ? NAN : pos;
     eq->var_values[VAR_T]   = TS2T(in->pts, inlink->time_base);
 
@@ -281,8 +281,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int h = inlink->h;
 
         if (i == 1 || i == 2) {
-            w = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
         }
 
         if (eq->param[i].adjust)
@@ -385,4 +385,5 @@ AVFilter ff_vf_eq = {
     .query_formats   = query_formats,
     .init            = initialize,
     .uninit          = uninit,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

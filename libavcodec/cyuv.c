@@ -4,7 +4,7 @@
  * based on "Creative YUV (CYUV) stream format for AVI":
  *   http://www.csse.monash.edu.au/~timf/videocodec/cyuv.txt
  *
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -184,7 +184,7 @@ AVCodec ff_aura_decoder = {
     .priv_data_size = sizeof(CyuvDecodeContext),
     .init           = cyuv_decode_init,
     .decode         = cyuv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif
 
@@ -197,6 +197,6 @@ AVCodec ff_cyuv_decoder = {
     .priv_data_size = sizeof(CyuvDecodeContext),
     .init           = cyuv_decode_init,
     .decode         = cyuv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 #endif

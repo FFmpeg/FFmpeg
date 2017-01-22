@@ -238,6 +238,14 @@ The following abbreviations are recognized:
 480x320
 @item qhd
 960x540
+@item 2kdci
+2048x1080
+@item 4kdci
+4096x2160
+@item uhd2160
+3840x2160
+@item uhd4320
+7680x4320
 @end table
 
 @anchor{video rate syntax}
@@ -861,7 +869,7 @@ Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
 Return the maximum between @var{x} and @var{y}.
 
 @item min(x, y)
-Return the maximum between @var{x} and @var{y}.
+Return the minimum between @var{x} and @var{y}.
 
 @item mod(x, y)
 Compute the remainder of division of @var{x} by @var{y}.

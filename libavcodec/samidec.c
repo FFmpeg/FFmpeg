@@ -27,11 +27,15 @@
 #include "ass.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "htmlsubtitles.h"
 
 typedef struct {
     AVBPrint source;
     AVBPrint content;
+    AVBPrint encoded_source;
+    AVBPrint encoded_content;
     AVBPrint full;
+    int readorder;
 } SAMIContext;
 
 static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
@@ -41,8 +45,12 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     char *tag = NULL;
     char *dupsrc = av_strdup(src);
     char *p = dupsrc;
+    AVBPrint *dst_content = &sami->encoded_content;
+    AVBPrint *dst_source = &sami->encoded_source;
 
+    av_bprint_clear(&sami->encoded_content);
     av_bprint_clear(&sami->content);
+    av_bprint_clear(&sami->encoded_source);
     for (;;) {
         char *saveptr = NULL;
         int prev_chr_is_space = 0;
@@ -82,8 +90,9 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
             if (*p == '<') {
                 if (!av_strncasecmp(p, "<P", 2) && (p[2] == '>' || av_isspace(p[2])))
                     break;
-                if (!av_strncasecmp(p, "<BR", 3))
-                    av_bprintf(dst, "\\N");
+            }
+            if (!av_strncasecmp(p, "<BR", 3)) {
+                av_bprintf(dst, "\\N");
                 p++;
                 while (*p && *p != '>')
                     p++;
@@ -103,9 +112,12 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     }
 
     av_bprint_clear(&sami->full);
-    if (sami->source.len)
-        av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->source.str);
-    av_bprintf(&sami->full, "%s", sami->content.str);
+    if (sami->source.len) {
+        ff_htmlmarkup_to_ass(avctx, dst_source, sami->source.str);
+        av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->encoded_source.str);
+    }
+    ff_htmlmarkup_to_ass(avctx, dst_content, sami->content.str);
+    av_bprintf(&sami->full, "%s", sami->encoded_content.str);
 
 end:
     av_free(dupsrc);
@@ -120,10 +132,8 @@ static int sami_decode_frame(AVCodecContext *avctx,
     SAMIContext *sami = avctx->priv_data;
 
     if (ptr && avpkt->size > 0 && !sami_paragraph_to_ass(avctx, ptr)) {
-        int ts_start     = av_rescale_q(avpkt->pts, avctx->time_base, (AVRational){1,100});
-        int ts_duration  = avpkt->duration != -1 ?
-                           av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
-        int ret = ff_ass_add_rect_bprint(sub, &sami->full, ts_start, ts_duration);
+        // TODO: pass escaped sami->encoded_source.str as source
+        int ret = ff_ass_add_rect(sub, sami->full.str, sami->readorder++, 0, NULL, NULL);
         if (ret < 0)
             return ret;
     }
@@ -136,6 +146,8 @@ static av_cold int sami_init(AVCodecContext *avctx)
     SAMIContext *sami = avctx->priv_data;
     av_bprint_init(&sami->source,  0, 2048);
     av_bprint_init(&sami->content, 0, 2048);
+    av_bprint_init(&sami->encoded_source,  0, 2048);
+    av_bprint_init(&sami->encoded_content, 0, 2048);
     av_bprint_init(&sami->full,    0, 2048);
     return ff_ass_subtitle_header_default(avctx);
 }
@@ -145,8 +157,17 @@ static av_cold int sami_close(AVCodecContext *avctx)
     SAMIContext *sami = avctx->priv_data;
     av_bprint_finalize(&sami->source,  NULL);
     av_bprint_finalize(&sami->content, NULL);
+    av_bprint_finalize(&sami->encoded_source,  NULL);
+    av_bprint_finalize(&sami->encoded_content, NULL);
     av_bprint_finalize(&sami->full,    NULL);
     return 0;
+}
+
+static void sami_flush(AVCodecContext *avctx)
+{
+    SAMIContext *sami = avctx->priv_data;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        sami->readorder = 0;
 }
 
 AVCodec ff_sami_decoder = {
@@ -158,4 +179,5 @@ AVCodec ff_sami_decoder = {
     .init           = sami_init,
     .close          = sami_close,
     .decode         = sami_decode_frame,
+    .flush          = sami_flush,
 };

@@ -57,14 +57,14 @@
  * (that is the offset of the data table after the header).
  * After checking all samples from (S1) all confirms this.
  *
- * Then, about NSVf[12-15], faster.nsf has 179700. When veiwing it in VLC,
+ * Then, about NSVf[12-15], faster.nsf has 179700. When viewing it in VLC,
  * I noticed there was about 1 NVSs chunk/s, so I ran
  * strings faster.nsv | grep NSVs | wc -l
  * which gave me 180. That leads me to think that NSVf[12-15] might be the
  * file length in milliseconds.
  * Let's try that:
  * for f in *.nsv; do HTIME="$(od -t x4 "$f" | head -1 | sed 's/.* //')"; echo "'$f' $((0x$HTIME))s = $((0x$HTIME/1000/60)):$((0x$HTIME/1000%60))"; done
- * except for nstrailer (which doesn't have an NSVf header), it repports correct time.
+ * except for nsvtrailer (which doesn't have an NSVf header), it reports correct time.
  *
  * nsvtrailer.nsv (S1) does not have any NSVf header, only NSVs chunks,
  * so the header seems to not be mandatory. (for streaming).
@@ -434,12 +434,12 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_tag = vtag;
-            st->codec->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
-            st->codec->width = vwidth;
-            st->codec->height = vheight;
-            st->codec->bits_per_coded_sample = 24; /* depth XXX */
+            st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_tag = vtag;
+            st->codecpar->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
+            st->codecpar->width = vwidth;
+            st->codecpar->height = vheight;
+            st->codecpar->bits_per_coded_sample = 24; /* depth XXX */
 
             avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
             st->start_time = 0;
@@ -465,9 +465,9 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_tag = atag;
-            st->codec->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_tag = atag;
+            st->codecpar->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
 
             st->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
 
@@ -579,7 +579,7 @@ null_chunk_retry:
               ((auxtag >> 24) & 0x0ff),
               auxsize);
         avio_skip(pb, auxsize);
-        vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming braindead */
+        vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming brain-dead */
     }
 
     if (avio_feof(pb))
@@ -614,7 +614,7 @@ null_chunk_retry:
         pkt = &nsv->ahead[NSV_ST_AUDIO];
         /* read raw audio specific header on the first audio chunk... */
         /* on ALL audio chunks ?? seems so! */
-        if (asize && st[NSV_ST_AUDIO]->codec->codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
+        if (asize && st[NSV_ST_AUDIO]->codecpar->codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
             uint8_t bps;
             uint8_t channels;
             uint16_t samplerate;
@@ -632,11 +632,11 @@ null_chunk_retry:
                 }
                 bps /= channels; // ???
                 if (bps == 8)
-                    st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
+                    st[NSV_ST_AUDIO]->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */
                 channels = 1;
-                st[NSV_ST_AUDIO]->codec->channels = channels;
-                st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
+                st[NSV_ST_AUDIO]->codecpar->channels = channels;
+                st[NSV_ST_AUDIO]->codecpar->sample_rate = samplerate;
                 av_log(s, AV_LOG_TRACE, "NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate);
             }
         }
@@ -683,7 +683,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    /* this restaurant is not approvisionned :^] */
+    /* this restaurant is not provisioned :^] */
     return -1;
 }
 
@@ -713,9 +713,9 @@ static int nsv_read_close(AVFormatContext *s)
     av_freep(&nsv->nsvs_file_offset);
     av_freep(&nsv->nsvs_timestamps);
     if (nsv->ahead[0].data)
-        av_free_packet(&nsv->ahead[0]);
+        av_packet_unref(&nsv->ahead[0]);
     if (nsv->ahead[1].data)
-        av_free_packet(&nsv->ahead[1]);
+        av_packet_unref(&nsv->ahead[1]);
     return 0;
 }
 

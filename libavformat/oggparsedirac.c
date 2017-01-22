@@ -18,7 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/get_bits.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
 #include "libavcodec/dirac.h"
 #include "avformat.h"
 #include "internal.h"
@@ -29,25 +30,39 @@ static int dirac_header(AVFormatContext *s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    dirac_source_params source;
-    GetBitContext gb;
+    AVDiracSeqHeader *dsh;
+    int ret;
 
     // already parsed the header
-    if (st->codec->codec_id == AV_CODEC_ID_DIRAC)
+    if (st->codecpar->codec_id == AV_CODEC_ID_DIRAC)
         return 0;
 
-    init_get_bits(&gb, os->buf + os->pstart + 13, (os->psize - 13) * 8);
-    if (avpriv_dirac_parse_sequence_header(st->codec, &gb, &source) < 0)
-        return -1;
+    ret = av_dirac_parse_sequence_header(&dsh, os->buf + os->pstart + 13, (os->psize - 13), s);
+    if (ret < 0)
+        return ret;
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_DIRAC;
-    // dirac in ogg always stores timestamps as though the video were interlaced
-    avpriv_set_pts_info(st, 64, st->codec->framerate.den, 2*st->codec->framerate.num);
+    st->codecpar->codec_type      = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id        = AV_CODEC_ID_DIRAC;
+    st->codecpar->width           = dsh->width;
+    st->codecpar->height          = dsh->height;
+    st->codecpar->format          = dsh->pix_fmt;
+    st->codecpar->color_range     = dsh->color_range;
+    st->codecpar->color_trc       = dsh->color_trc;
+    st->codecpar->color_primaries = dsh->color_primaries;
+    st->codecpar->color_space     = dsh->colorspace;
+    st->codecpar->profile         = dsh->profile;
+    st->codecpar->level           = dsh->level;
+    if (av_image_check_sar(st->codecpar->width, st->codecpar->height, dsh->sample_aspect_ratio) >= 0)
+        st->sample_aspect_ratio = dsh->sample_aspect_ratio;
+
+    // Dirac in Ogg always stores timestamps as though the video were interlaced
+    avpriv_set_pts_info(st, 64, dsh->framerate.den, 2 * dsh->framerate.num);
+
+    av_freep(&dsh);
     return 1;
 }
 
-// various undocument things: granule is signed (only for dirac!)
+// various undocumented things: granule is signed (only for Dirac!)
 static uint64_t dirac_gptopts(AVFormatContext *s, int idx, uint64_t granule,
                               int64_t *dts_out)
 {
@@ -78,8 +93,8 @@ static int old_dirac_header(AVFormatContext *s, int idx)
     if (buf[0] != 'K')
         return 0;
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = AV_CODEC_ID_DIRAC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = AV_CODEC_ID_DIRAC;
     avpriv_set_pts_info(st, 64, AV_RB32(buf+12), AV_RB32(buf+8));
     return 1;
 }

@@ -43,9 +43,7 @@ static void clear_blocks_axp(int16_t *blocks) {
     } while (n);
 }
 
-av_cold void ff_blockdsp_init_alpha(BlockDSPContext *c, unsigned high_bit_depth)
+av_cold void ff_blockdsp_init_alpha(BlockDSPContext *c)
 {
-    if (!high_bit_depth) {
-        c->clear_blocks = clear_blocks_axp;
-    }
+    c->clear_blocks = clear_blocks_axp;
 }

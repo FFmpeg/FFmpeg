@@ -23,7 +23,7 @@
  * @file
  * PCX image encoder
  * @author Daniel Verkamp
- * @see http://www.qzx.com/pc-gpe/pcx.txt
+ * @see http://bespin.org/~qz/pc-gpe/pcx.txt
  */
 
 #include "avcodec.h"
@@ -35,19 +35,13 @@ static const uint32_t monoblack_pal[16] = { 0x000000, 0xFFFFFF };
 
 static av_cold int pcx_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
-    return 0;
-}
-
-static av_cold int pcx_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -151,7 +145,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     line_bytes = (line_bytes + 1) & ~1;
 
     max_pkt_size = 128 + avctx->height * 2 * line_bytes * nplanes + (pal ? 256*3 + 1 : 0);
-    if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size, 0)) < 0)
         return ret;
     buf     = pkt->data;
     buf_end = pkt->data + pkt->size;
@@ -216,7 +210,6 @@ AVCodec ff_pcx_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PCX,
     .init           = pcx_encode_init,
-    .close          = pcx_encode_close,
     .encode2        = pcx_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24,

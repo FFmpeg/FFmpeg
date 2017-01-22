@@ -60,10 +60,6 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
         return AVERROR(EINVAL);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -78,8 +74,12 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int bit_count = avctx->bits_per_coded_sample;
     uint8_t *ptr, *buf;
 
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGB444:
         compression = BMP_BITFIELDS;
@@ -118,7 +118,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #define SIZE_BITMAPINFOHEADER 40
     hsize = SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2);
     n_bytes = n_bytes_image + hsize;
-    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
         return ret;
     buf = pkt->data;
     bytestream_put_byte(&buf, 'B');                   // BITMAPFILEHEADER.bfType
@@ -163,12 +163,6 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int bmp_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
-    return 0;
-}
-
 AVCodec ff_bmp_encoder = {
     .name           = "bmp",
     .long_name      = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
@@ -176,7 +170,6 @@ AVCodec ff_bmp_encoder = {
     .id             = AV_CODEC_ID_BMP,
     .init           = bmp_encode_init,
     .encode2        = bmp_encode_frame,
-    .close          = bmp_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,

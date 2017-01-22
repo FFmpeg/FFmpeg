@@ -225,6 +225,17 @@ $(foreach N,$(HEVC_SAMPLES_444_12BIT),$(eval $(call FATE_HEVC_TEST_444_12BIT,$(N
 fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync 0 -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC += fate-hevc-paramchange-yuv420p-yuv420p10
 
+tests/data/hevc-mp4.mov: TAG = GEN
+tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-i $(TARGET_SAMPLES)/hevc-conformance/WPP_A_ericsson_MAIN10_2.bit -c copy -flags +bitexact $(TARGET_PATH)/$@ -y 2>/dev/null
+
+FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_MP4TOANNEXB_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb
+fate-hevc-bsf-mp4toannexb: tests/data/hevc-mp4.mov
+fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -vcodec copy -fflags +bitexact -f hevc
+fate-hevc-bsf-mp4toannexb: CMP = oneline
+fate-hevc-bsf-mp4toannexb: REF = 1873662a3af1848c37e4eb25722c8df9
+
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)

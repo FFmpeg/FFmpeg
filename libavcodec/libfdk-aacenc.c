@@ -184,7 +184,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    if (avctx->flags & CODEC_FLAG_QSCALE || s->vbr) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || s->vbr) {
         int mode = s->vbr ? s->vbr : avctx->global_quality;
         if (mode <  1 || mode > 5) {
             av_log(avctx, AV_LOG_WARNING,
@@ -215,8 +215,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         }
         if ((err = aacEncoder_SetParam(s->handle, AACENC_BITRATE,
                                        avctx->bit_rate)) != AACENC_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to set the bitrate %d: %s\n",
-                   avctx->bit_rate, aac_get_error(err));
+            av_log(avctx, AV_LOG_ERROR, "Unable to set the bitrate %"PRId64": %s\n",
+                   (int64_t)avctx->bit_rate, aac_get_error(err));
             goto error;
         }
     }
@@ -224,7 +224,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     /* Choose bitstream format - if global header is requested, use
      * raw access units, otherwise use ADTS. */
     if ((err = aacEncoder_SetParam(s->handle, AACENC_TRANSMUX,
-                                   avctx->flags & CODEC_FLAG_GLOBAL_HEADER ? 0 : s->latm ? 10 : 2)) != AACENC_OK) {
+                                   avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? 0 : s->latm ? 10 : 2)) != AACENC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set the transmux format: %s\n",
                aac_get_error(err));
         goto error;
@@ -243,7 +243,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
      * if using mp4 mode (raw access units, with global header) and
      * implicit signaling if using ADTS. */
     if (s->signaling < 0)
-        s->signaling = avctx->flags & CODEC_FLAG_GLOBAL_HEADER ? 2 : 0;
+        s->signaling = avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? 2 : 0;
 
     if ((err = aacEncoder_SetParam(s->handle, AACENC_SIGNALING_MODE,
                                    s->signaling)) != AACENC_OK) {
@@ -289,10 +289,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     avctx->initial_padding = info.encoderDelay;
     ff_af_queue_init(avctx, &s->afq);
 
-    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         avctx->extradata_size = info.confSize;
         avctx->extradata      = av_mallocz(avctx->extradata_size +
-                                           FF_INPUT_BUFFER_PADDING_SIZE);
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
         if (!avctx->extradata) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -342,7 +342,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     /* The maximum packet size is 6144 bits aka 768 bytes per channel. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels))) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels), 0)) < 0)
         return ret;
 
     out_ptr                   = avpkt->data;
@@ -417,7 +417,7 @@ AVCodec ff_libfdk_aac_encoder = {
     .init                  = aac_encode_init,
     .encode2               = aac_encode_frame,
     .close                 = aac_encode_close,
-    .capabilities          = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
+    .capabilities          = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
     .priv_class            = &aac_enc_class,

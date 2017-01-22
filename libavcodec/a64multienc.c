@@ -66,7 +66,8 @@ static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
 //static const int mc_colors[5]={0x0,0x8,0xa,0xf,0x7};
 //static const int mc_colors[5]={0x0,0x9,0x8,0xa,0x3};
 
-static void to_meta_with_crop(AVCodecContext *avctx, const AVFrame *p, int *dest)
+static void to_meta_with_crop(AVCodecContext *avctx,
+                              const AVFrame *p, int *dest)
 {
     int blockx, blocky, x, y;
     int luma = 0;
@@ -234,7 +235,7 @@ static av_cold int a64multi_encode_init(AVCodecContext *avctx)
     }
 
     /* set up extradata */
-    if (!(avctx->extradata = av_mallocz(8 * 4 + FF_INPUT_BUFFER_PADDING_SIZE))) {
+    if (!(avctx->extradata = av_mallocz(8 * 4 + AV_INPUT_BUFFER_PADDING_SIZE))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to allocate memory for extradata.\n");
         return AVERROR(ENOMEM);
     }
@@ -327,7 +328,7 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         /* any frames to encode? */
         if (c->mc_lifetime) {
             int alloc_size = charset_size + c->mc_lifetime*(screen_size + colram_size);
-            if ((ret = ff_alloc_packet2(avctx, pkt, alloc_size)) < 0)
+            if ((ret = ff_alloc_packet2(avctx, pkt, alloc_size, 0)) < 0)
                 return ret;
             buf = pkt->data;
 
@@ -405,7 +406,7 @@ AVCodec ff_a64multi_encoder = {
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
 };
 #endif
 #if CONFIG_A64MULTI5_ENCODER
@@ -419,6 +420,6 @@ AVCodec ff_a64multi5_encoder = {
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
     .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
 };
 #endif

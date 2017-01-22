@@ -167,7 +167,7 @@ INIT_MMX mmx
 cglobal put_vp_no_rnd_pixels8_l2, 5, 6, 0, dst, src1, src2, stride, h, stride3
     mova   m6, [pb_FE]
     lea    stride3q,[strideq+strideq*2]
-.loop
+.loop:
     mova   m0, [src1q]
     mova   m1, [src2q]
     mova   m2, [src1q+strideq]

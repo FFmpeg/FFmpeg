@@ -32,12 +32,13 @@ typedef struct {
     AVClass *class;
     const char *linebreaks;
     int keep_ass_markup;
+    int readorder;
 } TextContext;
 
 #define OFFSET(x) offsetof(TextContext, x)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "keep_ass_markup", "Set if ASS tags must be escaped", OFFSET(keep_ass_markup), AV_OPT_TYPE_INT,    {.i64=0}, 0, 1, .flags=SD },
+    { "keep_ass_markup", "Set if ASS tags must be escaped", OFFSET(keep_ass_markup), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags=SD },
     { NULL }
 };
 
@@ -48,21 +49,25 @@ static int text_decode_frame(AVCodecContext *avctx, void *data,
     AVBPrint buf;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
-    const TextContext *text = avctx->priv_data;
-    const int ts_start     = av_rescale_q(avpkt->pts,      avctx->time_base, (AVRational){1,100});
-    const int ts_duration  = avpkt->duration != -1 ?
-                             av_rescale_q(avpkt->duration, avctx->time_base, (AVRational){1,100}) : -1;
+    TextContext *text = avctx->priv_data;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr) {
         ff_ass_bprint_text_event(&buf, ptr, avpkt->size, text->linebreaks, text->keep_ass_markup);
-        ret = ff_ass_add_rect_bprint(sub, &buf, ts_start, ts_duration);
+        ret = ff_ass_add_rect(sub, buf.str, text->readorder++, 0, NULL, NULL);
     }
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;
     *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
+}
+
+static void text_flush(AVCodecContext *avctx)
+{
+    TextContext *text = avctx->priv_data;
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
+        text->readorder = 0;
 }
 
 #define DECLARE_CLASS(decname) static const AVClass decname ## _decoder_class = {   \
@@ -85,6 +90,7 @@ AVCodec ff_text_decoder = {
     .decode         = text_decode_frame,
     .init           = ff_ass_subtitle_header_default,
     .priv_class     = &text_decoder_class,
+    .flush          = text_flush,
 };
 #endif
 
@@ -110,6 +116,7 @@ AVCodec ff_vplayer_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &vplayer_decoder_class,
+    .flush          = text_flush,
 };
 #endif
 
@@ -126,6 +133,7 @@ AVCodec ff_stl_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &stl_decoder_class,
+    .flush          = text_flush,
 };
 #endif
 
@@ -142,6 +150,7 @@ AVCodec ff_pjs_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &pjs_decoder_class,
+    .flush          = text_flush,
 };
 #endif
 
@@ -158,6 +167,7 @@ AVCodec ff_subviewer1_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &subviewer1_decoder_class,
+    .flush          = text_flush,
 };
 #endif
 

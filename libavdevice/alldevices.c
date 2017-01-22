@@ -63,7 +63,7 @@ void avdevice_register_all(void)
     REGISTER_INOUTDEV(OSS,              oss);
     REGISTER_INOUTDEV(PULSE,            pulse);
     REGISTER_INDEV   (QTKIT,            qtkit);
-    REGISTER_OUTDEV  (SDL,              sdl);
+    REGISTER_OUTDEV  (SDL2,             sdl2);
     REGISTER_INOUTDEV(SNDIO,            sndio);
     REGISTER_INOUTDEV(V4L2,             v4l2);
 //    REGISTER_INDEV   (V4L,              v4l

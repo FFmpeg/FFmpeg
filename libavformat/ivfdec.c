@@ -46,11 +46,11 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_tag  = avio_rl32(s->pb);
-    st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
-    st->codec->width      = avio_rl16(s->pb);
-    st->codec->height     = avio_rl16(s->pb);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_tag  = avio_rl32(s->pb);
+    st->codecpar->codec_id   = ff_codec_get_id(ff_codec_bmp_tags, st->codecpar->codec_tag);
+    st->codecpar->width      = avio_rl16(s->pb);
+    st->codecpar->height     = avio_rl16(s->pb);
     time_base.den         = avio_rl32(s->pb);
     time_base.num         = avio_rl32(s->pb);
     st->duration          = avio_rl64(s->pb);

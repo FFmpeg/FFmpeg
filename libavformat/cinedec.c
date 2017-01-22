@@ -49,12 +49,12 @@ enum {
     CFA_VRIV6     = 2,  /**< BGGR/GRBG */
     CFA_BAYER     = 3,  /**< GB/RG */
     CFA_BAYERFLIP = 4,  /**< RG/GB */
-
-    CFA_TLGRAY    = 0x80000000,
-    CFA_TRGRAY    = 0x40000000,
-    CFA_BLGRAY    = 0x20000000,
-    CFA_BRGRAY    = 0x10000000
 };
+
+#define CFA_TLGRAY  0x80000000U
+#define CFA_TRGRAY  0x40000000U
+#define CFA_BLGRAY  0x20000000U
+#define CFA_BRGRAY  0x10000000U
 
 static int cine_read_probe(AVProbeData *p)
 {
@@ -101,9 +101,9 @@ static int cine_read_header(AVFormatContext *avctx)
     st = avformat_new_stream(avctx, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->codec_tag  = 0;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->codec_tag  = 0;
 
     /* CINEFILEHEADER structure */
     avio_skip(pb, 4); // Type, Headersize
@@ -111,7 +111,7 @@ static int cine_read_header(AVFormatContext *avctx)
     compression = avio_rl16(pb);
     version     = avio_rl16(pb);
     if (version != 1) {
-        avpriv_request_sample(avctx, "uknown version %i", version);
+        avpriv_request_sample(avctx, "unknown version %i", version);
         return AVERROR_INVALIDDATA;
     }
 
@@ -127,8 +127,8 @@ static int cine_read_header(AVFormatContext *avctx)
     /* BITMAPINFOHEADER structure */
     avio_seek(pb, offImageHeader, SEEK_SET);
     avio_skip(pb, 4); //biSize
-    st->codec->width      = avio_rl32(pb);
-    st->codec->height     = avio_rl32(pb);
+    st->codecpar->width      = avio_rl32(pb);
+    st->codecpar->height     = avio_rl32(pb);
 
     if (avio_rl16(pb) != 1) // biPlanes
         return AVERROR_INVALIDDATA;
@@ -144,7 +144,7 @@ static int cine_read_header(AVFormatContext *avctx)
         vflip = 0;
         break;
     case 0x100: /* BI_PACKED */
-        st->codec->codec_tag = MKTAG('B', 'I', 'T', 0);
+        st->codecpar->codec_tag = MKTAG('B', 'I', 'T', 0);
         vflip = 1;
         break;
     default:
@@ -167,8 +167,8 @@ static int cine_read_header(AVFormatContext *avctx)
 
     avio_skip(pb, 616); // Binning .. bFlipH
     if (!avio_rl32(pb) ^ vflip) {
-        st->codec->extradata  = av_strdup("BottomUp");
-        st->codec->extradata_size  = 9;
+        st->codecpar->extradata  = av_strdup("BottomUp");
+        st->codecpar->extradata_size  = 9;
     }
 
     avio_skip(pb, 4); // Grid
@@ -193,17 +193,17 @@ static int cine_read_header(AVFormatContext *avctx)
     set_metadata_float(&st->metadata, "wbgain[0].b", av_int2float(avio_rl32(pb)), 1);
     avio_skip(pb, 36); // WBGain[1].. WBView
 
-    st->codec->bits_per_coded_sample = avio_rl32(pb);
+    st->codecpar->bits_per_coded_sample = avio_rl32(pb);
 
     if (compression == CC_RGB) {
         if (biBitCount == 8) {
-            st->codec->pix_fmt = AV_PIX_FMT_GRAY8;
+            st->codecpar->format = AV_PIX_FMT_GRAY8;
         } else if (biBitCount == 16) {
-            st->codec->pix_fmt = AV_PIX_FMT_GRAY16LE;
+            st->codecpar->format = AV_PIX_FMT_GRAY16LE;
         } else if (biBitCount == 24) {
-            st->codec->pix_fmt = AV_PIX_FMT_BGR24;
+            st->codecpar->format = AV_PIX_FMT_BGR24;
         } else if (biBitCount == 48) {
-            st->codec->pix_fmt = AV_PIX_FMT_BGR48LE;
+            st->codecpar->format = AV_PIX_FMT_BGR48LE;
         } else {
             avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
             return AVERROR_INVALIDDATA;
@@ -212,9 +212,9 @@ static int cine_read_header(AVFormatContext *avctx)
         switch (CFA & 0xFFFFFF) {
         case CFA_BAYER:
             if (biBitCount == 8) {
-                st->codec->pix_fmt = AV_PIX_FMT_BAYER_GBRG8;
+                st->codecpar->format = AV_PIX_FMT_BAYER_GBRG8;
             } else if (biBitCount == 16) {
-                st->codec->pix_fmt = AV_PIX_FMT_BAYER_GBRG16LE;
+                st->codecpar->format = AV_PIX_FMT_BAYER_GBRG16LE;
             } else {
                 avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
                 return AVERROR_INVALIDDATA;
@@ -222,9 +222,9 @@ static int cine_read_header(AVFormatContext *avctx)
             break;
         case CFA_BAYERFLIP:
             if (biBitCount == 8) {
-                st->codec->pix_fmt = AV_PIX_FMT_BAYER_RGGB8;
+                st->codecpar->format = AV_PIX_FMT_BAYER_RGGB8;
             } else if (biBitCount == 16) {
-                st->codec->pix_fmt = AV_PIX_FMT_BAYER_RGGB16LE;
+                st->codecpar->format = AV_PIX_FMT_BAYER_RGGB16LE;
             } else {
                 avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
                 return AVERROR_INVALIDDATA;

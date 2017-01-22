@@ -21,6 +21,8 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+
+#define BITSTREAM_READER_LE
 #include "tak.h"
 
 static const int64_t tak_channel_layouts[] = {

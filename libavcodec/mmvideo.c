@@ -247,5 +247,5 @@ AVCodec ff_mmvideo_decoder = {
     .init           = mm_decode_init,
     .close          = mm_decode_end,
     .decode         = mm_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

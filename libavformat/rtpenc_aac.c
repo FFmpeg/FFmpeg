@@ -33,7 +33,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
     uint8_t *p;
 
     /* skip ADTS header, if present */
-    if ((s1->streams[0]->codec->extradata_size) == 0) {
+    if ((s1->streams[0]->codecpar->extradata_size) == 0) {
         size -= 7;
         buff += 7;
     }

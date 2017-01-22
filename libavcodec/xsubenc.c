@@ -131,8 +131,21 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
     if (h->num_rects != 1)
         av_log(avctx, AV_LOG_WARNING, "Only single rects supported (%d in subtitle.)\n", h->num_rects);
 
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!h->rects[0]->data[0]) {
+        AVSubtitleRect *rect = h->rects[0];
+        int j;
+        for (j = 0; j < 4; j++) {
+            rect->data[j] = rect->pict.data[j];
+            rect->linesize[j] = rect->pict.linesize[j];
+        }
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     // TODO: render text-based subtitles into bitmaps
-    if (!h->rects[0]->pict.data[0] || !h->rects[0]->pict.data[1]) {
+    if (!h->rects[0]->data[0] || !h->rects[0]->data[1]) {
         av_log(avctx, AV_LOG_WARNING, "No subtitle bitmap available.\n");
         return -1;
     }
@@ -142,7 +155,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
         av_log(avctx, AV_LOG_WARNING, "No more than 4 subtitle colors supported (%d found.)\n", h->rects[0]->nb_colors);
 
     // TODO: Palette swapping if color zero is not transparent
-    if (((uint32_t *)h->rects[0]->pict.data[1])[0] & 0xff000000)
+    if (((uint32_t *)h->rects[0]->data[1])[0] & 0xff000000)
         av_log(avctx, AV_LOG_WARNING, "Color index 0 is not transparent. Transparency will be messed up.\n");
 
     if (make_tc(startTime, start_tc) || make_tc(endTime, end_tc)) {
@@ -174,19 +187,19 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
 
     // Palette
     for (i=0; i<4; i++)
-        bytestream_put_be24(&hdr, ((uint32_t *)h->rects[0]->pict.data[1])[i]);
+        bytestream_put_be24(&hdr, ((uint32_t *)h->rects[0]->data[1])[i]);
 
     // Bitmap
     // RLE buffer. Reserve 2 bytes for possible padding after the last row.
     init_put_bits(&pb, hdr, bufsize - (hdr - buf) - 2);
-    if (xsub_encode_rle(&pb, h->rects[0]->pict.data[0],
-                        h->rects[0]->pict.linesize[0]*2,
+    if (xsub_encode_rle(&pb, h->rects[0]->data[0],
+                        h->rects[0]->linesize[0] * 2,
                         h->rects[0]->w, (h->rects[0]->h + 1) >> 1))
         return -1;
     bytestream_put_le16(&rlelenptr, put_bits_count(&pb) >> 3); // Length of first field
 
-    if (xsub_encode_rle(&pb, h->rects[0]->pict.data[0] + h->rects[0]->pict.linesize[0],
-                        h->rects[0]->pict.linesize[0]*2,
+    if (xsub_encode_rle(&pb, h->rects[0]->data[0] + h->rects[0]->linesize[0],
+                        h->rects[0]->linesize[0] * 2,
                         h->rects[0]->w, h->rects[0]->h >> 1))
         return -1;
 

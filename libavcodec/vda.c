@@ -21,7 +21,7 @@
 #include "libavutil/mem.h"
 
 #include "vda.h"
-#include "vda_internal.h"
+#include "vda_vt_internal.h"
 
 #if CONFIG_H264_VDA_HWACCEL
 AVVDAContext *av_vda_alloc_context(void)
@@ -69,6 +69,11 @@ AVVDAContext *av_vda_alloc_context(void)
 }
 
 int av_vda_default_init(AVCodecContext *avctx)
+{
+    return AVERROR(ENOSYS);
+}
+
+int av_vda_default_init2(AVCodecContext *avctx, AVVDAContext *vdactx)
 {
     return AVERROR(ENOSYS);
 }

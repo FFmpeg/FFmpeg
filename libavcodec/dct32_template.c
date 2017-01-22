@@ -73,7 +73,7 @@
 #define COS3_0 FIXHR(0.54119610014619698439/2)
 #define COS3_1 FIXHR(1.30656296487637652785/4)
 
-#define COS4_0 FIXHR(0.70710678118654752439/2)
+#define COS4_0 FIXHR(M_SQRT1_2/2)
 
 /* butterfly operator */
 #define BF(a, b, c, s)\

@@ -27,9 +27,9 @@ extern void ff_v210_planar_unpack_aligned_avx(const uint32_t *src, uint16_t *y, 
 
 av_cold void ff_v210_x86_init(V210DecContext *s)
 {
+#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (s->aligned_input) {
         if (cpu_flags & AV_CPU_FLAG_SSSE3)
             s->unpack_frame = ff_v210_planar_unpack_aligned_ssse3;

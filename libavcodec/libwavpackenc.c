@@ -188,7 +188,7 @@ AVCodec ff_libwavpack_encoder = {
     .init           = wavpack_encode_init,
     .encode2        = wavpack_encode_frame,
     .close          = wavpack_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
 };

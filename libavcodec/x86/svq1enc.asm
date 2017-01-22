@@ -21,12 +21,12 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_TEXT
+SECTION .text
 
 %macro SSD_INT8_VS_INT16 0
 cglobal ssd_int8_vs_int16, 3, 3, 3, pix1, pix2, size
     pxor m0, m0
-.loop
+.loop:
     sub       sizeq, 8
     movq      m1, [pix1q + sizeq]
     mova      m2, [pix2q + sizeq*2]

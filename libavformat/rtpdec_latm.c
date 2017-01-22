@@ -97,7 +97,7 @@ static int parse_fmtp_config(AVStream *st, const char *value)
     int audio_mux_version, same_time_framing, num_programs, num_layers;
 
     /* Pad this buffer, too, to avoid out of bounds reads with get_bits below */
-    config = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
+    config = av_mallocz(len + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!config)
         return AVERROR(ENOMEM);
     ff_hex_to_data(config, value);
@@ -115,13 +115,13 @@ static int parse_fmtp_config(AVStream *st, const char *value)
         ret = AVERROR_PATCHWELCOME;
         goto end;
     }
-    av_freep(&st->codec->extradata);
-    if (ff_alloc_extradata(st->codec, (get_bits_left(&gb) + 7)/8)) {
+    av_freep(&st->codecpar->extradata);
+    if (ff_alloc_extradata(st->codecpar, (get_bits_left(&gb) + 7)/8)) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    for (i = 0; i < st->codec->extradata_size; i++)
-        st->codec->extradata[i] = get_bits(&gb, 8);
+    for (i = 0; i < st->codecpar->extradata_size; i++)
+        st->codecpar->extradata[i] = get_bits(&gb, 8);
 
 end:
     av_free(config);

@@ -276,7 +276,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             p->linesize[0] = -p->linesize[0];
         }
         bytestream2_init(&gb, buf, dsize);
-        ff_msrle_decode(avctx, (AVPicture*)p, depth, &gb);
+        ff_msrle_decode(avctx, p, depth, &gb);
         if (height < 0) {
             p->data[0]    +=  p->linesize[0] * (avctx->height - 1);
             p->linesize[0] = -p->linesize[0];
@@ -337,6 +337,20 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
     }
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA) {
+        for (i = 0; i < avctx->height; i++) {
+            int j;
+            uint8_t *ptr = p->data[0] + p->linesize[0]*i + 3;
+            for (j = 0; j < avctx->width; j++) {
+                if (ptr[4*j])
+                    break;
+            }
+            if (j < avctx->width)
+                break;
+        }
+        if (i == avctx->height)
+            avctx->pix_fmt = p->format = AV_PIX_FMT_BGR0;
+    }
 
     *got_frame = 1;
 
@@ -349,5 +363,5 @@ AVCodec ff_bmp_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_BMP,
     .decode         = bmp_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

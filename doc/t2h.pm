@@ -174,7 +174,7 @@ EOT
     <link rel="stylesheet" type="text/css" href="style.min.css">
   </head>
   <body>
-    <div style="width: 95%; margin: auto">
+    <div class="container">
       <h1>
 EOT
 

@@ -1,6 +1,6 @@
 /*
  * amr file format
- * Copyright (c) 2001 ffmpeg project
+ * Copyright (c) 2001 FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -42,13 +42,13 @@ static const char AMRWB_header[] = "#!AMR-WB\n";
 static int amr_write_header(AVFormatContext *s)
 {
     AVIOContext    *pb  = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     s->priv_data = NULL;
 
-    if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
+    if (par->codec_id == AV_CODEC_ID_AMR_NB) {
         avio_write(pb, AMR_header,   sizeof(AMR_header)   - 1); /* magic number */
-    } else if (enc->codec_id == AV_CODEC_ID_AMR_WB) {
+    } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
         avio_write(pb, AMRWB_header, sizeof(AMRWB_header) - 1); /* magic number */
     } else {
         return -1;
@@ -94,25 +94,25 @@ static int amr_read_header(AVFormatContext *s)
             return -1;
         }
 
-        st->codec->codec_tag   = MKTAG('s', 'a', 'w', 'b');
-        st->codec->codec_id    = AV_CODEC_ID_AMR_WB;
-        st->codec->sample_rate = 16000;
+        st->codecpar->codec_tag   = MKTAG('s', 'a', 'w', 'b');
+        st->codecpar->codec_id    = AV_CODEC_ID_AMR_WB;
+        st->codecpar->sample_rate = 16000;
     } else {
-        st->codec->codec_tag   = MKTAG('s', 'a', 'm', 'r');
-        st->codec->codec_id    = AV_CODEC_ID_AMR_NB;
-        st->codec->sample_rate = 8000;
+        st->codecpar->codec_tag   = MKTAG('s', 'a', 'm', 'r');
+        st->codecpar->codec_id    = AV_CODEC_ID_AMR_NB;
+        st->codecpar->sample_rate = 8000;
     }
-    st->codec->channels   = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    st->codecpar->channels   = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
 
 static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int read, size = 0, toc, mode;
     int64_t pos = avio_tell(s->pb);
     AMRContext *amr = s->priv_data;
@@ -121,17 +121,17 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    // FIXME this is wrong, this should rather be in a AVParser
+    // FIXME this is wrong, this should rather be in an AVParser
     toc  = avio_r8(s->pb);
     mode = (toc >> 3) & 0x0F;
 
-    if (enc->codec_id == AV_CODEC_ID_AMR_NB) {
+    if (par->codec_id == AV_CODEC_ID_AMR_NB) {
         static const uint8_t packed_size[16] = {
             12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0
         };
 
         size = packed_size[mode] + 1;
-    } else if (enc->codec_id == AV_CODEC_ID_AMR_WB) {
+    } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
         static const uint8_t packed_size[16] = {
             18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1
         };
@@ -145,17 +145,17 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (amr->cumulated_size < UINT64_MAX - size) {
         amr->cumulated_size += size;
         /* Both AMR formats have 50 frames per second */
-        s->streams[0]->codec->bit_rate = amr->cumulated_size / ++amr->block_count * 8 * 50;
+        s->streams[0]->codecpar->bit_rate = amr->cumulated_size / ++amr->block_count * 8 * 50;
     }
 
     pkt->stream_index = 0;
     pkt->pos          = pos;
     pkt->data[0]      = toc;
-    pkt->duration     = enc->codec_id == AV_CODEC_ID_AMR_NB ? 160 : 320;
+    pkt->duration     = par->codec_id == AV_CODEC_ID_AMR_NB ? 160 : 320;
     read              = avio_read(s->pb, pkt->data + 1, size - 1);
 
     if (read != size - 1) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 

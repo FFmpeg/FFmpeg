@@ -71,6 +71,7 @@ typedef struct MPADecodeContext {
     MPA_DECODE_HEADER
     uint8_t last_buf[LAST_BUF_SIZE];
     int last_buf_size;
+    int extrasize;
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;
     GetBitContext gb;
@@ -429,7 +430,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     s->avctx = avctx;
 
 #if USE_FLOATS
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 #endif
@@ -816,19 +817,13 @@ static void exponents_from_scale_factors(MPADecodeContext *s, GranuleDef *g,
     }
 }
 
-/* handle n = 0 too */
-static inline int get_bitsz(GetBitContext *s, int n)
-{
-    return n ? get_bits(s, n) : 0;
-}
-
-
 static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
                           int *end_pos2)
 {
-    if (s->in_gb.buffer && *pos >= s->gb.size_in_bits) {
+    if (s->in_gb.buffer && *pos >= s->gb.size_in_bits - s->extrasize * 8) {
         s->gb           = s->in_gb;
         s->in_gb.buffer = NULL;
+        s->extrasize    = 0;
         av_assert2((get_bits_count(&s->gb) & 7) == 0);
         skip_bits_long(&s->gb, *pos - *end_pos);
         *end_pos2 =
@@ -837,7 +832,7 @@ static void switch_buffer(MPADecodeContext *s, int *pos, int *end_pos,
     }
 }
 
-/* Following is a optimized code for
+/* Following is an optimized code for
             INTFLOAT v = *src
             if(get_bits1(&s->gb))
                 v = -v;
@@ -860,7 +855,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     int i;
     int last_pos, bits_left;
     VLC *vlc;
-    int end_pos = FFMIN(end_pos2, s->gb.size_in_bits);
+    int end_pos = FFMIN(end_pos2, s->gb.size_in_bits - s->extrasize * 8);
 
     /* low frequencies (called big values) */
     s_index = 0;
@@ -1172,9 +1167,9 @@ found2:
 #   include "mips/compute_antialias_float.h"
 #endif /* HAVE_MIPSFPU */
 #else
-#if HAVE_MIPSDSPR1
+#if HAVE_MIPSDSP
 #   include "mips/compute_antialias_fixed.h"
-#endif /* HAVE_MIPSDSPR1 */
+#endif /* HAVE_MIPSDSP */
 #endif /* USE_FLOATS */
 
 #ifndef compute_antialias
@@ -1394,18 +1389,16 @@ static int mp_decode_layer3(MPADecodeContext *s)
     if (!s->adu_mode) {
         int skip;
         const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
-        int extrasize = av_clip(get_bits_left(&s->gb) >> 3, 0, EXTRABYTES);
+        s->extrasize = av_clip((get_bits_left(&s->gb) >> 3) - s->extrasize, 0,
+                               FFMAX(0, LAST_BUF_SIZE - s->last_buf_size));
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
         ff_dlog(s->avctx, "seekback:%d, lastbuf:%d\n",
                 main_data_begin, s->last_buf_size);
 
-        memcpy(s->last_buf + s->last_buf_size, ptr, extrasize);
+        memcpy(s->last_buf + s->last_buf_size, ptr, s->extrasize);
         s->in_gb = s->gb;
-        init_get_bits(&s->gb, s->last_buf, s->last_buf_size*8);
-#if !UNCHECKED_BITSTREAM_READER
-        s->gb.size_in_bits_plus8 += FFMAX(extrasize, LAST_BUF_SIZE - s->last_buf_size) * 8;
-#endif
+        init_get_bits(&s->gb, s->last_buf, (s->last_buf_size + s->extrasize) * 8);
         s->last_buf_size <<= 3;
         for (gr = 0; gr < nb_granules && (s->last_buf_size >> 3) < main_data_begin; gr++) {
             for (ch = 0; ch < s->nb_channels; ch++) {
@@ -1416,15 +1409,17 @@ static int mp_decode_layer3(MPADecodeContext *s)
             }
         }
         skip = s->last_buf_size - 8 * main_data_begin;
-        if (skip >= s->gb.size_in_bits && s->in_gb.buffer) {
-            skip_bits_long(&s->in_gb, skip - s->gb.size_in_bits);
+        if (skip >= s->gb.size_in_bits - s->extrasize * 8 && s->in_gb.buffer) {
+            skip_bits_long(&s->in_gb, skip - s->gb.size_in_bits + s->extrasize * 8);
             s->gb           = s->in_gb;
             s->in_gb.buffer = NULL;
+            s->extrasize    = 0;
         } else {
             skip_bits_long(&s->gb, skip);
         }
     } else {
         gr = 0;
+        s->extrasize = 0;
     }
 
     for (; gr < nb_granules; gr++) {
@@ -1436,7 +1431,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 uint8_t *sc;
                 int slen, slen1, slen2;
 
-                /* MPEG1 scale factors */
+                /* MPEG-1 scale factors */
                 slen1 = slen_table[0][g->scalefac_compress];
                 slen2 = slen_table[1][g->scalefac_compress];
                 ff_dlog(s->avctx, "slen1=%d slen2=%d\n", slen1, slen2);
@@ -1589,7 +1584,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
         s->last_buf_size=0;
         if (s->in_gb.buffer) {
             align_get_bits(&s->gb);
-            i = get_bits_left(&s->gb)>>3;
+            i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
             if (i >= 0 && i <= BACKSTEP_SIZE) {
                 memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
                 s->last_buf_size=i;
@@ -1597,12 +1592,12 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
                 av_log(s->avctx, AV_LOG_ERROR, "invalid old backstep %d\n", i);
             s->gb           = s->in_gb;
             s->in_gb.buffer = NULL;
+            s->extrasize    = 0;
         }
 
         align_get_bits(&s->gb);
         av_assert1((get_bits_count(&s->gb) & 7) == 0);
-        i = get_bits_left(&s->gb) >> 3;
-
+        i = (get_bits_left(&s->gb) >> 3) - s->extrasize;
         if (i < 0 || i > BACKSTEP_SIZE || nb_frames < 0) {
             if (i < 0)
                 av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n", i);
@@ -1657,9 +1652,11 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     uint32_t header;
     int ret;
 
+    int skipped = 0;
     while(buf_size && !*buf){
         buf++;
         buf_size--;
+        skipped++;
     }
 
     if (buf_size < HEADER_SIZE)
@@ -1670,12 +1667,11 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
         av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
         return buf_size;
     }
-    if (ff_mpa_check_header(header) < 0) {
+    ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Header missing\n");
         return AVERROR_INVALIDDATA;
-    }
-
-    if (avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
+    } else if (ret == 1) {
         /* free format: prepare to compute frame size */
         s->frame_size = -1;
         return AVERROR_INVALIDDATA;
@@ -1714,7 +1710,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
             return ret;
     }
     s->frame_size = 0;
-    return buf_size;
+    return buf_size + skipped;
 }
 
 static void mp_flush(MPADecodeContext *ctx)
@@ -1756,12 +1752,11 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     // Get header and restore sync word
     header = AV_RB32(buf) | 0xffe00000;
 
-    if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
+    ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid frame header\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
-
-    avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
     avctx->channels    = s->nb_channels;
@@ -1952,12 +1947,11 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         }
         header = (AV_RB32(buf) & 0x000fffff) | s->syncword; // patch header
 
-        if (ff_mpa_check_header(header) < 0) {
+        ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
+        if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Bad header, discard block\n");
             return AVERROR_INVALIDDATA;
         }
-
-        avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
 
         if (ch + m->nb_channels > avctx->channels ||
             s->coff[fr] + m->nb_channels > avctx->channels) {

@@ -29,8 +29,8 @@
 
 #include "avcodec.h"
 #include "dv_profile.h"
-#include "get_bits.h"
 #include "me_cmp.h"
+#include "vlc.h"
 
 typedef struct DVwork_chunk {
     uint16_t buf_offset;
@@ -39,7 +39,7 @@ typedef struct DVwork_chunk {
 
 typedef struct DVVideoContext {
     const AVDVProfile *sys;
-    AVFrame         *frame;
+    const AVFrame   *frame;
     AVCodecContext  *avctx;
     uint8_t         *buf;
 

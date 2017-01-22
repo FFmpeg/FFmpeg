@@ -10,30 +10,17 @@ INSTHEADERS := $(INSTHEADERS) $(HEADERS:%=$(SUBDIR)%)
 all-$(CONFIG_STATIC): $(SUBDIR)$(LIBNAME)
 all-$(CONFIG_SHARED): $(SUBDIR)$(SLIBNAME)
 
-$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$(COMPILE_C)
-
-$(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$(COMPILE_C)
-
-$(SUBDIR)%-test.i: $(SUBDIR)%-test.c
-	$(CC) $(CCFLAGS) $(CC_E) $<
-
-$(SUBDIR)%-test.i: $(SUBDIR)%.c
-	$(CC) $(CCFLAGS) $(CC_E) $<
-
 $(SUBDIR)x86/%$(DEFAULT_YASMD).asm: $(SUBDIR)x86/%.asm
 	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.asm=.d)
 	$(YASM) $(YASMFLAGS) -I $(<D)/ -e $< | sed '/^%/d;/^$$/d;' > $@
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%$(YASMD).asm
 	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
-	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $<
+	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
 	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 LIBOBJS := $(OBJS) $(SUBDIR)%.h.o $(TESTOBJS)
 $(LIBOBJS) $(LIBOBJS:.o=.s) $(LIBOBJS:.o=.i):   CPPFLAGS += -DHAVE_AV_CONFIG_H
-$(TESTOBJS) $(TESTOBJS:.o=.i): CPPFLAGS += -DTEST
 $(TESTOBJS) $(TESTOBJS:.o=.i): CFLAGS += -Umain
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
@@ -53,12 +40,15 @@ $(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
 	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
 
+$(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
+	$$(M)sed 's/MAJOR/$(lib$(NAME)_VERSION_MAJOR)/' $$< | $(VERSION_SCRIPT_POSTPROCESS_CMD) > $$@
+
 $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SLIBOBJS) $(SUBDIR)lib$(NAME).ver
 	$(SLIB_CREATE_DEF_CMD)
-	$$(LD) $(SHFLAGS) $(LDFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS)
+	$$(LD) $(SHFLAGS) $(LDFLAGS) $(LDLIBFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS)
 	$(SLIB_EXTRA_CMD)
 
 ifdef SUBDIR
@@ -66,11 +56,12 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(DEP_LIBS)
 endif
 
 clean::
-	$(RM) $(addprefix $(SUBDIR),*-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
-	    $(CLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%)
-
+	$(RM) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	    $(CLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%) $(CLEANSUFFIXES:%=$(SUBDIR)tests/%)
+ 
 distclean:: clean
-	$(RM) $(DISTCLEANSUFFIXES:%=$(SUBDIR)%) $(DISTCLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%)
+	$(RM) $(DISTCLEANSUFFIXES:%=$(SUBDIR)%) $(DISTCLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%) \
+            $(DISTCLEANSUFFIXES:%=$(SUBDIR)tests/%)
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(Q)mkdir -p "$(SHLIBDIR)"

@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -78,12 +79,12 @@ static av_cold void framepack_uninit(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = outlink->src;
-    FramepackContext *s  = outlink->src->priv;
+    AVFilterContext *ctx  = outlink->src;
+    FramepackContext *s   = outlink->src->priv;
 
-    int width            = ctx->inputs[LEFT]->w;
-    int height           = ctx->inputs[LEFT]->h;
-    AVRational time_base = ctx->inputs[LEFT]->time_base;
+    int width             = ctx->inputs[LEFT]->w;
+    int height            = ctx->inputs[LEFT]->h;
+    AVRational time_base  = ctx->inputs[LEFT]->time_base;
     AVRational frame_rate = ctx->inputs[LEFT]->frame_rate;
 
     // check size and fps match on the other input
@@ -117,7 +118,7 @@ static int config_output(AVFilterLink *outlink)
     // modify output properties as needed
     switch (s->format) {
     case AV_STEREO3D_FRAMESEQUENCE:
-        time_base.den *= 2;
+        time_base.den  *= 2;
         frame_rate.num *= 2;
 
         s->double_pts = AV_NOPTS_VALUE;
@@ -135,123 +136,159 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_INVALIDDATA;
     }
 
-    outlink->w         = width;
-    outlink->h         = height;
-    outlink->time_base = time_base;
-    outlink->frame_rate= frame_rate;
+    outlink->w          = width;
+    outlink->h          = height;
+    outlink->time_base  = time_base;
+    outlink->frame_rate = frame_rate;
 
     return 0;
 }
 
-static void horizontal_frame_pack(FramepackContext *s,
-                                  AVFrame *dst,
+static void horizontal_frame_pack(AVFilterLink *outlink,
+                                  AVFrame *out,
                                   int interleaved)
 {
-    int plane, i;
-    int length = dst->width / 2;
-    int lines  = dst->height;
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
+    int i, plane;
 
-    for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
-        const uint8_t *leftp  = s->input_views[LEFT]->data[plane];
-        const uint8_t *rightp = s->input_views[RIGHT]->data[plane];
-        uint8_t *dstp         = dst->data[plane];
+    if (interleaved) {
+        const uint8_t *leftp  = s->input_views[LEFT]->data[0];
+        const uint8_t *rightp = s->input_views[RIGHT]->data[0];
+        uint8_t *dstp         = out->data[0];
+        int length = out->width / 2;
+        int lines  = out->height;
 
-        if (plane == 1 || plane == 2) {
-            length = FF_CEIL_RSHIFT(dst->width / 2, s->pix_desc->log2_chroma_w);
-            lines  = FF_CEIL_RSHIFT(dst->height,    s->pix_desc->log2_chroma_h);
-        }
-
-        if (interleaved) {
+        for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
+            if (plane == 1 || plane == 2) {
+                length = AV_CEIL_RSHIFT(out->width / 2, s->pix_desc->log2_chroma_w);
+                lines  = AV_CEIL_RSHIFT(out->height,    s->pix_desc->log2_chroma_h);
+            }
             for (i = 0; i < lines; i++) {
                 int j;
-                int k = 0;
-
+                leftp  = s->input_views[LEFT]->data[plane] +
+                         s->input_views[LEFT]->linesize[plane] * i;
+                rightp = s->input_views[RIGHT]->data[plane] +
+                         s->input_views[RIGHT]->linesize[plane] * i;
+                dstp   = out->data[plane] + out->linesize[plane] * i;
                 for (j = 0; j < length; j++) {
-                    dstp[k++] = leftp[j];
-                    dstp[k++] = rightp[j];
+                    // interpolate chroma as necessary
+                    if ((s->pix_desc->log2_chroma_w ||
+                         s->pix_desc->log2_chroma_h) &&
+                        (plane == 1 || plane == 2)) {
+                        *dstp++ = (*leftp + *rightp) / 2;
+                        *dstp++ = (*leftp + *rightp) / 2;
+                    } else {
+                        *dstp++ = *leftp;
+                        *dstp++ = *rightp;
+                    }
+                    leftp += 1;
+                    rightp += 1;
                 }
-
-                dstp   += dst->linesize[plane];
-                leftp  += s->input_views[LEFT]->linesize[plane];
-                rightp += s->input_views[RIGHT]->linesize[plane];
             }
-        } else {
-            av_image_copy_plane(dst->data[plane], dst->linesize[plane],
-                                leftp, s->input_views[LEFT]->linesize[plane],
-                                length, lines);
-            av_image_copy_plane(dst->data[plane] + length, dst->linesize[plane],
-                                rightp, s->input_views[RIGHT]->linesize[plane],
-                                length, lines);
+        }
+    } else {
+        for (i = 0; i < 2; i++) {
+            const uint8_t *src[4];
+            uint8_t *dst[4];
+            int sub_w = s->input_views[i]->width >> s->pix_desc->log2_chroma_w;
+
+            src[0] = s->input_views[i]->data[0];
+            src[1] = s->input_views[i]->data[1];
+            src[2] = s->input_views[i]->data[2];
+
+            dst[0] = out->data[0] + i * s->input_views[i]->width;
+            dst[1] = out->data[1] + i * sub_w;
+            dst[2] = out->data[2] + i * sub_w;
+
+            av_image_copy(dst, out->linesize, src, s->input_views[i]->linesize,
+                          s->input_views[i]->format,
+                          s->input_views[i]->width,
+                          s->input_views[i]->height);
         }
     }
 }
 
-static void vertical_frame_pack(FramepackContext *s,
-                                AVFrame *dst,
+static void vertical_frame_pack(AVFilterLink *outlink,
+                                AVFrame *out,
                                 int interleaved)
 {
-    int plane, offset;
-    int length = dst->width;
-    int lines  = dst->height / 2;
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
+    int i;
 
-    for (plane = 0; plane < s->pix_desc->nb_components; plane++) {
-        if (plane == 1 || plane == 2) {
-            length = -(-(dst->width)      >> s->pix_desc->log2_chroma_w);
-            lines  = -(-(dst->height / 2) >> s->pix_desc->log2_chroma_h);
-        }
+    for (i = 0; i < 2; i++) {
+        const uint8_t *src[4];
+        uint8_t *dst[4];
+        int linesizes[4];
+        int sub_h = s->input_views[i]->height >> s->pix_desc->log2_chroma_h;
 
-        offset = interleaved ? dst->linesize[plane] : dst->linesize[plane] * lines;
+        src[0] = s->input_views[i]->data[0];
+        src[1] = s->input_views[i]->data[1];
+        src[2] = s->input_views[i]->data[2];
 
-        av_image_copy_plane(dst->data[plane],
-                            dst->linesize[plane] << interleaved,
-                            s->input_views[LEFT]->data[plane],
-                            s->input_views[LEFT]->linesize[plane],
-                            length, lines);
-        av_image_copy_plane(dst->data[plane] + offset,
-                            dst->linesize[plane] << interleaved,
-                            s->input_views[RIGHT]->data[plane],
-                            s->input_views[RIGHT]->linesize[plane],
-                            length, lines);
+        dst[0] = out->data[0] + i * out->linesize[0] *
+                 (interleaved + s->input_views[i]->height * (1 - interleaved));
+        dst[1] = out->data[1] + i * out->linesize[1] *
+                 (interleaved + sub_h * (1 - interleaved));
+        dst[2] = out->data[2] + i * out->linesize[2] *
+                 (interleaved + sub_h * (1 - interleaved));
+
+        linesizes[0] = out->linesize[0] +
+                       interleaved * out->linesize[0];
+        linesizes[1] = out->linesize[1] +
+                       interleaved * out->linesize[1];
+        linesizes[2] = out->linesize[2] +
+                       interleaved * out->linesize[2];
+
+        av_image_copy(dst, linesizes, src, s->input_views[i]->linesize,
+                      s->input_views[i]->format,
+                      s->input_views[i]->width,
+                      s->input_views[i]->height);
     }
 }
 
-static av_always_inline void spatial_frame_pack(FramepackContext *s, AVFrame *dst)
+static av_always_inline void spatial_frame_pack(AVFilterLink *outlink,
+                                                AVFrame *dst)
 {
+    AVFilterContext *ctx = outlink->src;
+    FramepackContext *s = ctx->priv;
     switch (s->format) {
     case AV_STEREO3D_SIDEBYSIDE:
-        horizontal_frame_pack(s, dst, 0);
+        horizontal_frame_pack(outlink, dst, 0);
         break;
     case AV_STEREO3D_COLUMNS:
-        horizontal_frame_pack(s, dst, 1);
+        horizontal_frame_pack(outlink, dst, 1);
         break;
     case AV_STEREO3D_TOPBOTTOM:
-        vertical_frame_pack(s, dst, 0);
+        vertical_frame_pack(outlink, dst, 0);
         break;
     case AV_STEREO3D_LINES:
-        vertical_frame_pack(s, dst, 1);
+        vertical_frame_pack(outlink, dst, 1);
         break;
     }
 }
+
+static int try_push_frame(AVFilterContext *ctx);
 
 static int filter_frame_left(AVFilterLink *inlink, AVFrame *frame)
 {
     FramepackContext *s = inlink->dst->priv;
     s->input_views[LEFT] = frame;
-    return 0;
+    return try_push_frame(inlink->dst);
 }
 
 static int filter_frame_right(AVFilterLink *inlink, AVFrame *frame)
 {
     FramepackContext *s = inlink->dst->priv;
     s->input_views[RIGHT] = frame;
-    return 0;
+    return try_push_frame(inlink->dst);
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     FramepackContext *s = ctx->priv;
-    AVStereo3D *stereo;
     int ret, i;
 
     /* get a frame on the either input, stop as soon as a video ends */
@@ -262,7 +299,18 @@ static int request_frame(AVFilterLink *outlink)
                 return ret;
         }
     }
+    return 0;
+}
 
+static int try_push_frame(AVFilterContext *ctx)
+{
+    FramepackContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVStereo3D *stereo;
+    int ret, i;
+
+    if (!(s->input_views[0] && s->input_views[1]))
+        return 0;
     if (s->format == AV_STEREO3D_FRAMESEQUENCE) {
         if (s->double_pts == AV_NOPTS_VALUE)
             s->double_pts = s->input_views[LEFT]->pts;
@@ -289,7 +337,7 @@ static int request_frame(AVFilterLink *outlink)
         if (!dst)
             return AVERROR(ENOMEM);
 
-        spatial_frame_pack(s, dst);
+        spatial_frame_pack(outlink, dst);
 
         // get any property from the original frame
         ret = av_frame_copy_props(dst, s->input_views[LEFT]);

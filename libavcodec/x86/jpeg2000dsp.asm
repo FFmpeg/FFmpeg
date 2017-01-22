@@ -69,7 +69,7 @@ cglobal ict_float, 4, 4, %1, src0, src1, src2, csize
 %endif ; ARCH
 
 align 16
-.loop
+.loop:
     movaps   m0, [src0q+csizeq]
     movaps   m1, [src1q+csizeq]
     movaps   m2, [src2q+csizeq]

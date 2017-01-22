@@ -101,7 +101,7 @@ int main(int argc, char **argv)
         }
         out_stream->codec->codec_tag = 0;
         if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-            out_stream->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
     av_dump_format(ofmt_ctx, 0, out_filename, 1);
 
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "Error muxing packet\n");
             break;
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
     }
 
     av_write_trailer(ofmt_ctx);

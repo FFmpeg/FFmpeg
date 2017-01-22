@@ -116,15 +116,6 @@ fail:
 
 static mfxStatus frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
 {
-    DecodeContext *decode = pthis;
-
-    if (decode->surfaces)
-        vaDestroySurfaces(decode->va_dpy, decode->surfaces, decode->nb_surfaces);
-    av_freep(&decode->surfaces);
-    av_freep(&decode->surface_ids);
-    av_freep(&decode->surface_used);
-    decode->nb_surfaces = 0;
-
     return MFX_ERR_NONE;
 }
 
@@ -142,6 +133,16 @@ static mfxStatus frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
 {
     *hdl = mid;
     return MFX_ERR_NONE;
+}
+
+static void free_surfaces(DecodeContext *decode)
+{
+    if (decode->surfaces)
+        vaDestroySurfaces(decode->va_dpy, decode->surfaces, decode->nb_surfaces);
+    av_freep(&decode->surfaces);
+    av_freep(&decode->surface_ids);
+    av_freep(&decode->surface_used);
+    decode->nb_surfaces = 0;
 }
 
 static void free_buffer(void *opaque, uint8_t *data)
@@ -351,7 +352,7 @@ int main(int argc, char **argv)
     for (i = 0; i < input_ctx->nb_streams; i++) {
         AVStream *st = input_ctx->streams[i];
 
-        if (st->codec->codec_id == AV_CODEC_ID_H264 && !video_st)
+        if (st->codecpar->codec_id == AV_CODEC_ID_H264 && !video_st)
             video_st = st;
         else
             st->discard = AVDISCARD_ALL;
@@ -403,16 +404,16 @@ int main(int argc, char **argv)
         goto finish;
     }
     decoder_ctx->codec_id = AV_CODEC_ID_H264;
-    if (video_st->codec->extradata_size) {
-        decoder_ctx->extradata = av_mallocz(video_st->codec->extradata_size +
-                                            FF_INPUT_BUFFER_PADDING_SIZE);
+    if (video_st->codecpar->extradata_size) {
+        decoder_ctx->extradata = av_mallocz(video_st->codecpar->extradata_size +
+                                            AV_INPUT_BUFFER_PADDING_SIZE);
         if (!decoder_ctx->extradata) {
             ret = AVERROR(ENOMEM);
             goto finish;
         }
-        memcpy(decoder_ctx->extradata, video_st->codec->extradata,
-               video_st->codec->extradata_size);
-        decoder_ctx->extradata_size = video_st->codec->extradata_size;
+        memcpy(decoder_ctx->extradata, video_st->codecpar->extradata,
+               video_st->codecpar->extradata_size);
+        decoder_ctx->extradata_size = video_st->codecpar->extradata_size;
     }
     decoder_ctx->refcounted_frames = 1;
 
@@ -467,16 +468,18 @@ finish:
 
     av_frame_free(&frame);
 
+    if (decoder_ctx)
+        av_freep(&decoder_ctx->hwaccel_context);
+    avcodec_free_context(&decoder_ctx);
+
+    free_surfaces(&decode);
+
     if (decode.mfx_session)
         MFXClose(decode.mfx_session);
     if (decode.va_dpy)
         vaTerminate(decode.va_dpy);
     if (dpy)
         XCloseDisplay(dpy);
-
-    if (decoder_ctx)
-        av_freep(&decoder_ctx->hwaccel_context);
-    avcodec_free_context(&decoder_ctx);
 
     avio_close(output_ctx);
 

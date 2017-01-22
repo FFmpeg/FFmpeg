@@ -1,6 +1,13 @@
-FATE_ATRAC1-$(call DEMDEC, AEA, ATRAC1) += fate-atrac1
-fate-atrac1: CMD = pcm -i $(TARGET_SAMPLES)/atrac1/test_tones_small.aea
-fate-atrac1: REF = $(SAMPLES)/atrac1/test_tones_small.pcm
+FATE_ATRAC1 += fate-atrac1-1
+fate-atrac1-1: CMD = pcm -i $(TARGET_SAMPLES)/atrac1/test_tones_small.aea
+fate-atrac1-1: REF = $(SAMPLES)/atrac1/test_tones_small_fixed_delay.pcm
+
+FATE_ATRAC1 += fate-atrac1-2
+fate-atrac1-2: CMD = pcm -i $(TARGET_SAMPLES)/atrac1/chirp_tone_10-16000.aea
+fate-atrac1-2: REF = $(SAMPLES)/atrac1/chirp_tone_10-16000.pcm
+fate-atrac1-2: FUZZ = 61
+
+FATE_ATRAC1-$(call DEMDEC, AEA, ATRAC1) += $(FATE_ATRAC1)
 
 FATE_ATRAC3 += fate-atrac3-1
 fate-atrac3-1: CMD = pcm -i $(TARGET_SAMPLES)/atrac3/mc_sich_at3_066_small.wav

@@ -29,7 +29,7 @@ pw_qmf_coeffs2: dw  12, 3876, -156,  951,   32, -805, 362, -210
 pw_qmf_coeffs3: dw 362,    0 ,  32,    0, -156,    0,  12,    0
 pw_qmf_coeffs4: dw  53,    0,  -11,    0,  -11,    0,   3,    0
 
-SECTION_TEXT
+SECTION .text
 
 INIT_XMM sse2
 cglobal g722_apply_qmf, 2, 2, 5, prev, out

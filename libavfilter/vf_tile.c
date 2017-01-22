@@ -116,8 +116,6 @@ static int config_props(AVFilterLink *outlink)
     ff_draw_init(&tile->draw, inlink->format, 0);
     ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
 
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
     return 0;
 }
 

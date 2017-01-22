@@ -23,7 +23,7 @@
 
 /**
  * @file
- * Mandelbrot fraktal renderer
+ * Mandelbrot fractal renderer
  */
 
 #include "avfilter.h"
@@ -121,35 +121,35 @@ AVFILTER_DEFINE_CLASS(mandelbrot);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    MBContext *mb = ctx->priv;
+    MBContext *s = ctx->priv;
 
-    mb->bailout *= mb->bailout;
+    s->bailout *= s->bailout;
 
-    mb->start_scale /=mb->h;
-    mb->end_scale /=mb->h;
+    s->start_scale /=s->h;
+    s->end_scale /=s->h;
 
-    mb->cache_allocated = mb->w * mb->h * 3;
-    mb->cache_used = 0;
-    mb->point_cache= av_malloc_array(mb->cache_allocated, sizeof(*mb->point_cache));
-    mb-> next_cache= av_malloc_array(mb->cache_allocated, sizeof(*mb-> next_cache));
-    mb-> zyklus    = av_malloc_array(mb->maxiter + 16, sizeof(*mb->zyklus));
+    s->cache_allocated = s->w * s->h * 3;
+    s->cache_used = 0;
+    s->point_cache= av_malloc_array(s->cache_allocated, sizeof(*s->point_cache));
+    s-> next_cache= av_malloc_array(s->cache_allocated, sizeof(*s-> next_cache));
+    s-> zyklus    = av_malloc_array(s->maxiter + 16, sizeof(*s->zyklus));
 
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    MBContext *mb = ctx->priv;
+    MBContext *s = ctx->priv;
 
-    av_freep(&mb->point_cache);
-    av_freep(&mb-> next_cache);
-    av_freep(&mb->zyklus);
+    av_freep(&s->point_cache);
+    av_freep(&s-> next_cache);
+    av_freep(&s->zyklus);
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_BGR32,
+        AV_PIX_FMT_0BGR32,
         AV_PIX_FMT_NONE
     };
 
@@ -162,48 +162,48 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->src;
-    MBContext *mb = ctx->priv;
+    MBContext *s = ctx->priv;
 
-    if (av_image_check_size(mb->w, mb->h, 0, ctx) < 0)
+    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
         return AVERROR(EINVAL);
 
-    inlink->w = mb->w;
-    inlink->h = mb->h;
-    inlink->time_base = av_inv_q(mb->frame_rate);
+    inlink->w = s->w;
+    inlink->h = s->h;
+    inlink->time_base = av_inv_q(s->frame_rate);
 
     return 0;
 }
 
 static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx, int *out_cidx, double py, double scale){
-    MBContext *mb = ctx->priv;
-    if(mb->morphamp)
+    MBContext *s = ctx->priv;
+    if(s->morphamp)
         return;
-    for(; *in_cidx < mb->cache_used; (*in_cidx)++){
-        Point *p= &mb->point_cache[*in_cidx];
+    for(; *in_cidx < s->cache_used; (*in_cidx)++){
+        Point *p= &s->point_cache[*in_cidx];
         int x;
         if(p->p[1] > py)
             break;
-        x= round((p->p[0] - mb->start_x) / scale + mb->w/2);
-        if(x<0 || x >= mb->w)
+        x= lrint((p->p[0] - s->start_x) / scale + s->w/2);
+        if(x<0 || x >= s->w)
             continue;
         if(color) color[x] = p->val;
-        if(out_cidx && *out_cidx < mb->cache_allocated)
-            mb->next_cache[(*out_cidx)++]= *p;
+        if(out_cidx && *out_cidx < s->cache_allocated)
+            s->next_cache[(*out_cidx)++]= *p;
     }
 }
 
-static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
+static int interpol(MBContext *s, uint32_t *color, int x, int y, int linesize)
 {
     uint32_t a,b,c,d, i;
     uint32_t ipol=0xFF000000;
     int dist;
 
-    if(!x || !y || x+1==mb->w || y+1==mb->h)
+    if(!x || !y || x+1==s->w || y+1==s->h)
         return 0;
 
-    dist= FFMAX(FFABS(x-(mb->w>>1))*mb->h, FFABS(y-(mb->h>>1))*mb->w);
+    dist= FFMAX(FFABS(x-(s->w>>1))*s->h, FFABS(y-(s->h>>1))*s->w);
 
-    if(dist<(mb->w*mb->h>>3))
+    if(dist<(s->w*s->h>>3))
         return 0;
 
     a=color[(x+1) + (y+0)*linesize];
@@ -248,50 +248,50 @@ static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
 
 static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize, int64_t pts)
 {
-    MBContext *mb = ctx->priv;
+    MBContext *s = ctx->priv;
     int x,y,i, in_cidx=0, next_cidx=0, tmp_cidx;
-    double scale= mb->start_scale*pow(mb->end_scale/mb->start_scale, pts/mb->end_pts);
+    double scale= s->start_scale*pow(s->end_scale/s->start_scale, pts/s->end_pts);
     int use_zyklus=0;
-    fill_from_cache(ctx, NULL, &in_cidx, NULL, mb->start_y+scale*(-mb->h/2-0.5), scale);
+    fill_from_cache(ctx, NULL, &in_cidx, NULL, s->start_y+scale*(-s->h/2-0.5), scale);
     tmp_cidx= in_cidx;
-    memset(color, 0, sizeof(*color)*mb->w);
-    for(y=0; y<mb->h; y++){
+    memset(color, 0, sizeof(*color)*s->w);
+    for(y=0; y<s->h; y++){
         int y1= y+1;
-        const double ci=mb->start_y+scale*(y-mb->h/2);
+        const double ci=s->start_y+scale*(y-s->h/2);
         fill_from_cache(ctx, NULL, &in_cidx, &next_cidx, ci, scale);
-        if(y1<mb->h){
-            memset(color+linesize*y1, 0, sizeof(*color)*mb->w);
+        if(y1<s->h){
+            memset(color+linesize*y1, 0, sizeof(*color)*s->w);
             fill_from_cache(ctx, color+linesize*y1, &tmp_cidx, NULL, ci + 3*scale/2, scale);
         }
 
-        for(x=0; x<mb->w; x++){
+        for(x=0; x<s->w; x++){
             float av_uninit(epsilon);
-            const double cr=mb->start_x+scale*(x-mb->w/2);
+            const double cr=s->start_x+scale*(x-s->w/2);
             double zr=cr;
             double zi=ci;
             uint32_t c=0;
-            double dv= mb->dither / (double)(1LL<<32);
-            mb->dither= mb->dither*1664525+1013904223;
+            double dv= s->dither / (double)(1LL<<32);
+            s->dither= s->dither*1664525+1013904223;
 
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
-            if(!mb->morphamp){
-                if(interpol(mb, color, x, y, linesize)){
-                    if(next_cidx < mb->cache_allocated){
-                        mb->next_cache[next_cidx  ].p[0]= cr;
-                        mb->next_cache[next_cidx  ].p[1]= ci;
-                        mb->next_cache[next_cidx++].val = color[x + y*linesize];
+            if(!s->morphamp){
+                if(interpol(s, color, x, y, linesize)){
+                    if(next_cidx < s->cache_allocated){
+                        s->next_cache[next_cidx  ].p[0]= cr;
+                        s->next_cache[next_cidx  ].p[1]= ci;
+                        s->next_cache[next_cidx++].val = color[x + y*linesize];
                     }
                     continue;
                 }
             }else{
-                zr += cos(pts * mb->morphxf) * mb->morphamp;
-                zi += sin(pts * mb->morphyf) * mb->morphamp;
+                zr += cos(pts * s->morphxf) * s->morphamp;
+                zi += sin(pts * s->morphyf) * s->morphamp;
             }
 
-            use_zyklus= (x==0 || mb->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
+            use_zyklus= (x==0 || s->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
             if(use_zyklus)
-                epsilon= scale*1*sqrt(SQR(x-mb->w/2) + SQR(y-mb->h/2))/mb->w;
+                epsilon= scale*(abs(x-s->w/2) + abs(y-s->h/2))/s->w;
 
 #define Z_Z2_C(outr,outi,inr,ini)\
             outr= inr*inr - ini*ini + cr;\
@@ -300,15 +300,15 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
 #define Z_Z2_C_ZYKLUS(outr,outi,inr,ini, Z)\
             Z_Z2_C(outr,outi,inr,ini)\
             if(use_zyklus){\
-                if(Z && fabs(mb->zyklus[i>>1][0]-outr)+fabs(mb->zyklus[i>>1][1]-outi) <= epsilon)\
+                if(Z && fabs(s->zyklus[i>>1][0]-outr)+fabs(s->zyklus[i>>1][1]-outi) <= epsilon)\
                     break;\
             }\
-            mb->zyklus[i][0]= outr;\
-            mb->zyklus[i][1]= outi;\
+            s->zyklus[i][0]= outr;\
+            s->zyklus[i][1]= outi;\
 
 
 
-            for(i=0; i<mb->maxiter-8; i++){
+            for(i=0; i<s->maxiter-8; i++){
                 double t;
                 Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
                 i++;
@@ -325,27 +325,27 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
                 i++;
                 Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
-                if(zr*zr + zi*zi > mb->bailout){
+                if(zr*zr + zi*zi > s->bailout){
                     i-= FFMIN(7, i);
-                    for(; i<mb->maxiter; i++){
-                        zr= mb->zyklus[i][0];
-                        zi= mb->zyklus[i][1];
-                        if(zr*zr + zi*zi > mb->bailout){
-                            switch(mb->outer){
+                    for(; i<s->maxiter; i++){
+                        zr= s->zyklus[i][0];
+                        zi= s->zyklus[i][1];
+                        if(zr*zr + zi*zi > s->bailout){
+                            switch(s->outer){
                             case            ITERATION_COUNT:
                                 zr = i;
-                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                c = lrintf((sinf(zr)+1)*127) + lrintf((sinf(zr/1.234)+1)*127)*256*256 + lrintf((sinf(zr/100)+1)*127)*256;
                                 break;
                             case NORMALIZED_ITERATION_COUNT:
-                                zr = i + log2(log(mb->bailout) / log(zr*zr + zi*zi));
-                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                zr = i + log2(log(s->bailout) / log(zr*zr + zi*zi));
+                                c = lrintf((sinf(zr)+1)*127) + lrintf((sinf(zr/1.234)+1)*127)*256*256 + lrintf((sinf(zr/100)+1)*127)*256;
                                 break;
                             case                      WHITE:
                                 c = 0xFFFFFF;
                                 break;
                             case                      OUTZ:
-                                zr /= mb->bailout;
-                                zi /= mb->bailout;
+                                zr /= s->bailout;
+                                zi /= s->bailout;
                                 c = (((int)(zr*128+128))&0xFF)*256 + (((int)(zi*128+128))&0xFF);
                             }
                             break;
@@ -355,55 +355,55 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 }
             }
             if(!c){
-                if(mb->inner==PERIOD){
+                if(s->inner==PERIOD){
                     int j;
                     for(j=i-1; j; j--)
-                        if(SQR(mb->zyklus[j][0]-zr) + SQR(mb->zyklus[j][1]-zi) < epsilon*epsilon*10)
+                        if(SQR(s->zyklus[j][0]-zr) + SQR(s->zyklus[j][1]-zi) < epsilon*epsilon*10)
                             break;
                     if(j){
                         c= i-j;
                         c= ((c<<5)&0xE0) + ((c<<10)&0xE000) + ((c<<15)&0xE00000);
                     }
-                }else if(mb->inner==CONVTIME){
-                    c= floor(i*255.0/mb->maxiter+dv)*0x010101;
-                } else if(mb->inner==MINCOL){
+                }else if(s->inner==CONVTIME){
+                    c= floor(i*255.0/s->maxiter+dv)*0x010101;
+                } else if(s->inner==MINCOL){
                     int j;
                     double closest=9999;
                     int closest_index=0;
                     for(j=i-1; j>=0; j--)
-                        if(SQR(mb->zyklus[j][0]) + SQR(mb->zyklus[j][1]) < closest){
-                            closest= SQR(mb->zyklus[j][0]) + SQR(mb->zyklus[j][1]);
+                        if(SQR(s->zyklus[j][0]) + SQR(s->zyklus[j][1]) < closest){
+                            closest= SQR(s->zyklus[j][0]) + SQR(s->zyklus[j][1]);
                             closest_index= j;
                         }
                     closest = sqrt(closest);
-                    c= lrintf((mb->zyklus[closest_index][0]/closest+1)*127+dv) + lrintf((mb->zyklus[closest_index][1]/closest+1)*127+dv)*256;
+                    c= lrintf((s->zyklus[closest_index][0]/closest+1)*127+dv) + lrintf((s->zyklus[closest_index][1]/closest+1)*127+dv)*256;
                 }
             }
             c |= 0xFF000000;
             color[x + y*linesize]= c;
-            if(next_cidx < mb->cache_allocated){
-                mb->next_cache[next_cidx  ].p[0]= cr;
-                mb->next_cache[next_cidx  ].p[1]= ci;
-                mb->next_cache[next_cidx++].val = c;
+            if(next_cidx < s->cache_allocated){
+                s->next_cache[next_cidx  ].p[0]= cr;
+                s->next_cache[next_cidx  ].p[1]= ci;
+                s->next_cache[next_cidx++].val = c;
             }
         }
         fill_from_cache(ctx, NULL, &in_cidx, &next_cidx, ci + scale/2, scale);
     }
-    FFSWAP(void*, mb->next_cache, mb->point_cache);
-    mb->cache_used = next_cidx;
-    if(mb->cache_used == mb->cache_allocated)
+    FFSWAP(void*, s->next_cache, s->point_cache);
+    s->cache_used = next_cidx;
+    if(s->cache_used == s->cache_allocated)
         av_log(ctx, AV_LOG_INFO, "Mandelbrot cache is too small!\n");
 }
 
 static int request_frame(AVFilterLink *link)
 {
-    MBContext *mb = link->src->priv;
-    AVFrame *picref = ff_get_video_buffer(link, mb->w, mb->h);
+    MBContext *s = link->src->priv;
+    AVFrame *picref = ff_get_video_buffer(link, s->w, s->h);
     if (!picref)
         return AVERROR(ENOMEM);
 
     picref->sample_aspect_ratio = (AVRational) {1, 1};
-    picref->pts = mb->pts++;
+    picref->pts = s->pts++;
 
     draw_mandelbrot(link->src, (uint32_t*)picref->data[0], picref->linesize[0]/4, picref->pts);
     return ff_filter_frame(link, picref);

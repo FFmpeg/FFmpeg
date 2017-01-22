@@ -265,7 +265,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     ff_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
     if (pb_frame) {
-        avpriv_request_sample(s->avctx, "pb frame");
+        avpriv_request_sample(s->avctx, "PB-frame");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -431,7 +431,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         if (s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0) {
             av_log(s->avctx, AV_LOG_DEBUG,
-                   "messed up order, possible from seeking? skipping current b frame\n");
+                   "messed up order, possible from seeking? skipping current B-frame\n");
 #define ERROR_SKIP_FRAME -123
             return ERROR_SKIP_FRAME;
         }
@@ -797,7 +797,7 @@ AVCodec ff_rv10_decoder = {
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,
@@ -814,7 +814,7 @@ AVCodec ff_rv20_decoder = {
     .init           = rv10_decode_init,
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = (const enum AVPixelFormat[]) {

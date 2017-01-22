@@ -28,11 +28,12 @@
 #define AVCODEC_H264DSP_H
 
 #include <stdint.h>
+#include <stddef.h>
 
-typedef void (*h264_weight_func)(uint8_t *block, int stride, int height,
+typedef void (*h264_weight_func)(uint8_t *block, ptrdiff_t stride, int height,
                                  int log2_denom, int weight, int offset);
 typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src,
-                                   int stride, int height, int log2_denom,
+                                   ptrdiff_t stride, int height, int log2_denom,
                                    int weightd, int weights, int offset);
 
 /**
@@ -70,7 +71,7 @@ typedef struct H264DSPContext {
                                             int stride, int alpha, int beta);
     void (*h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix /*align 8*/,
                                                   int stride, int alpha, int beta);
-    // h264_loop_filter_strength: simd only. the C version is inlined in h264.c
+    // h264_loop_filter_strength: simd only. the C version is inlined in h264_loopfilter.c
     void (*h264_loop_filter_strength)(int16_t bS[2][4][4], uint8_t nnz[40],
                                       int8_t ref[2][40], int16_t mv[2][40][2],
                                       int bidir, int edges, int step,

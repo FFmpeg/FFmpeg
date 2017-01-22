@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "internal.h"
 
-#define MAX_CHANNELS 63
+#define MAX_CHANNELS 64
 
 typedef struct PanContext {
     const AVClass *class;
@@ -102,14 +102,14 @@ static av_cold int init(AVFilterContext *ctx)
 {
     PanContext *const pan = ctx->priv;
     char *arg, *arg0, *tokenizer, *args = av_strdup(pan->args);
-    int out_ch_id, in_ch_id, len, named, ret;
+    int out_ch_id, in_ch_id, len, named, ret, sign = 1;
     int nb_in_channels[2] = { 0, 0 }; // number of unnamed and named input channels
     double gain;
 
     if (!pan->args) {
         av_log(ctx, AV_LOG_ERROR,
                "pan filter needs a channel layout and a set "
-               "of channels definitions as parameter\n");
+               "of channel definitions as parameter\n");
         return AVERROR(EINVAL);
     }
     if (!args)
@@ -178,14 +178,18 @@ static av_cold int init(AVFilterContext *ctx)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            pan->gain[out_ch_id][in_ch_id] = gain;
+            pan->gain[out_ch_id][in_ch_id] = sign * gain;
             skip_spaces(&arg);
             if (!*arg)
                 break;
-            if (*arg != '+') {
+            if (*arg == '-') {
+                sign = -1;
+            } else if (*arg != '+') {
                 av_log(ctx, AV_LOG_ERROR, "Syntax error near \"%.8s\"\n", arg);
                 ret = AVERROR(EINVAL);
                 goto fail;
+            } else {
+                sign = 1;
             }
             arg++;
         }
@@ -227,27 +231,29 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
+    int ret;
 
     pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
-    ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO));
+    if ((ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO))) < 0)
+        return ret;
 
     formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
+    if ((ret = ff_set_common_samplerates(ctx, formats)) < 0)
+        return ret;
 
     // inlink supports any channel layout
     layouts = ff_all_channel_counts();
-    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
+    if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0)
+        return ret;
 
     // outlink supports only requested output channel layout
     layouts = NULL;
-    ff_add_channel_layout(&layouts,
+    if ((ret = ff_add_channel_layout(&layouts,
                           pan->out_channel_layout ? pan->out_channel_layout :
-                          FF_COUNT2LAYOUT(pan->nb_output_channels));
-    ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
-    return 0;
+                          FF_COUNT2LAYOUT(pan->nb_output_channels))) < 0)
+        return ret;
+    return ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
 }
 
 static int config_props(AVFilterLink *link)
@@ -274,7 +280,7 @@ static int config_props(AVFilterLink *link)
     if (link->channels > MAX_CHANNELS ||
         pan->nb_output_channels > MAX_CHANNELS) {
         av_log(ctx, AV_LOG_ERROR,
-               "af_pan support a maximum of %d channels. "
+               "af_pan supports a maximum of %d channels. "
                "Feel free to ask for a higher limit.\n", MAX_CHANNELS);
         return AVERROR_PATCHWELCOME;
     }
@@ -320,7 +326,7 @@ static int config_props(AVFilterLink *link)
                 continue;
             t = 0;
             for (j = 0; j < link->channels; j++)
-                t += pan->gain[i][j];
+                t += fabs(pan->gain[i][j]);
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
                 if (t)

@@ -34,7 +34,7 @@ NUT has some variants signaled by using the flags field in its main header.
 
 The BROADCAST variant provides a secondary time reference to facilitate
 detecting endpoint latency and network delays.
-It assumes all the endpoint clocks are syncronized.
+It assumes all the endpoint clocks are synchronized.
 To be used in real-time scenarios.
 
 @section PIPE

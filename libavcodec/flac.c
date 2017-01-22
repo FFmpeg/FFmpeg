@@ -201,7 +201,7 @@ void ff_flac_set_channel_layout(AVCodecContext *avctx)
         avctx->channel_layout = 0;
 }
 
-void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+int ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
     GetBitContext gb;
@@ -213,6 +213,7 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
         av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
                s->max_blocksize);
         s->max_blocksize = 16;
+        return AVERROR_INVALIDDATA;
     }
 
     skip_bits(&gb, 24); /* skip min frame size */
@@ -221,6 +222,12 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     s->samplerate = get_bits_long(&gb, 20);
     s->channels = get_bits(&gb, 3) + 1;
     s->bps = get_bits(&gb, 5) + 1;
+
+    if (s->bps < 4) {
+        av_log(avctx, AV_LOG_ERROR, "invalid bps: %d\n", s->bps);
+        s->bps = 16;
+        return AVERROR_INVALIDDATA;
+    }
 
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
@@ -234,19 +241,6 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */
-}
 
-#if LIBAVCODEC_VERSION_MAJOR < 57
-void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
-                              const uint8_t *buffer)
-{
-    ff_flac_parse_streaminfo(avctx, s, buffer);
+    return 0;
 }
-
-int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
-                               enum FLACExtradataFormat *format,
-                               uint8_t **streaminfo_start)
-{
-    return ff_flac_is_extradata_valid(avctx, format, streaminfo_start);
-}
-#endif

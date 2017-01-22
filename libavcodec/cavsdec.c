@@ -32,7 +32,6 @@
 #include "cavs.h"
 #include "internal.h"
 #include "mpeg12data.h"
-#include "mpegvideo.h"
 
 static const uint8_t mv_scan[4] = {
     MV_FWD_X0, MV_FWD_X1,
@@ -1105,6 +1104,7 @@ static int decode_pic(AVSContext *h)
             }
         } while (ff_cavs_next_mb(h));
     }
+    emms_c();
     if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         av_frame_unref(h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
@@ -1218,6 +1218,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 h->got_keyframe = 1;
             }
         case PIC_PB_START_CODE:
+            if (*got_frame)
+                av_frame_unref(data);
             *got_frame = 0;
             if (!h->got_keyframe)
                 break;
@@ -1262,6 +1264,6 @@ AVCodec ff_cavs_decoder = {
     .init           = ff_cavs_init,
     .close          = ff_cavs_end,
     .decode         = cavs_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = cavs_flush,
 };

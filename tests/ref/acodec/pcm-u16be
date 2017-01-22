@@ -1,4 +1,4 @@
-753d5bfdc38d314fa3b1a2eb34449aea *tests/data/fate/acodec-pcm-u16be.nut
-1060715 tests/data/fate/acodec-pcm-u16be.nut
+abc31c722aee72f21b5f858731c28fb9 *tests/data/fate/acodec-pcm-u16be.nut
+1060720 tests/data/fate/acodec-pcm-u16be.nut
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-u16be.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

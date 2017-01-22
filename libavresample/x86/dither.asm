@@ -28,7 +28,7 @@ pf_dither_scale: times 8 dd 2.32830643762e-10
 
 pf_s16_scale: times 4 dd 32753.0
 
-SECTION_TEXT
+SECTION .text
 
 ;------------------------------------------------------------------------------
 ; void ff_quantize(int16_t *dst, float *src, float *dither, int len);

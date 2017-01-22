@@ -20,6 +20,7 @@
 
 #define BITSTREAM_WRITER_LE
 #include "ttadata.h"
+#include "ttaencdsp.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "internal.h"
@@ -29,6 +30,7 @@ typedef struct TTAEncContext {
     const AVCRC *crc_table;
     int bps;
     TTAChannel *ch_ctx;
+    TTAEncDSPContext dsp;
 } TTAEncContext;
 
 static av_cold int tta_encode_init(AVCodecContext *avctx)
@@ -57,38 +59,9 @@ static av_cold int tta_encode_init(AVCodecContext *avctx)
     if (!s->ch_ctx)
         return AVERROR(ENOMEM);
 
+    ff_ttaencdsp_init(&s->dsp);
+
     return 0;
-}
-
-static inline void ttafilter_process(TTAFilter *c, int32_t *in)
-{
-    register int32_t *dl = c->dl, *qm = c->qm, *dx = c->dx, sum = c->round;
-
-    if (c->error < 0) {
-        qm[0] -= dx[0]; qm[1] -= dx[1]; qm[2] -= dx[2]; qm[3] -= dx[3];
-        qm[4] -= dx[4]; qm[5] -= dx[5]; qm[6] -= dx[6]; qm[7] -= dx[7];
-    } else if (c->error > 0) {
-        qm[0] += dx[0]; qm[1] += dx[1]; qm[2] += dx[2]; qm[3] += dx[3];
-        qm[4] += dx[4]; qm[5] += dx[5]; qm[6] += dx[6]; qm[7] += dx[7];
-    }
-
-    sum += dl[0] * qm[0] + dl[1] * qm[1] + dl[2] * qm[2] + dl[3] * qm[3] +
-           dl[4] * qm[4] + dl[5] * qm[5] + dl[6] * qm[6] + dl[7] * qm[7];
-
-    dx[0] = dx[1]; dx[1] = dx[2]; dx[2] = dx[3]; dx[3] = dx[4];
-    dl[0] = dl[1]; dl[1] = dl[2]; dl[2] = dl[3]; dl[3] = dl[4];
-
-    dx[4] = ((dl[4] >> 30) | 1);
-    dx[5] = ((dl[5] >> 30) | 2) & ~1;
-    dx[6] = ((dl[6] >> 30) | 2) & ~1;
-    dx[7] = ((dl[7] >> 30) | 4) & ~3;
-
-    dl[4] = -dl[5]; dl[5] = -dl[6];
-    dl[6] = *in - dl[7]; dl[7] = *in;
-    dl[5] += dl[6]; dl[4] += dl[5];
-
-    *in -= (sum >> c->shift);
-    c->error = *in;
 }
 
 static int32_t get_sample(const AVFrame *frame, int sample,
@@ -114,9 +87,12 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     TTAEncContext *s = avctx->priv_data;
     PutBitContext pb;
-    int ret, i, out_bytes, cur_chan = 0, res = 0, samples = 0;
+    int ret, i, out_bytes, cur_chan, res, samples;
+    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->channels * s->bps;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame->nb_samples * 2 * avctx->channels * s->bps)) < 0)
+pkt_alloc:
+    cur_chan = 0, res = 0, samples = 0;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
@@ -152,7 +128,8 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
         c->predictor = temp;
 
-        ttafilter_process(filter, &value);
+        s->dsp.filter_process(filter->qm, filter->dx, filter->dl, &filter->error, &value,
+                              filter->shift, filter->round);
         outval = (value > 0) ? (value << 1) - 1: -value << 1;
 
         k = rice->k0;
@@ -174,6 +151,14 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 rice->k1++;
 
             unary = 1 + (outval >> k);
+            if (unary + 100LL > put_bits_left(&pb)) {
+                if (pkt_size < INT_MAX/2) {
+                    pkt_size *= 2;
+                    av_packet_unref(avpkt);
+                    goto pkt_alloc;
+                } else
+                    return AVERROR(ENOMEM);
+            }
             do {
                 if (unary > 31) {
                     put_bits(&pb, 31, 0x7FFFFFFF);
@@ -224,7 +209,7 @@ AVCodec ff_tta_encoder = {
     .init           = tta_encode_init,
     .close          = tta_encode_close,
     .encode2        = tta_encode_frame,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_LOSSLESS,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_LOSSLESS,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_S32,

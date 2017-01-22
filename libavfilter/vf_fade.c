@@ -244,10 +244,10 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     FadeContext *s = ctx->priv;
     AVFrame *frame = arg;
     int i, j, plane;
-    const int width = FF_CEIL_RSHIFT(frame->width, s->hsub);
-    const int height= FF_CEIL_RSHIFT(frame->height, s->vsub);
+    const int width = AV_CEIL_RSHIFT(frame->width, s->hsub);
+    const int height= AV_CEIL_RSHIFT(frame->height, s->vsub);
     int slice_start = (height *  jobnr   ) / nb_jobs;
-    int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    int slice_end   = FFMIN(((height * (jobnr+1)) / nb_jobs), frame->height);
 
     for (plane = 1; plane < 3; plane++) {
         for (i = slice_start; i < slice_end; i++) {
@@ -300,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (s->fade_state == VF_FADE_WAITING) {
         s->factor=0;
         if (frame_timestamp >= s->start_time/(double)AV_TIME_BASE
-            && inlink->frame_count >= s->start_frame) {
+            && inlink->frame_count_out >= s->start_frame) {
             // Time to start fading
             s->fade_state = VF_FADE_FADING;
 
@@ -311,15 +311,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             // Save start frame in case we are starting based on time and fading based on frames
             if (s->start_time != 0 && s->start_frame == 0) {
-                s->start_frame = inlink->frame_count;
+                s->start_frame = inlink->frame_count_out;
             }
         }
     }
     if (s->fade_state == VF_FADE_FADING) {
         if (s->duration == 0) {
             // Fading based on frame count
-            s->factor = (inlink->frame_count - s->start_frame) * s->fade_per_frame;
-            if (inlink->frame_count > s->start_frame + s->nb_frames) {
+            s->factor = (inlink->frame_count_out - s->start_frame) * s->fade_per_frame;
+            if (inlink->frame_count_out > s->start_frame + s->nb_frames) {
                 s->fade_state = VF_FADE_DONE;
             }
 
@@ -347,19 +347,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
             ctx->internal->execute(ctx, filter_slice_alpha, frame, NULL,
-                                FFMIN(frame->height, ctx->graph->nb_threads));
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else if (s->is_packed_rgb && !s->black_fade) {
             ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
-                                   FFMIN(frame->height, ctx->graph->nb_threads));
+                                   FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
             /* luma, or rgb plane in case of black */
             ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
-                                FFMIN(frame->height, ctx->graph->nb_threads));
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
             if (frame->data[1] && frame->data[2]) {
                 /* chroma planes */
                 ctx->internal->execute(ctx, filter_slice_chroma, frame, NULL,
-                                    FFMIN(frame->height, ctx->graph->nb_threads));
+                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
             }
         }
     }
@@ -384,7 +384,7 @@ static const AVOption fade_options[] = {
                                                     OFFSET(nb_frames),   AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, FLAGS },
     { "n",           "Number of frames to which the effect should be applied.",
                                                     OFFSET(nb_frames),   AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, FLAGS },
-    { "alpha",       "fade alpha if it is available on the input", OFFSET(alpha),       AV_OPT_TYPE_INT, {.i64 = 0    }, 0,       1, FLAGS },
+    { "alpha",       "fade alpha if it is available on the input", OFFSET(alpha),       AV_OPT_TYPE_BOOL, {.i64 = 0    }, 0,       1, FLAGS },
     { "start_time",  "Number of seconds of the beginning of the effect.",
                                                     OFFSET(start_time),  AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "st",          "Number of seconds of the beginning of the effect.",

@@ -70,8 +70,8 @@ static int pjs_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 10);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_PJS;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_PJS;
 
     while (!avio_feof(s->pb)) {
         char line[4096];
@@ -100,7 +100,7 @@ static int pjs_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&pjs->q);
+    ff_subtitles_queue_finalize(s, &pjs->q);
     return res;
 }
 

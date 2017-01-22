@@ -301,10 +301,10 @@ IDCT_DC(32)
 #undef SCALE
 #undef ADD_AND_SCALE
 
-static void FUNC(sao_band_filter_0)(uint8_t *_dst, uint8_t *_src,
-                                    ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                    int16_t *sao_offset_val, int sao_left_class,
-                                    int width, int height)
+static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
+                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                  int16_t *sao_offset_val, int sao_left_class,
+                                  int width, int height)
 {
     pixel *dst = (pixel *)_dst;
     pixel *src = (pixel *)_src;
@@ -341,7 +341,7 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, uint8_t *_src, ptrdiff_t stride
     pixel *src = (pixel *)_src;
     int a_stride, b_stride;
     int x, y;
-    ptrdiff_t stride_src = (2*MAX_PB_SIZE + FF_INPUT_BUFFER_PADDING_SIZE) / sizeof(pixel);
+    ptrdiff_t stride_src = (2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / sizeof(pixel);
     stride_dst /= sizeof(pixel);
 
     a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;

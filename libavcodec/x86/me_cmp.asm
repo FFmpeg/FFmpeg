@@ -794,7 +794,7 @@ cglobal vsad_intra%1, 5, 5, 3, v, pix1, pix2, lsize, h
 %endif
     sub       hd, 2
 
-.loop
+.loop:
     lea    pix1q, [pix1q + 2*lsizeq]
 %if %1 == mmsize
     mova      m1, [pix1q]
@@ -875,7 +875,7 @@ cglobal vsad%1_approx, 5, 5, 5, v, pix1, pix2, lsize, h
 %endif
     sub    hd, 2
 
-.loop
+.loop:
     lea pix1q, [pix1q + 2*lsizeq]
     lea pix2q, [pix2q + 2*lsizeq]
     mova   m2, [pix1q]

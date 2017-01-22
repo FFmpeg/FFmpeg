@@ -53,6 +53,11 @@
 #define MAX_QUANT_TABLES 8
 #define MAX_CONTEXT_INPUTS 5
 
+#define AC_GOLOMB_RICE          0
+#define AC_RANGE_DEFAULT_TAB    1
+#define AC_RANGE_CUSTOM_TAB     2
+#define AC_RANGE_DEFAULT_TAB_FORCE -2
+
 typedef struct VlcState {
     int16_t drift;
     uint16_t error_sum;
@@ -87,6 +92,7 @@ typedef struct FFV1Context {
     int transparency;
     int flags;
     int picture_number;
+    int key_frame;
     ThreadFrame picture, last_picture;
     struct FFV1Context *fsrc;
 
@@ -103,11 +109,15 @@ typedef struct FFV1Context {
     int run_index;
     int colorspace;
     int16_t *sample_buffer;
+    int32_t *sample_buffer32;
+
+    int use32bit;
 
     int ec;
     int intra;
     int slice_damaged;
     int key_frame_ok;
+    int context_model;
 
     int bits_per_raw_sample;
     int packed_at_lsb;
@@ -117,6 +127,7 @@ typedef struct FFV1Context {
 
     struct FFV1Context *slice_context[MAX_SLICES];
     int slice_count;
+    int max_slice_count;
     int num_v_slices;
     int num_h_slices;
     int slice_width;
@@ -129,13 +140,13 @@ typedef struct FFV1Context {
     int slice_rct_ry_coef;
 } FFV1Context;
 
-int ffv1_common_init(AVCodecContext *avctx);
-int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs);
-int ffv1_init_slices_state(FFV1Context *f);
-int ffv1_init_slice_contexts(FFV1Context *f);
-int ffv1_allocate_initial_states(FFV1Context *f);
-void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs);
-int ffv1_close(AVCodecContext *avctx);
+int ff_ffv1_common_init(AVCodecContext *avctx);
+int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs);
+int ff_ffv1_init_slices_state(FFV1Context *f);
+int ff_ffv1_init_slice_contexts(FFV1Context *f);
+int ff_ffv1_allocate_initial_states(FFV1Context *f);
+void ff_ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs);
+int ff_ffv1_close(AVCodecContext *avctx);
 
 static av_always_inline int fold(int diff, int bits)
 {
@@ -148,37 +159,6 @@ static av_always_inline int fold(int diff, int bits)
     }
 
     return diff;
-}
-
-static inline int predict(int16_t *src, int16_t *last)
-{
-    const int LT = last[-1];
-    const int T  = last[0];
-    const int L  = src[-1];
-
-    return mid_pred(L, L + T - LT, T);
-}
-
-static inline int get_context(PlaneContext *p, int16_t *src,
-                              int16_t *last, int16_t *last2)
-{
-    const int LT = last[-1];
-    const int T  = last[0];
-    const int RT = last[1];
-    const int L  = src[-1];
-
-    if (p->quant_table[3][127]) {
-        const int TT = last2[0];
-        const int LL = src[-2];
-        return p->quant_table[0][(L - LT) & 0xFF] +
-               p->quant_table[1][(LT - T) & 0xFF] +
-               p->quant_table[2][(T - RT) & 0xFF] +
-               p->quant_table[3][(LL - L) & 0xFF] +
-               p->quant_table[4][(TT - T) & 0xFF];
-    } else
-        return p->quant_table[0][(L - LT) & 0xFF] +
-               p->quant_table[1][(LT - T) & 0xFF] +
-               p->quant_table[2][(T - RT) & 0xFF];
 }
 
 static inline void update_vlc_state(VlcState *const state, const int v)
@@ -214,5 +194,17 @@ static inline void update_vlc_state(VlcState *const state, const int v)
     state->drift = drift;
     state->count = count;
 }
+
+#define TYPE int16_t
+#define RENAME(name) name
+#include "ffv1_template.c"
+#undef TYPE
+#undef RENAME
+
+#define TYPE int32_t
+#define RENAME(name) name ## 32
+#include "ffv1_template.c"
+#undef TYPE
+#undef RENAME
 
 #endif /* AVCODEC_FFV1_H */

@@ -1,6 +1,6 @@
 /*
  * AMR Audio encoder stub
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -51,7 +51,7 @@ static const AVClass amrwb_class = {
 
 static int get_wb_bitrate_mode(int bitrate, void *log_ctx)
 {
-    /* make the correspondance between bitrate and mode */
+    /* make the correspondence between bitrate and mode */
     static const int rates[] = {  6600,  8850, 12650, 14250, 15850, 18250,
                                  19850, 23050, 23850 };
     int i, best = -1, min_diff = 0;
@@ -115,7 +115,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int16_t *samples = (const int16_t *)frame->data[0];
     int size, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MAX_PACKET_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, MAX_PACKET_SIZE, 0)) < 0)
         return ret;
 
     if (s->last_bitrate != avctx->bit_rate) {

@@ -47,7 +47,7 @@ enum FieldType {
 typedef struct InterlaceContext {
     const AVClass *class;
     enum ScanMode scan;    // top or bottom field first scanning
-    int lowpass;           // enable or disable low pass filterning
+    int lowpass;           // enable or disable low pass filtering
     AVFrame *cur, *next;   // the two frames from which the new one is obtained
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t linesize, const uint8_t *srcp,
                          const uint8_t *srcp_above, const uint8_t *srcp_below);

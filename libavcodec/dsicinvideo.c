@@ -313,5 +313,5 @@ AVCodec ff_dsicinvideo_decoder = {
     .init           = cinvideo_decode_init,
     .close          = cinvideo_decode_end,
     .decode         = cinvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

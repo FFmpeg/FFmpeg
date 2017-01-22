@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "libavutil/avassert.h"
 #include "libavutil/lls.h"
+#include "aac_defines.h"
 
 #define ORDER_METHOD_EST     0
 #define ORDER_METHOD_2LEVEL  1
@@ -94,10 +95,13 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
                       enum FFLPCType lpc_type, int lpc_passes,
-                      int omethod, int max_shift, int zero_shift);
+                      int omethod, int min_shift, int max_shift, int zero_shift);
 
 int ff_lpc_calc_ref_coefs(LPCContext *s,
                           const int32_t *samples, int order, double *ref);
+
+double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
+                               int order, double *ref);
 
 /**
  * Initialize LPCContext.
@@ -111,11 +115,15 @@ void ff_lpc_init_x86(LPCContext *s);
  */
 void ff_lpc_end(LPCContext *s);
 
-#ifdef LPC_USE_DOUBLE
-#define LPC_TYPE double
+#if USE_FIXED
+typedef int LPC_TYPE;
 #else
-#define LPC_TYPE float
+#ifdef LPC_USE_DOUBLE
+typedef double LPC_TYPE;
+#else
+typedef float LPC_TYPE;
 #endif
+#endif // USE_FIXED
 
 /**
  * Schur recursion.
@@ -152,7 +160,7 @@ static inline void compute_ref_coefs(const LPC_TYPE *autoc, int max_order,
  * Levinson-Durbin recursion.
  * Produce LPC coefficients from autocorrelation data.
  */
-static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
+static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_order,
                                     LPC_TYPE *lpc, int lpc_stride, int fail,
                                     int normalize)
 {
@@ -169,14 +177,14 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
         return -1;
 
     for(i=0; i<max_order; i++) {
-        LPC_TYPE r = -autoc[i];
+        LPC_TYPE r = AAC_SRA_R(-autoc[i], 5);
 
         if (normalize) {
             for(j=0; j<i; j++)
                 r -= lpc_last[j] * autoc[i-j-1];
 
             r /= err;
-            err *= 1.0 - (r * r);
+            err *= FIXR(1.0) - (r * r);
         }
 
         lpc[i] = r;
@@ -184,8 +192,8 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
         for(j=0; j < (i+1)>>1; j++) {
             LPC_TYPE f = lpc_last[    j];
             LPC_TYPE b = lpc_last[i-1-j];
-            lpc[    j] = f + r * b;
-            lpc[i-1-j] = b + r * f;
+            lpc[    j] = f + AAC_MUL26(r, b);
+            lpc[i-1-j] = b + AAC_MUL26(r, f);
         }
 
         if (fail && err < 0)

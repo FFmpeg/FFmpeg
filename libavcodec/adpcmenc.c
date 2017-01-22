@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-2003 The FFmpeg Project
+ * Copyright (c) 2001-2003 The FFmpeg project
  *
  * first version by Francois Revol (revol@free.fr)
  * fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
@@ -113,7 +113,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2;
         avctx->bits_per_coded_sample = 4;
         avctx->block_align    = BLKSIZE;
-        if (!(avctx->extradata = av_malloc(32 + FF_INPUT_BUFFER_PADDING_SIZE)))
+        if (!(avctx->extradata = av_malloc(32 + AV_INPUT_BUFFER_PADDING_SIZE)))
             goto error;
         avctx->extradata_size = 32;
         extradata = avctx->extradata;
@@ -486,7 +486,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         pkt_size = (2 + avctx->channels * (22 + 4 * (frame->nb_samples - 1)) + 7) / 8;
     else
         pkt_size = avctx->block_align;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
     dst = avpkt->data;
 

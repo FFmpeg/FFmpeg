@@ -128,7 +128,7 @@ static void orthogonalize(float *v, const float *u)
 
 /**
  * Calculate match score and gain of an LPC-filtered vector with respect to
- * input data, possibly othogonalizing it to up to 2 other vectors
+ * input data, possibly orthogonalizing it to up to two other vectors.
  *
  * @param work array used to calculate the filtered vector
  * @param coefs coefficients of the LPC filter
@@ -229,8 +229,8 @@ static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
 
 /**
  * Find the best vector of a fixed codebook by applying an LPC filter to
- * codebook entries, possibly othogonalizing them to up to 2 other vectors and
- * matching the results with input data
+ * codebook entries, possibly orthogonalizing them to up to two other vectors
+ * and matching the results with input data.
  *
  * @param work array used to calculate the filtered vectors
  * @param coefs coefficients of the LPC filter
@@ -447,7 +447,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ractx->last_frame)
         return 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FRAME_SIZE, 0)) < 0)
         return ret;
 
     /**
@@ -475,7 +475,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     ff_lpc_calc_coefs(&ractx->lpc_ctx, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,
                       LPC_ORDER, 16, lpc_coefs, shift, FF_LPC_TYPE_LEVINSON,
-                      0, ORDER_METHOD_EST, 12, 0);
+                      0, ORDER_METHOD_EST, 0, 12, 0);
     for (i = 0; i < LPC_ORDER; i++)
         block_coefs[NBLOCKS - 1][i] = -(lpc_coefs[LPC_ORDER - 1][i] <<
                                         (12 - shift[LPC_ORDER - 1]));
@@ -551,7 +551,7 @@ AVCodec ff_ra_144_encoder = {
     .init           = ra144_encode_init,
     .encode2        = ra144_encode_frame,
     .close          = ra144_encode_close,
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]){ 8000, 0 },

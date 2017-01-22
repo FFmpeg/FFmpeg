@@ -393,5 +393,5 @@ AVCodec ff_paf_video_decoder = {
     .init           = paf_video_init,
     .close          = paf_video_close,
     .decode         = paf_video_decode,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

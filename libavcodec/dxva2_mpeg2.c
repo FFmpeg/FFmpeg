@@ -21,8 +21,13 @@
  */
 
 #include "libavutil/log.h"
-#include "dxva2_internal.h"
 #include "mpegutils.h"
+#include "mpegvideo.h"
+
+// The headers above may include w32threads.h, which uses the original
+// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
+// potentially newer version.
+#include "dxva2_internal.h"
 
 #define MAX_SLICES 1024
 struct dxva2_picture_context {
@@ -257,9 +262,7 @@ static int dxva2_mpeg2_start_frame(AVCodecContext *avctx,
     struct dxva2_picture_context *ctx_pic =
         s->current_picture_ptr->hwaccel_picture_private;
 
-    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
+    if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
     assert(ctx_pic);
 

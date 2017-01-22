@@ -445,7 +445,7 @@ endconst
         h264_chroma_mc4 avg, rv40
 #endif
 
-#if CONFIG_VC1_DECODER
+#if CONFIG_VC1DSP
         h264_chroma_mc8 put, vc1
         h264_chroma_mc8 avg, vc1
         h264_chroma_mc4 put, vc1

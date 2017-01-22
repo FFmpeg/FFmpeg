@@ -1,6 +1,6 @@
 /*
  * Sony Playstation (PSX) STR File Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -104,13 +104,7 @@ static int str_probe(AVProbeData *p)
                      && sector_count*VIDEO_DATA_CHUNK_SIZE >=frame_size)){
                     return 0;
                 }
-
-                /*st->codec->width      = AV_RL16(&sector[0x28]);
-                st->codec->height     = AV_RL16(&sector[0x2A]);*/
-
-//                 if (current_sector == sector_count-1) {
-                    vid++;
-//                 }
+                vid++;
 
             }
             break;
@@ -205,11 +199,11 @@ static int str_read_packet(AVFormatContext *s,
 
                     str->channels[channel].video_stream_index = st->index;
 
-                    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                    st->codec->codec_id   = AV_CODEC_ID_MDEC;
-                    st->codec->codec_tag  = 0;  /* no fourcc */
-                    st->codec->width      = AV_RL16(&sector[0x28]);
-                    st->codec->height     = AV_RL16(&sector[0x2A]);
+                    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+                    st->codecpar->codec_id   = AV_CODEC_ID_MDEC;
+                    st->codecpar->codec_tag  = 0;  /* no fourcc */
+                    st->codecpar->width      = AV_RL16(&sector[0x28]);
+                    st->codecpar->height     = AV_RL16(&sector[0x2A]);
                 }
 
                 /* if this is the first sector of the frame, allocate a pkt */
@@ -217,8 +211,8 @@ static int str_read_packet(AVFormatContext *s,
 
                 if(pkt->size != sector_count*VIDEO_DATA_CHUNK_SIZE){
                     if(pkt->data)
-                        av_log(s, AV_LOG_ERROR, "missmatching sector_count\n");
-                    av_free_packet(pkt);
+                        av_log(s, AV_LOG_ERROR, "mismatching sector_count\n");
+                    av_packet_unref(pkt);
                     if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
                         return AVERROR(EIO);
                     memset(pkt->data, 0, sector_count*VIDEO_DATA_CHUNK_SIZE);
@@ -238,11 +232,6 @@ static int str_read_packet(AVFormatContext *s,
                     pkt->data= NULL;
                     pkt->size= -1;
                     pkt->buf = NULL;
-#if FF_API_DESTRUCT_PACKET
-FF_DISABLE_DEPRECATION_WARNINGS
-                    pkt->destruct = NULL;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                     return 0;
                 }
 
@@ -259,22 +248,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
                 str->channels[channel].audio_stream_index = st->index;
 
-                st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id    = AV_CODEC_ID_ADPCM_XA;
-                st->codec->codec_tag   = 0;  /* no fourcc */
+                st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+                st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_XA;
+                st->codecpar->codec_tag   = 0;  /* no fourcc */
                 if (fmt & 1) {
-                    st->codec->channels       = 2;
-                    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                    st->codecpar->channels       = 2;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
                 } else {
-                    st->codec->channels       = 1;
-                    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                    st->codecpar->channels       = 1;
+                    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
                 }
-                st->codec->sample_rate = (fmt&4)?18900:37800;
-            //    st->codec->bit_rate = 0; //FIXME;
-                st->codec->block_align = 128;
+                st->codecpar->sample_rate = (fmt&4)?18900:37800;
+            //    st->codecpar->bit_rate = 0; //FIXME;
+                st->codecpar->block_align = 128;
 
-                avpriv_set_pts_info(st, 64, 18 * 224 / st->codec->channels,
-                                    st->codec->sample_rate);
+                avpriv_set_pts_info(st, 64, 18 * 224 / st->codecpar->channels,
+                                    st->codecpar->sample_rate);
                 st->start_time = 0;
             }
             pkt = ret_pkt;
@@ -303,7 +292,7 @@ static int str_read_close(AVFormatContext *s)
     int i;
     for(i=0; i<32; i++){
         if(str->channels[i].tmp_pkt.data)
-            av_free_packet(&str->channels[i].tmp_pkt);
+            av_packet_unref(&str->channels[i].tmp_pkt);
     }
 
     return 0;

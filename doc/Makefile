@@ -36,15 +36,15 @@ DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
 DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
-DOC_EXAMPLES-$(CONFIG_AVIO_LIST_DIR_EXAMPLE)     += avio_list_dir
+DOC_EXAMPLES-$(CONFIG_AVIO_DIR_CMD_EXAMPLE)      += avio_dir_cmd
 DOC_EXAMPLES-$(CONFIG_AVIO_READING_EXAMPLE)      += avio_reading
-DOC_EXAMPLES-$(CONFIG_AVCODEC_EXAMPLE)           += avcodec
 DOC_EXAMPLES-$(CONFIG_DECODING_ENCODING_EXAMPLE) += decoding_encoding
 DOC_EXAMPLES-$(CONFIG_DEMUXING_DECODING_EXAMPLE) += demuxing_decoding
 DOC_EXAMPLES-$(CONFIG_EXTRACT_MVS_EXAMPLE)       += extract_mvs
 DOC_EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)      += filter_audio
 DOC_EXAMPLES-$(CONFIG_FILTERING_AUDIO_EXAMPLE)   += filtering_audio
 DOC_EXAMPLES-$(CONFIG_FILTERING_VIDEO_EXAMPLE)   += filtering_video
+DOC_EXAMPLES-$(CONFIG_HTTP_MULTICLIENT_EXAMPLE)  += http_multiclient
 DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)          += metadata
 DOC_EXAMPLES-$(CONFIG_MUXING_EXAMPLE)            += muxing
 DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)            += qsvdec
@@ -124,11 +124,12 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c))
+DOXY_INPUT      = $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c)
+DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT)) config.mak
 
 doc/doxy/html: TAG = DOXY
-doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT)
-	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $< $(DOXYGEN) $(DOXY_INPUT)
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT_DEPS)
+	$(M)OUT_DIR=$$PWD/doc/doxy; cd $(SRC_PATH); ./doc/doxy-wrapper.sh $$OUT_DIR $< $(DOXYGEN) $(DOXY_INPUT);
 
 install-doc: install-html install-man
 

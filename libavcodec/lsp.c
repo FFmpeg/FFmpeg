@@ -34,7 +34,7 @@ void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, in
 {
     int i, j;
 
-    /* sort lsfq in ascending order. float bubble agorithm,
+    /* sort lsfq in ascending order. float bubble algorithm,
        O(n) if data already sorted, O(n^2) - otherwise */
     for(i=0; i<lp_order-1; i++)
         for(j=i; j>=0 && lsfq[j] > lsfq[j+1]; j--)

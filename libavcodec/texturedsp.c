@@ -28,10 +28,14 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/libm.h"
 
 #include "texturedsp.h"
 
-#define RGBA(r, g, b, a) ((r) | ((g) << 8) | ((b) << 16) | ((a) << 24))
+#define RGBA(r, g, b, a) (((uint8_t)(r) <<  0) | \
+                          ((uint8_t)(g) <<  8) | \
+                          ((uint8_t)(b) << 16) | \
+                          ((uint8_t)(a) << 24))
 
 static av_always_inline void extract_color(uint32_t colors[4],
                                            uint16_t color0,
@@ -163,7 +167,7 @@ static inline void dxt3_block_internal(uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-/** Convert a premultiplied alpha pixel to a straigth alpha pixel. */
+/** Convert a premultiplied alpha pixel to a straight alpha pixel. */
 static av_always_inline void premult2straight(uint8_t *src)
 {
     int r = src[0];
@@ -425,7 +429,7 @@ static inline void rgtc_block_internal(uint8_t *dst, ptrdiff_t stride,
             int i = indices[x + y * 4];
             /* Interval expansion from [-1 1] or [0 1] to [0 255]. */
             int c = color_tab[i];
-            uint32_t pixel = RGBA(c, c, c, 255);
+            uint32_t pixel = RGBA(c, c, c, 255U);
             AV_WL32(dst + x * 4 + y * stride, pixel);
         }
     }
@@ -525,7 +529,7 @@ static inline void rgtc2_block_internal(uint8_t *dst, ptrdiff_t stride,
 
             int d = (255 * 255 - r * r - g * g) / 2;
             if (d > 0)
-                b = rint(sqrtf(d));
+                b = lrint(sqrtf(d));
 
             p[0] = r;
             p[1] = g;
