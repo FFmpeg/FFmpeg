@@ -478,8 +478,13 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             goto icon_error;
         }
 
+		OSVERSIONINFO osvi;
+        ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+        GetVersionEx(&osvi);
+
 		float dpifactor=1.0;
-        if(gdigrab->dpi>120)
+        if(gdigrab->dpi>120||(gdigrab->dpi>=120&&osvi.dwMajorVersion>=10))
         {
         	dpifactor=(double)(gdigrab->dpi)/(double)DEFAULT_DPI;
         }
