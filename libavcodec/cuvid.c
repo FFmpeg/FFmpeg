@@ -612,7 +612,10 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cuparseinfo)
+static int cuvid_test_dummy_decoder(AVCodecContext *avctx,
+                                    const CUVIDPARSERPARAMS *cuparseinfo,
+                                    int probed_width,
+                                    int probed_height)
 {
     CuvidContext *ctx = avctx->priv_data;
     CUVIDDECODECREATEINFO cuinfo;
@@ -625,8 +628,8 @@ static int cuvid_test_dummy_decoder(AVCodecContext *avctx, CUVIDPARSERPARAMS *cu
     cuinfo.ChromaFormat = cudaVideoChromaFormat_420;
     cuinfo.OutputFormat = cudaVideoSurfaceFormat_NV12;
 
-    cuinfo.ulWidth = 1280;
-    cuinfo.ulHeight = 720;
+    cuinfo.ulWidth = probed_width;
+    cuinfo.ulHeight = probed_height;
     cuinfo.ulTargetWidth = cuinfo.ulWidth;
     cuinfo.ulTargetHeight = cuinfo.ulHeight;
 
@@ -668,6 +671,9 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
                                        AV_PIX_FMT_NV12,
                                        AV_PIX_FMT_NONE };
+
+    int probed_width = avctx->coded_width ? avctx->coded_width : 1280;
+    int probed_height = avctx->coded_height ? avctx->coded_height : 720;
 
     // Accelerated transcoding scenarios with 'ffmpeg' require that the
     // pix_fmt be set to AV_PIX_FMT_CUDA early. The sw_pix_fmt, and the
@@ -824,7 +830,9 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         goto error;
 
-    ret = cuvid_test_dummy_decoder(avctx, &ctx->cuparseinfo);
+    ret = cuvid_test_dummy_decoder(avctx, &ctx->cuparseinfo,
+                                   probed_width,
+                                   probed_height);
     if (ret < 0)
         goto error;
 
