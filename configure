@@ -610,7 +610,7 @@ is_in(){
     return 1
 }
 
-do_check_deps(){
+check_deps(){
     for cfg; do
         enabled ${cfg}_checking && die "Circular dependency for $cfg."
         disabled ${cfg}_checking && continue
@@ -626,7 +626,7 @@ do_check_deps(){
         eval dep_ifn="\$${cfg}_if_any"
 
         pushvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
-        do_check_deps $dep_all $dep_any $dep_con $dep_sel $dep_sgs $dep_ifa $dep_ifn
+        check_deps $dep_all $dep_any $dep_con $dep_sel $dep_sgs $dep_ifa $dep_ifn
         popvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
 
         [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
@@ -639,21 +639,14 @@ do_check_deps(){
         if enabled $cfg; then
             enable_deep $dep_sel
             enable_deep_weak $dep_sgs
+            for dep in $dep_all $dep_any $dep_sgs; do
+                # filter out library deps, these do not belong in extralibs
+                is_in $dep $LIBRARY_LIST && continue
+                enabled $dep && eval append ${cfg}_extralibs ${dep}_extralibs
+            done
         fi
 
         disable ${cfg}_checking
-    done
-}
-
-check_deps(){
-    unset allopts
-
-    do_check_deps "$@"
-
-    for cfg in $allopts; do
-        enabled $cfg || continue
-        eval dep_extralibs="\$${cfg}_extralibs"
-        test -n "$dep_extralibs" && add_extralibs $dep_extralibs
     done
 }
 
@@ -709,6 +702,15 @@ unique(){
         uniq_list="$(filter_out $tok $uniq_list) $tok"
     done
     eval "$var=\"${uniq_list}\""
+}
+
+resolve(){
+    var=$1
+    tmpvar=
+    for entry in $(eval echo \$$var); do
+        tmpvar="$tmpvar $(eval echo \$${entry})"
+    done
+    eval "$var=\"${tmpvar}\""
 }
 
 add_cppflags(){
@@ -1015,7 +1017,7 @@ check_lib(){
     shift 3
     disable $name
     check_func_headers "$headers" "$funcs" "$@" &&
-        enable $name && add_extralibs "$@"
+        enable $name && eval ${name}_extralibs="\$@"
 }
 
 check_pkg_config(){
@@ -1033,7 +1035,7 @@ check_pkg_config(){
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         enable $name &&
         add_cflags    "$pkg_cflags" &&
-        add_extralibs "$pkg_libs"
+        eval $(sanitize_var_name ${name}_extralibs)="\$pkg_libs"
 }
 
 check_exec(){
@@ -1250,6 +1252,12 @@ EXAMPLE_LIST="
     output_example
     qsvdec_example
     transcode_aac_example
+"
+
+# catchall list of things that require external libs to link
+EXTRALIBS_LIST="
+    cpu_init
+    cws2fws
 "
 
 HWACCEL_LIBRARY_NONFREE_LIST="
@@ -2497,6 +2505,10 @@ output_example_deps="avcodec avformat avresample avutil swscale"
 qsvdec_example_deps="avcodec avutil libmfx h264_qsv_decoder"
 transcode_aac_example_deps="avcodec avformat avresample"
 
+# EXTRALIBS_LIST
+cpu_init_extralibs="pthreads_extralibs"
+cws2fws_extralibs="zlib_extralibs"
+
 # libraries, in linking order
 avcodec_deps="avutil"
 avcodec_select="null_bsf"
@@ -2507,15 +2519,25 @@ avformat_suggest="network"
 avresample_deps="avutil"
 swscale_deps="avutil"
 
+avcodec_extralibs="pthreads_extralibs libm_extralibs"
+avdevice_extralibs="libm_extralibs"
+avformat_extralibs="libm_extralibs"
+avfilter_extralibs="pthreads_extralibs libm_extralibs"
+avresample_extralibs="libm_extralibs"
+avutil_extralibs="clock_gettime_extralibs cuda_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
+swscale_extralibs="libm_extralibs"
+
 # programs
 avconv_deps="avcodec avfilter avformat avresample swscale"
 avconv_select="aformat_filter anull_filter asyncts_filter atrim_filter format_filter
                fps_filter null_filter resample_filter scale_filter
                trim_filter"
+avconv_suggest="dxva2_lib ole32 psapi shell32"
 avplay_deps="avcodec avfilter avformat avresample sdl"
-avplay_extralibs='$sdl_extralibs'
 avplay_select="rdft format_filter transpose_filter hflip_filter vflip_filter"
+avplay_suggest="shell32"
 avprobe_deps="avcodec avformat"
+avprobe_suggest="shell32"
 
 # documentation
 pod2man_deps="doc"
@@ -2572,6 +2594,9 @@ enable valgrind_backtrace
 
 # By default, enable only those hwaccels that have no external dependencies.
 enable d3d11va dxva2 vda vdpau
+
+# internal components are enabled by default
+enable $EXTRALIBS_LIST
 
 # Avoid external, non-system, libraries getting enabled by dependency resolution
 disable $EXTERNAL_LIBRARY_LIST
@@ -2669,18 +2694,34 @@ find_things_extern(){
 BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
-ALL_COMPONENTS="
+AVCODEC_COMPONENTS_LIST="
     $BSF_LIST
     $DECODER_LIST
-    $DEMUXER_LIST
     $ENCODER_LIST
-    $FILTER_LIST
     $HWACCEL_LIST
-    $INDEV_LIST
-    $MUXER_LIST
-    $OUTDEV_LIST
     $PARSER_LIST
+"
+
+AVDEVICE_COMPONENTS_LIST="
+    $INDEV_LIST
+    $OUTDEV_LIST
+"
+
+AVFILTER_COMPONENTS_LIST="
+    $FILTER_LIST
+"
+
+AVFORMAT_COMPONENTS_LIST="
+    $DEMUXER_LIST
+    $MUXER_LIST
     $PROTOCOL_LIST
+"
+
+ALL_COMPONENTS="
+    $AVCODEC_COMPONENTS_LIST
+    $AVDEVICE_COMPONENTS_LIST
+    $AVFILTER_COMPONENTS_LIST
+    $AVFORMAT_COMPONENTS_LIST
 "
 
 for n in $COMPONENT_LIST; do
@@ -4525,7 +4566,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
     check_func_headers time.h clock_gettime ||
-        { check_lib clock_gettime time.h clock_gettime -lrt && LIBRT="-lrt"; }
+        check_lib clock_gettime time.h clock_gettime -lrt
 
 check_func  fcntl
 check_func  fork
@@ -4638,14 +4679,14 @@ disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion -lbz2
 # On some systems dynamic loading requires no extra linker flags
 check_lib libdl dlfcn.h dlopen || check_lib libdl dlfcn.h dlopen -ldl
 
-check_lib libm math.h sin -lm && LIBM="-lm"
+check_lib libm math.h sin -lm
 
 atan2f_args=2
 ldexpf_args=2
 powf_args=2
 
 for func in $MATH_FUNCS; do
-    eval check_mathfunc $func \${${func}_args:-1} $LIBM
+    eval check_mathfunc $func \${${func}_args:-1} $libm_extralibs
 done
 
 # these are off by default, so fail if requested and not available
@@ -4716,10 +4757,10 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
                                  check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
+enabled omx               && require_header OMX_Core.h
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
-                               die "ERROR: OpenMAX IL headers not found"; }
-enabled omx               && require_header OMX_Core.h
+                               die "ERROR: OpenMAX IL headers not found"; } && enable omx
 enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                  check_pkg_config openssl openssl openssl/ssl.h SSL_library_init; } ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
@@ -5069,6 +5110,43 @@ check_deps $CONFIG_LIST       \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
 
+flatten_extralibs(){
+    unset nested_entries
+    list_name=$1
+    eval list=\$${1}
+    for entry in $list; do
+        entry_copy=$entry
+        resolve entry_copy
+        append nested_entries $(filter '*_extralibs' $entry_copy)
+        flat_entries=$(filter_out '*_extralibs' $entry_copy)
+        eval $entry="\$flat_entries"
+    done
+    append $list_name "$nested_entries"
+
+    resolve nested_entries
+    if test -n "$(filter '*_extralibs' $nested_entries)"; then
+        flatten_extralibs $list_name
+    fi
+}
+
+for linkunit in $LIBRARY_LIST; do
+    unset current_extralibs
+    eval components=\$$(toupper ${linkunit})_COMPONENTS_LIST
+    for comp in ${components}; do
+        enabled $comp || continue
+        comp_extralibs="${comp}_extralibs"
+        append current_extralibs $comp_extralibs
+    done
+    eval prepend ${linkunit}_extralibs $current_extralibs
+done
+
+for linkunit in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
+    flatten_extralibs ${linkunit}_extralibs
+    unique  ${linkunit}_extralibs
+    resolve ${linkunit}_extralibs
+    eval ${linkunit}_extralibs=\$\(\$ldflags_filter \$${linkunit}_extralibs\)
+done
+
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
 for thread in $THREADS_LIST; do
@@ -5313,7 +5391,6 @@ TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 CFLAGS-avplay=$sdl_cflags
 CFLAGS_HEADERS=$CFLAGS_HEADERS
-ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
@@ -5335,12 +5412,9 @@ EOF
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> avbuild/config.mak' $LIBRARY_LIST
 
-print_program_extralibs(){
-    eval "program_extralibs=\$${1}_extralibs"
-    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> avbuild/config.mak
-}
-
-map 'print_program_extralibs $v' $PROGRAM_LIST
+for entry in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
+    eval echo "EXTRALIBS-${entry}=\$${entry}_extralibs" >> avbuild/config.mak
+done
 
 cat > $TMPH <<EOF
 /* Automatically generated by configure - do not modify! */
@@ -5422,13 +5496,13 @@ incdir=$incdir
 source_path=${source_path}
 LIBPREF=${LIBPREF}
 LIBSUF=${LIBSUF}
-extralibs_avutil="$LIBRT $LIBM"
-extralibs_avcodec="$extralibs"
-extralibs_avformat="$extralibs"
-extralibs_avdevice="$extralibs"
-extralibs_avfilter="$extralibs"
-extralibs_avresample="$LIBM"
-extralibs_swscale="$LIBM"
+extralibs_avutil="$avutil_extralibs"
+extralibs_avcodec="$avcodec_extralibs"
+extralibs_avformat="$avformat_extralibs"
+extralibs_avdevice="$avdevice_extralibs"
+extralibs_avfilter="$avfilter_extralibs"
+extralibs_avresample="$avresample_extralibs"
+extralibs_swscale="$swscale_extralibs"
 EOF
 
 for lib in $LIBRARY_LIST; do
