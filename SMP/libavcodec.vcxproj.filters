@@ -2400,6 +2400,9 @@
     <ClCompile Include="..\libavcodec\rv34_parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\sipr_parser.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\tak_parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2413,6 +2416,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vp9_parser.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\xma_parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\aac_adtstoasc_bsf.c">

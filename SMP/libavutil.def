@@ -258,6 +258,7 @@ EXPORTS
     av_int2i
     av_int_list_length_for_size
     av_lfg_init
+    av_lfg_init_from_data
     av_log
     av_log2
     av_log2_16bit

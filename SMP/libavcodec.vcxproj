@@ -859,11 +859,13 @@
     <ClCompile Include="..\libavcodec\opus_parser.c" />
     <ClCompile Include="..\libavcodec\pnm_parser.c" />
     <ClCompile Include="..\libavcodec\rv34_parser.c" />
+    <ClCompile Include="..\libavcodec\sipr_parser.c" />
     <ClCompile Include="..\libavcodec\tak_parser.c" />
     <ClCompile Include="..\libavcodec\vc1_parser.c" />
     <ClCompile Include="..\libavcodec\vp3_parser.c" />
     <ClCompile Include="..\libavcodec\vp8_parser.c" />
     <ClCompile Include="..\libavcodec\vp9_parser.c" />
+    <ClCompile Include="..\libavcodec\xma_parser.c" />
     <ClCompile Include="..\libavcodec\aac_adtstoasc_bsf.c" />
     <ClCompile Include="..\libavcodec\chomp_bsf.c" />
     <ClCompile Include="..\libavcodec\dump_extradata_bsf.c" />
