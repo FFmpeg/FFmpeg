@@ -373,22 +373,38 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
     }
 }
 
+#define MV_FROZEN    8
+#define MV_CHANGED   4
+#define MV_UNCHANGED 2
+#define MV_LISTED    1
+static av_always_inline void add_blocklist(int (*blocklist)[2], int *blocklist_length, uint8_t *fixed, int mb_x, int mb_y, int mb_xy)
+{
+    if (fixed[mb_xy])
+        return;
+    fixed[mb_xy] = MV_LISTED;
+    blocklist[ *blocklist_length   ][0] = mb_x;
+    blocklist[(*blocklist_length)++][1] = mb_y;
+}
+
 static void guess_mv(ERContext *s)
 {
-    uint8_t *fixed = s->er_temp_buffer;
-#define MV_FROZEN    4
-#define MV_CHANGED   2
-#define MV_UNCHANGED 1
+    int (*blocklist)[2], (*next_blocklist)[2];
+    uint8_t *fixed;
     const int mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
     int mb_height = s->mb_height;
     int i, depth, num_avail;
     int mb_x, mb_y, mot_step, mot_stride;
+    int blocklist_length, next_blocklist_length;
 
     if (s->last_pic.f && s->last_pic.f->data[0])
         mb_height = FFMIN(mb_height, (s->last_pic.f->height+15)>>4);
     if (s->next_pic.f && s->next_pic.f->data[0])
         mb_height = FFMIN(mb_height, (s->next_pic.f->height+15)>>4);
+
+    blocklist      =  s->er_temp_buffer;
+    next_blocklist = (s->er_temp_buffer + 2 * sizeof(int) * s->mb_stride * s->mb_height);
+    fixed          =  s->er_temp_buffer + 4 * sizeof(int) * s->mb_stride * s->mb_height;
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
@@ -439,8 +455,22 @@ static void guess_mv(ERContext *s)
         return;
     }
 
+    blocklist_length = 0;
+    for (mb_y = 0; mb_y < mb_height; mb_y++) {
+        for (mb_x = 0; mb_x < mb_width; mb_x++) {
+            const int mb_xy = mb_x + mb_y * mb_stride;
+            if (fixed[mb_xy] == MV_FROZEN) {
+                if (mb_x)               add_blocklist(blocklist, &blocklist_length, fixed, mb_x - 1, mb_y, mb_xy - 1);
+                if (mb_y)               add_blocklist(blocklist, &blocklist_length, fixed, mb_x, mb_y - 1, mb_xy - mb_stride);
+                if (mb_x+1 < mb_width)  add_blocklist(blocklist, &blocklist_length, fixed, mb_x + 1, mb_y, mb_xy + 1);
+                if (mb_y+1 < mb_height) add_blocklist(blocklist, &blocklist_length, fixed, mb_x, mb_y + 1, mb_xy + mb_stride);
+            }
+        }
+    }
+
     for (depth = 0; ; depth++) {
         int changed, pass, none_left;
+        int blocklist_index;
 
         none_left = 1;
         changed   = 1;
@@ -449,20 +479,24 @@ static void guess_mv(ERContext *s)
             int score_sum = 0;
 
             changed = 0;
-            for (mb_y = 0; mb_y < mb_height; mb_y++) {
-                for (mb_x = (mb_y ^ pass) & 1; mb_x < s->mb_width; mb_x+=2) {
-                    const int mb_xy        = mb_x + mb_y * s->mb_stride;
-                    int mv_predictor[8][2];
-                    int ref[8];
-                    int pred_count;
-                    int j;
-                    int best_score;
-                    int best_pred;
-                    int mot_index;
-                    int prev_x, prev_y, prev_ref;
+            for (blocklist_index = 0; blocklist_index < blocklist_length; blocklist_index++) {
+                const int mb_x = blocklist[blocklist_index][0];
+                const int mb_y = blocklist[blocklist_index][1];
+                const int mb_xy = mb_x + mb_y * mb_stride;
+                int mv_predictor[8][2];
+                int ref[8];
+                int pred_count;
+                int j;
+                int best_score;
+                int best_pred;
+                int mot_index;
+                int prev_x, prev_y, prev_ref;
 
-                    if (fixed[mb_xy] == MV_FROZEN)
-                        continue;
+                if ((mb_x ^ mb_y ^ pass) & 1)
+                    continue;
+                av_assert2(fixed[mb_xy] != MV_FROZEN);
+
+
                     av_assert1(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
                     av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
@@ -476,8 +510,7 @@ static void guess_mv(ERContext *s)
                     if (mb_y + 1 < mb_height)
                         j |= fixed[mb_xy + mb_stride];
 
-                    if (!(j & MV_FROZEN))
-                        continue;
+                    av_assert2(j & MV_FROZEN);
 
                     if (!(j & MV_CHANGED) && pass > 1)
                         continue;
@@ -486,7 +519,7 @@ static void guess_mv(ERContext *s)
                     pred_count = 0;
                     mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
-                    if (mb_x > 0 && fixed[mb_xy - 1]) {
+                    if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
                         mv_predictor[pred_count][0] =
                             s->cur_pic.motion_val[0][mot_index - mot_step][0];
                         mv_predictor[pred_count][1] =
@@ -495,7 +528,7 @@ static void guess_mv(ERContext *s)
                             s->cur_pic.ref_index[0][4 * (mb_xy - 1)];
                         pred_count++;
                     }
-                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
+                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
                         mv_predictor[pred_count][0] =
                             s->cur_pic.motion_val[0][mot_index + mot_step][0];
                         mv_predictor[pred_count][1] =
@@ -504,7 +537,7 @@ static void guess_mv(ERContext *s)
                             s->cur_pic.ref_index[0][4 * (mb_xy + 1)];
                         pred_count++;
                     }
-                    if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
+                    if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
                         mv_predictor[pred_count][0] =
                             s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
@@ -513,7 +546,7 @@ static void guess_mv(ERContext *s)
                             s->cur_pic.ref_index[0][4 * (mb_xy - s->mb_stride)];
                         pred_count++;
                     }
-                    if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride]) {
+                    if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride] > 1) {
                         mv_predictor[pred_count][0] =
                             s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
@@ -606,24 +639,24 @@ skip_mean_and_median:
                         s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
                                      MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
 
-                        if (mb_x > 0 && fixed[mb_xy - 1]) {
+                        if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
                             int k;
                             for (k = 0; k < 16; k++)
                                 score += FFABS(src[k * linesize[0] - 1] -
                                                src[k * linesize[0]]);
                         }
-                        if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
+                        if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
                             int k;
                             for (k = 0; k < 16; k++)
                                 score += FFABS(src[k * linesize[0] + 15] -
                                                src[k * linesize[0] + 16]);
                         }
-                        if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
+                        if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
                             int k;
                             for (k = 0; k < 16; k++)
                                 score += FFABS(src[k - linesize[0]] - src[k]);
                         }
-                        if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride]) {
+                        if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] > 1) {
                             int k;
                             for (k = 0; k < 16; k++)
                                 score += FFABS(src[k + linesize[0] * 15] -
@@ -654,18 +687,34 @@ skip_mean_and_median:
                         changed++;
                     } else
                         fixed[mb_xy] = MV_UNCHANGED;
-                }
             }
         }
 
         if (none_left)
             return;
 
-        for (i = 0; i < mb_width * mb_height; i++) {
-            int mb_xy = s->mb_index2xy[i];
-            if (fixed[mb_xy])
+        next_blocklist_length = 0;
+
+        for (blocklist_index = 0; blocklist_index < blocklist_length; blocklist_index++) {
+            const int mb_x = blocklist[blocklist_index][0];
+            const int mb_y = blocklist[blocklist_index][1];
+            const int mb_xy = mb_x + mb_y * mb_stride;
+
+            if (fixed[mb_xy] & (MV_CHANGED|MV_UNCHANGED|MV_FROZEN)) {
                 fixed[mb_xy] = MV_FROZEN;
+                if (mb_x > 0)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x - 1, mb_y, mb_xy - 1);
+                if (mb_y > 0)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x, mb_y - 1, mb_xy - mb_stride);
+                if (mb_x + 1 < mb_width)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x + 1, mb_y, mb_xy + 1);
+                if (mb_y + 1 < mb_height)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x, mb_y + 1, mb_xy + mb_stride);
+            }
         }
+        av_assert0(next_blocklist_length <= mb_height * mb_width);
+        FFSWAP(int , blocklist_length, next_blocklist_length);
+        FFSWAP(void*, blocklist, next_blocklist);
     }
 }
 

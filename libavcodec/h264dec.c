@@ -285,7 +285,7 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
                           mb_array_size * sizeof(uint8_t), fail);
 
         FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
-                         h->mb_height * h->mb_stride, fail);
+                         h->mb_height * h->mb_stride * (4*sizeof(int) + 1), fail);
 
         FF_ALLOCZ_OR_GOTO(h->avctx, sl->dc_val_base,
                           yc_size * sizeof(int16_t), fail);
