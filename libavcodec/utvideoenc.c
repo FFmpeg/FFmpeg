@@ -26,12 +26,13 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "put_bits.h"
-#include "huffyuvencdsp.h"
 #include "mathops.h"
 #include "utvideo.h"
 #include "huffman.h"
@@ -48,7 +49,6 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
     UtvideoContext *c = avctx->priv_data;
     int i;
 
-    av_frame_free(&avctx->coded_frame);
     av_freep(&c->slice_bits);
     for (i = 0; i < 4; i++)
         av_freep(&c->slice_buffer[i]);
@@ -76,6 +76,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         c->planes        = 4;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'A');
         original_format  = UTVIDEO_RGBA;
+        avctx->bits_per_coded_sample = 32;
         break;
     case AV_PIX_FMT_YUV420P:
         if (avctx->width & 1 || avctx->height & 1) {
@@ -103,6 +104,14 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
             avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         original_format  = UTVIDEO_422;
         break;
+    case AV_PIX_FMT_YUV444P:
+        c->planes        = 3;
+        if (avctx->colorspace == AVCOL_SPC_BT709)
+            avctx->codec_tag = MKTAG('U', 'L', 'H', '4');
+        else
+            avctx->codec_tag = MKTAG('U', 'L', 'Y', '4');
+        original_format  = UTVIDEO_444;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown pixel format: %d\n",
                avctx->pix_fmt);
@@ -110,8 +119,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     ff_bswapdsp_init(&c->bdsp);
-    ff_huffyuvencdsp_init(&c->hdsp);
+    ff_llvidencdsp_init(&c->llvidencdsp);
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
     /* Check the prediction method, and error out if unsupported */
     if (avctx->prediction_method < 0 || avctx->prediction_method > 4) {
         av_log(avctx, AV_LOG_WARNING,
@@ -127,7 +138,10 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     /* Convert from libavcodec prediction type to Ut Video's */
-    c->frame_pred = ff_ut_pred_order[avctx->prediction_method];
+    if (avctx->prediction_method)
+        c->frame_pred = ff_ut_pred_order[avctx->prediction_method];
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (c->frame_pred == PRED_GRADIENT) {
         av_log(avctx, AV_LOG_ERROR, "Gradient prediction is not supported.\n");
@@ -154,19 +168,11 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        utvideo_encode_close(avctx);
-        return AVERROR(ENOMEM);
-    }
-
-    /* extradata size is 4 * 32bit */
+    /* extradata size is 4 * 32 bits */
     avctx->extradata_size = 16;
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
-                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                                  AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (!avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
@@ -176,7 +182,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     for (i = 0; i < c->planes; i++) {
         c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                       AV_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
             utvideo_encode_close(avctx);
@@ -286,6 +292,9 @@ static void left_predict(uint8_t *src, uint8_t *dst, int stride,
     }
 }
 
+#undef A
+#undef B
+
 /* Write data to a plane with median prediction */
 static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
                            int width, int height)
@@ -314,7 +323,7 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
 
     /* Rest of the coded part uses median prediction */
     for (j = 1; j < height; j++) {
-        c->hdsp.sub_hfyu_median_pred(dst, src - stride, src, width, &A, &B);
+        c->llvidencdsp.sub_median_pred(dst, src - stride, src, width, &A, &B);
         dst += width;
         src += stride;
     }
@@ -373,7 +382,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
         src += width;
     }
 
-    /* Pad output to a 32bit boundary */
+    /* Pad output to a 32-bit boundary */
     count = put_bits_count(&pb) & 0x1F;
 
     if (count)
@@ -545,7 +554,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Allocate a new packet if needed, and set it to the pointer dst */
     ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * c->slices + width * height) *
-                           c->planes + 4);
+                           c->planes + 4, 0);
 
     if (ret < 0)
         return ret;
@@ -574,6 +583,17 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             ret = encode_plane(avctx, c->slice_buffer[i] + 2 * c->slice_stride,
                                c->slice_buffer[i], c->slice_stride, i,
                                width, height, &pb);
+
+            if (ret) {
+                av_log(avctx, AV_LOG_ERROR, "Error encoding plane %d.\n", i);
+                return ret;
+            }
+        }
+        break;
+    case AV_PIX_FMT_YUV444P:
+        for (i = 0; i < c->planes; i++) {
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
+                               pic->linesize[i], i, width, height, &pb);
 
             if (ret) {
                 av_log(avctx, AV_LOG_ERROR, "Error encoding plane %d.\n", i);
@@ -611,7 +631,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /*
-     * Write frame information (LE 32bit unsigned)
+     * Write frame information (LE 32-bit unsigned)
      * into the output packet.
      * Contains the prediction method.
      */
@@ -622,8 +642,12 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
      * At least currently Ut Video is IDR only.
      * Set flags accordingly.
      */
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     pkt->size   = bytestream2_tell_p(&pb);
     pkt->flags |= AV_PKT_FLAG_KEY;
@@ -634,18 +658,38 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
+#define OFFSET(x) offsetof(UtvideoContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{ "pred", "Prediction method", OFFSET(frame_pred), AV_OPT_TYPE_INT, { .i64 = PRED_LEFT }, PRED_NONE, PRED_MEDIAN, VE, "pred" },
+    { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_NONE }, INT_MIN, INT_MAX, VE, "pred" },
+    { "left",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_LEFT }, INT_MIN, INT_MAX, VE, "pred" },
+    { "gradient", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_GRADIENT }, INT_MIN, INT_MAX, VE, "pred" },
+    { "median",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_MEDIAN }, INT_MIN, INT_MAX, VE, "pred" },
+
+    { NULL},
+};
+
+static const AVClass utvideo_class = {
+    .class_name = "utvideo",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_utvideo_encoder = {
     .name           = "utvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Ut Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),
+    .priv_class     = &utvideo_class,
     .init           = utvideo_encode_init,
     .encode2        = utvideo_encode_frame,
     .close          = utvideo_encode_close,
-    .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
+    .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
-                          AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
+                          AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
                       },
 };

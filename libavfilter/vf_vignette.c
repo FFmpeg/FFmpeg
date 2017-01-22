@@ -90,7 +90,7 @@ static const AVOption vignette_options[] = {
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions for each frame",             0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
-    { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
+    { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     { "aspect", "set aspect ratio", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 1}, 0, DBL_MAX, .flags = FLAGS },
     { NULL }
 };
@@ -165,7 +165,7 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
     int dst_linesize = s->fmap_linesize;
 
     if (frame) {
-        s->var_values[VAR_N]   = inlink->frame_count;
+        s->var_values[VAR_N]   = inlink->frame_count_out;
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {
@@ -267,8 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const int chroma = plane == 1 || plane == 2;
             const int hsub = chroma ? s->desc->log2_chroma_w : 0;
             const int vsub = chroma ? s->desc->log2_chroma_h : 0;
-            const int w = FF_CEIL_RSHIFT(inlink->w, hsub);
-            const int h = FF_CEIL_RSHIFT(inlink->h, vsub);
+            const int w = AV_CEIL_RSHIFT(inlink->w, hsub);
+            const int h = AV_CEIL_RSHIFT(inlink->h, vsub);
 
             for (y = 0; y < h; y++) {
                 uint8_t *dstp = dst;

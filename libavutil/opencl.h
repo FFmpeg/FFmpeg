@@ -29,9 +29,10 @@
  * change without prior notice.
  */
 
-#ifndef LIBAVUTIL_OPENCL_H
-#define LIBAVUTIL_OPENCL_H
+#ifndef AVUTIL_OPENCL_H
+#define AVUTIL_OPENCL_H
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS 1
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -288,4 +289,4 @@ void av_opencl_uninit(void);
 int64_t av_opencl_benchmark(AVOpenCLDeviceNode *device, cl_platform_id platform,
                             int64_t (*benchmark)(AVOpenCLExternalEnv *ext_opencl_env));
 
-#endif /* LIBAVUTIL_OPENCL_H */
+#endif /* AVUTIL_OPENCL_H */

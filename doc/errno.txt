@@ -76,7 +76,7 @@ EMFILE           POSIX     ++++++  Too many open files
 EMLINK           POSIX     ++++++  Too many links
 EMSGSIZE         POSIX     +++..+  Message too long
 EMULTIHOP        POSIX     ++4...  Multihop attempted
-ENAMETOOLONG     POSIX  -  ++++++  Filen ame too long
+ENAMETOOLONG     POSIX  -  ++++++  File name too long
 ENAVAIL                    +.....  No XENIX semaphores available
 ENEEDAUTH                  .++...  Need authenticator
 ENETDOWN         POSIX     +++..+  Network is down

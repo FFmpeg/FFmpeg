@@ -24,6 +24,9 @@
  * X-Face common definitions.
  */
 
+#ifndef AVCODEC_XFACE_H
+#define AVCODEC_XFACE_H
+
 #include <stdint.h>
 
 /* define the face size - 48x48x1 */
@@ -94,3 +97,5 @@ extern const ProbRange ff_xface_probranges_per_level[4][3];
 extern const ProbRange ff_xface_probranges_2x2[16];
 
 void ff_xface_generate_face(uint8_t *dst, uint8_t * const src);
+
+#endif /* AVCODEC_XFACE_H */

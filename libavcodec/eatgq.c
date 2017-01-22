@@ -28,13 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGQ
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "bytestream.h"
-#include "idctdsp.h"
 #include "aandcttab.h"
+#include "avcodec.h"
+#include "bytestream.h"
 #include "eaidct.h"
+#include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 
 typedef struct TgqContext {
@@ -116,7 +116,7 @@ static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], AVFrame *frame,
     ff_ea_idct_put_c(dest_y                + 8, linesize, block[1]);
     ff_ea_idct_put_c(dest_y + 8 * linesize    , linesize, block[2]);
     ff_ea_idct_put_c(dest_y + 8 * linesize + 8, linesize, block[3]);
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
          ff_ea_idct_put_c(dest_cb, frame->linesize[1], block[4]);
          ff_ea_idct_put_c(dest_cr, frame->linesize[2], block[5]);
     }
@@ -142,7 +142,7 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, AVFrame *frame,
     tgq_dconly(s, dest_y                + 8, linesize, dc[1]);
     tgq_dconly(s, dest_y + 8 * linesize,     linesize, dc[2]);
     tgq_dconly(s, dest_y + 8 * linesize + 8, linesize, dc[3]);
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         tgq_dconly(s, dest_cb, frame->linesize[1], dc[4]);
         tgq_dconly(s, dest_cr, frame->linesize[2], dc[5]);
     }
@@ -157,7 +157,10 @@ static int tgq_decode_mb(TgqContext *s, AVFrame *frame, int mb_y, int mb_x)
     mode = bytestream2_get_byte(&s->gb);
     if (mode > 12) {
         GetBitContext gb;
-        init_get_bits8(&gb, s->gb.buffer, FFMIN(bytestream2_get_bytes_left(&s->gb), mode));
+        int ret = init_get_bits8(&gb, s->gb.buffer, FFMIN(bytestream2_get_bytes_left(&s->gb), mode));
+        if (ret < 0)
+            return ret;
+
         for (i = 0; i < 6; i++)
             tgq_decode_block(s, s->block[i], &gb);
         tgq_idct_put_mb(s, s->block, frame, mb_x, mb_y);
@@ -249,5 +252,5 @@ AVCodec ff_eatgq_decoder = {
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
     .decode         = tgq_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

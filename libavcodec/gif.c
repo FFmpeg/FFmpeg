@@ -43,6 +43,7 @@ typedef struct GIFContext {
     const AVClass *class;
     LZWState *lzw;
     uint8_t *buf;
+    int buf_size;
     AVFrame *last_frame;
     int flags;
     uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
@@ -82,7 +83,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     GIFContext *s = avctx->priv_data;
     int len = 0, height = avctx->height, width = avctx->width, x, y;
     int x_start = 0, y_start = 0, trans = s->transparent_index;
-    int honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame;
+    int honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
     const uint8_t *ptr;
 
     /* Crop image */
@@ -174,7 +175,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
     bytestream_put_byte(bytestream, 0x08);
 
-    ff_lzw_encode_init(s->lzw, s->buf, 2 * width * height,
+    ff_lzw_encode_init(s->lzw, s->buf, s->buf_size,
                        12, FF_LZW_GIF, put_bits);
 
     ptr = buf + y_start*linesize + x_start;
@@ -221,18 +222,18 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "GIF does not support resolutions above 65535x65535\n");
         return AVERROR(EINVAL);
     }
-
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     s->transparent_index = -1;
 
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
-    s->buf = av_malloc(avctx->width*avctx->height*2);
+    s->buf_size = avctx->width*avctx->height*2 + 1000;
+    s->buf = av_malloc(s->buf_size);
     s->tmpl = av_malloc(avctx->width);
     if (!s->tmpl || !s->buf || !s->lzw)
         return AVERROR(ENOMEM);
@@ -270,7 +271,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const uint32_t *palette = NULL;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*7/5 + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*7/5 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
     outbuf_ptr = pkt->data;
     end        = pkt->data + pkt->size;
@@ -320,10 +321,9 @@ static int gif_encode_close(AVCodecContext *avctx)
 {
     GIFContext *s = avctx->priv_data;
 
-    av_frame_free(&avctx->coded_frame);
-
     av_freep(&s->lzw);
     av_freep(&s->buf);
+    s->buf_size = 0;
     av_frame_free(&s->last_frame);
     av_freep(&s->tmpl);
     return 0;

@@ -122,6 +122,7 @@ if [ -n "$do_mov" ] ; then
 mov_common_opt="-acodec pcm_alaw -vcodec mpeg4 -threads 1"
 do_lavf mov "" "-movflags +rtphint $mov_common_opt"
 do_lavf_timecode mov "-movflags +faststart $mov_common_opt"
+do_lavf_timecode mp4 "-vcodec mpeg4 -an -threads 1"
 fi
 
 if [ -n "$do_ismv" ] ; then
@@ -144,6 +145,10 @@ if [ -n "$do_nut" ] ; then
 do_lavf nut "" "-acodec mp2 -ab 64k -ar 44100 -threads 1"
 fi
 
+if [ -n "$do_mka" ] ; then
+do_audio_only mka "" "-c:a tta"
+fi
+
 if [ -n "$do_mkv" ] ; then
 do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 \
  -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap -threads 1"
@@ -162,6 +167,20 @@ if [ -n "$do_ogg_vp3" ] ; then
 # -idct simple causes different results on different systems
 DEC_OPTS="$DEC_OPTS -idct auto"
 do_lavf_fate ogg "vp3/coeff_level64.mkv"
+fi
+
+if [ -n "$do_ogg_vp8" ] ; then
+do_lavf_fate ogv "vp8/RRSF49-short.webm" "-acodec copy"
+fi
+
+if [ -n "$do_mov_qtrle_mace6" ] ; then
+DEC_OPTS="$DEC_OPTS -idct auto"
+do_lavf_fate mov "qtrle/Animation-16Greys.mov"
+fi
+
+if [ -n "$do_avi_cram" ] ; then
+DEC_OPTS="$DEC_OPTS -idct auto"
+do_lavf_fate avi "cram/toon.avi"
 fi
 
 if [ -n "$do_wtv" ] ; then
@@ -190,6 +209,18 @@ fi
 if [ -n "$do_gif" ] ; then
 file=${outfile}lavf.gif
 do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10 -pix_fmt rgb24
+do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
+fi
+
+if [ -n "$do_apng" ] ; then
+file=${outfile}lavf.apng
+do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -pix_fmt rgb24
+do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
+file_copy=${outfile}lavf.copy.apng
+do_avconv $file_copy $DEC_OPTS -i $file $ENC_OPTS -c copy
+do_avconv_crc $file_copy $DEC_OPTS -i $target_path/$file_copy
+file=${outfile}lavf.png
+do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -pix_fmt rgb24 -frames:v 1 -f apng
 do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
 fi
 
@@ -333,6 +364,10 @@ fi
 
 if [ -n "$do_sox" ] ; then
 do_audio_only sox
+fi
+
+if [ -n "$do_tta" ] ; then
+do_audio_only tta
 fi
 
 if [ -n "$do_caf" ] ; then

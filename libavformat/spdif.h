@@ -54,8 +54,8 @@ enum IEC61937DataType {
 
 static const uint16_t spdif_mpeg_pkt_offset[2][3] = {
     //LAYER1  LAYER2  LAYER3
-    { 3072,    9216,   4608 }, // MPEG2 LSF
-    { 1536,    4608,   4608 }, // MPEG1
+    { 3072,    9216,   4608 }, // MPEG-2 LSF
+    { 1536,    4608,   4608 }, // MPEG-1
 };
 
 void ff_spdif_bswap_buf16(uint16_t *dst, const uint16_t *src, int w);

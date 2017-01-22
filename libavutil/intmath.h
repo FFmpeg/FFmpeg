@@ -33,11 +33,6 @@
 #   include "x86/intmath.h"
 #endif
 
-/**
- * @addtogroup lavu_internal
- * @{
- */
-
 #if HAVE_FAST_CLZ
 #if AV_GCC_VERSION_AT_LEAST(3,4)
 #ifndef ff_log2
@@ -46,21 +41,13 @@
 #      define ff_log2_16bit av_log2
 #   endif
 #endif /* ff_log2 */
-#elif defined( __INTEL_COMPILER )
-#ifndef ff_log2
-#   define ff_log2(x) (_bit_scan_reverse((x)|1))
-#   ifndef ff_log2_16bit
-#      define ff_log2_16bit av_log2
-#   endif
-#endif /* ff_log2 */
-#endif
 #endif /* AV_GCC_VERSION_AT_LEAST(3,4) */
+#endif
 
 extern const uint8_t ff_log2_tab[256];
 
 #ifndef ff_log2
 #define ff_log2 ff_log2_c
-#if !defined( _MSC_VER )
 static av_always_inline av_const int ff_log2_c(unsigned int v)
 {
     int n = 0;
@@ -76,15 +63,6 @@ static av_always_inline av_const int ff_log2_c(unsigned int v)
 
     return n;
 }
-#else
-static av_always_inline av_const int ff_log2_c(unsigned int v)
-{
-    unsigned long n;
-    _BitScanReverse(&n, v|1);
-    return n;
-}
-#define ff_log2_16bit av_log2
-#endif
 #endif
 
 #ifndef ff_log2_16bit
@@ -106,10 +84,6 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
 #define av_log2_16bit ff_log2_16bit
 
 /**
- * @}
- */
-
-/**
  * @addtogroup lavu_math
  * @{
  */
@@ -119,61 +93,71 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
 #ifndef ff_ctz
 #define ff_ctz(v) __builtin_ctz(v)
 #endif
-#elif defined( __INTEL_COMPILER )
-#ifndef ff_ctz
-#define ff_ctz(v) _bit_scan_forward(v)
+#ifndef ff_ctzll
+#define ff_ctzll(v) __builtin_ctzll(v)
+#endif
+#ifndef ff_clz
+#define ff_clz(v) __builtin_clz(v)
 #endif
 #endif
 #endif
 
 #ifndef ff_ctz
 #define ff_ctz ff_ctz_c
-#if !defined( _MSC_VER )
-static av_always_inline av_const int ff_ctz_c(int v)
-{
-    int c;
-
-    if (v & 0x1)
-        return 0;
-
-    c = 1;
-    if (!(v & 0xffff)) {
-        v >>= 16;
-        c += 16;
-    }
-    if (!(v & 0xff)) {
-        v >>= 8;
-        c += 8;
-    }
-    if (!(v & 0xf)) {
-        v >>= 4;
-        c += 4;
-    }
-    if (!(v & 0x3)) {
-        v >>= 2;
-        c += 2;
-    }
-    c -= v & 0x1;
-
-    return c;
-}
-#else
-static av_always_inline av_const int ff_ctz_c( int v )
-{
-    unsigned long c;
-    _BitScanForward(&c, v);
-    return c;
-}
-#endif
-#endif
-
 /**
  * Trailing zero bit count.
  *
  * @param v  input value. If v is 0, the result is undefined.
  * @return   the number of trailing 0-bits
  */
-int av_ctz(int v);
+/* We use the De-Bruijn method outlined in:
+ * http://supertech.csail.mit.edu/papers/debruijn.pdf. */
+static av_always_inline av_const int ff_ctz_c(int v)
+{
+    static const uint8_t debruijn_ctz32[32] = {
+        0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+    };
+    return debruijn_ctz32[(uint32_t)((v & -v) * 0x077CB531U) >> 27];
+}
+#endif
+
+#ifndef ff_ctzll
+#define ff_ctzll ff_ctzll_c
+/* We use the De-Bruijn method outlined in:
+ * http://supertech.csail.mit.edu/papers/debruijn.pdf. */
+static av_always_inline av_const int ff_ctzll_c(long long v)
+{
+    static const uint8_t debruijn_ctz64[64] = {
+        0, 1, 2, 53, 3, 7, 54, 27, 4, 38, 41, 8, 34, 55, 48, 28,
+        62, 5, 39, 46, 44, 42, 22, 9, 24, 35, 59, 56, 49, 18, 29, 11,
+        63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
+        51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12
+    };
+    return debruijn_ctz64[(uint64_t)((v & -v) * 0x022FDD63CC95386DU) >> 58];
+}
+#endif
+
+#ifndef ff_clz
+#define ff_clz ff_clz_c
+static av_always_inline av_const unsigned ff_clz_c(unsigned x)
+{
+    unsigned i = sizeof(x) * 8;
+
+    while (x) {
+        x >>= 1;
+        i--;
+    }
+
+    return i;
+}
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#ifndef av_parity
+#define av_parity __builtin_parity
+#endif
+#endif
 
 /**
  * @}

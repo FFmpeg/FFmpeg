@@ -20,7 +20,7 @@
 
 /**
  * @file
- * VP8 decoder support via libvpx
+ * VP8/9 decoder support via libvpx
  */
 
 #define VPX_CODEC_DISABLE_COMPAT 1
@@ -29,18 +29,23 @@
 
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "libvpx.h"
+#include "profiles.h"
 
-typedef struct VP8DecoderContext {
+typedef struct VPxDecoderContext {
     struct vpx_codec_ctx decoder;
-} VP8Context;
+    struct vpx_codec_ctx decoder_alpha;
+    int has_alpha_channel;
+} VPxContext;
 
 static av_cold int vpx_init(AVCodecContext *avctx,
-                            const struct vpx_codec_iface *iface)
+                            const struct vpx_codec_iface *iface,
+                            int is_alpha_decoder)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VPxContext *ctx = avctx->priv_data;
     struct vpx_codec_dec_cfg deccfg = {
         /* token partitions+1 would be a decent choice */
         .threads = FFMIN(avctx->thread_count, 16)
@@ -49,7 +54,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
 
-    if (vpx_codec_dec_init(&ctx->decoder, iface, &deccfg, 0) != VPX_CODEC_OK) {
+    if (vpx_codec_dec_init(
+            is_alpha_decoder ? &ctx->decoder_alpha : &ctx->decoder,
+            iface, &deccfg, 0) != VPX_CODEC_OK) {
         const char *error = vpx_codec_error(&ctx->decoder);
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize decoder: %s\n",
                error);
@@ -60,13 +67,20 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 }
 
 // returns 0 on success, AVERROR_INVALIDDATA otherwise
-static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
+static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
+                       int has_alpha_channel)
 {
 #if VPX_IMAGE_ABI_VERSION >= 3
     static const enum AVColorSpace colorspaces[8] = {
         AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
         AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
     };
+#if VPX_IMAGE_ABI_VERSION >= 4
+    static const enum AVColorRange color_ranges[] = {
+        AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG
+    };
+    avctx->color_range = color_ranges[img->range];
+#endif
     avctx->colorspace = colorspaces[img->cs];
 #endif
     if (avctx->codec_id == AV_CODEC_ID_VP8 && img->fmt != VPX_IMG_FMT_I420)
@@ -75,7 +89,8 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I420:
         if (avctx->codec_id == AV_CODEC_ID_VP9)
             avctx->profile = FF_PROFILE_VP9_0;
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        avctx->pix_fmt =
+            has_alpha_channel ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
         return 0;
 #if CONFIG_LIBVPX_VP9_DECODER
     case VPX_IMG_FMT_I422:
@@ -90,16 +105,21 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
 #endif
     case VPX_IMG_FMT_I444:
         avctx->profile = FF_PROFILE_VP9_1;
+#if VPX_IMAGE_ABI_VERSION >= 3
+        avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                         AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
+#else
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+#endif
         return 0;
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case VPX_IMG_FMT_I42016:
         avctx->profile = FF_PROFILE_VP9_2;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
             return 0;
         } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P12LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
@@ -107,10 +127,10 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I42216:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P10LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
             return 0;
         } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P12LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
@@ -119,10 +139,10 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I44016:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV440P10LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV440P10;
             return 0;
         } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV440P12LE;
+            avctx->pix_fmt = AV_PIX_FMT_YUV440P12;
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
@@ -131,10 +151,20 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     case VPX_IMG_FMT_I44416:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
+#if VPX_IMAGE_ABI_VERSION >= 3
+            avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                             AV_PIX_FMT_GBRP10 : AV_PIX_FMT_YUV444P10;
+#else
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+#endif
             return 0;
         } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P12LE;
+#if VPX_IMAGE_ABI_VERSION >= 3
+            avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
+                             AV_PIX_FMT_GBRP12 : AV_PIX_FMT_YUV444P12;
+#else
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P12;
+#endif
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
@@ -146,29 +176,75 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img)
     }
 }
 
-static int vp8_decode(AVCodecContext *avctx,
-                      void *data, int *got_frame, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, vpx_codec_ctx_t *decoder,
+                        uint8_t *data, uint32_t data_sz)
 {
-    VP8Context *ctx = avctx->priv_data;
-    AVFrame *picture = data;
-    const void *iter = NULL;
-    struct vpx_image *img;
-    int ret;
-
-    if (vpx_codec_decode(&ctx->decoder, avpkt->data, avpkt->size, NULL, 0) !=
-        VPX_CODEC_OK) {
-        const char *error  = vpx_codec_error(&ctx->decoder);
-        const char *detail = vpx_codec_error_detail(&ctx->decoder);
+    if (vpx_codec_decode(decoder, data, data_sz, NULL, 0) != VPX_CODEC_OK) {
+        const char *error  = vpx_codec_error(decoder);
+        const char *detail = vpx_codec_error_detail(decoder);
 
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame: %s\n", error);
-        if (detail)
+        if (detail) {
             av_log(avctx, AV_LOG_ERROR, "  Additional information: %s\n",
                    detail);
+        }
         return AVERROR_INVALIDDATA;
     }
+    return 0;
+}
 
-    if ((img = vpx_codec_get_frame(&ctx->decoder, &iter))) {
-        if ((ret = set_pix_fmt(avctx, img)) < 0) {
+static int vpx_decode(AVCodecContext *avctx,
+                      void *data, int *got_frame, AVPacket *avpkt)
+{
+    VPxContext *ctx = avctx->priv_data;
+    AVFrame *picture = data;
+    const void *iter = NULL;
+    const void *iter_alpha = NULL;
+    struct vpx_image *img, *img_alpha;
+    int ret;
+    uint8_t *side_data = NULL;
+    int side_data_size = 0;
+
+    ret = decode_frame(avctx, &ctx->decoder, avpkt->data, avpkt->size);
+    if (ret)
+        return ret;
+
+    side_data = av_packet_get_side_data(avpkt,
+                                        AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                        &side_data_size);
+    if (side_data_size > 1) {
+        const uint64_t additional_id = AV_RB64(side_data);
+        side_data += 8;
+        side_data_size -= 8;
+        if (additional_id == 1) {  // 1 stands for alpha channel data.
+            if (!ctx->has_alpha_channel) {
+                ctx->has_alpha_channel = 1;
+                ret = vpx_init(avctx,
+#if CONFIG_LIBVPX_VP8_DECODER && CONFIG_LIBVPX_VP9_DECODER
+                               (avctx->codec_id == AV_CODEC_ID_VP8) ?
+                               &vpx_codec_vp8_dx_algo : &vpx_codec_vp9_dx_algo,
+#elif CONFIG_LIBVPX_VP8_DECODER
+                               &vpx_codec_vp8_dx_algo,
+#else
+                               &vpx_codec_vp9_dx_algo,
+#endif
+                               1);
+                if (ret)
+                    return ret;
+            }
+            ret = decode_frame(avctx, &ctx->decoder_alpha, side_data,
+                               side_data_size);
+            if (ret)
+                return ret;
+        }
+    }
+
+    if ((img = vpx_codec_get_frame(&ctx->decoder, &iter)) &&
+        (!ctx->has_alpha_channel ||
+         (img_alpha = vpx_codec_get_frame(&ctx->decoder_alpha, &iter_alpha)))) {
+        uint8_t *planes[4];
+        int linesizes[4];
+        if ((ret = set_pix_fmt(avctx, img, ctx->has_alpha_channel)) < 0) {
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
             av_log(avctx, AV_LOG_ERROR, "Unsupported output colorspace (%d) / bit_depth (%d)\n",
                    img->fmt, img->bit_depth);
@@ -188,24 +264,37 @@ static int vp8_decode(AVCodecContext *avctx,
         }
         if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
             return ret;
-        av_image_copy(picture->data, picture->linesize, (const uint8_t **)img->planes,
-                      img->stride, avctx->pix_fmt, img->d_w, img->d_h);
+
+        planes[0] = img->planes[VPX_PLANE_Y];
+        planes[1] = img->planes[VPX_PLANE_U];
+        planes[2] = img->planes[VPX_PLANE_V];
+        planes[3] =
+            ctx->has_alpha_channel ? img_alpha->planes[VPX_PLANE_Y] : NULL;
+        linesizes[0] = img->stride[VPX_PLANE_Y];
+        linesizes[1] = img->stride[VPX_PLANE_U];
+        linesizes[2] = img->stride[VPX_PLANE_V];
+        linesizes[3] =
+            ctx->has_alpha_channel ? img_alpha->stride[VPX_PLANE_Y] : 0;
+        av_image_copy(picture->data, picture->linesize, (const uint8_t**)planes,
+                      linesizes, avctx->pix_fmt, img->d_w, img->d_h);
         *got_frame           = 1;
     }
     return avpkt->size;
 }
 
-static av_cold int vp8_free(AVCodecContext *avctx)
+static av_cold int vpx_free(AVCodecContext *avctx)
 {
-    VP8Context *ctx = avctx->priv_data;
+    VPxContext *ctx = avctx->priv_data;
     vpx_codec_destroy(&ctx->decoder);
+    if (ctx->has_alpha_channel)
+        vpx_codec_destroy(&ctx->decoder_alpha);
     return 0;
 }
 
 #if CONFIG_LIBVPX_VP8_DECODER
 static av_cold int vp8_init(AVCodecContext *avctx)
 {
-    return vpx_init(avctx, &vpx_codec_vp8_dx_algo);
+    return vpx_init(avctx, &vpx_codec_vp8_dx_algo, 0);
 }
 
 AVCodec ff_libvpx_vp8_decoder = {
@@ -213,39 +302,31 @@ AVCodec ff_libvpx_vp8_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
-    .priv_data_size = sizeof(VP8Context),
+    .priv_data_size = sizeof(VPxContext),
     .init           = vp8_init,
-    .close          = vp8_free,
-    .decode         = vp8_decode,
-    .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_DR1,
+    .close          = vpx_free,
+    .decode         = vpx_decode,
+    .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
 };
 #endif /* CONFIG_LIBVPX_VP8_DECODER */
 
 #if CONFIG_LIBVPX_VP9_DECODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
-    return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
+    return vpx_init(avctx, &vpx_codec_vp9_dx_algo, 0);
 }
-
-static const AVProfile profiles[] = {
-    { FF_PROFILE_VP9_0, "Profile 0" },
-    { FF_PROFILE_VP9_1, "Profile 1" },
-    { FF_PROFILE_VP9_2, "Profile 2" },
-    { FF_PROFILE_VP9_3, "Profile 3" },
-    { FF_PROFILE_UNKNOWN },
-};
 
 AVCodec ff_libvpx_vp9_decoder = {
     .name           = "libvpx-vp9",
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP9,
-    .priv_data_size = sizeof(VP8Context),
+    .priv_data_size = sizeof(VPxContext),
     .init           = vp9_init,
-    .close          = vp8_free,
-    .decode         = vp8_decode,
-    .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_DR1,
+    .close          = vpx_free,
+    .decode         = vpx_decode,
+    .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
     .init_static_data = ff_vp9_init_static,
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */

@@ -47,7 +47,7 @@ typedef struct AudioPhaserContext {
 
     int delay_pos, modulation_pos;
 
-    void (*phaser)(struct AudioPhaserContext *p,
+    void (*phaser)(struct AudioPhaserContext *s,
                    uint8_t * const *src, uint8_t **dst,
                    int nb_samples, int channels);
 } AudioPhaserContext;
@@ -73,11 +73,11 @@ AVFILTER_DEFINE_CLASS(aphaser);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    AudioPhaserContext *p = ctx->priv;
+    AudioPhaserContext *s = ctx->priv;
 
-    if (p->in_gain > (1 - p->decay * p->decay))
+    if (s->in_gain > (1 - s->decay * s->decay))
         av_log(ctx, AV_LOG_WARNING, "in_gain may cause clipping\n");
-    if (p->in_gain / (1 - p->decay) > 1 / p->out_gain)
+    if (s->in_gain / (1 - s->decay) > 1 / s->out_gain)
         av_log(ctx, AV_LOG_WARNING, "out_gain may cause clipping\n");
 
     return 0;
@@ -96,7 +96,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
@@ -119,75 +119,75 @@ static int query_formats(AVFilterContext *ctx)
 #define MOD(a, b) (((a) >= (b)) ? (a) - (b) : (a))
 
 #define PHASER_PLANAR(name, type)                                      \
-static void phaser_## name ##p(AudioPhaserContext *p,                  \
-                               uint8_t * const *src, uint8_t **dst,    \
+static void phaser_## name ##p(AudioPhaserContext *s,                  \
+                               uint8_t * const *ssrc, uint8_t **ddst,  \
                                int nb_samples, int channels)           \
 {                                                                      \
     int i, c, delay_pos, modulation_pos;                               \
                                                                        \
     av_assert0(channels > 0);                                          \
     for (c = 0; c < channels; c++) {                                   \
-        type *s = (type *)src[c];                                      \
-        type *d = (type *)dst[c];                                      \
-        double *buffer = p->delay_buffer +                             \
-                         c * p->delay_buffer_length;                   \
+        type *src = (type *)ssrc[c];                                   \
+        type *dst = (type *)ddst[c];                                   \
+        double *buffer = s->delay_buffer +                             \
+                         c * s->delay_buffer_length;                   \
                                                                        \
-        delay_pos      = p->delay_pos;                                 \
-        modulation_pos = p->modulation_pos;                            \
+        delay_pos      = s->delay_pos;                                 \
+        modulation_pos = s->modulation_pos;                            \
                                                                        \
-        for (i = 0; i < nb_samples; i++, s++, d++) {                   \
-            double v = *s * p->in_gain + buffer[                       \
-                       MOD(delay_pos + p->modulation_buffer[           \
+        for (i = 0; i < nb_samples; i++, src++, dst++) {               \
+            double v = *src * s->in_gain + buffer[                     \
+                       MOD(delay_pos + s->modulation_buffer[           \
                        modulation_pos],                                \
-                       p->delay_buffer_length)] * p->decay;            \
+                       s->delay_buffer_length)] * s->decay;            \
                                                                        \
             modulation_pos = MOD(modulation_pos + 1,                   \
-                             p->modulation_buffer_length);             \
-            delay_pos = MOD(delay_pos + 1, p->delay_buffer_length);    \
+                             s->modulation_buffer_length);             \
+            delay_pos = MOD(delay_pos + 1, s->delay_buffer_length);    \
             buffer[delay_pos] = v;                                     \
                                                                        \
-            *d = v * p->out_gain;                                      \
+            *dst = v * s->out_gain;                                    \
         }                                                              \
     }                                                                  \
                                                                        \
-    p->delay_pos      = delay_pos;                                     \
-    p->modulation_pos = modulation_pos;                                \
+    s->delay_pos      = delay_pos;                                     \
+    s->modulation_pos = modulation_pos;                                \
 }
 
 #define PHASER(name, type)                                              \
-static void phaser_## name (AudioPhaserContext *p,                      \
-                            uint8_t * const *src, uint8_t **dst,        \
+static void phaser_## name (AudioPhaserContext *s,                      \
+                            uint8_t * const *ssrc, uint8_t **ddst,      \
                             int nb_samples, int channels)               \
 {                                                                       \
     int i, c, delay_pos, modulation_pos;                                \
-    type *s = (type *)src[0];                                           \
-    type *d = (type *)dst[0];                                           \
-    double *buffer = p->delay_buffer;                                   \
+    type *src = (type *)ssrc[0];                                        \
+    type *dst = (type *)ddst[0];                                        \
+    double *buffer = s->delay_buffer;                                   \
                                                                         \
-    delay_pos      = p->delay_pos;                                      \
-    modulation_pos = p->modulation_pos;                                 \
+    delay_pos      = s->delay_pos;                                      \
+    modulation_pos = s->modulation_pos;                                 \
                                                                         \
     for (i = 0; i < nb_samples; i++) {                                  \
-        int pos = MOD(delay_pos + p->modulation_buffer[modulation_pos], \
-                   p->delay_buffer_length) * channels;                  \
+        int pos = MOD(delay_pos + s->modulation_buffer[modulation_pos], \
+                      s->delay_buffer_length) * channels;               \
         int npos;                                                       \
                                                                         \
-        delay_pos = MOD(delay_pos + 1, p->delay_buffer_length);         \
+        delay_pos = MOD(delay_pos + 1, s->delay_buffer_length);         \
         npos = delay_pos * channels;                                    \
-        for (c = 0; c < channels; c++, s++, d++) {                      \
-            double v = *s * p->in_gain + buffer[pos + c] * p->decay;    \
+        for (c = 0; c < channels; c++, src++, dst++) {                  \
+            double v = *src * s->in_gain + buffer[pos + c] * s->decay;  \
                                                                         \
             buffer[npos + c] = v;                                       \
                                                                         \
-            *d = v * p->out_gain;                                       \
+            *dst = v * s->out_gain;                                     \
         }                                                               \
                                                                         \
         modulation_pos = MOD(modulation_pos + 1,                        \
-                         p->modulation_buffer_length);                  \
+                         s->modulation_buffer_length);                  \
     }                                                                   \
                                                                         \
-    p->delay_pos      = delay_pos;                                      \
-    p->modulation_pos = modulation_pos;                                 \
+    s->delay_pos      = delay_pos;                                      \
+    s->modulation_pos = modulation_pos;                                 \
 }
 
 PHASER_PLANAR(dbl, double)
@@ -202,36 +202,36 @@ PHASER(s32, int32_t)
 
 static int config_output(AVFilterLink *outlink)
 {
-    AudioPhaserContext *p = outlink->src->priv;
+    AudioPhaserContext *s = outlink->src->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
 
-    p->delay_buffer_length = p->delay * 0.001 * inlink->sample_rate + 0.5;
-    if (p->delay_buffer_length <= 0) {
+    s->delay_buffer_length = s->delay * 0.001 * inlink->sample_rate + 0.5;
+    if (s->delay_buffer_length <= 0) {
         av_log(outlink->src, AV_LOG_ERROR, "delay is too small\n");
         return AVERROR(EINVAL);
     }
-    p->delay_buffer = av_calloc(p->delay_buffer_length, sizeof(*p->delay_buffer) * inlink->channels);
-    p->modulation_buffer_length = inlink->sample_rate / p->speed + 0.5;
-    p->modulation_buffer = av_malloc_array(p->modulation_buffer_length, sizeof(*p->modulation_buffer));
+    s->delay_buffer = av_calloc(s->delay_buffer_length, sizeof(*s->delay_buffer) * inlink->channels);
+    s->modulation_buffer_length = inlink->sample_rate / s->speed + 0.5;
+    s->modulation_buffer = av_malloc_array(s->modulation_buffer_length, sizeof(*s->modulation_buffer));
 
-    if (!p->modulation_buffer || !p->delay_buffer)
+    if (!s->modulation_buffer || !s->delay_buffer)
         return AVERROR(ENOMEM);
 
-    ff_generate_wave_table(p->type, AV_SAMPLE_FMT_S32,
-                           p->modulation_buffer, p->modulation_buffer_length,
-                           1., p->delay_buffer_length, M_PI / 2.0);
+    ff_generate_wave_table(s->type, AV_SAMPLE_FMT_S32,
+                           s->modulation_buffer, s->modulation_buffer_length,
+                           1., s->delay_buffer_length, M_PI / 2.0);
 
-    p->delay_pos = p->modulation_pos = 0;
+    s->delay_pos = s->modulation_pos = 0;
 
     switch (inlink->format) {
-    case AV_SAMPLE_FMT_DBL:  p->phaser = phaser_dbl;  break;
-    case AV_SAMPLE_FMT_DBLP: p->phaser = phaser_dblp; break;
-    case AV_SAMPLE_FMT_FLT:  p->phaser = phaser_flt;  break;
-    case AV_SAMPLE_FMT_FLTP: p->phaser = phaser_fltp; break;
-    case AV_SAMPLE_FMT_S16:  p->phaser = phaser_s16;  break;
-    case AV_SAMPLE_FMT_S16P: p->phaser = phaser_s16p; break;
-    case AV_SAMPLE_FMT_S32:  p->phaser = phaser_s32;  break;
-    case AV_SAMPLE_FMT_S32P: p->phaser = phaser_s32p; break;
+    case AV_SAMPLE_FMT_DBL:  s->phaser = phaser_dbl;  break;
+    case AV_SAMPLE_FMT_DBLP: s->phaser = phaser_dblp; break;
+    case AV_SAMPLE_FMT_FLT:  s->phaser = phaser_flt;  break;
+    case AV_SAMPLE_FMT_FLTP: s->phaser = phaser_fltp; break;
+    case AV_SAMPLE_FMT_S16:  s->phaser = phaser_s16;  break;
+    case AV_SAMPLE_FMT_S16P: s->phaser = phaser_s16p; break;
+    case AV_SAMPLE_FMT_S32:  s->phaser = phaser_s32;  break;
+    case AV_SAMPLE_FMT_S32P: s->phaser = phaser_s32p; break;
     default: av_assert0(0);
     }
 
@@ -240,7 +240,7 @@ static int config_output(AVFilterLink *outlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
 {
-    AudioPhaserContext *p = inlink->dst->priv;
+    AudioPhaserContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outbuf;
 
@@ -253,7 +253,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
         av_frame_copy_props(outbuf, inbuf);
     }
 
-    p->phaser(p, inbuf->extended_data, outbuf->extended_data,
+    s->phaser(s, inbuf->extended_data, outbuf->extended_data,
               outbuf->nb_samples, av_frame_get_channels(outbuf));
 
     if (inbuf != outbuf)
@@ -264,10 +264,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    AudioPhaserContext *p = ctx->priv;
+    AudioPhaserContext *s = ctx->priv;
 
-    av_freep(&p->delay_buffer);
-    av_freep(&p->modulation_buffer);
+    av_freep(&s->delay_buffer);
+    av_freep(&s->modulation_buffer);
 }
 
 static const AVFilterPad aphaser_inputs[] = {

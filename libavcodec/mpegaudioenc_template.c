@@ -244,11 +244,11 @@ static void idct32(int *out, int *tab)
     do {
         int x1, x2, x3, x4;
 
-        x3 = MUL(t[16], FIX(SQRT2*0.5));
+        x3 = MUL(t[16], FIX(M_SQRT2*0.5));
         x4 = t[0] - x3;
         x3 = t[0] + x3;
 
-        x2 = MUL(-(t[24] + t[8]), FIX(SQRT2*0.5));
+        x2 = MUL(-(t[24] + t[8]), FIX(M_SQRT2*0.5));
         x1 = MUL((t[8] - x2), xp[0]);
         x2 = MUL((t[8] + x2), xp[1]);
 
@@ -599,7 +599,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
 }
 
 /*
- * Output the mpeg audio layer 2 frame. Note how the code is small
+ * Output the MPEG audio layer 2 frame. Note how the code is small
  * compared to other encoders :-)
  */
 static void encode_frame(MpegAudioContext *s,
@@ -614,7 +614,7 @@ static void encode_frame(MpegAudioContext *s,
     /* header */
 
     put_bits(p, 12, 0xfff);
-    put_bits(p, 1, 1 - s->lsf); /* 1 = mpeg1 ID, 0 = mpeg2 lsf ID */
+    put_bits(p, 1, 1 - s->lsf); /* 1 = MPEG-1 ID, 0 = MPEG-2 lsf ID */
     put_bits(p, 2, 4-2);  /* layer 2 */
     put_bits(p, 1, 1); /* no error protection */
     put_bits(p, 4, s->bitrate_index);
@@ -763,7 +763,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     compute_bit_allocation(s, smr, bit_alloc, &padding);
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE, 0)) < 0)
         return ret;
 
     init_put_bits(&s->pb, avpkt->data, avpkt->size);

@@ -29,8 +29,11 @@
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/colorspace.h"
 
+#if FF_API_AVPICTURE
+FF_DISABLE_DEPRECATION_WARNINGS
 int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
@@ -75,4 +78,5 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
     av_image_copy(dst->data, dst->linesize, (const uint8_t **)src->data,
                   src->linesize, pix_fmt, width, height);
 }
-
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_AVPICTURE */

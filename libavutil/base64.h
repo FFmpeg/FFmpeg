@@ -29,18 +29,23 @@
  * @{
  */
 
-
 /**
  * Decode a base64-encoded string.
  *
  * @param out      buffer for decoded data
  * @param in       null-terminated input string
  * @param out_size size in bytes of the out buffer, must be at
- *                 least 3/4 of the length of in
+ *                 least 3/4 of the length of in, that is AV_BASE64_DECODE_SIZE(strlen(in))
  * @return         number of bytes written, or a negative value in case of
  *                 invalid input
  */
 int av_base64_decode(uint8_t *out, const char *in, int out_size);
+
+/**
+ * Calculate the output size in bytes needed to decode a base64 string
+ * with length x to a data buffer.
+ */
+#define AV_BASE64_DECODE_SIZE(x) ((x) * 3LL / 4)
 
 /**
  * Encode data to base64 and null-terminate.

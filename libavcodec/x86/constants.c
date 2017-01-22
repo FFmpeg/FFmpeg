@@ -27,7 +27,8 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_1)    = { 0x0001000100010001ULL, 0x000
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_2)    = { 0x0002000200020002ULL, 0x0002000200020002ULL,
                                                     0x0002000200020002ULL, 0x0002000200020002ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_3)    = { 0x0003000300030003ULL, 0x0003000300030003ULL };
-DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_4)    = { 0x0004000400040004ULL, 0x0004000400040004ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_4)    = { 0x0004000400040004ULL, 0x0004000400040004ULL,
+                                                    0x0004000400040004ULL, 0x0004000400040004ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_5)    = { 0x0005000500050005ULL, 0x0005000500050005ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_8)    = { 0x0008000800080008ULL, 0x0008000800080008ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_9)    = { 0x0009000900090009ULL, 0x0009000900090009ULL };
@@ -55,6 +56,8 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_1024) = { 0x0400040004000400ULL, 0x040
                                                     0x0400040004000400ULL, 0x0400040004000400ULL};
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_2048) = { 0x0800080008000800ULL, 0x0800080008000800ULL,
                                                     0x0800080008000800ULL, 0x0800080008000800ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_4095) = { 0x0fff0fff0fff0fffULL, 0x0fff0fff0fff0fffULL,
+                                                    0x0fff0fff0fff0fffULL, 0x0fff0fff0fff0fffULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_4096) = { 0x1000100010001000ULL, 0x1000100010001000ULL,
                                                     0x1000100010001000ULL, 0x1000100010001000ULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_8192) = { 0x2000200020002000ULL, 0x2000200020002000ULL,
@@ -72,10 +75,19 @@ DECLARE_ALIGNED(32, const ymm_reg,  ff_pb_3)    = { 0x0303030303030303ULL, 0x030
                                                     0x0303030303030303ULL, 0x0303030303030303ULL };
 DECLARE_ALIGNED(32, const xmm_reg,  ff_pb_15)   = { 0x0F0F0F0F0F0F0F0FULL, 0x0F0F0F0F0F0F0F0FULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_80)   = { 0x8080808080808080ULL, 0x8080808080808080ULL };
-DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_FE)   = { 0xFEFEFEFEFEFEFEFEULL, 0xFEFEFEFEFEFEFEFEULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pb_FE)   = { 0xFEFEFEFEFEFEFEFEULL, 0xFEFEFEFEFEFEFEFEULL,
+                                                    0xFEFEFEFEFEFEFEFEULL, 0xFEFEFEFEFEFEFEFEULL };
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_FC)   =   0xFCFCFCFCFCFCFCFCULL;
 
 DECLARE_ALIGNED(16, const xmm_reg,  ff_ps_neg)  = { 0x8000000080000000ULL, 0x8000000080000000ULL };
 
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_1)    = { 0x0000000100000001ULL, 0x0000000100000001ULL,
                                                     0x0000000100000001ULL, 0x0000000100000001ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_16)   = { 0x0000001000000010ULL, 0x0000001000000010ULL,
+                                                    0x0000001000000010ULL, 0x0000001000000010ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_32)   = { 0x0000002000000020ULL, 0x0000002000000020ULL,
+                                                    0x0000002000000020ULL, 0x0000002000000020ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_8192) = { 0x0000200000002000ULL, 0x0000200000002000ULL,
+                                                    0x0000200000002000ULL, 0x0000200000002000ULL };
+DECLARE_ALIGNED(32, const ymm_reg,  ff_pd_65535)= { 0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL,
+                                                    0x0000ffff0000ffffULL, 0x0000ffff0000ffffULL };

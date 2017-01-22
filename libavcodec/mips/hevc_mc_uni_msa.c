@@ -3871,7 +3871,7 @@ UNI_MC_COPY(64);
 #undef UNI_MC_COPY
 
 #define UNI_MC(PEL, DIR, WIDTH, TAP, DIR1, FILT_DIR)                           \
-void ff_hevc_put_hevc_uni_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,         \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,           \
                                                          ptrdiff_t             \
                                                          dst_stride,           \
                                                          uint8_t *src,         \
@@ -3925,7 +3925,7 @@ UNI_MC(epel, v, 32, 4, vt, my);
 #undef UNI_MC
 
 #define UNI_MC_HV(PEL, DIR, WIDTH, TAP, DIR1)                           \
-void ff_hevc_put_hevc_uni_##PEL##_##DIR####WIDTH##_8_msa(uint8_t *dst,  \
+void ff_hevc_put_hevc_uni_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,    \
                                                          ptrdiff_t      \
                                                          dst_stride,    \
                                                          uint8_t *src,  \

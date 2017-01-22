@@ -151,19 +151,19 @@ static int smush_read_header(AVFormatContext *ctx)
     vst->duration          =
     vst->nb_frames         = nframes;
     vst->avg_frame_rate    = av_inv_q(vst->time_base);
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = AV_CODEC_ID_SANM;
-    vst->codec->codec_tag  = 0;
-    vst->codec->width      = width;
-    vst->codec->height     = height;
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id   = AV_CODEC_ID_SANM;
+    vst->codecpar->codec_tag  = 0;
+    vst->codecpar->width      = width;
+    vst->codecpar->height     = height;
 
     if (!smush->version) {
-        if (ff_alloc_extradata(vst->codec, 1024 + 2))
+        if (ff_alloc_extradata(vst->codecpar, 1024 + 2))
             return AVERROR(ENOMEM);
 
-        AV_WL16(vst->codec->extradata, subversion);
+        AV_WL16(vst->codecpar->extradata, subversion);
         for (i = 0; i < 256; i++)
-            AV_WL32(vst->codec->extradata + 2 + i * 4, palette[i]);
+            AV_WL32(vst->codecpar->extradata + 2 + i * 4, palette[i]);
     }
 
     if (got_audio) {
@@ -174,13 +174,13 @@ static int smush_read_header(AVFormatContext *ctx)
         smush->audio_stream_index = ast->index;
 
         ast->start_time         = 0;
-        ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id    = AV_CODEC_ID_ADPCM_VIMA;
-        ast->codec->codec_tag   = 0;
-        ast->codec->sample_rate = sample_rate;
-        ast->codec->channels    = channels;
+        ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+        ast->codecpar->codec_id    = AV_CODEC_ID_ADPCM_VIMA;
+        ast->codecpar->codec_tag   = 0;
+        ast->codecpar->sample_rate = sample_rate;
+        ast->codecpar->channels    = channels;
 
-        avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+        avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
     }
 
     return 0;

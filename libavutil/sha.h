@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_sha
+ * Public header for SHA-1 & SHA-256 hash function implementations.
+ */
+
 #ifndef AVUTIL_SHA_H
 #define AVUTIL_SHA_H
 
@@ -28,7 +34,17 @@
 
 /**
  * @defgroup lavu_sha SHA
- * @ingroup lavu_crypto
+ * @ingroup lavu_hash
+ * SHA-1 and SHA-256 (Secure Hash Algorithm) hash function implementations.
+ *
+ * This module supports the following SHA hash functions:
+ *
+ * - SHA-1: 160 bits
+ * - SHA-224: 224 bits, as a variant of SHA-2
+ * - SHA-256: 256 bits, as a variant of SHA-2
+ *
+ * @see For SHA-384, SHA-512, and variants thereof, see @ref lavu_sha512.
+ *
  * @{
  */
 

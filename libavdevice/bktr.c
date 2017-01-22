@@ -286,14 +286,12 @@ static int grab_read_header(AVFormatContext *s1)
 
     s->per_frame = ((uint64_t)1000000 * framerate.den) / framerate.num;
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width = s->width;
-    st->codec->height = s->height;
-    st->codec->time_base.den = framerate.num;
-    st->codec->time_base.num = framerate.den;
-
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->format = AV_PIX_FMT_YUV420P;
+    st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width = s->width;
+    st->codecpar->height = s->height;
+    st->avg_frame_rate = framerate;
 
     if (bktr_init(s1->filename, s->width, s->height, s->standard,
                   &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {

@@ -48,8 +48,7 @@ void av_audio_fifo_free(AVAudioFifo *af)
         if (af->buf) {
             int i;
             for (i = 0; i < af->nb_buffers; i++) {
-                if (af->buf[i])
-                    av_fifo_free(af->buf[i]);
+                av_fifo_freep(&af->buf[i]);
             }
             av_freep(&af->buf);
         }
@@ -132,6 +131,49 @@ int av_audio_fifo_write(AVAudioFifo *af, void **data, int nb_samples)
             return AVERROR_BUG;
     }
     af->nb_samples += nb_samples;
+
+    return nb_samples;
+}
+
+int av_audio_fifo_peek(AVAudioFifo *af, void **data, int nb_samples)
+{
+    int i, ret, size;
+
+    if (nb_samples < 0)
+        return AVERROR(EINVAL);
+    nb_samples = FFMIN(nb_samples, af->nb_samples);
+    if (!nb_samples)
+        return 0;
+
+    size = nb_samples * af->sample_size;
+    for (i = 0; i < af->nb_buffers; i++) {
+        if ((ret = av_fifo_generic_peek(af->buf[i], data[i], size, NULL)) < 0)
+            return AVERROR_BUG;
+    }
+
+    return nb_samples;
+}
+
+int av_audio_fifo_peek_at(AVAudioFifo *af, void **data, int nb_samples, int offset)
+{
+    int i, ret, size;
+
+    if (offset < 0 || offset >= af->nb_samples)
+        return AVERROR(EINVAL);
+    if (nb_samples < 0)
+        return AVERROR(EINVAL);
+    nb_samples = FFMIN(nb_samples, af->nb_samples);
+    if (!nb_samples)
+        return 0;
+    if (offset > af->nb_samples - nb_samples)
+        return AVERROR(EINVAL);
+
+    offset *= af->sample_size;
+    size = nb_samples * af->sample_size;
+    for (i = 0; i < af->nb_buffers; i++) {
+        if ((ret = av_fifo_generic_peek_at(af->buf[i], data[i], offset, size, NULL)) < 0)
+            return AVERROR_BUG;
+    }
 
     return nb_samples;
 }

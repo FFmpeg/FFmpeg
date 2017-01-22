@@ -127,7 +127,7 @@ static int denoise_depth(HQDN3DContext *s,
                          int w, int h, int sstride, int dstride,
                          int16_t *spatial, int16_t *temporal, int depth)
 {
-    // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
+    // FIXME: For 16-bit depth, frame_ant could be a pointer to the previous
     // filtered frame rather than a separate buffer.
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
@@ -182,7 +182,7 @@ static int16_t *precalc_coefs(double dist25, int depth)
 
     for (i = -256<<LUT_BITS; i < 256<<LUT_BITS; i++) {
         double f = ((i<<(9-LUT_BITS)) + (1<<(8-LUT_BITS)) - 1) / 512.0; // midpoint of the bin
-        simil = FFMAX(0, 1.0 - FFABS(f) / 255.0);
+        simil = FFMAX(0, 1.0 - fabs(f) / 255.0);
         C = pow(simil, gamma) * 256.0 * f;
         ct[(256<<LUT_BITS)+i] = lrint(C);
     }
@@ -269,7 +269,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
-    s->depth = desc->comp[0].depth_minus1+1;
+    s->depth = desc->comp[0].depth;
 
     s->line = av_malloc_array(inlink->w, sizeof(*s->line));
     if (!s->line)
@@ -311,8 +311,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (c = 0; c < 3; c++) {
         denoise(s, in->data[c], out->data[c],
                 s->line, &s->frame_prev[c],
-                FF_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
-                FF_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
+                AV_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
+                AV_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
                 in->linesize[c], out->linesize[c],
                 s->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
                 s->coefs[c ? CHROMA_TMP     : LUMA_TMP]);

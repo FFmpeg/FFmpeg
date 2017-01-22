@@ -28,9 +28,9 @@
 #include "internal.h"
 #include "mpeg_er.h"
 #include "msmpeg4.h"
-#include "msmpeg4data.h"
 #include "qpeldsp.h"
 #include "vc1.h"
+#include "wmv2data.h"
 #include "mss12.h"
 #include "mss2dsp.h"
 
@@ -210,8 +210,13 @@ static int decode_555(GetByteContext *gB, uint16_t *dst, int stride,
                     last_symbol = b << 8 | bytestream2_get_byte(gB);
                 else if (b > 129) {
                     repeat = 0;
-                    while (b-- > 130)
+                    while (b-- > 130) {
+                        if (repeat >= (INT_MAX >> 8) - 1) {
+                            av_log(NULL, AV_LOG_ERROR, "repeat overflow\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                         repeat = (repeat << 8) + bytestream2_get_byte(gB) + 1;
+                    }
                     if (last_symbol == -2) {
                         int skip = FFMIN((unsigned)repeat, dst + w - p);
                         repeat -= skip;
@@ -417,7 +422,13 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_vc1_decode_blocks(v);
 
-    ff_er_frame_end(&s->er);
+    if (v->end_mb_x == s->mb_width && s->end_mb_y == s->mb_height) {
+        ff_er_frame_end(&s->er);
+    } else {
+        av_log(v->s.avctx, AV_LOG_WARNING,
+               "disabling error correction due to block count mismatch %dx%d != %dx%d\n",
+               v->end_mb_x, s->end_mb_y, s->mb_width, s->mb_height);
+    }
 
     ff_mpv_frame_end(s);
 
@@ -476,9 +487,6 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
     int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
-
-    av_assert0(FF_INPUT_BUFFER_PADDING_SIZE >=
-               ARITH2_PADDING + (MIN_CACHE_BITS + 7) / 8);
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
         return ret;
@@ -849,5 +857,5 @@ AVCodec ff_mss2_decoder = {
     .init           = mss2_decode_init,
     .close          = mss2_decode_end,
     .decode         = mss2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

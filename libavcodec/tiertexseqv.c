@@ -24,8 +24,8 @@
  * Tiertex Limited SEQ video decoder
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -265,5 +265,5 @@ AVCodec ff_tiertexseqvideo_decoder = {
     .init           = seqvideo_decode_init,
     .close          = seqvideo_decode_end,
     .decode         = seqvideo_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -1,4 +1,8 @@
 #tb 0: 1/30
+#media_type 0: video
+#codec_id 0: vp8
+#dimensions 0: 320x240
+#sar 0: 1/1
 0,          0,          0,        1,     5014, 0x4798fa33
 0,          1,          1,        1,      822, 0x596486c5, F=0x0
 0,          2,          2,        1,      840, 0xf06490ba, F=0x0

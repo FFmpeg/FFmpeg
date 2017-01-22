@@ -185,8 +185,8 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
             high_freq = high_freq * 0.5;
     }
     ff_dlog(s->avctx, "flags2=0x%x\n", flags2);
-    ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
-            s->version, avctx->channels, avctx->sample_rate, avctx->bit_rate,
+    ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%"PRId64" block_align=%d\n",
+            s->version, avctx->channels, avctx->sample_rate, (int64_t)avctx->bit_rate,
             avctx->block_align);
     ff_dlog(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
             bps, bps1, high_freq, s->byte_offset_bits);
@@ -338,7 +338,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 #endif /* TRACE */
     }
 
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
@@ -429,7 +429,7 @@ unsigned int ff_wma_get_large_val(GetBitContext *gb)
  * @param version 0 for wma1,2 1 for wmapro
  * @param ptr output buffer
  * @param offset offset in the output buffer
- * @param num_coefs number of input coefficents
+ * @param num_coefs number of input coefficients
  * @param block_len input buffer length (2^n)
  * @param frame_len_bits number of bits for escaped run codes
  * @param coef_nb_bits number of bits for escaped level codes

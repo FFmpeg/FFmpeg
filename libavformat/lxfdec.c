@@ -130,7 +130,7 @@ static int get_packet_header(AVFormatContext *s)
     version     = bytestream_get_le32(&p);
     header_size = bytestream_get_le32(&p);
     if (version > 1)
-        avpriv_request_sample(s, "Unknown format version %"PRIu32"\n", version);
+        avpriv_request_sample(s, "Format version %"PRIu32, version);
 
     if (header_size < (version ? 72 : 60) ||
         header_size > LXF_MAX_PACKET_HEADER_SIZE ||
@@ -178,25 +178,25 @@ static int get_packet_header(AVFormatContext *s)
 
         //set codec based on specified audio bitdepth
         //we only support tightly packed 16-, 20-, 24- and 32-bit PCM at the moment
-        st->codec->bits_per_coded_sample = (audio_format >> 6) & 0x3F;
+        st->codecpar->bits_per_coded_sample = (audio_format >> 6) & 0x3F;
 
-        if (st->codec->bits_per_coded_sample != (audio_format & 0x3F)) {
+        if (st->codecpar->bits_per_coded_sample != (audio_format & 0x3F)) {
             av_log(s, AV_LOG_WARNING, "only tightly packed PCM currently supported\n");
             return AVERROR_PATCHWELCOME;
         }
 
-        switch (st->codec->bits_per_coded_sample) {
-        case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
-        case 20: st->codec->codec_id = AV_CODEC_ID_PCM_LXF;   break;
-        case 24: st->codec->codec_id = AV_CODEC_ID_PCM_S24LE_PLANAR; break;
-        case 32: st->codec->codec_id = AV_CODEC_ID_PCM_S32LE_PLANAR; break;
+        switch (st->codecpar->bits_per_coded_sample) {
+        case 16: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
+        case 20: st->codecpar->codec_id = AV_CODEC_ID_PCM_LXF;   break;
+        case 24: st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE_PLANAR; break;
+        case 32: st->codecpar->codec_id = AV_CODEC_ID_PCM_S32LE_PLANAR; break;
         default:
             av_log(s, AV_LOG_WARNING,
                    "only 16-, 20-, 24- and 32-bit PCM currently supported\n");
             return AVERROR_PATCHWELCOME;
         }
 
-        samples = track_size * 8 / st->codec->bits_per_coded_sample;
+        samples = track_size * 8 / st->codecpar->bits_per_coded_sample;
 
         //use audio packet size to determine video standard
         //for NTSC we have one 8008-sample audio frame per five video frames
@@ -257,11 +257,11 @@ static int lxf_read_header(AVFormatContext *s)
     expiration_date       = AV_RL16(&header_data[58]);
     disk_params           = AV_RL32(&header_data[116]);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->bit_rate   = 1000000 * ((video_params >> 14) & 0xFF);
-    st->codec->codec_tag  = video_params & 0xF;
-    st->codec->codec_id   = ff_codec_get_id(lxf_tags, st->codec->codec_tag);
-    st->need_parsing      = AVSTREAM_PARSE_HEADERS;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->bit_rate   = 1000000 * ((video_params >> 14) & 0xFF);
+    st->codecpar->codec_tag  = video_params & 0xF;
+    st->codecpar->codec_id   = ff_codec_get_id(lxf_tags, st->codecpar->codec_tag);
+    st->need_parsing         = AVSTREAM_PARSE_HEADERS;
 
     av_log(s, AV_LOG_DEBUG, "record: %x = %i-%02i-%02i\n",
            record_date, 1900 + (record_date & 0x7F), (record_date >> 7) & 0xF,
@@ -278,11 +278,11 @@ static int lxf_read_header(AVFormatContext *s)
         if (!(st = avformat_new_stream(s, NULL)))
             return AVERROR(ENOMEM);
 
-        st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        st->codec->sample_rate = LXF_SAMPLERATE;
-        st->codec->channels    = lxf->channels;
+        st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->sample_rate = LXF_SAMPLERATE;
+        st->codecpar->channels    = lxf->channels;
 
-        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     }
 
     avio_skip(s->pb, lxf->extended_size);
@@ -305,7 +305,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (stream > 1) {
         av_log(s, AV_LOG_WARNING,
                "got packet with illegal stream index %"PRIu32"\n", stream);
-        return AVERROR(EAGAIN);
+        return FFERROR_REDO;
     }
 
     if (stream == 1 && s->nb_streams < 2) {
@@ -317,7 +317,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret2;
 
     if ((ret2 = avio_read(pb, pkt->data, ret)) != ret) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret2 < 0 ? ret2 : AVERROR_EOF;
     }
 

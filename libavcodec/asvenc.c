@@ -61,7 +61,7 @@ static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
     } else {
         put_bits(pb, ff_asv2_level_tab[31][1], ff_asv2_level_tab[31][0]);
         if (level < -128 || level > 127) {
-            av_log(a->avctx, AV_LOG_WARNING, "Cliping level %d, increase qscale\n", level);
+            av_log(a->avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
         }
         asv2_put_bits(pb, 8, level & 0xFF);
@@ -207,7 +207,7 @@ static inline void dct_get(ASV1Context *a, const AVFrame *frame,
     for (i = 0; i < 4; i++)
         a->fdsp.fdct(block[i]);
 
-    if (!(a->avctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(a->avctx->flags & AV_CODEC_FLAG_GRAY)) {
         a->pdsp.get_pixels(block[4], ptr_cb, frame->linesize[1]);
         a->pdsp.get_pixels(block[5], ptr_cr, frame->linesize[2]);
         for (i = 4; i < 6; i++)
@@ -245,10 +245,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (i = 0; i<3; i++) {
             int x, y;
-            int w  = FF_CEIL_RSHIFT(pict->width, !!i);
-            int h  = FF_CEIL_RSHIFT(pict->height, !!i);
-            int w2 = FF_CEIL_RSHIFT(clone->width, !!i);
-            int h2 = FF_CEIL_RSHIFT(clone->height, !!i);
+            int w  = AV_CEIL_RSHIFT(pict->width, !!i);
+            int h  = AV_CEIL_RSHIFT(pict->height, !!i);
+            int w2 = AV_CEIL_RSHIFT(clone->width, !!i);
+            int h2 = AV_CEIL_RSHIFT(clone->height, !!i);
             for (y=0; y<h; y++)
                 for (x=w; x<w2; x++)
                     clone->data[i][x + y*clone->linesize[i]] =
@@ -265,7 +265,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if ((ret = ff_alloc_packet2(avctx, pkt, a->mb_height * a->mb_width * MAX_MB_SIZE +
-                                FF_MIN_BUFFER_SIZE)) < 0)
+                                AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
 
     init_put_bits(&a->pb, pkt->data, pkt->size);
@@ -363,8 +363,7 @@ AVCodec ff_asv1_encoder = {
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -379,7 +378,6 @@ AVCodec ff_asv2_encoder = {
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
-                      FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

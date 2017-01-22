@@ -191,7 +191,7 @@ ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 %endmacro
 
 INIT_YMM avx
-SECTION_TEXT
+SECTION .text
 %if HAVE_AVX_EXTERNAL
 ; void ff_dct32_float_avx(FFTSample *out, const FFTSample *in)
 cglobal dct32_float, 2,3,8, out, in, tmp
@@ -488,5 +488,6 @@ cglobal dct32_float, 2, 3, 16, out, in, tmp
 INIT_XMM sse
 DCT32_FUNC
 %endif
+
 INIT_XMM sse2
 DCT32_FUNC

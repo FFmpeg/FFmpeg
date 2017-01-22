@@ -66,7 +66,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
             goto fail;
         st->time_base           = s->streams[i]->time_base;
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
     }
     if ((ret = avio_open_dyn_buf(&mpegts_ctx->pb)) < 0)
         goto fail;
@@ -87,7 +87,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     st = avformat_new_stream(rtp_ctx, NULL);
     st->time_base.num   = 1;
     st->time_base.den   = 90000;
-    st->codec->codec_id = AV_CODEC_ID_MPEG2TS;
+    st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;
     rtp_ctx->pb = s->pb;
     if ((ret = avformat_write_header(rtp_ctx, NULL)) < 0)
         goto fail;

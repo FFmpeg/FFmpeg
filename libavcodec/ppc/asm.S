@@ -24,6 +24,12 @@
 #define JOIN(a, b) GLUE(a, b)
 #define X(s) JOIN(EXTERN_ASM, s)
 
+#if __APPLE__
+#define R(n) r ## n
+#else
+#define R(n) n
+#endif
+
 #if ARCH_PPC64
 
 #define PTR  .quad
@@ -53,7 +59,7 @@ L(\name):
 .endm
 
 .macro movrel rd, sym, gp
-    ld      \rd, \sym@got(r2)
+    ld      \rd, \sym@got(R(2))
 .endm
 
 .macro get_got rd

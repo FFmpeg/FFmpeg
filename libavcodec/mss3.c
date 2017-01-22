@@ -869,5 +869,5 @@ AVCodec ff_msa1_decoder = {
     .init           = mss3_decode_init,
     .close          = mss3_decode_end,
     .decode         = mss3_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -32,7 +32,7 @@ static int process_frame(FFFrameSync *fs)
         return ret;
     }
     av_assert0(mainpic);
-    mainpic->pts = av_rescale_q(mainpic->pts, s->fs.time_base, ctx->outputs[0]->time_base);
+    mainpic->pts = av_rescale_q(s->fs.pts, s->fs.time_base, ctx->outputs[0]->time_base);
     if (secondpic && !ctx->is_disabled)
         mainpic = s->process(ctx, mainpic, secondpic);
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
@@ -42,9 +42,13 @@ static int process_frame(FFFrameSync *fs)
 
 int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s)
 {
-    FFFrameSyncIn *in = s->fs.in;
+    FFFrameSyncIn *in;
+    int ret;
 
-    ff_framesync_init(&s->fs, ctx, 2);
+    if ((ret = ff_framesync_init(&s->fs, ctx, 2)) < 0)
+        return ret;
+
+    in = s->fs.in;
     s->fs.opaque = s;
     s->fs.on_event = process_frame;
     in[0].time_base = ctx->inputs[0]->time_base;
@@ -61,6 +65,9 @@ int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s)
     if (!s->repeatlast) {
         in[1].after = EXT_NULL;
         in[1].sync  = 0;
+    }
+    if (s->skip_initial_unpaired) {
+        in[1].before = EXT_STOP;
     }
 
     return ff_framesync_configure(&s->fs);

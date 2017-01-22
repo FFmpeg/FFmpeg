@@ -56,7 +56,7 @@ typedef struct TDSCContext {
     AVFrame *jpgframe;          // decoded JPEG tile
     uint8_t *tilebuffer;        // buffer containing tile data
 
-    /* zlib interation */
+    /* zlib interaction */
     uint8_t *deflatebuffer;
     uLongf deflatelen;
 
@@ -365,7 +365,7 @@ static int tdsc_decode_jpeg_tile(AVCodecContext *avctx, int tile_size,
             return 0;
     }
 
-    /* Let's paint ont the buffer */
+    /* Let's paint onto the buffer */
     tdsc_blit(ctx->refframe->data[0] + x * 3 + ctx->refframe->linesize[0] * y,
               ctx->refframe->linesize[0],
               ctx->jpgframe->data[0], ctx->jpgframe->linesize[0],
@@ -609,7 +609,7 @@ static int tdsc_decode_frame(AVCodecContext *avctx, void *data,
     }
     *got_frame = 1;
 
-    return 0;
+    return avpkt->size;
 }
 
 AVCodec ff_tdsc_decoder = {
@@ -621,7 +621,7 @@ AVCodec ff_tdsc_decoder = {
     .decode         = tdsc_decode_frame,
     .close          = tdsc_close,
     .priv_data_size = sizeof(TDSCContext),
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

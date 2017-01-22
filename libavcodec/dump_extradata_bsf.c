@@ -21,34 +21,83 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "bsf.h"
+
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
+enum DumpFreq {
+    DUMP_FREQ_KEYFRAME,
+    DUMP_FREQ_ALL,
+};
 
-static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe){
-    int cmd= args ? *args : 0;
-    /* cast to avoid warning about discarding qualifiers */
-    if(avctx->extradata){
-        if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) && cmd=='a')
-           ||(keyframe && (cmd=='k' || !cmd))
-           ||(cmd=='e')
-            /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){
-            int size= buf_size + avctx->extradata_size;
-            *poutbuf_size= size;
-            *poutbuf= av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!*poutbuf)
-                return AVERROR(ENOMEM);
+typedef struct DumpExtradataContext {
+    const AVClass *class;
+    int freq;
+} DumpExtradataContext;
 
-            memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
-            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            return 1;
+static int dump_extradata(AVBSFContext *ctx, AVPacket *out)
+{
+    DumpExtradataContext *s = ctx->priv_data;
+    AVPacket *in;
+    int ret = 0;
+
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    if (ctx->par_in->extradata &&
+        (s->freq == DUMP_FREQ_ALL ||
+         (s->freq == DUMP_FREQ_KEYFRAME && in->flags & AV_PKT_FLAG_KEY))) {
+        if (in->size >= INT_MAX - ctx->par_in->extradata_size) {
+            ret = AVERROR(ERANGE);
+            goto fail;
         }
+
+        ret = av_new_packet(out, in->size + ctx->par_in->extradata_size);
+        if (ret < 0)
+            goto fail;
+
+        ret = av_packet_copy_props(out, in);
+        if (ret < 0) {
+            av_packet_unref(out);
+            goto fail;
+        }
+
+        memcpy(out->data, ctx->par_in->extradata, ctx->par_in->extradata_size);
+        memcpy(out->data + ctx->par_in->extradata_size, in->data, in->size);
+    } else {
+        av_packet_move_ref(out, in);
     }
-    return 0;
+
+fail:
+    av_packet_free(&in);
+
+    return ret;
 }
 
-AVBitStreamFilter ff_dump_extradata_bsf={
-    .name   = "dump_extra",
-    .filter = dump_extradata,
+#define OFFSET(x) offsetof(DumpExtradataContext, x)
+static const AVOption options[] = {
+    { "freq", "When do dump extradata", OFFSET(freq), AV_OPT_TYPE_INT,
+        { .i64 = DUMP_FREQ_KEYFRAME }, DUMP_FREQ_KEYFRAME, DUMP_FREQ_ALL, 0, "freq" },
+        { "k",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_KEYFRAME }, .unit = "freq" },
+        { "keyframe", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_KEYFRAME }, .unit = "freq" },
+        { "e",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_ALL      }, .unit = "freq" },
+        { "all",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = DUMP_FREQ_ALL      }, .unit = "freq" },
+    { NULL },
+};
+
+static const AVClass dump_extradata_class = {
+    .class_name = "dump_extradata bsf",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_MAJOR,
+};
+
+const AVBitStreamFilter ff_dump_extradata_bsf = {
+    .name           = "dump_extra",
+    .priv_data_size = sizeof(DumpExtradataContext),
+    .priv_class     = &dump_extradata_class,
+    .filter         = dump_extradata,
 };

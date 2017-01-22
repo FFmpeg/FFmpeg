@@ -1,0 +1,4 @@
+4bf0992de6b40389a35cd744f76bb213 *tests/data/fate/vsynth2-bpp15.avi
+10144452 tests/data/fate/vsynth2-bpp15.avi
+9a40133384e3f22c960d70c8cfe51781 *tests/data/fate/vsynth2-bpp15.out.rawvideo
+stddev:   33.97 PSNR: 17.51 MAXDIFF:  154 bytes:  7603200/  7603200

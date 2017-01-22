@@ -151,5 +151,5 @@ AVCodec ff_zero12v_decoder = {
     .id             = AV_CODEC_ID_012V,
     .init           = zero12v_decode_init,
     .decode         = zero12v_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

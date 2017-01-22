@@ -111,7 +111,7 @@ AVCodec ff_libilbc_decoder = {
     .priv_data_size = sizeof(ILBCDecContext),
     .init           = ilbc_decode_init,
     .decode         = ilbc_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &ilbc_dec_class,
 };
 
@@ -166,7 +166,7 @@ static int ilbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ILBCEncContext *s = avctx->priv_data;
     int ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 50)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 50, 0)) < 0)
         return ret;
 
     WebRtcIlbcfix_EncodeImpl((uint16_t *) avpkt->data, (const int16_t *) frame->data[0], &s->encoder);

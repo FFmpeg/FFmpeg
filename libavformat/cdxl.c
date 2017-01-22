@@ -111,7 +111,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t current_size, video_size, image_size;
     uint16_t audio_size, palette_size, width, height;
     int64_t  pos;
-    int      frames, ret;
+    int      format, frames, ret;
 
     if (avio_feof(pb))
         return AVERROR_EOF;
@@ -125,6 +125,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
+    format       = cdxl->header[1] & 0xE0;
     current_size = AV_RB32(&cdxl->header[2]);
     width        = AV_RB16(&cdxl->header[14]);
     height       = AV_RB16(&cdxl->header[16]);
@@ -132,7 +133,10 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     audio_size   = AV_RB16(&cdxl->header[22]);
     if (FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
-    image_size   = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
+    if (format == 0x20)
+        image_size = width * height * cdxl->header[19] / 8;
+    else
+        image_size = FFALIGN(width, 16) * height * cdxl->header[19] / 8;
     video_size   = palette_size + image_size;
 
     if (palette_size > 512)
@@ -146,17 +150,17 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type    = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_tag     = 0;
-            st->codec->codec_id      = AV_CODEC_ID_PCM_S8;
+            st->codecpar->codec_type    = AVMEDIA_TYPE_AUDIO;
+            st->codecpar->codec_tag     = 0;
+            st->codecpar->codec_id      = AV_CODEC_ID_PCM_S8;
             if (cdxl->header[1] & 0x10) {
-                st->codec->channels       = 2;
-                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                st->codecpar->channels       = 2;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
             } else {
-                st->codec->channels       = 1;
-                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->channels       = 1;
+                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            st->codec->sample_rate   = cdxl->sample_rate;
+            st->codecpar->sample_rate   = cdxl->sample_rate;
             st->start_time           = 0;
             cdxl->audio_stream_index = st->index;
             avpriv_set_pts_info(st, 64, 1, cdxl->sample_rate);
@@ -175,11 +179,11 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!st)
                 return AVERROR(ENOMEM);
 
-            st->codec->codec_type    = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_tag     = 0;
-            st->codec->codec_id      = AV_CODEC_ID_CDXL;
-            st->codec->width         = width;
-            st->codec->height        = height;
+            st->codecpar->codec_type    = AVMEDIA_TYPE_VIDEO;
+            st->codecpar->codec_tag     = 0;
+            st->codecpar->codec_id      = AV_CODEC_ID_CDXL;
+            st->codecpar->width         = width;
+            st->codecpar->height        = height;
 
             if (audio_size + video_size && cdxl->filesize > 0) {
                 frames = cdxl->filesize / (audio_size + video_size);
@@ -202,7 +206,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(pkt->data, cdxl->header, CDXL_HEADER_SIZE);
         ret = avio_read(pb, pkt->data + CDXL_HEADER_SIZE, video_size);
         if (ret < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, CDXL_HEADER_SIZE + ret);

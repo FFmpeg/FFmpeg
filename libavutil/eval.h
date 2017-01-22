@@ -102,7 +102,7 @@ void av_expr_free(AVExpr *e);
  * @param numstr a string representing a number, may contain one of
  * the International System number postfixes, for example 'K', 'M',
  * 'G'. If 'i' is appended after the postfix, powers of 2 are used
- * instead of powers of 10. The 'B' postfix multiplies the value for
+ * instead of powers of 10. The 'B' postfix multiplies the value by
  * 8, and can be appended after another postfix or used alone. This
  * allows using for example 'KB', 'MiB', 'G' and 'B' as postfix.
  * @param tail if non-NULL puts here the pointer to the char next

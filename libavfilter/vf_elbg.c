@@ -33,7 +33,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct ColorContext {
+typedef struct ELBGContext {
     const AVClass *class;
     AVLFG lfg;
     unsigned int lfg_seed;
@@ -45,6 +45,7 @@ typedef struct ColorContext {
     int codebook_length;
     const AVPixFmtDescriptor *pix_desc;
     uint8_t rgba_map[4];
+    int pal8;
 } ELBGContext;
 
 #define OFFSET(x) offsetof(ELBGContext, x)
@@ -57,6 +58,7 @@ static const AVOption elbg_options[] = {
     { "n",        "set max number of steps used to compute the mapping", OFFSET(max_steps_nb), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, FLAGS },
     { "seed", "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { "s",    "set the random seed", OFFSET(lfg_seed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT32_MAX, FLAGS },
+    { "pal8", "set the pal8 output", OFFSET(pal8), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -65,6 +67,11 @@ AVFILTER_DEFINE_CLASS(elbg);
 static av_cold int init(AVFilterContext *ctx)
 {
     ELBGContext *elbg = ctx->priv;
+
+    if (elbg->pal8 && elbg->codebook_length > 256) {
+        av_log(ctx, AV_LOG_ERROR, "pal8 output allows max 256 codebook length.\n");
+        return AVERROR(EINVAL);
+    }
 
     if (elbg->lfg_seed == -1)
         elbg->lfg_seed = av_get_random_seed();
@@ -75,15 +82,29 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
+    ELBGContext *elbg = ctx->priv;
+    int ret;
+
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_ARGB, AV_PIX_FMT_RGBA, AV_PIX_FMT_ABGR, AV_PIX_FMT_BGRA,
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    if (!elbg->pal8) {
+        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+        if (!fmts_list)
+            return AVERROR(ENOMEM);
+        return ff_set_common_formats(ctx, fmts_list);
+    } else {
+        static const enum AVPixelFormat pal8_fmt[] = {
+            AV_PIX_FMT_PAL8,
+            AV_PIX_FMT_NONE
+        };
+        if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts), &ctx->inputs[0]->out_formats)) < 0 ||
+            (ret = ff_formats_ref(ff_make_format_list(pal8_fmt), &ctx->outputs[0]->in_formats)) < 0)
+            return ret;
+    }
+    return 0;
 }
 
 #define NB_COMPONENTS 3
@@ -151,6 +172,37 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     avpriv_do_elbg(elbg->codeword, NB_COMPONENTS, elbg->codeword_length,
                    elbg->codebook, elbg->codebook_length, elbg->max_steps_nb,
                    elbg->codeword_closest_codebook_idxs, &elbg->lfg);
+
+    if (elbg->pal8) {
+        AVFilterLink *outlink = inlink->dst->outputs[0];
+        AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        uint32_t *pal;
+
+        if (!out)
+            return AVERROR(ENOMEM);
+        out->pts = frame->pts;
+        av_frame_free(&frame);
+        pal = (uint32_t *)out->data[1];
+        p0 = (uint8_t *)out->data[0];
+
+        for (i = 0; i < elbg->codebook_length; i++) {
+            pal[i] =  0xFFU                 << 24  |
+                     (elbg->codebook[i*3  ] << 16) |
+                     (elbg->codebook[i*3+1] <<  8) |
+                      elbg->codebook[i*3+2];
+        }
+
+        k = 0;
+        for (i = 0; i < inlink->h; i++) {
+            p = p0;
+            for (j = 0; j < inlink->w; j++, p++) {
+                p[0] = elbg->codeword_closest_codebook_idxs[k++];
+            }
+            p0 += out->linesize[0];
+        }
+
+        return ff_filter_frame(outlink, out);
+    }
 
     /* fill the output with the codebook values */
     p0 = frame->data[0];

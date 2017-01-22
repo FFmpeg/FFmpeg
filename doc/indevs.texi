@@ -51,6 +51,18 @@ ffmpeg -f alsa -i hw:0 alsaout.wav
 For more information see:
 @url{http://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html}
 
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
 @section avfoundation
 
 AVFoundation input device.
@@ -109,10 +121,23 @@ Specify the audio device by its index. Overrides anything given in the input fil
 @item -pixel_format <FORMAT>
 Request the video device to use a specific pixel format.
 If the specified format is not supported, a list of available formats is given
-und the first one in this list is used instead. Available pixel formats are:
+and the first one in this list is used instead. Available pixel formats are:
 @code{monob, rgb555be, rgb555le, rgb565be, rgb565le, rgb24, bgr24, 0rgb, bgr0, 0bgr, rgb0,
  bgr48be, uyvy422, yuva444p, yuva444p16le, yuv444p, yuv422p16, yuv422p10, yuv444p10,
  yuv420p, nv12, yuyv422, gray}
+
+@item -framerate
+Set the grabbing frame rate. Default is @code{ntsc}, corresponding to a
+frame rate of @code{30000/1001}.
+
+@item -video_size
+Set the video frame size.
+
+@item -capture_cursor
+Capture the mouse pointer. Default is 0.
+
+@item -capture_mouse_clicks
+Capture the screen mouse clicks. Default is 0.
 
 @end table
 
@@ -150,6 +175,36 @@ $ ffmpeg -f avfoundation -pixel_format bgr0 -i "default:none" out.avi
 
 BSD video input device.
 
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate.
+
+@item video_size
+Set the video frame size. Default is @code{vga}.
+
+@item standard
+
+Available values are:
+@table @samp
+@item pal
+
+@item ntsc
+
+@item secam
+
+@item paln
+
+@item palm
+
+@item ntscj
+
+@end table
+
+@end table
+
 @section decklink
 
 The decklink input device provides capture capabilities for Blackmagic
@@ -163,7 +218,8 @@ On Windows, you need to run the IDL files through @command{widl}.
 DeckLink is very picky about the formats it supports. Pixel format is
 uyvy422 or v210, framerate and video size must be determined for your device with
 @command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
-of channels can be 2, 8 or 16.
+of channels can be 2, 8 or 16. Note that all audio channels are bundled in one single
+audio track.
 
 @subsection Options
 
@@ -180,6 +236,46 @@ Defaults to @option{false}.
 @item bm_v210
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
+
+@item teletext_lines
+If set to nonzero, an additional teletext stream will be captured from the
+vertical ancillary data. This option is a bitmask of the VBI lines checked,
+specifically lines 6 to 22, and lines 318 to 335. Line 6 is the LSB in the mask.
+Selected lines which do not contain teletext information will be ignored. You
+can use the special @option{all} constant to select all possible lines, or
+@option{standard} to skip lines 6, 318 and 319, which are not compatible with all
+receivers. Capturing teletext only works for SD PAL sources in 8 bit mode.
+To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
+
+@item channels
+Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.
+Defaults to @samp{2}.
+
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
+@item video_input
+Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
+@samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.
+Defaults to @samp{unset}.
+
+@item audio_input
+Sets the audio input source. Must be @samp{unset}, @samp{embedded},
+@samp{aes_ebu}, @samp{analog}, @samp{analog_xlr}, @samp{analog_rca} or
+@samp{microphone}. Defaults to @samp{unset}.
+
+@item video_pts
+Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+
+@item audio_pts
+Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+
+@item draw_bars
+If set to @samp{true}, color bars are drawn in the event of a signal loss.
+Defaults to @samp{true}.
 
 @end table
 
@@ -212,15 +308,9 @@ ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -v
 @end example
 
 @item
-Capture video clip at 720p50 with 32bit audio:
+Capture video clip at 1080i50 with 16 audio channels:
 @example
-ffmpeg -bm_audiodepth 32 -f decklink -i 'UltraStudio Mini Recorder@@14' -acodec copy -vcodec copy output.avi
-@end example
-
-@item
-Capture video clip at 576i50 with 8 audio channels:
-@example
-ffmpeg -bm_channels 8 -f decklink -i 'UltraStudio Mini Recorder@@3' -acodec copy -vcodec copy output.avi
+ffmpeg -channels 16 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
 @end example
 
 @end itemize
@@ -275,11 +365,11 @@ If set to @option{true}, print a list of selected device's options
 and exit.
 
 @item video_device_number
-Set video device number for devices with same name (starts at 0,
+Set video device number for devices with the same name (starts at 0,
 defaults to 0).
 
 @item audio_device_number
-Set audio device number for devices with same name (starts at 0,
+Set audio device number for devices with the same name (starts at 0,
 defaults to 0).
 
 @item pixel_format
@@ -429,6 +519,27 @@ $ ffmpeg -f dshow -show_video_device_dialog true -crossbar_video_input_pin_numbe
 
 Linux DV 1394 input device.
 
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate. Default is 25.
+
+@item standard
+
+Available values are:
+@table @samp
+@item pal
+
+@item ntsc
+
+@end table
+
+Default value is @code{ntsc}.
+
+@end table
+
 @section fbdev
 
 Linux framebuffer input device.
@@ -441,18 +552,27 @@ console. It is accessed through a file device node, usually
 For more detailed information read the file
 Documentation/fb/framebuffer.txt included in the Linux source tree.
 
+See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+
 To record from the framebuffer device @file{/dev/fb0} with
 @command{ffmpeg}:
 @example
-ffmpeg -f fbdev -r 10 -i /dev/fb0 out.avi
+ffmpeg -f fbdev -framerate 10 -i /dev/fb0 out.avi
 @end example
 
 You can take a single screenshot image with the command:
 @example
-ffmpeg -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
+ffmpeg -f fbdev -framerate 1 -i /dev/fb0 -frames:v 1 screenshot.jpeg
 @end example
 
-See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+@subsection Options
+
+@table @option
+
+@item framerate
+Set the frame rate. Default is 25.
+
+@end table
 
 @section gdigrab
 
@@ -562,7 +682,7 @@ is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
 @item dvguid
-Select the capture device by specifying it's GUID. Capturing will only
+Select the capture device by specifying its GUID. Capturing will only
 be performed from the specified device and fails if no device with the
 given GUID is found. This is useful to select the input if multiple
 devices are connected at the same time.
@@ -638,6 +758,15 @@ $ jack_connect metro:120_bpm ffmpeg:input_1
 For more information read:
 @url{http://jackaudio.org/}
 
+@subsection Options
+
+@table @option
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
 @section lavfi
 
 Libavfilter input virtual device.
@@ -677,6 +806,9 @@ device.
 Set the filename of the filtergraph to be read and sent to the other
 filters. Syntax of the filtergraph is the same as the one specified by
 the option @var{graph}.
+
+@item dumpgraph
+Dump graph to stderr.
 
 @end table
 
@@ -879,6 +1011,19 @@ ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
 For more information about OSS see:
 @url{http://manuals.opensound.com/usersguide/dsp.html}
 
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
+
+
 @section pulse
 
 PulseAudio input device.
@@ -919,6 +1064,10 @@ Specify the number of bytes per frame, by default it is set to 1024.
 @item fragment_size
 Specify the minimal buffering fragment in PulseAudio, it will affect the
 audio latency. By default it is unset.
+
+@item wallclock
+Set the initial PTS using the current time. Default is 1.
+
 @end table
 
 @subsection Examples
@@ -954,6 +1103,22 @@ ffmpeg -f qtkit -i "default" out.mpg
 ffmpeg -f qtkit -list_devices true -i ""
 @end example
 
+@subsection Options
+
+@table @option
+
+@item frame_rate
+Set frame rate. Default is 30.
+
+@item list_devices
+If set to @code{true}, print a list of devices and exit. Default is
+@code{false}.
+
+@item video_device_index
+Select the video device by index for devices with the same name (starts at 0).
+
+@end table
+
 @section sndio
 
 sndio input device.
@@ -970,6 +1135,18 @@ command:
 @example
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
+
+@subsection Options
+
+@table @option
+
+@item sample_rate
+Set the sample rate in Hz. Default is 48000.
+
+@item channels
+Set the number of channels. Default is 2.
+
+@end table
 
 @section video4linux2, v4l2
 
@@ -1093,6 +1270,10 @@ Force conversion from monotonic to absolute timestamps.
 @end table
 
 Default value is @code{default}.
+
+@item use_libv4l2
+Use libv4l2 (v4l-utils) conversion functions. Default is 0.
+
 @end table
 
 @section vfwcap
@@ -1102,6 +1283,19 @@ VfW (Video for Windows) capture input device.
 The filename passed as input is the capture driver number, ranging from
 0 to 9. You may use "list" as filename to print a list of drivers. Any
 other filename will be interpreted as device number 0.
+
+@subsection Options
+
+@table @option
+
+@item video_size
+Set the video frame size.
+
+@item framerate
+Set the grabbing frame rate. Default value is @code{ntsc},
+corresponding to a frame rate of @code{30000/1001}.
+
+@end table
 
 @section x11grab
 
@@ -1151,7 +1345,7 @@ ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 
 @table @option
 @item draw_mouse
-Specify whether to draw the mouse pointer. A value of @code{0} specify
+Specify whether to draw the mouse pointer. A value of @code{0} specifies
 not to draw the pointer. Default value is @code{1}.
 
 @item follow_mouse
@@ -1205,17 +1399,13 @@ Set the video frame size. Default value is @code{vga}.
 Use the MIT-SHM extension for shared memory. Default value is @code{1}.
 It may be necessary to disable it for remote displays (legacy x11grab
 only).
+
+@item grab_x
+@item grab_y
+Set the grabbing region coordinates. They are expressed as offset from
+the top left corner of the X11 window and correspond to the
+@var{x_offset} and @var{y_offset} parameters in the device name. The
+default value for both options is 0.
 @end table
-
-@subsection @var{grab_x} @var{grab_y} AVOption
-
-The syntax is:
-@example
--grab_x @var{x_offset} -grab_y @var{y_offset}
-@end example
-
-Set the grabbing region coordinates. They are expressed as offset from the top left
-corner of the X11 window. The default value is 0.
-
 
 @c man end INPUT DEVICES

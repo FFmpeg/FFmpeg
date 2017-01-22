@@ -58,15 +58,15 @@ AVFILTER_DEFINE_CLASS(thumbnail);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    ThumbContext *thumb = ctx->priv;
+    ThumbContext *s = ctx->priv;
 
-    thumb->frames = av_calloc(thumb->n_frames, sizeof(*thumb->frames));
-    if (!thumb->frames) {
+    s->frames = av_calloc(s->n_frames, sizeof(*s->frames));
+    if (!s->frames) {
         av_log(ctx, AV_LOG_ERROR,
                "Allocation failure, try to lower the number of frames\n");
         return AVERROR(ENOMEM);
     }
-    av_log(ctx, AV_LOG_VERBOSE, "batch size: %d frames\n", thumb->n_frames);
+    av_log(ctx, AV_LOG_VERBOSE, "batch size: %d frames\n", s->n_frames);
     return 0;
 }
 
@@ -91,39 +91,39 @@ static double frame_sum_square_err(const int *hist, const double *median)
 static AVFrame *get_best_frame(AVFilterContext *ctx)
 {
     AVFrame *picref;
-    ThumbContext *thumb = ctx->priv;
+    ThumbContext *s = ctx->priv;
     int i, j, best_frame_idx = 0;
-    int nb_frames = thumb->n;
+    int nb_frames = s->n;
     double avg_hist[HIST_SIZE] = {0}, sq_err, min_sq_err = -1;
 
     // average histogram of the N frames
     for (j = 0; j < FF_ARRAY_ELEMS(avg_hist); j++) {
         for (i = 0; i < nb_frames; i++)
-            avg_hist[j] += (double)thumb->frames[i].histogram[j];
+            avg_hist[j] += (double)s->frames[i].histogram[j];
         avg_hist[j] /= nb_frames;
     }
 
     // find the frame closer to the average using the sum of squared errors
     for (i = 0; i < nb_frames; i++) {
-        sq_err = frame_sum_square_err(thumb->frames[i].histogram, avg_hist);
+        sq_err = frame_sum_square_err(s->frames[i].histogram, avg_hist);
         if (i == 0 || sq_err < min_sq_err)
             best_frame_idx = i, min_sq_err = sq_err;
     }
 
     // free and reset everything (except the best frame buffer)
     for (i = 0; i < nb_frames; i++) {
-        memset(thumb->frames[i].histogram, 0, sizeof(thumb->frames[i].histogram));
+        memset(s->frames[i].histogram, 0, sizeof(s->frames[i].histogram));
         if (i != best_frame_idx)
-            av_frame_free(&thumb->frames[i].buf);
+            av_frame_free(&s->frames[i].buf);
     }
-    thumb->n = 0;
+    s->n = 0;
 
     // raise the chosen one
-    picref = thumb->frames[best_frame_idx].buf;
+    picref = s->frames[best_frame_idx].buf;
     av_log(ctx, AV_LOG_INFO, "frame id #%d (pts_time=%f) selected "
            "from a set of %d images\n", best_frame_idx,
-           picref->pts * av_q2d(thumb->tb), nb_frames);
-    thumb->frames[best_frame_idx].buf = NULL;
+           picref->pts * av_q2d(s->tb), nb_frames);
+    s->frames[best_frame_idx].buf = NULL;
 
     return picref;
 }
@@ -132,13 +132,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     int i, j;
     AVFilterContext *ctx  = inlink->dst;
-    ThumbContext *thumb   = ctx->priv;
+    ThumbContext *s   = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int *hist = thumb->frames[thumb->n].histogram;
+    int *hist = s->frames[s->n].histogram;
     const uint8_t *p = frame->data[0];
 
     // keep a reference of each frame
-    thumb->frames[thumb->n].buf = frame;
+    s->frames[s->n].buf = frame;
 
     // update current frame RGB histogram
     for (j = 0; j < inlink->h; j++) {
@@ -151,8 +151,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     // no selection until the buffer of N frames is filled up
-    thumb->n++;
-    if (thumb->n < thumb->n_frames)
+    s->n++;
+    if (s->n < s->n_frames)
         return 0;
 
     return ff_filter_frame(outlink, get_best_frame(ctx));
@@ -161,39 +161,35 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
-    ThumbContext *thumb = ctx->priv;
-    for (i = 0; i < thumb->n_frames && thumb->frames[i].buf; i++)
-        av_frame_free(&thumb->frames[i].buf);
-    av_freep(&thumb->frames);
+    ThumbContext *s = ctx->priv;
+    for (i = 0; i < s->n_frames && s->frames[i].buf; i++)
+        av_frame_free(&s->frames[i].buf);
+    av_freep(&s->frames);
 }
 
 static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
-    ThumbContext *thumb = ctx->priv;
+    ThumbContext *s = ctx->priv;
+    int ret = ff_request_frame(ctx->inputs[0]);
 
-    /* loop until a frame thumbnail is available (when a frame is queued,
-     * thumb->n is reset to zero) */
-    do {
-        int ret = ff_request_frame(ctx->inputs[0]);
-        if (ret == AVERROR_EOF && thumb->n) {
-            ret = ff_filter_frame(link, get_best_frame(ctx));
-            if (ret < 0)
-                return ret;
-            ret = AVERROR_EOF;
-        }
+    if (ret == AVERROR_EOF && s->n) {
+        ret = ff_filter_frame(link, get_best_frame(ctx));
         if (ret < 0)
             return ret;
-    } while (thumb->n);
+        ret = AVERROR_EOF;
+    }
+    if (ret < 0)
+        return ret;
     return 0;
 }
 
 static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    ThumbContext *thumb = ctx->priv;
+    ThumbContext *s = ctx->priv;
 
-    thumb->tb = inlink->time_base;
+    s->tb = inlink->time_base;
     return 0;
 }
 

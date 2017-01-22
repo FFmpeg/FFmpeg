@@ -26,4 +26,8 @@
  */
 #define SUBFRAME_SIZE 40
 
+/* bytes per block */
+#define G729_8K_BLOCK_SIZE     10
+#define G729D_6K4_BLOCK_SIZE   8
+
 #endif // AVCODEC_G729_H

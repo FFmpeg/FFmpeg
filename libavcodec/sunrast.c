@@ -168,7 +168,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         for (y = 0; y < h; y++) {
-            if (buf_end - buf < len)
+            if (buf_end - buf < alen)
                 break;
             memcpy(ptr, buf, len);
             ptr += stride;
@@ -211,5 +211,5 @@ AVCodec ff_sunrast_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SUNRAST,
     .decode         = sunrast_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

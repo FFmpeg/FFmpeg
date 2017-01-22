@@ -424,5 +424,5 @@ AVCodec ff_ulti_decoder = {
     .init           = ulti_decode_init,
     .close          = ulti_decode_end,
     .decode         = ulti_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

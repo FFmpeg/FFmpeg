@@ -230,12 +230,12 @@ static int wv_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id              = AV_CODEC_ID_WAVPACK;
-    st->codec->channels              = wc->chan;
-    st->codec->channel_layout        = wc->chmask;
-    st->codec->sample_rate           = wc->rate;
-    st->codec->bits_per_coded_sample = wc->bpp;
+    st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id              = AV_CODEC_ID_WAVPACK;
+    st->codecpar->channels              = wc->chan;
+    st->codecpar->channel_layout        = wc->chmask;
+    st->codecpar->sample_rate           = wc->rate;
+    st->codecpar->bits_per_coded_sample = wc->bpp;
     avpriv_set_pts_info(st, 64, 1, wc->rate);
     st->start_time = 0;
     if (wc->header.total_samples != 0xFFFFFFFFu)
@@ -273,25 +273,25 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
     ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
     if (ret != wc->header.blocksize) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR(EIO);
     }
     while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
 
         off = pkt->size;
         if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->header.blocksize)) < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
 
         ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->header.blocksize);
         if (ret != wc->header.blocksize) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return (ret < 0) ? ret : AVERROR_EOF;
         }
     }

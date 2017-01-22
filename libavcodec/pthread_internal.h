@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 
-/* H264 slice threading seems to be buggy with more than 16 threads,
+/* H.264 slice threading seems to be buggy with more than 16 threads,
  * limit the number of threads to 16 for automatic detection */
 #define MAX_AUTO_THREADS 16
 

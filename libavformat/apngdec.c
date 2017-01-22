@@ -122,9 +122,9 @@ end:
     return AVPROBE_SCORE_MAX;
 }
 
-static int append_extradata(AVCodecContext *s, AVIOContext *pb, int len)
+static int append_extradata(AVCodecParameters *par, AVIOContext *pb, int len)
 {
-    int previous_size = s->extradata_size;
+    int previous_size = par->extradata_size;
     int new_size, ret;
     uint8_t *new_extradata;
 
@@ -132,13 +132,13 @@ static int append_extradata(AVCodecContext *s, AVIOContext *pb, int len)
         return AVERROR_INVALIDDATA;
 
     new_size = previous_size + len;
-    new_extradata = av_realloc(s->extradata, new_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    new_extradata = av_realloc(par->extradata, new_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!new_extradata)
         return AVERROR(ENOMEM);
-    s->extradata = new_extradata;
-    s->extradata_size = new_size;
+    par->extradata = new_extradata;
+    par->extradata_size = new_size;
 
-    if ((ret = avio_read(pb, s->extradata + previous_size, len)) < 0)
+    if ((ret = avio_read(pb, par->extradata + previous_size, len)) < 0)
         return ret;
 
     return previous_size;
@@ -170,23 +170,23 @@ static int apng_read_header(AVFormatContext *s)
     /* set the timebase to something large enough (1/100,000 of second)
      * to hopefully cope with all sane frame durations */
     avpriv_set_pts_info(st, 64, 1, 100000);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_APNG;
-    st->codec->width      = avio_rb32(pb);
-    st->codec->height     = avio_rb32(pb);
-    if ((ret = av_image_check_size(st->codec->width, st->codec->height, 0, s)) < 0)
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_APNG;
+    st->codecpar->width      = avio_rb32(pb);
+    st->codecpar->height     = avio_rb32(pb);
+    if ((ret = av_image_check_size(st->codecpar->width, st->codecpar->height, 0, s)) < 0)
         return ret;
 
     /* extradata will contain every chunk up to the first fcTL (excluded) */
-    st->codec->extradata = av_malloc(len + 12 + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    st->codecpar->extradata = av_malloc(len + 12 + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codecpar->extradata)
         return AVERROR(ENOMEM);
-    st->codec->extradata_size = len + 12;
-    AV_WB32(st->codec->extradata,    len);
-    AV_WL32(st->codec->extradata+4,  tag);
-    AV_WB32(st->codec->extradata+8,  st->codec->width);
-    AV_WB32(st->codec->extradata+12, st->codec->height);
-    if ((ret = avio_read(pb, st->codec->extradata+16, 9)) < 0)
+    st->codecpar->extradata_size = len + 12;
+    AV_WB32(st->codecpar->extradata,    len);
+    AV_WL32(st->codecpar->extradata+4,  tag);
+    AV_WB32(st->codecpar->extradata+8,  st->codecpar->width);
+    AV_WB32(st->codecpar->extradata+12, st->codecpar->height);
+    if ((ret = avio_read(pb, st->codecpar->extradata+16, 9)) < 0)
         goto fail;
 
     while (!avio_feof(pb)) {
@@ -218,11 +218,11 @@ static int apng_read_header(AVFormatContext *s)
         switch (tag) {
         case MKTAG('a', 'c', 'T', 'L'):
             if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
-                (ret = append_extradata(st->codec, pb, len + 12)) < 0)
+                (ret = append_extradata(st->codecpar, pb, len + 12)) < 0)
                 goto fail;
             acTL_found = 1;
-            ctx->num_frames = AV_RB32(st->codec->extradata + ret + 8);
-            ctx->num_play   = AV_RB32(st->codec->extradata + ret + 12);
+            ctx->num_frames = AV_RB32(st->codecpar->extradata + ret + 8);
+            ctx->num_play   = AV_RB32(st->codecpar->extradata + ret + 12);
             av_log(s, AV_LOG_DEBUG, "num_frames: %"PRIu32", num_play: %"PRIu32"\n",
                                     ctx->num_frames, ctx->num_play);
             break;
@@ -236,15 +236,15 @@ static int apng_read_header(AVFormatContext *s)
             return 0;
         default:
             if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
-                (ret = append_extradata(st->codec, pb, len + 12)) < 0)
+                (ret = append_extradata(st->codecpar, pb, len + 12)) < 0)
                 goto fail;
         }
     }
 
 fail:
-    if (st->codec->extradata_size) {
-        av_freep(&st->codec->extradata);
-        st->codec->extradata_size = 0;
+    if (st->codecpar->extradata_size) {
+        av_freep(&st->codecpar->extradata);
+        st->codecpar->extradata_size = 0;
     }
     return ret;
 }
@@ -298,15 +298,15 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
             dispose_op,
             blend_op);
 
-    if (width != s->streams[0]->codec->width ||
-        height != s->streams[0]->codec->height ||
+    if (width != s->streams[0]->codecpar->width ||
+        height != s->streams[0]->codecpar->height ||
         x_offset != 0 ||
         y_offset != 0) {
         if (sequence_number == 0 ||
-            x_offset >= s->streams[0]->codec->width ||
-            width > s->streams[0]->codec->width - x_offset ||
-            y_offset >= s->streams[0]->codec->height ||
-            height > s->streams[0]->codec->height - y_offset)
+            x_offset >= s->streams[0]->codecpar->width ||
+            width > s->streams[0]->codecpar->width - x_offset ||
+            y_offset >= s->streams[0]->codecpar->height ||
+            height > s->streams[0]->codecpar->height - y_offset)
             return AVERROR_INVALIDDATA;
         ctx->is_key_frame = 0;
     } else {
@@ -400,7 +400,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             avio_seek(pb, -8, SEEK_CUR);
             return AVERROR_EOF;
         }
-        if ((ret = avio_seek(pb, s->streams[0]->codec->extradata_size + 8, SEEK_SET)) < 0)
+        if ((ret = avio_seek(pb, s->streams[0]->codecpar->extradata_size + 8, SEEK_SET)) < 0)
             return ret;
         return 0;
     default:
@@ -419,7 +419,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static const AVOption options[] = {
     { "ignore_loop", "ignore loop setting"                         , offsetof(APNGDemuxContext, ignore_loop),
-      AV_OPT_TYPE_INT, { .i64 = 1 }               , 0, 1      , AV_OPT_FLAG_DECODING_PARAM },
+      AV_OPT_TYPE_BOOL, { .i64 = 1 }              , 0, 1      , AV_OPT_FLAG_DECODING_PARAM },
     { "max_fps"    , "maximum framerate (0 is no limit)"           , offsetof(APNGDemuxContext, max_fps),
       AV_OPT_TYPE_INT, { .i64 = DEFAULT_APNG_FPS }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "default_fps", "default framerate (0 is as fast as possible)", offsetof(APNGDemuxContext, default_fps),

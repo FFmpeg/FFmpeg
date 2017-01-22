@@ -196,9 +196,12 @@ int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
  */
 AVVDPAUContext *av_vdpau_alloc_context(void);
 
+#if FF_API_VDPAU_PROFILE
 /**
  * Get a decoder profile that should be used for initializing a VDPAU decoder.
  * Should be called from the AVCodecContext.get_format() callback.
+ *
+ * @deprecated Use av_vdpau_bind_context() instead.
  *
  * @param avctx the codec context being used for decoding the stream
  * @param profile a pointer into which the result will be written on success.
@@ -207,7 +210,9 @@ AVVDPAUContext *av_vdpau_alloc_context(void);
  *
  * @return 0 on success (non-negative), a negative AVERROR on failure.
  */
+attribute_deprecated
 int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile);
+#endif
 
 #if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */
@@ -231,10 +236,8 @@ struct vdpau_render_state {
 
     int state; ///< Holds FF_VDPAU_STATE_* values.
 
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     /** picture parameter information for all supported codecs */
     union AVVDPAUPictureInfo info;
-#endif
 
     /** Describe size/location of the compressed video data.
         Set to 0 when freeing bitstream_buffers. */
@@ -242,11 +245,6 @@ struct vdpau_render_state {
     int bitstream_buffers_used;
     /** The user is responsible for freeing this buffer using av_freep(). */
     VdpBitstreamBuffer *bitstream_buffers;
-
-#if !AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    /** picture parameter information for all supported codecs */
-    union AVVDPAUPictureInfo info;
-#endif
 };
 #endif
 

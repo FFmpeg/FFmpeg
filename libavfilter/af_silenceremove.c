@@ -61,15 +61,20 @@ typedef struct SilenceRemoveContext {
     size_t stop_holdoff_end;
     int    stop_found_periods;
 
+    double window_ratio;
     double *window;
     double *window_current;
     double *window_end;
     int window_size;
-    double rms_sum;
+    double sum;
 
     int leave_silence;
     int restart;
     int64_t next_pts;
+
+    int detection;
+    void (*update)(struct SilenceRemoveContext *s, double sample);
+    double(*compute)(struct SilenceRemoveContext *s, double sample);
 } SilenceRemoveContext;
 
 #define OFFSET(x) offsetof(SilenceRemoveContext, x)
@@ -81,11 +86,59 @@ static const AVOption silenceremove_options[] = {
     { "stop_periods",    NULL, OFFSET(stop_periods),    AV_OPT_TYPE_INT,      {.i64=0}, -9000,    9000, FLAGS },
     { "stop_duration",   NULL, OFFSET(stop_duration),   AV_OPT_TYPE_DURATION, {.i64=0},     0,    9000, FLAGS },
     { "stop_threshold",  NULL, OFFSET(stop_threshold),  AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0, DBL_MAX, FLAGS },
-    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_INT,      {.i64=0},     0,       1, FLAGS },
+    { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_BOOL,     {.i64=0},     0,       1, FLAGS },
+    { "detection",       NULL, OFFSET(detection),       AV_OPT_TYPE_INT,      {.i64=1},     0,       1, FLAGS, "detection" },
+    {   "peak",          0,    0,                       AV_OPT_TYPE_CONST,    {.i64=0},     0,       0, FLAGS, "detection" },
+    {   "rms",           0,    0,                       AV_OPT_TYPE_CONST,    {.i64=1},     0,       0, FLAGS, "detection" },
+    { "window",          NULL, OFFSET(window_ratio),    AV_OPT_TYPE_DOUBLE,   {.dbl=0.02},  0,      10, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(silenceremove);
+
+static double compute_peak(SilenceRemoveContext *s, double sample)
+{
+    double new_sum;
+
+    new_sum  = s->sum;
+    new_sum -= *s->window_current;
+    new_sum += fabs(sample);
+
+    return new_sum / s->window_size;
+}
+
+static void update_peak(SilenceRemoveContext *s, double sample)
+{
+    s->sum -= *s->window_current;
+    *s->window_current = fabs(sample);
+    s->sum += *s->window_current;
+
+    s->window_current++;
+    if (s->window_current >= s->window_end)
+        s->window_current = s->window;
+}
+
+static double compute_rms(SilenceRemoveContext *s, double sample)
+{
+    double new_sum;
+
+    new_sum  = s->sum;
+    new_sum -= *s->window_current;
+    new_sum += sample * sample;
+
+    return sqrt(new_sum / s->window_size);
+}
+
+static void update_rms(SilenceRemoveContext *s, double sample)
+{
+    s->sum -= *s->window_current;
+    *s->window_current = sample * sample;
+    s->sum += *s->window_current;
+
+    s->window_current++;
+    if (s->window_current >= s->window_end)
+        s->window_current = s->window;
+}
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -96,16 +149,27 @@ static av_cold int init(AVFilterContext *ctx)
         s->restart = 1;
     }
 
+    switch (s->detection) {
+    case 0:
+        s->update = update_peak;
+        s->compute = compute_peak;
+        break;
+    case 1:
+        s->update = update_rms;
+        s->compute = compute_rms;
+        break;
+    };
+
     return 0;
 }
 
-static void clear_rms(SilenceRemoveContext *s)
+static void clear_window(SilenceRemoveContext *s)
 {
     memset(s->window, 0, s->window_size * sizeof(*s->window));
 
     s->window_current = s->window;
     s->window_end = s->window + s->window_size;
-    s->rms_sum = 0;
+    s->sum = 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -113,12 +177,12 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SilenceRemoveContext *s = ctx->priv;
 
-    s->window_size = (inlink->sample_rate / 50) * inlink->channels;
+    s->window_size = FFMAX((inlink->sample_rate * s->window_ratio), 1) * inlink->channels;
     s->window = av_malloc_array(s->window_size, sizeof(*s->window));
     if (!s->window)
         return AVERROR(ENOMEM);
 
-    clear_rms(s);
+    clear_window(s);
 
     s->start_duration = av_rescale(s->start_duration, inlink->sample_rate,
                                    AV_TIME_BASE);
@@ -151,35 +215,6 @@ static int config_input(AVFilterLink *inlink)
         s->mode = SILENCE_COPY;
 
     return 0;
-}
-
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-
-    return 0;
-}
-
-static double compute_rms(SilenceRemoveContext *s, double sample)
-{
-    double new_sum;
-
-    new_sum  = s->rms_sum;
-    new_sum -= *s->window_current;
-    new_sum += sample * sample;
-
-    return sqrt(new_sum / s->window_size);
-}
-
-static void update_rms(SilenceRemoveContext *s, double sample)
-{
-    s->rms_sum -= *s->window_current;
-    *s->window_current = sample * sample;
-    s->rms_sum += *s->window_current;
-
-    s->window_current++;
-    if (s->window_current >= s->window_end)
-        s->window_current = s->window;
 }
 
 static void flush(AVFrame *out, AVFilterLink *outlink,
@@ -216,15 +251,15 @@ silence_trim:
         for (i = 0; i < nbs; i++) {
             threshold = 0;
             for (j = 0; j < inlink->channels; j++) {
-                threshold |= compute_rms(s, ibuf[j]) > s->start_threshold;
+                threshold |= s->compute(s, ibuf[j]) > s->start_threshold;
             }
 
             if (threshold) {
                 for (j = 0; j < inlink->channels; j++) {
-                    update_rms(s, *ibuf);
+                    s->update(s, *ibuf);
                     s->start_holdoff[s->start_holdoff_end++] = *ibuf++;
-                    nb_samples_read++;
                 }
+                nb_samples_read += inlink->channels;
 
                 if (s->start_holdoff_end >= s->start_duration * inlink->channels) {
                     if (++s->start_found_periods >= s->start_periods) {
@@ -239,7 +274,7 @@ silence_trim:
                 s->start_holdoff_end = 0;
 
                 for (j = 0; j < inlink->channels; j++)
-                    update_rms(s, ibuf[j]);
+                    s->update(s, ibuf[j]);
 
                 ibuf += inlink->channels;
                 nb_samples_read += inlink->channels;
@@ -291,7 +326,7 @@ silence_copy:
             for (i = 0; i < nbs; i++) {
                 threshold = 1;
                 for (j = 0; j < inlink->channels; j++)
-                    threshold &= compute_rms(s, ibuf[j]) > s->stop_threshold;
+                    threshold &= s->compute(s, ibuf[j]) > s->stop_threshold;
 
                 if (threshold && s->stop_holdoff_end && !s->leave_silence) {
                     s->mode = SILENCE_COPY_FLUSH;
@@ -299,22 +334,22 @@ silence_copy:
                     goto silence_copy_flush;
                 } else if (threshold) {
                     for (j = 0; j < inlink->channels; j++) {
-                        update_rms(s, *ibuf);
+                        s->update(s, *ibuf);
                         *obuf++ = *ibuf++;
-                        nb_samples_read++;
-                        nb_samples_written++;
                     }
+                    nb_samples_read    += inlink->channels;
+                    nb_samples_written += inlink->channels;
                 } else if (!threshold) {
                     for (j = 0; j < inlink->channels; j++) {
-                        update_rms(s, *ibuf);
+                        s->update(s, *ibuf);
                         if (s->leave_silence) {
                             *obuf++ = *ibuf;
                             nb_samples_written++;
                         }
 
                         s->stop_holdoff[s->stop_holdoff_end++] = *ibuf++;
-                        nb_samples_read++;
                     }
+                    nb_samples_read += inlink->channels;
 
                     if (s->stop_holdoff_end >= s->stop_duration * inlink->channels) {
                         if (++s->stop_found_periods >= s->stop_periods) {
@@ -330,7 +365,7 @@ silence_copy:
                                 s->start_found_periods = 0;
                                 s->start_holdoff_offset = 0;
                                 s->start_holdoff_end = 0;
-                                clear_rms(s);
+                                clear_window(s);
                                 s->mode = SILENCE_TRIM;
                                 flush(out, outlink, &nb_samples_written, &ret);
                                 goto silence_trim;
@@ -420,7 +455,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts)
         return AVERROR(ENOMEM);
     ret = ff_set_common_channel_layouts(ctx, layouts);
@@ -463,7 +498,6 @@ static const AVFilterPad silenceremove_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
         .request_frame = request_frame,
     },
     { NULL }

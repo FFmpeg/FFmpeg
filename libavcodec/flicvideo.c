@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation Video Decoder
- * Copyright (c) 2003, 2004 The FFmpeg Project
+ * Copyright (C) 2003, 2004 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -133,7 +133,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 8  : avctx->pix_fmt = AV_PIX_FMT_PAL8; break;
         case 15 : avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
         case 16 : avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
-        case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but havent any files to test with */
+        case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but no files to test with */
                   avpriv_request_sample(avctx, "24Bpp FLC/FLX");
                   return AVERROR_PATCHWELCOME;
         default :
@@ -193,7 +193,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     pixels = s->frame->data[0];
     pixel_limit = s->avctx->height * s->frame->linesize[0];
-    if (buf_size < 16 || buf_size > INT_MAX - (3 * 256 + FF_INPUT_BUFFER_PADDING_SIZE))
+    if (buf_size < 16 || buf_size > INT_MAX - (3 * 256 + AV_INPUT_BUFFER_PADDING_SIZE))
         return AVERROR_INVALIDDATA;
     frame_size = bytestream2_get_le32(&g2);
     if (frame_size > buf_size)
@@ -423,7 +423,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
         case FLI_COPY:
             /* copy the chunk (uncompressed frame) */
-            if (chunk_size - 6 != s->avctx->width * s->avctx->height) {
+            if (chunk_size - 6 != FFALIGN(s->avctx->width, 4) * s->avctx->height) {
                 av_log(avctx, AV_LOG_ERROR, "In chunk FLI_COPY : source data (%d bytes) " \
                        "has incorrect size, skipping chunk\n", chunk_size - 6);
                 bytestream2_skip(&g2, chunk_size - 6);
@@ -432,6 +432,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                      y_ptr += s->frame->linesize[0]) {
                     bytestream2_get_buffer(&g2, &pixels[y_ptr],
                                            s->avctx->width);
+                    if (s->avctx->width & 3)
+                        bytestream2_skip(&g2, 4 - (s->avctx->width & 3));
                 }
             }
             break;
@@ -711,7 +713,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
         case FLI_COPY:
         case FLI_DTA_COPY:
             /* copy the chunk (uncompressed frame) */
-            if (chunk_size - 6 > (unsigned int)(s->avctx->width * s->avctx->height)*2) {
+            if (chunk_size - 6 > (unsigned int)(FFALIGN(s->avctx->width, 2) * s->avctx->height)*2) {
                 av_log(avctx, AV_LOG_ERROR, "In chunk FLI_COPY : source data (%d bytes) " \
                        "bigger than image, skipping chunk\n", chunk_size - 6);
                 bytestream2_skip(&g2, chunk_size - 6);
@@ -727,6 +729,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                       pixel_ptr += 2;
                       pixel_countdown--;
                     }
+                    if (s->avctx->width & 1)
+                        bytestream2_skip(&g2, 2);
                 }
             }
             break;
@@ -789,7 +793,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
 
     /* Should not get  here, ever as the pix_fmt is processed */
     /* in flic_decode_init and the above if should deal with */
-    /* the finite set of possibilites allowable by here. */
+    /* the finite set of possibilities allowable by here. */
     /* But in case we do, just error out. */
     av_log(avctx, AV_LOG_ERROR, "Unknown FLC format, my science cannot explain how this happened.\n");
     return AVERROR_BUG;
@@ -814,5 +818,5 @@ AVCodec ff_flic_decoder = {
     .init           = flic_decode_init,
     .close          = flic_decode_end,
     .decode         = flic_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

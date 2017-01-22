@@ -20,7 +20,10 @@
 
 #include "config.h"
 
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
+
 #include "libavcodec/fft.h"
 
 void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);

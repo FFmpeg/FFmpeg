@@ -36,7 +36,8 @@ static int vplayer_probe(AVProbeData *p)
     char c;
     const unsigned char *ptr = p->buf;
 
-    if (sscanf(ptr, "%*d:%*d:%*d.%*d%c", &c) == 1 && strchr(": =", c))
+    if ((sscanf(ptr, "%*3d:%*2d:%*2d.%*2d%c", &c) == 1 ||
+         sscanf(ptr, "%*3d:%*2d:%*2d%c",      &c) == 1) && strchr(": =", c))
         return AVPROBE_SCORE_MAX;
     return 0;
 }
@@ -44,12 +45,12 @@ static int vplayer_probe(AVProbeData *p)
 static int64_t read_ts(char **line)
 {
     char c;
-    int hh, mm, ss, ms, len;
+    int hh, mm, ss, ms, n, len;
 
-    if (sscanf(*line, "%d:%d:%d.%d%c%n",
-               &hh, &mm, &ss, &ms, &c, &len) >= 5) {
+    if (((n = sscanf(*line, "%d:%d:%d.%d%c%n", &hh, &mm, &ss, &ms, &c, &len)) >= 5 ||
+         (n = sscanf(*line, "%d:%d:%d%c%n",    &hh, &mm, &ss,      &c, &len)) >= 4) && strchr(": =", c)) {
         *line += len;
-        return (hh*3600LL + mm*60LL + ss) * 100LL + ms;
+        return (hh*3600LL + mm*60LL + ss) * 100LL + (n < 5 ? 0 : ms);
     }
     return AV_NOPTS_VALUE;
 }
@@ -62,8 +63,8 @@ static int vplayer_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_VPLAYER;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_VPLAYER;
 
     while (!avio_feof(s->pb)) {
         char line[4096];
@@ -90,7 +91,7 @@ static int vplayer_read_header(AVFormatContext *s)
         }
     }
 
-    ff_subtitles_queue_finalize(&vplayer->q);
+    ff_subtitles_queue_finalize(s, &vplayer->q);
     return 0;
 }
 

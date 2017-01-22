@@ -298,7 +298,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
             cbp++;
     }
 
-    if (s->avctx->flags & CODEC_FLAG_GRAY) {
+    if (s->avctx->flags & AV_CODEC_FLAG_GRAY) {
         if (s->mb_intra) {                                   // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
                 memset(s->pblocks[i], 0, sizeof(*s->pblocks[i]));  // so we need to clear them

@@ -309,7 +309,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!tsize)
+    if (!tsize || !AV_RL16(src + 37) || !AV_RL16(src + 39))
         skip_cursor = 1;
 
     if (!skip_cursor && tsize < 32) {
@@ -322,8 +322,8 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     cur_x = AV_RL16(src + 33);
     cur_y = AV_RL16(src + 35);
     if (!skip_cursor && (cur_x > avctx->width || cur_y > avctx->height)) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Invalid cursor position: (%d,%d). Skipping cusor.\n",
+        av_log(avctx, AV_LOG_DEBUG,
+               "Invalid cursor position: (%d,%d). Skipping cursor.\n",
                cur_x, cur_y);
         skip_cursor = 1;
     }
@@ -456,7 +456,7 @@ static av_cold int fic_decode_init(AVCodecContext *avctx)
 }
 
 static const AVOption options[] = {
-{ "skip_cursor", "skip the cursor", offsetof(FICContext, skip_cursor), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
+{ "skip_cursor", "skip the cursor", offsetof(FICContext, skip_cursor), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
 { NULL },
 };
 
@@ -476,6 +476,6 @@ AVCodec ff_fic_decoder = {
     .init           = fic_decode_init,
     .decode         = fic_decode_frame,
     .close          = fic_decode_close,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class     = &fic_decoder_class,
 };

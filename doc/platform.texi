@@ -63,7 +63,7 @@ bash ./configure
 @section Darwin (Mac OS X, iPhone)
 
 The toolchain provided with Xcode is sufficient to build the basic
-unacelerated code.
+unaccelerated code.
 
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{https://github.com/FFmpeg/gas-preprocessor} or
@@ -107,8 +107,13 @@ Notes:
 
 @itemize
 
-@item Building natively using MSYS2 can be sped up by disabling implicit rules
-in the Makefile by calling @code{make -r} instead of plain @code{make}. This
+@item Building for the MSYS environment is discouraged, MSYS2 provides a full
+MinGW-w64 environment through @file{mingw64_shell.bat} or
+@file{mingw32_shell.bat} that should be used instead of the environment
+provided by @file{msys2_shell.bat}.
+
+@item Building using MSYS2 can be sped up by disabling implicit rules in the
+Makefile by calling @code{make -r} instead of plain @code{make}. This
 speed up is close to non-existent for normal one-off builds and is only
 noticeable when running make for a second time (for example during
 @code{make install}).
@@ -121,6 +126,25 @@ you can build the FFmpeg libraries (e.g. libavutil, libavcodec,
 libavformat) as DLLs.
 
 @end itemize
+
+@subsection Native Windows compilation using MSYS2
+
+The MSYS2 MinGW-w64 environment provides ready to use toolchains and dependencies
+through @command{pacman}.
+
+Make sure to use @file{mingw64_shell.bat} or @file{mingw32_shell.bat} to have
+the correct MinGW-w64 environment. The default install provides shortcuts to
+them under @command{MinGW-w64 Win64 Shell} and @command{MinGW-w64 Win32 Shell}.
+
+@example
+# normal msys2 packages
+pacman -S make pkgconf diffutils
+
+# mingw-w64 packages and toolchains
+pacman -S mingw-w64-x86_64-yasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL
+@end example
+
+To target 32 bits replace @code{x86_64} with @code{i686} in the command above.
 
 @section Microsoft Visual C++ or Intel C++ Compiler for Windows
 
@@ -149,7 +173,7 @@ earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
 and @code{INCLUDE} environment variables to include the @strong{Windows-style}
-paths to these directories. Alternatively, you can try and use the
+paths to these directories. Alternatively, you can try to use the
 @code{--extra-cflags}/@code{--extra-ldflags} configure options. If using MSVC
 2012 or earlier, place @code{inttypes.h} somewhere the compiler can see too.
 
@@ -174,12 +198,6 @@ enabling shared libraries will automatically disable the static ones.
 Notes:
 
 @itemize
-
-@item It is possible that coreutils' @code{link.exe} conflicts with MSVC's linker.
-You can find out by running @code{which link} to see which @code{link.exe} you
-are using. If it is located at @code{/bin/link.exe}, then you have the wrong one
-in your @code{PATH}. Either move or remove that copy, or make sure MSVC's
-@code{link.exe} takes precedence in your @code{PATH} over coreutils'.
 
 @item If you wish to build with zlib support, you will have to grab a compatible
 zlib binary from somewhere, with an MSVC import lib, or if you wish to link
@@ -296,7 +314,7 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libfaac-devel, libaacplus-devel, libgsm-devel, libmp3lame-devel,
+yasm, libSDL-devel, libgsm-devel, libmp3lame-devel,
 libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 

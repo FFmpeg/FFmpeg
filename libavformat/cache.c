@@ -29,7 +29,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
-#include "libavutil/file.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/tree.h"
 #include "avformat.h"
@@ -65,9 +65,9 @@ typedef struct Context {
     int read_ahead_limit;
 } Context;
 
-static int cmp(void *key, const void *node)
+static int cmp(const void *key, const void *node)
 {
-    return (*(int64_t *) key) - ((const CacheEntry *) node)->logical_pos;
+    return FFDIFFSIGN(*(const int64_t *)key, ((const CacheEntry *) node)->logical_pos);
 }
 
 static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
@@ -77,7 +77,7 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
     av_strstart(arg, "cache:", &arg);
 
-    c->fd = av_tempfile("ffcache", &buffername, 0, h);
+    c->fd = avpriv_tempfile("ffcache", &buffername, 0, h);
     if (c->fd < 0){
         av_log(h, AV_LOG_ERROR, "Failed to create tempfile\n");
         return c->fd;
@@ -86,7 +86,8 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
     unlink(buffername);
     av_freep(&buffername);
 
-    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, options);
+    return ffurl_open_whitelist(&c->inner, arg, flags, &h->interrupt_callback,
+                                options, h->protocol_whitelist, h->protocol_blacklist, h);
 }
 
 static int add_entry(URLContext *h, const unsigned char *buf, int size)
@@ -156,7 +157,7 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
 {
     Context *c= h->priv_data;
     CacheEntry *entry, *next[2] = {NULL, NULL};
-    int r;
+    int64_t r;
 
     entry = av_tree_find(c->root, &c->logical_pos, cmp, (void**)next);
 
@@ -282,6 +283,12 @@ resolve_eof:
     return ret;
 }
 
+static int enu_free(void *opaque, void *elem)
+{
+    av_free(elem);
+    return 0;
+}
+
 static int cache_close(URLContext *h)
 {
     Context *c= h->priv_data;
@@ -291,6 +298,7 @@ static int cache_close(URLContext *h)
 
     close(c->fd);
     ffurl_close(c->inner);
+    av_tree_enumerate(c->root, NULL, NULL, enu_free);
     av_tree_destroy(c->root);
 
     return 0;
@@ -311,7 +319,7 @@ static const AVClass cache_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_cache_protocol = {
+const URLProtocol ff_cache_protocol = {
     .name                = "cache",
     .url_open2           = cache_open,
     .url_read            = cache_read,

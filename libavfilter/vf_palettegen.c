@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/qsort.h"
 #include "avfilter.h"
@@ -52,6 +53,7 @@ struct hist_node {
 enum {
     STATS_MODE_ALL_FRAMES,
     STATS_MODE_DIFF_FRAMES,
+    STATS_MODE_SINGLE_FRAMES,
     NB_STATS_MODE
 };
 
@@ -78,10 +80,11 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption palettegen_options[] = {
     { "max_colors", "set the maximum number of colors to use in the palette", OFFSET(max_colors), AV_OPT_TYPE_INT, {.i64=256}, 4, 256, FLAGS },
-    { "reserve_transparent", "reserve a palette entry for transparency", OFFSET(reserve_transparent), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { "stats_mode", "set statistics mode", OFFSET(stats_mode), AV_OPT_TYPE_INT, {.i64=STATS_MODE_ALL_FRAMES}, 0, NB_STATS_MODE, FLAGS, "mode" },
+    { "reserve_transparent", "reserve a palette entry for transparency", OFFSET(reserve_transparent), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "stats_mode", "set statistics mode", OFFSET(stats_mode), AV_OPT_TYPE_INT, {.i64=STATS_MODE_ALL_FRAMES}, 0, NB_STATS_MODE-1, FLAGS, "mode" },
         { "full", "compute full frame histograms", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_ALL_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "diff", "compute histograms only for the part that differs from previous frame", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_DIFF_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
+        { "single", "compute new histogram for each frame", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_SINGLE_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
     { NULL }
 };
 
@@ -91,15 +94,12 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat in_fmts[]  = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
-    AVFilterFormats *in  = ff_make_format_list(in_fmts);
-    AVFilterFormats *out = ff_make_format_list(out_fmts);
-    if (!in || !out) {
-        av_freep(&in);
-        av_freep(&out);
-        return AVERROR(ENOMEM);
-    }
-    ff_formats_ref(in,  &ctx->inputs[0]->out_formats);
-    ff_formats_ref(out, &ctx->outputs[0]->in_formats);
+    int ret;
+
+    if ((ret = ff_formats_ref(ff_make_format_list(in_fmts) , &ctx->inputs[0]->out_formats)) < 0)
+        return ret;
+    if ((ret = ff_formats_ref(ff_make_format_list(out_fmts), &ctx->outputs[0]->in_formats)) < 0)
+        return ret;
     return 0;
 }
 
@@ -127,7 +127,7 @@ static int cmp_color(const void *a, const void *b)
 {
     const struct range_box *box1 = a;
     const struct range_box *box2 = b;
-    return box1->color - box2->color;
+    return FFDIFFSIGN(box1->color , box2->color);
 }
 
 static av_always_inline int diff(const uint32_t a, const uint32_t b)
@@ -347,7 +347,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
         if (rr >= gr && rr >= br) longest = 0;
         if (gr >= rr && gr >= br) longest = 1; // prefer green again
 
-        av_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x] sort by %c (already sorted:%c) ",
+        ff_dlog(ctx, "box #%02X [%6d..%-6d] (%6d) w:%-6"PRIu64" ranges:[%2x %2x %2x] sort by %c (already sorted:%c) ",
                 box_id, box->start, box->start + box->len - 1, box->len, box_weight,
                 rr, gr, br, "rgb"[longest], box->sorted_by == longest ? 'y':'n');
 
@@ -368,7 +368,7 @@ static AVFrame *get_palette_frame(AVFilterContext *ctx)
             if (box_weight > median)
                 break;
         }
-        av_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, box_weight, median);
+        ff_dlog(ctx, "split @ i=%-6d with w=%-6"PRIu64" (target=%6"PRIu64")\n", i, box_weight, median);
         split_box(s, box, i);
 
         box_id = get_next_box_id_to_split(s);
@@ -477,8 +477,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     PaletteGenContext *s = ctx->priv;
-    const int ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in)
-                                  : update_histogram_frame(s->histogram, in);
+    int ret = s->prev_frame ? update_histogram_diff(s->histogram, s->prev_frame, in)
+                            : update_histogram_frame(s->histogram, in);
 
     if (ret > 0)
         s->nb_refs += ret;
@@ -486,6 +486,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->stats_mode == STATS_MODE_DIFF_FRAMES) {
         av_frame_free(&s->prev_frame);
         s->prev_frame = in;
+    } else if (s->stats_mode == STATS_MODE_SINGLE_FRAMES) {
+        AVFrame *out;
+        int i;
+
+        out = get_palette_frame(ctx);
+        out->pts = in->pts;
+        av_frame_free(&in);
+        ret = ff_filter_frame(ctx->outputs[0], out);
+        for (i = 0; i < HIST_SIZE; i++)
+            av_freep(&s->histogram[i].entries);
+        av_freep(&s->refs);
+        s->nb_refs = 0;
+        s->nb_boxes = 0;
+        memset(s->boxes, 0, sizeof(s->boxes));
+        memset(s->histogram, 0, sizeof(s->histogram));
     } else {
         av_frame_free(&in);
     }
@@ -504,7 +519,7 @@ static int request_frame(AVFilterLink *outlink)
     int r;
 
     r = ff_request_frame(inlink);
-    if (r == AVERROR_EOF && !s->palette_pushed && s->nb_refs) {
+    if (r == AVERROR_EOF && !s->palette_pushed && s->nb_refs && s->stats_mode != STATS_MODE_SINGLE_FRAMES) {
         r = ff_filter_frame(outlink, get_palette_frame(ctx));
         s->palette_pushed = 1;
         return r;
@@ -519,7 +534,6 @@ static int config_output(AVFilterLink *outlink)
 {
     outlink->w = outlink->h = 16;
     outlink->sample_aspect_ratio = av_make_q(1, 1);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     return 0;
 }
 

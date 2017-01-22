@@ -4,9 +4,9 @@ NAME = avutil
 
 HEADERS = adler32.h                                                     \
           aes.h                                                         \
+          aes_ctr.h                                                     \
           attributes.h                                                  \
           audio_fifo.h                                                  \
-          audioconvert.h                                                \
           avassert.h                                                    \
           avstring.h                                                    \
           avutil.h                                                      \
@@ -21,6 +21,8 @@ HEADERS = adler32.h                                                     \
           common.h                                                      \
           cpu.h                                                         \
           crc.h                                                         \
+          des.h                                                         \
+          dict.h                                                        \
           display.h                                                     \
           downmix_info.h                                                \
           error.h                                                       \
@@ -30,6 +32,12 @@ HEADERS = adler32.h                                                     \
           frame.h                                                       \
           hash.h                                                        \
           hmac.h                                                        \
+          hwcontext.h                                                   \
+          hwcontext_cuda.h                                              \
+          hwcontext_dxva2.h                                             \
+          hwcontext_qsv.h                                               \
+          hwcontext_vaapi.h                                             \
+          hwcontext_vdpau.h                                             \
           imgutils.h                                                    \
           intfloat.h                                                    \
           intreadwrite.h                                                \
@@ -37,32 +45,35 @@ HEADERS = adler32.h                                                     \
           log.h                                                         \
           macros.h                                                      \
           mathematics.h                                                 \
+          mastering_display_metadata.h                                  \
           md5.h                                                         \
           mem.h                                                         \
           motion_vector.h                                               \
           murmur3.h                                                     \
-          dict.h                                                        \
-          old_pix_fmts.h                                                \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
           pixelutils.h                                                  \
           pixfmt.h                                                      \
           random_seed.h                                                 \
-          replaygain.h                                                  \
+          rc4.h                                                         \
           rational.h                                                    \
+          replaygain.h                                                  \
           ripemd.h                                                      \
           samplefmt.h                                                   \
           sha.h                                                         \
           sha512.h                                                      \
+          spherical.h                                                   \
           stereo3d.h                                                    \
           threadmessage.h                                               \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
+          tree.h                                                        \
           twofish.h                                                     \
           version.h                                                     \
           xtea.h                                                        \
+          tea.h                                                         \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 
@@ -78,6 +89,7 @@ BUILT_HEADERS = avconfig.h                                              \
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
+       aes_ctr.o                                                        \
        audio_fifo.o                                                     \
        avstring.o                                                       \
        base64.o                                                         \
@@ -91,6 +103,7 @@ OBJS = adler32.o                                                        \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \
+       dict.o                                                           \
        display.o                                                        \
        downmix_info.o                                                   \
        error.o                                                          \
@@ -103,29 +116,32 @@ OBJS = adler32.o                                                        \
        frame.o                                                          \
        hash.o                                                           \
        hmac.o                                                           \
+       hwcontext.o                                                      \
        imgutils.o                                                       \
+       integer.o                                                        \
        intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \
        log2_tab.o                                                       \
        mathematics.o                                                    \
+       mastering_display_metadata.o                                     \
        md5.o                                                            \
        mem.o                                                            \
        murmur3.o                                                        \
-       dict.o                                                           \
        opt.o                                                            \
        parseutils.o                                                     \
        pixdesc.o                                                        \
        pixelutils.o                                                     \
        random_seed.o                                                    \
        rational.o                                                       \
+       reverse.o                                                        \
        rc4.o                                                            \
        ripemd.o                                                         \
        samplefmt.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
-       softfloat.o                                                      \
+       spherical.o                                                      \
        stereo3d.o                                                       \
        threadmessage.o                                                  \
        time.o                                                           \
@@ -135,19 +151,29 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
        xga_font_data.o                                                  \
        xtea.o                                                           \
+       tea.o                                                            \
 
 OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
 
+OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
+OBJS-$(CONFIG_QSV)                   += hwcontext_qsv.o
 OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
+OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
+OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 # Windows resource file
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
 
-SKIPHEADERS          = old_pix_fmts.h
-
+SKIPHEADERS-$(HAVE_CUDA_H)             += hwcontext_cuda.h
+SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h
+SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
+SKIPHEADERS-$(CONFIG_QSV)           += hwcontext_qsv.h
+SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
+SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
 SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
@@ -155,23 +181,29 @@ SKIPHEADERS-$(CONFIG_OPENCL)           += opencl.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
+            aes_ctr                                                     \
             atomic                                                      \
+            audio_fifo                                                  \
             avstring                                                    \
             base64                                                      \
             blowfish                                                    \
             bprint                                                      \
             cast5                                                       \
             camellia                                                    \
+            color_utils                                                 \
             cpu                                                         \
             crc                                                         \
             des                                                         \
             dict                                                        \
+            display                                                     \
             error                                                       \
             eval                                                        \
             file                                                        \
             fifo                                                        \
             float_dsp                                                   \
+            hash                                                        \
             hmac                                                        \
+            imgutils                                                    \
             lfg                                                         \
             lls                                                         \
             log                                                         \
@@ -192,12 +224,14 @@ TESTPROGS = adler32                                                     \
             twofish                                                     \
             utf8                                                        \
             xtea                                                        \
+            tea                                                         \
 
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
+TESTPROGS-$(HAVE_THREADS) += cpu_init
 
 TOOLS = crypto_bench ffhash ffeval ffescape
 
 tools/crypto_bench$(EXESUF): ELIBS += $(if $(VERSUS),$(subst +, -l,+$(VERSUS)),)
 tools/crypto_bench$(EXESUF): CFLAGS += -DUSE_EXT_LIBS=0$(if $(VERSUS),$(subst +,+USE_,+$(VERSUS)),)
 
-$(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2
+$(SUBDIR)tests/lzo$(EXESUF): ELIBS = -llzo2

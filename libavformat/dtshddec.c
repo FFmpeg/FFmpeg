@@ -21,7 +21,9 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavcodec/dca.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define AUPR_HDR 0x415550522D484452
 #define AUPRINFO 0x41555052494E464F
@@ -53,6 +55,7 @@ static int dtshd_read_header(AVFormatContext *s)
     DTSHDDemuxContext *dtshd = s->priv_data;
     AVIOContext *pb = s->pb;
     uint64_t chunk_type, chunk_size;
+    int64_t duration, data_start;
     AVStream *st;
     int ret;
     char *value;
@@ -60,13 +63,16 @@ static int dtshd_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = AV_CODEC_ID_DTS;
-    st->need_parsing      = AVSTREAM_PARSE_FULL_RAW;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_DTS;
+    st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
-    while (!avio_feof(pb)) {
+    for (;;) {
         chunk_type = avio_rb64(pb);
         chunk_size = avio_rb64(pb);
+
+        if (avio_feof(pb))
+            break;
 
         if (chunk_size < 4) {
             av_log(s, AV_LOG_ERROR, "chunk size too small\n");
@@ -79,10 +85,28 @@ static int dtshd_read_header(AVFormatContext *s)
 
         switch (chunk_type) {
         case STRMDATA:
-            dtshd->data_end = chunk_size + avio_tell(pb);
+            data_start = avio_tell(pb);
+            dtshd->data_end = data_start + chunk_size;
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
-            return 0;
+            if (!pb->seekable)
+                goto break_loop;
+            goto skip;
+            break;
+        case AUPR_HDR:
+            if (chunk_size < 21)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, 3);
+            st->codecpar->sample_rate = avio_rb24(pb);
+            if (!st->codecpar->sample_rate)
+                return AVERROR_INVALIDDATA;
+            duration  = avio_rb32(pb); // num_frames
+            duration *= avio_rb16(pb); // samples_per_frames
+            st->duration = duration;
+            avio_skip(pb, 5);
+            st->codecpar->channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
+            st->codecpar->initial_padding = avio_rb16(pb);
+            avio_skip(pb, chunk_size - 21);
             break;
         case FILEINFO:
             if (chunk_size > INT_MAX)
@@ -103,7 +127,16 @@ skip:
         };
     }
 
-    return AVERROR_EOF;
+    if (!dtshd->data_end)
+        return AVERROR_EOF;
+
+    avio_seek(pb, data_start, SEEK_SET);
+
+break_loop:
+    if (st->codecpar->sample_rate)
+        avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+
+    return 0;
 }
 
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)

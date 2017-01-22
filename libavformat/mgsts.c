@@ -55,13 +55,13 @@ static int read_header(AVFormatContext *s)
     st->nb_frames  =
     st->duration   = avio_rb32(pb);
     fps = av_d2q(av_int2float(avio_rb32(pb)), INT_MAX);
-    st->codec->width  = avio_rb32(pb);
-    st->codec->height = avio_rb32(pb);
+    st->codecpar->width  = avio_rb32(pb);
+    st->codecpar->height = avio_rb32(pb);
     avio_skip(pb, 12);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_tag  = avio_rb32(pb);
-    st->codec->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
-                                            st->codec->codec_tag);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_tag  = avio_rb32(pb);
+    st->codecpar->codec_id   = ff_codec_get_id(ff_codec_bmp_tags,
+                                               st->codecpar->codec_tag);
     avpriv_set_pts_info(st, 64, fps.den, fps.num);
     avio_skip(pb, 20);
 

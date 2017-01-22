@@ -49,8 +49,8 @@ static int audio_write_header(AVFormatContext *s1)
     int ret;
 
     st = s1->streams[0];
-    s->sample_rate = st->codec->sample_rate;
-    s->channels = st->codec->channels;
+    s->sample_rate = st->codecpar->sample_rate;
+    s->channels = st->codecpar->channels;
     ret = ff_oss_audio_open(s1, 1, s1->filename);
     if (ret < 0) {
         return AVERROR(EIO);

@@ -37,6 +37,8 @@ enum QuickdrawOpcodes {
     PACKBITSRGN,
     DIRECTBITSRECT,
     DIRECTBITSRGN,
+    SHORTCOMMENT = 0x00A0,
+    LONGCOMMENT,
 
     EOP = 0x00FF,
 };
@@ -281,10 +283,8 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_request_sample(avctx, "Pack type %d", pack_type);
                 return AVERROR_PATCHWELCOME;
             }
-            if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
-            }
 
             /* jump to data */
             bytestream2_skip(&gbc, 30);
@@ -298,6 +298,10 @@ static int decode_frame(AVCodecContext *avctx,
             if (ret < 0)
                 return ret;
             *got_frame = 1;
+            break;
+        case LONGCOMMENT:
+            bytestream2_get_be16(&gbc);
+            bytestream2_skip(&gbc, bytestream2_get_be16(&gbc));
             break;
         default:
             av_log(avctx, AV_LOG_TRACE, "Unknown 0x%04X opcode\n", opcode);
@@ -339,5 +343,5 @@ AVCodec ff_qdraw_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QDRAW,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

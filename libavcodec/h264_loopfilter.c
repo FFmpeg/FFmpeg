@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 loop filter.
+ * H.264 / AVC / MPEG-4 part10 loop filter.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -29,7 +29,8 @@
 #include "libavutil/intreadwrite.h"
 #include "internal.h"
 #include "avcodec.h"
-#include "h264.h"
+#include "h264dec.h"
+#include "h264_ps.h"
 #include "mathops.h"
 #include "mpegutils.h"
 #include "rectangle.h"
@@ -242,7 +243,7 @@ static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
                                                           unsigned int uvlinesize,
                                                           int pixel_shift)
 {
-    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
+    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
     int chroma444 = CHROMA444(h);
     int chroma422 = CHROMA422(h);
 
@@ -250,7 +251,7 @@ static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
     int left_type = sl->left_type[LTOP];
     int top_type  = sl->top_type;
 
-    int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
+    int qp_bd_offset = 6 * (h->ps.sps->bit_depth_luma - 8);
     int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
     int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
@@ -258,9 +259,9 @@ static av_always_inline void h264_filter_mb_fast_internal(const H264Context *h,
     int qp      = h->cur_pic.qscale_table[mb_xy];
     int qp0     = h->cur_pic.qscale_table[mb_xy - 1];
     int qp1     = h->cur_pic.qscale_table[sl->top_mb_xy];
-    int qpc = get_chroma_qp( h, 0, qp );
-    int qpc0 = get_chroma_qp( h, 0, qp0 );
-    int qpc1 = get_chroma_qp( h, 0, qp1 );
+    int qpc  = get_chroma_qp(h->ps.pps, 0, qp);
+    int qpc0 = get_chroma_qp(h->ps.pps, 0, qp0);
+    int qpc1 = get_chroma_qp(h->ps.pps, 0, qp1);
     qp0 = (qp + qp0 + 1) >> 1;
     qp1 = (qp + qp1 + 1) >> 1;
     qpc0 = (qpc + qpc0 + 1) >> 1;
@@ -420,7 +421,7 @@ void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl,
                             unsigned int linesize, unsigned int uvlinesize)
 {
     av_assert2(!FRAME_MBAFF(h));
-    if(!h->h264dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
+    if(!h->h264dsp.h264_loop_filter_strength || h->ps.pps->chroma_qp_diff) {
         ff_h264_filter_mb(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
     }
@@ -529,8 +530,8 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
                 ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
                 { int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
                 filter_mb_edgeh( &img_y[j*linesize], tmp_linesize, bS, qp, a, b, h, 0 );
-                chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h, 0, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
-                chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h, 1, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
+                chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h->ps.pps, 0, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
+                chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h->ps.pps, 1, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;
                 if (chroma) {
                     if (chroma444) {
                         filter_mb_edgeh (&img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[0], a, b, h, 0);
@@ -594,8 +595,8 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
                 //ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], h->cur_pic.qscale_table[mbn_xy]);
                 ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
                 //{ int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
-                chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h, 0, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
-                chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h, 1, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
+                chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h->ps.pps, 0, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
+                chroma_qp_avg[1] = (sl->chroma_qp[1] + get_chroma_qp(h->ps.pps, 1, h->cur_pic.qscale_table[mbm_xy]) + 1) >> 1;
                 if( dir == 0 ) {
                     filter_mb_edgev( &img_y[0], linesize, bS, qp, a, b, h, 1 );
                     if (chroma) {
@@ -723,8 +724,8 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
-    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
-    int qp_bd_offset = 6 * (h->sps.bit_depth_luma - 8);
+    int chroma = CHROMA(h) && !(CONFIG_GRAY && (h->flags & AV_CODEC_FLAG_GRAY));
+    int qp_bd_offset = 6 * (h->ps.sps->bit_depth_luma - 8);
     int a = 52 + sl->slice_alpha_c0_offset - qp_bd_offset;
     int b = 52 + sl->slice_beta_offset - qp_bd_offset;
 
@@ -767,7 +768,7 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
                     bS[i] = 4;
                 else{
                     bS[i] = 1 + !!(sl->non_zero_count_cache[12+8*(i>>1)] |
-                         ((!h->pps.cabac && IS_8x8DCT(mbn_type)) ?
+                         ((!h->ps.pps->cabac && IS_8x8DCT(mbn_type)) ?
                             (h->cbp_table[mbn_xy] & (((MB_FIELD(sl) ? (i&2) : (mb_y&1)) ? 8 : 2) << 12))
                                                                        :
                             h->non_zero_count[mbn_xy][ off[i] ]));
@@ -779,15 +780,15 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
         mbn0_qp = h->cur_pic.qscale_table[sl->left_mb_xy[0]];
         mbn1_qp = h->cur_pic.qscale_table[sl->left_mb_xy[1]];
         qp[0] = ( mb_qp + mbn0_qp + 1 ) >> 1;
-        bqp[0] = ( get_chroma_qp( h, 0, mb_qp ) +
-                   get_chroma_qp( h, 0, mbn0_qp ) + 1 ) >> 1;
-        rqp[0] = ( get_chroma_qp( h, 1, mb_qp ) +
-                   get_chroma_qp( h, 1, mbn0_qp ) + 1 ) >> 1;
+        bqp[0] = (get_chroma_qp(h->ps.pps, 0, mb_qp) +
+                  get_chroma_qp(h->ps.pps, 0, mbn0_qp) + 1) >> 1;
+        rqp[0] = (get_chroma_qp(h->ps.pps, 1, mb_qp) +
+                  get_chroma_qp(h->ps.pps, 1, mbn0_qp) + 1) >> 1;
         qp[1] = ( mb_qp + mbn1_qp + 1 ) >> 1;
-        bqp[1] = ( get_chroma_qp( h, 0, mb_qp ) +
-                   get_chroma_qp( h, 0, mbn1_qp ) + 1 ) >> 1;
-        rqp[1] = ( get_chroma_qp( h, 1, mb_qp ) +
-                   get_chroma_qp( h, 1, mbn1_qp ) + 1 ) >> 1;
+        bqp[1] = (get_chroma_qp(h->ps.pps, 0, mb_qp) +
+                  get_chroma_qp(h->ps.pps, 0, mbn1_qp) + 1 ) >> 1;
+        rqp[1] = (get_chroma_qp(h->ps.pps, 1, mb_qp) +
+                  get_chroma_qp(h->ps.pps, 1, mbn1_qp) + 1 ) >> 1;
 
         /* Filter edge */
         ff_tlog(h->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPb:%d/%d QPr:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], bqp[0], bqp[1], rqp[0], rqp[1], linesize, uvlinesize);

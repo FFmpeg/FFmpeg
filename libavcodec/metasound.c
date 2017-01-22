@@ -25,12 +25,13 @@
 #include <math.h>
 #include <stdint.h>
 
-#define BITSTREAM_READER_LE
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
 #include "fft.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "lsp.h"
 #include "sinewin.h"
@@ -383,7 +384,7 @@ AVCodec ff_metasound_decoder = {
     .init           = metasound_decode_init,
     .close          = ff_twinvq_decode_close,
     .decode         = ff_twinvq_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

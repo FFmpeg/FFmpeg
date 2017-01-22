@@ -29,6 +29,7 @@
 
 #include "avformat.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "internal.h"
 
 #include "libavutil/avassert.h"
@@ -49,6 +50,7 @@ typedef struct WebMChunkContext {
     char *header_filename;
     int chunk_duration;
     int chunk_index;
+    char *http_method;
     uint64_t duration_written;
     int prev_pts;
     AVOutputFormat *oformat;
@@ -91,6 +93,7 @@ static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
     }
     if (is_header) {
         if (!wc->header_filename) {
+            av_log(oc, AV_LOG_ERROR, "No header filename provided\n");
             return AVERROR(EINVAL);
         }
         av_strlcpy(filename, wc->header_filename, strlen(wc->header_filename) + 1);
@@ -109,6 +112,8 @@ static int webm_chunk_write_header(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = NULL;
     int ret;
+    int i;
+    AVDictionary *options = NULL;
 
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
@@ -125,8 +130,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = get_chunk_filename(s, 1, oc->filename);
     if (ret < 0)
         return ret;
-    ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options);
+    av_dict_free(&options);
     if (ret < 0)
         return ret;
 
@@ -134,7 +141,11 @@ static int webm_chunk_write_header(AVFormatContext *s)
     ret = oc->oformat->write_header(oc);
     if (ret < 0)
         return ret;
-    avio_close(oc->pb);
+    ff_format_io_close(s, &oc->pb);
+    for (i = 0; i < s->nb_streams; i++) {
+        // ms precision is the de-facto standard timescale for mkv files.
+        avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
+    }
     return 0;
 }
 
@@ -160,6 +171,7 @@ static int chunk_end(AVFormatContext *s)
     uint8_t *buffer;
     AVIOContext *pb;
     char filename[MAX_FILENAME_SIZE];
+    AVDictionary *options = NULL;
 
     if (wc->chunk_start_index == wc->chunk_index)
         return 0;
@@ -169,15 +181,16 @@ static int chunk_end(AVFormatContext *s)
     ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
         goto fail;
-    ret = avio_open2(&pb, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, &options);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
-    ret = avio_close(pb);
-    if (ret < 0)
-        goto fail;
+    ff_format_io_close(s, &pb);
     oc->pb = NULL;
 fail:
+    av_dict_free(&options);
     av_free(buffer);
     return (ret < 0) ? ret : 0;
 }
@@ -189,7 +202,7 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int ret;
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
                                              st->time_base,
                                              (AVRational) {1, 1000});
@@ -198,9 +211,9 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // For video, a new chunk is started only on key frames. For audio, a new
     // chunk is started based on chunk_duration.
-    if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+    if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
          (pkt->flags & AV_PKT_FLAG_KEY)) ||
-        (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+        (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
          (pkt->pts == 0 || wc->duration_written >= wc->chunk_duration))) {
         wc->duration_written = 0;
         if ((ret = chunk_end(s)) < 0 || (ret = chunk_start(s)) < 0) {
@@ -239,6 +252,7 @@ static const AVOption options[] = {
     { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_start_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "header", "filename of the header where the initialization data will be written", OFFSET(header_filename), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "audio_chunk_duration", "duration of each chunk in milliseconds", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 5000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "method", "set the HTTP method", OFFSET(http_method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

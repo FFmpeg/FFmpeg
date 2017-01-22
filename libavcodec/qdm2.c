@@ -35,14 +35,16 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define BITSTREAM_READER_LE
 #include "libavutil/channel_layout.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "bytestream.h"
 #include "internal.h"
-#include "rdft.h"
-#include "mpegaudiodsp.h"
 #include "mpegaudio.h"
+#include "mpegaudiodsp.h"
+#include "rdft.h"
 
 #include "qdm2_tablegen.h"
 
@@ -235,7 +237,7 @@ static int qdm2_get_se_vlc(const VLC *vlc, GetBitContext *gb, int depth)
 /**
  * QDM2 checksum
  *
- * @param data      pointer to data to be checksum'ed
+ * @param data      pointer to data to be checksummed
  * @param length    data length
  * @param value     checksum value
  *
@@ -536,7 +538,7 @@ static void fill_coding_method_array(sb_int8_array tone_level_idx,
         /* This case is untested, no samples available */
         avpriv_request_sample(NULL, "!superblocktype_2_3");
         return;
-        for (ch = 0; ch < nb_channels; ch++)
+        for (ch = 0; ch < nb_channels; ch++) {
             for (sb = 0; sb < 30; sb++) {
                 for (j = 1; j < 63; j++) {  // The loop only iterates to 63 so the code doesn't overflow the buffer
                     add1 = tone_level_idx[ch][sb][j] - 10;
@@ -565,67 +567,68 @@ static void fill_coding_method_array(sb_int8_array tone_level_idx,
                 }
                 tone_level_idx_temp[ch][sb][0] = tone_level_idx_temp[ch][sb][1];
             }
-            acc = 0;
-            for (ch = 0; ch < nb_channels; ch++)
-                for (sb = 0; sb < 30; sb++)
-                    for (j = 0; j < 64; j++)
-                        acc += tone_level_idx_temp[ch][sb][j];
-
-            multres = 0x66666667LL * (acc * 10);
-            esp_40 = (multres >> 32) / 8 + ((multres & 0xffffffff) >> 31);
-            for (ch = 0;  ch < nb_channels; ch++)
-                for (sb = 0; sb < 30; sb++)
-                    for (j = 0; j < 64; j++) {
-                        comp = tone_level_idx_temp[ch][sb][j]* esp_40 * 10;
-                        if (comp < 0)
-                            comp += 0xff;
-                        comp /= 256; // signed shift
-                        switch(sb) {
-                            case 0:
-                                if (comp < 30)
-                                    comp = 30;
-                                comp += 15;
-                                break;
-                            case 1:
-                                if (comp < 24)
-                                    comp = 24;
-                                comp += 10;
-                                break;
-                            case 2:
-                            case 3:
-                            case 4:
-                                if (comp < 16)
-                                    comp = 16;
-                        }
-                        if (comp <= 5)
-                            tmp = 0;
-                        else if (comp <= 10)
-                            tmp = 10;
-                        else if (comp <= 16)
-                            tmp = 16;
-                        else if (comp <= 24)
-                            tmp = -1;
-                        else
-                            tmp = 0;
-                        coding_method[ch][sb][j] = ((tmp & 0xfffa) + 30 )& 0xff;
-                    }
+        }
+        acc = 0;
+        for (ch = 0; ch < nb_channels; ch++)
             for (sb = 0; sb < 30; sb++)
-                fix_coding_method_array(sb, nb_channels, coding_method);
-            for (ch = 0; ch < nb_channels; ch++)
-                for (sb = 0; sb < 30; sb++)
-                    for (j = 0; j < 64; j++)
-                        if (sb >= 10) {
-                            if (coding_method[ch][sb][j] < 10)
-                                coding_method[ch][sb][j] = 10;
+                for (j = 0; j < 64; j++)
+                    acc += tone_level_idx_temp[ch][sb][j];
+
+        multres = 0x66666667LL * (acc * 10);
+        esp_40 = (multres >> 32) / 8 + ((multres & 0xffffffff) >> 31);
+        for (ch = 0;  ch < nb_channels; ch++)
+            for (sb = 0; sb < 30; sb++)
+                for (j = 0; j < 64; j++) {
+                    comp = tone_level_idx_temp[ch][sb][j]* esp_40 * 10;
+                    if (comp < 0)
+                        comp += 0xff;
+                    comp /= 256; // signed shift
+                    switch(sb) {
+                        case 0:
+                            if (comp < 30)
+                                comp = 30;
+                            comp += 15;
+                            break;
+                        case 1:
+                            if (comp < 24)
+                                comp = 24;
+                            comp += 10;
+                            break;
+                        case 2:
+                        case 3:
+                        case 4:
+                            if (comp < 16)
+                                comp = 16;
+                    }
+                    if (comp <= 5)
+                        tmp = 0;
+                    else if (comp <= 10)
+                        tmp = 10;
+                    else if (comp <= 16)
+                        tmp = 16;
+                    else if (comp <= 24)
+                        tmp = -1;
+                    else
+                        tmp = 0;
+                    coding_method[ch][sb][j] = ((tmp & 0xfffa) + 30 )& 0xff;
+                }
+        for (sb = 0; sb < 30; sb++)
+            fix_coding_method_array(sb, nb_channels, coding_method);
+        for (ch = 0; ch < nb_channels; ch++)
+            for (sb = 0; sb < 30; sb++)
+                for (j = 0; j < 64; j++)
+                    if (sb >= 10) {
+                        if (coding_method[ch][sb][j] < 10)
+                            coding_method[ch][sb][j] = 10;
+                    } else {
+                        if (sb >= 2) {
+                            if (coding_method[ch][sb][j] < 16)
+                                coding_method[ch][sb][j] = 16;
                         } else {
-                            if (sb >= 2) {
-                                if (coding_method[ch][sb][j] < 16)
-                                    coding_method[ch][sb][j] = 16;
-                            } else {
-                                if (coding_method[ch][sb][j] < 30)
-                                    coding_method[ch][sb][j] = 30;
-                            }
+                            if (coding_method[ch][sb][j] < 30)
+                                coding_method[ch][sb][j] = 30;
                         }
+                    }
     } else { // superblocktype_2_3 != 0
         for (ch = 0; ch < nb_channels; ch++)
             for (sb = 0; sb < 30; sb++)
@@ -635,7 +638,6 @@ static void fill_coding_method_array(sb_int8_array tone_level_idx,
 }
 
 /**
- *
  * Called by process_subpacket_11 to process more data from subpacket 11
  * with sb 0-8.
  * Called by process_subpacket_12 to process data from subpacket 12 with
@@ -1604,9 +1606,8 @@ static av_cold void qdm2_init_static_data(void) {
 static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 {
     QDM2Context *s = avctx->priv_data;
-    uint8_t *extradata;
-    int extradata_size;
     int tmp_val, tmp, size;
+    GetByteContext gb;
 
     qdm2_init_static_data();
 
@@ -1649,55 +1650,39 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    extradata      = avctx->extradata;
-    extradata_size = avctx->extradata_size;
+    bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 
-    while (extradata_size > 7) {
-        if (!memcmp(extradata, "frmaQDM", 7))
+    while (bytestream2_get_bytes_left(&gb) > 8) {
+        if (bytestream2_peek_be64(&gb) == (((uint64_t)MKBETAG('f','r','m','a') << 32) |
+                                            (uint64_t)MKBETAG('Q','D','M','2')))
             break;
-        extradata++;
-        extradata_size--;
+        bytestream2_skip(&gb, 1);
     }
 
-    if (extradata_size < 12) {
+    if (bytestream2_get_bytes_left(&gb) < 12) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata (%i)\n",
-               extradata_size);
+               bytestream2_get_bytes_left(&gb));
         return AVERROR_INVALIDDATA;
     }
 
-    if (memcmp(extradata, "frmaQDM", 7)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid headers, QDM? not found\n");
-        return AVERROR_INVALIDDATA;
-    }
+    bytestream2_skip(&gb, 8);
+    size = bytestream2_get_be32(&gb);
 
-    if (extradata[7] == 'C') {
-//        s->is_qdmc = 1;
-        avpriv_report_missing_feature(avctx, "QDMC version 1");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    extradata += 8;
-    extradata_size -= 8;
-
-    size = AV_RB32(extradata);
-
-    if(size > extradata_size){
+    if (size > bytestream2_get_bytes_left(&gb)) {
         av_log(avctx, AV_LOG_ERROR, "extradata size too small, %i < %i\n",
-               extradata_size, size);
+               bytestream2_get_bytes_left(&gb), size);
         return AVERROR_INVALIDDATA;
     }
 
-    extradata += 4;
     av_log(avctx, AV_LOG_DEBUG, "size: %d\n", size);
-    if (AV_RB32(extradata) != MKBETAG('Q','D','C','A')) {
+    if (bytestream2_get_be32(&gb) != MKBETAG('Q','D','C','A')) {
         av_log(avctx, AV_LOG_ERROR, "invalid extradata, expecting QDCA\n");
         return AVERROR_INVALIDDATA;
     }
 
-    extradata += 8;
+    bytestream2_skip(&gb, 4);
 
-    avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
-    extradata += 4;
+    avctx->channels = s->nb_channels = s->channels = bytestream2_get_be32(&gb);
     if (s->channels <= 0 || s->channels > MPA_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
@@ -1705,19 +1690,11 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
                                                    AV_CH_LAYOUT_MONO;
 
-    avctx->sample_rate = AV_RB32(extradata);
-    extradata += 4;
-
-    avctx->bit_rate = AV_RB32(extradata);
-    extradata += 4;
-
-    s->group_size = AV_RB32(extradata);
-    extradata += 4;
-
-    s->fft_size = AV_RB32(extradata);
-    extradata += 4;
-
-    s->checksum_size = AV_RB32(extradata);
+    avctx->sample_rate = bytestream2_get_be32(&gb);
+    avctx->bit_rate = bytestream2_get_be32(&gb);
+    s->group_size = bytestream2_get_be32(&gb);
+    s->fft_size = bytestream2_get_be32(&gb);
+    s->checksum_size = bytestream2_get_be32(&gb);
     if (s->checksum_size >= 1U << 28) {
         av_log(avctx, AV_LOG_ERROR, "data block size too large (%u)\n", s->checksum_size);
         return AVERROR_INVALIDDATA;
@@ -1832,7 +1809,7 @@ static int qdm2_decode(QDM2Context *q, const uint8_t *in, int16_t *out)
 
     q->sub_packet = (q->sub_packet + 1) % 16;
 
-    /* clip and convert output float[] to 16bit signed samples */
+    /* clip and convert output float[] to 16-bit signed samples */
     for (i = 0; i < frame_size; i++) {
         int value = (int)q->output_buffer[i];
 
@@ -1888,5 +1865,5 @@ AVCodec ff_qdm2_decoder = {
     .init             = qdm2_decode_init,
     .close            = qdm2_decode_close,
     .decode           = qdm2_decode_frame,
-    .capabilities     = CODEC_CAP_DR1,
+    .capabilities     = AV_CODEC_CAP_DR1,
 };

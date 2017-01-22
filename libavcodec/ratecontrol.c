@@ -26,16 +26,14 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "ratecontrol.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "libavutil/eval.h"
-
-#ifndef M_E
-#define M_E 2.718281828
-#endif
 
 static int init_pass2(MpegEncContext *s);
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce,
@@ -144,6 +142,13 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         return res;
     }
 
+#if FF_API_RC_STRATEGY
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!s->rc_strategy)
+        s->rc_strategy = s->avctx->rc_strategy;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     for (i = 0; i < 5; i++) {
         rcc->pred[i].coeff = FF_QP2LAMBDA * 7.0;
         rcc->pred[i].count = 1.0;
@@ -161,7 +166,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
     if (!rcc->buffer_index)
         rcc->buffer_index = s->avctx->rc_buffer_size * 3 / 4;
 
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         int i;
         char *p;
 
@@ -177,8 +182,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return AVERROR(ENOMEM);
         rcc->num_entries = i;
 
-        /* init all to skipped p frames
-         * (with b frames we might have a not encoded frame at the end FIXME) */
+        /* init all to skipped P-frames
+         * (with B-frames we might have a not encoded frame at the end FIXME) */
         for (i = 0; i < rcc->num_entries; i++) {
             RateControlEntry *rce = &rcc->entry[i];
 
@@ -198,7 +203,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
 
             next = strchr(p, ';');
             if (next) {
-                (*next) = 0; // sscanf in unbelievably slow on looong strings // FIXME copy / do not write
+                (*next) = 0; // sscanf is unbelievably slow on looong strings // FIXME copy / do not write
                 next++;
             }
             e = sscanf(p, " in:%d ", &picture_number);
@@ -228,8 +233,12 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             return -1;
         }
 
+#if FF_API_RC_STRATEGY
+        av_assert0(MPV_RC_STRATEGY_XVID == FF_RC_STRATEGY_XVID);
+#endif
+
         // FIXME maybe move to end
-        if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
+        if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID) {
 #if CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
@@ -240,7 +249,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         }
     }
 
-    if (!(s->avctx->flags & CODEC_FLAG_PASS2)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_PASS2)) {
         rcc->short_term_qsum   = 0.001;
         rcc->short_term_qcount = 0.001;
 
@@ -309,7 +318,7 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID)
         ff_xvid_rate_control_uninit(s);
 #endif
 }
@@ -643,9 +652,9 @@ static void adaptive_quantization(MpegEncContext *s, double q)
         int mb_distance;
         float mb_factor = 0.0;
         if (spat_cplx < 4)
-            spat_cplx = 4;              // FIXME finetune
+            spat_cplx = 4;              // FIXME fine-tune
         if (temp_cplx < 4)
-            temp_cplx = 4;              // FIXME finetune
+            temp_cplx = 4;              // FIXME fine-tune
 
         if ((s->mb_type[mb_xy] & CANDIDATE_MB_TYPE_INTRA)) { // FIXME hq mode
             cplx   = spat_cplx;
@@ -762,8 +771,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     emms_c();
 
 #if CONFIG_LIBXVID
-    if ((s->avctx->flags & CODEC_FLAG_PASS2) &&
-        s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
 #endif
 
@@ -782,7 +790,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
                          s->frame_bits - s->stuffing_bits);
     }
 
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         av_assert0(picture_number >= 0);
         if (picture_number >= rcc->num_entries) {
             av_log(s, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
@@ -816,7 +824,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     var = pict_type == AV_PICTURE_TYPE_I ? pic->mb_var_sum : pic->mc_mb_var_sum;
 
     short_term_q = 0; /* avoid warning */
-    if (s->avctx->flags & CODEC_FLAG_PASS2) {
+    if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         if (pict_type != AV_PICTURE_TYPE_I)
             av_assert0(pict_type == rce->new_pict_type);
 
@@ -882,7 +890,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     if (s->avctx->debug & FF_DEBUG_RC) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f "
-               "size:%d var:%"PRId64"/%"PRId64" br:%d fps:%d\n",
+               "size:%d var:%"PRId64"/%"PRId64" br:%"PRId64" fps:%d\n",
                av_get_picture_type_char(pict_type),
                qmin, q, qmax, picture_number,
                (int)wanted_bits / 1000, (int)s->total_bits / 1000,
@@ -1049,9 +1057,9 @@ static int init_pass2(MpegEncContext *s)
     }
     av_assert0(toobig <= 40);
     av_log(s->avctx, AV_LOG_DEBUG,
-           "[lavc rc] requested bitrate: %d bps  expected bitrate: %d bps\n",
+           "[lavc rc] requested bitrate: %"PRId64" bps  expected bitrate: %"PRId64" bps\n",
            s->bit_rate,
-           (int)(expected_bits / ((double)all_available_bits / s->bit_rate)));
+           (int64_t)(expected_bits / ((double)all_available_bits / s->bit_rate)));
     av_log(s->avctx, AV_LOG_DEBUG,
            "[lavc rc] estimated target average qp: %.3f\n",
            (float)qscale_sum / rcc->num_entries);

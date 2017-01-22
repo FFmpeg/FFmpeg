@@ -26,6 +26,10 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "avfilter.h"
 #include "bufferqueue.h"
 #include "formats.h"
@@ -59,7 +63,7 @@ inline static int push_frame(AVFilterContext *ctx)
     for (i = 0; i < ctx->nb_inputs; i++) {
         struct FFBufQueue *q = &s->queues[i];
 
-        if (!q->available && !ctx->inputs[i]->closed)
+        if (!q->available && !ctx->inputs[i]->status_out)
             return 0;
         if (q->available) {
             frame = ff_bufqueue_peek(q, 0);
@@ -180,8 +184,6 @@ static int config_output(AVFilterLink *outlink)
             }
         }
     }
-
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     return 0;
 }
 
@@ -192,7 +194,7 @@ static int request_frame(AVFilterLink *outlink)
     int i, ret;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (!s->queues[i].available && !ctx->inputs[i]->closed) {
+        if (!s->queues[i].available && !ctx->inputs[i]->status_out) {
             ret = ff_request_frame(ctx->inputs[i]);
             if (ret != AVERROR_EOF)
                 return ret;

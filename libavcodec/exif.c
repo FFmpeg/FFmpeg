@@ -41,14 +41,14 @@ static const char *exif_get_tag_name(uint16_t id)
 }
 
 
-static int exif_add_metadata(AVCodecContext *avctx, int count, int type,
+static int exif_add_metadata(void *logctx, int count, int type,
                              const char *name, const char *sep,
                              GetByteContext *gb, int le,
                              AVDictionary **metadata)
 {
     switch(type) {
     case 0:
-        av_log(avctx, AV_LOG_WARNING,
+        av_log(logctx, AV_LOG_WARNING,
                "Invalid TIFF tag type 0 found for %s with size %d\n",
                name, count);
         return 0;
@@ -64,13 +64,13 @@ static int exif_add_metadata(AVCodecContext *avctx, int count, int type,
     case TIFF_SLONG    :
     case TIFF_LONG     : return ff_tadd_long_metadata(count, name, sep, gb, le, metadata);
     default:
-        avpriv_request_sample(avctx, "TIFF tag type (%u)", type);
+        avpriv_request_sample(logctx, "TIFF tag type (%u)", type);
         return 0;
     };
 }
 
 
-static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le,
+static int exif_decode_tag(void *logctx, GetByteContext *gbytes, int le,
                            int depth, AVDictionary **metadata)
 {
     int ret, cur_pos;
@@ -92,7 +92,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
     // store metadata or proceed with next IFD
     ret = ff_tis_ifd(id);
     if (ret) {
-        ret = avpriv_exif_decode_ifd(avctx, gbytes, le, depth + 1, metadata);
+        ret = avpriv_exif_decode_ifd(logctx, gbytes, le, depth + 1, metadata);
     } else {
         const char *name = exif_get_tag_name(id);
         char *use_name   = (char*) name;
@@ -105,7 +105,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
             snprintf(use_name, 7, "0x%04X", id);
         }
 
-        ret = exif_add_metadata(avctx, count, type, use_name, NULL,
+        ret = exif_add_metadata(logctx, count, type, use_name, NULL,
                                 gbytes, le, metadata);
 
         if (!name) {
@@ -119,7 +119,7 @@ static int exif_decode_tag(AVCodecContext *avctx, GetByteContext *gbytes, int le
 }
 
 
-int avpriv_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le,
+int avpriv_exif_decode_ifd(void *logctx, GetByteContext *gbytes, int le,
                            int depth, AVDictionary **metadata)
 {
     int i, ret;
@@ -132,7 +132,7 @@ int avpriv_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le
     }
 
     for (i = 0; i < entries; i++) {
-        if ((ret = exif_decode_tag(avctx, gbytes, le, depth, metadata)) < 0) {
+        if ((ret = exif_decode_tag(logctx, gbytes, le, depth, metadata)) < 0) {
             return ret;
         }
     }

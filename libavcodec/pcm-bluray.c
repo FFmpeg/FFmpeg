@@ -117,9 +117,9 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         ff_dlog(avctx,
-                "pcm_bluray_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
+                "pcm_bluray_parse_header: %d channels, %d bits per sample, %d Hz, %"PRId64" bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
-                avctx->sample_rate, avctx->bit_rate);
+                avctx->sample_rate, (int64_t)avctx->bit_rate);
     return 0;
 }
 
@@ -307,7 +307,7 @@ AVCodec ff_pcm_bluray_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_PCM_BLURAY,
     .decode         = pcm_bluray_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]){
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE
     },

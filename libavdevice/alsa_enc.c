@@ -55,20 +55,20 @@ static av_cold int audio_write_header(AVFormatContext *s1)
     enum AVCodecID codec_id;
     int res;
 
-    if (s1->nb_streams != 1 || s1->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
+    if (s1->nb_streams != 1 || s1->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         av_log(s1, AV_LOG_ERROR, "Only a single audio stream is supported.\n");
         return AVERROR(EINVAL);
     }
     st = s1->streams[0];
 
-    sample_rate = st->codec->sample_rate;
-    codec_id    = st->codec->codec_id;
+    sample_rate = st->codecpar->sample_rate;
+    codec_id    = st->codecpar->codec_id;
     res = ff_alsa_open(s1, SND_PCM_STREAM_PLAYBACK, &sample_rate,
-        st->codec->channels, &codec_id);
-    if (sample_rate != st->codec->sample_rate) {
+        st->codecpar->channels, &codec_id);
+    if (sample_rate != st->codecpar->sample_rate) {
         av_log(s1, AV_LOG_ERROR,
                "sample rate %d not available, nearest is %d\n",
-               st->codec->sample_rate, sample_rate);
+               st->codecpar->sample_rate, sample_rate);
         goto fail;
     }
     avpriv_set_pts_info(st, 64, 1, sample_rate);
@@ -124,7 +124,7 @@ static int audio_write_frame(AVFormatContext *s1, int stream_index,
 
     /* ff_alsa_open() should have accepted only supported formats */
     if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
-        return av_sample_fmt_is_planar(s1->streams[stream_index]->codec->sample_fmt) ?
+        return av_sample_fmt_is_planar(s1->streams[stream_index]->codecpar->format) ?
                AVERROR(EINVAL) : 0;
     /* set only used fields */
     pkt.data     = (*frame)->data[0];

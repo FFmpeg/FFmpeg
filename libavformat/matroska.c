@@ -1,6 +1,6 @@
 /*
  * Matroska common data
- * Copyright (c) 2003-2004 The FFmpeg Project
+ * Copyright (c) 2003-2004 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -35,7 +35,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_FLAC"           , AV_CODEC_ID_FLAC},
     {"A_MLP"            , AV_CODEC_ID_MLP},
     {"A_MPEG/L2"        , AV_CODEC_ID_MP2},
-    {"A_MPEG/L1"        , AV_CODEC_ID_MP2},
+    {"A_MPEG/L1"        , AV_CODEC_ID_MP1},
     {"A_MPEG/L3"        , AV_CODEC_ID_MP3},
     {"A_OPUS"           , AV_CODEC_ID_OPUS},
     {"A_OPUS/EXPERIMENTAL",AV_CODEC_ID_OPUS},
@@ -150,25 +150,12 @@ const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_CO
 
 int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode)
 {
-    AVPacketSideData *sd, *tmp;
     AVStereo3D *stereo;
+    int ret;
 
     stereo = av_stereo3d_alloc();
     if (!stereo)
         return AVERROR(ENOMEM);
-
-    tmp = av_realloc_array(st->side_data, st->nb_side_data + 1, sizeof(*tmp));
-    if (!tmp) {
-        av_freep(&stereo);
-        return AVERROR(ENOMEM);
-    }
-    st->side_data = tmp;
-    st->nb_side_data++;
-
-    sd = &st->side_data[st->nb_side_data - 1];
-    sd->type = AV_PKT_DATA_STEREO3D;
-    sd->data = (uint8_t *)stereo;
-    sd->size = sizeof(*stereo);
 
     // note: the missing breaks are intentional
     switch (stereo_mode) {
@@ -205,6 +192,13 @@ int ff_mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mode)
     case MATROSKA_VIDEO_STEREOMODE_TYPE_BOTH_EYES_BLOCK_LR:
         stereo->type = AV_STEREO3D_FRAMESEQUENCE;
         break;
+    }
+
+    ret = av_stream_add_side_data(st, AV_PKT_DATA_STEREO3D, (uint8_t *)stereo,
+                                  sizeof(*stereo));
+    if (ret < 0) {
+        av_freep(&stereo);
+        return ret;
     }
 
     return 0;

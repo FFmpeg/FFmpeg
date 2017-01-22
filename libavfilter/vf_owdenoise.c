@@ -42,6 +42,7 @@ typedef struct {
     float *plane[16+1][4];
     int linesize;
     int hsub, vsub;
+    int pixel_depth;
 } OWDenoiseContext;
 
 #define OFFSET(x) offsetof(OWDenoiseContext, x)
@@ -188,9 +189,18 @@ static void filter(OWDenoiseContext *s,
     while (1<<depth > width || 1<<depth > height)
         depth--;
 
-    for (y = 0; y < height; y++)
-        for(x = 0; x < width; x++)
-            s->plane[0][0][y*s->linesize + x] = src[y*src_linesize + x];
+    if (s->pixel_depth <= 8) {
+        for (y = 0; y < height; y++)
+            for(x = 0; x < width; x++)
+                s->plane[0][0][y*s->linesize + x] = src[y*src_linesize + x];
+    } else {
+        const uint16_t *src16 = (const uint16_t *)src;
+
+        src_linesize /= 2;
+        for (y = 0; y < height; y++)
+            for(x = 0; x < width; x++)
+                s->plane[0][0][y*s->linesize + x] = src16[y*src_linesize + x];
+    }
 
     for (i = 0; i < depth; i++)
         decompose2D2(s->plane[i + 1], s->plane[i][0], s->plane[0] + 1, s->linesize, 1<<i, width, height);
@@ -211,28 +221,45 @@ static void filter(OWDenoiseContext *s,
     for (i = depth-1; i >= 0; i--)
         compose2D2(s->plane[i][0], s->plane[i + 1], s->plane[0] + 1, s->linesize, 1<<i, width, height);
 
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            i = s->plane[0][0][y*s->linesize + x] + dither[x&7][y&7]*(1.0/64) + 1.0/128; // yes the rounding is insane but optimal :)
-            if ((unsigned)i > 255U) i = ~(i >> 31);
-            dst[y*dst_linesize + x] = i;
+    if (s->pixel_depth <= 8) {
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                i = s->plane[0][0][y*s->linesize + x] + dither[x&7][y&7]*(1.0/64) + 1.0/128; // yes the rounding is insane but optimal :)
+                if ((unsigned)i > 255U) i = ~(i >> 31);
+                dst[y*dst_linesize + x] = i;
+            }
+        }
+    } else {
+        uint16_t *dst16 = (uint16_t *)dst;
+
+        dst_linesize /= 2;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
+                i = s->plane[0][0][y*s->linesize + x];
+                dst16[y*dst_linesize + x] = i;
+            }
         }
     }
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    int direct = 0;
     AVFilterContext *ctx = inlink->dst;
     OWDenoiseContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    const int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-    const int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+    const int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
     if (av_frame_is_writable(in)) {
-        direct = 1;
         out = in;
+
+        if (s->luma_strength > 0)
+            filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
+        if (s->chroma_strength > 0) {
+            filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,        ch,        s->chroma_strength);
+            filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,        ch,        s->chroma_strength);
+        }
     } else {
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
@@ -240,13 +267,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             return AVERROR(ENOMEM);
         }
         av_frame_copy_props(out, in);
-    }
 
-    filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
-    filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,        ch,        s->chroma_strength);
-    filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,        ch,        s->chroma_strength);
+        if (s->luma_strength > 0) {
+            filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
+        } else {
+            av_image_copy_plane(out->data[0], out->linesize[0], in ->data[0], in ->linesize[0], inlink->w, inlink->h);
+        }
+        if (s->chroma_strength > 0) {
+            filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw, ch, s->chroma_strength);
+            filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw, ch, s->chroma_strength);
+        } else {
+            av_image_copy_plane(out->data[1], out->linesize[1], in ->data[1], in ->linesize[1], inlink->w, inlink->h);
+            av_image_copy_plane(out->data[2], out->linesize[2], in ->data[2], in ->linesize[2], inlink->w, inlink->h);
+        }
 
-    if (!direct) {
         if (in->data[3])
             av_image_copy_plane(out->data[3], out->linesize[3],
                                 in ->data[3], in ->linesize[3],
@@ -265,6 +299,13 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P,     AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -282,6 +323,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
+    s->pixel_depth = desc->comp[0].depth;
 
     s->linesize = FFALIGN(inlink->w, 16);
     for (j = 0; j < 4; j++) {

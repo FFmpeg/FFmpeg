@@ -33,7 +33,7 @@ static av_cold int write_header(AVFormatContext *s1)
         .type = V4L2_BUF_TYPE_VIDEO_OUTPUT
     };
     V4L2Context *s = s1->priv_data;
-    AVCodecContext *enc_ctx;
+    AVCodecParameters *par;
     uint32_t v4l2_pixfmt;
 
     if (s1->flags & AVFMT_FLAG_NONBLOCK)
@@ -47,19 +47,19 @@ static av_cold int write_header(AVFormatContext *s1)
     }
 
     if (s1->nb_streams != 1 ||
-        s1->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-        s1->streams[0]->codec->codec_id   != AV_CODEC_ID_RAWVIDEO) {
+        s1->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+        s1->streams[0]->codecpar->codec_id   != AV_CODEC_ID_RAWVIDEO) {
         av_log(s1, AV_LOG_ERROR,
                "V4L2 output device supports only a single raw video stream\n");
         return AVERROR(EINVAL);
     }
 
-    enc_ctx = s1->streams[0]->codec;
+    par = s1->streams[0]->codecpar;
 
-    v4l2_pixfmt = ff_fmt_ff2v4l(enc_ctx->pix_fmt, AV_CODEC_ID_RAWVIDEO);
+    v4l2_pixfmt = ff_fmt_ff2v4l(par->format, AV_CODEC_ID_RAWVIDEO);
     if (!v4l2_pixfmt) { // XXX: try to force them one by one?
         av_log(s1, AV_LOG_ERROR, "Unknown V4L2 pixel format equivalent for %s\n",
-               av_get_pix_fmt_name(enc_ctx->pix_fmt));
+               av_get_pix_fmt_name(par->format));
         return AVERROR(EINVAL);
     }
 
@@ -69,10 +69,10 @@ static av_cold int write_header(AVFormatContext *s1)
         return res;
     }
 
-    fmt.fmt.pix.width       = enc_ctx->width;
-    fmt.fmt.pix.height      = enc_ctx->height;
+    fmt.fmt.pix.width       = par->width;
+    fmt.fmt.pix.height      = par->height;
     fmt.fmt.pix.pixelformat = v4l2_pixfmt;
-    fmt.fmt.pix.sizeimage   = av_image_get_buffer_size(enc_ctx->pix_fmt, enc_ctx->width, enc_ctx->height, 1);
+    fmt.fmt.pix.sizeimage   = av_image_get_buffer_size(par->format, par->width, par->height, 1);
 
     if (ioctl(s->fd, VIDIOC_S_FMT, &fmt) < 0) {
         res = AVERROR(errno);

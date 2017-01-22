@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DXVA_H
-#define AVCODEC_DXVA_H
+#ifndef AVCODEC_DXVA2_H
+#define AVCODEC_DXVA2_H
 
 /**
  * @file
@@ -29,9 +29,9 @@
  * Public libavcodec DXVA2 header.
  */
 
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0602
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0602
 #endif
 
 #include <stdint.h>
@@ -90,4 +90,4 @@ struct dxva_context {
  * @}
  */
 
-#endif /* AVCODEC_DXVA_H */
+#endif /* AVCODEC_DXVA2_H */

@@ -24,6 +24,7 @@
 #include "dict.h"
 #include "internal.h"
 #include "mem.h"
+#include "time_internal.h"
 #include "bprint.h"
 
 struct AVDictionary {
@@ -70,9 +71,12 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
                 int flags)
 {
     AVDictionary *m = *pm;
-    AVDictionaryEntry *tag = av_dict_get(m, key, NULL, flags);
+    AVDictionaryEntry *tag = NULL;
     char *oldval = NULL, *copy_key = NULL, *copy_value = NULL;
 
+    if (!(flags & AV_DICT_MULTIKEY)) {
+        tag = av_dict_get(m, key, NULL, flags);
+    }
     if (flags & AV_DICT_DONT_STRDUP_KEY)
         copy_key = (void *)key;
     else
@@ -98,7 +102,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
             av_free(tag->value);
         av_free(tag->key);
         *tag = m->elems[--m->count];
-    } else {
+    } else if (copy_value) {
         AVDictionaryEntry *tmp = av_realloc(m->elems,
                                             (m->count + 1) * sizeof(*m->elems));
         if (!tmp)
@@ -210,12 +214,17 @@ void av_dict_free(AVDictionary **pm)
     av_freep(pm);
 }
 
-void av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
+int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
 {
     AVDictionaryEntry *t = NULL;
 
-    while ((t = av_dict_get(src, "", t, AV_DICT_IGNORE_SUFFIX)))
-        av_dict_set(dst, t->key, t->value, flags);
+    while ((t = av_dict_get(src, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        int ret = av_dict_set(dst, t->key, t->value, flags);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
 }
 
 int av_dict_get_string(const AVDictionary *m, char **buffer,
@@ -246,116 +255,18 @@ int av_dict_get_string(const AVDictionary *m, char **buffer,
     return av_bprint_finalize(&bprint, buffer);
 }
 
-#ifdef TEST
-static void print_dict(const AVDictionary *m)
+int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp)
 {
-    AVDictionaryEntry *t = NULL;
-    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
-        printf("%s %s   ", t->key, t->value);
-    printf("\n");
+    time_t seconds = timestamp / 1000000;
+    struct tm *ptm, tmbuf;
+    ptm = gmtime_r(&seconds, &tmbuf);
+    if (ptm) {
+        char buf[32];
+        if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", ptm))
+            return AVERROR_EXTERNAL;
+        av_strlcatf(buf, sizeof(buf), ".%06dZ", (int)(timestamp % 1000000));
+        return av_dict_set(dict, key, buf, 0);
+    } else {
+        return AVERROR_EXTERNAL;
+    }
 }
-
-static void test_separators(const AVDictionary *m, const char pair, const char val)
-{
-    AVDictionary *dict = NULL;
-    char pairs[] = {pair , '\0'};
-    char vals[]  = {val, '\0'};
-
-    char *buffer = NULL;
-    av_dict_copy(&dict, m, 0);
-    print_dict(dict);
-    av_dict_get_string(dict, &buffer, val, pair);
-    printf("%s\n", buffer);
-    av_dict_free(&dict);
-    av_dict_parse_string(&dict, buffer, vals, pairs, 0);
-    av_freep(&buffer);
-    print_dict(dict);
-    av_dict_free(&dict);
-}
-
-int main(void)
-{
-    AVDictionary *dict = NULL;
-    AVDictionaryEntry *e;
-    char *buffer = NULL;
-
-    printf("Testing av_dict_get_string() and av_dict_parse_string()\n");
-    av_dict_get_string(dict, &buffer, '=', ',');
-    printf("%s\n", buffer);
-    av_freep(&buffer);
-    av_dict_set(&dict, "aaa", "aaa", 0);
-    av_dict_set(&dict, "b,b", "bbb", 0);
-    av_dict_set(&dict, "c=c", "ccc", 0);
-    av_dict_set(&dict, "ddd", "d,d", 0);
-    av_dict_set(&dict, "eee", "e=e", 0);
-    av_dict_set(&dict, "f,f", "f=f", 0);
-    av_dict_set(&dict, "g=g", "g,g", 0);
-    test_separators(dict, ',', '=');
-    av_dict_free(&dict);
-    av_dict_set(&dict, "aaa", "aaa", 0);
-    av_dict_set(&dict, "bbb", "bbb", 0);
-    av_dict_set(&dict, "ccc", "ccc", 0);
-    av_dict_set(&dict, "\\,=\'\"", "\\,=\'\"", 0);
-    test_separators(dict, '"',  '=');
-    test_separators(dict, '\'', '=');
-    test_separators(dict, ',', '"');
-    test_separators(dict, ',', '\'');
-    test_separators(dict, '\'', '"');
-    test_separators(dict, '"', '\'');
-    av_dict_free(&dict);
-
-    printf("\nTesting av_dict_set()\n");
-    av_dict_set(&dict, "a", "a", 0);
-    av_dict_set(&dict, "b", av_strdup("b"), AV_DICT_DONT_STRDUP_VAL);
-    av_dict_set(&dict, av_strdup("c"), "c", AV_DICT_DONT_STRDUP_KEY);
-    av_dict_set(&dict, av_strdup("d"), av_strdup("d"), AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
-    av_dict_set(&dict, "e", "e", AV_DICT_DONT_OVERWRITE);
-    av_dict_set(&dict, "e", "f", AV_DICT_DONT_OVERWRITE);
-    av_dict_set(&dict, "f", "f", 0);
-    av_dict_set(&dict, "f", NULL, 0);
-    av_dict_set(&dict, "ff", "f", 0);
-    av_dict_set(&dict, "ff", "f", AV_DICT_APPEND);
-    e = NULL;
-    while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX)))
-        printf("%s %s\n", e->key, e->value);
-    av_dict_free(&dict);
-
-    av_dict_set(&dict, NULL, "a", 0);
-    av_dict_set(&dict, NULL, "b", 0);
-    av_dict_get(dict, NULL, NULL, 0);
-    e = NULL;
-    while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX)))
-        printf("'%s' '%s'\n", e->key, e->value);
-    av_dict_free(&dict);
-
-
-    //valgrind sensible test
-    printf("\nTesting av_dict_set_int()\n");
-    av_dict_set_int(&dict, "1", 1, AV_DICT_DONT_STRDUP_VAL);
-    av_dict_set_int(&dict, av_strdup("2"), 2, AV_DICT_DONT_STRDUP_KEY);
-    av_dict_set_int(&dict, av_strdup("3"), 3, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
-    av_dict_set_int(&dict, "4", 4, 0);
-    av_dict_set_int(&dict, "5", 5, AV_DICT_DONT_OVERWRITE);
-    av_dict_set_int(&dict, "5", 6, AV_DICT_DONT_OVERWRITE);
-    av_dict_set_int(&dict, "12", 1, 0);
-    av_dict_set_int(&dict, "12", 2, AV_DICT_APPEND);
-    e = NULL;
-    while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX)))
-        printf("%s %s\n", e->key, e->value);
-    av_dict_free(&dict);
-
-    //valgrind sensible test
-    printf("\nTesting av_dict_set() with existing AVDictionaryEntry.key as key\n");
-    av_dict_set(&dict, "key", "old", 0);
-    e = av_dict_get(dict, "key", NULL, 0);
-    av_dict_set(&dict, e->key, "new val OK", 0);
-    e = av_dict_get(dict, "key", NULL, 0);
-    printf("%s\n", e->value);
-    av_dict_set(&dict, e->key, e->value, 0);
-    e = av_dict_get(dict, "key", NULL, 0);
-    printf("%s\n", e->value);
-    av_dict_free(&dict);
-
-    return 0;
-}
-#endif

@@ -376,19 +376,26 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
 static void guess_mv(ERContext *s)
 {
     uint8_t *fixed = s->er_temp_buffer;
-#define MV_FROZEN    3
+#define MV_FROZEN    4
 #define MV_CHANGED   2
 #define MV_UNCHANGED 1
     const int mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
-    const int mb_height = s->mb_height;
+    int mb_height = s->mb_height;
     int i, depth, num_avail;
     int mb_x, mb_y, mot_step, mot_stride;
+
+    if (s->last_pic.f && s->last_pic.f->data[0])
+        mb_height = FFMIN(mb_height, (s->last_pic.f->height+15)>>4);
+    if (s->next_pic.f && s->next_pic.f->data[0])
+        mb_height = FFMIN(mb_height, (s->next_pic.f->height+15)>>4);
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
     num_avail = 0;
-    for (i = 0; i < s->mb_num; i++) {
+    if (s->last_pic.motion_val[0])
+        ff_thread_await_progress(s->last_pic.tf, mb_height-1, 0);
+    for (i = 0; i < mb_width * mb_height; i++) {
         const int mb_xy = s->mb_index2xy[i];
         int f = 0;
         int error = s->error_status_table[mb_xy];
@@ -413,7 +420,7 @@ static void guess_mv(ERContext *s)
 
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
         num_avail <= mb_width / 2) {
-        for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+        for (mb_y = 0; mb_y < mb_height; mb_y++) {
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
                 int mv_dir = (s->last_pic.f && s->last_pic.f->data[0]) ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
@@ -442,20 +449,17 @@ static void guess_mv(ERContext *s)
             int score_sum = 0;
 
             changed = 0;
-            for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
-                for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+            for (mb_y = 0; mb_y < mb_height; mb_y++) {
+                for (mb_x = (mb_y ^ pass) & 1; mb_x < s->mb_width; mb_x+=2) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
-                    int mv_predictor[8][2] = { { 0 } };
-                    int ref[8]             = { 0 };
-                    int pred_count         = 0;
+                    int mv_predictor[8][2];
+                    int ref[8];
+                    int pred_count;
                     int j;
-                    int best_score         = 256 * 256 * 256 * 64;
-                    int best_pred          = 0;
-                    const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
-                    int prev_x = 0, prev_y = 0, prev_ref = 0;
-
-                    if ((mb_x ^ mb_y ^ pass) & 1)
-                        continue;
+                    int best_score;
+                    int best_pred;
+                    int mot_index;
+                    int prev_x, prev_y, prev_ref;
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
@@ -463,30 +467,24 @@ static void guess_mv(ERContext *s)
                     av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
                     j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (j == 0)
+                    if (mb_x > 0)
+                        j |= fixed[mb_xy - 1];
+                    if (mb_x + 1 < mb_width)
+                        j |= fixed[mb_xy + 1];
+                    if (mb_y > 0)
+                        j |= fixed[mb_xy - mb_stride];
+                    if (mb_y + 1 < mb_height)
+                        j |= fixed[mb_xy + mb_stride];
+
+                    if (!(j & MV_FROZEN))
                         continue;
 
-                    j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (j == 0 && pass > 1)
+                    if (!(j & MV_CHANGED) && pass > 1)
                         continue;
 
                     none_left = 0;
+                    pred_count = 0;
+                    mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
                     if (mb_x > 0 && fixed[mb_xy - 1]) {
                         mv_predictor[pred_count][0] =
@@ -573,26 +571,14 @@ static void guess_mv(ERContext *s)
 
 skip_mean_and_median:
                     /* zero MV */
+                    mv_predictor[pred_count][0] =
+                    mv_predictor[pred_count][1] =
+                             ref[pred_count]    = 0;
                     pred_count++;
 
-                    if (!fixed[mb_xy] && 0) {
-                        if (s->avctx->codec_id == AV_CODEC_ID_H264) {
-                            // FIXME
-                        } else {
-                            ff_thread_await_progress(s->last_pic.tf,
-                                                     mb_y, 0);
-                        }
-                        if (!s->last_pic.motion_val[0] ||
-                            !s->last_pic.ref_index[0])
-                            goto skip_last_mv;
-                        prev_x   = s->last_pic.motion_val[0][mot_index][0];
-                        prev_y   = s->last_pic.motion_val[0][mot_index][1];
-                        prev_ref = s->last_pic.ref_index[0][4 * mb_xy];
-                    } else {
-                        prev_x   = s->cur_pic.motion_val[0][mot_index][0];
-                        prev_y   = s->cur_pic.motion_val[0][mot_index][1];
-                        prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
-                    }
+                    prev_x   = s->cur_pic.motion_val[0][mot_index][0];
+                    prev_y   = s->cur_pic.motion_val[0][mot_index][1];
+                    prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
 
                     /* last MV */
                     mv_predictor[pred_count][0] = prev_x;
@@ -600,8 +586,8 @@ skip_mean_and_median:
                              ref[pred_count]    = prev_ref;
                     pred_count++;
 
-skip_last_mv:
-
+                    best_pred = 0;
+                    best_score = 256 * 256 * 256 * 64;
                     for (j = 0; j < pred_count; j++) {
                         int *linesize = s->cur_pic.f->linesize;
                         int score = 0;
@@ -675,7 +661,7 @@ skip_last_mv:
         if (none_left)
             return;
 
-        for (i = 0; i < s->mb_num; i++) {
+        for (i = 0; i < mb_width * mb_height; i++) {
             int mb_xy = s->mb_index2xy[i];
             if (fixed[mb_xy])
                 fixed[mb_xy] = MV_FROZEN;
@@ -777,7 +763,9 @@ void ff_er_frame_start(ERContext *s)
 static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
-       s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
+#if FF_API_CAP_VDPAU
+       s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU          ||
+#endif
        !s->cur_pic.f                                                  ||
        s->cur_pic.field_picture
     )
@@ -890,7 +878,7 @@ void ff_er_frame_end(ERContext *s)
 
     if (   mb_x == s->mb_width
         && s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
-        && (s->avctx->height&16)
+        && (FFALIGN(s->avctx->height, 16)&16)
         && s->error_count == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
     ) {
         av_log(s->avctx, AV_LOG_DEBUG, "ignoring last missing slice\n");
@@ -1142,7 +1130,7 @@ void ff_er_frame_end(ERContext *s)
                 s->mv[0][0][1] = s->cur_pic.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
             }
 
-            s->decode_mb(s->opaque, 0 /* FIXME h264 partitioned slices need this set */,
+            s->decode_mb(s->opaque, 0 /* FIXME H.264 partitioned slices need this set */,
                          mv_dir, mv_type, &s->mv, mb_x, mb_y, 0, 0);
         }
     }

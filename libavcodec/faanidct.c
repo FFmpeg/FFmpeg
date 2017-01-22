@@ -22,7 +22,7 @@
 #include "libavutil/common.h"
 
 /* To allow switching to double. */
-#define FLOAT float
+typedef float FLOAT;
 
 #define B0 1.0000000000000000000000
 #define B1 1.3870398453221474618216 // cos(pi*1/16)sqrt(2)

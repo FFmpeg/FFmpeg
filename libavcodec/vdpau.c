@@ -22,18 +22,25 @@
  */
 
 #include <limits.h>
-#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "vc1.h"
-
-#undef NDEBUG
-#include <assert.h>
-
 #include "vdpau.h"
 #include "vdpau_compat.h"
 #include "vdpau_internal.h"
+
+// XXX: at the time of adding this ifdefery, av_assert* wasn't use outside.
+// When dropping it, make sure other av_assert* were not added since then.
+#if FF_API_BUFS_VDPAU
+#include "libavutil/avassert.h"
+#endif
+
+#if FF_API_VDPAU
+#undef NDEBUG
+#include <assert.h>
+#endif
 
 /**
  * @addtogroup VDPAU_Decoding
@@ -187,8 +194,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     status = decoder_query_caps(vdctx->device, profile, &supported, &max_level,
                                 &max_mb, &max_width, &max_height);
 #ifdef VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE
-    if (status != VDP_STATUS_OK && profile == VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE) {
-        /* Run-time backward compatibility for libvdpau 0.8 and earlier */
+    if ((status != VDP_STATUS_OK || supported != VDP_TRUE) && profile == VDP_DECODER_PROFILE_H264_CONSTRAINED_BASELINE) {
         profile = VDP_DECODER_PROFILE_H264_MAIN;
         status = decoder_query_caps(vdctx->device, profile, &supported,
                                     &max_level, &max_mb,
@@ -318,7 +324,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return vdpau_error(status);
 }
 
-#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
+#if CONFIG_MPEG1_VDPAU_HWACCEL || \
     CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
     CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
@@ -358,6 +364,25 @@ int ff_vdpau_add_buffer(struct vdpau_picture_context *pic_ctx,
 
 /* Obsolete non-hwaccel VDPAU support below... */
 
+#if FF_API_VDPAU
+void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf, int buf_size)
+{
+    struct vdpau_render_state *render = (struct vdpau_render_state*)data;
+    assert(render);
+
+    render->bitstream_buffers= av_fast_realloc(
+        render->bitstream_buffers,
+        &render->bitstream_buffers_allocated,
+        sizeof(*render->bitstream_buffers)*(render->bitstream_buffers_used + 1)
+    );
+
+    render->bitstream_buffers[render->bitstream_buffers_used].struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
+    render->bitstream_buffers[render->bitstream_buffers_used].bitstream       = buf;
+    render->bitstream_buffers[render->bitstream_buffers_used].bitstream_bytes = buf_size;
+    render->bitstream_buffers_used++;
+}
+
+#if CONFIG_H264_VDPAU_DECODER
 void ff_vdpau_h264_set_reference_frames(H264Context *h)
 {
     struct vdpau_render_state *render, *render_ref;
@@ -426,24 +451,6 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
     }
 }
 
-void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf, int buf_size)
-{
-    struct vdpau_render_state *render = (struct vdpau_render_state*)data;
-    assert(render);
-
-    render->bitstream_buffers= av_fast_realloc(
-        render->bitstream_buffers,
-        &render->bitstream_buffers_allocated,
-        sizeof(*render->bitstream_buffers)*(render->bitstream_buffers_used + 1)
-    );
-
-    render->bitstream_buffers[render->bitstream_buffers_used].struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
-    render->bitstream_buffers[render->bitstream_buffers_used].bitstream       = buf;
-    render->bitstream_buffers[render->bitstream_buffers_used].bitstream_bytes = buf_size;
-    render->bitstream_buffers_used++;
-}
-
-#if CONFIG_H264_VDPAU_DECODER
 void ff_vdpau_h264_picture_start(H264Context *h)
 {
     struct vdpau_render_state *render;
@@ -459,7 +466,7 @@ void ff_vdpau_h264_picture_start(H264Context *h)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
-    render->info.h264.frame_num = h->frame_num;
+    render->info.h264.frame_num = h->poc.frame_num;
 }
 
 void ff_vdpau_h264_picture_complete(H264Context *h)
@@ -476,30 +483,30 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     render->info.h264.is_reference                           = (h->cur_pic_ptr->reference & 3) ? VDP_TRUE : VDP_FALSE;
     render->info.h264.field_pic_flag                         = h->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = h->picture_structure == PICT_BOTTOM_FIELD;
-    render->info.h264.num_ref_frames                         = h->sps.ref_frame_count;
-    render->info.h264.mb_adaptive_frame_field_flag           = h->sps.mb_aff && !render->info.h264.field_pic_flag;
-    render->info.h264.constrained_intra_pred_flag            = h->pps.constrained_intra_pred;
-    render->info.h264.weighted_pred_flag                     = h->pps.weighted_pred;
-    render->info.h264.weighted_bipred_idc                    = h->pps.weighted_bipred_idc;
-    render->info.h264.frame_mbs_only_flag                    = h->sps.frame_mbs_only_flag;
-    render->info.h264.transform_8x8_mode_flag                = h->pps.transform_8x8_mode;
-    render->info.h264.chroma_qp_index_offset                 = h->pps.chroma_qp_index_offset[0];
-    render->info.h264.second_chroma_qp_index_offset          = h->pps.chroma_qp_index_offset[1];
-    render->info.h264.pic_init_qp_minus26                    = h->pps.init_qp - 26;
-    render->info.h264.num_ref_idx_l0_active_minus1           = h->pps.ref_count[0] - 1;
-    render->info.h264.num_ref_idx_l1_active_minus1           = h->pps.ref_count[1] - 1;
-    render->info.h264.log2_max_frame_num_minus4              = h->sps.log2_max_frame_num - 4;
-    render->info.h264.pic_order_cnt_type                     = h->sps.poc_type;
-    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
-    render->info.h264.delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
-    render->info.h264.direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
-    render->info.h264.entropy_coding_mode_flag               = h->pps.cabac;
-    render->info.h264.pic_order_present_flag                 = h->pps.pic_order_present;
-    render->info.h264.deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
-    render->info.h264.redundant_pic_cnt_present_flag         = h->pps.redundant_pic_cnt_present;
-    memcpy(render->info.h264.scaling_lists_4x4, h->pps.scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
-    memcpy(render->info.h264.scaling_lists_8x8[0], h->pps.scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
-    memcpy(render->info.h264.scaling_lists_8x8[1], h->pps.scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    render->info.h264.num_ref_frames                         = h->ps.sps->ref_frame_count;
+    render->info.h264.mb_adaptive_frame_field_flag           = h->ps.sps->mb_aff && !render->info.h264.field_pic_flag;
+    render->info.h264.constrained_intra_pred_flag            = h->ps.pps->constrained_intra_pred;
+    render->info.h264.weighted_pred_flag                     = h->ps.pps->weighted_pred;
+    render->info.h264.weighted_bipred_idc                    = h->ps.pps->weighted_bipred_idc;
+    render->info.h264.frame_mbs_only_flag                    = h->ps.sps->frame_mbs_only_flag;
+    render->info.h264.transform_8x8_mode_flag                = h->ps.pps->transform_8x8_mode;
+    render->info.h264.chroma_qp_index_offset                 = h->ps.pps->chroma_qp_index_offset[0];
+    render->info.h264.second_chroma_qp_index_offset          = h->ps.pps->chroma_qp_index_offset[1];
+    render->info.h264.pic_init_qp_minus26                    = h->ps.pps->init_qp - 26;
+    render->info.h264.num_ref_idx_l0_active_minus1           = h->ps.pps->ref_count[0] - 1;
+    render->info.h264.num_ref_idx_l1_active_minus1           = h->ps.pps->ref_count[1] - 1;
+    render->info.h264.log2_max_frame_num_minus4              = h->ps.sps->log2_max_frame_num - 4;
+    render->info.h264.pic_order_cnt_type                     = h->ps.sps->poc_type;
+    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->ps.sps->poc_type ? 0 : h->ps.sps->log2_max_poc_lsb - 4;
+    render->info.h264.delta_pic_order_always_zero_flag       = h->ps.sps->delta_pic_order_always_zero_flag;
+    render->info.h264.direct_8x8_inference_flag              = h->ps.sps->direct_8x8_inference_flag;
+    render->info.h264.entropy_coding_mode_flag               = h->ps.pps->cabac;
+    render->info.h264.pic_order_present_flag                 = h->ps.pps->pic_order_present;
+    render->info.h264.deblocking_filter_control_present_flag = h->ps.pps->deblocking_filter_parameters_present;
+    render->info.h264.redundant_pic_cnt_present_flag         = h->ps.pps->redundant_pic_cnt_present;
+    memcpy(render->info.h264.scaling_lists_4x4, h->ps.pps->scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
+    memcpy(render->info.h264.scaling_lists_8x8[0], h->ps.pps->scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    memcpy(render->info.h264.scaling_lists_8x8[1], h->ps.pps->scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
 
     ff_h264_draw_horiz_band(h, &h->slice_ctx[0], 0, h->avctx->height);
     render->bitstream_buffers_used = 0;
@@ -692,7 +699,9 @@ void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *ctx, const uint8_t *buf,
     render->bitstream_buffers_used = 0;
 }
 #endif /* CONFIG_MPEG4_VDPAU_DECODER */
+#endif /* FF_API_VDPAU */
 
+#if FF_API_VDPAU_PROFILE
 int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile)
 {
 #define PROFILE(prof)                      \
@@ -739,6 +748,7 @@ do {                                       \
     return AVERROR(EINVAL);
 #undef PROFILE
 }
+#endif /* FF_API_VDPAU_PROFILE */
 
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {

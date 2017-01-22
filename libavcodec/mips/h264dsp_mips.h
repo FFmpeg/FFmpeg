@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Parag Salasakar (Parag.Salasakar@imgtec.com)
+                      Zhou Xiaoyong <zhouxiaoyong@loongson.cn>
  *
  * This file is part of FFmpeg.
  *
@@ -18,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef H264_DSP_MIPS_H
-#define H264_DSP_MIPS_H
+#ifndef AVCODEC_MIPS_H264DSP_MIPS_H
+#define AVCODEC_MIPS_H264DSP_MIPS_H
 
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
+#include "constants.h"
 
 void ff_h264_h_lpf_luma_inter_msa(uint8_t *src, int stride,
                                   int alpha, int beta, int8_t *tc0);
@@ -77,19 +79,19 @@ void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, int stride,
                                                 int alpha, int beta);
 
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
-                                     int stride, int height, int log2_denom,
+                                     ptrdiff_t stride, int height, int log2_denom,
                                      int weightd, int weights, int offset);
 void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height, int log2_denom,
+                                    ptrdiff_t stride, int height, int log2_denom,
                                     int weightd, int weights, int offset);
 void ff_biweight_h264_pixels4_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height, int log2_denom,
+                                    ptrdiff_t stride, int height, int log2_denom,
                                     int weightd, int weights, int offset);
-void ff_weight_h264_pixels16_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels16_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                    int log2_denom, int weight, int offset);
-void ff_weight_h264_pixels8_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels8_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                   int log2_denom, int weight, int offset);
-void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels4_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                   int log2_denom, int weight, int offset);
 
 void ff_put_h264_qpel16_mc00_msa(uint8_t *dst, const uint8_t *src,
@@ -317,20 +319,259 @@ void ff_vp8_pred8x8_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 void ff_vp8_pred16x16_127_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 void ff_vp8_pred16x16_129_dc_8_msa(uint8_t *src, ptrdiff_t stride);
 
-void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_add_pixels4_8_mmi(uint8_t *_dst, int16_t *_src, int stride);
+void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_dc_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_dc_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_add16_8_mmi(uint8_t *dst, const int *block_offset,
+        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+void ff_h264_idct_add16intra_8_mmi(uint8_t *dst, const int *block_offset,
+        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+void ff_h264_idct8_add4_8_mmi(uint8_t *dst, const int *block_offset,
+        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+void ff_h264_idct_add8_8_mmi(uint8_t **dest, const int *block_offset,
+        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+void ff_h264_idct_add8_422_8_mmi(uint8_t **dest, const int *block_offset,
+        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+void ff_h264_luma_dc_dequant_idct_8_mmi(int16_t *output, int16_t *input,
+        int qmul);
+void ff_h264_chroma_dc_dequant_idct_8_mmi(int16_t *block, int qmul);
+void ff_h264_chroma422_dc_dequant_idct_8_mmi(int16_t *block, int qmul);
+
+void ff_h264_weight_pixels16_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
-void ff_h264_weight_pixels8_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels8_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
-void ff_h264_weight_pixels4_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels4_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
 
-#endif  // #ifndef H264_DSP_MIPS_H
+void ff_deblock_v_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
+        int8_t *tc0);
+void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+        int beta);
+void ff_deblock_h_chroma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+        int8_t *tc0);
+void ff_deblock_h_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+        int beta);
+void ff_deblock_v_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+        int8_t *tc0);
+void ff_deblock_v_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+        int beta);
+void ff_deblock_h_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+        int8_t *tc0);
+void ff_deblock_h_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+        int beta);
+void ff_deblock_v8_luma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+        int8_t *tc0);
+void ff_deblock_v8_luma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
+        int beta);
+
+void ff_put_h264_qpel16_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel16_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+void ff_put_h264_qpel8_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel8_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+void ff_put_h264_qpel4_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_put_h264_qpel4_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+void ff_avg_h264_qpel16_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+void ff_avg_h264_qpel8_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+void ff_avg_h264_qpel4_mc00_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc10_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc20_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc30_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc01_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc11_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc21_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc31_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc02_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc12_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc22_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc32_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc03_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc13_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc23_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+void ff_avg_h264_qpel4_mc33_mmi(uint8_t *dst, const uint8_t *src,
+        ptrdiff_t dst_stride);
+
+#endif  // #ifndef AVCODEC_MIPS_H264DSP_MIPS_H

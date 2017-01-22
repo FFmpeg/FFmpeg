@@ -31,11 +31,16 @@
 #    define INTER double
 #    define RENAME(x) x ## _double
 #elif defined(TEMPLATE_REMATRIX_S16)
-#    define R(x) (((x) + 16384)>>15)
 #    define SAMPLE int16_t
 #    define COEFF int
 #    define INTER int
+#  ifdef TEMPLATE_CLIP
+#    define R(x) av_clip_int16(((x) + 16384)>>15)
+#    define RENAME(x) x ## _clip_s16
+#  else
+#    define R(x) (((x) + 16384)>>15)
 #    define RENAME(x) x ## _s16
+#  endif
 #elif defined(TEMPLATE_REMATRIX_S32)
 #    define R(x) (((x) + 16384)>>15)
 #    define SAMPLE int32_t

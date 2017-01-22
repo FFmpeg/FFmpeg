@@ -108,15 +108,15 @@ static int hnm_read_header(AVFormatContext *s)
     if (!(vst = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = AV_CODEC_ID_HNM4_VIDEO;
-    vst->codec->codec_tag  = 0;
-    vst->codec->width      = hnm->width;
-    vst->codec->height     = hnm->height;
-    vst->codec->extradata  = av_mallocz(1);
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id   = AV_CODEC_ID_HNM4_VIDEO;
+    vst->codecpar->codec_tag  = 0;
+    vst->codecpar->width      = hnm->width;
+    vst->codecpar->height     = hnm->height;
+    vst->codecpar->extradata  = av_mallocz(1);
 
-    vst->codec->extradata_size = 1;
-    memcpy(vst->codec->extradata, &hnm->version, 1);
+    vst->codecpar->extradata_size = 1;
+    memcpy(vst->codecpar->extradata, &hnm->version, 1);
 
     vst->start_time = 0;
 
@@ -190,7 +190,7 @@ static int hnm_read_close(AVFormatContext *s)
     Hnm4DemuxContext *hnm = s->priv_data;
 
     if (hnm->vpkt.size > 0)
-        av_free_packet(&hnm->vpkt);
+        av_packet_unref(&hnm->vpkt);
 
     return 0;
 }

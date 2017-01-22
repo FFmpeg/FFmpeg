@@ -68,7 +68,7 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
     // 0 - whole frame (possibly multiple frames)
     // 1 - first fragment
     // 2 - fragment continuation
-    // 3 - last fragmement
+    // 3 - last fragment
     frag = size <= max_pkt_size ? 0 : 1;
 
     if (!frag && !xdt) { // do we have a whole frame of raw data?

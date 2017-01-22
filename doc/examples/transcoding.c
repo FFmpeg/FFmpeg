@@ -31,7 +31,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
-#include <libavfilter/avcodec.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -129,7 +128,10 @@ static int open_output_file(const char *filename)
                 enc_ctx->width = dec_ctx->width;
                 enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
                 /* take first format from list of supported formats */
-                enc_ctx->pix_fmt = encoder->pix_fmts[0];
+                if (encoder->pix_fmts)
+                    enc_ctx->pix_fmt = encoder->pix_fmts[0];
+                else
+                    enc_ctx->pix_fmt = dec_ctx->pix_fmt;
                 /* video time_base can be set to whatever is handy and supported by encoder */
                 enc_ctx->time_base = dec_ctx->time_base;
             } else {
@@ -161,7 +163,7 @@ static int open_output_file(const char *filename)
         }
 
         if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-            enc_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     }
     av_dump_format(ofmt_ctx, 0, filename, 1);
@@ -449,7 +451,7 @@ static int flush_encoder(unsigned int stream_index)
     int got_frame;
 
     if (!(ofmt_ctx->streams[stream_index]->codec->codec->capabilities &
-                CODEC_CAP_DELAY))
+                AV_CODEC_CAP_DELAY))
         return 0;
 
     while (1) {
@@ -537,7 +539,7 @@ int main(int argc, char **argv)
             if (ret < 0)
                 goto end;
         }
-        av_free_packet(&packet);
+        av_packet_unref(&packet);
     }
 
     /* flush filters and encoders */
@@ -561,7 +563,7 @@ int main(int argc, char **argv)
 
     av_write_trailer(ofmt_ctx);
 end:
-    av_free_packet(&packet);
+    av_packet_unref(&packet);
     av_frame_free(&frame);
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
         avcodec_close(ifmt_ctx->streams[i]->codec);

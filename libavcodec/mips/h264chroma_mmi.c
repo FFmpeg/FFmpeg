@@ -23,6 +23,8 @@
  */
 
 #include "h264chroma_mips.h"
+#include "constants.h"
+#include "libavutil/mips/mmiutils.h"
 
 void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
         int h, int x, int y)
@@ -32,171 +34,176 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
     const int C = (8 - x) * y;
     const int D = x * y;
     const int E = B + C;
-    int i;
-
-    av_assert2(x<8 && y<8 && x>=0 && y>=0);
+    double ftmp[10];
+    uint64_t tmp[1];
+    mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     if (D) {
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "ldl $4, %6                 \r\n"
-                "ldr $4, %5                 \r\n"
-                "ldl $5, %8                 \r\n"
-                "ldr $5, %7                 \r\n"
-                "daddiu $6, $0, 32          \r\n"
-                "mtc1 %9, $f6               \r\n"
-                "mtc1 %10, $f8              \r\n"
-                "mtc1 %11, $f10             \r\n"
-                "mtc1 %12, $f12             \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "pshufh $f12, $f12, $f20    \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "dsrl32 $2, $2, 0           \r\n"
-                "dsrl32 $3, $3, 0           \r\n"
-                "dsrl32 $4, $4, 0           \r\n"
-                "dsrl32 $5, $5, 0           \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f24, $f2, $f22      \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f24, $f2    \r\n"
-                "sdc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*src),"m"(*(src+7)),"m"(*(src+1)),"m"(*(src+8)),
-                  "m"(*(src+stride)),"m"(*(src+stride+7)),
-                  "m"(*(src+stride+1)),"m"(*(src+stride+8)),
-                  "r"(A),"r"(B),"r"(C),"r"(D)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[B],       %[B],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp9]                            \n\t"
+            "pshufh     %[C],       %[C],           %[ftmp0]            \n\t"
+            "pshufh     %[D],       %[D],           %[ftmp0]            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[stride]           \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            MMI_ULDC1(%[ftmp2], %[src], 0x01)
+            MMI_ULDC1(%[ftmp3], %[addr0], 0x00)
+            MMI_ULDC1(%[ftmp4], %[addr0], 0x01)
+
+            "punpcklbh  %[ftmp5],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp7],   %[ftmp2],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp8],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[A]                \n\t"
+            "pmullh     %[ftmp7],   %[ftmp7],       %[B]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp5],       %[ftmp7]            \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[A]                \n\t"
+            "pmullh     %[ftmp8],   %[ftmp8],       %[B]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp6],       %[ftmp8]            \n\t"
+
+            "punpcklbh  %[ftmp5],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp7],   %[ftmp4],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp8],   %[ftmp4],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[C]                \n\t"
+            "pmullh     %[ftmp7],   %[ftmp7],       %[D]                \n\t"
+            "paddh      %[ftmp3],   %[ftmp5],       %[ftmp7]            \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[C]                \n\t"
+            "pmullh     %[ftmp8],   %[ftmp8],       %[D]                \n\t"
+            "paddh      %[ftmp4],   %[ftmp6],       %[ftmp8]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp9]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp9]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [B]"f"(B),
+              [C]"f"(C),                    [D]"f"(D)
+            : "memory"
+        );
     } else if (E) {
         const int step = C ? stride : 1;
 
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "daddiu $6, $0, 32          \r\n"
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "mtc1 %5, $f6               \r\n"
-                "mtc1 %6, $f8               \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "dsrl32 $2, $2, 0           \r\n"
-                "dsrl32 $3, $3, 0           \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f24, $f2, $f22      \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f24, $f2    \r\n"
-                "sdc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),
-                  "m"(*(src+step)),"m"(*(src+step+7)),
-                  "r"(A),"r"(E)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[E],       %[E],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp7]                            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[step]             \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            MMI_ULDC1(%[ftmp2], %[addr0], 0x00)
+
+            "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp3],   %[ftmp3],       %[A]                \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[E]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp3],       %[ftmp5]            \n\t"
+            "pmullh     %[ftmp4],   %[ftmp4],       %[A]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[E]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp4],       %[ftmp6]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp7]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp7]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[step]"r"((mips_reg)step),
+              [ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [E]"f"(E)
+            : "memory"
+        );
     } else {
-        for (i = 0; i < h; i++) {
-            __asm__ volatile (
-                "daddiu $6, $0, 32          \r\n"
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "mtc1 %3, $f6               \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "dsrl32 $2, $2, 0           \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "psrah $f24, $f2, $f22      \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f24, $f2    \r\n"
-                "sdc1 $f2, %0               \r\n"
-                :"=m"(*dst)
-                :"m"(*src),"m"(*(src+7)),"r"(A)
-                :"$2"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "pmullh     %[ftmp2],   %[ftmp3],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp4]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "pmullh     %[ftmp2],   %[ftmp3],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp4]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x02               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A)
+            : "memory"
+        );
     }
 }
 
@@ -208,140 +215,184 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
     const int C = (8 - x) * y;
     const int D = x * y;
     const int E = B + C;
-    int i;
-
-    av_assert2(x<8 && y<8 && x>=0 && y>=0);
+    double ftmp[10];
+    uint64_t tmp[1];
+    mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     if (D) {
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "ldl $4, %6                 \r\n"
-                "ldr $4, %5                 \r\n"
-                "ldl $5, %8                 \r\n"
-                "ldr $5, %7                 \r\n"
-                "daddiu $6, $0, 32          \r\n"
-                "mtc1 %9, $f6               \r\n"
-                "mtc1 %10, $f8              \r\n"
-                "mtc1 %11, $f10             \r\n"
-                "mtc1 %12, $f12             \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "pshufh $f12, $f12, $f20    \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "dsrl32 $2, $2, 0           \r\n"
-                "dsrl32 $3, $3, 0           \r\n"
-                "dsrl32 $4, $4, 0           \r\n"
-                "dsrl32 $5, $5, 0           \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f24, $f2, $f22      \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f24, $f2    \r\n"
-                "ldc1 $f4, %0               \r\n"
-                "pavgb $f2, $f2, $f4        \r\n"
-                "sdc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),"m"(*(src+1)),"m"(*(src+8)),
-                  "m"(*(src+stride)),"m"(*(src+stride+7)),
-                  "m"(*(src+stride+1)),"m"(*(src+stride+8)),
-                  "r"(A),"r"(B),"r"(C),"r"(D)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[B],       %[B],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp9]                            \n\t"
+            "pshufh     %[C],       %[C],           %[ftmp0]            \n\t"
+            "pshufh     %[D],       %[D],           %[ftmp0]            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
-    } else {
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[stride]           \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            MMI_ULDC1(%[ftmp2], %[src], 0x01)
+            MMI_ULDC1(%[ftmp3], %[addr0], 0x00)
+            MMI_ULDC1(%[ftmp4], %[addr0], 0x01)
+
+            "punpcklbh  %[ftmp5],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp7],   %[ftmp2],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp8],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[A]                \n\t"
+            "pmullh     %[ftmp7],   %[ftmp7],       %[B]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp5],       %[ftmp7]            \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[A]                \n\t"
+            "pmullh     %[ftmp8],   %[ftmp8],       %[B]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp6],       %[ftmp8]            \n\t"
+
+            "punpcklbh  %[ftmp5],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp7],   %[ftmp4],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp8],   %[ftmp4],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[C]                \n\t"
+            "pmullh     %[ftmp7],   %[ftmp7],       %[D]                \n\t"
+            "paddh      %[ftmp3],   %[ftmp5],       %[ftmp7]            \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[C]                \n\t"
+            "pmullh     %[ftmp8],   %[ftmp8],       %[D]                \n\t"
+            "paddh      %[ftmp4],   %[ftmp6],       %[ftmp8]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp9]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp9]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            MMI_LDC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [B]"f"(B),
+              [C]"f"(C),                    [D]"f"(D)
+            : "memory"
+        );
+    } else if (E) {
         const int step = C ? stride : 1;
 
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "daddiu $6, $0, 32          \r\n"
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "mtc1 %5, $f6               \r\n"
-                "mtc1 %6, $f8               \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "dsrl32 $2, $2, 0           \r\n"
-                "dsrl32 $3, $3, 0           \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f24, $f2, $f22      \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f24, $f2    \r\n"
-                "ldc1 $f4, %0               \r\n"
-                "pavgb $f2, $f2, $f4        \r\n"
-                "sdc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),
-                  "m"(*(src+step)),"m"(*(src+step+7)),"r"(A),"r"(E)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[E],       %[E],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp7]                            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[step]             \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            MMI_ULDC1(%[ftmp2], %[addr0], 0x00)
+
+            "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp6],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp3],   %[ftmp3],       %[A]                \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[E]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp3],       %[ftmp5]            \n\t"
+            "pmullh     %[ftmp4],   %[ftmp4],       %[A]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[E]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp4],       %[ftmp6]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp7]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp7]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            MMI_LDC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[step]"r"((mips_reg)step),
+              [ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [E]"f"(E)
+            : "memory"
+        );
+    } else {
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp4]                            \n\t"
+
+            "1:                                                         \n\t"
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "pmullh     %[ftmp2],   %[ftmp3],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp4]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            MMI_LDC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+
+            MMI_ULDC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpckhbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "pmullh     %[ftmp2],   %[ftmp3],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "paddh      %[ftmp2],   %[ftmp2],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp4]            \n\t"
+            "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp4]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            MMI_LDC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x02               \n\t"
+            MMI_SDC1(%[ftmp1], %[dst], 0x00)
+
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_ALL64
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A)
+            : "memory"
+        );
     }
 }
 
@@ -353,118 +404,145 @@ void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, int stride,
     const int C = (8 - x) *  y;
     const int D = x *  y;
     const int E = B + C;
-    int i;
-
-    av_assert2(x<8 && y<8 && x>=0 && y>=0);
+    double ftmp[8];
+    uint64_t tmp[1];
+    mips_reg addr[1];
+    DECLARE_VAR_LOW32;
 
     if (D) {
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "ldl $4, %6                 \r\n"
-                "ldr $4, %5                 \r\n"
-                "ldl $5, %8                 \r\n"
-                "ldr $5, %7                 \r\n"
-                "daddiu $6, $0, 32          \r\n"
-                "mtc1 %9, $f6               \r\n"
-                "mtc1 %10, $f8              \r\n"
-                "mtc1 %11, $f10             \r\n"
-                "mtc1 %12, $f12             \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "pshufh $f12, $f12, $f20    \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f2, $f2     \r\n"
-                "swc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),"m"(*(src+1)),"m"(*(src+8)),
-                  "m"(*(src+stride)),"m"(*(src+stride+7)),
-                  "m"(*(src+stride+1)),"m"(*(src+stride+8)),
-                  "r"(A),"r"(B),"r"(C),"r"(D)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[B],       %[B],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp7]                            \n\t"
+            "pshufh     %[C],       %[C],           %[ftmp0]            \n\t"
+            "pshufh     %[D],       %[D],           %[ftmp0]            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[stride]           \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            MMI_ULWC1(%[ftmp2], %[src], 0x01)
+            MMI_ULWC1(%[ftmp3], %[addr0], 0x00)
+            MMI_ULWC1(%[ftmp4], %[addr0], 0x01)
+
+            "punpcklbh  %[ftmp5],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp6],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[A]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[B]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp5],       %[ftmp6]            \n\t"
+
+            "punpcklbh  %[ftmp5],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp6],   %[ftmp4],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[C]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[D]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp5],       %[ftmp6]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp7]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [B]"f"(B),
+              [C]"f"(C),                    [D]"f"(D)
+            : "memory"
+        );
     } else if (E) {
         const int step = C ? stride : 1;
 
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "daddiu $4, $0, 32          \r\n"
-                "mtc1 %5, $f6               \r\n"
-                "mtc1 %6, $f8               \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f10              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "daddiu $4, $0, 6           \r\n"
-                "mtc1 $4, $f22              \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f10       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f2, $f20    \r\n"
-                "swc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),"m"(*(src+step)),
-                  "m"(*(src+step+7)),"r"(A),"r"(E)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[E],       %[E],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp5]                            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[step]             \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            MMI_ULWC1(%[ftmp2], %[addr0], 0x00)
+
+            "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp4],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp3],   %[ftmp3],       %[A]                \n\t"
+            "pmullh     %[ftmp4],   %[ftmp4],       %[E]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp3],       %[ftmp4]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp5]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[step]"r"((mips_reg)step),
+              [ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [E]"f"(E)
+            : "memory"
+        );
     } else {
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "lwl $2, %2                 \r\n"
-                "lwr $2, %1                 \r\n"
-                "sw $2, %0                  \r\n"
-                : "=m"(*dst)
-                : "m"(*src),"m"(*(src+3))
-                : "$2"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp3]                            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
+            "1:                                                         \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            "addi       %[h],       %[h],           -0x02               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A)
+            : "memory"
+        );
     }
 }
 
@@ -475,108 +553,152 @@ void ff_avg_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, int stride,
     const int B = x * (8 - y);
     const int C = (8 - x) * y;
     const int D = x * y;
-    int i;
-
-    av_assert2(x<8 && y<8 && x>=0 && y>=0);
+    const int E = B + C;
+    double ftmp[8];
+    uint64_t tmp[1];
+    mips_reg addr[1];
+    DECLARE_VAR_LOW32;
 
     if (D) {
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "ldl $4, %6                 \r\n"
-                "ldr $4, %5                 \r\n"
-                "ldl $5, %8                 \r\n"
-                "ldr $5, %7                 \r\n"
-                "daddiu $6, $0, 32          \r\n"
-                "mtc1 %9, $f6               \r\n"
-                "mtc1 %10, $f8              \r\n"
-                "mtc1 %11, $f10             \r\n"
-                "mtc1 %12, $f12             \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f16              \r\n"
-                "mtc1 $5, $f18              \r\n"
-                "mtc1 $6, $f14              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "pshufh $f12, $f12, $f20    \r\n"
-                "pshufh $f14, $f14, $f20    \r\n"
-                "punpcklbh $f16, $f16, $f20 \r\n"
-                "punpcklbh $f18, $f18, $f20 \r\n"
-                "daddiu $6, $0, 6           \r\n"
-                "mtc1 $6, $f22              \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "pmullh $f16, $f10, $f16    \r\n"
-                "pmullh $f18, $f12, $f18    \r\n"
-                "paddh $f2, $f2, $f14       \r\n"
-                "paddh $f4, $f4, $f16       \r\n"
-                "paddh $f2, $f2, $f18       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f2, $f2     \r\n"
-                "lwc1 $f4, %0               \r\n"
-                "pavgb $f2, $f2, $f4        \r\n"
-                "swc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),"m"(*(src+1)),"m"(*(src+8)),
-                  "m"(*(src+stride)),"m"(*(src+stride+7)),
-                  "m"(*(src+stride+1)),"m"(*(src+stride+8)),
-                  "r"(A),"r"(B),"r"(C),"r"(D)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[B],       %[B],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp7]                            \n\t"
+            "pshufh     %[C],       %[C],           %[ftmp0]            \n\t"
+            "pshufh     %[D],       %[D],           %[ftmp0]            \n\t"
 
-            dst += stride;
-            src += stride;
-        }
-    } else {
-        const int E = B + C;
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[stride]           \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            MMI_ULWC1(%[ftmp2], %[src], 0x01)
+            MMI_ULWC1(%[ftmp3], %[addr0], 0x00)
+            MMI_ULWC1(%[ftmp4], %[addr0], 0x01)
+
+            "punpcklbh  %[ftmp5],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp6],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[A]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[B]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp5],       %[ftmp6]            \n\t"
+
+            "punpcklbh  %[ftmp5],   %[ftmp3],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp6],   %[ftmp4],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp5],   %[ftmp5],       %[C]                \n\t"
+            "pmullh     %[ftmp6],   %[ftmp6],       %[D]                \n\t"
+            "paddh      %[ftmp2],   %[ftmp5],       %[ftmp6]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp7]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            MMI_LWC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [B]"f"(B),
+              [C]"f"(C),                    [D]"f"(D)
+            : "memory"
+        );
+    } else if (E) {
         const int step = C ? stride : 1;
 
-        for (i=0; i<h; i++) {
-            __asm__ volatile (
-                "ldl $2, %2                 \r\n"
-                "ldr $2, %1                 \r\n"
-                "ldl $3, %4                 \r\n"
-                "ldr $3, %3                 \r\n"
-                "daddiu $4, $0, 32          \r\n"
-                "mtc1 %5, $f6               \r\n"
-                "mtc1 %6, $f8               \r\n"
-                "mtc1 $0, $f20              \r\n"
-                "mtc1 $2, $f2               \r\n"
-                "mtc1 $3, $f4               \r\n"
-                "mtc1 $4, $f10              \r\n"
-                "punpcklbh $f2, $f2, $f20   \r\n"
-                "punpcklbh $f4, $f4, $f20   \r\n"
-                "pshufh $f6, $f6, $f20      \r\n"
-                "pshufh $f8, $f8, $f20      \r\n"
-                "pshufh $f10, $f10, $f20    \r\n"
-                "daddiu $4, $0, 6           \r\n"
-                "mtc1 $4, $f22              \r\n"
-                "pmullh $f2, $f2, $f6       \r\n"
-                "pmullh $f4, $f4, $f8       \r\n"
-                "paddh $f2, $f2, $f10       \r\n"
-                "paddh $f2, $f2, $f4        \r\n"
-                "psrah $f2, $f2, $f22       \r\n"
-                "packushb $f2, $f2, $f20    \r\n"
-                "lwc1 $f4, %0               \r\n"
-                "pavgb $f2, $f2, $f4        \r\n"
-                "swc1 $f2, %0               \r\n"
-                : "=m"(*dst)
-                : "m"(*(src)),"m"(*(src+7)),"m"(*(src+step)),
-                  "m"(*(src+step+7)),"r"(A),"r"(E)
-                : "$2","$3","$4","$5","$6"
-            );
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "pshufh     %[E],       %[E],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp5]                            \n\t"
+            "1:                                                         \n\t"
+            PTR_ADDU   "%[addr0],   %[src],         %[step]             \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            MMI_ULWC1(%[ftmp2], %[addr0], 0x00)
 
-            dst += stride;
-            src += stride;
-        }
+            "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]            \n\t"
+            "punpcklbh  %[ftmp4],   %[ftmp2],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp3],   %[ftmp3],       %[A]                \n\t"
+            "pmullh     %[ftmp4],   %[ftmp4],       %[E]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp3],       %[ftmp4]            \n\t"
+
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp5]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            MMI_LWC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x01               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [addr0]"=&r"(addr[0]),
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[step]"r"((mips_reg)step),
+              [ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A),                    [E]"f"(E)
+            : "memory"
+        );
+    } else {
+        __asm__ volatile (
+            "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+            "dli        %[tmp0],    0x06                                \n\t"
+            "pshufh     %[A],       %[A],           %[ftmp0]            \n\t"
+            "mtc1       %[tmp0],    %[ftmp3]                            \n\t"
+
+            "1:                                                         \n\t"
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            MMI_LWC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+
+            MMI_ULWC1(%[ftmp1], %[src], 0x00)
+            "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"
+            "pmullh     %[ftmp1],   %[ftmp2],       %[A]                \n\t"
+            "paddh      %[ftmp1],   %[ftmp1],       %[ff_pw_32]         \n\t"
+            "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp3]            \n\t"
+            "packushb   %[ftmp1],   %[ftmp1],       %[ftmp0]            \n\t"
+            MMI_LWC1(%[ftmp2], %[dst], 0x00)
+            "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"
+            "addi       %[h],       %[h],           -0x02               \n\t"
+            MMI_SWC1(%[ftmp1], %[dst], 0x00)
+
+            PTR_ADDU   "%[src],     %[src],         %[stride]           \n\t"
+            PTR_ADDU   "%[dst],     %[dst],         %[stride]           \n\t"
+            "bnez       %[h],       1b                                  \n\t"
+            : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+              [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+              [tmp0]"=&r"(tmp[0]),
+              RESTRICT_ASM_LOW32
+              [dst]"+&r"(dst),              [src]"+&r"(src),
+              [h]"+&r"(h)
+            : [stride]"r"((mips_reg)stride),[ff_pw_32]"f"(ff_pw_32),
+              [A]"f"(A)
+            : "memory"
+        );
     }
 }

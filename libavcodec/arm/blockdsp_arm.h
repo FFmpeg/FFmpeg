@@ -21,6 +21,6 @@
 
 #include "libavcodec/blockdsp.h"
 
-void ff_blockdsp_init_neon(BlockDSPContext *c, unsigned high_bit_depth);
+void ff_blockdsp_init_neon(BlockDSPContext *c);
 
 #endif /* AVCODEC_ARM_BLOCKDSP_ARM_H */

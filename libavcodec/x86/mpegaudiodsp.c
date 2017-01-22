@@ -30,6 +30,7 @@
 static void imdct36_blocks_ ## CPU(float *out, float *buf, float *in, int count, int switch_point, int block_type);\
 void ff_imdct36_float_ ## CPU(float *out, float *buf, float *in, float *win);
 
+#if HAVE_YASM
 #if ARCH_X86_32
 DECL(sse)
 #endif
@@ -37,6 +38,7 @@ DECL(sse2)
 DECL(sse3)
 DECL(ssse3)
 DECL(avx)
+#endif /* HAVE_YASM */
 
 void ff_four_imdct36_float_sse(float *out, float *buf, float *in, float *win,
                                float *tmpbuf);
@@ -239,7 +241,7 @@ DECL_IMDCT_BLOCKS(avx,avx)
 
 av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 {
-    int cpu_flags = av_get_cpu_flags();
+    av_unused int cpu_flags = av_get_cpu_flags();
 
     int i, j;
     for (j = 0; j < 4; j++) {

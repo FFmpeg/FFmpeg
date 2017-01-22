@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder.
+ * MPEG-4 encoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -29,7 +29,7 @@
 #include "mpeg4video.h"
 
 /* The uni_DCtab_* tables below contain unified bits+length tables to encode DC
- * differences in mpeg4. Unified in the sense that the specification specifies
+ * differences in MPEG-4. Unified in the sense that the specification specifies
  * this encoding in several steps. */
 static uint8_t  uni_DCtab_lum_len[512];
 static uint8_t  uni_DCtab_chrom_len[512];
@@ -47,7 +47,7 @@ static uint8_t  uni_mpeg4_inter_rl_len[64 * 64 * 2 * 2];
 //#define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) + (level) * 64)
 #define UNI_MPEG4_ENC_INDEX(last, run, level) ((last) * 128 * 64 + (run) * 128 + (level))
 
-/* mpeg4
+/* MPEG-4
  * inter
  * max level: 24/6
  * max run: 53/63
@@ -120,7 +120,7 @@ static inline void restore_ac_coeffs(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * Return the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
+ * Return the optimal value (0 or 1) for the ac_pred element for the given MB in MPEG-4.
  * This function will also update s->block_last_index and s->ac_val.
  * @param[in,out] block MB coefficients, these will be updated if 1 is returned
  * @param[in] dir ac prediction direction for each 8x8 block
@@ -208,7 +208,7 @@ static inline int decide_ac_pred(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * modify mb_type & qscale so that encoding is actually possible in mpeg4
+ * modify mb_type & qscale so that encoding is actually possible in MPEG-4
  */
 void ff_clean_mpeg4_qscales(MpegEncContext *s)
 {
@@ -220,7 +220,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s)
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         int odd = 0;
         /* ok, come on, this isn't funny anymore, there's more code for
-         * handling this mpeg4 mess than for the actual adaptive quantization */
+         * handling this MPEG-4 mess than for the actual adaptive quantization */
 
         for (i = 0; i < s->mb_num; i++) {
             int mb_xy = s->mb_index2xy[i];
@@ -318,7 +318,7 @@ static inline void mpeg4_encode_block(MpegEncContext *s,
     const int last_index = s->block_last_index[n];
 
     if (s->mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
-        /* mpeg4 based DC predictor */
+        /* MPEG-4 based DC predictor */
         mpeg4_encode_dc(dc_pb, intra_dc, n);
         if (last_index < 1)
             return;
@@ -378,7 +378,7 @@ static int mpeg4_get_block_length(MpegEncContext *s,
     int len = 0;
 
     if (s->mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
-        /* mpeg4 based DC predictor */
+        /* MPEG-4 based DC predictor */
         len += mpeg4_get_dc_length(intra_dc, n);
         if (last_index < 1)
             return len;
@@ -430,7 +430,7 @@ static inline void mpeg4_encode_blocks(MpegEncContext *s, int16_t block[6][64],
     int i;
 
     if (scan_table) {
-        if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT) {
+        if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT) {
             for (i = 0; i < 6; i++)
                 skip_put_bits(&s->pb,
                               mpeg4_get_block_length(s, block[i], i,
@@ -442,7 +442,7 @@ static inline void mpeg4_encode_blocks(MpegEncContext *s, int16_t block[6][64],
                                    intra_dc[i], scan_table[i], dc_pb, ac_pb);
         }
     } else {
-        if (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT) {
+        if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT) {
             for (i = 0; i < 6; i++)
                 skip_put_bits(&s->pb,
                               mpeg4_get_block_length(s, block[i], i, 0,
@@ -507,7 +507,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
     PutBitContext *const pb2    = s->data_partitioning ? &s->pb2 : &s->pb;
     PutBitContext *const tex_pb = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_B ? &s->tex_pb : &s->pb;
     PutBitContext *const dc_pb  = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_I ? &s->pb2 : &s->pb;
-    const int interleaved_stats = (s->avctx->flags & CODEC_FLAG_PASS1) && !s->data_partitioning ? 1 : 0;
+    const int interleaved_stats = (s->avctx->flags & AV_CODEC_FLAG_PASS1) && !s->data_partitioning ? 1 : 0;
 
     if (!s->mb_intra) {
         int i, cbp;
@@ -529,7 +529,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
             av_assert2((s->dquant & 1) == 0);
             av_assert2(mb_type >= 0);
 
-            /* nothing to do if this MB was skipped in the next P Frame */
+            /* nothing to do if this MB was skipped in the next P-frame */
             if (s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]) {  // FIXME avoid DCT & ...
                 s->skip_count++;
                 s->mv[0][0][0] =
@@ -659,7 +659,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
             if ((cbp | motion_x | motion_y | s->dquant) == 0 &&
                 s->mv_type == MV_TYPE_16X16) {
-                /* check if the B frames can skip it too, as we must skip it
+                /* Check if the B-frames can skip it too, as we must skip it
                  * if we skip here why didn't they just compress
                  * the skip-mb bits instead of reusing them ?! */
                 if (s->max_b_frames > 0) {
@@ -832,7 +832,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
         for (i = 0; i < 6; i++)
             dc_diff[i] = ff_mpeg4_pred_dc(s, i, block[i][0], &dir[i], 1);
 
-        if (s->avctx->flags & CODEC_FLAG_AC_PRED) {
+        if (s->avctx->flags & AV_CODEC_FLAG_AC_PRED) {
             s->ac_pred = decide_ac_pred(s, block, dir, scan_table, zigzag_last_index);
         } else {
             for (i = 0; i < 6; i++)
@@ -886,7 +886,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 }
 
 /**
- * add mpeg4 stuffing bits (01...1)
+ * add MPEG-4 stuffing bits (01...1)
  */
 void ff_mpeg4_stuffing(PutBitContext *pbc)
 {
@@ -932,7 +932,7 @@ static void mpeg4_encode_gop_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 1);
     put_bits(&s->pb, 6, seconds);
 
-    put_bits(&s->pb, 1, !!(s->avctx->flags & CODEC_FLAG_CLOSED_GOP));
+    put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
     put_bits(&s->pb, 1, 0);  // broken link == NO
 
     ff_mpeg4_stuffing(&s->pb);
@@ -1054,7 +1054,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
         put_bits(&s->pb, 2, 0);       /* sprite enable */
 
     put_bits(&s->pb, 1, 0);             /* not 8 bit == false */
-    put_bits(&s->pb, 1, s->mpeg_quant); /* quant type= (0=h263 style)*/
+    put_bits(&s->pb, 1, s->mpeg_quant); /* quant type = (0 = H.263 style) */
 
     if (s->mpeg_quant) {
         ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
@@ -1078,21 +1078,21 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     ff_mpeg4_stuffing(&s->pb);
 
     /* user data */
-    if (!(s->avctx->flags & CODEC_FLAG_BITEXACT)) {
+    if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
         put_bits(&s->pb, 16, 0);
         put_bits(&s->pb, 16, 0x1B2);    /* user_data */
         avpriv_put_string(&s->pb, LIBAVCODEC_IDENT, 0);
     }
 }
 
-/* write mpeg4 VOP header */
-void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
+/* write MPEG-4 VOP header */
+int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
 {
-    int time_incr;
-    int time_div, time_mod;
+    uint64_t time_incr;
+    int64_t time_div, time_mod;
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
-        if (!(s->avctx->flags & CODEC_FLAG_GLOBAL_HEADER)) {
+        if (!(s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
             if (s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT)  // HACK, the reference sw is buggy
                 mpeg4_encode_visual_object_header(s);
             if (s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || picture_number == 0)  // HACK, the reference sw is buggy
@@ -1111,7 +1111,12 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
     time_div  = FFUDIV(s->time, s->avctx->time_base.den);
     time_mod  = FFUMOD(s->time, s->avctx->time_base.den);
     time_incr = time_div - s->last_time_base;
-    av_assert0(time_incr >= 0);
+
+    // This limits the frame duration to max 1 hour
+    if (time_incr > 3600) {
+        av_log(s->avctx, AV_LOG_ERROR, "time_incr %"PRIu64" too large\n", time_incr);
+        return AVERROR(EINVAL);
+    }
     while (time_incr--)
         put_bits(&s->pb, 1, 1);
 
@@ -1137,6 +1142,8 @@ void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 3, s->f_code);  /* fcode_for */
     if (s->pict_type == AV_PICTURE_TYPE_B)
         put_bits(&s->pb, 3, s->b_code);  /* fcode_back */
+
+    return 0;
 }
 
 static av_cold void init_uni_dc_tab(void)
@@ -1325,7 +1332,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->y_dc_scale_table         = ff_mpeg4_y_dc_scale_table;
     s->c_dc_scale_table         = ff_mpeg4_c_dc_scale_table;
 
-    if (s->avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+    if (s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         s->avctx->extradata = av_malloc(1024);
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
@@ -1394,8 +1401,8 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "data_partitioning", "Use data partitioning.",      OFFSET(data_partitioning), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
-    { "alternate_scan",    "Enable alternate scantable.", OFFSET(alternate_scan),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "data_partitioning", "Use data partitioning.",      OFFSET(data_partitioning), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "alternate_scan",    "Enable alternate scantable.", OFFSET(alternate_scan),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     FF_MPV_COMMON_OPTS
     { NULL },
 };
@@ -1417,6 +1424,6 @@ AVCodec ff_mpeg4_encoder = {
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
     .priv_class     = &mpeg4enc_class,
 };

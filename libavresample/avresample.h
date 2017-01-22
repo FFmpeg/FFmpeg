@@ -28,7 +28,7 @@
  */
 
 /**
- * @defgroup lavr Libavresample
+ * @defgroup lavr libavresample
  * @{
  *
  * Libavresample (lavr) is a library that handles audio resampling, sample
@@ -167,9 +167,13 @@ AVAudioResampleContext *avresample_alloc_context(void);
 /**
  * Initialize AVAudioResampleContext.
  * @note The context must be configured using the AVOption API.
+ * @note The fields "in_channel_layout", "out_channel_layout",
+ *       "in_sample_rate", "out_sample_rate", "in_sample_fmt",
+ *       "out_sample_fmt" must be set.
  *
  * @see av_opt_set_int()
  * @see av_opt_set_dict()
+ * @see av_get_default_channel_layout()
  *
  * @param avr  audio resample context
  * @return     0 on success, negative AVERROR code on failure
@@ -373,8 +377,9 @@ int avresample_get_out_samples(AVAudioResampleContext *avr, int in_nb_samples);
  *                        output FIFO
  */
 int avresample_convert(AVAudioResampleContext *avr, uint8_t **output,
-                       int out_plane_size, int out_samples, uint8_t **input,
-                       int in_plane_size, int in_samples);
+                       int out_plane_size, int out_samples,
+                       uint8_t * const *input, int in_plane_size,
+                       int in_samples);
 
 /**
  * Return the number of samples currently in the resampling delay buffer.

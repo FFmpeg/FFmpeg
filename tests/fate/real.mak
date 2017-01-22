@@ -20,6 +20,9 @@ fate-ra-cook: CMD = pcm -i $(TARGET_SAMPLES)/real/ra_cook.rm
 fate-ra-cook: CMP = oneoff
 fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
 
+FATE_REALMEDIA_VIDEO-$(call DEMDEC, RM, RV20) += fate-rv20-1239
+fate-rv20-1239: CMD = framecrc -flags +bitexact -idct simple -lowres 1 -i $(TARGET_SAMPLES)/real/G2_with_SVT_320_240.rm
+
 FATE_REALMEDIA_VIDEO-$(call DEMDEC, RM, RV30) += fate-rv30
 fate-rv30: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/real/rv30.rm -an
 

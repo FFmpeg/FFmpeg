@@ -38,6 +38,7 @@
 #include "tableprint.h"
 #include "get_bits.h"
 #include "mathtables.c"
+#include "libavutil/reverse.c"
 #include "bitstream.c"
 
 #define REPLACE_DEFINE2(type) write_##type##_array

@@ -40,6 +40,7 @@ typedef struct ResampleContext {
     AVAudioResampleContext *avr;
     AVDictionary *options;
 
+    int resampling;
     int64_t next_pts;
     int64_t next_in_pts;
 
@@ -89,22 +90,25 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterFormats *in_formats, *out_formats, *in_samplerates, *out_samplerates;
+    AVFilterChannelLayouts *in_layouts, *out_layouts;
+    int ret;
 
-    AVFilterFormats        *in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
-    AVFilterFormats        *out_formats     = ff_all_formats(AVMEDIA_TYPE_AUDIO);
-    AVFilterFormats        *in_samplerates  = ff_all_samplerates();
-    AVFilterFormats        *out_samplerates = ff_all_samplerates();
-    AVFilterChannelLayouts *in_layouts      = ff_all_channel_layouts();
-    AVFilterChannelLayouts *out_layouts     = ff_all_channel_layouts();
+    if (!(in_formats      = ff_all_formats         (AVMEDIA_TYPE_AUDIO)) ||
+        !(out_formats     = ff_all_formats         (AVMEDIA_TYPE_AUDIO)) ||
+        !(in_samplerates  = ff_all_samplerates     (                  )) ||
+        !(out_samplerates = ff_all_samplerates     (                  )) ||
+        !(in_layouts      = ff_all_channel_layouts (                  )) ||
+        !(out_layouts     = ff_all_channel_layouts (                  )))
+        return AVERROR(ENOMEM);
 
-    ff_formats_ref(in_formats,  &inlink->out_formats);
-    ff_formats_ref(out_formats, &outlink->in_formats);
-
-    ff_formats_ref(in_samplerates,  &inlink->out_samplerates);
-    ff_formats_ref(out_samplerates, &outlink->in_samplerates);
-
-    ff_channel_layouts_ref(in_layouts,  &inlink->out_channel_layouts);
-    ff_channel_layouts_ref(out_layouts, &outlink->in_channel_layouts);
+    if ((ret = ff_formats_ref         (in_formats,      &inlink->out_formats        )) < 0 ||
+        (ret = ff_formats_ref         (out_formats,     &outlink->in_formats        )) < 0 ||
+        (ret = ff_formats_ref         (in_samplerates,  &inlink->out_samplerates    )) < 0 ||
+        (ret = ff_formats_ref         (out_samplerates, &outlink->in_samplerates    )) < 0 ||
+        (ret = ff_channel_layouts_ref (in_layouts,      &inlink->out_channel_layouts)) < 0 ||
+        (ret = ff_channel_layouts_ref (out_layouts,     &outlink->in_channel_layouts)) < 0)
+        return ret;
 
     return 0;
 }
@@ -116,6 +120,8 @@ static int config_output(AVFilterLink *outlink)
     ResampleContext   *s = ctx->priv;
     char buf1[64], buf2[64];
     int ret;
+
+    int64_t resampling_forced;
 
     if (s->avr) {
         avresample_close(s->avr);
@@ -155,9 +161,15 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = avresample_open(s->avr)) < 0)
         return ret;
 
-    outlink->time_base = (AVRational){ 1, outlink->sample_rate };
-    s->next_pts        = AV_NOPTS_VALUE;
-    s->next_in_pts     = AV_NOPTS_VALUE;
+    av_opt_get_int(s->avr, "force_resampling", 0, &resampling_forced);
+    s->resampling = resampling_forced || (inlink->sample_rate != outlink->sample_rate);
+
+    if (s->resampling) {
+        outlink->time_base = (AVRational){ 1, outlink->sample_rate };
+        s->next_pts        = AV_NOPTS_VALUE;
+        s->next_in_pts     = AV_NOPTS_VALUE;
+    } else
+        outlink->time_base = inlink->time_base;
 
     av_get_channel_layout_string(buf1, sizeof(buf1),
                                  -1, inlink ->channel_layout);
@@ -240,7 +252,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         av_assert0(!avresample_available(s->avr));
 
-        if (s->next_pts == AV_NOPTS_VALUE) {
+        if (s->resampling && s->next_pts == AV_NOPTS_VALUE) {
             if (in->pts == AV_NOPTS_VALUE) {
                 av_log(ctx, AV_LOG_WARNING, "First timestamp is missing, "
                        "assuming 0.\n");
@@ -259,22 +271,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 goto fail;
             }
 
-            out->sample_rate = outlink->sample_rate;
-            /* Only convert in->pts if there is a discontinuous jump.
-               This ensures that out->pts tracks the number of samples actually
-               output by the resampler in the absence of such a jump.
-               Otherwise, the rounding in av_rescale_q() and av_rescale()
-               causes off-by-1 errors. */
-            if (in->pts != AV_NOPTS_VALUE && in->pts != s->next_in_pts) {
-                out->pts = av_rescale_q(in->pts, inlink->time_base,
-                                            outlink->time_base) -
-                               av_rescale(delay, outlink->sample_rate,
-                                          inlink->sample_rate);
-            } else
-                out->pts = s->next_pts;
+            if (s->resampling) {
+                out->sample_rate = outlink->sample_rate;
+                /* Only convert in->pts if there is a discontinuous jump.
+                   This ensures that out->pts tracks the number of samples actually
+                   output by the resampler in the absence of such a jump.
+                   Otherwise, the rounding in av_rescale_q() and av_rescale()
+                   causes off-by-1 errors. */
+                if (in->pts != AV_NOPTS_VALUE && in->pts != s->next_in_pts) {
+                    out->pts = av_rescale_q(in->pts, inlink->time_base,
+                                                outlink->time_base) -
+                                   av_rescale(delay, outlink->sample_rate,
+                                              inlink->sample_rate);
+                } else
+                    out->pts = s->next_pts;
 
-            s->next_pts = out->pts + out->nb_samples;
-            s->next_in_pts = in->pts + in->nb_samples;
+                s->next_pts = out->pts + out->nb_samples;
+                s->next_in_pts = in->pts + in->nb_samples;
+            } else
+                out->pts = in->pts;
 
             ret = ff_filter_frame(outlink, out);
             s->got_output = 1;

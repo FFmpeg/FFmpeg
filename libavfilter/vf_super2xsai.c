@@ -58,15 +58,15 @@ static void super2xsai(AVFilterContext *ctx,
                        uint8_t *dst, int dst_linesize,
                        int width, int height)
 {
-    Super2xSaIContext *sai = ctx->priv;
+    Super2xSaIContext *s = ctx->priv;
     unsigned int x, y;
     uint32_t color[4][4];
     unsigned char *src_line[4];
-    const int bpp = sai->bpp;
-    const uint32_t hi_pixel_mask = sai->hi_pixel_mask;
-    const uint32_t lo_pixel_mask = sai->lo_pixel_mask;
-    const uint32_t q_hi_pixel_mask = sai->q_hi_pixel_mask;
-    const uint32_t q_lo_pixel_mask = sai->q_lo_pixel_mask;
+    const int bpp = s->bpp;
+    const uint32_t hi_pixel_mask = s->hi_pixel_mask;
+    const uint32_t lo_pixel_mask = s->lo_pixel_mask;
+    const uint32_t q_hi_pixel_mask = s->q_hi_pixel_mask;
+    const uint32_t q_lo_pixel_mask = s->q_lo_pixel_mask;
 
     /* Point to the first 4 lines, first line is duplicated */
     src_line[0] = src;
@@ -76,7 +76,7 @@ static void super2xsai(AVFilterContext *ctx,
 
 #define READ_COLOR4(dst, src_line, off) dst = *((const uint32_t *)src_line + off)
 #define READ_COLOR3(dst, src_line, off) dst = AV_RL24 (src_line + 3*off)
-#define READ_COLOR2(dst, src_line, off) dst = sai->is_be ? AV_RB16(src_line + 2 * off) : AV_RL16(src_line + 2 * off)
+#define READ_COLOR2(dst, src_line, off) dst = s->is_be ? AV_RB16(src_line + 2 * off) : AV_RL16(src_line + 2 * off)
 
     for (y = 0; y < height; y++) {
         uint8_t *dst_line[2];
@@ -179,7 +179,7 @@ static void super2xsai(AVFilterContext *ctx,
                 AV_WL24(dst_line[1] + x * 6 + 3, product2b);
                 break;
             default: // bpp = 2
-                if (sai->is_be) {
+                if (s->is_be) {
                     AV_WB32(dst_line[0] + x * 4, product1a | (product1b << 16));
                     AV_WB32(dst_line[1] + x * 4, product2a | (product2b << 16));
                 } else {
@@ -249,42 +249,42 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    Super2xSaIContext *sai = inlink->dst->priv;
+    Super2xSaIContext *s = inlink->dst->priv;
 
-    sai->hi_pixel_mask   = 0xFEFEFEFE;
-    sai->lo_pixel_mask   = 0x01010101;
-    sai->q_hi_pixel_mask = 0xFCFCFCFC;
-    sai->q_lo_pixel_mask = 0x03030303;
-    sai->bpp  = 4;
+    s->hi_pixel_mask   = 0xFEFEFEFE;
+    s->lo_pixel_mask   = 0x01010101;
+    s->q_hi_pixel_mask = 0xFCFCFCFC;
+    s->q_lo_pixel_mask = 0x03030303;
+    s->bpp  = 4;
 
     switch (inlink->format) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
-        sai->bpp = 3;
+        s->bpp = 3;
         break;
 
     case AV_PIX_FMT_RGB565BE:
     case AV_PIX_FMT_BGR565BE:
-        sai->is_be = 1;
+        s->is_be = 1;
     case AV_PIX_FMT_RGB565LE:
     case AV_PIX_FMT_BGR565LE:
-        sai->hi_pixel_mask   = 0xF7DEF7DE;
-        sai->lo_pixel_mask   = 0x08210821;
-        sai->q_hi_pixel_mask = 0xE79CE79C;
-        sai->q_lo_pixel_mask = 0x18631863;
-        sai->bpp = 2;
+        s->hi_pixel_mask   = 0xF7DEF7DE;
+        s->lo_pixel_mask   = 0x08210821;
+        s->q_hi_pixel_mask = 0xE79CE79C;
+        s->q_lo_pixel_mask = 0x18631863;
+        s->bpp = 2;
         break;
 
     case AV_PIX_FMT_BGR555BE:
     case AV_PIX_FMT_RGB555BE:
-        sai->is_be = 1;
+        s->is_be = 1;
     case AV_PIX_FMT_BGR555LE:
     case AV_PIX_FMT_RGB555LE:
-        sai->hi_pixel_mask   = 0x7BDE7BDE;
-        sai->lo_pixel_mask   = 0x04210421;
-        sai->q_hi_pixel_mask = 0x739C739C;
-        sai->q_lo_pixel_mask = 0x0C630C63;
-        sai->bpp = 2;
+        s->hi_pixel_mask   = 0x7BDE7BDE;
+        s->lo_pixel_mask   = 0x04210421;
+        s->q_hi_pixel_mask = 0x739C739C;
+        s->q_lo_pixel_mask = 0x0C630C63;
+        s->bpp = 2;
         break;
     }
 

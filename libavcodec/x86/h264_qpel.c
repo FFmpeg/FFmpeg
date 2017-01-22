@@ -23,16 +23,12 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "libavcodec/h264qpel.h"
 #include "libavcodec/pixels.h"
 #include "fpel.h"
 
 #if HAVE_YASM
-void ff_put_pixels4_mmx(uint8_t *block, const uint8_t *pixels,
-                        ptrdiff_t line_size, int h);
-void ff_avg_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
-                           ptrdiff_t line_size, int h);
 void ff_put_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
                               int dstStride, int src1Stride, int h);
 void ff_avg_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,

@@ -75,29 +75,29 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 16);
     size=avio_rl32(pb);
-    ff_get_wav_header(pb, st->codec, size, 0);
+    ff_get_wav_header(s, pb, st->codecpar, size, 0);
 
     /*
       8000Hz (Fine-rec) file format has 10 bytes long
       packets with 10ms of sound data in them
     */
-    if (st->codec->sample_rate != 8000) {
-        av_log(s, AV_LOG_ERROR, "Sample rate %d is not supported.\n", st->codec->sample_rate);
+    if (st->codecpar->sample_rate != 8000) {
+        av_log(s, AV_LOG_ERROR, "Sample rate %d is not supported.\n", st->codecpar->sample_rate);
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->frame_size=80;
-    st->codec->channels=1;
+    st->codecpar->frame_size=80;
+    st->codecpar->channels=1;
     avpriv_set_pts_info(st, 64, 1, 100);
 
-    st->codec->codec_id=AV_CODEC_ID_G729;
+    st->codecpar->codec_id=AV_CODEC_ID_G729;
 
     avio_seek(pb, 257, SEEK_SET);
     msec=avio_rl16(pb);
     sec=avio_r8(pb);
     min=avio_rl32(pb);
 
-    st->duration = av_rescale(1000*(min*60+sec)+msec, st->codec->sample_rate, 1000 * st->codec->frame_size);
+    st->duration = av_rescale(1000*(min*60+sec)+msec, st->codecpar->sample_rate, 1000 * st->codecpar->frame_size);
 
     ctx->bytes_left_in_chunk=CHUNK_SIZE;
 
@@ -113,10 +113,10 @@ static int read_packet(AVFormatContext *s,
     ACTContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     int ret;
-    int frame_size=s->streams[0]->codec->sample_rate==8000?10:22;
+    int frame_size=s->streams[0]->codecpar->sample_rate==8000?10:22;
 
 
-    if(s->streams[0]->codec->sample_rate==8000)
+    if(s->streams[0]->codecpar->sample_rate==8000)
         ret=av_new_packet(pkt, 10);
     else
         ret=av_new_packet(pkt, 11);
@@ -124,7 +124,7 @@ static int read_packet(AVFormatContext *s,
     if(ret)
         return ret;
 
-    if(s->streams[0]->codec->sample_rate==4400 && !ctx->second_packet)
+    if(s->streams[0]->codecpar->sample_rate==4400 && !ctx->second_packet)
     {
         ret = avio_read(pb, ctx->audio_buffer, frame_size);
 
@@ -147,7 +147,7 @@ static int read_packet(AVFormatContext *s,
 
         ctx->second_packet=1;
     }
-    else if(s->streams[0]->codec->sample_rate==4400 && ctx->second_packet)
+    else if(s->streams[0]->codecpar->sample_rate==4400 && ctx->second_packet)
     {
         pkt->data[0]=ctx->audio_buffer[5];
         pkt->data[1]=ctx->audio_buffer[17];

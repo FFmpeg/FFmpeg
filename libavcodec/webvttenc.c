@@ -159,21 +159,38 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
 {
     WebVTTContext *s = avctx->priv_data;
     ASSDialog *dialog;
-    int i, num;
+    int i;
 
     av_bprint_clear(&s->buffer);
 
     for (i=0; i<sub->num_rects; i++) {
+        const char *ass = sub->rects[i]->ass;
+
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
             return AVERROR(ENOSYS);
         }
 
-        dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
+#if FF_API_ASS_TIMING
+        if (!strncmp(ass, "Dialogue: ", 10)) {
+            int num;
+            dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
+            // TODO reindent
         for (; dialog && num--; dialog++) {
             webvtt_style_apply(s, dialog->style);
             ff_ass_split_override_codes(&webvtt_callbacks, s, dialog->text);
         }
+        } else {
+#endif
+            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+            if (!dialog)
+                return AVERROR(ENOMEM);
+            webvtt_style_apply(s, dialog->style);
+            ff_ass_split_override_codes(&webvtt_callbacks, s, dialog->text);
+            ff_ass_free_dialog(&dialog);
+#if FF_API_ASS_TIMING
+        }
+#endif
     }
 
     if (!av_bprint_is_complete(&s->buffer))

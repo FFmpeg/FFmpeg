@@ -77,6 +77,9 @@ int avpriv_open(const char *filename, int flags, ...)
 #ifdef O_CLOEXEC
     flags |= O_CLOEXEC;
 #endif
+#ifdef O_NOINHERIT
+    flags |= O_NOINHERIT;
+#endif
 
     fd = open(filename, flags, mode);
 #if HAVE_FCNTL
@@ -87,6 +90,65 @@ int avpriv_open(const char *filename, int flags, ...)
 #endif
 
     return fd;
+}
+
+typedef struct FileLogContext {
+    const AVClass *class;
+    int   log_offset;
+    void *log_ctx;
+} FileLogContext;
+
+static const AVClass file_log_ctx_class = {
+    "TEMPFILE", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT,
+    offsetof(FileLogContext, log_offset), offsetof(FileLogContext, log_ctx)
+};
+
+int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx)
+{
+    FileLogContext file_log_ctx = { &file_log_ctx_class, log_offset, log_ctx };
+    int fd = -1;
+#if !HAVE_MKSTEMP
+    void *ptr= tempnam(NULL, prefix);
+    if(!ptr)
+        ptr= tempnam(".", prefix);
+    *filename = av_strdup(ptr);
+#undef free
+    free(ptr);
+#else
+    size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
+    *filename  = av_malloc(len);
+#endif
+    /* -----common section-----*/
+    if (!*filename) {
+        av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
+        return AVERROR(ENOMEM);
+    }
+#if !HAVE_MKSTEMP
+#   ifndef O_BINARY
+#       define O_BINARY 0
+#   endif
+#   ifndef O_EXCL
+#       define O_EXCL 0
+#   endif
+    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
+#else
+    snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
+    fd = mkstemp(*filename);
+#if defined(_WIN32) || defined (__ANDROID__)
+    if (fd < 0) {
+        snprintf(*filename, len, "./%sXXXXXX", prefix);
+        fd = mkstemp(*filename);
+    }
+#endif
+#endif
+    /* -----common section-----*/
+    if (fd < 0) {
+        int err = AVERROR(errno);
+        av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
+        av_freep(filename);
+        return err;
+    }
+    return fd; /* success */
 }
 
 FILE *av_fopen_utf8(const char *path, const char *mode)

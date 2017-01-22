@@ -106,7 +106,7 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
     if (len > 6) {
-        /* check for h264 start code */
+        /* check for H.264 start code */
         if (AV_RB32(data) == 0x00000001 ||
             AV_RB24(data) == 0x000001) {
             uint8_t *buf=NULL, *end, *start;
@@ -180,7 +180,7 @@ int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
     if (11 + sps_size + pps_size > *size)
         return AVERROR_INVALIDDATA;
     out_size = 8 + sps_size + pps_size;
-    out = av_mallocz(out_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    out = av_mallocz(out_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!out)
         return AVERROR(ENOMEM);
     AV_WB32(&out[0], 0x00000001);

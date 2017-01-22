@@ -24,10 +24,12 @@
  * UDP protocol
  */
 
+#define _DEFAULT_SOURCE
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
@@ -39,6 +41,10 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
+
+#ifdef __APPLE__
+#include "TargetConditionals.h"
+#endif
 
 #if HAVE_UDPLITE_H
 #include "udplite.h"
@@ -91,6 +97,9 @@ typedef struct UDPContext {
     int circular_buffer_size;
     AVFifoBuffer *fifo;
     int circular_buffer_error;
+    int64_t bitrate; /* number of bits to send per second */
+    int64_t burst_bits;
+    int close_req;
 #if HAVE_PTHREAD_CANCEL
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
@@ -111,18 +120,20 @@ typedef struct UDPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "buffer_size",    "System data size (in bytes)",                     OFFSET(buffer_size),    AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
+    { "bitrate",        "Bits to send per second",                         OFFSET(bitrate),        AV_OPT_TYPE_INT64,  { .i64 = 0  },     0, INT64_MAX, .flags = E },
+    { "burst_bits",     "Max length of bursts in bits (when using bitrate)", OFFSET(burst_bits),   AV_OPT_TYPE_INT64,  { .i64 = 0  },     0, INT64_MAX, .flags = E },
     { "localport",      "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, D|E },
     { "local_port",     "Local port",                                      OFFSET(local_port),     AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "localaddr",      "Local address",                                   OFFSET(localaddr),      AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { "udplite_coverage", "choose UDPLite head size which should be validated by checksum", OFFSET(udplite_coverage), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
     { "pkt_size",       "Maximum UDP packet size",                         OFFSET(pkt_size),       AV_OPT_TYPE_INT,    { .i64 = 1472 },  -1, INT_MAX, .flags = D|E },
-    { "reuse",          "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       D|E },
-    { "reuse_socket",   "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 1,       .flags = D|E },
-    { "broadcast", "explicitly allow or disallow broadcast destination",   OFFSET(is_broadcast),   AV_OPT_TYPE_INT,    { .i64 = 0  },     0, 1,       E },
+    { "reuse",          "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_BOOL,   { .i64 = -1 },    -1, 1,       D|E },
+    { "reuse_socket",   "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_BOOL,   { .i64 = -1 },    -1, 1,       .flags = D|E },
+    { "broadcast", "explicitly allow or disallow broadcast destination",   OFFSET(is_broadcast),   AV_OPT_TYPE_BOOL,   { .i64 = 0  },     0, 1,       E },
     { "ttl",            "Time to live (multicast only)",                   OFFSET(ttl),            AV_OPT_TYPE_INT,    { .i64 = 16 },     0, INT_MAX, E },
-    { "connect",        "set if connect() should be called on socket",     OFFSET(is_connected),   AV_OPT_TYPE_INT,    { .i64 =  0 },     0, 1,       .flags = D|E },
+    { "connect",        "set if connect() should be called on socket",     OFFSET(is_connected),   AV_OPT_TYPE_BOOL,   { .i64 =  0 },     0, 1,       .flags = D|E },
     { "fifo_size",      "set the UDP receiving circular buffer size, expressed as a number of packets with size of 188 bytes", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = 7*4096}, 0, INT_MAX, D },
-    { "overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1,    D },
+    { "overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,    D },
     { "timeout",        "set raise error timeout (only in read mode)",     OFFSET(timeout),        AV_OPT_TYPE_INT,    { .i64 = 0 },      0, INT_MAX, D },
     { "sources",        "Source list",                                     OFFSET(sources),        AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { "block",          "Block list",                                      OFFSET(block),          AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
@@ -236,7 +247,8 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
     return 0;
 }
 
-static struct addrinfo* udp_resolve_host(const char *hostname, int port,
+static struct addrinfo *udp_resolve_host(URLContext *h,
+                                         const char *hostname, int port,
                                          int type, int family, int flags)
 {
     struct addrinfo hints = { 0 }, *res = 0;
@@ -256,24 +268,28 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port,
     hints.ai_flags = flags;
     if ((error = getaddrinfo(node, service, &hints, &res))) {
         res = NULL;
-        av_log(NULL, AV_LOG_ERROR, "udp_resolve_host: %s\n", gai_strerror(error));
+        av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
+               node ? node : "unknown",
+               service,
+               gai_strerror(error));
     }
 
     return res;
 }
 
-static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
+static int udp_set_multicast_sources(URLContext *h,
+                                     int sockfd, struct sockaddr *addr,
                                      int addr_len, char **sources,
                                      int nb_sources, int include)
 {
-#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32)
+#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32) && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
     /* These ones are available in the microsoft SDK, but don't seem to work
      * as on linux, so just prefer the v4-only approach there for now. */
     int i;
     for (i = 0; i < nb_sources; i++) {
         struct group_source_req mreqs;
         int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
-        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
                                                        0);
         if (!sourceaddr)
@@ -303,7 +319,7 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
     }
     for (i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
-        struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
+        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
                                                        0);
         if (!sourceaddr)
@@ -335,13 +351,14 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
 #endif
     return 0;
 }
-static int udp_set_url(struct sockaddr_storage *addr,
+static int udp_set_url(URLContext *h,
+                       struct sockaddr_storage *addr,
                        const char *hostname, int port)
 {
     struct addrinfo *res0;
     int addr_len;
 
-    res0 = udp_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
+    res0 = udp_resolve_host(h, hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
     if (!res0) return AVERROR(EIO);
     memcpy(addr, res0->ai_addr, res0->ai_addrlen);
     addr_len = res0->ai_addrlen;
@@ -350,16 +367,18 @@ static int udp_set_url(struct sockaddr_storage *addr,
     return addr_len;
 }
 
-static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
+static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
                              socklen_t *addr_len, const char *localaddr)
 {
+    UDPContext *s = h->priv_data;
     int udp_fd = -1;
     struct addrinfo *res0, *res;
     int family = AF_UNSPEC;
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_resolve_host((localaddr && localaddr[0]) ? localaddr : NULL, s->local_port,
+    res0 = udp_resolve_host(h, (localaddr && localaddr[0]) ? localaddr : NULL,
+                            s->local_port,
                             SOCK_DGRAM, family, AI_PASSIVE);
     if (!res0)
         goto fail;
@@ -430,7 +449,7 @@ int ff_udp_set_remote_url(URLContext *h, const char *uri)
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
 
     /* set the destination address */
-    s->dest_addr_len = udp_set_url(&s->dest_addr, hostname, port);
+    s->dest_addr_len = udp_set_url(h, &s->dest_addr, hostname, port);
     if (s->dest_addr_len < 0) {
         return AVERROR(EIO);
     }
@@ -477,7 +496,7 @@ static int udp_get_file_handle(URLContext *h)
 }
 
 #if HAVE_PTHREAD_CANCEL
-static void *circular_buffer_task( void *_URLContext)
+static void *circular_buffer_task_rx( void *_URLContext)
 {
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
@@ -533,6 +552,109 @@ end:
     pthread_mutex_unlock(&s->mutex);
     return NULL;
 }
+
+static void *circular_buffer_task_tx( void *_URLContext)
+{
+    URLContext *h = _URLContext;
+    UDPContext *s = h->priv_data;
+    int old_cancelstate;
+    int64_t target_timestamp = av_gettime_relative();
+    int64_t start_timestamp = av_gettime_relative();
+    int64_t sent_bits = 0;
+    int64_t burst_interval = s->bitrate ? (s->burst_bits * 1000000 / s->bitrate) : 0;
+    int64_t max_delay = s->bitrate ?  ((int64_t)h->max_packet_size * 8 * 1000000 / s->bitrate + 1) : 0;
+
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+    pthread_mutex_lock(&s->mutex);
+
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
+        s->circular_buffer_error = AVERROR(EIO);
+        goto end;
+    }
+
+    for(;;) {
+        int len;
+        const uint8_t *p;
+        uint8_t tmp[4];
+        int64_t timestamp;
+
+        len=av_fifo_size(s->fifo);
+
+        while (len<4) {
+            if (s->close_req)
+                goto end;
+            if (pthread_cond_wait(&s->cond, &s->mutex) < 0) {
+                goto end;
+            }
+            len=av_fifo_size(s->fifo);
+        }
+
+        av_fifo_generic_read(s->fifo, tmp, 4, NULL);
+        len=AV_RL32(tmp);
+
+        av_assert0(len >= 0);
+        av_assert0(len <= sizeof(s->tmp));
+
+        av_fifo_generic_read(s->fifo, s->tmp, len, NULL);
+
+        pthread_mutex_unlock(&s->mutex);
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
+
+        if (s->bitrate) {
+            timestamp = av_gettime_relative();
+            if (timestamp < target_timestamp) {
+                int64_t delay = target_timestamp - timestamp;
+                if (delay > max_delay) {
+                    delay = max_delay;
+                    start_timestamp = timestamp + delay;
+                    sent_bits = 0;
+                }
+                av_usleep(delay);
+            } else {
+                if (timestamp - burst_interval > target_timestamp) {
+                    start_timestamp = timestamp - burst_interval;
+                    sent_bits = 0;
+                }
+            }
+            sent_bits += len * 8;
+            target_timestamp = start_timestamp + sent_bits * 1000000 / s->bitrate;
+        }
+
+        p = s->tmp;
+        while (len) {
+            int ret;
+            av_assert0(len > 0);
+            if (!s->is_connected) {
+                ret = sendto (s->udp_fd, p, len, 0,
+                            (struct sockaddr *) &s->dest_addr,
+                            s->dest_addr_len);
+            } else
+                ret = send(s->udp_fd, p, len, 0);
+            if (ret >= 0) {
+                len -= ret;
+                p   += ret;
+            } else {
+                ret = ff_neterrno();
+                if (ret != AVERROR(EAGAIN) && ret != AVERROR(EINTR)) {
+                    pthread_mutex_lock(&s->mutex);
+                    s->circular_buffer_error = ret;
+                    pthread_mutex_unlock(&s->mutex);
+                    return NULL;
+                }
+            }
+        }
+
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+        pthread_mutex_lock(&s->mutex);
+    }
+
+end:
+    pthread_mutex_unlock(&s->mutex);
+    return NULL;
+}
+
+
 #endif
 
 static int parse_source_list(char *buf, char **sources, int *num_sources,
@@ -641,6 +763,16 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                        "'circular_buffer_size' option was set but it is not supported "
                        "on this build (pthread support is required)\n");
         }
+        if (av_find_info_tag(buf, sizeof(buf), "bitrate", p)) {
+            s->bitrate = strtoll(buf, NULL, 10);
+            if (!HAVE_PTHREAD_CANCEL)
+                av_log(h, AV_LOG_WARNING,
+                       "'bitrate' option was set but it is not supported "
+                       "on this build (pthread support is required)\n");
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "burst_bits", p)) {
+            s->burst_bits = strtoll(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
             av_strlcpy(localaddr, buf, sizeof(localaddr));
         }
@@ -685,9 +817,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         s->local_port = port;
 
     if (localaddr[0])
-        udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+        udp_fd = udp_socket_create(h, &my_addr, &len, localaddr);
     else
-        udp_fd = udp_socket_create(s, &my_addr, &len, s->localaddr);
+        udp_fd = udp_socket_create(h, &my_addr, &len, s->localaddr);
     if (udp_fd < 0)
         goto fail;
 
@@ -759,14 +891,22 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 goto fail;
             }
             if (num_include_sources) {
-                if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, include_sources, num_include_sources, 1) < 0)
+                if (udp_set_multicast_sources(h, udp_fd,
+                                              (struct sockaddr *)&s->dest_addr,
+                                              s->dest_addr_len,
+                                              include_sources,
+                                              num_include_sources, 1) < 0)
                     goto fail;
             } else {
                 if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage) < 0)
                     goto fail;
             }
             if (num_exclude_sources) {
-                if (udp_set_multicast_sources(udp_fd, (struct sockaddr *)&s->dest_addr, s->dest_addr_len, exclude_sources, num_exclude_sources, 0) < 0)
+                if (udp_set_multicast_sources(h, udp_fd,
+                                              (struct sockaddr *)&s->dest_addr,
+                                              s->dest_addr_len,
+                                              exclude_sources,
+                                              num_exclude_sources, 0) < 0)
                     goto fail;
             }
         }
@@ -812,7 +952,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->udp_fd = udp_fd;
 
 #if HAVE_PTHREAD_CANCEL
-    if (!is_output && s->circular_buffer_size) {
+    /*
+      Create thread in case of:
+      1. Input and circular_buffer_size is set
+      2. Output and bitrate and circular_buffer_size is set
+    */
+
+    if (is_output && s->bitrate && !s->circular_buffer_size) {
+        /* Warn user in case of 'circular_buffer_size' is not set */
+        av_log(h, AV_LOG_WARNING,"'bitrate' option was set but 'circular_buffer_size' is not, but required\n");
+    }
+
+    if ((!is_output && s->circular_buffer_size) || (is_output && s->bitrate && s->circular_buffer_size)) {
         int ret;
 
         /* start the task going */
@@ -827,7 +978,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", strerror(ret));
             goto cond_fail;
         }
-        ret = pthread_create(&s->circular_buffer_thread, NULL, circular_buffer_task, h);
+        ret = pthread_create(&s->circular_buffer_thread, NULL, is_output?circular_buffer_task_tx:circular_buffer_task_rx, h);
         if (ret != 0) {
             av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", strerror(ret));
             goto thread_fail;
@@ -928,6 +1079,35 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
 
+#if HAVE_PTHREAD_CANCEL
+    if (s->fifo) {
+        uint8_t tmp[4];
+
+        pthread_mutex_lock(&s->mutex);
+
+        /*
+          Return error if last tx failed.
+          Here we can't know on which packet error was, but it needs to know that error exists.
+        */
+        if (s->circular_buffer_error<0) {
+            int err=s->circular_buffer_error;
+            pthread_mutex_unlock(&s->mutex);
+            return err;
+        }
+
+        if(av_fifo_space(s->fifo) < size + 4) {
+            /* What about a partial packet tx ? */
+            pthread_mutex_unlock(&s->mutex);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(tmp, size);
+        av_fifo_generic_write(s->fifo, tmp, 4, NULL); /* size of packet */
+        av_fifo_generic_write(s->fifo, (uint8_t *)buf, size, NULL); /* the data */
+        pthread_cond_signal(&s->cond);
+        pthread_mutex_unlock(&s->mutex);
+        return size;
+    }
+#endif
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd(s->udp_fd, 1);
         if (ret < 0)
@@ -948,13 +1128,24 @@ static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
+#if HAVE_PTHREAD_CANCEL
+    // Request close once writing is finished
+    if (s->thread_started && !(h->flags & AVIO_FLAG_READ)) {
+        pthread_mutex_lock(&s->mutex);
+        s->close_req = 1;
+        pthread_cond_signal(&s->cond);
+        pthread_mutex_unlock(&s->mutex);
+    }
+#endif
+
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage);
-    closesocket(s->udp_fd);
 #if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
         int ret;
-        pthread_cancel(s->circular_buffer_thread);
+        // Cancel only read, as write has been signaled as success to the user
+        if (h->flags & AVIO_FLAG_READ)
+            pthread_cancel(s->circular_buffer_thread);
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
@@ -962,11 +1153,12 @@ static int udp_close(URLContext *h)
         pthread_cond_destroy(&s->cond);
     }
 #endif
+    closesocket(s->udp_fd);
     av_fifo_freep(&s->fifo);
     return 0;
 }
 
-URLProtocol ff_udp_protocol = {
+const URLProtocol ff_udp_protocol = {
     .name                = "udp",
     .url_open            = udp_open,
     .url_read            = udp_read,
@@ -978,7 +1170,7 @@ URLProtocol ff_udp_protocol = {
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
 
-URLProtocol ff_udplite_protocol = {
+const URLProtocol ff_udplite_protocol = {
     .name                = "udplite",
     .url_open            = udplite_open,
     .url_read            = udp_read,

@@ -20,8 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "avformat.h"
 #include "rawenc.h"
+#include "internal.h"
 
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -60,11 +63,11 @@ AVOutputFormat ff_ac3_muxer = {
 static int adx_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *avctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (pb->seekable) {
         int64_t file_size = avio_tell(pb);
-        uint64_t sample_count = (file_size - 36) / avctx->channels / 18 * 32;
+        uint64_t sample_count = (file_size - 36) / par->channels / 18 * 32;
         if (sample_count <= UINT32_MAX) {
             avio_seek(pb, 12, SEEK_SET);
             avio_wb32(pb, sample_count);
@@ -115,7 +118,7 @@ AVOutputFormat ff_data_muxer = {
 AVOutputFormat ff_dirac_muxer = {
     .name              = "dirac",
     .long_name         = NULL_IF_CONFIG_SMALL("raw Dirac"),
-    .extensions        = "drc",
+    .extensions        = "drc,vc2",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_DIRAC,
     .write_header      = force_one_stream,
@@ -128,7 +131,7 @@ AVOutputFormat ff_dirac_muxer = {
 AVOutputFormat ff_dnxhd_muxer = {
     .name              = "dnxhd",
     .long_name         = NULL_IF_CONFIG_SMALL("raw DNxHD (SMPTE VC-3)"),
-    .extensions        = "dnxhd",
+    .extensions        = "dnxhd,dnxhr",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_DNXHD,
     .write_header      = force_one_stream,
@@ -193,6 +196,20 @@ AVOutputFormat ff_g723_1_muxer = {
 };
 #endif
 
+#if CONFIG_GSM_MUXER
+AVOutputFormat ff_gsm_muxer = {
+    .name              = "gsm",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw GSM"),
+    .mime_type         = "audio/x-gsm",
+    .extensions        = "gsm",
+    .audio_codec       = AV_CODEC_ID_GSM,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_H261_MUXER
 AVOutputFormat ff_h261_muxer = {
     .name              = "h261",
@@ -222,6 +239,15 @@ AVOutputFormat ff_h263_muxer = {
 #endif
 
 #if CONFIG_H264_MUXER
+static int h264_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    AVStream *st = s->streams[0];
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "h264_mp4toannexb", NULL);
+    return 1;
+}
+
 AVOutputFormat ff_h264_muxer = {
     .name              = "h264",
     .long_name         = NULL_IF_CONFIG_SMALL("raw H.264 video"),
@@ -230,18 +256,30 @@ AVOutputFormat ff_h264_muxer = {
     .video_codec       = AV_CODEC_ID_H264,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = h264_check_bitstream,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
 
 #if CONFIG_HEVC_MUXER
+static int hevc_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    AVStream *st = s->streams[0];
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "hevc_mp4toannexb", NULL);
+    return 1;
+}
+
 AVOutputFormat ff_hevc_muxer = {
     .name              = "hevc",
     .long_name         = NULL_IF_CONFIG_SMALL("raw HEVC video"),
-    .extensions        = "hevc",
+    .extensions        = "hevc,h265,265",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_HEVC,
+    .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = hevc_check_bitstream,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
@@ -253,6 +291,7 @@ AVOutputFormat ff_m4v_muxer = {
     .extensions        = "m4v",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_MPEG4,
+    .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
@@ -293,6 +332,19 @@ AVOutputFormat ff_mlp_muxer = {
     .audio_codec       = AV_CODEC_ID_MLP,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_MP2_MUXER
+AVOutputFormat ff_mp2_muxer = {
+    .name              = "mp2",
+    .long_name         = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
+    .mime_type         = "audio/mpeg",
+    .extensions        = "mp2,m2a,mpa",
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };

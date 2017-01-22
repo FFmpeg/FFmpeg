@@ -57,12 +57,10 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/qsort.h"
 
 #include "deshake.h"
 #include "deshake_opencl.h"
-
-#define CHROMA_WIDTH(link)  (-((-(link)->w) >> av_pix_fmt_desc_get((link)->format)->log2_chroma_w))
-#define CHROMA_HEIGHT(link) (-((-(link)->h) >> av_pix_fmt_desc_get((link)->format)->log2_chroma_h))
 
 #define OFFSET(x) offsetof(DeshakeContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -85,15 +83,15 @@ static const AVOption deshake_options[] = {
         { "exhaustive", "exhaustive search",      0, AV_OPT_TYPE_CONST, {.i64=EXHAUSTIVE},       INT_MIN, INT_MAX, FLAGS, "smode" },
         { "less",       "less exhaustive search", 0, AV_OPT_TYPE_CONST, {.i64=SMART_EXHAUSTIVE}, INT_MIN, INT_MAX, FLAGS, "smode" },
     { "filename", "set motion search detailed log file name", OFFSET(filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
-    { "opencl", "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, .flags = FLAGS },
+    { "opencl", "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(deshake);
 
-static int cmp(const double *a, const double *b)
+static int cmp(const void *a, const void *b)
 {
-    return *a < *b ? -1 : ( *a > *b ? 1 : 0 );
+    return FFDIFFSIGN(*(const double *)a, *(const double *)b);
 }
 
 /**
@@ -105,7 +103,7 @@ static double clean_mean(double *values, int count)
     int cut = count / 5;
     int x;
 
-    qsort(values, count, sizeof(double), (void*)cmp);
+    AV_QSORT(values, count, double, cmp);
 
     for (x = cut; x < count - cut; x++) {
         mean += values[x];
@@ -438,6 +436,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
     int ret = 0;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
+    const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -526,9 +527,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Generate a luma transformation matrix
     avfilter_get_matrix(t.vec.x, t.vec.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
     // Generate a chroma transformation matrix
-    avfilter_get_matrix(t.vec.x / (link->w / CHROMA_WIDTH(link)), t.vec.y / (link->h / CHROMA_HEIGHT(link)), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
+    avfilter_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
     // Transform the luma and chroma planes
-    ret = deshake->transform(link->dst, link->w, link->h, CHROMA_WIDTH(link), CHROMA_HEIGHT(link),
+    ret = deshake->transform(link->dst, link->w, link->h, chroma_width, chroma_height,
                              matrix_y, matrix_uv, INTERPOLATE_BILINEAR, deshake->edge, in, out);
 
     // Cleanup the old reference frame

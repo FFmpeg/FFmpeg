@@ -171,7 +171,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     if ((ret = ff_mdct_init(&s->mdct_ctx, 8, 0, 32768.0)) < 0)
         goto error;
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -179,8 +179,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* Generate overlap window */
     ff_init_ff_sine_windows(7);
+    /* faster way of doing
     for (i = 0; i < POW_TABLE_SIZE; i++)
-        pow_table[i] = pow(2, -i / 2048.0 - 3.0 + POW_TABLE_OFFSET);
+       pow_table[i] = 2^(-i / 2048.0 - 3.0 + POW_TABLE_OFFSET); */
+    pow_table[0] = 1;
+    pow_table[1024] = M_SQRT1_2;
+    for (i = 1; i < 513; i++) {
+        double tmp = exp2(-i / 2048.0);
+        pow_table[i] = tmp;
+        pow_table[1024-i] = M_SQRT1_2 / tmp;
+        pow_table[1024+i] = tmp * M_SQRT1_2;
+        pow_table[2048-i] = 0.5 / tmp;
+    }
 
     if (s->avctx->trellis) {
         s->opt  = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(float  ));
@@ -318,7 +328,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
                        + s->mdct_out[i + NELLY_BUF_LEN] * s->mdct_out[i + NELLY_BUF_LEN];
         }
         cand[band] =
-            log(FFMAX(1.0, coeff_sum / (ff_nelly_band_sizes_table[band] << 7))) * 1024.0 / M_LN2;
+            log2(FFMAX(1.0, coeff_sum / (ff_nelly_band_sizes_table[band] << 7))) * 1024.0;
     }
 
     if (s->avctx->trellis) {
@@ -397,7 +407,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->last_frame = 1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, NELLY_BLOCK_LEN, 0)) < 0)
         return ret;
     encode_block(s, avpkt->data, avpkt->size);
 
@@ -418,7 +428,7 @@ AVCodec ff_nellymoser_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
 };

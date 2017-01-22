@@ -25,9 +25,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
-// FIXME those are internal headers, ffserver _really_ shouldn't use them
-#include "libavformat/ffm.h"
-
 #include "cmdutils.h"
 #include "ffserver_config.h"
 
@@ -42,8 +39,8 @@ static void report_config_error(const char *filename, int line_num,
                                 int log_level, int *errors, const char *fmt,
                                 ...);
 
-#define ERROR(...)   report_config_error(config->filename, config->line_num,\
-                                         AV_LOG_ERROR, &config->errors,  __VA_ARGS__)
+#define ERROR(...) report_config_error(config->filename, config->line_num,\
+                                       AV_LOG_ERROR, &config->errors, __VA_ARGS__)
 #define WARNING(...) report_config_error(config->filename, config->line_num,\
                                          AV_LOG_WARNING, &config->warnings, __VA_ARGS__)
 
@@ -116,7 +113,8 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
 {
     char arg[1024];
     FFServerIPAddressACL acl;
-    int errors = 0;
+    FFServerIPAddressACL *nacl;
+    FFServerIPAddressACL **naclp;
 
     ffserver_get_arg(arg, sizeof(arg), &p);
     if (av_strcasecmp(arg, "allow") == 0)
@@ -126,7 +124,7 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
     else {
         fprintf(stderr, "%s:%d: ACL action '%s' should be ALLOW or DENY.\n",
                 filename, line_num, arg);
-        errors++;
+        goto bail;
     }
 
     ffserver_get_arg(arg, sizeof(arg), &p);
@@ -135,9 +133,10 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
         fprintf(stderr,
                 "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                 filename, line_num, arg);
-        errors++;
-    } else
-        acl.last = acl.first;
+        goto bail;
+    }
+
+    acl.last = acl.first;
 
     ffserver_get_arg(arg, sizeof(arg), &p);
 
@@ -146,44 +145,49 @@ void ffserver_parse_acl_row(FFServerStream *stream, FFServerStream* feed,
             fprintf(stderr,
                     "%s:%d: ACL refers to invalid host or IP address '%s'\n",
                     filename, line_num, arg);
-            errors++;
+            goto bail;
         }
     }
 
-    if (!errors) {
-        FFServerIPAddressACL *nacl = av_mallocz(sizeof(*nacl));
-        FFServerIPAddressACL **naclp = 0;
-
-        acl.next = 0;
-        *nacl = acl;
-
-        if (stream)
-            naclp = &stream->acl;
-        else if (feed)
-            naclp = &feed->acl;
-        else if (ext_acl)
-            naclp = &ext_acl;
-        else {
-            fprintf(stderr, "%s:%d: ACL found not in <Stream> or <Feed>\n",
-                    filename, line_num);
-            errors++;
-        }
-
-        if (naclp) {
-            while (*naclp)
-                naclp = &(*naclp)->next;
-
-            *naclp = nacl;
-        } else
-            av_free(nacl);
+    nacl = av_mallocz(sizeof(*nacl));
+    if (!nacl) {
+        fprintf(stderr, "Failed to allocate FFServerIPAddressACL\n");
+        goto bail;
     }
+
+    naclp = 0;
+
+    acl.next = 0;
+    *nacl = acl;
+
+    if (stream)
+        naclp = &stream->acl;
+    else if (feed)
+        naclp = &feed->acl;
+    else if (ext_acl)
+        naclp = &ext_acl;
+    else
+        fprintf(stderr, "%s:%d: ACL found not in <Stream> or <Feed>\n",
+                filename, line_num);
+
+    if (naclp) {
+        while (*naclp)
+            naclp = &(*naclp)->next;
+
+        *naclp = nacl;
+    } else
+        av_free(nacl);
+
+bail:
+  return;
+
 }
 
 /* add a codec and set the default parameters */
 static void add_codec(FFServerStream *stream, AVCodecContext *av,
                       FFServerConfig *config)
 {
-    AVStream *st;
+    LayeredAVStream *st;
     AVDictionary **opts, *recommended = NULL;
     char *enc_config;
 
@@ -230,9 +234,9 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     /* compute default parameters */
     switch(av->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        if (!av_dict_get(recommended, "ab", NULL, 0)) {
+        if (!av_dict_get(recommended, "b", NULL, 0)) {
             av->bit_rate = 64000;
-            av_dict_set_int(&recommended, "ab", av->bit_rate, 0);
+            av_dict_set_int(&recommended, "b", av->bit_rate, 0);
             WARNING("Setting default value for audio bit rate = %d. "
                     "Use NoDefaults to disable it.\n",
                     av->bit_rate);
@@ -314,13 +318,15 @@ static void add_codec(FFServerStream *stream, AVCodecContext *av,
     }
 
 done:
-    st = av_mallocz(sizeof(AVStream));
+    st = av_mallocz(sizeof(*st));
     if (!st)
         return;
     av_dict_get_string(recommended, &enc_config, '=', ',');
     av_dict_free(&recommended);
-    av_stream_set_recommended_encoder_configuration(st, enc_config);
+    st->recommended_encoder_configuration = enc_config;
     st->codec = av;
+    st->codecpar = avcodec_parameters_alloc();
+    avcodec_parameters_from_context(st->codecpar, av);
     stream->streams[stream->nb_streams++] = st;
 }
 
@@ -458,7 +464,7 @@ static int ffserver_set_int_param(int *dest, const char *value, int factor,
     if (tmp < min || tmp > max)
         goto error;
     if (factor) {
-        if (FFABS(tmp) > INT_MAX / FFABS(factor))
+        if (tmp == INT_MIN || FFABS(tmp) > INT_MAX / FFABS(factor))
             goto error;
         tmp *= factor;
     }
@@ -683,8 +689,8 @@ static int ffserver_parse_config_global(FFServerConfig *config, const char *cmd,
     return 0;
 }
 
-static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, const char **p,
-                                      FFServerStream **pfeed)
+static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd,
+                                      const char **p, FFServerStream **pfeed)
 {
     FFServerStream *feed;
     char arg[1024];
@@ -791,7 +797,8 @@ static int ffserver_parse_config_feed(FFServerConfig *config, const char *cmd, c
     return 0;
 }
 
-static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd, const char **p,
+static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
+                                        const char **p,
                                         FFServerStream **pstream)
 {
     char arg[1024], arg2[1024];
@@ -923,7 +930,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         ffserver_get_arg(arg, sizeof(arg), p);
         ffserver_set_float_param(&f, arg, 1000, -FLT_MAX, FLT_MAX, config,
                 "Invalid %s: '%s'\n", cmd, arg);
-        if (ffserver_save_avoption_int("ab", (int64_t)lrintf(f),
+        if (ffserver_save_avoption_int("b", (int64_t)lrintf(f),
                                        AV_OPT_FLAG_AUDIO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "AudioChannels")) {
@@ -1046,6 +1053,7 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
                                        AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "BitExact")) {
+        config->bitexact = 1;
         if (ffserver_save_avoption("flags", "+bitexact", AV_OPT_FLAG_VIDEO_PARAM, config) < 0)
             goto nomem;
     } else if (!av_strcasecmp(cmd, "DctFastint")) {
@@ -1135,6 +1143,8 @@ static int ffserver_parse_config_stream(FFServerConfig *config, const char *cmd,
         av_dict_free(&config->audio_opts);
         avcodec_free_context(&config->dummy_vctx);
         avcodec_free_context(&config->dummy_actx);
+        config->no_video = 0;
+        config->no_audio = 0;
         *pstream = NULL;
     } else if (!av_strcasecmp(cmd, "File") ||
                !av_strcasecmp(cmd, "ReadOnlyFile")) {

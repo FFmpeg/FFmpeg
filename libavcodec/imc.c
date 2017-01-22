@@ -27,7 +27,6 @@
  *  A mdct based codec using a 256 points large transform
  *  divided into 32 bands with some mix of scale factors.
  *  Only mono is supported.
- *
  */
 
 
@@ -36,9 +35,9 @@
 #include <stdio.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/internal.h"
-#include "libavutil/libm.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
@@ -71,7 +70,7 @@ typedef struct IMCChannel {
     int sumLenArr[BANDS];      ///< bits for all coeffs in band
     int skipFlagRaw[BANDS];    ///< skip flags are stored in raw form or not
     int skipFlagBits[BANDS];   ///< bits used to code skip flags
-    int skipFlagCount[BANDS];  ///< skipped coeffients per band
+    int skipFlagCount[BANDS];  ///< skipped coefficients per band
     int skipFlags[COEFFS];     ///< skip coefficient decoding or not
     int codewords[COEFFS];     ///< raw codewords read from bitstream
 
@@ -137,8 +136,8 @@ static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
 
         if (i > 0) {
             tb = bark - prev_bark;
-            q->weights1[i - 1] = pow(10.0, -1.0 * tb);
-            q->weights2[i - 1] = pow(10.0, -2.7 * tb);
+            q->weights1[i - 1] = ff_exp10(-1.0 * tb);
+            q->weights2[i - 1] = ff_exp10(-2.7 * tb);
         }
         prev_bark = bark;
 
@@ -256,7 +255,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         return ret;
     }
     ff_bswapdsp_init(&q->bdsp);
-    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    q->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!q->fdsp) {
         ff_fft_end(&q->fft);
 
@@ -426,7 +425,7 @@ static void imc_decode_level_coefficients_raw(IMCContext *q, int *levlCoeffBuf,
 
     pos = q->coef0_pos;
     flcoeffs1[pos] = 20000.0 / pow (2, levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
-    flcoeffs2[pos] = log2f(flcoeffs1[0]);
+    flcoeffs2[pos] = log2f(flcoeffs1[pos]);
     tmp  = flcoeffs1[pos];
     tmp2 = flcoeffs2[pos];
 
@@ -1021,7 +1020,7 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
 
     IMCContext *q = avctx->priv_data;
 
-    LOCAL_ALIGNED_16(uint16_t, buf16, [(IMC_BLOCK_SIZE + FF_INPUT_BUFFER_PADDING_SIZE) / 2]);
+    LOCAL_ALIGNED_16(uint16_t, buf16, [(IMC_BLOCK_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / 2]);
 
     if (buf_size < IMC_BLOCK_SIZE * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "frame too small!\n");
@@ -1085,7 +1084,7 @@ AVCodec ff_imc_decoder = {
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -1101,7 +1100,7 @@ AVCodec ff_iac_decoder = {
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
     .flush          = flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

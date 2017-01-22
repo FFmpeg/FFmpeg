@@ -1,5 +1,5 @@
 /*
- * H261 decoder
+ * H.261 decoder
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -601,7 +601,7 @@ retry:
     init_get_bits(&s->gb, buf, buf_size * 8);
 
     if (!s->context_initialized)
-        // we need the IDCT permutaton for reading a custom matrix
+        // we need the IDCT permutation for reading a custom matrix
         ff_mpv_idct_init(s);
 
     ret = h261_decode_picture_header(h);
@@ -685,6 +685,6 @@ AVCodec ff_h261_decoder = {
     .init           = h261_decode_init,
     .close          = h261_decode_end,
     .decode         = h261_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
 };

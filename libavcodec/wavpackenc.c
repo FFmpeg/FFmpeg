@@ -128,6 +128,11 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
+    if (avctx->channels > 255) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d\n", avctx->channels);
+        return AVERROR(EINVAL);
+    }
+
     if (!avctx->frame_size) {
         int block_samples;
         if (!(avctx->sample_rate & 1))
@@ -1829,9 +1834,9 @@ static int wv_stereo(WavPackEncodeContext *s,
     log_limit = (((s->flags & MAG_MASK) >> MAG_LSB) + 4) * 256;
     log_limit = FFMIN(6912, log_limit);
 
-    if (s->joint) {
-        force_js = s->joint > 0;
-        force_ts = s->joint < 0;
+    if (s->joint != -1) {
+        force_js =  s->joint;
+        force_ts = !s->joint;
     }
 
     if ((ret = allocate_buffers(s)) < 0)
@@ -2211,8 +2216,7 @@ static void pack_float_sample(WavPackEncodeContext *s, int32_t *sample)
         }
     } else if (shift_count) {
         if (s->float_flags & FLOAT_SHIFT_SENT) {
-            int32_t data = get_mantissa(*sample) & ((1 << shift_count) - 1);
-            put_bits(pb, shift_count, data);
+            put_sbits(pb, shift_count, get_mantissa(*sample));
         } else if (s->float_flags & FLOAT_SHIFT_SAME) {
             put_bits(pb, 1, get_mantissa(*sample) & 1);
         }
@@ -2878,8 +2882,8 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     buf_size = s->block_samples * avctx->channels * 8
-             + 200 /* for headers */;
-    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size)) < 0)
+             + 200 * avctx->channels /* for headers */;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
         return ret;
     buf = avpkt->data;
 
@@ -2955,13 +2959,8 @@ static av_cold int wavpack_encode_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(WavPackEncodeContext, x)
 #define FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption options[] = {
-    { "joint_stereo",  "", OFFSET(joint), AV_OPT_TYPE_INT, {.i64=0},-1, 1, FLAGS, "joint" },
-    { "on",   "mid/side",   0, AV_OPT_TYPE_CONST, {.i64= 1}, 0, 0, FLAGS, "joint"},
-    { "off",  "left/right", 0, AV_OPT_TYPE_CONST, {.i64=-1}, 0, 0, FLAGS, "joint"},
-    { "auto", NULL, 0, AV_OPT_TYPE_CONST, {.i64= 0}, 0, 0, FLAGS, "joint"},
-    { "optimize_mono",        "", OFFSET(optimize_mono), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "opt_mono" },
-    { "on",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "opt_mono"},
-    { "off",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "opt_mono"},
+    { "joint_stereo",  "", OFFSET(joint), AV_OPT_TYPE_BOOL, {.i64=-1}, -1, 1, FLAGS },
+    { "optimize_mono", "", OFFSET(optimize_mono), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL },
 };
 
@@ -2982,7 +2981,7 @@ AVCodec ff_wavpack_encoder = {
     .init           = wavpack_encode_init,
     .encode2        = wavpack_encode_frame,
     .close          = wavpack_encode_close,
-    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8P,
                                                      AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_S32P,

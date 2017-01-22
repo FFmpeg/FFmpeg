@@ -105,7 +105,6 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b)
  * | 6 | 7 |
  * 1   3   |
  * ---------
- *
  */
 void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type)
 {

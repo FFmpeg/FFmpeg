@@ -28,12 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGV
  */
 
-#include "avcodec.h"
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
+#include "avcodec.h"
+#include "get_bits.h"
+#include "internal.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')
@@ -364,5 +365,5 @@ AVCodec ff_eatgv_decoder = {
     .init           = tgv_decode_init,
     .close          = tgv_decode_end,
     .decode         = tgv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

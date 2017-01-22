@@ -37,11 +37,11 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->tag = MKTAG('r','t','p',' ');
     track->src_track = src_index;
 
-    track->enc = avcodec_alloc_context3(NULL);
-    if (!track->enc)
+    track->par = avcodec_parameters_alloc();
+    if (!track->par)
         goto fail;
-    track->enc->codec_type = AVMEDIA_TYPE_DATA;
-    track->enc->codec_tag  = track->tag;
+    track->par->codec_type = AVMEDIA_TYPE_DATA;
+    track->par->codec_tag  = track->tag;
 
     ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
                                 RTP_MAX_PACKET_SIZE, src_index);
@@ -58,7 +58,7 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
 fail:
     av_log(s, AV_LOG_WARNING,
            "Unable to initialize hinting of stream %d\n", src_index);
-    av_freep(&track->enc);
+    avcodec_parameters_free(&track->par);
     /* Set a default timescale, to avoid crashes in av_dump_format */
     track->timescale = 90000;
     return ret;
@@ -460,7 +460,7 @@ void ff_mov_close_hinting(MOVTrack *track)
 {
     AVFormatContext *rtp_ctx = track->rtp_ctx;
 
-    av_freep(&track->enc);
+    avcodec_parameters_free(&track->par);
     sample_queue_free(&track->sample_queue);
     if (!rtp_ctx)
         return;

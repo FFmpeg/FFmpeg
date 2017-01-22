@@ -27,19 +27,12 @@
 #define AVCODEC_VP8_H
 
 #include "libavutil/buffer.h"
+#include "libavutil/thread.h"
 
 #include "h264pred.h"
 #include "thread.h"
 #include "vp56.h"
 #include "vp8dsp.h"
-
-#if HAVE_PTHREADS
-#   include <pthread.h>
-#elif HAVE_OS2THREADS
-#   include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#   include "compat/w32pthreads.h"
-#endif
 
 #define VP8_MAX_QUANT 127
 
@@ -230,7 +223,7 @@ typedef struct VP8Context {
 
     /**
      * These are all of the updatable probabilities for binary decisions.
-     * They are only implictly reset on keyframes, making it quite likely
+     * They are only implicitly reset on keyframes, making it quite likely
      * for an interframe to desync if a prior frame's header was corrupt
      * or missing outright!
      */
@@ -278,7 +271,7 @@ typedef struct VP8Context {
     /**
      * This describes the macroblock memory layout.
      * 0 -> Only width+height*2+1 macroblocks allocated (frame/single thread).
-     * 1 -> Macroblocks for entire frame alloced (sliced thread).
+     * 1 -> Macroblocks for entire frame allocated (sliced thread).
      */
     int mb_layout;
 

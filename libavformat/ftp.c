@@ -19,6 +19,8 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
 #include "url.h"
@@ -26,14 +28,22 @@
 #include "libavutil/bprint.h"
 
 #define CONTROL_BUFFER_SIZE 1024
+#define DIR_BUFFER_SIZE 4096
 
 typedef enum {
     UNKNOWN,
     READY,
     DOWNLOADING,
     UPLOADING,
+    LISTING_DIR,
     DISCONNECTED
 } FTPState;
+
+typedef enum {
+    UNKNOWN_METHOD,
+    NLST,
+    MLSD
+} FTPListingMethod;
 
 typedef struct {
     const AVClass *class;
@@ -53,6 +63,12 @@ typedef struct {
     const char *anonymous_password;              /**< Password to be used for anonymous user. An email should be used. */
     int write_seekable;                          /**< Control seekability, 0 = disable, 1 = enable. */
     FTPState state;                              /**< State of data connection */
+    FTPListingMethod listing_method;             /**< Called listing method */
+    char *features;                              /**< List of server's features represented as raw response */
+    char *dir_buffer;
+    size_t dir_buffer_size;
+    size_t dir_buffer_offset;
+    int utf8;
 } FTPContext;
 
 #define OFFSET(x) offsetof(FTPContext, x)
@@ -60,7 +76,7 @@ typedef struct {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
-    {"ftp-write-seekable", "control seekability of connection during encoding", OFFSET(write_seekable), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
+    {"ftp-write-seekable", "control seekability of connection during encoding", OFFSET(write_seekable), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     {"ftp-anonymous-password", "password for anonymous login. E-mail address should be used.", OFFSET(anonymous_password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
     {NULL}
 };
@@ -185,6 +201,8 @@ static int ftp_send_command(FTPContext *s, const char *command,
 {
     int err;
 
+    ff_dlog(s, "%s", command);
+
     if (response)
         *response = NULL;
 
@@ -266,7 +284,7 @@ static int ftp_passive_mode_epsv(FTPContext *s)
     end[-1] = '\0';
 
     s->server_data_port = atoi(start);
-    av_dlog(s, "Server data port: %d\n", s->server_data_port);
+    ff_dlog(s, "Server data port: %d\n", s->server_data_port);
 
     av_free(res);
     return 0;
@@ -312,7 +330,7 @@ static int ftp_passive_mode(FTPContext *s)
     start = av_strtok(end, ",", &end);
     if (!start) goto fail;
     s->server_data_port += atoi(start);
-    av_dlog(s, "Server data port: %d\n", s->server_data_port);
+    ff_dlog(s, "Server data port: %d\n", s->server_data_port);
 
     av_free(res);
     return 0;
@@ -347,10 +365,7 @@ static int ftp_current_dir(FTPContext *s)
     if (!end)
         goto fail;
 
-    if (end > res && end[-1] == '/') {
-        end[-1] = '\0';
-    } else
-        *end = '\0';
+    *end = '\0';
     s->path = av_strdup(start);
 
     av_free(res);
@@ -386,10 +401,12 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int retr_codes[] = {150, 0};
+    static const int retr_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
-    if (ftp_send_command(s, command, retr_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, retr_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = DOWNLOADING;
@@ -400,10 +417,12 @@ static int ftp_retrieve(FTPContext *s)
 static int ftp_store(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    static const int stor_codes[] = {150, 0};
+    static const int stor_codes[] = {150, 125, 0};
+    int resp_code;
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
-    if (ftp_send_command(s, command, stor_codes, NULL) != 150)
+    resp_code = ftp_send_command(s, command, stor_codes, NULL);
+    if (resp_code != 125 && resp_code != 150)
         return AVERROR(EIO);
 
     s->state = UPLOADING;
@@ -434,19 +453,76 @@ static int ftp_restart(FTPContext *s, int64_t pos)
     return 0;
 }
 
+static int ftp_set_dir(FTPContext *s)
+{
+    static const int cwd_codes[] = {250, 550, 0}; /* 550 is incorrect code */
+    char command[MAX_URL_SIZE];
+
+    snprintf(command, sizeof(command), "CWD %s\r\n", s->path);
+    if (ftp_send_command(s, command, cwd_codes, NULL) != 250)
+        return AVERROR(EIO);
+    return 0;
+}
+
+static int ftp_list_mlsd(FTPContext *s)
+{
+    static const char *command = "MLSD\r\n";
+    static const int mlsd_codes[] = {150, 500, 0}; /* 500 is incorrect code */
+
+    if (ftp_send_command(s, command, mlsd_codes, NULL) != 150)
+        return AVERROR(ENOSYS);
+    s->listing_method = MLSD;
+    return 0;
+}
+
+static int ftp_list_nlst(FTPContext *s)
+{
+    static const char *command = "NLST\r\n";
+    static const int nlst_codes[] = {226, 425, 426, 451, 450, 550, 0};
+
+    if (ftp_send_command(s, command, nlst_codes, NULL) != 226)
+        return AVERROR(ENOSYS);
+    s->listing_method = NLST;
+    return 0;
+}
+
+static int ftp_has_feature(FTPContext *s, const char *feature_name);
+
+static int ftp_list(FTPContext *s)
+{
+    int ret;
+    s->state = LISTING_DIR;
+
+    if ((ret = ftp_list_mlsd(s)) < 0)
+        ret = ftp_list_nlst(s);
+
+    return ret;
+}
+
+static int ftp_has_feature(FTPContext *s, const char *feature_name)
+{
+    if (!s->features)
+        return 0;
+
+    return av_stristr(s->features, feature_name) != NULL;
+}
+
 static int ftp_features(FTPContext *s)
 {
     static const char *feat_command        = "FEAT\r\n";
     static const char *enable_utf8_command = "OPTS UTF8 ON\r\n";
     static const int feat_codes[] = {211, 0};
-    static const int opts_codes[] = {200, 451};
-    char *feat = NULL;
+    static const int opts_codes[] = {200, 451, 0};
 
-    if (ftp_send_command(s, feat_command, feat_codes, &feat) == 211) {
-        if (av_stristr(feat, "UTF8"))
-            ftp_send_command(s, enable_utf8_command, opts_codes, NULL);
+    av_freep(&s->features);
+    if (ftp_send_command(s, feat_command, feat_codes, &s->features) != 211) {
+        av_freep(&s->features);
     }
-    av_freep(&feat);
+
+    if (ftp_has_feature(s, "UTF8")) {
+        if (ftp_send_command(s, enable_utf8_command, opts_codes, NULL) == 200)
+            s->utf8 = 1;
+    }
 
     return 0;
 }
@@ -465,8 +541,9 @@ static int ftp_connect_control_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0) {
             av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
@@ -518,8 +595,9 @@ static int ftp_connect_data_connection(URLContext *h)
         if (s->rw_timeout != -1) {
             av_dict_set_int(&opts, "timeout", s->rw_timeout, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_data, buf, h->flags,
-                         &h->interrupt_callback, &opts);
+        err = ffurl_open_whitelist(&s->conn_data, buf, h->flags,
+                                   &h->interrupt_callback, &opts,
+                                   h->protocol_whitelist, h->protocol_blacklist, h);
         av_dict_free(&opts);
         if (err < 0)
             return err;
@@ -570,20 +648,19 @@ static int ftp_abort(URLContext *h)
     return 0;
 }
 
-static int ftp_open(URLContext *h, const char *url, int flags)
+static int ftp_connect(URLContext *h, const char *url)
 {
     char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
     const char *tok_user = NULL, *tok_pass = NULL;
-    char *end = NULL;
+    char *end = NULL, *newpath = NULL;
     int err;
-    size_t pathlen;
     FTPContext *s = h->priv_data;
 
-    av_dlog(h, "ftp protocol open\n");
-
     s->state = DISCONNECTED;
+    s->listing_method = UNKNOWN_METHOD;
     s->filesize = -1;
     s->position = 0;
+    s->features = NULL;
 
     av_url_split(proto, sizeof(proto),
                  credencials, sizeof(credencials),
@@ -602,22 +679,36 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     s->password = av_strdup(tok_pass);
     s->hostname = av_strdup(hostname);
     if (!s->hostname || !s->user || (tok_pass && !s->password)) {
-        err = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     if (s->server_control_port < 0 || s->server_control_port > 65535)
         s->server_control_port = 21;
 
     if ((err = ftp_connect_control_connection(h)) < 0)
-        goto fail;
+        return err;
 
     if ((err = ftp_current_dir(s)) < 0)
+        return err;
+
+    newpath = av_append_path_component(s->path, path);
+    if (!newpath)
+        return AVERROR(ENOMEM);
+    av_free(s->path);
+    s->path = newpath;
+
+    return 0;
+}
+
+static int ftp_open(URLContext *h, const char *url, int flags)
+{
+    FTPContext *s = h->priv_data;
+    int err;
+
+    ff_dlog(h, "ftp protocol open\n");
+
+    if ((err = ftp_connect(h, url)) < 0)
         goto fail;
-    pathlen = strlen(s->path) + strlen(path) + 1;
-    if ((err = av_reallocp(&s->path, pathlen)) < 0)
-        goto fail;
-    av_strlcat(s->path + strlen(s->path), path, pathlen);
 
     if (ftp_restart(s, 0) < 0) {
         h->is_streamed = 1;
@@ -642,7 +733,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
     int err;
     int64_t new_pos, fake_pos;
 
-    av_dlog(h, "ftp protocol seek %"PRId64" %d\n", pos, whence);
+    ff_dlog(h, "ftp protocol seek %"PRId64" %d\n", pos, whence);
 
     switch(whence) {
     case AVSEEK_SIZE:
@@ -684,7 +775,7 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
     FTPContext *s = h->priv_data;
     int read, err, retry_done = 0;
 
-    av_dlog(h, "ftp protocol read %d bytes\n", size);
+    ff_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
     if (s->state == DISCONNECTED) {
         /* optimization */
@@ -742,7 +833,7 @@ static int ftp_write(URLContext *h, const unsigned char *buf, int size)
     FTPContext *s = h->priv_data;
     int written;
 
-    av_dlog(h, "ftp protocol write %d bytes\n", size);
+    ff_dlog(h, "ftp protocol write %d bytes\n", size);
 
     if (s->state == DISCONNECTED) {
         if ((err = ftp_connect_data_connection(h)) < 0)
@@ -769,13 +860,14 @@ static int ftp_close(URLContext *h)
 {
     FTPContext *s = h->priv_data;
 
-    av_dlog(h, "ftp protocol close\n");
+    ff_dlog(h, "ftp protocol close\n");
 
     ftp_close_both_connections(s);
     av_freep(&s->user);
     av_freep(&s->password);
     av_freep(&s->hostname);
     av_freep(&s->path);
+    av_freep(&s->features);
 
     return 0;
 }
@@ -784,7 +876,7 @@ static int ftp_get_file_handle(URLContext *h)
 {
     FTPContext *s = h->priv_data;
 
-    av_dlog(h, "ftp protocol get_file_handle\n");
+    ff_dlog(h, "ftp protocol get_file_handle\n");
 
     if (s->conn_data)
         return ffurl_get_file_handle(s->conn_data);
@@ -796,7 +888,7 @@ static int ftp_shutdown(URLContext *h, int flags)
 {
     FTPContext *s = h->priv_data;
 
-    av_dlog(h, "ftp protocol shutdown\n");
+    ff_dlog(h, "ftp protocol shutdown\n");
 
     if (s->conn_data)
         return ffurl_shutdown(s->conn_data, flags);
@@ -804,7 +896,214 @@ static int ftp_shutdown(URLContext *h, int flags)
     return AVERROR(EIO);
 }
 
-URLProtocol ff_ftp_protocol = {
+static int ftp_open_dir(URLContext *h)
+{
+    FTPContext *s = h->priv_data;
+    int ret;
+
+    if ((ret = ftp_connect(h, h->filename)) < 0)
+        goto fail;
+    if ((ret = ftp_set_dir(s)) < 0)
+        goto fail;
+    if ((ret = ftp_connect_data_connection(h)) < 0)
+        goto fail;
+    if ((ret = ftp_list(s)) < 0)
+        goto fail;
+    s->dir_buffer = av_malloc(DIR_BUFFER_SIZE);
+    if (!s->dir_buffer) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    s->dir_buffer[0] = 0;
+    if (s->conn_data && s->state == LISTING_DIR)
+        return 0;
+  fail:
+    ffurl_closep(&s->conn_control);
+    ffurl_closep(&s->conn_data);
+    return ret;
+}
+
+static int64_t ftp_parse_date(const char *date)
+{
+    struct tm tv;
+    memset(&tv, 0, sizeof(struct tm));
+    av_small_strptime(date, "%Y%m%d%H%M%S", &tv);
+    return INT64_C(1000000) * av_timegm(&tv);
+}
+
+static int ftp_parse_entry_nlst(char *line, AVIODirEntry *next)
+{
+    next->name = av_strdup(line);
+    return 0;
+}
+
+static int ftp_parse_entry_mlsd(char *mlsd, AVIODirEntry *next)
+{
+    char *fact, *value;
+    ff_dlog(NULL, "%s\n", mlsd);
+    while(fact = av_strtok(mlsd, ";", &mlsd)) {
+        if (fact[0] == ' ') {
+            next->name = av_strdup(&fact[1]);
+            continue;
+        }
+        fact = av_strtok(fact, "=", &value);
+        if (!av_strcasecmp(fact, "type")) {
+            if (!av_strcasecmp(value, "cdir") || !av_strcasecmp(value, "pdir"))
+                return 1;
+            if (!av_strcasecmp(value, "dir"))
+                next->type = AVIO_ENTRY_DIRECTORY;
+            else if (!av_strcasecmp(value, "file"))
+                next->type = AVIO_ENTRY_FILE;
+            else if (!av_strcasecmp(value, "OS.unix=slink:"))
+                next->type = AVIO_ENTRY_SYMBOLIC_LINK;
+        } else if (!av_strcasecmp(fact, "modify")) {
+            next->modification_timestamp = ftp_parse_date(value);
+        } else if (!av_strcasecmp(fact, "UNIX.mode")) {
+            next->filemode = strtoumax(value, NULL, 8);
+        } else if (!av_strcasecmp(fact, "UNIX.uid") || !av_strcasecmp(fact, "UNIX.owner"))
+            next->user_id = strtoumax(value, NULL, 10);
+        else if (!av_strcasecmp(fact, "UNIX.gid") || !av_strcasecmp(fact, "UNIX.group"))
+            next->group_id = strtoumax(value, NULL, 10);
+        else if (!av_strcasecmp(fact, "size") || !av_strcasecmp(fact, "sizd"))
+            next->size = strtoll(value, NULL, 10);
+    }
+    return 0;
+}
+
+/**
+ * @return 0 on success, negative on error, positive on entry to discard.
+ */
+static int ftp_parse_entry(URLContext *h, char *line, AVIODirEntry *next)
+{
+    FTPContext *s = h->priv_data;
+
+    switch (s->listing_method) {
+    case MLSD:
+        return ftp_parse_entry_mlsd(line, next);
+    case NLST:
+        return ftp_parse_entry_nlst(line, next);
+    case UNKNOWN_METHOD:
+    default:
+        return -1;
+    }
+}
+
+static int ftp_read_dir(URLContext *h, AVIODirEntry **next)
+{
+    FTPContext *s = h->priv_data;
+    char *start, *found;
+    int ret, retried;
+
+    do {
+        retried = 0;
+        start = s->dir_buffer + s->dir_buffer_offset;
+        while (!(found = strstr(start, "\n"))) {
+            if (retried)
+                return AVERROR(EIO);
+            s->dir_buffer_size -= s->dir_buffer_offset;
+            s->dir_buffer_offset = 0;
+            if (s->dir_buffer_size)
+                memmove(s->dir_buffer, start, s->dir_buffer_size);
+            ret = ffurl_read(s->conn_data, s->dir_buffer + s->dir_buffer_size, DIR_BUFFER_SIZE - (s->dir_buffer_size + 1));
+            if (ret < 0)
+                return ret;
+            if (!ret) {
+                *next = NULL;
+                return 0;
+            }
+            s->dir_buffer_size += ret;
+            s->dir_buffer[s->dir_buffer_size] = 0;
+            start = s->dir_buffer;
+            retried = 1;
+        }
+        s->dir_buffer_offset += (found + 1 - start);
+        found[0] = 0;
+        if (found > start && found[-1] == '\r')
+            found[-1] = 0;
+
+        *next = ff_alloc_dir_entry();
+        if (!*next)
+            return AVERROR(ENOMEM);
+        (*next)->utf8 = s->utf8;
+        ret = ftp_parse_entry(h, start, *next);
+        if (ret) {
+            avio_free_directory_entry(next);
+            if (ret < 0)
+                return ret;
+        }
+    } while (ret > 0);
+    return 0;
+}
+
+static int ftp_close_dir(URLContext *h)
+{
+    FTPContext *s = h->priv_data;
+    av_freep(&s->dir_buffer);
+    ffurl_closep(&s->conn_control);
+    ffurl_closep(&s->conn_data);
+    return 0;
+}
+
+static int ftp_delete(URLContext *h)
+{
+    FTPContext *s = h->priv_data;
+    char command[MAX_URL_SIZE];
+    static const int del_codes[] = {250, 421, 450, 500, 501, 502, 530, 550, 0};
+    static const int rmd_codes[] = {250, 421, 500, 501, 502, 530, 550, 0};
+    int ret;
+
+    if ((ret = ftp_connect(h, h->filename)) < 0)
+        goto cleanup;
+
+    snprintf(command, sizeof(command), "DELE %s\r\n", s->path);
+    if (ftp_send_command(s, command, del_codes, NULL) == 250) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    snprintf(command, sizeof(command), "RMD %s\r\n", s->path);
+    if (ftp_send_command(s, command, rmd_codes, NULL) == 250)
+        ret = 0;
+    else
+        ret = AVERROR(EIO);
+
+cleanup:
+    ftp_close(h);
+    return ret;
+}
+
+static int ftp_move(URLContext *h_src, URLContext *h_dst)
+{
+    FTPContext *s = h_src->priv_data;
+    char command[MAX_URL_SIZE], path[MAX_URL_SIZE];
+    static const int rnfr_codes[] = {350, 421, 450, 500, 501, 502, 503, 530, 0};
+    static const int rnto_codes[] = {250, 421, 500, 501, 502, 503, 530, 532, 553, 0};
+    int ret;
+
+    if ((ret = ftp_connect(h_src, h_src->filename)) < 0)
+        goto cleanup;
+
+    snprintf(command, sizeof(command), "RNFR %s\r\n", s->path);
+    if (ftp_send_command(s, command, rnfr_codes, NULL) != 350) {
+        ret = AVERROR(EIO);
+        goto cleanup;
+    }
+
+    av_url_split(0, 0, 0, 0, 0, 0, 0,
+                 path, sizeof(path),
+                 h_dst->filename);
+    snprintf(command, sizeof(command), "RNTO %s\r\n", path);
+    if (ftp_send_command(s, command, rnto_codes, NULL) == 250)
+        ret = 0;
+    else
+        ret = AVERROR(EIO);
+
+cleanup:
+    ftp_close(h_src);
+    return ret;
+}
+
+const URLProtocol ff_ftp_protocol = {
     .name                = "ftp",
     .url_open            = ftp_open,
     .url_read            = ftp_read,
@@ -815,5 +1114,11 @@ URLProtocol ff_ftp_protocol = {
     .url_shutdown        = ftp_shutdown,
     .priv_data_size      = sizeof(FTPContext),
     .priv_data_class     = &ftp_context_class,
+    .url_open_dir        = ftp_open_dir,
+    .url_read_dir        = ftp_read_dir,
+    .url_close_dir       = ftp_close_dir,
+    .url_delete          = ftp_delete,
+    .url_move            = ftp_move,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist   = "tcp",
 };

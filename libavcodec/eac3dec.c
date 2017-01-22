@@ -305,7 +305,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        application can select from. each independent stream can also contain
        dependent streams which are used to add or replace channels. */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        if (!s->eac3_frame_dependent_found) {
+            s->eac3_frame_dependent_found = 1;
+            avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
@@ -317,7 +320,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        associated to an independent stream have matching substream id's. */
     if (s->substreamid) {
         /* only decode substream with id=0. skip any additional substreams. */
-        avpriv_request_sample(s->avctx, "Additional substreams");
+        if (!s->eac3_subsbtreamid_found) {
+            s->eac3_subsbtreamid_found = 1;
+            avpriv_request_sample(s->avctx, "Additional substreams");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
 
@@ -333,9 +339,17 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
 
     /* volume control params */
     for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc)) {
-            skip_bits(gbc, 8); // skip compression gain word
+        s->dialog_normalization[i] = -get_bits(gbc, 5);
+        if (s->dialog_normalization[i] == 0) {
+            s->dialog_normalization[i] = -31;
+        }
+        if (s->target_level != 0) {
+            s->level_gain[i] = powf(2.0f,
+                (float)(s->target_level - s->dialog_normalization[i])/6.0f);
+        }
+        s->compression_exists[i] = get_bits1(gbc);
+        if (s->compression_exists[i]) {
+            s->heavy_dynamic_range[i] = AC3_HEAVY_RANGE(get_bits(gbc, 8));
         }
     }
 

@@ -27,7 +27,7 @@
 #include <inttypes.h>
 
 WRITE_1D_FUNC_ARGV(dv_vlc_pair, 7,
-                   "{0x%"PRIx32", %"PRId8"}", data[i].vlc, data[i].size)
+                   "{0x%"PRIx32", %"PRIu32"}", data[i].vlc, data[i].size)
 WRITE_2D_FUNC(dv_vlc_pair)
 
 int main(void)

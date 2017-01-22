@@ -34,11 +34,11 @@ cextern pw_8
 cextern pw_4
 cextern pw_2
 cextern pw_1
+cextern pd_16
 
 pw_m32101234: dw -3, -2, -1, 0, 1, 2, 3, 4
 pw_m3:        times 8 dw -3
 pd_17:        times 4 dd 17
-pd_16:        times 4 dd 16
 
 SECTION .text
 

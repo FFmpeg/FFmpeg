@@ -101,7 +101,7 @@ static int jacosub_read_close(AVFormatContext *s)
 }
 
 static const char *read_ts(JACOsubContext *jacosub, const char *buf,
-                           int64_t *start, int *duration)
+                           int64_t *start, int64_t *duration)
 {
     int len;
     unsigned hs, ms, ss, fs; // hours, minutes, seconds, frame start
@@ -167,12 +167,12 @@ static int jacosub_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_JACOSUB;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_JACOSUB;
 
     jacosub->timeres = 30;
 
-    av_bprint_init(&header, 1024+FF_INPUT_BUFFER_PADDING_SIZE, 4096);
+    av_bprint_init(&header, 1024+AV_INPUT_BUFFER_PADDING_SIZE, 4096);
 
     while (!avio_feof(pb)) {
         int cmd_len;
@@ -230,7 +230,7 @@ static int jacosub_read_header(AVFormatContext *s)
     }
 
     /* general/essential directives in the extradata */
-    ret = avpriv_bprint_to_extradata(st->codec, &header);
+    ret = ff_bprint_to_codecpar_extradata(st->codecpar, &header);
     if (ret < 0)
         goto fail;
 
@@ -240,7 +240,7 @@ static int jacosub_read_header(AVFormatContext *s)
         AVPacket *sub = &jacosub->q.subs[i];
         read_ts(jacosub, sub->data, &sub->pts, &sub->duration);
     }
-    ff_subtitles_queue_finalize(&jacosub->q);
+    ff_subtitles_queue_finalize(s, &jacosub->q);
 
     return 0;
 fail:

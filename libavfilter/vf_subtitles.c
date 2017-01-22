@@ -50,6 +50,7 @@ typedef struct {
     ASS_Renderer *renderer;
     ASS_Track    *track;
     char *filename;
+    char *fontsdir;
     char *charenc;
     char *force_style;
     int stream_index;
@@ -67,6 +68,7 @@ typedef struct {
     {"filename",       "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
     {"f",              "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
     {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
+    {"fontsdir",       "set the directory containing the fonts to read",           OFFSET(fontsdir),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
 
 /* libass supports a log level ranging from 0 to 7 */
 static const int ass_libavfilter_log_level_map[] = {
@@ -105,6 +107,8 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
     ass_set_message_cb(ass->library, ass_log, ctx);
+
+    ass_set_fonts_dir(ass->library, ass->fontsdir);
 
     ass->renderer = ass_renderer_init(ass->library);
     if (!ass->renderer) {
@@ -329,7 +333,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
         ret = -1;
         if (ass->stream_index < fmt->nb_streams) {
             for (j = 0; j < fmt->nb_streams; j++) {
-                if (fmt->streams[j]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                if (fmt->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     if (ass->stream_index == k) {
                         ret = j;
                         break;
@@ -351,7 +355,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     /* Load attached fonts */
     for (j = 0; j < fmt->nb_streams; j++) {
         AVStream *st = fmt->streams[j];
-        if (st->codec->codec_type == AVMEDIA_TYPE_ATTACHMENT &&
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT &&
             attachment_is_font(st)) {
             const AVDictionaryEntry *tag = NULL;
             tag = av_dict_get(st->metadata, "filename", NULL,
@@ -361,8 +365,8 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
                 av_log(ctx, AV_LOG_DEBUG, "Loading attached font: %s\n",
                        tag->value);
                 ass_add_font(ass->library, tag->value,
-                             st->codec->extradata,
-                             st->codec->extradata_size);
+                             st->codecpar->extradata,
+                             st->codecpar->extradata_size);
             } else {
                 av_log(ctx, AV_LOG_WARNING,
                        "Font attachment has no filename, ignored.\n");
@@ -374,14 +378,13 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
 
     /* Open decoder */
-    dec_ctx = st->codec;
-    dec = avcodec_find_decoder(dec_ctx->codec_id);
+    dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
         av_log(ctx, AV_LOG_ERROR, "Failed to find subtitle codec %s\n",
-               avcodec_get_name(dec_ctx->codec_id));
+               avcodec_get_name(st->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
-    dec_desc = avcodec_descriptor_get(dec_ctx->codec_id);
+    dec_desc = avcodec_descriptor_get(st->codecpar->codec_id);
     if (dec_desc && !(dec_desc->props & AV_CODEC_PROP_TEXT_SUB)) {
         av_log(ctx, AV_LOG_ERROR,
                "Only text based subtitles are currently supported\n");
@@ -389,7 +392,28 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
-    ret = avcodec_open2(dec_ctx, dec, &codec_opts);
+    if (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,26,100))
+        av_dict_set(&codec_opts, "sub_text_format", "ass", 0);
+
+    dec_ctx = avcodec_alloc_context3(dec);
+    if (!dec_ctx)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
+    if (ret < 0)
+        goto end;
+
+    /*
+     * This is required by the decoding process in order to rescale the
+     * timestamps: in the current API the decoded subtitles have their pts
+     * expressed in AV_TIME_BASE, and thus the lavc internals need to know the
+     * stream time base in order to achieve the rescaling.
+     *
+     * That API is old and needs to be reworked to match behaviour with A/V.
+     */
+    av_codec_set_pkt_timebase(dec_ctx, st->time_base);
+
+    ret = avcodec_open2(dec_ctx, NULL, &codec_opts);
     if (ret < 0)
         goto end;
 
@@ -432,24 +456,29 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
                 av_log(ctx, AV_LOG_WARNING, "Error decoding: %s (ignored)\n",
                        av_err2str(ret));
             } else if (got_subtitle) {
+                const int64_t start_time = av_rescale_q(sub.pts, AV_TIME_BASE_Q, av_make_q(1, 1000));
+                const int64_t duration   = sub.end_display_time;
                 for (i = 0; i < sub.num_rects; i++) {
                     char *ass_line = sub.rects[i]->ass;
                     if (!ass_line)
                         break;
-                    ass_process_data(ass->track, ass_line, strlen(ass_line));
+                    if (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57,25,100))
+                        ass_process_data(ass->track, ass_line, strlen(ass_line));
+                    else
+                        ass_process_chunk(ass->track, ass_line, strlen(ass_line),
+                                          start_time, duration);
                 }
             }
         }
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
         avsubtitle_free(&sub);
     }
 
 end:
     av_dict_free(&codec_opts);
-    if (dec_ctx)
-        avcodec_close(dec_ctx);
-    if (fmt)
-        avformat_close_input(&fmt);
+    avcodec_close(dec_ctx);
+    avcodec_free_context(&dec_ctx);
+    avformat_close_input(&fmt);
     return ret;
 }
 

@@ -67,6 +67,9 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
 
         w = r->s.avctx->extradata[6 + rpr*2] << 2;
         h = r->s.avctx->extradata[7 + rpr*2] << 2;
+    } else {
+        w = r->orig_width;
+        h = r->orig_height;
     }
     si->width  = w;
     si->height = h;
@@ -86,7 +89,7 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 
     for(i = 0; i < 4; i++, dst += r->intra_types_stride - 4){
         for(j = 0; j < 4; j+= 2){
-            unsigned code = svq3_get_ue_golomb(gb) << 1;
+            unsigned code = get_interleaved_ue_golomb(gb) << 1;
             if (code > 80U*2U) {
                 av_log(r->s.avctx, AV_LOG_ERROR, "Incorrect intra prediction code\n");
                 return -1;
@@ -114,7 +117,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
     static const int rv30_b_types[6] = { RV34_MB_SKIP, RV34_MB_B_DIRECT, RV34_MB_B_FORWARD, RV34_MB_B_BACKWARD, RV34_MB_TYPE_INTRA, RV34_MB_TYPE_INTRA16x16 };
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    unsigned code     = svq3_get_ue_golomb(gb);
+    unsigned code = get_interleaved_ue_golomb(gb);
 
     if (code > 11) {
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect MB type code\n");
@@ -259,6 +262,9 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     RV34DecContext *r = avctx->priv_data;
     int ret;
 
+    r->orig_width  = avctx->coded_width;
+    r->orig_height = avctx->coded_height;
+
     if (avctx->extradata_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
         return AVERROR(EINVAL);
@@ -291,8 +297,8 @@ AVCodec ff_rv30_decoder = {
     .init                  = rv30_decode_init,
     .close                 = ff_rv34_decode_end,
     .decode                = ff_rv34_decode_frame,
-    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DELAY |
-                             CODEC_CAP_FRAME_THREADS,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                             AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,
     .pix_fmts              = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,

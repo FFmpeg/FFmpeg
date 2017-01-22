@@ -46,6 +46,7 @@ static int smjpeg_write_header(AVFormatContext *s)
     avio_wb32(pb, 0);
     avio_wb32(pb, 0);
 
+    ff_standardize_creation_time(s);
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
         avio_wl32(pb, SMJPEG_TXT);
         avio_wb32(pb, strlen(t->key) + strlen(t->value) + 3);
@@ -56,22 +57,22 @@ static int smjpeg_write_header(AVFormatContext *s)
 
     for (n = 0; n < s->nb_streams; n++) {
         AVStream *st = s->streams[n];
-        AVCodecContext *codec = st->codec;
-        if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            tag = ff_codec_get_tag(ff_codec_smjpeg_audio_tags, codec->codec_id);
+        AVCodecParameters *par = st->codecpar;
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
+            tag = ff_codec_get_tag(ff_codec_smjpeg_audio_tags, par->codec_id);
             if (!tag) {
                 av_log(s, AV_LOG_ERROR, "unsupported audio codec\n");
                 return AVERROR(EINVAL);
             }
             avio_wl32(pb, SMJPEG_SND);
             avio_wb32(pb, 8);
-            avio_wb16(pb, codec->sample_rate);
-            avio_w8(pb, codec->bits_per_coded_sample);
-            avio_w8(pb, codec->channels);
+            avio_wb16(pb, par->sample_rate);
+            avio_w8(pb, par->bits_per_coded_sample);
+            avio_w8(pb, par->channels);
             avio_wl32(pb, tag);
             avpriv_set_pts_info(st, 32, 1, 1000);
-        } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            tag = ff_codec_get_tag(ff_codec_smjpeg_video_tags, codec->codec_id);
+        } else if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
+            tag = ff_codec_get_tag(ff_codec_smjpeg_video_tags, par->codec_id);
             if (!tag) {
                 av_log(s, AV_LOG_ERROR, "unsupported video codec\n");
                 return AVERROR(EINVAL);
@@ -79,8 +80,8 @@ static int smjpeg_write_header(AVFormatContext *s)
             avio_wl32(pb, SMJPEG_VID);
             avio_wb32(pb, 12);
             avio_wb32(pb, 0);
-            avio_wb16(pb, codec->width);
-            avio_wb16(pb, codec->height);
+            avio_wb16(pb, par->width);
+            avio_wb16(pb, par->height);
             avio_wl32(pb, tag);
             avpriv_set_pts_info(st, 32, 1, 1000);
         }
@@ -97,11 +98,11 @@ static int smjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     SMJPEGMuxContext *smc = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
-    AVCodecContext *codec = st->codec;
+    AVCodecParameters *par = st->codecpar;
 
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO)
         avio_wl32(pb, SMJPEG_SNDD);
-    else if (codec->codec_type == AVMEDIA_TYPE_VIDEO)
+    else if (par->codec_type == AVMEDIA_TYPE_VIDEO)
         avio_wl32(pb, SMJPEG_VIDD);
     else
         return 0;

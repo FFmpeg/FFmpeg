@@ -44,6 +44,9 @@ typedef struct APNGMuxContext {
     AVRational prev_delay;
 
     int framerate_warned;
+
+    uint8_t *extra_data;
+    int extra_data_size;
 } APNGMuxContext;
 
 static uint8_t *apng_find_chunk(uint32_t tag, uint8_t *buf, size_t length)
@@ -78,10 +81,11 @@ static void apng_write_chunk(AVIOContext *io_context, uint32_t tag,
 static int apng_write_header(AVFormatContext *format_context)
 {
     APNGMuxContext *apng = format_context->priv_data;
+    AVCodecParameters *par = format_context->streams[0]->codecpar;
 
     if (format_context->nb_streams != 1 ||
-        format_context->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-        format_context->streams[0]->codec->codec_id   != AV_CODEC_ID_APNG) {
+        format_context->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+        format_context->streams[0]->codecpar->codec_id   != AV_CODEC_ID_APNG) {
         av_log(format_context, AV_LOG_ERROR,
                "APNG muxer supports only a single video APNG stream.\n");
         return AVERROR(EINVAL);
@@ -98,17 +102,37 @@ static int apng_write_header(AVFormatContext *format_context)
     avio_wb64(format_context->pb, PNGSIG);
     // Remaining headers are written when they are copied from the encoder
 
+    if (par->extradata_size) {
+        apng->extra_data = av_mallocz(par->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!apng->extra_data)
+            return AVERROR(ENOMEM);
+        apng->extra_data_size = par->extradata_size;
+        memcpy(apng->extra_data, par->extradata, par->extradata_size);
+    }
+
     return 0;
 }
 
-static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
+static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
 {
     APNGMuxContext *apng = format_context->priv_data;
     AVIOContext *io_context = format_context->pb;
     AVStream *codec_stream = format_context->streams[0];
-    AVCodecContext *codec_context = codec_stream->codec;
+    uint8_t *side_data = NULL;
+    int side_data_size = 0;
 
     av_assert0(apng->prev_packet);
+
+    side_data = av_packet_get_side_data(apng->prev_packet, AV_PKT_DATA_NEW_EXTRADATA, &side_data_size);
+
+    if (side_data_size) {
+        av_freep(&apng->extra_data);
+        apng->extra_data = av_mallocz(side_data_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!apng->extra_data)
+            return AVERROR(ENOMEM);
+        apng->extra_data_size = side_data_size;
+        memcpy(apng->extra_data, side_data, apng->extra_data_size);
+    }
 
     if (apng->frame_number == 0 && !packet) {
         uint8_t *existing_acTL_chunk;
@@ -117,13 +141,13 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
         av_log(format_context, AV_LOG_INFO, "Only a single frame so saving as a normal PNG.\n");
 
         // Write normal PNG headers without acTL chunk
-        existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_context->extradata, codec_context->extradata_size);
+        existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), apng->extra_data, apng->extra_data_size);
         if (existing_acTL_chunk) {
             uint8_t *chunk_after_acTL = existing_acTL_chunk + AV_RB32(existing_acTL_chunk) + 12;
-            avio_write(io_context, codec_context->extradata, existing_acTL_chunk - codec_context->extradata);
-            avio_write(io_context, chunk_after_acTL, codec_context->extradata + codec_context->extradata_size - chunk_after_acTL);
+            avio_write(io_context, apng->extra_data, existing_acTL_chunk - apng->extra_data);
+            avio_write(io_context, chunk_after_acTL, apng->extra_data + apng->extra_data_size - chunk_after_acTL);
         } else {
-            avio_write(io_context, codec_context->extradata, codec_context->extradata_size);
+            avio_write(io_context, apng->extra_data, apng->extra_data_size);
         }
 
         // Write frame data without fcTL chunk
@@ -142,9 +166,9 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
             uint8_t *existing_acTL_chunk;
 
             // Write normal PNG headers
-            avio_write(io_context, codec_context->extradata, codec_context->extradata_size);
+            avio_write(io_context, apng->extra_data, apng->extra_data_size);
 
-            existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), codec_context->extradata, codec_context->extradata_size);
+            existing_acTL_chunk = apng_find_chunk(MKBETAG('a', 'c', 'T', 'L'), apng->extra_data, apng->extra_data_size);
             if (!existing_acTL_chunk) {
                 uint8_t buf[8];
                 // Write animation control header
@@ -173,7 +197,7 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
                                "Frame rate is too high or specified too precisely. Unable to copy losslessly.\n");
                         apng->framerate_warned = 1;
                     }
-                } else if (apng->last_delay.den > 0) {
+                } else if (apng->last_delay.num > 0) {
                     delay = apng->last_delay;
                 } else {
                     delay = apng->prev_delay;
@@ -192,14 +216,16 @@ static void flush_packet(AVFormatContext *format_context, AVPacket *packet)
     }
     ++apng->frame_number;
 
-    av_free_packet(apng->prev_packet);
+    av_packet_unref(apng->prev_packet);
     if (packet)
         av_copy_packet(apng->prev_packet, packet);
+    return 0;
 }
 
 static int apng_write_packet(AVFormatContext *format_context, AVPacket *packet)
 {
     APNGMuxContext *apng = format_context->priv_data;
+    int ret;
 
     if (!apng->prev_packet) {
         apng->prev_packet = av_malloc(sizeof(*apng->prev_packet));
@@ -208,7 +234,9 @@ static int apng_write_packet(AVFormatContext *format_context, AVPacket *packet)
 
         av_copy_packet(apng->prev_packet, packet);
     } else {
-        flush_packet(format_context, packet);
+        ret = flush_packet(format_context, packet);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -219,10 +247,13 @@ static int apng_write_trailer(AVFormatContext *format_context)
     APNGMuxContext *apng = format_context->priv_data;
     AVIOContext *io_context = format_context->pb;
     uint8_t buf[8];
+    int ret;
 
     if (apng->prev_packet) {
-        flush_packet(format_context, NULL);
+        ret = flush_packet(format_context, NULL);
         av_freep(&apng->prev_packet);
+        if (ret < 0)
+            return ret;
     }
 
     apng_write_chunk(io_context, MKBETAG('I', 'E', 'N', 'D'), NULL, 0);
@@ -234,6 +265,9 @@ static int apng_write_trailer(AVFormatContext *format_context)
         AV_WB32(buf + 4, apng->plays);
         apng_write_chunk(io_context, MKBETAG('a', 'c', 'T', 'L'), buf, 8);
     }
+
+    av_freep(&apng->extra_data);
+    apng->extra_data = 0;
 
     return 0;
 }

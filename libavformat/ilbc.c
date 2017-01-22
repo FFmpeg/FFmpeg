@@ -28,22 +28,22 @@ static const char mode30_header[] = "#!iLBC30\n";
 static int ilbc_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc;
+    AVCodecParameters *par;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Unsupported number of streams\n");
         return AVERROR(EINVAL);
     }
-    enc = s->streams[0]->codec;
+    par = s->streams[0]->codecpar;
 
-    if (enc->codec_id != AV_CODEC_ID_ILBC) {
+    if (par->codec_id != AV_CODEC_ID_ILBC) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
         return AVERROR(EINVAL);
     }
 
-    if (enc->block_align == 50) {
+    if (par->block_align == 50) {
         avio_write(pb, mode30_header, sizeof(mode30_header) - 1);
-    } else if (enc->block_align == 38) {
+    } else if (par->block_align == 38) {
         avio_write(pb, mode20_header, sizeof(mode20_header) - 1);
     } else {
         av_log(s, AV_LOG_ERROR, "Unsupported mode\n");
@@ -79,18 +79,18 @@ static int ilbc_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_id = AV_CODEC_ID_ILBC;
-    st->codec->sample_rate = 8000;
-    st->codec->channels = 1;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_ILBC;
+    st->codecpar->sample_rate = 8000;
+    st->codecpar->channels = 1;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->start_time = 0;
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     if (!memcmp(header, mode20_header, sizeof(mode20_header) - 1)) {
-        st->codec->block_align = 38;
-        st->codec->bit_rate = 15200;
+        st->codecpar->block_align = 38;
+        st->codecpar->bit_rate = 15200;
     } else if (!memcmp(header, mode30_header, sizeof(mode30_header) - 1)) {
-        st->codec->block_align = 50;
-        st->codec->bit_rate = 13333;
+        st->codecpar->block_align = 50;
+        st->codecpar->bit_rate = 13333;
     } else {
         av_log(s, AV_LOG_ERROR, "Unrecognized iLBC file header\n");
         return AVERROR_INVALIDDATA;
@@ -102,17 +102,17 @@ static int ilbc_read_header(AVFormatContext *s)
 static int ilbc_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int ret;
 
-    if ((ret = av_new_packet(pkt, enc->block_align)) < 0)
+    if ((ret = av_new_packet(pkt, par->block_align)) < 0)
         return ret;
 
     pkt->stream_index = 0;
     pkt->pos = avio_tell(s->pb);
-    pkt->duration = enc->block_align == 38 ? 160 : 240;
-    if ((ret = avio_read(s->pb, pkt->data, enc->block_align)) != enc->block_align) {
-        av_free_packet(pkt);
+    pkt->duration = par->block_align == 38 ? 160 : 240;
+    if ((ret = avio_read(s->pb, pkt->data, par->block_align)) != par->block_align) {
+        av_packet_unref(pkt);
         return ret < 0 ? ret : AVERROR(EIO);
     }
 

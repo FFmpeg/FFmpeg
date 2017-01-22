@@ -28,9 +28,10 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
 #include "bytestream.h"
+#include "get_bits.h"
 #include "internal.h"
+#include "mathops.h"
 #include "tscc2data.h"
 
 typedef struct TSCC2Context {
@@ -179,7 +180,7 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                 if (bpos >= 16)
                     return AVERROR_INVALIDDATA;
                 val = sign_extend(ac >> 4, 8);
-                c->block[tscc2_zigzag[bpos++]] = val;
+                c->block[ff_zigzag_scan[bpos++]] = val;
             }
             tscc2_idct4_put(c->block, q, dst + k * 4, stride);
         }
@@ -384,5 +385,5 @@ AVCodec ff_tscc2_decoder = {
     .init           = tscc2_decode_init,
     .close          = tscc2_decode_end,
     .decode         = tscc2_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

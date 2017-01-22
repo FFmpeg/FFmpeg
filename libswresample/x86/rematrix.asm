@@ -37,7 +37,7 @@ cglobal mix_2_1_%1_float, 7, 7, 6, out, in1, in2, coeffp, index1, index2, len
     test outq, mmsize-1
         jne mix_2_1_float_u_int %+ SUFFIX
 %else
-mix_2_1_float_u_int %+ SUFFIX
+mix_2_1_float_u_int %+ SUFFIX:
 %endif
     VBROADCASTSS m4, [coeffpq + 4*index1q]
     VBROADCASTSS m5, [coeffpq + 4*index2q]
@@ -79,7 +79,7 @@ cglobal mix_1_1_%1_float, 5, 5, 3, out, in, coeffp, index, len
     test outq, mmsize-1
         jne mix_1_1_float_u_int %+ SUFFIX
 %else
-mix_1_1_float_u_int %+ SUFFIX
+mix_1_1_float_u_int %+ SUFFIX:
 %endif
     VBROADCASTSS m2, [coeffpq + 4*indexq]
     shl lenq    , 2
@@ -111,7 +111,7 @@ cglobal mix_1_1_%1_int16, 5, 5, 6, out, in, coeffp, index, len
     test outq, mmsize-1
         jne mix_1_1_int16_u_int %+ SUFFIX
 %else
-mix_1_1_int16_u_int %+ SUFFIX
+mix_1_1_int16_u_int %+ SUFFIX:
 %endif
     movd   m4, [coeffpq + 4*indexq]
     SPLATW m5, m4
@@ -166,7 +166,7 @@ cglobal mix_2_1_%1_int16, 7, 7, 8, out, in1, in2, coeffp, index1, index2, len
     test outq, mmsize-1
         jne mix_2_1_int16_u_int %+ SUFFIX
 %else
-mix_2_1_int16_u_int %+ SUFFIX
+mix_2_1_int16_u_int %+ SUFFIX:
 %endif
     movd   m4, [coeffpq + 4*index1q]
     movd   m6, [coeffpq + 4*index2q]

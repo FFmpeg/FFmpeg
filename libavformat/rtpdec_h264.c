@@ -1,5 +1,5 @@
 /*
- * RTP H264 Protocol (RFC3984)
+ * RTP H.264 Protocol (RFC3984)
  * Copyright (c) 2006 Ryan Martell
  *
  * This file is part of FFmpeg.
@@ -119,7 +119,7 @@ int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
             uint8_t *dest = av_realloc(*data_ptr,
                                        packet_size + sizeof(start_sequence) +
                                        *size_ptr +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
+                                       AV_INPUT_BUFFER_PADDING_SIZE);
             if (!dest) {
                 av_log(s, AV_LOG_ERROR,
                        "Unable to allocate memory for extradata!\n");
@@ -132,7 +132,7 @@ int ff_h264_parse_sprop_parameter_sets(AVFormatContext *s,
             memcpy(dest + *size_ptr + sizeof(start_sequence),
                    decoded_packet, packet_size);
             memset(dest + *size_ptr + sizeof(start_sequence) +
-                   packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+                   packet_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
             *size_ptr += sizeof(start_sequence) + packet_size;
         }
@@ -146,7 +146,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
                                       PayloadContext *h264_data,
                                       const char *attr, const char *value)
 {
-    AVCodecContext *codec = stream->codec;
+    AVCodecParameters *par = stream->codecpar;
 
     if (!strcmp(attr, "packetization-mode")) {
         av_log(s, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));
@@ -166,18 +166,22 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
             parse_profile_level_id(s, h264_data, value);
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
         int ret;
-        codec->extradata_size = 0;
-        av_freep(&codec->extradata);
-        ret = ff_h264_parse_sprop_parameter_sets(s, &codec->extradata,
-                                                 &codec->extradata_size, value);
+        if (value[strlen(value) - 1] == ',') {
+            av_log(s, AV_LOG_WARNING, "Missing PPS in sprop-parameter-sets, ignoring\n");
+            return 0;
+        }
+        par->extradata_size = 0;
+        av_freep(&par->extradata);
+        ret = ff_h264_parse_sprop_parameter_sets(s, &par->extradata,
+                                                 &par->extradata_size, value);
         av_log(s, AV_LOG_DEBUG, "Extradata set to %p (size: %d)\n",
-               codec->extradata, codec->extradata_size);
+               par->extradata, par->extradata_size);
         return ret;
     }
     return 0;
 }
 
-void ff_h264_parse_framesize(AVCodecContext *codec, const char *p)
+void ff_h264_parse_framesize(AVCodecParameters *par, const char *p)
 {
     char buf1[50];
     char *dst = buf1;
@@ -195,8 +199,8 @@ void ff_h264_parse_framesize(AVCodecContext *codec, const char *p)
 
     // a='framesize:96 320-240'
     // set our parameters
-    codec->width   = atoi(buf1);
-    codec->height  = atoi(p + 1); // skip the -
+    par->width   = atoi(buf1);
+    par->height  = atoi(p + 1); // skip the -
 }
 
 int ff_h264_handle_aggregated_packet(AVFormatContext *ctx, PayloadContext *data, AVPacket *pkt,
@@ -285,7 +289,7 @@ static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, A
     uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
 
     if (len < 3) {
-        av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
+        av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H.264 RTP packet\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -315,14 +319,14 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     int result = 0;
 
     if (!len) {
-        av_log(ctx, AV_LOG_ERROR, "Empty H264 RTP packet\n");
+        av_log(ctx, AV_LOG_ERROR, "Empty H.264 RTP packet\n");
         return AVERROR_INVALIDDATA;
     }
     nal  = buf[0];
     type = nal & 0x1f;
 
-    /* Simplify the case (these are all the nal types used internally by
-     * the h264 codec). */
+    /* Simplify the case (these are all the NAL types used internally by
+     * the H.264 codec). */
     if (type >= 1 && type <= 23)
         type = 1;
     switch (type) {
@@ -347,10 +351,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     case 26:                   // MTAP-16
     case 27:                   // MTAP-24
     case 29:                   // FU-B
-        av_log(ctx, AV_LOG_ERROR,
-               "Unhandled type (%d) (See RFC for implementation details)\n",
-               type);
-        result = AVERROR(ENOSYS);
+        avpriv_report_missing_feature(ctx, "RTP H.264 NAL unit type %d", type);
+        result = AVERROR_PATCHWELCOME;
         break;
 
     case 28:                   // FU-A (fragmented nal)
@@ -396,7 +398,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
     stream = s->streams[st_index];
 
     if (av_strstart(p, "framesize:", &p)) {
-        ff_h264_parse_framesize(stream->codec, p);
+        ff_h264_parse_framesize(stream->codecpar, p);
     } else if (av_strstart(p, "fmtp:", &p)) {
         return ff_parse_fmtp(s, stream, h264_data, p, sdp_parse_fmtp_config_h264);
     } else if (av_strstart(p, "cliprect:", &p)) {

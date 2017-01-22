@@ -1,0 +1,10 @@
+Patchwork states
+
+NEW:               Initial state of new patches
+Accepted:          The patch was pushed to the main master repository
+Rejected:          The patch has been rejected
+Withdrawn:         The patch was withdrawn by the author
+Not Applicable:    The patch does not apply to the main master repository
+Superseded:        A newer version of the patch has been posted
+Changes Requested: The patch has been or is under review and changes have been requested
+RFC:               The patch is not intended to be applied but only for comments

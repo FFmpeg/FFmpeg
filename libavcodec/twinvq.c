@@ -789,7 +789,7 @@ av_cold int ff_twinvq_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    tctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & CODEC_FLAG_BITEXACT);
+    tctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!tctx->fdsp) {
         ff_twinvq_decode_close(avctx);
         return AVERROR(ENOMEM);

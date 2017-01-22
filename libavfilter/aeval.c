@@ -350,36 +350,34 @@ static int aeval_query_formats(AVFilterContext *ctx)
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE
     };
+    int ret;
 
     // inlink supports any channel layout
     layouts = ff_all_channel_counts();
-    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
+    if ((ret = ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts)) < 0)
+        return ret;
 
     if (eval->same_chlayout) {
         layouts = ff_all_channel_counts();
-        if (!layouts)
-            return AVERROR(ENOMEM);
-            ff_set_common_channel_layouts(ctx, layouts);
+        if ((ret = ff_set_common_channel_layouts(ctx, layouts)) < 0)
+            return ret;
     } else {
         // outlink supports only requested output channel layout
         layouts = NULL;
-        ff_add_channel_layout(&layouts,
+        if ((ret = ff_add_channel_layout(&layouts,
                               eval->out_channel_layout ? eval->out_channel_layout :
-                              FF_COUNT2LAYOUT(eval->nb_channels));
-        ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
+                              FF_COUNT2LAYOUT(eval->nb_channels))) < 0)
+            return ret;
+        if ((ret = ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts)) < 0)
+            return ret;
     }
 
     formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+    if ((ret = ff_set_common_formats(ctx, formats)) < 0)
+        return ret;
 
     formats = ff_all_samplerates();
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_set_common_samplerates(ctx, formats);
-
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int aeval_config_output(AVFilterLink *outlink)

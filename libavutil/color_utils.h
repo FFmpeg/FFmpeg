@@ -36,4 +36,21 @@
  */
 double avpriv_get_gamma_from_trc(enum AVColorTransferCharacteristic trc);
 
+
+typedef double (*avpriv_trc_function)(double);
+
+/**
+ * Determine the function needed to apply the given
+ * AVColorTransferCharacteristic to linear input.
+ *
+ * The function returned should expect a nominal domain and range of [0.0-1.0]
+ * values outside of this range maybe valid depending on the chosen
+ * characteristic function.
+ *
+ * @return Will return pointer to the function matching the
+ *         supplied Transfer Characteristic. If unspecified will
+ *         return NULL:
+ */
+avpriv_trc_function avpriv_get_trc_function_from_trc(enum AVColorTransferCharacteristic trc);
+
 #endif
