@@ -1134,8 +1134,11 @@ require_cpp_condition(){
 
 require_pkg_config(){
     log require_pkg_config "$@"
+    name="$1"
+    shift
     pkg_version="$1"
     pkg="${1%% *}"
+    test "$name" = "" && name=$pkg
     check_pkg_config "$@" || die "ERROR: $pkg_version not found"
     add_cflags    $(get_safe "${pkg}_cflags")
     add_extralibs $(get_safe "${pkg}_extralibs")
@@ -4513,7 +4516,7 @@ case "$custom_allocator" in
         require libjemalloc jemalloc/jemalloc.h malloc -ljemalloc
     ;;
     tcmalloc)
-        require_pkg_config libtcmalloc gperftools/tcmalloc.h tc_malloc
+        require_pkg_config "" libtcmalloc gperftools/tcmalloc.h tc_malloc
         malloc_prefix=tc_
     ;;
 esac
@@ -4649,41 +4652,41 @@ enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require avxsynth "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl
 enabled cuda              && require cuda cuda.h cuInit -lcuda
 enabled frei0r            && require_header frei0r.h
-enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
-enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
-enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled gnutls            && require_pkg_config "" gnutls gnutls/gnutls.h gnutls_global_init
+enabled libbs2b           && require_pkg_config "" libbs2b bs2b.h bs2b_open
+enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
 enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfdk_aac        && require_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
-enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
-enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
+enabled libfdk_aac        && require_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
+enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
+enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
-enabled libhdcd           && require_pkg_config libhdcd "hdcd/hdcd_simple.h" hdcd_new
+enabled libhdcd           && require_pkg_config "" libhdcd "hdcd/hdcd_simple.h" hdcd_new
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libkvazaar        && require_pkg_config "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
-enabled libmfx            && require_pkg_config libmfx "mfx/mfxvideo.h" MFXInit
+enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
+enabled libmfx            && require_pkg_config "" libmfx "mfx/mfxvideo.h" MFXInit
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv         && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
-enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
+enabled libopencv         && require_pkg_config libopencv opencv opencv/cv.h cvCreateImageHeader
+enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC ||
-                               require_pkg_config libopenjpeg1 openjpeg.h opj_version -DOPJ_STATIC; }
-enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
-enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
-enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
-enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
+                               require_pkg_config libopenjpeg libopenjpeg1 openjpeg.h opj_version -DOPJ_STATIC; }
+enabled libopus           && require_pkg_config libopus opus opus_multistream.h opus_multistream_decoder_create
+enabled libpulse          && require_pkg_config libpulse libpulse-simple pulse/simple.h pa_simple_new
+enabled librtmp           && require_pkg_config "" librtmp librtmp/rtmp.h RTMP_Socket
+enabled libschroedinger   && require_pkg_config libschroedinger schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy
-enabled libspeex          && require_pkg_config speex speex/speex.h speex_decoder_init -lspeex
+enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
 enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libvpx            && require_pkg_config "vpx >= 1.3.0" vpx/vpx_codec.h vpx_codec_version && {
+enabled libvpx            && require_pkg_config libvpx "vpx >= 1.3.0" vpx/vpx_codec.h vpx_codec_version && {
     enabled libvpx_vp8_decoder && {
         check_pkg_config vpx "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
             disable libvpx_vp8_decoder;
@@ -4705,12 +4708,12 @@ enabled libvpx            && require_pkg_config "vpx >= 1.3.0" vpx/vpx_codec.h v
     fi
 }
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
-enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEncoderVersion
-enabled libx264           && require_pkg_config x264 "stdint.h x264.h" x264_encoder_encode &&
+enabled libwebp           && require_pkg_config "" libwebp webp/encode.h WebPGetEncoderVersion
+enabled libx264           && require_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode &&
                              require_cpp_condition x264.h "X264_BUILD >= 118" &&
                              { check_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
-enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
+enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition x265.h "X265_BUILD >= 57"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
@@ -4790,11 +4793,11 @@ if enabled libcdio; then
 fi
 
 if enabled libxcb; then
-    require_pkg_config xcb-shape xcb/shape.h xcb_shape_rectangles
+    require_pkg_config libxcb xcb-shape xcb/shape.h xcb_shape_rectangles
     disabled libxcb_shm ||
-        require_pkg_config xcb-shm xcb/shm.h xcb_shm_attach
+        require_pkg_config libxcb_shm xcb-shm xcb/shm.h xcb_shm_attach
     disabled libxcb_xfixes ||
-        require_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
+        require_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 fi
 
 enabled dxva2 &&
