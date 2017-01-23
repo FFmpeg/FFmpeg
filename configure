@@ -2453,6 +2453,7 @@ deinterlace_qsv_filter_deps="libmfx"
 deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 drawtext_filter_deps="libfreetype"
+drawtext_filter_suggest="libfontconfig"
 frei0r_filter_deps="frei0r dlopen"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
