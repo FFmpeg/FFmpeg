@@ -424,7 +424,7 @@ fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAM
 fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-brokensps-2580:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/brokensps.flv -vf format=yuv420p,scale=w=192:h=144 -sws_flags bitexact+bilinear
 fate-h264-xavc-4389:                              CMD = framecrc -i $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF -pix_fmt yuv422p10le
-fate-h264-attachment-631:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/attachment631-small.mp4 -an -max_error_rate 0.95
+fate-h264-attachment-631:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/attachment631-small.mp4 -an -max_error_rate 0.96
 fate-h264-skip-nokey:                             CMD = framecrc -skip_frame nokey -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
 fate-h264-skip-nointra:                           CMD = framecrc -skip_frame nointra -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
 fate-h264-intra-refresh-recovery:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 -frames:v 10

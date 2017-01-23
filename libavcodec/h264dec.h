@@ -446,6 +446,8 @@ typedef struct H264Context {
     int nal_ref_idc;
     int nal_unit_type;
 
+    int has_slice;          ///< slice NAL is found in the packet, set by decode_nal_units, its state does not need to be preserved outside h264_decode_frame()
+
     /**
      * Used to parse AVC variant of H.264
      */
