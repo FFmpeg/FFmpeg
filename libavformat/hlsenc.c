@@ -47,6 +47,7 @@ typedef enum {
 
 #define KEYSIZE 16
 #define LINE_BUFFER_SIZE 1024
+#define HLS_MICROSECOND_UNIT   1000000
 
 typedef struct HLSSegment {
     char filename[1024];
@@ -501,7 +502,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
                 return AVERROR(ENOMEM);
             }
             if (replace_int_data_in_filename(hls->avf->filename, sizeof(hls->avf->filename),
-                filename, 't',  (int64_t)round(1000000 * duration)) < 1) {
+                filename, 't',  (int64_t)round(duration * HLS_MICROSECOND_UNIT)) < 1) {
                 av_log(hls, AV_LOG_ERROR,
                        "Invalid second level segment filename template '%s', "
                         "you can try to remove second_level_segment_time flag\n",
