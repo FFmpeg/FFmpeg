@@ -1612,7 +1612,6 @@ SYSTEM_FUNCS="
     CommandLineToArgvW
     CoTaskMemFree
     CryptGenRandom
-    dlopen
     fcntl
     flt_lim
     fork
@@ -2222,10 +2221,8 @@ wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
-nvenc_deps_any="dlopen LoadLibrary"
-nvenc_extralibs='$ldl'
-omx_deps="dlopen pthreads"
-omx_extralibs='$ldl'
+nvenc_deps_any="libdl LoadLibrary"
+omx_deps="libdl pthreads"
 omx_rpi_select="omx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
@@ -2284,7 +2281,7 @@ mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
 avisynth_deps="LoadLibrary"
-avxsynth_deps="dlopen"
+avxsynth_deps="libdl"
 avisynth_demuxer_deps_any="avisynth avxsynth"
 avisynth_demuxer_select="riffdec"
 libdcadec_decoder_deps="libdcadec"
@@ -2477,10 +2474,8 @@ deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 drawtext_filter_deps="libfreetype"
 drawtext_filter_suggest="libfontconfig"
-frei0r_filter_deps="frei0r dlopen"
-frei0r_filter_extralibs='$ldl'
-frei0r_src_filter_deps="frei0r dlopen"
-frei0r_src_filter_extralibs='$ldl'
+frei0r_filter_deps="frei0r libdl"
+frei0r_src_filter_deps="frei0r libdl"
 hdcd_filter_deps="libhdcd"
 hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
@@ -4469,12 +4464,6 @@ check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_
 
 check_ldflags -Wl,--as-needed
 
-if check_func dlopen; then
-    ldl=
-elif check_func dlopen -ldl; then
-    ldl=-ldl
-fi
-
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
     check_func inet_aton $network_extralibs
@@ -4646,6 +4635,9 @@ enabled pthreads &&
 disabled  zlib || check_lib  zlib  zlib.h      zlibVersion -lz
 disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion -lbz2
 
+# On some systems dynamic loading requires no extra linker flags
+check_lib libdl dlfcn.h dlopen || check_lib libdl dlfcn.h dlopen -ldl
+
 check_lib libm math.h sin -lm && LIBM="-lm"
 
 atan2f_args=2
@@ -4658,7 +4650,7 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled avisynth          && require_header avisynth/avisynth_c.h
-enabled avxsynth          && require avxsynth "avxsynth/avxsynth_c.h dlfcn.h" dlopen -ldl
+enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
 enabled frei0r            && require_header frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
