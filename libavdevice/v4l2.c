@@ -937,8 +937,8 @@ static int v4l2_read_header(AVFormatContext *ctx)
 
     st->codecpar->format = ff_fmt_v4l2ff(desired_format, codec_id);
     if (st->codecpar->format != AV_PIX_FMT_NONE)
-    s->frame_size = av_image_get_buffer_size(st->codecpar->format,
-                                             s->width, s->height, 1);
+        s->frame_size = av_image_get_buffer_size(st->codecpar->format,
+                                                 s->width, s->height, 1);
 
     if ((res = mmap_init(ctx)) ||
         (res = mmap_start(ctx)) < 0)
