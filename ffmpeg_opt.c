@@ -121,6 +121,7 @@ int frame_bits_per_raw_sample = 0;
 float max_error_rate  = 2.0/3;
 int filter_nbthreads = 0;
 int filter_complex_nbthreads = 0;
+int vstats_version = 1;
 
 
 static int intra_only         = 0;
@@ -3547,6 +3548,8 @@ const OptionDef options[] = {
         "dump video coding statistics to file" },
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { .func_arg = opt_vstats_file },
         "dump video coding statistics to file", "file" },
+    { "vstats_version",  OPT_VIDEO | OPT_INT | HAS_ARG | OPT_EXPERT ,            { &vstats_version },
+        "Version of the vstats format to use."},
     { "vf",           OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_filters },
         "set video filters", "filter_graph" },
     { "intra_matrix", OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
