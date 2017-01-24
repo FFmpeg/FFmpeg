@@ -74,7 +74,7 @@ typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
 typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
                            int offset1, int offset2, int stride,
                            VP56mv mv, int mask, int select, int luma);
-typedef void (*VP56ParseCoeff)(VP56Context *s);
+typedef int  (*VP56ParseCoeff)(VP56Context *s);
 typedef void (*VP56DefaultModelsInit)(VP56Context *s);
 typedef void (*VP56ParseVectorModels)(VP56Context *s);
 typedef int  (*VP56ParseCoeffModels)(VP56Context *s);

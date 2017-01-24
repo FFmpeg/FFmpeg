@@ -381,12 +381,13 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
     }
 }
 
-static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
+static int vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
 {
     AVFrame *frame_current, *frame_ref;
     VP56mb mb_type;
     VP56Frame ref_frame;
     int b, ab, b_max, plane, off;
+    int ret;
 
     if (s->frames[VP56_FRAME_CURRENT]->key_frame)
         mb_type = VP56_MB_INTRA;
@@ -394,14 +395,16 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
         mb_type = vp56_decode_mv(s, row, col);
     ref_frame = ff_vp56_reference_frame[mb_type];
 
-    s->parse_coeff(s);
+    ret = s->parse_coeff(s);
+    if (ret < 0)
+        return ret;
 
     vp56_add_predictors_dc(s, ref_frame);
 
     frame_current = s->frames[VP56_FRAME_CURRENT];
     frame_ref = s->frames[ref_frame];
     if (mb_type != VP56_MB_INTRA && !frame_ref->data[0])
-        return;
+        return 0;
 
     ab = 6*is_alpha;
     b_max = 6 - 2*is_alpha;
@@ -451,6 +454,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
         s->block_coeff[4][0] = 0;
         s->block_coeff[5][0] = 0;
     }
+    return 0;
 }
 
 static int vp56_size_changed(VP56Context *s)
@@ -653,7 +657,9 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
         s->block_offset[5] = s->block_offset[4];
 
         for (mb_col=0; mb_col<s->mb_width; mb_col++) {
-            vp56_decode_mb(s, mb_row, mb_col, is_alpha);
+            int ret = vp56_decode_mb(s, mb_row, mb_col, is_alpha);
+            if (ret < 0)
+                return ret;
 
             for (y=0; y<4; y++) {
                 s->above_block_idx[y] += 2;
