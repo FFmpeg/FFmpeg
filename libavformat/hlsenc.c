@@ -660,6 +660,19 @@ static void set_http_options(AVDictionary **options, HLSContext *c)
         av_dict_set(options, "method", c->method, 0);
 }
 
+static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version,
+                                  int target_duration, int64_t sequence)
+{
+    avio_printf(out, "#EXTM3U\n");
+    avio_printf(out, "#EXT-X-VERSION:%d\n", version);
+    if (hls->allowcache == 0 || hls->allowcache == 1) {
+        avio_printf(out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
+    }
+    avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
+    avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+    av_log(hls, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+}
+
 static int hls_window(AVFormatContext *s, int last)
 {
     HLSContext *hls = s->priv_data;
@@ -699,21 +712,13 @@ static int hls_window(AVFormatContext *s, int last)
     }
 
     hls->discontinuity_set = 0;
-    avio_printf(out, "#EXTM3U\n");
-    avio_printf(out, "#EXT-X-VERSION:%d\n", version);
-    if (hls->allowcache == 0 || hls->allowcache == 1) {
-        avio_printf(out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
-    }
-    avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
-    avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+    write_m3u8_head_block(hls, out, version, target_duration, sequence);
     if (hls->pl_type == PLAYLIST_TYPE_EVENT) {
         avio_printf(out, "#EXT-X-PLAYLIST-TYPE:EVENT\n");
     } else if (hls->pl_type == PLAYLIST_TYPE_VOD) {
         avio_printf(out, "#EXT-X-PLAYLIST-TYPE:VOD\n");
     }
 
-    av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-           sequence);
     if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && hls->discontinuity_set==0 ){
         avio_printf(out, "#EXT-X-DISCONTINUITY\n");
         hls->discontinuity_set = 1;
@@ -775,16 +780,7 @@ static int hls_window(AVFormatContext *s, int last)
     if( hls->vtt_m3u8_name ) {
         if ((ret = s->io_open(s, &sub_out, hls->vtt_m3u8_name, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
-        avio_printf(sub_out, "#EXTM3U\n");
-        avio_printf(sub_out, "#EXT-X-VERSION:%d\n", version);
-        if (hls->allowcache == 0 || hls->allowcache == 1) {
-            avio_printf(sub_out, "#EXT-X-ALLOW-CACHE:%s\n", hls->allowcache == 0 ? "NO" : "YES");
-        }
-        avio_printf(sub_out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
-        avio_printf(sub_out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
-
-        av_log(s, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n",
-               sequence);
+        write_m3u8_head_block(hls, sub_out, version, target_duration, sequence);
 
         for (en = hls->segments; en; en = en->next) {
             avio_printf(sub_out, "#EXTINF:%f,\n", en->duration);
