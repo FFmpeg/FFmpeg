@@ -84,16 +84,23 @@ void ff_thread_free(struct AVCodecContext *s);
 void ff_thread_flush(struct AVCodecContext *avctx);
 
 /**
- * Submit a new frame to a decoding thread.
- * Returns the next available frame in picture. *got_picture_ptr
- * will be 0 if none is available.
- * The return value on success is the size of the consumed packet for
- * compatibility with FFCodec.decode. This means the decoder
- * has to consume the full packet.
+ * Submit available packets for decoding to worker threads, return a
+ * decoded frame if available. Returns AVERROR(EAGAIN) if none is available.
  *
- * Parameters are the same as FFCodec.decode.
+ * Parameters are the same as FFCodec.receive_frame.
  */
-int ff_thread_decode_frame(struct AVCodecContext *avctx, struct AVFrame *frame,
-                           int *got_picture_ptr, struct AVPacket *avpkt);
+int ff_thread_receive_frame(AVCodecContext *avctx, AVFrame *frame);
+
+/**
+ * Do the actual decoding and obtain a decoded frame from the decoder, if
+ * available. When frame threading is used, this is invoked by the worker
+ * threads, otherwise by the top layer directly.
+ */
+int ff_decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame);
+
+/**
+ * Get a packet for decoding. This gets invoked by the worker threads.
+ */
+int ff_thread_get_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 #endif // AVCODEC_AVCODEC_INTERNAL_H
