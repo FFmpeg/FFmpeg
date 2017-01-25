@@ -599,7 +599,7 @@ int ff_ebur128_relative_threshold(FFEBUR128State * st, double *out)
     double relative_threshold;
     size_t above_thresh_counter;
 
-    if (st && (st->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I)
+    if ((st->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I)
         return AVERROR(EINVAL);
 
     ebur128_calc_relative_threshold(st, &above_thresh_counter,
