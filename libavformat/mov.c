@@ -689,7 +689,7 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     avio_skip(pb, len);
             }
         } else {
-            av_log(c->fc, AV_LOG_DEBUG, "Unknown dref type 0x08%x size %d\n",
+            av_log(c->fc, AV_LOG_DEBUG, "Unknown dref type 0x%08x size %d\n",
                    dref->type, size);
             entries--;
             i--;
