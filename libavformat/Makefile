@@ -598,7 +598,8 @@ TESTPROGS = seek                                                        \
             url                                                         \
 #           async                                                       \
 
-TESTPROGS-$(CONFIG_FIFO_MUXER)          += fifo_muxer
+FIFO-MUXER-TESTPROGS-$(CONFIG_NETWORK)   += fifo_muxer
+TESTPROGS-$(CONFIG_FIFO_MUXER)           += $(FIFO-MUXER-TESTPROGS-yes)
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
