@@ -5033,7 +5033,7 @@ fi
 for pfx in "" host_; do
     varname=${pfx%_}cc_type
     eval "type=\$$varname"
-    if [ $type = "msvc" ]; then
+    if [ "$type" = "msvc" ]; then
         check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
 static inline int foo(int a) { return a; }
 EOF
