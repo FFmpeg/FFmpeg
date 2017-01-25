@@ -2484,6 +2484,7 @@ avcodec_select="null_bsf"
 avdevice_deps="avformat avcodec avutil"
 avfilter_deps="avutil"
 avformat_deps="avcodec avutil"
+avformat_suggest="network"
 avresample_deps="avutil"
 swscale_deps="avutil"
 
