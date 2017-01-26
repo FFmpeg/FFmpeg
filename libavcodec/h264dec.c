@@ -670,8 +670,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
         case H264_NAL_SLICE:
             h->has_slice = 1;
 
-            if ((err = ff_h264_queue_decode_slice(h, nal)))
+            if ((err = ff_h264_queue_decode_slice(h, nal))) {
+                H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
+                sl->ref_count[0] = sl->ref_count[1] = 0;
                 break;
+            }
 
             if (h->current_slice == 1) {
                 if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
