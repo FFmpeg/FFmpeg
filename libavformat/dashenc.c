@@ -429,7 +429,7 @@ static void format_date_now(char *buf, int size)
     struct tm *ptm, tmbuf;
     ptm = gmtime_r(&t, &tmbuf);
     if (ptm) {
-        if (!strftime(buf, size, "%Y-%m-%dT%H:%M:%S", ptm))
+        if (!strftime(buf, size, "%Y-%m-%dT%H:%M:%SZ", ptm))
             buf[0] = '\0';
     }
 }
