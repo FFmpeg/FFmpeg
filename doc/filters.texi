@@ -878,6 +878,49 @@ afftfilt="1-clip((b/nb)*b,0,1)"
 @end example
 @end itemize
 
+@section afir
+
+Apply an arbitrary Frequency Impulse Response filter.
+
+This filter is designed for applying long FIR filters,
+up to 30 seconds long.
+
+It can be used as component for digital crossover filters,
+room equalization, cross talk cancellation, wavefield synthesis,
+auralization, ambiophonics and ambisonics.
+
+This filter uses second stream as FIR coefficients.
+If second stream holds single channel, it will be used
+for all input channels in first stream, otherwise
+number of channels in second stream must be same as
+number of channels in first stream.
+
+It accepts the following parameters:
+
+@table @option
+@item dry
+Set dry gain. This sets input gain.
+
+@item wet
+Set wet gain. This sets final output gain.
+
+@item length
+Set Impulse Response filter length. Default is 1, which means whole IR is processed.
+
+@item again
+Enable applying gain measured from power of IR.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply reverb to stream using mono IR file as second input, complete command using ffmpeg:
+@example
+ffmpeg -i input.wav -i middle_tunnel_1way_mono.wav -lavfi afir output.wav
+@end example
+@end itemize
+
 @anchor{aformat}
 @section aformat
 

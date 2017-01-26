@@ -37,6 +37,7 @@ OBJS-$(CONFIG_AEMPHASIS_FILTER)              += af_aemphasis.o
 OBJS-$(CONFIG_AEVAL_FILTER)                  += aeval.o
 OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFFTFILT_FILTER)               += af_afftfilt.o window_func.o
+OBJS-$(CONFIG_AFIR_FILTER)                   += af_afir.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AGATE_FILTER)                  += af_agate.o
 OBJS-$(CONFIG_AINTERLEAVE_FILTER)            += f_interleave.o
