@@ -121,7 +121,7 @@ int frame_bits_per_raw_sample = 0;
 float max_error_rate  = 2.0/3;
 int filter_nbthreads = 0;
 int filter_complex_nbthreads = 0;
-int vstats_version = 1;
+int vstats_version = 2;
 
 
 static int intra_only         = 0;

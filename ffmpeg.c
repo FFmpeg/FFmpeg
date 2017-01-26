@@ -1347,8 +1347,13 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     enc = ost->enc_ctx;
     if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
         frame_number = ost->st->nb_frames;
-        fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
-                ost->quality / (float)FF_QP2LAMBDA);
+        if (vstats_version <= 1) {
+            fprintf(vstats_file, "frame= %5d q= %2.1f ", frame_number,
+                    ost->quality / (float)FF_QP2LAMBDA);
+        } else  {
+            fprintf(vstats_file, "out= %2d st= %2d frame= %5d q= %2.1f ", ost->file_index, ost->index, frame_number,
+                    ost->quality / (float)FF_QP2LAMBDA);
+        }
 
         if (ost->error[0]>=0 && (enc->flags & AV_CODEC_FLAG_PSNR))
             fprintf(vstats_file, "PSNR= %6.2f ", psnr(ost->error[0] / (enc->width * enc->height * 255.0 * 255.0)));
