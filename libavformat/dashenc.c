@@ -481,7 +481,7 @@ static int write_manifest(AVFormatContext *s, int final)
         }
     }
     avio_printf(out, "\tminBufferTime=\"");
-    write_time(out, c->last_duration);
+    write_time(out, c->last_duration * 2);
     avio_printf(out, "\">\n");
     avio_printf(out, "\t<ProgramInformation>\n");
     if (title) {
