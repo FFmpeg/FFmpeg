@@ -49,8 +49,8 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
                 buf2+=16;
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
                 for(i=0; i<8; i+=2) {
-                    buf3[i  ] = buf[i+1];
-                    buf3[i+1] = buf[i  ];
+                    buf3[i  ] = buf2[i+1];
+                    buf3[i+1] = buf2[i  ];
                 }
                 init_get_bits(&gbc, buf3, 54);
             }else
@@ -62,8 +62,8 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
                 av_assert0(phdr->frame_size <= sizeof(buf3));
                 for(i=8; i<phdr->frame_size; i+=2) {
-                    buf3[i  ] = buf[i+1];
-                    buf3[i+1] = buf[i  ];
+                    buf3[i  ] = buf2[i+1];
+                    buf3[i+1] = buf2[i  ];
                 }
             }
             if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, gbc.buffer + 2, phdr->frame_size - 2))
