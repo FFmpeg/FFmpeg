@@ -3252,7 +3252,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     size = avio_rb32(pb);
-    if (size > atom.size)
+    if (size <= 12 || size > atom.size)
         return AVERROR_INVALIDDATA;
 
     tag = avio_rl32(pb);
@@ -3261,7 +3261,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     avio_skip(pb, 4); /*  version + flags */
-    avio_skip(pb, avio_r8(pb)); /* metadata_source */
+    avio_skip(pb, size - 12); /* metadata_source */
 
     size = avio_rb32(pb);
     if (size > atom.size)
