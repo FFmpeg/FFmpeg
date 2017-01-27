@@ -100,6 +100,8 @@ extern void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, ptrd
 
 void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx);
 
+void ff_idctdsp_init_aarch64(IDCTDSPContext *c, AVCodecContext *avctx,
+                             unsigned high_bit_depth);
 void ff_idctdsp_init_alpha(IDCTDSPContext *c, AVCodecContext *avctx,
                            unsigned high_bit_depth);
 void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,

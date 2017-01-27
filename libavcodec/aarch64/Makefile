@@ -36,6 +36,8 @@ NEON-OBJS-$(CONFIG_H264PRED)            += aarch64/h264pred_neon.o
 NEON-OBJS-$(CONFIG_H264QPEL)            += aarch64/h264qpel_neon.o             \
                                            aarch64/hpeldsp_neon.o
 NEON-OBJS-$(CONFIG_HPELDSP)             += aarch64/hpeldsp_neon.o
+NEON-OBJS-$(CONFIG_IDCTDSP)             += aarch64/idctdsp_init_aarch64.o      \
+                                           aarch64/simple_idct_neon.o
 NEON-OBJS-$(CONFIG_MDCT)                += aarch64/mdct_neon.o
 NEON-OBJS-$(CONFIG_MPEGAUDIODSP)        += aarch64/mpegaudiodsp_neon.o
 
