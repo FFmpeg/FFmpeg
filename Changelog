@@ -18,6 +18,7 @@ version <next>:
 - readeia608 filter
 - Sample Dump eXchange demuxer
 - abitscope multimedia filter
+- Scenarist Closed Captions demuxer and muxer
 
 version 3.2:
 - libopenmpt demuxer

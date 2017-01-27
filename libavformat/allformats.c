@@ -273,7 +273,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (SAMI,             sami);
     REGISTER_MUXDEMUX(SAP,              sap);
     REGISTER_DEMUXER (SBG,              sbg);
-    REGISTER_DEMUXER (SCC,              scc);
+    REGISTER_MUXDEMUX(SCC,              scc);
     REGISTER_DEMUXER (SDP,              sdp);
     REGISTER_DEMUXER (SDR2,             sdr2);
     REGISTER_DEMUXER (SDS,              sds);
