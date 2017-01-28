@@ -588,11 +588,25 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
     if (s->pb)
-        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, 0);
+        ff_id3v2_read_dict(s->pb, &s->internal->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->iformat->read_header)
         if ((ret = s->iformat->read_header(s)) < 0)
             goto fail;
+
+    if (!s->metadata) {
+        s->metadata = s->internal->id3v2_meta;
+        s->internal->id3v2_meta = NULL;
+    } else if (s->internal->id3v2_meta) {
+        int level = AV_LOG_WARNING;
+        if (s->error_recognition & AV_EF_COMPLIANT)
+            level = AV_LOG_ERROR;
+        av_log(s, level, "Discarding ID3 tags because more suitable tags were found.\n");
+        av_dict_free(&s->internal->id3v2_meta);
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+    }
 
     if (id3v2_extra_meta) {
         if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac") ||
@@ -4178,6 +4192,7 @@ void avformat_free_context(AVFormatContext *s)
     }
     av_freep(&s->chapters);
     av_dict_free(&s->metadata);
+    av_dict_free(&s->internal->id3v2_meta);
     av_freep(&s->streams);
     av_freep(&s->internal);
     flush_packet_queue(s);

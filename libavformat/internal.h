@@ -140,6 +140,11 @@ struct AVFormatInternal {
      * Whether or not avformat_init_output fully initialized streams
      */
     int streams_initialized;
+
+    /**
+     * ID3v2 tag useful for MP3 demuxing
+     */
+    AVDictionary *id3v2_meta;
 };
 
 struct AVStreamInternal {
