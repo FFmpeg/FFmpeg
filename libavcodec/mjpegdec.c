@@ -2247,8 +2247,10 @@ eoi_parser:
             goto the_end;
         case SOS:
             s->cur_scan++;
-            if (avctx->skip_frame == AVDISCARD_ALL)
+            if (avctx->skip_frame == AVDISCARD_ALL) {
+                skip_bits(&s->gb, get_bits_left(&s->gb));
                 break;
+            }
 
             if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
                 (avctx->err_recognition & AV_EF_EXPLODE))
