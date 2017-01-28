@@ -31,7 +31,7 @@ typedef struct SCCContext {
 
 static int scc_probe(AVProbeData *p)
 {
-    char buf[128];
+    char buf[18];
     FFTextReader tr;
 
     ff_text_init_buf(&tr, p->buf, p->buf_size);
@@ -39,8 +39,7 @@ static int scc_probe(AVProbeData *p)
     while (ff_text_peek_r8(&tr) == '\r' || ff_text_peek_r8(&tr) == '\n')
         ff_text_r8(&tr);
 
-    if (ff_subtitles_read_line(&tr, buf, sizeof(buf)) < 0)
-        return 0;
+    ff_text_read(&tr, buf, sizeof(buf));
 
     if (!memcmp(buf, "Scenarist_SCC V1.0", 18))
         return AVPROBE_SCORE_MAX;
