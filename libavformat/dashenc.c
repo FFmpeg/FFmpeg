@@ -24,6 +24,7 @@
 #include <unistd.h>
 #endif
 
+#include "libavutil/avutil.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
@@ -57,9 +58,14 @@ typedef struct Segment {
     int n;
 } Segment;
 
+typedef struct AdaptationSet {
+    char id[10];
+    enum AVMediaType media_type;
+} AdaptationSet;
+
 typedef struct OutputStream {
     AVFormatContext *ctx;
-    int ctx_inited;
+    int ctx_inited, as_idx;
     uint8_t iobuf[32768];
     AVIOContext *out;
     int packets_written;
@@ -78,6 +84,9 @@ typedef struct OutputStream {
 
 typedef struct DASHContext {
     const AVClass *class;  /* Class for private options. */
+    char *adaptation_sets;
+    AdaptationSet *as;
+    int nb_as;
     int window_size;
     int extra_window_size;
     int min_seg_duration;
@@ -86,7 +95,7 @@ typedef struct DASHContext {
     int use_timeline;
     int single_file;
     OutputStream *streams;
-    int has_video, has_audio;
+    int has_video;
     int64_t last_duration;
     int64_t total_duration;
     char availability_start_time[100];
@@ -175,6 +184,12 @@ static void dash_free(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
     int i, j;
+
+    if (c->as) {
+        av_freep(&c->as);
+        c->nb_as = 0;
+    }
+
     if (!c->streams)
         return;
     for (i = 0; i < s->nb_streams; i++) {
@@ -435,12 +450,160 @@ static void format_date_now(char *buf, int size)
     }
 }
 
+static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_index)
+{
+    DASHContext *c = s->priv_data;
+    AdaptationSet *as = &c->as[as_index];
+    int i;
+
+    avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n",
+                as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
+
+    for (i = 0; i < s->nb_streams; i++) {
+        OutputStream *os = &c->streams[i];
+
+        if (os->as_idx - 1 != as_index)
+            continue;
+
+        if (as->media_type == AVMEDIA_TYPE_VIDEO) {
+            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"%s\"%s width=\"%d\" height=\"%d\">\n",
+                i, os->codec_str, os->bandwidth_str, s->streams[i]->codecpar->width, s->streams[i]->codecpar->height);
+        } else {
+            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/mp4\" codecs=\"%s\"%s audioSamplingRate=\"%d\">\n",
+                i, os->codec_str, os->bandwidth_str, s->streams[i]->codecpar->sample_rate);
+            avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n",
+                s->streams[i]->codecpar->channels);
+        }
+        output_segment_list(os, out, c);
+        avio_printf(out, "\t\t\t</Representation>\n");
+    }
+    avio_printf(out, "\t\t</AdaptationSet>\n");
+
+    return 0;
+}
+
+static int add_adaptation_set(AVFormatContext *s, AdaptationSet **as, enum AVMediaType type)
+{
+    DASHContext *c = s->priv_data;
+
+    void *mem = av_realloc(c->as, sizeof(*c->as) * (c->nb_as + 1));
+    if (!mem)
+        return AVERROR(ENOMEM);
+    c->as = mem;
+    ++c->nb_as;
+
+    *as = &c->as[c->nb_as - 1];
+    memset(*as, 0, sizeof(**as));
+    (*as)->media_type = type;
+
+    return 0;
+}
+
+static int parse_adaptation_sets(AVFormatContext *s)
+{
+    DASHContext *c = s->priv_data;
+    const char *p = c->adaptation_sets;
+    enum { new_set, parse_id, parsing_streams } state;
+    AdaptationSet *as;
+    int i, n, ret;
+    enum AVMediaType types[] = { AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_UNKNOWN };
+
+    // default: one AdaptationSet for each media type
+    if (!p) {
+        for (n = 0; types[n] != AVMEDIA_TYPE_UNKNOWN; n++) {
+            int as_idx = 0;
+
+            for (i = 0; i < s->nb_streams; i++) {
+                if (s->streams[i]->codecpar->codec_type != types[n])
+                    continue;
+
+                if (!as_idx) {
+                    if ((ret = add_adaptation_set(s, &as, types[n])) < 0)
+                        return ret;
+                    as_idx = c->nb_as;
+
+                    snprintf(as->id, sizeof(as->id), "%d", i);
+                }
+                c->streams[i].as_idx = as_idx;
+            }
+        }
+        goto end;
+    }
+
+    // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
+    state = new_set;
+    while (*p) {
+        if (*p == ' ') {
+            p++;
+            continue;
+        } else if (state == new_set && av_strstart(p, "id=", &p)) {
+
+            if ((ret = add_adaptation_set(s, &as, AVMEDIA_TYPE_UNKNOWN)) < 0)
+                return ret;
+
+            n = strcspn(p, ",");
+            snprintf(as->id, sizeof(as->id), "%.*s", n, p);
+
+            p += n;
+            if (*p)
+                p++;
+            state = parse_id;
+        } else if (state == parse_id && av_strstart(p, "streams=", &p)) {
+            state = parsing_streams;
+        } else if (state == parsing_streams) {
+            AdaptationSet *as = &c->as[c->nb_as - 1];
+            OutputStream *os;
+            char idx_str[8], *end_str;
+
+            n = strcspn(p, " ,");
+            snprintf(idx_str, sizeof(idx_str), "%.*s", n, p);
+            p += n;
+
+            i = strtol(idx_str, &end_str, 10);
+            if (idx_str == end_str || i < 0 || i >= s->nb_streams) {
+                av_log(s, AV_LOG_ERROR, "Selected stream \"%s\" not found!\n", idx_str);
+                return AVERROR(EINVAL);
+            }
+
+            os = &c->streams[i];
+            if (as->media_type == AVMEDIA_TYPE_UNKNOWN) {
+                as->media_type = s->streams[i]->codecpar->codec_type;
+            } else if (as->media_type != s->streams[i]->codecpar->codec_type) {
+                av_log(s, AV_LOG_ERROR, "Mixing codec types within an AdaptationSet is not allowed\n");
+                return AVERROR(EINVAL);
+            } else if (os->as_idx) {
+                av_log(s, AV_LOG_ERROR, "Assigning a stream to more than one AdaptationSet is not allowed\n");
+                return AVERROR(EINVAL);
+            }
+            os->as_idx = c->nb_as;
+
+            if (*p == ' ')
+                state = new_set;
+            if (*p)
+                p++;
+        } else {
+            return AVERROR(EINVAL);
+        }
+    }
+
+end:
+    // check for unassigned streams
+    for (i = 0; i < s->nb_streams; i++) {
+        OutputStream *os = &c->streams[i];
+        if (!os->as_idx) {
+            av_log(s, AV_LOG_ERROR, "Stream %d is not mapped to an AdaptationSet\n", i);
+            return AVERROR(EINVAL);
+        }
+    }
+    return 0;
+}
+
 static int write_manifest(AVFormatContext *s, int final)
 {
     DASHContext *c = s->priv_data;
     AVIOContext *out;
     char temp_filename[1024];
-    int ret, i, as_id = 0;
+    int ret, i;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
 
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", s->filename);
@@ -505,32 +668,9 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\t<Period id=\"0\" start=\"PT0.0S\">\n");
     }
 
-    if (c->has_video) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n", as_id++);
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            OutputStream *os = &c->streams[i];
-            if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
-                continue;
-            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/mp4\" codecs=\"%s\"%s width=\"%d\" height=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codecpar->width, st->codecpar->height);
-            output_segment_list(&c->streams[i], out, c);
-            avio_printf(out, "\t\t\t</Representation>\n");
-        }
-        avio_printf(out, "\t\t</AdaptationSet>\n");
-    }
-    if (c->has_audio) {
-        avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n", as_id++);
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            OutputStream *os = &c->streams[i];
-            if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
-                continue;
-            avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"audio/mp4\" codecs=\"%s\"%s audioSamplingRate=\"%d\">\n", i, os->codec_str, os->bandwidth_str, st->codecpar->sample_rate);
-            avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n", st->codecpar->channels);
-            output_segment_list(&c->streams[i], out, c);
-            avio_printf(out, "\t\t\t</Representation>\n");
-        }
-        avio_printf(out, "\t\t</AdaptationSet>\n");
+    for (i = 0; i < c->nb_as; i++) {
+        if ((ret = write_adaptation_set(s, out, i)) < 0)
+            return ret;
     }
     avio_printf(out, "\t</Period>\n");
     avio_printf(out, "</MPD>\n");
@@ -577,6 +717,9 @@ static int dash_write_header(AVFormatContext *s)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+
+    if ((ret = parse_adaptation_sets(s)) < 0)
+        goto fail;
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
@@ -657,8 +800,6 @@ static int dash_write_header(AVFormatContext *s)
         s->avoid_negative_ts = ctx->avoid_negative_ts;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             c->has_video = 1;
-        else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-            c->has_audio = 1;
 
         set_codec_str(s, st->codecpar, os->codec_str, sizeof(os->codec_str));
         os->first_pts = AV_NOPTS_VALUE;
@@ -984,6 +1125,7 @@ static int dash_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(DASHContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "adaptation_sets", "Adaptation sets. Syntax: id=0,streams=0,1,2 id=1,streams=3,4 and so on", OFFSET(adaptation_sets), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size", "number of segments kept in the manifest", OFFSET(window_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, E },
     { "extra_window_size", "number of segments kept outside of the manifest before removing from disk", OFFSET(extra_window_size), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, E },
     { "min_seg_duration", "minimum segment duration (in microseconds)", OFFSET(min_seg_duration), AV_OPT_TYPE_INT64, { .i64 = 5000000 }, 0, INT_MAX, E },
