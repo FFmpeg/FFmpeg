@@ -868,7 +868,6 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     DASHContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
-    int64_t seg_end_duration = (os->segment_index) * (int64_t) c->min_seg_duration;
     int ret;
 
     ret = update_stream_extradata(s, os, st->codecpar);
@@ -898,8 +897,8 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if ((!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
-        av_compare_ts(pkt->pts - os->first_pts, st->time_base,
-                      seg_end_duration, AV_TIME_BASE_Q) >= 0) {
+        av_compare_ts(pkt->pts - os->start_pts, st->time_base,
+                      c->min_seg_duration, AV_TIME_BASE_Q) >= 0) {
         int64_t prev_duration = c->last_duration;
 
         c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
