@@ -180,6 +180,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         while (avpkt.size > 0 && it++ < maxiteration) {
             av_frame_unref(frame);
             int ret = decode_handler(ctx, frame, &got_frame, &avpkt);
+
+            if (it > 20)
+                ctx->error_concealment = 0;
+
             if (ret <= 0 || ret > avpkt.size)
                break;
             avpkt.data += ret;
