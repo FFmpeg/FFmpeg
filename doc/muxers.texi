@@ -53,6 +53,68 @@ avconv -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 
 See also the @ref{framecrc} muxer.
 
+@anchor{dash}
+@section dash
+
+Dynamic Adaptive Streaming over HTTP (DASH) muxer that creates segments
+and manifest files according to the MPEG-DASH standard ISO/IEC 23009-1:2014.
+
+For more information see:
+
+@itemize @bullet
+@item
+ISO DASH Specification: @url{http://standards.iso.org/ittf/PubliclyAvailableStandards/c065274_ISO_IEC_23009-1_2014.zip}
+@item
+WebM DASH Specification: @url{https://sites.google.com/a/webmproject.org/wiki/adaptive-streaming/webm-dash-specification}
+@end itemize
+
+It creates a MPD manifest file and segment files for each stream.
+
+The segment filename might contain pre-defined identifiers used with SegmentTemplate
+as defined in section 5.3.9.4.4 of the standard. Available identifiers are "$RepresentationID$",
+"$Number$", "$Bandwidth$" and "$Time$".
+
+@example
+avconv -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
+-b:v:0 800k -b:v:1 300k -s:v:1 320x170 -profile:v:1 baseline
+-profile:v:0 main -bf 1 -keyint_min 120 -g 120 -sc_threshold 0
+-b_strategy 0 -ar:a:1 22050 -use_timeline 1 -use_template 1
+-window_size 5 -adaptation_sets "id=0,streams=v id=1,streams=a"
+-f dash /path/to/out.mpd
+@end example
+
+@table @option
+@item -min_seg_duration @var{microseconds}
+Set the segment length in microseconds.
+@item -window_size @var{size}
+Set the maximum number of segments kept in the manifest.
+@item -extra_window_size @var{size}
+Set the maximum number of segments kept outside of the manifest before removing from disk.
+@item -remove_at_exit @var{remove}
+Enable (1) or disable (0) removal of all segments when finished.
+@item -use_template @var{template}
+Enable (1) or disable (0) use of SegmentTemplate instead of SegmentList.
+@item -use_timeline @var{timeline}
+Enable (1) or disable (0) use of SegmentTimeline in SegmentTemplate.
+@item -single_file @var{single_file}
+Enable (1) or disable (0) storing all segments in one file, accessed using byte ranges.
+@item -single_file_name @var{file_name}
+DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1".
+@item -init_seg_name @var{init_name}
+DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.m4s"
+@item -media_seg_name @var{segment_name}
+DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.m4s"
+@item -utc_timing_url @var{utc_url}
+URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
+@item -adaptation_sets @var{adaptation_sets}
+Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
+of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
+
+To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
+
+When no assignment is defined, this defaults to an AdaptationSet for each stream.
+@end table
+
 @anchor{framecrc}
 @section framecrc
 
