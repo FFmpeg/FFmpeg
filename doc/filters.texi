@@ -17029,7 +17029,7 @@ Specify the transform timeclamp. At low frequency, there is trade-off between
 accuracy in time domain and frequency domain. If timeclamp is lower,
 event in time domain is represented more accurately (such as fast bass drum),
 otherwise event in frequency domain is represented more accurately
-(such as bass guitar). Acceptable range is @code{[0.1, 1]}. Default value is @code{0.17}.
+(such as bass guitar). Acceptable range is @code{[0.002, 1]}. Default value is @code{0.17}.
 
 @item basefreq
 Specify the transform base frequency. Default value is @code{20.01523126408007475},
