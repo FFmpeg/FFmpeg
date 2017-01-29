@@ -61,6 +61,7 @@ typedef struct Segment {
 typedef struct AdaptationSet {
     char id[10];
     enum AVMediaType media_type;
+    AVDictionary *metadata;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -186,6 +187,8 @@ static void dash_free(AVFormatContext *s)
     int i, j;
 
     if (c->as) {
+        for (i = 0; i < c->nb_as; i++)
+            av_dict_free(&c->as[i].metadata);
         av_freep(&c->as);
         c->nb_as = 0;
     }
@@ -454,10 +457,19 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 {
     DASHContext *c = s->priv_data;
     AdaptationSet *as = &c->as[as_index];
+    AVDictionaryEntry *lang, *role;
     int i;
 
-    avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n",
+    avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
+    lang = av_dict_get(as->metadata, "language", NULL, 0);
+    if (lang)
+        avio_printf(out, " lang=\"%s\"", lang->value);
+    avio_printf(out, ">\n");
+
+    role = av_dict_get(as->metadata, "role", NULL, 0);
+    if (role)
+        avio_printf(out, "\t\t\t<Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%s\"/>\n", role->value);
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
@@ -697,6 +709,14 @@ static int write_manifest(AVFormatContext *s, int final)
     return ff_rename(temp_filename, s->filename);
 }
 
+static int dict_copy_entry(AVDictionary **dst, const AVDictionary *src, const char *key)
+{
+    AVDictionaryEntry *entry = av_dict_get(src, key, NULL, 0);
+    if (entry)
+        av_dict_set(dst, key, entry->value, AV_DICT_DONT_OVERWRITE);
+    return 0;
+}
+
 static int dash_write_header(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -741,6 +761,7 @@ static int dash_write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
+        AdaptationSet *as = &c->as[os->as_idx - 1];
         AVFormatContext *ctx;
         AVStream *st;
         AVDictionary *opts = NULL;
@@ -759,6 +780,10 @@ static int dash_write_header(AVFormatContext *s)
                 goto fail;
             }
         }
+
+        // copy AdaptationSet language and role from stream metadata
+        dict_copy_entry(&as->metadata, s->streams[i]->metadata, "language");
+        dict_copy_entry(&as->metadata, s->streams[i]->metadata, "role");
 
         ctx = avformat_alloc_context();
         if (!ctx) {
