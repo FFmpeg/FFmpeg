@@ -67,11 +67,10 @@ typedef struct AdaptationSet {
 typedef struct OutputStream {
     AVFormatContext *ctx;
     int ctx_inited, as_idx;
-    uint8_t iobuf[32768];
     AVIOContext *out;
     int packets_written;
     char initfile[1024];
-    int64_t init_start_pos;
+    int64_t init_start_pos, pos;
     int init_range_length;
     int nb_segments, segments_size, segment_index;
     Segment **segments;
@@ -106,14 +105,6 @@ typedef struct DASHContext {
     const char *media_seg_name;
     const char *utc_timing_url;
 } DASHContext;
-
-static int dash_write(void *opaque, uint8_t *buf, int buf_size)
-{
-    OutputStream *os = opaque;
-    if (os->out)
-        avio_write(os->out, buf, buf_size);
-    return buf_size;
-}
 
 // RFC 6381
 static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
@@ -181,6 +172,28 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
     }
 }
 
+static int flush_dynbuf(OutputStream *os, int *range_length)
+{
+    uint8_t *buffer;
+
+    if (!os->ctx->pb) {
+        return AVERROR(EINVAL);
+    }
+
+    // flush
+    av_write_frame(os->ctx, NULL);
+    avio_flush(os->ctx->pb);
+
+    // write out to file
+    *range_length = avio_close_dyn_buf(os->ctx->pb, &buffer);
+    os->ctx->pb = NULL;
+    avio_write(os->out, buffer, *range_length);
+    av_free(buffer);
+
+    // re-open buffer
+    return avio_open_dyn_buf(&os->ctx->pb);
+}
+
 static void dash_free(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -200,7 +213,7 @@ static void dash_free(AVFormatContext *s)
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
         if (os->ctx && os->ctx->pb)
-            av_free(os->ctx->pb);
+            ffio_free_dyn_buf(&os->ctx->pb);
         ff_format_io_close(s, &os->out);
         if (os->ctx)
             avformat_free_context(os->ctx);
@@ -806,11 +819,8 @@ static int dash_write_header(AVFormatContext *s)
         st->time_base = s->streams[i]->time_base;
         ctx->avoid_negative_ts = s->avoid_negative_ts;
 
-        ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf), AVIO_FLAG_WRITE, os, NULL, dash_write, NULL);
-        if (!ctx->pb) {
-            ret = AVERROR(ENOMEM);
+        if ((ret = avio_open_dyn_buf(&ctx->pb)) < 0)
             goto fail;
-        }
 
         if (c->single_file) {
             if (c->single_file_name)
@@ -966,7 +976,6 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         char filename[1024] = "", full_path[1024], temp_path[1024];
-        int64_t start_pos;
         int range_length, index_length = 0;
 
         if (!os->packets_written)
@@ -985,13 +994,13 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         }
 
         if (!os->init_range_length) {
-            av_write_frame(os->ctx, NULL);
-            os->init_range_length = avio_tell(os->ctx->pb);
+            ret = flush_dynbuf(os, &range_length);
+            if (ret < 0)
+                break;
+            os->pos = os->init_range_length = range_length;
             if (!c->single_file)
                 ff_format_io_close(s, &os->out);
         }
-
-        start_pos = avio_tell(os->ctx->pb);
 
         if (!c->single_file) {
             dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
@@ -1005,13 +1014,13 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, os->initfile);
         }
 
-        av_write_frame(os->ctx, NULL);
-        avio_flush(os->ctx->pb);
+        ret = flush_dynbuf(os, &range_length);
+        if (ret < 0)
+            break;
         os->packets_written = 0;
 
-        range_length = avio_tell(os->ctx->pb) - start_pos;
         if (c->single_file) {
-            find_index_range(s, full_path, start_pos, &index_length);
+            find_index_range(s, full_path, os->pos, &index_length);
         } else {
             ff_format_io_close(s, &os->out);
             ret = ff_rename(temp_path, full_path);
@@ -1028,8 +1037,10 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                      " bandwidth=\"%d\"", os->bit_rate);
             }
         }
-        add_segment(os, filename, os->start_pts, os->max_pts - os->start_pts, start_pos, range_length, index_length);
+        add_segment(os, filename, os->start_pts, os->max_pts - os->start_pts, os->pos, range_length, index_length);
         av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, full_path);
+
+        os->pos += range_length;
     }
 
     if (c->window_size || (final && c->remove_at_exit)) {
