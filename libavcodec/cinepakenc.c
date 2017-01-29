@@ -1,5 +1,5 @@
 /*
- * Cinepak encoder (c) 2011 Tomas Härdin
+ * Cinepak encoder (c) 2011 Tomas HÃ¤rdin
  * http://titan.codemill.se/~tomhar/cinepakenc.patch
  *
  * Fixes and improvements, vintage decoders compatibility
@@ -23,9 +23,6 @@ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
- * TODO:
- * - optimize: color space conversion, ...
- * - implement options to set the min/max number of strips?
  * MAYBE:
  * - "optimally" split the frame into several non-regular areas
  *   using a separate codebook pair for each area and approximating
@@ -92,7 +89,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define MAX_STRIPS  32      //Note: having fewer choices regarding the number of strips speeds up encoding (obviously)
 #define MIN_STRIPS  1       //Note: having more strips speeds up encoding the frame (this is less obvious)
 // MAX_STRIPS limits the maximum quality you can reach
-//            when you want hight quality on high resolutions,
+//            when you want high quality on high resolutions,
 // MIN_STRIPS limits the minimum efficiently encodable bit rate
 //            on low resolutions
 // the numbers are only used for brute force optimization for the first frame,
@@ -119,7 +116,7 @@ typedef enum {
 typedef struct {
     int v1_vector;                  //index into v1 codebook
     int v1_error;                   //error when using V1 encoding
-    int v4_vector[4];               //indices into v4 codebooks
+    int v4_vector[4];               //indices into v4 codebook
     int v4_error;                   //error when using V4 encoding
     int skip_error;                 //error when block is skipped (aka copied from last frame)
     mb_encoding best_encoding;      //last result from calculate_mode_score()
