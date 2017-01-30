@@ -119,6 +119,7 @@ int ffio_init_context(AVIOContext *s,
     s->ignore_boundary_point = 0;
     s->current_type          = AVIO_DATA_MARKER_UNKNOWN;
     s->last_time             = AV_NOPTS_VALUE;
+    s->short_seek_get        = NULL;
 
     return 0;
 }
@@ -233,6 +234,7 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     int64_t pos;
     int force = whence & AVSEEK_FORCE;
     int buffer_size;
+    int short_seek;
     whence &= ~AVSEEK_FORCE;
 
     if(!s)
@@ -254,13 +256,21 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     if (offset < 0)
         return AVERROR(EINVAL);
 
+    if (s->short_seek_get) {
+        short_seek = s->short_seek_get(s->opaque);
+        /* fallback to default short seek */
+        if (short_seek <= 0)
+            short_seek = s->short_seek_threshold;
+    } else
+        short_seek = s->short_seek_threshold;
+
     offset1 = offset - pos; // "offset1" is the relative offset from the beginning of s->buffer
     if (!s->must_flush && (!s->direct || !s->seek) &&
         offset1 >= 0 && offset1 <= buffer_size - s->write_flag) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if ((!s->seekable ||
-               offset1 <= buffer_size + s->short_seek_threshold) &&
+               offset1 <= buffer_size + short_seek) &&
                !s->write_flag && offset1 >= 0 &&
                (!s->direct || !s->seek) &&
               (whence != SEEK_END || force)) {
@@ -858,6 +868,12 @@ static int64_t io_seek(void *opaque, int64_t offset, int whence)
     return ffurl_seek(internal->h, offset, whence);
 }
 
+static int io_short_seek(void *opaque)
+{
+    AVIOInternal *internal = opaque;
+    return ffurl_get_short_seek(internal->h);
+}
+
 static int io_read_pause(void *opaque, int pause)
 {
     AVIOInternal *internal = opaque;
@@ -919,6 +935,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         (*s)->read_pause = io_read_pause;
         (*s)->read_seek  = io_read_seek;
     }
+    (*s)->short_seek_get = io_short_seek;
     (*s)->av_class = &ff_avio_class;
     return 0;
 fail:

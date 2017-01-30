@@ -1533,6 +1533,12 @@ static int http_get_file_handle(URLContext *h)
     return ffurl_get_file_handle(s->hd);
 }
 
+static int http_get_short_seek(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    return ffurl_get_short_seek(s->hd);
+}
+
 #define HTTP_CLASS(flavor)                          \
 static const AVClass flavor ## _context_class = {   \
     .class_name = # flavor,                         \
@@ -1554,6 +1560,7 @@ const URLProtocol ff_http_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
@@ -1573,6 +1580,7 @@ const URLProtocol ff_https_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &https_context_class,
