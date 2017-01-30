@@ -88,6 +88,12 @@ Stuff that didn't reach the codebase:
 -------------------------------------
 
 - HEVC DSP and x86 MC SIMD improvements from Libav (see https://ffmpeg.org/pipermail/ffmpeg-devel/2015-December/184777.html)
+  - 1f821750f hevcdsp: split the qpel functions by width instead of by the subpixel fraction
+  - 818bfe7f0 hevcdsp: split the epel functions by width
+  - 688417399 hevcdsp: split the pred functions by width
+  - a853388d2 hevc: change the stride of the MC buffer to be in bytes instead of elements
+  - 0cef06df0 checkasm: add HEVC MC tests
+  - e7078e842 hevcdsp: add x86 SIMD for MC
 - QSV scaling filter (62c58c5)
 - ffmpeg.c filter init decoupling (3e265ca,a3a0230,d2e56cf,94ebf55)
 
