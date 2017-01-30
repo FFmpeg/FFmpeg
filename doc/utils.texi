@@ -719,19 +719,24 @@ the name of a standard channel layout (e.g. @samp{mono},
 the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.)
 
 @item
-a number of channels, in decimal, optionally followed by 'c', yielding
-the default channel layout for that number of channels (see the
-function @code{av_get_default_channel_layout})
+a number of channels, in decimal, followed by 'c', yielding the default channel
+layout for that number of channels (see the function
+@code{av_get_default_channel_layout}). Note that not all channel counts have a
+default layout.
+
+@item
+a number of channels, in decimal, followed by 'C', yielding an unknown channel
+layout with the specified number of channels. Note that not all channel layout
+specification strings support unknown channel layouts.
 
 @item
 a channel layout mask, in hexadecimal starting with "0x" (see the
 @code{AV_CH_*} macros in @file{libavutil/channel_layout.h}.
 @end itemize
 
-Starting from libavutil version 53 the trailing character "c" to
-specify a number of channels will be required, while a channel layout
-mask could also be specified as a decimal number (if and only if not
-followed by "c").
+Before libavutil version 53 the trailing character "c" to specify a number of
+channels was optional, but now it is required, while a channel layout mask can
+also be specified as a decimal number (if and only if not followed by "c" or "C").
 
 See also the function @code{av_get_channel_layout} defined in
 @file{libavutil/channel_layout.h}.
@@ -770,6 +775,9 @@ Compute arcsine of @var{x}.
 
 @item atan(x)
 Compute arctangent of @var{x}.
+
+@item atan2(x, y)
+Compute principal value of the arc tangent of @var{y}/@var{x}.
 
 @item between(x, min, max)
 Return 1 if @var{x} is greater than or equal to @var{min} and lesser than or

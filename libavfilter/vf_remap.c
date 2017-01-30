@@ -404,7 +404,7 @@ static const AVFilterPad remap_outputs[] = {
 
 AVFilter ff_vf_remap = {
     .name          = "remap",
-    .description   = NULL_IF_CONFIG_SMALL("Remap pixels"),
+    .description   = NULL_IF_CONFIG_SMALL("Remap pixels."),
     .priv_size     = sizeof(RemapContext),
     .uninit        = uninit,
     .query_formats = query_formats,

@@ -354,6 +354,9 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     int i;
     int err;
 
+    if (!oc || !oc->pb)
+        return AVERROR(EINVAL);
+
     av_write_frame(oc, NULL); /* Flush any buffered data (fragmented mp4) */
     if (write_trailer)
         ret = av_write_trailer(oc);
@@ -850,7 +853,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t usecs;
     int64_t wrapped_val;
 
-    if (!seg->avf)
+    if (!seg->avf || !seg->avf->pb)
         return AVERROR(EINVAL);
 
 calc_times:

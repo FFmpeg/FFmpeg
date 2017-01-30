@@ -823,6 +823,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
     const ID3v2EMFunc *extra_func = NULL;
     unsigned char *uncompressed_buffer = NULL;
     av_unused int uncompressed_buffer_size = 0;
+    const char *comm_frame;
 
     av_log(s, AV_LOG_DEBUG, "id3v2 ver:%d flags:%02X len:%d\n", version, flags, len);
 
@@ -834,12 +835,14 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
         }
         isv34     = 0;
         taghdrlen = 6;
+        comm_frame = "COM";
         break;
 
     case 3:
     case 4:
         isv34     = 1;
         taghdrlen = 10;
+        comm_frame = "COMM";
         break;
 
     default:
@@ -950,7 +953,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
         /* check for text tag or supported special meta tag */
         } else if (tag[0] == 'T' ||
                    !memcmp(tag, "USLT", 4) ||
-                   !memcmp(tag, "COMM", 4) ||
+                   !strcmp(tag, comm_frame) ||
                    (extra_meta &&
                     (extra_func = get_extra_meta_func(tag, isv34)))) {
             pbx = pb;
@@ -1018,7 +1021,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
                 read_ttag(s, pbx, tlen, metadata, tag);
             else if (!memcmp(tag, "USLT", 4))
                 read_uslt(s, pbx, tlen, metadata);
-            else if (!memcmp(tag, "COMM", 4))
+            else if (!strcmp(tag, comm_frame))
                 read_comment(s, pbx, tlen, metadata);
             else
                 /* parse special meta tag */

@@ -434,8 +434,12 @@ OBJS-$(CONFIG_SAMI_DEMUXER)              += samidec.o subtitles.o
 OBJS-$(CONFIG_SAP_DEMUXER)               += sapdec.o
 OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o
 OBJS-$(CONFIG_SBG_DEMUXER)               += sbgdec.o
+OBJS-$(CONFIG_SCC_DEMUXER)               += sccdec.o subtitles.o
+OBJS-$(CONFIG_SCC_MUXER)                 += sccenc.o subtitles.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o
 OBJS-$(CONFIG_SDR2_DEMUXER)              += sdr2.o
+OBJS-$(CONFIG_SDS_DEMUXER)               += sdsdec.o
+OBJS-$(CONFIG_SDX_DEMUXER)               += sdxdec.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SEGMENT_MUXER)             += segment.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += shortendec.o rawdec.o
@@ -594,7 +598,8 @@ TESTPROGS = seek                                                        \
             url                                                         \
 #           async                                                       \
 
-TESTPROGS-$(CONFIG_FIFO_MUXER)          += fifo_muxer
+FIFO-MUXER-TESTPROGS-$(CONFIG_NETWORK)   += fifo_muxer
+TESTPROGS-$(CONFIG_FIFO_MUXER)           += $(FIFO-MUXER-TESTPROGS-yes)
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
 TESTPROGS-$(CONFIG_MOV_MUXER)            += movenc
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy

@@ -626,13 +626,15 @@ static int shift_data(AVFormatContext *s)
     avio_seek(read_pb, flv->keyframes_info_offset, SEEK_SET);
     pos = avio_tell(read_pb);
 
-    /* shift data by chunk of at most keyframe *filepositions* and *times* size */
+#define READ_BLOCK do {                                                             \
     read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id], metadata_size);  \
-    read_buf_id ^= 1;
-    do {
+    read_buf_id ^= 1;                                                               \
+} while (0)
 
-        read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id], metadata_size);  \
-        read_buf_id ^= 1;
+    /* shift data by chunk of at most keyframe *filepositions* and *times* size */
+    READ_BLOCK;
+    do {
+        READ_BLOCK;
         n = read_size[read_buf_id];
         if (n < 0)
             break;

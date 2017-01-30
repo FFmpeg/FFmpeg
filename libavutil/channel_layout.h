@@ -131,20 +131,29 @@ enum AVMatrixEncoding {
  *   5.0(side), 5.1, 5.1(side), 7.1, 7.1(wide), downmix);
  * - the name of a single channel (FL, FR, FC, LFE, BL, BR, FLC, FRC, BC,
  *   SL, SR, TC, TFL, TFC, TFR, TBL, TBC, TBR, DL, DR);
- * - a number of channels, in decimal, optionally followed by 'c', yielding
+ * - a number of channels, in decimal, followed by 'c', yielding
  *   the default channel layout for that number of channels (@see
  *   av_get_default_channel_layout);
  * - a channel layout mask, in hexadecimal starting with "0x" (see the
  *   AV_CH_* macros).
  *
- * @warning Starting from the next major bump the trailing character
- * 'c' to specify a number of channels will be required, while a
- * channel layout mask could also be specified as a decimal number
- * (if and only if not followed by "c").
- *
  * Example: "stereo+FC" = "2c+FC" = "2c+1c" = "0x7"
  */
 uint64_t av_get_channel_layout(const char *name);
+
+/**
+ * Return a channel layout and the number of channels based on the specified name.
+ *
+ * This function is similar to (@see av_get_channel_layout), but can also parse
+ * unknown channel layout specifications.
+ *
+ * @param[in]  name             channel layout specification string
+ * @param[out] channel_layout   parsed channel layout (0 if unknown)
+ * @param[out] nb_channels      number of channels
+ *
+ * @return 0 on success, AVERROR(EINVAL) if the parsing fails.
+ */
+int av_get_extended_channel_layout(const char *name, uint64_t* channel_layout, int* nb_channels);
 
 /**
  * Return a description of a channel layout.

@@ -393,6 +393,23 @@ static void put_xiph_size(AVIOContext *pb, int size)
  * Free the members allocated in the mux context.
  */
 static void mkv_free(MatroskaMuxContext *mkv) {
+    uint8_t* buf;
+    if (mkv->dyn_bc) {
+        avio_close_dyn_buf(mkv->dyn_bc, &buf);
+        av_free(buf);
+    }
+    if (mkv->info_bc) {
+        avio_close_dyn_buf(mkv->info_bc, &buf);
+        av_free(buf);
+    }
+    if (mkv->tracks_bc) {
+        avio_close_dyn_buf(mkv->tracks_bc, &buf);
+        av_free(buf);
+    }
+    if (mkv->tags_bc) {
+        avio_close_dyn_buf(mkv->tags_bc, &buf);
+        av_free(buf);
+    }
     if (mkv->main_seekhead) {
         av_freep(&mkv->main_seekhead->entries);
         av_freep(&mkv->main_seekhead);
@@ -893,7 +910,7 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
 
     colorinfo_size = avio_close_dyn_buf(dyn_cp, &colorinfo_ptr);
     if (colorinfo_size) {
-        ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, 0);
+        ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, colorinfo_size);
         avio_write(pb, colorinfo_ptr, colorinfo_size);
         end_ebml_master(pb, colorinfo);
     }

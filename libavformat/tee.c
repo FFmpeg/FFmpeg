@@ -208,7 +208,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             if (ret < 0)
                 goto end;
 
-            ret = av_dict_set(&tee_slave->fifo_options, "format_options", format_options_str,
+            ret = av_dict_set(&tee_slave->fifo_options, "format_opts", format_options_str,
                               AV_DICT_DONT_STRDUP_VAL);
             if (ret < 0)
                 goto end;

@@ -1022,17 +1022,19 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     ShowSpectrumContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    int ret;
+    int ret, samples;
 
     ret = ff_request_frame(inlink);
-    if (ret == AVERROR_EOF && s->outpicref) {
-        int samples = av_audio_fifo_size(s->fifo);
+    samples = av_audio_fifo_size(s->fifo);
+    if (ret == AVERROR_EOF && s->outpicref && samples > 0) {
         int consumed = 0;
         int y, x = 0, sz = s->orientation == VERTICAL ? s->w : s->h;
         int ch, spf, spb;
         AVFrame *fin;
 
         spf = s->win_size * (samples / ((s->win_size * sz) * ceil(samples / (float)(s->win_size * sz))));
+        spf = FFMAX(1, spf);
+
         spb = (samples / (spf * sz)) * spf;
 
         fin = ff_get_audio_buffer(inlink, s->win_size);

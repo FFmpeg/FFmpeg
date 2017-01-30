@@ -40,8 +40,8 @@
 
 #define VP6_MAX_HUFF_SIZE 12
 
-static void vp6_parse_coeff(VP56Context *s);
-static void vp6_parse_coeff_huffman(VP56Context *s);
+static int vp6_parse_coeff(VP56Context *s);
+static int vp6_parse_coeff_huffman(VP56Context *s);
 
 static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 {
@@ -380,7 +380,7 @@ static unsigned vp6_get_nb_null(VP56Context *s)
     return val;
 }
 
-static void vp6_parse_coeff_huffman(VP56Context *s)
+static int vp6_parse_coeff_huffman(VP56Context *s)
 {
     VP56Model *model = s->modelp;
     uint8_t *permute = s->idct_scantable;
@@ -402,7 +402,7 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
                     break;
             } else {
                 if (get_bits_left(&s->gb) <= 0)
-                    return;
+                    return AVERROR_INVALIDDATA;
                 coeff = get_vlc2(&s->gb, vlc_coeff->table, FF_HUFFMAN_BITS, 3);
                 if (coeff == 0) {
                     if (coeff_idx) {
@@ -437,9 +437,10 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
             vlc_coeff = &s->ract_vlc[pt][ct][cg];
         }
     }
+    return 0;
 }
 
-static void vp6_parse_coeff(VP56Context *s)
+static int vp6_parse_coeff(VP56Context *s)
 {
     VP56RangeCoder *c = s->ccp;
     VP56Model *model = s->modelp;
@@ -448,6 +449,11 @@ static void vp6_parse_coeff(VP56Context *s)
     int coeff, sign, coeff_idx;
     int b, i, cg, idx, ctx;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
+
+    if (c->end >= c->buffer && c->bits >= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "End of AC stream reached in vp6_parse_coeff\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     for (b=0; b<6; b++) {
         int ct = 1;    /* code type */
@@ -512,6 +518,7 @@ static void vp6_parse_coeff(VP56Context *s)
         s->left_block[ff_vp56_b6to4[b]].not_null_dc =
         s->above_blocks[s->above_block_idx[b]].not_null_dc = !!s->block_coeff[b][0];
     }
+    return 0;
 }
 
 static int vp6_block_variance(uint8_t *src, int stride)

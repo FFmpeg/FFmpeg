@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-01-24 - xxxxxxx - lavu 55.45.100 - channel_layout.h
+  Add av_get_extended_channel_layout()
+
 2017-01-22 - xxxxxxx - lavu 55.44.100 - lfg.h
   Add av_lfg_init_from_data().
 

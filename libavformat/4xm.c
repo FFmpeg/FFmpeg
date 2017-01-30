@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -153,8 +154,10 @@ static int parse_strk(AVFormatContext *s,
     fourxm->tracks[track].audio_pts   = 0;
 
     if (fourxm->tracks[track].channels    <= 0 ||
+        fourxm->tracks[track].channels     > FF_SANE_NB_CHANNELS ||
         fourxm->tracks[track].sample_rate <= 0 ||
-        fourxm->tracks[track].bits        <= 0) {
+        fourxm->tracks[track].bits        <= 0 ||
+        fourxm->tracks[track].bits         > INT_MAX / FF_SANE_NB_CHANNELS) {
         av_log(s, AV_LOG_ERROR, "audio header invalid\n");
         return AVERROR_INVALIDDATA;
     }

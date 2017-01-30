@@ -161,14 +161,13 @@ static inline void ff_framequeue_update_peeked(FFFrameQueue *fq, size_t idx)
 }
 
 /**
- * Update the sample count in the queue.
+ * Skip samples from the first frame in the queue.
  *
  * This function must be used when the first frame was accessed using
- * ff_framequeue_peek() and samples were removed from it.
+ * ff_framequeue_peek() and samples were consumed from it.
+ * It adapts the data pointers and timestamps of the head frame to account
+ * for the skipped samples.
  */
-static inline void ff_framequeue_skip_samples(FFFrameQueue *fq, size_t n)
-{
-    fq->total_samples_tail += n;
-}
+void ff_framequeue_skip_samples(FFFrameQueue *fq, size_t samples, AVRational time_base);
 
 #endif /* AVFILTER_FRAMEQUEUE_H */

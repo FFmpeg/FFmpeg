@@ -285,7 +285,7 @@ int ff_h264_slice_context_init(H264Context *h, H264SliceContext *sl)
                           mb_array_size * sizeof(uint8_t), fail);
 
         FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer,
-                         h->mb_height * h->mb_stride, fail);
+                         h->mb_height * h->mb_stride * (4*sizeof(int) + 1), fail);
 
         FF_ALLOCZ_OR_GOTO(h->avctx, sl->dc_val_base,
                           yc_size * sizeof(int16_t), fail);
@@ -602,14 +602,13 @@ static void debug_green_metadata(const H264SEIGreenMetaData *gm, void *logctx)
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
-    unsigned context_count = 0;
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int idr_cleared=0;
     int i, ret = 0;
 
+    h->has_slice = 0;
     h->nal_unit_type= 0;
 
-    h->max_contexts = h->nb_slice_ctx;
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
         if (!h->first_field)
@@ -639,14 +638,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     for (i = 0; i < h->pkt.nb_nals; i++) {
         H2645NAL *nal = &h->pkt.nals[i];
-        H264SliceContext *sl = &h->slice_ctx[context_count];
-        int err;
+        int max_slice_ctx, err;
 
         if (avctx->skip_frame >= AVDISCARD_NONREF &&
             nal->ref_idc == 0 && nal->type != H264_NAL_SEI)
             continue;
 
-again:
         // FIXME these should stop being context-global variables
         h->nal_ref_idc   = nal->ref_idc;
         h->nal_unit_type = nal->type;
@@ -671,13 +668,13 @@ again:
             idr_cleared = 1;
             h->has_recovery_point = 1;
         case H264_NAL_SLICE:
-            sl->gb = nal->gb;
+            h->has_slice = 1;
 
-            if ((err = ff_h264_decode_slice_header(h, sl, nal)))
+            if ((err = ff_h264_queue_decode_slice(h, nal))) {
+                H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
+                sl->ref_count[0] = sl->ref_count[1] = 0;
                 break;
-
-            if (sl->redundant_pic_count > 0)
-                break;
+            }
 
             if (h->current_slice == 1) {
                 if (avctx->active_thread_type & FF_THREAD_FRAME && !h->avctx->hwaccel &&
@@ -696,14 +693,14 @@ again:
 #endif
             }
 
-            if (avctx->hwaccel) {
-                ret = avctx->hwaccel->decode_slice(avctx,
-                                                   nal->raw_data,
-                                                   nal->raw_size);
-                if (ret < 0)
-                    goto end;
+            max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
+            if (h->nb_slice_ctx_queued == max_slice_ctx) {
+                if (h->avctx->hwaccel) {
+                    ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
+                    h->nb_slice_ctx_queued = 0;
+                } else
 #if FF_API_CAP_VDPAU
-            } else if (CONFIG_H264_VDPAU_DECODER &&
+            if (CONFIG_H264_VDPAU_DECODER &&
                        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
                 ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
                                         start_code,
@@ -711,9 +708,13 @@ again:
                 ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
                                         nal->raw_data,
                                         nal->raw_size);
-#endif
+                ret = 0;
             } else
-                context_count++;
+#endif
+                    ret = ff_h264_execute_decode_slices(h);
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                    goto end;
+            }
             break;
         case H264_NAL_DPA:
         case H264_NAL_DPB:
@@ -763,34 +764,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    nal->type, nal->size_bits);
         }
 
-        if (context_count == h->max_contexts) {
-            ret = ff_h264_execute_decode_slices(h, context_count);
-            if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-                goto end;
-            context_count = 0;
+        if (err < 0) {
+            av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
         }
+    }
 
-        if (err < 0 || err == SLICE_SKIPED) {
-            if (err < 0)
-                av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
-            sl->ref_count[0] = sl->ref_count[1] = sl->list_count = 0;
-        } else if (err == SLICE_SINGLETHREAD) {
-            if (context_count > 0) {
-                ret = ff_h264_execute_decode_slices(h, context_count);
-                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-                    goto end;
-                context_count = 0;
-            }
-            /* Slice could not be decoded in parallel mode, restart. */
-            sl               = &h->slice_ctx[0];
-            goto again;
-        }
-    }
-    if (context_count) {
-        ret = ff_h264_execute_decode_slices(h, context_count);
-        if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
-            goto end;
-    }
+    ret = ff_h264_execute_decode_slices(h);
+    if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+        goto end;
 
     ret = 0;
 end:
@@ -839,7 +820,7 @@ end:
     }
 #endif /* CONFIG_ERROR_RESILIENCE */
     /* clean up */
-    if (h->cur_pic_ptr && !h->droppable) {
+    if (h->cur_pic_ptr && !h->droppable && h->has_slice) {
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
     }
@@ -1011,6 +992,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
 
     h->flags = avctx->flags;
     h->setup_finished = 0;
+    h->nb_slice_ctx_queued = 0;
 
     if (h->backup_width != -1) {
         avctx->width    = h->backup_width;
@@ -1055,7 +1037,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         return send_next_delayed_frame(h, pict, got_frame, buf_index);
     }
 
-    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && (!h->cur_pic_ptr || !h->has_slice)) {
         if (avctx->skip_frame >= AVDISCARD_NONREF ||
             buf_size >= 4 && !memcmp("Q264", buf, 4))
             return buf_size;

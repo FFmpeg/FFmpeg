@@ -155,7 +155,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2
     } type;
     double value; // is sign in other types
     union {
@@ -306,6 +306,7 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
                 case e_hypot:return e->value * hypot(d, d2);
+                case e_atan2:return e->value * atan2(d, d2);
                 case e_bitand: return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d & (long int)d2);
                 case e_bitor:  return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d | (long int)d2);
             }
@@ -452,6 +453,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "bitor" )) d->type = e_bitor;
     else if (strmatch(next, "between"))d->type = e_between;
     else if (strmatch(next, "clip"  )) d->type = e_clip;
+    else if (strmatch(next, "atan2" )) d->type = e_atan2;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {

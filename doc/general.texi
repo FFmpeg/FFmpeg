@@ -387,6 +387,7 @@ library:
     @tab Audio format used on the PS3.
 @item Mirillis FIC video        @tab   @tab X
     @tab No cursor rendering.
+@item MIDI Sample Dump Standard @tab   @tab X
 @item MIME multipart JPEG       @tab X @tab
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
@@ -482,6 +483,7 @@ library:
     @tab Output is performed by publishing stream to RTMP server
 @item RTP                       @tab X @tab X
 @item RTSP                      @tab X @tab X
+@item Sample Dump eXchange      @tab   @tab X
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
 @item SDP                       @tab   @tab X

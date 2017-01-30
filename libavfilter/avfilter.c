@@ -1235,13 +1235,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
         frame = ff_framequeue_peek(&link->fifo, 0);
         av_samples_copy(buf->extended_data, frame->extended_data, p, 0, n,
                         link->channels, link->format);
-        frame->nb_samples -= n;
-        av_samples_copy(frame->extended_data, frame->extended_data, 0, n,
-                        frame->nb_samples, link->channels, link->format);
-        if (frame->pts != AV_NOPTS_VALUE)
-            frame->pts += av_rescale_q(n, av_make_q(1, link->sample_rate), link->time_base);
-        ff_framequeue_update_peeked(&link->fifo, 0);
-        ff_framequeue_skip_samples(&link->fifo, n);
+        ff_framequeue_skip_samples(&link->fifo, n, link->time_base);
     }
 
     *rframe = buf;

@@ -1497,7 +1497,9 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
         dst  += dststride;
         src2 += MAX_PB_SIZE;
     }
-}// line zero
+}
+
+// line zero
 #define P3 pix[-4 * xstride]
 #define P2 pix[-3 * xstride]
 #define P1 pix[-2 * xstride]

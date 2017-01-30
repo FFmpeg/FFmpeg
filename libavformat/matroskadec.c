@@ -1913,8 +1913,6 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
 
     switch (track->video.projection.type) {
     case MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR:
-        if (track->video.projection.private.size < 4)
-            return AVERROR_INVALIDDATA;
         projection = AV_SPHERICAL_EQUIRECTANGULAR;
         break;
     case MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP:

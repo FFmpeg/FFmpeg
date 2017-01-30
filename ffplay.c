@@ -158,8 +158,6 @@ typedef struct Frame {
     double pts;           /* presentation timestamp for the frame */
     double duration;      /* estimated duration of the frame */
     int64_t pos;          /* byte position of the frame in the input file */
-    SDL_Texture *bmp;
-    int allocated;
     int width;
     int height;
     int format;
@@ -274,6 +272,7 @@ typedef struct VideoState {
     double last_vis_time;
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
+    SDL_Texture *vid_texture;
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -357,7 +356,6 @@ static int64_t audio_callback_time;
 
 static AVPacket flush_pkt;
 
-#define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Window *window;
@@ -391,8 +389,6 @@ int64_t get_valid_channel_layout(int64_t channel_layout, int channels)
     else
         return 0;
 }
-
-static void free_picture(Frame *vp);
 
 static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
@@ -677,7 +673,6 @@ static void frame_queue_destory(FrameQueue *f)
         Frame *vp = &f->queue[i];
         frame_queue_unref_item(vp);
         av_frame_free(&vp->frame);
-        free_picture(vp);
     }
     SDL_DestroyMutex(f->mutex);
     SDL_DestroyCond(f->cond);
@@ -798,14 +793,6 @@ static inline void fill_rectangle(int x, int y, int w, int h)
         SDL_RenderFillRect(renderer, &rect);
 }
 
-static void free_picture(Frame *vp)
-{
-     if (vp->bmp) {
-         SDL_DestroyTexture(vp->bmp);
-         vp->bmp = NULL;
-     }
-}
-
 static int realloc_texture(SDL_Texture **texture, Uint32 new_format, int new_width, int new_height, SDL_BlendMode blendmode, int init_texture)
 {
     Uint32 format;
@@ -907,79 +894,80 @@ static void video_image_display(VideoState *is)
     SDL_Rect rect;
 
     vp = frame_queue_peek_last(&is->pictq);
-    if (vp->bmp) {
-        if (is->subtitle_st) {
-            if (frame_queue_nb_remaining(&is->subpq) > 0) {
-                sp = frame_queue_peek(&is->subpq);
+    if (is->subtitle_st) {
+        if (frame_queue_nb_remaining(&is->subpq) > 0) {
+            sp = frame_queue_peek(&is->subpq);
 
-                if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
-                    if (!sp->uploaded) {
-                        uint8_t* pixels[4];
-                        int pitch[4];
-                        int i;
-                        if (!sp->width || !sp->height) {
-                            sp->width = vp->width;
-                            sp->height = vp->height;
-                        }
-                        if (realloc_texture(&is->sub_texture, SDL_PIXELFORMAT_ARGB8888, sp->width, sp->height, SDL_BLENDMODE_BLEND, 1) < 0)
-                            return;
-
-                        for (i = 0; i < sp->sub.num_rects; i++) {
-                            AVSubtitleRect *sub_rect = sp->sub.rects[i];
-
-                            sub_rect->x = av_clip(sub_rect->x, 0, sp->width );
-                            sub_rect->y = av_clip(sub_rect->y, 0, sp->height);
-                            sub_rect->w = av_clip(sub_rect->w, 0, sp->width  - sub_rect->x);
-                            sub_rect->h = av_clip(sub_rect->h, 0, sp->height - sub_rect->y);
-
-                            is->sub_convert_ctx = sws_getCachedContext(is->sub_convert_ctx,
-                                sub_rect->w, sub_rect->h, AV_PIX_FMT_PAL8,
-                                sub_rect->w, sub_rect->h, AV_PIX_FMT_BGRA,
-                                0, NULL, NULL, NULL);
-                            if (!is->sub_convert_ctx) {
-                                av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
-                                return;
-                            }
-                            if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)pixels, pitch)) {
-                                sws_scale(is->sub_convert_ctx, (const uint8_t * const *)sub_rect->data, sub_rect->linesize,
-                                          0, sub_rect->h, pixels, pitch);
-                                SDL_UnlockTexture(is->sub_texture);
-                            }
-                        }
-                        sp->uploaded = 1;
+            if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
+                if (!sp->uploaded) {
+                    uint8_t* pixels[4];
+                    int pitch[4];
+                    int i;
+                    if (!sp->width || !sp->height) {
+                        sp->width = vp->width;
+                        sp->height = vp->height;
                     }
-                } else
-                    sp = NULL;
-            }
+                    if (realloc_texture(&is->sub_texture, SDL_PIXELFORMAT_ARGB8888, sp->width, sp->height, SDL_BLENDMODE_BLEND, 1) < 0)
+                        return;
+
+                    for (i = 0; i < sp->sub.num_rects; i++) {
+                        AVSubtitleRect *sub_rect = sp->sub.rects[i];
+
+                        sub_rect->x = av_clip(sub_rect->x, 0, sp->width );
+                        sub_rect->y = av_clip(sub_rect->y, 0, sp->height);
+                        sub_rect->w = av_clip(sub_rect->w, 0, sp->width  - sub_rect->x);
+                        sub_rect->h = av_clip(sub_rect->h, 0, sp->height - sub_rect->y);
+
+                        is->sub_convert_ctx = sws_getCachedContext(is->sub_convert_ctx,
+                            sub_rect->w, sub_rect->h, AV_PIX_FMT_PAL8,
+                            sub_rect->w, sub_rect->h, AV_PIX_FMT_BGRA,
+                            0, NULL, NULL, NULL);
+                        if (!is->sub_convert_ctx) {
+                            av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
+                            return;
+                        }
+                        if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)pixels, pitch)) {
+                            sws_scale(is->sub_convert_ctx, (const uint8_t * const *)sub_rect->data, sub_rect->linesize,
+                                      0, sub_rect->h, pixels, pitch);
+                            SDL_UnlockTexture(is->sub_texture);
+                        }
+                    }
+                    sp->uploaded = 1;
+                }
+            } else
+                sp = NULL;
         }
+    }
 
-        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
+    calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
 
-        if (!vp->uploaded) {
-            if (upload_texture(vp->bmp, vp->frame, &is->img_convert_ctx) < 0)
-                return;
-            vp->uploaded = 1;
-            vp->flip_v = vp->frame->linesize[0] < 0;
-        }
+    if (!vp->uploaded) {
+        int sdl_pix_fmt = vp->frame->format == AV_PIX_FMT_YUV420P ? SDL_PIXELFORMAT_YV12 : SDL_PIXELFORMAT_ARGB8888;
+        if (realloc_texture(&is->vid_texture, sdl_pix_fmt, vp->frame->width, vp->frame->height, SDL_BLENDMODE_NONE, 0) < 0)
+            return;
+        if (upload_texture(is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
+            return;
+        vp->uploaded = 1;
+        vp->flip_v = vp->frame->linesize[0] < 0;
+    }
 
-        SDL_RenderCopyEx(renderer, vp->bmp, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
-        if (sp) {
+    SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
+    if (sp) {
 #if USE_ONEPASS_SUBTITLE_RENDER
-            SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
+        SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
 #else
-            int i;
-            double xratio = (double)rect.w / (double)sp->width;
-            double yratio = (double)rect.h / (double)sp->height;
-            for (i = 0; i < sp->sub.num_rects; i++) {
-                SDL_Rect *sub_rect = (SDL_Rect*)sp->sub.rects[i];
-                SDL_Rect target = {.x = rect.x + sub_rect->x * xratio,
-                                   .y = rect.y + sub_rect->y * yratio,
-                                   .w = sub_rect->w * xratio,
-                                   .h = sub_rect->h * yratio};
-                SDL_RenderCopy(renderer, is->sub_texture, sub_rect, &target);
-            }
-#endif
+        int i;
+        double xratio = (double)rect.w / (double)sp->width;
+        double yratio = (double)rect.h / (double)sp->height;
+        for (i = 0; i < sp->sub.num_rects; i++) {
+            SDL_Rect *sub_rect = (SDL_Rect*)sp->sub.rects[i];
+            SDL_Rect target = {.x = rect.x + sub_rect->x * xratio,
+                               .y = rect.y + sub_rect->y * yratio,
+                               .w = sub_rect->w * xratio,
+                               .h = sub_rect->h * yratio};
+            SDL_RenderCopy(renderer, is->sub_texture, sub_rect, &target);
         }
+#endif
     }
 }
 
@@ -1217,6 +1205,8 @@ static void stream_close(VideoState *is)
     av_free(is->filename);
     if (is->vis_texture)
         SDL_DestroyTexture(is->vis_texture);
+    if (is->vid_texture)
+        SDL_DestroyTexture(is->vid_texture);
     if (is->sub_texture)
         SDL_DestroyTexture(is->sub_texture);
     av_free(is);
@@ -1257,12 +1247,9 @@ static void set_default_window_size(int width, int height, AVRational sar)
     default_height = rect.h;
 }
 
-static int video_open(VideoState *is, Frame *vp)
+static int video_open(VideoState *is)
 {
     int w,h;
-
-    if (vp && vp->width)
-        set_default_window_size(vp->width, vp->height, vp->sar);
 
     if (screen_width) {
         w = screen_width;
@@ -1311,7 +1298,7 @@ static int video_open(VideoState *is, Frame *vp)
 static void video_display(VideoState *is)
 {
     if (!window)
-        video_open(is, NULL);
+        video_open(is);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -1678,38 +1665,6 @@ display:
     }
 }
 
-/* allocate a picture (needs to do that in main thread to avoid
-   potential locking problems */
-static void alloc_picture(VideoState *is)
-{
-    Frame *vp;
-    int sdl_format;
-
-    vp = &is->pictq.queue[is->pictq.windex];
-
-    video_open(is, vp);
-
-    if (vp->format == AV_PIX_FMT_YUV420P)
-        sdl_format = SDL_PIXELFORMAT_YV12;
-    else
-        sdl_format = SDL_PIXELFORMAT_ARGB8888;
-
-    if (realloc_texture(&vp->bmp, sdl_format, vp->width, vp->height, SDL_BLENDMODE_NONE, 0) < 0) {
-        /* SDL allocates a buffer smaller than requested if the video
-         * overlay hardware is unable to support the requested size. */
-        av_log(NULL, AV_LOG_FATAL,
-               "Error: the video system does not support an image\n"
-                        "size of %dx%d pixels. Try using -lowres or -vf \"scale=w:h\"\n"
-                        "to reduce the image size.\n", vp->width, vp->height );
-        do_exit(is);
-    }
-
-    SDL_LockMutex(is->pictq.mutex);
-    vp->allocated = 1;
-    SDL_CondSignal(is->pictq.cond);
-    SDL_UnlockMutex(is->pictq.mutex);
-}
-
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double duration, int64_t pos, int serial)
 {
     Frame *vp;
@@ -1725,51 +1680,19 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
     vp->sar = src_frame->sample_aspect_ratio;
     vp->uploaded = 0;
 
-    /* alloc or resize hardware picture buffer */
-    if (!vp->bmp || !vp->allocated ||
-        vp->width  != src_frame->width ||
-        vp->height != src_frame->height ||
-        vp->format != src_frame->format) {
-        SDL_Event event;
+    vp->width = src_frame->width;
+    vp->height = src_frame->height;
+    vp->format = src_frame->format;
 
-        vp->allocated = 0;
-        vp->width = src_frame->width;
-        vp->height = src_frame->height;
-        vp->format = src_frame->format;
+    vp->pts = pts;
+    vp->duration = duration;
+    vp->pos = pos;
+    vp->serial = serial;
 
-        /* the allocation must be done in the main thread to avoid
-           locking problems. */
-        event.type = FF_ALLOC_EVENT;
-        event.user.data1 = is;
-        SDL_PushEvent(&event);
+    set_default_window_size(vp->width, vp->height, vp->sar);
 
-        /* wait until the picture is allocated */
-        SDL_LockMutex(is->pictq.mutex);
-        while (!vp->allocated && !is->videoq.abort_request) {
-            SDL_CondWait(is->pictq.cond, is->pictq.mutex);
-        }
-        /* if the queue is aborted, we have to pop the pending ALLOC event or wait for the allocation to complete */
-        if (is->videoq.abort_request && SDL_PeepEvents(&event, 1, SDL_GETEVENT, FF_ALLOC_EVENT, FF_ALLOC_EVENT) != 1) {
-            while (!vp->allocated && !is->abort_request) {
-                SDL_CondWait(is->pictq.cond, is->pictq.mutex);
-            }
-        }
-        SDL_UnlockMutex(is->pictq.mutex);
-
-        if (is->videoq.abort_request)
-            return -1;
-    }
-
-    /* if the frame is not skipped, then display it */
-    if (vp->bmp) {
-        vp->pts = pts;
-        vp->duration = duration;
-        vp->pos = pos;
-        vp->serial = serial;
-
-        av_frame_move_ref(vp->frame, src_frame);
-        frame_queue_push(&is->pictq);
-    }
+    av_frame_move_ref(vp->frame, src_frame);
+    frame_queue_push(&is->pictq);
     return 0;
 }
 
@@ -3460,9 +3383,6 @@ static void event_loop(VideoState *cur_stream)
         case SDL_QUIT:
         case FF_QUIT_EVENT:
             do_exit(cur_stream);
-            break;
-        case FF_ALLOC_EVENT:
-            alloc_picture(event.user.data1);
             break;
         default:
             break;

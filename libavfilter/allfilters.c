@@ -262,6 +262,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(QP,             qp,             vf);
     REGISTER_FILTER(RANDOM,         random,         vf);
+    REGISTER_FILTER(READEIA608,     readeia608,     vf);
     REGISTER_FILTER(READVITC,       readvitc,       vf);
     REGISTER_FILTER(REALTIME,       realtime,       vf);
     REGISTER_FILTER(REMAP,          remap,          vf);
@@ -347,6 +348,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(NULLSINK,       nullsink,       vsink);
 
     /* multimedia filters */
+    REGISTER_FILTER(ABITSCOPE,      abitscope,      avf);
     REGISTER_FILTER(ADRAWGRAPH,     adrawgraph,     avf);
     REGISTER_FILTER(AHISTOGRAM,     ahistogram,     avf);
     REGISTER_FILTER(APHASEMETER,    aphasemeter,    avf);

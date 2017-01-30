@@ -4,7 +4,7 @@
 FATE_MATROSKA-$(call DEMMUX, MATROSKA, MATROSKA) += fate-matroska-remux
 fate-matroska-remux: CMD = md5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-2pass-akiyo.webm -color_trc 4 -c:v copy -fflags +bitexact -strict -2 -f matroska
 fate-matroska-remux: CMP = oneline
-fate-matroska-remux: REF = 9b8398b42804ba12c39d2f47299a0996
+fate-matroska-remux: REF = 1ed49a4f2b6790357fac268938357353
 
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
