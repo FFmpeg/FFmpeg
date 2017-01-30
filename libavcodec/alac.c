@@ -76,6 +76,7 @@ typedef struct ALACContext {
     uint8_t  rice_history_mult;
     uint8_t  rice_initial_history;
     uint8_t  rice_limit;
+    int      sample_rate;
 
     int extra_bits;     /**< number of extra bits beyond 16-bit */
     int nb_samples;     /**< number of samples in the current frame */
@@ -538,7 +539,7 @@ static int alac_set_info(ALACContext *alac)
     bytestream2_get_be16u(&gb); // maxRun
     bytestream2_get_be32u(&gb); // max coded frame size
     bytestream2_get_be32u(&gb); // average bitrate
-    bytestream2_get_be32u(&gb); // samplerate
+    alac->sample_rate          = bytestream2_get_be32u(&gb);
 
     return 0;
 }
@@ -570,6 +571,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
              return AVERROR_PATCHWELCOME;
     }
     avctx->bits_per_raw_sample = alac->sample_size;
+    avctx->sample_rate         = alac->sample_rate;
 
     if (alac->channels < 1) {
         av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
