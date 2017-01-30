@@ -10201,7 +10201,10 @@ force YUV422 output
 force YUV444 output
 
 @item rgb
-force RGB output
+force packed RGB output
+
+@item gbrp
+force planar RGB output
 @end table
 
 Default value is @samp{yuv420}.
