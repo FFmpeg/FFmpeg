@@ -162,6 +162,8 @@ typedef struct OptionsContext {
     int        nb_sample_fmts;
     SpecifierOpt *qscale;
     int        nb_qscale;
+    SpecifierOpt *bitrates;
+    int        nb_bitrates;
     SpecifierOpt *forced_key_frames;
     int        nb_forced_key_frames;
     SpecifierOpt *force_fps;
@@ -381,6 +383,9 @@ typedef struct OutputStream {
     int forced_kf_count;
     int forced_kf_index;
     char *forced_keyframes;
+
+    // the bitrate to send to the muxer for streamcopy
+    int bitrate_override;
 
     char *logfile_prefix;
     FILE *logfile;

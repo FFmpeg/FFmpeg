@@ -354,6 +354,13 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
+@item -b[:@var{stream_specifier}] @var{bitrate} (@emph{output,per-stream})
+Set the stream bitrate in bits per second. When transcoding, this tells the
+encoder to use the specified bitrate for the encoded stream.
+
+For streamcopy, this provides a hint to the muxer about the bitrate of the input
+stream.
+
 @item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
 @var{filter_graph} is a description of the filter graph to apply to
 the stream. Use @code{-filters} to show all the available filters

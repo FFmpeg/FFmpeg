@@ -952,6 +952,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     const char *bsfs = NULL;
     char *next, *codec_tag = NULL;
     double qscale = -1;
+    int bitrate = 0;
 
     if (!st) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
@@ -1089,6 +1090,14 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (qscale >= 0) {
         ost->enc_ctx->flags |= AV_CODEC_FLAG_QSCALE;
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
+    }
+
+    MATCH_PER_STREAM_OPT(bitrates, i, bitrate, oc, st);
+    if (bitrate > 0) {
+        if (ost->stream_copy)
+            ost->bitrate_override = bitrate;
+        else
+            ost->enc_ctx->bit_rate = bitrate;
     }
 
     ost->max_muxing_queue_size = 128;
@@ -2570,6 +2579,8 @@ const OptionDef options[] = {
     { "qscale",         HAS_ARG | OPT_EXPERT | OPT_DOUBLE |
                         OPT_SPEC | OPT_OUTPUT,                       { .off = OFFSET(qscale) },
         "use fixed quality scale (VBR)", "q" },
+    { "b",              HAS_ARG | OPT_INT | OPT_SPEC | OPT_OUTPUT,    { .off = OFFSET(bitrates) },
+        "set stream bitrate in bits/second", "bitrate" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filters) },
         "set stream filterchain", "filter_list" },
     { "filter_script",  HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filter_scripts) },

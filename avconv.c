@@ -1852,6 +1852,9 @@ static int init_output_stream_streamcopy(OutputStream *ost)
 
     ost->st->time_base = ist->st->time_base;
 
+    if (ost->bitrate_override)
+        par_dst->bit_rate = ost->bitrate_override;
+
     if (ist->st->nb_side_data) {
         ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
                                               sizeof(*ist->st->side_data));
