@@ -37,7 +37,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "bytestream.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "flac.h"
 #include "flacdata.h"
 #include "flacdsp.h"

@@ -26,7 +26,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "idctdsp.h"
 #include "thread.h"
 #include "unary_legacy.h"

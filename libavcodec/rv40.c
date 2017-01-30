@@ -27,9 +27,9 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "golomb_legacy.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "golomb.h"
 
 #include "rv34.h"
 #include "rv40vlc2.h"

@@ -30,7 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "unary_legacy.h"
 #include "ralfdata.h"

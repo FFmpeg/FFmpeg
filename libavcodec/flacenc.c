@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "lpc.h"
 #include "flac.h"

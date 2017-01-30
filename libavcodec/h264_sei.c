@@ -27,7 +27,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "h264_ps.h"
 #include "h264_sei.h"
 #include "internal.h"

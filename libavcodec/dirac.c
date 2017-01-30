@@ -29,7 +29,7 @@
 
 #include "avcodec.h"
 #include "dirac.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "mpeg12data.h"
 

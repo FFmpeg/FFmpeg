@@ -35,7 +35,7 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "cabac_functions.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "hevc.h"
 #include "hevc_data.h"
 #include "hevcdec.h"

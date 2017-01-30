@@ -25,7 +25,7 @@
 
 #include "libavutil/imgutils.h"
 
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "hevc_data.h"
 #include "hevc_ps.h"
 

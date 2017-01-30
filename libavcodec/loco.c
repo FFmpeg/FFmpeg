@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "mathops.h"
 

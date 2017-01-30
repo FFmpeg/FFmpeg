@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 
 #define MAX_CHANNELS 8

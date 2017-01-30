@@ -32,7 +32,7 @@
 #include "h264dec.h"
 #include "h264_mvpred.h"
 #include "h264data.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "mpegutils.h"
 
 #include <assert.h>

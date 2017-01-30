@@ -43,12 +43,13 @@
 #include <inttypes.h>
 
 #include "libavutil/attributes.h"
+
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegutils.h"
 #include "h264dec.h"
 #include "h264data.h"
-#include "golomb.h"
 #include "hpeldsp.h"
 #include "mathops.h"
 #include "rectangle.h"

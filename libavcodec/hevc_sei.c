@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "hevcdec.h"
 
 enum HEVC_SEI_TYPE {

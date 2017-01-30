@@ -21,7 +21,7 @@
 
 #include "libavutil/mem.h"
 
-#include "libavcodec/get_bits.h"
+#include "libavcodec/bitstream.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/golomb.h"
 
@@ -33,7 +33,7 @@ int main(void)
     int i, ret = 0;
     uint8_t *temp;
     PutBitContext pb;
-    GetBitContext gb;
+    BitstreamContext bc;
 
     temp = av_malloc(SIZE);
     if (!temp)
@@ -44,11 +44,11 @@ int main(void)
         set_ue_golomb(&pb, i);
     flush_put_bits(&pb);
 
-    init_get_bits(&gb, temp, 8 * SIZE);
+    bitstream_init8(&bc, temp, SIZE);
     for (i = 0; i < COUNT; i++) {
-        int j, s = show_bits(&gb, 25);
+        int j, s = bitstream_peek(&bc, 25);
 
-        j = get_ue_golomb(&gb);
+        j = get_ue_golomb(&bc);
         if (j != i) {
             fprintf(stderr, "get_ue_golomb: expected %d, got %d. bits: %7x\n",
                     i, j, s);
@@ -62,11 +62,11 @@ int main(void)
         set_ue_golomb(&pb, EXTEND(i));
     flush_put_bits(&pb);
 
-    init_get_bits(&gb, temp, 8 * SIZE);
+    bitstream_init8(&bc, temp, SIZE);
     for (i = 0; i < COUNT; i++) {
-        int j, s = show_bits_long(&gb, 32);
+        int j, s = bitstream_peek(&bc, 32);
 
-        j = get_ue_golomb_long(&gb);
+        j = get_ue_golomb_long(&bc);
         if (j != EXTEND(i)) {
             fprintf(stderr, "get_ue_golomb_long: expected %d, got %d. "
                     "bits: %8x\n", EXTEND(i), j, s);
@@ -79,11 +79,11 @@ int main(void)
         set_se_golomb(&pb, i - COUNT / 2);
     flush_put_bits(&pb);
 
-    init_get_bits(&gb, temp, 8 * SIZE);
+    bitstream_init8(&bc, temp, SIZE);
     for (i = 0; i < COUNT; i++) {
-        int j, s = show_bits(&gb, 25);
+        int j, s = bitstream_peek(&bc, 25);
 
-        j = get_se_golomb(&gb);
+        j = get_se_golomb(&bc);
         if (j != i - COUNT / 2) {
             fprintf(stderr, "get_se_golomb: expected %d, got %d. bits: %7x\n",
                     i - COUNT / 2, j, s);

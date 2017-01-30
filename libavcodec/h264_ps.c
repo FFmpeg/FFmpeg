@@ -28,12 +28,13 @@
 #include <inttypes.h>
 
 #include "libavutil/imgutils.h"
+
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "mathops.h"
 #include "avcodec.h"
 #include "h264data.h"
 #include "h264_ps.h"
-#include "golomb.h"
 
 #define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 #define MIN_LOG2_MAX_FRAME_NUM    4

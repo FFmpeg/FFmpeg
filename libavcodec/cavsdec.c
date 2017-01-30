@@ -27,7 +27,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "golomb.h"
+#include "golomb_legacy.h"
 #include "cavs.h"
 #include "internal.h"
 #include "mpeg12data.h"

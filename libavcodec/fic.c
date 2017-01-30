@@ -22,10 +22,11 @@
  */
 
 #include "libavutil/common.h"
+
 #include "avcodec.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "get_bits.h"
-#include "golomb.h"
 
 typedef struct FICThreadContext {
     DECLARE_ALIGNED(16, int16_t, block)[64];

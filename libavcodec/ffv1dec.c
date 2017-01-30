@@ -31,12 +31,13 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/timer.h"
+
 #include "avcodec.h"
+#include "golomb_legacy.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "rangecoder.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
 
