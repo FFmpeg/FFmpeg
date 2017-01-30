@@ -87,7 +87,7 @@ static int xwma_read_header(AVFormatContext *s)
      */
     if (st->codecpar->codec_id != AV_CODEC_ID_WMAV2 &&
         st->codecpar->codec_id != AV_CODEC_ID_WMAPRO) {
-        avpriv_request_sample(s, "Unexpected codec (tag 0x04%x; id %d)",
+        avpriv_request_sample(s, "Unexpected codec (tag 0x%04x; id %d)",
                               st->codecpar->codec_tag, st->codecpar->codec_id);
     } else {
         /* In all xWMA files I have seen, there is no extradata. But the WMA
