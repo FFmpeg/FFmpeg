@@ -48,6 +48,10 @@
 #include "atrac.h"
 #include "atrac3data.h"
 
+#define MIN_CHANNELS    1
+#define MAX_CHANNELS    8
+#define MAX_JS_PAIRS    8 / 2
+
 #define JOINT_STEREO    0x12
 #define SINGLE          0x2
 
@@ -90,10 +94,10 @@ typedef struct ATRAC3Context {
     //@}
     //@{
     /** joint-stereo related variables */
-    int matrix_coeff_index_prev[4];
-    int matrix_coeff_index_now[4];
-    int matrix_coeff_index_next[4];
-    int weighting_delay[6];
+    int matrix_coeff_index_prev[MAX_JS_PAIRS][4];
+    int matrix_coeff_index_now[MAX_JS_PAIRS][4];
+    int matrix_coeff_index_next[MAX_JS_PAIRS][4];
+    int weighting_delay[MAX_JS_PAIRS][6];
     //@}
     //@{
     /** data buffers */
@@ -577,7 +581,7 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
     GainBlock *gain1 = &snd->gain_block[    snd->gc_blk_switch];
     GainBlock *gain2 = &snd->gain_block[1 - snd->gc_blk_switch];
 
-    if (coding_mode == JOINT_STEREO && channel_num == 1) {
+    if (coding_mode == JOINT_STEREO && (channel_num % 2) == 1) {
         if (get_bits(gb, 2) != 3) {
             av_log(NULL,AV_LOG_ERROR,"JS mono Sound Unit id != 3.\n");
             return AVERROR_INVALIDDATA;
@@ -640,67 +644,83 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
                         float **out_samples)
 {
     ATRAC3Context *q = avctx->priv_data;
-    int ret, i;
+    int ret, i, ch;
     uint8_t *ptr1;
 
     if (q->coding_mode == JOINT_STEREO) {
         /* channel coupling mode */
-        /* decode Sound Unit 1 */
-        init_get_bits(&q->gb, databuf, avctx->block_align * 8);
 
-        ret = decode_channel_sound_unit(q, &q->gb, q->units, out_samples[0], 0,
-                                        JOINT_STEREO);
-        if (ret != 0)
-            return ret;
+        /* Decode sound unit pairs (channels are expected to be even).
+         * Multichannel joint stereo interleaves pairs (6ch: 2ch + 2ch + 2ch) */
+        uint8_t *js_databuf;
+        int js_pair, js_block_align;
 
-        /* Framedata of the su2 in the joint-stereo mode is encoded in
-         * reverse byte order so we need to swap it first. */
-        if (databuf == q->decoded_bytes_buffer) {
-            uint8_t *ptr2 = q->decoded_bytes_buffer + avctx->block_align - 1;
-            ptr1          = q->decoded_bytes_buffer;
-            for (i = 0; i < avctx->block_align / 2; i++, ptr1++, ptr2--)
-                FFSWAP(uint8_t, *ptr1, *ptr2);
-        } else {
-            const uint8_t *ptr2 = databuf + avctx->block_align - 1;
-            for (i = 0; i < avctx->block_align; i++)
-                q->decoded_bytes_buffer[i] = *ptr2--;
+        js_block_align = (avctx->block_align / avctx->channels) * 2; /* block pair */
+
+        for (ch = 0; ch < avctx->channels; ch = ch + 2) {
+            js_pair = ch/2;
+            js_databuf = databuf + js_pair * js_block_align; /* align to current pair */
+
+            /* Set the bitstream reader at the start of first channel sound unit. */
+            init_get_bits(&q->gb,
+                          js_databuf, js_block_align * 8);
+
+            /* decode Sound Unit 1 */
+            ret = decode_channel_sound_unit(q, &q->gb, &q->units[ch],
+                                            out_samples[ch], ch, JOINT_STEREO);
+            if (ret != 0)
+                return ret;
+
+            /* Framedata of the su2 in the joint-stereo mode is encoded in
+             * reverse byte order so we need to swap it first. */
+            if (js_databuf == q->decoded_bytes_buffer) {
+                uint8_t *ptr2 = q->decoded_bytes_buffer + js_block_align - 1;
+                ptr1          = q->decoded_bytes_buffer;
+                for (i = 0; i < js_block_align / 2; i++, ptr1++, ptr2--)
+                    FFSWAP(uint8_t, *ptr1, *ptr2);
+            } else {
+                const uint8_t *ptr2 = js_databuf + js_block_align - 1;
+                for (i = 0; i < js_block_align; i++)
+                    q->decoded_bytes_buffer[i] = *ptr2--;
+            }
+
+            /* Skip the sync codes (0xF8). */
+            ptr1 = q->decoded_bytes_buffer;
+            for (i = 4; *ptr1 == 0xF8; i++, ptr1++) {
+                if (i >= js_block_align)
+                    return AVERROR_INVALIDDATA;
+            }
+
+
+            /* set the bitstream reader at the start of the second Sound Unit */
+            init_get_bits8(&q->gb,
+                           ptr1, q->decoded_bytes_buffer + js_block_align - ptr1);
+
+            /* Fill the Weighting coeffs delay buffer */
+            memmove(q->weighting_delay[js_pair], &q->weighting_delay[js_pair][2],
+                    4 * sizeof(*q->weighting_delay[js_pair]));
+            q->weighting_delay[js_pair][4] = get_bits1(&q->gb);
+            q->weighting_delay[js_pair][5] = get_bits(&q->gb, 3);
+
+            for (i = 0; i < 4; i++) {
+                q->matrix_coeff_index_prev[js_pair][i] = q->matrix_coeff_index_now[js_pair][i];
+                q->matrix_coeff_index_now[js_pair][i]  = q->matrix_coeff_index_next[js_pair][i];
+                q->matrix_coeff_index_next[js_pair][i] = get_bits(&q->gb, 2);
+            }
+
+            /* Decode Sound Unit 2. */
+            ret = decode_channel_sound_unit(q, &q->gb, &q->units[ch+1],
+                                            out_samples[ch+1], ch+1, JOINT_STEREO);
+            if (ret != 0)
+                return ret;
+
+            /* Reconstruct the channel coefficients. */
+            reverse_matrixing(out_samples[ch], out_samples[ch+1],
+                              q->matrix_coeff_index_prev[js_pair],
+                              q->matrix_coeff_index_now[js_pair]);
+
+            channel_weighting(out_samples[ch], out_samples[ch+1], q->weighting_delay[js_pair]);
         }
-
-        /* Skip the sync codes (0xF8). */
-        ptr1 = q->decoded_bytes_buffer;
-        for (i = 4; *ptr1 == 0xF8; i++, ptr1++) {
-            if (i >= avctx->block_align)
-                return AVERROR_INVALIDDATA;
-        }
-
-
-        /* set the bitstream reader at the start of the second Sound Unit*/
-        init_get_bits8(&q->gb, ptr1, q->decoded_bytes_buffer + avctx->block_align - ptr1);
-
-        /* Fill the Weighting coeffs delay buffer */
-        memmove(q->weighting_delay, &q->weighting_delay[2],
-                4 * sizeof(*q->weighting_delay));
-        q->weighting_delay[4] = get_bits1(&q->gb);
-        q->weighting_delay[5] = get_bits(&q->gb, 3);
-
-        for (i = 0; i < 4; i++) {
-            q->matrix_coeff_index_prev[i] = q->matrix_coeff_index_now[i];
-            q->matrix_coeff_index_now[i]  = q->matrix_coeff_index_next[i];
-            q->matrix_coeff_index_next[i] = get_bits(&q->gb, 2);
-        }
-
-        /* Decode Sound Unit 2. */
-        ret = decode_channel_sound_unit(q, &q->gb, &q->units[1],
-                                        out_samples[1], 1, JOINT_STEREO);
-        if (ret != 0)
-            return ret;
-
-        /* Reconstruct the channel coefficients. */
-        reverse_matrixing(out_samples[0], out_samples[1],
-                          q->matrix_coeff_index_prev,
-                          q->matrix_coeff_index_now);
-
-        channel_weighting(out_samples[0], out_samples[1], q->weighting_delay);
     } else {
         /* single channels */
         /* Decode the channel sound units. */
@@ -792,12 +812,12 @@ static av_cold void atrac3_init_static_data(void)
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     static int static_init_done;
-    int i, ret;
+    int i, js_pair, ret;
     int version, delay, samples_per_frame, frame_factor;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
 
-    if (avctx->channels <= 0 || avctx->channels > 6) {
+    if (avctx->channels < MIN_CHANNELS || avctx->channels > MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
         return AVERROR(EINVAL);
     }
@@ -870,8 +890,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     if (q->coding_mode == SINGLE)
         av_log(avctx, AV_LOG_DEBUG, "Single channels detected.\n");
     else if (q->coding_mode == JOINT_STEREO) {
-        if (avctx->channels != 2) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid coding mode\n");
+        if (avctx->channels % 2 == 1) { /* Joint stereo channels must be even */
+            av_log(avctx, AV_LOG_ERROR, "Invalid joint stereo channel configuration.\n");
             return AVERROR_INVALIDDATA;
         }
         av_log(avctx, AV_LOG_DEBUG, "Joint stereo detected.\n");
@@ -899,17 +919,19 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     /* init the joint-stereo decoding data */
-    q->weighting_delay[0] = 0;
-    q->weighting_delay[1] = 7;
-    q->weighting_delay[2] = 0;
-    q->weighting_delay[3] = 7;
-    q->weighting_delay[4] = 0;
-    q->weighting_delay[5] = 7;
+    for (js_pair = 0; js_pair < MAX_JS_PAIRS; js_pair++) {
+        q->weighting_delay[js_pair][0] = 0;
+        q->weighting_delay[js_pair][1] = 7;
+        q->weighting_delay[js_pair][2] = 0;
+        q->weighting_delay[js_pair][3] = 7;
+        q->weighting_delay[js_pair][4] = 0;
+        q->weighting_delay[js_pair][5] = 7;
 
-    for (i = 0; i < 4; i++) {
-        q->matrix_coeff_index_prev[i] = 3;
-        q->matrix_coeff_index_now[i]  = 3;
-        q->matrix_coeff_index_next[i] = 3;
+        for (i = 0; i < 4; i++) {
+            q->matrix_coeff_index_prev[js_pair][i] = 3;
+            q->matrix_coeff_index_now[js_pair][i]  = 3;
+            q->matrix_coeff_index_next[js_pair][i] = 3;
+        }
     }
 
     ff_atrac_init_gain_compensation(&q->gainc_ctx, 4, 3);
