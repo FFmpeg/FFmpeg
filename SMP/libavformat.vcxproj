@@ -401,7 +401,11 @@
     <ClCompile Include="..\libavformat\sapdec.c" />
     <ClCompile Include="..\libavformat\sapenc.c" />
     <ClCompile Include="..\libavformat\sbgdec.c" />
+    <ClCompile Include="..\libavformat\sccdec.c" />
+    <ClCompile Include="..\libavformat\sccenc.c" />
     <ClCompile Include="..\libavformat\sdr2.c" />
+    <ClCompile Include="..\libavformat\sdsdec.c" />
+    <ClCompile Include="..\libavformat\sdxdec.c" />
     <ClCompile Include="..\libavformat\segafilm.c" />
     <ClCompile Include="..\libavformat\segment.c" />
     <ClCompile Include="..\libavformat\shortendec.c" />

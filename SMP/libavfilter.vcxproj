@@ -279,6 +279,7 @@
     <ClCompile Include="..\libavfilter\vf_premultiply.c" />
     <ClCompile Include="..\libavfilter\vf_qp.c" />
     <ClCompile Include="..\libavfilter\vf_random.c" />
+    <ClCompile Include="..\libavfilter\vf_readeia608.c" />
     <ClCompile Include="..\libavfilter\vf_readvitc.c" />
     <ClCompile Include="..\libavfilter\vf_remap.c" />
     <ClCompile Include="..\libavfilter\lswsutils.c" />
@@ -322,6 +323,7 @@
     <ClCompile Include="..\libavfilter\vsrc_mandelbrot.c" />
     <ClCompile Include="..\libavfilter\vsrc_mptestsrc.c" />
     <ClCompile Include="..\libavfilter\vsink_nullsink.c" />
+    <ClCompile Include="..\libavfilter\avf_abitscope.c" />
     <ClCompile Include="..\libavfilter\avf_ahistogram.c" />
     <ClCompile Include="..\libavfilter\avf_aphasemeter.c" />
     <ClCompile Include="..\libavfilter\avf_avectorscope.c" />

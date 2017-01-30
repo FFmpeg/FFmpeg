@@ -193,6 +193,7 @@ EXPORTS
     av_get_colorspace_name
     av_get_cpu_flags
     av_get_default_channel_layout
+    av_get_extended_channel_layout
     av_get_known_color_name
     av_get_media_type_string
     av_get_packed_sample_fmt
