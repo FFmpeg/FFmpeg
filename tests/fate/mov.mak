@@ -5,6 +5,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-elist-starts-ctts-2ndsample \
            fate-mov-1elist-ends-last-bframe \
            fate-mov-2elist-elist1-ends-bframe \
+           fate-mov-3elist-encrypted \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -22,6 +23,9 @@ fate-mov-1elist-noctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-noctt
 fate-mov-1elist-1ctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-1ctts.mov
 fate-mov-3elist: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-3elist.mov
 fate-mov-3elist-1ctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-3elist-1ctts.mov
+
+# Edit list with encryption
+fate-mov-3elist-encrypted: CMD = framemd5 -decryption_key 12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-3elist-encrypted.mov
 
 # Makes sure that the CTTS is also modified when we fix avindex in mov.c while parsing edit lists.
 fate-mov-elist-starts-ctts-2ndsample: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-elist-starts-ctts-2ndsample.mov
