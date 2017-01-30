@@ -4700,7 +4700,7 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int ret;
+    int64_t ret;
     uint8_t uuid[16];
     static const uint8_t uuid_isml_manifest[] = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
