@@ -82,6 +82,9 @@
     <ClCompile Include="..\libavdevice\libcdio.c">
       <Filter>Source Files\libavdevice</Filter>
     </ClCompile>
+    <ClCompile Include="libavdevice\dce_defs.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavdevice\avdevice.h">

@@ -78,6 +78,9 @@
     <ClCompile Include="libswresample\log2_tab_wrap.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>
+    <ClCompile Include="libswresample\dce_defs.c">
+      <Filter>Source Files\libswresample</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswresample\rematrix.c">
       <Filter>Source Files\libswresample</Filter>
     </ClCompile>

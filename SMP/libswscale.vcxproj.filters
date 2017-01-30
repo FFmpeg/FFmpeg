@@ -87,6 +87,9 @@
     <ClCompile Include="libswscale\log2_tab_wrap.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>
+    <ClCompile Include="libswscale\dce_defs.c">
+      <Filter>Source Files\libswscale</Filter>
+    </ClCompile>
     <ClCompile Include="..\libswscale\input.c">
       <Filter>Source Files\libswscale</Filter>
     </ClCompile>

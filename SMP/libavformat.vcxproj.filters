@@ -1354,6 +1354,9 @@
     <ClCompile Include="libavformat\log2_tab_wrap.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="libavformat\dce_defs.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavformat\avformat.h">

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\ffplay">
+      <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cmdutils.c">
@@ -20,6 +23,9 @@
     </ClCompile>
     <ClCompile Include="..\ffplay.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ffplay\dce_defs.c">
+      <Filter>Source Files\ffplay</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

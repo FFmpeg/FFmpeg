@@ -2682,6 +2682,9 @@
     <ClCompile Include="libavcodec\reverse_wrap.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="libavcodec\dce_defs.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\ac3dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

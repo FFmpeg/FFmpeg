@@ -276,6 +276,9 @@
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
+    <ClCompile Include="libavutil\dce_defs.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\float_dsp.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>

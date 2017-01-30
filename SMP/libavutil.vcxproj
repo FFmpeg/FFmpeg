@@ -149,6 +149,7 @@
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c" />
     <ClCompile Include="..\libavutil\x86\lls_init.c" />
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c" />
+    <ClCompile Include="libavutil\dce_defs.c" />
     <ClCompile Include="..\libavutil\float_dsp.c">
       <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
     </ClCompile>
@@ -798,7 +799,6 @@ cd $(ProjectDir)
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -909,11 +909,6 @@ cd $(ProjectDir)
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -950,7 +945,6 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalDependencies>mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -1061,11 +1055,6 @@ cd $(ProjectDir)
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1103,7 +1092,6 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -1214,11 +1202,6 @@ cd $(ProjectDir)
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1255,7 +1238,6 @@ echo            These errors are the result of dead code elimination not being p
       <AdditionalDependencies>libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -1366,11 +1348,6 @@ cd $(ProjectDir)
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
     <ResourceCompile>
       <AdditionalIncludeDirectories>.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>

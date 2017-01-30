@@ -37,6 +37,7 @@
   <ItemGroup>
     <ClCompile Include="..\cmdutils.c" />
     <ClCompile Include="..\ffplay.c" />
+    <ClCompile Include="ffplay\dce_defs.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E2A6865D-BD68-45B4-8130-EFD620F2C7EB}</ProjectGuid>
@@ -199,7 +200,6 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;LIBCPMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -224,11 +224,6 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -257,7 +252,6 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;LIBCPMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -282,11 +276,6 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
     <ClCompile>
@@ -316,7 +305,6 @@ echo            These errors are the result of dead code elimination not being p
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;LIBCPMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -341,11 +329,6 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <ClCompile>
@@ -374,7 +357,6 @@ echo            These errors are the result of dead code elimination not being p
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;LIBCPMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -399,11 +381,6 @@ if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )</Command>
     </PreBuildEvent>
-    <PreLinkEvent>
-      <Command>echo Note: Any linker warning about missing symbols can be ignored!
-echo            A output file will be generated anyway.
-echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
-    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
