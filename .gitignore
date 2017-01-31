@@ -17,6 +17,7 @@
 *.so.*
 *.swp
 *.ver
+*.version
 /.config
 /.version
 /avconv
