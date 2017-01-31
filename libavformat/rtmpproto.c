@@ -93,7 +93,7 @@ typedef struct RTMPContext {
     int           flv_off;                    ///< number of bytes read from current buffer
     int           flv_nb_packets;             ///< number of flv packets published
     RTMPPacket    out_pkt;                    ///< rtmp packet, created from flv a/v or metadata (for output)
-    uint32_t      client_report_size;         ///< number of bytes after which client should report to server
+    uint32_t      receive_report_size;        ///< number of bytes after which we should report the number of received bytes to the peer
     uint32_t      bytes_read;                 ///< number of bytes read from server
     uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
     uint32_t      last_timestamp;             ///< last timestamp received in a packet
@@ -114,7 +114,7 @@ typedef struct RTMPContext {
     char          swfverification[42];        ///< hash of the SWF verification
     char*         pageurl;                    ///< url of the web page
     char*         subscribe;                  ///< name of live stream to subscribe
-    int           server_bw;                  ///< server bandwidth
+    int           max_sent_unacked;           ///< max unacked sent bytes
     int           client_buffer_time;         ///< client buffer time in ms
     int           flush_interval;             ///< number of packets flushed in the same request (RTMPT only)
     int           encrypted;                  ///< use an encrypted connection (RTMPE only)
@@ -456,7 +456,9 @@ static int read_connect(URLContext *s, RTMPContext *rt)
                                      RTMP_PT_WINDOW_ACK_SIZE, 0, 4)) < 0)
         return ret;
     p = pkt.data;
-    bytestream_put_be32(&p, rt->server_bw);
+    // Inform the peer about how often we want acknowledgements about what
+    // we send. (We don't check for the acknowledgements currently.)
+    bytestream_put_be32(&p, rt->max_sent_unacked);
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
                                &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
@@ -468,7 +470,9 @@ static int read_connect(URLContext *s, RTMPContext *rt)
                                      RTMP_PT_SET_PEER_BW, 0, 5)) < 0)
         return ret;
     p = pkt.data;
-    bytestream_put_be32(&p, rt->server_bw);
+    // Tell the peer to only send this many bytes unless it gets acknowledgements.
+    // This could be any arbitrary value we want here.
+    bytestream_put_be32(&p, rt->max_sent_unacked);
     bytestream_put_byte(&p, 2); // dynamic
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
@@ -888,7 +892,7 @@ static int gen_window_ack_size(URLContext *s, RTMPContext *rt)
         return ret;
 
     p = pkt.data;
-    bytestream_put_be32(&p, rt->server_bw);
+    bytestream_put_be32(&p, rt->max_sent_unacked);
 
     return rtmp_send_packet(rt, &pkt, 0);
 }
@@ -1558,15 +1562,18 @@ static int handle_set_peer_bw(URLContext *s, RTMPPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
-    rt->client_report_size = AV_RB32(pkt->data);
-    if (rt->client_report_size <= 0) {
-        av_log(s, AV_LOG_ERROR, "Incorrect peer bandwidth %d\n",
-                rt->client_report_size);
+    // We currently don't check how much the peer has acknowledged of
+    // what we have sent. To do that properly, we should call
+    // gen_window_ack_size here, to tell the peer that we want an
+    // acknowledgement with (at least) that interval.
+    rt->max_sent_unacked = AV_RB32(pkt->data);
+    if (rt->max_sent_unacked <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect set peer bandwidth %d\n",
+               rt->max_sent_unacked);
         return AVERROR_INVALIDDATA;
 
     }
-    av_log(s, AV_LOG_DEBUG, "Peer bandwidth = %d\n", rt->client_report_size);
-    rt->client_report_size >>= 1;
+    av_log(s, AV_LOG_DEBUG, "Max sent, unacked = %d\n", rt->max_sent_unacked);
 
     return 0;
 }
@@ -1582,13 +1589,17 @@ static int handle_window_ack_size(URLContext *s, RTMPPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
-    rt->server_bw = AV_RB32(pkt->data);
-    if (rt->server_bw <= 0) {
+    rt->receive_report_size = AV_RB32(pkt->data);
+    if (rt->receive_report_size <= 0) {
         av_log(s, AV_LOG_ERROR, "Incorrect window acknowledgement size %d\n",
-               rt->server_bw);
+               rt->receive_report_size);
         return AVERROR_INVALIDDATA;
     }
-    av_log(s, AV_LOG_DEBUG, "Window acknowledgement size = %d\n", rt->server_bw);
+    av_log(s, AV_LOG_DEBUG, "Window acknowledgement size = %d\n", rt->receive_report_size);
+    // Send an Acknowledgement packet after receiving half the maximum
+    // size, to make sure the peer can keep on sending without waiting
+    // for acknowledgements.
+    rt->receive_report_size >>= 1;
 
     return 0;
 }
@@ -2416,7 +2427,7 @@ static int get_packet(URLContext *s, int for_header)
         rt->last_timestamp = rpkt.timestamp;
 
         rt->bytes_read += ret;
-        if (rt->bytes_read - rt->last_bytes_read > rt->client_report_size) {
+        if (rt->bytes_read - rt->last_bytes_read > rt->receive_report_size) {
             av_log(s, AV_LOG_DEBUG, "Sending bytes read report\n");
             if ((ret = gen_bytes_read(s, rt, rpkt.timestamp + 1)) < 0)
                 return ret;
@@ -2765,13 +2776,13 @@ reconnect:
         }
     }
 
-    rt->client_report_size = 1048576;
+    rt->receive_report_size = 1048576;
     rt->bytes_read = 0;
     rt->has_audio = 0;
     rt->has_video = 0;
     rt->received_metadata = 0;
     rt->last_bytes_read = 0;
-    rt->server_bw = 2500000;
+    rt->max_sent_unacked = 2500000;
     rt->duration = 0;
 
     av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
