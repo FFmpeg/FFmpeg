@@ -527,9 +527,9 @@ static const char* rtmp_packet_type(int type)
     switch (type) {
     case RTMP_PT_CHUNK_SIZE:     return "chunk size";
     case RTMP_PT_BYTES_READ:     return "bytes read";
-    case RTMP_PT_PING:           return "ping";
-    case RTMP_PT_SERVER_BW:      return "server bandwidth";
-    case RTMP_PT_CLIENT_BW:      return "client bandwidth";
+    case RTMP_PT_USER_CONTROL:   return "user control";
+    case RTMP_PT_WINDOW_ACK_SIZE: return "window acknowledgement size";
+    case RTMP_PT_SET_PEER_BW:    return "set peer bandwidth";
     case RTMP_PT_AUDIO:          return "audio packet";
     case RTMP_PT_VIDEO:          return "video packet";
     case RTMP_PT_FLEX_STREAM:    return "Flex shared stream";
@@ -627,10 +627,10 @@ void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p)
                 break;
             src += sz;
         }
-    } else if (p->type == RTMP_PT_SERVER_BW){
-        av_log(ctx, AV_LOG_DEBUG, "Server BW = %d\n", AV_RB32(p->data));
-    } else if (p->type == RTMP_PT_CLIENT_BW){
-        av_log(ctx, AV_LOG_DEBUG, "Client BW = %d\n", AV_RB32(p->data));
+    } else if (p->type == RTMP_PT_WINDOW_ACK_SIZE) {
+        av_log(ctx, AV_LOG_DEBUG, "Window acknowledgement size = %d\n", AV_RB32(p->data));
+    } else if (p->type == RTMP_PT_SET_PEER_BW) {
+        av_log(ctx, AV_LOG_DEBUG, "Set Peer BW = %d\n", AV_RB32(p->data));
     } else if (p->type != RTMP_PT_AUDIO && p->type != RTMP_PT_VIDEO && p->type != RTMP_PT_METADATA) {
         int i;
         for (i = 0; i < p->size; i++)

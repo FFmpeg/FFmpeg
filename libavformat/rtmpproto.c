@@ -453,7 +453,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
 
     // Send Window Acknowledgement Size (as defined in specification)
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
-                                     RTMP_PT_SERVER_BW, 0, 4)) < 0)
+                                     RTMP_PT_WINDOW_ACK_SIZE, 0, 4)) < 0)
         return ret;
     p = pkt.data;
     bytestream_put_be32(&p, rt->server_bw);
@@ -463,9 +463,9 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
-    // Send Peer Bandwidth
+    // Set Peer Bandwidth
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
-                                     RTMP_PT_CLIENT_BW, 0, 5)) < 0)
+                                     RTMP_PT_SET_PEER_BW, 0, 5)) < 0)
         return ret;
     p = pkt.data;
     bytestream_put_be32(&p, rt->server_bw);
@@ -477,14 +477,14 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     if (ret < 0)
         return ret;
 
-    // Ping request
+    // User control
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
-                                     RTMP_PT_PING, 0, 6)) < 0)
+                                     RTMP_PT_USER_CONTROL, 0, 6)) < 0)
         return ret;
 
     p = pkt.data;
     bytestream_put_be16(&p, 0); // 0 -> Stream Begin
-    bytestream_put_be32(&p, 0);
+    bytestream_put_be32(&p, 0); // Stream 0
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
                                &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
@@ -710,12 +710,12 @@ static int gen_buffer_time(URLContext *s, RTMPContext *rt)
     uint8_t *p;
     int ret;
 
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_USER_CONTROL,
                                      1, 10)) < 0)
         return ret;
 
     p = pkt.data;
-    bytestream_put_be16(&p, 3);
+    bytestream_put_be16(&p, 3); // SetBuffer Length
     bytestream_put_be32(&p, rt->stream_id);
     bytestream_put_be32(&p, rt->client_buffer_time);
 
@@ -842,12 +842,12 @@ static int gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,RTMP_PT_USER_CONTROL,
                                      ppkt->timestamp + 1, 6)) < 0)
         return ret;
 
     p = pkt.data;
-    bytestream_put_be16(&p, 7);
+    bytestream_put_be16(&p, 7); // PingResponse
     bytestream_put_be32(&p, AV_RB32(ppkt->data+2));
 
     return rtmp_send_packet(rt, &pkt, 0);
@@ -863,7 +863,7 @@ static int gen_swf_verification(URLContext *s, RTMPContext *rt)
     int ret;
 
     av_log(s, AV_LOG_DEBUG, "Sending SWF verification...\n");
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_USER_CONTROL,
                                      0, 44)) < 0)
         return ret;
 
@@ -875,15 +875,15 @@ static int gen_swf_verification(URLContext *s, RTMPContext *rt)
 }
 
 /**
- * Generate server bandwidth message and send it to the server.
+ * Generate window acknowledgement size message and send it to the server.
  */
-static int gen_server_bw(URLContext *s, RTMPContext *rt)
+static int gen_window_ack_size(URLContext *s, RTMPContext *rt)
 {
     RTMPPacket pkt;
     uint8_t *p;
     int ret;
 
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_SERVER_BW,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_WINDOW_ACK_SIZE,
                                      0, 4)) < 0)
         return ret;
 
@@ -1520,19 +1520,19 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
     return 0;
 }
 
-static int handle_ping(URLContext *s, RTMPPacket *pkt)
+static int handle_user_control(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     int t, ret;
 
     if (pkt->size < 2) {
-        av_log(s, AV_LOG_ERROR, "Too short ping packet (%d)\n",
+        av_log(s, AV_LOG_ERROR, "Too short user control packet (%d)\n",
                pkt->size);
         return AVERROR_INVALIDDATA;
     }
 
     t = AV_RB16(pkt->data);
-    if (t == 6) {
+    if (t == 6) { // PingRequest
         if ((ret = gen_pong(s, rt, pkt)) < 0)
             return ret;
     } else if (t == 26) {
@@ -1547,48 +1547,48 @@ static int handle_ping(URLContext *s, RTMPPacket *pkt)
     return 0;
 }
 
-static int handle_client_bw(URLContext *s, RTMPPacket *pkt)
+static int handle_set_peer_bw(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
 
     if (pkt->size < 4) {
         av_log(s, AV_LOG_ERROR,
-               "Client bandwidth report packet is less than 4 bytes long (%d)\n",
+               "Peer bandwidth packet is less than 4 bytes long (%d)\n",
                pkt->size);
         return AVERROR_INVALIDDATA;
     }
 
     rt->client_report_size = AV_RB32(pkt->data);
     if (rt->client_report_size <= 0) {
-        av_log(s, AV_LOG_ERROR, "Incorrect client bandwidth %d\n",
+        av_log(s, AV_LOG_ERROR, "Incorrect peer bandwidth %d\n",
                 rt->client_report_size);
         return AVERROR_INVALIDDATA;
 
     }
-    av_log(s, AV_LOG_DEBUG, "Client bandwidth = %d\n", rt->client_report_size);
+    av_log(s, AV_LOG_DEBUG, "Peer bandwidth = %d\n", rt->client_report_size);
     rt->client_report_size >>= 1;
 
     return 0;
 }
 
-static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
+static int handle_window_ack_size(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
 
     if (pkt->size < 4) {
         av_log(s, AV_LOG_ERROR,
-               "Too short server bandwidth report packet (%d)\n",
+               "Too short window acknowledgement size packet (%d)\n",
                pkt->size);
         return AVERROR_INVALIDDATA;
     }
 
     rt->server_bw = AV_RB32(pkt->data);
     if (rt->server_bw <= 0) {
-        av_log(s, AV_LOG_ERROR, "Incorrect server bandwidth %d\n",
+        av_log(s, AV_LOG_ERROR, "Incorrect window acknowledgement size %d\n",
                rt->server_bw);
         return AVERROR_INVALIDDATA;
     }
-    av_log(s, AV_LOG_DEBUG, "Server bandwidth = %d\n", rt->server_bw);
+    av_log(s, AV_LOG_DEBUG, "Window acknowledgement size = %d\n", rt->server_bw);
 
     return 0;
 }
@@ -1825,7 +1825,7 @@ static int write_begin(URLContext *s)
 
     // Send Stream Begin 1
     if ((ret = ff_rtmp_packet_create(&spkt, RTMP_NETWORK_CHANNEL,
-                                     RTMP_PT_PING, 0, 6)) < 0) {
+                                     RTMP_PT_USER_CONTROL, 0, 6)) < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
         return ret;
     }
@@ -2053,7 +2053,7 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
             if ((ret = gen_fcpublish_stream(s, rt)) < 0)
                 goto fail;
         } else {
-            if ((ret = gen_server_bw(s, rt)) < 0)
+            if ((ret = gen_window_ack_size(s, rt)) < 0)
                 goto fail;
         }
 
@@ -2302,16 +2302,16 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         if ((ret = handle_chunk_size(s, pkt)) < 0)
             return ret;
         break;
-    case RTMP_PT_PING:
-        if ((ret = handle_ping(s, pkt)) < 0)
+    case RTMP_PT_USER_CONTROL:
+        if ((ret = handle_user_control(s, pkt)) < 0)
             return ret;
         break;
-    case RTMP_PT_CLIENT_BW:
-        if ((ret = handle_client_bw(s, pkt)) < 0)
+    case RTMP_PT_SET_PEER_BW:
+        if ((ret = handle_set_peer_bw(s, pkt)) < 0)
             return ret;
         break;
-    case RTMP_PT_SERVER_BW:
-        if ((ret = handle_server_bw(s, pkt)) < 0)
+    case RTMP_PT_WINDOW_ACK_SIZE:
+        if ((ret = handle_window_ack_size(s, pkt)) < 0)
             return ret;
         break;
     case RTMP_PT_INVOKE:
