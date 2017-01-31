@@ -26,7 +26,6 @@
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
 
-
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
 {
@@ -82,7 +81,6 @@ static void FUNC(add_residual32x32)(uint8_t *_dst, int16_t *res,
 {
     FUNC(add_residual)(_dst, res, stride, 32);
 }
-
 
 static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
 {
