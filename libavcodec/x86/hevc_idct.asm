@@ -1,37 +1,38 @@
-; /*
-; * SIMD optimized idct functions for HEVC decoding
-; * Copyright (c) 2014 Pierre-Edouard LEPERE
-; * Copyright (c) 2014 James Almer
-; *
-; * This file is part of FFmpeg.
-; *
-; * FFmpeg is free software; you can redistribute it and/or
-; * modify it under the terms of the GNU Lesser General Public
-; * License as published by the Free Software Foundation; either
-; * version 2.1 of the License, or (at your option) any later version.
-; *
-; * FFmpeg is distributed in the hope that it will be useful,
-; * but WITHOUT ANY WARRANTY; without even the implied warranty of
-; * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-; * Lesser General Public License for more details.
-; *
-; * You should have received a copy of the GNU Lesser General Public
-; * License along with FFmpeg; if not, write to the Free Software
-; * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-; */
+;*******************************************************************************
+;* SIMD-optimized IDCT functions for HEVC decoding
+;* Copyright (c) 2014 Pierre-Edouard LEPERE
+;* Copyright (c) 2014 James Almer
+;*
+;* This file is part of FFmpeg.
+;*
+;* FFmpeg is free software; you can redistribute it and/or
+;* modify it under the terms of the GNU Lesser General Public
+;* License as published by the Free Software Foundation; either
+;* version 2.1 of the License, or (at your option) any later version.
+;*
+;* FFmpeg is distributed in the hope that it will be useful,
+;* but WITHOUT ANY WARRANTY; without even the implied warranty of
+;* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;* Lesser General Public License for more details.
+;*
+;* You should have received a copy of the GNU Lesser General Public
+;* License along with FFmpeg; if not, write to the Free Software
+;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+;******************************************************************************
+
 %include "libavutil/x86/x86util.asm"
 
 SECTION .text
 
-; void ff_hevc_idctHxW_dc_{8,10}_<opt>(int16_t *coeffs)
+; void ff_hevc_idct_HxW_dc_{8,10}_<opt>(int16_t *coeffs)
 ; %1 = HxW
 ; %2 = number of loops
 ; %3 = bitdepth
 %macro IDCT_DC 3
-cglobal hevc_idct%1x%1_dc_%3, 1, 2, 1, coeff, tmp
-    movsx             tmpq, word [coeffq]
-    add               tmpw, ((1 << 14-%3) + 1)
-    sar               tmpw, (15-%3)
+cglobal hevc_idct_%1x%1_dc_%3, 1, 2, 1, coeff, tmp
+    movsx             tmpd, word [coeffq]
+    add               tmpd, (1 << (14 - %3)) + 1
+    sar               tmpd, (15 - %3)
     movd               xm0, tmpd
     SPLATW              m0, xm0
     DEFINE_ARGS coeff, cnt
@@ -41,11 +42,11 @@ cglobal hevc_idct%1x%1_dc_%3, 1, 2, 1, coeff, tmp
     mova [coeffq+mmsize*1], m0
     mova [coeffq+mmsize*2], m0
     mova [coeffq+mmsize*3], m0
-    mova [coeffq+mmsize*4], m0
-    mova [coeffq+mmsize*5], m0
-    mova [coeffq+mmsize*6], m0
-    mova [coeffq+mmsize*7], m0
     add  coeffq, mmsize*8
+    mova [coeffq+mmsize*-4], m0
+    mova [coeffq+mmsize*-3], m0
+    mova [coeffq+mmsize*-2], m0
+    mova [coeffq+mmsize*-1], m0
     dec  cntd
     jg  .loop
     RET
@@ -54,10 +55,10 @@ cglobal hevc_idct%1x%1_dc_%3, 1, 2, 1, coeff, tmp
 ; %1 = HxW
 ; %2 = bitdepth
 %macro IDCT_DC_NL 2 ; No loop
-cglobal hevc_idct%1x%1_dc_%2, 1, 2, 1, coeff, tmp
-    movsx             tmpq, word [coeffq]
-    add               tmpw, ((1 << 14-%2) + 1)
-    sar               tmpw, (15-%2)
+cglobal hevc_idct_%1x%1_dc_%2, 1, 2, 1, coeff, tmp
+    movsx             tmpd, word [coeffq]
+    add               tmpd, (1 << (14 - %2)) + 1
+    sar               tmpd, (15 - %2)
     movd                m0, tmpd
     SPLATW              m0, xm0
     mova [coeffq+mmsize*0], m0

@@ -29,9 +29,6 @@
 #include <stdint.h>
 
 
-#define idct_dc_proto(size, bitd, opt) \
-                void ff_hevc_idct##size##_dc_add_##bitd##_##opt(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-
 #define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
 dst[idx1][idx2][idx3] = ff_hevc_put_hevc_ ## name ## _ ## D ## _##opt; \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_hevc_bi_ ## name ## _ ## D ## _##opt; \
