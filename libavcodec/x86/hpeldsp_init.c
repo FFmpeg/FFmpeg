@@ -264,21 +264,18 @@ static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int cpu_flags)
 #endif /* HAVE_AMD3DNOW_EXTERNAL */
 }
 
-static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int cpu_flags)
+static void hpeldsp_init_sse2_fast(HpelDSPContext *c, int flags, int cpu_flags)
 {
 #if HAVE_SSE2_EXTERNAL
-    if (!(cpu_flags & AV_CPU_FLAG_SSE2SLOW)) {
-        // these functions are slower than mmx on AMD, but faster on Intel
-        c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
-        c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
-        c->put_pixels_tab[0][1]        = ff_put_pixels16_x2_sse2;
-        c->put_pixels_tab[0][2]        = ff_put_pixels16_y2_sse2;
-        c->put_pixels_tab[0][3]        = ff_put_pixels16_xy2_sse2;
-        c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
-        c->avg_pixels_tab[0][1]        = ff_avg_pixels16_x2_sse2;
-        c->avg_pixels_tab[0][2]        = ff_avg_pixels16_y2_sse2;
-        c->avg_pixels_tab[0][3]        = ff_avg_pixels16_xy2_sse2;
-    }
+    c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
+    c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
+    c->put_pixels_tab[0][1]        = ff_put_pixels16_x2_sse2;
+    c->put_pixels_tab[0][2]        = ff_put_pixels16_y2_sse2;
+    c->put_pixels_tab[0][3]        = ff_put_pixels16_xy2_sse2;
+    c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
+    c->avg_pixels_tab[0][1]        = ff_avg_pixels16_x2_sse2;
+    c->avg_pixels_tab[0][2]        = ff_avg_pixels16_y2_sse2;
+    c->avg_pixels_tab[0][3]        = ff_avg_pixels16_xy2_sse2;
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
@@ -305,8 +302,8 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
     if (EXTERNAL_MMXEXT(cpu_flags))
         hpeldsp_init_mmxext(c, flags, cpu_flags);
 
-    if (EXTERNAL_SSE2(cpu_flags))
-        hpeldsp_init_sse2(c, flags, cpu_flags);
+    if (EXTERNAL_SSE2_FAST(cpu_flags))
+        hpeldsp_init_sse2_fast(c, flags, cpu_flags);
 
     if (EXTERNAL_SSSE3(cpu_flags))
         hpeldsp_init_ssse3(c, flags, cpu_flags);
