@@ -135,7 +135,7 @@ int cuvid_transcode_init(OutputStream *ost)
          */
         hwframe_ctx = (AVHWFramesContext*)ctx->hw_frames_ctx->data;
         hwframe_ctx->format = AV_PIX_FMT_CUDA;
-        hwframe_ctx->sw_format = AV_PIX_FMT_NV12;
+        hwframe_ctx->sw_format = ist->st->codecpar->format == AV_PIX_FMT_YUV420P10 ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
     }
 
     return 0;
