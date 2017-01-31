@@ -223,7 +223,7 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
         for (i = 0; i < 16; i++)                                  \
             for (j = 1; j < end; j += 2)                          \
                 o_32[i] += transform[j][i] * src[j * sstep];      \
-        TR_16(e_32, src, 1, 2 * sstep, SET, end/2);               \
+        TR_16(e_32, src, 1, 2 * sstep, SET, end / 2);             \
                                                                   \
         for (i = 0; i < 16; i++) {                                \
             assign(dst[i * dstep], e_32[i] + o_32[i]);            \
@@ -232,21 +232,22 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
     } while (0)
 
 #define IDCT_VAR4(H)                                              \
-    int      limit2   = FFMIN(col_limit + 4, H)
+    int limit2 = FFMIN(col_limit + 4, H)
 #define IDCT_VAR8(H)                                              \
-        int      limit   = FFMIN(col_limit, H);                   \
-        int      limit2  = FFMIN(col_limit + 4, H)
+    int limit  = FFMIN(col_limit, H);                             \
+    int limit2 = FFMIN(col_limit + 4, H)
 #define IDCT_VAR16(H)   IDCT_VAR8(H)
 #define IDCT_VAR32(H)   IDCT_VAR8(H)
 
 #define IDCT(H)                                                   \
 static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs,          \
-                                        int col_limit) {          \
+                                        int col_limit)            \
+{                                                                 \
     int i;                                                        \
     int      shift = 7;                                           \
     int      add   = 1 << (shift - 1);                            \
     int16_t *src   = coeffs;                                      \
-    IDCT_VAR ##H(H);                                              \
+    IDCT_VAR ## H(H);                                             \
                                                                   \
     for (i = 0; i < H; i++) {                                     \
         TR_ ## H(src, src, H, H, SCALE, limit2);                  \
