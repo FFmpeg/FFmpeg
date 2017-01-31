@@ -239,23 +239,23 @@ WEIGHTING_PROTOTYPES(12, sse4);
 ///////////////////////////////////////////////////////////////////////////////
 // TRANSFORM_ADD
 ///////////////////////////////////////////////////////////////////////////////
-void ff_hevc_transform_add4_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual4_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual8_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual16_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual32_8_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_add8_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual8_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual16_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual32_8_avx(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_add32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_add4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual4_10_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual8_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual16_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual32_10_sse2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
-void ff_hevc_transform_add16_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
-void ff_hevc_transform_add32_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual16_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
+void ff_hevc_add_residual32_10_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride);
 
 #endif // AVCODEC_X86_HEVCDSP_H

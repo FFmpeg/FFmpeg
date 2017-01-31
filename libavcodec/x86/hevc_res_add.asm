@@ -1,5 +1,5 @@
 ; /*
-; * Provide SIMD optimizations for transform_add functions for HEVC decoding
+; * Provide SIMD optimizations for add_residual functions for HEVC decoding
 ; * Copyright (c) 2014 Pierre-Edouard LEPERE
 ; *
 ; * This file is part of FFmpeg.
@@ -52,7 +52,7 @@ cextern pw_1023
 
 INIT_MMX mmxext
 ; void ff_hevc_tranform_add_8_mmxext(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_transform_add4_8, 3, 4, 6
+cglobal hevc_add_residual4_8, 3, 4, 6
     TR_ADD_MMX_4_8
     add               r1, 16
     lea               r0, [r0+r2*2]
@@ -135,8 +135,8 @@ cglobal hevc_transform_add4_8, 3, 4, 6
 
 
 %macro TRANSFORM_ADD_8 0
-; void ff_hevc_transform_add8_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_transform_add8_8, 3, 4, 8
+; void ff_hevc_add_residual8_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_add_residual8_8, 3, 4, 8
     lea               r3, [r2*3]
     TR_ADD_SSE_8_8
     add               r1, 64
@@ -144,8 +144,8 @@ cglobal hevc_transform_add8_8, 3, 4, 8
     TR_ADD_SSE_8_8
     RET
 
-; void ff_hevc_transform_add16_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_transform_add16_8, 3, 4, 7
+; void ff_hevc_add_residual16_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_add_residual16_8, 3, 4, 7
     pxor              m0, m0
     lea               r3, [r2*3]
     TR_ADD_SSE_16_32_8  0, r0,      r0+r2
@@ -158,8 +158,8 @@ cglobal hevc_transform_add16_8, 3, 4, 7
 %endrep
     RET
 
-; void ff_hevc_transform_add32_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_transform_add32_8, 3, 4, 7
+; void ff_hevc_add_residual32_8_<opt>(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_add_residual32_8, 3, 4, 7
     pxor               m0, m0
     TR_ADD_SSE_16_32_8  0, r0,    r0+16
     TR_ADD_SSE_16_32_8 64, r0+r2, r0+r2+16
@@ -179,8 +179,8 @@ TRANSFORM_ADD_8
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-; void ff_hevc_transform_add32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
-cglobal hevc_transform_add32_8, 3, 4, 7
+; void ff_hevc_add_residual32_8_avx2(uint8_t *dst, int16_t *coeffs, ptrdiff_t stride)
+cglobal hevc_add_residual32_8, 3, 4, 7
     pxor              m0, m0
     lea               r3, [r2*3]
     TR_ADD_SSE_16_32_8   0, r0,      r0+r2
@@ -195,7 +195,7 @@ cglobal hevc_transform_add32_8, 3, 4, 7
 %endif
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_transform_add_10(pixel *dst, int16_t *block, int stride)
+; void ff_hevc_add_residual_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
 %macro TR_ADD_SSE_8_10 4
     mova              m0, [%4]
@@ -310,7 +310,7 @@ cglobal hevc_transform_add32_8, 3, 4, 7
 
 
 INIT_MMX mmxext
-cglobal hevc_transform_add4_10,3,4, 6
+cglobal hevc_add_residual4_10,3,4, 6
     pxor              m2, m2
     mova              m3, [max_pixels_10]
     TR_ADD_MMX4_10     r0, r2, r1
@@ -320,10 +320,10 @@ cglobal hevc_transform_add4_10,3,4, 6
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_hevc_transform_add_10(pixel *dst, int16_t *block, int stride)
+; void ff_hevc_add_residual_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
 INIT_XMM sse2
-cglobal hevc_transform_add8_10,3,4,6
+cglobal hevc_add_residual8_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
     lea               r3, [r2*3]
@@ -334,7 +334,7 @@ cglobal hevc_transform_add8_10,3,4,6
     TR_ADD_SSE_8_10      r0, r2, r3, r1
     RET
 
-cglobal hevc_transform_add16_10,3,4,6
+cglobal hevc_add_residual16_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
@@ -346,7 +346,7 @@ cglobal hevc_transform_add16_10,3,4,6
 %endrep
     RET
 
-cglobal hevc_transform_add32_10,3,4,6
+cglobal hevc_add_residual32_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
@@ -361,7 +361,7 @@ cglobal hevc_transform_add32_10,3,4,6
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 
-cglobal hevc_transform_add16_10,3,4,6
+cglobal hevc_add_residual16_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
     lea               r3, [r2*3]
@@ -374,7 +374,7 @@ cglobal hevc_transform_add16_10,3,4,6
 %endrep
     RET
 
-cglobal hevc_transform_add32_10,3,4,6
+cglobal hevc_add_residual32_10,3,4,6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
