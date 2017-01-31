@@ -35,8 +35,8 @@ void ff_add_median_pred_sse2(uint8_t *dst, const uint8_t *top,
 
 int  ff_add_left_pred_ssse3(uint8_t *dst, const uint8_t *src,
                             intptr_t w, int left);
-int  ff_add_left_pred_sse4(uint8_t *dst, const uint8_t *src,
-                            intptr_t w, int left);
+int  ff_add_left_pred_unaligned_ssse3(uint8_t *dst, const uint8_t *src,
+                                      intptr_t w, int left);
 
 int ff_add_left_pred_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
 int ff_add_left_pred_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc);
@@ -105,10 +105,11 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c)
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
         c->add_left_pred = ff_add_left_pred_ssse3;
-        if (cpu_flags & AV_CPU_FLAG_SSE4) // not really SSE4, just slow on Conroe
-            c->add_left_pred = ff_add_left_pred_sse4;
-
         c->add_left_pred_int16 = ff_add_left_pred_int16_ssse3;
+    }
+
+    if (EXTERNAL_SSSE3_FAST(cpu_flags)) {
+        c->add_left_pred = ff_add_left_pred_unaligned_ssse3;
     }
 
     if (EXTERNAL_SSE4(cpu_flags)) {
