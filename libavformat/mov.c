@@ -2432,12 +2432,14 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+#define mov_stsc_index_valid(index, count) ((index) < (count) - 1)
+
 /* Compute the samples value for the stsc entry at the given index. */
 static inline int mov_get_stsc_samples(MOVStreamContext *sc, int index)
 {
     int chunk_count;
 
-    if (index < sc->stsc_count - 1)
+    if (mov_stsc_index_valid(index, sc->stsc_count))
         chunk_count = sc->stsc_data[index + 1].first - sc->stsc_data[index].first;
     else
         chunk_count = sc->chunk_count - (sc->stsc_data[index].first - 1);
@@ -3353,7 +3355,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         for (i = 0; i < sc->chunk_count; i++) {
             int64_t next_offset = i+1 < sc->chunk_count ? sc->chunk_offsets[i+1] : INT64_MAX;
             current_offset = sc->chunk_offsets[i];
-            while (stsc_index + 1 < sc->stsc_count &&
+            while (mov_stsc_index_valid(stsc_index, sc->stsc_count) &&
                 i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
 
@@ -3476,7 +3478,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 count = (chunk_samples+1023) / 1024;
             }
 
-            if (i < sc->stsc_count - 1)
+            if (mov_stsc_index_valid(i, sc->stsc_count))
                 chunk_count = sc->stsc_data[i+1].first - sc->stsc_data[i].first;
             else
                 chunk_count = sc->chunk_count - (sc->stsc_data[i].first - 1);
@@ -3497,7 +3499,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         // populate index
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->stsc_count &&
+            if (mov_stsc_index_valid(stsc_index, sc->stsc_count) &&
                 i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
             chunk_samples = sc->stsc_data[stsc_index].count;
@@ -6265,7 +6267,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* Keep track of the stsc index for the given sample, then check
         * if the stsd index is different from the last used one. */
         sc->stsc_sample++;
-        if (sc->stsc_index < sc->stsc_count - 1 &&
+        if (mov_stsc_index_valid(sc->stsc_index, sc->stsc_count) &&
             mov_get_stsc_samples(sc, sc->stsc_index) == sc->stsc_sample) {
             sc->stsc_index++;
             sc->stsc_sample = 0;
