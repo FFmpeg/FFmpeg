@@ -771,11 +771,25 @@ int ff_h263_decode_mb(MpegEncContext *s,
 //FIXME UMV
 
             if(USES_LIST(mb_type, 0)){
-                int16_t *mot_val= ff_h263_pred_motion(s, 0, 0, &mx, &my);
+                int16_t *mot_val= ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
                 s->mv_dir = MV_DIR_FORWARD;
 
-                mx = ff_h263_decode_motion(s, mx, 1);
-                my = ff_h263_decode_motion(s, my, 1);
+                if (s->umvplus)
+                    mx = h263p_decode_umotion(s, pred_x);
+                else
+                    mx = ff_h263_decode_motion(s, pred_x, 1);
+                if (mx >= 0xffff)
+                    return -1;
+
+                if (s->umvplus)
+                    my = h263p_decode_umotion(s, pred_y);
+                else
+                    my = ff_h263_decode_motion(s, pred_y, 1);
+                if (my >= 0xffff)
+                    return -1;
+
+                if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                    skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
 
                 s->mv[0][0][0] = mx;
                 s->mv[0][0][1] = my;
@@ -784,11 +798,25 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
 
             if(USES_LIST(mb_type, 1)){
-                int16_t *mot_val= ff_h263_pred_motion(s, 0, 1, &mx, &my);
+                int16_t *mot_val= ff_h263_pred_motion(s, 0, 1, &pred_x, &pred_y);
                 s->mv_dir |= MV_DIR_BACKWARD;
 
-                mx = ff_h263_decode_motion(s, mx, 1);
-                my = ff_h263_decode_motion(s, my, 1);
+                if (s->umvplus)
+                    mx = h263p_decode_umotion(s, pred_x);
+                else
+                    mx = ff_h263_decode_motion(s, pred_x, 1);
+                if (mx >= 0xffff)
+                    return -1;
+
+                if (s->umvplus)
+                    my = h263p_decode_umotion(s, pred_y);
+                else
+                    my = ff_h263_decode_motion(s, pred_y, 1);
+                if (my >= 0xffff)
+                    return -1;
+
+                if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                    skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
 
                 s->mv[1][0][0] = mx;
                 s->mv[1][0][1] = my;
@@ -1081,6 +1109,12 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                     av_log(s->avctx, AV_LOG_ERROR, "unordered slices not supported\n");
                 }
             }
+            if (s->pict_type == AV_PICTURE_TYPE_B) {
+                skip_bits(&s->gb, 4); //ELNUM
+                if (ufep == 1) {
+                    skip_bits(&s->gb, 4); // RLNUM
+                }
+            }
         }
 
         s->qscale = get_bits(&s->gb, 5);
@@ -1132,6 +1166,9 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         }
     }
     s->f_code = 1;
+
+    if (s->pict_type == AV_PICTURE_TYPE_B)
+        s->low_delay = 0;
 
     if(s->h263_aic){
          s->y_dc_scale_table=
