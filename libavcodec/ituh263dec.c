@@ -928,8 +928,9 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     }
     /* temporal reference */
     i = get_bits(&s->gb, 8); /* picture timestamp */
-    if( (s->picture_number&~0xFF)+i < s->picture_number)
-        i+= 256;
+
+    i -= (i - (s->picture_number & 0xFF) + 128) & ~0xFF;
+
     s->picture_number= (s->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */
