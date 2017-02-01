@@ -64,6 +64,7 @@ static int msf_read_header(AVFormatContext *s)
     // avio_rb32(s->pb); /* byte flags with encoder info */
     switch (codec) {
     case 0: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE; break;
+    case 1: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE; break;
     case 3: st->codecpar->block_align = 16 * st->codecpar->channels;
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX; break;
     case 4:
