@@ -1207,7 +1207,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ltp,   11, 0, RANGE15(-2.0));
 #if !USE_FIXED
-    ret = ff_imdct15_init(&ac->mdct480, 5);
+    ret = ff_mdct15_init(&ac->mdct480, 1, 5, -1.0f);
     if (ret < 0)
         return ret;
 #endif
@@ -3217,7 +3217,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     ff_mdct_end(&ac->mdct_ld);
     ff_mdct_end(&ac->mdct_ltp);
 #if !USE_FIXED
-    ff_imdct15_uninit(&ac->mdct480);
+    ff_mdct15_uninit(&ac->mdct480);
 #endif
     av_freep(&ac->fdsp);
     return 0;

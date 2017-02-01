@@ -42,7 +42,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "imdct15.h"
+#include "mdct15.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"
