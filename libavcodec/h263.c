@@ -141,8 +141,6 @@ void ff_h263_loop_filter(MpegEncContext * s){
     uint8_t *dest_cb= s->dest[1];
     uint8_t *dest_cr= s->dest[2];
 
-//    if(s->pict_type==AV_PICTURE_TYPE_B && !s->readable) return;
-
     /*
        Diag Top
        Left Center
