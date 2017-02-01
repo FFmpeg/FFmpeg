@@ -636,7 +636,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             cbpc = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
             if (cbpc < 0){
                 av_log(s->avctx, AV_LOG_ERROR, "cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return SLICE_ERROR;
             }
         }while(cbpc == 20);
 
@@ -670,7 +670,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
                mx = ff_h263_decode_motion(s, pred_x, 1);
 
             if (mx >= 0xffff)
-                return -1;
+                return SLICE_ERROR;
 
             if (s->umvplus)
                my = h263p_decode_umotion(s, pred_y);
@@ -678,7 +678,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
                my = ff_h263_decode_motion(s, pred_y, 1);
 
             if (my >= 0xffff)
-                return -1;
+                return SLICE_ERROR;
             s->mv[0][0][0] = mx;
             s->mv[0][0][1] = my;
 
@@ -694,14 +694,14 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 else
                     mx = ff_h263_decode_motion(s, pred_x, 1);
                 if (mx >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
 
                 if (s->umvplus)
                     my = h263p_decode_umotion(s, pred_y);
                 else
                     my = ff_h263_decode_motion(s, pred_y, 1);
                 if (my >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
                 s->mv[0][i][0] = mx;
                 s->mv[0][i][1] = my;
                 if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
@@ -727,7 +727,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             mb_type= get_vlc2(&s->gb, h263_mbtype_b_vlc.table, H263_MBTYPE_B_VLC_BITS, 2);
             if (mb_type < 0){
                 av_log(s->avctx, AV_LOG_ERROR, "b mb_type damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return SLICE_ERROR;
             }
 
             mb_type= h263_mb_type_b_map[ mb_type ];
@@ -746,7 +746,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
 
             if (cbpy < 0){
                 av_log(s->avctx, AV_LOG_ERROR, "b cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return SLICE_ERROR;
             }
 
             if(s->alt_inter_vlc==0 || (cbpc & 3)!=3)
@@ -779,14 +779,14 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 else
                     mx = ff_h263_decode_motion(s, pred_x, 1);
                 if (mx >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
 
                 if (s->umvplus)
                     my = h263p_decode_umotion(s, pred_y);
                 else
                     my = ff_h263_decode_motion(s, pred_y, 1);
                 if (my >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
 
                 if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
@@ -806,14 +806,14 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 else
                     mx = ff_h263_decode_motion(s, pred_x, 1);
                 if (mx >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
 
                 if (s->umvplus)
                     my = h263p_decode_umotion(s, pred_y);
                 else
                     my = ff_h263_decode_motion(s, pred_y, 1);
                 if (my >= 0xffff)
-                    return -1;
+                    return SLICE_ERROR;
 
                 if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
@@ -831,7 +831,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             cbpc = get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
             if (cbpc < 0){
                 av_log(s->avctx, AV_LOG_ERROR, "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return SLICE_ERROR;
             }
         }while(cbpc == 8);
 
@@ -856,7 +856,7 @@ intra:
         cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if(cbpy<0){
             av_log(s->avctx, AV_LOG_ERROR, "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+            return SLICE_ERROR;
         }
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
