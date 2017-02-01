@@ -234,7 +234,7 @@ times 4 dw 78, -82
 times 4 dw 85, -88
 times 4 dw 90, -90
 
-section .text
+SECTION .text
 
 ; void ff_hevc_idctHxW_dc_{8,10}_<opt>(int16_t *coeffs)
 ; %1 = HxW
