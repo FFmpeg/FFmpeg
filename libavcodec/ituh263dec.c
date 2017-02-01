@@ -364,14 +364,14 @@ static void preview_obmc(MpegEncContext *s){
                 /* 16x16 motion prediction */
                 mot_val= ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
                 if (s->umvplus)
-                   mx = h263p_decode_umotion(s, pred_x);
+                    mx = h263p_decode_umotion(s, pred_x);
                 else
-                   mx = ff_h263_decode_motion(s, pred_x, 1);
+                    mx = ff_h263_decode_motion(s, pred_x, 1);
 
                 if (s->umvplus)
-                   my = h263p_decode_umotion(s, pred_y);
+                    my = h263p_decode_umotion(s, pred_y);
                 else
-                   my = ff_h263_decode_motion(s, pred_y, 1);
+                    my = ff_h263_decode_motion(s, pred_y, 1);
 
                 mot_val[0       ]= mot_val[2       ]=
                 mot_val[0+stride]= mot_val[2+stride]= mx;
@@ -382,16 +382,16 @@ static void preview_obmc(MpegEncContext *s){
             for(i=0;i<4;i++) {
                 mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
                 if (s->umvplus)
-                  mx = h263p_decode_umotion(s, pred_x);
+                    mx = h263p_decode_umotion(s, pred_x);
                 else
-                  mx = ff_h263_decode_motion(s, pred_x, 1);
+                    mx = ff_h263_decode_motion(s, pred_x, 1);
 
                 if (s->umvplus)
-                  my = h263p_decode_umotion(s, pred_y);
+                    my = h263p_decode_umotion(s, pred_y);
                 else
-                  my = ff_h263_decode_motion(s, pred_y, 1);
+                    my = ff_h263_decode_motion(s, pred_y, 1);
                 if (s->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
-                  skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
+                    skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
                 mot_val[0] = mx;
                 mot_val[1] = my;
             }
@@ -690,16 +690,16 @@ int ff_h263_decode_mb(MpegEncContext *s,
             for(i=0;i<4;i++) {
                 mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
                 if (s->umvplus)
-                  mx = h263p_decode_umotion(s, pred_x);
+                    mx = h263p_decode_umotion(s, pred_x);
                 else
-                  mx = ff_h263_decode_motion(s, pred_x, 1);
+                    mx = ff_h263_decode_motion(s, pred_x, 1);
                 if (mx >= 0xffff)
                     return -1;
 
                 if (s->umvplus)
-                  my = h263p_decode_umotion(s, pred_y);
+                    my = h263p_decode_umotion(s, pred_y);
                 else
-                  my = ff_h263_decode_motion(s, pred_y, 1);
+                    my = ff_h263_decode_motion(s, pred_y, 1);
                 if (my >= 0xffff)
                     return -1;
                 s->mv[0][i][0] = mx;
