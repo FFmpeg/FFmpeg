@@ -475,7 +475,6 @@ static void guess_mv(ERContext *s)
         none_left = 1;
         changed   = 1;
         for (pass = 0; (changed || pass < 2) && pass < 10; pass++) {
-            int mb_x, mb_y;
             int score_sum = 0;
 
             changed = 0;
