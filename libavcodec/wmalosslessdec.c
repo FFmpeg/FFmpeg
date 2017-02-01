@@ -205,7 +205,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (s->bits_per_sample == 16)
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
         else if (s->bits_per_sample == 24) {
-            av_log(avctx, AV_LOG_WARNING, "Decoding audio at 24 bit-depth\n");
             avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
             avctx->bits_per_raw_sample = 24;
         } else {
