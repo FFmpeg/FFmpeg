@@ -10,6 +10,7 @@
 /imgconvert
 /jpeg2000dwt
 /mathops
+/mjpegenc_huffman
 /motion
 /options
 /rangecoder

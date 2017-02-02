@@ -213,11 +213,13 @@ fate-vsynth%-jpeg2000-97:             DECINOPTS = -vcodec jpeg2000
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
 
-FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg mjpeg-422 mjpeg-444 mjpeg-trell
-fate-vsynth%-mjpeg:              ENCOPTS = -qscale 9 -pix_fmt yuvj420p
-fate-vsynth%-mjpeg-422:          ENCOPTS = -qscale 9 -pix_fmt yuvj422p
-fate-vsynth%-mjpeg-444:          ENCOPTS = -qscale 9 -pix_fmt yuvj444p
-fate-vsynth%-mjpeg-trell:        ENCOPTS = -qscale 9 -pix_fmt yuvj420p -trellis 1
+FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg mjpeg-422 mjpeg-444 mjpeg-trell mjpeg-huffman mjpeg-trell-huffman
+fate-vsynth%-mjpeg:                   ENCOPTS = -qscale 9 -pix_fmt yuvj420p
+fate-vsynth%-mjpeg-422:               ENCOPTS = -qscale 9 -pix_fmt yuvj422p
+fate-vsynth%-mjpeg-444:               ENCOPTS = -qscale 9 -pix_fmt yuvj444p
+fate-vsynth%-mjpeg-trell:             ENCOPTS = -qscale 9 -pix_fmt yuvj420p -trellis 1
+fate-vsynth%-mjpeg-huffman:           ENCOPTS = -qscale 9 -pix_fmt yuvj420p -huffman optimal
+fate-vsynth%-mjpeg-trell-huffman:     ENCOPTS = -qscale 9 -pix_fmt yuvj420p -trellis 1 -huffman optimal
 
 FATE_VCODEC-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) += mpeg1 mpeg1b
 fate-vsynth%-mpeg1:              FMT     = mpeg1video
