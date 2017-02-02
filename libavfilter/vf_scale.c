@@ -29,9 +29,9 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "scale.h"
 #include "video.h"
 #include "libavutil/avstring.h"
-#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -41,42 +41,11 @@
 #include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
 
-static const char *const var_names[] = {
-    "in_w",   "iw",
-    "in_h",   "ih",
-    "out_w",  "ow",
-    "out_h",  "oh",
-    "a",
-    "sar",
-    "dar",
-    "hsub",
-    "vsub",
-    "ohsub",
-    "ovsub",
-    NULL
-};
-
-enum var_name {
-    VAR_IN_W,   VAR_IW,
-    VAR_IN_H,   VAR_IH,
-    VAR_OUT_W,  VAR_OW,
-    VAR_OUT_H,  VAR_OH,
-    VAR_A,
-    VAR_SAR,
-    VAR_DAR,
-    VAR_HSUB,
-    VAR_VSUB,
-    VAR_OHSUB,
-    VAR_OVSUB,
-    VARS_NB
-};
-
 enum EvalMode {
     EVAL_MODE_INIT,
     EVAL_MODE_FRAME,
     EVAL_MODE_NB
 };
-
 
 typedef struct ScaleContext {
     const AVClass *class;
@@ -256,74 +225,16 @@ static int config_props(AVFilterLink *outlink)
                             outlink->src->inputs[1] :
                             outlink->src->inputs[0];
     enum AVPixelFormat outfmt = outlink->format;
-    ScaleContext *scale = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
-    int64_t w, h;
-    double var_values[VARS_NB], res;
-    char *expr;
+    ScaleContext *scale = ctx->priv;
+    int w, h;
     int ret;
-    int factor_w, factor_h;
 
-    var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
-    var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
-    var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
-    var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_A]     = (double) inlink->w / inlink->h;
-    var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
-        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
-    var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
-    var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
-    var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
-    var_values[VAR_OHSUB] = 1 << out_desc->log2_chroma_w;
-    var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
-
-    /* evaluate width and height */
-    av_expr_parse_and_eval(&res, (expr = scale->w_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
-    scale->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
-    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->h_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+    if ((ret = ff_scale_eval_dimensions(ctx,
+                                        scale->w_expr, scale->h_expr,
+                                        inlink, outlink,
+                                        &w, &h)) < 0)
         goto fail;
-    scale->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = res;
-    /* evaluate again the width, as it may depend on the output height */
-    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->w_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    scale->w = res;
-
-    w = scale->w;
-    h = scale->h;
-
-    /* Check if it is requested that the result has to be divisible by a some
-     * factor (w or h = -n with n being the factor). */
-    factor_w = 1;
-    factor_h = 1;
-    if (w < -1) {
-        factor_w = -w;
-    }
-    if (h < -1) {
-        factor_h = -h;
-    }
-
-    if (w < 0 && h < 0)
-        scale->w = scale->h = 0;
-
-    if (!(w = scale->w))
-        w = inlink->w;
-    if (!(h = scale->h))
-        h = inlink->h;
-
-    /* Make sure that the result is divisible by the factor we determined
-     * earlier. If no factor was set, it is nothing will happen as the default
-     * factor is 1 */
-    if (w < 0)
-        w = av_rescale(h, inlink->w, inlink->h * factor_w) * factor_w;
-    if (h < 0)
-        h = av_rescale(w, inlink->h, inlink->w * factor_h) * factor_h;
 
     /* Note that force_original_aspect_ratio may overwrite the previous set
      * dimensions so that it is not divisible by the set factors anymore. */
@@ -439,10 +350,6 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 
 fail:
-    av_log(NULL, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'.\n"
-           "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
-           expr, scale->w_expr, scale->h_expr);
     return ret;
 }
 

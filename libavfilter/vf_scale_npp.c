@@ -27,17 +27,16 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
-#include "libavutil/eval.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/internal.h"
-#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "scale.h"
 #include "video.h"
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -48,32 +47,6 @@ static const enum AVPixelFormat supported_formats[] = {
 
 static const enum AVPixelFormat deinterleaved_formats[][2] = {
     { AV_PIX_FMT_NV12, AV_PIX_FMT_YUV420P },
-};
-
-static const char *const var_names[] = {
-    "PI",
-    "PHI",
-    "E",
-    "in_w",   "iw",
-    "in_h",   "ih",
-    "out_w",  "ow",
-    "out_h",  "oh",
-    "a", "dar",
-    "sar",
-    NULL
-};
-
-enum var_name {
-    VAR_PI,
-    VAR_PHI,
-    VAR_E,
-    VAR_IN_W,   VAR_IW,
-    VAR_IN_H,   VAR_IH,
-    VAR_OUT_W,  VAR_OW,
-    VAR_OUT_H,  VAR_OH,
-    VAR_A, VAR_DAR,
-    VAR_SAR,
-    VARS_NB
 };
 
 enum ScaleStage {
@@ -359,64 +332,18 @@ static int nppscale_config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
-    NPPScaleContext  *s = ctx->priv;
-    int64_t w, h;
-    double var_values[VARS_NB], res;
-    char *expr;
+    NPPScaleContext *s = ctx->priv;
+    int w, h;
     int ret;
 
-    var_values[VAR_PI]    = M_PI;
-    var_values[VAR_PHI]   = M_PHI;
-    var_values[VAR_E]     = M_E;
-    var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
-    var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
-    var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
-    var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_A]     = (double) inlink->w / inlink->h;
-    var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
-        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
-    var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
-
-    /* evaluate width and height */
-    av_expr_parse_and_eval(&res, (expr = s->w_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
-    s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
-    if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+    if ((ret = ff_scale_eval_dimensions(s,
+                                        s->w_expr, s->h_expr,
+                                        inlink, outlink,
+                                        &w, &h)) < 0)
         goto fail;
-    s->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = res;
-    /* evaluate again the width, as it may depend on the output height */
-    if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    s->w = res;
 
-    w = s->w;
-    h = s->h;
-
-    /* sanity check params */
-    if (w <  -1 || h <  -1) {
-        av_log(ctx, AV_LOG_ERROR, "Size values less than -1 are not acceptable.\n");
-        return AVERROR(EINVAL);
-    }
-    if (w == -1 && h == -1)
-        s->w = s->h = 0;
-
-    if (!(w = s->w))
-        w = inlink->w;
-    if (!(h = s->h))
-        h = inlink->h;
-    if (w == -1)
-        w = av_rescale(h, inlink->w, inlink->h);
-    if (h == -1)
-        h = av_rescale(w, inlink->h, inlink->w);
-
-    if (w > INT_MAX || h > INT_MAX ||
-        (h * inlink->w) > INT_MAX  ||
-        (w * inlink->h) > INT_MAX)
+    if (((int64_t)h * inlink->w) > INT_MAX  ||
+        ((int64_t)w * inlink->h) > INT_MAX)
         av_log(ctx, AV_LOG_ERROR, "Rescaled value for width or height is too big.\n");
 
     outlink->w = w;
@@ -439,8 +366,6 @@ static int nppscale_config_props(AVFilterLink *outlink)
     return 0;
 
 fail:
-    av_log(NULL, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'\n", expr);
     return ret;
 }
 
