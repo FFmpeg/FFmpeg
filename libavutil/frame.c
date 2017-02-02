@@ -317,6 +317,8 @@ void av_frame_unref(AVFrame *frame)
 
     av_buffer_unref(&frame->hw_frames_ctx);
 
+    av_buffer_unref(&frame->opaque_ref);
+
     get_frame_defaults(frame);
 }
 
@@ -438,6 +440,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         memcpy(sd_dst->data, sd_src->data, sd_src->size);
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
+    }
+
+    av_buffer_unref(&dst->opaque_ref);
+    if (src->opaque_ref) {
+        dst->opaque_ref = av_buffer_ref(src->opaque_ref);
+        if (!dst->opaque_ref)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
