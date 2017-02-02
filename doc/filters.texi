@@ -9643,6 +9643,17 @@ Macroblock size. Default @code{16}.
 Search parameter. Default @code{7}.
 @end table
 
+@section midequalizer
+
+Apply Midway Image Equalization effect using two video streams.
+
+This filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes to process. Default is @code{15}, which is all available planes.
+@end table
+
 @section minterpolate
 
 Convert the video to specified frame rate using motion interpolation.

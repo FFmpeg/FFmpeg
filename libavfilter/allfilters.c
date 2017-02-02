@@ -235,6 +235,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(MERGEPLANES,    mergeplanes,    vf);
     REGISTER_FILTER(MESTIMATE,      mestimate,      vf);
     REGISTER_FILTER(METADATA,       metadata,       vf);
+    REGISTER_FILTER(MIDEQUALIZER,   midequalizer,   vf);
     REGISTER_FILTER(MINTERPOLATE,   minterpolate,   vf);
     REGISTER_FILTER(MPDECIMATE,     mpdecimate,     vf);
     REGISTER_FILTER(NEGATE,         negate,         vf);
