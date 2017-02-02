@@ -1098,7 +1098,7 @@ static int handle_p_frame_apng(AVCodecContext *avctx, PNGDecContext *s,
 static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                                AVFrame *p, AVPacket *avpkt)
 {
-    AVDictionary *metadata  = NULL;
+    AVDictionary **metadatap = NULL;
     uint32_t tag, length;
     int decode_next_dat = 0;
     int ret;
@@ -1109,7 +1109,6 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
 
             if (avctx->codec_id == AV_CODEC_ID_PNG &&
                 avctx->skip_frame == AVDISCARD_ALL) {
-                av_frame_set_metadata(p, metadata);
                 return 0;
             }
 
@@ -1155,6 +1154,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             }
         }
 
+        metadatap = avpriv_frame_get_metadatap(p);
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
             if ((ret = decode_ihdr_chunk(avctx, s, length)) < 0)
@@ -1196,12 +1196,12 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 goto skip_tag;
             break;
         case MKTAG('t', 'E', 'X', 't'):
-            if (decode_text_chunk(s, length, 0, &metadata) < 0)
+            if (decode_text_chunk(s, length, 0, metadatap) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken tEXt chunk\n");
             bytestream2_skip(&s->gb, length + 4);
             break;
         case MKTAG('z', 'T', 'X', 't'):
-            if (decode_text_chunk(s, length, 1, &metadata) < 0)
+            if (decode_text_chunk(s, length, 1, metadatap) < 0)
                 av_log(avctx, AV_LOG_WARNING, "Broken zTXt chunk\n");
             bytestream2_skip(&s->gb, length + 4);
             break;
@@ -1238,9 +1238,9 @@ skip_tag:
         }
     }
 exit_loop:
+
     if (avctx->codec_id == AV_CODEC_ID_PNG &&
         avctx->skip_frame == AVDISCARD_ALL) {
-        av_frame_set_metadata(p, metadata);
         return 0;
     }
 
@@ -1290,12 +1290,9 @@ exit_loop:
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
     ff_thread_report_progress(&s->previous_picture, INT_MAX, 0);
 
-    av_frame_set_metadata(p, metadata);
-    metadata   = NULL;
     return 0;
 
 fail:
-    av_dict_free(&metadata);
     ff_thread_report_progress(&s->picture, INT_MAX, 0);
     ff_thread_report_progress(&s->previous_picture, INT_MAX, 0);
     return ret;
