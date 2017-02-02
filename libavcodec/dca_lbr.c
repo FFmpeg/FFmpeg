@@ -310,7 +310,7 @@ static int parse_tonal(DCALbrDecoder *s, int group)
                 break;  // End of subframe
 
             freq += diff - 2;
-            if (freq >> (5 - group) > s->nsubbands * 4 - 5) {
+            if (freq >> (5 - group) > s->nsubbands * 4 - 6) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid spectral line offset\n");
                 return -1;
             }
