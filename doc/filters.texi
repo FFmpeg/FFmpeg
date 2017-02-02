@@ -18134,7 +18134,7 @@ audio instead of video.
 
 @item loop
 Specifies how many times to read the stream in sequence.
-If the value is less than 1, the stream will be read again and again.
+If the value is 0, the stream will be looped infinitely.
 Default value is "1".
 
 Note that when the movie is looped the source timestamps are not
