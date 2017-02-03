@@ -1261,13 +1261,15 @@ static int video_open(VideoState *is)
     }
 
     if (!window) {
-        int flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+        int flags = SDL_WINDOW_SHOWN;
         if (!window_title)
             window_title = input_filename;
         if (is_full_screen)
             flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
         if (borderless)
             flags |= SDL_WINDOW_BORDERLESS;
+        else
+            flags |= SDL_WINDOW_RESIZABLE;
         window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window) {
