@@ -1983,13 +1983,13 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static inline int mov_stsc_index_valid(int index, int count)
+static inline int mov_stsc_index_valid(unsigned int index, unsigned int count)
 {
-    return index + 1 < count;
+    return index < count - 1;
 }
 
 /* Compute the samples value for the stsc entry at the given index. */
-static inline int mov_get_stsc_samples(MOVStreamContext *sc, int index)
+static inline int mov_get_stsc_samples(MOVStreamContext *sc, unsigned int index)
 {
     int chunk_count;
 
@@ -3982,7 +3982,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 {
     MOVStreamContext *sc = st->priv_data;
     int sample, time_sample;
-    int i;
+    unsigned int i;
 
     sample = av_index_search_timestamp(st, timestamp, flags);
     av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
