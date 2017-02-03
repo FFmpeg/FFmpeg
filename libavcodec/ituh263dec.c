@@ -608,6 +608,73 @@ static int h263_get_modb(GetBitContext *gb, int pb_frame, int *cbpb)
     return mv;
 }
 
+#define tab_size ((signed)FF_ARRAY_ELEMS(s->direct_scale_mv[0]))
+#define tab_bias (tab_size / 2)
+static inline void set_one_direct_mv(MpegEncContext *s, Picture *p, int i)
+{
+    int xy           = s->block_index[i];
+    uint16_t time_pp = s->pp_time;
+    uint16_t time_pb = s->pb_time;
+    int p_mx, p_my;
+
+    p_mx = p->motion_val[0][xy][0];
+    if ((unsigned)(p_mx + tab_bias) < tab_size) {
+        s->mv[0][i][0] = s->direct_scale_mv[0][p_mx + tab_bias];
+        s->mv[1][i][0] = s->direct_scale_mv[1][p_mx + tab_bias];
+    } else {
+        s->mv[0][i][0] = p_mx * time_pb / time_pp;
+        s->mv[1][i][0] = p_mx * (time_pb - time_pp) / time_pp;
+    }
+    p_my = p->motion_val[0][xy][1];
+    if ((unsigned)(p_my + tab_bias) < tab_size) {
+        s->mv[0][i][1] = s->direct_scale_mv[0][p_my + tab_bias];
+        s->mv[1][i][1] = s->direct_scale_mv[1][p_my + tab_bias];
+    } else {
+        s->mv[0][i][1] = p_my * time_pb / time_pp;
+        s->mv[1][i][1] = p_my * (time_pb - time_pp) / time_pp;
+    }
+}
+
+/**
+ * @return the mb_type
+ */
+static int set_direct_mv(MpegEncContext *s)
+{
+    const int mb_index = s->mb_x + s->mb_y * s->mb_stride;
+    Picture *p = &s->next_picture;
+    int colocated_mb_type = p->mb_type[mb_index];
+    int i;
+
+    if (s->codec_tag == AV_RL32("U263") && p->f->pict_type == AV_PICTURE_TYPE_I) {
+        p = &s->last_picture;
+        colocated_mb_type = p->mb_type[mb_index];
+    }
+
+    if (IS_8X8(colocated_mb_type)) {
+        s->mv_type = MV_TYPE_8X8;
+        for (i = 0; i < 4; i++)
+            set_one_direct_mv(s, p, i);
+        return MB_TYPE_DIRECT2 | MB_TYPE_8x8 | MB_TYPE_L0L1;
+    } else {
+        set_one_direct_mv(s, p, 0);
+        s->mv[0][1][0] =
+        s->mv[0][2][0] =
+        s->mv[0][3][0] = s->mv[0][0][0];
+        s->mv[0][1][1] =
+        s->mv[0][2][1] =
+        s->mv[0][3][1] = s->mv[0][0][1];
+        s->mv[1][1][0] =
+        s->mv[1][2][0] =
+        s->mv[1][3][0] = s->mv[1][0][0];
+        s->mv[1][1][1] =
+        s->mv[1][2][1] =
+        s->mv[1][3][1] = s->mv[1][0][1];
+        s->mv_type = MV_TYPE_8X8;
+        // Note see prev line
+        return MB_TYPE_DIRECT2 | MB_TYPE_16x16 | MB_TYPE_L0L1;
+    }
+}
+
 int ff_h263_decode_mb(MpegEncContext *s,
                       int16_t block[6][64])
 {
@@ -764,7 +831,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
 
         if(IS_DIRECT(mb_type)){
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-            mb_type |= ff_mpeg4_set_direct_mv(s, 0, 0);
+            mb_type |= set_direct_mv(s);
         }else{
             s->mv_dir = 0;
             s->mv_type= MV_TYPE_16X16;
