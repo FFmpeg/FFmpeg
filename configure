@@ -872,7 +872,7 @@ check_code(){
 check_cppflags(){
     log check_cppflags "$@"
     check_cpp "$@" <<EOF && append CPPFLAGS "$@"
-int x;
+#include <stdlib.h>;
 EOF
 }
 
@@ -1166,7 +1166,7 @@ check_host_cpp(){
 check_host_cppflags(){
     log check_host_cppflags "$@"
     check_host_cpp "$@" <<EOF && append host_cppflags "$@"
-int x;
+#include <stdlib.h>;
 EOF
 }
 
