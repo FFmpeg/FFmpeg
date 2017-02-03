@@ -6327,6 +6327,9 @@ EOF
     # Issue has been fixed in MSVC v19.00.24218.
     check_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
         check_cflags -d2SSAOptimizer-
+    # enable utf-8 source processing on VS2015 U2 and newer
+    check_cpp_condition windows.h "_MSC_FULL_VER >= 190023918" &&
+        add_cflags -utf-8
 fi
 
 for pfx in "" host_; do
