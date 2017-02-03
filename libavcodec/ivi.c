@@ -1060,7 +1060,9 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int             buf_size = avpkt->size;
     int             result, p, b;
 
-    init_get_bits(&ctx->gb, buf, buf_size * 8);
+    result = init_get_bits8(&ctx->gb, buf, buf_size);
+    if (result < 0)
+        return result;
     ctx->frame_data = buf;
     ctx->frame_size = buf_size;
 
