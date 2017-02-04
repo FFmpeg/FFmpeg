@@ -467,8 +467,9 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             goto icon_error;
         }
 
-        pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
-        pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot;
+        //that would keep the correct location of mouse with hidpi screens
+        pos.x = ci.ptScreenPos.x* desktopvertres / vertres - clip_rect.left - info.xHotspot;
+        pos.y = ci.ptScreenPos.y* desktopvertres / vertres - clip_rect.top - info.yHotspot;
 
         if (hwnd) {
             RECT rect;
@@ -483,15 +484,22 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         }
 
         //that would keep the correct location of mouse with hidpi screens
-        pos.x = pos.x * desktopvertres / vertres;
-        pos.y = pos.y * desktopvertres / vertres;
+        //pos.x = pos.x * desktopvertres / vertres;
+        //pos.y = pos.y * desktopvertres / vertres;
 
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
 
         if (pos.x >= 0 && pos.x <= clip_rect.right - clip_rect.left &&
                 pos.y >= 0 && pos.y <= clip_rect.bottom - clip_rect.top) {
-        		if (!DrawIcon(gdigrab->dest_hdc, pos.x, pos.y, icon))
+        		double dpifactor=desktopvertres / vertres;
+				int xWidth=GetSystemMetrics(SM_CXCURSOR)*dpifactor;
+        		int yWidth=GetSystemMetrics(SM_CYCURSOR)*dpifactor;
+        		xWidth=xWidth-xWidth%2;
+        		yWidth=yWidth-yWidth%2;
+        		//av_log(s1, AV_LOG_WARNING, "cursor size (%i,%i)",xWidth,yWidth);
+        		if(!DrawIconEx(gdigrab->dest_hdc,pos.x,pos.y,icon,xWidth,yWidth,0,NULL,0x0003|0x0004))
+        			//av_log(s1, AV_LOG_WARNING, "error drawing icon");
         			CURSOR_ERROR("Couldn't draw icon");
         		}
 
