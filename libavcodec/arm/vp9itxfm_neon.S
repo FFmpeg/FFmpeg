@@ -690,21 +690,21 @@ function \txfm\()16_1d_4x16_pass1_neon
         @ for the first slice of the second pass (where it is the
         @ last 4x4 block).
         add             r0,  r0,  #8
-.irp i, 20, 24, 28
-        vst1.16         {d\i}, [r0,:64]!
-.endr
+        vst1.16         {d20}, [r0,:64]!
+        vst1.16         {d24}, [r0,:64]!
+        vst1.16         {d28}, [r0,:64]!
         add             r0,  r0,  #8
-.irp i, 21, 25, 29
-        vst1.16         {d\i}, [r0,:64]!
-.endr
+        vst1.16         {d21}, [r0,:64]!
+        vst1.16         {d25}, [r0,:64]!
+        vst1.16         {d29}, [r0,:64]!
         add             r0,  r0,  #8
-.irp i, 22, 26, 30
-        vst1.16         {d\i}, [r0,:64]!
-.endr
+        vst1.16         {d22}, [r0,:64]!
+        vst1.16         {d26}, [r0,:64]!
+        vst1.16         {d30}, [r0,:64]!
         add             r0,  r0,  #8
-.irp i, 23, 27, 31
-        vst1.16         {d\i}, [r0,:64]!
-.endr
+        vst1.16         {d23}, [r0,:64]!
+        vst1.16         {d27}, [r0,:64]!
+        vst1.16         {d31}, [r0,:64]!
         vmov            d28, d16
         vmov            d29, d17
         vmov            d30, d18
