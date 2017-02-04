@@ -30,6 +30,7 @@ version <next>:
 - amultiply filter
 - Block-Matching 3d (bm3d) denoising filter
 - acrossover filter
+- ilbc decoder
 
 
 version 4.0:

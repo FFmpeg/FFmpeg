@@ -424,6 +424,7 @@ extern AVCodec ff_g729_decoder;
 extern AVCodec ff_gsm_decoder;
 extern AVCodec ff_gsm_ms_decoder;
 extern AVCodec ff_iac_decoder;
+extern AVCodec ff_ilbc_decoder;
 extern AVCodec ff_imc_decoder;
 extern AVCodec ff_interplay_acm_decoder;
 extern AVCodec ff_mace3_decoder;
