@@ -598,6 +598,51 @@ endfunc
         st1             {v2.8h},  [\src], \inc
 .endm
 
+.macro load_add_store coef0, coef1, coef2, coef3, coef4, coef5, coef6, coef7, tmp1, tmp2
+        srshr           \coef0, \coef0, #6
+        ld1             {v2.8b},  [x0], x1
+        srshr           \coef1, \coef1, #6
+        ld1             {v3.8b},  [x3], x1
+        srshr           \coef2, \coef2, #6
+        ld1             {v4.8b},  [x0], x1
+        srshr           \coef3, \coef3, #6
+        uaddw           \coef0, \coef0, v2.8b
+        ld1             {v5.8b},  [x3], x1
+        uaddw           \coef1, \coef1, v3.8b
+        srshr           \coef4, \coef4, #6
+        ld1             {v6.8b},  [x0], x1
+        srshr           \coef5, \coef5, #6
+        ld1             {v7.8b},  [x3], x1
+        sqxtun          v2.8b,  \coef0
+        srshr           \coef6, \coef6, #6
+        sqxtun          v3.8b,  \coef1
+        srshr           \coef7, \coef7, #6
+        uaddw           \coef2, \coef2, v4.8b
+        ld1             {\tmp1},  [x0], x1
+        uaddw           \coef3, \coef3, v5.8b
+        ld1             {\tmp2},  [x3], x1
+        sqxtun          v4.8b,  \coef2
+        sub             x0,  x0,  x1, lsl #2
+        sub             x3,  x3,  x1, lsl #2
+        sqxtun          v5.8b,  \coef3
+        uaddw           \coef4, \coef4, v6.8b
+        st1             {v2.8b},  [x0], x1
+        uaddw           \coef5, \coef5, v7.8b
+        st1             {v3.8b},  [x3], x1
+        sqxtun          v6.8b,  \coef4
+        st1             {v4.8b},  [x0], x1
+        sqxtun          v7.8b,  \coef5
+        st1             {v5.8b},  [x3], x1
+        uaddw           \coef6, \coef6, \tmp1
+        st1             {v6.8b},  [x0], x1
+        uaddw           \coef7, \coef7, \tmp2
+        st1             {v7.8b},  [x3], x1
+        sqxtun          \tmp1,  \coef6
+        sqxtun          \tmp2,  \coef7
+        st1             {\tmp1},  [x0], x1
+        st1             {\tmp2},  [x3], x1
+.endm
+
 // Read a vertical 8x16 slice out of a 16x16 matrix, do a transform on it,
 // transpose into a horizontal 16x8 slice and store.
 // x0 = dst (temp buffer)
@@ -671,53 +716,8 @@ function \txfm\()16_1d_8x16_pass2_neon
         lsl             x1,  x1,  #1
         bl              \txfm\()16
 
-.macro load_add_store coef0, coef1, coef2, coef3, coef4, coef5, coef6, coef7, tmp1, tmp2
-        srshr           \coef0, \coef0, #6
-        ld1             {v2.8b},  [x0], x1
-        srshr           \coef1, \coef1, #6
-        ld1             {v3.8b},  [x3], x1
-        srshr           \coef2, \coef2, #6
-        ld1             {v4.8b},  [x0], x1
-        srshr           \coef3, \coef3, #6
-        uaddw           \coef0, \coef0, v2.8b
-        ld1             {v5.8b},  [x3], x1
-        uaddw           \coef1, \coef1, v3.8b
-        srshr           \coef4, \coef4, #6
-        ld1             {v6.8b},  [x0], x1
-        srshr           \coef5, \coef5, #6
-        ld1             {v7.8b},  [x3], x1
-        sqxtun          v2.8b,  \coef0
-        srshr           \coef6, \coef6, #6
-        sqxtun          v3.8b,  \coef1
-        srshr           \coef7, \coef7, #6
-        uaddw           \coef2, \coef2, v4.8b
-        ld1             {\tmp1},  [x0], x1
-        uaddw           \coef3, \coef3, v5.8b
-        ld1             {\tmp2},  [x3], x1
-        sqxtun          v4.8b,  \coef2
-        sub             x0,  x0,  x1, lsl #2
-        sub             x3,  x3,  x1, lsl #2
-        sqxtun          v5.8b,  \coef3
-        uaddw           \coef4, \coef4, v6.8b
-        st1             {v2.8b},  [x0], x1
-        uaddw           \coef5, \coef5, v7.8b
-        st1             {v3.8b},  [x3], x1
-        sqxtun          v6.8b,  \coef4
-        st1             {v4.8b},  [x0], x1
-        sqxtun          v7.8b,  \coef5
-        st1             {v5.8b},  [x3], x1
-        uaddw           \coef6, \coef6, \tmp1
-        st1             {v6.8b},  [x0], x1
-        uaddw           \coef7, \coef7, \tmp2
-        st1             {v7.8b},  [x3], x1
-        sqxtun          \tmp1,  \coef6
-        sqxtun          \tmp2,  \coef7
-        st1             {\tmp1},  [x0], x1
-        st1             {\tmp2},  [x3], x1
-.endm
         load_add_store  v16.8h, v17.8h, v18.8h, v19.8h, v20.8h, v21.8h, v22.8h, v23.8h, v16.8b, v17.8b
         load_add_store  v24.8h, v25.8h, v26.8h, v27.8h, v28.8h, v29.8h, v30.8h, v31.8h, v16.8b, v17.8b
-.purgem load_add_store
 
         br              x14
 endfunc
