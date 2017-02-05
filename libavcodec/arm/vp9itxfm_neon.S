@@ -657,6 +657,42 @@ function iadst16
         bx              lr
 endfunc
 
+.macro load_add_store coef0, coef1, coef2, coef3
+        vrshr.s16       \coef0, \coef0, #6
+        vrshr.s16       \coef1, \coef1, #6
+
+        vld1.32         {d4[]},   [r0,:32], r1
+        vld1.32         {d4[1]},  [r3,:32], r1
+        vrshr.s16       \coef2, \coef2, #6
+        vrshr.s16       \coef3, \coef3, #6
+        vld1.32         {d5[]},   [r0,:32], r1
+        vld1.32         {d5[1]},  [r3,:32], r1
+        vaddw.u8        \coef0, \coef0, d4
+        vld1.32         {d6[]},   [r0,:32], r1
+        vld1.32         {d6[1]},  [r3,:32], r1
+        vaddw.u8        \coef1, \coef1, d5
+        vld1.32         {d7[]},   [r0,:32], r1
+        vld1.32         {d7[1]},  [r3,:32], r1
+
+        vqmovun.s16     d4,  \coef0
+        vqmovun.s16     d5,  \coef1
+        sub             r0,  r0,  r1, lsl #2
+        sub             r3,  r3,  r1, lsl #2
+        vaddw.u8        \coef2, \coef2, d6
+        vaddw.u8        \coef3, \coef3, d7
+        vst1.32         {d4[0]},  [r0,:32], r1
+        vst1.32         {d4[1]},  [r3,:32], r1
+        vqmovun.s16     d6,  \coef2
+        vst1.32         {d5[0]},  [r0,:32], r1
+        vst1.32         {d5[1]},  [r3,:32], r1
+        vqmovun.s16     d7,  \coef3
+
+        vst1.32         {d6[0]},  [r0,:32], r1
+        vst1.32         {d6[1]},  [r3,:32], r1
+        vst1.32         {d7[0]},  [r0,:32], r1
+        vst1.32         {d7[1]},  [r3,:32], r1
+.endm
+
 .macro itxfm16_1d_funcs txfm
 @ Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
 @ transpose into a horizontal 16x4 slice and store.
@@ -739,44 +775,8 @@ function \txfm\()16_1d_4x16_pass2_neon
         lsl             r1,  r1,  #1
         bl              \txfm\()16
 
-.macro load_add_store coef0, coef1, coef2, coef3
-        vrshr.s16       \coef0, \coef0, #6
-        vrshr.s16       \coef1, \coef1, #6
-
-        vld1.32         {d4[]},   [r0,:32], r1
-        vld1.32         {d4[1]},  [r3,:32], r1
-        vrshr.s16       \coef2, \coef2, #6
-        vrshr.s16       \coef3, \coef3, #6
-        vld1.32         {d5[]},   [r0,:32], r1
-        vld1.32         {d5[1]},  [r3,:32], r1
-        vaddw.u8        \coef0, \coef0, d4
-        vld1.32         {d6[]},   [r0,:32], r1
-        vld1.32         {d6[1]},  [r3,:32], r1
-        vaddw.u8        \coef1, \coef1, d5
-        vld1.32         {d7[]},   [r0,:32], r1
-        vld1.32         {d7[1]},  [r3,:32], r1
-
-        vqmovun.s16     d4,  \coef0
-        vqmovun.s16     d5,  \coef1
-        sub             r0,  r0,  r1, lsl #2
-        sub             r3,  r3,  r1, lsl #2
-        vaddw.u8        \coef2, \coef2, d6
-        vaddw.u8        \coef3, \coef3, d7
-        vst1.32         {d4[0]},  [r0,:32], r1
-        vst1.32         {d4[1]},  [r3,:32], r1
-        vqmovun.s16     d6,  \coef2
-        vst1.32         {d5[0]},  [r0,:32], r1
-        vst1.32         {d5[1]},  [r3,:32], r1
-        vqmovun.s16     d7,  \coef3
-
-        vst1.32         {d6[0]},  [r0,:32], r1
-        vst1.32         {d6[1]},  [r3,:32], r1
-        vst1.32         {d7[0]},  [r0,:32], r1
-        vst1.32         {d7[1]},  [r3,:32], r1
-.endm
         load_add_store  q8,  q9,  q10, q11
         load_add_store  q12, q13, q14, q15
-.purgem load_add_store
 
         pop             {pc}
 endfunc
