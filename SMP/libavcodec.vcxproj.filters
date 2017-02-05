@@ -253,6 +253,9 @@
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\hpeldsp_vp3.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\vp6dsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -2647,6 +2650,9 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vorbisdsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\hpeldsp_vp3_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\vp6dsp_init.c">

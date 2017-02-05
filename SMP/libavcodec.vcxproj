@@ -142,6 +142,7 @@
     <YASM Include="..\libavcodec\x86\v210enc.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
+    <YASM Include="..\libavcodec\x86\hpeldsp_vp3.asm" />
     <YASM Include="..\libavcodec\x86\vp6dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp9intrapred.asm" />
     <YASM Include="..\libavcodec\x86\vp9intrapred_16bpp.asm" />
@@ -942,6 +943,7 @@
     <ClCompile Include="..\libavcodec\x86\v210-init.c" />
     <ClCompile Include="..\libavcodec\x86\v210enc_init.c" />
     <ClCompile Include="..\libavcodec\x86\vorbisdsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\hpeldsp_vp3_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp6dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\vp9dsp_init_10bpp.c" />

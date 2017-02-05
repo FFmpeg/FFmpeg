@@ -261,6 +261,7 @@
     <ClCompile Include="..\libavfilter\vf_mergeplanes.c" />
     <ClCompile Include="..\libavfilter\vf_mestimate.c" />
     <ClCompile Include="..\libavfilter\motion_estimation.c" />
+    <ClCompile Include="..\libavfilter\vf_midequalizer.c" />
     <ClCompile Include="..\libavfilter\vf_minterpolate.c" />
     <ClCompile Include="..\libavfilter\vf_mpdecimate.c" />
     <ClCompile Include="..\libavfilter\vf_nlmeans.c" />
@@ -288,6 +289,7 @@
     <ClCompile Include="..\libavfilter\vf_rotate.c" />
     <ClCompile Include="..\libavfilter\vf_sab.c" />
     <ClCompile Include="..\libavfilter\vf_scale.c" />
+    <ClCompile Include="..\libavfilter\scale.c" />
     <ClCompile Include="..\libavfilter\vf_selectivecolor.c" />
     <ClCompile Include="..\libavfilter\vf_separatefields.c" />
     <ClCompile Include="..\libavfilter\vf_aspect.c" />
@@ -303,6 +305,7 @@
     <ClCompile Include="..\libavfilter\vf_swaprect.c" />
     <ClCompile Include="..\libavfilter\vf_swapuv.c" />
     <ClCompile Include="..\libavfilter\vf_telecine.c" />
+    <ClCompile Include="..\libavfilter\vf_threshold.c" />
     <ClCompile Include="..\libavfilter\vf_thumbnail.c" />
     <ClCompile Include="..\libavfilter\vf_tile.c" />
     <ClCompile Include="..\libavfilter\vf_tinterlace.c" />

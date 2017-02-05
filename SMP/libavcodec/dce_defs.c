@@ -3476,6 +3476,9 @@ void ff_psdsp_init_arm(PSDSPContext *s) {return;}
 void ff_psdsp_init_mips(PSDSPContext *s) {return;}
 void ff_qpeldsp_init_mips(QpelDSPContext *c) {return;}
 void ff_rdft_init_arm(RDFTContext *s) {return;}
+#if !(ARCH_X86_32)
+void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc) {return;}
+#endif
 void ff_rv34dsp_init_arm(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_aarch64(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_arm(RV34DSPContext *c) {return;}
