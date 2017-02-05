@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.6:
+- avcodec/pngdec: Check trns more completely
+- avcodec/interplayvideo: Move parameter change check up
 - avcodec/mjpegdec: Check for for the bitstream end in mjpeg_decode_scan_progressive_ac()
 - avformat/flacdec: Check avio_read result when reading flac block header.
 - avcodec/utils: correct align value for interplay
