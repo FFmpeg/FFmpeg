@@ -115,6 +115,11 @@ static av_cold int init(AVFilterContext *ctx)
     if (!args)
         return AVERROR(ENOMEM);
     arg = av_strtok(args, "|", &tokenizer);
+    if (!arg) {
+        av_log(ctx, AV_LOG_ERROR, "Channel layout not specified\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
     ret = ff_parse_channel_layout(&pan->out_channel_layout,
                                   &pan->nb_output_channels, arg, ctx);
     if (ret < 0)
