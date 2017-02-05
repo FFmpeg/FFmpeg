@@ -42,7 +42,7 @@ static int msf_probe(AVProbeData *p)
 
 static int msf_read_header(AVFormatContext *s)
 {
-    unsigned codec, align, size;
+    unsigned codec, size;
     AVStream *st;
     int ret;
 
@@ -61,12 +61,10 @@ static int msf_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rb32(s->pb);
     if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
-    align = avio_rb32(s->pb) ;
-    if (align > INT_MAX / st->codecpar->channels)
-        return AVERROR_INVALIDDATA;
-    st->codecpar->block_align = align;
+    // avio_rb32(s->pb); /* byte flags with encoder info */
     switch (codec) {
     case 0: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE; break;
+    case 1: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE; break;
     case 3: st->codecpar->block_align = 16 * st->codecpar->channels;
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX; break;
     case 4:
@@ -76,8 +74,10 @@ static int msf_read_header(AVFormatContext *s)
             if (ret < 0)
                 return ret;
             memset(st->codecpar->extradata, 0, st->codecpar->extradata_size);
-            AV_WL16(st->codecpar->extradata, 1);
-            AV_WL16(st->codecpar->extradata+4, 4096);
+            AV_WL16(st->codecpar->extradata, 1); /* version */
+            AV_WL16(st->codecpar->extradata+2, 2048 * st->codecpar->channels); /* unknown size */
+            AV_WL16(st->codecpar->extradata+6, codec == 4 ? 1 : 0); /* joint stereo */
+            AV_WL16(st->codecpar->extradata+8, codec == 4 ? 1 : 0); /* joint stereo (repeat?) */
             AV_WL16(st->codecpar->extradata+10, 1);
             st->codecpar->codec_id = AV_CODEC_ID_ATRAC3;    break;
     case 7: st->need_parsing = AVSTREAM_PARSE_FULL_RAW;

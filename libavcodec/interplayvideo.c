@@ -989,6 +989,11 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret;
 
+    if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
+        av_frame_unref(s->last_frame);
+        av_frame_unref(s->second_last_frame);
+    }
+
     if (buf_size < 2)
         return AVERROR_INVALIDDATA;
 
@@ -1000,10 +1005,6 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     if (buf_size < s->decoding_map_size + 2)
         return buf_size;
 
-    if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
-        av_frame_unref(s->last_frame);
-        av_frame_unref(s->second_last_frame);
-    }
 
     s->decoding_map = buf + 2;
     bytestream2_init(&s->stream_ptr, buf + 2 + s->decoding_map_size,

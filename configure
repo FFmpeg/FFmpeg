@@ -1993,6 +1993,7 @@ SYSTEM_FUNCS="
 
 TOOLCHAIN_FEATURES="
     as_dn_directive
+    as_fpu_directive
     as_func
     as_object_arch
     asm_mod_q
@@ -4803,7 +4804,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         dlltool="${cross_prefix}dlltool"
         if check_cmd lib.exe -list; then
-            SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); lib.exe /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+            SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); lib.exe /nologo /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
             if enabled x86_64; then
                 LIBTARGET=x64
             fi
@@ -5311,6 +5312,9 @@ EOF
     check_as <<EOF && enable as_dn_directive
 ra .dn d0.i16
 .unreq ra
+EOF
+    check_as <<EOF && enable as_fpu_directive
+.fpu neon
 EOF
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
@@ -6323,6 +6327,9 @@ EOF
     # Issue has been fixed in MSVC v19.00.24218.
     check_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
         check_cflags -d2SSAOptimizer-
+    # enable utf-8 source processing on VS2015 U2 and newer
+    check_cpp_condition windows.h "_MSC_FULL_VER >= 190023918" &&
+        add_cflags -utf-8
 fi
 
 for pfx in "" host_; do

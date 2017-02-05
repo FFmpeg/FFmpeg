@@ -1052,7 +1052,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         for (i = 0; i < (size * size); i++) {
                             coeffs[i] = ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);
                         }
-                        s->hevcdsp.transform_add[log2_trafo_size_c-2](dst, coeffs, stride);
+                        s->hevcdsp.add_residual[log2_trafo_size_c-2](dst, coeffs, stride);
                     }
             }
 
@@ -1081,7 +1081,7 @@ static int hls_transform_unit(HEVCContext *s, int x0, int y0,
                         for (i = 0; i < (size * size); i++) {
                             coeffs[i] = ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);
                         }
-                        s->hevcdsp.transform_add[log2_trafo_size_c-2](dst, coeffs, stride);
+                        s->hevcdsp.add_residual[log2_trafo_size_c-2](dst, coeffs, stride);
                     }
             }
         } else if (s->ps.sps->chroma_format_idc && blk_idx == 3) {

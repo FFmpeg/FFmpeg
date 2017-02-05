@@ -40,6 +40,12 @@
 #   define FUNC @
 #endif
 
+#if HAVE_AS_FPU_DIRECTIVE
+#   define FPU
+#else
+#   define FPU @
+#endif
+
 #if   HAVE_NEON
         .arch           armv7-a
 #elif HAVE_ARMV6T2
@@ -54,11 +60,11 @@ ELF     .object_arch    armv4
 #endif
 
 #if   HAVE_NEON
-        .fpu            neon
+FPU     .fpu            neon
 ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
 ELF     .eabi_attribute 12, 0           @ suppress Tag_Advanced_SIMD_arch
 #elif HAVE_VFP
-        .fpu            vfp
+FPU     .fpu            vfp
 ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
 #endif
 

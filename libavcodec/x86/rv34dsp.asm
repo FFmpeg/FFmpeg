@@ -64,6 +64,7 @@ rv34_idct dc
 rv34_idct dc_noround
 
 ; ff_rv34_idct_dc_add_mmx(uint8_t *dst, int stride, int dc);
+%if ARCH_X86_32
 INIT_MMX mmx
 cglobal rv34_idct_dc_add, 3, 3
     ; calculate DC
@@ -97,6 +98,7 @@ cglobal rv34_idct_dc_add, 3, 3
     movh       [r2], m4
     movh       [r2+r1], m5
     RET
+%endif
 
 ; Load coeffs and perform row transform
 ; Output: coeffs in mm[0467], rounder in mm5
@@ -167,7 +169,7 @@ cglobal rv34_idct_add, 3,3,0, d, s, b
     ret
 
 ; ff_rv34_idct_dc_add_sse4(uint8_t *dst, int stride, int dc);
-INIT_XMM sse4
+%macro RV34_IDCT_DC_ADD 0
 cglobal rv34_idct_dc_add, 3, 3, 6
     ; load data
     IDCT_DC_ROUND r2
@@ -190,7 +192,22 @@ cglobal rv34_idct_dc_add, 3, 3, 6
     paddw      m4, m0
     packuswb   m2, m4
     movd      [r0], m2
+%if cpuflag(sse4)
     pextrd [r0+r1], m2, 1
     pextrd    [r2], m2, 2
     pextrd [r2+r1], m2, 3
+%else
+    psrldq     m2, 4
+    movd   [r0+r1], m2
+    psrldq     m2, 4
+    movd      [r2], m2
+    psrldq     m2, 4
+    movd   [r2+r1], m2
+%endif
     RET
+%endmacro
+
+INIT_XMM sse2
+RV34_IDCT_DC_ADD
+INIT_XMM sse4
+RV34_IDCT_DC_ADD

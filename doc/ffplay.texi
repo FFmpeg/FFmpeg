@@ -62,6 +62,8 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 Seek by bytes.
 @item -nodisp
 Disable graphical display.
+@item -noborder
+Borderless window.
 @item -volume
 Set the startup volume. 0 means silence, 100 means no volume reduction or
 amplification. Negative values are treated as 0, values above 100 are treated

@@ -259,7 +259,13 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
                 *decoded++ = get_sbits_long(&s->gb, tmp);
         } else {
             for (; i < samples; i++) {
-                *decoded++ = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
+                int v = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
+                if (v == 0x80000000){
+                    av_log(s->avctx, AV_LOG_ERROR, "invalid residual\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
+                *decoded++ = v;
             }
         }
         i= 0;

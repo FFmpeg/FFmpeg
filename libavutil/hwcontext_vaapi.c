@@ -961,14 +961,13 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
         return AVERROR(EINVAL);
     }
 
-    hwctx->display = display;
-
     vas = vaInitialize(display, &major, &minor);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
                "connection: %d (%s).\n", vas, vaErrorStr(vas));
         return AVERROR(EIO);
     }
+    hwctx->display = display;
     av_log(ctx, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
            "version %d.%d\n", major, minor);
 

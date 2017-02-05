@@ -519,26 +519,27 @@ FF_EBUR128_ADD_FRAMES(int)
 FF_EBUR128_ADD_FRAMES(float)
 FF_EBUR128_ADD_FRAMES(double)
 
-static int ebur128_calc_relative_threshold(FFEBUR128State * st,
-                                           size_t * above_thresh_counter,
+static int ebur128_calc_relative_threshold(FFEBUR128State **sts, size_t size,
                                            double *relative_threshold)
 {
-    size_t i;
+    size_t i, j;
+    int above_thresh_counter = 0;
     *relative_threshold = 0.0;
-    *above_thresh_counter = 0;
 
-    for (i = 0; i < 1000; ++i) {
-        *relative_threshold += st->d->block_energy_histogram[i] *
-            histogram_energies[i];
-        *above_thresh_counter += st->d->block_energy_histogram[i];
+    for (i = 0; i < size; i++) {
+        unsigned long *block_energy_histogram = sts[i]->d->block_energy_histogram;
+        for (j = 0; j < 1000; ++j) {
+            *relative_threshold += block_energy_histogram[j] * histogram_energies[j];
+            above_thresh_counter += block_energy_histogram[j];
+        }
     }
 
-    if (*above_thresh_counter != 0) {
-        *relative_threshold /= (double) *above_thresh_counter;
+    if (above_thresh_counter != 0) {
+        *relative_threshold /= (double)above_thresh_counter;
         *relative_threshold *= RELATIVE_GATE_FACTOR;
     }
 
-    return 0;
+    return above_thresh_counter;
 }
 
 static int ebur128_gated_loudness(FFEBUR128State ** sts, size_t size,
@@ -549,20 +550,11 @@ static int ebur128_gated_loudness(FFEBUR128State ** sts, size_t size,
     size_t above_thresh_counter;
     size_t i, j, start_index;
 
-    for (i = 0; i < size; i++) {
-        if (sts[i]
-            && (sts[i]->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I) {
+    for (i = 0; i < size; i++)
+        if ((sts[i]->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I)
             return AVERROR(EINVAL);
-        }
-    }
 
-    for (i = 0; i < size; i++) {
-        if (!sts[i])
-            continue;
-        ebur128_calc_relative_threshold(sts[i], &above_thresh_counter,
-                                        &relative_threshold);
-    }
-    if (!above_thresh_counter) {
+    if (!ebur128_calc_relative_threshold(sts, size, &relative_threshold)) {
         *out = -HUGE_VAL;
         return 0;
     }
@@ -577,8 +569,6 @@ static int ebur128_gated_loudness(FFEBUR128State ** sts, size_t size,
         }
     }
     for (i = 0; i < size; i++) {
-        if (!sts[i])
-            continue;
         for (j = start_index; j < 1000; ++j) {
             gated_loudness += sts[i]->d->block_energy_histogram[j] *
                 histogram_energies[j];
@@ -597,15 +587,11 @@ static int ebur128_gated_loudness(FFEBUR128State ** sts, size_t size,
 int ff_ebur128_relative_threshold(FFEBUR128State * st, double *out)
 {
     double relative_threshold;
-    size_t above_thresh_counter;
 
-    if (st && (st->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I)
+    if ((st->mode & FF_EBUR128_MODE_I) != FF_EBUR128_MODE_I)
         return AVERROR(EINVAL);
 
-    ebur128_calc_relative_threshold(st, &above_thresh_counter,
-                                    &relative_threshold);
-
-    if (!above_thresh_counter) {
+    if (!ebur128_calc_relative_threshold(&st, 1, &relative_threshold)) {
         *out = -70.0;
         return 0;
     }

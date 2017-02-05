@@ -21,6 +21,8 @@
 
 //#define DEBUG
 
+#include <math.h>
+
 #include "avformat.h"
 #include "internal.h"
 #include "avi.h"
@@ -29,6 +31,7 @@
 #include "mpegts.h"
 #include "libavformat/avlanguage.h"
 #include "libavutil/avstring.h"
+#include "libavutil/avutil.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -51,6 +54,9 @@ typedef struct AVIIentry {
 } AVIIentry;
 
 #define AVI_INDEX_CLUSTER_SIZE 16384
+#define AVI_MASTER_INDEX_PREFIX_SIZE    (8+2+1+1+4+8+4+4)
+#define AVI_MASTER_INDEX_ENTRY_SIZE     16  /* bytes per entry */
+#define AVI_MASTER_INDEX_SIZE_DEFAULT   256 /* number of entries */
 
 typedef struct AVIIndex {
     int64_t     indx_start;
@@ -66,6 +72,8 @@ typedef struct AVIContext {
     int64_t riff_start, movi_list, odml_list;
     int64_t frames_hdr_all;
     int riff_id;
+    int reserve_index_space;
+    int master_index_max_size;
     int write_channel_mask;
 } AVIContext;
 
@@ -132,6 +140,21 @@ static int avi_add_ientry(AVFormatContext *s, int stream_index, char *tag,
     idx->entry++;
 
     return 0;
+}
+
+static av_cold int avi_init(struct AVFormatContext *s)
+{
+    AVIContext *avi = s->priv_data;
+
+    if (avi->reserve_index_space > 0) {
+        avi->master_index_max_size = (avi->reserve_index_space - AVI_MASTER_INDEX_PREFIX_SIZE) / AVI_MASTER_INDEX_ENTRY_SIZE;
+        avi->master_index_max_size = FFMAX(avi->master_index_max_size, 16);
+    } else
+        avi->master_index_max_size = AVI_MASTER_INDEX_SIZE_DEFAULT;
+    av_log(s, AV_LOG_DEBUG, "reserve_index_space:%d master_index_max_size:%d\n",
+           avi->reserve_index_space, avi->master_index_max_size);
+
+    return 1; /* stream initialization continues in avi_write_header */
 }
 
 static int64_t avi_start_new_riff(AVFormatContext *s, AVIOContext *pb,
@@ -210,6 +233,7 @@ static int avi_write_counters(AVFormatContext *s, int riff_id)
 static void write_odml_master(AVFormatContext *s, int stream_index)
 {
     AVIOContext *pb = s->pb;
+    AVIContext *avi = s->priv_data;
     AVStream *st = s->streams[stream_index];
     AVCodecParameters *par = st->codecpar;
     AVIStream *avist = st->priv_data;
@@ -229,7 +253,7 @@ static void write_odml_master(AVFormatContext *s, int stream_index)
                         /* dwChunkId */
     avio_wl64(pb, 0);   /* dwReserved[3] */
     avio_wl32(pb, 0);   /* Must be 0.    */
-    for (j = 0; j < AVI_MASTER_INDEX_SIZE * 2; j++)
+    for (j = 0; j < avi->master_index_max_size * 2; j++)
         avio_wl64(pb, 0);
     ff_end_tag(pb, avist->indexes.indx_start);
 }
@@ -239,6 +263,7 @@ static int avi_write_header(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
+    int64_t max_stream_duration = 0;
     AVCodecParameters *video_par;
     AVStream *video_st = NULL;
     int64_t list1, list2, strh, strf;
@@ -269,11 +294,32 @@ static int avi_write_header(AVFormatContext *s)
     video_par = NULL;
     for (n = 0; n < s->nb_streams; n++) {
         AVCodecParameters *par = s->streams[n]->codecpar;
-        bitrate += par->bit_rate;
+        AVStream *st = s->streams[n];
+        bitrate = FFMIN(bitrate + par->bit_rate, INT32_MAX);
+        if (st->duration > 0) {
+            int64_t stream_duration = av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
+            max_stream_duration = FFMAX(stream_duration, max_stream_duration);
+        }
         if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
             video_par = par;
-            video_st = s->streams[n];
+            video_st = st;
         }
+    }
+
+    /* guess master index size based on bitrate and duration */
+    if (!avi->reserve_index_space) {
+        double duration_est, filesize_est;
+        if (s->duration > 0)
+            duration_est = (double)s->duration / AV_TIME_BASE;
+        else if (max_stream_duration > 0)
+            duration_est = (double)max_stream_duration / AV_TIME_BASE;
+        else
+            duration_est = 10 * 60 * 60; /* default to 10 hours */
+        filesize_est = duration_est * (bitrate / 8) * 1.10; /* add 10% safety margin for muxer+bitrate */
+        avi->master_index_max_size = FFMAX((int)ceil(filesize_est / AVI_MAX_RIFF_SIZE) + 1,
+                                           avi->master_index_max_size);
+        av_log(s, AV_LOG_DEBUG, "duration_est:%0.3f, filesize_est:%0.1fGiB, master_index_max_size:%d\n",
+               duration_est, filesize_est / (1024*1024*1024), avi->master_index_max_size);
     }
 
     nb_frames = 0;
@@ -569,9 +615,9 @@ static int avi_write_ix(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVIStream *avist = s->streams[i]->priv_data;
-        if (avi->riff_id - avist->indexes.master_odml_riff_id_base == AVI_MASTER_INDEX_SIZE) {
+        if (avi->riff_id - avist->indexes.master_odml_riff_id_base == avi->master_index_max_size) {
             int64_t pos;
-            int size = 8+2+1+1+4+8+4+4+16*AVI_MASTER_INDEX_SIZE;
+            int size = AVI_MASTER_INDEX_PREFIX_SIZE + AVI_MASTER_INDEX_ENTRY_SIZE * avi->master_index_max_size;
 
             pos = avio_tell(pb);
             update_odml_entry(s, i, pos, size);
@@ -579,7 +625,7 @@ static int avi_write_ix(AVFormatContext *s)
             av_assert1(avio_tell(pb) - pos == size);
             avist->indexes.master_odml_riff_id_base = avi->riff_id - 1;
         }
-        av_assert0(avi->riff_id - avist->indexes.master_odml_riff_id_base < AVI_MASTER_INDEX_SIZE);
+        av_assert0(avi->riff_id - avist->indexes.master_odml_riff_id_base < avi->master_index_max_size);
     }
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -890,6 +936,14 @@ static int avi_write_trailer(AVFormatContext *s)
         }
     }
 
+    if (avi->riff_id >= avi->master_index_max_size) {
+        int index_space = AVI_MASTER_INDEX_PREFIX_SIZE +
+                          AVI_MASTER_INDEX_ENTRY_SIZE * avi->riff_id;
+        av_log(s, AV_LOG_WARNING, "Output file not strictly OpenDML compliant, "
+               "consider re-muxing with 'reserve_index_space' option value >= %d\n",
+               index_space);
+    }
+
     for (i = 0; i < s->nb_streams; i++) {
         AVIStream *avist = s->streams[i]->priv_data;
         for (j = 0; j < avist->indexes.ents_allocated / AVI_INDEX_CLUSTER_SIZE; j++)
@@ -908,6 +962,7 @@ static int avi_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(AVIContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "reserve_index_space", "reserve space (in bytes) at the beginning of the file for each stream index", OFFSET(reserve_index_space), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, ENC },
     { "write_channel_mask", "write channel mask into wave format header", OFFSET(write_channel_mask), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, ENC },
     { NULL },
 };
@@ -927,6 +982,7 @@ AVOutputFormat ff_avi_muxer = {
     .priv_data_size = sizeof(AVIContext),
     .audio_codec    = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_AC3,
     .video_codec    = AV_CODEC_ID_MPEG4,
+    .init           = avi_init,
     .write_header   = avi_write_header,
     .write_packet   = avi_write_packet,
     .write_trailer  = avi_write_trailer,

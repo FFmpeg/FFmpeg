@@ -87,7 +87,6 @@ typedef struct SegmentContext {
     int64_t clocktime_offset; //< clock offset for cutting the segments at regular clock time
     int64_t clocktime_wrap_duration; //< wrapping duration considered for starting a new segment
     int64_t last_val;      ///< remember last time for wrap around detection
-    int64_t last_cut;      ///< remember last cut
     int cut_pending;
     int header_written;    ///< whether we've already called avformat_write_header
 
@@ -870,10 +869,8 @@ calc_times:
             localtime_r(&sec, &ti);
             usecs = (int64_t)(ti.tm_hour * 3600 + ti.tm_min * 60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = (usecs + seg->clocktime_offset) % seg->time;
-            if (seg->last_cut != usecs && wrapped_val < seg->last_val && wrapped_val < seg->clocktime_wrap_duration) {
+            if (wrapped_val < seg->last_val && wrapped_val < seg->clocktime_wrap_duration)
                 seg->cut_pending = 1;
-                seg->last_cut = usecs;
-            }
             seg->last_val = wrapped_val;
         } else {
             end_pts = seg->time * (seg->segment_count + 1);

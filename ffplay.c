@@ -321,6 +321,7 @@ static int subtitle_disable;
 static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
 static int seek_by_bytes = -1;
 static int display_disable;
+static int borderless;
 static int startup_volume = 100;
 static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -1260,11 +1261,15 @@ static int video_open(VideoState *is)
     }
 
     if (!window) {
-        int flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+        int flags = SDL_WINDOW_SHOWN;
         if (!window_title)
             window_title = input_filename;
         if (is_full_screen)
             flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        if (borderless)
+            flags |= SDL_WINDOW_BORDERLESS;
+        else
+            flags |= SDL_WINDOW_RESIZABLE;
         window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window) {
@@ -3513,6 +3518,7 @@ static const OptionDef options[] = {
     { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { &seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
     { "nodisp", OPT_BOOL, { &display_disable }, "disable graphical display" },
+    { "noborder", OPT_BOOL, { &borderless }, "borderless window" },
     { "volume", OPT_INT | HAS_ARG, { &startup_volume}, "set startup volume 0=min 100=max", "volume" },
     { "f", HAS_ARG, { .func_arg = opt_format }, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_frame_pix_fmt }, "set pixel format", "format" },

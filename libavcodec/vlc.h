@@ -54,21 +54,28 @@ void ff_free_vlc(VLC *vlc);
 #define INIT_VLC_LE             2
 #define INIT_VLC_USE_NEW_STATIC 4
 
-#define INIT_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)       \
+#define INIT_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
     do {                                                                   \
         static VLC_TYPE table[static_size][2];                             \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
-        init_vlc(vlc, bits, a, b, c, d, e, f, g, INIT_VLC_USE_NEW_STATIC); \
+        ff_init_vlc_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
+            INIT_VLC_USE_NEW_STATIC);                                      \
     } while (0)
 
-#define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)    \
+#define INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
     do {                                                                   \
         static VLC_TYPE table[static_size][2];                             \
         (vlc)->table           = table;                                    \
         (vlc)->table_allocated = static_size;                              \
-        init_vlc(vlc, bits, a, b, c, d, e, f, g,                           \
+        ff_init_vlc_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
             INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);                        \
     } while (0)
+
+#define INIT_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)       \
+    INIT_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
+
+#define INIT_LE_VLC_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size) \
+    INIT_LE_VLC_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
 
 #endif /* AVCODEC_VLC_H */

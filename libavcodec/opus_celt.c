@@ -1641,7 +1641,7 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
 
     if (silence) {
         consumed = s->framebits;
-        rc->total_read_bits += s->framebits - opus_rc_tell(rc);
+        rc->total_bits += s->framebits - opus_rc_tell(rc);
     }
 
     /* obtain post-filter options */

@@ -437,11 +437,11 @@ static av_cold void hevc_dsp_init_msa(HEVCDSPContext *c,
         c->idct_dc[1] = ff_hevc_idct_dc_8x8_msa;
         c->idct_dc[2] = ff_hevc_idct_dc_16x16_msa;
         c->idct_dc[3] = ff_hevc_idct_dc_32x32_msa;
-        c->transform_add[0] = ff_hevc_addblk_4x4_msa;
-        c->transform_add[1] = ff_hevc_addblk_8x8_msa;
-        c->transform_add[2] = ff_hevc_addblk_16x16_msa;
-        c->transform_add[3] = ff_hevc_addblk_32x32_msa;
-        c->idct_4x4_luma = ff_hevc_idct_luma_4x4_msa;
+        c->add_residual[0] = ff_hevc_addblk_4x4_msa;
+        c->add_residual[1] = ff_hevc_addblk_8x8_msa;
+        c->add_residual[2] = ff_hevc_addblk_16x16_msa;
+        c->add_residual[3] = ff_hevc_addblk_32x32_msa;
+        c->transform_4x4_luma = ff_hevc_idct_luma_4x4_msa;
     }
 }
 #endif  // #if HAVE_MSA

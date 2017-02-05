@@ -53,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     AVSubtitle *sub = data;
     const uint8_t *buf_end = buf + buf_size;
     uint8_t *bitmap;
-    int w, h, x, y, i;
+    int w, h, x, y, i, ret;
     int64_t packet_time = 0;
     GetBitContext gb;
     int has_alpha = avctx->codec_tag == MKTAG('D','X','S','A');
@@ -145,7 +145,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     // process RLE-compressed data
-    init_get_bits(&gb, buf, (buf_end - buf) * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_end - buf)) < 0)
+        return ret;
     bitmap = sub->rects[0]->data[0];
     for (y = 0; y < h; y++) {
         // interlaced: do odd lines

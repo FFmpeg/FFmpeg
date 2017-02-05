@@ -61,10 +61,11 @@ enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
 static void parse_waveformatex(AVIOContext *pb, AVCodecParameters *par)
 {
     ff_asf_guid subformat;
-    int bps = avio_rl16(pb);
+    int bps;
+
+    bps = avio_rl16(pb);
     if (bps)
         par->bits_per_coded_sample = bps;
-
     par->channel_layout        = avio_rl32(pb); /* dwChannelMask */
 
     ff_get_guid(pb, &subformat);

@@ -22,12 +22,19 @@
 
 #include "opus_rc.h"
 
+#define OPUS_RC_BITS 32
+#define OPUS_RC_SYM  8
+#define OPUS_RC_CEIL ((1 << OPUS_RC_SYM) - 1)
+#define OPUS_RC_TOP (1u << 31)
+#define OPUS_RC_BOT (OPUS_RC_TOP >> OPUS_RC_SYM)
+#define OPUS_RC_SHIFT (OPUS_RC_BITS - OPUS_RC_SYM - 1)
+
 static av_always_inline void opus_rc_dec_normalize(OpusRangeCoder *rc)
 {
-    while (rc->range <= 1<<23) {
-        rc->value = ((rc->value << 8) | (get_bits(&rc->gb, 8) ^ 0xFF)) & ((1u << 31) - 1);
-        rc->range          <<= 8;
-        rc->total_read_bits += 8;
+    while (rc->range <= OPUS_RC_BOT) {
+        rc->value = ((rc->value << OPUS_RC_SYM) | (get_bits(&rc->gb, OPUS_RC_SYM) ^ OPUS_RC_CEIL)) & (OPUS_RC_TOP - 1);
+        rc->range     <<= OPUS_RC_SYM;
+        rc->total_bits += OPUS_RC_SYM;
     }
 }
 
@@ -93,7 +100,7 @@ uint32_t ff_opus_rc_get_raw(OpusRangeCoder *rc, uint32_t count)
     value = av_mod_uintp2(rc->rb.cacheval, count);
     rc->rb.cacheval    >>= count;
     rc->rb.cachelen     -= count;
-    rc->total_read_bits += count;
+    rc->total_bits      += count;
 
     return value;
 }
@@ -206,7 +213,7 @@ int ff_opus_rc_dec_init(OpusRangeCoder *rc, const uint8_t *data, int size)
 
     rc->range = 128;
     rc->value = 127 - get_bits(&rc->gb, 7);
-    rc->total_read_bits = 9;
+    rc->total_bits = 9;
     opus_rc_dec_normalize(rc);
 
     return 0;

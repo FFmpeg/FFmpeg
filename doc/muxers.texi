@@ -57,6 +57,39 @@ fragmentation or muxer overhead depending on your source. Default value is
 
 @end table
 
+@anchor{avi}
+@section avi
+
+Audio Video Interleaved muxer.
+
+@subsection Options
+
+It accepts the following options:
+
+@table @option
+@item reserve_index_space
+Reserve the specified amount of bytes for the OpenDML master index of each
+stream within the file header. By default additional master indexes are
+embedded within the data packets if there is no space left in the first master
+index and are linked together as a chain of indexes. This index structure can
+cause problems for some use cases, e.g. third-party software strictly relying
+on the OpenDML index specification or when file seeking is slow. Reserving
+enough index space in the file header avoids these problems.
+
+The required index space depends on the output file size and should be about 16
+bytes per gigabyte. When this option is omitted or set to zero the necessary
+index space is guessed.
+
+@item write_channel_mask
+Write the channel layout mask into the audio stream header.
+
+This option is enabled by default. Disabling the channel mask can be useful in
+specific scenarios, e.g. when merging multiple audio streams into one for
+compatibility with software that only supports a single audio stream in AVI
+(see @ref{amerge,,the "amerge" section in the ffmpeg-filters manual,ffmpeg-filters}).
+
+@end table
+
 @anchor{chromaprint}
 @section chromaprint
 
@@ -1407,9 +1440,6 @@ Force the segmenter to only start a new segment if a packet reaches the muxer
 within the specified duration after the segmenting clock time. This way you
 can make the segmenter more resilient to backward local time jumps, such as
 leap seconds or transition to standard time from daylight savings time.
-
-Assuming that the delay between the packets of your source is less than 0.5
-second you can detect a leap second by specifying 0.5 as the duration.
 
 Default is the maximum possible duration which means starting a new segment
 regardless of the elapsed time since the last clock time.

@@ -40,7 +40,7 @@ typedef struct OpusRangeCoder {
     RawBitsContext rb;
     uint32_t range;
     uint32_t value;
-    uint32_t total_read_bits;
+    uint32_t total_bits;
 } OpusRangeCoder;
 
 /**
@@ -49,14 +49,14 @@ typedef struct OpusRangeCoder {
  */
 static av_always_inline uint32_t opus_rc_tell(const OpusRangeCoder *rc)
 {
-    return rc->total_read_bits - av_log2(rc->range) - 1;
+    return rc->total_bits - av_log2(rc->range) - 1;
 }
 
 static av_always_inline uint32_t opus_rc_tell_frac(const OpusRangeCoder *rc)
 {
     uint32_t i, total_bits, rcbuffer, range;
 
-    total_bits = rc->total_read_bits << 3;
+    total_bits = rc->total_bits << 3;
     rcbuffer   = av_log2(rc->range) + 1;
     range      = rc->range >> (rcbuffer-16);
 

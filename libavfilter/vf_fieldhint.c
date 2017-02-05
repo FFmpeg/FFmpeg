@@ -196,6 +196,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Invalid hint: %c.\n", hint);
+        av_frame_free(&out);
         return AVERROR(EINVAL);
     }
 

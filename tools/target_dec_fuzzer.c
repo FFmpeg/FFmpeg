@@ -186,6 +186,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
             if (ret <= 0 || ret > avpkt.size)
                break;
+            if (ctx->codec_type != AVMEDIA_TYPE_AUDIO)
+                ret = avpkt.size;
             avpkt.data += ret;
             avpkt.size -= ret;
         }

@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-01-31 - xxxxxxx - lavu 55.46.100 / 55.20.0 - cpu.h
+  Add AV_CPU_FLAG_SSSE3SLOW.
+
 2017-01-24 - xxxxxxx - lavu 55.45.100 - channel_layout.h
   Add av_get_extended_channel_layout()
 

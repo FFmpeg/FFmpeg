@@ -19,6 +19,8 @@ version <next>:
 - Sample Dump eXchange demuxer
 - abitscope multimedia filter
 - Scenarist Closed Captions demuxer and muxer
+- threshold filter
+- midequalizer filter
 
 version 3.2:
 - libopenmpt demuxer

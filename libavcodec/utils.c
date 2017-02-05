@@ -2714,13 +2714,19 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                                                      avctx->pkt_timebase, ms);
             }
 
+            if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
+                sub->format = 0;
+            else if (avctx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB)
+                sub->format = 1;
+
             for (i = 0; i < sub->num_rects; i++) {
                 if (sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Invalid UTF-8 in decoded subtitles text; "
                            "maybe missing -sub_charenc option\n");
                     avsubtitle_free(sub);
-                    return AVERROR_INVALIDDATA;
+                    ret = AVERROR_INVALIDDATA;
+                    break;
                 }
             }
 
@@ -2731,10 +2737,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
                 av_packet_unref(&pkt_recoded);
             }
-            if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB)
-                sub->format = 0;
-            else if (avctx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB)
-                sub->format = 1;
             avctx->internal->pkt = NULL;
         }
 

@@ -1,6 +1,4 @@
 /*
- * copyright (C) 2006 Corey Hickey
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,19 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_LIBXVID_H
-#define AVCODEC_LIBXVID_H
+#ifndef AVFILTER_SCALE_H
+#define AVFILTER_SCALE_H
 
-/**
- * @file
- * common functions for use with the Xvid wrappers
- */
+#include "avfilter.h"
 
-struct MpegEncContext;
-
-/* rate control */
-int ff_xvid_rate_control_init(struct MpegEncContext *s);
-void ff_xvid_rate_control_uninit(struct MpegEncContext *s);
-float ff_xvid_rate_estimate_qscale(struct MpegEncContext *s, int dry_run);
-
-#endif /* AVCODEC_LIBXVID_H */
+int ff_scale_eval_dimensions(void *ctx,
+    const char *w_expr, const char *h_expr,
+    AVFilterLink *inlink, AVFilterLink *outlink,
+    int *ret_w, int *ret_h);
+#endif
