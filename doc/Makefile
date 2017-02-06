@@ -73,7 +73,7 @@ $(DOCS) doc/doxy/html: | doc/
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c))
+DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c))
 DOXY_TEMPLATES  = doxy_stylesheet.css footer.html header.html
 DOXY_TEMPLATES := $(addprefix $(SRC_PATH)/doc/doxy/, $(DOXY_TEMPLATES))
 
