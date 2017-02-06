@@ -25,7 +25,6 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "avfilter.h"
 #include "framesync.h"
 
 typedef struct MidEqualizerContext {
