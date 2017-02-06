@@ -21,6 +21,9 @@
 #include "huffyuvencdsp.h"
 #include "mathops.h"
 
+// 0x00010001 or 0x0001000100010001 or whatever, depending on the cpu's native arithmetic size
+#define pw_1 (ULONG_MAX / UINT16_MAX)
+
 static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *src2, unsigned mask, int w){
     long i;
 #if !HAVE_FAST_UNALIGNED
@@ -34,8 +37,8 @@ static void diff_int16_c(uint16_t *dst, const uint16_t *src1, const uint16_t *sr
     }else
 #endif
     {
-        unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
-        unsigned long pw_msb = pw_lsb +  0x0001000100010001ULL;
+        unsigned long pw_lsb = (mask >> 1) * pw_1;
+        unsigned long pw_msb = pw_lsb +  pw_1;
 
         for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
             long a = *(long*)(src1+i);
