@@ -285,6 +285,7 @@ static int config_props(AVFilterLink *outlink)
         int i;
 
         for (i = 0; i < 3; i++) {
+            int in_v_chr_pos = scale->in_v_chr_pos, out_v_chr_pos = scale->out_v_chr_pos;
             struct SwsContext **s = swscs[i];
             *s = sws_alloc_context();
             if (!*s)
@@ -317,17 +318,17 @@ static int config_props(AVFilterLink *outlink)
              * MPEG-2 chroma positions are used by convention
              * XXX: support other 4:2:0 pixel formats */
             if (inlink0->format == AV_PIX_FMT_YUV420P && scale->in_v_chr_pos == -513) {
-                scale->in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+                in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
             if (outlink->format == AV_PIX_FMT_YUV420P && scale->out_v_chr_pos == -513) {
-                scale->out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+                out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
             av_opt_set_int(*s, "src_h_chr_pos", scale->in_h_chr_pos, 0);
-            av_opt_set_int(*s, "src_v_chr_pos", scale->in_v_chr_pos, 0);
+            av_opt_set_int(*s, "src_v_chr_pos", in_v_chr_pos, 0);
             av_opt_set_int(*s, "dst_h_chr_pos", scale->out_h_chr_pos, 0);
-            av_opt_set_int(*s, "dst_v_chr_pos", scale->out_v_chr_pos, 0);
+            av_opt_set_int(*s, "dst_v_chr_pos", out_v_chr_pos, 0);
 
             if ((ret = sws_init_context(*s, NULL, NULL)) < 0)
                 return ret;
