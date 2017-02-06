@@ -13,6 +13,7 @@ version <next>:
   --x86asmexe=yasm to configure to restore the old behavior.
 - Cineform HD decoder
 - VP9 superframe split/merge bitstream filters
+- FM Screen Capture Codec decoder
 
 
 version 12:
