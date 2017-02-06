@@ -617,8 +617,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     if (!proto_name)
         return AVERROR_INVALIDDATA;
 
-    // only http(s) & file are allowed
-    if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
+    // only http(s) & file & data are allowed
+    if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL) && !av_strstart(proto_name, "data", NULL))
         return AVERROR_INVALIDDATA;
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         ;
