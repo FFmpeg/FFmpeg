@@ -116,6 +116,8 @@ static void mov_text_cleanup(MovTextContext *m)
             av_freep(&m->s[i]);
         }
         av_freep(&m->s);
+        m->count_s = 0;
+        m->style_entries = 0;
     }
 }
 
@@ -279,11 +281,13 @@ static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 {
     int i;
-    m->style_entries = AV_RB16(tsmb);
+    int style_entries = AV_RB16(tsmb);
     tsmb += 2;
     // A single style record is of length 12 bytes.
-    if (m->tracksize + m->size_var + 2 + m->style_entries * 12 > avpkt->size)
+    if (m->tracksize + m->size_var + 2 + style_entries * 12 > avpkt->size)
         return -1;
+
+    m->style_entries = style_entries;
 
     m->box_flags |= STYL_BOX;
     for(i = 0; i < m->style_entries; i++) {
