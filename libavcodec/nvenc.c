@@ -359,6 +359,9 @@ static int nvenc_check_device(AVCodecContext *avctx, int idx)
     if (((major << 4) | minor) < NVENC_CAP)
         goto fail;
 
+    if (ctx->device != idx && ctx->device != ANY_DEVICE)
+        return -1;
+
     ret = nvel->cu_ctx_create(&ctx->cu_context_internal, 0, cu_device);
     if (ret != CUDA_SUCCESS)
         goto fail;
@@ -377,7 +380,7 @@ static int nvenc_check_device(AVCodecContext *avctx, int idx)
 
     av_log(avctx, loglevel, "supports NVENC\n");
 
-    if (ctx->device == cu_device || ctx->device == ANY_DEVICE)
+    if (ctx->device == idx || ctx->device == ANY_DEVICE)
         return 0;
 
 fail3:
