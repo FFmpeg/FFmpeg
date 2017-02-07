@@ -22,9 +22,9 @@ version 3.2.3:
 - avformat/avidec: skip odml master index chunks in avi_sync
 - avcodec/mjpegdec: Check for rgb before flipping
 - lavf/utils.c Protect against accessing entries[nb_entries]
-- avutil/random_seed: Reduce the time needed on systems with very low precission clock()
+- avutil/random_seed: Reduce the time needed on systems with very low precision clock()
 - swscale/swscale: Fix dereference of stride array before null check
-- avutil/random_seed: Improve get_generic_seed() with higher precission clock()
+- avutil/random_seed: Improve get_generic_seed() with higher precision clock()
 - avformat/mp3dec: fix msan warning when verifying mpa header
 - avformat/utils: Print verbose error message if stream count exceeds max_streams
 - avformat/options_table: Set the default maximum number of streams to 1000
