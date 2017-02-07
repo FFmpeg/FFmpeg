@@ -496,4 +496,5 @@ AVCodec ff_cllc_decoder = {
     .decode         = cllc_decode_frame,
     .close          = cllc_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
