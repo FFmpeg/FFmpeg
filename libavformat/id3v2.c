@@ -688,9 +688,9 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, const cha
     }
 
     if (decode_str(s, pb, 0, &dst, &len) < 0)
-        return;
+        goto end;
     if (len < 16)
-        return;
+        goto end;
 
     start = avio_rb32(pb);
     end   = avio_rb32(pb);
