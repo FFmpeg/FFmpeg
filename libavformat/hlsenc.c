@@ -76,6 +76,7 @@ typedef enum HLSFlags {
     HLS_SECOND_LEVEL_SEGMENT_INDEX = (1 << 8), // include segment index in segment filenames when use_localtime  e.g.: %%03d
     HLS_SECOND_LEVEL_SEGMENT_DURATION = (1 << 9), // include segment duration (microsec) in segment filenames when use_localtime  e.g.: %%09t
     HLS_SECOND_LEVEL_SEGMENT_SIZE = (1 << 10), // include segment size (bytes) in segment filenames when use_localtime  e.g.: %%014s
+    HLS_TEMP_FILE = (1 << 11),
 } HLSFlags;
 
 typedef enum {
@@ -416,6 +417,7 @@ static int hls_mux_init(AVFormatContext *s)
         return ret;
     oc = hls->avf;
 
+    oc->filename[0]        = '\0';
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
@@ -815,6 +817,15 @@ static int hls_start(AVFormatContext *s)
     char *filename, iv_string[KEYSIZE*2 + 1];
     int err = 0;
 
+    if ((c->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
+        size_t len = strlen(oc->filename);
+        char final_filename[sizeof(oc->filename)];
+        av_strlcpy(final_filename, oc->filename, len);
+        final_filename[len-4] = '\0';
+        ff_rename(oc->filename, final_filename, s);
+        oc->filename[len-4] = '\0';
+    }
+
     if (c->flags & HLS_SINGLE_FILE) {
         av_strlcpy(oc->filename, c->basename,
                    sizeof(oc->filename));
@@ -914,6 +925,10 @@ static int hls_start(AVFormatContext *s)
     c->number++;
 
     set_http_options(&options, c);
+
+    if (c->flags & HLS_TEMP_FILE) {
+        av_strlcat(oc->filename, ".tmp", sizeof(oc->filename));
+    }
 
     if (c->key_info_file) {
         if ((err = hls_encryption_start(s)) < 0)
@@ -1364,6 +1379,15 @@ static int hls_write_trailer(struct AVFormatContext *s)
          ff_rename(old_filename, hls->avf->filename, hls);
     }
 
+    if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
+        size_t len = strlen(oc->filename);
+        char final_filename[sizeof(oc->filename)];
+        av_strlcpy(final_filename, oc->filename, len);
+        final_filename[len-4] = '\0';
+        ff_rename(oc->filename, final_filename, s);
+        oc->filename[len-4] = '\0';
+    }
+
     if (vtt_oc) {
         if (vtt_oc->pb)
             av_write_trailer(vtt_oc);
@@ -1406,6 +1430,7 @@ static const AVOption options[] = {
     {"hls_subtitle_path",     "set path of hls subtitles", OFFSET(subtitle_filename), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
+    {"temp_file", "write segment to temporary file and rename when complete", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_TEMP_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "start the playlist with a discontinuity tag", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},

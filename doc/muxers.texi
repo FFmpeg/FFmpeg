@@ -656,6 +656,11 @@ Makes it possible to use segment duration (calculated  in microseconds) as %%t i
 expression besides date/time values when use_localtime is on.
 To get fixed width numbers with trailing zeroes, %%0xt format is available where x is the required width.
 
+@item temp_file
+Write segment data to filename.tmp and rename to filename only once the segment is complete. A webserver
+serving up segments can be configured to reject requests to *.tmp to prevent access to in-progress segments
+before they have been added to the m3u8 playlist.
+
 @example
 ffmpeg -i sample.mpeg \
    -f hls -hls_time 3 -hls_list_size 5 \
