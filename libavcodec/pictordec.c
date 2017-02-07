@@ -140,7 +140,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    if (s->width != avctx->width && s->height != avctx->height) {
+    if (s->width != avctx->width || s->height != avctx->height) {
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
