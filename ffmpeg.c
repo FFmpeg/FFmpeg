@@ -654,7 +654,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     int ret;
 
     if (!of->header_written) {
-        AVPacket tmp_pkt;
+        AVPacket tmp_pkt = {0};
         /* the muxer is not initialized yet, buffer the packet */
         if (!av_fifo_space(ost->muxing_queue)) {
             int new_size = FFMIN(2 * av_fifo_size(ost->muxing_queue),
@@ -669,8 +669,11 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
             if (ret < 0)
                 exit_program(1);
         }
-        av_packet_move_ref(&tmp_pkt, pkt);
+        ret = av_packet_ref(&tmp_pkt, pkt);
+        if (ret < 0)
+            exit_program(1);
         av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
+        av_packet_unref(pkt);
         return;
     }
 
