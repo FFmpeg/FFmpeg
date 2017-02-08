@@ -186,4 +186,5 @@ AVCodec ff_avs_decoder = {
     .decode         = avs_decode_frame,
     .close          = avs_decode_end,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

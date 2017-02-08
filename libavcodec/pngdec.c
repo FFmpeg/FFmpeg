@@ -708,4 +708,5 @@ AVCodec ff_png_decoder = {
     .close          = png_dec_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 /*| AV_CODEC_CAP_DRAW_HORIZ_BAND*/,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
