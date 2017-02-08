@@ -1,6 +1,42 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.1.7:
+- avcodec/h264_slice: Clear ref_counts on redundant slices
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_uuid
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_hdlr
+- avcodec/pictordec: Fix logic error
+- ffserver_config: Setup codecpar in add_codec()
+- avcodec/movtextdec: Fix decode_styl() cleanup
+- lavf/matroskadec: fix is_keyframe for early Blocks
+- configure: bump year
+- avcodec/pngdec: Check trns more completely
+- avcodec/interplayvideo: Move parameter change check up
+- avcodec/dca_lbr: Fix off by 1 error in freq check
+- avcodec/mjpegdec: Check for for the bitstream end in mjpeg_decode_scan_progressive_ac()
+- avformat/flacdec: Check avio_read result when reading flac block header.
+- avcodec/utils: correct align value for interplay
+- avcodec/vp56: Check for the bitstream end, pass error codes on
+- avcodec/mjpegdec: Check remaining bitstream in ljpeg_decode_yuv_scan()
+- avcodec/pngdec: Fix off by 1 size in decode_zbuf()
+- avcodec/omx: Do not pass negative value into av_malloc()
+- avformat/avidec: skip odml master index chunks in avi_sync
+- avcodec/mjpegdec: Check for rgb before flipping
+- avutil/random_seed: Reduce the time needed on systems with very low precision clock()
+- avutil/random_seed: Improve get_generic_seed() with higher precision clock()
+- avformat/mp3dec: fix msan warning when verifying mpa header
+- avformat/utils: Print verbose error message if stream count exceeds max_streams
+- avformat/options_table: Set the default maximum number of streams to 1000
+- pgssubdec: reset rle_data_len/rle_remaining_len on allocation error
+- avutil: Add av_image_check_size2()
+- avformat: Add max_streams option
+- avcodec/ffv1enc: Allocate smaller packet if the worst case size cannot be allocated
+- avcodec/mpeg4videodec: Fix undefined shifts in mpeg4_decode_sprite_trajectory()
+- avformat/oggdec: Skip streams in duration correction that did not had their duration set.
+- avcodec/ffv1enc: Fix size of first slice
+- avfilter/vf_hwupload_cuda: Add min/max limits for the 'device' option
+- configure: check for strtoull on msvc
+
 version 3.1.6:
 - configure: check for strtoull on msvc
 - http: move chunk handling from http_read_stream() to http_buf_read().
