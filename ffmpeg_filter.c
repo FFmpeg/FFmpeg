@@ -230,6 +230,25 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     return 0;
 }
 
+static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
+{
+    AVFilterContext *ctx = inout->filter_ctx;
+    AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;
+    int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;
+    AVIOContext *pb;
+    uint8_t *res = NULL;
+
+    if (avio_open_dyn_buf(&pb) < 0)
+        exit_program(1);
+
+    avio_printf(pb, "%s", ctx->filter->name);
+    if (nb_pads > 1)
+        avio_printf(pb, ":%s", avfilter_pad_get_name(pads, inout->pad_idx));
+    avio_w8(pb, 0);
+    avio_close_dyn_buf(pb, &res);
+    return res;
+}
+
 static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
 {
     InputStream *ist = NULL;
@@ -300,6 +319,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
     fg->inputs[fg->nb_inputs - 1]->format = -1;
     fg->inputs[fg->nb_inputs - 1]->type = ist->st->codecpar->codec_type;
+    fg->inputs[fg->nb_inputs - 1]->name = describe_filter_link(fg, in, 1);
 
     fg->inputs[fg->nb_inputs - 1]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
     if (!fg->inputs[fg->nb_inputs - 1]->frame_queue)
@@ -338,6 +358,7 @@ int init_complex_filtergraph(FilterGraph *fg)
         fg->outputs[fg->nb_outputs - 1]->out_tmp = cur;
         fg->outputs[fg->nb_outputs - 1]->type    = avfilter_pad_get_type(cur->filter_ctx->output_pads,
                                                                          cur->pad_idx);
+        fg->outputs[fg->nb_outputs - 1]->name = describe_filter_link(fg, cur, 0);
         cur = cur->next;
         fg->outputs[fg->nb_outputs - 1]->out_tmp->next = NULL;
     }
@@ -643,28 +664,8 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     return 0;
 }
 
-#define DESCRIBE_FILTER_LINK(f, inout, in)                         \
-{                                                                  \
-    AVFilterContext *ctx = inout->filter_ctx;                      \
-    AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;  \
-    int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;   \
-    AVIOContext *pb;                                               \
-                                                                   \
-    if (avio_open_dyn_buf(&pb) < 0)                                \
-        exit_program(1);                                           \
-                                                                   \
-    avio_printf(pb, "%s", ctx->filter->name);                      \
-    if (nb_pads > 1)                                               \
-        avio_printf(pb, ":%s", avfilter_pad_get_name(pads, inout->pad_idx));\
-    avio_w8(pb, 0);                                                \
-    avio_close_dyn_buf(pb, &f->name);                              \
-}
-
 int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
-    av_freep(&ofilter->name);
-    DESCRIBE_FILTER_LINK(ofilter, out, 0);
-
     if (!ofilter->ost) {
         av_log(NULL, AV_LOG_FATAL, "Filter %s has an unconnected output\n", ofilter->name);
         exit_program(1);
@@ -970,9 +971,6 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
                                   AVFilterInOut *in)
 {
-    av_freep(&ifilter->name);
-    DESCRIBE_FILTER_LINK(ifilter, in, 1);
-
     if (!ifilter->ist->dec) {
         av_log(NULL, AV_LOG_ERROR,
                "No decoder for stream #%d:%d, filtering impossible\n",
