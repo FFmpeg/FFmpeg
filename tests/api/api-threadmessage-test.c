@@ -101,7 +101,7 @@ static void *sender_thread(void *arg)
             msg.frame->format = AV_PIX_FMT_RGBA;
             msg.frame->width  = 320;
             msg.frame->height = 240;
-            ret = av_frame_get_buffer(msg.frame, 32);
+            ret = av_frame_get_buffer(msg.frame, 0);
             if (ret < 0) {
                 av_frame_free(&msg.frame);
                 break;

@@ -1044,7 +1044,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->tmp_frames[i]->width  = s->width  >> s->brd_scale;
             s->tmp_frames[i]->height = s->height >> s->brd_scale;
 
-            ret = av_frame_get_buffer(s->tmp_frames[i], 32);
+            ret = av_frame_get_buffer(s->tmp_frames[i], 0);
             if (ret < 0)
                 return ret;
         }

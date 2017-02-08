@@ -396,7 +396,7 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
     picture->height = height;
 
     /* allocate the buffers for the frame data */
-    ret = av_frame_get_buffer(picture, 32);
+    ret = av_frame_get_buffer(picture, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate frame data.\n");
         exit(1);

@@ -80,7 +80,7 @@ static AVFrame *downscale(AVFrame *in)
     frame->width  = (in->width + 1) / 2;
     frame->height = (in->height+ 1) / 2;
 
-    if (av_frame_get_buffer(frame, 32) < 0) {
+    if (av_frame_get_buffer(frame, 0) < 0) {
         av_frame_free(&frame);
         return NULL;
     }

@@ -90,7 +90,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
     frame->channel_layout = src->channel_layout;
     frame->channels       = src->channels;
     frame->nb_samples     = s->frame_size;
-    ret = av_frame_get_buffer(frame, 32);
+    ret = av_frame_get_buffer(frame, 0);
     if (ret < 0)
         goto fail;
 

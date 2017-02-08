@@ -484,7 +484,7 @@ static int tdsc_parse_tdsf(AVCodecContext *avctx, int number_tiles)
 
     /* Allocate the reference frame if not already done or on size change */
     if (init_refframe) {
-        ret = av_frame_get_buffer(ctx->refframe, 32);
+        ret = av_frame_get_buffer(ctx->refframe, 0);
         if (ret < 0)
             return ret;
     }

@@ -365,7 +365,7 @@ static AVFrame *alloc_frame_empty(enum AVPixelFormat format, int w, int h)
     out->format = format;
     out->width = w;
     out->height = h;
-    if (av_frame_get_buffer(out, 32) < 0) {
+    if (av_frame_get_buffer(out, 0) < 0) {
         av_frame_free(&out);
         return NULL;
     }

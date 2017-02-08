@@ -126,7 +126,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
     in_frame->nb_samples = enc_ctx->frame_size;
     in_frame->format = enc_ctx->sample_fmt;
     in_frame->channel_layout = enc_ctx->channel_layout;
-    if (av_frame_get_buffer(in_frame, 32) != 0) {
+    if (av_frame_get_buffer(in_frame, 0) != 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate a buffer for input frame\n");
         return AVERROR(ENOMEM);
     }

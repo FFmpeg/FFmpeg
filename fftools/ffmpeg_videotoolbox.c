@@ -67,7 +67,7 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
 
     vt->tmp_frame->width  = frame->width;
     vt->tmp_frame->height = frame->height;
-    ret = av_frame_get_buffer(vt->tmp_frame, 32);
+    ret = av_frame_get_buffer(vt->tmp_frame, 0);
     if (ret < 0)
         return ret;
 

@@ -461,7 +461,7 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
 
     /* duplicate the frame data if it's not refcounted */
     if (!src->buf[0]) {
-        ret = av_frame_get_buffer(dst, 32);
+        ret = av_frame_get_buffer(dst, 0);
         if (ret < 0)
             return ret;
 
@@ -631,7 +631,7 @@ int av_frame_make_writable(AVFrame *frame)
     if (frame->hw_frames_ctx)
         ret = av_hwframe_get_buffer(frame->hw_frames_ctx, &tmp, 0);
     else
-        ret = av_frame_get_buffer(&tmp, 32);
+        ret = av_frame_get_buffer(&tmp, 0);
     if (ret < 0)
         return ret;
 

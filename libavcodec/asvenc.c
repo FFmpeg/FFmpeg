@@ -228,7 +228,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         clone->format = pict->format;
         clone->width  = FFALIGN(pict->width, 16);
         clone->height = FFALIGN(pict->height, 16);
-        ret = av_frame_get_buffer(clone, 32);
+        ret = av_frame_get_buffer(clone, 0);
         if (ret < 0) {
             av_frame_free(&clone);
             return ret;

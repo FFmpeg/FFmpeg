@@ -922,7 +922,7 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
         tmp_frame.format         = src->format;
         tmp_frame.width          = FFALIGN(src->width, 16);
         tmp_frame.height         = FFALIGN(src->height, 16);
-        ret = av_frame_get_buffer(&tmp_frame, 32);
+        ret = av_frame_get_buffer(&tmp_frame, 0);
         if (ret < 0)
             return ret;
 
