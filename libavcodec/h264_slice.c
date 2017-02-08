@@ -1771,8 +1771,10 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
         return ret;
 
     // discard redundant pictures
-    if (sl->redundant_pic_count > 0)
+    if (sl->redundant_pic_count > 0) {
+        sl->ref_count[0] = sl->ref_count[1] = 0;
         return 0;
+    }
 
     if (sl->first_mb_addr == 0 || !h->current_slice) {
         if (h->setup_finished) {
