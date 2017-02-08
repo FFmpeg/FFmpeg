@@ -179,17 +179,10 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
     return 0;
 }
 
-#if HAVE_SIMD_ALIGN_32
-#   define STRIDE_ALIGN 32
-#elif HAVE_SIMD_ALIGN_16
-#   define STRIDE_ALIGN 16
-#else
-#   define STRIDE_ALIGN 8
-#endif
-
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS])
 {
+    size_t max_align = av_cpu_max_align();
     int i;
     int w_align = 1;
     int h_align = 1;
@@ -282,7 +275,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         *height += 2;
 
     for (i = 0; i < 4; i++)
-        linesize_align[i] = STRIDE_ALIGN;
+        linesize_align[i] = max_align;
 }
 
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
