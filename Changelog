@@ -1,6 +1,14 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.0.7
+- avcodec/h264_slice: Clear ref_counts on redundant slices
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_uuid
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_hdlr
+- avcodec/pictordec: Fix logic error
+- avcodec/movtextdec: Fix decode_styl() cleanup
+- lavf/matroskadec: fix is_keyframe for early Blocks
+
 version 3.0.6:
 - avcodec/pngdec: Check trns more completely
 - avcodec/interplayvideo: Move parameter change check up
