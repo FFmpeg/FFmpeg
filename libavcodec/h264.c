@@ -1023,7 +1023,8 @@ again:
 #endif
                 } else
                     context_count++;
-            }
+            } else
+                sl->ref_count[0] = sl->ref_count[1] = 0;
             break;
         case NAL_DPA:
         case NAL_DPB:
