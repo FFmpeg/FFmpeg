@@ -180,10 +180,12 @@ enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps)
     return id;
 }
 
-int ff_get_bmp_header(AVIOContext *pb, AVStream *st)
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st, uint32_t *size)
 {
     int tag1;
-    avio_rl32(pb); /* size */
+    uint32_t size_ = avio_rl32(pb);
+    if (size)
+        *size = size_;
     st->codecpar->width  = avio_rl32(pb);
     st->codecpar->height = (int32_t)avio_rl32(pb);
     avio_rl16(pb); /* planes */

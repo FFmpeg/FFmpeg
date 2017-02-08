@@ -613,7 +613,7 @@ static int avi_read_header(AVFormatContext *s)
                         avio_skip(pb, size);
                         break;
                     }
-                    tag1 = ff_get_bmp_header(pb, st);
+                    tag1 = ff_get_bmp_header(pb, st, NULL);
 
                     if (tag1 == MKTAG('D', 'X', 'S', 'B') ||
                         tag1 == MKTAG('D', 'X', 'S', 'A')) {
