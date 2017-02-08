@@ -314,6 +314,8 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
                 return AVERROR(EINVAL);
             }
             lut3d->lutsize = size;
+
+            int is_skip_line = 0;
             for (k = 0; k < size; k++) {
                 for (j = 0; j < size; j++) {
                     for (i = 0; i < size; i++) {
@@ -321,7 +323,9 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
 
                         do {
                             NEXT_LINE(0);
+                            is_skip_line = 0;
                             if (!strncmp(line, "DOMAIN_", 7)) {
+                                is_skip_line = 1;
                                 float *vals = NULL;
                                 if      (!strncmp(line + 7, "MIN ", 4)) vals = min;
                                 else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
@@ -332,7 +336,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
                                 continue;
                             }
-                        } while (skip_line(line));
+                        } while (skip_line(line) || is_skip_line);
                         if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                             return AVERROR_INVALIDDATA;
                         vec->r *= max[0] - min[0];
