@@ -170,7 +170,7 @@ static int vp5_parse_coeff_models(VP56Context *s)
     return 0;
 }
 
-static void vp5_parse_coeff(VP56Context *s)
+static int vp5_parse_coeff(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
     VP56Model *model = s->modelp;
@@ -179,6 +179,11 @@ static void vp5_parse_coeff(VP56Context *s)
     int coeff, sign, coeff_idx;
     int b, i, cg, idx, ctx, ctx_last;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
+
+    if (c->end >= c->buffer && c->bits >= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "End of AC stream reached in vp5_parse_coeff\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     for (b=0; b<6; b++) {
         int ct = 1;    /* code type */
@@ -245,6 +250,7 @@ static void vp5_parse_coeff(VP56Context *s)
                 s->coeff_ctx[ff_vp56_b6to4[b]][i] = 5;
         s->above_blocks[s->above_block_idx[b]].not_null_dc = s->coeff_ctx[ff_vp56_b6to4[b]][0];
     }
+    return 0;
 }
 
 static void vp5_default_models_init(VP56Context *s)

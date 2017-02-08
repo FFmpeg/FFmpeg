@@ -39,7 +39,11 @@ typedef struct ChromaprintMuxContext {
     int silence_threshold;
     int algorithm;
     FingerprintFormat fp_format;
+#if CPR_VERSION_INT >= AV_VERSION_INT(1, 4, 0)
+    ChromaprintContext *ctx;
+#else
     ChromaprintContext ctx;
+#endif
 } ChromaprintMuxContext;
 
 static void cleanup(ChromaprintMuxContext *cpr)
