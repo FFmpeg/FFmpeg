@@ -1,6 +1,14 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.4:
+- avcodec/h264_slice: Clear ref_counts on redundant slices
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_uuid
+- lavf/mov.c: Avoid heap allocation wrap in mov_read_hdlr
+- avcodec/pictordec: Fix logic error
+- ffserver_config: Setup codecpar in add_codec()
+- Changelog: fix typos
+
 version 3.2.3:
 - avcodec/movtextdec: Fix decode_styl() cleanup
 - lavf/matroskadec: fix is_keyframe for early Blocks
