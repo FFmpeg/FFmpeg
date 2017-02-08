@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-02-xx - xxxxxxx - lavu 55.31.1 - frame.h
+  Allow passing the value of 0 (meaning "automatic") as the required alignment
+  to av_frame_get_buffer().
+
 2017-02-xx - xxxxxxx - lavu 55.31.0 - cpu.h
   Add av_cpu_max_align() for querying maximum required data alignment.
 

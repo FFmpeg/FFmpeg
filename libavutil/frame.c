@@ -19,6 +19,7 @@
 #include "channel_layout.h"
 #include "buffer.h"
 #include "common.h"
+#include "cpu.h"
 #include "dict.h"
 #include "frame.h"
 #include "imgutils.h"
@@ -102,6 +103,9 @@ static int get_video_buffer(AVFrame *frame, int align)
                                       frame->width);
         if (ret < 0)
             return ret;
+
+        if (align <= 0)
+            align = av_cpu_max_align();
 
         for (i = 0; i < 4 && frame->linesize[i]; i++)
             frame->linesize[i] = FFALIGN(frame->linesize[i], align);
