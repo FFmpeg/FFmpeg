@@ -289,17 +289,19 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     int sync_extension    = 0;
     int bits_consumed, esize, i;
 
-    if (asclen) {
+    if (asclen > 0) {
         sync_extension = 1;
         asclen         = FFMIN(asclen, get_bits_left(gb));
-    } else
-        asclen         = get_bits_left(gb);
-
-    if (asclen <= 0)
+        init_get_bits(&gbc, gb->buffer, config_start_bit + asclen);
+        skip_bits_long(&gbc, config_start_bit);
+    } else if (asclen == 0) {
+        gbc = *gb;
+    } else {
         return AVERROR_INVALIDDATA;
+    }
 
-    init_get_bits(&gbc, gb->buffer, config_start_bit + asclen);
-    skip_bits_long(&gbc, config_start_bit);
+    if (get_bits_left(gb) <= 0)
+        return AVERROR_INVALIDDATA;
 
     bits_consumed = decode_audio_specific_config_gb(NULL, avctx, &m4ac,
                                                     &gbc, config_start_bit,
@@ -308,6 +310,9 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     if (bits_consumed < config_start_bit)
         return AVERROR_INVALIDDATA;
     bits_consumed -= config_start_bit;
+
+    if (asclen == 0)
+      asclen = bits_consumed;
 
     if (!latmctx->initialized ||
         ac->oc[1].m4ac.sample_rate != m4ac.sample_rate ||
@@ -320,7 +325,7 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         }
         latmctx->initialized = 0;
 
-        esize = (bits_consumed+7) / 8;
+        esize = (asclen + 7) / 8;
 
         if (avctx->extradata_size < esize) {
             av_free(avctx->extradata);
@@ -336,9 +341,9 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         }
         memset(avctx->extradata+esize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
-    skip_bits_long(gb, bits_consumed);
+    skip_bits_long(gb, asclen);
 
-    return bits_consumed;
+    return 0;
 }
 
 static int read_stream_mux_config(struct LATMContext *latmctx,
@@ -379,8 +384,6 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
             int ascLen = latm_get_value(gb);
             if ((ret = latm_decode_audio_specific_config(latmctx, gb, ascLen)) < 0)
                 return ret;
-            ascLen -= ret;
-            skip_bits_long(gb, ascLen);
         }
 
         latmctx->frame_length_type = get_bits(gb, 3);
