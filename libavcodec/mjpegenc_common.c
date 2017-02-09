@@ -36,7 +36,7 @@
 #include "mjpegenc_huffman.h"
 #include "mjpeg.h"
 
-av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256], uint8_t *uni_ac_vlc_len)
+av_cold void ff_init_uni_ac_vlc(const uint8_t huff_size_ac[256], uint8_t *uni_ac_vlc_len)
 {
     int i;
 
@@ -505,8 +505,8 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
         // Replace the VLCs with the optimal ones.
         // The default ones may be used for trellis during quantization.
-        init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
-        init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
+        ff_init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
+        ff_init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
         s->intra_ac_vlc_length      =
         s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
         s->intra_chroma_ac_vlc_length      =

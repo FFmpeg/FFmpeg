@@ -80,8 +80,8 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
                                  avpriv_mjpeg_bits_ac_chrominance,
                                  avpriv_mjpeg_val_ac_chrominance);
 
-    init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
-    init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
+    ff_init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
+    ff_init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
     s->intra_ac_vlc_length      =
     s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
     s->intra_chroma_ac_vlc_length      =
