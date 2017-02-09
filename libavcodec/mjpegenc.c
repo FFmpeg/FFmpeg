@@ -79,7 +79,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
         return AVERROR(EINVAL);
     }
 
-    m = av_malloc(sizeof(MJpegContext));
+    m = av_mallocz(sizeof(MJpegContext));
     if (!m)
         return AVERROR(ENOMEM);
 
@@ -117,7 +117,10 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     m->huff_ncode = 0;
     s->mjpeg_ctx = m;
 
-    return alloc_huffman(s);
+    if(s->huffman == HUFFMAN_TABLE_OPTIMAL)
+        return alloc_huffman(s);
+
+    return 0;
 }
 
 av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
@@ -224,7 +227,7 @@ static void ff_mjpeg_encode_coef(MJpegContext *s, uint8_t table_id, int val, int
  * @param block The block.
  * @param n The block's index or number.
  */
-static void encode_block(MpegEncContext *s, int16_t *block, int n)
+static void record_block(MpegEncContext *s, int16_t *block, int n)
 {
     int i, j, table_id;
     int component, dc, last_index, val, run;
@@ -267,36 +270,127 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         ff_mjpeg_encode_code(m, table_id, 0);
 }
 
+static void encode_block(MpegEncContext *s, int16_t *block, int n)
+{
+    int mant, nbits, code, i, j;
+    int component, dc, run, last_index, val;
+    MJpegContext *m = s->mjpeg_ctx;
+    uint8_t *huff_size_ac;
+    uint16_t *huff_code_ac;
+
+    /* DC coef */
+    component = (n <= 3 ? 0 : (n&1) + 1);
+    dc = block[0]; /* overflow is impossible */
+    val = dc - s->last_dc[component];
+    if (n < 4) {
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
+        huff_size_ac = m->huff_size_ac_luminance;
+        huff_code_ac = m->huff_code_ac_luminance;
+    } else {
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+        huff_size_ac = m->huff_size_ac_chrominance;
+        huff_code_ac = m->huff_code_ac_chrominance;
+    }
+    s->last_dc[component] = dc;
+
+    /* AC coefs */
+
+    run = 0;
+    last_index = s->block_last_index[n];
+    for(i=1;i<=last_index;i++) {
+        j = s->intra_scantable.permutated[i];
+        val = block[j];
+        if (val == 0) {
+            run++;
+        } else {
+            while (run >= 16) {
+                put_bits(&s->pb, huff_size_ac[0xf0], huff_code_ac[0xf0]);
+                run -= 16;
+            }
+            mant = val;
+            if (val < 0) {
+                val = -val;
+                mant--;
+            }
+
+            nbits= av_log2_16bit(val) + 1;
+            code = (run << 4) | nbits;
+
+            put_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
+
+            put_sbits(&s->pb, nbits, mant);
+            run = 0;
+        }
+    }
+
+    /* output EOB only if not already 64 values */
+    if (last_index < 63 || run != 0)
+        put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
+}
+
 void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i;
-    if (s->chroma_format == CHROMA_444) {
-        encode_block(s, block[0], 0);
-        encode_block(s, block[2], 2);
-        encode_block(s, block[4], 4);
-        encode_block(s, block[8], 8);
-        encode_block(s, block[5], 5);
-        encode_block(s, block[9], 9);
+    if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        if (s->chroma_format == CHROMA_444) {
+            record_block(s, block[0], 0);
+            record_block(s, block[2], 2);
+            record_block(s, block[4], 4);
+            record_block(s, block[8], 8);
+            record_block(s, block[5], 5);
+            record_block(s, block[9], 9);
 
-        if (16*s->mb_x+8 < s->width) {
-            encode_block(s, block[1], 1);
-            encode_block(s, block[3], 3);
-            encode_block(s, block[6], 6);
-            encode_block(s, block[10], 10);
-            encode_block(s, block[7], 7);
-            encode_block(s, block[11], 11);
+            if (16*s->mb_x+8 < s->width) {
+                record_block(s, block[1], 1);
+                record_block(s, block[3], 3);
+                record_block(s, block[6], 6);
+                record_block(s, block[10], 10);
+                record_block(s, block[7], 7);
+                record_block(s, block[11], 11);
+            }
+        } else {
+            for(i=0;i<5;i++) {
+                record_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                record_block(s, block[5], 5);
+            } else {
+                record_block(s, block[6], 6);
+                record_block(s, block[5], 5);
+                record_block(s, block[7], 7);
+            }
         }
     } else {
-        for(i=0;i<5;i++) {
-            encode_block(s, block[i], i);
-        }
-        if (s->chroma_format == CHROMA_420) {
+        if (s->chroma_format == CHROMA_444) {
+            encode_block(s, block[0], 0);
+            encode_block(s, block[2], 2);
+            encode_block(s, block[4], 4);
+            encode_block(s, block[8], 8);
             encode_block(s, block[5], 5);
+            encode_block(s, block[9], 9);
+
+            if (16*s->mb_x+8 < s->width) {
+                encode_block(s, block[1], 1);
+                encode_block(s, block[3], 3);
+                encode_block(s, block[6], 6);
+                encode_block(s, block[10], 10);
+                encode_block(s, block[7], 7);
+                encode_block(s, block[11], 11);
+            }
         } else {
-            encode_block(s, block[6], 6);
-            encode_block(s, block[5], 5);
-            encode_block(s, block[7], 7);
+            for(i=0;i<5;i++) {
+                encode_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                encode_block(s, block[5], 5);
+            } else {
+                encode_block(s, block[6], 6);
+                encode_block(s, block[5], 5);
+                encode_block(s, block[7], 7);
+            }
         }
+
+        s->i_tex_bits += get_bits_diff(s);
     }
 }
 

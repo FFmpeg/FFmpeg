@@ -480,7 +480,8 @@ static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
 }
 
 /**
- * Writes the complete JPEG frame.
+ * Writes the complete JPEG frame when optimal huffman tables are enabled,
+ * otherwise writes the stuffing.
  *
  * Header + values + stuffing.
  *
@@ -508,11 +509,11 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
         s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
         s->intra_chroma_ac_vlc_length      =
         s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
-    }
 
-    ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                   s->pred, s->intra_matrix, s->chroma_intra_matrix);
-    ff_mjpeg_encode_picture_frame(s);
+        ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
+                                       s->pred, s->intra_matrix, s->chroma_intra_matrix);
+        ff_mjpeg_encode_picture_frame(s);
+    }
 
     ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,
                                             put_bits_count(&s->pb) / 4 + 1000);
