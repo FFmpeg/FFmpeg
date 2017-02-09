@@ -207,6 +207,11 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
             hwframe_ctx->format != AV_PIX_FMT_CUDA ||
             hwframe_ctx->sw_format != avctx->sw_pix_fmt)) {
         av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized with incompatible parameters\n");
+        av_log(avctx, AV_LOG_DEBUG, "width: %d <-> %d\n", hwframe_ctx->width, avctx->width);
+        av_log(avctx, AV_LOG_DEBUG, "height: %d <-> %d\n", hwframe_ctx->height, avctx->height);
+        av_log(avctx, AV_LOG_DEBUG, "format: %s <-> cuda\n", av_get_pix_fmt_name(hwframe_ctx->format));
+        av_log(avctx, AV_LOG_DEBUG, "sw_format: %s <-> %s\n",
+               av_get_pix_fmt_name(hwframe_ctx->sw_format), av_get_pix_fmt_name(avctx->sw_pix_fmt));
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
     }
