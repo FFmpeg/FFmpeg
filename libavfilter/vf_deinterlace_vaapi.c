@@ -278,10 +278,6 @@ static int deint_vaapi_config_output(AVFilterLink *outlink)
         goto fail;
     }
 
-    err = deint_vaapi_build_filter_params(avctx);
-    if (err < 0)
-        goto fail;
-
     ctx->output_frames_ref = av_hwframe_ctx_alloc(ctx->device_ref);
     if (!ctx->output_frames_ref) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create HW frame context "
@@ -319,8 +315,13 @@ static int deint_vaapi_config_output(AVFilterLink *outlink)
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create processing pipeline "
                "context: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EIO);
+        err = AVERROR(EIO);
+        goto fail;
     }
+
+    err = deint_vaapi_build_filter_params(avctx);
+    if (err < 0)
+        goto fail;
 
     outlink->w = ctx->output_width;
     outlink->h = ctx->output_height;
