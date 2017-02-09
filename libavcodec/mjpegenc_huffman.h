@@ -38,9 +38,9 @@ static inline void ff_mjpeg_encode_huffman_increment(MJpegEncHuffmanContext *s,
 {
     s->val_count[val]++;
 }
-int ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s,
-                                  uint8_t bits[17], uint8_t val[],
-                                  int max_nval);
+void ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s,
+                                   uint8_t bits[17], uint8_t val[],
+                                   int max_nval);
 
 
 /**

@@ -444,22 +444,18 @@ static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
         ff_mjpeg_encode_huffman_increment(ctx[table_id], code);
     }
 
-    ret = ff_mjpeg_encode_huffman_close(&dc_luminance_ctx,
-                                        m->bits_dc_luminance,
-                                        m->val_dc_luminance, 12);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&dc_chrominance_ctx,
-                                        m->bits_dc_chrominance,
-                                        m->val_dc_chrominance, 12);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&ac_luminance_ctx,
-                                        m->bits_ac_luminance,
-                                        m->val_ac_luminance, 256);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&ac_chrominance_ctx,
-                                        m->bits_ac_chrominance,
-                                        m->val_ac_chrominance, 256);
-    av_assert0(!ret);
+    ff_mjpeg_encode_huffman_close(&dc_luminance_ctx,
+                                  m->bits_dc_luminance,
+                                  m->val_dc_luminance, 12);
+    ff_mjpeg_encode_huffman_close(&dc_chrominance_ctx,
+                                  m->bits_dc_chrominance,
+                                  m->val_dc_chrominance, 12);
+    ff_mjpeg_encode_huffman_close(&ac_luminance_ctx,
+                                  m->bits_ac_luminance,
+                                  m->val_ac_luminance, 256);
+    ff_mjpeg_encode_huffman_close(&ac_chrominance_ctx,
+                                  m->bits_ac_chrominance,
+                                  m->val_ac_chrominance, 256);
 
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
                                  m->huff_code_dc_luminance,

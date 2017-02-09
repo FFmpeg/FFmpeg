@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/error.h"
 #include "libavutil/qsort.h"
@@ -154,10 +155,9 @@ void ff_mjpeg_encode_huffman_init(MJpegEncHuffmanContext *s)
  * @param bits      output array where the ith character represents how many input values have i length encoding
  * @param val       output array of input values sorted by their encoded length
  * @param max_nval  maximum number of distinct input values
- * @return int      Return code, 0 if succeeded.
  */
-int ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
-                                  uint8_t val[], int max_nval)
+void ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
+                                   uint8_t val[], int max_nval)
 {
     int i, j;
     int nval = 0;
@@ -167,9 +167,7 @@ int ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
     for (i = 0; i < 256; i++) {
         if (s->val_count[i]) nval++;
     }
-    if (nval > max_nval) {
-        return AVERROR(EINVAL);
-    }
+    av_assert0 (nval <= max_nval);
 
     j = 0;
     for (i = 0; i < 256; i++) {
@@ -189,6 +187,4 @@ int ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
         val[i] = distincts[i].code;
         bits[distincts[i].length]++;
     }
-
-    return 0;
 }
