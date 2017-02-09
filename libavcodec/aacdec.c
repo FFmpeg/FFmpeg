@@ -284,9 +284,10 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     AACContext *ac        = &latmctx->aac_ctx;
     AVCodecContext *avctx = ac->avctx;
     MPEG4AudioConfig m4ac = { 0 };
+    GetBitContext gbc;
     int config_start_bit  = get_bits_count(gb);
     int sync_extension    = 0;
-    int bits_consumed, esize;
+    int bits_consumed, esize, i;
 
     if (asclen) {
         sync_extension = 1;
@@ -294,19 +295,19 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     } else
         asclen         = get_bits_left(gb);
 
-    if (config_start_bit % 8) {
-        avpriv_request_sample(latmctx->aac_ctx.avctx,
-                              "Non-byte-aligned audio-specific config");
-        return AVERROR_PATCHWELCOME;
-    }
     if (asclen <= 0)
         return AVERROR_INVALIDDATA;
-    bits_consumed = decode_audio_specific_config(NULL, avctx, &m4ac,
-                                         gb->buffer + (config_start_bit / 8),
-                                         asclen, sync_extension);
 
-    if (bits_consumed < 0)
+    init_get_bits(&gbc, gb->buffer, config_start_bit + asclen);
+    skip_bits_long(&gbc, config_start_bit);
+
+    bits_consumed = decode_audio_specific_config_gb(NULL, avctx, &m4ac,
+                                                    &gbc, config_start_bit,
+                                                    sync_extension);
+
+    if (bits_consumed < config_start_bit)
         return AVERROR_INVALIDDATA;
+    bits_consumed -= config_start_bit;
 
     if (!latmctx->initialized ||
         ac->oc[1].m4ac.sample_rate != m4ac.sample_rate ||
@@ -329,7 +330,10 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         }
 
         avctx->extradata_size = esize;
-        memcpy(avctx->extradata, gb->buffer + (config_start_bit/8), esize);
+        gbc = *gb;
+        for (i = 0; i < esize; i++) {
+          avctx->extradata[i] = get_bits(&gbc, 8);
+        }
         memset(avctx->extradata+esize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
     skip_bits_long(gb, bits_consumed);
