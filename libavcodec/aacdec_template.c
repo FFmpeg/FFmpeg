@@ -2949,6 +2949,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int err, elem_id;
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
+    int payload_alignment;
 
     ac->frame = data;
 
@@ -2971,6 +2972,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     // This may lead to an undefined profile being signaled
     ac->avctx->profile = ac->oc[1].m4ac.object_type - 1;
 
+    payload_alignment = get_bits_count(gb);
     ac->tags_mapped = 0;
     // parse
     while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
@@ -3025,7 +3027,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             uint8_t layout_map[MAX_ELEM_ID*4][3];
             int tags;
             push_output_configuration(ac);
-            tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb, 0);
+            tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb,
+                              payload_alignment);
             if (tags < 0) {
                 err = tags;
                 break;
