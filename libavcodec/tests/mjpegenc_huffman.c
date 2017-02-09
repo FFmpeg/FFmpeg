@@ -39,7 +39,7 @@ static int check_lengths(int L, int expected_length,
     int actual_length = 0, i, j, k, prob, length;
     int ret = 0;
     double cantor_measure = 0;
-    assert(nprobs <= 256);
+    av_assert0(nprobs <= 256);
 
     for (i = 0; i < nprobs; i++) {
         val_counts[i] = (PTable){.value = i, .prob = probs[i]};
