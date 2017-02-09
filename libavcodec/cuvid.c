@@ -143,6 +143,19 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     avctx->pix_fmt = surface_fmt;
 
+    // Update our hwframe ctx, as the get_format callback might have refreshed it!
+    if (avctx->hw_frames_ctx) {
+        av_buffer_unref(&ctx->hwframe);
+
+        ctx->hwframe = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!ctx->hwframe) {
+            ctx->internal_error = AVERROR(ENOMEM);
+            return 0;
+        }
+
+        hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
+    }
+
     avctx->width = format->display_area.right;
     avctx->height = format->display_area.bottom;
 
