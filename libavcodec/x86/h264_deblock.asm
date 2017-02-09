@@ -37,11 +37,6 @@ cextern pb_0
 cextern pb_1
 cextern pb_3
 
-; expands to [base],...,[base+7*stride]
-%define PASS8ROWS(base, base3, stride, stride3) \
-    [base], [base+stride], [base+stride*2], [base3], \
-    [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
-
 %define PASS8ROWS(base, base3, stride, stride3, offset) \
     PASS8ROWS(base+offset, base3+offset, stride, stride3)
 

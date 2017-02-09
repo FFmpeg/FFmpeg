@@ -29,6 +29,11 @@
 
 %include "libavutil/x86/x86inc.asm"
 
+; expands to [base],...,[base+7*stride]
+%define PASS8ROWS(base, base3, stride, stride3) \
+    [base],           [base  + stride],   [base  + 2*stride], [base3], \
+    [base3 + stride], [base3 + 2*stride], [base3 + stride3],  [base3 + stride*4]
+
 %macro SBUTTERFLY 4
 %ifidn %1, dqqq
     vperm2i128  m%4, m%2, m%3, q0301
