@@ -190,6 +190,9 @@ struct RTPDemuxContext {
     /* dynamic payload stuff */
     const RTPDynamicProtocolHandler *handler;
     PayloadContext *dynamic_protocol_context;
+
+    /* packet loss tracking */
+    uint64_t rtp_packets_missed;
 };
 
 /**
