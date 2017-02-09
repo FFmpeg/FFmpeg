@@ -3546,19 +3546,6 @@ static int transcode_init(void)
                 input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
 
-    /* hwaccel transcoding */
-    for (i = 0; i < nb_output_streams; i++) {
-        ost = output_streams[i];
-
-        if (!ost->stream_copy) {
-
-#if CONFIG_CUVID
-            if (cuvid_transcode_init(ost))
-                exit_program(1);
-#endif
-        }
-    }
-
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
         if ((ret = init_input_stream(i, error, sizeof(error))) < 0) {
