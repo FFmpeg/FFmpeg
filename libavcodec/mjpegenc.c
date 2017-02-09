@@ -267,10 +267,9 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         ff_mjpeg_encode_code(m, table_id, 0);
 }
 
-int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
-    int i, is_chroma_420;
-
+    int i;
     if (s->chroma_format == CHROMA_444) {
         encode_block(s, block[0], 0);
         encode_block(s, block[2], 2);
@@ -288,11 +287,10 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
             encode_block(s, block[11], 11);
         }
     } else {
-        is_chroma_420 = (s->chroma_format == CHROMA_420);
         for(i=0;i<5;i++) {
             encode_block(s, block[i], i);
         }
-        if (is_chroma_420) {
+        if (s->chroma_format == CHROMA_420) {
             encode_block(s, block[5], 5);
         } else {
             encode_block(s, block[6], 6);
@@ -300,8 +298,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
             encode_block(s, block[7], 7);
         }
     }
-
-    return 0;
 }
 
 // maximum over s->mjpeg_vsample[i]
