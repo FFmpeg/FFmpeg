@@ -42,6 +42,34 @@
 // Don't know, but let's guess 16 bits per code
 #define MJPEG_HUFFMAN_EST_BITS_PER_CODE 16
 
+static int alloc_huffman(MpegEncContext *s)
+{
+    MJpegContext *m = s->mjpeg_ctx;
+    size_t num_mbs, num_blocks, num_codes;
+    int blocks_per_mb;
+
+    // We need to init this here as the mjpeg init is called before the common init,
+    s->mb_width  = (s->width  + 15) / 16;
+    s->mb_height = (s->height + 15) / 16;
+
+    switch (s->chroma_format) {
+    case CHROMA_420: blocks_per_mb =  6; break;
+    case CHROMA_422: blocks_per_mb =  8; break;
+    case CHROMA_444: blocks_per_mb = 12; break;
+    default: av_assert0(0);
+    };
+
+    // Make sure we have enough space to hold this frame.
+    num_mbs = s->mb_width * s->mb_height;
+    num_blocks = num_mbs * blocks_per_mb;
+    num_codes = num_blocks * 64;
+
+    m->huff_buffer = av_malloc_array(num_codes, sizeof(MJpegHuffmanCode));
+    if (!m->huff_buffer)
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
@@ -88,13 +116,10 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
     // Buffers start out empty.
-    m->huff_buffer = NULL;
     m->huff_ncode = 0;
-    m->huff_capacity = 0;
-    m->error = 0;
-
     s->mjpeg_ctx = m;
-    return 0;
+
+    return alloc_huffman(s);
 }
 
 av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
@@ -159,7 +184,6 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
 static inline void ff_mjpeg_encode_code(MJpegContext *s, uint8_t table_id, int code)
 {
     MJpegHuffmanCode *c = &s->huff_buffer[s->huff_ncode++];
-    av_assert0(s->huff_ncode < s->huff_capacity);
     c->table_id = table_id;
     c->code = code;
 }
@@ -206,10 +230,6 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     int component, dc, last_index, val, run;
     MJpegContext *m = s->mjpeg_ctx;
 
-    if (m->error) return;
-
-    av_assert0(m->huff_capacity >= m->huff_ncode + 64);
-
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
     table_id = (n <= 3 ? 0 : 1);
@@ -247,30 +267,6 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         ff_mjpeg_encode_code(m, table_id, 0);
 }
 
-// Possibly reallocate the huffman code buffer, assuming blocks_per_mb.
-// Set s->mjpeg_ctx->error on ENOMEM.
-static void realloc_huffman(MpegEncContext *s, int blocks_per_mb)
-{
-    MJpegContext *m = s->mjpeg_ctx;
-    size_t num_mbs, num_blocks, num_codes;
-    MJpegHuffmanCode *new_buf;
-    if (m->error) return;
-    // Make sure we have enough space to hold this frame.
-    num_mbs = s->mb_width * s->mb_height;
-    num_blocks = num_mbs * blocks_per_mb;
-    av_assert0(m->huff_ncode <=
-               (s->mb_y * s->mb_width + s->mb_x) * blocks_per_mb * 64);
-    num_codes = num_blocks * 64;
-
-    new_buf = av_fast_realloc(m->huff_buffer, &m->huff_capacity,
-                              num_codes * sizeof(MJpegHuffmanCode));
-    if (!new_buf) {
-        m->error = AVERROR(ENOMEM);
-    } else {
-        m->huff_buffer = new_buf;
-    }
-}
-
 int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i, is_chroma_420;
@@ -285,7 +281,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
     }
 
     if (s->chroma_format == CHROMA_444) {
-        realloc_huffman(s, 12);
         encode_block(s, block[0], 0);
         encode_block(s, block[2], 2);
         encode_block(s, block[4], 4);
@@ -303,7 +298,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
         }
     } else {
         is_chroma_420 = (s->chroma_format == CHROMA_420);
-        realloc_huffman(s, 5 + (is_chroma_420 ? 1 : 3));
         for(i=0;i<5;i++) {
             encode_block(s, block[i], i);
         }
@@ -315,8 +309,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
             encode_block(s, block[7], 7);
         }
     }
-    if (s->mjpeg_ctx->error)
-        return s->mjpeg_ctx->error;
 
     s->i_tex_bits = MJPEG_HUFFMAN_EST_BITS_PER_CODE * s->mjpeg_ctx->huff_ncode;
     return 0;

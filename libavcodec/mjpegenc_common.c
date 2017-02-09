@@ -497,9 +497,6 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
     m = s->mjpeg_ctx;
 
-    if (m->error)
-        return m->error;
-
     if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
         ff_mjpeg_build_optimal_huffman(m);
 
@@ -516,10 +513,6 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
     ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
                                    s->pred, s->intra_matrix, s->chroma_intra_matrix);
     ff_mjpeg_encode_picture_frame(s);
-    if (m->error < 0) {
-        ret = m->error;
-        return ret;
-    }
 
     ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,
                                             put_bits_count(&s->pb) / 4 + 1000);

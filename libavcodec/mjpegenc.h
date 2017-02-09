@@ -85,10 +85,8 @@ typedef struct MJpegContext {
     uint8_t bits_ac_chrominance[17]; ///< AC chrominance Huffman bits.
     uint8_t val_ac_chrominance[256]; ///< AC chrominance Huffman values.
 
-    unsigned int huff_capacity;      ///< Size of the buffer, in entries.
     size_t huff_ncode;               ///< Number of current entries in the buffer.
     MJpegHuffmanCode *huff_buffer;   ///< Buffer for Huffman code values.
-    int error;                       ///< Error code.
 } MJpegContext;
 
 /**
