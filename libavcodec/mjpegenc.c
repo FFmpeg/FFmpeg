@@ -39,8 +39,6 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-// Don't know, but let's guess 16 bits per code
-#define MJPEG_HUFFMAN_EST_BITS_PER_CODE 16
 
 static int alloc_huffman(MpegEncContext *s)
 {
@@ -148,6 +146,7 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
     size_t total_bits = 0;
     size_t bytes_needed;
 
+    s->header_bits = get_bits_diff(s);
     // Estimate the total size first
     for (i = 0; i < m->huff_ncode; i++) {
         table_id = m->huff_buffer[i].table_id;
@@ -172,6 +171,7 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
     }
 
     m->huff_ncode = 0;
+    s->i_tex_bits = get_bits_diff(s);
 }
 
 /**
@@ -271,15 +271,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i, is_chroma_420;
 
-    // Number of bits used depends on future data.
-    // So, nothing that relies on encoding many times and taking the
-    // one with the fewest bits will work properly here.
-    if (s->i_tex_bits != MJPEG_HUFFMAN_EST_BITS_PER_CODE *
-        s->mjpeg_ctx->huff_ncode) {
-        av_log(s->avctx, AV_LOG_ERROR, "Unsupported encoding method\n");
-        return AVERROR(EINVAL);
-    }
-
     if (s->chroma_format == CHROMA_444) {
         encode_block(s, block[0], 0);
         encode_block(s, block[2], 2);
@@ -310,7 +301,6 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
         }
     }
 
-    s->i_tex_bits = MJPEG_HUFFMAN_EST_BITS_PER_CODE * s->mjpeg_ctx->huff_ncode;
     return 0;
 }
 
