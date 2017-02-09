@@ -21,7 +21,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "libavutil/common.h"
 #include "libavutil/error.h"
