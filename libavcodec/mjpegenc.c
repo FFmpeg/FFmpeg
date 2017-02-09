@@ -280,7 +280,7 @@ int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
     // one with the fewest bits will work properly here.
     if (s->i_tex_bits != MJPEG_HUFFMAN_EST_BITS_PER_CODE *
         s->mjpeg_ctx->huff_ncode) {
-        av_log(NULL, AV_LOG_ERROR, "Unsupported encoding method\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Unsupported encoding method\n");
         return AVERROR(EINVAL);
     }
 
