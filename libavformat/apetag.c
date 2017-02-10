@@ -192,10 +192,6 @@ int ff_ape_write_tag(AVFormatContext *s)
     if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
         goto end;
 
-    // flags
-    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_IS_HEADER);
-    ffio_fill(dyn_bc, 0, 8);             // reserved
-
     ff_standardize_creation_time(s);
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
         int val_len;
@@ -218,7 +214,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     if (size <= 0)
         goto end;
-    size += 20;
+    size += APE_TAG_FOOTER_BYTES;
 
     // header
     avio_write(s->pb, "APETAGEX", 8);   // id
@@ -226,7 +222,11 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, size);
     avio_wl32(s->pb, count);
 
-    avio_write(s->pb, dyn_buf, size - 20);
+    // flags
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_IS_HEADER);
+    ffio_fill(s->pb, 0, 8);             // reserved
+
+    avio_write(s->pb, dyn_buf, size - APE_TAG_FOOTER_BYTES);
 
     // footer
     avio_write(s->pb, "APETAGEX", 8);   // id
