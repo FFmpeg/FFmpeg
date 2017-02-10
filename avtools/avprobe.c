@@ -792,11 +792,23 @@ static void show_stream(InputFile *ifile, InputStream *ist)
                 spherical = (AVSphericalMapping *)sd->data;
                 probe_object_header("spherical");
 
-                if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+                if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR) {
                     probe_str("projection", "equirectangular");
-                else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+                } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
                     probe_str("projection", "cubemap");
-                else
+                    probe_int("padding", spherical->padding);
+                } else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
+                    size_t l, t, r, b;
+                    av_spherical_tile_bounds(spherical, par->width, par->height,
+                                             &l, &t, &r, &b);
+                    probe_str("projection", "tiled equirectangular");
+                    probe_object_header("bounding");
+                    probe_int("left", l);
+                    probe_int("top", t);
+                    probe_int("right", r);
+                    probe_int("bottom", b);
+                    probe_object_footer("bounding");
+                } else
                     probe_str("projection", "unknown");
 
                 probe_object_header("orientation");

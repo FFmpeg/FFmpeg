@@ -32,3 +32,21 @@ AVSphericalMapping *av_spherical_alloc(size_t *size)
 
     return spherical;
 }
+
+void av_spherical_tile_bounds(AVSphericalMapping *map,
+                              size_t width, size_t height,
+                              size_t *left, size_t *top,
+                              size_t *right, size_t *bottom)
+{
+    /* conversion from 0.32 coordinates to pixels */
+    uint64_t orig_width  = (uint64_t) width  * UINT32_MAX /
+                           (UINT32_MAX - map->bound_right  - map->bound_left);
+    uint64_t orig_height = (uint64_t) height * UINT32_MAX /
+                           (UINT32_MAX - map->bound_bottom - map->bound_top);
+
+    /* add a (UINT32_MAX - 1) to round up integer division */
+    *left   = (orig_width  * map->bound_left + UINT32_MAX - 1) / UINT32_MAX;
+    *top    = (orig_height * map->bound_top  + UINT32_MAX - 1) / UINT32_MAX;
+    *right  = orig_width  - width  - *left;
+    *bottom = orig_height - height - *top;
+}

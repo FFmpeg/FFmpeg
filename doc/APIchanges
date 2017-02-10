@@ -13,6 +13,11 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-02-10 - xxxxxxx - lavu 55.33.0 - spherical.h
+  Add AV_SPHERICAL_EQUIRECTANGULAR_TILE, av_spherical_tile_bounds(),
+  and projection-specific properties (bound_left, bound_top, bound_right,
+  bound_bottom, padding) to AVSphericalMapping.
+
 2017-xx-xx - xxxxxxx - lavc 57.34.0 - avcodec.h
   Add AVCodecContext.hw_device_ctx.
 

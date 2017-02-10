@@ -307,7 +307,7 @@ static void dump_cpb(void *ctx, AVPacketSideData *sd)
            cpb->vbv_delay);
 }
 
-static void dump_spherical(void *ctx, AVPacketSideData *sd)
+static void dump_spherical(void *ctx, AVCodecParameters *par, AVPacketSideData *sd)
 {
     AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
     double yaw, pitch, roll;
@@ -321,6 +321,8 @@ static void dump_spherical(void *ctx, AVPacketSideData *sd)
         av_log(ctx, AV_LOG_INFO, "equirectangular ");
     else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
         av_log(ctx, AV_LOG_INFO, "cubemap ");
+    else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE)
+        av_log(ctx, AV_LOG_INFO, "tiled equirectangular ");
     else {
         av_log(ctx, AV_LOG_WARNING, "unknown");
         return;
@@ -330,6 +332,15 @@ static void dump_spherical(void *ctx, AVPacketSideData *sd)
     pitch = ((double)spherical->pitch) / (1 << 16);
     roll = ((double)spherical->roll) / (1 << 16);
     av_log(ctx, AV_LOG_INFO, "(%f/%f/%f) ", yaw, pitch, roll);
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
+        size_t l, t, r, b;
+        av_spherical_tile_bounds(spherical, par->width, par->height,
+                                 &l, &t, &r, &b);
+        av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ", l, t, r, b);
+    } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
+        av_log(ctx, AV_LOG_INFO, "[pad %zu] ", spherical->padding);
+    }
 }
 
 static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
@@ -382,7 +393,7 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             break;
         case AV_PKT_DATA_SPHERICAL:
             av_log(ctx, AV_LOG_INFO, "spherical: ");
-            dump_spherical(ctx, &sd);
+            dump_spherical(ctx, st->codecpar, &sd);
             break;
         default:
             av_log(ctx, AV_LOG_WARNING,
