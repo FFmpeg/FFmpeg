@@ -1601,18 +1601,62 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track)
     AVSphericalMapping *spherical;
     enum AVSphericalProjection projection;
     size_t spherical_size;
+    size_t l = 0, t = 0, r = 0, b = 0;
+    size_t padding = 0;
     int ret;
+    GetByteContext gb;
+
+    bytestream2_init(&gb, track->video.projection.private.data,
+                     track->video.projection.private.size);
+
+    if (bytestream2_get_byte(&gb) != 0) {
+        av_log(NULL, AV_LOG_WARNING, "Unknown spherical metadata\n");
+        return 0;
+    }
+
+    bytestream2_skip(&gb, 3); // flags
 
     switch (track->video.projection.type) {
     case MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR:
-        projection = AV_SPHERICAL_EQUIRECTANGULAR;
+        if (track->video.projection.private.size == 20) {
+            t = bytestream2_get_be32(&gb);
+            b = bytestream2_get_be32(&gb);
+            l = bytestream2_get_be32(&gb);
+            r = bytestream2_get_be32(&gb);
+
+            if (b >= UINT_MAX - t || r >= UINT_MAX - l) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Invalid bounding rectangle coordinates "
+                       "%zu,%zu,%zu,%zu\n", l, t, r, b);
+                return AVERROR_INVALIDDATA;
+            }
+        } else if (track->video.projection.private.size != 0) {
+            av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (l || t || r || b)
+            projection = AV_SPHERICAL_EQUIRECTANGULAR_TILE;
+        else
+            projection = AV_SPHERICAL_EQUIRECTANGULAR;
         break;
     case MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP:
         if (track->video.projection.private.size < 4) {
             av_log(NULL, AV_LOG_ERROR, "Missing projection private properties\n");
             return AVERROR_INVALIDDATA;
+        } else if (track->video.projection.private.size == 12) {
+            uint32_t layout = bytestream2_get_be32(&gb);
+            if (layout) {
+                av_log(NULL, AV_LOG_WARNING,
+                       "Unknown spherical cubemap layout %"PRIu32"\n", layout);
+                return 0;
+            }
+            projection = AV_SPHERICAL_CUBEMAP;
+            padding = bytestream2_get_be32(&gb);
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
+            return AVERROR_INVALIDDATA;
         }
-        projection = AV_SPHERICAL_CUBEMAP;
         break;
     default:
         av_log(NULL, AV_LOG_WARNING,
@@ -1630,6 +1674,13 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track)
     spherical->yaw   = (int32_t) (track->video.projection.yaw   * (1 << 16));
     spherical->pitch = (int32_t) (track->video.projection.pitch * (1 << 16));
     spherical->roll  = (int32_t) (track->video.projection.roll  * (1 << 16));
+
+    spherical->padding = padding;
+
+    spherical->bound_left   = l;
+    spherical->bound_top    = t;
+    spherical->bound_right  = r;
+    spherical->bound_bottom = b;
 
     ret = av_stream_add_side_data(st, AV_PKT_DATA_SPHERICAL, (uint8_t *)spherical,
                                   spherical_size);
