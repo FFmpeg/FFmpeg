@@ -2622,6 +2622,8 @@ target_path='$(CURDIR)'
 DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," > $(@:.o=.d)'
 DEPFLAGS='-MM'
 
+mkdir -p avbuild
+
 # find source path
 if test -f configure; then
     source_path=.
@@ -2839,7 +2841,6 @@ disable_components(){
 
 map 'disable_components $v' $LIBRARY_LIST
 
-mkdir -p avbuild
 echo "# $0 $LIBAV_CONFIGURATION" > $logfile
 set >> $logfile
 
