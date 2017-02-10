@@ -265,6 +265,21 @@
     SWAP       %12, %15
 %endmacro
 
+%macro TRANSPOSE_8X8B 8
+    %if mmsize == 8
+        %error "This macro does not support mmsize == 8"
+    %endif
+    punpcklbw m%1, m%2
+    punpcklbw m%3, m%4
+    punpcklbw m%5, m%6
+    punpcklbw m%7, m%8
+    TRANSPOSE4x4W %1, %3, %5, %7, %2
+    MOVHL m%2, m%1
+    MOVHL m%4, m%3
+    MOVHL m%6, m%5
+    MOVHL m%8, m%7
+%endmacro
+
 ; PABSW macro assumes %1 != %2, while ABS1/2 macros work in-place
 %macro PABSW 2
 %if cpuflag(ssse3)
