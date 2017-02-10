@@ -33,6 +33,7 @@
 #include "bitstream.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "thread.h"
 #include "utvideo.h"
 
