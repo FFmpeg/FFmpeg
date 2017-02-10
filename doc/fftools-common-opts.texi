@@ -110,6 +110,12 @@ Show version.
 @item -formats
 Show available formats (including devices).
 
+@item -demuxers
+Show available demuxers.
+
+@item -muxers
+Show available muxers.
+
 @item -devices
 Show available devices.
 

@@ -13,8 +13,9 @@ You can disable all the demuxers using the configure option
 the option @code{--enable-demuxer=@var{DEMUXER}}, or disable it
 with the option @code{--disable-demuxer=@var{DEMUXER}}.
 
-The option @code{-formats} of the ff* tools will display the list of
-enabled demuxers.
+The option @code{-demuxers} of the ff* tools will display the list of
+enabled demuxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
 
 The description of some of the currently available demuxers follows.
 

@@ -13,8 +13,9 @@ You can disable all the muxers with the configure option
 with the options @code{--enable-muxer=@var{MUXER}} /
 @code{--disable-muxer=@var{MUXER}}.
 
-The option @code{-formats} of the ff* tools will display the list of
-enabled muxers.
+The option @code{-muxers} of the ff* tools will display the list of
+enabled muxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
 
 A description of some of the currently available muxers follows.
 
