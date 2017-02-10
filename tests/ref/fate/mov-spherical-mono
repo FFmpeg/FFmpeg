@@ -7,7 +7,7 @@ inverted=0
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=Spherical Mapping
-side_data_size=16
+side_data_size=56
 projection=equirectangular
 yaw=45
 pitch=30

@@ -1762,6 +1762,7 @@ static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id
 }
 
 static void print_pkt_side_data(WriterContext *w,
+                                AVCodecParameters *par,
                                 const AVPacketSideData *side_data,
                                 int nb_side_data,
                                 SectionID id_data_list,
@@ -1788,9 +1789,19 @@ static void print_pkt_side_data(WriterContext *w,
             const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
             if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
                 print_str("projection", "equirectangular");
-            else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+            else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
                 print_str("projection", "cubemap");
-            else
+                print_int("padding", spherical->padding);
+            } else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
+                size_t l, t, r, b;
+                av_spherical_tile_bounds(spherical, par->width, par->height,
+                                         &l, &t, &r, &b);
+                print_str("projection", "tiled equirectangular");
+                print_int("bound_left", l);
+                print_int("bound_top", t);
+                print_int("bound_right", r);
+                print_int("bound_bottom", b);
+            } else
                 print_str("projection", "unknown");
 
             print_int("yaw", (double) spherical->yaw / (1 << 16));
@@ -1843,7 +1854,7 @@ static void show_packet(WriterContext *w, InputFile *ifile, AVPacket *pkt, int p
             av_dict_free(&dict);
         }
 
-        print_pkt_side_data(w, pkt->side_data, pkt->side_data_elems,
+        print_pkt_side_data(w, st->codecpar, pkt->side_data, pkt->side_data_elems,
                             SECTION_ID_PACKET_SIDE_DATA_LIST,
                             SECTION_ID_PACKET_SIDE_DATA);
     }
@@ -2404,7 +2415,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         ret = show_tags(w, stream->metadata, in_program ? SECTION_ID_PROGRAM_STREAM_TAGS : SECTION_ID_STREAM_TAGS);
 
     if (stream->nb_side_data) {
-        print_pkt_side_data(w, stream->side_data, stream->nb_side_data,
+        print_pkt_side_data(w, stream->codecpar, stream->side_data, stream->nb_side_data,
                             SECTION_ID_STREAM_SIDE_DATA_LIST,
                             SECTION_ID_STREAM_SIDE_DATA);
     }
