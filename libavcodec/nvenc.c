@@ -1421,6 +1421,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
         ctx->registered_frames[reg_idx].mapped = 1;
         nvenc_frame->reg_idx                   = reg_idx;
         nvenc_frame->input_surface             = nvenc_frame->in_map.mappedResource;
+        nvenc_frame->format                    = nvenc_frame->in_map.mappedBufferFmt;
         nvenc_frame->pitch                     = frame->linesize[0];
         return 0;
     } else {
