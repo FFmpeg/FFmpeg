@@ -32,7 +32,7 @@
 #define APE_TAG_VERSION               2000
 #define APE_TAG_FOOTER_BYTES          32
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
-#define APE_TAG_FLAG_CONTAINS_FOOTER  (1 << 30)
+#define APE_TAG_FLAG_LACKS_FOOTER     (1 << 30)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 #define APE_TAG_FLAG_IS_BINARY        (1 << 1)
 
@@ -194,8 +194,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, 0);                // reserve space for tag count
 
     // flags
-    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
-                     APE_TAG_FLAG_IS_HEADER);
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_IS_HEADER);
     ffio_fill(s->pb, 0, 8);             // reserved
 
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
@@ -217,7 +216,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, count);            // tag count
 
     // flags
-    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER);
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER);
     ffio_fill(s->pb, 0, 8);             // reserved
 
     // update values in the header
