@@ -282,18 +282,18 @@ cextern pb_3
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 %macro DEBLOCK_LUMA 0
-cglobal deblock_v_luma_8, 5,5,10
+cglobal deblock_v_luma_8, 5,5,10, pix_, stride_, alpha_, beta_, base3_
     movd    m8, [r4] ; tc0
-    lea     r4, [r1*3]
-    dec     r2d        ; alpha-1
+    lea     r4, [stride_q*3]
+    dec     alpha_d        ; alpha-1
     neg     r4
-    dec     r3d        ; beta-1
-    add     r4, r0     ; pix-3*stride
+    dec     beta_d        ; beta-1
+    add     base3_q, pix_q     ; pix-3*stride
 
-    mova    m0, [r4+r1]   ; p1
-    mova    m1, [r4+2*r1] ; p0
-    mova    m2, [r0]      ; q0
-    mova    m3, [r0+r1]   ; q1
+    mova    m0, [base3_q + stride_q]   ; p1
+    mova    m1, [base3_q + 2*stride_q] ; p0
+    mova    m2, [pix_q]      ; q0
+    mova    m3, [pix_q + stride_q]   ; q1
     LOAD_MASK r2d, r3d
 
     punpcklbw m8, m8
@@ -303,24 +303,24 @@ cglobal deblock_v_luma_8, 5,5,10
     pandn   m9, m7
     pand    m8, m9
 
-    movdqa  m3, [r4] ; p2
+    movdqa  m3, [base3_q] ; p2
     DIFF_GT2 m1, m3, m5, m6, m7 ; |p2-p0| > beta-1
     pand    m6, m9
     psubb   m7, m8, m6
     pand    m6, m8
-    LUMA_Q1 m0, m3, [r4], [r4+r1], m6, m4
+    LUMA_Q1 m0, m3, [base3_q], [base3_q + stride_q], m6, m4
 
-    movdqa  m4, [r0+2*r1] ; q2
+    movdqa  m4, [pix_q + 2*stride_q] ; q2
     DIFF_GT2 m2, m4, m5, m6, m3 ; |q2-q0| > beta-1
     pand    m6, m9
     pand    m8, m6
     psubb   m7, m6
-    mova    m3, [r0+r1]
-    LUMA_Q1 m3, m4, [r0+2*r1], [r0+r1], m8, m6
+    mova    m3, [pix_q + stride_q]
+    LUMA_Q1 m3, m4, [pix_q + 2*stride_q], [pix_q + stride_q], m8, m6
 
     DEBLOCK_P0_Q0
-    mova    [r4+2*r1], m1
-    mova    [r0], m2
+    mova    [base3_q + 2*stride_q], m1
+    mova    [pix_q], m2
     RET
 
 ;-----------------------------------------------------------------------------
