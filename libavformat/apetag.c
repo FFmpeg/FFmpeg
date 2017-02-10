@@ -30,7 +30,7 @@
 #include "internal.h"
 
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
-#define APE_TAG_FLAG_CONTAINS_FOOTER  (1 << 30)
+#define APE_TAG_FLAG_LACKS_FOOTER     (1 << 30)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 #define APE_TAG_FLAG_IS_BINARY        (1 << 1)
 
@@ -189,8 +189,7 @@ int ff_ape_write_tag(AVFormatContext *s)
         goto end;
 
     // flags
-    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
-                     APE_TAG_FLAG_IS_HEADER);
+    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_IS_HEADER);
     ffio_fill(dyn_bc, 0, 8);             // reserved
 
     ff_standardize_creation_time(s);
@@ -232,7 +231,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, count);            // tag count
 
     // flags
-    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER);
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER);
     ffio_fill(s->pb, 0, 8);             // reserved
 
 end:
