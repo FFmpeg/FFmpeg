@@ -424,7 +424,7 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
  */
 static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
 {
-    int i, ret, table_id, code;
+    int i, table_id, code;
 
     MJpegEncHuffmanContext dc_luminance_ctx;
     MJpegEncHuffmanContext dc_chrominance_ctx;
