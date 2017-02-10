@@ -31,6 +31,7 @@
 
 #define APE_TAG_VERSION               2000
 #define APE_TAG_FOOTER_BYTES          32
+#define APE_TAG_HEADER_BYTES          32
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
 #define APE_TAG_FLAG_LACKS_FOOTER     (1 << 30)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
@@ -154,7 +155,6 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Invalid tag size %"PRIu32".\n", tag_bytes);
         return 0;
     }
-    tag_start = file_size - tag_bytes - APE_TAG_FOOTER_BYTES;
 
     fields = avio_rl32(pb);    /* number of fields */
     if (fields > 65536) {
@@ -169,6 +169,11 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
     }
 
     avio_seek(pb, file_size - tag_bytes, SEEK_SET);
+
+    if (val & APE_TAG_FLAG_CONTAINS_HEADER)
+        tag_bytes += APE_TAG_HEADER_BYTES;
+
+    tag_start = file_size - tag_bytes;
 
     for (i=0; i<fields; i++)
         if (ape_tag_read_field(s) < 0) break;
