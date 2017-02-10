@@ -11,7 +11,7 @@ FATE_MOV += fate-mov-sar
 fate-mov-sar: CMD = probestream sample_aspect_ratio $(TARGET_SAMPLES)/mov/displaymatrix.mov
 
 FATE_MOV += fate-mov-spherical
-fate-mov-spherical: CMD = probestream projection,yaw,pitch,roll $(TARGET_SAMPLES)/mov/spherical.mov
+fate-mov-spherical: CMD = probestream projection,yaw,pitch,roll,left,top,right,bottom $(TARGET_SAMPLES)/mov/spherical.mov
 
 FATE_MOV += fate-mov-stereo3d
 fate-mov-stereo3d: CMD = probestream type $(TARGET_SAMPLES)/mov/spherical.mov
