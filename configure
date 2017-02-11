@@ -2210,6 +2210,8 @@ h264_vda_old_hwaccel_deps="vda"
 h264_vda_old_hwaccel_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+hevc_cuvid_hwaccel_deps="cuvid CUVIDHEVCPICPARAMS"
+hevc_cuvid_hwaccel_select="hevc_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
@@ -4700,6 +4702,7 @@ check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "cuviddec.h" "CUVIDH264PICPARAMS"
+check_type "cuviddec.h" "CUVIDHEVCPICPARAMS"
 check_struct "cuviddec.h" "CUVIDDECODECREATEINFO" bitDepthMinus8
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
