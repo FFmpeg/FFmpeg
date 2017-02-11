@@ -13,6 +13,7 @@ version <next>:
 - PCE support for extended channel layouts in the AAC encoder
 - native aptX encoder and decoder
 - Raw aptX muxer and demuxer
+- NVIDIA NVDEC-accelerated H.264 hwaccel decoding
 
 
 version 3.4:
