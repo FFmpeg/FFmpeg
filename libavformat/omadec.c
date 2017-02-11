@@ -374,8 +374,13 @@ static int aal_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     pkt->pos = pos;
-    pkt->pts = pts * 2048LL;
-    pkt->duration = 2048;
+    if (s->streams[0]->codecpar->codec_id == AV_CODEC_ID_ATRAC3AL) {
+        pkt->duration = 1024;
+        pkt->pts = pts * 1024LL;
+    } else {
+        pkt->duration = 2048;
+        pkt->pts = pts * 2048LL;
+    }
 
     return ret;
 }
