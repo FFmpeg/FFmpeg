@@ -652,7 +652,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
         /* Decode sound unit pairs (channels are expected to be even).
          * Multichannel joint stereo interleaves pairs (6ch: 2ch + 2ch + 2ch) */
-        uint8_t *js_databuf;
+        const uint8_t *js_databuf;
         int js_pair, js_block_align;
 
         js_block_align = (avctx->block_align / avctx->channels) * 2; /* block pair */
