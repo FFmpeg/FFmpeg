@@ -375,7 +375,7 @@ static uint32_t celt_alg_unquant(OpusRangeCoder *rc, float *X, uint32_t N, uint3
     return celt_extract_collapse_mask(y, N, blocks);
 }
 
-uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
+uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                              float *X, float *Y, int N, int b, uint32_t blocks,
                              float *lowband, int duration, float *lowband_out, int level,
                              float gain, float *lowband_scratch, int fill)
@@ -403,9 +403,9 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
         float *x = X;
         for (i = 0; i <= dualstereo; i++) {
             int sign = 0;
-            if (s->remaining2 >= 1<<3) {
+            if (f->remaining2 >= 1<<3) {
                 sign           = ff_opus_rc_get_raw(rc, 1);
-                s->remaining2 -= 1 << 3;
+                f->remaining2 -= 1 << 3;
                 b             -= 1 << 3;
             }
             x[0] = sign ? -1.0f : 1.0f;
@@ -417,7 +417,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
     }
 
     if (!dualstereo && level == 0) {
-        int tf_change = s->tf_change[band];
+        int tf_change = f->tf_change[band];
         int k;
         if (tf_change > 0)
             recombine = tf_change;
@@ -454,7 +454,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
 
         /* Reorganize the samples in time order instead of frequency order */
         if (B0 > 1 && lowband)
-            celt_deinterleave_hadamard(s->scratch, lowband, N_B >> recombine,
+            celt_deinterleave_hadamard(f->scratch, lowband, N_B >> recombine,
                                        B0 << recombine, longblocks);
     }
 
@@ -485,7 +485,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
         pulse_cap = ff_celt_log_freq_range[band] + duration * 8;
         offset = (pulse_cap >> 1) - (dualstereo && N == 2 ? CELT_QTHETA_OFFSET_TWOPHASE :
                                                           CELT_QTHETA_OFFSET);
-        qn = (dualstereo && band >= s->intensitystereo) ? 1 :
+        qn = (dualstereo && band >= f->intensity_stereo) ? 1 :
              celt_compute_qn(N, b, offset, pulse_cap, dualstereo);
         tell = opus_rc_tell_frac(rc);
         if (qn != 1) {
@@ -501,7 +501,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
             /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
             Let's do that at higher complexity */
         } else if (dualstereo) {
-            inv = (b > 2 << 3 && s->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
+            inv = (b > 2 << 3 && f->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
             itheta = 0;
         }
         qalloc = opus_rc_tell_frac(rc) - tell;
@@ -542,7 +542,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
             sbits = (itheta != 0 && itheta != 16384) ? 1 << 3 : 0;
             mbits -= sbits;
             c = (itheta > 8192);
-            s->remaining2 -= qalloc+sbits;
+            f->remaining2 -= qalloc+sbits;
 
             x2 = c ? Y : X;
             y2 = c ? X : Y;
@@ -551,7 +551,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
             sign = 1 - 2 * sign;
             /* We use orig_fill here because we want to fold the side, but if
             itheta==16384, we'll have cleared the low bits of fill. */
-            cm = ff_celt_decode_band(s, rc, band, x2, NULL, N, mbits, blocks,
+            cm = ff_celt_decode_band(f, rc, band, x2, NULL, N, mbits, blocks,
                                      lowband, duration, lowband_out, level, gain,
                                      lowband_scratch, orig_fill);
             /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
@@ -588,7 +588,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
             }
             mbits = av_clip((b - delta) / 2, 0, b);
             sbits = b - mbits;
-            s->remaining2 -= qalloc;
+            f->remaining2 -= qalloc;
 
             if (lowband && !dualstereo)
                 next_lowband2 = lowband + N; /* >32-bit split case */
@@ -600,40 +600,40 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
             else
                 next_level = level + 1;
 
-            rebalance = s->remaining2;
+            rebalance = f->remaining2;
             if (mbits >= sbits) {
                 /* In stereo mode, we do not apply a scaling to the mid
                  * because we need the normalized mid for folding later */
-                cm = ff_celt_decode_band(s, rc, band, X, NULL, N, mbits, blocks,
+                cm = ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                          lowband, duration, next_lowband_out1,
                                          next_level, dualstereo ? 1.0f : (gain * mid),
                                          lowband_scratch, fill);
 
-                rebalance = mbits - (rebalance - s->remaining2);
+                rebalance = mbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 0)
                     sbits += rebalance - (3 << 3);
 
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cm |= ff_celt_decode_band(s, rc, band, Y, NULL, N, sbits, blocks,
+                cm |= ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                           next_lowband2, duration, NULL,
                                           next_level, gain * side, NULL,
                                           fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
             } else {
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cm = ff_celt_decode_band(s, rc, band, Y, NULL, N, sbits, blocks,
+                cm = ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                          next_lowband2, duration, NULL,
                                          next_level, gain * side, NULL,
                                          fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
 
-                rebalance = sbits - (rebalance - s->remaining2);
+                rebalance = sbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 16384)
                     mbits += rebalance - (3 << 3);
 
                 /* In stereo mode, we do not apply a scaling to the mid because
                  * we need the normalized mid for folding later */
-                cm |= ff_celt_decode_band(s, rc, band, X, NULL, N, mbits, blocks,
+                cm |= ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                           lowband, duration, next_lowband_out1,
                                           next_level, dualstereo ? 1.0f : (gain * mid),
                                           lowband_scratch, fill);
@@ -643,19 +643,19 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
         /* This is the basic no-split case */
         uint32_t q         = celt_bits2pulses(cache, b);
         uint32_t curr_bits = celt_pulses2bits(cache, q);
-        s->remaining2 -= curr_bits;
+        f->remaining2 -= curr_bits;
 
         /* Ensures we can never bust the budget */
-        while (s->remaining2 < 0 && q > 0) {
-            s->remaining2 += curr_bits;
+        while (f->remaining2 < 0 && q > 0) {
+            f->remaining2 += curr_bits;
             curr_bits      = celt_pulses2bits(cache, --q);
-            s->remaining2 -= curr_bits;
+            f->remaining2 -= curr_bits;
         }
 
         if (q != 0) {
             /* Finally do the actual quantization */
             cm = celt_alg_unquant(rc, X, N, (q < 8) ? q : (8 + (q & 7)) << ((q >> 3) - 1),
-                                  s->spread, blocks, gain);
+                                  f->spread, blocks, gain);
         } else {
             /* If there's no pulse, fill the band anyway */
             int j;
@@ -668,13 +668,13 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
                 if (!lowband) {
                     /* Noise */
                     for (j = 0; j < N; j++)
-                        X[j] = (((int32_t)celt_rng(s)) >> 20);
+                        X[j] = (((int32_t)celt_rng(f)) >> 20);
                     cm = cm_mask;
                 } else {
                     /* Folded spectrum */
                     for (j = 0; j < N; j++) {
                         /* About 48 dB below the "normal" folding level */
-                        X[j] = lowband[j] + (((celt_rng(s)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
+                        X[j] = lowband[j] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
                     }
                     cm = fill;
                 }
@@ -697,7 +697,7 @@ uint32_t ff_celt_decode_band(CeltContext *s, OpusRangeCoder *rc, const int band,
 
         /* Undo the sample reorganization going from time order to frequency order */
         if (B0 > 1)
-            celt_interleave_hadamard(s->scratch, X, N_B>>recombine,
+            celt_interleave_hadamard(f->scratch, X, N_B>>recombine,
                                      B0<<recombine, longblocks);
 
         /* Undo time-freq changes that we did earlier */

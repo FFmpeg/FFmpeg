@@ -24,6 +24,8 @@
 #ifndef AVCODEC_OPUS_CELT_H
 #define AVCODEC_OPUS_CELT_H
 
+#include <float.h>
+
 #include "opus.h"
 
 #include "mdct15.h"
@@ -37,7 +39,7 @@
 #define CELT_NORM_SCALE              16384
 #define CELT_QTHETA_OFFSET           4
 #define CELT_QTHETA_OFFSET_TWOPHASE  16
-#define CELT_DEEMPH_COEFF            0.85000610f
+#define CELT_EMPH_COEFF              0.85000610f
 #define CELT_POSTFILTER_MINPERIOD    15
 #define CELT_ENERGY_SILENCE          (-28.0f)
 
@@ -48,7 +50,16 @@ enum CeltSpread {
     CELT_SPREAD_AGGRESSIVE
 };
 
-typedef struct CeltFrame {
+enum CeltBlockSize {
+    CELT_BLOCK_120,
+    CELT_BLOCK_240,
+    CELT_BLOCK_480,
+    CELT_BLOCK_960,
+
+    CELT_BLOCK_NB
+};
+
+typedef struct CeltBlock {
     float energy[CELT_MAX_BANDS];
     float prev_energy[2][CELT_MAX_BANDS];
 
@@ -56,50 +67,46 @@ typedef struct CeltFrame {
 
     /* buffer for mdct output + postfilter */
     DECLARE_ALIGNED(32, float, buf)[2048];
+    DECLARE_ALIGNED(32, float, coeffs)[CELT_MAX_FRAME_SIZE];
 
     /* postfilter parameters */
-    int pf_period_new;
+    int   pf_period_new;
     float pf_gains_new[3];
-    int pf_period;
+    int   pf_period;
     float pf_gains[3];
-    int pf_period_old;
+    int   pf_period_old;
     float pf_gains_old[3];
 
-    float deemph_coeff;
-} CeltFrame;
+    float emph_coeff;
+} CeltBlock;
 
-struct CeltContext {
+struct CeltFrame {
     // constant values that do not change during context lifetime
-    AVCodecContext    *avctx;
-    MDCT15Context     *imdct[4];
-    AVFloatDSPContext  *dsp;
+    AVCodecContext      *avctx;
+    MDCT15Context       *imdct[4];
+    AVFloatDSPContext   *dsp;
+    CeltBlock           block[2];
+    int channels;
     int output_channels;
 
-    // values that have inter-frame effect and must be reset on flush
-    CeltFrame frame[2];
-    uint32_t seed;
+    enum CeltBlockSize size;
+    int start_band;
+    int end_band;
+    int coded_bands;
+    int transient;
+    int blocks;        /* number of iMDCT blocks in the frame, depends on transient */
+    int blocksize;     /* size of each block */
+    int silence;       /* Frame is filled with silence */
+    int anticollapse_needed; /* Whether to expect an anticollapse bit */
+    int anticollapse;  /* Encoded anticollapse bit */
+    int intensity_stereo;
+    int dual_stereo;
     int flushed;
-
-    // values that only affect a single frame
-    int coded_channels;
-    int framebits;
-    int duration;
-
-    /* number of iMDCT blocks in the frame */
-    int blocks;
-    /* size of each block */
-    int blocksize;
-
-    int startband;
-    int endband;
-    int codedbands;
-
-    int anticollapse_bit;
-
-    int intensitystereo;
-    int dualstereo;
+    uint32_t seed;
     enum CeltSpread spread;
 
+    /* Bit allocation */
+    int framebits;
     int remaining;
     int remaining2;
     int fine_bits    [CELT_MAX_BANDS];
@@ -107,15 +114,14 @@ struct CeltContext {
     int pulses       [CELT_MAX_BANDS];
     int tf_change    [CELT_MAX_BANDS];
 
-    DECLARE_ALIGNED(32, float, coeffs)[2][CELT_MAX_FRAME_SIZE];
     DECLARE_ALIGNED(32, float, scratch)[22 * 8]; // MAX(ff_celt_freq_range) * 1<<CELT_MAX_LOG_BLOCKS
 };
 
 /* LCG for noise generation */
-static av_always_inline uint32_t celt_rng(CeltContext *s)
+static av_always_inline uint32_t celt_rng(CeltFrame *f)
 {
-    s->seed = 1664525 * s->seed + 1013904223;
-    return s->seed;
+    f->seed = 1664525 * f->seed + 1013904223;
+    return f->seed;
 }
 
 static av_always_inline void celt_renormalize_vector(float *X, int N, float gain)
@@ -129,5 +135,14 @@ static av_always_inline void celt_renormalize_vector(float *X, int N, float gain
     for (i = 0; i < N; i++)
         X[i] *= g;
 }
+
+int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels);
+
+void ff_celt_free(CeltFrame **f);
+
+void ff_celt_flush(CeltFrame *f);
+
+int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc, float **output,
+                         int coded_channels, int frame_size, int startband, int endband);
 
 #endif /* AVCODEC_OPUS_CELT_H */

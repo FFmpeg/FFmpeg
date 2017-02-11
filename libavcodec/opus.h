@@ -62,7 +62,9 @@ static const uint8_t opus_default_extradata[30] = {
 enum OpusMode {
     OPUS_MODE_SILK,
     OPUS_MODE_HYBRID,
-    OPUS_MODE_CELT
+    OPUS_MODE_CELT,
+
+    OPUS_MODE_NB
 };
 
 enum OpusBandwidth {
@@ -70,12 +72,14 @@ enum OpusBandwidth {
     OPUS_BANDWIDTH_MEDIUMBAND,
     OPUS_BANDWIDTH_WIDEBAND,
     OPUS_BANDWIDTH_SUPERWIDEBAND,
-    OPUS_BANDWIDTH_FULLBAND
+    OPUS_BANDWIDTH_FULLBAND,
+
+    OPUS_BANDWITH_NB
 };
 
 typedef struct SilkContext SilkContext;
 
-typedef struct CeltContext CeltContext;
+typedef struct CeltFrame CeltFrame;
 
 typedef struct OpusPacket {
     int packet_size;                /**< packet size */
@@ -100,7 +104,7 @@ typedef struct OpusStreamContext {
     OpusRangeCoder rc;
     OpusRangeCoder redundancy_rc;
     SilkContext *silk;
-    CeltContext *celt;
+    CeltFrame *celt;
     AVFloatDSPContext *fdsp;
 
     float silk_buf[2][960];
@@ -184,15 +188,5 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               float *output[2],
                               enum OpusBandwidth bandwidth, int coded_channels,
                               int duration_ms);
-
-int ff_celt_init(AVCodecContext *avctx, CeltContext **s, int output_channels);
-
-void ff_celt_free(CeltContext **s);
-
-void ff_celt_flush(CeltContext *s);
-
-int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
-                         float **output, int coded_channels, int frame_size,
-                         int startband,  int endband);
 
 #endif /* AVCODEC_OPUS_H */
