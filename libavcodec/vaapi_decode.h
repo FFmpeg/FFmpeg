@@ -69,6 +69,9 @@ typedef struct VAAPIDecodeContext {
 
     AVHWFramesContext    *frames;
     AVVAAPIFramesContext *hwfc;
+
+    enum AVPixelFormat    surface_format;
+    int                   surface_count;
 } VAAPIDecodeContext;
 
 

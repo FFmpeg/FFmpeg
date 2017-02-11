@@ -18,6 +18,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -280,6 +281,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     const AVCodecDescriptor *codec_desc;
     VAProfile profile, *profile_list = NULL;
     int profile_count, exact_match, alt_profile;
+    const AVPixFmtDescriptor *sw_desc, *desc;
 
     // Allowing a profile mismatch can be useful because streams may
     // over-declare their required capabilities - in particular, many
@@ -373,7 +375,9 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    hwconfig = av_hwdevice_hwconfig_alloc(ctx->frames->device_ref);
+    hwconfig = av_hwdevice_hwconfig_alloc(avctx->hw_device_ctx ?
+                                          avctx->hw_device_ctx :
+                                          ctx->frames->device_ref);
     if (!hwconfig) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -381,24 +385,77 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     hwconfig->config_id = ctx->va_config;
 
     constraints =
-        av_hwdevice_get_hwframe_constraints(ctx->frames->device_ref,
+        av_hwdevice_get_hwframe_constraints(avctx->hw_device_ctx ?
+                                            avctx->hw_device_ctx :
+                                            ctx->frames->device_ref,
                                             hwconfig);
     if (!constraints) {
-        // Ignore.
-    } else {
-        if (avctx->coded_width  < constraints->min_width  ||
-            avctx->coded_height < constraints->min_height ||
-            avctx->coded_width  > constraints->max_width  ||
-            avctx->coded_height > constraints->max_height) {
-            av_log(avctx, AV_LOG_ERROR, "Hardware does not support image "
-                   "size %dx%d (constraints: width %d-%d height %d-%d).\n",
-                   avctx->coded_width, avctx->coded_height,
-                   constraints->min_width,  constraints->max_width,
-                   constraints->min_height, constraints->max_height);
-            err = AVERROR(EINVAL);
-            goto fail;
-        }
+        err = AVERROR(ENOMEM);
+        goto fail;
     }
+
+    if (avctx->coded_width  < constraints->min_width  ||
+        avctx->coded_height < constraints->min_height ||
+        avctx->coded_width  > constraints->max_width  ||
+        avctx->coded_height > constraints->max_height) {
+        av_log(avctx, AV_LOG_ERROR, "Hardware does not support image "
+               "size %dx%d (constraints: width %d-%d height %d-%d).\n",
+               avctx->coded_width, avctx->coded_height,
+               constraints->min_width,  constraints->max_width,
+               constraints->min_height, constraints->max_height);
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+    if (!constraints->valid_sw_formats ||
+        constraints->valid_sw_formats[0] == AV_PIX_FMT_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Hardware does not offer any "
+               "usable surface formats.\n");
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    // Find the first format in the list which matches the expected
+    // bit depth and subsampling.  If none are found (this can happen
+    // when 10-bit streams are decoded to 8-bit surfaces, for example)
+    // then just take the first format on the list.
+    ctx->surface_format = constraints->valid_sw_formats[0];
+    sw_desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
+    for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
+        desc = av_pix_fmt_desc_get(constraints->valid_sw_formats[i]);
+        if (desc->nb_components != sw_desc->nb_components ||
+            desc->log2_chroma_w != sw_desc->log2_chroma_w ||
+            desc->log2_chroma_h != sw_desc->log2_chroma_h)
+            continue;
+        for (j = 0; j < desc->nb_components; j++) {
+            if (desc->comp[j].depth != sw_desc->comp[j].depth)
+                break;
+        }
+        if (j < desc->nb_components)
+            continue;
+        ctx->surface_format = constraints->valid_sw_formats[i];
+        break;
+    }
+
+    // Start with at least four surfaces.
+    ctx->surface_count = 4;
+    // Add per-codec number of surfaces used for storing reference frames.
+    switch (avctx->codec_id) {
+    case AV_CODEC_ID_H264:
+    case AV_CODEC_ID_HEVC:
+        ctx->surface_count += 16;
+        break;
+    case AV_CODEC_ID_VP9:
+        ctx->surface_count += 8;
+        break;
+    case AV_CODEC_ID_VP8:
+        ctx->surface_count += 3;
+        break;
+    default:
+        ctx->surface_count += 2;
+    }
+    // Add an additional surface per thread is frame threading is enabled.
+    if (avctx->active_thread_type & FF_THREAD_FRAME)
+        ctx->surface_count += avctx->thread_count;
 
     av_hwframe_constraints_free(&constraints);
     av_freep(&hwconfig);
@@ -461,13 +518,24 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
 
         ctx->frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
         ctx->hwfc   = ctx->frames->hwctx;
-
         ctx->device = ctx->frames->device_ctx;
         ctx->hwctx  = ctx->device->hwctx;
 
+    } else if (avctx->hw_device_ctx) {
+        ctx->device = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
+        ctx->hwctx  = ctx->device->hwctx;
+
+        if (ctx->device->type != AV_HWDEVICE_TYPE_VAAPI) {
+            av_log(avctx, AV_LOG_ERROR, "Device supplied for VAAPI "
+                   "decoding must be a VAAPI device (not %d).\n",
+                   ctx->device->type);
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+
     } else {
-        av_log(avctx, AV_LOG_ERROR, "A hardware frames context is "
-               "required for VAAPI decoding.\n");
+        av_log(avctx, AV_LOG_ERROR, "A hardware device or frames context "
+               "is required for VAAPI decoding.\n");
         err = AVERROR(EINVAL);
         goto fail;
     }
@@ -485,6 +553,31 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
     err = vaapi_decode_make_config(avctx);
     if (err)
         goto fail;
+
+    if (!avctx->hw_frames_ctx) {
+        avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+        if (!avctx->hw_frames_ctx) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+        ctx->frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+
+        ctx->frames->format = AV_PIX_FMT_VAAPI;
+        ctx->frames->width  = avctx->coded_width;
+        ctx->frames->height = avctx->coded_height;
+
+        ctx->frames->sw_format         = ctx->surface_format;
+        ctx->frames->initial_pool_size = ctx->surface_count;
+
+        err = av_hwframe_ctx_init(avctx->hw_frames_ctx);
+        if (err < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to initialise internal "
+                   "frames context: %d.\n", err);
+            goto fail;
+        }
+
+        ctx->hwfc = ctx->frames->hwctx;
+    }
 
     vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
                           avctx->coded_width, avctx->coded_height,
