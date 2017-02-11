@@ -1020,17 +1020,20 @@ check_lib(){
 
 check_pkg_config(){
     log check_pkg_config "$@"
-    pkg_version="$1"
-    pkg="${1%% *}"
-    headers="$2"
-    funcs="$3"
-    shift 3
+    name="$1"
+    pkg_version="$2"
+    pkg="${2%% *}"
+    headers="$3"
+    funcs="$4"
+    shift 4
+    disable $name
     check_cmd $pkg_config --exists --print-errors $pkg_version || return
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
-        set_safe "${pkg}_cflags"    $pkg_cflags &&
-        set_safe "${pkg}_extralibs" $pkg_libs
+        enable $name &&
+        add_cflags    "$pkg_cflags" &&
+        add_extralibs "$pkg_libs"
 }
 
 check_exec(){
@@ -1135,13 +1138,8 @@ require_cpp_condition(){
 
 require_pkg_config(){
     log require_pkg_config "$@"
-    name="$1"
-    shift
-    pkg_version="$1"
-    pkg="${1%% *}"
+    pkg_version="$2"
     check_pkg_config "$@" || die "ERROR: $pkg_version not found"
-    add_cflags    $(get_safe "${pkg}_cflags")
-    add_extralibs $(get_safe "${pkg}_extralibs")
 }
 
 hostcc_e(){
@@ -4690,27 +4688,18 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
 enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libvpx            && require_pkg_config libvpx "vpx >= 1.3.0" vpx/vpx_codec.h vpx_codec_version && {
-    enabled libvpx_vp8_decoder && {
-        check_pkg_config vpx "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
-            disable libvpx_vp8_decoder;
-    }
-    enabled libvpx_vp8_encoder && {
-        check_pkg_config vpx "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
-            disable libvpx_vp8_encoder;
-    }
-    enabled libvpx_vp9_decoder && {
-        check_pkg_config vpx "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
-            disable libvpx_vp9_decoder;
-    }
-    enabled libvpx_vp9_encoder && {
-        check_pkg_config vpx "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
-            disable libvpx_vp9_encoder;
-    }
-    if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
-        die "libvpx enabled but no supported decoders found"
-    fi
-}
+enabled libvpx            && require_pkg_config libvpx "vpx >= 1.3.0" vpx/vpx_codec.h vpx_codec_version &&
+                             { enabled libvpx_vp8_decoder &&
+                                   check_pkg_config libvpx_vp8_decoder vpx "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx
+                               enabled libvpx_vp8_encoder &&
+                                   check_pkg_config libvpx_vp8_encoder vpx "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx
+                               enabled libvpx_vp9_decoder &&
+                                   check_pkg_config libvpx_vp9_decoder vpx "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx
+                               enabled libvpx_vp9_encoder &&
+                                   check_pkg_config libvpx_vp9_encoder vpx "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx
+                               disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder &&
+                                   die "libvpx enabled but no supported decoders/encoders found"
+                             }
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && require_pkg_config libwebp libwebp webp/encode.h WebPGetEncoderVersion
 enabled libx264           && require_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode &&
@@ -4732,9 +4721,8 @@ enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
 enabled omx               && require_header OMX_Core.h
-enabled openssl           && { { check_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
-                                 check_pkg_config openssl openssl/ssl.h SSL_library_init; } && {
-                               add_cflags $openssl_cflags && add_extralibs $openssl_extralibs; } ||
+enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
+                                 check_pkg_config openssl openssl openssl/ssl.h SSL_library_init; } ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
@@ -4747,9 +4735,7 @@ if enabled nvenc; then
     require_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
 fi
 
-if check_pkg_config "sdl >= 1.2.1 sdl < 1.3.0" SDL_events.h SDL_PollEvent; then
-    enable sdl
-fi
+check_pkg_config sdl "sdl >= 1.2.1 sdl < 1.3.0" SDL_events.h SDL_PollEvent
 
 ! disabled pod2man   && check_cmd pod2man --help     && enable pod2man   || disable pod2man
 ! disabled texi2html && check_cmd texi2html -version && enable texi2html || disable texi2html
@@ -4798,9 +4784,9 @@ if enabled libxcb; then
     require_pkg_config libxcb xcb xcb/xcb.h xcb_connect
     require_pkg_config libxcb_shape xcb-shape xcb/shape.h xcb_shape_rectangles
     disabled libxcb_shm ||
-        require_pkg_config libxcb_shm xcb-shm xcb/shm.h xcb_shm_attach
+        check_pkg_config libxcb_shm xcb-shm xcb/shm.h xcb_shm_attach
     disabled libxcb_xfixes ||
-        require_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
+        check_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 fi
 
 enabled dxva2 &&
