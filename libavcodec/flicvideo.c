@@ -767,8 +767,8 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
                                    void *data, int *got_frame,
                                    const uint8_t *buf, int buf_size)
 {
-  av_log(avctx, AV_LOG_ERROR, "24Bpp FLC Unsupported due to lack of test files.\n");
-  return AVERROR_PATCHWELCOME;
+    av_log(avctx, AV_LOG_ERROR, "24Bpp FLC Unsupported due to lack of test files.\n");
+    return AVERROR_PATCHWELCOME;
 }
 
 static int flic_decode_frame(AVCodecContext *avctx,
@@ -778,17 +778,15 @@ static int flic_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-      return flic_decode_frame_8BPP(avctx, data, got_frame,
-                                    buf, buf_size);
-    }
-    else if ((avctx->pix_fmt == AV_PIX_FMT_RGB555) ||
-             (avctx->pix_fmt == AV_PIX_FMT_RGB565)) {
-      return flic_decode_frame_15_16BPP(avctx, data, got_frame,
-                                        buf, buf_size);
-    }
-    else if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
-      return flic_decode_frame_24BPP(avctx, data, got_frame,
-                                     buf, buf_size);
+        return flic_decode_frame_8BPP(avctx, data, got_frame,
+                                      buf, buf_size);
+    } else if ((avctx->pix_fmt == AV_PIX_FMT_RGB555) ||
+               (avctx->pix_fmt == AV_PIX_FMT_RGB565)) {
+        return flic_decode_frame_15_16BPP(avctx, data, got_frame,
+                                          buf, buf_size);
+    } else if (avctx->pix_fmt == AV_PIX_FMT_BGR24) {
+        return flic_decode_frame_24BPP(avctx, data, got_frame,
+                                       buf, buf_size);
     }
 
     /* Should not get  here, ever as the pix_fmt is processed */
