@@ -721,7 +721,7 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
 {
     AVFilterContext *ctx = inlink->dst;
     MIContext *mi_ctx = ctx->priv;
-    Frame frame_tmp, *frame;
+    Frame frame_tmp;
     int mb_x, mb_y, dir;
 
     av_frame_free(&mi_ctx->frames[0].avf);
@@ -729,7 +729,6 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
     memmove(&mi_ctx->frames[0], &mi_ctx->frames[1], sizeof(mi_ctx->frames[0]) * (NB_FRAMES - 1));
     mi_ctx->frames[NB_FRAMES - 1] = frame_tmp;
     mi_ctx->frames[NB_FRAMES - 1].avf = avf_in;
-    frame = &mi_ctx->frames[NB_FRAMES - 1];
 
     if (mi_ctx->mi_mode == MI_MODE_MCI) {
 
