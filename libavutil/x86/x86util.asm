@@ -876,3 +876,15 @@
     psrlq   %1, 8*(%2)
 %endif
 %endmacro
+
+%macro MOVHL 2 ; dst, src
+%ifidn %1, %2
+    punpckhqdq %1, %2
+%elif cpuflag(avx)
+    punpckhqdq %1, %2, %2
+%elif cpuflag(sse4)
+    pshufd     %1, %2, q3232 ; pshufd is slow on some older CPUs, so only use it on more modern ones
+%else
+    movhlps    %1, %2        ; may cause an int/float domain transition and has a dependency on dst
+%endif
+%endmacro
