@@ -345,7 +345,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 static int aal_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int64_t pos = avio_tell(s->pb);
-    int ret, type, pts;
+    int ret, pts;
     int packet_size;
     unsigned tag;
 
@@ -358,7 +358,7 @@ static int aal_read_packet(AVFormatContext *s, AVPacket *pkt)
     else if (tag != MKBETAG(0,'B','L','K'))
         return AVERROR_INVALIDDATA;
 
-    type = avio_r8(s->pb);
+    avio_skip(s->pb, 1);
     packet_size = avio_rb16(s->pb);
     avio_skip(s->pb, 2);
     pts = avio_rb32(s->pb);
