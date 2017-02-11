@@ -43,16 +43,6 @@
 #define CELT_MAX_LOG_BLOCKS          3
 #define CELT_MAX_FRAME_SIZE          (CELT_SHORT_BLOCKSIZE * (1 << CELT_MAX_LOG_BLOCKS))
 #define CELT_MAX_BANDS               21
-#define CELT_VECTORS                 11
-#define CELT_ALLOC_STEPS             6
-#define CELT_FINE_OFFSET             21
-#define CELT_MAX_FINE_BITS           8
-#define CELT_NORM_SCALE              16384
-#define CELT_QTHETA_OFFSET           4
-#define CELT_QTHETA_OFFSET_TWOPHASE  16
-#define CELT_DEEMPH_COEFF            0.85000610f
-#define CELT_POSTFILTER_MINPERIOD    15
-#define CELT_ENERGY_SILENCE          (-28.0f)
 
 #define SILK_HISTORY                 322
 #define SILK_MAX_LPC                 16
