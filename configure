@@ -237,6 +237,7 @@ External library support:
 
   The following libraries provide various hardware acceleration features:
   --enable-cuda    Nvidia CUDA (dynamically linked)
+  --enable-cuvid   Nvidia CUVID video decode acceleration
   --enable-d3d11va Microsoft Direct3D 11 video acceleration [auto]
   --enable-dxva2   Microsoft DirectX 9 video acceleration [auto]
   --enable-libmfx  Intel MediaSDK (AKA Quick Sync Video)
@@ -1266,6 +1267,7 @@ EXTRALIBS_LIST="
 
 HWACCEL_LIBRARY_NONFREE_LIST="
     cuda
+    cuvid
     libnpp
 "
 HWACCEL_LIBRARY_LIST="
@@ -1686,6 +1688,7 @@ TOOLCHAIN_FEATURES="
 
 TYPES_LIST="
     CONDITION_VARIABLE_Ptr
+    CUVIDDECODECREATEINFO_bitDepthMinus8
     socklen_t
     struct_addrinfo
     struct_group_source_req
@@ -2189,6 +2192,8 @@ vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -fra
 
 h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
+h264_cuvid_hwaccel_deps="cuvid CUVIDH264PICPARAMS"
+h264_cuvid_hwaccel_select="h264_decoder"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
 h264_d3d11va2_hwaccel_deps="d3d11va"
@@ -2556,7 +2561,7 @@ avdevice_extralibs="libm_extralibs"
 avformat_extralibs="libm_extralibs"
 avfilter_extralibs="pthreads_extralibs libm_extralibs"
 avresample_extralibs="libm_extralibs"
-avutil_extralibs="clock_gettime_extralibs cuda_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs pthreads_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
+avutil_extralibs="clock_gettime_extralibs cuda_extralibs cuvid_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs pthreads_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
 swscale_extralibs="libm_extralibs"
 
 # programs
@@ -4694,6 +4699,9 @@ check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
+check_type "cuviddec.h" "CUVIDH264PICPARAMS"
+check_struct "cuviddec.h" "CUVIDDECODECREATEINFO" bitDepthMinus8
+
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
@@ -4753,6 +4761,7 @@ done
 enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
+enabled cuvid             && require cuvid cuviddec.h cuvidCreateDecoder -lnvcuvid
 enabled frei0r            && require_header frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open

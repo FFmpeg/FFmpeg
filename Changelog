@@ -18,6 +18,7 @@ version <next>:
 - support for decoding through D3D11VA in avconv
 - Cinepak encoder
 - Intel QSV-accelerated MJPEG encoding
+- NVIDIA CUVID-accelerated H.264 decoding
 
 
 version 12:

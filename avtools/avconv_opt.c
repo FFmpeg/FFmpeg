@@ -80,6 +80,10 @@ const HWAccel hwaccels[] = {
     { "vaapi", hwaccel_decode_init, HWACCEL_VAAPI, AV_PIX_FMT_VAAPI,
       AV_HWDEVICE_TYPE_VAAPI },
 #endif
+#if CONFIG_CUVID
+    { "cuvid", hwaccel_decode_init, HWACCEL_CUVID, AV_PIX_FMT_CUDA,
+       AV_HWDEVICE_TYPE_CUDA },
+#endif
     { 0 },
 };
 int hwaccel_lax_profile_check = 0;
