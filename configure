@@ -1752,8 +1752,9 @@ CONFIG_EXTRA="
     iso_media
     ividsp
     jpegtables
-    libx262
     lgplv3
+    libx262
+    libxcb_shape
     lpc
     lzf
     me_cmp
@@ -2420,7 +2421,7 @@ sndio_indev_deps="sndio"
 sndio_outdev_deps="sndio"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
-xcbgrab_indev_deps="libxcb"
+xcbgrab_indev_deps="libxcb libxcb_shape"
 xcbgrab_indev_suggest="libxcb_shm libxcb_xfixes"
 
 # protocols
@@ -4797,7 +4798,8 @@ if enabled libcdio; then
 fi
 
 if enabled libxcb; then
-    require_pkg_config libxcb xcb-shape xcb/shape.h xcb_shape_rectangles
+    require_pkg_config libxcb xcb xcb/xcb.h xcb_connect
+    require_pkg_config libxcb_shape xcb-shape xcb/shape.h xcb_shape_rectangles
     disabled libxcb_shm ||
         require_pkg_config libxcb_shm xcb-shm xcb/shm.h xcb_shm_attach
     disabled libxcb_xfixes ||
