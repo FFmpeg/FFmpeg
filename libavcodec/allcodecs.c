@@ -449,7 +449,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MPC8,              mpc8);
     REGISTER_ENCDEC (NELLYMOSER,        nellymoser);
     REGISTER_DECODER(ON2AVC,            on2avc);
-    REGISTER_DECODER(OPUS,              opus);
+    REGISTER_ENCDEC (OPUS,              opus);
     REGISTER_DECODER(PAF_AUDIO,         paf_audio);
     REGISTER_DECODER(QCELP,             qcelp);
     REGISTER_DECODER(QDM2,              qdm2);

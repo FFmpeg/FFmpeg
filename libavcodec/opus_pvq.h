@@ -32,4 +32,10 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                              float *lowband, int duration, float *lowband_out, int level,
                              float gain, float *lowband_scratch, int fill);
 
+/* Encodes a band using PVQ */
+uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
+                             float *X, float *Y, int N, int b, uint32_t blocks,
+                             float *lowband, int duration, float *lowband_out, int level,
+                             float gain, float *lowband_scratch, int fill);
+
 #endif /* AVCODEC_OPUS_PVQ_H */

@@ -61,13 +61,22 @@ enum CeltBlockSize {
 
 typedef struct CeltBlock {
     float energy[CELT_MAX_BANDS];
+    float lin_energy[CELT_MAX_BANDS];
+    float error_energy[CELT_MAX_BANDS];
     float prev_energy[2][CELT_MAX_BANDS];
 
     uint8_t collapse_masks[CELT_MAX_BANDS];
 
+    int band_bins[CELT_MAX_BANDS]; /* MDCT bins per band */
+    float *band_coeffs[CELT_MAX_BANDS];
+
     /* buffer for mdct output + postfilter */
     DECLARE_ALIGNED(32, float, buf)[2048];
     DECLARE_ALIGNED(32, float, coeffs)[CELT_MAX_FRAME_SIZE];
+
+    /* Used by the encoder */
+    DECLARE_ALIGNED(32, float, overlap)[120];
+    DECLARE_ALIGNED(32, float, samples)[CELT_MAX_FRAME_SIZE];
 
     /* postfilter parameters */
     int   pf_period_new;
@@ -94,6 +103,12 @@ struct CeltFrame {
     int end_band;
     int coded_bands;
     int transient;
+    int intra;
+    int pfilter;
+    int skip_band_floor;
+    int tf_select;
+    int alloc_trim;
+    int alloc_boost[CELT_MAX_BANDS];
     int blocks;        /* number of iMDCT blocks in the frame, depends on transient */
     int blocksize;     /* size of each block */
     int silence;       /* Frame is filled with silence */
@@ -109,6 +124,7 @@ struct CeltFrame {
     int framebits;
     int remaining;
     int remaining2;
+    int caps         [CELT_MAX_BANDS];
     int fine_bits    [CELT_MAX_BANDS];
     int fine_priority[CELT_MAX_BANDS];
     int pulses       [CELT_MAX_BANDS];
