@@ -54,6 +54,7 @@
 #include "libavcodec/iirfilter.h"
 #include "libavcodec/idctdsp.h"
 #include "libavcodec/hpeldsp.h"
+#include "libavcodec/x86/hevcdsp.h"
 #include "libavcodec/hevcpred.h"
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/h264qpel.h"
