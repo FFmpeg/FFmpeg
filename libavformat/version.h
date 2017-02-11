@@ -85,6 +85,10 @@
 #ifndef FF_API_HTTP_USER_AGENT
 #define FF_API_HTTP_USER_AGENT          (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
+#ifndef FF_API_HLS_WRAP
+#define FF_API_HLS_WRAP                 (LIBAVFORMAT_VERSION_MAJOR < 58)
+#endif
+
 
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
