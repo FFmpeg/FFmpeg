@@ -73,8 +73,8 @@ const int program_birth_year = 2003;
 /* Calculate actual buffer size keeping in mind not cause too frequent audio callbacks */
 #define SDL_AUDIO_MAX_CALLBACKS_PER_SEC 30
 
-/* Step size for volume control */
-#define SDL_VOLUME_STEP (SDL_MIX_MAXVOLUME / 50)
+/* Step size for volume control in dB */
+#define SDL_VOLUME_STEP (0.75)
 
 /* no AV sync correction is done if below the minimum AV sync threshold */
 #define AV_SYNC_THRESHOLD_MIN 0.04
@@ -1450,9 +1450,11 @@ static void toggle_mute(VideoState *is)
     is->muted = !is->muted;
 }
 
-static void update_volume(VideoState *is, int sign, int step)
+static void update_volume(VideoState *is, int sign, double step)
 {
-    is->audio_volume = av_clip(is->audio_volume + sign * step, 0, SDL_MIX_MAXVOLUME);
+    double volume_level = is->audio_volume ? (20 * log(is->audio_volume / (double)SDL_MIX_MAXVOLUME) / log(10)) : -1000.0;
+    int new_volume = lrint(SDL_MIX_MAXVOLUME * pow(10.0, (volume_level + sign * step) / 20.0));
+    is->audio_volume = av_clip(is->audio_volume == new_volume ? (is->audio_volume + sign) : new_volume, 0, SDL_MIX_MAXVOLUME);
 }
 
 static void step_to_next_frame(VideoState *is)

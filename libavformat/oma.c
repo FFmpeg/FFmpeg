@@ -26,10 +26,12 @@
 const uint16_t ff_oma_srate_tab[8] = { 320, 441, 480, 882, 960, 0 };
 
 const AVCodecTag ff_oma_codec_tags[] = {
-    { AV_CODEC_ID_ATRAC3,      OMA_CODECID_ATRAC3  },
-    { AV_CODEC_ID_ATRAC3P,     OMA_CODECID_ATRAC3P },
-    { AV_CODEC_ID_MP3,         OMA_CODECID_MP3     },
-    { AV_CODEC_ID_PCM_S16BE,   OMA_CODECID_LPCM    },
+    { AV_CODEC_ID_ATRAC3,      OMA_CODECID_ATRAC3    },
+    { AV_CODEC_ID_ATRAC3P,     OMA_CODECID_ATRAC3P   },
+    { AV_CODEC_ID_MP3,         OMA_CODECID_MP3       },
+    { AV_CODEC_ID_PCM_S16BE,   OMA_CODECID_LPCM      },
+    { AV_CODEC_ID_ATRAC3PAL,   OMA_CODECID_ATRAC3PAL },
+    { AV_CODEC_ID_ATRAC3AL,    OMA_CODECID_ATRAC3AL  },
     { 0 },
 };
 

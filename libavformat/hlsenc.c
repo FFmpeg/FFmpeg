@@ -76,6 +76,7 @@ typedef enum HLSFlags {
     HLS_SECOND_LEVEL_SEGMENT_INDEX = (1 << 8), // include segment index in segment filenames when use_localtime  e.g.: %%03d
     HLS_SECOND_LEVEL_SEGMENT_DURATION = (1 << 9), // include segment duration (microsec) in segment filenames when use_localtime  e.g.: %%09t
     HLS_SECOND_LEVEL_SEGMENT_SIZE = (1 << 10), // include segment size (bytes) in segment filenames when use_localtime  e.g.: %%014s
+    HLS_TEMP_FILE = (1 << 11),
 } HLSFlags;
 
 typedef enum {
@@ -100,7 +101,9 @@ typedef struct HLSContext {
     float time;            // Set by a private option.
     float init_time;       // Set by a private option.
     int max_nb_segments;   // Set by a private option.
+#if FF_API_HLS_WRAP
     int  wrap;             // Set by a private option.
+#endif
     uint32_t flags;        // enum HLSFlags
     uint32_t pl_type;      // enum PlaylistType
     char *segment_filename;
@@ -416,6 +419,7 @@ static int hls_mux_init(AVFormatContext *s)
         return ret;
     oc = hls->avf;
 
+    oc->filename[0]        = '\0';
     oc->oformat            = hls->oformat;
     oc->interrupt_callback = s->interrupt_callback;
     oc->max_delay          = s->max_delay;
@@ -564,7 +568,11 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
         hls->initial_prog_date_time += en->duration;
         hls->segments = en->next;
         if (en && hls->flags & HLS_DELETE_SEGMENTS &&
+#if FF_API_HLS_WRAP
                 !(hls->flags & HLS_SINGLE_FILE || hls->wrap)) {
+#else
+                !(hls->flags & HLS_SINGLE_FILE)) {
+#endif
             en->next = hls->old_segments;
             hls->old_segments = en;
             if ((ret = hls_delete_old_segments(hls)) < 0)
@@ -815,6 +823,15 @@ static int hls_start(AVFormatContext *s)
     char *filename, iv_string[KEYSIZE*2 + 1];
     int err = 0;
 
+    if ((c->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
+        size_t len = strlen(oc->filename);
+        char final_filename[sizeof(oc->filename)];
+        av_strlcpy(final_filename, oc->filename, len);
+        final_filename[len-4] = '\0';
+        ff_rename(oc->filename, final_filename, s);
+        oc->filename[len-4] = '\0';
+    }
+
     if (c->flags & HLS_SINGLE_FILE) {
         av_strlcpy(oc->filename, c->basename,
                    sizeof(oc->filename));
@@ -823,7 +840,11 @@ static int hls_start(AVFormatContext *s)
                   sizeof(vtt_oc->filename));
     } else if (c->max_seg_size > 0) {
         if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
             c->basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+            c->basename, 'd', c->sequence) < 1) {
+#endif
                 av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", c->basename);
                 return AVERROR(EINVAL);
         }
@@ -842,7 +863,11 @@ static int hls_start(AVFormatContext *s)
                 if (!filename)
                     return AVERROR(ENOMEM);
                 if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
                     filename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                    filename, 'd', c->sequence) < 1) {
+#endif
                     av_log(c, AV_LOG_ERROR,
                            "Invalid second level segment filename template '%s', "
                             "you can try to remove second_level_segment_index flag\n",
@@ -899,13 +924,21 @@ static int hls_start(AVFormatContext *s)
                 av_free(fn_copy);
             }
         } else if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
                    c->basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                   c->basename, 'd', c->sequence) < 1) {
+#endif
             av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", c->basename);
             return AVERROR(EINVAL);
         }
         if( c->vtt_basename) {
             if (replace_int_data_in_filename(vtt_oc->filename, sizeof(vtt_oc->filename),
+#if FF_API_HLS_WRAP
                 c->vtt_basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                c->vtt_basename, 'd', c->sequence) < 1) {
+#endif
                 av_log(vtt_oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", c->vtt_basename);
                 return AVERROR(EINVAL);
             }
@@ -914,6 +947,10 @@ static int hls_start(AVFormatContext *s)
     c->number++;
 
     set_http_options(&options, c);
+
+    if (c->flags & HLS_TEMP_FILE) {
+        av_strlcat(oc->filename, ".tmp", sizeof(oc->filename));
+    }
 
     if (c->key_info_file) {
         if ((err = hls_encryption_start(s)) < 0)
@@ -1364,6 +1401,15 @@ static int hls_write_trailer(struct AVFormatContext *s)
          ff_rename(old_filename, hls->avf->filename, hls);
     }
 
+    if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
+        size_t len = strlen(oc->filename);
+        char final_filename[sizeof(oc->filename)];
+        av_strlcpy(final_filename, oc->filename, len);
+        final_filename[len-4] = '\0';
+        ff_rename(oc->filename, final_filename, s);
+        oc->filename[len-4] = '\0';
+    }
+
     if (vtt_oc) {
         if (vtt_oc->pb)
             av_write_trailer(vtt_oc);
@@ -1397,7 +1443,9 @@ static const AVOption options[] = {
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
-    {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+#if FF_API_HLS_WRAP
+    {"hls_wrap",      "set number after which the index wraps (will be deprecated)",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+#endif
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
@@ -1406,6 +1454,7 @@ static const AVOption options[] = {
     {"hls_subtitle_path",     "set path of hls subtitles", OFFSET(subtitle_filename), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
+    {"temp_file", "write segment to temporary file and rename when complete", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_TEMP_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "start the playlist with a discontinuity tag", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},

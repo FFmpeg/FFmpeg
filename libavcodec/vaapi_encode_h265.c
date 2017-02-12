@@ -803,8 +803,10 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         vseq->seq_fields.bits.chroma_format_idc = 1; // 4:2:0.
         vseq->seq_fields.bits.separate_colour_plane_flag = 0;
-        vseq->seq_fields.bits.bit_depth_luma_minus8 = 0; // 8-bit luma.
-        vseq->seq_fields.bits.bit_depth_chroma_minus8 = 0; // 8-bit chroma.
+        vseq->seq_fields.bits.bit_depth_luma_minus8 =
+            avctx->profile == FF_PROFILE_HEVC_MAIN_10 ? 2 : 0;
+        vseq->seq_fields.bits.bit_depth_chroma_minus8 =
+            avctx->profile == FF_PROFILE_HEVC_MAIN_10 ? 2 : 0;
         // Other misc flags all zero.
 
         // These have to come from the capabilities of the encoder.  We have
@@ -823,8 +825,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         vseq->bits_per_second = avctx->bit_rate;
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-            vseq->vui_num_units_in_tick = avctx->framerate.num;
-            vseq->vui_time_scale        = avctx->framerate.den;
+            vseq->vui_num_units_in_tick = avctx->framerate.den;
+            vseq->vui_time_scale        = avctx->framerate.num;
         } else {
             vseq->vui_num_units_in_tick = avctx->time_base.num;
             vseq->vui_time_scale        = avctx->time_base.den;
@@ -1231,20 +1233,24 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     case FF_PROFILE_HEVC_MAIN:
     case FF_PROFILE_UNKNOWN:
         ctx->va_profile = VAProfileHEVCMain;
+        ctx->va_rt_format = VA_RT_FORMAT_YUV420;
         break;
     case FF_PROFILE_HEVC_MAIN_10:
-        av_log(avctx, AV_LOG_ERROR, "H.265 main 10-bit profile "
-               "is not supported.\n");
-        return AVERROR_PATCHWELCOME;
+#ifdef VA_RT_FORMAT_YUV420_10BPP
+        ctx->va_profile = VAProfileHEVCMain10;
+        ctx->va_rt_format = VA_RT_FORMAT_YUV420_10BPP;
+        break;
+#else
+        av_log(avctx, AV_LOG_ERROR, "10-bit encoding is not "
+               "supported with this VAAPI version.\n");
+        return AVERROR(ENOSYS);
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown H.265 profile %d.\n",
                avctx->profile);
         return AVERROR(EINVAL);
     }
     ctx->va_entrypoint = VAEntrypointEncSlice;
-
-    // This will be dependent on profile when 10-bit is supported.
-    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
 
     if (avctx->bit_rate > 0)
         ctx->va_rc_mode = VA_RC_CBR;

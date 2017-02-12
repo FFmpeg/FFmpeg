@@ -39,52 +39,56 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-static uint8_t uni_ac_vlc_len[64 * 64 * 2];
-static uint8_t uni_chroma_ac_vlc_len[64 * 64 * 2];
 
-static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256], uint8_t *uni_ac_vlc_len)
+static int alloc_huffman(MpegEncContext *s)
 {
-    int i;
+    MJpegContext *m = s->mjpeg_ctx;
+    size_t num_mbs, num_blocks, num_codes;
+    int blocks_per_mb;
 
-    for (i = 0; i < 128; i++) {
-        int level = i - 64;
-        int run;
-        if (!level)
-            continue;
-        for (run = 0; run < 64; run++) {
-            int len, code, nbits;
-            int alevel = FFABS(level);
+    // We need to init this here as the mjpeg init is called before the common init,
+    s->mb_width  = (s->width  + 15) / 16;
+    s->mb_height = (s->height + 15) / 16;
 
-            len = (run >> 4) * huff_size_ac[0xf0];
+    switch (s->chroma_format) {
+    case CHROMA_420: blocks_per_mb =  6; break;
+    case CHROMA_422: blocks_per_mb =  8; break;
+    case CHROMA_444: blocks_per_mb = 12; break;
+    default: av_assert0(0);
+    };
 
-            nbits= av_log2_16bit(alevel) + 1;
-            code = ((15&run) << 4) | nbits;
+    // Make sure we have enough space to hold this frame.
+    num_mbs = s->mb_width * s->mb_height;
+    num_blocks = num_mbs * blocks_per_mb;
+    num_codes = num_blocks * 64;
 
-            len += huff_size_ac[code] + nbits;
-
-            uni_ac_vlc_len[UNI_AC_ENC_INDEX(run, i)] = len;
-            // We ignore EOB as its just a constant which does not change generally
-        }
-    }
+    m->huff_buffer = av_malloc_array(num_codes, sizeof(MJpegHuffmanCode));
+    if (!m->huff_buffer)
+        return AVERROR(ENOMEM);
+    return 0;
 }
 
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
     MJpegContext *m;
 
+    av_assert0(s->slice_context_count == 1);
+
     if (s->width > 65500 || s->height > 65500) {
         av_log(s, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
     }
 
-    m = av_malloc(sizeof(MJpegContext));
+    m = av_mallocz(sizeof(MJpegContext));
     if (!m)
         return AVERROR(ENOMEM);
 
     s->min_qcoeff=-1023;
     s->max_qcoeff= 1023;
 
-    /* build all the huffman tables */
+    // Build default Huffman tables.
+    // These may be overwritten later with more optimal Huffman tables, but
+    // they are needed at least right now for some processes like trellis.
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
                                  m->huff_code_dc_luminance,
                                  avpriv_mjpeg_bits_dc_luminance,
@@ -102,20 +106,168 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
                                  avpriv_mjpeg_bits_ac_chrominance,
                                  avpriv_mjpeg_val_ac_chrominance);
 
-    init_uni_ac_vlc(m->huff_size_ac_luminance,   uni_ac_vlc_len);
-    init_uni_ac_vlc(m->huff_size_ac_chrominance, uni_chroma_ac_vlc_len);
+    ff_init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
+    ff_init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
     s->intra_ac_vlc_length      =
-    s->intra_ac_vlc_last_length = uni_ac_vlc_len;
+    s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
     s->intra_chroma_ac_vlc_length      =
-    s->intra_chroma_ac_vlc_last_length = uni_chroma_ac_vlc_len;
+    s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
+    // Buffers start out empty.
+    m->huff_ncode = 0;
     s->mjpeg_ctx = m;
+
+    if(s->huffman == HUFFMAN_TABLE_OPTIMAL)
+        return alloc_huffman(s);
+
     return 0;
 }
 
 av_cold void ff_mjpeg_encode_close(MpegEncContext *s)
 {
+    av_freep(&s->mjpeg_ctx->huff_buffer);
     av_freep(&s->mjpeg_ctx);
+}
+
+/**
+ * Encodes and outputs the entire frame in the JPEG format.
+ *
+ * @param s The MpegEncContext.
+ */
+void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
+{
+    int i, nbits, code, table_id;
+    MJpegContext *m = s->mjpeg_ctx;
+    uint8_t *huff_size[4] = {m->huff_size_dc_luminance,
+                             m->huff_size_dc_chrominance,
+                             m->huff_size_ac_luminance,
+                             m->huff_size_ac_chrominance};
+    uint16_t *huff_code[4] = {m->huff_code_dc_luminance,
+                              m->huff_code_dc_chrominance,
+                              m->huff_code_ac_luminance,
+                              m->huff_code_ac_chrominance};
+    size_t total_bits = 0;
+    size_t bytes_needed;
+
+    s->header_bits = get_bits_diff(s);
+    // Estimate the total size first
+    for (i = 0; i < m->huff_ncode; i++) {
+        table_id = m->huff_buffer[i].table_id;
+        code = m->huff_buffer[i].code;
+        nbits = code & 0xf;
+
+        total_bits += huff_size[table_id][code] + nbits;
+    }
+
+    bytes_needed = (total_bits + 7) / 8;
+    ff_mpv_reallocate_putbitbuffer(s, bytes_needed, bytes_needed);
+
+    for (i = 0; i < m->huff_ncode; i++) {
+        table_id = m->huff_buffer[i].table_id;
+        code = m->huff_buffer[i].code;
+        nbits = code & 0xf;
+
+        put_bits(&s->pb, huff_size[table_id][code], huff_code[table_id][code]);
+        if (nbits != 0) {
+            put_sbits(&s->pb, nbits, m->huff_buffer[i].mant);
+        }
+    }
+
+    m->huff_ncode = 0;
+    s->i_tex_bits = get_bits_diff(s);
+}
+
+/**
+ * Add code and table_id to the JPEG buffer.
+ *
+ * @param s The MJpegContext which contains the JPEG buffer.
+ * @param table_id Which Huffman table the code belongs to.
+ * @param code The encoded exponent of the coefficients and the run-bits.
+ */
+static inline void ff_mjpeg_encode_code(MJpegContext *s, uint8_t table_id, int code)
+{
+    MJpegHuffmanCode *c = &s->huff_buffer[s->huff_ncode++];
+    c->table_id = table_id;
+    c->code = code;
+}
+
+/**
+ * Add the coefficient's data to the JPEG buffer.
+ *
+ * @param s The MJpegContext which contains the JPEG buffer.
+ * @param table_id Which Huffman table the code belongs to.
+ * @param val The coefficient.
+ * @param run The run-bits.
+ */
+static void ff_mjpeg_encode_coef(MJpegContext *s, uint8_t table_id, int val, int run)
+{
+    int mant, code;
+
+    if (val == 0) {
+        av_assert0(run == 0);
+        ff_mjpeg_encode_code(s, table_id, 0);
+    } else {
+        mant = val;
+        if (val < 0) {
+            val = -val;
+            mant--;
+        }
+
+        code = (run << 4) | (av_log2_16bit(val) + 1);
+
+        s->huff_buffer[s->huff_ncode].mant = mant;
+        ff_mjpeg_encode_code(s, table_id, code);
+    }
+}
+
+/**
+ * Add the block's data into the JPEG buffer.
+ *
+ * @param s The MJpegEncContext that contains the JPEG buffer.
+ * @param block The block.
+ * @param n The block's index or number.
+ */
+static void record_block(MpegEncContext *s, int16_t *block, int n)
+{
+    int i, j, table_id;
+    int component, dc, last_index, val, run;
+    MJpegContext *m = s->mjpeg_ctx;
+
+    /* DC coef */
+    component = (n <= 3 ? 0 : (n&1) + 1);
+    table_id = (n <= 3 ? 0 : 1);
+    dc = block[0]; /* overflow is impossible */
+    val = dc - s->last_dc[component];
+
+    ff_mjpeg_encode_coef(m, table_id, val, 0);
+
+    s->last_dc[component] = dc;
+
+    /* AC coefs */
+
+    run = 0;
+    last_index = s->block_last_index[n];
+    table_id |= 2;
+
+    for(i=1;i<=last_index;i++) {
+        j = s->intra_scantable.permutated[i];
+        val = block[j];
+
+        if (val == 0) {
+            run++;
+        } else {
+            while (run >= 16) {
+                ff_mjpeg_encode_code(m, table_id, 0xf0);
+                run -= 16;
+            }
+            ff_mjpeg_encode_coef(m, table_id, val, run);
+            run = 0;
+        }
+    }
+
+    /* output EOB only if not already 64 values */
+    if (last_index < 63 || run != 0)
+        ff_mjpeg_encode_code(m, table_id, 0);
 }
 
 static void encode_block(MpegEncContext *s, int16_t *block, int n)
@@ -179,36 +331,67 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
 void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i;
-    if (s->chroma_format == CHROMA_444) {
-        encode_block(s, block[0], 0);
-        encode_block(s, block[2], 2);
-        encode_block(s, block[4], 4);
-        encode_block(s, block[8], 8);
-        encode_block(s, block[5], 5);
-        encode_block(s, block[9], 9);
+    if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        if (s->chroma_format == CHROMA_444) {
+            record_block(s, block[0], 0);
+            record_block(s, block[2], 2);
+            record_block(s, block[4], 4);
+            record_block(s, block[8], 8);
+            record_block(s, block[5], 5);
+            record_block(s, block[9], 9);
 
-        if (16*s->mb_x+8 < s->width) {
-            encode_block(s, block[1], 1);
-            encode_block(s, block[3], 3);
-            encode_block(s, block[6], 6);
-            encode_block(s, block[10], 10);
-            encode_block(s, block[7], 7);
-            encode_block(s, block[11], 11);
+            if (16*s->mb_x+8 < s->width) {
+                record_block(s, block[1], 1);
+                record_block(s, block[3], 3);
+                record_block(s, block[6], 6);
+                record_block(s, block[10], 10);
+                record_block(s, block[7], 7);
+                record_block(s, block[11], 11);
+            }
+        } else {
+            for(i=0;i<5;i++) {
+                record_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                record_block(s, block[5], 5);
+            } else {
+                record_block(s, block[6], 6);
+                record_block(s, block[5], 5);
+                record_block(s, block[7], 7);
+            }
         }
     } else {
-        for(i=0;i<5;i++) {
-            encode_block(s, block[i], i);
-        }
-        if (s->chroma_format == CHROMA_420) {
+        if (s->chroma_format == CHROMA_444) {
+            encode_block(s, block[0], 0);
+            encode_block(s, block[2], 2);
+            encode_block(s, block[4], 4);
+            encode_block(s, block[8], 8);
             encode_block(s, block[5], 5);
-        } else {
-            encode_block(s, block[6], 6);
-            encode_block(s, block[5], 5);
-            encode_block(s, block[7], 7);
-        }
-    }
+            encode_block(s, block[9], 9);
 
-    s->i_tex_bits += get_bits_diff(s);
+            if (16*s->mb_x+8 < s->width) {
+                encode_block(s, block[1], 1);
+                encode_block(s, block[3], 3);
+                encode_block(s, block[6], 6);
+                encode_block(s, block[10], 10);
+                encode_block(s, block[7], 7);
+                encode_block(s, block[11], 11);
+            }
+        } else {
+            for(i=0;i<5;i++) {
+                encode_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                encode_block(s, block[5], 5);
+            } else {
+                encode_block(s, block[6], 6);
+                encode_block(s, block[5], 5);
+                encode_block(s, block[7], 7);
+            }
+        }
+
+        s->i_tex_bits += get_bits_diff(s);
+    }
 }
 
 // maximum over s->mjpeg_vsample[i]
@@ -261,7 +444,9 @@ FF_MPV_COMMON_OPTS
     { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
     { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "pred" },
     { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 3 }, INT_MIN, INT_MAX, VE, "pred" },
-
+{ "huffman", "Huffman table strategy", OFFSET(huffman), AV_OPT_TYPE_INT, { .i64 = HUFFMAN_TABLE_DEFAULT }, 0, NB_HUFFMAN_TABLE_OPTION - 1, VE, "huffman" },
+    { "default", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = HUFFMAN_TABLE_DEFAULT }, INT_MIN, INT_MAX, VE, "huffman" },
+    { "optimal", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = HUFFMAN_TABLE_OPTIMAL }, INT_MIN, INT_MAX, VE, "huffman" },
 { NULL},
 };
 

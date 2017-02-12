@@ -422,6 +422,7 @@ typedef struct MpegEncContext {
     struct MJpegContext *mjpeg_ctx;
     int esc_pos;
     int pred;
+    int huffman;
 
     /* MSMPEG4 specific */
     int mv_table_index;

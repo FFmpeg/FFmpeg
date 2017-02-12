@@ -1547,7 +1547,7 @@ to enable LAME support by passing @code{--enable-libmp3lame} to configure.
 The mapping is particularly useful for DVD transcoding
 to get the desired audio language.
 
-NOTE: To see the supported input formats, use @code{ffmpeg -formats}.
+NOTE: To see the supported input formats, use @code{ffmpeg -demuxers}.
 
 @item
 You can extract images from a video, or create a video from many images:

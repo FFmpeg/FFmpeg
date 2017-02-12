@@ -603,6 +603,8 @@ enum AVCodecID {
     AV_CODEC_ID_XMA1,
     AV_CODEC_ID_XMA2,
     AV_CODEC_ID_DST,
+    AV_CODEC_ID_ATRAC3AL,
+    AV_CODEC_ID_ATRAC3PAL,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

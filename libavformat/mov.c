@@ -407,11 +407,11 @@ retry:
                 return ret;
             } else if (!key && c->found_hdlr_mdta && c->meta_keys) {
                 uint32_t index = AV_RB32(&atom.type);
-                if (index < c->meta_keys_count) {
+                if (index < c->meta_keys_count && index > 0) {
                     key = c->meta_keys[index];
                 } else {
                     av_log(c->fc, AV_LOG_WARNING,
-                           "The index of 'data' is out of range: %d >= %d.\n",
+                           "The index of 'data' is out of range: %d < 1 or >= %d.\n",
                            index, c->meta_keys_count);
                 }
             }
@@ -742,6 +742,8 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     title_size = atom.size - 24;
     if (title_size > 0) {
+        if (title_size > FFMIN(INT_MAX, SIZE_MAX-1))
+            return AVERROR_INVALIDDATA;
         title_str = av_malloc(title_size + 1); /* Add null terminator */
         if (!title_str)
             return AVERROR(ENOMEM);
@@ -4787,7 +4789,7 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         0x88, 0x14, 0x58, 0x7a, 0x02, 0x52, 0x1f, 0xdd,
     };
 
-    if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
+    if (atom.size < sizeof(uuid) || atom.size >= FFMIN(INT_MAX, SIZE_MAX))
         return AVERROR_INVALIDDATA;
 
     if (c->fc->nb_streams < 1)
@@ -4966,8 +4968,8 @@ static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb32(pb);        /* entries */
 
-    if (atom.size < 8) {
-        av_log(c->fc, AV_LOG_ERROR, "senc atom size %"PRId64" too small\n", atom.size);
+    if (atom.size < 8 || atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
+        av_log(c->fc, AV_LOG_ERROR, "senc atom size %"PRId64" invalid\n", atom.size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -5033,6 +5035,11 @@ static int mov_read_saiz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (atom.size <= atom_header_size) {
         return 0;
+    }
+
+    if (atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
+        av_log(c->fc, AV_LOG_ERROR, "saiz atom auxiliary_info_sizes size %"PRId64" invalid\n", atom.size);
+        return AVERROR_INVALIDDATA;
     }
 
     /* save the auxiliary info sizes as is */

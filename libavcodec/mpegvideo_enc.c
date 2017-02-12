@@ -266,7 +266,8 @@ static void mpv_encode_defaults(MpegEncContext *s)
     s->picture_in_gop_number = 0;
 }
 
-av_cold int ff_dct_encode_init(MpegEncContext *s) {
+av_cold int ff_dct_encode_init(MpegEncContext *s)
+{
     if (ARCH_X86)
         ff_dct_encode_init_x86(s);
 
@@ -639,6 +640,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
         s->avctx->mb_decision != FF_MB_DECISION_RD) {
         av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
+        return -1;
+    }
+
+    if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
+            (s->codec_id == AV_CODEC_ID_AMV ||
+             s->codec_id == AV_CODEC_ID_MJPEG)) {
+        // Used to produce garbage with MJPEG.
+        av_log(avctx, AV_LOG_ERROR,
+               "QP RD is no longer compatible with MJPEG or AMV\n");
         return -1;
     }
 
@@ -3932,7 +3942,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     s->last_bits= put_bits_count(&s->pb);
     switch(s->out_format) {
     case FMT_MJPEG:
-        if (CONFIG_MJPEG_ENCODER)
+        if (CONFIG_MJPEG_ENCODER && s->huffman != HUFFMAN_TABLE_OPTIMAL)
             ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
                                            s->pred, s->intra_matrix, s->chroma_intra_matrix);
         break;

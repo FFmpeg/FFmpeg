@@ -1200,6 +1200,27 @@ Same as @samp{3}, but with extra processing enabled.
 @end table
 @end table
 
+@anchor{mjpegenc}
+@section mjpeg
+
+Motion JPEG encoder.
+
+@subsection Options
+
+@table @option
+@item huffman
+Set the huffman encoding strategy. Possible values:
+
+@table @samp
+@item default
+Use the default huffman tables. This is the default strategy.
+
+@item optimal
+Compute and use optimal huffman tables.
+
+@end table
+@end table
+
 @anchor{wavpackenc}
 @section wavpack
 

@@ -2768,6 +2768,8 @@ mpeg2_qsv_decoder_deps="libmfx"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
 mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
+mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
+mpeg2_vaapi_encoder_select="vaapi_encode"
 mpeg4_cuvid_decoder_deps="cuda cuvid"
 mpeg4_cuvid_decoder_select="mpeg4_cuvid_hwaccel"
 nvenc_h264_encoder_deps="nvenc"
@@ -2777,6 +2779,8 @@ vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_cuvid_decoder_select="vc1_cuvid_hwaccel"
 vp8_cuvid_decoder_deps="cuda cuvid"
 vp8_cuvid_decoder_select="vp8_cuvid_hwaccel"
+vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
+vp8_vaapi_encoder_select="vaapi_encode"
 vp9_cuvid_decoder_deps="cuda cuvid"
 vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
@@ -4804,7 +4808,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         dlltool="${cross_prefix}dlltool"
         if check_cmd lib.exe -list; then
-            SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); lib.exe /nologo /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+            SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); lib.exe -nologo -machine:$(LIBTARGET) -def:$$(@:$(SLIBSUF)=.def) -out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
             if enabled x86_64; then
                 LIBTARGET=x64
             fi
@@ -5653,6 +5657,8 @@ check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
 check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
 check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
+check_type "va/va.h va/va_enc_mpeg2.h" "VAEncPictureParameterBufferMPEG2"
+check_type "va/va.h va/va_enc_vp8.h"  "VAEncPictureParameterBufferVP8"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 

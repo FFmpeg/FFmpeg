@@ -800,6 +800,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         vseq->seq_fields.bits.direct_8x8_inference_flag = 1;
         vseq->seq_fields.bits.log2_max_frame_num_minus4 = 4;
         vseq->seq_fields.bits.pic_order_cnt_type = 0;
+        vseq->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 =
+            av_clip(av_log2(avctx->max_b_frames + 1) - 2, 0, 12);
 
         if (avctx->width  != ctx->surface_width ||
             avctx->height != ctx->surface_height) {
@@ -1124,13 +1126,15 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
                "%d / %d / %d for IDR- / P- / B-frames.\n",
                priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
 
-    } else if (ctx->va_rc_mode == VA_RC_CBR) {
+    } else if (ctx->va_rc_mode == VA_RC_CBR ||
+               ctx->va_rc_mode == VA_RC_VBR) {
         // These still need to be  set for pic_init_qp/slice_qp_delta.
         priv->fixed_qp_idr = 26;
         priv->fixed_qp_p   = 26;
         priv->fixed_qp_b   = 26;
 
-        av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %"PRId64" bps.\n",
+        av_log(avctx, AV_LOG_DEBUG, "Using %s-bitrate = %"PRId64" bps.\n",
+               ctx->va_rc_mode == VA_RC_CBR ? "constant" : "variable",
                avctx->bit_rate);
 
     } else {
@@ -1249,9 +1253,12 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
     // Only 8-bit encode is supported.
     ctx->va_rt_format = VA_RT_FORMAT_YUV420;
 
-    if (avctx->bit_rate > 0)
-        ctx->va_rc_mode = VA_RC_CBR;
-    else
+    if (avctx->bit_rate > 0) {
+        if (avctx->rc_max_rate == avctx->bit_rate)
+            ctx->va_rc_mode = VA_RC_CBR;
+        else
+            ctx->va_rc_mode = VA_RC_VBR;
+    } else
         ctx->va_rc_mode = VA_RC_CQP;
 
     ctx->va_packed_headers =
@@ -1289,6 +1296,7 @@ static const AVCodecDefault vaapi_encode_h264_defaults[] = {
     { "i_qoffset",      "0"   },
     { "b_qfactor",      "6/5" },
     { "b_qoffset",      "0"   },
+    { "qmin",           "0"   },
     { NULL },
 };
 

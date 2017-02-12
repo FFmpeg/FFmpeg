@@ -155,8 +155,8 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                 }
             }
         }
-/* to get the correct picture for not-multiple-of-4 cases let us fill
- * each block from the bottom up, thus possibly overwriting the top line
+/* to get the correct picture for not-multiple-of-4 cases let us fill each
+ * block from the bottom up, thus possibly overwriting the bottommost line
  * more than once but ending with the correct data in place
  * (instead of in-loop checking) */
 

@@ -5517,7 +5517,7 @@ static int mov_init(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
-    int i, ret, hint_track = 0, tmcd_track = 0;
+    int i, ret;
 
     mov->fc = s;
 
@@ -5610,7 +5610,6 @@ static int mov_init(AVFormatContext *s)
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Add hint tracks for each audio and video stream */
-        hint_track = mov->nb_streams;
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -5622,8 +5621,6 @@ static int mov_init(AVFormatContext *s)
 
     if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
         || mov->write_tmcd == 1) {
-        tmcd_track = mov->nb_streams;
-
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];

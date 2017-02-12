@@ -35,8 +35,8 @@ enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
     MAX_PICTURE_REFERENCES = 2,
-    MAX_PICTURE_SLICES     = 1,
-    MAX_PARAM_BUFFERS      = 16,
+    MAX_PICTURE_SLICES     = 112,
+    MAX_PARAM_BUFFERS      = 128,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
 };
@@ -49,6 +49,7 @@ enum {
 };
 
 typedef struct VAAPIEncodeSlice {
+    int             index;
     void           *priv_data;
     void           *codec_slice_params;
 } VAAPIEncodeSlice;
@@ -154,6 +155,10 @@ typedef struct VAAPIEncodeContext {
         VAEncMiscParameterBuffer misc;
         VAEncMiscParameterHRD hrd;
     } hrd_params;
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterFrameRate fr;
+    } fr_params;
 
     // Per-sequence parameter structure (VAEncSequenceParameterBuffer*).
     void           *codec_sequence_params;
@@ -190,11 +195,10 @@ typedef struct VAAPIEncodeContext {
     int64_t         ts_ring[MAX_REORDER_DELAY * 3];
 
     // Frame type decision.
-    int i_per_idr;
     int p_per_i;
     int b_per_p;
-    int idr_counter;
-    int i_counter;
+    int force_idr;
+    int gop_counter;
     int p_counter;
     int end_of_stream;
 

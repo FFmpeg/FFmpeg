@@ -2477,6 +2477,20 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_ATRAC3PAL,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "atrac3pal",
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_ATRAC3AL,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "atrac3al",
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_EAC3,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "eac3",
