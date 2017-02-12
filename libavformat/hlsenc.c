@@ -450,6 +450,7 @@ static int hls_mux_init(AVFormatContext *s)
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
+        av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
     hls->start_pos = 0;
     hls->new_start = 1;
