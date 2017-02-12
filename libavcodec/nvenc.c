@@ -1112,6 +1112,20 @@ static av_cold int nvenc_setup_codec_config(AVCodecContext *avctx)
     return 0;
 }
 
+static void compute_dar(AVCodecContext *avctx, int *dw, int *dh) {
+    int sw, sh;
+
+    sw = avctx->width;
+    sh = avctx->height;
+
+    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
+        sw *= avctx->sample_aspect_ratio.num;
+        sh *= avctx->sample_aspect_ratio.den;
+    }
+
+    av_reduce(dw, dh, sw, sh, 1024 * 1024);
+}
+
 static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
@@ -1148,13 +1162,7 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->encode_config.version = NV_ENC_CONFIG_VER;
 
-    dw = avctx->width;
-    dh = avctx->height;
-    if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0) {
-        dw*= avctx->sample_aspect_ratio.num;
-        dh*= avctx->sample_aspect_ratio.den;
-    }
-    av_reduce(&dw, &dh, dw, dh, 1024 * 1024);
+    compute_dar(avctx, &dw, &dh);
     ctx->init_encode_params.darHeight = dh;
     ctx->init_encode_params.darWidth = dw;
 
@@ -1927,6 +1935,49 @@ static int output_ready(AVCodecContext *avctx, int flush)
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
+static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
+{
+    NvencContext *ctx = avctx->priv_data;
+    NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &ctx->nvenc_dload_funcs.nvenc_funcs;
+    NVENCSTATUS ret;
+
+    NV_ENC_RECONFIGURE_PARAMS params = { 0 };
+    int needs_reconfig = 0;
+    int needs_encode_config = 0;
+    int dw, dh;
+
+    params.version = NV_ENC_RECONFIGURE_PARAMS_VER;
+    params.reInitEncodeParams = ctx->init_encode_params;
+
+    compute_dar(avctx, &dw, &dh);
+    if (dw != ctx->init_encode_params.darWidth || dh != ctx->init_encode_params.darHeight) {
+        av_log(avctx, AV_LOG_VERBOSE,
+               "aspect ratio change (DAR): %d:%d -> %d:%d\n",
+               ctx->init_encode_params.darWidth,
+               ctx->init_encode_params.darHeight, dw, dh);
+
+        params.reInitEncodeParams.darHeight = dh;
+        params.reInitEncodeParams.darWidth = dw;
+
+        needs_reconfig = 1;
+    }
+
+    if (!needs_encode_config)
+        params.reInitEncodeParams.encodeConfig = NULL;
+
+    if (needs_reconfig) {
+        ret = p_nvenc->nvEncReconfigureEncoder(ctx->nvencoder, &params);
+        if (ret != NV_ENC_SUCCESS) {
+            nvenc_print_error(avctx, ret, "failed to reconfigure nvenc");
+        } else {
+            ctx->init_encode_params.darHeight = dh;
+            ctx->init_encode_params.darWidth = dw;
+        }
+    }
+
+    return 0;
+}
+
 int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     NVENCSTATUS nv_status;
@@ -1947,6 +1998,8 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         return AVERROR_EOF;
 
     if (frame) {
+        reconfig_encoder(avctx, frame);
+
         in_surf = get_free_frame(ctx);
         if (!in_surf)
             return AVERROR(EAGAIN);
