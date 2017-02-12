@@ -173,6 +173,7 @@
     <ClCompile Include="..\libavcodec\mediacodec.c" />
     <ClCompile Include="..\libavcodec\mpeg12framerate.c" />
     <ClCompile Include="..\libavcodec\options.c" />
+    <ClCompile Include="..\libavcodec\mjpegenc_huffman.c" />
     <ClCompile Include="..\libavcodec\parser.c" />
     <ClCompile Include="..\libavcodec\profiles.c" />
     <ClCompile Include="..\libavcodec\qsv_api.c" />

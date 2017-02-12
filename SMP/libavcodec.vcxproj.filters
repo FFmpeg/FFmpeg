@@ -342,6 +342,9 @@
     <ClCompile Include="..\libavcodec\options.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\mjpegenc_huffman.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\parser.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
