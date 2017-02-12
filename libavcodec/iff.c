@@ -1617,6 +1617,8 @@ static int decode_frame(AVCodecContext *avctx,
                 }
             } else
                 return unsupported(avctx);
+        } else {
+            return unsupported(avctx);
         }
         break;
     case 0x1:
@@ -1691,6 +1693,34 @@ static int decode_frame(AVCodecContext *avctx,
                 decode_deep_rle32(frame->data[0], buf, buf_size, avctx->width, avctx->height, frame->linesize[0]);
             else
                 return unsupported(avctx);
+        } else if (avctx->codec_tag == MKTAG('A', 'C', 'B', 'M')) {
+            if (avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
+                memset(frame->data[0], 0, avctx->height * frame->linesize[0]);
+                for (plane = 0; plane < s->bpp; plane++) {
+                    for (y = 0; y < avctx->height && buf < buf_end; y++) {
+                        uint8_t *row = &frame->data[0][y * frame->linesize[0]];
+                        decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), plane);
+                        buf += s->planesize;
+                    }
+                }
+            } else if (s->ham) { // HAM to AV_PIX_FMT_BGR32
+                memset(frame->data[0], 0, avctx->height * frame->linesize[0]);
+                for (y = 0; y < avctx->height; y++) {
+                    uint8_t *row = &frame->data[0][y * frame->linesize[0]];
+                    memset(s->ham_buf, 0, s->planesize * 8);
+                    for (plane = 0; plane < s->bpp; plane++) {
+                        const uint8_t * start = buf + (plane * avctx->height + y) * s->planesize;
+                        if (start >= buf_end)
+                            break;
+                        decodeplane8(s->ham_buf, start, FFMIN(s->planesize, buf_end - start), plane);
+                    }
+                    decode_ham_plane32((uint32_t *)row, s->ham_buf, s->ham_palbuf, s->planesize);
+                }
+            } else {
+                return unsupported(avctx);
+            }
+        } else {
+            return unsupported(avctx);
         }
         break;
     case 0x2:
