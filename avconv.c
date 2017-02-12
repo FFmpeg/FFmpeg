@@ -326,6 +326,8 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         }
     }
 
+    av_packet_rescale_ts(pkt, ost->mux_timebase, ost->st->time_base);
+
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
         ost->last_mux_dts != AV_NOPTS_VALUE &&
         pkt->dts < ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT)) {
@@ -349,7 +351,6 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     ost->packets_written++;
 
     pkt->stream_index = ost->index;
-    av_packet_rescale_ts(pkt, ost->mux_timebase, ost->st->time_base);
 
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
@@ -1006,7 +1007,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->last_mux_dts * av_q2d(ost->mux_timebase);
+        pts = (double)ost->last_mux_dts * av_q2d(ost->st->time_base);
         if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
