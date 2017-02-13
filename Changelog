@@ -8,6 +8,7 @@ version <next>:
 - chromashift and rgbashift filters
 - freezedetect filter
 - truehd_core bitstream filter
+- dhav demuxer
 
 
 version 4.1:
