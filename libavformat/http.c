@@ -989,6 +989,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     int len = 0;
     const char *method;
     int send_expect_100 = 0;
+    int ret;
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -1079,7 +1080,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (s->headers)
         av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
-    snprintf(s->buffer, sizeof(s->buffer),
+    ret = snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
              "%s"
              "%s"
@@ -1094,6 +1095,14 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
     av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+
+    if (strlen(headers) + 1 == sizeof(headers) ||
+        ret >= sizeof(s->buffer)) {
+        av_log(h, AV_LOG_ERROR, "overlong headers\n");
+        err = AVERROR(EINVAL);
+        goto done;
+    }
+
 
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
         goto done;
