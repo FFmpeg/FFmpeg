@@ -310,7 +310,7 @@ static int config_props(AVFilterLink *inlink)
         s->var_values[VAR_MAXVAL] = max[color];
         s->var_values[VAR_MINVAL] = min[color];
 
-        for (val = 0; val < (1 << desc->comp[0].depth); val++) {
+        for (val = 0; val < FF_ARRAY_ELEMS(s->lut[comp]); val++) {
             s->var_values[VAR_VAL] = val;
             s->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
             s->var_values[VAR_NEGVAL] =
