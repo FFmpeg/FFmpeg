@@ -15,6 +15,11 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-02 - xxxxxxx - lavu 55.47.101, lavc 57.81.102, lavf 57.66.103
+  Remove requirement to use AVOption or accessors to access certain fields
+  in AVFrame, AVCodecContext, and AVFormatContext that were previously
+  documented as "no direct access" allowed.
+
 2017-02-13 - xxxxxxx - lavc 57.80.100 - avcodec.h
   Add AVCodecContext.hw_device_ctx.
 
