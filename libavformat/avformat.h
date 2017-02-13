@@ -1005,7 +1005,9 @@ typedef struct AVStream {
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
      * removed at will.
-     * New public fields should be added right above.
+     * Internal note: be aware that physically removing these fields
+     * will break ABI. Replace removed fields with dummy fields, and
+     * add new fields to AVStreamInternal.
      *****************************************************************
      */
 
@@ -1200,6 +1202,12 @@ typedef struct AVStream {
      * Internal data to inject global side data
      */
     int inject_global_side_data;
+
+    /*****************************************************************
+     * All fields above this line are not part of the public API.
+     * Fields below are part of the public API and ABI again.
+     *****************************************************************
+     */
 
     /**
      * String containing paris of key and values describing recommended encoder configuration.
