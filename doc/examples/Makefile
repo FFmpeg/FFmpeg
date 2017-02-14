@@ -12,6 +12,9 @@ DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
 ALL_DOC_EXAMPLES := $(DOC_EXAMPLES) $(DOC_EXAMPLES-:%=doc/examples/%$(EXESUF))
 PROGS            += $(DOC_EXAMPLES)
 
+$(foreach P,$(DOC_EXAMPLES),$(eval OBJS-$(P:%$(EXESUF)=%) = $(P:%$(EXESUF)=%).o))
+$(DOC_EXAMPLES): %$(EXESUF): %.o
+
 examples: $(DOC_EXAMPLES)
 
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
@@ -22,5 +25,7 @@ DOXY_INPUT += $(addprefix $(SRC_PATH)/, $(DOC_EXAMPLES:%$(EXESUF)=%.c))
 clean::
 	$(RM) $(ALL_DOC_EXAMPLES)
 	$(RM) $(CLEANSUFFIXES:%=doc/examples/%)
+
+-include $(wildcard $(DOC_EXAMPLES:%$(EXESUF)=%.d))
 
 .PHONY: examples

@@ -165,7 +165,7 @@ $(1)$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 
-$(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(EXESUF)=))))
+$(foreach P,$(AVPROGS-yes),$(eval $(call DOPROG,$(P))))
 
 $(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
