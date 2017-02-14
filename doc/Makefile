@@ -25,16 +25,9 @@ DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)         += metadata
 DOC_EXAMPLES-$(CONFIG_OUTPUT_EXAMPLE)           += output
 DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)           += qsvdec
 DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
-ALL_DOC_EXAMPLES = decode_audio                                         \
-                   decode_video                                         \
-                   encode_audio                                         \
-                   encode_video                                         \
-                   filter_audio                                         \
-                   metadata output                                      \
-                   transcode_aac                                        \
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
-ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(EXESUF))
+ALL_DOC_EXAMPLES := $(DOC_EXAMPLES) $(DOC_EXAMPLES-:%=doc/examples/%$(EXESUF))
 PROGS            += $(DOC_EXAMPLES)
 
 all: $(DOCS)
