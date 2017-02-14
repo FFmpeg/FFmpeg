@@ -113,6 +113,10 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     ctx->internal_error = 0;
 
+    // width and height need to be set before calling ff_get_format
+    avctx->width = format->display_area.right;
+    avctx->height = format->display_area.bottom;
+
     switch (format->bit_depth_luma_minus8) {
     case 0: // 8-bit
         pix_fmts[1] = AV_PIX_FMT_NV12;
@@ -155,9 +159,6 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
         hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
     }
-
-    avctx->width = format->display_area.right;
-    avctx->height = format->display_area.bottom;
 
     ff_set_sar(avctx, av_div_q(
         (AVRational){ format->display_aspect_ratio.x, format->display_aspect_ratio.y },
