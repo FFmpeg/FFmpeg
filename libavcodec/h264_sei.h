@@ -64,6 +64,7 @@ typedef enum {
 } SEI_FpaType;
 
 typedef struct H264SEIPictureTiming {
+    int present;
     SEI_PicStructType pic_struct;
 
     /**
