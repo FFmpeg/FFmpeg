@@ -94,15 +94,17 @@ static const struct {
     { MFX_ERR_LOCK_MEMORY,              AVERROR(EIO),    "failed to lock the memory block"      },
     { MFX_ERR_NOT_INITIALIZED,          AVERROR_BUG,     "not initialized"                      },
     { MFX_ERR_NOT_FOUND,                AVERROR(ENOSYS), "specified object was not found"       },
-    { MFX_ERR_MORE_DATA,                AVERROR(EAGAIN), "expect more data at input"            },
-    { MFX_ERR_MORE_SURFACE,             AVERROR(EAGAIN), "expect more surface at output"        },
+    /* the following 3 errors should always be handled explicitly, so those "mappings"
+     * are for completeness only */
+    { MFX_ERR_MORE_DATA,                AVERROR_UNKNOWN, "expect more data at input"            },
+    { MFX_ERR_MORE_SURFACE,             AVERROR_UNKNOWN, "expect more surface at output"        },
+    { MFX_ERR_MORE_BITSTREAM,           AVERROR_UNKNOWN, "expect more bitstream at output"      },
     { MFX_ERR_ABORTED,                  AVERROR_UNKNOWN, "operation aborted"                    },
     { MFX_ERR_DEVICE_LOST,              AVERROR(EIO),    "device lost"                          },
     { MFX_ERR_INCOMPATIBLE_VIDEO_PARAM, AVERROR(EINVAL), "incompatible video parameters"        },
     { MFX_ERR_INVALID_VIDEO_PARAM,      AVERROR(EINVAL), "invalid video parameters"             },
     { MFX_ERR_UNDEFINED_BEHAVIOR,       AVERROR_BUG,     "undefined behavior"                   },
     { MFX_ERR_DEVICE_FAILED,            AVERROR(EIO),    "device failed"                        },
-    { MFX_ERR_MORE_BITSTREAM,           AVERROR(EAGAIN), "expect more bitstream at output"      },
     { MFX_ERR_INCOMPATIBLE_AUDIO_PARAM, AVERROR(EINVAL), "incompatible audio parameters"        },
     { MFX_ERR_INVALID_AUDIO_PARAM,      AVERROR(EINVAL), "invalid audio parameters"             },
 

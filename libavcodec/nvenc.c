@@ -123,12 +123,14 @@ static const struct {
     { NV_ENC_ERR_OUT_OF_MEMORY,            AVERROR(ENOMEM),  "out of memory"            },
     { NV_ENC_ERR_ENCODER_NOT_INITIALIZED,  AVERROR(EINVAL),  "encoder not initialized"  },
     { NV_ENC_ERR_UNSUPPORTED_PARAM,        AVERROR(ENOSYS),  "unsupported param"        },
-    { NV_ENC_ERR_LOCK_BUSY,                AVERROR(EAGAIN),  "lock busy"                },
+    { NV_ENC_ERR_LOCK_BUSY,                AVERROR(EBUSY),   "lock busy"                },
     { NV_ENC_ERR_NOT_ENOUGH_BUFFER,        AVERROR(ENOBUFS), "not enough buffer"        },
     { NV_ENC_ERR_INVALID_VERSION,          AVERROR(EINVAL),  "invalid version"          },
     { NV_ENC_ERR_MAP_FAILED,               AVERROR(EIO),     "map failed"               },
-    { NV_ENC_ERR_NEED_MORE_INPUT,          AVERROR(EAGAIN),  "need more input"          },
-    { NV_ENC_ERR_ENCODER_BUSY,             AVERROR(EAGAIN),  "encoder busy"             },
+    /* this is error should always be treated specially, so this "mapping"
+     * is for completeness only */
+    { NV_ENC_ERR_NEED_MORE_INPUT,          AVERROR_UNKNOWN,  "need more input"          },
+    { NV_ENC_ERR_ENCODER_BUSY,             AVERROR(EBUSY),   "encoder busy"             },
     { NV_ENC_ERR_EVENT_NOT_REGISTERD,      AVERROR(EBADF),   "event not registered"     },
     { NV_ENC_ERR_GENERIC,                  AVERROR_UNKNOWN,  "generic error"            },
     { NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,  AVERROR(EINVAL),  "incompatible client key"  },
