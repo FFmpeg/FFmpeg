@@ -52,6 +52,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "mxf.h"
@@ -265,6 +266,7 @@ typedef struct MXFIndexTable {
 } MXFIndexTable;
 
 typedef struct MXFContext {
+    const AVClass *class;     /**< Class for private options. */
     MXFPartition *partitions;
     unsigned partitions_count;
     MXFOP op;
@@ -287,6 +289,7 @@ typedef struct MXFContext {
     int last_forward_partition;
     int nb_index_tables;
     MXFIndexTable *index_tables;
+    int eia608_extract;
 } MXFContext;
 
 /* NOTE: klv_offset is not set (-1) for local keys */
@@ -447,6 +450,81 @@ static int find_body_sid_by_offset(MXFContext *mxf, int64_t offset)
     if (a == -1)
         return 0;
     return mxf->partitions[a].body_sid;
+}
+
+static int mxf_get_eia608_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt, int64_t length)
+{
+    int count = avio_rb16(s->pb);
+    int cdp_identifier, cdp_length, cdp_footer_id, ccdata_id, cc_count;
+    int line_num, sample_coding, sample_count;
+    int did, sdid, data_length;
+    int i, ret;
+
+    if (count != 1)
+        av_log(s, AV_LOG_WARNING, "unsupported multiple ANC packets (%d) per KLV packet\n", count);
+
+    for (i = 0; i < count; i++) {
+        if (length < 6) {
+            av_log(s, AV_LOG_ERROR, "error reading s436m packet %"PRId64"\n", length);
+            return AVERROR_INVALIDDATA;
+        }
+        line_num = avio_rb16(s->pb);
+        avio_r8(s->pb); // wrapping type
+        sample_coding = avio_r8(s->pb);
+        sample_count = avio_rb16(s->pb);
+        length -= 6 + 8 + sample_count;
+        if (line_num != 9 && line_num != 11)
+            continue;
+        if (sample_coding == 7 || sample_coding == 8 || sample_coding == 9) {
+            av_log(s, AV_LOG_WARNING, "unsupported s436m 10 bit sample coding\n");
+            continue;
+        }
+        if (length < 0)
+            return AVERROR_INVALIDDATA;
+
+        avio_rb32(s->pb); // array count
+        avio_rb32(s->pb); // array elem size
+        did = avio_r8(s->pb);
+        sdid = avio_r8(s->pb);
+        data_length = avio_r8(s->pb);
+        if (did != 0x61 || sdid != 1) {
+            av_log(s, AV_LOG_WARNING, "unsupported did or sdid: %x %x\n", did, sdid);
+            continue;
+        }
+        cdp_identifier = avio_rb16(s->pb); // cdp id
+        if (cdp_identifier != 0x9669) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp identifier %x\n", cdp_identifier);
+            return AVERROR_INVALIDDATA;
+        }
+        cdp_length = avio_r8(s->pb);
+        avio_r8(s->pb); // cdp_frame_rate
+        avio_r8(s->pb); // cdp_flags
+        avio_rb16(s->pb); // cdp_hdr_sequence_cntr
+        ccdata_id = avio_r8(s->pb); // ccdata_id
+        if (ccdata_id != 0x72) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp data section %x\n", ccdata_id);
+            return AVERROR_INVALIDDATA;
+        }
+        cc_count = avio_r8(s->pb) & 0x1f;
+        ret = av_get_packet(s->pb, pkt, cc_count * 3);
+        if (ret < 0)
+            return ret;
+        if (cdp_length - 9 - 4 <  cc_count * 3) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp size %d cc count %d\n", cdp_length, cc_count);
+            return AVERROR_INVALIDDATA;
+        }
+        avio_skip(s->pb, data_length - 9 - 4 - cc_count * 3);
+        cdp_footer_id = avio_r8(s->pb);
+        if (cdp_footer_id != 0x74) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp footer section %x\n", cdp_footer_id);
+            return AVERROR_INVALIDDATA;
+        }
+        avio_rb16(s->pb); // cdp_ftr_sequence_cntr
+        avio_r8(s->pb); // packet_checksum
+        break;
+    }
+
+    return 0;
 }
 
 /* XXX: use AVBitStreamFilter */
@@ -2433,6 +2511,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codecpar->codec_type = type;
             if (container_ul->desc)
                 av_dict_set(&st->metadata, "data_type", container_ul->desc, 0);
+            if (mxf->eia608_extract &&
+                !strcmp(container_ul->desc, "vbi_vanc_smpte_436M")) {
+                st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                st->codecpar->codec_id = AV_CODEC_ID_EIA_608;
+            }
         }
         if (descriptor->extradata) {
             if (!ff_alloc_extradata(st->codecpar, descriptor->extradata_size)) {
@@ -3409,6 +3492,13 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     mxf->current_klv_data = (KLVPacket){{0}};
                     return ret;
                 }
+            } else if (mxf->eia608_extract &&
+                       s->streams[index]->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
+                ret = mxf_get_eia608_packet(s, s->streams[index], pkt, klv.length);
+                if (ret < 0) {
+                    mxf->current_klv_data = (KLVPacket){{0}};
+                    return ret;
+                }
             } else {
                 ret = av_get_packet(s->pb, pkt, klv.length);
                 if (ret < 0) {
@@ -3607,6 +3697,21 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     return 0;
 }
 
+static const AVOption options[] = {
+    { "eia608_extract", "extract eia 608 captions from s436m track",
+      offsetof(MXFContext, eia608_extract), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,
+      AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass demuxer_class = {
+    .class_name = "mxf",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
+};
+
 AVInputFormat ff_mxf_demuxer = {
     .name           = "mxf",
     .long_name      = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
@@ -3617,4 +3722,5 @@ AVInputFormat ff_mxf_demuxer = {
     .read_packet    = mxf_read_packet,
     .read_close     = mxf_read_close,
     .read_seek      = mxf_read_seek,
+    .priv_class     = &demuxer_class,
 };
