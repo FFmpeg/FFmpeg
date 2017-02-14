@@ -230,6 +230,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     for (;;) {
         int src_length, consumed;
         int ret;
+        int num = 0, den = 0;
         buf = avpriv_find_start_code(buf, buf_end, &state);
         if (--buf + 2 >= buf_end)
             break;
@@ -319,6 +320,18 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             s->format       = ps->sps->pix_fmt;
             avctx->profile  = ps->sps->ptl.general_ptl.profile_idc;
             avctx->level    = ps->sps->ptl.general_ptl.level_idc;
+
+            if (ps->vps->vps_timing_info_present_flag) {
+                num = ps->vps->vps_num_units_in_tick;
+                den = ps->vps->vps_time_scale;
+            } else if (ps->sps->vui.vui_timing_info_present_flag) {
+                num = ps->sps->vui.vui_num_units_in_tick;
+                den = ps->sps->vui.vui_time_scale;
+            }
+
+            if (num != 0 && den != 0)
+                av_reduce(&avctx->framerate.den, &avctx->framerate.num,
+                          num, den, 1 << 30);
 
             if (!sh->first_slice_in_pic_flag) {
                 int slice_address_length;
