@@ -1117,6 +1117,28 @@ ff_chroma_intra_body_mmxext:
     DEBLOCK_P0_Q0
 %endmacro
 
+%macro CHROMA_INTRA_BODY_XMM 0
+    LOAD_MASK alpha_d, beta_d
+    mova    m5,  m1
+    mova    m6,  m2
+    pxor    m4,  m1, m3
+    pand    m4, [pb_1]
+    pavgb   m1,  m3
+    psubusb m1,  m4
+    pavgb   m1,  m0
+    pxor    m4,  m2, m0
+    pand    m4, [pb_1]
+    pavgb   m2,  m0
+    psubusb m2,  m4
+    pavgb   m2,  m3
+    psubb   m1,  m5
+    psubb   m2,  m6
+    pand    m1,  m7
+    pand    m2,  m7
+    paddb   m1,  m5
+    paddb   m2,  m6
+%endmacro
+
 %macro CHROMA_V_START_XMM 1
     movsxdifnidn stride_q, stride_d
     dec alpha_d
@@ -1188,6 +1210,17 @@ cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
     movq m3, [rsp + 8]
     TRANSPOSE_4x8B_XMM
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+RET
+
+cglobal deblock_v_chroma_intra_8, 4, 5, 8, pix_, stride_, alpha_, beta_
+    CHROMA_V_START_XMM r4
+    movq m0, [r4]
+    movq m1, [r4 + stride_q]
+    movq m2, [pix_q]
+    movq m3, [pix_q + stride_q]
+    CHROMA_INTRA_BODY_XMM
+    movq [r4 + stride_q], m1
+    movq [pix_q], m2
 RET
 
 %endmacro ; DEBLOCK_CHROMA_XMM
