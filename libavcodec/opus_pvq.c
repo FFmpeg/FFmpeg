@@ -857,8 +857,8 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     int dualstereo, split;
     int imid = 0, iside = 0;
     //uint32_t N0 = N;
-    int N_B;
-    //int N_B0;
+    int N_B = N / blocks;
+    //int N_B0 = N_B;
     int B0 = blocks;
     int time_divide = 0;
     int recombine = 0;
@@ -867,7 +867,6 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     int longblocks = (B0 == 1);
     uint32_t cm = 0;
 
-    //N_B0 = N_B = N / blocks;
     split = dualstereo = (Y != NULL);
 
     if (N == 1) {
