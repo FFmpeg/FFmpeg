@@ -1461,6 +1461,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     uint8_t *data = NULL;
     int offset = 0, size = pkt->size;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
+    ts += mkv->tracks[pkt->stream_index].ts_offset;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", flags %d\n",
