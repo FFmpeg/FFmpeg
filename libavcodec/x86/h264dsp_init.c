@@ -325,6 +325,7 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                 c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma_intra_8_avx;
             } else {
                 c->h264_h_loop_filter_chroma       = ff_deblock_h_chroma422_8_avx;
+                c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma422_intra_8_avx;
             }
         }
     } else if (bit_depth == 10) {

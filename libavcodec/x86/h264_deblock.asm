@@ -1232,6 +1232,24 @@ cglobal deblock_h_chroma_intra_8, 4, 6, 8, pix_, stride_, alpha_, beta_
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
 RET
 
+cglobal deblock_h_chroma422_intra_8, 4, 6, 8, pix_, stride_, alpha_, beta_
+    CHROMA_H_START_XMM r4, r5
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+    TRANSPOSE_8x4B_XMM
+    CHROMA_INTRA_BODY_XMM
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+
+    lea pix_q, [pix_q + 8*stride_q]
+    lea r4,    [r4    + 8*stride_q]
+
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+    TRANSPOSE_8x4B_XMM
+    CHROMA_INTRA_BODY_XMM
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+RET
+
 %endmacro ; DEBLOCK_CHROMA_XMM
 
 DEBLOCK_CHROMA_XMM avx
