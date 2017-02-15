@@ -667,7 +667,7 @@ static void celt_quant_coarse(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
                 ff_opus_rc_enc_laplace(rc, &q_en, pmod[i << 1] << 7, pmod[(i << 1) + 1] << 6);
             } else if (left >= 2) {
                 q_en = av_clip(q_en, -1, 1);
-                ff_opus_rc_enc_cdf(rc, ((q_en & 1) << 1) | (q_en < 0), ff_celt_model_energy_small);
+                ff_opus_rc_enc_cdf(rc, 2*q_en + 3*(q_en < 0), ff_celt_model_energy_small);
             } else if (left >= 1) {
                 q_en = av_clip(q_en, -1, 0);
                 ff_opus_rc_enc_log(rc, (q_en & 1), 1);
