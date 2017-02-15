@@ -154,6 +154,7 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 include $(SRC_PATH)/doc/Makefile
+include $(SRC_PATH)/doc/examples/Makefile
 
 define DOPROG
 OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
@@ -239,5 +240,4 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config examples install*
-.PHONY: testprogs uninstall*
+.PHONY: all all-yes alltools check *clean config install* testprogs uninstall*

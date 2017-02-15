@@ -16,26 +16,10 @@ DOCS-$(CONFIG_POD2MAN)                          += $(MANPAGES) $(PODPAGES)
 DOCS-$(CONFIG_TEXI2HTML)                        += $(HTMLPAGES)
 DOCS = $(DOCS-yes)
 
-DOC_EXAMPLES-$(CONFIG_DECODE_AUDIO_EXAMPLE)     += decode_audio
-DOC_EXAMPLES-$(CONFIG_DECODE_VIDEO_EXAMPLE)     += decode_video
-DOC_EXAMPLES-$(CONFIG_ENCODE_AUDIO_EXAMPLE)     += encode_audio
-DOC_EXAMPLES-$(CONFIG_ENCODE_VIDEO_EXAMPLE)     += encode_video
-DOC_EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)     += filter_audio
-DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)         += metadata
-DOC_EXAMPLES-$(CONFIG_OUTPUT_EXAMPLE)           += output
-DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)           += qsvdec
-DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
-
-DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
-ALL_DOC_EXAMPLES := $(DOC_EXAMPLES) $(DOC_EXAMPLES-:%=doc/examples/%$(EXESUF))
-PROGS            += $(DOC_EXAMPLES)
-
 all: $(DOCS)
 
 apidoc: doc/doxy/html
 documentation: $(DOCS)
-
-examples: $(DOC_EXAMPLES)
 
 TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
@@ -63,10 +47,8 @@ doc/%.1: doc/%.pod
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
-$(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
-OBJDIRS += doc/examples
 
-DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c))
+DOXY_INPUT      = $(addprefix $(SRC_PATH)/, $(INSTHEADERS))
 DOXY_TEMPLATES  = doxy_stylesheet.css footer.html header.html
 DOXY_TEMPLATES := $(addprefix $(SRC_PATH)/doc/doxy/, $(DOXY_TEMPLATES))
 
@@ -93,8 +75,7 @@ uninstall-man:
 	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 clean::
-	$(RM) $(ALL_DOC_EXAMPLES)
-	$(RM) $(CLEANSUFFIXES:%=doc/%) $(CLEANSUFFIXES:%=doc/examples/%)
+	$(RM) $(CLEANSUFFIXES:%=doc/%)
 	$(RM) doc/*.html doc/*.pod doc/*.1 doc/avoptions_*.texi
 	$(RM) -r doc/doxy/html
 
