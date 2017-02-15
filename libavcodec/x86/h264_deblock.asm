@@ -1059,6 +1059,44 @@ ff_chroma_intra_body_mmxext:
     paddb  m2, m6
     ret
 
+%macro CHROMA_INTER_BODY_XMM 1
+    LOAD_MASK alpha_d, beta_d
+    movd m6, [tc0_q]
+    %rep %1
+        punpcklbw m6, m6
+    %endrep
+    pand m7, m6
+    DEBLOCK_P0_Q0
+%endmacro
+
+%macro CHROMA_V_START_XMM 1
+    movsxdifnidn stride_q, stride_d
+    dec alpha_d
+    dec beta_d
+    mov %1, pix_q
+    sub %1, stride_q
+    sub %1, stride_q
+%endmacro
+
+%macro DEBLOCK_CHROMA_XMM 1
+
+INIT_XMM %1
+
+cglobal deblock_v_chroma_8, 5, 6, 8, pix_, stride_, alpha_, beta_, tc0_
+    CHROMA_V_START_XMM r5
+    movq m0, [r5]
+    movq m1, [r5 + stride_q]
+    movq m2, [pix_q]
+    movq m3, [pix_q + stride_q]
+    CHROMA_INTER_BODY_XMM 1
+    movq [r5 + stride_q], m1
+    movq [pix_q], m2
+RET
+
+%endmacro ; DEBLOCK_CHROMA_XMM
+
+DEBLOCK_CHROMA_XMM avx
+
 ;-----------------------------------------------------------------------------
 ; void ff_h264_loop_filter_strength(int16_t bs[2][4][4], uint8_t nnz[40],
 ;                                   int8_t ref[2][40], int16_t mv[2][40][2],

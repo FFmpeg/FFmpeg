@@ -317,6 +317,8 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 #if ARCH_X86_64
             c->h264_h_loop_filter_luma_mbaff = ff_deblock_h_luma_mbaff_8_avx;
 #endif
+
+            c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_8_avx;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
