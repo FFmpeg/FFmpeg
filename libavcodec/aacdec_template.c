@@ -3036,6 +3036,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             if (pce_found) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
+                pop_output_configuration(ac);
             } else {
                 err = output_configure(ac, layout_map, tags, OC_TRIAL_PCE, 1);
                 if (!err)
