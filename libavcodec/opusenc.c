@@ -40,9 +40,9 @@
 /* 120 ms / 2.5 ms = 48 frames (extremely improbable, but the encoder'll work) */
 #define OPUS_MAX_FRAMES_PER_PACKET 48
 
-#define OPUS_BLOCK_SIZE(x) (2 * 15 * (1 << (x + 2)))
+#define OPUS_BLOCK_SIZE(x) (2 * 15 * (1 << ((x) + 2)))
 
-#define OPUS_SAMPLES_TO_BLOCK_SIZE(x) (ff_log2(x / (2 * 15)) - 2)
+#define OPUS_SAMPLES_TO_BLOCK_SIZE(x) (ff_log2((x) / (2 * 15)) - 2)
 
 typedef struct OpusEncOptions {
     float max_delay_ms;
