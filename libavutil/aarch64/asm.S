@@ -83,8 +83,8 @@ ELF     .size   \name, . - \name
         add             \rd, \rd, \val+(\offset)@PAGEOFF
     .endif
 #elif CONFIG_PIC
-        adrp            \rd, \val+\offset
-        add             \rd, \rd, :lo12:\val+\offset
+        adrp            \rd, \val+(\offset)
+        add             \rd, \rd, :lo12:\val+(\offset)
 #else
         ldr             \rd, =\val+\offset
 #endif
