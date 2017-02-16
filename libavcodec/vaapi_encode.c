@@ -428,6 +428,8 @@ fail:
 fail_at_end:
     av_freep(&pic->codec_picture_params);
     av_frame_free(&pic->recon_image);
+    av_buffer_unref(&pic->output_buffer_ref);
+    pic->output_buffer = VA_INVALID_ID;
     return err;
 }
 
