@@ -402,9 +402,9 @@ static void guess_mv(ERContext *s)
     if (s->next_pic.f && s->next_pic.f->data[0])
         mb_height = FFMIN(mb_height, (s->next_pic.f->height+15)>>4);
 
-    blocklist      =  s->er_temp_buffer;
-    next_blocklist = (s->er_temp_buffer + 2 * sizeof(int) * s->mb_stride * s->mb_height);
-    fixed          =  s->er_temp_buffer + 4 * sizeof(int) * s->mb_stride * s->mb_height;
+    blocklist      = (int (*)[2])s->er_temp_buffer;
+    next_blocklist = blocklist + s->mb_stride * s->mb_height;
+    fixed          = (uint8_t *)(next_blocklist + s->mb_stride * s->mb_height);
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
