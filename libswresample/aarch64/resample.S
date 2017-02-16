@@ -46,6 +46,7 @@ function ff_resample_common_apply_filter_x8_float_neon, export=1
     faddp               v0.4S, v0.4S, v0.4S                            // pair adding of the 4x32-bit accumulated values
     faddp               v0.4S, v0.4S, v0.4S                            // pair adding of the 4x32-bit accumulated values
     st1                 {v0.S}[0], [x0], #4                            // write accumulator
+    ret
 endfunc
 
 function ff_resample_common_apply_filter_x4_s16_neon, export=1
