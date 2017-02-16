@@ -123,7 +123,8 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     AVFrame *frame = arg;
     int slice_h     = FFALIGN(frame->height / nb_jobs, 1 << s->vsub);
     int slice_start = jobnr * slice_h;
-    int slice_end   = FFMIN((jobnr + 1) * slice_h, frame->height);
+    int slice_end   = (jobnr == nb_jobs - 1) ? frame->height :
+                                               FFMIN((jobnr + 1) * slice_h, frame->height);
     int i, j, plane;
 
     for (plane = 1; plane < 3; plane++) {
