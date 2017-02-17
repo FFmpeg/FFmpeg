@@ -381,6 +381,10 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                        " for nonnegative integer n\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (channels > 227) {
+                av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
+                return AVERROR_INVALIDDATA;
+            }
             layout = 0;
         } else
             layout = 0;
