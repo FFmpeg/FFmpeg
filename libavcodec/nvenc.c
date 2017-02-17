@@ -479,7 +479,7 @@ typedef struct GUIDTuple {
 
 #define PRESET(name, ...) PRESET_ALIAS(name, name, __VA_ARGS__)
 
-static int nvec_map_preset(NVENCContext *ctx)
+static int nvenc_map_preset(NVENCContext *ctx)
 {
     GUIDTuple presets[] = {
         PRESET(DEFAULT),
@@ -882,7 +882,7 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->params.encodeConfig = &ctx->config;
 
-    nvec_map_preset(ctx);
+    nvenc_map_preset(ctx);
 
     preset_cfg.version           = NV_ENC_PRESET_CONFIG_VER;
     preset_cfg.presetCfg.version = NV_ENC_CONFIG_VER;
