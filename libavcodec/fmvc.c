@@ -441,7 +441,7 @@ static int decode_frame(AVCodecContext *avctx,
         for (y = 0; y < avctx->height; y++) {
             memcpy(dst, src, avctx->width * s->bpp);
             dst -= frame->linesize[0];
-            src += avctx->width * s->bpp;
+            src += s->stride * 4;
         }
     } else {
         int block, nb_blocks, type, k, l;
@@ -518,7 +518,7 @@ static int decode_frame(AVCodecContext *avctx,
         for (y = 0; y < avctx->height; y++) {
             memcpy(ddst, ssrc, avctx->width * s->bpp);
             ddst -= frame->linesize[0];
-            ssrc += avctx->width * s->bpp;
+            ssrc += s->stride * 4;
         }
     }
 
