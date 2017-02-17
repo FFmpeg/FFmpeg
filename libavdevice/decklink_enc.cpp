@@ -92,20 +92,20 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
-    AVCodecContext *c = st->codec;
+    AVCodecParameters *c = st->codecpar;
 
     if (ctx->video) {
         av_log(avctx, AV_LOG_ERROR, "Only one video stream is supported!\n");
         return -1;
     }
 
-    if (c->pix_fmt != AV_PIX_FMT_UYVY422) {
+    if (c->format != AV_PIX_FMT_UYVY422) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format!"
                " Only AV_PIX_FMT_UYVY422 is supported.\n");
         return -1;
     }
     if (ff_decklink_set_format(avctx, c->width, c->height,
-                            c->time_base.num, c->time_base.den)) {
+                            st->time_base.num, st->time_base.den)) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported video size or framerate!"
                " Check available formats with -list_formats 1.\n");
         return -1;
@@ -121,8 +121,8 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
     ctx->dlo->SetScheduledFrameCompletionCallback(ctx->output_callback);
 
     /* Start video semaphore. */
-    ctx->frames_preroll = c->time_base.den * ctx->preroll;
-    if (c->time_base.den > 1000)
+    ctx->frames_preroll = st->time_base.den * ctx->preroll;
+    if (st->time_base.den > 1000)
         ctx->frames_preroll /= 1000;
 
     /* Buffer twice as many frames as the preroll. */
@@ -131,7 +131,7 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
     sem_init(&ctx->semaphore, 0, ctx->frames_buffer);
 
     /* The device expects the framerate to be fixed. */
-    avpriv_set_pts_info(st, 64, c->time_base.num, c->time_base.den);
+    avpriv_set_pts_info(st, 64, st->time_base.num, st->time_base.den);
 
     ctx->video = 1;
 
@@ -142,7 +142,7 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
-    AVCodecContext *c = st->codec;
+    AVCodecParameters *c = st->codecpar;
 
     if (ctx->audio) {
         av_log(avctx, AV_LOG_ERROR, "Only one audio stream is supported!\n");
@@ -352,7 +352,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     ret = AVERROR(EIO);
     for (n = 0; n < avctx->nb_streams; n++) {
         AVStream *st = avctx->streams[n];
-        AVCodecContext *c = st->codec;
+        AVCodecParameters *c = st->codecpar;
         if        (c->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (decklink_setup_audio(avctx, st))
                 goto error;
@@ -380,9 +380,9 @@ int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     ctx->last_pts = FFMAX(ctx->last_pts, pkt->pts);
 
-    if      (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+    if      (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
         return decklink_write_video_packet(avctx, pkt);
-    else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         return decklink_write_audio_packet(avctx, pkt);
 
     return AVERROR(EIO);
