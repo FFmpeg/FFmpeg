@@ -1288,6 +1288,16 @@ static int vp8_lossy_decode_alpha(AVCodecContext *avctx, AVFrame *p,
     return 0;
 }
 
+static enum AVPixelFormat webp_get_format(AVCodecContext *avctx,
+                                          const enum AVPixelFormat *formats)
+{
+    WebPContext *s = avctx->priv_data;
+    if (s->has_alpha)
+        return AV_PIX_FMT_YUVA420P;
+    else
+        return AV_PIX_FMT_YUV420P;
+}
+
 static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                   int *got_frame, uint8_t *data_start,
                                   unsigned int data_size)
@@ -1299,8 +1309,7 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (!s->initialized) {
         ff_vp8_decode_init(avctx);
         s->initialized = 1;
-        if (s->has_alpha)
-            avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
+        avctx->get_format = webp_get_format;
     }
     s->lossless = 0;
 
