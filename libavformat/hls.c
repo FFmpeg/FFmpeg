@@ -670,7 +670,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         av_dict_set(&opts, "seekable", "0", 0);
 
         // broker prior HTTP options that should be consistent across requests
-        av_dict_set(&opts, "user-agent", c->user_agent, 0);
+        av_dict_set(&opts, "user_agent", c->user_agent, 0);
         av_dict_set(&opts, "cookies", c->cookies, 0);
         av_dict_set(&opts, "headers", c->headers, 0);
         av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
@@ -1084,7 +1084,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
     int is_http = 0;
 
     // broker prior HTTP options that should be consistent across requests
-    av_dict_set(&opts, "user-agent", c->user_agent, 0);
+    av_dict_set(&opts, "user_agent", c->user_agent, 0);
     av_dict_set(&opts, "cookies", c->cookies, 0);
     av_dict_set(&opts, "headers", c->headers, 0);
     av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
@@ -1623,7 +1623,7 @@ static int hls_read_header(AVFormatContext *s)
 
     if (u) {
         // get the previous user agent & set back to null if string size is zero
-        update_options(&c->user_agent, "user-agent", u);
+        update_options(&c->user_agent, "user_agent", u);
 
         // get the previous cookies & set back to null if string size is zero
         update_options(&c->cookies, "cookies", u);
