@@ -105,8 +105,8 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
         return -1;
     }
     if (ff_decklink_set_format(avctx, c->width, c->height,
-                            st->time_base.num, st->time_base.den)) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported video size or framerate!"
+                            st->time_base.num, st->time_base.den, c->field_order)) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported video size, framerate or field order!"
                " Check available formats with -list_formats 1.\n");
         return -1;
     }
