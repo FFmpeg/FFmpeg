@@ -28,6 +28,7 @@ extern "C" {
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/atomic.h"
 }
 
 #include "decklink_common.h"
@@ -38,33 +39,43 @@ extern "C" {
 class decklink_frame : public IDeckLinkVideoFrame
 {
 public:
-    decklink_frame(struct decklink_ctx *ctx, AVFrame *avframe, long width,
-                   long height, void *buffer) :
-                   _ctx(ctx), _avframe(avframe), _width(width),
-                   _height(height), _buffer(buffer), _refs(0) { }
+    decklink_frame(struct decklink_ctx *ctx, AVFrame *avframe) :
+                   _ctx(ctx), _avframe(avframe),  _refs(1) { }
 
-    virtual long           STDMETHODCALLTYPE GetWidth      (void)          { return _width; }
-    virtual long           STDMETHODCALLTYPE GetHeight     (void)          { return _height; }
-    virtual long           STDMETHODCALLTYPE GetRowBytes   (void)          { return _width<<1; }
+    virtual long           STDMETHODCALLTYPE GetWidth      (void)          { return _avframe->width; }
+    virtual long           STDMETHODCALLTYPE GetHeight     (void)          { return _avframe->height; }
+    virtual long           STDMETHODCALLTYPE GetRowBytes   (void)          { return _avframe->linesize[0] < 0 ? -_avframe->linesize[0] : _avframe->linesize[0]; }
     virtual BMDPixelFormat STDMETHODCALLTYPE GetPixelFormat(void)          { return bmdFormat8BitYUV; }
-    virtual BMDFrameFlags  STDMETHODCALLTYPE GetFlags      (void)          { return bmdVideoOutputFlagDefault; }
-    virtual HRESULT        STDMETHODCALLTYPE GetBytes      (void **buffer) { *buffer = _buffer; return S_OK; }
+    virtual BMDFrameFlags  STDMETHODCALLTYPE GetFlags      (void)          { return _avframe->linesize[0] < 0 ? bmdFrameFlagFlipVertical : bmdFrameFlagDefault; }
+    virtual HRESULT        STDMETHODCALLTYPE GetBytes      (void **buffer)
+    {
+        if (_avframe->linesize[0] < 0)
+            *buffer = (void *)(_avframe->data[0] + _avframe->linesize[0] * (_avframe->height - 1));
+        else
+            *buffer = (void *)(_avframe->data[0]);
+        return S_OK;
+    }
 
     virtual HRESULT STDMETHODCALLTYPE GetTimecode     (BMDTimecodeFormat format, IDeckLinkTimecode **timecode) { return S_FALSE; }
     virtual HRESULT STDMETHODCALLTYPE GetAncillaryData(IDeckLinkVideoFrameAncillary **ancillary)               { return S_FALSE; }
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
-    virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return ++_refs; }
-    virtual ULONG   STDMETHODCALLTYPE Release(void)                           { if (!--_refs) {delete this; return 0;} return _refs; }
+    virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return avpriv_atomic_int_add_and_fetch(&_refs, 1); }
+    virtual ULONG   STDMETHODCALLTYPE Release(void)
+    {
+        int ret = avpriv_atomic_int_add_and_fetch(&_refs, -1);
+        if (!ret) {
+            av_frame_free(&_avframe);
+            delete this;
+        }
+        return ret;
+    }
 
     struct decklink_ctx *_ctx;
     AVFrame *_avframe;
 
 private:
-    long  _width;
-    long  _height;
-    void *_buffer;
-    int   _refs;
+    volatile int   _refs;
 };
 
 class decklink_output_callback : public IDeckLinkVideoOutputCallback
@@ -76,7 +87,7 @@ public:
         struct decklink_ctx *ctx = frame->_ctx;
         AVFrame *avframe = frame->_avframe;
 
-        av_frame_free(&avframe);
+        av_frame_unref(avframe);
 
         sem_post(&ctx->semaphore);
 
@@ -209,41 +220,27 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
-    AVPicture *avpicture = (AVPicture *) pkt->data;
-    AVFrame *avframe, *tmp;
+    AVFrame *avframe, *tmp = (AVFrame *)pkt->data;
     decklink_frame *frame;
     buffercount_type buffered;
     HRESULT hr;
 
-    /* HACK while av_uncoded_frame() isn't implemented */
-    int ret;
-
-    tmp = av_frame_alloc();
-    if (!tmp)
-        return AVERROR(ENOMEM);
-    tmp->format = AV_PIX_FMT_UYVY422;
-    tmp->width  = ctx->bmd_width;
-    tmp->height = ctx->bmd_height;
-    ret = av_frame_get_buffer(tmp, 32);
-    if (ret < 0) {
-        av_frame_free(&tmp);
-        return ret;
+    if (tmp->format != AV_PIX_FMT_UYVY422 ||
+        tmp->width  != ctx->bmd_width ||
+        tmp->height != ctx->bmd_height) {
+        av_log(avctx, AV_LOG_ERROR, "Got a frame with invalid pixel format or dimension.\n");
+        return AVERROR(EINVAL);
     }
-    av_image_copy(tmp->data, tmp->linesize, (const uint8_t **) avpicture->data,
-                  avpicture->linesize, (AVPixelFormat) tmp->format, tmp->width,
-                  tmp->height);
     avframe = av_frame_clone(tmp);
-    av_frame_free(&tmp);
     if (!avframe) {
         av_log(avctx, AV_LOG_ERROR, "Could not clone video frame.\n");
         return AVERROR(EIO);
     }
-    /* end HACK */
 
-    frame = new decklink_frame(ctx, avframe, ctx->bmd_width, ctx->bmd_height,
-                               (void *) avframe->data[0]);
+    frame = new decklink_frame(ctx, avframe);
     if (!frame) {
         av_log(avctx, AV_LOG_ERROR, "Could not create new frame.\n");
+        av_frame_free(&avframe);
         return AVERROR(EIO);
     }
 
@@ -254,10 +251,11 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
     hr = ctx->dlo->ScheduleVideoFrame((struct IDeckLinkVideoFrame *) frame,
                                       pkt->pts * ctx->bmd_tb_num,
                                       ctx->bmd_tb_num, ctx->bmd_tb_den);
+    /* Pass ownership to DeckLink, or release on failure */
+    frame->Release();
     if (hr != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not schedule video frame."
                 " error %08x.\n", (uint32_t) hr);
-        frame->Release();
         return AVERROR(EIO);
     }
 
