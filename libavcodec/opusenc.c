@@ -1077,6 +1077,9 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
         if ((ret = ff_mdct15_init(&s->mdct[i], 0, i + 3, 68 << (CELT_BLOCK_NB - 1 - i))))
             return AVERROR(ENOMEM);
 
+    for (i = 0; i < OPUS_MAX_FRAMES_PER_PACKET; i++)
+        s->frame[i].block[0].emph_coeff = s->frame[i].block[1].emph_coeff = 0.0f;
+
     /* Zero out previous energy (matters for inter first frame) */
     for (ch = 0; ch < s->channels; ch++)
         for (i = 0; i < CELT_MAX_BANDS; i++)
