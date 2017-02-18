@@ -242,7 +242,7 @@ fail:
     return -1;
 }
 
-static int hls_delete_old_segments(HLSContext *hls) {
+static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls) {
 
     HLSSegment *segment, *previous_segment = NULL;
     float playlist_duration = 0.0f;
@@ -251,6 +251,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
     char *path = NULL;
     AVDictionary *options = NULL;
     AVIOContext *out = NULL;
+    const char *proto = NULL;
 
     segment = hls->segments;
     while (segment) {
@@ -300,7 +301,8 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_strlcat(path, segment->filename, path_size);
         }
 
-        if (hls->method) {
+        proto = avio_find_protocol_name(s->filename);
+        if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
             av_dict_set(&options, "method", "DELETE", 0);
             if ((ret = hls->avf->io_open(hls->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0)
                 goto fail;
@@ -321,7 +323,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_strlcpy(sub_path, dirname, sub_path_size);
             av_strlcat(sub_path, segment->sub_filename, sub_path_size);
 
-            if (hls->method) {
+            if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
                 if ((ret = hls->avf->io_open(hls->avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
                     av_free(sub_path);
@@ -576,7 +578,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 #endif
             en->next = hls->old_segments;
             hls->old_segments = en;
-            if ((ret = hls_delete_old_segments(hls)) < 0)
+            if ((ret = hls_delete_old_segments(s, hls)) < 0)
                 return ret;
         } else
             av_free(en);
@@ -663,10 +665,17 @@ static void hls_free_segments(HLSSegment *p)
     }
 }
 
-static void set_http_options(AVDictionary **options, HLSContext *c)
+static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
 {
-    if (c->method)
+    const char *proto = avio_find_protocol_name(s->filename);
+    int http_base_proto = !av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https");
+
+    if (c->method) {
         av_dict_set(options, "method", c->method, 0);
+    } else if (proto && http_base_proto) {
+        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
+        av_dict_set(options, "method", "PUT", 0);
+    }
 }
 
 static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version,
@@ -710,7 +719,7 @@ static int hls_window(AVFormatContext *s, int last)
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
-    set_http_options(&options, hls);
+    set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
     if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &options)) < 0)
         goto fail;
@@ -947,7 +956,7 @@ static int hls_start(AVFormatContext *s)
     }
     c->number++;
 
-    set_http_options(&options, c);
+    set_http_options(s, &options, c);
 
     if (c->flags & HLS_TEMP_FILE) {
         av_strlcat(oc->filename, ".tmp", sizeof(oc->filename));
@@ -979,7 +988,7 @@ static int hls_start(AVFormatContext *s)
         if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     if (c->vtt_basename) {
-        set_http_options(&options, c);
+        set_http_options(s, &options, c);
         if ((err = s->io_open(s, &vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     }
@@ -1471,7 +1480,7 @@ static const AVOption options[] = {
     {"hls_playlist_type", "set the HLS playlist type", OFFSET(pl_type), AV_OPT_TYPE_INT, {.i64 = PLAYLIST_TYPE_NONE }, 0, PLAYLIST_TYPE_NB-1, E, "pl_type" },
     {"event", "EVENT playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_EVENT }, INT_MIN, INT_MAX, E, "pl_type" },
     {"vod", "VOD playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_VOD }, INT_MIN, INT_MAX, E, "pl_type" },
-    {"method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"method", "set the HTTP method(default: PUT)", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_start_number_source", "set source of first number in sequence", OFFSET(start_sequence_source_type), AV_OPT_TYPE_INT, {.i64 = HLS_START_SEQUENCE_AS_START_NUMBER }, 0, HLS_START_SEQUENCE_AS_FORMATTED_DATETIME, E, "start_sequence_source_type" },
     {"generic", "start_number value (default)", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_START_NUMBER }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"epoch", "seconds since epoch", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
