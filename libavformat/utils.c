@@ -1164,8 +1164,11 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
     for (; pktl; pktl = get_next_pkt(s, st, pktl)) {
         if (pktl->pkt.stream_index != stream_index)
             continue;
-        if (pktl->pkt.pts == pktl->pkt.dts  &&
-            (pktl->pkt.dts == AV_NOPTS_VALUE || pktl->pkt.dts == st->first_dts) &&
+        if ((pktl->pkt.pts == pktl->pkt.dts ||
+             pktl->pkt.pts == AV_NOPTS_VALUE) &&
+            (pktl->pkt.dts == AV_NOPTS_VALUE ||
+             pktl->pkt.dts == st->first_dts ||
+             pktl->pkt.dts == RELATIVE_TS_BASE) &&
             !pktl->pkt.duration) {
             pktl->pkt.dts = cur_dts;
             if (!st->internal->avctx->has_b_frames)
