@@ -367,6 +367,12 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     } else {
         int shift_y = 16 - ctx->sprite_shift[0];
         int shift_c = 16 - ctx->sprite_shift[1];
+
+        if (shift_c < 0 || shift_y < 0) {
+            avpriv_request_sample(s->avctx, "Too large sprite shift");
+            return AVERROR_PATCHWELCOME;
+        }
+
         for (i = 0; i < 2; i++) {
             s->sprite_offset[0][i] *= 1 << shift_y;
             s->sprite_offset[1][i] *= 1 << shift_c;
