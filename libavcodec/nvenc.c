@@ -1421,6 +1421,7 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
         ctx->registered_frames[reg_idx].mapped = 1;
         nvenc_frame->reg_idx                   = reg_idx;
         nvenc_frame->input_surface             = nvenc_frame->in_map.mappedResource;
+        nvenc_frame->format                    = nvenc_frame->in_map.mappedBufferFmt;
         nvenc_frame->pitch                     = frame->linesize[0];
         return 0;
     } else {
@@ -1648,6 +1649,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *frame, int *got_packet)
 {
     NVENCSTATUS nv_status;
+    CUresult cu_res;
+    CUcontext dummy;
     NvencSurface *tmpoutsurf, *inSurf;
     int res;
 
@@ -1665,7 +1668,20 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR_BUG;
         }
 
+        cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
+        if (cu_res != CUDA_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
+            return AVERROR_EXTERNAL;
+        }
+
         res = nvenc_upload_frame(avctx, frame, inSurf);
+
+        cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
+        if (cu_res != CUDA_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
+            return AVERROR_EXTERNAL;
+        }
+
         if (res) {
             inSurf->lockCount = 0;
             return res;
@@ -1701,7 +1717,20 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
 
+    cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
+    if (cu_res != CUDA_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
+        return AVERROR_EXTERNAL;
+    }
+
     nv_status = p_nvenc->nvEncEncodePicture(ctx->nvencoder, &pic_params);
+
+    cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
+    if (cu_res != CUDA_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
+        return AVERROR_EXTERNAL;
+    }
+
     if (nv_status != NV_ENC_SUCCESS &&
         nv_status != NV_ENC_ERR_NEED_MORE_INPUT)
         return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");

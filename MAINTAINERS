@@ -115,6 +115,8 @@ Generic Parts:
     lzw.*                               Michael Niedermayer
   floating point AAN DCT:
     faandct.c, faandct.h                Michael Niedermayer
+  Non-power-of-two MDCT:
+    mdct15.c, mdct15.h                  Rostislav Pehlivanov
   Golomb coding:
     golomb.c, golomb.h                  Michael Niedermayer
   motion estimation:
@@ -209,6 +211,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
   nvenc*                                Timo Rothenpieler
+  opus*                                 Rostislav Pehlivanov
   paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger

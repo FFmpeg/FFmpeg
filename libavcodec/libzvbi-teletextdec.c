@@ -395,7 +395,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     if (!ctx->vbi) {
         if (!(ctx->vbi = vbi_decoder_new()))
             return AVERROR(ENOMEM);
-        if (!vbi_event_handler_add(ctx->vbi, VBI_EVENT_TTX_PAGE, handler, ctx)) {
+        if (!vbi_event_handler_register(ctx->vbi, VBI_EVENT_TTX_PAGE, handler, ctx)) {
             vbi_decoder_delete(ctx->vbi);
             ctx->vbi = NULL;
             return AVERROR(ENOMEM);

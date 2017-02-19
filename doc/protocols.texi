@@ -5,6 +5,11 @@ The libavformat library provides some generic global options, which
 can be set on all the protocols. In addition each protocol may support
 so-called private options, which are specific for that component.
 
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
 The list of supported options follows:
 
 @table @option

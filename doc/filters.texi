@@ -1905,9 +1905,6 @@ Remap input channels to new locations.
 
 It accepts the following parameters:
 @table @option
-@item channel_layout
-The channel layout of the output stream.
-
 @item map
 Map channels from input to output. The argument is a '|'-separated list of
 mappings, each in the @code{@var{in_channel}-@var{out_channel}} or
@@ -1916,6 +1913,9 @@ channel (e.g. FL for front left) or its index in the input channel layout.
 @var{out_channel} is the name of the output channel or its index in the output
 channel layout. If @var{out_channel} is not given then it is implicitly an
 index, starting with zero and increasing by one for each mapping.
+
+@item channel_layout
+The channel layout of the output stream.
 @end table
 
 If no mapping is present, the filter will implicitly map input channels to
@@ -16400,13 +16400,13 @@ Float representation of @code{value} from metadata key.
 
 @item VALUE2
 Float representation of @code{value} as supplied by user in @code{value} option.
+@end table
 
 @item file
 If specified in @code{print} mode, output is written to the named file. Instead of
 plain filename any writable url can be specified. Filename ``-'' is a shorthand
 for standard output. If @code{file} option is not set, output is written to the log
 with AV_LOG_INFO loglevel.
-@end table
 
 @end table
 

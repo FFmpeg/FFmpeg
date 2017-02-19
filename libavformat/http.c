@@ -1011,6 +1011,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     int len = 0;
     const char *method;
     int send_expect_100 = 0;
+    int ret;
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -1107,7 +1108,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (s->headers)
         av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
-    snprintf(s->buffer, sizeof(s->buffer),
+    ret = snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
              "%s"
              "%s"
@@ -1122,6 +1123,14 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
     av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+
+    if (strlen(headers) + 1 == sizeof(headers) ||
+        ret >= sizeof(s->buffer)) {
+        av_log(h, AV_LOG_ERROR, "overlong headers\n");
+        err = AVERROR(EINVAL);
+        goto done;
+    }
+
 
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
         goto done;
@@ -1524,6 +1533,12 @@ static int http_get_file_handle(URLContext *h)
     return ffurl_get_file_handle(s->hd);
 }
 
+static int http_get_short_seek(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    return ffurl_get_short_seek(s->hd);
+}
+
 #define HTTP_CLASS(flavor)                          \
 static const AVClass flavor ## _context_class = {   \
     .class_name = # flavor,                         \
@@ -1545,6 +1560,7 @@ const URLProtocol ff_http_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
@@ -1564,6 +1580,7 @@ const URLProtocol ff_https_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &https_context_class,

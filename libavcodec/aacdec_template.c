@@ -134,7 +134,7 @@ static av_cold int che_configure(AACContext *ac,
         if (!ac->che[type][id]) {
             if (!(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
                 return AVERROR(ENOMEM);
-            AAC_RENAME(ff_aac_sbr_ctx_init)(ac, &ac->che[type][id]->sbr);
+            AAC_RENAME(ff_aac_sbr_ctx_init)(ac, &ac->che[type][id]->sbr, type);
         }
         if (type != TYPE_CCE) {
             if (*channels >= MAX_CHANNELS - (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))) {
@@ -715,6 +715,13 @@ static void decode_channel_map(uint8_t layout_map[][3],
     }
 }
 
+static inline void relative_align_get_bits(GetBitContext *gb,
+                                           int reference_position) {
+    int n = (reference_position - get_bits_count(gb) & 7);
+    if (n)
+        skip_bits(gb, n);
+}
+
 /**
  * Decode program configuration element; reference: table 4.2.
  *
@@ -722,7 +729,7 @@ static void decode_channel_map(uint8_t layout_map[][3],
  */
 static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
                       uint8_t (*layout_map)[3],
-                      GetBitContext *gb)
+                      GetBitContext *gb, int byte_align_ref)
 {
     int num_front, num_side, num_back, num_lfe, num_assoc_data, num_cc;
     int sampling_index;
@@ -770,7 +777,7 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
     decode_channel_map(layout_map + tags, AAC_CHANNEL_CC,    gb, num_cc);
     tags += num_cc;
 
-    align_get_bits(gb);
+    relative_align_get_bits(gb, byte_align_ref);
 
     /* comment field, first byte is length */
     comment_len = get_bits(gb, 8) * 8;
@@ -792,6 +799,7 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
  */
 static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
                                      GetBitContext *gb,
+                                     int get_bit_alignment,
                                      MPEG4AudioConfig *m4ac,
                                      int channel_config)
 {
@@ -815,7 +823,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
 
     if (channel_config == 0) {
         skip_bits(gb, 4);  // element_instance_tag
-        tags = decode_pce(avctx, m4ac, layout_map, gb);
+        tags = decode_pce(avctx, m4ac, layout_map, gb, get_bit_alignment);
         if (tags < 0)
             return tags;
     } else {
@@ -937,37 +945,25 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
  * @param   ac          pointer to AACContext, may be null
  * @param   avctx       pointer to AVCCodecContext, used for logging
  * @param   m4ac        pointer to MPEG4AudioConfig, used for parsing
- * @param   data        pointer to buffer holding an audio specific config
- * @param   bit_size    size of audio specific config or data in bits
+ * @param   gb          buffer holding an audio specific config
+ * @param   get_bit_alignment relative alignment for byte align operations
  * @param   sync_extension look for an appended sync extension
  *
  * @return  Returns error status or number of consumed bits. <0 - error
  */
-static int decode_audio_specific_config(AACContext *ac,
-                                        AVCodecContext *avctx,
-                                        MPEG4AudioConfig *m4ac,
-                                        const uint8_t *data, int64_t bit_size,
-                                        int sync_extension)
+static int decode_audio_specific_config_gb(AACContext *ac,
+                                           AVCodecContext *avctx,
+                                           MPEG4AudioConfig *m4ac,
+                                           GetBitContext *gb,
+                                           int get_bit_alignment,
+                                           int sync_extension)
 {
-    GetBitContext gb;
     int i, ret;
+    GetBitContext gbc = *gb;
 
-    if (bit_size < 0 || bit_size > INT_MAX) {
-        av_log(avctx, AV_LOG_ERROR, "Audio specific config size is invalid\n");
+    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension)) < 0)
         return AVERROR_INVALIDDATA;
-    }
 
-    ff_dlog(avctx, "audio specific config size %d\n", (int)bit_size >> 3);
-    for (i = 0; i < bit_size >> 3; i++)
-        ff_dlog(avctx, "%02x ", data[i]);
-    ff_dlog(avctx, "\n");
-
-    if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
-        return ret;
-
-    if ((i = avpriv_mpeg4audio_get_config(m4ac, data, bit_size,
-                                          sync_extension)) < 0)
-        return AVERROR_INVALIDDATA;
     if (m4ac->sampling_index > 12) {
         av_log(avctx, AV_LOG_ERROR,
                "invalid sampling rate index %d\n",
@@ -982,7 +978,7 @@ static int decode_audio_specific_config(AACContext *ac,
         return AVERROR_INVALIDDATA;
     }
 
-    skip_bits_long(&gb, i);
+    skip_bits_long(gb, i);
 
     switch (m4ac->object_type) {
     case AOT_AAC_MAIN:
@@ -990,12 +986,12 @@ static int decode_audio_specific_config(AACContext *ac,
     case AOT_AAC_LTP:
     case AOT_ER_AAC_LC:
     case AOT_ER_AAC_LD:
-        if ((ret = decode_ga_specific_config(ac, avctx, &gb,
+        if ((ret = decode_ga_specific_config(ac, avctx, gb, get_bit_alignment,
                                             m4ac, m4ac->chan_config)) < 0)
             return ret;
         break;
     case AOT_ER_AAC_ELD:
-        if ((ret = decode_eld_specific_config(ac, avctx, &gb,
+        if ((ret = decode_eld_specific_config(ac, avctx, gb,
                                               m4ac, m4ac->chan_config)) < 0)
             return ret;
         break;
@@ -1013,7 +1009,33 @@ static int decode_audio_specific_config(AACContext *ac,
             m4ac->sample_rate, m4ac->sbr,
             m4ac->ps);
 
-    return get_bits_count(&gb);
+    return get_bits_count(gb);
+}
+
+static int decode_audio_specific_config(AACContext *ac,
+                                        AVCodecContext *avctx,
+                                        MPEG4AudioConfig *m4ac,
+                                        const uint8_t *data, int64_t bit_size,
+                                        int sync_extension)
+{
+    int i, ret;
+    GetBitContext gb;
+
+    if (bit_size < 0 || bit_size > INT_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "Audio specific config size is invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ff_dlog(avctx, "audio specific config size %d\n", (int)bit_size >> 3);
+    for (i = 0; i < bit_size >> 3; i++)
+        ff_dlog(avctx, "%02x ", data[i]);
+    ff_dlog(avctx, "\n");
+
+    if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
+        return ret;
+
+    return decode_audio_specific_config_gb(ac, avctx, m4ac, &gb, 0,
+                                           sync_extension);
 }
 
 /**
@@ -1185,7 +1207,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ltp,   11, 0, RANGE15(-2.0));
 #if !USE_FIXED
-    ret = ff_imdct15_init(&ac->mdct480, 5);
+    ret = ff_mdct15_init(&ac->mdct480, 1, 5, -1.0f);
     if (ret < 0)
         return ret;
 #endif
@@ -2927,6 +2949,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int err, elem_id;
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
+    int payload_alignment;
 
     ac->frame = data;
 
@@ -2949,6 +2972,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     // This may lead to an undefined profile being signaled
     ac->avctx->profile = ac->oc[1].m4ac.object_type - 1;
 
+    payload_alignment = get_bits_count(gb);
     ac->tags_mapped = 0;
     // parse
     while ((elem_type = get_bits(gb, 3)) != TYPE_END) {
@@ -3003,7 +3027,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             uint8_t layout_map[MAX_ELEM_ID*4][3];
             int tags;
             push_output_configuration(ac);
-            tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb);
+            tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb,
+                              payload_alignment);
             if (tags < 0) {
                 err = tags;
                 break;
@@ -3192,7 +3217,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     ff_mdct_end(&ac->mdct_ld);
     ff_mdct_end(&ac->mdct_ltp);
 #if !USE_FIXED
-    ff_imdct15_uninit(&ac->mdct480);
+    ff_mdct15_uninit(&ac->mdct480);
 #endif
     av_freep(&ac->fdsp);
     return 0;

@@ -348,6 +348,8 @@ uint8_t *av_packet_get_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
             return pkt->side_data[i].data;
         }
     }
+    if (size)
+        *size = 0;
     return NULL;
 }
 

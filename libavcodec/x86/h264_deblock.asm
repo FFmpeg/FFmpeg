@@ -37,11 +37,6 @@ cextern pb_0
 cextern pb_1
 cextern pb_3
 
-; expands to [base],...,[base+7*stride]
-%define PASS8ROWS(base, base3, stride, stride3) \
-    [base], [base+stride], [base+stride*2], [base3], \
-    [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
-
 %define PASS8ROWS(base, base3, stride, stride3, offset) \
     PASS8ROWS(base+offset, base3+offset, stride, stride3)
 
@@ -287,18 +282,18 @@ cextern pb_3
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 %macro DEBLOCK_LUMA 0
-cglobal deblock_v_luma_8, 5,5,10
+cglobal deblock_v_luma_8, 5,5,10, pix_, stride_, alpha_, beta_, base3_
     movd    m8, [r4] ; tc0
-    lea     r4, [r1*3]
-    dec     r2d        ; alpha-1
+    lea     r4, [stride_q*3]
+    dec     alpha_d        ; alpha-1
     neg     r4
-    dec     r3d        ; beta-1
-    add     r4, r0     ; pix-3*stride
+    dec     beta_d        ; beta-1
+    add     base3_q, pix_q     ; pix-3*stride
 
-    mova    m0, [r4+r1]   ; p1
-    mova    m1, [r4+2*r1] ; p0
-    mova    m2, [r0]      ; q0
-    mova    m3, [r0+r1]   ; q1
+    mova    m0, [base3_q + stride_q]   ; p1
+    mova    m1, [base3_q + 2*stride_q] ; p0
+    mova    m2, [pix_q]      ; q0
+    mova    m3, [pix_q + stride_q]   ; q1
     LOAD_MASK r2d, r3d
 
     punpcklbw m8, m8
@@ -308,24 +303,24 @@ cglobal deblock_v_luma_8, 5,5,10
     pandn   m9, m7
     pand    m8, m9
 
-    movdqa  m3, [r4] ; p2
+    movdqa  m3, [base3_q] ; p2
     DIFF_GT2 m1, m3, m5, m6, m7 ; |p2-p0| > beta-1
     pand    m6, m9
     psubb   m7, m8, m6
     pand    m6, m8
-    LUMA_Q1 m0, m3, [r4], [r4+r1], m6, m4
+    LUMA_Q1 m0, m3, [base3_q], [base3_q + stride_q], m6, m4
 
-    movdqa  m4, [r0+2*r1] ; q2
+    movdqa  m4, [pix_q + 2*stride_q] ; q2
     DIFF_GT2 m2, m4, m5, m6, m3 ; |q2-q0| > beta-1
     pand    m6, m9
     pand    m8, m6
     psubb   m7, m6
-    mova    m3, [r0+r1]
-    LUMA_Q1 m3, m4, [r0+2*r1], [r0+r1], m8, m6
+    mova    m3, [pix_q + stride_q]
+    LUMA_Q1 m3, m4, [pix_q + 2*stride_q], [pix_q + stride_q], m8, m6
 
     DEBLOCK_P0_Q0
-    mova    [r4+2*r1], m1
-    mova    [r0], m2
+    mova    [base3_q + 2*stride_q], m1
+    mova    [pix_q], m2
     RET
 
 ;-----------------------------------------------------------------------------
@@ -382,10 +377,99 @@ cglobal deblock_h_luma_8, 5,9,0,0x60+16*WIN64
     RET
 %endmacro
 
+%macro DEBLOCK_H_LUMA_MBAFF 0
+
+cglobal deblock_h_luma_mbaff_8, 5, 9, 10, 8*16, pix_, stride_, alpha_, beta_, tc0_, base3_, stride3_
+    movsxd stride_q,   stride_d
+    dec    alpha_d
+    dec    beta_d
+    mov    base3_q,    pix_q
+    lea    stride3_q, [3*stride_q]
+    add    base3_q,    stride3_q
+
+    movq m0, [pix_q - 4]
+    movq m1, [pix_q + stride_q - 4]
+    movq m2, [pix_q + 2*stride_q - 4]
+    movq m3, [base3_q - 4]
+    movq m4, [base3_q + stride_q - 4]
+    movq m5, [base3_q + 2*stride_q - 4]
+    movq m6, [base3_q + stride3_q - 4]
+    movq m7, [base3_q + 4*stride_q - 4]
+
+    TRANSPOSE_8X8B 0,1,2,3,4,5,6,7
+
+    %assign i 0
+    %rep 8
+        movq [rsp + 16*i], m %+ i
+        %assign i i+1
+    %endrep
+
+    ; p2 = m1 [rsp + 16]
+    ; p1 = m2 [rsp + 32]
+    ; p0 = m3 [rsp + 48]
+    ; q0 = m4 [rsp + 64]
+    ; q1 = m5 [rsp + 80]
+    ; q2 = m6 [rsp + 96]
+
+    SWAP 0, 2
+    SWAP 1, 3
+    SWAP 2, 4
+    SWAP 3, 5
+
+    LOAD_MASK alpha_d, beta_d
+    movd m8, [tc0_q]
+    punpcklbw m8, m8
+    pcmpeqb m9, m9
+    pcmpeqb m9, m8
+    pandn   m9, m7
+    pand    m8, m9
+
+    movdqa  m3, [rsp + 16] ; p2
+    DIFF_GT2 m1, m3, m5, m6, m7 ; |p2-p0| > beta-1
+    pand    m6, m9
+    psubb   m7, m8, m6
+    pand    m6, m8
+    LUMA_Q1 m0, m3, [rsp + 16], [rsp + 32], m6, m4
+
+    movdqa  m4, [rsp + 96] ; q2
+    DIFF_GT2 m2, m4, m5, m6, m3 ; |q2-q0| > beta-1
+    pand    m6, m9
+    pand    m8, m6
+    psubb   m7, m6
+    mova    m3, [rsp + 80]
+    LUMA_Q1 m3, m4, [rsp + 96], [rsp + 80], m8, m6
+
+    DEBLOCK_P0_Q0
+    SWAP 1, 3
+    SWAP 2, 4
+    movq m0, [rsp]
+    movq m1, [rsp + 16]
+    movq m2, [rsp + 32]
+    movq m5, [rsp + 80]
+    movq m6, [rsp + 96]
+    movq m7, [rsp + 112]
+
+    TRANSPOSE_8X8B 0,1,2,3,4,5,6,7
+    movq [pix_q - 4], m0
+    movq [pix_q + stride_q - 4], m1
+    movq [pix_q + 2*stride_q - 4], m2
+    movq [base3_q - 4], m3
+    movq [base3_q + stride_q - 4], m4
+    movq [base3_q + 2*stride_q - 4], m5
+    movq [base3_q + stride3_q - 4], m6
+    movq [base3_q + 4*stride_q - 4], m7
+
+RET
+
+%endmacro
+
 INIT_XMM sse2
+DEBLOCK_H_LUMA_MBAFF
 DEBLOCK_LUMA
+
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
+DEBLOCK_H_LUMA_MBAFF
 DEBLOCK_LUMA
 %endif
 

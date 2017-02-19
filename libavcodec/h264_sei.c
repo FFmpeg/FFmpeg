@@ -45,6 +45,7 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->picture_timing.dpb_output_delay  = 0;
     h->picture_timing.cpb_removal_delay = -1;
 
+    h->picture_timing.present      = 0;
     h->buffering_period.present    = 0;
     h->frame_packing.present       = 0;
     h->display_orientation.present = 0;
@@ -119,6 +120,8 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
         av_log(logctx, AV_LOG_DEBUG, "ct_type:%X pic_struct:%d\n",
                h->ct_type, h->pic_struct);
     }
+
+    h->present = 1;
     return 0;
 }
 

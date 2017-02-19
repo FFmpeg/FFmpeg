@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "vaapi_encode.h"
+#include "vp8.h"
 
 
 typedef struct VAAPIEncodeVP8Context {
@@ -161,12 +162,12 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
     VAAPIEncodeContext     *ctx = avctx->priv_data;
     VAAPIEncodeVP8Context *priv = ctx->priv_data;
 
-    priv->q_index_p = av_clip(avctx->global_quality, 0, 127);
+    priv->q_index_p = av_clip(avctx->global_quality, 0, VP8_MAX_QUANT);
     if (avctx->i_quant_factor > 0.0)
         priv->q_index_i = av_clip((avctx->global_quality *
                                    avctx->i_quant_factor +
                                    avctx->i_quant_offset) + 0.5,
-                                  0, 127);
+                                  0, VP8_MAX_QUANT);
     else
         priv->q_index_i = priv->q_index_p;
 

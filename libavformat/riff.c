@@ -448,6 +448,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '5') },
     { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '7') },
     { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '9') },
+    { AV_CODEC_ID_FMVC,         MKTAG('F', 'M', 'V', 'C') },
 
     { AV_CODEC_ID_NONE,         0 }
 };

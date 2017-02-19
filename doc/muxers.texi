@@ -442,7 +442,7 @@ parameters. Values containing @code{:} special characters must be
 escaped.
 
 @item hls_wrap @var{wrap}
-This is a deprecated option, you can use @code {hls_list_size}
+This is a deprecated option, you can use @code{hls_list_size}
 and @code{hls_flags delete_segments} instead it
 
 This option is useful to avoid to fill the disk with many segment

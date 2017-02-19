@@ -716,6 +716,7 @@ following image formats are supported:
 @item Flash Screen Video v2  @tab  X  @tab  X
 @item Flash Video (FLV)      @tab  X  @tab  X
     @tab Sorenson H.263 used in Flash
+@item FM Screen Capture Codec  @tab     @tab  X
 @item Forward Uncompressed   @tab     @tab  X
 @item Fraps                  @tab     @tab  X
 @item Go2Meeting             @tab     @tab  X
@@ -788,6 +789,7 @@ following image formats are supported:
 @item MPEG-4 part 2 Microsoft variant version 1  @tab     @tab  X
 @item MPEG-4 part 2 Microsoft variant version 2  @tab  X  @tab  X
 @item MPEG-4 part 2 Microsoft variant version 3  @tab  X  @tab  X
+@item Newtek SpeedHQ               @tab     @tab  X
 @item Nintendo Gamecube THP video  @tab     @tab  X
 @item NuppelVideo/RTjpeg     @tab     @tab  X
     @tab Video encoding used in NuppelVideo files.

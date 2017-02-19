@@ -3067,6 +3067,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     avctx->nb_coded_side_data = 0;
 
     av_buffer_unref(&avctx->hw_frames_ctx);
+    av_buffer_unref(&avctx->hw_device_ctx);
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
         av_opt_free(avctx->priv_data);

@@ -29,6 +29,11 @@
 
 %include "libavutil/x86/x86inc.asm"
 
+; expands to [base],...,[base+7*stride]
+%define PASS8ROWS(base, base3, stride, stride3) \
+    [base],           [base  + stride],   [base  + 2*stride], [base3], \
+    [base3 + stride], [base3 + 2*stride], [base3 + stride3],  [base3 + stride*4]
+
 %macro SBUTTERFLY 4
 %ifidn %1, dqqq
     vperm2i128  m%4, m%2, m%3, q0301
@@ -258,6 +263,21 @@
 
     SWAP       %10, %13
     SWAP       %12, %15
+%endmacro
+
+%macro TRANSPOSE_8X8B 8
+    %if mmsize == 8
+        %error "This macro does not support mmsize == 8"
+    %endif
+    punpcklbw m%1, m%2
+    punpcklbw m%3, m%4
+    punpcklbw m%5, m%6
+    punpcklbw m%7, m%8
+    TRANSPOSE4x4W %1, %3, %5, %7, %2
+    MOVHL m%2, m%1
+    MOVHL m%4, m%3
+    MOVHL m%6, m%5
+    MOVHL m%8, m%7
 %endmacro
 
 ; PABSW macro assumes %1 != %2, while ABS1/2 macros work in-place
@@ -869,5 +889,17 @@
     psrldq  %1, %2
 %else
     psrlq   %1, 8*(%2)
+%endif
+%endmacro
+
+%macro MOVHL 2 ; dst, src
+%ifidn %1, %2
+    punpckhqdq %1, %2
+%elif cpuflag(avx)
+    punpckhqdq %1, %2, %2
+%elif cpuflag(sse4)
+    pshufd     %1, %2, q3232 ; pshufd is slow on some older CPUs, so only use it on more modern ones
+%else
+    movhlps    %1, %2        ; may cause an int/float domain transition and has a dependency on dst
 %endif
 %endmacro
