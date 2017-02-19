@@ -559,6 +559,11 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
     s->bit_depth        = bytestream2_get_byte(&s->gb);
+    if (s->bit_depth != 1 && s->bit_depth != 2 && s->bit_depth != 4 &&
+        s->bit_depth != 8 && s->bit_depth != 16) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid bit depth\n");
+        goto error;
+    }
     s->color_type       = bytestream2_get_byte(&s->gb);
     s->compression_type = bytestream2_get_byte(&s->gb);
     s->filter_type      = bytestream2_get_byte(&s->gb);
@@ -572,6 +577,10 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 s->compression_type, s->filter_type, s->interlace_type);
 
     return 0;
+error:
+    s->cur_w = s->cur_h = s->width = s->height = 0;
+    s->bit_depth = 8;
+    return AVERROR_INVALIDDATA;
 }
 
 static int decode_phys_chunk(AVCodecContext *avctx, PNGDecContext *s)
