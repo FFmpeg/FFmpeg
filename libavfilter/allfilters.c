@@ -172,6 +172,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(DEBAND,         deband,         vf);
     REGISTER_FILTER(DECIMATE,       decimate,       vf);
     REGISTER_FILTER(DEFLATE,        deflate,        vf);
+    REGISTER_FILTER(DEINTERLACE_VAAPI, deinterlace_vaapi, vf);
     REGISTER_FILTER(DEJUDDER,       dejudder,       vf);
     REGISTER_FILTER(DELOGO,         delogo,         vf);
     REGISTER_FILTER(DESHAKE,        deshake,        vf);
