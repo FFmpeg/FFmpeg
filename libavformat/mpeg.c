@@ -138,7 +138,7 @@ typedef struct MpegDemuxContext {
 static int mpegps_read_header(AVFormatContext *s)
 {
     MpegDemuxContext *m = s->priv_data;
-    char buffer[7];
+    char buffer[7] = { 0 };
     int64_t last_pos = avio_tell(s->pb);
 
     m->header_state = 0xff;
