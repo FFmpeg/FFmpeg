@@ -717,6 +717,11 @@ int ff_h263_decode_mb(MpegEncContext *s,
             pb_mv_count = h263_get_modb(&s->gb, s->pb_frame, &cbpb);
         cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
 
+        if (cbpy < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
+            return SLICE_ERROR;
+        }
+
         if(s->alt_inter_vlc==0 || (cbpc & 3)!=3)
             cbpy ^= 0xF;
 
