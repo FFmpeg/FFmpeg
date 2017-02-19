@@ -30,6 +30,10 @@
 #    define NDEBUG
 #endif
 
+#if defined(DEBUG) && !defined(CHECKED)
+#    define CHECKED
+#endif
+
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>

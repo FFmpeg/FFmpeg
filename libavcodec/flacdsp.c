@@ -45,7 +45,7 @@
 
 // For debuging we use signed operations so overflows can be detected (by ubsan)
 // For production we use unsigned so there are no undefined operations
-#ifdef DEBUG
+#ifdef CHECKED
 #define SUINT   int
 #else
 #define SUINT   unsigned
