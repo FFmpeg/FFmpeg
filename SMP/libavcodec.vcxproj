@@ -216,7 +216,7 @@
     <ClCompile Include="..\libavcodec\simple_idct.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
     <ClCompile Include="..\libavcodec\iirfilter.c" />
-    <ClCompile Include="..\libavcodec\imdct15.c" />
+    <ClCompile Include="..\libavcodec\mdct15.c" />
     <ClCompile Include="..\libavcodec\intrax8.c" />
     <ClCompile Include="..\libavcodec\intrax8dsp.c" />
     <ClCompile Include="..\libavcodec\ivi_dsp.c" />
@@ -449,6 +449,7 @@
     <ClCompile Include="..\libavcodec\flashsvenc.c" />
     <ClCompile Include="..\libavcodec\flashsv2enc.c" />
     <ClCompile Include="..\libavcodec\flicvideo.c" />
+    <ClCompile Include="..\libavcodec\fmvc.c" />
     <ClCompile Include="..\libavcodec\4xm.c" />
     <ClCompile Include="..\libavcodec\fraps.c" />
     <ClCompile Include="..\libavcodec\frwu.c" />
@@ -608,8 +609,10 @@
     <ClCompile Include="..\libavcodec\opus.c" />
     <ClCompile Include="..\libavcodec\opus_celt.c" />
     <ClCompile Include="..\libavcodec\opus_rc.c" />
+    <ClCompile Include="..\libavcodec\opus_pvq.c" />
     <ClCompile Include="..\libavcodec\opus_silk.c" />
     <ClCompile Include="..\libavcodec\opustab.c" />
+    <ClCompile Include="..\libavcodec\opusenc.c" />
     <ClCompile Include="..\libavcodec\pafaudio.c" />
     <ClCompile Include="..\libavcodec\pafvideo.c" />
     <ClCompile Include="..\libavcodec\pnmdec.c" />

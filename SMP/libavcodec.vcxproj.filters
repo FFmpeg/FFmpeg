@@ -471,7 +471,7 @@
     <ClCompile Include="..\libavcodec\iirfilter.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\imdct15.c">
+    <ClCompile Include="..\libavcodec\mdct15.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\intrax8.c">
@@ -1170,6 +1170,9 @@
     <ClCompile Include="..\libavcodec\flicvideo.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\fmvc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\4xm.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1647,10 +1650,16 @@
     <ClCompile Include="..\libavcodec\opus_rc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\opus_pvq.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\opus_silk.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\opustab.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\opusenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\pafaudio.c">
