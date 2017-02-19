@@ -20,7 +20,18 @@
 #define AVCODEC_FLACDSP_H
 
 #include <stdint.h>
+#include "libavutil/internal.h"
 #include "libavutil/samplefmt.h"
+
+// For debuging we use signed operations so overflows can be detected (by ubsan)
+// For production we use unsigned so there are no undefined operations
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
+#endif
 
 typedef struct FLACDSPContext {
     void (*decorrelate[4])(uint8_t **out, int32_t **in, int channels,
