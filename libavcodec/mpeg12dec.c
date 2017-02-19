@@ -865,8 +865,8 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                                                    s->last_mv[i][0][1]);
                             /* full_pel: only for MPEG-1 */
                             if (s->full_pel[i]) {
-                                s->mv[i][0][0] <<= 1;
-                                s->mv[i][0][1] <<= 1;
+                                s->mv[i][0][0] *= 2;
+                                s->mv[i][0][1] *= 2;
                             }
                         }
                     }
