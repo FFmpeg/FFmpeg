@@ -1182,9 +1182,9 @@ found2:
     } while (0)
 #else
 #define AA(j) do {                                              \
-        int tmp0 = ptr[-1-j];                                   \
-        int tmp1 = ptr[   j];                                   \
-        int tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
+        SUINT tmp0 = ptr[-1-j];                                   \
+        SUINT tmp1 = ptr[   j];                                   \
+        SUINT tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
         ptr[-1-j] = 4 * (tmp2 - MULH(tmp1, csa_table[j][2]));   \
         ptr[   j] = 4 * (tmp2 + MULH(tmp0, csa_table[j][3]));   \
     } while (0)

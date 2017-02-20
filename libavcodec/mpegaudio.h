@@ -31,6 +31,7 @@
 #endif
 
 #include <stdint.h>
+#include "libavutil/internal.h"
 
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
@@ -58,16 +59,27 @@
 
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
+#endif
+
 #if USE_FLOATS
 #   define INTFLOAT float
+#   define SUINTFLOAT float
 typedef float MPA_INT;
 typedef float OUT_INT;
 #elif FRAC_BITS <= 15
 #   define INTFLOAT int
+#   define SUINTFLOAT SUINT
 typedef int16_t MPA_INT;
 typedef int16_t OUT_INT;
 #else
 #   define INTFLOAT int
+#   define SUINTFLOAT SUINT
 typedef int32_t MPA_INT;
 typedef int16_t OUT_INT;
 #endif
