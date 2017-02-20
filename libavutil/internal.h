@@ -30,6 +30,10 @@
 #    define NDEBUG
 #endif
 
+#if defined(DEBUG) && !defined(CHECKED)
+#    define CHECKED
+#endif
+
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -250,6 +254,17 @@ void avpriv_request_sample(void *avc,
 #else
 #define PTRDIFF_SPECIFIER "td"
 #define SIZE_SPECIFIER "zu"
+#endif
+
+
+// For debuging we use signed operations so overflows can be detected (by ubsan)
+// For production we use unsigned so there are no undefined operations
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
 #endif
 
 /**
