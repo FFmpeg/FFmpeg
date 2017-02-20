@@ -80,7 +80,7 @@ static void picmemset(PicContext *s, AVFrame *frame, int value, int run,
                    value <<= bits_per_plane;
                    mask  <<= bits_per_plane;
                    if (*plane >= s->nb_planes)
-                       break;
+                       return;
                 }
             }
         }
@@ -236,7 +236,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
 
-        if (x < avctx->width) {
+        if (plane < s->nb_planes && x < avctx->width) {
             int run = (y + 1) * avctx->width - x;
             if (bits_per_plane == 8)
                 picmemset_8bpp(s, frame, val, run, &x, &y);
