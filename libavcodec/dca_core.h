@@ -33,6 +33,7 @@
 #include "dca_exss.h"
 #include "dcadsp.h"
 #include "dcadct.h"
+#include "dcamath.h"
 #include "dcahuff.h"
 #include "fft.h"
 #include "synth_filter.h"
@@ -43,7 +44,6 @@
 #define DCA_SUBFRAMES           16
 #define DCA_SUBBAND_SAMPLES     8
 #define DCA_PCMBLOCK_SAMPLES    32
-#define DCA_ADPCM_COEFFS        4
 #define DCA_LFE_HISTORY         8
 #define DCA_ABITS_MAX           26
 
@@ -193,6 +193,29 @@ static inline int ff_dca_core_map_spkr(DCACoreDecoder *core, int spkr)
     if (spkr == DCA_SPEAKER_Rss && (core->ch_mask & DCA_SPEAKER_MASK_Rs))
         return DCA_SPEAKER_Rs;
     return -1;
+}
+
+static inline void ff_dca_core_dequantize(int32_t *output, const int32_t *input,
+                                          int32_t step_size, int32_t scale, int residual, int len)
+{
+    // Account for quantizer step size
+    int64_t step_scale = (int64_t)step_size * scale;
+    int n, shift = 0;
+
+    // Limit scale factor resolution to 22 bits
+    if (step_scale > (1 << 23)) {
+        shift = av_log2(step_scale >> 23) + 1;
+        step_scale >>= shift;
+    }
+
+    // Scale the samples
+    if (residual) {
+        for (n = 0; n < len; n++)
+            output[n] += clip23(norm__(input[n] * step_scale, 22 - shift));
+    } else {
+        for (n = 0; n < len; n++)
+            output[n]  = clip23(norm__(input[n] * step_scale, 22 - shift));
+    }
 }
 
 int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size);

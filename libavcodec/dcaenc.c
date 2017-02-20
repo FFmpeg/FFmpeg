@@ -25,8 +25,12 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dca.h"
+#include "dcaadpcm.h"
+#include "dcamath.h"
+#include "dca_core.h"
 #include "dcadata.h"
 #include "dcaenc.h"
 #include "internal.h"
@@ -44,8 +48,15 @@
 #define SUBBAND_SAMPLES (SUBFRAMES * SUBSUBFRAMES * 8)
 #define AUBANDS 25
 
+typedef struct CompressionOptions {
+    int adpcm_mode;
+} CompressionOptions;
+
 typedef struct DCAEncContext {
+    AVClass *class;
     PutBitContext pb;
+    DCAADPCMEncContext adpcm_ctx;
+    CompressionOptions options;
     int frame_size;
     int frame_bits;
     int fullband_channels;
@@ -61,10 +72,13 @@ typedef struct DCAEncContext {
     int32_t lfe_peak_cb;
     const int8_t *channel_order_tab;  ///< channel reordering table, lfe and non lfe
 
+    int32_t prediction_mode[MAX_CHANNELS][DCAENC_SUBBANDS];
+    int32_t adpcm_history[MAX_CHANNELS][DCAENC_SUBBANDS][DCA_ADPCM_COEFFS * 2];
     int32_t history[MAX_CHANNELS][512]; /* This is a circular buffer */
-    int32_t subband[MAX_CHANNELS][DCAENC_SUBBANDS][SUBBAND_SAMPLES];
+    int32_t *subband[MAX_CHANNELS][DCAENC_SUBBANDS];
     int32_t quantized[MAX_CHANNELS][DCAENC_SUBBANDS][SUBBAND_SAMPLES];
     int32_t peak_cb[MAX_CHANNELS][DCAENC_SUBBANDS];
+    int32_t diff_peak_cb[MAX_CHANNELS][DCAENC_SUBBANDS]; ///< expected peak of residual signal
     int32_t downsampled_lfe[DCA_LFE_SAMPLES];
     int32_t masking_curve_cb[SUBSUBFRAMES][256];
     int32_t bit_allocation_sel[MAX_CHANNELS];
@@ -77,6 +91,7 @@ typedef struct DCAEncContext {
     int32_t worst_quantization_noise;
     int32_t worst_noise_ever;
     int consumed_bits;
+    int consumed_adpcm_bits; ///< Number of bits to transmit ADPCM related info
 } DCAEncContext;
 
 static int32_t cos_table[2048];
@@ -107,11 +122,41 @@ static double gammafilter(int i, double f)
     return 20 * log10(h);
 }
 
+static int subband_bufer_alloc(DCAEncContext *c)
+{
+    int ch, band;
+    int32_t *bufer = av_calloc(MAX_CHANNELS * DCAENC_SUBBANDS *
+                               (SUBBAND_SAMPLES + DCA_ADPCM_COEFFS),
+                               sizeof(int32_t));
+    if (!bufer)
+        return -1;
+
+    /* we need a place for DCA_ADPCM_COEFF samples from previous frame
+     * to calc prediction coefficients for each subband */
+    for (ch = 0; ch < MAX_CHANNELS; ch++) {
+        for (band = 0; band < DCAENC_SUBBANDS; band++) {
+            c->subband[ch][band] = bufer +
+                                   ch * DCAENC_SUBBANDS * (SUBBAND_SAMPLES + DCA_ADPCM_COEFFS) +
+                                   band * (SUBBAND_SAMPLES + DCA_ADPCM_COEFFS) + DCA_ADPCM_COEFFS;
+        }
+    }
+    return 0;
+}
+
+static void subband_bufer_free(DCAEncContext *c)
+{
+    int32_t *bufer = c->subband[0][0] - DCA_ADPCM_COEFFS;
+    av_freep(&bufer);
+}
+
 static int encode_init(AVCodecContext *avctx)
 {
     DCAEncContext *c = avctx->priv_data;
     uint64_t layout = avctx->channel_layout;
     int i, j, min_frame_bits;
+
+    if (subband_bufer_alloc(c))
+        return AVERROR(ENOMEM);
 
     c->fullband_channels = c->channels = avctx->channels;
     c->lfe_channel = (avctx->channels == 3 || avctx->channels == 6);
@@ -119,6 +164,10 @@ static int encode_init(AVCodecContext *avctx)
     c->band_spectrum = band_spectrum[1];
     c->worst_quantization_noise = -2047;
     c->worst_noise_ever = -2047;
+    c->consumed_adpcm_bits = 0;
+
+    if (ff_dcaadpcm_init(&c->adpcm_ctx))
+        return AVERROR(ENOMEM);
 
     if (!layout) {
         av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
@@ -150,6 +199,12 @@ static int encode_init(AVCodecContext *avctx)
         }
         /* 6 - no Huffman */
         c->bit_allocation_sel[i] = 6;
+
+        for (j = 0; j < DCAENC_SUBBANDS; j++) {
+            /* -1 - no ADPCM */
+            c->prediction_mode[i][j] = -1;
+            memset(c->adpcm_history[i][j], 0, sizeof(int32_t)*DCA_ADPCM_COEFFS);
+        }
     }
 
     for (i = 0; i < 9; i++) {
@@ -238,6 +293,16 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int encode_close(AVCodecContext *avctx)
+{
+    if (avctx->priv_data) {
+        DCAEncContext *c = avctx->priv_data;
+        subband_bufer_free(c);
+        ff_dcaadpcm_free(&c->adpcm_ctx);
+    }
+    return 0;
+}
+
 static inline int32_t cos_t(int x)
 {
     return cos_table[x & 2047];
@@ -251,12 +316,6 @@ static inline int32_t sin_t(int x)
 static inline int32_t half32(int32_t a)
 {
     return (a + 1) >> 1;
-}
-
-static inline int32_t mul32(int32_t a, int32_t b)
-{
-    int64_t r = (int64_t)a * b + 0x80000000ULL;
-    return r >> 32;
 }
 
 static void subband_transform(DCAEncContext *c, const int32_t *input)
@@ -545,31 +604,53 @@ static void calc_masking(DCAEncContext *c, const int32_t *input)
     }
 }
 
+static inline int32_t find_peak(const int32_t *in, int len) {
+    int sample;
+    int32_t m = 0;
+    for (sample = 0; sample < len; sample++) {
+        int32_t s = abs(in[sample]);
+        if (m < s) {
+            m = s;
+        }
+    }
+    return get_cb(m);
+}
+
 static void find_peaks(DCAEncContext *c)
 {
     int band, ch;
 
-    for (ch = 0; ch < c->fullband_channels; ch++)
+    for (ch = 0; ch < c->fullband_channels; ch++) {
         for (band = 0; band < 32; band++) {
-            int sample;
-            int32_t m = 0;
-
-            for (sample = 0; sample < SUBBAND_SAMPLES; sample++) {
-                int32_t s = abs(c->subband[ch][band][sample]);
-                if (m < s)
-                    m = s;
-            }
-            c->peak_cb[ch][band] = get_cb(m);
+            c->peak_cb[ch][band] = find_peak(c->subband[ch][band], SUBBAND_SAMPLES);
         }
+    }
 
     if (c->lfe_channel) {
-        int sample;
-        int32_t m = 0;
+        c->lfe_peak_cb = find_peak(c->downsampled_lfe, DCA_LFE_SAMPLES);
+    }
+}
 
-        for (sample = 0; sample < DCA_LFE_SAMPLES; sample++)
-            if (m < abs(c->downsampled_lfe[sample]))
-                m = abs(c->downsampled_lfe[sample]);
-        c->lfe_peak_cb = get_cb(m);
+static void adpcm_analysis(DCAEncContext *c)
+{
+    int ch, band;
+    int pred_vq_id;
+    int32_t *samples;
+    int32_t estimated_diff[SUBBAND_SAMPLES];
+
+    c->consumed_adpcm_bits = 0;
+    for (ch = 0; ch < c->fullband_channels; ch++) {
+        for (band = 0; band < 32; band++) {
+            samples = c->subband[ch][band] - DCA_ADPCM_COEFFS;
+            pred_vq_id = ff_dcaadpcm_subband_analysis(&c->adpcm_ctx, samples, SUBBAND_SAMPLES, estimated_diff);
+            if (pred_vq_id >= 0) {
+                c->prediction_mode[ch][band] = pred_vq_id;
+                c->consumed_adpcm_bits += 12; //12 bits to transmit prediction vq index
+                c->diff_peak_cb[ch][band] = find_peak(estimated_diff, 16);
+            } else {
+                c->prediction_mode[ch][band] = -1;
+            }
+        }
     }
 }
 
@@ -578,13 +659,16 @@ static const int snr_fudge = 128;
 #define USED_NABITS 2
 #define USED_26ABITS 4
 
-static int32_t quantize_value(int32_t value, softfloat quant)
+static inline int32_t get_step_size(const DCAEncContext *c, int ch, int band)
 {
-    int32_t offset = 1 << (quant.e - 1);
+    int32_t step_size;
 
-    value = mul32(value, quant.m) + offset;
-    value = value >> quant.e;
-    return value;
+    if (c->bitrate_index == 3)
+        step_size = ff_dca_lossless_quant[c->abits[ch][band]];
+    else
+        step_size = ff_dca_lossy_quant[c->abits[ch][band]];
+
+    return step_size;
 }
 
 static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
@@ -619,14 +703,40 @@ static int calc_one_scale(int32_t peak_cb, int abits, softfloat *quant)
     return our_nscale;
 }
 
-static void quantize_all(DCAEncContext *c)
+static inline void quantize_adpcm_subband(DCAEncContext *c, int ch, int band)
+{
+    int32_t step_size;
+    int32_t diff_peak_cb = c->diff_peak_cb[ch][band];
+    c->scale_factor[ch][band] = calc_one_scale(diff_peak_cb,
+                                               c->abits[ch][band],
+                                               &c->quant[ch][band]);
+
+    step_size = get_step_size(c, ch, band);
+    ff_dcaadpcm_do_real(c->prediction_mode[ch][band],
+                        c->quant[ch][band], ff_dca_scale_factor_quant7[c->scale_factor[ch][band]], step_size,
+                        c->adpcm_history[ch][band], c->subband[ch][band], c->adpcm_history[ch][band]+4, c->quantized[ch][band],
+                        SUBBAND_SAMPLES, cb_to_level[-diff_peak_cb]);
+}
+
+static void quantize_adpcm(DCAEncContext *c)
+{
+    int band, ch;
+
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < 32; band++)
+            if (c->prediction_mode[ch][band] >= 0)
+                quantize_adpcm_subband(c, ch, band);
+}
+
+static void quantize_pcm(DCAEncContext *c)
 {
     int sample, band, ch;
 
     for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < 32; band++)
-            for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
-                c->quantized[ch][band][sample] = quantize_value(c->subband[ch][band][sample], c->quant[ch][band]);
+            if (c->prediction_mode[ch][band] == -1)
+                for (sample = 0; sample < SUBBAND_SAMPLES; sample++)
+                    c->quantized[ch][band][sample] = quantize_value(c->subband[ch][band][sample], c->quant[ch][band]);
 }
 
 static void accumulate_huff_bit_consumption(int abits, int32_t *quantized, uint32_t *result)
@@ -710,6 +820,7 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
     uint32_t bits_counter = 0;
 
     c->consumed_bits = 132 + 333 * c->fullband_channels;
+    c->consumed_bits += c->consumed_adpcm_bits;
     if (c->lfe_channel)
         c->consumed_bits += 72;
 
@@ -740,12 +851,15 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
     /* TODO: May be cache scaled values */
     for (ch = 0; ch < c->fullband_channels; ch++) {
         for (band = 0; band < 32; band++) {
-            c->scale_factor[ch][band] = calc_one_scale(c->peak_cb[ch][band],
-                                                       c->abits[ch][band],
-                                                       &c->quant[ch][band]);
+            if (c->prediction_mode[ch][band] == -1) {
+                c->scale_factor[ch][band] = calc_one_scale(c->peak_cb[ch][band],
+                                                           c->abits[ch][band],
+                                                           &c->quant[ch][band]);
+            }
         }
     }
-    quantize_all(c);
+    quantize_adpcm(c);
+    quantize_pcm(c);
 
     memset(huff_bit_count_accum, 0, MAX_CHANNELS * DCA_CODE_BOOKS * 7 * sizeof(uint32_t));
     memset(clc_bit_count_accum, 0, MAX_CHANNELS * DCA_CODE_BOOKS * sizeof(uint32_t));
@@ -817,6 +931,41 @@ static void shift_history(DCAEncContext *c, const int32_t *input)
 
             c->history[ch][k] = input[k * c->channels + chi];
         }
+}
+
+static void fill_in_adpcm_bufer(DCAEncContext *c)
+{
+     int ch, band;
+     int32_t step_size;
+     /* We fill in ADPCM work buffer for subbands which hasn't been ADPCM coded
+      * in current frame - we need this data if subband of next frame is
+      * ADPCM
+      */
+     for (ch = 0; ch < c->channels; ch++) {
+        for (band = 0; band < 32; band++) {
+            int32_t *samples = c->subband[ch][band] - DCA_ADPCM_COEFFS;
+            if (c->prediction_mode[ch][band] == -1) {
+                step_size = get_step_size(c, ch, band);
+
+                ff_dca_core_dequantize(c->adpcm_history[ch][band],
+                                       c->quantized[ch][band]+12, step_size, ff_dca_scale_factor_quant7[c->scale_factor[ch][band]], 0, 4);
+            } else {
+                AV_COPY128U(c->adpcm_history[ch][band], c->adpcm_history[ch][band]+4);
+            }
+            /* Copy dequantized values for LPC analysis.
+             * It reduces artifacts in case of extreme quantization,
+             * example: in current frame abits is 1 and has no prediction flag,
+             * but end of this frame is sine like signal. In this case, if LPC analysis uses
+             * original values, likely LPC analysis returns good prediction gain, and sets prediction flag.
+             * But there are no proper value in decoder history, so likely result will be no good.
+             * Bitstream has "Predictor history flag switch", but this flag disables history for all subbands
+             */
+            samples[0] = c->adpcm_history[ch][band][0] << 7;
+            samples[1] = c->adpcm_history[ch][band][1] << 7;
+            samples[2] = c->adpcm_history[ch][band][2] << 7;
+            samples[3] = c->adpcm_history[ch][band][3] << 7;
+        }
+     }
 }
 
 static void calc_lfe_scales(DCAEncContext *c)
@@ -1001,9 +1150,14 @@ static void put_subframe(DCAEncContext *c, int subframe)
     /* Prediction mode: no ADPCM, in each channel and subband */
     for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < DCAENC_SUBBANDS; band++)
-            put_bits(&c->pb, 1, 0);
+            put_bits(&c->pb, 1, !(c->prediction_mode[ch][band] == -1));
 
-    /* Prediction VQ address: not transmitted */
+    /* Prediction VQ address */
+    for (ch = 0; ch < c->fullband_channels; ch++)
+        for (band = 0; band < DCAENC_SUBBANDS; band++)
+            if (c->prediction_mode[ch][band] >= 0)
+                put_bits(&c->pb, 12, c->prediction_mode[ch][band]);
+
     /* Bit allocation index */
     for (ch = 0; ch < c->fullband_channels; ch++) {
         if (c->bit_allocation_sel[ch] == 6) {
@@ -1068,12 +1222,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         lfe_downsample(c, samples);
 
     calc_masking(c, samples);
+    if (c->options.adpcm_mode)
+        adpcm_analysis(c);
     find_peaks(c);
     assign_bits(c);
     calc_lfe_scales(c);
     shift_history(c, samples);
 
     init_put_bits(&c->pb, avpkt->data, avpkt->size);
+    fill_in_adpcm_bufer(c);
     put_frame_header(c);
     put_primary_audio_header(c);
     for (i = 0; i < SUBFRAMES; i++)
@@ -1092,6 +1249,20 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+#define DCAENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+
+static const AVOption options[] = {
+    { "dca_adpcm", "Use ADPCM encoding", offsetof(DCAEncContext, options.adpcm_mode), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DCAENC_FLAGS },
+    { NULL },
+};
+
+static const AVClass dcaenc_class = {
+    .class_name = "DCA (DTS Coherent Acoustics)",
+    .item_name = av_default_item_name,
+    .option = options,
+    .version = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVCodecDefault defaults[] = {
     { "b",          "1411200" },
     { NULL },
@@ -1104,6 +1275,7 @@ AVCodec ff_dca_encoder = {
     .id                    = AV_CODEC_ID_DTS,
     .priv_data_size        = sizeof(DCAEncContext),
     .init                  = encode_init,
+    .close                 = encode_close,
     .encode2               = encode_frame,
     .capabilities          = AV_CODEC_CAP_EXPERIMENTAL,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
@@ -1116,4 +1288,5 @@ AVCodec ff_dca_encoder = {
                                                   AV_CH_LAYOUT_5POINT1,
                                                   0 },
     .defaults              = defaults,
+    .priv_class            = &dcaenc_class,
 };
