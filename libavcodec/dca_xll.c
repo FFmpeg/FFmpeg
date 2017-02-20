@@ -717,10 +717,10 @@ static void chs_assemble_msbs_lsbs(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int32_t *lsb = b->lsb_sample_buffer[ch];
                 int adj = b->bit_width_adjust[ch];
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift) + (lsb[n] << adj);
+                    msb[n] = msb[n] * (SUINT)(1 << shift) + (lsb[n] << adj);
             } else {
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift);
+                    msb[n] = msb[n] * (SUINT)(1 << shift);
             }
         }
     }
