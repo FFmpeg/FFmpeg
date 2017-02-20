@@ -1913,7 +1913,6 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     int n, i, ret, tcp_fd, timeout_cnt = 0;
-    int max_p = 0;
     struct pollfd *p = rt->p;
     int *fds = NULL, fdsnum, fdsidx;
 
@@ -1921,33 +1920,33 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         p = rt->p = av_malloc_array(2 * (rt->nb_rtsp_streams + 1), sizeof(struct pollfd));
         if (!p)
             return AVERROR(ENOMEM);
-    }
 
-    if (rt->rtsp_hd) {
-        tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
-        p[max_p].fd = tcp_fd;
-        p[max_p++].events = POLLIN;
-    } else {
-        tcp_fd = -1;
-    }
-    for (i = 0; i < rt->nb_rtsp_streams; i++) {
-        rtsp_st = rt->rtsp_streams[i];
-        if (rtsp_st->rtp_handle) {
-            if (ret = ffurl_get_multi_file_handle(rtsp_st->rtp_handle,
-                                                  &fds, &fdsnum)) {
-                av_log(s, AV_LOG_ERROR, "Unable to recover rtp ports\n");
-                return ret;
+        if (rt->rtsp_hd) {
+            tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
+            p[rt->max_p].fd = tcp_fd;
+            p[rt->max_p++].events = POLLIN;
+        } else {
+            tcp_fd = -1;
+        }
+        for (i = 0; i < rt->nb_rtsp_streams; i++) {
+            rtsp_st = rt->rtsp_streams[i];
+            if (rtsp_st->rtp_handle) {
+                if (ret = ffurl_get_multi_file_handle(rtsp_st->rtp_handle,
+                                                      &fds, &fdsnum)) {
+                    av_log(s, AV_LOG_ERROR, "Unable to recover rtp ports\n");
+                    return ret;
+                }
+                if (fdsnum != 2) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Number of fds %d not supported\n", fdsnum);
+                    return AVERROR_INVALIDDATA;
+                }
+                for (fdsidx = 0; fdsidx < fdsnum; fdsidx++) {
+                    p[rt->max_p].fd       = fds[fdsidx];
+                    p[rt->max_p++].events = POLLIN;
+                }
+                av_free(fds);
             }
-            if (fdsnum != 2) {
-                av_log(s, AV_LOG_ERROR,
-                       "Number of fds %d not supported\n", fdsnum);
-                return AVERROR_INVALIDDATA;
-            }
-            for (fdsidx = 0; fdsidx < fdsnum; fdsidx++) {
-                p[max_p].fd       = fds[fdsidx];
-                p[max_p++].events = POLLIN;
-            }
-            av_free(fds);
         }
     }
 
@@ -1956,7 +1955,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             return AVERROR_EXIT;
         if (wait_end && wait_end - av_gettime_relative() < 0)
             return AVERROR(EAGAIN);
-        n = poll(p, max_p, POLL_TIMEOUT_MS);
+        n = poll(p, rt->max_p, POLL_TIMEOUT_MS);
         if (n > 0) {
             int j = 1 - (tcp_fd == -1);
             timeout_cnt = 0;
