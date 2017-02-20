@@ -59,14 +59,6 @@
 
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 
-#ifdef CHECKED
-#define SUINT   int
-#define SUINT32 int32_t
-#else
-#define SUINT   unsigned
-#define SUINT32 uint32_t
-#endif
-
 #if USE_FLOATS
 #   define INTFLOAT float
 #   define SUINTFLOAT float
