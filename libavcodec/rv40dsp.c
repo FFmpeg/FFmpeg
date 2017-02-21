@@ -449,7 +449,7 @@ static av_always_inline void rv40_weak_loop_filter(uint8_t *src,
         if (u > 3 - (filter_p1 && filter_q1))
             continue;
 
-        t <<= 2;
+        t *= 1 << 2;
         if (filter_p1 && filter_q1)
             t += src[-2*step] - src[1*step];
 
