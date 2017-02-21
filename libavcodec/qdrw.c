@@ -68,6 +68,114 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
     return 0;
 }
 
+static int decode_rle_bpp2(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+{
+    int offset = avctx->width;
+    uint8_t *outdata = p->data[0];
+    int i, j;
+
+    for (i = 0; i < avctx->height; i++) {
+        int size, left, code, pix;
+        uint8_t *out = outdata;
+        int pos = 0;
+
+        /* size of packed line */
+        size = left = bytestream2_get_be16(gbc);
+        if (bytestream2_get_bytes_left(gbc) < size)
+            return AVERROR_INVALIDDATA;
+
+        /* decode line */
+        while (left > 0) {
+            code = bytestream2_get_byte(gbc);
+            if (code & 0x80 ) { /* run */
+                pix = bytestream2_get_byte(gbc);
+                for (j = 0; j < 257 - code; j++) {
+                    out[pos++] = (pix & 0xC0) >> 6;
+                    out[pos++] = (pix & 0x30) >> 4;
+                    out[pos++] = (pix & 0x0C) >> 2;
+                    out[pos++] = (pix & 0x03);
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
+                }
+                left  -= 2;
+            } else { /* copy */
+                for (j = 0; j < code + 1; j++) {
+                    pix = bytestream2_get_byte(gbc);
+                    out[pos++] = (pix & 0xC0) >> 6;
+                    out[pos++] = (pix & 0x30) >> 4;
+                    out[pos++] = (pix & 0x0C) >> 2;
+                    out[pos++] = (pix & 0x03);
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
+                }
+                left  -= 1 + (code + 1);
+            }
+        }
+        outdata += p->linesize[0];
+    }
+    return 0;
+}
+
+static int decode_rle_bpp4(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+{
+    int offset = avctx->width;
+    uint8_t *outdata = p->data[0];
+    int i, j;
+
+    for (i = 0; i < avctx->height; i++) {
+        int size, left, code, pix;
+        uint8_t *out = outdata;
+        int pos = 0;
+
+        /* size of packed line */
+        size = left = bytestream2_get_be16(gbc);
+        if (bytestream2_get_bytes_left(gbc) < size)
+            return AVERROR_INVALIDDATA;
+
+        /* decode line */
+        while (left > 0) {
+            code = bytestream2_get_byte(gbc);
+            if (code & 0x80 ) { /* run */
+                pix = bytestream2_get_byte(gbc);
+                for (j = 0; j < 257 - code; j++) {
+                    out[pos++] = (pix & 0xF0) >> 4;
+                    out[pos++] = pix & 0xF;
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
+                }
+                left  -= 2;
+            } else { /* copy */
+                for (j = 0; j < code + 1; j++) {
+                    pix = bytestream2_get_byte(gbc);
+                    out[pos++] = (pix & 0xF0) >> 4;
+                    out[pos++] = pix & 0xF;
+                    if (pos >= offset) {
+                        pos -= offset;
+                        pos++;
+                    }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
+                }
+                left  -= 1 + (code + 1);
+            }
+        }
+        outdata += p->linesize[0];
+    }
+    return 0;
+}
+
 static int decode_rle16(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
 {
     int offset = avctx->width;
@@ -256,6 +364,8 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
             if (bppcnt == 1 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            } else if (bppcnt == 1 && (bpp == 4 || bpp == 2)) {
+                avctx->pix_fmt = AV_PIX_FMT_PAL8;
             } else if (bppcnt == 3 && bpp == 5) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB555;
             } else {
@@ -295,6 +405,10 @@ static int decode_frame(AVCodecContext *avctx,
 
             if (avctx->pix_fmt == AV_PIX_FMT_RGB555)
                 ret = decode_rle16(avctx, p, &gbc);
+            else if (bpp = 2)
+                ret = decode_rle_bpp2(avctx, p, &gbc);
+            else if (bpp = 4)
+                ret = decode_rle_bpp4(avctx, p, &gbc);
             else
                 ret = decode_rle(avctx, p, &gbc, bppcnt);
             if (ret < 0)
