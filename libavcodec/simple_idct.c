@@ -66,8 +66,8 @@ static inline void idct4col_put(uint8_t *dest, int line_size, const int16_t *col
     a1 = col[8*2];
     a2 = col[8*4];
     a3 = col[8*6];
-    c0 = ((a0 + a2) << (CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
-    c2 = ((a0 - a2) << (CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
+    c0 = ((a0 + a2) * (1 << CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
+    c2 = ((a0 - a2) * (1 << CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
     c1 = a1 * C1 + a3 * C2;
     c3 = a1 * C2 - a3 * C1;
     dest[0] = av_clip_uint8((c0 + c1) >> C_SHIFT);
