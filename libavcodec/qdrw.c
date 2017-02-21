@@ -405,9 +405,9 @@ static int decode_frame(AVCodecContext *avctx,
 
             if (avctx->pix_fmt == AV_PIX_FMT_RGB555)
                 ret = decode_rle16(avctx, p, &gbc);
-            else if (bpp = 2)
+            else if (bpp == 2)
                 ret = decode_rle_bpp2(avctx, p, &gbc);
-            else if (bpp = 4)
+            else if (bpp == 4)
                 ret = decode_rle_bpp4(avctx, p, &gbc);
             else
                 ret = decode_rle(avctx, p, &gbc, bppcnt);
