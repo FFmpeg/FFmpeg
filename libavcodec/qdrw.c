@@ -70,7 +70,7 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
 
 static int decode_rle16(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
 {
-    int offset = avctx->width * 2;
+    int offset = avctx->width;
     uint8_t *outdata = p->data[0];
     int i, j;
 
