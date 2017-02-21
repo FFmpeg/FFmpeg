@@ -866,6 +866,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     for(i = 0; i < num_mvs[block_type]; i++){
         r->dmv[i][0] = get_interleaved_se_golomb(gb);
         r->dmv[i][1] = get_interleaved_se_golomb(gb);
+        if (r->dmv[i][0] == INVALID_VLC ||
+            r->dmv[i][1] == INVALID_VLC) {
+            r->dmv[i][0] = r->dmv[i][1] = 0;
+            return AVERROR_INVALIDDATA;
+        }
     }
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
