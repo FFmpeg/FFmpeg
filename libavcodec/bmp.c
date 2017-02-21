@@ -133,7 +133,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     avctx->width  = width;
-    avctx->height = height > 0 ? height : -height;
+    avctx->height = height > 0 ? height : -(unsigned)height;
 
     avctx->pix_fmt = AV_PIX_FMT_NONE;
 
