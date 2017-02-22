@@ -192,6 +192,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (FLASHSV2,          flashsv2);
     REGISTER_DECODER(FLIC,              flic);
     REGISTER_ENCDEC (FLV,               flv);
+    REGISTER_DECODER(FMVC,              fmvc);
     REGISTER_DECODER(FOURXM,            fourxm);
     REGISTER_DECODER(FRAPS,             fraps);
     REGISTER_DECODER(FRWU,              frwu);
@@ -403,7 +404,9 @@ void avcodec_register_all(void)
     REGISTER_DECODER(APE,               ape);
     REGISTER_DECODER(ATRAC1,            atrac1);
     REGISTER_DECODER(ATRAC3,            atrac3);
+    REGISTER_DECODER(ATRAC3AL,          atrac3al);
     REGISTER_DECODER(ATRAC3P,           atrac3p);
+    REGISTER_DECODER(ATRAC3PAL,         atrac3pal);
     REGISTER_DECODER(BINKAUDIO_DCT,     binkaudio_dct);
     REGISTER_DECODER(BINKAUDIO_RDFT,    binkaudio_rdft);
     REGISTER_DECODER(BMV_AUDIO,         bmv_audio);
@@ -446,7 +449,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(MPC8,              mpc8);
     REGISTER_ENCDEC (NELLYMOSER,        nellymoser);
     REGISTER_DECODER(ON2AVC,            on2avc);
-    REGISTER_DECODER(OPUS,              opus);
+    REGISTER_ENCDEC (OPUS,              opus);
     REGISTER_DECODER(PAF_AUDIO,         paf_audio);
     REGISTER_DECODER(QCELP,             qcelp);
     REGISTER_DECODER(QDM2,              qdm2);

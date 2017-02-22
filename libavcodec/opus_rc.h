@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Andrew D'Addesio
  * Copyright (c) 2013-2014 Mozilla Corporation
- * Copyright (c) 2016 Rostislav Pehlivanov <atomnuker@gmail.com>
+ * Copyright (c) 2017 Rostislav Pehlivanov <atomnuker@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include "get_bits.h"
 
+#define OPUS_MAX_PACKET_SIZE 1275
+
 #define opus_ilog(i) (av_log2(i) + !!(i))
 
 typedef struct RawBitsContext {
@@ -41,6 +43,15 @@ typedef struct OpusRangeCoder {
     uint32_t range;
     uint32_t value;
     uint32_t total_bits;
+
+    /* Encoder */
+    uint8_t buf[OPUS_MAX_PACKET_SIZE + 12]; /* memcpy vs (memmove + overreading) */
+    uint8_t *rng_cur;                      /* Current range coded byte */
+    int ext;                               /* Awaiting propagation */
+    int rem;                               /* Carryout flag */
+
+    /* Encoding stats */
+    int waste;
 } OpusRangeCoder;
 
 /**
@@ -72,14 +83,30 @@ static av_always_inline uint32_t opus_rc_tell_frac(const OpusRangeCoder *rc)
 }
 
 uint32_t ff_opus_rc_dec_cdf(OpusRangeCoder *rc, const uint16_t *cdf);
-uint32_t ff_opus_rc_dec_log(OpusRangeCoder *rc, uint32_t bits);
-uint32_t ff_opus_rc_dec_uint(OpusRangeCoder *rc, uint32_t size);
-uint32_t ff_opus_rc_dec_uint_step(OpusRangeCoder *rc, int k0);
-uint32_t ff_opus_rc_dec_uint_tri(OpusRangeCoder *rc, int qn);
-uint32_t ff_opus_rc_get_raw(OpusRangeCoder *rc, uint32_t count);
-int      ff_opus_rc_dec_laplace(OpusRangeCoder *rc, uint32_t symbol, int decay);
+void     ff_opus_rc_enc_cdf(OpusRangeCoder *rc, int val, const uint16_t *cdf);
 
-int  ff_opus_rc_dec_init(OpusRangeCoder *rc, const uint8_t *data, int size);
-void ff_opus_rc_dec_raw_init(OpusRangeCoder *rc, const uint8_t *rightend, uint32_t bytes);
+uint32_t ff_opus_rc_dec_log(OpusRangeCoder *rc, uint32_t bits);
+void     ff_opus_rc_enc_log(OpusRangeCoder *rc, int val, uint32_t bits);
+
+uint32_t ff_opus_rc_dec_uint_step(OpusRangeCoder *rc, int k0);
+void     ff_opus_rc_enc_uint_step(OpusRangeCoder *rc, uint32_t val, int k0);
+
+uint32_t ff_opus_rc_dec_uint_tri(OpusRangeCoder *rc, int qn);
+void     ff_opus_rc_enc_uint_tri(OpusRangeCoder *rc, uint32_t k, int qn);
+
+uint32_t ff_opus_rc_dec_uint(OpusRangeCoder *rc, uint32_t size);
+void     ff_opus_rc_enc_uint(OpusRangeCoder *rc, uint32_t val, uint32_t size);
+
+uint32_t ff_opus_rc_get_raw(OpusRangeCoder *rc, uint32_t count);
+void     ff_opus_rc_put_raw(OpusRangeCoder *rc, uint32_t val, uint32_t count);
+
+int      ff_opus_rc_dec_laplace(OpusRangeCoder *rc, uint32_t symbol, int decay);
+void     ff_opus_rc_enc_laplace(OpusRangeCoder *rc, int *value, uint32_t symbol, int decay);
+
+int      ff_opus_rc_dec_init(OpusRangeCoder *rc, const uint8_t *data, int size);
+void     ff_opus_rc_dec_raw_init(OpusRangeCoder *rc, const uint8_t *rightend, uint32_t bytes);
+
+void     ff_opus_rc_enc_end(OpusRangeCoder *rc, uint8_t *dst, int size);
+void     ff_opus_rc_enc_init(OpusRangeCoder *rc);
 
 #endif /* AVCODEC_OPUS_RC_H */

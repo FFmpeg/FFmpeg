@@ -39,8 +39,34 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-// Don't know, but let's guess 16 bits per code
-#define MJPEG_HUFFMAN_EST_BITS_PER_CODE 16
+
+static int alloc_huffman(MpegEncContext *s)
+{
+    MJpegContext *m = s->mjpeg_ctx;
+    size_t num_mbs, num_blocks, num_codes;
+    int blocks_per_mb;
+
+    // We need to init this here as the mjpeg init is called before the common init,
+    s->mb_width  = (s->width  + 15) / 16;
+    s->mb_height = (s->height + 15) / 16;
+
+    switch (s->chroma_format) {
+    case CHROMA_420: blocks_per_mb =  6; break;
+    case CHROMA_422: blocks_per_mb =  8; break;
+    case CHROMA_444: blocks_per_mb = 12; break;
+    default: av_assert0(0);
+    };
+
+    // Make sure we have enough space to hold this frame.
+    num_mbs = s->mb_width * s->mb_height;
+    num_blocks = num_mbs * blocks_per_mb;
+    num_codes = num_blocks * 64;
+
+    m->huff_buffer = av_malloc_array(num_codes, sizeof(MJpegHuffmanCode));
+    if (!m->huff_buffer)
+        return AVERROR(ENOMEM);
+    return 0;
+}
 
 av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
 {
@@ -53,7 +79,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
         return AVERROR(EINVAL);
     }
 
-    m = av_malloc(sizeof(MJpegContext));
+    m = av_mallocz(sizeof(MJpegContext));
     if (!m)
         return AVERROR(ENOMEM);
 
@@ -88,12 +114,12 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
     // Buffers start out empty.
-    m->huff_buffer = NULL;
     m->huff_ncode = 0;
-    m->huff_capacity = 0;
-    m->error = 0;
-
     s->mjpeg_ctx = m;
+
+    if(s->huffman == HUFFMAN_TABLE_OPTIMAL)
+        return alloc_huffman(s);
+
     return 0;
 }
 
@@ -123,6 +149,7 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
     size_t total_bits = 0;
     size_t bytes_needed;
 
+    s->header_bits = get_bits_diff(s);
     // Estimate the total size first
     for (i = 0; i < m->huff_ncode; i++) {
         table_id = m->huff_buffer[i].table_id;
@@ -147,6 +174,7 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
     }
 
     m->huff_ncode = 0;
+    s->i_tex_bits = get_bits_diff(s);
 }
 
 /**
@@ -159,7 +187,6 @@ void ff_mjpeg_encode_picture_frame(MpegEncContext *s)
 static inline void ff_mjpeg_encode_code(MJpegContext *s, uint8_t table_id, int code)
 {
     MJpegHuffmanCode *c = &s->huff_buffer[s->huff_ncode++];
-    av_assert0(s->huff_ncode < s->huff_capacity);
     c->table_id = table_id;
     c->code = code;
 }
@@ -200,15 +227,11 @@ static void ff_mjpeg_encode_coef(MJpegContext *s, uint8_t table_id, int val, int
  * @param block The block.
  * @param n The block's index or number.
  */
-static void encode_block(MpegEncContext *s, int16_t *block, int n)
+static void record_block(MpegEncContext *s, int16_t *block, int n)
 {
     int i, j, table_id;
     int component, dc, last_index, val, run;
     MJpegContext *m = s->mjpeg_ctx;
-
-    if (m->error) return;
-
-    av_assert0(m->huff_capacity >= m->huff_ncode + 64);
 
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
@@ -247,79 +270,128 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         ff_mjpeg_encode_code(m, table_id, 0);
 }
 
-// Possibly reallocate the huffman code buffer, assuming blocks_per_mb.
-// Set s->mjpeg_ctx->error on ENOMEM.
-static void realloc_huffman(MpegEncContext *s, int blocks_per_mb)
+static void encode_block(MpegEncContext *s, int16_t *block, int n)
 {
+    int mant, nbits, code, i, j;
+    int component, dc, run, last_index, val;
     MJpegContext *m = s->mjpeg_ctx;
-    size_t num_mbs, num_blocks, num_codes;
-    MJpegHuffmanCode *new_buf;
-    if (m->error) return;
-    // Make sure we have enough space to hold this frame.
-    num_mbs = s->mb_width * s->mb_height;
-    num_blocks = num_mbs * blocks_per_mb;
-    av_assert0(m->huff_ncode <=
-               (s->mb_y * s->mb_width + s->mb_x) * blocks_per_mb * 64);
-    num_codes = num_blocks * 64;
+    uint8_t *huff_size_ac;
+    uint16_t *huff_code_ac;
 
-    new_buf = av_fast_realloc(m->huff_buffer, &m->huff_capacity,
-                              num_codes * sizeof(MJpegHuffmanCode));
-    if (!new_buf) {
-        m->error = AVERROR(ENOMEM);
+    /* DC coef */
+    component = (n <= 3 ? 0 : (n&1) + 1);
+    dc = block[0]; /* overflow is impossible */
+    val = dc - s->last_dc[component];
+    if (n < 4) {
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
+        huff_size_ac = m->huff_size_ac_luminance;
+        huff_code_ac = m->huff_code_ac_luminance;
     } else {
-        m->huff_buffer = new_buf;
+        ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+        huff_size_ac = m->huff_size_ac_chrominance;
+        huff_code_ac = m->huff_code_ac_chrominance;
     }
+    s->last_dc[component] = dc;
+
+    /* AC coefs */
+
+    run = 0;
+    last_index = s->block_last_index[n];
+    for(i=1;i<=last_index;i++) {
+        j = s->intra_scantable.permutated[i];
+        val = block[j];
+        if (val == 0) {
+            run++;
+        } else {
+            while (run >= 16) {
+                put_bits(&s->pb, huff_size_ac[0xf0], huff_code_ac[0xf0]);
+                run -= 16;
+            }
+            mant = val;
+            if (val < 0) {
+                val = -val;
+                mant--;
+            }
+
+            nbits= av_log2_16bit(val) + 1;
+            code = (run << 4) | nbits;
+
+            put_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
+
+            put_sbits(&s->pb, nbits, mant);
+            run = 0;
+        }
+    }
+
+    /* output EOB only if not already 64 values */
+    if (last_index < 63 || run != 0)
+        put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 {
-    int i, is_chroma_420;
+    int i;
+    if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        if (s->chroma_format == CHROMA_444) {
+            record_block(s, block[0], 0);
+            record_block(s, block[2], 2);
+            record_block(s, block[4], 4);
+            record_block(s, block[8], 8);
+            record_block(s, block[5], 5);
+            record_block(s, block[9], 9);
 
-    // Number of bits used depends on future data.
-    // So, nothing that relies on encoding many times and taking the
-    // one with the fewest bits will work properly here.
-    if (s->i_tex_bits != MJPEG_HUFFMAN_EST_BITS_PER_CODE *
-        s->mjpeg_ctx->huff_ncode) {
-        av_log(s->avctx, AV_LOG_ERROR, "Unsupported encoding method\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (s->chroma_format == CHROMA_444) {
-        realloc_huffman(s, 12);
-        encode_block(s, block[0], 0);
-        encode_block(s, block[2], 2);
-        encode_block(s, block[4], 4);
-        encode_block(s, block[8], 8);
-        encode_block(s, block[5], 5);
-        encode_block(s, block[9], 9);
-
-        if (16*s->mb_x+8 < s->width) {
-            encode_block(s, block[1], 1);
-            encode_block(s, block[3], 3);
-            encode_block(s, block[6], 6);
-            encode_block(s, block[10], 10);
-            encode_block(s, block[7], 7);
-            encode_block(s, block[11], 11);
+            if (16*s->mb_x+8 < s->width) {
+                record_block(s, block[1], 1);
+                record_block(s, block[3], 3);
+                record_block(s, block[6], 6);
+                record_block(s, block[10], 10);
+                record_block(s, block[7], 7);
+                record_block(s, block[11], 11);
+            }
+        } else {
+            for(i=0;i<5;i++) {
+                record_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                record_block(s, block[5], 5);
+            } else {
+                record_block(s, block[6], 6);
+                record_block(s, block[5], 5);
+                record_block(s, block[7], 7);
+            }
         }
     } else {
-        is_chroma_420 = (s->chroma_format == CHROMA_420);
-        realloc_huffman(s, 5 + (is_chroma_420 ? 1 : 3));
-        for(i=0;i<5;i++) {
-            encode_block(s, block[i], i);
-        }
-        if (is_chroma_420) {
+        if (s->chroma_format == CHROMA_444) {
+            encode_block(s, block[0], 0);
+            encode_block(s, block[2], 2);
+            encode_block(s, block[4], 4);
+            encode_block(s, block[8], 8);
             encode_block(s, block[5], 5);
-        } else {
-            encode_block(s, block[6], 6);
-            encode_block(s, block[5], 5);
-            encode_block(s, block[7], 7);
-        }
-    }
-    if (s->mjpeg_ctx->error)
-        return s->mjpeg_ctx->error;
+            encode_block(s, block[9], 9);
 
-    s->i_tex_bits = MJPEG_HUFFMAN_EST_BITS_PER_CODE * s->mjpeg_ctx->huff_ncode;
-    return 0;
+            if (16*s->mb_x+8 < s->width) {
+                encode_block(s, block[1], 1);
+                encode_block(s, block[3], 3);
+                encode_block(s, block[6], 6);
+                encode_block(s, block[10], 10);
+                encode_block(s, block[7], 7);
+                encode_block(s, block[11], 11);
+            }
+        } else {
+            for(i=0;i<5;i++) {
+                encode_block(s, block[i], i);
+            }
+            if (s->chroma_format == CHROMA_420) {
+                encode_block(s, block[5], 5);
+            } else {
+                encode_block(s, block[6], 6);
+                encode_block(s, block[5], 5);
+                encode_block(s, block[7], 7);
+            }
+        }
+
+        s->i_tex_bits += get_bits_diff(s);
+    }
 }
 
 // maximum over s->mjpeg_vsample[i]

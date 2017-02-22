@@ -645,6 +645,13 @@ int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles)
     return h->prot->url_get_multi_file_handle(h, handles, numhandles);
 }
 
+int ffurl_get_short_seek(URLContext *h)
+{
+    if (!h->prot->url_get_short_seek)
+        return AVERROR(ENOSYS);
+    return h->prot->url_get_short_seek(h);
+}
+
 int ffurl_shutdown(URLContext *h, int flags)
 {
     if (!h->prot->url_shutdown)

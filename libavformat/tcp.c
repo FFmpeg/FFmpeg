@@ -266,6 +266,26 @@ static int tcp_get_file_handle(URLContext *h)
     return s->fd;
 }
 
+static int tcp_get_window_size(URLContext *h)
+{
+    TCPContext *s = h->priv_data;
+    int avail;
+    int avail_len = sizeof(avail);
+
+#if HAVE_WINSOCK2_H
+    /* SO_RCVBUF with winsock only reports the actual TCP window size when
+    auto-tuning has been disabled via setting SO_RCVBUF */
+    if (s->recv_buffer_size < 0) {
+        return AVERROR(ENOSYS);
+    }
+#endif
+
+    if (getsockopt(s->fd, SOL_SOCKET, SO_RCVBUF, &avail, &avail_len)) {
+        return ff_neterrno();
+    }
+    return avail;
+}
+
 const URLProtocol ff_tcp_protocol = {
     .name                = "tcp",
     .url_open            = tcp_open,
@@ -274,6 +294,7 @@ const URLProtocol ff_tcp_protocol = {
     .url_write           = tcp_write,
     .url_close           = tcp_close,
     .url_get_file_handle = tcp_get_file_handle,
+    .url_get_short_seek  = tcp_get_window_size,
     .url_shutdown        = tcp_shutdown,
     .priv_data_size      = sizeof(TCPContext),
     .flags               = URL_PROTOCOL_FLAG_NETWORK,

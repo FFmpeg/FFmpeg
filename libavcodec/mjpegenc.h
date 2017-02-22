@@ -85,10 +85,8 @@ typedef struct MJpegContext {
     uint8_t bits_ac_chrominance[17]; ///< AC chrominance Huffman bits.
     uint8_t val_ac_chrominance[256]; ///< AC chrominance Huffman values.
 
-    unsigned int huff_capacity;      ///< Size of the buffer, in entries.
     size_t huff_ncode;               ///< Number of current entries in the buffer.
     MJpegHuffmanCode *huff_buffer;   ///< Buffer for Huffman code values.
-    int error;                       ///< Error code.
 } MJpegContext;
 
 /**
@@ -109,6 +107,6 @@ static inline void put_marker(PutBitContext *p, enum JpegMarker code)
 int  ff_mjpeg_encode_init(MpegEncContext *s);
 void ff_mjpeg_encode_picture_frame(MpegEncContext *s);
 void ff_mjpeg_encode_close(MpegEncContext *s);
-int ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64]);
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64]);
 
 #endif /* AVCODEC_MJPEGENC_H */

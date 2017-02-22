@@ -2107,7 +2107,7 @@ CONFIG_EXTRA="
     huffyuvencdsp
     idctdsp
     iirfilter
-    imdct15
+    mdct15
     intrax8
     iso_media
     ividsp
@@ -2339,6 +2339,7 @@ h264dsp_select="startcode"
 frame_thread_encoder_deps="encoders threads"
 intrax8_select="blockdsp idctdsp"
 mdct_select="fft"
+mdct15_select="fft"
 me_cmp_select="fdctdsp idctdsp pixblockdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp"
@@ -2349,7 +2350,7 @@ vc1dsp_select="h264chroma qpeldsp startcode"
 rdft_select="fft"
 
 # decoders / encoders
-aac_decoder_select="imdct15 mdct sinewin"
+aac_decoder_select="mdct15 mdct sinewin"
 aac_fixed_decoder_select="mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter lpc mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
@@ -2491,7 +2492,8 @@ nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="idctdsp lzo"
 on2avc_decoder_select="mdct"
 opus_decoder_deps="swresample"
-opus_decoder_select="imdct15"
+opus_decoder_select="mdct15"
+opus_encoder_select="audio_frame_queue mdct15"
 png_decoder_select="zlib"
 png_encoder_select="llvidencdsp zlib"
 prores_decoder_select="blockdsp idctdsp"

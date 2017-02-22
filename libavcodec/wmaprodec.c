@@ -323,9 +323,6 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx)
     }
 
     s->avctx = avctx;
-    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!s->fdsp)
-        return AVERROR(ENOMEM);
 
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
@@ -522,6 +519,10 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx)
             }
         }
     }
+
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     /** init MDCT, FIXME: only init needed sizes */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)

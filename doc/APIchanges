@@ -15,6 +15,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-02-13 - xxxxxxx - lavc 57.80.100 - avcodec.h
+  Add AVCodecContext.hw_device_ctx.
+
+2017-02-11 - xxxxxxx - lavu 55.47.100 - frame.h
+  Add AVFrame.opaque_ref.
+
 2017-01-31 - xxxxxxx - lavu 55.46.100 / 55.20.0 - cpu.h
   Add AV_CPU_FLAG_SSSE3SLOW.
 

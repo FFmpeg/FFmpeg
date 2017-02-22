@@ -30,7 +30,7 @@
 #include "internal.h"
 
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
-#define APE_TAG_FLAG_CONTAINS_FOOTER  (1 << 30)
+#define APE_TAG_FLAG_LACKS_FOOTER     (1 << 30)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 #define APE_TAG_FLAG_IS_BINARY        (1 << 1)
 
@@ -150,7 +150,6 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Invalid tag size %"PRIu32".\n", tag_bytes);
         return 0;
     }
-    tag_start = file_size - tag_bytes - APE_TAG_FOOTER_BYTES;
 
     fields = avio_rl32(pb);    /* number of fields */
     if (fields > 65536) {
@@ -165,6 +164,11 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
     }
 
     avio_seek(pb, file_size - tag_bytes, SEEK_SET);
+
+    if (val & APE_TAG_FLAG_CONTAINS_HEADER)
+        tag_bytes += APE_TAG_HEADER_BYTES;
+
+    tag_start = file_size - tag_bytes;
 
     for (i=0; i<fields; i++)
         if (ape_tag_read_field(s) < 0) break;
@@ -188,11 +192,6 @@ int ff_ape_write_tag(AVFormatContext *s)
     if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
         goto end;
 
-    // flags
-    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
-                     APE_TAG_FLAG_IS_HEADER);
-    ffio_fill(dyn_bc, 0, 8);             // reserved
-
     ff_standardize_creation_time(s);
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
         int val_len;
@@ -215,7 +214,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
     if (size <= 0)
         goto end;
-    size += 20;
+    size += APE_TAG_FOOTER_BYTES;
 
     // header
     avio_write(s->pb, "APETAGEX", 8);   // id
@@ -223,7 +222,11 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, size);
     avio_wl32(s->pb, count);
 
-    avio_write(s->pb, dyn_buf, size - 20);
+    // flags
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_IS_HEADER);
+    ffio_fill(s->pb, 0, 8);             // reserved
+
+    avio_write(s->pb, dyn_buf, size - APE_TAG_FOOTER_BYTES);
 
     // footer
     avio_write(s->pb, "APETAGEX", 8);   // id
@@ -232,7 +235,7 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, count);            // tag count
 
     // flags
-    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER);
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER);
     ffio_fill(s->pb, 0, 8);             // reserved
 
 end:

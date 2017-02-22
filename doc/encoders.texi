@@ -616,6 +616,27 @@ and slightly improves compression.
 
 @end table
 
+@anchor{opusenc}
+@section opus
+
+Opus encoder.
+
+This is a native FFmpeg encoder for the Opus format. Currently its in development and
+only implements the CELT part of the codec. Its quality is usually worse and at best
+is equal to the libopus encoder.
+
+@subsection Options
+
+@table @option
+@item b
+Set bit rate in bits/s. If unspecified it uses the number of channels and the layout
+to make a good guess.
+
+@item opus_delay
+Sets the maximum delay in milliseconds. Lower delays than 20ms will very quickly
+decrease quality.
+@end table
+
 @anchor{libfdk-aac-enc}
 @section libfdk_aac
 

@@ -258,8 +258,9 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
             for (; i < samples; i++)
                 *decoded++ = get_sbits_long(&s->gb, tmp);
         } else {
+            int real_limit = tmp ? (INT_MAX >> tmp) + 2 : INT_MAX;
             for (; i < samples; i++) {
-                int v = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
+                int v = get_sr_golomb_flac(&s->gb, tmp, real_limit, 0);
                 if (v == 0x80000000){
                     av_log(s->avctx, AV_LOG_ERROR, "invalid residual\n");
                     return AVERROR_INVALIDDATA;
@@ -326,7 +327,7 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
     return 0;
 }
 
-static void lpc_analyze_remodulate(int32_t *decoded, const int coeffs[32],
+static void lpc_analyze_remodulate(SUINT32 *decoded, const int coeffs[32],
                                    int order, int qlevel, int len, int bps)
 {
     int i, j;
@@ -342,7 +343,7 @@ static void lpc_analyze_remodulate(int32_t *decoded, const int coeffs[32],
     for (i = len - 1; i >= order; i--) {
         int64_t p = 0;
         for (j = 0; j < order; j++)
-            p += coeffs[j] * (int64_t)decoded[i-order+j];
+            p += coeffs[j] * (int64_t)(int32_t)decoded[i-order+j];
         decoded[i] -= p >> qlevel;
     }
     for (i = order; i < len; i++, decoded++) {

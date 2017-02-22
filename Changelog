@@ -22,6 +22,8 @@ version <next>:
 - threshold filter
 - midequalizer filter
 - Optimal Huffman tables for (M)JPEG encoding
+- FM Screen Capture Codec decoder
+- native Opus encoder
 
 version 3.2:
 - libopenmpt demuxer

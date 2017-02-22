@@ -313,6 +313,12 @@ typedef struct AVIOContext {
      */
     enum AVIODataMarkerType current_type;
     int64_t last_time;
+
+    /**
+     * A callback that is used instead of short_seek_threshold.
+     * This is current internal only, do not use from outside.
+     */
+    int (*short_seek_get)(void *opaque);
 } AVIOContext;
 
 /**

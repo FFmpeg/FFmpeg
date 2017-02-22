@@ -84,17 +84,17 @@ typedef struct LutContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption options[] = {
-    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "y",  "set Y expression",            OFFSET(comp_expr_str[Y]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "u",  "set U expression",            OFFSET(comp_expr_str[U]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "v",  "set V expression",            OFFSET(comp_expr_str[V]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "r",  "set R expression",            OFFSET(comp_expr_str[R]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "g",  "set G expression",            OFFSET(comp_expr_str[G]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "b",  "set B expression",            OFFSET(comp_expr_str[B]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { "a",  "set A expression",            OFFSET(comp_expr_str[A]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
+    { "c0", "set component #0 expression", OFFSET(comp_expr_str[0]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "c1", "set component #1 expression", OFFSET(comp_expr_str[1]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "c2", "set component #2 expression", OFFSET(comp_expr_str[2]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "c3", "set component #3 expression", OFFSET(comp_expr_str[3]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "y",  "set Y expression",            OFFSET(comp_expr_str[Y]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "u",  "set U expression",            OFFSET(comp_expr_str[U]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "v",  "set V expression",            OFFSET(comp_expr_str[V]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "r",  "set R expression",            OFFSET(comp_expr_str[R]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "g",  "set G expression",            OFFSET(comp_expr_str[G]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "b",  "set B expression",            OFFSET(comp_expr_str[B]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
+    { "a",  "set A expression",            OFFSET(comp_expr_str[A]),  AV_OPT_TYPE_STRING, { .str = "clipval" }, .flags = FLAGS },
     { NULL }
 };
 
@@ -265,7 +265,7 @@ static int config_props(AVFilterLink *inlink)
         max[Y] = 235 * (1 << (desc->comp[0].depth - 8));
         max[U] = 240 * (1 << (desc->comp[1].depth - 8));
         max[V] = 240 * (1 << (desc->comp[2].depth - 8));
-        max[A] = (1 << desc->comp[3].depth) - 1;
+        max[A] = (1 << desc->comp[0].depth) - 1;
         break;
     case AV_PIX_FMT_RGB48LE:
     case AV_PIX_FMT_RGBA64LE:
@@ -310,7 +310,7 @@ static int config_props(AVFilterLink *inlink)
         s->var_values[VAR_MAXVAL] = max[color];
         s->var_values[VAR_MINVAL] = min[color];
 
-        for (val = 0; val < (1 << desc->comp[0].depth); val++) {
+        for (val = 0; val < FF_ARRAY_ELEMS(s->lut[comp]); val++) {
             s->var_values[VAR_VAL] = val;
             s->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
             s->var_values[VAR_NEGVAL] =
@@ -324,7 +324,7 @@ static int config_props(AVFilterLink *inlink)
                        s->comp_expr_str[color], val, comp);
                 return AVERROR(EINVAL);
             }
-            s->lut[comp][val] = av_clip((int)res, min[color], max[color]);
+            s->lut[comp][val] = av_clip((int)res, 0, max[A]);
             av_log(ctx, AV_LOG_DEBUG, "val[%d][%d] = %d\n", comp, val, s->lut[comp][val]);
         }
     }

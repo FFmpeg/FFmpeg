@@ -23,10 +23,13 @@
 #include "mathops.h"
 #include "huffyuvdsp.h"
 
+// 0x00010001 or 0x0001000100010001 or whatever, depending on the cpu's native arithmetic size
+#define pw_1 (ULONG_MAX / UINT16_MAX)
+
 static void add_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w){
     long i;
-    unsigned long pw_lsb = (mask >> 1) * 0x0001000100010001ULL;
-    unsigned long pw_msb = pw_lsb +  0x0001000100010001ULL;
+    unsigned long pw_lsb = (mask >> 1) * pw_1;
+    unsigned long pw_msb = pw_lsb +  pw_1;
     for (i = 0; i <= w - (int)sizeof(long)/2; i += sizeof(long)/2) {
         long a = *(long*)(src+i);
         long b = *(long*)(dst+i);

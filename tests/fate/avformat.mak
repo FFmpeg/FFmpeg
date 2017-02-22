@@ -54,6 +54,7 @@ FATE_LAVF-$(call ENCDEC,  PCM_S16LE,             WAV)                += wav_peak
 FATE_LAVF-$(call ENCDEC,  PCM_S16LE,             WAV)                += wav_peak_only
 FATE_LAVF-$(call ENCMUX,  PCM_S16LE,             W64)                += w64
 FATE_LAVF-$(call ENCDEC,  MP2,                   WTV)                += wtv
+FATE_LAVF-$(call ENCDEC,  WAVPACK,               WV)                 += wv
 FATE_LAVF-$(call ENCDEC,  XBM,                   IMAGE2)             += xbm
 FATE_LAVF-$(call ENCDEC,  XWD,                   IMAGE2)             += xwd
 FATE_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                               += yuv4mpeg

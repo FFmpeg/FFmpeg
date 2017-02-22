@@ -881,7 +881,7 @@ static void reset_pes_packet_state(PESContext *pes)
 static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
 {
     av_init_packet(pkt);
-    pkt->data = buffer;
+    pkt->data = (uint8_t *)buffer;
     pkt->size = len;
 }
 

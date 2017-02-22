@@ -409,7 +409,7 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
 static void compute_quant_matrix(int *output, int qscale)
 {
     int i;
-    for (i = 0; i < 64; i++) output[i] = unscaled_quant_matrix[i] * qscale;
+    for (i = 0; i < 64; i++) output[i] = unscaled_quant_matrix[ff_zigzag_direct[i]] * qscale;
 }
 
 static int speedhq_decode_frame(AVCodecContext *avctx,

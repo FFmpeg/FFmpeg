@@ -257,8 +257,14 @@ static void decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
         memcpy(factors, fallback_list, size * sizeof(uint8_t));
     else
         for (i = 0; i < size; i++) {
-            if (next)
-                next = (last + get_se_golomb(gb)) & 0xff;
+            if (next) {
+                int v = get_se_golomb(gb);
+                if (v < -128 || v > 127) {
+                    av_log(NULL, AV_LOG_ERROR, "delta scale %d is invalid\n", v);
+                    v = -last;
+                }
+                next = (last + v) & 0xff;
+            }
             if (!i && !next) { /* matrix not written, we use the preset one */
                 memcpy(factors, jvt_list, size * sizeof(uint8_t));
                 break;
@@ -468,7 +474,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
 
     sps->frame_mbs_only_flag = get_bits1(gb);
 
-    if (sps->mb_height >= INT_MAX / 2) {
+    if (sps->mb_height >= INT_MAX / 2U) {
         av_log(avctx, AV_LOG_ERROR, "height overflow\n");
         goto fail;
     }

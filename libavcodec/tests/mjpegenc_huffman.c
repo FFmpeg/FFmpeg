@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 {
     int i, ret = 0;
     // Probabilities of symbols 0..4
-    static PTable val_counts[] = {
+    PTable val_counts[] = {
         {.value = 0, .prob = 1},
         {.value = 1, .prob = 2},
         {.value = 2, .prob = 5},

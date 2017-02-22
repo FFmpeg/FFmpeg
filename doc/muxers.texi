@@ -13,8 +13,9 @@ You can disable all the muxers with the configure option
 with the options @code{--enable-muxer=@var{MUXER}} /
 @code{--disable-muxer=@var{MUXER}}.
 
-The option @code{-formats} of the ff* tools will display the list of
-enabled muxers.
+The option @code{-muxers} of the ff* tools will display the list of
+enabled muxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
 
 A description of some of the currently available muxers follows.
 
@@ -441,9 +442,8 @@ parameters. Values containing @code{:} special characters must be
 escaped.
 
 @item hls_wrap @var{wrap}
-Set the number after which the segment filename number (the number
-specified in each segment file) wraps. If set to 0 the number will be
-never wrapped. Default value is 0.
+This is a deprecated option, you can use @code{hls_list_size}
+and @code{hls_flags delete_segments} instead it
 
 This option is useful to avoid to fill the disk with many segment
 files, and limits the maximum number of segment files written to disk

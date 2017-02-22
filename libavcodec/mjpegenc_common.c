@@ -424,7 +424,7 @@ void ff_mjpeg_escape_FF(PutBitContext *pb, int start)
  */
 static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
 {
-    int i, ret, table_id, code;
+    int i, table_id, code;
 
     MJpegEncHuffmanContext dc_luminance_ctx;
     MJpegEncHuffmanContext dc_chrominance_ctx;
@@ -444,22 +444,18 @@ static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
         ff_mjpeg_encode_huffman_increment(ctx[table_id], code);
     }
 
-    ret = ff_mjpeg_encode_huffman_close(&dc_luminance_ctx,
-                                        m->bits_dc_luminance,
-                                        m->val_dc_luminance, 12);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&dc_chrominance_ctx,
-                                        m->bits_dc_chrominance,
-                                        m->val_dc_chrominance, 12);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&ac_luminance_ctx,
-                                        m->bits_ac_luminance,
-                                        m->val_ac_luminance, 256);
-    av_assert0(!ret);
-    ret = ff_mjpeg_encode_huffman_close(&ac_chrominance_ctx,
-                                        m->bits_ac_chrominance,
-                                        m->val_ac_chrominance, 256);
-    av_assert0(!ret);
+    ff_mjpeg_encode_huffman_close(&dc_luminance_ctx,
+                                  m->bits_dc_luminance,
+                                  m->val_dc_luminance, 12);
+    ff_mjpeg_encode_huffman_close(&dc_chrominance_ctx,
+                                  m->bits_dc_chrominance,
+                                  m->val_dc_chrominance, 12);
+    ff_mjpeg_encode_huffman_close(&ac_luminance_ctx,
+                                  m->bits_ac_luminance,
+                                  m->val_ac_luminance, 256);
+    ff_mjpeg_encode_huffman_close(&ac_chrominance_ctx,
+                                  m->bits_ac_chrominance,
+                                  m->val_ac_chrominance, 256);
 
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
                                  m->huff_code_dc_luminance,
@@ -480,7 +476,8 @@ static void ff_mjpeg_build_optimal_huffman(MJpegContext *m)
 }
 
 /**
- * Writes the complete JPEG frame.
+ * Writes the complete JPEG frame when optimal huffman tables are enabled,
+ * otherwise writes the stuffing.
  *
  * Header + values + stuffing.
  *
@@ -497,9 +494,6 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
 
     m = s->mjpeg_ctx;
 
-    if (m->error)
-        return m->error;
-
     if (s->huffman == HUFFMAN_TABLE_OPTIMAL) {
         ff_mjpeg_build_optimal_huffman(m);
 
@@ -511,14 +505,10 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
         s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
         s->intra_chroma_ac_vlc_length      =
         s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
-    }
 
-    ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
-                                   s->pred, s->intra_matrix, s->chroma_intra_matrix);
-    ff_mjpeg_encode_picture_frame(s);
-    if (m->error < 0) {
-        ret = m->error;
-        return ret;
+        ff_mjpeg_encode_picture_header(s->avctx, &s->pb, &s->intra_scantable,
+                                       s->pred, s->intra_matrix, s->chroma_intra_matrix);
+        ff_mjpeg_encode_picture_frame(s);
     }
 
     ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,

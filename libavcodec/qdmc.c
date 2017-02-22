@@ -53,7 +53,7 @@ typedef struct QDMCContext {
     int nb_channels;
     int checksum_size;
 
-    uint8_t noise[2][19][16];
+    uint8_t noise[2][19][17];
     QDMCTone tones[5][8192];
     int nb_tones[5];
     int cur_tone[5];

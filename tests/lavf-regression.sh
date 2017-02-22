@@ -386,6 +386,10 @@ if [ -n "$do_w64" ] ; then
 do_audio_only w64
 fi
 
+if [ -n "$do_wv" ] ; then
+do_audio_only wv
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then

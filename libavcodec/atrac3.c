@@ -652,7 +652,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
         /* Decode sound unit pairs (channels are expected to be even).
          * Multichannel joint stereo interleaves pairs (6ch: 2ch + 2ch + 2ch) */
-        uint8_t *js_databuf;
+        const uint8_t *js_databuf;
         int js_pair, js_block_align;
 
         js_block_align = (avctx->block_align / avctx->channels) * 2; /* block pair */
@@ -751,6 +751,40 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
     return 0;
 }
 
+static int al_decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
+                           int size, float **out_samples)
+{
+    ATRAC3Context *q = avctx->priv_data;
+    int ret, i;
+
+    /* Set the bitstream reader at the start of a channel sound unit. */
+    init_get_bits(&q->gb, databuf, size * 8);
+    /* single channels */
+    /* Decode the channel sound units. */
+    for (i = 0; i < avctx->channels; i++) {
+        ret = decode_channel_sound_unit(q, &q->gb, &q->units[i],
+                                        out_samples[i], i, q->coding_mode);
+        if (ret != 0)
+            return ret;
+        while (i < avctx->channels && get_bits_left(&q->gb) > 6 && show_bits(&q->gb, 6) != 0x28) {
+            skip_bits(&q->gb, 1);
+        }
+    }
+
+    /* Apply the iQMF synthesis filter. */
+    for (i = 0; i < avctx->channels; i++) {
+        float *p1 = out_samples[i];
+        float *p2 = p1 + 256;
+        float *p3 = p2 + 256;
+        float *p4 = p3 + 256;
+        ff_atrac_iqmf(p1, p2, 256, p1, q->units[i].delay_buf1, q->temp_buf);
+        ff_atrac_iqmf(p4, p3, 256, p3, q->units[i].delay_buf2, q->temp_buf);
+        ff_atrac_iqmf(p1, p3, 512, p1, q->units[i].delay_buf3, q->temp_buf);
+    }
+
+    return 0;
+}
+
 static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -791,6 +825,28 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
+static int atrac3al_decode_frame(AVCodecContext *avctx, void *data,
+                                 int *got_frame_ptr, AVPacket *avpkt)
+{
+    AVFrame *frame = data;
+    int ret;
+
+    frame->nb_samples = SAMPLES_PER_FRAME;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+
+    ret = al_decode_frame(avctx, avpkt->data, avpkt->size,
+                          (float **)frame->extended_data);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "Frame decoding error!\n");
+        return ret;
+    }
+
+    *got_frame_ptr = 1;
+
+    return avpkt->size;
+}
+
 static av_cold void atrac3_init_static_data(void)
 {
     int i;
@@ -827,7 +883,12 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     static_init_done = 1;
 
     /* Take care of the codec-specific extradata. */
-    if (avctx->extradata_size == 14) {
+    if (avctx->codec_id == AV_CODEC_ID_ATRAC3AL) {
+        version           = 4;
+        samples_per_frame = SAMPLES_PER_FRAME * avctx->channels;
+        delay             = 0x88E;
+        q->coding_mode    = SINGLE;
+    } else if (avctx->extradata_size == 14) {
         /* Parse the extradata, WAV format */
         av_log(avctx, AV_LOG_DEBUG, "[0-1] %d\n",
                bytestream_get_le16(&edata_ptr));  // Unknown value always 1
@@ -955,6 +1016,20 @@ AVCodec ff_atrac3_decoder = {
     .init             = atrac3_decode_init,
     .close            = atrac3_decode_close,
     .decode           = atrac3_decode_frame,
+    .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                        AV_SAMPLE_FMT_NONE },
+};
+
+AVCodec ff_atrac3al_decoder = {
+    .name             = "atrac3al",
+    .long_name        = NULL_IF_CONFIG_SMALL("ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)"),
+    .type             = AVMEDIA_TYPE_AUDIO,
+    .id               = AV_CODEC_ID_ATRAC3AL,
+    .priv_data_size   = sizeof(ATRAC3Context),
+    .init             = atrac3_decode_init,
+    .close            = atrac3_decode_close,
+    .decode           = atrac3al_decode_frame,
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },

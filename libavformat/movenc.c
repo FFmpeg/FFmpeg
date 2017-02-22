@@ -3645,6 +3645,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
         MOVTrack *track = &mov->tracks[i];
         const char *type;
         int track_id = track->track_id;
+        char track_name_buf[32] = { 0 };
 
         AVStream *st = track->st;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
@@ -3670,6 +3671,23 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
         param_write_int(pb, "systemBitrate", manifest_bit_rate);
         param_write_int(pb, "trackID", track_id);
         param_write_string(pb, "systemLanguage", lang ? lang->value : "und");
+
+        /* Build track name piece by piece: */
+        /* 1. track type */
+        av_strlcat(track_name_buf, type, sizeof(track_name_buf));
+        /* 2. track language, if available */
+        if (lang)
+            av_strlcatf(track_name_buf, sizeof(track_name_buf),
+                        "_%s", lang->value);
+        /* 3. special type suffix */
+        /* "_cc" = closed captions, "_ad" = audio_description */
+        if (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED)
+            av_strlcat(track_name_buf, "_cc", sizeof(track_name_buf));
+        else if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
+            av_strlcat(track_name_buf, "_ad", sizeof(track_name_buf));
+
+        param_write_string(pb, "trackName", track_name_buf);
+
         if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->par->codec_id == AV_CODEC_ID_H264) {
                 uint8_t *ptr;
@@ -5517,7 +5535,7 @@ static int mov_init(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVDictionaryEntry *global_tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
-    int i, ret, hint_track = 0, tmcd_track = 0;
+    int i, ret;
 
     mov->fc = s;
 
@@ -5610,7 +5628,6 @@ static int mov_init(AVFormatContext *s)
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Add hint tracks for each audio and video stream */
-        hint_track = mov->nb_streams;
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
@@ -5622,8 +5639,6 @@ static int mov_init(AVFormatContext *s)
 
     if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
         || mov->write_tmcd == 1) {
-        tmcd_track = mov->nb_streams;
-
         /* +1 tmcd track for each video stream with a timecode */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];

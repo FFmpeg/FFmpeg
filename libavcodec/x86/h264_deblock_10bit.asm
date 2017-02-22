@@ -843,11 +843,6 @@ DEBLOCK_LUMA_INTRA
     mova [r0+2*r1], m2
 %endmacro
 
-; expands to [base],...,[base+7*stride]
-%define PASS8ROWS(base, base3, stride, stride3) \
-    [base], [base+stride], [base+stride*2], [base3], \
-    [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
-
 ; in: 8 rows of 4 words in %4..%11
 ; out: 4 rows of 8 words in m0..m3
 %macro TRANSPOSE4x8W_LOAD 8

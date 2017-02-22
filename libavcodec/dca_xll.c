@@ -717,10 +717,10 @@ static void chs_assemble_msbs_lsbs(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int32_t *lsb = b->lsb_sample_buffer[ch];
                 int adj = b->bit_width_adjust[ch];
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift) + (lsb[n] << adj);
+                    msb[n] = msb[n] * (SUINT)(1 << shift) + (lsb[n] << adj);
             } else {
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift);
+                    msb[n] = msb[n] * (SUINT)(1 << shift);
             }
         }
     }
@@ -1446,11 +1446,11 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
         if (frame->format == AV_SAMPLE_FMT_S16P) {
             int16_t *plane = (int16_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = av_clip_int16(samples[k] * (1 << shift));
+                plane[k] = av_clip_int16(samples[k] * (SUINT)(1 << shift));
         } else {
             int32_t *plane = (int32_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = clip23(samples[k] * (1 << shift)) * (1 << 8);
+                plane[k] = clip23(samples[k] * (SUINT)(1 << shift)) * (1 << 8);
         }
     }
 

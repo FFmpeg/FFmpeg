@@ -42,6 +42,7 @@ typedef struct CuvidContext
 
     char *cu_gpu;
     int nb_surfaces;
+    int drop_second_field;
 
     AVBufferRef *hwdevice;
     AVBufferRef *hwframe;
@@ -51,6 +52,7 @@ typedef struct CuvidContext
     AVFifoBuffer *frame_queue;
 
     int deint_mode;
+    int deint_mode_current;
     int64_t prev_pts;
 
     int internal_error;
@@ -113,6 +115,10 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     ctx->internal_error = 0;
 
+    // width and height need to be set before calling ff_get_format
+    avctx->width = format->display_area.right;
+    avctx->height = format->display_area.bottom;
+
     switch (format->bit_depth_luma_minus8) {
     case 0: // 8-bit
         pix_fmts[1] = AV_PIX_FMT_NV12;
@@ -143,14 +149,28 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     avctx->pix_fmt = surface_fmt;
 
-    avctx->width = format->display_area.right;
-    avctx->height = format->display_area.bottom;
+    // Update our hwframe ctx, as the get_format callback might have refreshed it!
+    if (avctx->hw_frames_ctx) {
+        av_buffer_unref(&ctx->hwframe);
+
+        ctx->hwframe = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!ctx->hwframe) {
+            ctx->internal_error = AVERROR(ENOMEM);
+            return 0;
+        }
+
+        hwframe_ctx = (AVHWFramesContext*)ctx->hwframe->data;
+    }
 
     ff_set_sar(avctx, av_div_q(
         (AVRational){ format->display_aspect_ratio.x, format->display_aspect_ratio.y },
         (AVRational){ avctx->width, avctx->height }));
 
-    if (!format->progressive_sequence && ctx->deint_mode == cudaVideoDeinterlaceMode_Weave)
+    ctx->deint_mode_current = format->progressive_sequence
+                              ? cudaVideoDeinterlaceMode_Weave
+                              : ctx->deint_mode;
+
+    if (!format->progressive_sequence && ctx->deint_mode_current == cudaVideoDeinterlaceMode_Weave)
         avctx->flags |= AV_CODEC_FLAG_INTERLACED_DCT;
     else
         avctx->flags &= ~AV_CODEC_FLAG_INTERLACED_DCT;
@@ -193,6 +213,11 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
             hwframe_ctx->format != AV_PIX_FMT_CUDA ||
             hwframe_ctx->sw_format != avctx->sw_pix_fmt)) {
         av_log(avctx, AV_LOG_ERROR, "AVHWFramesContext is already initialized with incompatible parameters\n");
+        av_log(avctx, AV_LOG_DEBUG, "width: %d <-> %d\n", hwframe_ctx->width, avctx->width);
+        av_log(avctx, AV_LOG_DEBUG, "height: %d <-> %d\n", hwframe_ctx->height, avctx->height);
+        av_log(avctx, AV_LOG_DEBUG, "format: %s <-> cuda\n", av_get_pix_fmt_name(hwframe_ctx->format));
+        av_log(avctx, AV_LOG_DEBUG, "sw_format: %s <-> %s\n",
+               av_get_pix_fmt_name(hwframe_ctx->sw_format), av_get_pix_fmt_name(avctx->sw_pix_fmt));
         ctx->internal_error = AVERROR(EINVAL);
         return 0;
     }
@@ -241,14 +266,9 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     cuinfo.ulNumOutputSurfaces = 1;
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
     cuinfo.bitDepthMinus8 = format->bit_depth_luma_minus8;
+    cuinfo.DeinterlaceMode = ctx->deint_mode_current;
 
-    if (format->progressive_sequence) {
-        ctx->deint_mode = cuinfo.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave;
-    } else {
-        cuinfo.DeinterlaceMode = ctx->deint_mode;
-    }
-
-    if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave)
+    if (ctx->deint_mode_current != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
         avctx->framerate = av_mul_q(avctx->framerate, (AVRational){2, 1});
 
     ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidCreateDecoder(&ctx->cudecoder, &cuinfo));
@@ -293,13 +313,15 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     parsed_frame.dispinfo = *dispinfo;
     ctx->internal_error = 0;
 
-    if (ctx->deint_mode == cudaVideoDeinterlaceMode_Weave) {
+    if (ctx->deint_mode_current == cudaVideoDeinterlaceMode_Weave) {
         av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
     } else {
         parsed_frame.is_deinterlacing = 1;
         av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
-        parsed_frame.second_field = 1;
-        av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
+        if (!ctx->drop_second_field) {
+            parsed_frame.second_field = 1;
+            av_fifo_generic_write(ctx->frame_queue, &parsed_frame, sizeof(CuvidParsedFrame), NULL);
+        }
     }
 
     return 1;
@@ -564,7 +586,7 @@ static int cuvid_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     av_log(avctx, AV_LOG_TRACE, "cuvid_decode_frame\n");
 
-    if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave) {
+    if (ctx->deint_mode_current != cudaVideoDeinterlaceMode_Weave) {
         av_log(avctx, AV_LOG_ERROR, "Deinterlacing is not supported via the old API\n");
         return AVERROR(EINVAL);
     }
@@ -930,6 +952,7 @@ static const AVOption options[] = {
     { "adaptive", "Adaptive deinterlacing",                  0, AV_OPT_TYPE_CONST, { .i64 = cudaVideoDeinterlaceMode_Adaptive }, 0, 0, VD, "deint" },
     { "gpu",      "GPU to be used for decoding", OFFSET(cu_gpu), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
     { "surfaces", "Maximum surfaces to be used for decoding", OFFSET(nb_surfaces), AV_OPT_TYPE_INT, { .i64 = 25 }, 0, INT_MAX, VD },
+    { "drop_second_field", "Drop second field when deinterlacing", OFFSET(drop_second_field), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { NULL }
 };
 

@@ -101,7 +101,9 @@ typedef struct HLSContext {
     float time;            // Set by a private option.
     float init_time;       // Set by a private option.
     int max_nb_segments;   // Set by a private option.
+#if FF_API_HLS_WRAP
     int  wrap;             // Set by a private option.
+#endif
     uint32_t flags;        // enum HLSFlags
     uint32_t pl_type;      // enum PlaylistType
     char *segment_filename;
@@ -240,7 +242,7 @@ fail:
     return -1;
 }
 
-static int hls_delete_old_segments(HLSContext *hls) {
+static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls) {
 
     HLSSegment *segment, *previous_segment = NULL;
     float playlist_duration = 0.0f;
@@ -249,6 +251,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
     char *path = NULL;
     AVDictionary *options = NULL;
     AVIOContext *out = NULL;
+    const char *proto = NULL;
 
     segment = hls->segments;
     while (segment) {
@@ -298,7 +301,8 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_strlcat(path, segment->filename, path_size);
         }
 
-        if (hls->method) {
+        proto = avio_find_protocol_name(s->filename);
+        if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
             av_dict_set(&options, "method", "DELETE", 0);
             if ((ret = hls->avf->io_open(hls->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0)
                 goto fail;
@@ -319,7 +323,7 @@ static int hls_delete_old_segments(HLSContext *hls) {
             av_strlcpy(sub_path, dirname, sub_path_size);
             av_strlcat(sub_path, segment->sub_filename, sub_path_size);
 
-            if (hls->method) {
+            if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
                 if ((ret = hls->avf->io_open(hls->avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
                     av_free(sub_path);
@@ -448,6 +452,7 @@ static int hls_mux_init(AVFormatContext *s)
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
+        av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
     hls->start_pos = 0;
     hls->new_start = 1;
@@ -566,10 +571,14 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
         hls->initial_prog_date_time += en->duration;
         hls->segments = en->next;
         if (en && hls->flags & HLS_DELETE_SEGMENTS &&
+#if FF_API_HLS_WRAP
                 !(hls->flags & HLS_SINGLE_FILE || hls->wrap)) {
+#else
+                !(hls->flags & HLS_SINGLE_FILE)) {
+#endif
             en->next = hls->old_segments;
             hls->old_segments = en;
-            if ((ret = hls_delete_old_segments(hls)) < 0)
+            if ((ret = hls_delete_old_segments(s, hls)) < 0)
                 return ret;
         } else
             av_free(en);
@@ -656,10 +665,17 @@ static void hls_free_segments(HLSSegment *p)
     }
 }
 
-static void set_http_options(AVDictionary **options, HLSContext *c)
+static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
 {
-    if (c->method)
+    const char *proto = avio_find_protocol_name(s->filename);
+    int http_base_proto = proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
+
+    if (c->method) {
         av_dict_set(options, "method", c->method, 0);
+    } else if (http_base_proto) {
+        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
+        av_dict_set(options, "method", "PUT", 0);
+    }
 }
 
 static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version,
@@ -703,7 +719,7 @@ static int hls_window(AVFormatContext *s, int last)
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
-    set_http_options(&options, hls);
+    set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
     if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &options)) < 0)
         goto fail;
@@ -834,7 +850,11 @@ static int hls_start(AVFormatContext *s)
                   sizeof(vtt_oc->filename));
     } else if (c->max_seg_size > 0) {
         if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
             c->basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+            c->basename, 'd', c->sequence) < 1) {
+#endif
                 av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", c->basename);
                 return AVERROR(EINVAL);
         }
@@ -853,7 +873,11 @@ static int hls_start(AVFormatContext *s)
                 if (!filename)
                     return AVERROR(ENOMEM);
                 if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
                     filename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                    filename, 'd', c->sequence) < 1) {
+#endif
                     av_log(c, AV_LOG_ERROR,
                            "Invalid second level segment filename template '%s', "
                             "you can try to remove second_level_segment_index flag\n",
@@ -910,13 +934,21 @@ static int hls_start(AVFormatContext *s)
                 av_free(fn_copy);
             }
         } else if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
                    c->basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                   c->basename, 'd', c->sequence) < 1) {
+#endif
             av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", c->basename);
             return AVERROR(EINVAL);
         }
         if( c->vtt_basename) {
             if (replace_int_data_in_filename(vtt_oc->filename, sizeof(vtt_oc->filename),
+#if FF_API_HLS_WRAP
                 c->vtt_basename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+                c->vtt_basename, 'd', c->sequence) < 1) {
+#endif
                 av_log(vtt_oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", c->vtt_basename);
                 return AVERROR(EINVAL);
             }
@@ -924,7 +956,7 @@ static int hls_start(AVFormatContext *s)
     }
     c->number++;
 
-    set_http_options(&options, c);
+    set_http_options(s, &options, c);
 
     if (c->flags & HLS_TEMP_FILE) {
         av_strlcat(oc->filename, ".tmp", sizeof(oc->filename));
@@ -956,7 +988,7 @@ static int hls_start(AVFormatContext *s)
         if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     if (c->vtt_basename) {
-        set_http_options(&options, c);
+        set_http_options(s, &options, c);
         if ((err = s->io_open(s, &vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
     }
@@ -1421,7 +1453,9 @@ static const AVOption options[] = {
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
-    {"hls_wrap",      "set number after which the index wraps",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+#if FF_API_HLS_WRAP
+    {"hls_wrap",      "set number after which the index wraps (will be deprecated)",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+#endif
     {"hls_allow_cache", "explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments", OFFSET(allowcache), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, E},
     {"hls_base_url",  "url to prepend to each playlist entry",   OFFSET(baseurl), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E},
     {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
@@ -1446,7 +1480,7 @@ static const AVOption options[] = {
     {"hls_playlist_type", "set the HLS playlist type", OFFSET(pl_type), AV_OPT_TYPE_INT, {.i64 = PLAYLIST_TYPE_NONE }, 0, PLAYLIST_TYPE_NB-1, E, "pl_type" },
     {"event", "EVENT playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_EVENT }, INT_MIN, INT_MAX, E, "pl_type" },
     {"vod", "VOD playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_VOD }, INT_MIN, INT_MAX, E, "pl_type" },
-    {"method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"method", "set the HTTP method(default: PUT)", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_start_number_source", "set source of first number in sequence", OFFSET(start_sequence_source_type), AV_OPT_TYPE_INT, {.i64 = HLS_START_SEQUENCE_AS_START_NUMBER }, 0, HLS_START_SEQUENCE_AS_FORMATTED_DATETIME, E, "start_sequence_source_type" },
     {"generic", "start_number value (default)", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_START_NUMBER }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"epoch", "seconds since epoch", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
