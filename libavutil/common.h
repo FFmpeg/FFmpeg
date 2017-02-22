@@ -183,6 +183,17 @@ static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
 }
 
 /**
+ * Clear high bits from an unsigned integer starting with specific bit position
+ * @param  a value to clip
+ * @param  p bit position to clip at
+ * @return clipped value
+ */
+static av_always_inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
+{
+    return a & ((1 << p) - 1);
+}
+
+/**
  * Add two signed 32-bit values with saturation.
  *
  * @param  a one value
@@ -409,6 +420,9 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_clip_uintp2
 #   define av_clip_uintp2   av_clip_uintp2_c
+#endif
+#ifndef av_mod_uintp2
+#   define av_mod_uintp2    av_mod_uintp2_c
 #endif
 #ifndef av_sat_add32
 #   define av_sat_add32     av_sat_add32_c
