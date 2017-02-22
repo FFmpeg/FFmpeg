@@ -404,7 +404,8 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
             r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
     }
     r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
-    rv34_decode_mv(r, r->block_type);
+    if (rv34_decode_mv(r, r->block_type) < 0)
+        return -1;
     if(r->block_type == RV34_MB_SKIP){
         fill_rectangle(intra_types, 4, 4, r->intra_types_stride, 0, sizeof(intra_types[0]));
         return 0;
