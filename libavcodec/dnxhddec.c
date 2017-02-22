@@ -249,7 +249,10 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         ctx->decode_dct_block = dnxhd_decode_dct_block_12;
         ctx->pix_fmt = AV_PIX_FMT_YUV422P12;
     } else if (bitdepth == 10) {
-        ctx->decode_dct_block = dnxhd_decode_dct_block_10;
+        if (ctx->avctx->profile == FF_PROFILE_DNXHR_HQX)
+            ctx->decode_dct_block = dnxhd_decode_dct_block_10_444;
+        else
+            ctx->decode_dct_block = dnxhd_decode_dct_block_10;
         ctx->pix_fmt = AV_PIX_FMT_YUV422P10;
     } else {
         ctx->decode_dct_block = dnxhd_decode_dct_block_8;
