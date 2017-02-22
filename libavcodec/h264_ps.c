@@ -828,6 +828,11 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     pps->init_qp                              = get_se_golomb(gb) + 26 + qp_bd_offset;
     pps->init_qs                              = get_se_golomb(gb) + 26 + qp_bd_offset;
     pps->chroma_qp_index_offset[0]            = get_se_golomb(gb);
+    if (pps->chroma_qp_index_offset[0] < -12 || pps->chroma_qp_index_offset[0] > 12) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     pps->deblocking_filter_parameters_present = get_bits1(gb);
     pps->constrained_intra_pred               = get_bits1(gb);
     pps->redundant_pic_cnt_present            = get_bits1(gb);
@@ -845,6 +850,10 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
                                 pps->scaling_matrix4, pps->scaling_matrix8);
         // second_chroma_qp_index_offset
         pps->chroma_qp_index_offset[1] = get_se_golomb(gb);
+        if (pps->chroma_qp_index_offset[1] < -12 || pps->chroma_qp_index_offset[1] > 12) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     } else {
         pps->chroma_qp_index_offset[1] = pps->chroma_qp_index_offset[0];
     }
