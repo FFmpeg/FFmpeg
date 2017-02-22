@@ -1252,6 +1252,7 @@ RET
 
 %endmacro ; DEBLOCK_CHROMA_XMM
 
+DEBLOCK_CHROMA_XMM sse2
 DEBLOCK_CHROMA_XMM avx
 
 ;-----------------------------------------------------------------------------
