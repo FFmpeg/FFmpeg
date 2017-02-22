@@ -65,7 +65,7 @@
 #define APIENTRY
 #endif
 
-/* FF_GL_RED_COMPONENT is used for plannar pixel types.
+/* FF_GL_RED_COMPONENT is used for planar pixel types.
  * Only red component is sampled in shaders.
  * On some platforms GL_RED is not available and GL_LUMINANCE have to be used,
  * but since OpenGL 3.0 GL_LUMINANCE is deprecated.
