@@ -510,7 +510,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
         if (ctx->divx_version == 500 && ctx->divx_build == 413)
             sum = s->sprite_offset[0][n] / (1 << (a - s->quarter_sample));
         else
-            sum = RSHIFT(s->sprite_offset[0][n] << s->quarter_sample, a);
+            sum = RSHIFT(s->sprite_offset[0][n] * (1 << s->quarter_sample), a);
     } else {
         dx    = s->sprite_delta[n][0];
         dy    = s->sprite_delta[n][1];
