@@ -33,6 +33,7 @@
 #include "internal.h"
 
 enum QuickdrawOpcodes {
+    CLIP = 0x0001,
     PACKBITSRECT = 0x0098,
     PACKBITSRGN,
     DIRECTBITSRECT,
@@ -309,7 +310,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p      = data;
     GetByteContext gbc;
     int colors;
-    int w, h, ret;
+    int w, h, x0, y0, x1, y1, ret;
     int ver;
 
     bytestream2_init(&gbc, avpkt->data, avpkt->size);
@@ -353,6 +354,16 @@ static int decode_frame(AVCodecContext *avctx,
         int opcode = bytestream2_get_be16(&gbc);
 
         switch(opcode) {
+        case CLIP:
+            bytestream2_get_be16(&gbc);
+            y0 = bytestream2_get_be16(&gbc);
+            x0 = bytestream2_get_be16(&gbc);
+            y1 = bytestream2_get_be16(&gbc);
+            x1 = bytestream2_get_be16(&gbc);
+            ret = ff_set_dimensions(avctx, x1 - x0, y1 - y0);
+            if (ret < 0)
+                return ret;
+            break;
         case PACKBITSRECT:
         case PACKBITSRGN:
             av_log(avctx, AV_LOG_DEBUG, "Parsing Packbit opcode\n");
