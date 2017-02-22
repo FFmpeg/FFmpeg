@@ -459,7 +459,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
    cases. */
 static void imdct12(INTFLOAT *out, INTFLOAT *in)
 {
-    INTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
+    SUINTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
 
     in0  = in[0*3];
     in1  = in[1*3] + in[0*3];
