@@ -48,8 +48,8 @@ static void gmc1_motion(MpegEncContext *s,
     motion_y   = s->sprite_offset[0][1];
     src_x      = s->mb_x * 16 + (motion_x >> (s->sprite_warping_accuracy + 1));
     src_y      = s->mb_y * 16 + (motion_y >> (s->sprite_warping_accuracy + 1));
-    motion_x <<= (3 - s->sprite_warping_accuracy);
-    motion_y <<= (3 - s->sprite_warping_accuracy);
+    motion_x *= 1 << (3 - s->sprite_warping_accuracy);
+    motion_y *= 1 << (3 - s->sprite_warping_accuracy);
     src_x      = av_clip(src_x, -16, s->width);
     if (src_x == s->width)
         motion_x = 0;
@@ -95,8 +95,8 @@ static void gmc1_motion(MpegEncContext *s,
     motion_y   = s->sprite_offset[1][1];
     src_x      = s->mb_x * 8 + (motion_x >> (s->sprite_warping_accuracy + 1));
     src_y      = s->mb_y * 8 + (motion_y >> (s->sprite_warping_accuracy + 1));
-    motion_x <<= (3 - s->sprite_warping_accuracy);
-    motion_y <<= (3 - s->sprite_warping_accuracy);
+    motion_x  *= 1 << (3 - s->sprite_warping_accuracy);
+    motion_y  *= 1 << (3 - s->sprite_warping_accuracy);
     src_x      = av_clip(src_x, -8, s->width >> 1);
     if (src_x == s->width >> 1)
         motion_x = 0;
