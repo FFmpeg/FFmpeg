@@ -140,6 +140,11 @@ static const VideoRateAbbr video_rate_abbrs[]= {
     { "ntsc-film", { 24000, 1001 } },
 };
 
+static const char *months[12] = {
+    "january", "february", "march", "april", "may", "june", "july", "august",
+    "september", "october", "november", "december"
+};
+
 int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
@@ -466,6 +471,21 @@ static int date_get_num(const char **pp,
     return val;
 }
 
+static int date_get_month(const char **pp) {
+    int i = 0;
+    for (; i < 12; i++) {
+        if (!av_strncasecmp(*pp, months[i], 3)) {
+            const char *mo_full = months[i] + 3;
+            int len = strlen(mo_full);
+            *pp += 3;
+            if (len > 0 && !av_strncasecmp(*pp, mo_full, len))
+                *pp += len;
+            return i;
+        }
+    }
+    return -1;
+}
+
 char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
@@ -524,6 +544,14 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
             p = av_small_strptime(p, "%H:%M:%S", dt);
             if (!p)
                 return NULL;
+            break;
+        case 'b':
+        case 'B':
+        case 'h':
+            val = date_get_month(&p);
+            if (val == -1)
+                return NULL;
+            dt->tm_mon = val;
             break;
         case '%':
             if (*p++ != '%')
