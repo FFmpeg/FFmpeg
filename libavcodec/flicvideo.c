@@ -27,8 +27,7 @@
  * variations, visit:
  *   http://www.compuphase.com/flic.htm
  *
- * This decoder outputs PAL8/RGB555/RGB565 and maybe one day RGB24
- * colorspace data, depending on the FLC. To use this decoder, be
+ * This decoder outputs PAL8/RGB555/RGB565/BGR24. To use this decoder, be
  * sure that your demuxer sends the FLI file header to the decoder via
  * the extradata chunk in AVCodecContext. The chunk should be 128 bytes
  * large. The only exception is for FLI files from the game "Magic Carpet",
