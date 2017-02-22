@@ -44,6 +44,10 @@
 #   endif
 #endif /* ff_log2 */
 
+#ifndef ff_clz
+#   define ff_clz(v) __builtin_clz(v)
+#endif /* ff_clz */
+
 #endif /* AV_GCC_VERSION_AT_LEAST(3,4) */
 
 extern const uint8_t ff_log2_tab[256];
@@ -129,6 +133,21 @@ static av_always_inline av_const int ff_ctz_c(int v)
     c -= v & 0x1;
 
     return c;
+}
+#endif
+
+#ifndef ff_clz
+#define ff_clz ff_clz_c
+static av_always_inline av_const unsigned ff_clz_c(unsigned x)
+{
+    unsigned i = sizeof(x) * 8;
+
+    while (x) {
+        x >>= 1;
+        i--;
+    }
+
+    return i;
 }
 #endif
 
