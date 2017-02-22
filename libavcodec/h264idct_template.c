@@ -289,15 +289,15 @@ void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
 
     for(i=0; i<2; i++){
         const int offset= x_offset[i];
-        const int z0= temp[2*0+i] + temp[2*2+i];
-        const int z1= temp[2*0+i] - temp[2*2+i];
-        const int z2= temp[2*1+i] - temp[2*3+i];
-        const int z3= temp[2*1+i] + temp[2*3+i];
+        const SUINT z0= temp[2*0+i] + temp[2*2+i];
+        const SUINT z1= temp[2*0+i] - temp[2*2+i];
+        const SUINT z2= temp[2*1+i] - temp[2*3+i];
+        const SUINT z3= temp[2*1+i] + temp[2*3+i];
 
-        block[stride*0+offset]= ((z0 + z3)*qmul + 128) >> 8;
-        block[stride*1+offset]= ((z1 + z2)*qmul + 128) >> 8;
-        block[stride*2+offset]= ((z1 - z2)*qmul + 128) >> 8;
-        block[stride*3+offset]= ((z0 - z3)*qmul + 128) >> 8;
+        block[stride*0+offset]= (int)((z0 + z3)*qmul + 128) >> 8;
+        block[stride*1+offset]= (int)((z1 + z2)*qmul + 128) >> 8;
+        block[stride*2+offset]= (int)((z1 - z2)*qmul + 128) >> 8;
+        block[stride*3+offset]= (int)((z0 - z3)*qmul + 128) >> 8;
     }
 }
 
