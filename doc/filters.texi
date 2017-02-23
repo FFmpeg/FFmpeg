@@ -306,6 +306,8 @@ smartblur = enable='between(t,10,3*60)',
 curves    = enable='gte(t,3)' : preset=cross_process
 @end example
 
+See @code{ffmpeg -filters} to view which filters have timeline support.
+
 @c man end FILTERGRAPH DESCRIPTION
 
 @chapter Audio Filters
