@@ -504,7 +504,8 @@ static int decompress_p(AVCodecContext *avctx,
                 mvx -= 256;
                 mvy -= 256;
 
-                if (by + mvy + sy1 < 0 || bx + mvx + sx1 < 0)
+                if (by + mvy + sy1 < 0 || bx + mvx + sx1 < 0 ||
+                    by + mvy + sy1 >= avctx->height || bx + mvx + sx1 >= avctx->width)
                     return AVERROR_INVALIDDATA;
 
                 for (i = 0; i < sy2 - sy1 && (by + sy1 + i) < avctx->height; i++) {
