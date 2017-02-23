@@ -408,7 +408,7 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         }
 
         if (avctx->bits_per_coded_sample == 16) {
-            cx1 = (clr & 0xFF00) >> 2;
+            cx1 = (clr & 0x3F00) >> 2;
             cx = (clr & 0xFFFFFF) >> 16;
         } else {
             cx1 = (clr & 0xFC00) >> 4;
@@ -647,7 +647,7 @@ static int decompress_p(AVCodecContext *avctx,
                     }
 
                     if (avctx->bits_per_coded_sample == 16) {
-                        cx1 = (clr & 0xFF00) >> 2;
+                        cx1 = (clr & 0x3F00) >> 2;
                         cx = (clr & 0xFFFFFF) >> 16;
                     } else {
                         cx1 = (clr & 0xFC00) >> 4;
