@@ -34,12 +34,91 @@
 #include <pthread.h>
 #include "h264.h"
 #include "h264_sei.h"
+#include <dlfcn.h>
 
-#if !CONFIG_VT_BT2020
-# define kCVImageBufferColorPrimaries_ITU_R_2020   CFSTR("ITU_R_2020")
-# define kCVImageBufferTransferFunction_ITU_R_2020 CFSTR("ITU_R_2020")
-# define kCVImageBufferYCbCrMatrix_ITU_R_2020      CFSTR("ITU_R_2020")
-#endif
+//These symbols may not be present
+static struct{
+    CFStringRef kCVImageBufferColorPrimaries_ITU_R_2020;
+    CFStringRef kCVImageBufferTransferFunction_ITU_R_2020;
+    CFStringRef kCVImageBufferYCbCrMatrix_ITU_R_2020;
+
+    CFStringRef kVTCompressionPropertyKey_H264EntropyMode;
+    CFStringRef kVTH264EntropyMode_CAVLC;
+    CFStringRef kVTH264EntropyMode_CABAC;
+
+    CFStringRef kVTProfileLevel_H264_Baseline_4_0;
+    CFStringRef kVTProfileLevel_H264_Baseline_4_2;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_0;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_1;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_2;
+    CFStringRef kVTProfileLevel_H264_Baseline_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_Main_4_2;
+    CFStringRef kVTProfileLevel_H264_Main_5_1;
+    CFStringRef kVTProfileLevel_H264_Main_5_2;
+    CFStringRef kVTProfileLevel_H264_Main_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_High_3_0;
+    CFStringRef kVTProfileLevel_H264_High_3_1;
+    CFStringRef kVTProfileLevel_H264_High_3_2;
+    CFStringRef kVTProfileLevel_H264_High_4_0;
+    CFStringRef kVTProfileLevel_H264_High_4_1;
+    CFStringRef kVTProfileLevel_H264_High_4_2;
+    CFStringRef kVTProfileLevel_H264_High_5_1;
+    CFStringRef kVTProfileLevel_H264_High_5_2;
+    CFStringRef kVTProfileLevel_H264_High_AutoLevel;
+
+    CFStringRef kVTCompressionPropertyKey_RealTime;
+
+    CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
+    CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
+} compat_keys;
+
+#define GET_SYM(symbol, defaultVal)                                     \
+do{                                                                     \
+    CFStringRef cfstr = dlsym(RTLD_DEFAULT, #symbol);                   \
+    if(!cfstr)                                                          \
+        compat_keys.symbol = CFSTR(defaultVal);                         \
+    else                                                                \
+        compat_keys.symbol = symbol;                                    \
+}while(0)
+
+static pthread_once_t once_ctrl = PTHREAD_ONCE_INIT;
+
+static void loadVTEncSymbols(){
+    GET_SYM(kCVImageBufferColorPrimaries_ITU_R_2020,   "ITU_R_2020");
+    GET_SYM(kCVImageBufferTransferFunction_ITU_R_2020, "ITU_R_2020");
+    GET_SYM(kCVImageBufferYCbCrMatrix_ITU_R_2020,      "ITU_R_2020");
+
+    GET_SYM(kVTCompressionPropertyKey_H264EntropyMode, "H264EntropyMode");
+    GET_SYM(kVTH264EntropyMode_CAVLC, "CAVLC");
+    GET_SYM(kVTH264EntropyMode_CABAC, "CABAC");
+
+    GET_SYM(kVTProfileLevel_H264_Baseline_4_0,       "H264_Baseline_4_0");
+    GET_SYM(kVTProfileLevel_H264_Baseline_4_2,       "H264_Baseline_4_2");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_0,       "H264_Baseline_5_0");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_1,       "H264_Baseline_5_1");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_2,       "H264_Baseline_5_2");
+    GET_SYM(kVTProfileLevel_H264_Baseline_AutoLevel, "H264_Baseline_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_Main_4_2,           "H264_Main_4_2");
+    GET_SYM(kVTProfileLevel_H264_Main_5_1,           "H264_Main_5_1");
+    GET_SYM(kVTProfileLevel_H264_Main_5_2,           "H264_Main_5_2");
+    GET_SYM(kVTProfileLevel_H264_Main_AutoLevel,     "H264_Main_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_High_3_0,           "H264_High_3_0");
+    GET_SYM(kVTProfileLevel_H264_High_3_1,           "H264_High_3_1");
+    GET_SYM(kVTProfileLevel_H264_High_3_2,           "H264_High_3_2");
+    GET_SYM(kVTProfileLevel_H264_High_4_0,           "H264_High_4_0");
+    GET_SYM(kVTProfileLevel_H264_High_4_1,           "H264_High_4_1");
+    GET_SYM(kVTProfileLevel_H264_High_4_2,           "H264_High_4_2");
+    GET_SYM(kVTProfileLevel_H264_High_5_1,           "H264_High_5_1");
+    GET_SYM(kVTProfileLevel_H264_High_5_2,           "H264_High_5_2");
+    GET_SYM(kVTProfileLevel_H264_High_AutoLevel,     "H264_High_AutoLevel");
+
+    GET_SYM(kVTCompressionPropertyKey_RealTime, "RealTime");
+
+    GET_SYM(kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
+            "EnableHardwareAcceleratedVideoEncoder");
+    GET_SYM(kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder,
+            "RequireHardwareAcceleratedVideoEncoder");
+}
 
 typedef enum VT_H264Profile {
     H264_PROF_AUTO,
@@ -520,47 +599,66 @@ static bool get_vt_profile_level(AVCodecContext *avctx,
 
         case H264_PROF_BASELINE:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_Baseline_AutoLevel; break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_AutoLevel; break;
                 case 13: *profile_level_val = kVTProfileLevel_H264_Baseline_1_3;       break;
                 case 30: *profile_level_val = kVTProfileLevel_H264_Baseline_3_0;       break;
                 case 31: *profile_level_val = kVTProfileLevel_H264_Baseline_3_1;       break;
                 case 32: *profile_level_val = kVTProfileLevel_H264_Baseline_3_2;       break;
-                case 40: *profile_level_val = kVTProfileLevel_H264_Baseline_4_0;       break;
+                case 40: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_4_0;       break;
                 case 41: *profile_level_val = kVTProfileLevel_H264_Baseline_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_Baseline_4_2;       break;
-                case 50: *profile_level_val = kVTProfileLevel_H264_Baseline_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_Baseline_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_Baseline_5_2;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_4_2;       break;
+                case 50: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_0;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_2;       break;
             }
             break;
 
         case H264_PROF_MAIN:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_Main_AutoLevel; break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_AutoLevel; break;
                 case 30: *profile_level_val = kVTProfileLevel_H264_Main_3_0;       break;
                 case 31: *profile_level_val = kVTProfileLevel_H264_Main_3_1;       break;
                 case 32: *profile_level_val = kVTProfileLevel_H264_Main_3_2;       break;
                 case 40: *profile_level_val = kVTProfileLevel_H264_Main_4_0;       break;
                 case 41: *profile_level_val = kVTProfileLevel_H264_Main_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_Main_4_2;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_4_2;       break;
                 case 50: *profile_level_val = kVTProfileLevel_H264_Main_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_Main_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_Main_5_2;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_5_2;       break;
             }
             break;
 
         case H264_PROF_HIGH:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_High_AutoLevel; break;
-                case 30: *profile_level_val = kVTProfileLevel_H264_High_3_0;       break;
-                case 31: *profile_level_val = kVTProfileLevel_H264_High_3_1;       break;
-                case 32: *profile_level_val = kVTProfileLevel_H264_High_3_2;       break;
-                case 40: *profile_level_val = kVTProfileLevel_H264_High_4_0;       break;
-                case 41: *profile_level_val = kVTProfileLevel_H264_High_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_High_4_2;       break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_AutoLevel; break;
+                case 30: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_0;       break;
+                case 31: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_1;       break;
+                case 32: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_2;       break;
+                case 40: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_0;       break;
+                case 41: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_1;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_2;       break;
                 case 50: *profile_level_val = kVTProfileLevel_H264_High_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_High_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_High_5_2;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_5_2;       break;
             }
             break;
     }
@@ -701,7 +799,7 @@ static int get_cv_color_primaries(AVCodecContext *avctx,
             break;
 
         case AVCOL_PRI_BT2020:
-            *primaries = kCVImageBufferColorPrimaries_ITU_R_2020;
+            *primaries = compat_keys.kCVImageBufferColorPrimaries_ITU_R_2020;
             break;
 
         default:
@@ -748,7 +846,7 @@ static int get_cv_transfer_function(AVCodecContext *avctx,
 
         case AVCOL_TRC_BT2020_10:
         case AVCOL_TRC_BT2020_12:
-            *transfer_fnc = kCVImageBufferTransferFunction_ITU_R_2020;
+            *transfer_fnc = compat_keys.kCVImageBufferTransferFunction_ITU_R_2020;
             break;
 
         default:
@@ -779,7 +877,7 @@ static int get_cv_ycbcr_matrix(AVCodecContext *avctx, CFStringRef *matrix) {
             break;
 
         case AVCOL_SPC_BT2020_NCL:
-            *matrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
+            *matrix = compat_keys.kCVImageBufferYCbCrMatrix_ITU_R_2020;
             break;
 
         default:
@@ -846,7 +944,6 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                       profile_level);
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
-            return AVERROR_EXTERNAL;
         }
     }
 
@@ -1012,22 +1109,21 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
     if (vtctx->entropy != VT_ENTROPY_NOT_SET) {
         CFStringRef entropy = vtctx->entropy == VT_CABAC ?
-                                kVTH264EntropyMode_CABAC:
-                                kVTH264EntropyMode_CAVLC;
+                                compat_keys.kVTH264EntropyMode_CABAC:
+                                compat_keys.kVTH264EntropyMode_CAVLC;
 
         status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_H264EntropyMode,
+                                      compat_keys.kVTCompressionPropertyKey_H264EntropyMode,
                                       entropy);
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting entropy property: %d\n", status);
-            return AVERROR_EXTERNAL;
         }
     }
 
     if (vtctx->realtime) {
         status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_RealTime,
+                                      compat_keys.kVTCompressionPropertyKey_RealTime,
                                       kCFBooleanTrue);
 
         if (status) {
@@ -1054,6 +1150,8 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     CFBooleanRef           has_b_frames_cfbool;
     CFNumberRef            gamma_level = NULL;
     int                    status;
+
+    pthread_once(&once_ctrl, loadVTEncSymbols);
 
     codec_type = get_cm_codec_type(avctx->codec_id);
     if (!codec_type) {
@@ -1087,9 +1185,13 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
 
 #if !TARGET_OS_IPHONE
     if (!vtctx->allow_sw) {
-        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+        CFDictionarySetValue(enc_info,
+                             compat_keys.kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder,
+                             kCFBooleanTrue);
     } else {
-        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
+        CFDictionarySetValue(enc_info,
+                             compat_keys.kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
+                             kCFBooleanTrue);
     }
 #endif
 
