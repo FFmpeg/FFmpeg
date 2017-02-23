@@ -162,18 +162,15 @@
         dup             v2\sz,  w3        // I
         dup             v3\sz,  w4        // H
 .else
-        dup             v0.8b,  w2        // E
-        dup             v2.8b,  w3        // I
-        dup             v3.8b,  w4        // H
-        lsr             w5,     w2,  #8
-        lsr             w6,     w3,  #8
-        lsr             w7,     w4,  #8
-        dup             v1.8b,  w5        // E
-        dup             v4.8b,  w6        // I
-        dup             v5.8b,  w7        // H
-        trn1            v0.2d,  v0.2d,  v1.2d
-        trn1            v2.2d,  v2.2d,  v4.2d
-        trn1            v3.2d,  v3.2d,  v5.2d
+        dup             v0.8h,  w2        // E
+        dup             v2.8h,  w3        // I
+        dup             v3.8h,  w4        // H
+        rev16           v1.16b, v0.16b    // E
+        rev16           v4.16b, v2.16b    // I
+        rev16           v5.16b, v3.16b    // H
+        uzp1            v0.16b, v0.16b, v1.16b
+        uzp1            v2.16b, v2.16b, v4.16b
+        uzp1            v3.16b, v3.16b, v5.16b
 .endif
 
         uabd            v4\sz,  v20\sz, v21\sz        // abs(p3 - p2)
