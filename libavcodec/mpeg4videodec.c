@@ -384,6 +384,13 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
             s->sprite_delta[0][i]  *= 1 << shift_y;
             s->sprite_delta[1][i]  *= 1 << shift_y;
             ctx->sprite_shift[i]     = 16;
+
+            if (llabs(s->sprite_offset[i][0] + s->sprite_delta[i][0] * (int64_t)w) >= INT_MAX ||
+                llabs(s->sprite_offset[i][0] + s->sprite_delta[i][1] * (int64_t)h) >= INT_MAX ||
+                llabs(s->sprite_offset[i][0] + s->sprite_delta[i][0] * (int64_t)w + s->sprite_delta[i][1] * (int64_t)h) >= INT_MAX) {
+                avpriv_request_sample(s->avctx, "Overflow on sprite points");
+                return AVERROR_PATCHWELCOME;
+            }
         }
         s->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
