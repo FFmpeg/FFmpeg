@@ -333,6 +333,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         switch (ptype) {
         case 0:
             while (run-- > 0) {
+                if (y >= avctx->height)
+                    return AVERROR_INVALIDDATA;
+
                 dst[y * linesize + x] = clr;
                 lx = x;
                 ly = y;
@@ -345,6 +348,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             break;
         case 1:
             while (run-- > 0) {
+                if (y >= avctx->height)
+                    return AVERROR_INVALIDDATA;
+
                 dst[y * linesize + x] = dst[ly * linesize + lx];
                 lx = x;
                 ly = y;
@@ -358,6 +364,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             break;
         case 2:
             while (run-- > 0) {
+                if (y < 1 || y >= avctx->height)
+                    return AVERROR_INVALIDDATA;
+
                 clr = dst[y * linesize + x + off + 1];
                 dst[y * linesize + x] = clr;
                 lx = x;
@@ -372,6 +381,10 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         case 4:
             while (run-- > 0) {
                 uint8_t *odst = (uint8_t *)dst;
+
+                if (y < 1 || y >= avctx->height)
+                    return AVERROR_INVALIDDATA;
+
                 r = odst[(ly * linesize + lx) * 4] +
                     odst[((y * linesize + x) + off) * 4 + 4] -
                     odst[((y * linesize + x) + off) * 4];
@@ -394,6 +407,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             break;
         case 5:
             while (run-- > 0) {
+                if (y < 1 || y >= avctx->height)
+                    return AVERROR_INVALIDDATA;
+
                 clr = dst[y * linesize + x + off];
                 dst[y * linesize + x] = clr;
                 lx = x;
