@@ -509,8 +509,8 @@ static int decompress_p(AVCodecContext *avctx,
                     by + mvy + sy1 >= avctx->height || bx + mvx + sx1 >= avctx->width)
                     return AVERROR_INVALIDDATA;
 
-                for (i = 0; i < sy2 - sy1 && (by + sy1 + i) < avctx->height; i++) {
-                    for (j = 0; j < sx2 - sx1 && (bx + sx1 + j) < avctx->width; j++) {
+                for (i = 0; i < sy2 - sy1 && (by + sy1 + i) < avctx->height && (by + mvy + sy1 + i) < avctx->height; i++) {
+                    for (j = 0; j < sx2 - sx1 && (bx + sx1 + j) < avctx->width && (bx + mvx + sx1 + j) < avctx->width; j++) {
                         dst[(by + i + sy1) * linesize + bx + sx1 + j] = prev[(by + mvy + sy1 + i) * plinesize + bx + sx1 + mvx + j];
                     }
                 }
