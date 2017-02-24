@@ -58,6 +58,7 @@ typedef struct SCPRContext {
     unsigned        nbx, nby;
     unsigned        nbcount;
     unsigned       *blocks;
+    unsigned        cbits;
     int             cxshift;
 } SCPRContext;
 
@@ -241,7 +242,7 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
     }
     pixel->total_freq = totfr;
 
-    *rval = c;
+    *rval = c & s->cbits;
 
     return 0;
 }
@@ -789,6 +790,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->cxshift = avctx->bits_per_coded_sample == 16 ? 0 : 2;
+    s->cbits = avctx->bits_per_coded_sample == 16 ? 0x1F : 0xFF;
     s->nbx = (avctx->width + 15) / 16;
     s->nby = (avctx->height + 15) / 16;
     s->nbcount = s->nbx * s->nby;
