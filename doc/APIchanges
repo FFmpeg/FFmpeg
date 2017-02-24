@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-02 - xxxxxxx - lavc 57.81.104 - videotoolbox.h
+  AVVideotoolboxContext.cv_pix_fmt_type can now be set to 0 to output the
+  native decoder format. (The default value is not changed.)
+
 2017-03-02 - xxxxxxx - lavu 55.47.101, lavc 57.81.102, lavf 57.66.103
   Remove requirement to use AVOption or accessors to access certain fields
   in AVFrame, AVCodecContext, and AVFormatContext that were previously
