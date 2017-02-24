@@ -1195,12 +1195,12 @@ endfunc
 
 .macro idct32_odd
         movrel          r12, idct_coeffs
-        add             r12, r12, #32
-        vld1.16         {q0-q1}, [r12,:128]
-        vmovl.s16       q2,  d2
-        vmovl.s16       q3,  d3
-        vmovl.s16       q1,  d1
-        vmovl.s16       q0,  d0
+
+        @ Overwrite the idct16 coeffs with the stored ones for idct32
+        vmovl.s16       q0,  d12
+        vmovl.s16       q1,  d13
+        vmovl.s16       q2,  d14
+        vmovl.s16       q3,  d15
 
         mbutterfly      d16, d31, d0[0], d0[1], q4, q5 @ d16 = t16a, d31 = t31a
         mbutterfly      d24, d23, d1[0], d1[1], q4, q5 @ d24 = t17a, d23 = t30a
@@ -1211,15 +1211,19 @@ endfunc
         mbutterfly      d22, d25, d6[0], d6[1], q4, q5 @ d22 = t22a, d25 = t25a
         mbutterfly      d30, d17, d7[0], d7[1], q4, q5 @ d30 = t23a, d17 = t24a
 
-        sub             r12, r12, #32
-        vld1.16         {q0}, [r12,:128]
+        @ Reload the idct16 coefficients. We could swap the coefficients between
+        @ q0-q3 and q6-q7 by narrowing/lengthening, but that's slower than just
+        @ loading and lengthening.
+        vld1.16         {q0-q1}, [r12,:128]
+
+        butterfly       d8,  d24, d16, d24 @ d8  = t16, d24 = t17
+        butterfly       d9,  d20, d28, d20 @ d9  = t19, d20 = t18
+        butterfly       d10, d26, d18, d26 @ d10 = t20, d26 = t21
+        butterfly       d11, d22, d30, d22 @ d11 = t23, d22 = t22
+        vmovl.s16       q2,  d2
+        vmovl.s16       q3,  d3
         vmovl.s16       q1,  d1
         vmovl.s16       q0,  d0
-
-        butterfly       d4,  d24, d16, d24 @ d4  = t16, d24 = t17
-        butterfly       d5,  d20, d28, d20 @ d5  = t19, d20 = t18
-        butterfly       d6,  d26, d18, d26 @ d6  = t20, d26 = t21
-        butterfly       d7,  d22, d30, d22 @ d7  = t23, d22 = t22
         butterfly       d28, d25, d17, d25 @ d28 = t24, d25 = t25
         butterfly       d30, d21, d29, d21 @ d30 = t27, d21 = t26
         butterfly       d29, d23, d31, d23 @ d29 = t31, d23 = t30
@@ -1230,34 +1234,34 @@ endfunc
         mbutterfly      d21, d26, d3[0], d3[1], q8, q9        @ d21 = t21a, d26 = t26a
         mbutterfly      d25, d22, d3[0], d3[1], q8, q9, neg=1 @ d25 = t25a, d22 = t22a
 
-        butterfly       d16, d5,  d4,  d5  @ d16 = t16a, d5  = t19a
+        butterfly       d16, d9,  d8,  d9  @ d16 = t16a, d9  = t19a
         butterfly       d17, d20, d23, d20 @ d17 = t17,  d20 = t18
-        butterfly       d18, d6,  d7,  d6  @ d18 = t23a, d6  = t20a
+        butterfly       d18, d10, d11, d10 @ d18 = t23a, d10 = t20a
         butterfly       d19, d21, d22, d21 @ d19 = t22,  d21 = t21
-        butterfly       d4,  d28, d28, d30 @ d4  = t24a, d28 = t27a
+        butterfly       d8,  d28, d28, d30 @ d8  = t24a, d28 = t27a
         butterfly       d23, d26, d25, d26 @ d23 = t25,  d26 = t26
-        butterfly       d7,  d29, d29, d31 @ d7  = t31a, d29 = t28a
+        butterfly       d11, d29, d29, d31 @ d11 = t31a, d29 = t28a
         butterfly       d22, d27, d24, d27 @ d22 = t30,  d27 = t29
 
         mbutterfly      d27, d20, d1[0], d1[1], q12, q15        @ d27 = t18a, d20 = t29a
-        mbutterfly      d29, d5,  d1[0], d1[1], q12, q15        @ d29 = t19,  d5  = t28
-        mbutterfly      d28, d6,  d1[0], d1[1], q12, q15, neg=1 @ d28 = t27,  d6  = t20
+        mbutterfly      d29, d9,  d1[0], d1[1], q12, q15        @ d29 = t19,  d9  = t28
+        mbutterfly      d28, d10, d1[0], d1[1], q12, q15, neg=1 @ d28 = t27,  d10 = t20
         mbutterfly      d26, d21, d1[0], d1[1], q12, q15, neg=1 @ d26 = t26a, d21 = t21a
 
-        butterfly       d31, d24, d7,  d4  @ d31 = t31,  d24 = t24
+        butterfly       d31, d24, d11, d8  @ d31 = t31,  d24 = t24
         butterfly       d30, d25, d22, d23 @ d30 = t30a, d25 = t25a
         butterfly_r     d23, d16, d16, d18 @ d23 = t23,  d16 = t16
         butterfly_r     d22, d17, d17, d19 @ d22 = t22a, d17 = t17a
         butterfly       d18, d21, d27, d21 @ d18 = t18,  d21 = t21
-        butterfly_r     d27, d28, d5,  d28 @ d27 = t27a, d28 = t28a
-        butterfly       d4,  d26, d20, d26 @ d4  = t29,  d26 = t26
-        butterfly       d19, d20, d29, d6  @ d19 = t19a, d20 = t20
-        vmov            d29, d4            @ d29 = t29
+        butterfly_r     d27, d28, d9,  d28 @ d27 = t27a, d28 = t28a
+        butterfly       d8,  d26, d20, d26 @ d8  = t29,  d26 = t26
+        butterfly       d19, d20, d29, d10 @ d19 = t19a, d20 = t20
+        vmov            d29, d8            @ d29 = t29
 
-        mbutterfly0     d27, d20, d27, d20, d4, d6, q2, q3 @ d27 = t27,  d20 = t20
-        mbutterfly0     d26, d21, d26, d21, d4, d6, q2, q3 @ d26 = t26a, d21 = t21a
-        mbutterfly0     d25, d22, d25, d22, d4, d6, q2, q3 @ d25 = t25,  d22 = t22
-        mbutterfly0     d24, d23, d24, d23, d4, d6, q2, q3 @ d24 = t24a, d23 = t23a
+        mbutterfly0     d27, d20, d27, d20, d8, d10, q4, q5 @ d27 = t27,  d20 = t20
+        mbutterfly0     d26, d21, d26, d21, d8, d10, q4, q5 @ d26 = t26a, d21 = t21a
+        mbutterfly0     d25, d22, d25, d22, d8, d10, q4, q5 @ d25 = t25,  d22 = t22
+        mbutterfly0     d24, d23, d24, d23, d8, d10, q4, q5 @ d24 = t24a, d23 = t23a
 .endm
 
 @ Do an 32-point IDCT of a 2x32 slice out of a 32x32 matrix.
@@ -1270,13 +1274,6 @@ endfunc
 @ r1 = unused
 @ r2 = src
 function idct32_1d_2x32_pass1_neon
-        movrel          r12, idct_coeffs
-        vld1.16         {q0-q1}, [r12,:128]
-        vmovl.s16       q2,  d2
-        vmovl.s16       q3,  d3
-        vmovl.s16       q1,  d1
-        vmovl.s16       q0,  d0
-
         @ Double stride of the input, since we only read every other line
         mov             r12, #256
         vmov.s32        d8,  #0
@@ -1315,11 +1312,11 @@ function idct32_1d_2x32_pass1_neon
         sub             r2,  r2,  r12, lsl #4
         add             r2,  r2,  #128
 
-        vmov.s32        d4,  #0
+        vmov.s32        d8,  #0
         @ d16 = IN(1), d17 = IN(3) ... d31 = IN(31)
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         vld1.16         {d\i}, [r2,:64]
-        vst1.16         {d4},  [r2,:64], r12
+        vst1.16         {d8},  [r2,:64], r12
 .endr
 
         idct32_odd
@@ -1331,15 +1328,15 @@ function idct32_1d_2x32_pass1_neon
         @ from the output.
 .macro store_rev a, b, c, d, e, f, g, h
 .irp i, \a, \b, \c, \d, \e, \f, \g, \h
-        vld1.32         {d4},  [r0,:64]
-        vadd.s32        d4, d4, d\i
-        vst1.32         {d4},  [r0,:64]!
+        vld1.32         {d8},  [r0,:64]
+        vadd.s32        d8, d8, d\i
+        vst1.32         {d8},  [r0,:64]!
         vrev64.32       d\i, d\i
 .endr
 .irp i, \h, \g, \f, \e, \d, \c, \b, \a
-        vld1.32         {d4},  [r0,:64]
-        vsub.s32        d4, d4, d\i
-        vst1.32         {d4},  [r0,:64]!
+        vld1.32         {d8},  [r0,:64]
+        vsub.s32        d8, d8, d\i
+        vst1.32         {d8},  [r0,:64]!
 .endr
 .endm
 
@@ -1357,13 +1354,6 @@ endfunc
 @ r1 = dst stride
 @ r2 = src (temp buffer)
 function idct32_1d_2x32_pass2_neon
-        movrel          r12, idct_coeffs
-        vld1.16         {q0-q1}, [r12,:128]
-        vmovl.s16       q2,  d2
-        vmovl.s16       q3,  d3
-        vmovl.s16       q1,  d1
-        vmovl.s16       q0,  d0
-
         mov             r12, #256
         @ d16 = IN(0), d17 = IN(2) ... d31 = IN(30)
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
@@ -1389,6 +1379,13 @@ function idct32_1d_2x32_pass2_neon
 
         idct32_odd
 
+        @ Narrow the ict16 coefficients in q0-q3 into q0-q1, to
+        @ allow clobbering q2-q3 below.
+        vmovn.s32       d0,  q0
+        vmovn.s32       d1,  q1
+        vmovn.s32       d2,  q2
+        vmovn.s32       d3,  q3
+
         mov             r12, #256
         vdup.s16        q4,  r9
 .macro load_acc_store a, b, c, d, neg=0
@@ -1409,15 +1406,15 @@ function idct32_1d_2x32_pass2_neon
         vsub.s32        d6,  d6,  d\c
         vsub.s32        d7,  d7,  d\d
 .endif
-        vld1.32         {d2[]},   [r0,:32], r1
-        vld1.32         {d2[1]},  [r0,:32], r1
+        vld1.32         {d10[]},  [r0,:32], r1
+        vld1.32         {d10[1]}, [r0,:32], r1
         vrshr.s32       q2,  q2,  #6
-        vld1.32         {d3[]},   [r0,:32], r1
+        vld1.32         {d11[]},  [r0,:32], r1
         vrshr.s32       q3,  q3,  #6
-        vld1.32         {d3[1]},  [r0,:32], r1
+        vld1.32         {d11[1]}, [r0,:32], r1
         sub             r0,  r0,  r1, lsl #2
-        vaddw.u16       q2,  q2,  d2
-        vaddw.u16       q3,  q3,  d3
+        vaddw.u16       q2,  q2,  d10
+        vaddw.u16       q3,  q3,  d11
         vqmovun.s32     d4,  q2
         vqmovun.s32     d5,  q3
         vmin.u16        q2,  q2,  q4
@@ -1437,6 +1434,11 @@ function idct32_1d_2x32_pass2_neon
         load_acc_store  24, 25, 26, 27, 1
         load_acc_store  28, 29, 30, 31, 1
 .purgem load_acc_store
+        @ Lengthen the idct16 coeffs back into 32 bit form
+        vmovl.s16       q2,  d2
+        vmovl.s16       q3,  d3
+        vmovl.s16       q1,  d1
+        vmovl.s16       q0,  d0
         bx              lr
 endfunc
 
@@ -1447,7 +1449,7 @@ endconst
 function vp9_idct_idct_32x32_add_16_neon
         cmp             r3,  #1
         beq             idct32x32_dc_add_neon
-        vpush           {q4-q5}
+        vpush           {q4-q7}
         movrel          r8,  min_eob_idct_idct_32 + 2
 
         @ Align the stack, allocate a temp buffer
@@ -1460,6 +1462,14 @@ A       and             r7,  sp,  #15
         mov             r4,  r0
         mov             r5,  r1
         mov             r6,  r2
+
+        movrel          r12, idct_coeffs
+        vld1.16         {q0-q1}, [r12,:128]!
+        vld1.16         {q6-q7}, [r12,:128]
+        vmovl.s16       q2,  d2
+        vmovl.s16       q3,  d3
+        vmovl.s16       q1,  d1
+        vmovl.s16       q0,  d0
 
 .irp i, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
         add             r0,  sp,  #(\i*128)
@@ -1498,7 +1508,7 @@ A       and             r7,  sp,  #15
 .endr
 
         add             sp,  sp,  r7
-        vpop            {q4-q5}
+        vpop            {q4-q7}
         pop             {r4-r9,pc}
 endfunc
 
