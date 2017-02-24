@@ -710,7 +710,7 @@ function idct16x16_dc_add_neon
         ret
 endfunc
 
-.macro idct16
+function idct16
         dmbutterfly0    v16, v24, v16, v24, v4, v5, v6, v7, v8, v9 // v16 = t0a,  v24 = t1a
         dmbutterfly     v20, v28, v0.s[2], v0.s[3], v4, v5, v6, v7 // v20 = t2a,  v28 = t3a
         dmbutterfly     v18, v30, v1.s[0], v1.s[1], v4, v5, v6, v7 // v18 = t4a,  v30 = t7a
@@ -753,9 +753,10 @@ endfunc
         butterfly_4s    v19, v28, v5,  v28               // v19 = out[3], v28 = out[12]
         butterfly_4s    v20, v27, v6,  v27               // v20 = out[4], v27 = out[11]
         butterfly_4s    v21, v26, v26, v9                // v21 = out[5], v26 = out[10]
-.endm
+        ret
+endfunc
 
-.macro iadst16
+function iadst16
         ld1             {v0.8h,v1.8h}, [x11]
         sxtl            v2.4s,  v1.4h
         sxtl2           v3.4s,  v1.8h
@@ -830,7 +831,8 @@ endfunc
 
         mov             v16.16b, v2.16b
         mov             v30.16b, v4.16b
-.endm
+        ret
+endfunc
 
 // Helper macros; we can't use these expressions directly within
 // e.g. .irp due to the extra concatenation \(). Therefore wrap
@@ -857,12 +859,14 @@ endfunc
 // x9 = input stride
 .macro itxfm16_1d_funcs txfm
 function \txfm\()16_1d_4x16_pass1_neon
+        mov             x14, x30
+
         movi            v4.4s, #0
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         load_clear      \i,  x2,  x9
 .endr
 
-        \txfm\()16
+        bl              \txfm\()16
 
         // Do four 4x4 transposes. Originally, v16-v31 contain the
         // 16 rows. Afterwards, v16-v19, v20-v23, v24-v27 and v28-v31
@@ -878,7 +882,7 @@ function \txfm\()16_1d_4x16_pass1_neon
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
         store           \i,  x0,  #16
 .endr
-        ret
+        br              x14
 1:
         // Special case: For the last input column (x1 == 12),
         // which would be stored as the last row in the temp buffer,
@@ -906,7 +910,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         mov             v29.16b, v17.16b
         mov             v30.16b, v18.16b
         mov             v31.16b, v19.16b
-        ret
+        br              x14
 endfunc
 
 // Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
@@ -917,6 +921,8 @@ endfunc
 // x3 = slice offset
 // x9 = temp buffer stride
 function \txfm\()16_1d_4x16_pass2_neon
+        mov             x14, x30
+
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27
         load            \i,  x2,  x9
 .endr
@@ -928,7 +934,7 @@ function \txfm\()16_1d_4x16_pass2_neon
 
         add             x3,  x0,  x1
         lsl             x1,  x1,  #1
-        \txfm\()16
+        bl              \txfm\()16
 
         dup             v8.8h, w13
 .macro load_add_store coef0, coef1, coef2, coef3, coef4, coef5, coef6, coef7
@@ -983,7 +989,7 @@ function \txfm\()16_1d_4x16_pass2_neon
         load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
 .purgem load_add_store
 
-        ret
+        br              x14
 endfunc
 .endm
 
@@ -1158,7 +1164,7 @@ function idct32x32_dc_add_neon
         ret
 endfunc
 
-.macro idct32_odd
+function idct32_odd
         dmbutterfly     v16, v31, v10.s[0], v10.s[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
         dmbutterfly     v24, v23, v10.s[2], v10.s[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
         dmbutterfly     v20, v27, v11.s[0], v11.s[1], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
@@ -1209,7 +1215,8 @@ endfunc
         dmbutterfly0    v26, v21, v26, v21, v4, v5, v6, v7, v8, v9 // v26 = t26a, v21 = t21a
         dmbutterfly0    v25, v22, v25, v22, v4, v5, v6, v7, v8, v9 // v25 = t25,  v22 = t22
         dmbutterfly0    v24, v23, v24, v23, v4, v5, v6, v7, v8, v9 // v24 = t24a, v23 = t23a
-.endm
+        ret
+endfunc
 
 // Do an 32-point IDCT of a 4x32 slice out of a 32x32 matrix.
 // The 32-point IDCT can be decomposed into two 16-point IDCTs;
@@ -1221,6 +1228,8 @@ endfunc
 // x2 = src
 // x9 = double input stride
 function idct32_1d_4x32_pass1_neon
+        mov             x14, x30
+
         movi            v4.4s,  #0
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
@@ -1229,7 +1238,7 @@ function idct32_1d_4x32_pass1_neon
         st1             {v4.4s},  [x2], x9
 .endr
 
-        idct16
+        bl              idct16
 
         // Do four 4x4 transposes. Originally, v16-v31 contain the
         // 16 rows. Afterwards, v16-v19, v20-v23, v24-v27 and v28-v31
@@ -1280,7 +1289,7 @@ function idct32_1d_4x32_pass1_neon
         st1             {v4.4s},  [x2], x9
 .endr
 
-        idct32_odd
+        bl              idct32_odd
 
         transpose_4x4s  v31, v30, v29, v28, v4, v5, v6, v7
         transpose_4x4s  v27, v26, v25, v24, v4, v5, v6, v7
@@ -1330,7 +1339,7 @@ function idct32_1d_4x32_pass1_neon
         store_rev       v29.4s, v25.4s, v21.4s, v17.4s, v29.16b, v25.16b
         store_rev       v28.4s, v24.4s, v20.4s, v16.4s, v28.16b, v24.16b
 .purgem store_rev
-        ret
+        br              x14
 endfunc
 
 // This is mostly the same as 4x32_pass1, but without the transpose,
@@ -1342,13 +1351,15 @@ endfunc
 // x7 = negative double temp buffer stride
 // x9 = double temp buffer stride
 function idct32_1d_4x32_pass2_neon
+        mov             x14, x30
+
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         ld1             {v\i\().4s}, [x2], x9
 .endr
         sub             x2,  x2,  x9, lsl #4
 
-        idct16
+        bl              idct16
 
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
         st1             {v\i\().4s}, [x2], x9
@@ -1364,7 +1375,7 @@ function idct32_1d_4x32_pass2_neon
         sub             x2,  x2,  x9, lsl #4
         sub             x2,  x2,  #128
 
-        idct32_odd
+        bl              idct32_odd
 
 .macro load_acc_store a, b, c, d, neg=0
 .if \neg == 0
@@ -1420,7 +1431,7 @@ function idct32_1d_4x32_pass2_neon
         load_acc_store  v24.4s, v25.4s, v26.4s, v27.4s, 1
         load_acc_store  v28.4s, v29.4s, v30.4s, v31.4s, 1
 .purgem load_acc_store
-        ret
+        br              x14
 endfunc
 
 const min_eob_idct_idct_32, align=4
