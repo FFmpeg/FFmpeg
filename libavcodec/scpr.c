@@ -321,8 +321,6 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             if (ret < 0)
                 return ret;
 
-            cx1 = (cx << 6) & 0xFC0;
-            cx = b >> cxshift;
             clr = (b << 16) + (g << 8) + r;
         }
         if (ptype > 5)
@@ -537,8 +535,6 @@ static int decompress_p(AVCodecContext *avctx,
                         if (ret < 0)
                             return ret;
 
-                        cx1 = (cx << 6) & 0xFC0;
-                        cx = b >> cxshift;
                         clr = (b << 16) + (g << 8) + r;
                     }
                     if (ptype > 5)
