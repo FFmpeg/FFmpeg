@@ -413,11 +413,14 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
         y_norm += 1.0f;
 
         for (i = 0; i < N; i++) {
+            /* If the sum has been overshot and the best place has 0 pulses allocated
+             * to it, attempting to decrease it further will actually increase the
+             * sum. Prevent this by disregarding any 0 positions when decrementing. */
+            const int ca = 1 ^ ((y[i] == 0) & (phase < 0));
             float xy_new = xy_norm + 1*phase*FFABS(X[i]);
             float y_new  = y_norm  + 2*phase*FFABS(y[i]);
             xy_new = xy_new * xy_new;
-            /* FIXME: the y[i] check makes the search slightly worse at Ks below 5 */
-            if (y[i] && (max_den*xy_new) > (y_new*max_num)) {
+            if (ca && (max_den*xy_new) > (y_new*max_num)) {
                 max_den = y_new;
                 max_num = xy_new;
                 max_idx = i;
