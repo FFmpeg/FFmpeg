@@ -397,7 +397,7 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
     for (i = 0; i < N; i++)
         res += FFABS(X[i]);
 
-    res = K/res;
+    res = K/(res + FLT_EPSILON);
 
     for (i = 0; i < N; i++) {
         y[i] = lrintf(res*X[i]);
