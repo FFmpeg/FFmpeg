@@ -589,16 +589,6 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
         }
         set_constqp(avctx);
         return;
-    case NV_ENC_PARAMS_RC_2_PASS_VBR:
-    case NV_ENC_PARAMS_RC_VBR:
-        if (avctx->qmin < 0 && avctx->qmax < 0) {
-            av_log(avctx, AV_LOG_WARNING,
-                   "The variable bitrate rate-control requires "
-                   "the 'qmin' and/or 'qmax' option set.\n");
-            set_vbr(avctx);
-            return;
-        }
-        /* fall through */
     case NV_ENC_PARAMS_RC_VBR_MINQP:
         if (avctx->qmin < 0) {
             av_log(avctx, AV_LOG_WARNING,
@@ -607,6 +597,9 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
             set_vbr(avctx);
             return;
         }
+        /* fall through */
+    case NV_ENC_PARAMS_RC_2_PASS_VBR:
+    case NV_ENC_PARAMS_RC_VBR:
         set_vbr(avctx);
         break;
     case NV_ENC_PARAMS_RC_CBR:
