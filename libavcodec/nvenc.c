@@ -495,8 +495,7 @@ static int nvenc_map_preset(NVENCContext *ctx)
         PRESET(LOSSLESS_HP,         NVENC_LOSSLESS),
         PRESET_ALIAS(SLOW, HQ,      NVENC_TWO_PASSES),
         PRESET_ALIAS(MEDIUM, HQ,    NVENC_ONE_PASS),
-        PRESET_ALIAS(FAST, HP,      NVENC_ONE_PASS),
-        { { 0 } }
+        PRESET_ALIAS(FAST, HP,      NVENC_ONE_PASS)
     };
 
     GUIDTuple *t = &presets[ctx->preset];
