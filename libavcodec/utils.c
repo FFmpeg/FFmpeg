@@ -2092,7 +2092,7 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
     return pts;
 }
 
-static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
+static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     int size = 0, ret;
     const uint8_t *data;
