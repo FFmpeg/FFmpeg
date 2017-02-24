@@ -1296,7 +1296,6 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_VERSION3_LIST
     avisynth
     avxsynth
-    bzlib
     frei0r
     gnutls
     libbs2b
@@ -1327,6 +1326,10 @@ EXTERNAL_LIBRARY_LIST="
     libxcb
     libxcb_shm
     libxcb_xfixes
+"
+
+SYSTEM_LIBRARY_LIST="
+    bzlib
     zlib
 "
 
@@ -1388,6 +1391,7 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
+    $SYSTEM_LIBRARY_LIST
     neon_clobber_test
     pic
     pod2man
@@ -2573,6 +2577,9 @@ enable valgrind_backtrace
 
 # By default, enable only those hwaccels that have no external dependencies.
 enable d3d11va dxva2 vda vdpau
+
+# Avoid external, non-system, libraries getting enabled by dependency resolution
+disable $EXTERNAL_LIBRARY_LIST
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
