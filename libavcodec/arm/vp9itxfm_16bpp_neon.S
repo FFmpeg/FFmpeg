@@ -1395,25 +1395,25 @@ function idct32_1d_2x32_pass2_neon
         vld1.32         {d4},  [r2,:64], r12
         vld1.32         {d5},  [r2,:64], r12
 .if \neg == 0
-        vadd.s32        d4, d4, d\a
+        vadd.s32        d4,  d4,  d\a
         vld1.32         {d6},  [r2,:64], r12
-        vadd.s32        d5, d5, d\b
+        vadd.s32        d5,  d5,  d\b
         vld1.32         {d7},  [r2,:64], r12
-        vadd.s32        d6, d6, d\c
-        vadd.s32        d7, d7, d\d
+        vadd.s32        d6,  d6,  d\c
+        vadd.s32        d7,  d7,  d\d
 .else
-        vsub.s32        d4, d4, d\a
+        vsub.s32        d4,  d4,  d\a
         vld1.32         {d6},  [r2,:64], r12
-        vsub.s32        d5, d5, d\b
+        vsub.s32        d5,  d5,  d\b
         vld1.32         {d7},  [r2,:64], r12
-        vsub.s32        d6, d6, d\c
-        vsub.s32        d7, d7, d\d
+        vsub.s32        d6,  d6,  d\c
+        vsub.s32        d7,  d7,  d\d
 .endif
         vld1.32         {d2[]},   [r0,:32], r1
         vld1.32         {d2[1]},  [r0,:32], r1
-        vrshr.s32       q2, q2, #6
+        vrshr.s32       q2,  q2,  #6
         vld1.32         {d3[]},   [r0,:32], r1
-        vrshr.s32       q3, q3, #6
+        vrshr.s32       q3,  q3,  #6
         vld1.32         {d3[1]},  [r0,:32], r1
         sub             r0,  r0,  r1, lsl #2
         vaddw.u16       q2,  q2,  d2
