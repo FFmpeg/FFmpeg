@@ -1082,8 +1082,8 @@ A       and             r7,  sp,  #15
 .ifc \txfm1\()_\txfm2,idct_idct
         b               3f
 1:
-        vmov.i16        q14, #0
-        vmov.i16        q15, #0
+        vmov.i32        q14, #0
+        vmov.i32        q15, #0
 2:
         subs            r1,  r1,  #1
         @ Unroll for 2 lines
