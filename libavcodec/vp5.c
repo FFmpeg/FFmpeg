@@ -180,7 +180,7 @@ static int vp5_parse_coeff(VP56Context *s)
     int b, i, cg, idx, ctx, ctx_last;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
 
-    if (c->end >= c->buffer && c->bits >= 0) {
+    if (c->end <= c->buffer && c->bits >= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "End of AC stream reached in vp5_parse_coeff\n");
         return AVERROR_INVALIDDATA;
     }
