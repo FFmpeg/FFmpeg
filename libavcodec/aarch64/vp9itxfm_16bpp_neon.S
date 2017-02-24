@@ -851,6 +851,55 @@ endfunc
         st1             {v4.4s},  [\src], \inc
 .endm
 
+.macro load_add_store coef0, coef1, coef2, coef3, coef4, coef5, coef6, coef7
+        srshr           \coef0, \coef0, #6
+        ld1             {v4.4h},   [x0], x1
+        srshr           \coef1, \coef1, #6
+        ld1             {v4.d}[1], [x3], x1
+        srshr           \coef2, \coef2, #6
+        ld1             {v5.4h},   [x0], x1
+        srshr           \coef3, \coef3, #6
+        uaddw           \coef0, \coef0, v4.4h
+        ld1             {v5.d}[1], [x3], x1
+        srshr           \coef4, \coef4, #6
+        uaddw2          \coef1, \coef1, v4.8h
+        ld1             {v6.4h},   [x0], x1
+        srshr           \coef5, \coef5, #6
+        uaddw           \coef2, \coef2, v5.4h
+        ld1             {v6.d}[1], [x3], x1
+        sqxtun          v4.4h,  \coef0
+        srshr           \coef6, \coef6, #6
+        uaddw2          \coef3, \coef3, v5.8h
+        ld1             {v7.4h},   [x0], x1
+        sqxtun2         v4.8h,  \coef1
+        srshr           \coef7, \coef7, #6
+        uaddw           \coef4, \coef4, v6.4h
+        ld1             {v7.d}[1], [x3], x1
+        umin            v4.8h,  v4.8h,  v8.8h
+        sub             x0,  x0,  x1, lsl #2
+        sub             x3,  x3,  x1, lsl #2
+        sqxtun          v5.4h,  \coef2
+        uaddw2          \coef5, \coef5, v6.8h
+        st1             {v4.4h},   [x0], x1
+        sqxtun2         v5.8h,  \coef3
+        uaddw           \coef6, \coef6, v7.4h
+        st1             {v4.d}[1], [x3], x1
+        umin            v5.8h,  v5.8h,  v8.8h
+        sqxtun          v6.4h,  \coef4
+        uaddw2          \coef7, \coef7, v7.8h
+        st1             {v5.4h},   [x0], x1
+        sqxtun2         v6.8h,  \coef5
+        st1             {v5.d}[1], [x3], x1
+        umin            v6.8h,  v6.8h,  v8.8h
+        sqxtun          v7.4h,  \coef6
+        st1             {v6.4h},   [x0], x1
+        sqxtun2         v7.8h,  \coef7
+        st1             {v6.d}[1], [x3], x1
+        umin            v7.8h,  v7.8h,  v8.8h
+        st1             {v7.4h},   [x0], x1
+        st1             {v7.d}[1], [x3], x1
+.endm
+
 // Read a vertical 4x16 slice out of a 16x16 matrix, do a transform on it,
 // transpose into a horizontal 16x4 slice and store.
 // x0 = dst (temp buffer)
@@ -937,57 +986,8 @@ function \txfm\()16_1d_4x16_pass2_neon
         bl              \txfm\()16
 
         dup             v8.8h, w13
-.macro load_add_store coef0, coef1, coef2, coef3, coef4, coef5, coef6, coef7
-        srshr           \coef0, \coef0, #6
-        ld1             {v4.4h},   [x0], x1
-        srshr           \coef1, \coef1, #6
-        ld1             {v4.d}[1], [x3], x1
-        srshr           \coef2, \coef2, #6
-        ld1             {v5.4h},   [x0], x1
-        srshr           \coef3, \coef3, #6
-        uaddw           \coef0, \coef0, v4.4h
-        ld1             {v5.d}[1], [x3], x1
-        srshr           \coef4, \coef4, #6
-        uaddw2          \coef1, \coef1, v4.8h
-        ld1             {v6.4h},   [x0], x1
-        srshr           \coef5, \coef5, #6
-        uaddw           \coef2, \coef2, v5.4h
-        ld1             {v6.d}[1], [x3], x1
-        sqxtun          v4.4h,  \coef0
-        srshr           \coef6, \coef6, #6
-        uaddw2          \coef3, \coef3, v5.8h
-        ld1             {v7.4h},   [x0], x1
-        sqxtun2         v4.8h,  \coef1
-        srshr           \coef7, \coef7, #6
-        uaddw           \coef4, \coef4, v6.4h
-        ld1             {v7.d}[1], [x3], x1
-        umin            v4.8h,  v4.8h,  v8.8h
-        sub             x0,  x0,  x1, lsl #2
-        sub             x3,  x3,  x1, lsl #2
-        sqxtun          v5.4h,  \coef2
-        uaddw2          \coef5, \coef5, v6.8h
-        st1             {v4.4h},   [x0], x1
-        sqxtun2         v5.8h,  \coef3
-        uaddw           \coef6, \coef6, v7.4h
-        st1             {v4.d}[1], [x3], x1
-        umin            v5.8h,  v5.8h,  v8.8h
-        sqxtun          v6.4h,  \coef4
-        uaddw2          \coef7, \coef7, v7.8h
-        st1             {v5.4h},   [x0], x1
-        sqxtun2         v6.8h,  \coef5
-        st1             {v5.d}[1], [x3], x1
-        umin            v6.8h,  v6.8h,  v8.8h
-        sqxtun          v7.4h,  \coef6
-        st1             {v6.4h},   [x0], x1
-        sqxtun2         v7.8h,  \coef7
-        st1             {v6.d}[1], [x3], x1
-        umin            v7.8h,  v7.8h,  v8.8h
-        st1             {v7.4h},   [x0], x1
-        st1             {v7.d}[1], [x3], x1
-.endm
         load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
         load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
-.purgem load_add_store
 
         br              x14
 endfunc
