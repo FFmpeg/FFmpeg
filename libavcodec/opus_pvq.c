@@ -285,7 +285,6 @@ static inline uint32_t celt_icwrsi(uint32_t N, uint32_t K, const int *y)
         idx += CELT_PVQ_U(N - i, sum) + (y[i] < 0)*i_s;
         sum += FFABS(y[i]);
     }
-    av_assert0(sum == K);
     return idx;
 }
 
