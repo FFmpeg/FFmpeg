@@ -1027,7 +1027,8 @@ static const char * get_default_pattern_localtime_fmt(void)
     struct tm *p, tmbuf;
     p = localtime_r(&t, &tmbuf);
     // no %s support when strftime returned error or left format string unchanged
-    return (!strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
+    // also no %s support on MSVC, which invokes the invalid parameter handler on unsupported format strings, instead of returning an error
+    return (HAVE_LIBC_MSVCRT || !strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
 }
 
 static int hls_write_header(AVFormatContext *s)
