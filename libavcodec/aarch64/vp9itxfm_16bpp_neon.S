@@ -886,21 +886,21 @@ function \txfm\()16_1d_4x16_pass1_neon
         // for the first slice of the second pass (where it is the
         // last 4x4 block).
         add             x0,  x0,  #16
-.irp i, 20, 24, 28
-        store           \i,  x0,  #16
-.endr
+        st1             {v20.4s},  [x0], #16
+        st1             {v24.4s},  [x0], #16
+        st1             {v28.4s},  [x0], #16
         add             x0,  x0,  #16
-.irp i, 21, 25, 29
-        store           \i,  x0,  #16
-.endr
+        st1             {v21.4s},  [x0], #16
+        st1             {v25.4s},  [x0], #16
+        st1             {v29.4s},  [x0], #16
         add             x0,  x0,  #16
-.irp i, 22, 26, 30
-        store           \i,  x0,  #16
-.endr
+        st1             {v22.4s},  [x0], #16
+        st1             {v26.4s},  [x0], #16
+        st1             {v30.4s},  [x0], #16
         add             x0,  x0,  #16
-.irp i, 23, 27, 31
-        store           \i,  x0,  #16
-.endr
+        st1             {v23.4s},  [x0], #16
+        st1             {v27.4s},  [x0], #16
+        st1             {v31.4s},  [x0], #16
 
         mov             v28.16b, v16.16b
         mov             v29.16b, v17.16b
