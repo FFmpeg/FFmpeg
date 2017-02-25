@@ -796,7 +796,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
             return AVERROR_INVALIDDATA;
 
         for (i = 0; i < length; i++) {
-            v = bytestream2_get_byte(&s->gb);
+            unsigned v = bytestream2_get_byte(&s->gb);
             s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
         }
     } else if (s->color_type == PNG_COLOR_TYPE_GRAY || s->color_type == PNG_COLOR_TYPE_RGB) {
