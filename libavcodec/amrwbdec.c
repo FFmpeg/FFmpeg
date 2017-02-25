@@ -292,7 +292,7 @@ static void decode_pitch_lag_low(int *lag_int, int *lag_frac, int pitch_index,
     if (subframe == 0 || (subframe == 2 && mode != MODE_6k60)) {
         if (pitch_index < 116) {
             *lag_int  = (pitch_index + 69) >> 1;
-            *lag_frac = (pitch_index - (*lag_int << 1) + 68) << 1;
+            *lag_frac = (pitch_index - (*lag_int << 1) + 68) * 2;
         } else {
             *lag_int  = pitch_index - 24;
             *lag_frac = 0;
@@ -302,7 +302,7 @@ static void decode_pitch_lag_low(int *lag_int, int *lag_frac, int pitch_index,
                                 AMRWB_P_DELAY_MIN, AMRWB_P_DELAY_MAX - 15);
     } else {
         *lag_int  = (pitch_index + 1) >> 1;
-        *lag_frac = (pitch_index - (*lag_int << 1)) << 1;
+        *lag_frac = (pitch_index - (*lag_int << 1)) * 2;
         *lag_int += *base_lag_int;
     }
 }
