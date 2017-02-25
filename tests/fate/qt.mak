@@ -53,7 +53,7 @@ FATE_SVQ3 += fate-svq3-1
 fate-svq3-1: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
 
 FATE_SVQ3 += fate-svq3-2
-fate-svq3-2: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/svq3_decoding_regression.mov -an
+fate-svq3-2: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/svq3/svq3_decoding_regression.mov -an
 
 FATE_SAMPLES_AVCONV-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += $(FATE_SVQ3)
 fate-svq3: $(FATE_SVQ3)
