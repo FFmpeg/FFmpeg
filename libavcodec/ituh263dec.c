@@ -962,6 +962,9 @@ intra:
     }
 end:
 
+    if (get_bits_left(&s->gb) < 0)
+        return AVERROR_INVALIDDATA;
+
         /* per-MB end of slice check */
     {
         int v= show_bits(&s->gb, 16);
