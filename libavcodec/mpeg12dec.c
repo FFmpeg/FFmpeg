@@ -948,8 +948,8 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                         dmy = get_dmv(s);
 
 
-                        s->last_mv[i][0][1] = my << my_shift;
-                        s->last_mv[i][1][1] = my << my_shift;
+                        s->last_mv[i][0][1] = my * (1 << my_shift);
+                        s->last_mv[i][1][1] = my * (1 << my_shift);
 
                         s->mv[i][0][0] = mx;
                         s->mv[i][0][1] = my;
