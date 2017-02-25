@@ -124,6 +124,17 @@ endconst
 .endif
 .endm
 
+// Same as dmbutterfly0 above, but treating the input in in2 as zero,
+// writing the same output into both out1 and out2.
+.macro dmbutterfly0_h out1, out2, in1, in2, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6
+        smull           \tmp1\().2d, \in1\().2s,  v0.s[0]
+        smull2          \tmp2\().2d, \in1\().4s,  v0.s[0]
+        rshrn           \out1\().2s, \tmp1\().2d, #14
+        rshrn2          \out1\().4s, \tmp2\().2d, #14
+        rshrn           \out2\().2s, \tmp1\().2d, #14
+        rshrn2          \out2\().4s, \tmp2\().2d, #14
+.endm
+
 // out1,out2 = in1 * coef1 - in2 * coef2
 // out3,out4 = in1 * coef2 + in2 * coef1
 // out are 4 x .2d registers, in are 2 x .4s registers
@@ -152,6 +163,43 @@ endconst
         rshrn           \inout2\().2s, \tmp3\().2d,  #14
         rshrn2          \inout2\().4s, \tmp4\().2d,  #14
 .endm
+
+// Same as dmbutterfly above, but treating the input in inout2 as zero
+.macro dmbutterfly_h1 inout1, inout2, coef1, coef2, tmp1, tmp2, tmp3, tmp4
+        smull           \tmp1\().2d, \inout1\().2s, \coef1
+        smull2          \tmp2\().2d, \inout1\().4s, \coef1
+        smull           \tmp3\().2d, \inout1\().2s, \coef2
+        smull2          \tmp4\().2d, \inout1\().4s, \coef2
+        rshrn           \inout1\().2s, \tmp1\().2d, #14
+        rshrn2          \inout1\().4s, \tmp2\().2d, #14
+        rshrn           \inout2\().2s, \tmp3\().2d, #14
+        rshrn2          \inout2\().4s, \tmp4\().2d, #14
+.endm
+
+// Same as dmbutterfly above, but treating the input in inout1 as zero
+.macro dmbutterfly_h2 inout1, inout2, coef1, coef2, tmp1, tmp2, tmp3, tmp4
+        smull           \tmp1\().2d, \inout2\().2s, \coef2
+        smull2          \tmp2\().2d, \inout2\().4s, \coef2
+        smull           \tmp3\().2d, \inout2\().2s, \coef1
+        smull2          \tmp4\().2d, \inout2\().4s, \coef1
+        neg             \tmp1\().2d, \tmp1\().2d
+        neg             \tmp2\().2d, \tmp2\().2d
+        rshrn           \inout2\().2s, \tmp3\().2d, #14
+        rshrn2          \inout2\().4s, \tmp4\().2d, #14
+        rshrn           \inout1\().2s, \tmp1\().2d, #14
+        rshrn2          \inout1\().4s, \tmp2\().2d, #14
+.endm
+
+.macro dsmull_h out1, out2, in, coef
+        smull           \out1\().2d, \in\().2s, \coef
+        smull2          \out2\().2d, \in\().4s, \coef
+.endm
+
+.macro drshrn_h out, in1, in2, shift
+        rshrn           \out\().2s, \in1\().2d, \shift
+        rshrn2          \out\().4s, \in2\().2d, \shift
+.endm
+
 
 // out1 = in1 + in2
 // out2 = in1 - in2
@@ -710,6 +758,30 @@ function idct16x16_dc_add_neon
         ret
 endfunc
 
+.macro idct16_end
+        butterfly_4s    v18, v7,  v4,  v7                // v18 = t0a,  v7  = t7a
+        butterfly_4s    v19, v22, v5,  v22               // v19 = t1a,  v22 = t6
+        butterfly_4s    v4,  v26, v20, v26               // v4  = t2a,  v26 = t5
+        butterfly_4s    v5,  v6,  v28, v6                // v5  = t3a,  v6  = t4
+        butterfly_4s    v20, v28, v16, v24               // v20 = t8a,  v28 = t11a
+        butterfly_4s    v24, v21, v23, v21               // v24 = t9,   v21 = t10
+        butterfly_4s    v23, v27, v25, v27               // v23 = t14,  v27 = t13
+        butterfly_4s    v25, v29, v29, v17               // v25 = t15a, v29 = t12a
+
+        dmbutterfly0    v8,  v9,  v27, v21, v8,  v9,  v16, v17, v30, v31 // v8  = t13a, v9  = t10a
+        dmbutterfly0    v28, v27, v29, v28, v21, v29, v16, v17, v30, v31 // v28 = t12,  v27 = t11
+
+        butterfly_4s    v16, v31, v18, v25               // v16 = out[0], v31 = out[15]
+        butterfly_4s    v17, v30, v19, v23               // v17 = out[1], v30 = out[14]
+        butterfly_4s_r  v25, v22, v22, v24               // v25 = out[9], v22 = out[6]
+        butterfly_4s    v23, v24, v7,  v20               // v23 = out[7], v24 = out[8]
+        butterfly_4s    v18, v29, v4,  v8                // v18 = out[2], v29 = out[13]
+        butterfly_4s    v19, v28, v5,  v28               // v19 = out[3], v28 = out[12]
+        butterfly_4s    v20, v27, v6,  v27               // v20 = out[4], v27 = out[11]
+        butterfly_4s    v21, v26, v26, v9                // v21 = out[5], v26 = out[10]
+        ret
+.endm
+
 function idct16
         dmbutterfly0    v16, v24, v16, v24, v4, v5, v6, v7, v8, v9 // v16 = t0a,  v24 = t1a
         dmbutterfly     v20, v28, v0.s[2], v0.s[3], v4, v5, v6, v7 // v20 = t2a,  v28 = t3a
@@ -732,28 +804,65 @@ function idct16
         dmbutterfly0    v22, v26, v22, v26, v8, v9, v18, v19, v30, v31        // v22 = t6a,  v26 = t5a
         dmbutterfly     v23, v25, v0.s[2], v0.s[3], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
         dmbutterfly     v27, v21, v0.s[2], v0.s[3], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
+        idct16_end
+endfunc
 
-        butterfly_4s    v18, v7,  v4,  v7                // v18 = t0a,  v7  = t7a
-        butterfly_4s    v19, v22, v5,  v22               // v19 = t1a,  v22 = t6
-        butterfly_4s    v4,  v26, v20, v26               // v4  = t2a,  v26 = t5
-        butterfly_4s    v5,  v6,  v28, v6                // v5  = t3a,  v6  = t4
-        butterfly_4s    v20, v28, v16, v24               // v20 = t8a,  v28 = t11a
-        butterfly_4s    v24, v21, v23, v21               // v24 = t9,   v21 = t10
-        butterfly_4s    v23, v27, v25, v27               // v23 = t14,  v27 = t13
-        butterfly_4s    v25, v29, v29, v17               // v25 = t15a, v29 = t12a
+function idct16_half
+        dmbutterfly0_h  v16, v24, v16, v24, v4, v5, v6, v7, v8, v9 // v16 = t0a,  v24 = t1a
+        dmbutterfly_h1  v20, v28, v0.s[2], v0.s[3], v4, v5, v6, v7 // v20 = t2a,  v28 = t3a
+        dmbutterfly_h1  v18, v30, v1.s[0], v1.s[1], v4, v5, v6, v7 // v18 = t4a,  v30 = t7a
+        dmbutterfly_h2  v26, v22, v1.s[2], v1.s[3], v4, v5, v6, v7 // v26 = t5a,  v22 = t6a
+        dmbutterfly_h1  v17, v31, v2.s[0], v2.s[1], v4, v5, v6, v7 // v17 = t8a,  v31 = t15a
+        dmbutterfly_h2  v25, v23, v2.s[2], v2.s[3], v4, v5, v6, v7 // v25 = t9a,  v23 = t14a
+        dmbutterfly_h1  v21, v27, v3.s[0], v3.s[1], v4, v5, v6, v7 // v21 = t10a, v27 = t13a
+        dmbutterfly_h2  v29, v19, v3.s[2], v3.s[3], v4, v5, v6, v7 // v29 = t11a, v19 = t12a
 
-        dmbutterfly0    v8,  v9,  v27, v21, v8,  v9,  v16, v17, v30, v31 // v8  = t13a, v9  = t10a
-        dmbutterfly0    v28, v27, v29, v28, v21, v29, v16, v17, v30, v31 // v28 = t12,  v27 = t11
+        butterfly_4s    v4,  v28, v16, v28               // v4  = t0,   v28 = t3
+        butterfly_4s    v5,  v20, v24, v20               // v5  = t1,   v20 = t2
+        butterfly_4s    v6,  v26, v18, v26               // v6  = t4,   v26 = t5
+        butterfly_4s    v7,  v22, v30, v22               // v7  = t7,   v22 = t6
+        butterfly_4s    v16, v25, v17, v25               // v16 = t8,   v25 = t9
+        butterfly_4s    v24, v21, v29, v21               // v24 = t11,  v21 = t10
+        butterfly_4s    v17, v27, v19, v27               // v17 = t12,  v27 = t13
+        butterfly_4s    v29, v23, v31, v23               // v29 = t15,  v23 = t14
 
-        butterfly_4s    v16, v31, v18, v25               // v16 = out[0], v31 = out[15]
-        butterfly_4s    v17, v30, v19, v23               // v17 = out[1], v30 = out[14]
-        butterfly_4s_r  v25, v22, v22, v24               // v25 = out[9], v22 = out[6]
-        butterfly_4s    v23, v24, v7,  v20               // v23 = out[7], v24 = out[8]
-        butterfly_4s    v18, v29, v4,  v8                // v18 = out[2], v29 = out[13]
-        butterfly_4s    v19, v28, v5,  v28               // v19 = out[3], v28 = out[12]
-        butterfly_4s    v20, v27, v6,  v27               // v20 = out[4], v27 = out[11]
-        butterfly_4s    v21, v26, v26, v9                // v21 = out[5], v26 = out[10]
-        ret
+        dmbutterfly0    v22, v26, v22, v26, v8, v9, v18, v19, v30, v31        // v22 = t6a,  v26 = t5a
+        dmbutterfly     v23, v25, v0.s[2], v0.s[3], v18, v19, v30, v31        // v23 = t9a,  v25 = t14a
+        dmbutterfly     v27, v21, v0.s[2], v0.s[3], v18, v19, v30, v31, neg=1 // v27 = t13a, v21 = t10a
+        idct16_end
+endfunc
+
+function idct16_quarter
+        dsmull_h        v24, v25, v19, v3.s[3]
+        dsmull_h        v4,  v5,  v17, v2.s[0]
+        dsmull_h        v7,  v6,  v18, v1.s[1]
+        dsmull_h        v30, v31, v18, v1.s[0]
+        neg             v24.2d,  v24.2d
+        neg             v25.2d,  v25.2d
+        dsmull_h        v29, v28, v17, v2.s[1]
+        dsmull_h        v26, v27, v19, v3.s[2]
+        dsmull_h        v22, v23, v16, v0.s[0]
+        drshrn_h        v24, v24, v25, #14
+        drshrn_h        v16, v4,  v5,  #14
+        drshrn_h        v7,  v7,  v6,  #14
+        drshrn_h        v6,  v30, v31, #14
+        drshrn_h        v29, v29, v28, #14
+        drshrn_h        v17, v26, v27, #14
+        drshrn_h        v28, v22, v23, #14
+
+        dmbutterfly_l   v20, v21, v22, v23, v17, v24, v0.s[2], v0.s[3]
+        dmbutterfly_l   v18, v19, v30, v31, v29, v16, v0.s[2], v0.s[3]
+        neg             v22.2d,  v22.2d
+        neg             v23.2d,  v23.2d
+        drshrn_h        v27, v20, v21, #14
+        drshrn_h        v21, v22, v23, #14
+        drshrn_h        v23, v18, v19, #14
+        drshrn_h        v25, v30, v31, #14
+        mov             v4.16b,  v28.16b
+        mov             v5.16b,  v28.16b
+        dmbutterfly0    v22, v26, v7,  v6,  v18, v19, v30, v31
+        mov             v20.16b, v28.16b
+        idct16_end
 endfunc
 
 function iadst16
@@ -1026,7 +1135,6 @@ function vp9_\txfm1\()_\txfm2\()_16x16_add_16_neon
 .ifnc \txfm1\()_\txfm2,idct_idct
         movrel          x11, iadst16_coeffs
 .endif
-        movrel          x12, min_eob_idct_idct_16, 2
 .ifc \txfm1,idct
         ld1             {v0.8h,v1.8h}, [x10]
         sxtl            v2.4s,  v1.4h
@@ -1035,6 +1143,15 @@ function vp9_\txfm1\()_\txfm2\()_16x16_add_16_neon
         sxtl            v0.4s,  v0.4h
 .endif
         mov             x9,  #64
+
+.ifc \txfm1\()_\txfm2,idct_idct
+        cmp             w3,  #10
+        b.le            idct16x16_quarter_add_16_neon
+        cmp             w3,  #38
+        b.le            idct16x16_half_add_16_neon
+
+        movrel          x12, min_eob_idct_idct_16, 2
+.endif
 
 .irp i, 0, 4, 8, 12
         add             x0,  sp,  #(\i*64)
@@ -1110,6 +1227,175 @@ itxfm_func16x16 iadst, idct
 itxfm_func16x16 idct,  iadst
 itxfm_func16x16 iadst, iadst
 
+function idct16_1d_4x16_pass1_quarter_neon
+        mov             x14, x30
+
+        movi            v4.4s, #0
+.irp i, 16, 17, 18, 19
+        load_clear      \i,  x2,  x9
+.endr
+
+        bl              idct16_quarter
+
+        // Do four 4x4 transposes. Originally, v16-v31 contain the
+        // 16 rows. Afterwards, v16-v19, v20-v23, v24-v27 and v28-v31
+        // contain the four transposed 4x4 blocks.
+        transpose_4x4s  v16, v17, v18, v19, v4, v5, v6, v7
+        transpose_4x4s  v20, v21, v22, v23, v4, v5, v6, v7
+        transpose_4x4s  v24, v25, v26, v27, v4, v5, v6, v7
+        transpose_4x4s  v28, v29, v30, v31, v4, v5, v6, v7
+
+        // Store the transposed 4x4 blocks horizontally.
+        // The first 4x4 block is kept in registers for the second pass,
+        // store the rest in the temp buffer.
+        add             x0,  x0,  #16
+        st1             {v20.4s},  [x0], #16
+        st1             {v24.4s},  [x0], #16
+        st1             {v28.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v21.4s},  [x0], #16
+        st1             {v25.4s},  [x0], #16
+        st1             {v29.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v22.4s},  [x0], #16
+        st1             {v26.4s},  [x0], #16
+        st1             {v30.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v23.4s},  [x0], #16
+        st1             {v27.4s},  [x0], #16
+        st1             {v31.4s},  [x0], #16
+        br              x14
+endfunc
+
+function idct16_1d_4x16_pass2_quarter_neon
+        mov             x14, x30
+
+        // Only load the top 4 lines, and only do it for the later slices.
+        // For the first slice, d16-d19 is kept in registers from the first pass.
+        cbz             x3,  1f
+.irp i, 16, 17, 18, 19
+        load            \i,  x2,  x9
+.endr
+1:
+
+        add             x3,  x0,  x1
+        lsl             x1,  x1,  #1
+        bl              idct16_quarter
+
+        dup             v8.8h, w13
+        load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
+        load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+        br              x14
+endfunc
+
+function idct16_1d_4x16_pass1_half_neon
+        mov             x14, x30
+
+        movi            v4.4s, #0
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        load_clear      \i,  x2,  x9
+.endr
+
+        bl              idct16_half
+
+        // Do four 4x4 transposes. Originally, v16-v31 contain the
+        // 16 rows. Afterwards, v16-v19, v20-v23, v24-v27 and v28-v31
+        // contain the four transposed 4x4 blocks.
+        transpose_4x4s  v16, v17, v18, v19, v4, v5, v6, v7
+        transpose_4x4s  v20, v21, v22, v23, v4, v5, v6, v7
+        transpose_4x4s  v24, v25, v26, v27, v4, v5, v6, v7
+        transpose_4x4s  v28, v29, v30, v31, v4, v5, v6, v7
+
+        // Store the transposed 4x4 blocks horizontally.
+        cmp             x1,  #4
+        b.eq            1f
+.irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
+        store           \i,  x0,  #16
+.endr
+        br              x14
+1:
+        // Special case: For the second input column (r1 == 4),
+        // which would be stored as the second row in the temp buffer,
+        // don't store the first 4x4 block, but keep it in registers
+        // for the first slice of the second pass (where it is the
+        // second 4x4 block).
+        add             x0,  x0,  #16
+        st1             {v20.4s},  [x0], #16
+        st1             {v24.4s},  [x0], #16
+        st1             {v28.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v21.4s},  [x0], #16
+        st1             {v25.4s},  [x0], #16
+        st1             {v29.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v22.4s},  [x0], #16
+        st1             {v26.4s},  [x0], #16
+        st1             {v30.4s},  [x0], #16
+        add             x0,  x0,  #16
+        st1             {v23.4s},  [x0], #16
+        st1             {v27.4s},  [x0], #16
+        st1             {v31.4s},  [x0], #16
+
+        mov             v20.16b, v16.16b
+        mov             v21.16b, v17.16b
+        mov             v22.16b, v18.16b
+        mov             v23.16b, v19.16b
+        br              x14
+endfunc
+
+function idct16_1d_4x16_pass2_half_neon
+        mov             x14, x30
+
+.irp i, 16, 17, 18, 19
+        load            \i,  x2,  x9
+.endr
+        cbz             x3,  1f
+.irp i, 20, 21, 22, 23
+        load            \i,  x2,  x9
+.endr
+1:
+
+        add             x3,  x0,  x1
+        lsl             x1,  x1,  #1
+        bl              idct16_half
+
+        dup             v8.8h, w13
+        load_add_store  v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
+        load_add_store  v24.4s, v25.4s, v26.4s, v27.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+        br              x14
+endfunc
+
+.macro idct16_partial size
+function idct16x16_\size\()_add_16_neon
+        add             x0,  sp,  #(0*64)
+        mov             x1,  #0
+        add             x2,  x6,  #(0*4)
+        bl              idct16_1d_4x16_pass1_\size\()_neon
+.ifc \size,half
+        add             x0,  sp,  #(4*64)
+        mov             x1,  #4
+        add             x2,  x6,  #(4*4)
+        bl              idct16_1d_4x16_pass1_\size\()_neon
+.endif
+
+.irp i, 0, 4, 8, 12
+        add             x0,  x4,  #(\i*2)
+        mov             x1,  x5
+        add             x2,  sp,  #(\i*4)
+        mov             x3,  #\i
+        bl              idct16_1d_4x16_pass2_\size\()_neon
+.endr
+
+        add             sp,  sp,  #1024
+        ldp             d8,  d9,  [sp], 0x10
+        br              x15
+endfunc
+.endm
+
+idct16_partial quarter
+idct16_partial half
 
 function idct32x32_dc_add_neon
         movrel          x4,  idct_coeffs
@@ -1164,30 +1450,7 @@ function idct32x32_dc_add_neon
         ret
 endfunc
 
-function idct32_odd
-        dmbutterfly     v16, v31, v10.s[0], v10.s[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
-        dmbutterfly     v24, v23, v10.s[2], v10.s[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
-        dmbutterfly     v20, v27, v11.s[0], v11.s[1], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
-        dmbutterfly     v28, v19, v11.s[2], v11.s[3], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
-        dmbutterfly     v18, v29, v12.s[0], v12.s[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
-        dmbutterfly     v26, v21, v12.s[2], v12.s[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
-        dmbutterfly     v22, v25, v13.s[0], v13.s[1], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
-        dmbutterfly     v30, v17, v13.s[2], v13.s[3], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
-
-        butterfly_4s    v4,  v24, v16, v24 // v4  = t16, v24 = t17
-        butterfly_4s    v5,  v20, v28, v20 // v5  = t19, v20 = t18
-        butterfly_4s    v6,  v26, v18, v26 // v6  = t20, v26 = t21
-        butterfly_4s    v7,  v22, v30, v22 // v7  = t23, v22 = t22
-        butterfly_4s    v28, v25, v17, v25 // v28 = t24, v25 = t25
-        butterfly_4s    v30, v21, v29, v21 // v30 = t27, v21 = t26
-        butterfly_4s    v29, v23, v31, v23 // v29 = t31, v23 = t30
-        butterfly_4s    v31, v27, v19, v27 // v31 = t28, v27 = t29
-
-        dmbutterfly     v23, v24, v1.s[0], v1.s[1], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
-        dmbutterfly     v27, v20, v1.s[0], v1.s[1], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
-        dmbutterfly     v21, v26, v1.s[2], v1.s[3], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
-        dmbutterfly     v25, v22, v1.s[2], v1.s[3], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
-
+.macro idct32_end
         butterfly_4s    v16, v5,  v4,  v5  // v16 = t16a, v5  = t19a
         butterfly_4s    v17, v20, v23, v20 // v17 = t17,  v20 = t18
         butterfly_4s    v18, v6,  v7,  v6  // v18 = t23a, v6  = t20a
@@ -1216,8 +1479,105 @@ function idct32_odd
         dmbutterfly0    v25, v22, v25, v22, v4, v5, v6, v7, v8, v9 // v25 = t25,  v22 = t22
         dmbutterfly0    v24, v23, v24, v23, v4, v5, v6, v7, v8, v9 // v24 = t24a, v23 = t23a
         ret
+.endm
+
+function idct32_odd
+        dmbutterfly     v16, v31, v10.s[0], v10.s[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
+        dmbutterfly     v24, v23, v10.s[2], v10.s[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
+        dmbutterfly     v20, v27, v11.s[0], v11.s[1], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
+        dmbutterfly     v28, v19, v11.s[2], v11.s[3], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
+        dmbutterfly     v18, v29, v12.s[0], v12.s[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
+        dmbutterfly     v26, v21, v12.s[2], v12.s[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
+        dmbutterfly     v22, v25, v13.s[0], v13.s[1], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
+        dmbutterfly     v30, v17, v13.s[2], v13.s[3], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
+
+        butterfly_4s    v4,  v24, v16, v24 // v4  = t16, v24 = t17
+        butterfly_4s    v5,  v20, v28, v20 // v5  = t19, v20 = t18
+        butterfly_4s    v6,  v26, v18, v26 // v6  = t20, v26 = t21
+        butterfly_4s    v7,  v22, v30, v22 // v7  = t23, v22 = t22
+        butterfly_4s    v28, v25, v17, v25 // v28 = t24, v25 = t25
+        butterfly_4s    v30, v21, v29, v21 // v30 = t27, v21 = t26
+        butterfly_4s    v29, v23, v31, v23 // v29 = t31, v23 = t30
+        butterfly_4s    v31, v27, v19, v27 // v31 = t28, v27 = t29
+
+        dmbutterfly     v23, v24, v1.s[0], v1.s[1], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
+        dmbutterfly     v27, v20, v1.s[0], v1.s[1], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
+        dmbutterfly     v21, v26, v1.s[2], v1.s[3], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
+        dmbutterfly     v25, v22, v1.s[2], v1.s[3], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
+        idct32_end
 endfunc
 
+function idct32_odd_half
+        dmbutterfly_h1  v16, v31, v10.s[0], v10.s[1], v4, v5, v6, v7 // v16 = t16a, v31 = t31a
+        dmbutterfly_h2  v24, v23, v10.s[2], v10.s[3], v4, v5, v6, v7 // v24 = t17a, v23 = t30a
+        dmbutterfly_h1  v20, v27, v11.s[0], v11.s[1], v4, v5, v6, v7 // v20 = t18a, v27 = t29a
+        dmbutterfly_h2  v28, v19, v11.s[2], v11.s[3], v4, v5, v6, v7 // v28 = t19a, v19 = t28a
+        dmbutterfly_h1  v18, v29, v12.s[0], v12.s[1], v4, v5, v6, v7 // v18 = t20a, v29 = t27a
+        dmbutterfly_h2  v26, v21, v12.s[2], v12.s[3], v4, v5, v6, v7 // v26 = t21a, v21 = t26a
+        dmbutterfly_h1  v22, v25, v13.s[0], v13.s[1], v4, v5, v6, v7 // v22 = t22a, v25 = t25a
+        dmbutterfly_h2  v30, v17, v13.s[2], v13.s[3], v4, v5, v6, v7 // v30 = t23a, v17 = t24a
+
+        butterfly_4s    v4,  v24, v16, v24 // v4  = t16, v24 = t17
+        butterfly_4s    v5,  v20, v28, v20 // v5  = t19, v20 = t18
+        butterfly_4s    v6,  v26, v18, v26 // v6  = t20, v26 = t21
+        butterfly_4s    v7,  v22, v30, v22 // v7  = t23, v22 = t22
+        butterfly_4s    v28, v25, v17, v25 // v28 = t24, v25 = t25
+        butterfly_4s    v30, v21, v29, v21 // v30 = t27, v21 = t26
+        butterfly_4s    v29, v23, v31, v23 // v29 = t31, v23 = t30
+        butterfly_4s    v31, v27, v19, v27 // v31 = t28, v27 = t29
+
+        dmbutterfly     v23, v24, v1.s[0], v1.s[1], v16, v17, v18, v19        // v23 = t17a, v24 = t30a
+        dmbutterfly     v27, v20, v1.s[0], v1.s[1], v16, v17, v18, v19, neg=1 // v27 = t29a, v20 = t18a
+        dmbutterfly     v21, v26, v1.s[2], v1.s[3], v16, v17, v18, v19        // v21 = t21a, v26 = t26a
+        dmbutterfly     v25, v22, v1.s[2], v1.s[3], v16, v17, v18, v19, neg=1 // v25 = t25a, v22 = t22a
+        idct32_end
+endfunc
+
+function idct32_odd_quarter
+        dsmull_h        v4,  v5,  v16, v10.s[0]
+        dsmull_h        v28, v29, v19, v11.s[3]
+        dsmull_h        v30, v31, v16, v10.s[1]
+        dsmull_h        v22, v23, v17, v13.s[2]
+        dsmull_h        v7,  v6,  v17, v13.s[3]
+        dsmull_h        v26, v27, v19, v11.s[2]
+        dsmull_h        v20, v21, v18, v12.s[0]
+        dsmull_h        v24, v25, v18, v12.s[1]
+
+        neg             v28.2d, v28.2d
+        neg             v29.2d, v29.2d
+        neg             v7.2d,  v7.2d
+        neg             v6.2d,  v6.2d
+
+        drshrn_h        v4,  v4,  v5,  #14
+        drshrn_h        v5,  v28, v29, #14
+        drshrn_h        v29, v30, v31, #14
+        drshrn_h        v28, v22, v23, #14
+        drshrn_h        v7,  v7,  v6,  #14
+        drshrn_h        v31, v26, v27, #14
+        drshrn_h        v6,  v20, v21, #14
+        drshrn_h        v30, v24, v25, #14
+
+        dmbutterfly_l   v16, v17, v18, v19, v29, v4,  v1.s[0], v1.s[1]
+        dmbutterfly_l   v27, v26, v20, v21, v31, v5,  v1.s[0], v1.s[1]
+        drshrn_h        v23, v16, v17, #14
+        drshrn_h        v24, v18, v19, #14
+        neg             v20.2d, v20.2d
+        neg             v21.2d, v21.2d
+        drshrn_h        v27, v27, v26, #14
+        drshrn_h        v20, v20, v21, #14
+        dmbutterfly_l   v16, v17, v18, v19, v30, v6,  v1.s[2], v1.s[3]
+        drshrn_h        v21, v16, v17, #14
+        drshrn_h        v26, v18, v19, #14
+        dmbutterfly_l   v16, v17, v18, v19, v28, v7,  v1.s[2], v1.s[3]
+        drshrn_h        v25, v16, v17, #14
+        neg             v18.2d, v18.2d
+        neg             v19.2d, v19.2d
+        drshrn_h        v22, v18, v19, #14
+
+        idct32_end
+endfunc
+
+.macro idct32_funcs suffix
 // Do an 32-point IDCT of a 4x32 slice out of a 32x32 matrix.
 // The 32-point IDCT can be decomposed into two 16-point IDCTs;
 // a normal IDCT16 with every other input component (the even ones, with
@@ -1227,18 +1587,29 @@ endfunc
 // x1 = unused
 // x2 = src
 // x9 = double input stride
-function idct32_1d_4x32_pass1_neon
+function idct32_1d_4x32_pass1\suffix\()_neon
         mov             x14, x30
 
         movi            v4.4s,  #0
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        ld1             {v\i\().4s}, [x2]
-        st1             {v4.4s},  [x2], x9
+        load_clear      \i, x2, x9
 .endr
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        load_clear      \i, x2, x9
+.endr
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        load_clear      \i, x2, x9
+.endr
+.endif
 
-        bl              idct16
+        bl              idct16\suffix
 
         // Do four 4x4 transposes. Originally, v16-v31 contain the
         // 16 rows. Afterwards, v16-v19, v20-v23, v24-v27 and v28-v31
@@ -1279,17 +1650,36 @@ function idct32_1d_4x32_pass1_neon
 
         // Move x2 back to the start of the input, and move
         // to the first odd row
+.ifb \suffix
         sub             x2,  x2,  x9, lsl #4
+.endif
+.ifc \suffix,_quarter
+        sub             x2,  x2,  x9, lsl #2
+.endif
+.ifc \suffix,_half
+        sub             x2,  x2,  x9, lsl #3
+.endif
         add             x2,  x2,  #128
 
         movi            v4.4s,  #0
         // v16 = IN(1), v17 = IN(3) ... v31 = IN(31)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        ld1             {v\i\().4s}, [x2]
-        st1             {v4.4s},  [x2], x9
+        load_clear      \i, x2, x9
 .endr
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        load_clear      \i, x2, x9
+.endr
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        load_clear      \i, x2, x9
+.endr
+.endif
 
-        bl              idct32_odd
+        bl              idct32_odd\suffix
 
         transpose_4x4s  v31, v30, v29, v28, v4, v5, v6, v7
         transpose_4x4s  v27, v26, v25, v24, v4, v5, v6, v7
@@ -1350,32 +1740,60 @@ endfunc
 // x2 = src (temp buffer)
 // x7 = negative double temp buffer stride
 // x9 = double temp buffer stride
-function idct32_1d_4x32_pass2_neon
+function idct32_1d_4x32_pass2\suffix\()_neon
         mov             x14, x30
 
         // v16 = IN(0), v17 = IN(2) ... v31 = IN(30)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        ld1             {v\i\().4s}, [x2], x9
+        load            \i, x2, x9
 .endr
         sub             x2,  x2,  x9, lsl #4
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        load            \i, x2, x9
+.endr
+        sub             x2,  x2,  x9, lsl #2
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        load            \i, x2, x9
+.endr
+        sub             x2,  x2,  x9, lsl #3
+.endif
 
-        bl              idct16
+        bl              idct16\suffix
 
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        st1             {v\i\().4s}, [x2], x9
+        store           \i, x2, x9
 .endr
 
         sub             x2,  x2,  x9, lsl #4
         add             x2,  x2,  #128
 
         // v16 = IN(1), v17 = IN(3) ... v31 = IN(31)
+.ifb \suffix
 .irp i, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-        ld1             {v\i\().4s}, [x2], x9
+        load            \i, x2, x9
 .endr
         sub             x2,  x2,  x9, lsl #4
+.endif
+.ifc \suffix,_quarter
+.irp i, 16, 17, 18, 19
+        load            \i, x2, x9
+.endr
+        sub             x2,  x2,  x9, lsl #2
+.endif
+.ifc \suffix,_half
+.irp i, 16, 17, 18, 19, 20, 21, 22, 23
+        load            \i, x2, x9
+.endr
+        sub             x2,  x2,  x9, lsl #3
+.endif
         sub             x2,  x2,  #128
 
-        bl              idct32_odd
+        bl              idct32_odd\suffix
 
 .macro load_acc_store a, b, c, d, neg=0
 .if \neg == 0
@@ -1433,6 +1851,11 @@ function idct32_1d_4x32_pass2_neon
 .purgem load_acc_store
         br              x14
 endfunc
+.endm
+
+idct32_funcs
+idct32_funcs _quarter
+idct32_funcs _half
 
 const min_eob_idct_idct_32, align=4
         .short  0, 9, 34, 70, 135, 240, 336, 448
@@ -1443,7 +1866,6 @@ function vp9_idct_idct_32x32_add_16_neon
         b.eq            idct32x32_dc_add_neon
 
         movrel          x10, idct_coeffs
-        movrel          x12, min_eob_idct_idct_32, 2
 
         mov             x15, x30
         stp             d8,  d9,  [sp, #-0x10]!
@@ -1473,6 +1895,13 @@ function vp9_idct_idct_32x32_add_16_neon
         sxtl            v10.4s, v10.4h
 
         dup             v15.8h, w13
+
+        cmp             w3,  #34
+        b.le            idct32x32_quarter_add_16_neon
+        cmp             w3,  #135
+        b.le            idct32x32_half_add_16_neon
+
+        movrel          x12, min_eob_idct_idct_32, 2
 
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             x0,  sp,  #(\i*128)
@@ -1526,3 +1955,63 @@ function ff_vp9_idct_idct_32x32_add_12_neon, export=1
         mov             x13, #0x0fff
         b               vp9_idct_idct_32x32_add_16_neon
 endfunc
+
+.macro idct32_partial size
+function idct32x32_\size\()_add_16_neon
+.irp i, 0, 4
+        add             x0,  sp,  #(\i*128)
+.ifc \size,quarter
+.if \i == 4
+        cmp             w3,  #9
+        b.le            1f
+.endif
+.endif
+        add             x2,  x6,  #(\i*4)
+        bl              idct32_1d_4x32_pass1_\size\()_neon
+.endr
+
+.ifc \size,half
+.irp i, 8, 12
+        add             x0,  sp,  #(\i*128)
+.if \i == 12
+        cmp             w3,  #70
+        b.le            1f
+.endif
+        add             x2,  x6,  #(\i*4)
+        bl              idct32_1d_4x32_pass1_\size\()_neon
+.endr
+.endif
+        b               3f
+
+1:
+        // Write zeros to the temp buffer for pass 2
+        movi            v16.4s,  #0
+        movi            v17.4s,  #0
+        movi            v18.4s,  #0
+        movi            v19.4s,  #0
+
+.rept 4
+        st1             {v16.4s-v19.4s},  [x0], #64
+        st1             {v16.4s-v19.4s},  [x0], #64
+.endr
+
+3:
+.irp i, 0, 4, 8, 12, 16, 20, 24, 28
+        add             x0,  x4,  #(\i*2)
+        mov             x1,  x5
+        add             x2,  sp,  #(\i*4)
+        bl              idct32_1d_4x32_pass2_\size\()_neon
+.endr
+
+        add             sp,  sp,  #4096
+        ldp             d14, d15, [sp], 0x10
+        ldp             d12, d13, [sp], 0x10
+        ldp             d10, d11, [sp], 0x10
+        ldp             d8,  d9,  [sp], 0x10
+
+        br              x15
+endfunc
+.endm
+
+idct32_partial quarter
+idct32_partial half
