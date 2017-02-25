@@ -872,7 +872,7 @@ function \txfm\()16_1d_4x16_pass1_neon
         transpose_4x4s  v24, v25, v26, v27, v4, v5, v6, v7
         transpose_4x4s  v28, v29, v30, v31, v4, v5, v6, v7
 
-        // Store the transposed 8x8 blocks horizontally.
+        // Store the transposed 4x4 blocks horizontally.
         cmp             x1,  #12
         b.eq            1f
 .irp i, 16, 20, 24, 28, 17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31
