@@ -34,6 +34,7 @@
 typedef struct RangeCoder {
     unsigned   code;
     unsigned   range;
+    unsigned   code1;
 } RangeCoder;
 
 typedef struct PixelModel {
@@ -60,10 +61,14 @@ typedef struct SCPRContext {
     unsigned       *blocks;
     unsigned        cbits;
     int             cxshift;
+
+    int           (*get_freq)(RangeCoder *rc, unsigned total_freq, unsigned *freq);
+    void          (*decode)(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq);
 } SCPRContext;
 
 static void init_rangecoder(RangeCoder *rc, GetByteContext *gb)
 {
+    rc->code1 = 0;
     rc->range = 0xFFFFFFFFU;
     rc->code  = bytestream2_get_be32(gb);
 }
@@ -152,6 +157,31 @@ static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
     return 0;
 }
 
+static void decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
+{
+    int t = rc->range * (uint64_t)cumFreq / total_freq;
+
+    rc->code1 += t + 1;
+    rc->range = rc->range * (uint64_t)(freq + cumFreq) / total_freq - (t + 1);
+
+    while (rc->range < TOP && bytestream2_get_bytes_left(gb) > 0) {
+        unsigned byte = bytestream2_get_byte(gb);
+        rc->code = (rc->code << 8) | byte;
+        rc->code1 <<= 8;
+        rc->range <<= 8;
+    }
+}
+
+static int get_freq0(RangeCoder *rc, unsigned total_freq, unsigned *freq)
+{
+    if (rc->range == 0)
+        return AVERROR_INVALIDDATA;
+
+    *freq = total_freq * (uint64_t)(rc->code - rc->code1) / rc->range;
+
+    return 0;
+}
+
 static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned step, unsigned *rval)
 {
     GetByteContext *gb = &s->gb;
@@ -161,7 +191,7 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
     unsigned c = 0, cumfr = 0, cnt_c = 0;
     int i, ret;
 
-    if ((ret = get_freq(rc, totfr, &value)) < 0)
+    if ((ret = s->get_freq(rc, totfr, &value)) < 0)
         return ret;
 
     while (c < maxc) {
@@ -172,7 +202,7 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
             break;
         c++;
     }
-    decode(gb, rc, cumfr, cnt_c, totfr);
+    s->decode(gb, rc, cumfr, cnt_c, totfr);
 
     cnt[c] = cnt_c + step;
     totfr += step;
@@ -199,7 +229,7 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
     unsigned value, x = 0, cumfr = 0, cnt_x = 0;
     int i, j, ret, c, cnt_c;
 
-    if ((ret = get_freq(rc, totfr, &value)) < 0)
+    if ((ret = s->get_freq(rc, totfr, &value)) < 0)
         return ret;
 
     while (x < 16) {
@@ -221,7 +251,7 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
             break;
         c++;
     }
-    decode(gb, rc, cumfr, cnt_c, totfr);
+    s->decode(gb, rc, cumfr, cnt_c, totfr);
     pixel->freq[c] = cnt_c + step;
     pixel->lookup[x] = cnt_x + step;
     totfr += step;
@@ -695,7 +725,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     type = bytestream2_peek_byte(gb);
 
-    if (type == 18) {
+    if (type == 2) {
+        s->get_freq = get_freq0;
+        s->decode = decode0;
+        frame->key_frame = 1;
+        ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
+                           s->current_frame->linesize[0] / 4);
+    } else if (type == 18) {
+        s->get_freq = get_freq;
+        s->decode = decode;
         frame->key_frame = 1;
         ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
                            s->current_frame->linesize[0] / 4);
@@ -784,6 +822,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported bitdepth %i\n", avctx->bits_per_coded_sample);
         return AVERROR_INVALIDDATA;
     }
+
+    s->get_freq = get_freq0;
+    s->decode = decode0;
 
     s->cxshift = avctx->bits_per_coded_sample == 16 ? 0 : 2;
     s->cbits = avctx->bits_per_coded_sample == 16 ? 0x1F : 0xFF;
