@@ -77,10 +77,10 @@ static void picmemset(PicContext *s, AVFrame *frame, int value, int run,
                 if (*y < 0) {
                    *y = s->height - 1;
                    *plane += 1;
-                   value <<= bits_per_plane;
-                   mask  <<= bits_per_plane;
                    if (*plane >= s->nb_planes)
                        return;
+                   value <<= bits_per_plane;
+                   mask  <<= bits_per_plane;
                 }
             }
         }
