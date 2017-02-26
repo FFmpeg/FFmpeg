@@ -1575,7 +1575,6 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
         beq             idct32x32_dc_add_neon
         push            {r4-r8,lr}
         vpush           {q4-q6}
-        movrel          r8,  min_eob_idct_idct_32 + 2
 
         @ Align the stack, allocate a temp buffer
 T       mov             r7,  sp
@@ -1596,6 +1595,8 @@ A       and             r7,  sp,  #15
         ble             idct32x32_quarter_add_neon
         cmp             r3,  #135
         ble             idct32x32_half_add_neon
+
+        movrel          r8,  min_eob_idct_idct_32 + 2
 
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             r0,  sp,  #(\i*64)
@@ -1634,16 +1635,31 @@ A       and             r7,  sp,  #15
         pop             {r4-r8,pc}
 endfunc
 
-function idct32x32_quarter_add_neon
+.macro idct32_partial size
+function idct32x32_\size\()_add_neon
 .irp i, 0, 4
         add             r0,  sp,  #(\i*64)
+.ifc \size,quarter
 .if \i == 4
         cmp             r3,  #9
         ble             1f
 .endif
+.endif
         add             r2,  r6,  #(\i*2)
-        bl              idct32_1d_4x32_pass1_quarter_neon
+        bl              idct32_1d_4x32_pass1_\size\()_neon
 .endr
+
+.ifc \size,half
+.irp i, 8, 12
+        add             r0,  sp,  #(\i*64)
+.if \i == 12
+        cmp             r3,  #70
+        ble             1f
+.endif
+        add             r2,  r6,  #(\i*2)
+        bl              idct32_1d_4x32_pass1_\size\()_neon
+.endr
+.endif
         b               3f
 
 1:
@@ -1653,53 +1669,20 @@ function idct32x32_quarter_add_neon
 .rept 8
         vst1.16         {q14-q15}, [r0,:128]!
 .endr
+
 3:
 .irp i, 0, 4, 8, 12, 16, 20, 24, 28
         add             r0,  r4,  #(\i)
         mov             r1,  r5
         add             r2,  sp,  #(\i*2)
-        bl              idct32_1d_4x32_pass2_quarter_neon
+        bl              idct32_1d_4x32_pass2_\size\()_neon
 .endr
 
         add             sp,  sp,  r7
         vpop            {q4-q6}
         pop             {r4-r8,pc}
 endfunc
+.endm
 
-function idct32x32_half_add_neon
-.irp i, 0, 4, 8, 12
-        add             r0,  sp,  #(\i*64)
-.if \i > 0
-        ldrh_post       r1,  r8,  #2
-        cmp             r3,  r1
-        it              le
-        movle           r1,  #(16 - \i)/2
-        ble             1f
-.endif
-        add             r2,  r6,  #(\i*2)
-        bl              idct32_1d_4x32_pass1_half_neon
-.endr
-        b               3f
-
-1:
-        @ Write zeros to the temp buffer for pass 2
-        vmov.i16        q14, #0
-        vmov.i16        q15, #0
-2:
-        subs            r1,  r1,  #1
-.rept 4
-        vst1.16         {q14-q15}, [r0,:128]!
-.endr
-        bne             2b
-3:
-.irp i, 0, 4, 8, 12, 16, 20, 24, 28
-        add             r0,  r4,  #(\i)
-        mov             r1,  r5
-        add             r2,  sp,  #(\i*2)
-        bl              idct32_1d_4x32_pass2_half_neon
-.endr
-
-        add             sp,  sp,  r7
-        vpop            {q4-q6}
-        pop             {r4-r8,pc}
-endfunc
+idct32_partial quarter
+idct32_partial half
