@@ -889,8 +889,6 @@ function ff_vp9_\txfm1\()_\txfm2\()_16x16_add_neon, export=1
         push            {r4-r8,lr}
 .ifnc \txfm1\()_\txfm2,idct_idct
         vpush           {q4-q7}
-.else
-        movrel          r8,  min_eob_idct_idct_16 + 2
 .endif
 
         @ Align the stack, allocate a temp buffer
@@ -914,6 +912,8 @@ A       and             r7,  sp,  #15
         ble             idct16x16_quarter_add_neon
         cmp             r3,  #38
         ble             idct16x16_half_add_neon
+
+        movrel          r8,  min_eob_idct_idct_16 + 2
 .endif
 
 .irp i, 0, 4, 8, 12
