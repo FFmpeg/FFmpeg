@@ -283,12 +283,12 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         ctx->sprite_shift[1]   = 0;
         break;
     case 2:
-        s->sprite_offset[0][0] = (sprite_ref[0][0] << (alpha + rho)) +
+        s->sprite_offset[0][0] = (sprite_ref[0][0] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                  (-vop_ref[0][0]) +
                                  (r * sprite_ref[0][1] - virtual_ref[0][1]) *
                                  (-vop_ref[0][1]) + (1 << (alpha + rho - 1));
-        s->sprite_offset[0][1] = (sprite_ref[0][1] << (alpha + rho)) +
+        s->sprite_offset[0][1] = (sprite_ref[0][1] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][1] + virtual_ref[0][1]) *
                                  (-vop_ref[0][0]) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
