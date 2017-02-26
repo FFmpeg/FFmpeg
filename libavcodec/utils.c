@@ -745,7 +745,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
     }
 }
 
-static int add_metadata_from_side_data(AVPacket *avpkt, AVFrame *frame)
+static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 {
     int size;
     const uint8_t *side_metadata;
@@ -759,7 +759,7 @@ static int add_metadata_from_side_data(AVPacket *avpkt, AVFrame *frame)
 
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    AVPacket *pkt = avctx->internal->pkt;
+    const AVPacket *pkt = avctx->internal->pkt;
     int i;
     static const struct {
         enum AVPacketSideDataType packet;

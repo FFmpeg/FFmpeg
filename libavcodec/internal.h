@@ -141,7 +141,7 @@ typedef struct AVCodecInternal {
      * Current packet as passed into the decoder, to avoid having to pass the
      * packet into every function.
      */
-    AVPacket *pkt;
+    const AVPacket *pkt;
 
     /**
      * temporary buffer used for encoders to store their bitstream
