@@ -1244,27 +1244,27 @@ function idct32_1d_4x32_pass1_neon
 .macro store_rev a, b, c, d
         // There's no rev128 instruction, but we reverse each 64 bit
         // half, and then flip them using an ext with 8 bytes offset.
-        rev64           v7.4s, v\d\().4s
-        st1             {v\a\().4s},  [x0], #16
+        rev64           v7.4s, \d
+        st1             {\a},  [x0], #16
         ext             v7.16b, v7.16b, v7.16b, #8
-        st1             {v\b\().4s},  [x0], #16
-        rev64           v6.4s, v\c\().4s
-        st1             {v\c\().4s},  [x0], #16
+        st1             {\b},  [x0], #16
+        rev64           v6.4s, \c
+        st1             {\c},  [x0], #16
         ext             v6.16b, v6.16b, v6.16b, #8
-        st1             {v\d\().4s},  [x0], #16
-        rev64           v5.4s, v\b\().4s
+        st1             {\d},  [x0], #16
+        rev64           v5.4s, \b
         st1             {v7.4s},  [x0], #16
         ext             v5.16b, v5.16b, v5.16b, #8
         st1             {v6.4s},  [x0], #16
-        rev64           v4.4s, v\a\().4s
+        rev64           v4.4s, \a
         st1             {v5.4s},  [x0], #16
         ext             v4.16b, v4.16b, v4.16b, #8
         st1             {v4.4s},  [x0], #16
 .endm
-        store_rev       16, 20, 24, 28
-        store_rev       17, 21, 25, 29
-        store_rev       18, 22, 26, 30
-        store_rev       19, 23, 27, 31
+        store_rev       v16.4s, v20.4s, v24.4s, v28.4s
+        store_rev       v17.4s, v21.4s, v25.4s, v29.4s
+        store_rev       v18.4s, v22.4s, v26.4s, v30.4s
+        store_rev       v19.4s, v23.4s, v27.4s, v31.4s
         sub             x0,  x0,  #512
 .purgem store_rev
 
@@ -1290,27 +1290,27 @@ function idct32_1d_4x32_pass1_neon
         // Store the registers a, b, c, d horizontally,
         // adding into the output first, and the mirrored,
         // subtracted from the output.
-.macro store_rev a, b, c, d
+.macro store_rev a, b, c, d, a16b, b16b
         ld1             {v4.4s},  [x0]
-        rev64           v9.4s, v\d\().4s
-        add             v4.4s, v4.4s, v\a\().4s
+        rev64           v9.4s, \d
+        add             v4.4s, v4.4s, \a
         st1             {v4.4s},  [x0], #16
-        rev64           v8.4s, v\c\().4s
+        rev64           v8.4s, \c
         ld1             {v4.4s},  [x0]
         ext             v9.16b, v9.16b, v9.16b, #8
-        add             v4.4s, v4.4s, v\b\().4s
+        add             v4.4s, v4.4s, \b
         st1             {v4.4s},  [x0], #16
         ext             v8.16b, v8.16b, v8.16b, #8
         ld1             {v4.4s},  [x0]
-        rev64           v\b\().4s, v\b\().4s
-        add             v4.4s, v4.4s, v\c\().4s
+        rev64           \b, \b
+        add             v4.4s, v4.4s, \c
         st1             {v4.4s},  [x0], #16
-        rev64           v\a\().4s, v\a\().4s
+        rev64           \a, \a
         ld1             {v4.4s},  [x0]
-        ext             v\b\().16b, v\b\().16b, v\b\().16b, #8
-        add             v4.4s, v4.4s, v\d\().4s
+        ext             \b16b, \b16b, \b16b, #8
+        add             v4.4s, v4.4s, \d
         st1             {v4.4s},  [x0], #16
-        ext             v\a\().16b, v\a\().16b, v\a\().16b, #8
+        ext             \a16b, \a16b, \a16b, #8
         ld1             {v4.4s},  [x0]
         sub             v4.4s, v4.4s, v9.4s
         st1             {v4.4s},  [x0], #16
@@ -1318,17 +1318,17 @@ function idct32_1d_4x32_pass1_neon
         sub             v4.4s, v4.4s, v8.4s
         st1             {v4.4s},  [x0], #16
         ld1             {v4.4s},  [x0]
-        sub             v4.4s, v4.4s, v\b\().4s
+        sub             v4.4s, v4.4s, \b
         st1             {v4.4s},  [x0], #16
         ld1             {v4.4s},  [x0]
-        sub             v4.4s, v4.4s, v\a\().4s
+        sub             v4.4s, v4.4s, \a
         st1             {v4.4s},  [x0], #16
 .endm
 
-        store_rev       31, 27, 23, 19
-        store_rev       30, 26, 22, 18
-        store_rev       29, 25, 21, 17
-        store_rev       28, 24, 20, 16
+        store_rev       v31.4s, v27.4s, v23.4s, v19.4s, v31.16b, v27.16b
+        store_rev       v30.4s, v26.4s, v22.4s, v18.4s, v30.16b, v26.16b
+        store_rev       v29.4s, v25.4s, v21.4s, v17.4s, v29.16b, v25.16b
+        store_rev       v28.4s, v24.4s, v20.4s, v16.4s, v28.16b, v24.16b
 .purgem store_rev
         ret
 endfunc
@@ -1370,21 +1370,21 @@ function idct32_1d_4x32_pass2_neon
 .if \neg == 0
         ld1             {v4.4s},  [x2], x9
         ld1             {v5.4s},  [x2], x9
-        add             v4.4s, v4.4s, v\a\().4s
+        add             v4.4s, v4.4s, \a
         ld1             {v6.4s},  [x2], x9
-        add             v5.4s, v5.4s, v\b\().4s
+        add             v5.4s, v5.4s, \b
         ld1             {v7.4s},  [x2], x9
-        add             v6.4s, v6.4s, v\c\().4s
-        add             v7.4s, v7.4s, v\d\().4s
+        add             v6.4s, v6.4s, \c
+        add             v7.4s, v7.4s, \d
 .else
         ld1             {v4.4s},  [x2], x7
         ld1             {v5.4s},  [x2], x7
-        sub             v4.4s, v4.4s, v\a\().4s
+        sub             v4.4s, v4.4s, \a
         ld1             {v6.4s},  [x2], x7
-        sub             v5.4s, v5.4s, v\b\().4s
+        sub             v5.4s, v5.4s, \b
         ld1             {v7.4s},  [x2], x7
-        sub             v6.4s, v6.4s, v\c\().4s
-        sub             v7.4s, v7.4s, v\d\().4s
+        sub             v6.4s, v6.4s, \c
+        sub             v7.4s, v7.4s, \d
 .endif
         ld1             {v8.4h},   [x0], x1
         ld1             {v8.d}[1], [x0], x1
@@ -1410,15 +1410,15 @@ function idct32_1d_4x32_pass2_neon
         st1             {v5.4h},   [x0], x1
         st1             {v5.d}[1], [x0], x1
 .endm
-        load_acc_store  31, 30, 29, 28
-        load_acc_store  27, 26, 25, 24
-        load_acc_store  23, 22, 21, 20
-        load_acc_store  19, 18, 17, 16
+        load_acc_store  v31.4s, v30.4s, v29.4s, v28.4s
+        load_acc_store  v27.4s, v26.4s, v25.4s, v24.4s
+        load_acc_store  v23.4s, v22.4s, v21.4s, v20.4s
+        load_acc_store  v19.4s, v18.4s, v17.4s, v16.4s
         sub             x2,  x2,  x9
-        load_acc_store  16, 17, 18, 19, 1
-        load_acc_store  20, 21, 22, 23, 1
-        load_acc_store  24, 25, 26, 27, 1
-        load_acc_store  28, 29, 30, 31, 1
+        load_acc_store  v16.4s, v17.4s, v18.4s, v19.4s, 1
+        load_acc_store  v20.4s, v21.4s, v22.4s, v23.4s, 1
+        load_acc_store  v24.4s, v25.4s, v26.4s, v27.4s, 1
+        load_acc_store  v28.4s, v29.4s, v30.4s, v31.4s, 1
 .purgem load_acc_store
         ret
 endfunc
