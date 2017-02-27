@@ -63,7 +63,7 @@ typedef struct SCPRContext {
     int             cxshift;
 
     int           (*get_freq)(RangeCoder *rc, unsigned total_freq, unsigned *freq);
-    void          (*decode)(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq);
+    int           (*decode)(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq);
 } SCPRContext;
 
 static void init_rangecoder(RangeCoder *rc, GetByteContext *gb)
@@ -130,7 +130,7 @@ static void reinit_tables(SCPRContext *s)
     s->mv_model[1][512] = 512;
 }
 
-static void decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
+static int decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
 {
     rc->code -= cumFreq * rc->range;
     rc->range *= freq;
@@ -140,6 +140,8 @@ static void decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigne
         rc->code = (rc->code << 8) | byte;
         rc->range <<= 8;
     }
+
+    return 0;
 }
 
 static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
@@ -157,9 +159,14 @@ static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
     return 0;
 }
 
-static void decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
+static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
 {
-    int t = rc->range * (uint64_t)cumFreq / total_freq;
+    int t;
+
+    if (total_freq == 0)
+        return AVERROR_INVALIDDATA;
+
+    t = rc->range * (uint64_t)cumFreq / total_freq;
 
     rc->code1 += t + 1;
     rc->range = rc->range * (uint64_t)(freq + cumFreq) / total_freq - (t + 1);
@@ -170,6 +177,8 @@ static void decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsign
         rc->code1 <<= 8;
         rc->range <<= 8;
     }
+
+    return 0;
 }
 
 static int get_freq0(RangeCoder *rc, unsigned total_freq, unsigned *freq)
@@ -202,7 +211,8 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
             break;
         c++;
     }
-    s->decode(gb, rc, cumfr, cnt_c, totfr);
+    if ((ret = s->decode(gb, rc, cumfr, cnt_c, totfr)) < 0)
+        return ret;
 
     cnt[c] = cnt_c + step;
     totfr += step;
@@ -251,7 +261,10 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
             break;
         c++;
     }
-    s->decode(gb, rc, cumfr, cnt_c, totfr);
+
+    if ((ret = s->decode(gb, rc, cumfr, cnt_c, totfr)) < 0)
+        return ret;
+
     pixel->freq[c] = cnt_c + step;
     pixel->lookup[x] = cnt_x + step;
     totfr += step;
