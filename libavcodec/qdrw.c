@@ -91,31 +91,27 @@ static int decode_rle_bpp2(AVCodecContext *avctx, AVFrame *p, GetByteContext *gb
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_byte(gbc);
                 for (j = 0; j < 257 - code; j++) {
-                    out[pos++] = (pix & 0xC0) >> 6;
-                    out[pos++] = (pix & 0x30) >> 4;
-                    out[pos++] = (pix & 0x0C) >> 2;
-                    out[pos++] = (pix & 0x03);
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
-                    }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xC0) >> 6;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x30) >> 4;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x0C) >> 2;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x03);
                 }
                 left  -= 2;
             } else { /* copy */
                 for (j = 0; j < code + 1; j++) {
                     pix = bytestream2_get_byte(gbc);
-                    out[pos++] = (pix & 0xC0) >> 6;
-                    out[pos++] = (pix & 0x30) >> 4;
-                    out[pos++] = (pix & 0x0C) >> 2;
-                    out[pos++] = (pix & 0x03);
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
-                    }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xC0) >> 6;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x30) >> 4;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x0C) >> 2;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x03);
                 }
                 left  -= 1 + (code + 1);
             }
@@ -147,27 +143,19 @@ static int decode_rle_bpp4(AVCodecContext *avctx, AVFrame *p, GetByteContext *gb
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_byte(gbc);
                 for (j = 0; j < 257 - code; j++) {
-                    out[pos++] = (pix & 0xF0) >> 4;
-                    out[pos++] = pix & 0xF;
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
-                    }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xF0) >> 4;
+                    if (pos < offset)
+                        out[pos++] = pix & 0xF;
                 }
                 left  -= 2;
             } else { /* copy */
                 for (j = 0; j < code + 1; j++) {
                     pix = bytestream2_get_byte(gbc);
-                    out[pos++] = (pix & 0xF0) >> 4;
-                    out[pos++] = pix & 0xF;
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
-                    }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xF0) >> 4;
+                    if (pos < offset)
+                        out[pos++] = pix & 0xF;
                 }
                 left  -= 1 + (code + 1);
             }
