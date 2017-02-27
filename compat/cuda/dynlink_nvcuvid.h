@@ -173,8 +173,8 @@ typedef enum {
  */
 typedef struct _CUVIDSOURCEDATAPACKET
 {
-    unsigned long flags;            /**< Combination of CUVID_PKT_XXX flags */
-    unsigned long payload_size;     /**< number of bytes in the payload (may be zero if EOS flag is set) */
+    tcu_ulong flags;                /**< Combination of CUVID_PKT_XXX flags */
+    tcu_ulong payload_size;         /**< number of bytes in the payload (may be zero if EOS flag is set) */
     const unsigned char *payload;   /**< Pointer to packet payload data (may be NULL if EOS flag is set) */
     CUvideotimestamp timestamp;     /**< Presentation timestamp (10MHz clock), only valid if CUVID_PKT_TIMESTAMP flag is set */
 } CUVIDSOURCEDATAPACKET;
