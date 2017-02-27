@@ -81,7 +81,10 @@ static int decode_rle_bpp2(AVCodecContext *avctx, AVFrame *p, GetByteContext *gb
         int pos = 0;
 
         /* size of packed line */
-        size = left = bytestream2_get_be16(gbc);
+        if (offset / 4 > 200)
+            size = left = bytestream2_get_be16(gbc);
+        else
+            size = left = bytestream2_get_byte(gbc);
         if (bytestream2_get_bytes_left(gbc) < size)
             return AVERROR_INVALIDDATA;
 
