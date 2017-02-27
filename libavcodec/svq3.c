@@ -629,11 +629,6 @@ static av_always_inline void hl_decode_mb_idct_luma(SVQ3Context *s,
     }
 }
 
-static av_always_inline int dctcoef_get(int16_t *mb, int index)
-{
-    return AV_RN16A(mb + index);
-}
-
 static av_always_inline void hl_decode_mb_predict_luma(SVQ3Context *s,
                                                        int mb_type,
                                                        const int *block_offset,
