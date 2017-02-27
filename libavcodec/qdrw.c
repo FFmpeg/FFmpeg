@@ -199,26 +199,18 @@ static int decode_rle16(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_be16(gbc);
                 for (j = 0; j < 257 - code; j++) {
-                    out[pos] = pix;
-                    pos++;
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
+                    if (pos < offset) {
+                        out[pos++] = pix;
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 3;
             } else { /* copy */
                 for (j = 0; j < code + 1; j++) {
-                    out[pos] = bytestream2_get_be16(gbc);
-                    pos++;
-                    if (pos >= offset) {
-                        pos -= offset;
-                        pos++;
+                    if (pos < offset) {
+                        out[pos++] = bytestream2_get_be16(gbc);
+                    } else {
+                        bytestream2_skip(gbc, 2);
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 1 + (code + 1) * 2;
             }
