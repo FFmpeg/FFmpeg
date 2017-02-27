@@ -695,7 +695,7 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
     add        r0mp, gprsize
 %endif
     call         h264_idct_add8_mmx_plane
-    RET
+    RET ; TODO: check rep ret after a function call
 
 cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
 ; dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
@@ -727,7 +727,7 @@ cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, str
     add r5, 4
     call         h264_idct_add8_mmx_plane
 
-    RET
+    RET ; TODO: check rep ret after a function call
 
 h264_idct_add8_mmxext_plane:
     movsxdifnidn r3, r3d
@@ -795,7 +795,7 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
     add        r0mp, gprsize
 %endif
     call h264_idct_add8_mmxext_plane
-    RET
+    RET ; TODO: check rep ret after a function call
 
 ; r0 = uint8_t *dst, r2 = int16_t *block, r3 = int stride, r6=clobbered
 h264_idct_dc_add8_mmxext:
@@ -878,7 +878,7 @@ cglobal h264_idct_add16_8, 5, 5 + ARCH_X86_64, 8
     add16_sse2_cycle 5, 0x24
     add16_sse2_cycle 6, 0x1e
     add16_sse2_cycle 7, 0x26
-    RET
+REP_RET
 
 %macro add16intra_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -925,7 +925,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
     add16intra_sse2_cycle 5, 0x24
     add16intra_sse2_cycle 6, 0x1e
     add16intra_sse2_cycle 7, 0x26
-    RET
+REP_RET
 
 %macro add8_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -980,7 +980,7 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
 %endif
     add8_sse2_cycle 2, 0x5c
     add8_sse2_cycle 3, 0x64
-    RET
+REP_RET
 
 ;void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul)
 
