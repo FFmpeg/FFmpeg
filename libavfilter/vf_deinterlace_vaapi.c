@@ -22,6 +22,7 @@
 #include <va/va_vpp.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
 #include "libavutil/mem.h"
@@ -42,6 +43,8 @@ typedef struct DeintVAAPIContext {
     AVBufferRef       *device_ref;
 
     int                mode;
+    int                field_rate;
+    int                auto_enable;
 
     int                valid_ids;
     VAConfigID         va_config;
@@ -63,6 +66,7 @@ typedef struct DeintVAAPIContext {
     int                queue_depth;
     int                queue_count;
     AVFrame           *frame_queue[MAX_REFERENCES];
+    int                extra_delay_for_timestamps;
 
     VABufferID         filter_buffer;
 } DeintVAAPIContext;
@@ -208,8 +212,12 @@ static int deint_vaapi_build_filter_params(AVFilterContext *avctx)
         return AVERROR(EIO);
     }
 
+    ctx->extra_delay_for_timestamps = ctx->field_rate == 2 &&
+        ctx->pipeline_caps.num_backward_references == 0;
+
     ctx->queue_depth = ctx->pipeline_caps.num_backward_references +
-                       ctx->pipeline_caps.num_forward_references + 1;
+                       ctx->pipeline_caps.num_forward_references +
+                       ctx->extra_delay_for_timestamps + 1;
     if (ctx->queue_depth > MAX_REFERENCES) {
         av_log(avctx, AV_LOG_ERROR, "Pipeline requires too many "
                "references (%u forward, %u back).\n",
@@ -224,6 +232,7 @@ static int deint_vaapi_build_filter_params(AVFilterContext *avctx)
 static int deint_vaapi_config_output(AVFilterLink *outlink)
 {
     AVFilterContext    *avctx = outlink->src;
+    AVFilterLink      *inlink = avctx->inputs[0];
     DeintVAAPIContext    *ctx = avctx->priv;
     AVVAAPIHWConfig *hwconfig = NULL;
     AVHWFramesConstraints *constraints = NULL;
@@ -323,8 +332,13 @@ static int deint_vaapi_config_output(AVFilterLink *outlink)
     if (err < 0)
         goto fail;
 
-    outlink->w = ctx->output_width;
-    outlink->h = ctx->output_height;
+    outlink->w = inlink->w;
+    outlink->h = inlink->h;
+
+    outlink->time_base  = av_mul_q(inlink->time_base,
+                                   (AVRational) { 1, ctx->field_rate });
+    outlink->frame_rate = av_mul_q(inlink->frame_rate,
+                                   (AVRational) { ctx->field_rate, 1 });
 
     outlink->hw_frames_ctx = av_buffer_ref(ctx->output_frames_ref);
     if (!outlink->hw_frames_ctx) {
@@ -372,7 +386,7 @@ static int deint_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
     VABufferID params_id;
     VAStatus vas;
     void *filter_params_addr = NULL;
-    int err, i;
+    int err, i, field, current_frame_index;
 
     av_log(avctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(input_frame->format),
@@ -391,17 +405,16 @@ static int deint_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
         ctx->frame_queue[i] = input_frame;
     }
 
-    input_frame =
-        ctx->frame_queue[ctx->pipeline_caps.num_backward_references];
+    current_frame_index = ctx->pipeline_caps.num_forward_references;
+
+    input_frame = ctx->frame_queue[current_frame_index];
     input_surface = (VASurfaceID)(uintptr_t)input_frame->data[3];
-    for (i = 0; i < ctx->pipeline_caps.num_backward_references; i++)
-        backward_references[i] = (VASurfaceID)(uintptr_t)
-            ctx->frame_queue[ctx->pipeline_caps.num_backward_references -
-                             i - 1]->data[3];
     for (i = 0; i < ctx->pipeline_caps.num_forward_references; i++)
         forward_references[i] = (VASurfaceID)(uintptr_t)
-            ctx->frame_queue[ctx->pipeline_caps.num_backward_references +
-                             i + 1]->data[3];
+            ctx->frame_queue[current_frame_index - i - 1]->data[3];
+    for (i = 0; i < ctx->pipeline_caps.num_backward_references; i++)
+        backward_references[i] = (VASurfaceID)(uintptr_t)
+            ctx->frame_queue[current_frame_index + i + 1]->data[3];
 
     av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for "
            "deinterlace input.\n", input_surface);
@@ -414,123 +427,148 @@ static int deint_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
         av_log(avctx, AV_LOG_DEBUG, " %#x", forward_references[i]);
     av_log(avctx, AV_LOG_DEBUG, "\n");
 
-    output_frame = ff_get_video_buffer(outlink, ctx->output_width,
-                                       ctx->output_height);
-    if (!output_frame) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
-    av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for "
-           "deinterlace output.\n", output_surface);
-
-    memset(&params, 0, sizeof(params));
-
-    input_region = (VARectangle) {
-        .x      = 0,
-        .y      = 0,
-        .width  = input_frame->width,
-        .height = input_frame->height,
-    };
-
-    params.surface = input_surface;
-    params.surface_region = &input_region;
-    params.surface_color_standard =
-        vaapi_proc_colour_standard(input_frame->colorspace);
-
-    params.output_region = NULL;
-    params.output_background_color = 0xff000000;
-    params.output_color_standard = params.surface_color_standard;
-
-    params.pipeline_flags = 0;
-    params.filter_flags   = VA_FRAME_PICTURE;
-
-    vas = vaMapBuffer(ctx->hwctx->display, ctx->filter_buffer,
-                      &filter_params_addr);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to map filter parameter "
-               "buffer: %d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail;
-    }
-    filter_params = filter_params_addr;
-    filter_params->flags = 0;
-    if (input_frame->interlaced_frame && !input_frame->top_field_first)
-        filter_params->flags |= VA_DEINTERLACING_BOTTOM_FIELD_FIRST;
-    filter_params_addr = NULL;
-    vas = vaUnmapBuffer(ctx->hwctx->display, ctx->filter_buffer);
-    if (vas != VA_STATUS_SUCCESS)
-        av_log(avctx, AV_LOG_ERROR, "Failed to unmap filter parameter "
-               "buffer: %d (%s).\n", vas, vaErrorStr(vas));
-
-    params.filters     = &ctx->filter_buffer;
-    params.num_filters = 1;
-
-    params.forward_references = forward_references;
-    params.num_forward_references =
-        ctx->pipeline_caps.num_forward_references;
-    params.backward_references = backward_references;
-    params.num_backward_references =
-        ctx->pipeline_caps.num_backward_references;
-
-    vas = vaBeginPicture(ctx->hwctx->display,
-                         ctx->va_context, output_surface);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to attach new picture: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail;
-    }
-
-    vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
-                         VAProcPipelineParameterBufferType,
-                         sizeof(params), 1, &params, &params_id);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
-    }
-    av_log(avctx, AV_LOG_DEBUG, "Pipeline parameter buffer is %#x.\n",
-           params_id);
-
-    vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
-                          &params_id, 1);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to render parameter buffer: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_begin;
-    }
-
-    vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to start picture processing: "
-               "%d (%s).\n", vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail_after_render;
-    }
-
-    if (ctx->hwctx->driver_quirks &
-        AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
-        vas = vaDestroyBuffer(ctx->hwctx->display, params_id);
-        if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to free parameter buffer: "
-                   "%d (%s).\n", vas, vaErrorStr(vas));
-            // And ignore.
+    for (field = 0; field < ctx->field_rate; field++) {
+        output_frame = ff_get_video_buffer(outlink, ctx->output_width,
+                                           ctx->output_height);
+        if (!output_frame) {
+            err = AVERROR(ENOMEM);
+            goto fail;
         }
+
+        output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
+        av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for "
+               "deinterlace output.\n", output_surface);
+
+        memset(&params, 0, sizeof(params));
+
+        input_region = (VARectangle) {
+            .x      = 0,
+            .y      = 0,
+            .width  = input_frame->width,
+            .height = input_frame->height,
+        };
+
+        params.surface = input_surface;
+        params.surface_region = &input_region;
+        params.surface_color_standard =
+            vaapi_proc_colour_standard(input_frame->colorspace);
+
+        params.output_region = NULL;
+        params.output_background_color = 0xff000000;
+        params.output_color_standard = params.surface_color_standard;
+
+        params.pipeline_flags = 0;
+        params.filter_flags   = VA_FRAME_PICTURE;
+
+        if (!ctx->auto_enable || input_frame->interlaced_frame) {
+            vas = vaMapBuffer(ctx->hwctx->display, ctx->filter_buffer,
+                              &filter_params_addr);
+            if (vas != VA_STATUS_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to map filter parameter "
+                       "buffer: %d (%s).\n", vas, vaErrorStr(vas));
+                err = AVERROR(EIO);
+                goto fail;
+            }
+            filter_params = filter_params_addr;
+            filter_params->flags = 0;
+            if (input_frame->top_field_first) {
+                filter_params->flags |= field ? VA_DEINTERLACING_BOTTOM_FIELD : 0;
+            } else {
+                filter_params->flags |= VA_DEINTERLACING_BOTTOM_FIELD_FIRST;
+                filter_params->flags |= field ? 0 : VA_DEINTERLACING_BOTTOM_FIELD;
+            }
+            filter_params_addr = NULL;
+            vas = vaUnmapBuffer(ctx->hwctx->display, ctx->filter_buffer);
+            if (vas != VA_STATUS_SUCCESS)
+                av_log(avctx, AV_LOG_ERROR, "Failed to unmap filter parameter "
+                       "buffer: %d (%s).\n", vas, vaErrorStr(vas));
+
+            params.filters     = &ctx->filter_buffer;
+            params.num_filters = 1;
+
+            params.forward_references = forward_references;
+            params.num_forward_references =
+                ctx->pipeline_caps.num_forward_references;
+            params.backward_references = backward_references;
+            params.num_backward_references =
+                ctx->pipeline_caps.num_backward_references;
+
+        } else {
+            params.filters     = NULL;
+            params.num_filters = 0;
+        }
+
+        vas = vaBeginPicture(ctx->hwctx->display,
+                             ctx->va_context, output_surface);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to attach new picture: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail;
+        }
+
+        vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
+                             VAProcPipelineParameterBufferType,
+                             sizeof(params), 1, &params, &params_id);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to create parameter buffer: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail_after_begin;
+        }
+        av_log(avctx, AV_LOG_DEBUG, "Pipeline parameter buffer is %#x.\n",
+               params_id);
+
+        vas = vaRenderPicture(ctx->hwctx->display, ctx->va_context,
+                              &params_id, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to render parameter buffer: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail_after_begin;
+        }
+
+        vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to start picture processing: "
+                   "%d (%s).\n", vas, vaErrorStr(vas));
+            err = AVERROR(EIO);
+            goto fail_after_render;
+        }
+
+        if (ctx->hwctx->driver_quirks &
+            AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
+            vas = vaDestroyBuffer(ctx->hwctx->display, params_id);
+            if (vas != VA_STATUS_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to free parameter buffer: "
+                       "%d (%s).\n", vas, vaErrorStr(vas));
+                // And ignore.
+            }
+        }
+
+        err = av_frame_copy_props(output_frame, input_frame);
+        if (err < 0)
+            goto fail;
+
+        if (ctx->field_rate == 2) {
+            if (field == 0)
+                output_frame->pts = 2 * input_frame->pts;
+            else
+                output_frame->pts = input_frame->pts +
+                    ctx->frame_queue[current_frame_index + 1]->pts;
+        }
+        output_frame->interlaced_frame = 0;
+
+        av_log(avctx, AV_LOG_DEBUG, "Filter output: %s, %ux%u (%"PRId64").\n",
+               av_get_pix_fmt_name(output_frame->format),
+               output_frame->width, output_frame->height, output_frame->pts);
+
+        err = ff_filter_frame(outlink, output_frame);
+        if (err < 0)
+            break;
     }
 
-    err = av_frame_copy_props(output_frame, input_frame);
-    if (err < 0)
-        goto fail;
-
-    av_log(avctx, AV_LOG_DEBUG, "Filter output: %s, %ux%u (%"PRId64").\n",
-           av_get_pix_fmt_name(output_frame->format),
-           output_frame->width, output_frame->height, output_frame->pts);
-
-    return ff_filter_frame(outlink, output_frame);
+    return err;
 
 fail_after_begin:
     vaRenderPicture(ctx->hwctx->display, ctx->va_context, &params_id, 1);
@@ -583,6 +621,17 @@ static const AVOption deint_vaapi_options[] = {
       0, AV_OPT_TYPE_CONST, { .i64 = VAProcDeinterlacingMotionAdaptive }, .unit = "mode" },
     { "motion_compensated", "Use the motion compensated deinterlacing algorithm",
       0, AV_OPT_TYPE_CONST, { .i64 = VAProcDeinterlacingMotionCompensated }, .unit = "mode" },
+
+    { "rate", "Generate output at frame rate or field rate",
+      OFFSET(field_rate), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 2, FLAGS, "rate" },
+    { "frame", "Output at frame rate (one frame of output for each field-pair)",
+      0, AV_OPT_TYPE_CONST, { .i64 = 1 }, .unit = "rate" },
+    { "field", "Output at field rate (one frame of output for each field)",
+      0, AV_OPT_TYPE_CONST, { .i64 = 2 }, .unit = "rate" },
+
+    { "auto", "Only deinterlace fields, passing frames through unchanged",
+      OFFSET(auto_enable), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+
     { NULL },
 };
 
