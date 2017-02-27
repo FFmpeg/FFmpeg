@@ -231,26 +231,24 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_byte(gbc);
                 for (j = 0; j < 257 - code; j++) {
-                    out[pos] = pix;
+                    if (pos < offset)
+                        out[pos] = pix;
                     pos += step;
-                    if (pos >= offset) {
+                    if (pos >= offset && step > 1) {
                         pos -= offset;
                         pos++;
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2;
             } else { /* copy */
                 for (j = 0; j < code + 1; j++) {
-                    out[pos] = bytestream2_get_byte(gbc);
+                    if (pos < offset)
+                        out[pos] = bytestream2_get_byte(gbc);
                     pos += step;
-                    if (pos >= offset) {
+                    if (pos >= offset && step > 1) {
                         pos -= offset;
                         pos++;
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2 + code;
             }
