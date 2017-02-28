@@ -268,6 +268,7 @@ Toolchain options:
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --ld=LD                  use linker LD
+  --x86asmexe=X86ASM       use x86 assembler X86ASM
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
   --host-cc=HOSTCC         use host C compiler HOSTCC
@@ -1863,6 +1864,7 @@ CMDLINE_SET="
     target_path
     target_samples
     toolchain
+    x86asmexe
 "
 
 CMDLINE_APPEND="
@@ -2561,13 +2563,13 @@ shlibdir_default="$libdir_default"
 ar_default="ar"
 cc_default="gcc"
 host_cc_default="gcc"
+x86asmexe_default="yasm"
 ln_s="ln -s -f"
 nm_default="nm -g"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 strip="strip"
 version_script='--version-script'
-x86asmexe="yasm"
 
 # machine
 arch_default=$(uname -m)
@@ -2997,6 +2999,7 @@ fi
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
 objcc_default="${cross_prefix}${objcc_default}"
+x86asmexe_default="${cross_prefix}${x86asmexe_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
@@ -3004,7 +3007,7 @@ strip="${cross_prefix}${strip}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default arch cc pkg_config sysinclude target_exec target_os
+set_default arch cc pkg_config sysinclude target_exec target_os x86asmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -4474,16 +4477,26 @@ EOF
     enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
     enabled mmxext && check_inline_asm mmxext_inline '"pmaxub %mm0, %mm1"'
 
-    if ! disabled_any asm mmx x86asm; then
-        if check_cmd $x86asmexe --version; then
-            x86asm_debug="-g dwarf2"
-            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
-        elif check_cmd nasm -v; then
-            x86asmexe=nasm
+    probe_x86asm(){
+        x86asmexe_probe=$1
+        if check_cmd $x86asmexe_probe -v; then
+            x86asmexe=$x86asmexe_probe
+            x86asm_type=nasm
             x86asm_debug="-g -F dwarf"
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
+        elif check_cmd $x86asmexe_probe --version; then
+            x86asmexe=$x86asmexe_probe
+            x86asm_type=yasm
+            x86asm_debug="-g dwarf2"
+            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
         fi
+    }
 
+    if ! disabled_any asm mmx x86asm; then
+        for program in $x86asmexe yasm nasm; do
+            probe_x86asm $program
+            test -n "$x86asm_type" && break
+        done
         X86ASMFLAGS="-f $objformat"
         enabled pic               && append X86ASMFLAGS "-DPIC"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
@@ -5223,6 +5236,7 @@ echo "big-endian                ${bigendian-no}"
 echo "runtime cpu detection     ${runtime_cpudetect-no}"
 if enabled x86; then
     echo "standalone assembly       ${x86asm-no}"
+    echo "x86 assembler             ${x86asmexe}"
     echo "MMX enabled               ${mmx-no}"
     echo "MMXEXT enabled            ${mmxext-no}"
     echo "3DNow! enabled            ${amd3dnow-no}"
