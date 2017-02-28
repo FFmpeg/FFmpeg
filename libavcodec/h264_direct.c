@@ -609,7 +609,7 @@ single_col:
 
                 {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * b4_stride];
-                    int my_col            = (mv_col[1] << y_shift) / 2;
+                    int my_col            = (mv_col[1] * (1 << y_shift)) / 2;
                     int mx                = (scale * mv_col[0] + 128) >> 8;
                     int my                = (scale * my_col    + 128) >> 8;
                     fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,
