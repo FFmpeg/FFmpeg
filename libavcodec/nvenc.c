@@ -547,16 +547,33 @@ static av_cold void set_vbr(AVCodecContext *avctx)
     }
 
     rc->enableInitialRCQP = 1;
-    rc->initialRCQP.qpInterP  = qp_inter_p;
 
-    if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
-        rc->initialRCQP.qpIntra = av_clip(
-            qp_inter_p * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
-        rc->initialRCQP.qpInterB = av_clip(
-            qp_inter_p * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+    if (ctx->init_qp_p < 0) {
+        rc->initialRCQP.qpInterP  = qp_inter_p;
     } else {
-        rc->initialRCQP.qpIntra = qp_inter_p;
-        rc->initialRCQP.qpInterB = qp_inter_p;
+        rc->initialRCQP.qpInterP = ctx->init_qp_p;
+    }
+
+    if (ctx->init_qp_i < 0) {
+        if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
+            rc->initialRCQP.qpIntra = av_clip(
+                rc->initialRCQP.qpInterP * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
+        } else {
+            rc->initialRCQP.qpIntra = rc->initialRCQP.qpInterP;
+        }
+    } else {
+        rc->initialRCQP.qpIntra = ctx->init_qp_i;
+    }
+
+    if (ctx->init_qp_b < 0) {
+        if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
+            rc->initialRCQP.qpInterB = av_clip(
+                rc->initialRCQP.qpInterP * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+        } else {
+            rc->initialRCQP.qpInterB = rc->initialRCQP.qpInterP;
+        }
+    } else {
+        rc->initialRCQP.qpInterB = ctx->init_qp_b;
     }
 }
 
