@@ -63,6 +63,21 @@ static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial);
 static int ogg_restore(AVFormatContext *s);
 
+static void free_stream(AVFormatContext *s, int i)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *stream = &ogg->streams[i];
+
+    av_freep(&stream->buf);
+    if (stream->codec &&
+        stream->codec->cleanup) {
+        stream->codec->cleanup(s, i);
+    }
+
+    av_freep(&stream->private);
+    av_freep(&stream->new_metadata);
+}
+
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
 {
@@ -662,13 +677,7 @@ static int ogg_read_close(AVFormatContext *s)
     int i;
 
     for (i = 0; i < ogg->nstreams; i++) {
-        av_freep(&ogg->streams[i].buf);
-        if (ogg->streams[i].codec &&
-            ogg->streams[i].codec->cleanup) {
-            ogg->streams[i].codec->cleanup(s, i);
-        }
-        av_freep(&ogg->streams[i].private);
-        av_freep(&ogg->streams[i].new_metadata);
+        free_stream(s, i);
     }
 
     ogg->nstreams = 0;
