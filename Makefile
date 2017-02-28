@@ -179,6 +179,7 @@ distclean::
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
 
+build: all alltools checkheaders examples testprogs
 check: all alltools checkheaders examples testprogs fate
 
 include $(SRC_PATH)/tests/Makefile
@@ -194,4 +195,5 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config install* testprogs uninstall*
+.PHONY: all all-yes alltools build check config testprogs
+.PHONY: *clean install* uninstall*
