@@ -2991,7 +2991,7 @@ fi
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
-occ_default="${cross_prefix}${occ_default}"
+objcc_default="${cross_prefix}${objcc_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
@@ -5321,7 +5321,6 @@ CC_IDENT=$cc_ident
 ARCH=$arch
 INTRINSICS=$intrinsics
 CC=$cc
-OBJCC=$cc
 AS=$as
 OBJCC=$objcc
 LD=$ld
