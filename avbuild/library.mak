@@ -1,6 +1,8 @@
 include $(SRC_PATH)/avbuild/common.mak
 
+ifeq (,$(filter %clean,$(MAKECMDGOALS)))
 -include $(SUBDIR)lib$(NAME).version
+endif
 
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
