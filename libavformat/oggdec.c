@@ -61,7 +61,7 @@ static const struct ogg_codec * const ogg_codecs[] = {
 
 static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial);
-static int ogg_restore(AVFormatContext *s, int discard);
+static int ogg_restore(AVFormatContext *s);
 
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
@@ -95,12 +95,12 @@ static int ogg_save(AVFormatContext *s)
     ogg->state = ost;
 
     if (ret < 0)
-        ogg_restore(s, 0);
+        ogg_restore(s);
 
     return ret;
 }
 
-static int ogg_restore(AVFormatContext *s, int discard)
+static int ogg_restore(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     AVIOContext *bc = s->pb;
@@ -111,8 +111,6 @@ static int ogg_restore(AVFormatContext *s, int discard)
         return 0;
 
     ogg->state = ost->next;
-
-    if (!discard) {
 
         for (i = 0; i < ogg->nstreams; i++)
             av_freep(&ogg->streams[i].buf);
@@ -128,7 +126,6 @@ static int ogg_restore(AVFormatContext *s, int discard)
         } else
             memcpy(ogg->streams, ost->streams,
                    ost->nstreams * sizeof(*ogg->streams));
-    }
 
     av_free(ost);
 
@@ -631,7 +628,7 @@ static int ogg_get_length(AVFormatContext *s)
         }
     }
 
-    ogg_restore(s, 0);
+    ogg_restore(s);
 
     ret = ogg_save(s);
     if (ret < 0)
@@ -654,7 +651,7 @@ static int ogg_get_length(AVFormatContext *s)
             streams_left--;
         }
     }
-    ogg_restore (s, 0);
+    ogg_restore (s);
 
     return 0;
 }
