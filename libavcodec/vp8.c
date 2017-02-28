@@ -2275,7 +2275,7 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
 #define update_pos(td, mb_y, mb_x) while(0)
 #endif
 
-static av_always_inline void decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
+static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr, int is_vp7)
 {
     VP8Context *s = avctx->priv_data;
@@ -2291,6 +2291,10 @@ static av_always_inline void decode_mb_row_no_filter(AVCodecContext *avctx, void
         curframe->tf.f->data[1] +  8 * mb_y * s->uvlinesize,
         curframe->tf.f->data[2] +  8 * mb_y * s->uvlinesize
     };
+
+    if (c->end <= c->buffer && c->bits >= 0)
+         return AVERROR_INVALIDDATA;
+
     if (mb_y == 0)
         prev_td = td;
     else
@@ -2394,18 +2398,19 @@ static av_always_inline void decode_mb_row_no_filter(AVCodecContext *avctx, void
             update_pos(td, mb_y, mb_x);
         }
     }
+    return 0;
 }
 
-static void vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
+static int vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr)
 {
-    decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
+    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
 }
 
-static void vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
+static int vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
                                         int jobnr, int threadnr)
 {
-    decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 0);
+    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 0);
 }
 
 static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
@@ -2488,13 +2493,16 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
     VP8ThreadData *next_td = NULL, *prev_td = NULL;
     VP8Frame *curframe = s->curframe;
     int mb_y, num_jobs = s->num_jobs;
+    int ret;
 
     td->thread_nr = threadnr;
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
         if (mb_y >= s->mb_height)
             break;
         td->thread_mb_pos = mb_y << 16;
-        s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
+        ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
+        if (ret < 0)
+            return ret;
         if (s->deblock_filter)
             s->filter_mb_row(avctx, tdata, jobnr, threadnr);
         update_pos(td, mb_y, INT_MAX & 0xFFFF);
