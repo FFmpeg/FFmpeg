@@ -330,7 +330,7 @@ cglobal hevc_add_residual_32_10, 3, 5, 6
     mova              m5, [max_pixels_10]
 
     mov              r4d, 32
-.loop
+.loop:
     ADD_RES_SSE_32_10 r0, r1
     lea               r0, [r0+r2]
     add               r1, 64
@@ -346,7 +346,7 @@ cglobal hevc_add_residual_16_10, 3, 5, 6
     lea                r3, [r2*3]
 
     mov               r4d, 4
-.loop
+.loop:
     ADD_RES_AVX2_16_10 r0, r2, r3, r1
     lea                r0, [r0+r2*4]
     add                r1, 128
@@ -359,7 +359,7 @@ cglobal hevc_add_residual_32_10, 3, 5, 6
     mova               m5, [max_pixels_10]
 
     mov               r4d, 16
-.loop
+.loop:
     ADD_RES_AVX2_32_10 r0, r2, r1
     lea                r0, [r0+r2*2]
     add                r1, 128
