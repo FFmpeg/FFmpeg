@@ -3235,7 +3235,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int size, version;
+    int size, version, layout;
     int32_t yaw, pitch, roll;
     uint32_t tag;
     enum AVSphericalProjection projection;
@@ -3315,6 +3315,12 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_skip(pb, 3); /* flags */
     switch (tag) {
     case MKTAG('c','b','m','p'):
+        layout = avio_rb32(pb);
+        if (layout) {
+            av_log(c->fc, AV_LOG_WARNING,
+                   "Unsupported cubemap layout %d\n", layout);
+            return 0;
+        }
         projection = AV_SPHERICAL_CUBEMAP;
         break;
     case MKTAG('e','q','u','i'):
