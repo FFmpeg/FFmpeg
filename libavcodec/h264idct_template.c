@@ -261,15 +261,15 @@ void FUNCC(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int 
 
     for(i=0; i<4; i++){
         const int offset= x_offset[i];
-        const int z0= temp[4*0+i] + temp[4*2+i];
-        const int z1= temp[4*0+i] - temp[4*2+i];
-        const int z2= temp[4*1+i] - temp[4*3+i];
-        const int z3= temp[4*1+i] + temp[4*3+i];
+        const SUINT z0= temp[4*0+i] + temp[4*2+i];
+        const SUINT z1= temp[4*0+i] - temp[4*2+i];
+        const SUINT z2= temp[4*1+i] - temp[4*3+i];
+        const SUINT z3= temp[4*1+i] + temp[4*3+i];
 
-        output[stride* 0+offset]= ((((z0 + z3)*qmul + 128 ) >> 8));
-        output[stride* 1+offset]= ((((z1 + z2)*qmul + 128 ) >> 8));
-        output[stride* 4+offset]= ((((z1 - z2)*qmul + 128 ) >> 8));
-        output[stride* 5+offset]= ((((z0 - z3)*qmul + 128 ) >> 8));
+        output[stride* 0+offset]= (int)((z0 + z3)*qmul + 128 ) >> 8;
+        output[stride* 1+offset]= (int)((z1 + z2)*qmul + 128 ) >> 8;
+        output[stride* 4+offset]= (int)((z1 - z2)*qmul + 128 ) >> 8;
+        output[stride* 5+offset]= (int)((z0 - z3)*qmul + 128 ) >> 8;
     }
 #undef stride
 }
