@@ -2289,7 +2289,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 track->audio.coded_framesize <= 0 ||
                 track->audio.sub_packet_h    <= 0 ||
                 track->audio.frame_size      <= 0 ||
-                track->audio.sub_packet_size <= 0)
+                track->audio.sub_packet_size <= 0 && codec_id != AV_CODEC_ID_SIPR)
                 return AVERROR_INVALIDDATA;
             track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
                                                track->audio.frame_size);
