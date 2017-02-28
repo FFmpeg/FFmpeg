@@ -127,8 +127,12 @@ static int ogg_restore(AVFormatContext *s)
 
     ogg->state = ost->next;
 
-        for (i = 0; i < ogg->nstreams; i++)
+        for (i = 0; i < ogg->nstreams; i++) {
             av_freep(&ogg->streams[i].buf);
+            if (i >= ost->nstreams || !ost->streams[i].private) {
+                free_stream(s, i);
+            }
+        }
 
         avio_seek(bc, ost->pos, SEEK_SET);
         ogg->page_pos = -1;
