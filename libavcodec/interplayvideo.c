@@ -928,6 +928,8 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
     init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
     for (y = 0; y < s->avctx->height; y += 8) {
         for (x = 0; x < s->avctx->width; x += 8) {
+            if (get_bits_left(&gb) < 4)
+                return;
             opcode = get_bits(&gb, 4);
 
             ff_tlog(s->avctx,
