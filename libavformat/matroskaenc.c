@@ -2528,6 +2528,7 @@ static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_PCM_S16BE, 0xFFFFFFFF },
     { AV_CODEC_ID_PCM_S24BE, 0xFFFFFFFF },
     { AV_CODEC_ID_PCM_S32BE, 0xFFFFFFFF },
+    { AV_CODEC_ID_QDMC,      0xFFFFFFFF },
     { AV_CODEC_ID_QDM2,      0xFFFFFFFF },
     { AV_CODEC_ID_RA_144,    0xFFFFFFFF },
     { AV_CODEC_ID_RA_288,    0xFFFFFFFF },

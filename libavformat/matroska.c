@@ -48,6 +48,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_PCM/INT/LIT"    , AV_CODEC_ID_PCM_S24LE},
     {"A_PCM/INT/LIT"    , AV_CODEC_ID_PCM_S32LE},
     {"A_PCM/INT/LIT"    , AV_CODEC_ID_PCM_U8},
+    {"A_QUICKTIME/QDMC" , AV_CODEC_ID_QDMC},
     {"A_QUICKTIME/QDM2" , AV_CODEC_ID_QDM2},
     {"A_REAL/14_4"      , AV_CODEC_ID_RA_144},
     {"A_REAL/28_8"      , AV_CODEC_ID_RA_288},
