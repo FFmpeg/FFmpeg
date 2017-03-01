@@ -2185,7 +2185,7 @@ static void decode_aybri(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, 125, -128, -128 };
+        int pred[4] = { 125, s->alt ? 125 : -146, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int a, y, u, v;
@@ -2263,7 +2263,7 @@ static void decode_aybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, 125, -128, -128 };
+        int pred[4] = { 125, s->alt ? 125 : -146, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int a, y, u, v;
@@ -2959,6 +2959,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG('A', 'Y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG('A', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybr;
@@ -2968,6 +2969,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG('A', 'y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG('A', 'y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybri;
