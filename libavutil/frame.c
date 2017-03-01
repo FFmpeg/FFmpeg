@@ -668,8 +668,6 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
                                         enum AVFrameSideDataType type,
                                         int size)
 {
-    if (size <= 0)
-        return NULL;
 
     return frame_new_side_data(frame, type, av_buffer_alloc(size));
 }
