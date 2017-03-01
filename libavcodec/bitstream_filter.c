@@ -131,7 +131,7 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
             return ret;
     }
 
-    pkt.data = buf;
+    pkt.data = (uint8_t *)buf;
     pkt.size = buf_size;
 
     ret = av_bsf_send_packet(priv->ctx, &pkt);
