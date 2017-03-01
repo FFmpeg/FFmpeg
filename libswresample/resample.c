@@ -149,6 +149,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
     double *sin_lut = av_malloc_array(ph_nb, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
+    double norm = 0;
     int ret = AVERROR(ENOMEM);
 
     if (!tab || !sin_lut)
@@ -160,10 +161,9 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 
     if (factor == 1.0) {
         for (ph = 0; ph < ph_nb; ph++)
-            sin_lut[ph] = sin(M_PI * ph / phase_count);
+            sin_lut[ph] = sin(M_PI * ph / phase_count) * (center & 1 ? 1 : -1);
     }
     for(ph = 0; ph < ph_nb; ph++) {
-        double norm = 0;
         s = sin_lut[ph];
         for(i=0;i<=tap_count;i++) {
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
@@ -194,7 +194,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 
             tab[i] = y;
             s = -s;
-            if (i < tap_count)
+            if (!ph && i < tap_count)
                 norm += y;
         }
 
@@ -211,7 +211,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             else {
                 for (i = 1; i <= tap_count; i++)
                     ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-i] =
-                        av_clip_int16(lrintf(tab[i] * scale / (norm - tab[0] + tab[tap_count])));
+                        av_clip_int16(lrintf(tab[i] * scale / norm));
             }
             break;
         case AV_SAMPLE_FMT_S32P:
@@ -225,7 +225,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             else {
                 for (i = 1; i <= tap_count; i++)
                     ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-i] =
-                        av_clipl_int32(llrint(tab[i] * scale / (norm - tab[0] + tab[tap_count])));
+                        av_clipl_int32(llrint(tab[i] * scale / norm));
             }
             break;
         case AV_SAMPLE_FMT_FLTP:
@@ -238,7 +238,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             }
             else {
                 for (i = 1; i <= tap_count; i++)
-                    ((float*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / (norm - tab[0] + tab[tap_count]);
+                    ((float*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / norm;
             }
             break;
         case AV_SAMPLE_FMT_DBLP:
@@ -251,7 +251,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             }
             else {
                 for (i = 1; i <= tap_count; i++)
-                    ((double*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / (norm - tab[0] + tab[tap_count]);
+                    ((double*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / norm;
             }
             break;
         }

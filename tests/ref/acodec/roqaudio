@@ -1,4 +1,4 @@
 75859976d7098588aeaebbc5551484a9 *tests/data/fate/acodec-roqaudio.roq
 265992 tests/data/fate/acodec-roqaudio.roq
-73d5aaaab9488e63f1cf6fc324c7a9a2 *tests/data/fate/acodec-roqaudio.out.wav
+2057ed235e9d4e727e13bf57f3891093 *tests/data/fate/acodec-roqaudio.out.wav
 stddev: 4481.70 PSNR: 23.30 MAXDIFF:46250 bytes:  1058400/  1058400
