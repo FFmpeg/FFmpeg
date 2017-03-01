@@ -23,9 +23,8 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 16
 
-align 16
 pw_1024:   times 8 dw 1 << (16 - 6) ; pw_1024
 
 sixtap_filter_hb_m:  times 8 db   1, -5

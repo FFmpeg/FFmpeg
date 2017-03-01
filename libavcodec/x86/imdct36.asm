@@ -21,9 +21,8 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
+SECTION_RODATA 16
 
-align 16
 ps_mask:  dd 0, ~0, ~0, ~0
 ps_mask2: dd 0, ~0,  0, ~0
 ps_mask3: dd 0,  0,  0, ~0
