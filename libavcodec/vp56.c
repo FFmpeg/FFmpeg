@@ -572,13 +572,18 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF);
-    if (ret < 0)
+    if (ret < 0) {
+        if (res == VP56_SIZE_CHANGE)
+            ff_set_dimensions(avctx, 0, 0);
         return ret;
+    }
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) {
         av_frame_unref(s->alpha_context->frames[VP56_FRAME_CURRENT]);
         if ((ret = av_frame_ref(s->alpha_context->frames[VP56_FRAME_CURRENT], p)) < 0) {
             av_frame_unref(p);
+            if (res == VP56_SIZE_CHANGE)
+                ff_set_dimensions(avctx, 0, 0);
             return ret;
         }
     }
