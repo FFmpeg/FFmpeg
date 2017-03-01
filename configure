@@ -2563,7 +2563,6 @@ cc_default="gcc"
 host_cc_default="gcc"
 ln_s="ln -s -f"
 nm_default="nm -g"
-objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 strip="strip"
@@ -3883,6 +3882,8 @@ esac
 enable $subarch
 enabled spic && enable_weak pic
 
+enabled x86_64 && objformat=elf64 || objformat="elf32"
+
 # OS specific
 case $target_os in
     aix)
@@ -3947,8 +3948,7 @@ case $target_os in
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
-        objformat="macho"
-        enabled x86_64 && objformat="macho64"
+        enabled x86_64 && objformat="macho64" || objformat="macho32"
         enabled_any pic shared ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         check_header dispatch/dispatch.h &&
@@ -3982,7 +3982,7 @@ case $target_os in
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_EXTRA_LIB='lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.orig.def) -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
-        objformat="win32"
+        enabled x86_64 && objformat="win64" || objformat="win32"
         dlltool="${cross_prefix}dlltool"
         ranlib=:
         enable dos_paths
@@ -4007,7 +4007,7 @@ case $target_os in
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_EXTRA_LIB='$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
         SHFLAGS='-dll -def:$$(@:$(SLIBSUF)=.def) -implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
-        objformat="win32"
+        enabled x86_64 && objformat="win64" || objformat="win32"
         ranlib=:
         enable dos_paths
         ;;
@@ -4022,7 +4022,7 @@ case $target_os in
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_LIB='lib$(NAME).dll.a'
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(NAME).dll.a'
-        objformat="win32"
+        enabled x86_64 && objformat="win64" || objformat="win32"
         enable dos_paths
         ;;
     *-dos|freedos|opendos)
@@ -4376,7 +4376,8 @@ EOF
 EOF
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
-    [ "$objformat" = elf ] && check_as <<EOF && enable as_object_arch
+    [ "$objformat" = elf32 ] || [ "$objformat" = elf64 ] &&
+        check_as <<EOF && enable as_object_arch
 .object_arch armv4
 EOF
 
@@ -4475,17 +4476,15 @@ EOF
 
     if ! disabled_any asm mmx x86asm; then
         if check_cmd $x86asmexe --version; then
-            enabled x86_64 && x86asm_extra="-m amd64"
             x86asm_debug="-g dwarf2"
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
         elif check_cmd nasm -v; then
             x86asmexe=nasm
             x86asm_debug="-g -F dwarf"
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
-            enabled x86_64 && test "$objformat" = elf && objformat=elf64
         fi
 
-        X86ASMFLAGS="-f $objformat $x86asm_extra"
+        X86ASMFLAGS="-f $objformat"
         enabled pic               && append X86ASMFLAGS "-DPIC"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
         case "$objformat" in
