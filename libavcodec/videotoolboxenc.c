@@ -74,11 +74,11 @@ static struct{
 
 #define GET_SYM(symbol, defaultVal)                                     \
 do{                                                                     \
-    CFStringRef cfstr = dlsym(RTLD_DEFAULT, #symbol);                   \
+    CFStringRef cfstr = *(CFStringRef*)dlsym(RTLD_DEFAULT, #symbol);    \
     if(!cfstr)                                                          \
         compat_keys.symbol = CFSTR(defaultVal);                         \
     else                                                                \
-        compat_keys.symbol = symbol;                                    \
+        compat_keys.symbol = cfstr;                                     \
 }while(0)
 
 static pthread_once_t once_ctrl = PTHREAD_ONCE_INIT;
