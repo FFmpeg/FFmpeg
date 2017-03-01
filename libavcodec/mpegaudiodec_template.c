@@ -457,7 +457,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
-static void imdct12(INTFLOAT *out, INTFLOAT *in)
+static void imdct12(INTFLOAT *out, SUINTFLOAT *in)
 {
     SUINTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
 
