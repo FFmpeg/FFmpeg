@@ -2524,7 +2524,7 @@ avdevice_extralibs="libm_extralibs"
 avformat_extralibs="libm_extralibs"
 avfilter_extralibs="pthreads_extralibs libm_extralibs"
 avresample_extralibs="libm_extralibs"
-avutil_extralibs="clock_gettime_extralibs cuda_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
+avutil_extralibs="clock_gettime_extralibs cuda_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs pthreads_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
 swscale_extralibs="libm_extralibs"
 
 # programs
