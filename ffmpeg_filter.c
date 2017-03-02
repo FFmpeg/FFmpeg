@@ -984,6 +984,16 @@ static int configure_input_filter(FilterGraph *fg, InputFilter *ifilter,
     }
 }
 
+static void cleanup_filtergraph(FilterGraph *fg)
+{
+    int i;
+    for (i = 0; i < fg->nb_outputs; i++)
+        fg->outputs[i]->filter = (AVFilterContext *)NULL;
+    for (i = 0; i < fg->nb_inputs; i++)
+        fg->inputs[i]->filter = (AVFilterContext *)NULL;
+    avfilter_graph_free(&fg->graph);
+}
+
 int configure_filtergraph(FilterGraph *fg)
 {
     AVFilterInOut *inputs, *outputs, *cur;
@@ -991,7 +1001,7 @@ int configure_filtergraph(FilterGraph *fg)
     const char *graph_desc = simple ? fg->outputs[0]->ost->avfilter :
                                       fg->graph_desc;
 
-    avfilter_graph_free(&fg->graph);
+    cleanup_filtergraph(fg);
     if (!(fg->graph = avfilter_graph_alloc()))
         return AVERROR(ENOMEM);
 
@@ -1037,7 +1047,7 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)
-        return ret;
+        goto fail;
 
     if (hw_device_ctx) {
         for (i = 0; i < fg->graph->nb_filters; i++) {
@@ -1067,14 +1077,15 @@ int configure_filtergraph(FilterGraph *fg)
                " However, it had %s input(s) and %s output(s)."
                " Please adjust, or use a complex filtergraph (-filter_complex) instead.\n",
                graph_desc, num_inputs, num_outputs);
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     for (cur = inputs, i = 0; cur; cur = cur->next, i++)
         if ((ret = configure_input_filter(fg, fg->inputs[i], cur)) < 0) {
             avfilter_inout_free(&inputs);
             avfilter_inout_free(&outputs);
-            return ret;
+            goto fail;
         }
     avfilter_inout_free(&inputs);
 
@@ -1083,7 +1094,7 @@ int configure_filtergraph(FilterGraph *fg)
     avfilter_inout_free(&outputs);
 
     if ((ret = avfilter_graph_config(fg->graph, NULL)) < 0)
-        return ret;
+        goto fail;
 
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */
@@ -1109,7 +1120,8 @@ int configure_filtergraph(FilterGraph *fg)
                complex filter graphs are initialized earlier */
             av_log(NULL, AV_LOG_ERROR, "Encoder (codec %s) not found for output stream #%d:%d\n",
                      avcodec_get_name(ost->st->codecpar->codec_id), ost->file_index, ost->index);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         if (ost->enc->type == AVMEDIA_TYPE_AUDIO &&
             !(ost->enc->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
@@ -1124,7 +1136,7 @@ int configure_filtergraph(FilterGraph *fg)
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, tmp);
             av_frame_free(&tmp);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
     }
 
@@ -1133,7 +1145,7 @@ int configure_filtergraph(FilterGraph *fg)
         if (fg->inputs[i]->eof) {
             ret = av_buffersrc_add_frame(fg->inputs[i]->filter, NULL);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
     }
 
@@ -1151,6 +1163,10 @@ int configure_filtergraph(FilterGraph *fg)
     }
 
     return 0;
+
+fail:
+    cleanup_filtergraph(fg);
+    return ret;
 }
 
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
