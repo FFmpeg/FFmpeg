@@ -1413,7 +1413,9 @@ The filter accepts the syntax
 [@var{sample_rate}:]@var{resampler_options}, where @var{sample_rate}
 expresses a sample rate and @var{resampler_options} is a list of
 @var{key}=@var{value} pairs, separated by ":". See the
-ffmpeg-resampler manual for the complete list of supported options.
+@ref{Resampler Options,,the "Resampler Options" section in the
+ffmpeg-resampler(1) manual,ffmpeg-resampler}
+for the complete list of supported options.
 
 @subsection Examples
 
