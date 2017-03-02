@@ -14,6 +14,7 @@ version <next>:
 - Cineform HD decoder
 - VP9 superframe split/merge bitstream filters
 - FM Screen Capture Codec decoder
+- ClearVideo decoder (I-frames only)
 
 
 version 12:

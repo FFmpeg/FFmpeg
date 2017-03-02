@@ -375,6 +375,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_AV1,          MKTAG('A', 'V', '0', '1') },
     { AV_CODEC_ID_CFHD,         MKTAG('C', 'F', 'H', 'D') },
     { AV_CODEC_ID_FMVC,         MKTAG('F', 'M', 'V', 'C') },
+    { AV_CODEC_ID_CLEARVIDEO,   MKTAG('U', 'C', 'O', 'D') },
+
     { AV_CODEC_ID_NONE,         0 }
 };
 
