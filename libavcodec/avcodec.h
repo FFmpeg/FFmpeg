@@ -416,6 +416,7 @@ enum AVCodecID {
     AV_CODEC_ID_SPEEDHQ,
     AV_CODEC_ID_FMVC,
     AV_CODEC_ID_SCPR,
+    AV_CODEC_ID_CLEARVIDEO,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs

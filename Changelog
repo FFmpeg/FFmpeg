@@ -25,6 +25,7 @@ version <next>:
 - FM Screen Capture Codec decoder
 - native Opus encoder
 - ScreenPressor decoder
+- incomplete ClearVideo decoder
 
 version 3.2:
 - libopenmpt demuxer
