@@ -2652,12 +2652,6 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                    ist->file_index, ist->st->index, av_err2str(ret));
             if (exit_on_error)
                 exit_program(1);
-            // Decoding might not terminate if we're draining the decoder, and
-            // the decoder keeps returning an error.
-            // This should probably be considered a libavcodec issue.
-            // Sample: fate-vsynth1-dnxhd-720p-hr-lb
-            if (!pkt)
-                eof_reached = 1;
             break;
         }
 
