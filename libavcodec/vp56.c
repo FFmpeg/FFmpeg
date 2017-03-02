@@ -617,7 +617,11 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
+    s->discard_frame = 0;
     avctx->execute2(avctx, ff_vp56_decode_mbs, 0, 0, (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) + 1);
+
+    if (s->discard_frame)
+        return AVERROR_INVALIDDATA;
 
     if ((res = av_frame_ref(data, p)) < 0)
         return res;
@@ -704,8 +708,13 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
         for (mb_col=0; mb_col<s->mb_width; mb_col++) {
             if (!damaged) {
                 int ret = vp56_decode_mb(s, mb_row, mb_col, is_alpha);
-                if (ret < 0)
+                if (ret < 0) {
                     damaged = 1;
+                    if (!s->have_undamaged_frame) {
+                        s->discard_frame = 1;
+                        return AVERROR_INVALIDDATA;
+                    }
+                }
             }
             if (damaged)
                 vp56_conceal_mb(s, mb_row, mb_col, is_alpha);
@@ -721,6 +730,9 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
             }
         }
     }
+
+    if (!damaged)
+        s->have_undamaged_frame = 1;
 
 next:
     if (p->key_frame || s->golden_frame) {
