@@ -203,6 +203,9 @@ struct vp56_context {
     VLC runv_vlc[2];
     VLC ract_vlc[2][3][6];
     unsigned int nb_null[2][2];       /* number of consecutive NULL DC/AC */
+
+    int have_undamaged_frame;
+    int discard_frame;
 };
 
 
