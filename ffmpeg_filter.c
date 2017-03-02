@@ -1137,6 +1137,19 @@ int configure_filtergraph(FilterGraph *fg)
         }
     }
 
+    /* process queued up subtitle packets */
+    for (i = 0; i < fg->nb_inputs; i++) {
+        InputStream *ist = fg->inputs[i]->ist;
+        if (ist->sub2video.sub_queue && ist->sub2video.frame) {
+            while (av_fifo_size(ist->sub2video.sub_queue)) {
+                AVSubtitle tmp;
+                av_fifo_generic_read(ist->sub2video.sub_queue, &tmp, sizeof(tmp), NULL);
+                sub2video_update(ist, &tmp);
+                avsubtitle_free(&tmp);
+            }
+        }
+    }
+
     return 0;
 }
 

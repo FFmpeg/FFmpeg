@@ -226,7 +226,7 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
                                      AV_BUFFERSRC_FLAG_PUSH);
 }
 
-static void sub2video_update(InputStream *ist, AVSubtitle *sub)
+void sub2video_update(InputStream *ist, AVSubtitle *sub)
 {
     AVFrame *frame = ist->sub2video.frame;
     int8_t *dst;
@@ -480,6 +480,15 @@ static void ffmpeg_cleanup(int ret)
                 av_frame_free(&frame);
             }
             av_fifo_free(fg->inputs[j]->frame_queue);
+            if (fg->inputs[j]->ist->sub2video.sub_queue) {
+                while (av_fifo_size(fg->inputs[j]->ist->sub2video.sub_queue)) {
+                    AVSubtitle sub;
+                    av_fifo_generic_read(fg->inputs[j]->ist->sub2video.sub_queue,
+                                         &sub, sizeof(sub), NULL);
+                    avsubtitle_free(&sub);
+                }
+                av_fifo_free(fg->inputs[j]->ist->sub2video.sub_queue);
+            }
             av_buffer_unref(&fg->inputs[j]->hw_frames_ctx);
             av_freep(&fg->inputs[j]->name);
             av_freep(&fg->inputs[j]);
@@ -2468,6 +2477,7 @@ fail:
 static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVSubtitle subtitle;
+    int free_sub = 1;
     int i, ret = avcodec_decode_subtitle2(ist->dec_ctx,
                                           &subtitle, got_output, pkt);
 
@@ -2502,7 +2512,21 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     if (!*got_output)
         return ret;
 
-    sub2video_update(ist, &subtitle);
+    if (ist->sub2video.frame) {
+        sub2video_update(ist, &subtitle);
+    } else if (ist->nb_filters) {
+        if (!ist->sub2video.sub_queue)
+            ist->sub2video.sub_queue = av_fifo_alloc(8 * sizeof(AVSubtitle));
+        if (!ist->sub2video.sub_queue)
+            exit_program(1);
+        if (!av_fifo_space(ist->sub2video.sub_queue)) {
+            ret = av_fifo_realloc2(ist->sub2video.sub_queue, 2 * av_fifo_size(ist->sub2video.sub_queue));
+            if (ret < 0)
+                exit_program(1);
+        }
+        av_fifo_generic_write(ist->sub2video.sub_queue, &subtitle, sizeof(subtitle), NULL);
+        free_sub = 0;
+    }
 
     if (!subtitle.num_rects)
         goto out;
@@ -2520,7 +2544,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
 out:
-    avsubtitle_free(&subtitle);
+    if (free_sub)
+        avsubtitle_free(&subtitle);
     return ret;
 }
 
