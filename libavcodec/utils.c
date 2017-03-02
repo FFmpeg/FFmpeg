@@ -2807,11 +2807,11 @@ static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
     if (ret == AVERROR(EAGAIN))
         ret = pkt->size;
 
-    if (ret < 0)
-        return ret;
-
     if (avctx->internal->draining && !got_frame)
         avctx->internal->draining_done = 1;
+
+    if (ret < 0)
+        return ret;
 
     if (ret >= pkt->size) {
         av_packet_unref(avctx->internal->buffer_pkt);
