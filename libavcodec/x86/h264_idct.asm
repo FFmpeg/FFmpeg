@@ -87,10 +87,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     RET
 
 %macro IDCT8_1D 2
-    mova         m0, m1
-    psraw        m1, 1
-    mova         m4, m5
-    psraw        m4, 1
+    psraw        m0, m1, 1
+    SWAP 0, 1
+    psraw        m4, m5, 1
     paddw        m4, m5
     paddw        m1, m0
     paddw        m4, m7
@@ -107,10 +106,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     psubw        m0, m3
     psubw        m5, m7
 
-    mova         m7, m1
-    psraw        m1, 2
-    mova         m3, m4
-    psraw        m3, 2
+    psraw        m7, m1, 2
+    SWAP 7,1
+    psraw        m3, m4, 2
     paddw        m3, m0
     psraw        m0, 2
     paddw        m1, m5
@@ -118,10 +116,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     psubw        m0, m4
     psubw        m7, m5
 
-    mova         m5, m6
-    psraw        m6, 1
-    mova         m4, m2
-    psraw        m4, 1
+    psraw        m5, m6, 1
+    SWAP 5,6
+    psraw        m4, m2, 1
     paddw        m6, m2
     psubw        m4, m5
 
