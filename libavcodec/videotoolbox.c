@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "h264dec.h"
 #include "mpegvideo.h"
+#include <TargetConditionals.h>
 
 #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
 #  define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder CFSTR("RequireHardwareAcceleratedVideoDecoder")
@@ -477,7 +478,11 @@ static CFDictionaryRef videotoolbox_buffer_attributes_create(int width,
     CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfacePropertiesKey, io_surface_properties);
     CFDictionarySetValue(buffer_attributes, kCVPixelBufferWidthKey, w);
     CFDictionarySetValue(buffer_attributes, kCVPixelBufferHeightKey, h);
+#if TARGET_OS_IPHONE
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferOpenGLESCompatibilityKey, kCFBooleanTrue);
+#else
     CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfaceOpenGLTextureCompatibilityKey, kCFBooleanTrue);
+#endif
 
     CFRelease(io_surface_properties);
     CFRelease(cv_pix_fmt);
