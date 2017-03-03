@@ -295,7 +295,8 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
     SCPRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     int cx = 0, cx1 = 0, k = 0, clr = 0;
-    int run, r, g, b, off, y = 0, x = 0, ret;
+    int run, r, g, b, off, y = 0, x = 0, z, ret;
+    unsigned backstep = linesize - avctx->width;
     const int cxshift = s->cxshift;
     unsigned lx, ly, ptype;
 
@@ -424,18 +425,25 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             while (run-- > 0) {
                 uint8_t *odst = (uint8_t *)dst;
 
-                if (y < 1 || y >= avctx->height)
+                if (y < 1 || y >= avctx->height ||
+                    (y == 1 && x == 0))
                     return AVERROR_INVALIDDATA;
 
+                if (x == 0) {
+                    z = backstep;
+                } else {
+                    z = 0;
+                }
+
                 r = odst[(ly * linesize + lx) * 4] +
-                    odst[((y * linesize + x) + off) * 4 + 4] -
-                    odst[((y * linesize + x) + off) * 4];
+                    odst[((y * linesize + x) + off - z) * 4 + 4] -
+                    odst[((y * linesize + x) + off - z) * 4];
                 g = odst[(ly * linesize + lx) * 4 + 1] +
-                    odst[((y * linesize + x) + off) * 4 + 5] -
-                    odst[((y * linesize + x) + off) * 4 + 1];
+                    odst[((y * linesize + x) + off - z) * 4 + 5] -
+                    odst[((y * linesize + x) + off - z) * 4 + 1];
                 b = odst[(ly * linesize + lx) * 4 + 2] +
-                    odst[((y * linesize + x) + off) * 4 + 6] -
-                    odst[((y * linesize + x) + off) * 4 + 2];
+                    odst[((y * linesize + x) + off - z) * 4 + 6] -
+                    odst[((y * linesize + x) + off - z) * 4 + 2];
                 clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
                 dst[y * linesize + x] = clr;
                 lx = x;
@@ -449,10 +457,17 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
             break;
         case 5:
             while (run-- > 0) {
-                if (y < 1 || y >= avctx->height)
+                if (y < 1 || y >= avctx->height ||
+                    (y == 1 && x == 0))
                     return AVERROR_INVALIDDATA;
 
-                clr = dst[y * linesize + x + off];
+                if (x == 0) {
+                    z = backstep;
+                } else {
+                    z = 0;
+                }
+
+                clr = dst[y * linesize + x + off - z];
                 dst[y * linesize + x] = clr;
                 lx = x;
                 ly = y;
