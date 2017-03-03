@@ -561,6 +561,30 @@ static int write_manifest(AVFormatContext *s, int final)
     return 0;
 }
 
+static int set_bitrate(AVFormatContext *s)
+{
+    DASHContext *c = s->priv_data;
+    int i;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        OutputStream *os = &c->streams[i];
+
+        os->bit_rate = s->streams[i]->codecpar->bit_rate;
+        if (os->bit_rate) {
+            snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
+                     " bandwidth=\"%d\"", os->bit_rate);
+        } else {
+            int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
+                        AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(s, level, "No bit rate set for stream %d\n", i);
+            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT)
+                return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
 static int dash_init(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -597,24 +621,16 @@ static int dash_init(AVFormatContext *s)
     if (!c->streams)
         return AVERROR(ENOMEM);
 
+    ret = set_bitrate(s);
+    if (ret < 0)
+        return ret;
+
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         AVFormatContext *ctx;
         AVStream *st;
         AVDictionary *opts = NULL;
         char filename[1024];
-
-        os->bit_rate = s->streams[i]->codecpar->bit_rate;
-        if (os->bit_rate) {
-            snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
-                     " bandwidth=\"%d\"", os->bit_rate);
-        } else {
-            int level = s->strict_std_compliance >= FF_COMPLIANCE_STRICT ?
-                        AV_LOG_ERROR : AV_LOG_WARNING;
-            av_log(s, level, "No bit rate set for stream %d\n", i);
-            if (s->strict_std_compliance >= FF_COMPLIANCE_STRICT)
-                return AVERROR(EINVAL);
-        }
 
         ctx = avformat_alloc_context();
         if (!ctx)
@@ -980,6 +996,8 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int dash_write_trailer(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
+
+    set_bitrate(s);
 
     if (s->nb_streams > 0) {
         OutputStream *os = &c->streams[0];
