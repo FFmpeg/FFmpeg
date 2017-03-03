@@ -549,7 +549,8 @@ The following options are supported by FFmpeg's flac encoder.
 @table @option
 @item compression_level
 Sets the compression level, which chooses defaults for many other options
-if they are not set explicitly.
+if they are not set explicitly. Valid values are from 0 to 12, 5 is the
+default.
 
 @item frame_size
 Sets the size of the frames in samples per channel.
