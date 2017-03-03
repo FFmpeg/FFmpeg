@@ -389,7 +389,10 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         for (i = 0; i < 2; i++) {
             if (llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
                 llabs(s->sprite_offset[0][i] + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL) + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX) {
+                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL) + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
+                llabs(s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
+                llabs(s->sprite_delta[i][1] * (w+16LL)) >= INT_MAX
+            ) {
                 avpriv_request_sample(s->avctx, "Overflow on sprite points");
                 goto overflow;
             }
