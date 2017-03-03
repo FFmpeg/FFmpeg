@@ -347,7 +347,7 @@ static void dmix_scale_inv_c(int32_t *dst, int scale_inv, ptrdiff_t len)
         dst[i] = mul16(dst[i], scale_inv);
 }
 
-static void filter0(int32_t *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
+static void filter0(SUINT32 *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
 {
     int i;
 
@@ -355,7 +355,7 @@ static void filter0(int32_t *dst, const int32_t *src, int32_t coeff, ptrdiff_t l
         dst[i] -= mul22(src[i], coeff);
 }
 
-static void filter1(int32_t *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
+static void filter1(SUINT32 *dst, const int32_t *src, int32_t coeff, ptrdiff_t len)
 {
     int i;
 
