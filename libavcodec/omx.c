@@ -226,6 +226,7 @@ typedef struct OMXCodecContext {
     int output_buf_size;
 
     int input_zerocopy;
+    int profile;
 } OMXCodecContext;
 
 static void append_buffer(pthread_mutex_t *mutex, pthread_cond_t *cond,
@@ -523,6 +524,19 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
         CHECK(err);
         avc.nBFrames = 0;
         avc.nPFrames = avctx->gop_size - 1;
+        switch (s->profile == FF_PROFILE_UNKNOWN ? avctx->profile : s->profile) {
+        case FF_PROFILE_H264_BASELINE:
+            avc.eProfile = OMX_VIDEO_AVCProfileBaseline;
+            break;
+        case FF_PROFILE_H264_MAIN:
+            avc.eProfile = OMX_VIDEO_AVCProfileMain;
+            break;
+        case FF_PROFILE_H264_HIGH:
+            avc.eProfile = OMX_VIDEO_AVCProfileHigh;
+            break;
+        default:
+            break;
+        }
         err = OMX_SetParameter(s->handle, OMX_IndexParamVideoAvc, &avc);
         CHECK(err);
     }
@@ -884,6 +898,10 @@ static const AVOption options[] = {
     { "omx_libname", "OpenMAX library name", OFFSET(libname), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
     { "omx_libprefix", "OpenMAX library prefix", OFFSET(libprefix), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VDE },
     { "zerocopy", "Try to avoid copying input frames if possible", OFFSET(input_zerocopy), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "profile",  "Set the encoding profile", OFFSET(profile), AV_OPT_TYPE_INT,   { .i64 = FF_PROFILE_UNKNOWN },       FF_PROFILE_UNKNOWN, FF_PROFILE_H264_HIGH, VE, "profile" },
+    { "baseline", "",                         0,               AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_BASELINE }, 0, 0, VE, "profile" },
+    { "main",     "",                         0,               AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_MAIN },     0, 0, VE, "profile" },
+    { "high",     "",                         0,               AV_OPT_TYPE_CONST, { .i64 = FF_PROFILE_H264_HIGH },     0, 0, VE, "profile" },
     { NULL }
 };
 
