@@ -99,11 +99,13 @@ static av_always_inline int get_tail(GetBitContext *gb, int k)
     return res;
 }
 
-static void update_error_limit(WavpackFrameContext *ctx)
+static int update_error_limit(WavpackFrameContext *ctx)
 {
     int i, br[2], sl[2];
 
     for (i = 0; i <= ctx->stereo_in; i++) {
+        if (ctx->ch[i].bitrate_acc > UINT_MAX - ctx->ch[i].bitrate_delta)
+            return AVERROR_INVALIDDATA;
         ctx->ch[i].bitrate_acc += ctx->ch[i].bitrate_delta;
         br[i]                   = ctx->ch[i].bitrate_acc >> 16;
         sl[i]                   = LEVEL_DECAY(ctx->ch[i].slow_level);
@@ -131,6 +133,8 @@ static void update_error_limit(WavpackFrameContext *ctx)
             ctx->ch[i].error_limit = wp_exp2(br[i]);
         }
     }
+
+    return 0;
 }
 
 static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
@@ -200,8 +204,10 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         ctx->zero = !ctx->one;
     }
 
-    if (ctx->hybrid && !channel)
-        update_error_limit(ctx);
+    if (ctx->hybrid && !channel) {
+        if (update_error_limit(ctx) < 0)
+            goto error;
+    }
 
     if (!t) {
         base = 0;
