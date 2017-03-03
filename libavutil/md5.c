@@ -86,14 +86,14 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
                                                                         \
         if (i < 32) {                                                   \
             if (i < 16)                                                 \
-                a += (d ^ (b & (c ^ d)))  + X[       i  & 15];          \
+                a += (d ^ (b & (c ^ d)))  + AV_RL32(X+(       i  & 15));\
             else                                                        \
-                a += ((d & b) | (~d & c)) + X[(1 + 5*i) & 15];          \
+                a += ((d & b) | (~d & c)) + AV_RL32(X+((1 + 5*i) & 15));\
         } else {                                                        \
             if (i < 48)                                                 \
-                a += (b ^ c ^ d)          + X[(5 + 3*i) & 15];          \
+                a += (b ^ c ^ d)          + AV_RL32(X+((5 + 3*i) & 15));\
             else                                                        \
-                a += (c ^ (b | ~d))       + X[(    7*i) & 15];          \
+                a += (c ^ (b | ~d))       + AV_RL32(X+((    7*i) & 15));\
         }                                                               \
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
@@ -111,11 +111,6 @@ static void body(uint32_t ABCD[4], uint32_t *src, int nblocks)
         d = ABCD[0];
 
         X = src + n * 16;
-
-#if HAVE_BIGENDIAN
-        for (i = 0; i < 16; i++)
-            X[i] = av_bswap32(X[i]);
-#endif
 
 #if CONFIG_SMALL
         for (i = 0; i < 64; i++) {
@@ -173,7 +168,7 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
     }
 
     end = src + (len & ~63);
-    if (HAVE_BIGENDIAN || (!HAVE_FAST_UNALIGNED && ((intptr_t)src & 3))) {
+    if (!HAVE_FAST_UNALIGNED && ((intptr_t)src & 3)) {
        while (src < end) {
            memcpy(ctx->block, src, 64);
            body(ctx->ABCD, (uint32_t *) ctx->block, 1);
