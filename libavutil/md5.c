@@ -83,15 +83,15 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
         a += T[i];                                                      \
                                                                         \
         if (i < 32) {                                                   \
-            if (i < 16)                                                 \
-                a += (d ^ (b & (c ^ d))) + X[i           & 15];         \
-            else                                                        \
-                a += (c ^ (d & (c ^ b))) + X[(1 + 5 * i) & 15];         \
+            if (i < 16)                                                     \
+                a += (d ^ (b & (c ^ d))) + AV_RL32(X + (i          & 15));  \
+            else                                                            \
+                a += (c ^ (d & (c ^ b))) + AV_RL32(X + ((1 + 5 * i) & 15)); \
         } else {                                                        \
             if (i < 48)                                                 \
-                a += (b ^ c ^ d)    + X[(5 + 3 * i) & 15];              \
+                a += (b ^ c ^ d)    + AV_RL32(X + ((5 + 3 * i) & 15));  \
             else                                                        \
-                a += (c ^ (b | ~d)) + X[(7     * i) & 15];              \
+                a += (c ^ (b | ~d)) + AV_RL32(X + ((7     * i) & 15));  \
         }                                                               \
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
@@ -99,18 +99,14 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
 static void body(uint32_t ABCD[4], uint32_t X[16])
 {
     int t;
-    int i av_unused;
     unsigned int a = ABCD[3];
     unsigned int b = ABCD[2];
     unsigned int c = ABCD[1];
     unsigned int d = ABCD[0];
 
-#if HAVE_BIGENDIAN
-    for (i = 0; i < 16; i++)
-        X[i] = av_bswap32(X[i]);
-#endif
-
 #if CONFIG_SMALL
+    int i;
+
     for (i = 0; i < 64; i++) {
         CORE(i, a, b, c, d);
         t = d;
