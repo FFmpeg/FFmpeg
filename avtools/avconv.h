@@ -489,6 +489,7 @@ extern const OptionDef options[];
 extern const HWAccel hwaccels[];
 extern int hwaccel_lax_profile_check;
 extern AVBufferRef *hw_device_ctx;
+extern HWDevice *filter_hw_device;
 
 void reset_options(OptionsContext *o);
 void show_usage(void);

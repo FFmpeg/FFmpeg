@@ -644,6 +644,20 @@ deriving it from the existing device with the name @var{source}.
 @item -init_hw_device list
 List all hardware device types supported in this build of avconv.
 
+@item -filter_hw_device @var{name}
+Pass the hardware device called @var{name} to all filters in any filter graph.
+This can be used to set the device to upload to with the @code{hwupload} filter,
+or the device to map to with the @code{hwmap} filter.  Other filters may also
+make use of this parameter when they require a hardware device.  Note that this
+is typically only required when the input is not already in hardware frames -
+when it is, filters will derive the device they require from the context of the
+frames they receive as input.
+
+This is a global setting, so all filters will receive the same device.
+
+Do not use this option in scripts that should remain functional in future
+avconv versions.
+
 @item -hwaccel[:@var{stream_specifier}] @var{hwaccel} (@emph{input,per-stream})
 Use hardware acceleration to decode the matching stream(s). The allowed values
 of @var{hwaccel} are:
