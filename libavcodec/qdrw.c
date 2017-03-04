@@ -33,6 +33,7 @@
 #include "internal.h"
 
 enum QuickdrawOpcodes {
+    CLIP = 0x0001,
     PACKBITSRECT = 0x0098,
     PACKBITSRGN,
     DIRECTBITSRECT,
@@ -68,6 +69,148 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
     return 0;
 }
 
+static int decode_rle_bpp2(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+{
+    int offset = avctx->width;
+    uint8_t *outdata = p->data[0];
+    int i, j;
+
+    for (i = 0; i < avctx->height; i++) {
+        int size, left, code, pix;
+        uint8_t *out = outdata;
+        int pos = 0;
+
+        /* size of packed line */
+        if (offset / 4 > 200)
+            size = left = bytestream2_get_be16(gbc);
+        else
+            size = left = bytestream2_get_byte(gbc);
+        if (bytestream2_get_bytes_left(gbc) < size)
+            return AVERROR_INVALIDDATA;
+
+        /* decode line */
+        while (left > 0) {
+            code = bytestream2_get_byte(gbc);
+            if (code & 0x80 ) { /* run */
+                pix = bytestream2_get_byte(gbc);
+                for (j = 0; j < 257 - code; j++) {
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xC0) >> 6;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x30) >> 4;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x0C) >> 2;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x03);
+                }
+                left  -= 2;
+            } else { /* copy */
+                for (j = 0; j < code + 1; j++) {
+                    pix = bytestream2_get_byte(gbc);
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xC0) >> 6;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x30) >> 4;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x0C) >> 2;
+                    if (pos < offset)
+                        out[pos++] = (pix & 0x03);
+                }
+                left  -= 1 + (code + 1);
+            }
+        }
+        outdata += p->linesize[0];
+    }
+    return 0;
+}
+
+static int decode_rle_bpp4(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+{
+    int offset = avctx->width;
+    uint8_t *outdata = p->data[0];
+    int i, j;
+
+    for (i = 0; i < avctx->height; i++) {
+        int size, left, code, pix;
+        uint8_t *out = outdata;
+        int pos = 0;
+
+        /* size of packed line */
+        size = left = bytestream2_get_be16(gbc);
+        if (bytestream2_get_bytes_left(gbc) < size)
+            return AVERROR_INVALIDDATA;
+
+        /* decode line */
+        while (left > 0) {
+            code = bytestream2_get_byte(gbc);
+            if (code & 0x80 ) { /* run */
+                pix = bytestream2_get_byte(gbc);
+                for (j = 0; j < 257 - code; j++) {
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xF0) >> 4;
+                    if (pos < offset)
+                        out[pos++] = pix & 0xF;
+                }
+                left  -= 2;
+            } else { /* copy */
+                for (j = 0; j < code + 1; j++) {
+                    pix = bytestream2_get_byte(gbc);
+                    if (pos < offset)
+                        out[pos++] = (pix & 0xF0) >> 4;
+                    if (pos < offset)
+                        out[pos++] = pix & 0xF;
+                }
+                left  -= 1 + (code + 1);
+            }
+        }
+        outdata += p->linesize[0];
+    }
+    return 0;
+}
+
+static int decode_rle16(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc)
+{
+    int offset = avctx->width;
+    uint8_t *outdata = p->data[0];
+    int i, j;
+
+    for (i = 0; i < avctx->height; i++) {
+        int size, left, code, pix;
+        uint16_t *out = (uint16_t *)outdata;
+        int pos = 0;
+
+        /* size of packed line */
+        size = left = bytestream2_get_be16(gbc);
+        if (bytestream2_get_bytes_left(gbc) < size)
+            return AVERROR_INVALIDDATA;
+
+        /* decode line */
+        while (left > 0) {
+            code = bytestream2_get_byte(gbc);
+            if (code & 0x80 ) { /* run */
+                pix = bytestream2_get_be16(gbc);
+                for (j = 0; j < 257 - code; j++) {
+                    if (pos < offset) {
+                        out[pos++] = pix;
+                    }
+                }
+                left  -= 3;
+            } else { /* copy */
+                for (j = 0; j < code + 1; j++) {
+                    if (pos < offset) {
+                        out[pos++] = bytestream2_get_be16(gbc);
+                    } else {
+                        bytestream2_skip(gbc, 2);
+                    }
+                }
+                left  -= 1 + (code + 1) * 2;
+            }
+        }
+        outdata += p->linesize[0];
+    }
+    return 0;
+}
+
 static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
                       int step)
 {
@@ -91,26 +234,25 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
             if (code & 0x80 ) { /* run */
                 pix = bytestream2_get_byte(gbc);
                 for (j = 0; j < 257 - code; j++) {
-                    out[pos] = pix;
+                    if (pos < offset)
+                        out[pos] = pix;
                     pos += step;
-                    if (pos >= offset) {
+                    if (pos >= offset && step > 1) {
                         pos -= offset;
                         pos++;
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2;
             } else { /* copy */
                 for (j = 0; j < code + 1; j++) {
-                    out[pos] = bytestream2_get_byte(gbc);
+                    pix = bytestream2_get_byte(gbc);
+                    if (pos < offset)
+                        out[pos] = pix;
                     pos += step;
-                    if (pos >= offset) {
+                    if (pos >= offset && step > 1) {
                         pos -= offset;
                         pos++;
                     }
-                    if (pos >= offset)
-                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2 + code;
             }
@@ -194,6 +336,9 @@ static int decode_frame(AVCodecContext *avctx,
         int opcode = bytestream2_get_be16(&gbc);
 
         switch(opcode) {
+        case CLIP:
+            bytestream2_skip(&gbc, 10);
+            break;
         case PACKBITSRECT:
         case PACKBITSRGN:
             av_log(avctx, AV_LOG_DEBUG, "Parsing Packbit opcode\n");
@@ -205,6 +350,10 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
             if (bppcnt == 1 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            } else if (bppcnt == 1 && (bpp == 4 || bpp == 2)) {
+                avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            } else if (bppcnt == 3 && bpp == 5) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB555;
             } else {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid pixel format (bppcnt %d bpp %d) in Packbit\n",
@@ -240,7 +389,14 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_report_missing_feature(avctx, "Packbit mask region");
             }
 
-            ret = decode_rle(avctx, p, &gbc, bppcnt);
+            if (avctx->pix_fmt == AV_PIX_FMT_RGB555)
+                ret = decode_rle16(avctx, p, &gbc);
+            else if (bpp == 2)
+                ret = decode_rle_bpp2(avctx, p, &gbc);
+            else if (bpp == 4)
+                ret = decode_rle_bpp4(avctx, p, &gbc);
+            else
+                ret = decode_rle(avctx, p, &gbc, bppcnt);
             if (ret < 0)
                 return ret;
             *got_frame = 1;
@@ -256,7 +412,15 @@ static int decode_frame(AVCodecContext *avctx,
                 return AVERROR_PATCHWELCOME;
             }
 
-            bytestream2_skip(&gbc, 10);
+            bytestream2_skip(&gbc, 4);
+            h = bytestream2_get_be16(&gbc);
+            w = bytestream2_get_be16(&gbc);
+            bytestream2_skip(&gbc, 2);
+
+            ret = ff_set_dimensions(avctx, w, h);
+            if (ret < 0)
+                return ret;
+
             pack_type = bytestream2_get_be16(&gbc);
 
             bytestream2_skip(&gbc, 16);
@@ -266,6 +430,8 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
             if (bppcnt == 3 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            } else if (bppcnt == 3 && bpp == 5) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB555;
             } else if (bppcnt == 4 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_ARGB;
             } else {
@@ -294,7 +460,10 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_report_missing_feature(avctx, "DirectBit mask region");
             }
 
-            ret = decode_rle(avctx, p, &gbc, bppcnt);
+            if (avctx->pix_fmt == AV_PIX_FMT_RGB555)
+                ret = decode_rle16(avctx, p, &gbc);
+            else
+                ret = decode_rle(avctx, p, &gbc, bppcnt);
             if (ret < 0)
                 return ret;
             *got_frame = 1;

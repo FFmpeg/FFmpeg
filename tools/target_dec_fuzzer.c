@@ -46,6 +46,7 @@
 */
 
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
@@ -165,7 +166,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     while (data < end && it < maxiteration) {
         // Search for the TAG
         while (data + sizeof(fuzz_tag) < end) {
-            if (data[0] == (fuzz_tag & 0xFF) && *(const uint64_t *)(data) == fuzz_tag)
+            if (data[0] == (fuzz_tag & 0xFF) && AV_RN64(data) == fuzz_tag)
                 break;
             data++;
         }

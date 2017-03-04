@@ -40,10 +40,10 @@ void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
     block[0] += 1 << 5;
 
     for(i=0; i<4; i++){
-        const int z0=  block[i + 4*0]     +  block[i + 4*2];
-        const int z1=  block[i + 4*0]     -  block[i + 4*2];
-        const int z2= (block[i + 4*1]>>1) -  block[i + 4*3];
-        const int z3=  block[i + 4*1]     + (block[i + 4*3]>>1);
+        const SUINT z0=  block[i + 4*0]     +  block[i + 4*2];
+        const SUINT z1=  block[i + 4*0]     -  block[i + 4*2];
+        const SUINT z2= (block[i + 4*1]>>1) -  block[i + 4*3];
+        const SUINT z3=  block[i + 4*1]     + (block[i + 4*3]>>1);
 
         block[i + 4*0]= z0 + z3;
         block[i + 4*1]= z1 + z2;
@@ -52,15 +52,15 @@ void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
     }
 
     for(i=0; i<4; i++){
-        const int z0=  block[0 + 4*i]     +  block[2 + 4*i];
-        const int z1=  block[0 + 4*i]     -  block[2 + 4*i];
-        const int z2= (block[1 + 4*i]>>1) -  block[3 + 4*i];
-        const int z3=  block[1 + 4*i]     + (block[3 + 4*i]>>1);
+        const SUINT z0=  block[0 + 4*i]     +  (SUINT)block[2 + 4*i];
+        const SUINT z1=  block[0 + 4*i]     -  (SUINT)block[2 + 4*i];
+        const SUINT z2= (block[1 + 4*i]>>1) -  (SUINT)block[3 + 4*i];
+        const SUINT z3=  block[1 + 4*i]     + (SUINT)(block[3 + 4*i]>>1);
 
-        dst[i + 0*stride]= av_clip_pixel(dst[i + 0*stride] + ((z0 + z3) >> 6));
-        dst[i + 1*stride]= av_clip_pixel(dst[i + 1*stride] + ((z1 + z2) >> 6));
-        dst[i + 2*stride]= av_clip_pixel(dst[i + 2*stride] + ((z1 - z2) >> 6));
-        dst[i + 3*stride]= av_clip_pixel(dst[i + 3*stride] + ((z0 - z3) >> 6));
+        dst[i + 0*stride]= av_clip_pixel(dst[i + 0*stride] + ((int)(z0 + z3) >> 6));
+        dst[i + 1*stride]= av_clip_pixel(dst[i + 1*stride] + ((int)(z1 + z2) >> 6));
+        dst[i + 2*stride]= av_clip_pixel(dst[i + 2*stride] + ((int)(z1 - z2) >> 6));
+        dst[i + 3*stride]= av_clip_pixel(dst[i + 3*stride] + ((int)(z0 - z3) >> 6));
     }
 
     memset(block, 0, 16 * sizeof(dctcoef));
@@ -261,15 +261,15 @@ void FUNCC(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int 
 
     for(i=0; i<4; i++){
         const int offset= x_offset[i];
-        const int z0= temp[4*0+i] + temp[4*2+i];
-        const int z1= temp[4*0+i] - temp[4*2+i];
-        const int z2= temp[4*1+i] - temp[4*3+i];
-        const int z3= temp[4*1+i] + temp[4*3+i];
+        const SUINT z0= temp[4*0+i] + temp[4*2+i];
+        const SUINT z1= temp[4*0+i] - temp[4*2+i];
+        const SUINT z2= temp[4*1+i] - temp[4*3+i];
+        const SUINT z3= temp[4*1+i] + temp[4*3+i];
 
-        output[stride* 0+offset]= ((((z0 + z3)*qmul + 128 ) >> 8));
-        output[stride* 1+offset]= ((((z1 + z2)*qmul + 128 ) >> 8));
-        output[stride* 4+offset]= ((((z1 - z2)*qmul + 128 ) >> 8));
-        output[stride* 5+offset]= ((((z0 - z3)*qmul + 128 ) >> 8));
+        output[stride* 0+offset]= (int)((z0 + z3)*qmul + 128 ) >> 8;
+        output[stride* 1+offset]= (int)((z1 + z2)*qmul + 128 ) >> 8;
+        output[stride* 4+offset]= (int)((z1 - z2)*qmul + 128 ) >> 8;
+        output[stride* 5+offset]= (int)((z0 - z3)*qmul + 128 ) >> 8;
     }
 #undef stride
 }
@@ -289,15 +289,15 @@ void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
 
     for(i=0; i<2; i++){
         const int offset= x_offset[i];
-        const int z0= temp[2*0+i] + temp[2*2+i];
-        const int z1= temp[2*0+i] - temp[2*2+i];
-        const int z2= temp[2*1+i] - temp[2*3+i];
-        const int z3= temp[2*1+i] + temp[2*3+i];
+        const SUINT z0= temp[2*0+i] + temp[2*2+i];
+        const SUINT z1= temp[2*0+i] - temp[2*2+i];
+        const SUINT z2= temp[2*1+i] - temp[2*3+i];
+        const SUINT z3= temp[2*1+i] + temp[2*3+i];
 
-        block[stride*0+offset]= ((z0 + z3)*qmul + 128) >> 8;
-        block[stride*1+offset]= ((z1 + z2)*qmul + 128) >> 8;
-        block[stride*2+offset]= ((z1 - z2)*qmul + 128) >> 8;
-        block[stride*3+offset]= ((z0 - z3)*qmul + 128) >> 8;
+        block[stride*0+offset]= (int)((z0 + z3)*qmul + 128) >> 8;
+        block[stride*1+offset]= (int)((z1 + z2)*qmul + 128) >> 8;
+        block[stride*2+offset]= (int)((z1 - z2)*qmul + 128) >> 8;
+        block[stride*3+offset]= (int)((z0 - z3)*qmul + 128) >> 8;
     }
 }
 

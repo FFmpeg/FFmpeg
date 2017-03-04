@@ -179,9 +179,6 @@ typedef struct AVFrameSideData {
  *
  * sizeof(AVFrame) is not a part of the public ABI, so new fields may be added
  * to the end with a minor bump.
- * Similarly fields that are marked as to be only accessed by
- * av_opt_ptr() can be reordered. This allows 2 forks to add fields
- * without breaking compatibility with each other.
  *
  * Fields can be accessed through AVOptions, the name string used, matches the
  * C structure field name for fields accessible through AVOptions. The AVClass
@@ -420,8 +417,6 @@ typedef struct AVFrame {
 
     /**
      * MPEG vs JPEG YUV range.
-     * It must be accessed using av_frame_get_color_range() and
-     * av_frame_set_color_range().
      * - encoding: Set by user
      * - decoding: Set by libavcodec
      */
@@ -433,8 +428,6 @@ typedef struct AVFrame {
 
     /**
      * YUV colorspace type.
-     * It must be accessed using av_frame_get_colorspace() and
-     * av_frame_set_colorspace().
      * - encoding: Set by user
      * - decoding: Set by libavcodec
      */
@@ -444,8 +437,6 @@ typedef struct AVFrame {
 
     /**
      * frame timestamp estimated using various heuristics, in stream time base
-     * Code outside libavutil should access this field using:
-     * av_frame_get_best_effort_timestamp(frame)
      * - encoding: unused
      * - decoding: set by libavcodec, read by user.
      */
@@ -453,8 +444,6 @@ typedef struct AVFrame {
 
     /**
      * reordered pos from the last AVPacket that has been input into the decoder
-     * Code outside libavutil should access this field using:
-     * av_frame_get_pkt_pos(frame)
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -463,8 +452,6 @@ typedef struct AVFrame {
     /**
      * duration of the corresponding packet, expressed in
      * AVStream->time_base units, 0 if unknown.
-     * Code outside libavutil should access this field using:
-     * av_frame_get_pkt_duration(frame)
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -472,8 +459,6 @@ typedef struct AVFrame {
 
     /**
      * metadata.
-     * Code outside libavutil should access this field using:
-     * av_frame_get_metadata(frame)
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
      */
@@ -483,8 +468,6 @@ typedef struct AVFrame {
      * decode error flags of the frame, set to a combination of
      * FF_DECODE_ERROR_xxx flags if the decoder produced a frame, but there
      * were errors during the decoding.
-     * Code outside libavutil should access this field using:
-     * av_frame_get_decode_error_flags(frame)
      * - encoding: unused
      * - decoding: set by libavcodec, read by user.
      */
@@ -494,8 +477,6 @@ typedef struct AVFrame {
 
     /**
      * number of audio channels, only used for audio.
-     * Code outside libavutil should access this field using:
-     * av_frame_get_channels(frame)
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -503,8 +484,7 @@ typedef struct AVFrame {
 
     /**
      * size of the corresponding packet containing the compressed
-     * frame. It must be accessed using av_frame_get_pkt_size() and
-     * av_frame_set_pkt_size().
+     * frame.
      * It is set to a negative value if unknown.
      * - encoding: unused
      * - decoding: set by libavcodec, read by user.
@@ -514,13 +494,11 @@ typedef struct AVFrame {
 #if FF_API_FRAME_QP
     /**
      * QP table
-     * Not to be accessed directly from outside libavutil
      */
     attribute_deprecated
     int8_t *qscale_table;
     /**
      * QP store stride
-     * Not to be accessed directly from outside libavutil
      */
     attribute_deprecated
     int qstride;
@@ -528,9 +506,6 @@ typedef struct AVFrame {
     attribute_deprecated
     int qscale_type;
 
-    /**
-     * Not to be accessed directly from outside libavutil
-     */
     AVBufferRef *qp_table_buf;
 #endif
     /**
@@ -552,9 +527,8 @@ typedef struct AVFrame {
 } AVFrame;
 
 /**
- * Accessors for some AVFrame fields.
- * The position of these field in the structure is not part of the ABI,
- * they should not be accessed directly outside libavutil.
+ * Accessors for some AVFrame fields. These used to be provided for ABI
+ * compatibility, and do not need to be used anymore.
  */
 int64_t av_frame_get_best_effort_timestamp(const AVFrame *frame);
 void    av_frame_set_best_effort_timestamp(AVFrame *frame, int64_t val);

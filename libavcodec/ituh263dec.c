@@ -303,6 +303,10 @@ static int h263p_decode_umotion(MpegEncContext * s, int pred)
    {
       code <<= 1;
       code += get_bits1(&s->gb);
+      if (code >= 32768) {
+          avpriv_request_sample(s->avctx, "Huge DMV");
+          return 0xffff;
+      }
    }
    sign = code & 1;
    code >>= 1;
@@ -524,7 +528,7 @@ retry:
                     }else{
                         level = SHOW_UBITS(re, &s->gb, 5);
                         SKIP_CACHE(re, &s->gb, 5);
-                        level |= SHOW_SBITS(re, &s->gb, 6)<<5;
+                        level |= SHOW_SBITS(re, &s->gb, 6) * (1<<5);
                         SKIP_COUNTER(re, &s->gb, 5 + 6);
                     }
                 }
@@ -716,6 +720,11 @@ int ff_h263_decode_mb(MpegEncContext *s,
         if(s->pb_frame && get_bits1(&s->gb))
             pb_mv_count = h263_get_modb(&s->gb, s->pb_frame, &cbpb);
         cbpy = get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
+
+        if (cbpy < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
+            return SLICE_ERROR;
+        }
 
         if(s->alt_inter_vlc==0 || (cbpc & 3)!=3)
             cbpy ^= 0xF;
@@ -952,6 +961,9 @@ intra:
             preview_obmc(s);
     }
 end:
+
+    if (get_bits_left(&s->gb) < 0)
+        return AVERROR_INVALIDDATA;
 
         /* per-MB end of slice check */
     {

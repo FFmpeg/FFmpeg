@@ -63,8 +63,8 @@ static inline int round_sample(int64_t *sum)
 #   define MACS(rt, ra, rb) MAC64(rt, ra, rb)
 #   define MLSS(rt, ra, rb) MLS64(rt, ra, rb)
 #   define MULH3(x, y, s) MULH((s)*(x), y)
-#   define MULLx(x, y, s) MULL(x,y,s)
-#   define SHR(a,b)       ((a)>>(b))
+#   define MULLx(x, y, s) MULL((int)(x),(y),s)
+#   define SHR(a,b)       (((int)(a))>>(b))
 #   define FIXR(a)        ((int)((a) * FRAC_ONE + 0.5))
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #endif
@@ -300,11 +300,11 @@ static const INTFLOAT icos36h[9] = {
 };
 
 /* using Lee like decomposition followed by hand coded 9 points DCT */
-static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
+static void imdct36(INTFLOAT *out, INTFLOAT *buf, SUINTFLOAT *in, INTFLOAT *win)
 {
     int i, j;
-    INTFLOAT t0, t1, t2, t3, s0, s1, s2, s3;
-    INTFLOAT tmp[18], *tmp1, *in1;
+    SUINTFLOAT t0, t1, t2, t3, s0, s1, s2, s3;
+    SUINTFLOAT tmp[18], *tmp1, *in1;
 
     for (i = 17; i >= 1; i--)
         in[i] += in[i-1];

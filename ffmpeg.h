@@ -233,6 +233,9 @@ typedef struct InputFilter {
     struct InputStream *ist;
     struct FilterGraph *graph;
     uint8_t            *name;
+    enum AVMediaType    type;   // AVMEDIA_TYPE_SUBTITLE for sub2video
+
+    AVFifoBuffer *frame_queue;
 
     // parameters configured for this input
     int format;
@@ -245,6 +248,8 @@ typedef struct InputFilter {
     uint64_t channel_layout;
 
     AVBufferRef *hw_frames_ctx;
+
+    int eof;
 } InputFilter;
 
 typedef struct OutputFilter {
@@ -321,14 +326,6 @@ typedef struct InputStream {
     int guess_layout_max;
 
     int autorotate;
-    int resample_height;
-    int resample_width;
-    int resample_pix_fmt;
-
-    int      resample_sample_fmt;
-    int      resample_sample_rate;
-    int      resample_channels;
-    uint64_t resample_channel_layout;
 
     int fix_sub_duration;
     struct { /* previous decoded subtitle and related variables */
@@ -340,6 +337,7 @@ typedef struct InputStream {
     struct sub2video {
         int64_t last_pts;
         int64_t end_pts;
+        AVFifoBuffer *sub_queue;    ///< queue of AVSubtitle* before filter init
         AVFrame *frame;
         int w, h;
     } sub2video;
@@ -379,6 +377,8 @@ typedef struct InputStream {
 
     int64_t *dts_buffer;
     int nb_dts_buffer;
+
+    int got_output;
 } InputStream;
 
 typedef struct InputFile {
@@ -446,6 +446,8 @@ typedef struct OutputStream {
     int64_t first_pts;
     /* dts of the last packet sent to the muxer */
     int64_t last_mux_dts;
+    // the timebase of the packets sent to the muxer
+    AVRational mux_timebase;
 
     int                    nb_bitstream_filters;
     uint8_t                  *bsf_extradata_updated;
@@ -504,6 +506,8 @@ typedef struct OutputStream {
     // The encoder and the bitstream filters have been initialized and the stream
     // parameters are set in the AVStream.
     int initialized;
+
+    int inputs_done;
 
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
@@ -633,8 +637,9 @@ int filtergraph_is_simple(FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost);
 int init_complex_filtergraph(FilterGraph *fg);
 
+void sub2video_update(InputStream *ist, AVSubtitle *sub);
+
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
-int ifilter_parameters_from_decoder(InputFilter *ifilter, const AVCodecContext *avctx);
 
 int ffmpeg_parse_options(int argc, char **argv);
 
@@ -643,10 +648,8 @@ int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
 int videotoolbox_init(AVCodecContext *s);
 int qsv_init(AVCodecContext *s);
-int qsv_transcode_init(OutputStream *ost);
 int vaapi_decode_init(AVCodecContext *avctx);
 int vaapi_device_init(const char *device);
 int cuvid_init(AVCodecContext *s);
-int cuvid_transcode_init(OutputStream *ost);
 
 #endif /* FFMPEG_H */

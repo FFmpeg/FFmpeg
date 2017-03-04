@@ -257,8 +257,14 @@ static void decode_scaling_list(GetBitContext *gb, uint8_t *factors, int size,
         memcpy(factors, fallback_list, size * sizeof(uint8_t));
     else
         for (i = 0; i < size; i++) {
-            if (next)
-                next = (last + get_se_golomb(gb)) & 0xff;
+            if (next) {
+                int v = get_se_golomb(gb);
+                if (v < -128 || v > 127) {
+                    av_log(NULL, AV_LOG_ERROR, "delta scale %d is invalid\n", v);
+                    v = -last;
+                }
+                next = (last + v) & 0xff;
+            }
             if (!i && !next) { /* matrix not written, we use the preset one */
                 memcpy(factors, jvt_list, size * sizeof(uint8_t));
                 break;
@@ -468,7 +474,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
 
     sps->frame_mbs_only_flag = get_bits1(gb);
 
-    if (sps->mb_height >= INT_MAX / 2) {
+    if (sps->mb_height >= INT_MAX / 2U) {
         av_log(avctx, AV_LOG_ERROR, "height overflow\n");
         goto fail;
     }
@@ -822,6 +828,11 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     pps->init_qp                              = get_se_golomb(gb) + 26 + qp_bd_offset;
     pps->init_qs                              = get_se_golomb(gb) + 26 + qp_bd_offset;
     pps->chroma_qp_index_offset[0]            = get_se_golomb(gb);
+    if (pps->chroma_qp_index_offset[0] < -12 || pps->chroma_qp_index_offset[0] > 12) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     pps->deblocking_filter_parameters_present = get_bits1(gb);
     pps->constrained_intra_pred               = get_bits1(gb);
     pps->redundant_pic_cnt_present            = get_bits1(gb);
@@ -839,6 +850,10 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
                                 pps->scaling_matrix4, pps->scaling_matrix8);
         // second_chroma_qp_index_offset
         pps->chroma_qp_index_offset[1] = get_se_golomb(gb);
+        if (pps->chroma_qp_index_offset[1] < -12 || pps->chroma_qp_index_offset[1] > 12) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     } else {
         pps->chroma_qp_index_offset[1] = pps->chroma_qp_index_offset[0];
     }

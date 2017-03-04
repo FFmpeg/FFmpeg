@@ -283,12 +283,12 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         ctx->sprite_shift[1]   = 0;
         break;
     case 2:
-        s->sprite_offset[0][0] = (sprite_ref[0][0] << (alpha + rho)) +
+        s->sprite_offset[0][0] = (sprite_ref[0][0] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                  (-vop_ref[0][0]) +
                                  (r * sprite_ref[0][1] - virtual_ref[0][1]) *
                                  (-vop_ref[0][1]) + (1 << (alpha + rho - 1));
-        s->sprite_offset[0][1] = (sprite_ref[0][1] << (alpha + rho)) +
+        s->sprite_offset[0][1] = (sprite_ref[0][1] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][1] + virtual_ref[0][1]) *
                                  (-vop_ref[0][0]) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
@@ -367,17 +367,41 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     } else {
         int shift_y = 16 - ctx->sprite_shift[0];
         int shift_c = 16 - ctx->sprite_shift[1];
+
+        if (shift_c < 0 || shift_y < 0 ||
+            FFABS(s->sprite_offset[0][0]) >= INT_MAX >> shift_y  ||
+            FFABS(s->sprite_offset[1][0]) >= INT_MAX >> shift_c  ||
+            FFABS(s->sprite_offset[0][1]) >= INT_MAX >> shift_y  ||
+            FFABS(s->sprite_offset[1][1]) >= INT_MAX >> shift_c
+        ) {
+            avpriv_request_sample(s->avctx, "Too large sprite shift or offset");
+            goto overflow;
+        }
+
         for (i = 0; i < 2; i++) {
             s->sprite_offset[0][i] *= 1 << shift_y;
             s->sprite_offset[1][i] *= 1 << shift_c;
             s->sprite_delta[0][i]  *= 1 << shift_y;
             s->sprite_delta[1][i]  *= 1 << shift_y;
             ctx->sprite_shift[i]     = 16;
+
+        }
+        for (i = 0; i < 2; i++) {
+            if (llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
+                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
+                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL) + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX) {
+                avpriv_request_sample(s->avctx, "Overflow on sprite points");
+                goto overflow;
+            }
         }
         s->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
 
     return 0;
+overflow:
+    memset(s->sprite_offset, 0, sizeof(s->sprite_offset));
+    memset(s->sprite_delta, 0, sizeof(s->sprite_delta));
+    return AVERROR_PATCHWELCOME;
 }
 
 static int decode_new_pred(Mpeg4DecContext *ctx, GetBitContext *gb) {
@@ -504,7 +528,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
         if (ctx->divx_version == 500 && ctx->divx_build == 413)
             sum = s->sprite_offset[0][n] / (1 << (a - s->quarter_sample));
         else
-            sum = RSHIFT(s->sprite_offset[0][n] << s->quarter_sample, a);
+            sum = RSHIFT(s->sprite_offset[0][n] * (1 << s->quarter_sample), a);
     } else {
         dx    = s->sprite_delta[n][0];
         dy    = s->sprite_delta[n][1];

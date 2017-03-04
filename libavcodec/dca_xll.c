@@ -652,7 +652,7 @@ static void chs_filter_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int64_t err = 0;
                 for (k = 0; k < order; k++)
                     err += (int64_t)buf[j + k] * coeff[order - k - 1];
-                buf[j + k] -= clip23(norm16(err));
+                buf[j + k] -= (SUINT)clip23(norm16(err));
             }
         } else {
             // Inverse fixed coefficient prediction
@@ -717,10 +717,10 @@ static void chs_assemble_msbs_lsbs(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int32_t *lsb = b->lsb_sample_buffer[ch];
                 int adj = b->bit_width_adjust[ch];
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift) + (lsb[n] << adj);
+                    msb[n] = msb[n] * (SUINT)(1 << shift) + (lsb[n] << adj);
             } else {
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift);
+                    msb[n] = msb[n] * (SUINT)(1 << shift);
             }
         }
     }
@@ -1308,7 +1308,7 @@ static int combine_residual_frame(DCAXllDecoder *s, DCAXllChSet *c)
             // Undo embedded core downmix pre-scaling
             int scale_inv = o->dmix_scale_inv[c->hier_ofs + ch];
             for (n = 0; n < nsamples; n++)
-                dst[n] += clip23((mul16(src[n], scale_inv) + round) >> shift);
+                dst[n] += (SUINT)clip23((mul16(src[n], scale_inv) + round) >> shift);
         } else {
             // No downmix scaling
             for (n = 0; n < nsamples; n++)
@@ -1446,11 +1446,11 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
         if (frame->format == AV_SAMPLE_FMT_S16P) {
             int16_t *plane = (int16_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = av_clip_int16(samples[k] * (1 << shift));
+                plane[k] = av_clip_int16(samples[k] * (SUINT)(1 << shift));
         } else {
             int32_t *plane = (int32_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = clip23(samples[k] * (1 << shift)) * (1 << 8);
+                plane[k] = clip23(samples[k] * (SUINT)(1 << shift)) * (1 << 8);
         }
     }
 

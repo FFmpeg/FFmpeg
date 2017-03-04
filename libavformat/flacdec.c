@@ -233,7 +233,14 @@ static int flac_probe(AVProbeData *p)
         return raw_flac_probe(p);
     if (p->buf_size < 4 || memcmp(p->buf, "fLaC", 4))
         return 0;
-    return AVPROBE_SCORE_EXTENSION;
+    if (   p->buf[4] & 0x7f != FLAC_METADATA_TYPE_STREAMINFO
+        || AV_RB24(p->buf + 5) != FLAC_STREAMINFO_SIZE
+        || AV_RB16(p->buf + 8) < 16
+        || AV_RB16(p->buf + 8) > AV_RB16(p->buf + 10)
+        || !(AV_RB24(p->buf + 18) >> 4)
+        || AV_RB24(p->buf + 18) >> 4 > 655350)
+        return AVPROBE_SCORE_EXTENSION;
+    return AVPROBE_SCORE_MAX;
 }
 
 static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,

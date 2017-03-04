@@ -268,6 +268,13 @@ static int parse_interval(Interval *interval, int interval_count,
         char *start, *end;
 
         start = av_strtok(intervalstr, "-", &end);
+        if (!start) {
+            ret = AVERROR(EINVAL);
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Invalid interval specification '%s' in interval #%d\n",
+                   intervalstr, interval_count);
+            goto end;
+        }
         if ((ret = av_parse_time(&interval->start_ts, start, 1)) < 0) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "Invalid start time specification '%s' in interval #%d\n",

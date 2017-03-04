@@ -179,6 +179,9 @@ clean::
 	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
+	$(RM) $(CLEANSUFFIXES:%=compat/%)
 	$(RM) -r coverage-html
 	$(RM) -rf coverage.info coverage.info.in lcov
 

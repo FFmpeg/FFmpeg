@@ -120,6 +120,7 @@ static int iec61883_callback(unsigned char *data, int length,
 
     packet->buf = av_malloc(length);
     if (!packet->buf) {
+        av_free(packet);
         ret = -1;
         goto exit;
     }

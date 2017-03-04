@@ -277,16 +277,24 @@ static int request_frame(AVFilterLink *outlink)
     AVFrame *samplesref;
     int i, j;
     int64_t t = av_rescale(eval->n, AV_TIME_BASE, eval->sample_rate);
+    int nb_samples;
 
     if (eval->duration >= 0 && t >= eval->duration)
         return AVERROR_EOF;
 
-    samplesref = ff_get_audio_buffer(outlink, eval->nb_samples);
+    if (eval->duration >= 0) {
+        nb_samples = FFMIN(eval->nb_samples, av_rescale(eval->duration, eval->sample_rate, AV_TIME_BASE) - eval->pts);
+        if (!nb_samples)
+            return AVERROR_EOF;
+    } else {
+        nb_samples = eval->nb_samples;
+    }
+    samplesref = ff_get_audio_buffer(outlink, nb_samples);
     if (!samplesref)
         return AVERROR(ENOMEM);
 
     /* evaluate expression for each single sample and for each channel */
-    for (i = 0; i < eval->nb_samples; i++, eval->n++) {
+    for (i = 0; i < nb_samples; i++, eval->n++) {
         eval->var_values[VAR_N] = eval->n;
         eval->var_values[VAR_T] = eval->var_values[VAR_N] * (double)1/eval->sample_rate;
 
@@ -298,7 +306,7 @@ static int request_frame(AVFilterLink *outlink)
 
     samplesref->pts = eval->pts;
     samplesref->sample_rate = eval->sample_rate;
-    eval->pts += eval->nb_samples;
+    eval->pts += nb_samples;
 
     return ff_filter_frame(outlink, samplesref);
 }

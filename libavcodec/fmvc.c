@@ -53,7 +53,7 @@ typedef struct FMVCContext {
 
 static int decode_type2(GetByteContext *gb, PutByteContext *pb)
 {
-    unsigned repeat = 0, first = 1, opcode;
+    unsigned repeat = 0, first = 1, opcode = 0;
     int i, len, pos;
 
     while (bytestream2_get_bytes_left(gb) > 0) {
@@ -288,7 +288,7 @@ static int decode_type2(GetByteContext *gb, PutByteContext *pb)
 
 static int decode_type1(GetByteContext *gb, PutByteContext *pb)
 {
-    unsigned opcode, len;
+    unsigned opcode = 0, len;
     int high = 0;
     int i, pos;
 

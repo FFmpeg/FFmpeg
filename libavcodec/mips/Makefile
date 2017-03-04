@@ -36,7 +36,7 @@ OBJS-$(CONFIG_MPEGVIDEO)                  += mips/mpegvideo_init_mips.o
 OBJS-$(CONFIG_MPEGVIDEOENC)               += mips/mpegvideoencdsp_init_mips.o
 OBJS-$(CONFIG_ME_CMP)                     += mips/me_cmp_init_mips.o
 OBJS-$(CONFIG_MPEG4_DECODER)              += mips/xvididct_init_mips.o
-OBJS-$(CONFIG_VC1_DECODER)                += mips/vc1dsp_init_mips.o
+OBJS-$(CONFIG_VC1DSP)                     += mips/vc1dsp_init_mips.o
 OBJS-$(CONFIG_WMV2DSP)                    += mips/wmv2dsp_init_mips.o
 MSA-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_msa.o            \
                                              mips/hevc_mc_uni_msa.o        \

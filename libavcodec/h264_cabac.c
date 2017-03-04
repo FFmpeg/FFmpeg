@@ -1743,7 +1743,7 @@ decode_cabac_residual_internal(const H264Context *h, H264SliceContext *sl,
                 while( j-- ) { \
                     coeff_abs += coeff_abs + get_cabac_bypass( CC ); \
                 } \
-                coeff_abs+= 14; \
+                coeff_abs+= 14U; \
             } \
 \
             if( is_dc ) { \

@@ -157,6 +157,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(CDXL,              cdxl);
     REGISTER_DECODER(CFHD,              cfhd);
     REGISTER_ENCDEC (CINEPAK,           cinepak);
+    REGISTER_DECODER(CLEARVIDEO,        clearvideo);
     REGISTER_ENCDEC (CLJR,              cljr);
     REGISTER_DECODER(CLLC,              cllc);
     REGISTER_ENCDEC (COMFORTNOISE,      comfortnoise);
@@ -307,6 +308,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(RV40,              rv40);
     REGISTER_ENCDEC (S302M,             s302m);
     REGISTER_DECODER(SANM,              sanm);
+    REGISTER_DECODER(SCPR,              scpr);
     REGISTER_DECODER(SCREENPRESSO,      screenpresso);
     REGISTER_DECODER(SDX2_DPCM,         sdx2_dpcm);
     REGISTER_ENCDEC (SGI,               sgi);

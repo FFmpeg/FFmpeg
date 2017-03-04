@@ -457,9 +457,9 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
-static void imdct12(INTFLOAT *out, INTFLOAT *in)
+static void imdct12(INTFLOAT *out, SUINTFLOAT *in)
 {
-    INTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
+    SUINTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
 
     in0  = in[0*3];
     in1  = in[1*3] + in[0*3];
@@ -1182,9 +1182,9 @@ found2:
     } while (0)
 #else
 #define AA(j) do {                                              \
-        int tmp0 = ptr[-1-j];                                   \
-        int tmp1 = ptr[   j];                                   \
-        int tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
+        SUINT tmp0 = ptr[-1-j];                                   \
+        SUINT tmp1 = ptr[   j];                                   \
+        SUINT tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
         ptr[-1-j] = 4 * (tmp2 - MULH(tmp1, csa_table[j][2]));   \
         ptr[   j] = 4 * (tmp2 + MULH(tmp0, csa_table[j][3]));   \
     } while (0)
@@ -1665,7 +1665,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     header = AV_RB32(buf);
     if (header>>8 == AV_RB32("TAG")>>8) {
         av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
-        return buf_size;
+        return buf_size + skipped;
     }
     ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
     if (ret < 0) {

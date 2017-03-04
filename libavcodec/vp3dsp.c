@@ -41,7 +41,7 @@
 #define xC6S2 25080
 #define xC7S1 12785
 
-#define M(a, b) (((a) * (b)) >> 16)
+#define M(a, b) ((int)((SUINT)(a) * (b)) >> 16)
 
 static av_always_inline void idct(uint8_t *dst, int stride,
                                   int16_t *input, int type)

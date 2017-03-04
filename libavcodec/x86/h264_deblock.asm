@@ -1059,6 +1059,202 @@ ff_chroma_intra_body_mmxext:
     paddb  m2, m6
     ret
 
+%macro LOAD_8_ROWS 8
+    movd m0, %1
+    movd m1, %2
+    movd m2, %3
+    movd m3, %4
+    movd m4, %5
+    movd m5, %6
+    movd m6, %7
+    movd m7, %8
+%endmacro
+
+%macro STORE_8_ROWS 8
+    movd %1, m0
+    movd %2, m1
+    movd %3, m2
+    movd %4, m3
+    movd %5, m4
+    movd %6, m5
+    movd %7, m6
+    movd %8, m7
+%endmacro
+
+%macro TRANSPOSE_8x4B_XMM 0
+    punpcklbw m0, m1
+    punpcklbw m2, m3
+    punpcklbw m4, m5
+    punpcklbw m6, m7
+    punpcklwd m0, m2
+    punpcklwd m4, m6
+    punpckhdq m2, m0, m4
+    punpckldq m0, m4
+    MOVHL m1, m0
+    MOVHL m3, m2
+%endmacro
+
+%macro TRANSPOSE_4x8B_XMM 0
+    punpcklbw m0, m1
+    punpcklbw m2, m3
+    punpckhwd m4, m0, m2
+    punpcklwd m0, m2
+    MOVHL m6, m4
+    MOVHL m2, m0
+    pshufd m1, m0, 1
+    pshufd m3, m2, 1
+    pshufd m5, m4, 1
+    pshufd m7, m6, 1
+%endmacro
+
+%macro CHROMA_INTER_BODY_XMM 1
+    LOAD_MASK alpha_d, beta_d
+    movd m6, [tc0_q]
+    %rep %1
+        punpcklbw m6, m6
+    %endrep
+    pand m7, m6
+    DEBLOCK_P0_Q0
+%endmacro
+
+%macro CHROMA_INTRA_BODY_XMM 0
+    LOAD_MASK alpha_d, beta_d
+    mova    m5,  m1
+    mova    m6,  m2
+    pxor    m4,  m1, m3
+    pand    m4, [pb_1]
+    pavgb   m1,  m3
+    psubusb m1,  m4
+    pavgb   m1,  m0
+    pxor    m4,  m2, m0
+    pand    m4, [pb_1]
+    pavgb   m2,  m0
+    psubusb m2,  m4
+    pavgb   m2,  m3
+    psubb   m1,  m5
+    psubb   m2,  m6
+    pand    m1,  m7
+    pand    m2,  m7
+    paddb   m1,  m5
+    paddb   m2,  m6
+%endmacro
+
+%macro CHROMA_V_START_XMM 1
+    movsxdifnidn stride_q, stride_d
+    dec alpha_d
+    dec beta_d
+    mov %1, pix_q
+    sub %1, stride_q
+    sub %1, stride_q
+%endmacro
+
+%macro CHROMA_H_START_XMM 2
+    movsxdifnidn stride_q, stride_d
+    dec alpha_d
+    dec beta_d
+    lea %2, [3*stride_q]
+    mov %1,  pix_q
+    add %1,  %2
+%endmacro
+
+%macro DEBLOCK_CHROMA_XMM 1
+
+INIT_XMM %1
+
+cglobal deblock_v_chroma_8, 5, 6, 8, pix_, stride_, alpha_, beta_, tc0_
+    CHROMA_V_START_XMM r5
+    movq m0, [r5]
+    movq m1, [r5 + stride_q]
+    movq m2, [pix_q]
+    movq m3, [pix_q + stride_q]
+    CHROMA_INTER_BODY_XMM 1
+    movq [r5 + stride_q], m1
+    movq [pix_q], m2
+RET
+
+cglobal deblock_h_chroma_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
+    CHROMA_H_START_XMM r5, r6
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+    TRANSPOSE_8x4B_XMM
+    movq [rsp], m0
+    movq [rsp + 8], m3
+    CHROMA_INTER_BODY_XMM 1
+    movq m0, [rsp]
+    movq m3, [rsp + 8]
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+RET
+
+cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_,
+    CHROMA_H_START_XMM r5, r6
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+    TRANSPOSE_8x4B_XMM
+    movq [rsp], m0
+    movq [rsp + 8], m3
+    CHROMA_INTER_BODY_XMM 2
+    movq m0, [rsp]
+    movq m3, [rsp + 8]
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+
+    lea pix_q, [pix_q + 8*stride_q]
+    lea r5,    [r5    + 8*stride_q]
+    add tc0_q,  2
+
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+    TRANSPOSE_8x4B_XMM
+    movq [rsp], m0
+    movq [rsp + 8], m3
+    CHROMA_INTER_BODY_XMM 2
+    movq m0, [rsp]
+    movq m3, [rsp + 8]
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
+RET
+
+cglobal deblock_v_chroma_intra_8, 4, 5, 8, pix_, stride_, alpha_, beta_
+    CHROMA_V_START_XMM r4
+    movq m0, [r4]
+    movq m1, [r4 + stride_q]
+    movq m2, [pix_q]
+    movq m3, [pix_q + stride_q]
+    CHROMA_INTRA_BODY_XMM
+    movq [r4 + stride_q], m1
+    movq [pix_q], m2
+RET
+
+cglobal deblock_h_chroma_intra_8, 4, 6, 8, pix_, stride_, alpha_, beta_
+    CHROMA_H_START_XMM r4, r5
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+    TRANSPOSE_8x4B_XMM
+    CHROMA_INTRA_BODY_XMM
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+RET
+
+cglobal deblock_h_chroma422_intra_8, 4, 6, 8, pix_, stride_, alpha_, beta_
+    CHROMA_H_START_XMM r4, r5
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+    TRANSPOSE_8x4B_XMM
+    CHROMA_INTRA_BODY_XMM
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+
+    lea pix_q, [pix_q + 8*stride_q]
+    lea r4,    [r4    + 8*stride_q]
+
+    LOAD_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+    TRANSPOSE_8x4B_XMM
+    CHROMA_INTRA_BODY_XMM
+    TRANSPOSE_4x8B_XMM
+    STORE_8_ROWS PASS8ROWS(pix_q - 2, r4 - 2, stride_q, r5)
+RET
+
+%endmacro ; DEBLOCK_CHROMA_XMM
+
+DEBLOCK_CHROMA_XMM sse2
+DEBLOCK_CHROMA_XMM avx
+
 ;-----------------------------------------------------------------------------
 ; void ff_h264_loop_filter_strength(int16_t bs[2][4][4], uint8_t nnz[40],
 ;                                   int8_t ref[2][40], int16_t mv[2][40][2],

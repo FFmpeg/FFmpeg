@@ -27,6 +27,7 @@
 
 #include <limits.h>
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
@@ -109,12 +110,16 @@ typedef struct ShortenContext {
     int32_t lpcqoffset;
     int got_header;
     int got_quit_command;
+    int swap;
+    BswapDSPContext bdsp;
 } ShortenContext;
 
 static av_cold int shorten_decode_init(AVCodecContext *avctx)
 {
     ShortenContext *s = avctx->priv_data;
     s->avctx          = avctx;
+
+    ff_bswapdsp_init(&s->bdsp);
 
     return 0;
 }
@@ -202,6 +207,7 @@ static int init_offset(ShortenContext *s)
 static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
                               int header_size)
 {
+    ShortenContext *s = avctx->priv_data;
     int len, bps, exp;
     GetByteContext gb;
     uint64_t val;
@@ -217,7 +223,8 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
     bytestream2_skip(&gb, 4); /* chunk size */
 
     tag = bytestream2_get_le32(&gb);
-    if (tag != MKTAG('A', 'I', 'F', 'F')) {
+    if (tag != MKTAG('A', 'I', 'F', 'F') &&
+        tag != MKTAG('A', 'I', 'F', 'C')) {
         av_log(avctx, AV_LOG_ERROR, "missing AIFF tag\n");
         return AVERROR_INVALIDDATA;
     }
@@ -240,6 +247,8 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
     bytestream2_skip(&gb, 6);
     bps = bytestream2_get_be16(&gb);
     avctx->bits_per_coded_sample = bps;
+
+    s->swap = tag == MKTAG('A', 'I', 'F', 'C');
 
     if (bps != 16 && bps != 8) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
@@ -721,6 +730,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                             break;
                         }
                     }
+                    if (s->swap && s->internal_ftype != TYPE_U8)
+                        s->bdsp.bswap16_buf(((uint16_t **)frame->extended_data)[chan],
+                                            ((uint16_t **)frame->extended_data)[chan],
+                                            s->blocksize);
+
                 }
 
                 *got_frame_ptr = 1;

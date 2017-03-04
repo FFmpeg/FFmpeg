@@ -668,11 +668,11 @@ static void hls_free_segments(HLSSegment *p)
 static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
 {
     const char *proto = avio_find_protocol_name(s->filename);
-    int http_base_proto = !av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https");
+    int http_base_proto = proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
 
     if (c->method) {
         av_dict_set(options, "method", c->method, 0);
-    } else if (proto && http_base_proto) {
+    } else if (http_base_proto) {
         av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
         av_dict_set(options, "method", "PUT", 0);
     }
@@ -689,6 +689,17 @@ static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version
     avio_printf(out, "#EXT-X-TARGETDURATION:%d\n", target_duration);
     avio_printf(out, "#EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
     av_log(hls, AV_LOG_VERBOSE, "EXT-X-MEDIA-SEQUENCE:%"PRId64"\n", sequence);
+}
+
+static void hls_rename_temp_file(AVFormatContext *s, AVFormatContext *oc)
+{
+    size_t len = strlen(oc->filename);
+    char final_filename[sizeof(oc->filename)];
+
+    av_strlcpy(final_filename, oc->filename, len);
+    final_filename[len-4] = '\0';
+    ff_rename(oc->filename, final_filename, s);
+    oc->filename[len-4] = '\0';
 }
 
 static int hls_window(AVFormatContext *s, int last)
@@ -832,15 +843,6 @@ static int hls_start(AVFormatContext *s)
     AVDictionary *options = NULL;
     char *filename, iv_string[KEYSIZE*2 + 1];
     int err = 0;
-
-    if ((c->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
-        size_t len = strlen(oc->filename);
-        char final_filename[sizeof(oc->filename)];
-        av_strlcpy(final_filename, oc->filename, len);
-        final_filename[len-4] = '\0';
-        ff_rename(oc->filename, final_filename, s);
-        oc->filename[len-4] = '\0';
-    }
 
     if (c->flags & HLS_SINGLE_FILE) {
         av_strlcpy(oc->filename, c->basename,
@@ -1025,7 +1027,8 @@ static const char * get_default_pattern_localtime_fmt(void)
     struct tm *p, tmbuf;
     p = localtime_r(&t, &tmbuf);
     // no %s support when strftime returned error or left format string unchanged
-    return (!strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
+    // also no %s support on MSVC, which invokes the invalid parameter handler on unsupported format strings, instead of returning an error
+    return (HAVE_LIBC_MSVCRT || !strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
 }
 
 static int hls_write_header(AVFormatContext *s)
@@ -1325,6 +1328,18 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         new_start_pos = avio_tell(hls->avf->pb);
         hls->size = new_start_pos - hls->start_pos;
+
+        ff_format_io_close(s, &oc->pb);
+        if (hls->vtt_avf) {
+            ff_format_io_close(s, &hls->vtt_avf->pb);
+        }
+        if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
+            if (!(hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size <= 0))
+                if (hls->avf->oformat->priv_class && hls->avf->priv_data)
+                    av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
+            hls_rename_temp_file(s, oc);
+        }
+
         ret = hls_append_segment(s, hls, hls->duration, hls->start_pos, hls->size);
         hls->start_pos = new_start_pos;
         if (ret < 0) {
@@ -1336,21 +1351,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->duration = 0;
 
         if (hls->flags & HLS_SINGLE_FILE) {
-            if (hls->avf->oformat->priv_class && hls->avf->priv_data)
-                av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
             hls->number++;
         } else if (hls->max_seg_size > 0) {
-            if (hls->avf->oformat->priv_class && hls->avf->priv_data)
-                av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
             if (hls->start_pos >= hls->max_seg_size) {
                 hls->sequence++;
-                ff_format_io_close(s, &oc->pb);
                 if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
                      strlen(hls->current_segment_final_filename_fmt)) {
                     ff_rename(old_filename, hls->avf->filename, hls);
                 }
-                if (hls->vtt_avf)
-                    ff_format_io_close(s, &hls->vtt_avf->pb);
                 ret = hls_start(s);
                 hls->start_pos = 0;
                 /* When split segment by byte, the duration is short than hls_time,
@@ -1359,13 +1367,10 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             hls->number++;
         } else {
-            ff_format_io_close(s, &oc->pb);
             if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
                 strlen(hls->current_segment_final_filename_fmt)) {
                 ff_rename(old_filename, hls->avf->filename, hls);
             }
-            if (hls->vtt_avf)
-                ff_format_io_close(s, &hls->vtt_avf->pb);
 
             ret = hls_start(s);
         }
@@ -1402,6 +1407,11 @@ static int hls_write_trailer(struct AVFormatContext *s)
     if (oc->pb) {
         hls->size = avio_tell(hls->avf->pb) - hls->start_pos;
         ff_format_io_close(s, &oc->pb);
+
+        if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
+            hls_rename_temp_file(s, oc);
+        }
+
         /* after av_write_trailer, then duration + 1 duration per packet */
         hls_append_segment(s, hls, hls->duration + hls->dpp, hls->start_pos, hls->size);
     }
@@ -1409,15 +1419,6 @@ static int hls_write_trailer(struct AVFormatContext *s)
     if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
          strlen(hls->current_segment_final_filename_fmt)) {
          ff_rename(old_filename, hls->avf->filename, hls);
-    }
-
-    if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0] != 0) {
-        size_t len = strlen(oc->filename);
-        char final_filename[sizeof(oc->filename)];
-        av_strlcpy(final_filename, oc->filename, len);
-        final_filename[len-4] = '\0';
-        ff_rename(oc->filename, final_filename, s);
-        oc->filename[len-4] = '\0';
     }
 
     if (vtt_oc) {

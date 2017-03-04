@@ -277,7 +277,7 @@ static inline int celt_compute_qn(int N, int b, int offset, int pulse_cap,
 }
 
 /* Convert the quantized vector to an index */
-static inline uint32_t celt_icwrsi(uint32_t N, const int *y)
+static inline uint32_t celt_icwrsi(uint32_t N, uint32_t K, const int *y)
 {
     int i, idx = 0, sum = 0;
     for (i = N - 1; i >= 0; i--) {
@@ -376,7 +376,7 @@ static inline uint64_t celt_cwrsi(uint32_t N, uint32_t K, uint32_t i, int *y)
 
 static inline void celt_encode_pulses(OpusRangeCoder *rc, int *y, uint32_t N, uint32_t K)
 {
-    ff_opus_rc_enc_uint(rc, celt_icwrsi(N, y), CELT_PVQ_V(N, K));
+    ff_opus_rc_enc_uint(rc, celt_icwrsi(N, K, y), CELT_PVQ_V(N, K));
 }
 
 static inline float celt_decode_pulses(OpusRangeCoder *rc, int *y, uint32_t N, uint32_t K)
@@ -397,7 +397,7 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
     for (i = 0; i < N; i++)
         res += FFABS(X[i]);
 
-    res = K/res;
+    res = K/(res + FLT_EPSILON);
 
     for (i = 0; i < N; i++) {
         y[i] = lrintf(res*X[i]);
@@ -412,10 +412,14 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
         y_norm += 1.0f;
 
         for (i = 0; i < N; i++) {
+            /* If the sum has been overshot and the best place has 0 pulses allocated
+             * to it, attempting to decrease it further will actually increase the
+             * sum. Prevent this by disregarding any 0 positions when decrementing. */
+            const int ca = 1 ^ ((y[i] == 0) & (phase < 0));
             float xy_new = xy_norm + 1*phase*FFABS(X[i]);
             float y_new  = y_norm  + 2*phase*FFABS(y[i]);
             xy_new = xy_new * xy_new;
-            if ((max_den*xy_new) > (y_new*max_num)) {
+            if (ca && (max_den*xy_new) > (y_new*max_num)) {
                 max_den = y_new;
                 max_num = xy_new;
                 max_idx = i;

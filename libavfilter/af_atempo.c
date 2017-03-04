@@ -697,11 +697,11 @@ static int yae_adjust_position(ATempoContext *atempo)
     AudioFragment       *frag = yae_curr_frag(atempo);
 
     const double prev_output_position =
-        (double)(prev->position[1] - atempo->origin[1] + atempo->window / 2);
+        (double)(prev->position[1] - atempo->origin[1] + atempo->window / 2) *
+        atempo->tempo;
 
     const double ideal_output_position =
-        (double)(prev->position[0] - atempo->origin[0] + atempo->window / 2) /
-        atempo->tempo;
+        (double)(prev->position[0] - atempo->origin[0] + atempo->window / 2);
 
     const int drift = (int)(prev_output_position - ideal_output_position);
 

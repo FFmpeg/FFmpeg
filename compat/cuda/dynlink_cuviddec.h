@@ -45,6 +45,12 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#if defined(__CYGWIN__)
+typedef unsigned int tcu_ulong;
+#else
+typedef unsigned long tcu_ulong;
+#endif
+
 typedef void *CUvideodecoder;
 typedef struct _CUcontextlock_st *CUvideoctxlock;
 
@@ -125,14 +131,14 @@ typedef enum cudaVideoCreateFlags_enum {
  */
 typedef struct _CUVIDDECODECREATEINFO
 {
-    unsigned long ulWidth;              /**< Coded Sequence Width */
-    unsigned long ulHeight;             /**< Coded Sequence Height */
-    unsigned long ulNumDecodeSurfaces;  /**< Maximum number of internal decode surfaces */
+    tcu_ulong ulWidth;                  /**< Coded Sequence Width */
+    tcu_ulong ulHeight;                 /**< Coded Sequence Height */
+    tcu_ulong ulNumDecodeSurfaces;      /**< Maximum number of internal decode surfaces */
     cudaVideoCodec CodecType;           /**< cudaVideoCodec_XXX */
     cudaVideoChromaFormat ChromaFormat; /**< cudaVideoChromaFormat_XXX (only 4:2:0 is currently supported) */
-    unsigned long ulCreationFlags;      /**< Decoder creation flags (cudaVideoCreateFlags_XXX) */
-    unsigned long bitDepthMinus8;
-    unsigned long Reserved1[4];         /**< Reserved for future use - set to zero */
+    tcu_ulong ulCreationFlags;          /**< Decoder creation flags (cudaVideoCreateFlags_XXX) */
+    tcu_ulong bitDepthMinus8;
+    tcu_ulong Reserved1[4];             /**< Reserved for future use - set to zero */
     /**
     * area of the frame that should be displayed
     */
@@ -145,9 +151,9 @@ typedef struct _CUVIDDECODECREATEINFO
 
     cudaVideoSurfaceFormat OutputFormat;       /**< cudaVideoSurfaceFormat_XXX */
     cudaVideoDeinterlaceMode DeinterlaceMode;  /**< cudaVideoDeinterlaceMode_XXX */
-    unsigned long ulTargetWidth;               /**< Post-processed Output Width (Should be aligned to 2) */
-    unsigned long ulTargetHeight;              /**< Post-processed Output Height (Should be aligbed to 2) */
-    unsigned long ulNumOutputSurfaces;         /**< Maximum number of output surfaces simultaneously mapped */
+    tcu_ulong ulTargetWidth;                   /**< Post-processed Output Width (Should be aligned to 2) */
+    tcu_ulong ulTargetHeight;                  /**< Post-processed Output Height (Should be aligbed to 2) */
+    tcu_ulong ulNumOutputSurfaces;             /**< Maximum number of output surfaces simultaneously mapped */
     CUvideoctxlock vidLock;                    /**< If non-NULL, context lock used for synchronizing ownership of the cuda context */
     /**
     * target rectangle in the output frame (for aspect ratio conversion)
@@ -159,7 +165,7 @@ typedef struct _CUVIDDECODECREATEINFO
         short right;
         short bottom;
     } target_rect;
-    unsigned long Reserved2[5];                /**< Reserved for future use - set to zero */
+    tcu_ulong Reserved2[5];                    /**< Reserved for future use - set to zero */
 } CUVIDDECODECREATEINFO;
 
 /*!

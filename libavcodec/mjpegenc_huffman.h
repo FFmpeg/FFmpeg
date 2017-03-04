@@ -27,6 +27,8 @@
 #ifndef AVCODEC_MJPEGENC_HUFFMAN_H
 #define AVCODEC_MJPEGENC_HUFFMAN_H
 
+#include <stdint.h>
+
 typedef struct MJpegEncHuffmanContext {
     int val_count[256];
 } MJpegEncHuffmanContext;
