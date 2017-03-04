@@ -92,6 +92,11 @@ typedef struct HWContextType {
                                const AVFrame *src, int flags);
     int              (*map_from)(AVHWFramesContext *ctx, AVFrame *dst,
                                  const AVFrame *src, int flags);
+
+    int              (*frames_derive_to)(AVHWFramesContext *dst_ctx,
+                                         AVHWFramesContext *src_ctx, int flags);
+    int              (*frames_derive_from)(AVHWFramesContext *dst_ctx,
+                                           AVHWFramesContext *src_ctx, int flags);
 } HWContextType;
 
 struct AVHWDeviceInternal {

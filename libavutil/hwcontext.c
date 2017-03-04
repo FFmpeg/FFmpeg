@@ -816,7 +816,14 @@ int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
         goto fail;
     }
 
-    ret = av_hwframe_ctx_init(dst_ref);
+    ret = AVERROR(ENOSYS);
+    if (src->internal->hw_type->frames_derive_from)
+        ret = src->internal->hw_type->frames_derive_from(dst, src, flags);
+    if (ret == AVERROR(ENOSYS) &&
+        dst->internal->hw_type->frames_derive_to)
+        ret = dst->internal->hw_type->frames_derive_to(dst, src, flags);
+    if (ret == AVERROR(ENOSYS))
+        ret = 0;
     if (ret)
         goto fail;
 
