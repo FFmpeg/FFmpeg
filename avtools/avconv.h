@@ -515,8 +515,6 @@ int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
 int qsv_init(AVCodecContext *s);
 int qsv_transcode_init(OutputStream *ost);
-int vaapi_decode_init(AVCodecContext *avctx);
-int vaapi_device_init(const char *device);
 
 HWDevice *hw_device_get_by_name(const char *name);
 int hw_device_init_from_string(const char *arg, HWDevice **dev);

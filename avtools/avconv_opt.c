@@ -73,8 +73,8 @@ const HWAccel hwaccels[] = {
       AV_HWDEVICE_TYPE_NONE },
 #endif
 #if CONFIG_VAAPI
-    { "vaapi", vaapi_decode_init, HWACCEL_VAAPI, AV_PIX_FMT_VAAPI,
-      AV_HWDEVICE_TYPE_NONE },
+    { "vaapi", hwaccel_decode_init, HWACCEL_VAAPI, AV_PIX_FMT_VAAPI,
+      AV_HWDEVICE_TYPE_VAAPI },
 #endif
     { 0 },
 };
@@ -334,10 +334,22 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
 #if CONFIG_VAAPI
 static int opt_vaapi_device(void *optctx, const char *opt, const char *arg)
 {
+    HWDevice *dev;
+    const char *prefix = "vaapi:";
+    char *tmp;
     int err;
-    err = vaapi_device_init(arg);
+    tmp = av_malloc(strlen(prefix) + strlen(arg) + 1);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    strcpy(tmp, prefix);
+    strcat(tmp, arg);
+    err = hw_device_init_from_string(tmp, &dev);
+    av_free(tmp);
     if (err < 0)
-        exit_program(1);
+        return err;
+    hw_device_ctx = av_buffer_ref(dev->device_ref);
+    if (!hw_device_ctx)
+        return AVERROR(ENOMEM);
     return 0;
 }
 #endif
