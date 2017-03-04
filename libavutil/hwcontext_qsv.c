@@ -577,19 +577,102 @@ static int qsv_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
+static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
+                                  AVHWFramesContext *src_ctx, int flags)
+{
+    AVQSVFramesContext *src_hwctx = src_ctx->hwctx;
+    int i;
+
+    switch (dst_ctx->device_ctx->type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        {
+            AVVAAPIFramesContext *dst_hwctx = dst_ctx->hwctx;
+            dst_hwctx->surface_ids = av_mallocz_array(src_hwctx->nb_surfaces,
+                                                      sizeof(*dst_hwctx->surface_ids));
+            if (!dst_hwctx->surface_ids)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < src_hwctx->nb_surfaces; i++)
+                dst_hwctx->surface_ids[i] =
+                    *(VASurfaceID*)src_hwctx->surfaces[i].Data.MemId;
+            dst_hwctx->nb_surfaces = src_hwctx->nb_surfaces;
+        }
+        break;
+#endif
+#if CONFIG_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        {
+            AVDXVA2FramesContext *dst_hwctx = dst_ctx->hwctx;
+            dst_hwctx->surfaces = av_mallocz_array(src_hwctx->nb_surfaces,
+                                                   sizeof(*dst_hwctx->surfaces));
+            if (!dst_hwctx->surfaces)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < src_hwctx->nb_surfaces; i++)
+                dst_hwctx->surfaces[i] =
+                    (IDirect3DSurface9*)src_hwctx->surfaces[i].Data.MemId;
+            dst_hwctx->nb_surfaces = src_hwctx->nb_surfaces;
+            if (src_hwctx->frame_type == MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
+                dst_hwctx->surface_type = DXVA2_VideoDecoderRenderTarget;
+            else
+                dst_hwctx->surface_type = DXVA2_VideoProcessorRenderTarget;
+        }
+        break;
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    return 0;
+}
+
 static int qsv_map_from(AVHWFramesContext *ctx,
                         AVFrame *dst, const AVFrame *src, int flags)
 {
     QSVFramesContext *s = ctx->internal->priv;
     mfxFrameSurface1 *surf = (mfxFrameSurface1*)src->data[3];
     AVHWFramesContext *child_frames_ctx;
-
+    const AVPixFmtDescriptor *desc;
+    uint8_t *child_data;
     AVFrame *dummy;
     int ret = 0;
 
     if (!s->child_frames_ref)
         return AVERROR(ENOSYS);
     child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+
+    switch (child_frames_ctx->device_ctx->type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        child_data = (uint8_t*)(intptr_t)*(VASurfaceID*)surf->Data.MemId;
+        break;
+#endif
+#if CONFIG_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        child_data = surf->Data.MemId;
+        break;
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    if (dst->format == child_frames_ctx->format) {
+        ret = ff_hwframe_map_create(s->child_frames_ref,
+                                    dst, src, NULL, NULL);
+        if (ret < 0)
+            return ret;
+
+        dst->width   = src->width;
+        dst->height  = src->height;
+        dst->data[3] = child_data;
+
+        return 0;
+    }
+
+    desc = av_pix_fmt_desc_get(dst->format);
+    if (desc && desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        // This only supports mapping to software.
+        return AVERROR(ENOSYS);
+    }
 
     dummy = av_frame_alloc();
     if (!dummy)
@@ -603,7 +686,7 @@ static int qsv_map_from(AVHWFramesContext *ctx,
     dummy->format        = child_frames_ctx->format;
     dummy->width         = src->width;
     dummy->height        = src->height;
-    dummy->data[3]       = surf->Data.MemId;
+    dummy->data[3]       = child_data;
 
     ret = av_hwframe_map(dst, dummy, flags);
 
@@ -1042,6 +1125,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .map_to                 = qsv_map_to,
     .map_from               = qsv_map_from,
     .frames_derive_to       = qsv_frames_derive_to,
+    .frames_derive_from     = qsv_frames_derive_from,
 
     .pix_fmts = (const enum AVPixelFormat[]){ AV_PIX_FMT_QSV, AV_PIX_FMT_NONE },
 };
