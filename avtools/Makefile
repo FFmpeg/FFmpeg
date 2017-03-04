@@ -13,7 +13,6 @@ OBJS-avconv                   += avtools/avconv_opt.o avtools/avconv_filter.o \
 OBJS-avconv-$(CONFIG_LIBMFX)  += avtools/avconv_qsv.o
 OBJS-avconv-$(CONFIG_VDA)     += avtools/avconv_vda.o
 OBJS-avconv-$(HAVE_DXVA2_LIB) += avtools/avconv_dxva2.o
-OBJS-avconv-$(HAVE_VDPAU_X11) += avtools/avconv_vdpau.o
 
 define DOAVTOOL
 OBJS-$(1) += avtools/cmdutils.o avtools/$(1).o $(OBJS-$(1)-yes)
