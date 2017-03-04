@@ -693,6 +693,13 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
         }
 
         q->session = q->internal_session;
+    } else if (avctx->hw_device_ctx) {
+        ret = ff_qsv_init_session_device(avctx, &q->internal_session,
+                                         avctx->hw_device_ctx, q->load_plugins);
+        if (ret < 0)
+            return ret;
+
+        q->session = q->internal_session;
     } else {
         ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
                                            q->load_plugins);
