@@ -28,6 +28,8 @@
 #include <vdpau/vdpau.h>
 
 #include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_vdpau.h"
 
 #include "avcodec.h"
 #include "vdpau.h"

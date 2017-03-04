@@ -118,29 +118,76 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
 
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
-    hwctx->reset            = 0;
-
-    if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
-        vdctx->decoder = hwctx->context.decoder;
-        vdctx->render  = hwctx->context.render;
-        vdctx->device  = VDP_INVALID_HANDLE;
-        return 0; /* Decoder created by user */
-    }
-
-    vdctx->device           = hwctx->device;
-    vdctx->get_proc_address = hwctx->get_proc_address;
-
-    if (hwctx->flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
-        level = 0;
-    else if (level < 0)
-        return AVERROR(ENOTSUP);
 
     if (av_vdpau_get_surface_parameters(avctx, &type, &width, &height))
         return AVERROR(ENOSYS);
 
-    if (!(hwctx->flags & AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH) &&
-        type != VDP_CHROMA_TYPE_420)
-        return AVERROR(ENOSYS);
+    if (hwctx) {
+        hwctx->reset            = 0;
+
+        if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
+            vdctx->decoder = hwctx->context.decoder;
+            vdctx->render  = hwctx->context.render;
+            vdctx->device  = VDP_INVALID_HANDLE;
+            return 0; /* Decoder created by user */
+        }
+
+        vdctx->device           = hwctx->device;
+        vdctx->get_proc_address = hwctx->get_proc_address;
+
+        if (hwctx->flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
+            level = 0;
+
+        if (!(hwctx->flags & AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH) &&
+            type != VDP_CHROMA_TYPE_420)
+            return AVERROR(ENOSYS);
+    } else {
+        AVHWFramesContext *frames_ctx = NULL;
+        AVVDPAUDeviceContext *dev_ctx;
+
+        // We assume the hw_frames_ctx always survives until ff_vdpau_common_uninit
+        // is called. This holds true as the user is not allowed to touch
+        // hw_device_ctx, or hw_frames_ctx after get_format (and ff_get_format
+        // itself also uninits before unreffing hw_frames_ctx).
+        if (avctx->hw_frames_ctx) {
+            frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        } else if (avctx->hw_device_ctx) {
+            int ret;
+
+            avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+            if (!avctx->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+
+            frames_ctx            = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            frames_ctx->format    = AV_PIX_FMT_VDPAU;
+            frames_ctx->sw_format = avctx->sw_pix_fmt;
+            frames_ctx->width     = avctx->coded_width;
+            frames_ctx->height    = avctx->coded_height;
+
+            ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
+            if (ret < 0) {
+                av_buffer_unref(&avctx->hw_frames_ctx);
+                return ret;
+            }
+        }
+
+        if (!frames_ctx) {
+            av_log(avctx, AV_LOG_ERROR, "A hardware frames context is "
+                   "required for VDPAU decoding.\n");
+            return AVERROR(EINVAL);
+        }
+
+        dev_ctx = frames_ctx->device_ctx->hwctx;
+
+        vdctx->device           = dev_ctx->device;
+        vdctx->get_proc_address = dev_ctx->get_proc_address;
+
+        if (avctx->hwaccel_flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
+            level = 0;
+    }
+
+    if (level < 0)
+        return AVERROR(ENOTSUP);
 
     status = vdctx->get_proc_address(vdctx->device,
                                      VDP_FUNC_ID_VIDEO_SURFACE_QUERY_CAPABILITIES,
@@ -238,7 +285,7 @@ static int ff_vdpau_common_reinit(AVCodecContext *avctx)
     if (vdctx->device == VDP_INVALID_HANDLE)
         return 0; /* Decoder created by user */
     if (avctx->coded_width == vdctx->width &&
-        avctx->coded_height == vdctx->height && !hwctx->reset)
+        avctx->coded_height == vdctx->height && (!hwctx || !hwctx->reset))
         return 0;
 
     avctx->hwaccel->uninit(avctx);
