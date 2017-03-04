@@ -28,7 +28,7 @@
 #include "pixdesc.h"
 #include "pixfmt.h"
 
-static const HWContextType *hw_table[] = {
+static const HWContextType *const hw_table[] = {
 #if CONFIG_CUDA
     &ff_hwcontext_type_cuda,
 #endif
@@ -49,6 +49,48 @@ static const HWContextType *hw_table[] = {
 #endif
     NULL,
 };
+
+static const char *const hw_type_names[] = {
+    [AV_HWDEVICE_TYPE_CUDA]   = "cuda",
+    [AV_HWDEVICE_TYPE_DXVA2]  = "dxva2",
+    [AV_HWDEVICE_TYPE_QSV]    = "qsv",
+    [AV_HWDEVICE_TYPE_VAAPI]  = "vaapi",
+    [AV_HWDEVICE_TYPE_VDPAU]  = "vdpau",
+    [AV_HWDEVICE_TYPE_VIDEOTOOLBOX] = "videotoolbox",
+};
+
+enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name)
+{
+    int type;
+    for (type = 0; type < FF_ARRAY_ELEMS(hw_type_names); type++) {
+        if (hw_type_names[type] && !strcmp(hw_type_names[type], name))
+            return type;
+    }
+    return AV_HWDEVICE_TYPE_NONE;
+}
+
+const char *av_hwdevice_get_type_name(enum AVHWDeviceType type)
+{
+    if (type >= 0 && type < FF_ARRAY_ELEMS(hw_type_names))
+        return hw_type_names[type];
+    else
+        return NULL;
+}
+
+enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev)
+{
+    enum AVHWDeviceType next;
+    int i, set = 0;
+    for (i = 0; hw_table[i]; i++) {
+        if (prev != AV_HWDEVICE_TYPE_NONE && hw_table[i]->type <= prev)
+            continue;
+        if (!set || hw_table[i]->type < next) {
+            next = hw_table[i]->type;
+            set = 1;
+        }
+    }
+    return set ? next : AV_HWDEVICE_TYPE_NONE;
+}
 
 static const AVClass hwdevice_ctx_class = {
     .class_name = "AVHWDeviceContext",
