@@ -94,6 +94,16 @@ static const struct {
     { AV_PIX_FMT_PAL8, MFX_FOURCC_P8   },
 };
 
+static uint32_t qsv_fourcc_from_pix_fmt(enum AVPixelFormat pix_fmt)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(supported_pixel_formats); i++) {
+        if (supported_pixel_formats[i].pix_fmt == pix_fmt)
+            return supported_pixel_formats[i].fourcc;
+    }
+    return 0;
+}
+
 static int qsv_device_init(AVHWDeviceContext *ctx)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
@@ -272,17 +282,47 @@ fail:
     return ret;
 }
 
+static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf)
+{
+    const AVPixFmtDescriptor *desc;
+    uint32_t fourcc;
+
+    desc = av_pix_fmt_desc_get(ctx->sw_format);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    fourcc = qsv_fourcc_from_pix_fmt(ctx->sw_format);
+    if (!fourcc)
+        return AVERROR(EINVAL);
+
+    surf->Info.BitDepthLuma   = desc->comp[0].depth;
+    surf->Info.BitDepthChroma = desc->comp[0].depth;
+    surf->Info.Shift          = desc->comp[0].depth > 8;
+
+    if (desc->log2_chroma_w && desc->log2_chroma_h)
+        surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
+    else if (desc->log2_chroma_w)
+        surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV422;
+    else
+        surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV444;
+
+    surf->Info.FourCC         = fourcc;
+    surf->Info.Width          = ctx->width;
+    surf->Info.CropW          = ctx->width;
+    surf->Info.Height         = ctx->height;
+    surf->Info.CropH          = ctx->height;
+    surf->Info.FrameRateExtN  = 25;
+    surf->Info.FrameRateExtD  = 1;
+
+    return 0;
+}
+
 static int qsv_init_pool(AVHWFramesContext *ctx, uint32_t fourcc)
 {
     QSVFramesContext              *s = ctx->internal->priv;
     AVQSVFramesContext *frames_hwctx = ctx->hwctx;
-    const AVPixFmtDescriptor *desc;
 
     int i, ret = 0;
-
-    desc = av_pix_fmt_desc_get(ctx->sw_format);
-    if (!desc)
-        return AVERROR_BUG;
 
     if (ctx->initial_pool_size <= 0) {
         av_log(ctx, AV_LOG_ERROR, "QSV requires a fixed frame pool size\n");
@@ -295,26 +335,9 @@ static int qsv_init_pool(AVHWFramesContext *ctx, uint32_t fourcc)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < ctx->initial_pool_size; i++) {
-        mfxFrameSurface1 *surf = &s->surfaces_internal[i];
-
-        surf->Info.BitDepthLuma   = desc->comp[0].depth;
-        surf->Info.BitDepthChroma = desc->comp[0].depth;
-        surf->Info.Shift          = desc->comp[0].depth > 8;
-
-        if (desc->log2_chroma_w && desc->log2_chroma_h)
-            surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
-        else if (desc->log2_chroma_w)
-            surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV422;
-        else
-            surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV444;
-
-        surf->Info.FourCC         = fourcc;
-        surf->Info.Width          = ctx->width;
-        surf->Info.CropW          = ctx->width;
-        surf->Info.Height         = ctx->height;
-        surf->Info.CropH          = ctx->height;
-        surf->Info.FrameRateExtN  = 25;
-        surf->Info.FrameRateExtD  = 1;
+        ret = qsv_init_surface(ctx, &s->surfaces_internal[i]);
+        if (ret < 0)
+            return ret;
     }
 
     if (!(frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME)) {
@@ -466,15 +489,10 @@ static int qsv_frames_init(AVHWFramesContext *ctx)
 
     int opaque = !!(frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
 
-    uint32_t fourcc = 0;
+    uint32_t fourcc;
     int i, ret;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(supported_pixel_formats); i++) {
-        if (supported_pixel_formats[i].pix_fmt == ctx->sw_format) {
-            fourcc = supported_pixel_formats[i].fourcc;
-            break;
-        }
-    }
+    fourcc = qsv_fourcc_from_pix_fmt(ctx->sw_format);
     if (!fourcc) {
         av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format\n");
         return AVERROR(ENOSYS);
@@ -723,6 +741,96 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     return 0;
 }
 
+static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
+                                AVHWFramesContext *src_ctx, int flags)
+{
+    QSVFramesContext *s = dst_ctx->internal->priv;
+    AVQSVFramesContext *dst_hwctx = dst_ctx->hwctx;
+    int i;
+
+    switch (src_ctx->device_ctx->type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        {
+            AVVAAPIFramesContext *src_hwctx = src_ctx->hwctx;
+            s->surfaces_internal = av_mallocz_array(src_hwctx->nb_surfaces,
+                                                    sizeof(*s->surfaces_internal));
+            if (!s->surfaces_internal)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < src_hwctx->nb_surfaces; i++) {
+                qsv_init_surface(dst_ctx, &s->surfaces_internal[i]);
+                s->surfaces_internal[i].Data.MemId = src_hwctx->surface_ids + i;
+            }
+            dst_hwctx->nb_surfaces = src_hwctx->nb_surfaces;
+            dst_hwctx->frame_type  = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+        }
+        break;
+#endif
+#if CONFIG_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        {
+            AVDXVA2FramesContext *src_hwctx = src_ctx->hwctx;
+            s->surfaces_internal = av_mallocz_array(src_hwctx->nb_surfaces,
+                                                    sizeof(*s->surfaces_internal));
+            if (!s->surfaces_internal)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < src_hwctx->nb_surfaces; i++) {
+                qsv_init_surface(dst_ctx, &s->surfaces_internal[i]);
+                s->surfaces_internal[i].Data.MemId = (mfxMemId)src_hwctx->surfaces[i];
+            }
+            dst_hwctx->nb_surfaces = src_hwctx->nb_surfaces;
+            if (src_hwctx->surface_type == DXVA2_VideoProcessorRenderTarget)
+                dst_hwctx->frame_type = MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET;
+            else
+                dst_hwctx->frame_type = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+        }
+        break;
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    dst_hwctx->surfaces = s->surfaces_internal;
+
+    return 0;
+}
+
+static int qsv_map_to(AVHWFramesContext *dst_ctx,
+                      AVFrame *dst, const AVFrame *src, int flags)
+{
+    AVQSVFramesContext *hwctx = dst_ctx->hwctx;
+    int i, err;
+
+    for (i = 0; i < hwctx->nb_surfaces; i++) {
+#if CONFIG_VAAPI
+        if (*(VASurfaceID*)hwctx->surfaces[i].Data.MemId ==
+            (VASurfaceID)(uintptr_t)src->data[3])
+            break;
+#endif
+#if CONFIG_DXVA2
+        if ((IDirect3DSurface9*)hwctx->surfaces[i].Data.MemId ==
+            (IDirect3DSurface9*)(uintptr_t)src->data[3])
+            break;
+#endif
+    }
+    if (i >= hwctx->nb_surfaces) {
+        av_log(dst_ctx, AV_LOG_ERROR, "Trying to map from a surface which "
+               "is not in the mapped frames context.\n");
+        return AVERROR(EINVAL);
+    }
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx,
+                                dst, src, NULL, NULL);
+    if (err)
+        return err;
+
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->data[3] = (uint8_t*)&hwctx->surfaces[i];
+
+    return 0;
+}
+
 static int qsv_frames_get_constraints(AVHWDeviceContext *ctx,
                                       const void *hwconfig,
                                       AVHWFramesConstraints *constraints)
@@ -931,7 +1039,9 @@ const HWContextType ff_hwcontext_type_qsv = {
     .transfer_get_formats   = qsv_transfer_get_formats,
     .transfer_data_to       = qsv_transfer_data_to,
     .transfer_data_from     = qsv_transfer_data_from,
+    .map_to                 = qsv_map_to,
     .map_from               = qsv_map_from,
+    .frames_derive_to       = qsv_frames_derive_to,
 
     .pix_fmts = (const enum AVPixelFormat[]){ AV_PIX_FMT_QSV, AV_PIX_FMT_NONE },
 };
