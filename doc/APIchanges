@@ -13,6 +13,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-xx - xxxxxxx - lavc 57.37.0 - avcodec.h
+  Add AVCodecContext.hwaccel_flags field. This will control some hwaccels at
+  a later point.
+
 2017-03-xx - xxxxxxx - lavu 55.35.0 - hwcontext.h
   Add AV_HWDEVICE_TYPE_NONE, av_hwdevice_find_type_by_name(),
   av_hwdevice_get_type_name() and av_hwdevice_iterate_types().

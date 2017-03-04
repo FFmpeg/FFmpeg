@@ -270,6 +270,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     return AVERROR(ENOMEM);
             }
         }
+
+        dst->hwaccel_flags = src->hwaccel_flags;
     }
 
     if (for_user) {
