@@ -121,6 +121,11 @@ struct AVHWFramesInternal {
      * context it was derived from.
      */
     AVBufferRef *source_frames;
+    /**
+     * Flags to apply to the mapping from the source to the derived
+     * frame context when trying to allocate in the derived context.
+     */
+    int source_allocation_map_flags;
 };
 
 typedef struct HWMapDescriptor {

@@ -564,7 +564,9 @@ int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags);
  *                           AVHWFramesContext on.
  * @param source_frame_ctx   A reference to an existing AVHWFramesContext
  *                           which will be mapped to the derived context.
- * @param flags  Currently unused; should be set to zero.
+ * @param flags  Some combination of AV_HWFRAME_MAP_* flags, defining the
+ *               mapping parameters to apply to frames which are allocated
+ *               in the derived device.
  * @return       Zero on success, negative AVERROR code on failure.
  */
 int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
