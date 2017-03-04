@@ -65,6 +65,8 @@ static void hwdevice_ctx_free(void *opaque, uint8_t *data)
     if (ctx->free)
         ctx->free(ctx);
 
+    av_buffer_unref(&ctx->internal->source_device);
+
     av_freep(&ctx->hwctx);
     av_freep(&ctx->internal->priv);
     av_freep(&ctx->internal);
@@ -532,6 +534,69 @@ int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
 fail:
     av_buffer_unref(&device_ref);
     *pdevice_ref = NULL;
+    return ret;
+}
+
+int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ref_ptr,
+                                   enum AVHWDeviceType type,
+                                   AVBufferRef *src_ref, int flags)
+{
+    AVBufferRef *dst_ref = NULL, *tmp_ref;
+    AVHWDeviceContext *dst_ctx, *tmp_ctx;
+    int ret = 0;
+
+    tmp_ref = src_ref;
+    while (tmp_ref) {
+        tmp_ctx = (AVHWDeviceContext*)tmp_ref->data;
+        if (tmp_ctx->type == type) {
+            dst_ref = av_buffer_ref(tmp_ref);
+            if (!dst_ref) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            goto done;
+        }
+        tmp_ref = tmp_ctx->internal->source_device;
+    }
+
+    dst_ref = av_hwdevice_ctx_alloc(type);
+    if (!dst_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    dst_ctx = (AVHWDeviceContext*)dst_ref->data;
+
+    tmp_ref = src_ref;
+    while (tmp_ref) {
+        tmp_ctx = (AVHWDeviceContext*)tmp_ref->data;
+        if (dst_ctx->internal->hw_type->device_derive) {
+            ret = dst_ctx->internal->hw_type->device_derive(dst_ctx,
+                                                            tmp_ctx,
+                                                            flags);
+            if (ret == 0) {
+                dst_ctx->internal->source_device = av_buffer_ref(src_ref);
+                if (!dst_ctx->internal->source_device) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+                goto done;
+            }
+            if (ret != AVERROR(ENOSYS))
+                goto fail;
+        }
+        tmp_ref = tmp_ctx->internal->source_device;
+    }
+
+    ret = AVERROR(ENOSYS);
+    goto fail;
+
+done:
+    *dst_ref_ptr = dst_ref;
+    return 0;
+
+fail:
+    av_buffer_unref(&dst_ref);
+    *dst_ref_ptr = NULL;
     return ret;
 }
 
