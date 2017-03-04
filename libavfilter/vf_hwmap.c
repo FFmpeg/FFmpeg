@@ -30,10 +30,10 @@
 typedef struct HWMapContext {
     const AVClass *class;
 
-    AVBufferRef   *hwdevice_ref;
     AVBufferRef   *hwframes_ref;
 
     int            mode;
+    char          *derive_device_type;
     int            map_backwards;
 } HWMapContext;
 
@@ -52,6 +52,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
     HWMapContext      *ctx = avctx->priv;
     AVFilterLink   *inlink = avctx->inputs[0];
     AVHWFramesContext *hwfc;
+    AVBufferRef *device;
     const AVPixFmtDescriptor *desc;
     int err;
 
@@ -59,38 +60,64 @@ static int hwmap_config_output(AVFilterLink *outlink)
            av_get_pix_fmt_name(inlink->format),
            av_get_pix_fmt_name(outlink->format));
 
+    av_buffer_unref(&ctx->hwframes_ref);
+
+    device = avctx->hw_device_ctx;
+
     if (inlink->hw_frames_ctx) {
         hwfc = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
 
+        if (ctx->derive_device_type) {
+            enum AVHWDeviceType type;
+
+            type = av_hwdevice_find_type_by_name(ctx->derive_device_type);
+            if (type == AV_HWDEVICE_TYPE_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid device type.\n");
+                goto fail;
+            }
+
+            err = av_hwdevice_ctx_create_derived(&device, type,
+                                                 hwfc->device_ref, 0);
+            if (err < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to created derived "
+                       "device context: %d.\n", err);
+                goto fail;
+            }
+        }
+
         desc = av_pix_fmt_desc_get(outlink->format);
-        if (!desc)
-            return AVERROR(EINVAL);
+        if (!desc) {
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
 
         if (inlink->format == hwfc->format &&
             (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
             // Map between two hardware formats (including the case of
             // undoing an existing mapping).
 
-            ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
-            if (!ctx->hwdevice_ref) {
-                err = AVERROR(ENOMEM);
+            if (!device) {
+                av_log(avctx, AV_LOG_ERROR, "A device reference is "
+                       "required to map to a hardware format.\n");
+                err = AVERROR(EINVAL);
                 goto fail;
             }
 
             err = av_hwframe_ctx_create_derived(&ctx->hwframes_ref,
                                                 outlink->format,
-                                                ctx->hwdevice_ref,
+                                                device,
                                                 inlink->hw_frames_ctx, 0);
-            if (err < 0)
+            if (err < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to create derived "
+                       "frames context: %d.\n", err);
                 goto fail;
+            }
 
         } else if ((outlink->format == hwfc->format &&
                     inlink->format  == hwfc->sw_format) ||
                    inlink->format == hwfc->format) {
             // Map from a hardware format to a software format, or
             // undo an existing such mapping.
-
-            ctx->hwdevice_ref = NULL;
 
             ctx->hwframes_ref = av_buffer_ref(inlink->hw_frames_ctx);
             if (!ctx->hwframes_ref) {
@@ -115,15 +142,17 @@ static int hwmap_config_output(AVFilterLink *outlink)
         // returns frames mapped from that to the previous link in
         // order to fill them without an additional copy.
 
-        ctx->map_backwards = 1;
-
-        ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
-        if (!ctx->hwdevice_ref) {
-            err = AVERROR(ENOMEM);
+        if (!device) {
+            av_log(avctx, AV_LOG_ERROR, "A device reference is "
+                   "required to create new frames with backwards "
+                   "mapping.\n");
+            err = AVERROR(EINVAL);
             goto fail;
         }
 
-        ctx->hwframes_ref = av_hwframe_ctx_alloc(ctx->hwdevice_ref);
+        ctx->map_backwards = 1;
+
+        ctx->hwframes_ref = av_hwframe_ctx_alloc(device);
         if (!ctx->hwframes_ref) {
             err = AVERROR(ENOMEM);
             goto fail;
@@ -161,7 +190,6 @@ static int hwmap_config_output(AVFilterLink *outlink)
 
 fail:
     av_buffer_unref(&ctx->hwframes_ref);
-    av_buffer_unref(&ctx->hwdevice_ref);
     return err;
 }
 
@@ -269,7 +297,6 @@ static av_cold void hwmap_uninit(AVFilterContext *avctx)
     HWMapContext *ctx = avctx->priv;
 
     av_buffer_unref(&ctx->hwframes_ref);
-    av_buffer_unref(&ctx->hwdevice_ref);
 }
 
 #define OFFSET(x) offsetof(HWMapContext, x)
@@ -292,6 +319,10 @@ static const AVOption hwmap_options[] = {
     { "direct", "Mapping should not involve any copying",
       0, AV_OPT_TYPE_CONST, { .i64 = AV_HWFRAME_MAP_DIRECT },
       INT_MIN, INT_MAX, FLAGS, "mode" },
+
+    { "derive_device", "Derive a new device of this type",
+      OFFSET(derive_device_type), AV_OPT_TYPE_STRING,
+      { .str = NULL }, 0, 0, FLAGS },
 
     { NULL },
 };
