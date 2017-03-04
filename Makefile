@@ -31,7 +31,7 @@ ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog)-$(CONFIG_OPENCL) += cmdutils_opencl.o))
 
-OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
+OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o ffmpeg_hw.o
 OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += ffmpeg_videotoolbox.o
 OBJS-ffmpeg-$(CONFIG_LIBMFX)  += ffmpeg_qsv.o
 OBJS-ffmpeg-$(CONFIG_VAAPI)   += ffmpeg_vaapi.o
