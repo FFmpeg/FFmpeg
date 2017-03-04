@@ -37,6 +37,13 @@
 #include "hwcontext_vaapi.h"
 #endif
 
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+#include <mfx/mfxstructures.h>
+#include <va/va.h>
+#include <CL/va_ext.h>
+#include "hwcontext_vaapi.h"
+#endif
+
 
 typedef struct OpenCLDeviceContext {
     // Default command queue to use for transfer/mapping operations on
@@ -52,6 +59,16 @@ typedef struct OpenCLDeviceContext {
 #if HAVE_OPENCL_VAAPI_BEIGNET
     int vaapi_mapping_usable;
     clCreateImageFromFdINTEL_fn  clCreateImageFromFdINTEL;
+#endif
+
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+    int qsv_mapping_usable;
+    clCreateFromVA_APIMediaSurfaceINTEL_fn
+        clCreateFromVA_APIMediaSurfaceINTEL;
+    clEnqueueAcquireVA_APIMediaSurfacesINTEL_fn
+        clEnqueueAcquireVA_APIMediaSurfacesINTEL;
+    clEnqueueReleaseVA_APIMediaSurfacesINTEL_fn
+        clEnqueueReleaseVA_APIMediaSurfacesINTEL;
 #endif
 } OpenCLDeviceContext;
 
@@ -633,6 +650,85 @@ static int opencl_device_init(AVHWDeviceContext *hwdev)
     }
 #endif
 
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+    {
+        size_t props_size;
+        cl_context_properties *props = NULL;
+        VADisplay va_display;
+        const char *va_ext = "cl_intel_va_api_media_sharing";
+        int i, fail = 0;
+
+        if (!opencl_check_extension(hwdev, va_ext)) {
+            av_log(hwdev, AV_LOG_VERBOSE, "The %s extension is "
+                   "required for QSV to OpenCL mapping.\n", va_ext);
+            goto no_qsv;
+        }
+
+        cle = clGetContextInfo(hwctx->context, CL_CONTEXT_PROPERTIES,
+                               0, NULL, &props_size);
+        if (cle != CL_SUCCESS) {
+            av_log(hwdev, AV_LOG_VERBOSE, "Failed to get context "
+                   "properties: %d.\n", cle);
+            goto no_qsv;
+        }
+        if (props_size == 0) {
+            av_log(hwdev, AV_LOG_VERBOSE, "Media sharing must be "
+                   "enabled on context creation to use QSV to "
+                   "OpenCL mapping.\n");
+            goto no_qsv;
+        }
+
+        props = av_malloc(props_size);
+        if (!props)
+            return AVERROR(ENOMEM);
+
+        cle = clGetContextInfo(hwctx->context, CL_CONTEXT_PROPERTIES,
+                               props_size, props, NULL);
+        if (cle != CL_SUCCESS) {
+            av_log(hwdev, AV_LOG_VERBOSE, "Failed to get context "
+                   "properties: %d.\n", cle);
+            goto no_qsv;
+        }
+
+        va_display = NULL;
+        for (i = 0; i < (props_size / sizeof(*props) - 1); i++) {
+            if (props[i] == CL_CONTEXT_VA_API_DISPLAY_INTEL) {
+                va_display = (VADisplay)(intptr_t)props[i+1];
+                break;
+            }
+        }
+        if (!va_display) {
+            av_log(hwdev, AV_LOG_VERBOSE, "Media sharing must be "
+                   "enabled on context creation to use QSV to "
+                   "OpenCL mapping.\n");
+            goto no_qsv;
+        }
+        if (!vaDisplayIsValid(va_display)) {
+            av_log(hwdev, AV_LOG_VERBOSE, "A valid VADisplay is "
+                   "required on context creation to use QSV to "
+                   "OpenCL mapping.\n");
+            goto no_qsv;
+        }
+
+        CL_FUNC(clCreateFromVA_APIMediaSurfaceINTEL,
+                "Intel QSV to OpenCL mapping");
+        CL_FUNC(clEnqueueAcquireVA_APIMediaSurfacesINTEL,
+                "Intel QSV in OpenCL acquire");
+        CL_FUNC(clEnqueueReleaseVA_APIMediaSurfacesINTEL,
+                "Intel QSV in OpenCL release");
+
+        if (fail) {
+        no_qsv:
+            av_log(hwdev, AV_LOG_WARNING, "QSV to OpenCL mapping "
+                   "not usable.\n");
+            priv->qsv_mapping_usable = 0;
+        } else {
+            priv->qsv_mapping_usable = 1;
+        }
+        av_free(props);
+    }
+#endif
+
 #undef CL_FUNC
 
     return 0;
@@ -651,6 +747,95 @@ static void opencl_device_uninit(AVHWDeviceContext *hwdev)
         }
     }
 }
+
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+static int opencl_filter_intel_media_vaapi_platform(AVHWDeviceContext *hwdev,
+                                                    cl_platform_id platform_id,
+                                                    const char *platform_name,
+                                                    void *context)
+{
+    // This doesn't exist as a platform extension, so just test whether
+    // the function we will use for device enumeration exists.
+
+    if (!clGetExtensionFunctionAddressForPlatform(platform_id,
+            "clGetDeviceIDsFromVA_APIMediaAdapterINTEL")) {
+        av_log(hwdev, AV_LOG_DEBUG, "Platform %s does not export the "
+               "VAAPI device enumeration function.\n", platform_name);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static int opencl_enumerate_intel_media_vaapi_devices(AVHWDeviceContext *hwdev,
+                                                      cl_platform_id platform_id,
+                                                      const char *platform_name,
+                                                      cl_uint *nb_devices,
+                                                      cl_device_id **devices,
+                                                      void *context)
+{
+    VADisplay va_display = context;
+    clGetDeviceIDsFromVA_APIMediaAdapterINTEL_fn
+        clGetDeviceIDsFromVA_APIMediaAdapterINTEL;
+    cl_int cle;
+    int err;
+
+    clGetDeviceIDsFromVA_APIMediaAdapterINTEL =
+        clGetExtensionFunctionAddressForPlatform(platform_id,
+            "clGetDeviceIDsFromVA_APIMediaAdapterINTEL");
+    if (!clGetDeviceIDsFromVA_APIMediaAdapterINTEL) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get address of "
+               "clGetDeviceIDsFromVA_APIMediaAdapterINTEL().\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    cle = clGetDeviceIDsFromVA_APIMediaAdapterINTEL(
+        platform_id, CL_VA_API_DISPLAY_INTEL, va_display,
+        CL_PREFERRED_DEVICES_FOR_VA_API_INTEL, 0, NULL, nb_devices);
+    if (cle == CL_DEVICE_NOT_FOUND) {
+        av_log(hwdev, AV_LOG_DEBUG, "No VAAPI-supporting devices found "
+               "on platform \"%s\".\n", platform_name);
+        *nb_devices = 0;
+        return 0;
+    } else if (cle != CL_SUCCESS) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get number of devices "
+               "on platform \"%s\": %d.\n", platform_name, cle);
+        return AVERROR_UNKNOWN;
+    }
+
+    *devices = av_malloc_array(*nb_devices, sizeof(**devices));
+    if (!*devices)
+        return AVERROR(ENOMEM);
+
+    cle = clGetDeviceIDsFromVA_APIMediaAdapterINTEL(
+        platform_id, CL_VA_API_DISPLAY_INTEL, va_display,
+        CL_PREFERRED_DEVICES_FOR_VA_API_INTEL, *nb_devices, *devices, NULL);
+    if (cle != CL_SUCCESS) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get list of VAAPI-supporting "
+               "devices on platform \"%s\": %d.\n", platform_name, cle);
+        av_freep(devices);
+        return AVERROR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+static int opencl_filter_intel_media_vaapi_device(AVHWDeviceContext *hwdev,
+                                                  cl_device_id device_id,
+                                                  const char *device_name,
+                                                  void *context)
+{
+    const char *va_ext = "cl_intel_va_api_media_sharing";
+
+    if (opencl_check_device_extension(device_id, va_ext)) {
+        return 0;
+    } else {
+        av_log(hwdev, AV_LOG_DEBUG, "Device %s does not support the "
+               "%s extension.\n", device_name, va_ext);
+        return 1;
+    }
+}
+#endif
 
 static int opencl_device_derive(AVHWDeviceContext *hwdev,
                                 AVHWDeviceContext *src_ctx,
@@ -683,6 +868,37 @@ static int opencl_device_derive(AVHWDeviceContext *hwdev,
                 err = opencl_device_create_internal(hwdev, &selector, NULL);
             }
             av_dict_free(&opts);
+        }
+        break;
+#endif
+
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+        // The generic code automatically attempts to derive from all
+        // ancestors of the given device, so we can ignore QSV devices here
+        // and just consider the inner VAAPI device it was derived from.
+    case AV_HWDEVICE_TYPE_VAAPI:
+        {
+            AVVAAPIDeviceContext *src_hwctx = src_ctx->hwctx;
+            cl_context_properties props[7] = {
+                CL_CONTEXT_PLATFORM,
+                0,
+                CL_CONTEXT_VA_API_DISPLAY_INTEL,
+                (intptr_t)src_hwctx->display,
+                CL_CONTEXT_INTEROP_USER_SYNC,
+                CL_FALSE,
+                0,
+            };
+            OpenCLDeviceSelector selector = {
+                .platform_index      = -1,
+                .device_index        = -1,
+                .context             = src_hwctx->display,
+                .enumerate_platforms = &opencl_enumerate_platforms,
+                .filter_platform     = &opencl_filter_intel_media_vaapi_platform,
+                .enumerate_devices   = &opencl_enumerate_intel_media_vaapi_devices,
+                .filter_device       = &opencl_filter_intel_media_vaapi_device,
+            };
+
+            err = opencl_device_create_internal(hwdev, &selector, props);
         }
         break;
 #endif
@@ -1525,6 +1741,142 @@ fail:
 
 #endif
 
+static inline cl_mem_flags opencl_mem_flags_for_mapping(int map_flags)
+{
+    if ((map_flags & AV_HWFRAME_MAP_READ) &&
+        (map_flags & AV_HWFRAME_MAP_WRITE))
+        return CL_MEM_READ_WRITE;
+    else if (map_flags & AV_HWFRAME_MAP_READ)
+        return CL_MEM_READ_ONLY;
+    else if (map_flags & AV_HWFRAME_MAP_WRITE)
+        return CL_MEM_WRITE_ONLY;
+    else
+        return 0;
+}
+
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+
+static void opencl_unmap_from_qsv(AVHWFramesContext *dst_fc,
+                                  HWMapDescriptor *hwmap)
+{
+    AVOpenCLFrameDescriptor    *desc = hwmap->priv;
+    OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    cl_event event;
+    cl_int cle;
+    int p;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Unmap QSV/VAAPI surface from OpenCL.\n");
+
+    cle = device_priv->clEnqueueReleaseVA_APIMediaSurfacesINTEL(
+        frames_priv->command_queue, desc->nb_planes, desc->planes,
+        0, NULL, &event);
+    if (cle != CL_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to release surface "
+               "handles: %d.\n", cle);
+    }
+
+    opencl_wait_events(dst_fc, &event, 1);
+
+    for (p = 0; p < desc->nb_planes; p++) {
+        cle = clReleaseMemObject(desc->planes[p]);
+        if (cle != CL_SUCCESS) {
+            av_log(dst_fc, AV_LOG_ERROR, "Failed to release CL "
+                   "image of plane %d of QSV/VAAPI surface: %d\n",
+                   p, cle);
+        }
+    }
+
+    av_free(desc);
+}
+
+static int opencl_map_from_qsv(AVHWFramesContext *dst_fc, AVFrame *dst,
+                               const AVFrame *src, int flags)
+{
+    AVHWFramesContext *src_fc =
+        (AVHWFramesContext*)src->hw_frames_ctx->data;
+    AVOpenCLDeviceContext   *dst_dev = dst_fc->device_ctx->hwctx;
+    OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    AVOpenCLFrameDescriptor *desc;
+    VASurfaceID va_surface;
+    cl_mem_flags cl_flags;
+    cl_event event;
+    cl_int cle;
+    int err, p;
+
+    if (src->format == AV_PIX_FMT_QSV) {
+        mfxFrameSurface1 *mfx_surface = (mfxFrameSurface1*)src->data[3];
+        va_surface = *(VASurfaceID*)mfx_surface->Data.MemId;
+    } else if (src->format == AV_PIX_FMT_VAAPI) {
+        va_surface = (VASurfaceID)(uintptr_t)src->data[3];
+    } else {
+        return AVERROR(ENOSYS);
+    }
+
+    cl_flags = opencl_mem_flags_for_mapping(flags);
+    if (!cl_flags)
+        return AVERROR(EINVAL);
+
+    av_log(src_fc, AV_LOG_DEBUG, "Map QSV/VAAPI surface %#x to "
+           "OpenCL.\n", va_surface);
+
+    desc = av_mallocz(sizeof(*desc));
+    if (!desc)
+        return AVERROR(ENOMEM);
+
+    // The cl_intel_va_api_media_sharing extension only supports NV12
+    // surfaces, so for now there are always exactly two planes.
+    desc->nb_planes = 2;
+
+    for (p = 0; p < desc->nb_planes; p++) {
+        desc->planes[p] =
+            device_priv->clCreateFromVA_APIMediaSurfaceINTEL(
+                dst_dev->context, cl_flags, &va_surface, p, &cle);
+        if (!desc->planes[p]) {
+            av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL "
+                   "image from plane %d of QSV/VAAPI surface "
+                   "%#x: %d.\n", p, va_surface, cle);
+            err = AVERROR(EIO);
+            goto fail;
+        }
+
+        dst->data[p] = (uint8_t*)desc->planes[p];
+    }
+
+    cle = device_priv->clEnqueueAcquireVA_APIMediaSurfacesINTEL(
+        frames_priv->command_queue, desc->nb_planes, desc->planes,
+        0, NULL, &event);
+    if (cle != CL_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to acquire surface "
+               "handles: %d.\n", cle);
+        err = AVERROR(EIO);
+        goto fail;
+    }
+
+    err = opencl_wait_events(dst_fc, &event, 1);
+    if (err < 0)
+        goto fail;
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &opencl_unmap_from_qsv, desc);
+    if (err < 0)
+        goto fail;
+
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    return 0;
+
+fail:
+    for (p = 0; p < desc->nb_planes; p++)
+        if (desc->planes[p])
+            clReleaseMemObject(desc->planes[p]);
+    av_freep(&desc);
+    return err;
+}
+
+#endif
 
 static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
                            const AVFrame *src, int flags)
@@ -1546,6 +1898,12 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
         if (priv->vaapi_mapping_usable)
             return opencl_map_from_vaapi(hwfc, dst, src, flags);
 #endif
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+    case AV_PIX_FMT_QSV:
+    case AV_PIX_FMT_VAAPI:
+        if (priv->qsv_mapping_usable)
+            return opencl_map_from_qsv(hwfc, dst, src, flags);
+#endif
     }
     return AVERROR(ENOSYS);
 }
@@ -1558,6 +1916,13 @@ static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
 #if HAVE_OPENCL_VAAPI_BEIGNET
     case AV_HWDEVICE_TYPE_VAAPI:
         if (!priv->vaapi_mapping_usable)
+            return AVERROR(ENOSYS);
+        break;
+#endif
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+    case AV_HWDEVICE_TYPE_QSV:
+    case AV_HWDEVICE_TYPE_VAAPI:
+        if (!priv->qsv_mapping_usable)
             return AVERROR(ENOSYS);
         break;
 #endif

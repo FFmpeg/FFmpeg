@@ -2121,6 +2121,7 @@ HAVE_LIST="
     makeinfo
     makeinfo_html
     opencl_vaapi_beignet
+    opencl_vaapi_intel_media
     perl
     pod2man
     texi2html
@@ -6159,6 +6160,10 @@ enabled vaapi &&
 if enabled_all opencl vaapi ; then
     check_type "CL/cl_intel.h" "clCreateImageFromFdINTEL_fn" &&
         enable opencl_vaapi_beignet
+    if enabled libmfx ; then
+        check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
+            enable opencl_vaapi_intel_media
+    fi
 fi
 
 enabled vdpau &&
