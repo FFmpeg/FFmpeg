@@ -792,19 +792,94 @@ static mfxIMPL choose_implementation(const char *device)
     return impl;
 }
 
-static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
-                             AVDictionary *opts, int flags)
+static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
+                                        mfxIMPL implementation,
+                                        AVHWDeviceContext *child_device_ctx,
+                                        int flags)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
-    QSVDevicePriv *priv;
-    enum AVHWDeviceType child_device_type;
-    AVDictionaryEntry *e;
+    QSVDeviceContext       *s = ctx->internal->priv;
 
     mfxVersion    ver = { { 3, 1 } };
-    mfxIMPL       impl;
     mfxHDL        handle;
     mfxHandleType handle_type;
     mfxStatus     err;
+    int ret;
+
+    switch (child_device_ctx->type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        {
+            AVVAAPIDeviceContext *child_device_hwctx = child_device_ctx->hwctx;
+            handle_type = MFX_HANDLE_VA_DISPLAY;
+            handle = (mfxHDL)child_device_hwctx->display;
+        }
+        break;
+#endif
+#if CONFIG_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        {
+            AVDXVA2DeviceContext *child_device_hwctx = child_device_ctx->hwctx;
+            handle_type = MFX_HANDLE_D3D9_DEVICE_MANAGER;
+            handle = (mfxHDL)child_device_hwctx->devmgr;
+        }
+        break;
+#endif
+    default:
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
+
+    err = MFXInit(implementation, &ver, &hwctx->session);
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error initializing an MFX session: "
+               "%d.\n", err);
+        ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    err = MFXVideoCORE_SetHandle(hwctx->session, handle_type, handle);
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error setting child device handle: "
+               "%d\n", err);
+        ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    ret = qsv_device_init(ctx);
+    if (ret < 0)
+        goto fail;
+    if (s->handle_type != handle_type) {
+        av_log(ctx, AV_LOG_ERROR, "Error in child device handle setup: "
+               "type mismatch (%d != %d).\n", s->handle_type, handle_type);
+        err = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    return 0;
+
+fail:
+    if (hwctx->session)
+        MFXClose(hwctx->session);
+    return ret;
+}
+
+static int qsv_device_derive(AVHWDeviceContext *ctx,
+                             AVHWDeviceContext *child_device_ctx, int flags)
+{
+    return qsv_device_derive_from_child(ctx, MFX_IMPL_HARDWARE_ANY,
+                                        child_device_ctx, flags);
+}
+
+static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
+                             AVDictionary *opts, int flags)
+{
+    QSVDevicePriv *priv;
+    enum AVHWDeviceType child_device_type;
+    AVHWDeviceContext *child_device;
+    AVDictionaryEntry *e;
+
+    mfxIMPL impl;
     int ret;
 
     priv = av_mallocz(sizeof(*priv));
@@ -830,32 +905,11 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
     if (ret < 0)
         return ret;
 
-    {
-        AVHWDeviceContext      *child_device_ctx = (AVHWDeviceContext*)priv->child_device_ctx->data;
-#if CONFIG_VAAPI
-        AVVAAPIDeviceContext *child_device_hwctx = child_device_ctx->hwctx;
-        handle_type = MFX_HANDLE_VA_DISPLAY;
-        handle = (mfxHDL)child_device_hwctx->display;
-#elif CONFIG_DXVA2
-        AVDXVA2DeviceContext *child_device_hwctx = child_device_ctx->hwctx;
-        handle_type = MFX_HANDLE_D3D9_DEVICE_MANAGER;
-        handle = (mfxHDL)child_device_hwctx->devmgr;
-#endif
-    }
+    child_device = (AVHWDeviceContext*)priv->child_device_ctx->data;
 
     impl = choose_implementation(device);
 
-    err = MFXInit(impl, &ver, &hwctx->session);
-    if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error initializing an MFX session\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    err = MFXVideoCORE_SetHandle(hwctx->session, handle_type, handle);
-    if (err != MFX_ERR_NONE)
-        return AVERROR_UNKNOWN;
-
-    return 0;
+    return qsv_device_derive_from_child(ctx, impl, child_device, 0);
 }
 
 const HWContextType ff_hwcontext_type_qsv = {
@@ -868,6 +922,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .frames_priv_size       = sizeof(QSVFramesContext),
 
     .device_create          = qsv_device_create,
+    .device_derive          = qsv_device_derive,
     .device_init            = qsv_device_init,
     .frames_get_constraints = qsv_frames_get_constraints,
     .frames_init            = qsv_frames_init,
