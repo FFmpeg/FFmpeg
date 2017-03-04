@@ -535,27 +535,16 @@ static mfxStatus qsv_frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
     return MFX_ERR_NONE;
 }
 
-int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
-                                  QSVFramesContext *qsv_frames_ctx,
-                                  const char *load_plugins, int opaque)
+int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
+                               AVBufferRef *device_ref, const char *load_plugins)
 {
     static const mfxHandleType handle_types[] = {
         MFX_HANDLE_VA_DISPLAY,
         MFX_HANDLE_D3D9_DEVICE_MANAGER,
         MFX_HANDLE_D3D11_DEVICE,
     };
-    mfxFrameAllocator frame_allocator = {
-        .pthis  = qsv_frames_ctx,
-        .Alloc  = qsv_frame_alloc,
-        .Lock   = qsv_frame_lock,
-        .Unlock = qsv_frame_unlock,
-        .GetHDL = qsv_frame_get_hdl,
-        .Free   = qsv_frame_free,
-    };
-
-    AVHWFramesContext    *frames_ctx = (AVHWFramesContext*)qsv_frames_ctx->hw_frames_ctx->data;
-    AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
-    AVQSVDeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
+    AVHWDeviceContext    *device_ctx = (AVHWDeviceContext*)device_ref->data;
+    AVQSVDeviceContext *device_hwctx = device_ctx->hwctx;
     mfxSession        parent_session = device_hwctx->session;
 
     mfxSession    session;
@@ -604,6 +593,36 @@ int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
         av_log(avctx, AV_LOG_ERROR, "Error loading plugins\n");
         return ret;
     }
+
+    *psession = session;
+    return 0;
+}
+
+int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *psession,
+                               QSVFramesContext *qsv_frames_ctx,
+                               const char *load_plugins, int opaque)
+{
+    mfxFrameAllocator frame_allocator = {
+        .pthis  = qsv_frames_ctx,
+        .Alloc  = qsv_frame_alloc,
+        .Lock   = qsv_frame_lock,
+        .Unlock = qsv_frame_unlock,
+        .GetHDL = qsv_frame_get_hdl,
+        .Free   = qsv_frame_free,
+    };
+
+    AVHWFramesContext    *frames_ctx = (AVHWFramesContext*)qsv_frames_ctx->hw_frames_ctx->data;
+    AVQSVFramesContext *frames_hwctx = frames_ctx->hwctx;
+
+    mfxSession    session;
+    mfxStatus err;
+
+    int ret;
+
+    ret = ff_qsv_init_session_device(avctx, &session,
+                                     frames_ctx->device_ref, load_plugins);
+    if (ret < 0)
+        return ret;
 
     if (!opaque) {
         qsv_frames_ctx->logctx = avctx;
