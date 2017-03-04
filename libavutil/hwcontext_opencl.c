@@ -29,6 +29,14 @@
 #include "mem.h"
 #include "pixdesc.h"
 
+#if HAVE_OPENCL_VAAPI_BEIGNET
+#include <unistd.h>
+#include <va/va.h>
+#include <va/va_drmcommon.h>
+#include <CL/cl_intel.h>
+#include "hwcontext_vaapi.h"
+#endif
+
 
 typedef struct OpenCLDeviceContext {
     // Default command queue to use for transfer/mapping operations on
@@ -41,6 +49,10 @@ typedef struct OpenCLDeviceContext {
     cl_platform_id platform_id;
 
     // Platform/device-specific functions.
+#if HAVE_OPENCL_VAAPI_BEIGNET
+    int vaapi_mapping_usable;
+    clCreateImageFromFdINTEL_fn  clCreateImageFromFdINTEL;
+#endif
 } OpenCLDeviceContext;
 
 typedef struct OpenCLFramesContext {
@@ -589,6 +601,40 @@ static int opencl_device_init(AVHWDeviceContext *hwdev)
         return AVERROR(EIO);
     }
 
+#define CL_FUNC(name, desc) do {                                \
+        if (fail)                                               \
+            break;                                              \
+        priv->name = clGetExtensionFunctionAddressForPlatform(  \
+            priv->platform_id, #name);                          \
+        if (!priv->name) {                                      \
+            av_log(hwdev, AV_LOG_VERBOSE,                       \
+                   desc " function not found (%s).\n", #name);  \
+            fail = 1;                                           \
+        } else {                                                \
+            av_log(hwdev, AV_LOG_VERBOSE,                       \
+                   desc " function found (%s).\n", #name);      \
+        }                                                       \
+    } while (0)
+
+#if HAVE_OPENCL_VAAPI_BEIGNET
+    {
+        int fail = 0;
+
+        CL_FUNC(clCreateImageFromFdINTEL,
+                "Intel DRM to OpenCL image mapping");
+
+        if (fail) {
+            av_log(hwdev, AV_LOG_WARNING, "VAAPI to OpenCL mapping "
+                   "not usable.\n");
+            priv->vaapi_mapping_usable = 0;
+        } else {
+            priv->vaapi_mapping_usable = 1;
+        }
+    }
+#endif
+
+#undef CL_FUNC
+
     return 0;
 }
 
@@ -604,6 +650,52 @@ static void opencl_device_uninit(AVHWDeviceContext *hwdev)
                    "command queue reference: %d.\n", cle);
         }
     }
+}
+
+static int opencl_device_derive(AVHWDeviceContext *hwdev,
+                                AVHWDeviceContext *src_ctx,
+                                int flags)
+{
+    int err;
+    switch (src_ctx->type) {
+
+#if HAVE_OPENCL_VAAPI_BEIGNET
+    case AV_HWDEVICE_TYPE_VAAPI:
+        {
+            // Surface mapping works via DRM PRIME fds with no special
+            // initialisation required in advance.  This just finds the
+            // Beignet ICD by name.
+            AVDictionary *opts = NULL;
+
+            err = av_dict_set(&opts, "platform_vendor", "Intel", 0);
+            if (err >= 0)
+                err = av_dict_set(&opts, "platform_version", "beignet", 0);
+            if (err >= 0) {
+                OpenCLDeviceSelector selector = {
+                    .platform_index      = -1,
+                    .device_index        = 0,
+                    .context             = opts,
+                    .enumerate_platforms = &opencl_enumerate_platforms,
+                    .filter_platform     = &opencl_filter_platform,
+                    .enumerate_devices   = &opencl_enumerate_devices,
+                    .filter_device       = NULL,
+                };
+                err = opencl_device_create_internal(hwdev, &selector, NULL);
+            }
+            av_dict_free(&opts);
+        }
+        break;
+#endif
+
+    default:
+        err = AVERROR(ENOSYS);
+        break;
+    }
+
+    if (err < 0)
+        return err;
+
+    return opencl_device_init(hwdev);
 }
 
 static int opencl_get_plane_format(enum AVPixelFormat pixfmt,
@@ -1263,6 +1355,177 @@ fail:
     return err;
 }
 
+#if HAVE_OPENCL_VAAPI_BEIGNET
+
+typedef struct VAAPItoOpenCLMapping {
+    VAImage      va_image;
+    VABufferInfo va_buffer_info;
+
+    AVOpenCLFrameDescriptor frame;
+} VAAPItoOpenCLMapping;
+
+static void opencl_unmap_from_vaapi(AVHWFramesContext *src_fc,
+                                    HWMapDescriptor *hwmap)
+{
+    VAAPItoOpenCLMapping *mapping = hwmap->priv;
+    AVVAAPIDeviceContext *src_dev = src_fc->device_ctx->hwctx;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    cl_int cle;
+    int i;
+
+    surface_id = (VASurfaceID)(uintptr_t)hwmap->source->data[3];
+    av_log(src_fc, AV_LOG_DEBUG, "Unmap VAAPI surface %#x from OpenCL.\n",
+           surface_id);
+
+    for (i = 0; i < mapping->frame.nb_planes; i++) {
+        cle = clReleaseMemObject(mapping->frame.planes[i]);
+        if (cle != CL_SUCCESS) {
+            av_log(src_fc, AV_LOG_ERROR, "Failed to release CL "
+                   "buffer of plane %d of VA image %#x (derived "
+                   "from surface %#x): %d.\n", i,
+                   mapping->va_image.buf, surface_id, cle);
+        }
+    }
+
+    vas = vaReleaseBufferHandle(src_dev->display,
+                                mapping->va_image.buf);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(src_fc, AV_LOG_ERROR, "Failed to release buffer "
+               "handle of image %#x (derived from surface %#x): "
+               "%d (%s).\n", mapping->va_image.buf, surface_id,
+               vas, vaErrorStr(vas));
+    }
+
+    vas = vaDestroyImage(src_dev->display,
+                         mapping->va_image.image_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(src_fc, AV_LOG_ERROR, "Failed to destroy image "
+               "derived from surface %#x: %d (%s).\n",
+               surface_id, vas, vaErrorStr(vas));
+    }
+
+    av_free(mapping);
+}
+
+static int opencl_map_from_vaapi(AVHWFramesContext *dst_fc, AVFrame *dst,
+                                 const AVFrame *src, int flags)
+{
+    AVHWFramesContext      *src_fc =
+        (AVHWFramesContext*)src->hw_frames_ctx->data;
+    AVVAAPIDeviceContext  *src_dev = src_fc->device_ctx->hwctx;
+    AVOpenCLDeviceContext *dst_dev = dst_fc->device_ctx->hwctx;
+    OpenCLDeviceContext      *priv = dst_fc->device_ctx->internal->priv;
+    VAAPItoOpenCLMapping  *mapping = NULL;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    cl_int cle;
+    int err, p;
+
+    surface_id = (VASurfaceID)(uintptr_t)src->data[3];
+    av_log(src_fc, AV_LOG_DEBUG, "Map VAAPI surface %#x to OpenCL.\n",
+           surface_id);
+
+    mapping = av_mallocz(sizeof(*mapping));
+    if (!mapping)
+        return AVERROR(ENOMEM);
+
+    vas = vaDeriveImage(src_dev->display, surface_id,
+                        &mapping->va_image);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(src_fc, AV_LOG_ERROR, "Failed to derive image from "
+               "surface %#x: %d (%s).\n",
+               surface_id, vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        goto fail;
+    }
+
+    mapping->va_buffer_info.mem_type =
+        VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+
+    vas = vaAcquireBufferHandle(src_dev->display,
+                                mapping->va_image.buf,
+                                &mapping->va_buffer_info);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(src_fc, AV_LOG_ERROR, "Failed to get buffer "
+               "handle from image %#x (derived from surface %#x): "
+               "%d (%s).\n", mapping->va_image.buf, surface_id,
+               vas, vaErrorStr(vas));
+        vaDestroyImage(src_dev->display, mapping->va_image.buf);
+        err = AVERROR(EIO);
+        goto fail_derived;
+    }
+
+    av_log(dst_fc, AV_LOG_DEBUG, "DRM PRIME fd is %ld.\n",
+           mapping->va_buffer_info.handle);
+
+    mapping->frame.nb_planes = mapping->va_image.num_planes;
+    for (p = 0; p < mapping->frame.nb_planes; p++) {
+        cl_import_image_info_intel image_info = {
+            .fd   = mapping->va_buffer_info.handle,
+            .size = mapping->va_buffer_info.mem_size,
+            .type = CL_MEM_OBJECT_IMAGE2D,
+            .offset    = mapping->va_image.offsets[p],
+            .row_pitch = mapping->va_image.pitches[p],
+        };
+        cl_image_desc image_desc;
+
+        err = opencl_get_plane_format(src_fc->sw_format, p,
+                                      mapping->va_image.width,
+                                      mapping->va_image.height,
+                                      &image_info.fmt,
+                                      &image_desc);
+        if (err < 0) {
+            av_log(dst_fc, AV_LOG_ERROR, "VA %#x (derived from "
+                   "surface %#x) has invalid parameters: %d.\n",
+                   mapping->va_image.buf, surface_id, err);
+            goto fail_mapped;
+        }
+        image_info.width  = image_desc.image_width;
+        image_info.height = image_desc.image_height;
+
+        mapping->frame.planes[p] =
+            priv->clCreateImageFromFdINTEL(dst_dev->context,
+                                           &image_info, &cle);
+        if (!mapping->frame.planes[p]) {
+            av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL image "
+                   "from plane %d of VA image %#x (derived from "
+                   "surface %#x): %d.\n", p,
+                   mapping->va_image.buf, surface_id, cle);
+            err = AVERROR(EIO);
+            goto fail_mapped;
+        }
+
+        dst->data[p] = (uint8_t*)mapping->frame.planes[p];
+    }
+
+    err = ff_hwframe_map_create(src->hw_frames_ctx,
+                                dst, src, &opencl_unmap_from_vaapi,
+                                mapping);
+    if (err < 0)
+        goto fail_mapped;
+
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    return 0;
+
+fail_mapped:
+    for (p = 0; p < mapping->frame.nb_planes; p++) {
+        if (mapping->frame.planes[p])
+            clReleaseMemObject(mapping->frame.planes[p]);
+    }
+    vaReleaseBufferHandle(src_dev->display, mapping->va_image.buf);
+fail_derived:
+    vaDestroyImage(src_dev->display, mapping->va_image.image_id);
+fail:
+    av_freep(&mapping);
+    return err;
+}
+
+#endif
+
+
 static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
                            const AVFrame *src, int flags)
 {
@@ -1270,6 +1533,38 @@ static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     if (hwfc->sw_format != dst->format)
         return AVERROR(ENOSYS);
     return opencl_map_frame(hwfc, dst, src, flags);
+}
+
+static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
+                         const AVFrame *src, int flags)
+{
+    OpenCLDeviceContext *priv = hwfc->device_ctx->internal->priv;
+    av_assert0(dst->format == AV_PIX_FMT_OPENCL);
+    switch (src->format) {
+#if HAVE_OPENCL_VAAPI_BEIGNET
+    case AV_PIX_FMT_VAAPI:
+        if (priv->vaapi_mapping_usable)
+            return opencl_map_from_vaapi(hwfc, dst, src, flags);
+#endif
+    }
+    return AVERROR(ENOSYS);
+}
+
+static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
+                                   AVHWFramesContext *src_fc, int flags)
+{
+    OpenCLDeviceContext *priv = dst_fc->device_ctx->internal->priv;
+    switch (src_fc->device_ctx->type) {
+#if HAVE_OPENCL_VAAPI_BEIGNET
+    case AV_HWDEVICE_TYPE_VAAPI:
+        if (!priv->vaapi_mapping_usable)
+            return AVERROR(ENOSYS);
+        break;
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+    return opencl_frames_init_command_queue(dst_fc);
 }
 
 const HWContextType ff_hwcontext_type_opencl = {
@@ -1282,6 +1577,7 @@ const HWContextType ff_hwcontext_type_opencl = {
     .frames_priv_size       = sizeof(OpenCLFramesContext),
 
     .device_create          = &opencl_device_create,
+    .device_derive          = &opencl_device_derive,
     .device_init            = &opencl_device_init,
     .device_uninit          = &opencl_device_uninit,
 
@@ -1295,6 +1591,8 @@ const HWContextType ff_hwcontext_type_opencl = {
     .transfer_data_from     = &opencl_transfer_data_from,
 
     .map_from               = &opencl_map_from,
+    .map_to                 = &opencl_map_to,
+    .frames_derive_to       = &opencl_frames_derive_to,
 
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_OPENCL,
