@@ -8,7 +8,8 @@ PROGS      += $(AVPROGS)
 AVBASENAMES = avconv avplay avprobe
 ALLAVPROGS  = $(AVBASENAMES:%=%$(EXESUF))
 
-OBJS-avconv                   += avtools/avconv_opt.o avtools/avconv_filter.o
+OBJS-avconv                   += avtools/avconv_opt.o avtools/avconv_filter.o \
+                                 avtools/avconv_hw.o
 OBJS-avconv-$(CONFIG_LIBMFX)  += avtools/avconv_qsv.o
 OBJS-avconv-$(CONFIG_VAAPI)   += avtools/avconv_vaapi.o
 OBJS-avconv-$(CONFIG_VDA)     += avtools/avconv_vda.o

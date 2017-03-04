@@ -1704,6 +1704,17 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+
+        ret = hw_device_setup_for_decode(ist);
+        if (ret < 0) {
+            char errbuf[128];
+            av_strerror(ret, errbuf, sizeof(errbuf));
+            snprintf(error, error_len, "Device setup failed for "
+                     "decoder on input stream #%d:%d : %s",
+                     ist->file_index, ist->st->index, errbuf);
+            return ret;
+        }
+
         if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
             char errbuf[128];
             if (ret == AVERROR_EXPERIMENTAL)
@@ -2046,6 +2057,16 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             ost->enc_ctx->hw_frames_ctx = av_buffer_ref(ost->filter->filter->inputs[0]->hw_frames_ctx);
             if (!ost->enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);
+        } else {
+            ret = hw_device_setup_for_encode(ost);
+            if (ret < 0) {
+                char errbuf[128];
+                av_strerror(ret, errbuf, sizeof(errbuf));
+                snprintf(error, error_len, "Device setup failed for "
+                         "encoder on output stream #%d:%d : %s",
+                     ost->file_index, ost->index, errbuf);
+                return ret;
+            }
         }
 
         if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
@@ -2795,6 +2816,7 @@ static int transcode(void)
     }
 
     av_buffer_unref(&hw_device_ctx);
+    hw_device_free_all();
 
     /* finished ! */
     ret = 0;
