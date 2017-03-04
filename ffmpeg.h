@@ -628,6 +628,7 @@ extern AVBufferRef *hw_device_ctx;
 #if CONFIG_QSV
 extern char *qsv_device;
 #endif
+extern HWDevice *filter_hw_device;
 
 
 void term_init(void);

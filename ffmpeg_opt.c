@@ -98,6 +98,7 @@ const HWAccel hwaccels[] = {
 };
 int hwaccel_lax_profile_check = 0;
 AVBufferRef *hw_device_ctx;
+HWDevice *filter_hw_device;
 
 char *vstats_filename;
 char *sdp_filename;
@@ -493,6 +494,20 @@ static int opt_init_hw_device(void *optctx, const char *opt, const char *arg)
     } else {
         return hw_device_init_from_string(arg, NULL);
     }
+}
+
+static int opt_filter_hw_device(void *optctx, const char *opt, const char *arg)
+{
+    if (filter_hw_device) {
+        av_log(NULL, AV_LOG_ERROR, "Only one filter device can be used.\n");
+        return AVERROR(EINVAL);
+    }
+    filter_hw_device = hw_device_get_by_name(arg);
+    if (!filter_hw_device) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid filter device %s.\n", arg);
+        return AVERROR(EINVAL);
+    }
+    return 0;
 }
 
 /**
@@ -3708,6 +3723,8 @@ const OptionDef options[] = {
 
     { "init_hw_device", HAS_ARG | OPT_EXPERT, { .func_arg = opt_init_hw_device },
         "initialise hardware device", "args" },
+    { "filter_hw_device", HAS_ARG | OPT_EXPERT, { .func_arg = opt_filter_hw_device },
+        "set hardware device used when filtering", "device" },
 
     { NULL, },
 };
