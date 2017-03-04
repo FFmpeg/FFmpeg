@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-06-14 - xxxxxxx - lavu 55.64.100 - hwcontext.h
+  Add av_hwdevice_ctx_create_derived().
+
 2017-05-15 - xxxxxxxxxx - lavc 57.96.100 - avcodec.h
   VideoToolbox hardware-accelerated decoding now supports the new hwaccel API,
   which can create the decoder context and allocate hardware frames automatically.
