@@ -373,6 +373,7 @@
     <ClCompile Include="..\libavcodec\cfhddata.c" />
     <ClCompile Include="..\libavcodec\cinepak.c" />
     <ClCompile Include="..\libavcodec\cinepakenc.c" />
+    <ClCompile Include="..\libavcodec\clearvideo.c" />
     <ClCompile Include="..\libavcodec\cljrdec.c" />
     <ClCompile Include="..\libavcodec\cljrenc.c" />
     <ClCompile Include="..\libavcodec\cllc.c" />
@@ -666,6 +667,7 @@
     <ClCompile Include="..\libavcodec\s302m.c" />
     <ClCompile Include="..\libavcodec\s302menc.c" />
     <ClCompile Include="..\libavcodec\sanm.c" />
+    <ClCompile Include="..\libavcodec\scpr.c" />
     <ClCompile Include="..\libavcodec\screenpresso.c" />
     <ClCompile Include="..\libavcodec\sgidec.c" />
     <ClCompile Include="..\libavcodec\sgienc.c" />

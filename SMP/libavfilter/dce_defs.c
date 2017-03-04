@@ -196,6 +196,7 @@ AVFilter ff_af_rubberband = {0};
 AVFilter ff_af_sofalizer = {0};
 AVFilter ff_asrc_flite = {0};
 AVFilter ff_vf_coreimage = {0};
+AVFilter ff_vf_deinterlace_vaapi = {0};
 AVFilter ff_vf_frei0r = {0};
 AVFilter ff_vf_ocr = {0};
 AVFilter ff_vf_ocv = {0};
