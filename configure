@@ -289,7 +289,7 @@ External library support:
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
-  --enable-opencl          enable OpenCL code
+  --enable-opencl          enable OpenCL processing [no]
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
                            if gnutls is not used [no]
@@ -1633,7 +1633,6 @@ EXTERNAL_LIBRARY_LIST="
     libzvbi
     mediacodec
     openal
-    opencl
     opengl
 "
 
@@ -1669,6 +1668,7 @@ HWACCEL_LIBRARY_LIST="
     libmfx
     mmal
     omx
+    opencl
 "
 
 DOCUMENT_LIST="
