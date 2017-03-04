@@ -59,9 +59,9 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
         if (!q->frames_ctx.hw_frames_ctx)
             return AVERROR(ENOMEM);
 
-        ret = ff_qsv_init_session_hwcontext(avctx, &q->internal_session,
-                                            &q->frames_ctx, q->load_plugins,
-                                            q->iopattern == MFX_IOPATTERN_OUT_OPAQUE_MEMORY);
+        ret = ff_qsv_init_session_frames(avctx, &q->internal_session,
+                                         &q->frames_ctx, q->load_plugins,
+                                         q->iopattern == MFX_IOPATTERN_OUT_OPAQUE_MEMORY);
         if (ret < 0) {
             av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
             return ret;
