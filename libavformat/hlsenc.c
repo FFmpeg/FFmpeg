@@ -1329,13 +1329,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         new_start_pos = avio_tell(hls->avf->pb);
         hls->size = new_start_pos - hls->start_pos;
 
+        ff_format_io_close(s, &oc->pb);
+        if (hls->vtt_avf) {
+            ff_format_io_close(s, &hls->vtt_avf->pb);
+        }
         if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
             if (!(hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size <= 0))
                 if (hls->avf->oformat->priv_class && hls->avf->priv_data)
                     av_opt_set(hls->avf->priv_data, "mpegts_flags", "resend_headers", 0);
-            ff_format_io_close(s, &oc->pb);
-            if (hls->vtt_avf)
-                ff_format_io_close(s, &hls->vtt_avf->pb);
             hls_rename_temp_file(s, oc);
         }
 
