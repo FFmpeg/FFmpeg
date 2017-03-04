@@ -34,7 +34,7 @@ typedef struct HWMapContext {
 
     int            mode;
     char          *derive_device_type;
-    int            map_backwards;
+    int            reverse;
 } HWMapContext;
 
 static int hwmap_query_formats(AVFilterContext *avctx)
@@ -96,7 +96,8 @@ static int hwmap_config_output(AVFilterLink *outlink)
         }
 
         if (inlink->format == hwfc->format &&
-            (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+            (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+            !ctx->reverse) {
             // Map between two hardware formats (including the case of
             // undoing an existing mapping).
 
@@ -116,6 +117,56 @@ static int hwmap_config_output(AVFilterLink *outlink)
                        "frames context: %d.\n", err);
                 goto fail;
             }
+
+        } else if (inlink->format == hwfc->format &&
+                   (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+                   ctx->reverse) {
+            // Map between two hardware formats, but do it in reverse.
+            // Make a new hwframe context for the target type, and then
+            // overwrite the input hwframe context with a derived context
+            // mapped from that back to the source type.
+            AVBufferRef *source;
+            AVHWFramesContext *frames;
+
+            ctx->hwframes_ref = av_hwframe_ctx_alloc(device);
+            if (!ctx->hwframes_ref) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+            frames = (AVHWFramesContext*)ctx->hwframes_ref->data;
+
+            frames->format    = outlink->format;
+            frames->sw_format = hwfc->sw_format;
+            frames->width     = hwfc->width;
+            frames->height    = hwfc->height;
+            frames->initial_pool_size = 64;
+
+            err = av_hwframe_ctx_init(ctx->hwframes_ref);
+            if (err < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to initialise "
+                       "target frames context: %d.\n", err);
+                goto fail;
+            }
+
+            err = av_hwframe_ctx_create_derived(&source,
+                                                inlink->format,
+                                                hwfc->device_ref,
+                                                ctx->hwframes_ref,
+                                                ctx->mode);
+            if (err < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to create "
+                       "derived source frames context: %d.\n", err);
+                goto fail;
+            }
+
+            // Here is the naughty bit.  This overwriting changes what
+            // ff_get_video_buffer() in the previous filter returns -
+            // it will now give a frame allocated here mapped back to
+            // the format it expects.  If there were any additional
+            // constraints on the output frames there then this may
+            // break nastily.
+            av_buffer_unref(&inlink->hw_frames_ctx);
+            inlink->hw_frames_ctx = source;
 
         } else if ((outlink->format == hwfc->format &&
                     inlink->format  == hwfc->sw_format) ||
@@ -148,13 +199,13 @@ static int hwmap_config_output(AVFilterLink *outlink)
 
         if (!device) {
             av_log(avctx, AV_LOG_ERROR, "A device reference is "
-                   "required to create new frames with backwards "
+                   "required to create new frames with reverse "
                    "mapping.\n");
             err = AVERROR(EINVAL);
             goto fail;
         }
 
-        ctx->map_backwards = 1;
+        ctx->reverse = 1;
 
         ctx->hwframes_ref = av_hwframe_ctx_alloc(device);
         if (!ctx->hwframes_ref) {
@@ -171,7 +222,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
         err = av_hwframe_ctx_init(ctx->hwframes_ref);
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to create frame "
-                   "context for backward mapping: %d.\n", err);
+                   "context for reverse mapping: %d.\n", err);
             goto fail;
         }
 
@@ -203,7 +254,7 @@ static AVFrame *hwmap_get_buffer(AVFilterLink *inlink, int w, int h)
     AVFilterLink  *outlink = avctx->outputs[0];
     HWMapContext      *ctx = avctx->priv;
 
-    if (ctx->map_backwards) {
+    if (ctx->reverse && !inlink->hw_frames_ctx) {
         AVFrame *src, *dst;
         int err;
 
@@ -261,7 +312,7 @@ static int hwmap_filter_frame(AVFilterLink *link, AVFrame *input)
         goto fail;
     }
 
-    if (ctx->map_backwards && !input->hw_frames_ctx) {
+    if (ctx->reverse && !input->hw_frames_ctx) {
         // If we mapped backwards from hardware to software, we need
         // to attach the hardware frame context to the input frame to
         // make the mapping visible to av_hwframe_map().
@@ -327,6 +378,9 @@ static const AVOption hwmap_options[] = {
     { "derive_device", "Derive a new device of this type",
       OFFSET(derive_device_type), AV_OPT_TYPE_STRING,
       { .str = NULL }, 0, 0, FLAGS },
+    { "reverse", "Map in reverse (create and allocate in the sink)",
+      OFFSET(reverse), AV_OPT_TYPE_INT,
+      { .i64 = 0 }, 0, 1, FLAGS },
 
     { NULL }
 };
