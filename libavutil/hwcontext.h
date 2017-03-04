@@ -30,6 +30,7 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VAAPI,
     AV_HWDEVICE_TYPE_DXVA2,
     AV_HWDEVICE_TYPE_QSV,
+    AV_HWDEVICE_TYPE_NONE,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;
@@ -221,6 +222,33 @@ typedef struct AVHWFramesContext {
      */
     int width, height;
 } AVHWFramesContext;
+
+/**
+ * Look up an AVHWDeviceType by name.
+ *
+ * @param name String name of the device type (case-insensitive).
+ * @return The type from enum AVHWDeviceType, or AV_HWDEVICE_TYPE_NONE if
+ *         not found.
+ */
+enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name);
+
+/** Get the string name of an AVHWDeviceType.
+ *
+ * @param type Type from enum AVHWDeviceType.
+ * @return Pointer to a static string containing the name, or NULL if the type
+ *         is not valid.
+ */
+const char *av_hwdevice_get_type_name(enum AVHWDeviceType type);
+
+/**
+ * Iterate over supported device types.
+ *
+ * @param type AV_HWDEVICE_TYPE_NONE initially, then the previous type
+ *             returned by this function in subsequent iterations.
+ * @return The next usable device type from enum AVHWDeviceType, or
+ *         AV_HWDEVICE_TYPE_NONE if there are no more.
+ */
+enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev);
 
 /**
  * Allocate an AVHWDeviceContext for a given pixel format.
