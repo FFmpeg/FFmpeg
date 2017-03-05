@@ -44,6 +44,13 @@
 #include "hwcontext_vaapi.h"
 #endif
 
+#if HAVE_OPENCL_DXVA2
+#define COBJMACROS
+#include <CL/cl_dx9_media_sharing.h>
+#include <dxva2api.h>
+#include "hwcontext_dxva2.h"
+#endif
+
 
 typedef struct OpenCLDeviceContext {
     // Default command queue to use for transfer/mapping operations on
@@ -70,6 +77,18 @@ typedef struct OpenCLDeviceContext {
     clEnqueueReleaseVA_APIMediaSurfacesINTEL_fn
         clEnqueueReleaseVA_APIMediaSurfacesINTEL;
 #endif
+
+#if HAVE_OPENCL_DXVA2
+    int dxva2_mapping_usable;
+    cl_dx9_media_adapter_type_khr dx9_media_adapter_type;
+
+    clCreateFromDX9MediaSurfaceKHR_fn
+        clCreateFromDX9MediaSurfaceKHR;
+    clEnqueueAcquireDX9MediaSurfacesKHR_fn
+        clEnqueueAcquireDX9MediaSurfacesKHR;
+    clEnqueueReleaseDX9MediaSurfacesKHR_fn
+        clEnqueueReleaseDX9MediaSurfacesKHR;
+#endif
 } OpenCLDeviceContext;
 
 typedef struct OpenCLFramesContext {
@@ -78,6 +97,14 @@ typedef struct OpenCLFramesContext {
     // Otherwise, it is a reference to the default command queue for the
     // device.
     cl_command_queue command_queue;
+
+#if HAVE_OPENCL_DXVA2
+    // For mapping APIs which have separate creation and acquire/release
+    // steps, this stores the OpenCL memory objects corresponding to each
+    // frame.
+    int                   nb_mapped_frames;
+    AVOpenCLFrameDescriptor *mapped_frames;
+#endif
 } OpenCLFramesContext;
 
 
@@ -729,6 +756,28 @@ static int opencl_device_init(AVHWDeviceContext *hwdev)
     }
 #endif
 
+#if HAVE_OPENCL_DXVA2
+    {
+        int fail = 0;
+
+        CL_FUNC(clCreateFromDX9MediaSurfaceKHR,
+                "DXVA2 to OpenCL mapping");
+        CL_FUNC(clEnqueueAcquireDX9MediaSurfacesKHR,
+                "DXVA2 in OpenCL acquire");
+        CL_FUNC(clEnqueueReleaseDX9MediaSurfacesKHR,
+                "DXVA2 in OpenCL release");
+
+        if (fail) {
+            av_log(hwdev, AV_LOG_WARNING, "DXVA2 to OpenCL mapping "
+                   "not usable.\n");
+            priv->dxva2_mapping_usable = 0;
+        } else {
+            priv->dx9_media_adapter_type = CL_ADAPTER_D3D9EX_KHR;
+            priv->dxva2_mapping_usable = 1;
+        }
+    }
+#endif
+
 #undef CL_FUNC
 
     return 0;
@@ -837,6 +886,103 @@ static int opencl_filter_intel_media_vaapi_device(AVHWDeviceContext *hwdev,
 }
 #endif
 
+#if HAVE_OPENCL_DXVA2
+static int opencl_filter_dxva2_platform(AVHWDeviceContext *hwdev,
+                                        cl_platform_id platform_id,
+                                        const char *platform_name,
+                                        void *context)
+{
+    const char *dx9_ext = "cl_khr_dx9_media_sharing";
+
+    if (opencl_check_platform_extension(platform_id, dx9_ext)) {
+        return 0;
+    } else {
+        av_log(hwdev, AV_LOG_DEBUG, "Platform %s does not support the "
+               "%s extension.\n", platform_name, dx9_ext);
+        return 1;
+    }
+}
+
+static int opencl_enumerate_dxva2_devices(AVHWDeviceContext *hwdev,
+                                          cl_platform_id platform_id,
+                                          const char *platform_name,
+                                          cl_uint *nb_devices,
+                                          cl_device_id **devices,
+                                          void *context)
+{
+    IDirect3DDevice9 *device = context;
+    clGetDeviceIDsFromDX9MediaAdapterKHR_fn
+        clGetDeviceIDsFromDX9MediaAdapterKHR;
+    cl_dx9_media_adapter_type_khr media_adapter_type = CL_ADAPTER_D3D9EX_KHR;
+    cl_int cle;
+
+    clGetDeviceIDsFromDX9MediaAdapterKHR =
+        clGetExtensionFunctionAddressForPlatform(platform_id,
+            "clGetDeviceIDsFromDX9MediaAdapterKHR");
+    if (!clGetDeviceIDsFromDX9MediaAdapterKHR) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get address of "
+               "clGetDeviceIDsFromDX9MediaAdapterKHR().\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    cle = clGetDeviceIDsFromDX9MediaAdapterKHR(
+        platform_id, 1, &media_adapter_type, (void**)&device,
+        CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR,
+        0, NULL, nb_devices);
+    if (cle == CL_DEVICE_NOT_FOUND) {
+        av_log(hwdev, AV_LOG_DEBUG, "No DXVA2-supporting devices found "
+               "on platform \"%s\".\n", platform_name);
+        *nb_devices = 0;
+        return 0;
+    } else if (cle != CL_SUCCESS) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get number of devices "
+               "on platform \"%s\": %d.\n", platform_name, cle);
+        return AVERROR_UNKNOWN;
+    }
+
+    *devices = av_malloc_array(*nb_devices, sizeof(**devices));
+    if (!*devices)
+        return AVERROR(ENOMEM);
+
+    cle = clGetDeviceIDsFromDX9MediaAdapterKHR(
+        platform_id, 1, &media_adapter_type, (void**)&device,
+        CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR,
+        *nb_devices, *devices, NULL);
+    if (cle != CL_SUCCESS) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to get list of DXVA2-supporting "
+               "devices on platform \"%s\": %d.\n", platform_name, cle);
+        av_freep(devices);
+        return AVERROR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+static int opencl_filter_gpu_device(AVHWDeviceContext *hwdev,
+                                    cl_device_id device_id,
+                                    const char *device_name,
+                                    void *context)
+{
+    cl_device_type device_type;
+    cl_int cle;
+
+    cle = clGetDeviceInfo(device_id, CL_DEVICE_TYPE,
+                          sizeof(device_type), &device_type, NULL);
+    if (cle != CL_SUCCESS) {
+        av_log(hwdev, AV_LOG_ERROR, "Failed to query device type "
+               "of device \"%s\".\n", device_name);
+        return AVERROR_UNKNOWN;
+    }
+    if (!(device_type & CL_DEVICE_TYPE_GPU)) {
+        av_log(hwdev, AV_LOG_DEBUG, "Device %s skipped (not GPU).\n",
+               device_name);
+        return 1;
+    }
+
+    return 0;
+}
+#endif
+
 static int opencl_device_derive(AVHWDeviceContext *hwdev,
                                 AVHWDeviceContext *src_ctx,
                                 int flags)
@@ -899,6 +1045,60 @@ static int opencl_device_derive(AVHWDeviceContext *hwdev,
             };
 
             err = opencl_device_create_internal(hwdev, &selector, props);
+        }
+        break;
+#endif
+
+#if HAVE_OPENCL_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        {
+            AVDXVA2DeviceContext *src_hwctx = src_ctx->hwctx;
+            IDirect3DDevice9 *device;
+            HANDLE device_handle;
+            HRESULT hr;
+
+            hr = IDirect3DDeviceManager9_OpenDeviceHandle(src_hwctx->devmgr,
+                                                          &device_handle);
+            if (FAILED(hr)) {
+                av_log(hwdev, AV_LOG_ERROR, "Failed to open device handle "
+                       "for Direct3D9 device: %lx.\n", (unsigned long)hr);
+                err = AVERROR_UNKNOWN;
+                break;
+            }
+
+            hr = IDirect3DDeviceManager9_LockDevice(src_hwctx->devmgr,
+                                                    device_handle,
+                                                    &device, FALSE);
+            if (SUCCEEDED(hr)) {
+                cl_context_properties props[5] = {
+                    CL_CONTEXT_PLATFORM,
+                    0,
+                    CL_CONTEXT_ADAPTER_D3D9EX_KHR,
+                    (intptr_t)device,
+                    0,
+                };
+                OpenCLDeviceSelector selector = {
+                    .platform_index      = -1,
+                    .device_index        = -1,
+                    .context             = device,
+                    .enumerate_platforms = &opencl_enumerate_platforms,
+                    .filter_platform     = &opencl_filter_dxva2_platform,
+                    .enumerate_devices   = &opencl_enumerate_dxva2_devices,
+                    .filter_device       = &opencl_filter_gpu_device,
+                };
+
+                err = opencl_device_create_internal(hwdev, &selector, props);
+
+                IDirect3DDeviceManager9_UnlockDevice(src_hwctx->devmgr,
+                                                     device_handle, FALSE);
+            } else {
+                av_log(hwdev, AV_LOG_ERROR, "Failed to lock device handle "
+                       "for Direct3D9 device: %lx.\n", (unsigned long)hr);
+                err = AVERROR_UNKNOWN;
+            }
+
+            IDirect3DDeviceManager9_CloseDeviceHandle(src_hwctx->devmgr,
+                                                      device_handle);
         }
         break;
 #endif
@@ -1260,6 +1460,22 @@ static void opencl_frames_uninit(AVHWFramesContext *hwfc)
 {
     OpenCLFramesContext *priv = hwfc->internal->priv;
     cl_int cle;
+
+#if HAVE_OPENCL_DXVA2
+    int i, p;
+    for (i = 0; i < priv->nb_mapped_frames; i++) {
+        AVOpenCLFrameDescriptor *desc = &priv->mapped_frames[i];
+        for (p = 0; p < desc->nb_planes; p++) {
+            cle = clReleaseMemObject(desc->planes[p]);
+            if (cle != CL_SUCCESS) {
+                av_log(hwfc, AV_LOG_ERROR, "Failed to release mapped "
+                       "frame object (frame %d plane %d): %d.\n",
+                       i, p, cle);
+            }
+        }
+    }
+    av_freep(&priv->mapped_frames);
+#endif
 
     cle = clReleaseCommandQueue(priv->command_queue);
     if (cle != CL_SUCCESS) {
@@ -1878,6 +2094,170 @@ fail:
 
 #endif
 
+#if HAVE_OPENCL_DXVA2
+
+static void opencl_unmap_from_dxva2(AVHWFramesContext *dst_fc,
+                                    HWMapDescriptor *hwmap)
+{
+    AVOpenCLFrameDescriptor    *desc = hwmap->priv;
+    OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->device_ctx->internal->priv;
+    cl_event event;
+    cl_int cle;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Unmap DXVA2 surface from OpenCL.\n");
+
+    cle = device_priv->clEnqueueReleaseDX9MediaSurfacesKHR(
+        frames_priv->command_queue, desc->nb_planes, desc->planes,
+        0, NULL, &event);
+    if (cle != CL_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to release surface "
+               "handle: %d.\n", cle);
+        return;
+    }
+
+    opencl_wait_events(dst_fc, &event, 1);
+}
+
+static int opencl_map_from_dxva2(AVHWFramesContext *dst_fc, AVFrame *dst,
+                                 const AVFrame *src, int flags)
+{
+    AVHWFramesContext *src_fc =
+        (AVHWFramesContext*)src->hw_frames_ctx->data;
+    AVDXVA2FramesContext  *src_hwctx = src_fc->hwctx;
+    OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    AVOpenCLFrameDescriptor *desc;
+    cl_event event;
+    cl_int cle;
+    int err, i;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Map DXVA2 surface %p to "
+           "OpenCL.\n", src->data[3]);
+
+    for (i = 0; i < src_hwctx->nb_surfaces; i++) {
+        if (src_hwctx->surfaces[i] == (IDirect3DSurface9*)src->data[3])
+            break;
+    }
+    if (i >= src_hwctx->nb_surfaces) {
+        av_log(dst_fc, AV_LOG_ERROR, "Trying to map from a surface which "
+               "is not in the mapped frames context.\n");
+        return AVERROR(EINVAL);
+    }
+
+    desc = &frames_priv->mapped_frames[i];
+
+    cle = device_priv->clEnqueueAcquireDX9MediaSurfacesKHR(
+        frames_priv->command_queue, desc->nb_planes, desc->planes,
+        0, NULL, &event);
+    if (cle != CL_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to acquire surface "
+               "handle: %d.\n", cle);
+        return AVERROR(EIO);
+    }
+
+    err = opencl_wait_events(dst_fc, &event, 1);
+    if (err < 0)
+        goto fail;
+
+    for (i = 0; i < desc->nb_planes; i++)
+        dst->data[i] = (uint8_t*)desc->planes[i];
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &opencl_unmap_from_dxva2, desc);
+    if (err < 0)
+        goto fail;
+
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    return 0;
+
+fail:
+    cle = device_priv->clEnqueueReleaseDX9MediaSurfacesKHR(
+        frames_priv->command_queue, desc->nb_planes, desc->planes,
+        0, NULL, &event);
+    if (cle == CL_SUCCESS)
+        opencl_wait_events(dst_fc, &event, 1);
+    return err;
+}
+
+static int opencl_frames_derive_from_dxva2(AVHWFramesContext *dst_fc,
+                                           AVHWFramesContext *src_fc, int flags)
+{
+    AVOpenCLDeviceContext   *dst_dev = dst_fc->device_ctx->hwctx;
+    AVDXVA2FramesContext  *src_hwctx = src_fc->hwctx;
+    OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    cl_mem_flags cl_flags;
+    cl_int cle;
+    int err, i, p, nb_planes;
+
+    if (src_fc->sw_format != AV_PIX_FMT_NV12) {
+        av_log(dst_fc, AV_LOG_ERROR, "Only NV12 textures are supported "
+               "for DXVA2 to OpenCL mapping.\n");
+        return AVERROR(EINVAL);
+    }
+    nb_planes = 2;
+
+    if (src_fc->initial_pool_size == 0) {
+        av_log(dst_fc, AV_LOG_ERROR, "Only fixed-size pools are supported "
+               "for DXVA2 to OpenCL mapping.\n");
+        return AVERROR(EINVAL);
+    }
+
+    cl_flags = opencl_mem_flags_for_mapping(flags);
+    if (!cl_flags)
+        return AVERROR(EINVAL);
+
+    frames_priv->nb_mapped_frames = src_hwctx->nb_surfaces;
+
+    frames_priv->mapped_frames =
+        av_mallocz_array(frames_priv->nb_mapped_frames,
+                         sizeof(*frames_priv->mapped_frames));
+    if (!frames_priv->mapped_frames)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < frames_priv->nb_mapped_frames; i++) {
+        AVOpenCLFrameDescriptor *desc = &frames_priv->mapped_frames[i];
+        cl_dx9_surface_info_khr surface_info = {
+            .resource      = src_hwctx->surfaces[i],
+            .shared_handle = NULL,
+        };
+        desc->nb_planes = nb_planes;
+        for (p = 0; p < nb_planes; p++) {
+            desc->planes[p] =
+                device_priv->clCreateFromDX9MediaSurfaceKHR(
+                    dst_dev->context, cl_flags,
+                    device_priv->dx9_media_adapter_type,
+                    &surface_info, p, &cle);
+            if (!desc->planes[p]) {
+                av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL "
+                       "image from plane %d of DXVA2 surface %d: %d.\n",
+                       p, i, cle);
+                err = AVERROR(EIO);
+                goto fail;
+            }
+        }
+    }
+
+    return 0;
+
+fail:
+    for (i = 0; i < frames_priv->nb_mapped_frames; i++) {
+        AVOpenCLFrameDescriptor *desc = &frames_priv->mapped_frames[i];
+        for (p = 0; p < desc->nb_planes; p++) {
+            if (desc->planes[p])
+                clReleaseMemObject(desc->planes[p]);
+        }
+    }
+    av_freep(&frames_priv->mapped_frames);
+    frames_priv->nb_mapped_frames = 0;
+    return err;
+}
+
+#endif
+
 static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
                            const AVFrame *src, int flags)
 {
@@ -1904,6 +2284,11 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
         if (priv->qsv_mapping_usable)
             return opencl_map_from_qsv(hwfc, dst, src, flags);
 #endif
+#if HAVE_OPENCL_DXVA2
+    case AV_PIX_FMT_DXVA2_VLD:
+        if (priv->dxva2_mapping_usable)
+            return opencl_map_from_dxva2(hwfc, dst, src, flags);
+#endif
     }
     return AVERROR(ENOSYS);
 }
@@ -1924,6 +2309,18 @@ static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
     case AV_HWDEVICE_TYPE_VAAPI:
         if (!priv->qsv_mapping_usable)
             return AVERROR(ENOSYS);
+        break;
+#endif
+#if HAVE_OPENCL_DXVA2
+    case AV_HWDEVICE_TYPE_DXVA2:
+        if (!priv->dxva2_mapping_usable)
+            return AVERROR(ENOSYS);
+        {
+            int err;
+            err = opencl_frames_derive_from_dxva2(dst_fc, src_fc, flags);
+            if (err < 0)
+                return err;
+        }
         break;
 #endif
     default:

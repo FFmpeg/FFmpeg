@@ -2120,6 +2120,7 @@ HAVE_LIST="
     $TYPES_LIST
     makeinfo
     makeinfo_html
+    opencl_dxva2
     opencl_vaapi_beignet
     opencl_vaapi_intel_media
     perl
@@ -6164,6 +6165,11 @@ if enabled_all opencl vaapi ; then
         check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
             enable opencl_vaapi_intel_media
     fi
+fi
+
+if enabled_all opencl dxva2 ; then
+    check_type "CL/cl_dx9_media_sharing.h" cl_dx9_surface_info_khr &&
+        enable opencl_dxva2
 fi
 
 enabled vdpau &&
