@@ -63,7 +63,7 @@ static int vivo_probe(AVProbeData *p)
         return 0;
     buf += 15;
 
-    if (*buf < '0' && *buf > '2')
+    if (*buf < '0' || *buf > '2')
         return 0;
 
     return AVPROBE_SCORE_MAX;
