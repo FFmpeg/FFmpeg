@@ -273,7 +273,7 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc,
     unsigned bit;
 
     if (s->extra_bits) {
-        S <<= s->extra_bits;
+        S *= 1 << s->extra_bits;
 
         if (s->got_extra_bits &&
             get_bits_left(&s->gb_extra_bits) >= s->extra_bits) {
