@@ -2497,8 +2497,6 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
 
     td->thread_nr = threadnr;
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
-        if (mb_y >= s->mb_height)
-            break;
         td->thread_mb_pos = mb_y << 16;
         ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
         if (ret < 0)
