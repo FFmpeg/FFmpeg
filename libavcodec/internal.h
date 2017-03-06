@@ -363,4 +363,10 @@ int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, i
 int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
                      void **data, size_t *sei_size);
 
+/**
+ * Get an estimated video bitrate based on frame size, frame rate and coded
+ * bits per pixel.
+ */
+int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
+
 #endif /* AVCODEC_INTERNAL_H */
