@@ -1642,39 +1642,6 @@ Number of occasions (not the number of samples) that the signal attained either
 Overall bit depth of audio. Number of bits used for each sample.
 @end table
 
-@section asyncts
-
-Synchronize audio data with timestamps by squeezing/stretching it and/or
-dropping samples/adding silence when needed.
-
-This filter is not built by default, please use @ref{aresample} to do squeezing/stretching.
-
-It accepts the following parameters:
-@table @option
-
-@item compensate
-Enable stretching/squeezing the data to make it match the timestamps. Disabled
-by default. When disabled, time gaps are covered with silence.
-
-@item min_delta
-The minimum difference between timestamps and audio data (in seconds) to trigger
-adding/dropping samples. The default value is 0.1. If you get an imperfect
-sync with this filter, try setting this parameter to 0.
-
-@item max_comp
-The maximum compensation in samples per second. Only relevant with compensate=1.
-The default value is 500.
-
-@item first_pts
-Assume that the first PTS should be this value. The time base is 1 / sample
-rate. This allows for padding/trimming at the start of the stream. By default,
-no assumption is made about the first frame's expected PTS, so no padding or
-trimming is done. For example, this could be set to 0 to pad the beginning with
-silence if an audio stream starts after the video stream or to trim any samples
-with a negative PTS due to encoder delay.
-
-@end table
-
 @section atempo
 
 Adjust audio tempo.

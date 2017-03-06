@@ -187,12 +187,6 @@ $(FATE_AMIX): SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2-2.wav
 $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
-FATE_AFILTER_SAMPLES-$(call FILTERDEMDECMUX, ASYNCTS, FLV, NELLYMOSER, PCM_S16LE) += fate-filter-asyncts
-fate-filter-asyncts: SRC = $(TARGET_SAMPLES)/nellymoser/nellymoser-discont.flv
-fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
-fate-filter-asyncts: CMP = oneoff
-fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async-v3.pcm
-
 FATE_AFILTER_SAMPLES-$(CONFIG_ARESAMPLE_FILTER) += fate-filter-aresample
 fate-filter-aresample: SRC = $(TARGET_SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-aresample: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1:first_pts=0

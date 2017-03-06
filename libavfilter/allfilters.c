@@ -79,7 +79,6 @@ static void register_all(void)
     REGISTER_FILTER(ASPLIT,         asplit,         af);
     REGISTER_FILTER(ASTATS,         astats,         af);
     REGISTER_FILTER(ASTREAMSELECT,  astreamselect,  af);
-    REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATEMPO,         atempo,         af);
     REGISTER_FILTER(ATRIM,          atrim,          af);
     REGISTER_FILTER(AZMQ,           azmq,           af);

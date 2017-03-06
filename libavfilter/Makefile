@@ -67,7 +67,6 @@ OBJS-$(CONFIG_ASIDEDATA_FILTER)              += f_sidedata.o
 OBJS-$(CONFIG_ASPLIT_FILTER)                 += split.o
 OBJS-$(CONFIG_ASTATS_FILTER)                 += af_astats.o
 OBJS-$(CONFIG_ASTREAMSELECT_FILTER)          += f_streamselect.o
-OBJS-$(CONFIG_ASYNCTS_FILTER)                += af_asyncts.o
 OBJS-$(CONFIG_ATEMPO_FILTER)                 += af_atempo.o
 OBJS-$(CONFIG_ATRIM_FILTER)                  += trim.o
 OBJS-$(CONFIG_AZMQ_FILTER)                   += f_zmq.o
