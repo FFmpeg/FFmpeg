@@ -4572,8 +4572,8 @@ check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
-    check_func_headers time.h clock_gettime ||
-        check_lib clock_gettime time.h clock_gettime -lrt
+    { check_lib clock_gettime time.h clock_gettime ||
+      check_lib clock_gettime time.h clock_gettime -lrt; }
 
 check_func  fcntl
 check_func  fork
