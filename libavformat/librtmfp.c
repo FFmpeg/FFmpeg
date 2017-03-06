@@ -53,7 +53,7 @@ typedef struct LibRTMFPContext {
     unsigned int        pushLimit;
 } LibRTMFPContext;
 
-static void rtmfp_log(unsigned int threadID, int level, const char* fileName, long line, const char* message)
+static void rtmfp_log(unsigned int level, const char* fileName, long line, const char* message)
 {
     const char* strLevel = "";
     time_t today2 ;
@@ -115,8 +115,6 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
     int level = 0, res = 0;
-    char *url = av_malloc(strlen(uri)+1);
-    snprintf(url, strlen(uri)+1, uri);
 
     switch (av_log_get_level()) {
         case AV_LOG_FATAL:   level = 1; break;
@@ -128,7 +126,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         case AV_LOG_VERBOSE: level = 8; break;
         case AV_LOG_TRACE:   level = 8; break;
     }
-    RTMFP_Init(&ctx->rtmfp, &ctx->group);
+    RTMFP_Init(&ctx->rtmfp, &ctx->group, 1);
     ctx->rtmfp.pOnSocketError = onSocketError;
     ctx->rtmfp.pOnStatusEvent = onStatusEvent;
     ctx->rtmfp.isBlocking = 1;
@@ -139,9 +137,9 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     RTMFP_DumpSetCallback(rtmfp_dump);*/
     RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
-    RTMFP_GetPublicationAndUrlFromUri(url, &ctx->publication);
+    RTMFP_GetPublicationAndUrlFromUri(uri, &ctx->publication);
 
-    if ((ctx->id = RTMFP_Connect(url, &ctx->rtmfp)) == 0)
+    if ((ctx->id = RTMFP_Connect(uri, &ctx->rtmfp)) == 0)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
