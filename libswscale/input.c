@@ -948,16 +948,23 @@ static void planar_rgb##nbits##endian_name##_to_y(uint8_t *dst, const uint8_t *s
 {                                                                                                   \
     planar_rgb16_to_y(dst, src, w, nbits, endian, rgb2yuv);                                         \
 }                                                                                                   \
-static void planar_rgb##nbits##endian_name##_to_a(uint8_t *dst, const uint8_t *src[4],              \
-                                                  int w, int32_t *rgb2yuv)                          \
-{                                                                                                   \
-    planar_rgb16_to_a(dst, src, w, nbits, endian, rgb2yuv);                                         \
-}                                                                                                   \
 static void planar_rgb##nbits##endian_name##_to_uv(uint8_t *dstU, uint8_t *dstV,                    \
                                                    const uint8_t *src[4], int w, int32_t *rgb2yuv)  \
 {                                                                                                   \
     planar_rgb16_to_uv(dstU, dstV, src, w, nbits, endian, rgb2yuv);                                 \
 }                                                                                                   \
+
+#define rgb9plus_planar_transparency_funcs(nbits)                           \
+static void planar_rgb##nbits##le_to_a(uint8_t *dst, const uint8_t *src[4], \
+                                       int w, int32_t *rgb2yuv)             \
+{                                                                           \
+    planar_rgb16_to_a(dst, src, w, nbits, 0, rgb2yuv);                      \
+}                                                                           \
+static void planar_rgb##nbits##be_to_a(uint8_t *dst, const uint8_t *src[4], \
+                                       int w, int32_t *rgb2yuv)             \
+{                                                                           \
+    planar_rgb16_to_a(dst, src, w, nbits, 1, rgb2yuv);                      \
+}
 
 #define rgb9plus_planar_funcs(nbits)            \
     rgb9plus_planar_funcs_endian(nbits, le, 0)  \
@@ -968,6 +975,10 @@ rgb9plus_planar_funcs(10)
 rgb9plus_planar_funcs(12)
 rgb9plus_planar_funcs(14)
 rgb9plus_planar_funcs(16)
+
+rgb9plus_planar_transparency_funcs(10)
+rgb9plus_planar_transparency_funcs(12)
+rgb9plus_planar_transparency_funcs(16)
 
 av_cold void ff_sws_init_input_funcs(SwsContext *c)
 {
