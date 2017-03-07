@@ -880,7 +880,10 @@ static int decode_frame_header(AVCodecContext *ctx,
         av_log(ctx, AV_LOG_ERROR, "Invalid compressed header size\n");
         return AVERROR_INVALIDDATA;
     }
-    ff_vp56_init_range_decoder(&s->c, data2, size2);
+    res = ff_vp56_init_range_decoder(&s->c, data2, size2);
+    if (res < 0)
+        return res;
+
     if (vp56_rac_get_prob_branchy(&s->c, 128)) { // marker bit
         av_log(ctx, AV_LOG_ERROR, "Marker bit was set\n");
         return AVERROR_INVALIDDATA;
@@ -4129,7 +4132,9 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
                         ff_thread_report_progress(&s->frames[CUR_FRAME].tf, INT_MAX, 0);
                         return AVERROR_INVALIDDATA;
                     }
-                    ff_vp56_init_range_decoder(&s->c_b[tile_col], data, tile_size);
+                    res = ff_vp56_init_range_decoder(&s->c_b[tile_col], data, tile_size);
+                    if (res < 0)
+                        return res;
                     if (vp56_rac_get_prob_branchy(&s->c_b[tile_col], 128)) { // marker bit
                         ff_thread_report_progress(&s->frames[CUR_FRAME].tf, INT_MAX, 0);
                         return AVERROR_INVALIDDATA;
