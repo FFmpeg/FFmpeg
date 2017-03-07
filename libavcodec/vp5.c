@@ -38,8 +38,11 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 {
     VP56RangeCoder *c = &s->c;
     int rows, cols;
+    int ret;
 
-    ff_vp56_init_range_decoder(&s->c, buf, buf_size);
+    ret = ff_vp56_init_range_decoder(&s->c, buf, buf_size);
+    if (ret < 0)
+        return ret;
     s->frames[VP56_FRAME_CURRENT]->key_frame = !vp56_rac_get(c);
     vp56_rac_get(c);
     ff_vp56_init_dequant(s, vp56_rac_gets(c, 6));
