@@ -67,7 +67,6 @@ const char *avdevice_license(void);
 
 /**
  * Initialize libavdevice and register all the input and output devices.
- * @warning This function is not thread safe.
  */
 void avdevice_register_all(void);
 
