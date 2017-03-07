@@ -224,7 +224,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
  */
 
 extern const uint8_t ff_vp56_norm_shift[256];
-void ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
+int ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
 
 static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 {

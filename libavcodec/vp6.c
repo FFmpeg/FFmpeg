@@ -52,6 +52,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     int sub_version;
     int rows, cols;
     int res = 0;
+    int ret;
     int separated_coeff = buf[0] & 1;
 
     s->frames[VP56_FRAME_CURRENT]->key_frame = !(buf[0] & 0x80);
@@ -93,7 +94,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
                 s->avctx->coded_width  = 16 * cols;
                 s->avctx->coded_height = 16 * rows;
             } else {
-                int ret = ff_set_dimensions(s->avctx, 16 * cols, 16 * rows);
+                ret = ff_set_dimensions(s->avctx, 16 * cols, 16 * rows);
                 if (ret < 0)
                     return ret;
 
@@ -105,7 +106,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             res = VP56_SIZE_CHANGE;
         }
 
-        ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
+        ret = ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
+        if (ret < 0)
+            return ret;
         vp56_rac_gets(c, 2);
 
         parse_filter_info = s->filter_header;
@@ -122,7 +125,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             buf += 2;
             buf_size -= 2;
         }
-        ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
+        ret = ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
+        if (ret < 0)
+            return ret;
 
         s->golden_frame = vp56_rac_get(c);
         if (s->filter_header) {
@@ -165,7 +170,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             s->parse_coeff = vp6_parse_coeff_huffman;
             init_get_bits(&s->gb, buf, buf_size<<3);
         } else {
-            ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
+            ret = ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
+            if (ret < 0)
+                return ret;
             s->ccp = &s->cc;
         }
     } else {
