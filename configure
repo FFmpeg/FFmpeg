@@ -1821,7 +1821,6 @@ ARCH_FEATURES="
 
 BUILTIN_LIST="
     atomic_cas_ptr
-    atomic_compare_exchange
     machine_rw_barrier
     MemoryBarrier
     mm_empty
@@ -2322,7 +2321,7 @@ symver_if_any="symver_asm_label symver_gnu_asm"
 valgrind_backtrace_deps="!optimizations valgrind_valgrind_h"
 
 # threading support
-atomics_gcc_if_any="sync_val_compare_and_swap atomic_compare_exchange"
+atomics_gcc_if="sync_val_compare_and_swap"
 atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
 atomics_win32_if="MemoryBarrier"
 atomics_native_if_any="$ATOMICS_LIST"
@@ -5533,7 +5532,6 @@ if ! disabled network; then
 fi
 
 check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
-check_builtin atomic_compare_exchange "" "int *ptr, *oldval; int newval; __atomic_compare_exchange_n(ptr, oldval, newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)"
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin sarestart signal.h "SA_RESTART"
