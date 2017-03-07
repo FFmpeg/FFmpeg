@@ -89,6 +89,9 @@ static const AVOption options[] = {
     { "aq-strength", "When Spatial AQ is enabled, this field is used to specify AQ strength. AQ strength scale is from 1 (low) - 15 (aggressive)", OFFSET(aq_strength), AV_OPT_TYPE_INT, { .i64 = 8 }, 1, 15, VE },
     { "cq", "Set target quality level (0 to 51, 0 means automatic) for constant quality mode in VBR rate control", OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 51, VE },
 #endif /* NVENCAPI_MAJOR_VERSION >= 7 */
+    { "init_qpP", "Initial QP value for P-frames",        OFFSET(init_qp_p),   AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 51, VE },
+    { "init_qpB", "Initial QP value for B-frames",        OFFSET(init_qp_b),   AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 51, VE },
+    { "init_qpI", "Initial QP value for I-frames",        OFFSET(init_qp_i),   AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 51, VE },
     { NULL }
 };
 

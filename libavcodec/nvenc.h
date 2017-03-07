@@ -183,6 +183,9 @@ typedef struct NVENCContext {
     int strict_gop;
     int aq_strength;
     int quality;
+    int init_qp_p;
+    int init_qp_b;
+    int init_qp_i;
 } NVENCContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

@@ -519,6 +519,8 @@ static void set_constqp(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
 
 static void set_vbr(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
 {
+    NVENCContext *ctx    = avctx->priv_data;
+
     if (avctx->qmin >= 0) {
         rc->enableMinQP    = 1;
         rc->minQP.qpInterB = avctx->qmin;
@@ -531,6 +533,30 @@ static void set_vbr(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
         rc->maxQP.qpInterB = avctx->qmax;
         rc->maxQP.qpInterP = avctx->qmax;
         rc->maxQP.qpIntra  = avctx->qmax;
+    }
+
+    if (ctx->init_qp_p >= 0) {
+        rc->enableInitialRCQP = 1;
+        rc->initialRCQP.qpInterP = ctx->init_qp_p;
+        if (ctx->init_qp_i < 0) {
+            if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
+                rc->initialRCQP.qpIntra = av_clip(rc->initialRCQP.qpInterP * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
+            } else {
+                rc->initialRCQP.qpIntra = rc->initialRCQP.qpInterP;
+            }
+        } else {
+            rc->initialRCQP.qpIntra = ctx->init_qp_i;
+        }
+
+        if (ctx->init_qp_b < 0) {
+            if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
+                rc->initialRCQP.qpInterB = av_clip(rc->initialRCQP.qpInterP * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+            } else {
+                rc->initialRCQP.qpInterB = rc->initialRCQP.qpInterP;
+            }
+        } else {
+            rc->initialRCQP.qpInterB = ctx->init_qp_b;
+        }
     }
 }
 
