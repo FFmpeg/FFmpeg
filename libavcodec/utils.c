@@ -2787,7 +2787,7 @@ void avsubtitle_free(AVSubtitle *sub)
 
 static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
 {
-    int got_frame;
+    int got_frame = 0;
     int ret;
 
     av_assert0(!avctx->internal->buffer_frame->buf[0]);
