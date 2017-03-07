@@ -1930,9 +1930,7 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
 
     switch (track->video.projection.type) {
     case MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR:
-        if (track->video.projection.private.size == 0)
-            projection = AV_SPHERICAL_EQUIRECTANGULAR;
-        else if (track->video.projection.private.size == 20) {
+        if (track->video.projection.private.size == 20) {
             t = bytestream2_get_be32(&gb);
             b = bytestream2_get_be32(&gb);
             l = bytestream2_get_be32(&gb);
@@ -1946,15 +1944,15 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
                        l, t, r, b);
                 return AVERROR_INVALIDDATA;
             }
-
-            if (l || t || r || b)
-                projection = AV_SPHERICAL_EQUIRECTANGULAR_TILE;
-            else
-                projection = AV_SPHERICAL_EQUIRECTANGULAR;
-        } else {
+        } else if (track->video.projection.private.size != 0) {
             av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
             return AVERROR_INVALIDDATA;
         }
+
+        if (l || t || r || b)
+            projection = AV_SPHERICAL_EQUIRECTANGULAR_TILE;
+        else
+            projection = AV_SPHERICAL_EQUIRECTANGULAR;
         break;
     case MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP:
         if (track->video.projection.private.size < 4) {
@@ -1962,13 +1960,12 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
             return AVERROR_INVALIDDATA;
         } else if (track->video.projection.private.size == 12) {
             uint32_t layout = bytestream2_get_be32(&gb);
-            if (layout == 0) {
-                projection = AV_SPHERICAL_CUBEMAP;
-            } else {
+            if (layout) {
                 av_log(NULL, AV_LOG_WARNING,
                        "Unknown spherical cubemap layout %"PRIu32"\n", layout);
                 return 0;
             }
+            projection = AV_SPHERICAL_CUBEMAP;
             padding = bytestream2_get_be32(&gb);
         } else {
             av_log(NULL, AV_LOG_ERROR, "Unknown spherical metadata\n");
