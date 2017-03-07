@@ -2330,6 +2330,8 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     s->mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
+        if (c->end <= c->buffer && c->bits >= 0)
+            return AVERROR_INVALIDDATA;
         // Wait for previous thread to read mb_x+2, and reach mb_y-1.
         if (prev_td != td) {
             if (threadnr != 0) {
