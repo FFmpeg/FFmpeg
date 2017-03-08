@@ -1312,7 +1312,7 @@ static int combine_residual_frame(DCAXllDecoder *s, DCAXllChSet *c)
         } else {
             // No downmix scaling
             for (n = 0; n < nsamples; n++)
-                dst[n] += (src[n] + round) >> shift;
+                dst[n] += (unsigned)((src[n] + round) >> shift);
         }
     }
 
