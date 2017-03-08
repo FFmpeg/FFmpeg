@@ -362,7 +362,7 @@ fate-swr-resample_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/dat
 
 fate-swr-resample_async-$(3)-$(1)-$(2): CMP = stddev
 fate-swr-resample_async-$(3)-$(1)-$(2): CMP_UNIT = $(5)
-fate-swr-resample_async-$(3)-$(1)-$(2): FUZZ = 0.01
+fate-swr-resample_async-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
