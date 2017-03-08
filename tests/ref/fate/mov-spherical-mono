@@ -1,13 +1,11 @@
 [STREAM]
 [SIDE_DATA]
 side_data_type=Stereo 3D
-side_data_size=8
 type=2D
 inverted=0
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=Spherical Mapping
-side_data_size=56
 projection=tiled equirectangular
 bound_left=148
 bound_top=73

@@ -1777,7 +1777,6 @@ static void print_pkt_side_data(WriterContext *w,
 
         writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA);
         print_str("side_data_type", name ? name : "unknown");
-        print_int("side_data_size", sd->size);
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
             print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
@@ -1970,7 +1969,6 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA);
             name = av_frame_side_data_name(sd->type);
             print_str("side_data_type", name ? name : "unknown");
-            print_int("side_data_size", sd->size);
             if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
                 writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
                 print_int("rotation", av_display_rotation_get((int32_t *)sd->data));
