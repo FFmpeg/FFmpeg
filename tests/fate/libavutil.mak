@@ -101,6 +101,10 @@ FATE_LIBAVUTIL += fate-imgutils
 fate-imgutils: libavutil/tests/imgutils$(EXESUF)
 fate-imgutils: CMD = run libavutil/tests/imgutils
 
+FATE_LIBAVUTIL += fate-lfg
+fate-lfg: libavutil/tests/lfg$(EXESUF)
+fate-lfg: CMD = run libavutil/tests/lfg
+
 FATE_LIBAVUTIL += fate-md5
 fate-md5: libavutil/tests/md5$(EXESUF)
 fate-md5: CMD = run libavutil/tests/md5
