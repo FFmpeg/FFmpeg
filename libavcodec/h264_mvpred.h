@@ -68,7 +68,7 @@ static av_always_inline int fetch_diagonal_mv(const H264Context *h, H264SliceCon
             }
             if (MB_FIELD(sl) && !IS_INTERLACED(sl->left_type[0])) {
                 // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
-                SET_DIAG_MV(/ 2, << 1, sl->left_mb_xy[i >= 36], ((i >> 2)) & 3);
+                SET_DIAG_MV(/ 2, *2, sl->left_mb_xy[i >= 36], ((i >> 2)) & 3);
             }
         }
 #undef SET_DIAG_MV
