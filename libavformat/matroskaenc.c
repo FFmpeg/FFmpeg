@@ -918,6 +918,82 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
     return 0;
 }
 
+static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb, AVStream *st)
+{
+    int side_data_size = 0;
+    const AVSphericalMapping *spherical =
+        (const AVSphericalMapping*) av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
+                                                            &side_data_size);
+
+    if (side_data_size) {
+        AVIOContext *dyn_cp;
+        uint8_t *projection_ptr;
+        int ret, projection_size;
+
+        ret = avio_open_dyn_buf(&dyn_cp);
+        if (ret < 0)
+            return ret;
+
+        switch (spherical->projection) {
+        case AV_SPHERICAL_EQUIRECTANGULAR:
+            put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                          MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+            break;
+        case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
+        {
+            AVIOContext b;
+            uint8_t private[20];
+            ffio_init_context(&b, private, sizeof(private),
+                              1, NULL, NULL, NULL, NULL);
+            put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                          MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+            avio_wb32(&b, 0); // version + flags
+            avio_wb32(&b, spherical->bound_top);
+            avio_wb32(&b, spherical->bound_bottom);
+            avio_wb32(&b, spherical->bound_left);
+            avio_wb32(&b, spherical->bound_right);
+            put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE, private, sizeof(private));
+            break;
+        }
+        case AV_SPHERICAL_CUBEMAP:
+        {
+            AVIOContext b;
+            uint8_t private[12];
+            ffio_init_context(&b, private, sizeof(private),
+                              1, NULL, NULL, NULL, NULL);
+            put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                          MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
+            avio_wb32(&b, 0); // version + flags
+            avio_wb32(&b, 0); // layout
+            avio_wb32(&b, spherical->padding);
+            put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE, private, sizeof(private));
+            break;
+        }
+        default:
+            av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
+            goto end;
+        }
+
+        if (spherical->yaw)
+            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,   (double)spherical->yaw   / (1 << 16));
+        if (spherical->pitch)
+            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH, (double)spherical->pitch / (1 << 16));
+        if (spherical->roll)
+            put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,  (double)spherical->roll  / (1 << 16));
+
+end:
+        projection_size = avio_close_dyn_buf(dyn_cp, &projection_ptr);
+        if (projection_size) {
+            ebml_master projection = start_ebml_master(pb, MATROSKA_ID_VIDEOPROJECTION, projection_size);
+            avio_write(pb, projection_ptr, projection_size);
+            end_ebml_master(pb, projection);
+        }
+        av_freep(&projection_ptr);
+    }
+
+    return 0;
+}
+
 static void mkv_write_field_order(AVIOContext *pb, int mode,
                                   enum AVFieldOrder field_order)
 {
@@ -1266,6 +1342,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             put_ebml_binary(pb, MATROSKA_ID_VIDEOCOLORSPACE, &color_space, sizeof(color_space));
         }
         ret = mkv_write_video_color(pb, par, st);
+        if (ret < 0)
+            return ret;
+        ret = mkv_write_video_projection(s, pb, st);
         if (ret < 0)
             return ret;
         end_ebml_master(pb, subinfo);
