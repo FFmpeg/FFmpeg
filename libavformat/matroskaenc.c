@@ -24,6 +24,7 @@
 #include "avc.h"
 #include "hevc.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "avlanguage.h"
 #include "flacenc.h"
 #include "internal.h"
@@ -44,6 +45,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/spherical.h"
 
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
@@ -646,6 +648,85 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
+static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
+                                      AVStream *st)
+{
+    AVIOContext b;
+    AVIOContext *dyn_cp;
+    int side_data_size = 0;
+    int ret, projection_size;
+    uint8_t *projection_ptr;
+    uint8_t private[20];
+
+    const AVSphericalMapping *spherical =
+        (const AVSphericalMapping *)av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
+                                                            &side_data_size);
+
+    if (!side_data_size) {
+        av_log(NULL, AV_LOG_WARNING, "Unknown spherical metadata\n");
+        return 0;
+    }
+
+    ret = avio_open_dyn_buf(&dyn_cp);
+    if (ret < 0)
+        return ret;
+
+    switch (spherical->projection) {
+    case AV_SPHERICAL_EQUIRECTANGULAR:
+        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                      MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+        break;
+    case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
+        ffio_init_context(&b, private, 20, 1, NULL, NULL, NULL, NULL);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                      MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR);
+        avio_wb32(&b, 0); // version + flags
+        avio_wb32(&b, spherical->bound_top);
+        avio_wb32(&b, spherical->bound_bottom);
+        avio_wb32(&b, spherical->bound_left);
+        avio_wb32(&b, spherical->bound_right);
+        put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+                        private, sizeof(private));
+        break;
+    case AV_SPHERICAL_CUBEMAP:
+        ffio_init_context(&b, private, 12, 1, NULL, NULL, NULL, NULL);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONTYPE,
+                      MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP);
+        avio_wb32(&b, 0); // version + flags
+        avio_wb32(&b, 0); // layout
+        avio_wb32(&b, spherical->padding);
+        put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
+                        private, sizeof(private));
+        break;
+    default:
+        av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
+        goto end;
+    }
+
+    if (spherical->yaw)
+        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,
+                       (double) spherical->yaw   / (1 << 16));
+    if (spherical->pitch)
+        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH,
+                       (double) spherical->pitch / (1 << 16));
+    if (spherical->roll)
+        put_ebml_float(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPOSEROLL,
+                       (double) spherical->roll  / (1 << 16));
+
+end:
+    projection_size = avio_close_dyn_buf(dyn_cp, &projection_ptr);
+    if (projection_size) {
+        ebml_master projection = start_ebml_master(pb,
+                                                   MATROSKA_ID_VIDEOPROJECTION,
+                                                   projection_size);
+        avio_write(pb, projection_ptr, projection_size);
+        end_ebml_master(pb, projection);
+    }
+    av_freep(&projection_ptr);
+
+    return 0;
+}
+
 static void mkv_write_field_order(AVIOContext *pb,
                                   enum AVFieldOrder field_order)
 {
@@ -895,6 +976,9 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         // check both side data and metadata for stereo information,
         // write the result to the bitstream if any is found
         ret = mkv_write_stereo_mode(s, pb, st, mkv->mode);
+        if (ret < 0)
+            return ret;
+        ret = mkv_write_video_projection(s, pb, st);
         if (ret < 0)
             return ret;
 
