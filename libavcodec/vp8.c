@@ -2508,8 +2508,10 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
         td->thread_mb_pos = mb_y << 16;
         ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
-        if (ret < 0)
+        if (ret < 0) {
+            update_pos(td, s->mb_height, INT_MAX & 0xFFFF);
             return ret;
+        }
         if (s->deblock_filter)
             s->filter_mb_row(avctx, tdata, jobnr, threadnr);
         update_pos(td, mb_y, INT_MAX & 0xFFFF);
