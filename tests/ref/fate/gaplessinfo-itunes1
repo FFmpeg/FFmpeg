@@ -7,14 +7,14 @@ duration_ts=1294336
 start_time=0.047889
 duration=29.350023
 [/FORMAT]
-packet|pts=0|dts=0|duration=1024
+packet|pts=0|dts=0|duration=1024side_data|
+
 packet|pts=1024|dts=1024|duration=1024
 packet|pts=2048|dts=2048|duration=1024
 packet|pts=3072|dts=3072|duration=1024
 packet|pts=4096|dts=4096|duration=1024
 packet|pts=5120|dts=5120|duration=1024
 packet|pts=6144|dts=6144|duration=1024
-packet|pts=7168|dts=7168|duration=1024
 packet|pts=1286144|dts=1286144|duration=1024
 packet|pts=1287168|dts=1287168|duration=1024
 packet|pts=1288192|dts=1288192|duration=1024

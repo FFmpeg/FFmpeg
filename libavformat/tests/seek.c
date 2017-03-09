@@ -67,6 +67,8 @@ int main(int argc, char **argv)
     int frame_count = 1;
     int duration = 4;
 
+    ic->flags |= AVFMT_FLAG_KEEP_SIDE_DATA;
+
     for(i=2; i<argc; i+=2){
         if       (!strcmp(argv[i], "-seekforw")){
             seekfirst = atoi(argv[i+1]);
