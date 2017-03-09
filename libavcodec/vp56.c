@@ -507,6 +507,8 @@ static int vp56_size_changed(VP56Context *s)
     s->plane_height[0] = s->plane_height[3] = avctx->coded_height;
     s->plane_height[1] = s->plane_height[2] = avctx->coded_height/2;
 
+    s->have_undamaged_frame = 0;
+
     for (i=0; i<4; i++)
         s->stride[i] = s->flip * s->frames[VP56_FRAME_CURRENT]->linesize[i];
 
