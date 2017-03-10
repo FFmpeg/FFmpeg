@@ -64,9 +64,8 @@ typedef struct LibOpenJPEGContext {
     int prog_order;
     int cinema_mode;
     int numresolution;
-    int numlayers;
+    int irreversible;
     int disto_alloc;
-    int fixed_alloc;
     int fixed_quality;
 } LibOpenJPEGContext;
 
@@ -358,13 +357,12 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
             ctx->numresolution --;
     }
 
-    ctx->enc_params.mode = !!avctx->global_quality;
     ctx->enc_params.prog_order = ctx->prog_order;
     ctx->enc_params.numresolution = ctx->numresolution;
+    ctx->enc_params.irreversible = ctx->irreversible;
     ctx->enc_params.cp_disto_alloc = ctx->disto_alloc;
-    ctx->enc_params.cp_fixed_alloc = ctx->fixed_alloc;
     ctx->enc_params.cp_fixed_quality = ctx->fixed_quality;
-    ctx->enc_params.tcp_numlayers = ctx->numlayers;
+    ctx->enc_params.tcp_numlayers = 1;
     ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
 
     if (ctx->cinema_mode > 0) {
@@ -838,11 +836,10 @@ static const AVOption options[] = {
     { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(RPCL)    }, 0,         0,           VE, "prog_order"  },
     { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(PCRL)    }, 0,         0,           VE, "prog_order"  },
     { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CPRL)    }, 0,         0,           VE, "prog_order"  },
-    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         INT_MAX,     VE                },
-    { "numlayers",     NULL,                OFFSET(numlayers),     AV_OPT_TYPE_INT,   { .i64 = 1           }, 1,         10,          VE                },
-    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { .i64 = 1           }, 0,         1,           VE                },
-    { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
-    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
+    { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { .i64 = 6            }, 0,         33,          VE                },
+    { "irreversible",  NULL,                OFFSET(irreversible),  AV_OPT_TYPE_INT,   { .i64 = 0            }, 0,         1,           VE                },
+    { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { .i64 = 1            }, 0,         1,           VE                },
+    { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { .i64 = 0            }, 0,         1,           VE                },
     { NULL },
 };
 
