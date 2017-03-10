@@ -4054,7 +4054,7 @@ probe_cc(){
         _ident=$($_cc --version 2>/dev/null | head -n1)
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
-        _cflags_size='-Os'
+        _cflags_size='-Oz'
     elif $_cc -V 2>&1 | grep -q Sun; then
         _type=suncc
         _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
