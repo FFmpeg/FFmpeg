@@ -84,9 +84,6 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     if (av_opt_set_int(s, "isr", in_sample_rate,  0) < 0)
         goto fail;
 
-    if (av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0) < 0)
-        goto fail;
-
     if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> user_in_ch_layout), 0) < 0)
         goto fail;
 
