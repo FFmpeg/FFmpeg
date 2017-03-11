@@ -179,12 +179,12 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
                (uc->protocol_blacklist && !strcmp(uc->protocol_blacklist, e->value)));
 
     if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) {
-        av_log(uc, AV_LOG_ERROR, "Protocol not on whitelist '%s'!\n", uc->protocol_whitelist);
+        av_log(uc, AV_LOG_ERROR, "Protocol '%s' not on whitelist '%s'!\n", uc->prot->name, uc->protocol_whitelist);
         return AVERROR(EINVAL);
     }
 
     if (uc->protocol_blacklist && av_match_list(uc->prot->name, uc->protocol_blacklist, ',') > 0) {
-        av_log(uc, AV_LOG_ERROR, "Protocol blacklisted '%s'!\n", uc->protocol_blacklist);
+        av_log(uc, AV_LOG_ERROR, "Protocol '%s' on blacklist '%s'!\n", uc->prot->name, uc->protocol_blacklist);
         return AVERROR(EINVAL);
     }
 
