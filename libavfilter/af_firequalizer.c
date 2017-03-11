@@ -197,8 +197,8 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, float *conv_buf,
-                           OverlapIndex *idx, float *data, int nsamples)
+static void fast_convolute(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, float *av_restrict conv_buf,
+                           OverlapIndex *av_restrict idx, float *av_restrict data, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
@@ -235,8 +235,8 @@ static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, floa
     }
 }
 
-static void fast_convolute2(FIREqualizerContext *s, const float *kernel_buf, FFTComplex *conv_buf,
-                            OverlapIndex *idx, float *data0, float *data1, int nsamples)
+static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, FFTComplex *av_restrict conv_buf,
+                            OverlapIndex *av_restrict idx, float *av_restrict data0, float *av_restrict data1, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         FFTComplex *buf = conv_buf + idx->buf_idx * s->rdft_len;
