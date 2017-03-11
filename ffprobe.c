@@ -3004,6 +3004,7 @@ void show_help_default(const char *opt, const char *arg)
     printf("\n");
 
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
+    show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 }
 
 /**
