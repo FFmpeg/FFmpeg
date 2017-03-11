@@ -658,7 +658,7 @@ static void chs_filter_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band)
             // Inverse fixed coefficient prediction
             for (j = 0; j < b->fixed_pred_order[i]; j++)
                 for (k = 1; k < nsamples; k++)
-                    buf[k] += buf[k - 1];
+                    buf[k] += (unsigned)buf[k - 1];
         }
     }
 
