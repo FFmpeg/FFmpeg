@@ -650,6 +650,7 @@ OBJS-$(CONFIG_XFACE_ENCODER)           += xfaceenc.o xface.o
 OBJS-$(CONFIG_XL_DECODER)              += xl.o
 OBJS-$(CONFIG_XMA1_DECODER)            += wmaprodec.o wma.o wma_common.o
 OBJS-$(CONFIG_XMA2_DECODER)            += wmaprodec.o wma.o wma_common.o
+OBJS-$(CONFIG_XPM_DECODER)             += xpmdec.o
 OBJS-$(CONFIG_XSUB_DECODER)            += xsubdec.o
 OBJS-$(CONFIG_XSUB_ENCODER)            += xsubenc.o
 OBJS-$(CONFIG_XWD_DECODER)             += xwddec.o

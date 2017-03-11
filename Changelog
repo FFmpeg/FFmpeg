@@ -27,6 +27,7 @@ version <next>:
 - ScreenPressor decoder
 - incomplete ClearVideo decoder
 - Intel QSV video scaling and deinterlacing filters
+- XPM decoder
 
 version 3.2:
 - libopenmpt demuxer

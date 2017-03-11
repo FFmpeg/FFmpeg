@@ -378,6 +378,7 @@ static void register_all(void)
     REGISTER_ENCDEC (XBM,               xbm);
     REGISTER_ENCDEC (XFACE,             xface);
     REGISTER_DECODER(XL,                xl);
+    REGISTER_DECODER(XPM,               xpm);
     REGISTER_ENCDEC (XWD,               xwd);
     REGISTER_ENCDEC (Y41P,              y41p);
     REGISTER_DECODER(YLC,               ylc);

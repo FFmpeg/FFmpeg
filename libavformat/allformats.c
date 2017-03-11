@@ -372,6 +372,7 @@ static void register_all(void)
     REGISTER_DEMUXER (IMAGE_SUNRAST_PIPE,    image_sunrast_pipe);
     REGISTER_DEMUXER (IMAGE_TIFF_PIPE,       image_tiff_pipe);
     REGISTER_DEMUXER (IMAGE_WEBP_PIPE,       image_webp_pipe);
+    REGISTER_DEMUXER (IMAGE_XPM_PIPE,        image_xpm_pipe);
 
     /* external libraries */
     REGISTER_MUXER   (CHROMAPRINT,      chromaprint);

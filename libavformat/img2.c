@@ -75,6 +75,7 @@ const IdStrMap ff_img_tags[] = {
     { AV_CODEC_ID_V210X,      "yuv10"    },
     { AV_CODEC_ID_WEBP,       "webp"     },
     { AV_CODEC_ID_XBM,        "xbm"      },
+    { AV_CODEC_ID_XPM,        "xpm"      },
     { AV_CODEC_ID_XFACE,      "xface"    },
     { AV_CODEC_ID_XWD,        "xwd"      },
     { AV_CODEC_ID_NONE,       NULL       }
