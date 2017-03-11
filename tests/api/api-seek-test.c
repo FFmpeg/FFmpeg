@@ -30,17 +30,17 @@
 #include "libavutil/imgutils.h"
 
 int64_t *pts_array;
-int64_t *crc_array;
+uint32_t *crc_array;
 int size_of_array;
 int number_of_elements;
 
-static int add_crc_to_array(int64_t crc, int64_t pts)
+static int add_crc_to_array(uint32_t crc, int64_t pts)
 {
     if (size_of_array <= number_of_elements) {
         if (size_of_array == 0)
             size_of_array = 10;
         size_of_array *= 2;
-        crc_array = av_realloc(crc_array, size_of_array * sizeof(int64_t));
+        crc_array = av_realloc(crc_array, size_of_array * sizeof(uint32_t));
         pts_array = av_realloc(pts_array, size_of_array * sizeof(int64_t));
         if ((crc_array == NULL) || (pts_array == NULL)) {
             av_log(NULL, AV_LOG_ERROR, "Can't allocate array to store crcs\n");
@@ -53,13 +53,13 @@ static int add_crc_to_array(int64_t crc, int64_t pts)
     return 0;
 }
 
-static int compare_crc_in_array(int64_t crc, int64_t pts)
+static int compare_crc_in_array(uint32_t crc, int64_t pts)
 {
     int i;
     for (i = 0; i < number_of_elements; i++) {
         if (pts_array[i] == pts) {
             if (crc_array[i] == crc) {
-                printf("Comparing 0x%08lx %"PRId64" %d is OK\n", crc, pts, i);
+                printf("Comparing 0x%08"PRIx32" %"PRId64" %d is OK\n", crc, pts, i);
                 return 0;
             }
             else {
@@ -81,7 +81,7 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
     int end_of_stream = 0;
     int byte_buffer_size;
     uint8_t *byte_buffer;
-    int64_t crc;
+    uint32_t crc;
     AVPacket pkt;
 
     byte_buffer_size = av_image_get_buffer_size(ctx->pix_fmt, ctx->width, ctx->height, 16);
@@ -132,7 +132,7 @@ static int compute_crc_of_packets(AVFormatContext *fmt_ctx, int video_stream,
                 if ((!no_seeking) && (fr->pts > ts_end))
                     break;
                 crc = av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes);
-                printf("%10"PRId64", 0x%08lx\n", fr->pts, crc);
+                printf("%10"PRId64", 0x%08"PRIx32"\n", fr->pts, crc);
                 if (no_seeking) {
                     if (add_crc_to_array(crc, fr->pts) < 0)
                         return -1;
@@ -185,7 +185,8 @@ static int seek_test(const char *input_filename, const char *start, const char *
 
     size_of_array = 0;
     number_of_elements = 0;
-    crc_array = pts_array = NULL;
+    crc_array = NULL;
+    pts_array = NULL;
 
     result = avformat_open_input(&fmt_ctx, input_filename, NULL, NULL);
     if (result < 0) {
