@@ -309,7 +309,10 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
     avctx->pix_fmt = AV_PIX_FMT_BGRA;
 
     end = avpkt->data + avpkt->size;
-    if (memcmp(ptr, "/* XPM */", 9)) {
+    while (memcmp(ptr, "/* XPM */\n", 10) && ptr < end - 10)
+        ptr++;
+
+    if (ptr >= end) {
         av_log(avctx, AV_LOG_ERROR, "missing signature\n");
         return AVERROR_INVALIDDATA;
     }
