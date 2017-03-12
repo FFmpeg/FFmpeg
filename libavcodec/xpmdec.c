@@ -28,11 +28,11 @@
 
 typedef struct XPMContext {
     uint32_t  *pixels;
-    int      pixels_size;
+    int        pixels_size;
 } XPMDecContext;
 
 typedef struct ColorEntry {
-    const char *name;            ///< a string representing the name of the color
+    const char *name;         ///< a string representing the name of the color
     uint32_t    rgb_color;    ///< RGB values for the color
 } ColorEntry;
 
@@ -199,10 +199,8 @@ static unsigned convert(uint8_t x)
 }
 
 /*
-**  functions same as strcspn but ignores characters in reject if they are inside a C style comment...
-**  @param string, reject - same as that of strcspn
-**  @return length till any character in reject does not occur in string
-*/
+ * Function same as strcspn but ignores characters if they are inside a C style comments
+ */
 static size_t mod_strcspn(const char *string, const char *reject)
 {
     int i, j;
