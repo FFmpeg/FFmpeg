@@ -614,14 +614,19 @@ static int decode_picture(AVCodecContext *avctx)
 {
     ProresContext *ctx = avctx->priv_data;
     int i;
+    int error = 0;
 
     avctx->execute2(avctx, decode_slice_thread, NULL, NULL, ctx->slice_count);
 
     for (i = 0; i < ctx->slice_count; i++)
-        if (ctx->slices[i].ret < 0)
-            return ctx->slices[i].ret;
+        error += ctx->slices[i].ret < 0;
 
-    return 0;
+    if (error)
+        av_frame_set_decode_error_flags(ctx->frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+    if (error < ctx->slice_count)
+        return 0;
+
+    return ctx->slices[0].ret;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,

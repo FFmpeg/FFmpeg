@@ -112,6 +112,12 @@
  * are filled. This situation is handled transparently if you follow the steps
  * outlined above.
  *
+ * In theory, sending input can result in EAGAIN - this should happen only if
+ * not all output was received. You can use this to structure alternative decode
+ * or encode loops other than the one suggested above. For example, you could
+ * try sending new input on each iteration, and try to receive output if that
+ * returns EAGAIN.
+ *
  * End of stream situations. These require "flushing" (aka draining) the codec,
  * as the codec might buffer multiple frames or packets internally for
  * performance or out of necessity (consider B-frames).
@@ -146,7 +152,8 @@
  *   Unlike with the old video decoding API, multiple frames might result from
  *   a packet. For audio, splitting the input packet into frames by partially
  *   decoding packets becomes transparent to the API user. You never need to
- *   feed an AVPacket to the API twice.
+ *   feed an AVPacket to the API twice (unless it is rejected with EAGAIN - then
+ *   no data was read from the packet).
  *   Additionally, sending a flush/draining packet is required only once.
  * - avcodec_encode_video2()/avcodec_encode_audio2():
  *   Use avcodec_send_frame() to feed input to the encoder, then use
@@ -159,7 +166,22 @@
  * and will result in undefined behavior.
  *
  * Some codecs might require using the new API; using the old API will return
- * an error when calling it.
+ * an error when calling it. All codecs support the new API.
+ *
+ * A codec is not allowed to return EAGAIN for both sending and receiving. This
+ * would be an invalid state, which could put the codec user into an endless
+ * loop. The API has no concept of time either: it cannot happen that trying to
+ * do avcodec_send_packet() results in EAGAIN, but a repeated call 1 second
+ * later accepts the packet (with no other receive/flush API calls involved).
+ * The API is a strict state machine, and the passage of time is not supposed
+ * to influence it. Some timing-dependent behavior might still be deemed
+ * acceptable in certain cases. But it must never result in both send/receive
+ * returning EAGAIN at the same time at any point. It must also absolutely be
+ * avoided that the current state is "unstable" and can "flip-flop" between
+ * the send/receive APIs allowing progress. For example, it's not allowed that
+ * the codec randomly decides that it actually wants to consume a packet now
+ * instead of returning a frame, after it just returned EAGAIN on an
+ * avcodec_send_packet() call.
  * @}
  */
 
@@ -4914,8 +4936,10 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
  *                  a flush packet.
  *
  * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   input is not accepted right now - the packet must be
- *                         resent after trying to read output
+ *      AVERROR(EAGAIN):   input is not accepted in the current state - user
+ *                         must read output with avcodec_receive_frame() (once
+ *                         all output is read, the packet should be resent, and
+ *                         the call will not fail with EAGAIN).
  *      AVERROR_EOF:       the decoder has been flushed, and no new packets can
  *                         be sent to it (also returned if more than 1 flush
  *                         packet is sent)
@@ -4936,7 +4960,7 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *
  * @return
  *      0:                 success, a frame was returned
- *      AVERROR(EAGAIN):   output is not available right now - user must try
+ *      AVERROR(EAGAIN):   output is not available in this state - user must try
  *                         to send new input
  *      AVERROR_EOF:       the decoder has been fully flushed, and there will be
  *                         no more output frames
@@ -4969,8 +4993,10 @@ int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
  *                  avctx->frame_size for all frames except the last.
  *                  The final frame may be smaller than avctx->frame_size.
  * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   input is not accepted right now - the frame must be
- *                         resent after trying to read output packets
+ *      AVERROR(EAGAIN):   input is not accepted in the current state - user
+ *                         must read output with avcodec_receive_packet() (once
+ *                         all output is read, the packet should be resent, and
+ *                         the call will not fail with EAGAIN).
  *      AVERROR_EOF:       the encoder has been flushed, and no new frames can
  *                         be sent to it
  *      AVERROR(EINVAL):   codec not opened, refcounted_frames not set, it is a
@@ -4988,8 +5014,8 @@ int avcodec_send_frame(AVCodecContext *avctx, const AVFrame *frame);
  *              encoder. Note that the function will always call
  *              av_frame_unref(frame) before doing anything else.
  * @return 0 on success, otherwise negative error code:
- *      AVERROR(EAGAIN):   output is not available right now - user must try
- *                         to send input
+ *      AVERROR(EAGAIN):   output is not available in the current state - user
+ *                         must try to send input
  *      AVERROR_EOF:       the encoder has been fully flushed, and there will be
  *                         no more output packets
  *      AVERROR(EINVAL):   codec not opened, or it is an encoder

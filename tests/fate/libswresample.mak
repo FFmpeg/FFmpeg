@@ -26,13 +26,13 @@ endef
 #you can use this if you need to update it!
 #make -k  `make fate-list | grep swr` | egrep 'TEST|stddev' | tr '\n' '@' | sed 's#TEST *\([^@]*\)@stddev: *\([0-9.]*\)[^b@]*bytes: *\([0-9]*\) */ *\([0-9]*\)@#fate-\1: CMP_TARGET = \2@fate-\1: SIZE_TOLERANCE = \3 - \4@@#g' | tr '@' '\n'
 
-fate-swr-resample-dblp-2626-44100: CMP_TARGET = 1352.68
+fate-swr-resample-dblp-2626-44100: CMP_TARGET = 1352.67
 fate-swr-resample-dblp-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-dblp-2626-48000: CMP_TARGET = 1352.65
+fate-swr-resample-dblp-2626-48000: CMP_TARGET = 1352.66
 fate-swr-resample-dblp-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-dblp-2626-8000: CMP_TARGET = 1353.08
+fate-swr-resample-dblp-2626-8000: CMP_TARGET = 1352.56
 fate-swr-resample-dblp-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample-dblp-2626-96000: CMP_TARGET = 1352.67
@@ -41,19 +41,19 @@ fate-swr-resample-dblp-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample-dblp-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample-dblp-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample-dblp-44100-48000: CMP_TARGET = 9.70
+fate-swr-resample-dblp-44100-48000: CMP_TARGET = 9.69
 fate-swr-resample-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-dblp-44100-8000: CMP_TARGET = 75.45
 fate-swr-resample-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample-dblp-44100-96000: CMP_TARGET = 11.47
+fate-swr-resample-dblp-44100-96000: CMP_TARGET = 11.46
 fate-swr-resample-dblp-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-dblp-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample-dblp-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample-dblp-48000-44100: CMP_TARGET = 1.02
+fate-swr-resample-dblp-48000-44100: CMP_TARGET = 1.00
 fate-swr-resample-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample-dblp-48000-8000: CMP_TARGET = 62.38
@@ -62,7 +62,7 @@ fate-swr-resample-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample-dblp-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample-dblp-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample-dblp-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample-dblp-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample-dblp-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample-dblp-8000-44100: CMP_TARGET = 15.09
@@ -74,25 +74,25 @@ fate-swr-resample-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample-dblp-8000-96000: CMP_TARGET = 13.81
 fate-swr-resample-dblp-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample-dblp-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample-dblp-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample-dblp-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample-dblp-96000-44100: CMP_TARGET = 1.45
+fate-swr-resample-dblp-96000-44100: CMP_TARGET = 1.44
 fate-swr-resample-dblp-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample-dblp-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample-dblp-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample-dblp-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample-dblp-96000-8000: CMP_TARGET = 58.57
 fate-swr-resample-dblp-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample-fltp-2626-44100: CMP_TARGET = 1352.68
+fate-swr-resample-fltp-2626-44100: CMP_TARGET = 1352.67
 fate-swr-resample-fltp-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-fltp-2626-48000: CMP_TARGET = 1352.65
+fate-swr-resample-fltp-2626-48000: CMP_TARGET = 1352.66
 fate-swr-resample-fltp-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-fltp-2626-8000: CMP_TARGET = 1353.08
+fate-swr-resample-fltp-2626-8000: CMP_TARGET = 1352.56
 fate-swr-resample-fltp-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample-fltp-2626-96000: CMP_TARGET = 1352.67
@@ -101,19 +101,19 @@ fate-swr-resample-fltp-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample-fltp-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample-fltp-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample-fltp-44100-48000: CMP_TARGET = 9.70
+fate-swr-resample-fltp-44100-48000: CMP_TARGET = 9.69
 fate-swr-resample-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-fltp-44100-8000: CMP_TARGET = 75.45
 fate-swr-resample-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample-fltp-44100-96000: CMP_TARGET = 11.47
+fate-swr-resample-fltp-44100-96000: CMP_TARGET = 11.46
 fate-swr-resample-fltp-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-fltp-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample-fltp-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample-fltp-48000-44100: CMP_TARGET = 1.02
+fate-swr-resample-fltp-48000-44100: CMP_TARGET = 1.00
 fate-swr-resample-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample-fltp-48000-8000: CMP_TARGET = 62.38
@@ -122,7 +122,7 @@ fate-swr-resample-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample-fltp-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample-fltp-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample-fltp-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample-fltp-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample-fltp-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample-fltp-8000-44100: CMP_TARGET = 15.09
@@ -134,28 +134,28 @@ fate-swr-resample-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample-fltp-8000-96000: CMP_TARGET = 13.81
 fate-swr-resample-fltp-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample-fltp-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample-fltp-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample-fltp-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample-fltp-96000-44100: CMP_TARGET = 1.45
+fate-swr-resample-fltp-96000-44100: CMP_TARGET = 1.44
 fate-swr-resample-fltp-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample-fltp-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample-fltp-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample-fltp-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample-fltp-96000-8000: CMP_TARGET = 58.57
 fate-swr-resample-fltp-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample-s16p-2626-44100: CMP_TARGET = 1393.01
+fate-swr-resample-s16p-2626-44100: CMP_TARGET = 1392.98
 fate-swr-resample-s16p-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-s16p-2626-48000: CMP_TARGET = 1392.99
+fate-swr-resample-s16p-2626-48000: CMP_TARGET = 1393.01
 fate-swr-resample-s16p-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-s16p-2626-8000: CMP_TARGET = 1393.90
+fate-swr-resample-s16p-2626-8000: CMP_TARGET = 1393.36
 fate-swr-resample-s16p-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
-fate-swr-resample-s16p-2626-96000: CMP_TARGET = 1393.08
+fate-swr-resample-s16p-2626-96000: CMP_TARGET = 1393.07
 fate-swr-resample-s16p-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 
 fate-swr-resample-s16p-44100-2626: CMP_TARGET = 185.84
@@ -173,19 +173,19 @@ fate-swr-resample-s16p-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample-s16p-48000-2626: CMP_TARGET = 456.55
 fate-swr-resample-s16p-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample-s16p-48000-44100: CMP_TARGET = 1.22
+fate-swr-resample-s16p-48000-44100: CMP_TARGET = 1.20
 fate-swr-resample-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample-s16p-48000-8000: CMP_TARGET = 62.41
 fate-swr-resample-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample-s16p-48000-96000: CMP_TARGET = 0.50
+fate-swr-resample-s16p-48000-96000: CMP_TARGET = 0.73
 fate-swr-resample-s16p-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample-s16p-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample-s16p-8000-2626: CMP_TARGET = 2503.32
 fate-swr-resample-s16p-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
-fate-swr-resample-s16p-8000-44100: CMP_TARGET = 15.12
+fate-swr-resample-s16p-8000-44100: CMP_TARGET = 15.13
 fate-swr-resample-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
 fate-swr-resample-s16p-8000-48000: CMP_TARGET = 14.69
@@ -194,25 +194,25 @@ fate-swr-resample-s16p-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample-s16p-8000-96000: CMP_TARGET = 13.83
 fate-swr-resample-s16p-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample-s16p-96000-2626: CMP_TARGET = 675.14
+fate-swr-resample-s16p-96000-2626: CMP_TARGET = 675.15
 fate-swr-resample-s16p-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
 fate-swr-resample-s16p-96000-44100: CMP_TARGET = 1.62
 fate-swr-resample-s16p-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample-s16p-96000-48000: CMP_TARGET = 1.03
+fate-swr-resample-s16p-96000-48000: CMP_TARGET = 1.12
 fate-swr-resample-s16p-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample-s16p-96000-8000: CMP_TARGET = 58.60
 fate-swr-resample-s16p-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample-s32p-2626-44100: CMP_TARGET = 1393.01
+fate-swr-resample-s32p-2626-44100: CMP_TARGET = 1392.99
 fate-swr-resample-s32p-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-s32p-2626-48000: CMP_TARGET = 1392.99
+fate-swr-resample-s32p-2626-48000: CMP_TARGET = 1393.01
 fate-swr-resample-s32p-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample-s32p-2626-8000: CMP_TARGET = 1393.89
+fate-swr-resample-s32p-2626-8000: CMP_TARGET = 1393.36
 fate-swr-resample-s32p-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample-s32p-2626-96000: CMP_TARGET = 1393.00
@@ -221,19 +221,19 @@ fate-swr-resample-s32p-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample-s32p-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample-s32p-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample-s32p-44100-48000: CMP_TARGET = 9.70
+fate-swr-resample-s32p-44100-48000: CMP_TARGET = 9.69
 fate-swr-resample-s32p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-s32p-44100-8000: CMP_TARGET = 75.45
 fate-swr-resample-s32p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample-s32p-44100-96000: CMP_TARGET = 11.47
+fate-swr-resample-s32p-44100-96000: CMP_TARGET = 11.46
 fate-swr-resample-s32p-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample-s32p-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample-s32p-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample-s32p-48000-44100: CMP_TARGET = 1.02
+fate-swr-resample-s32p-48000-44100: CMP_TARGET = 1.00
 fate-swr-resample-s32p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample-s32p-48000-8000: CMP_TARGET = 62.38
@@ -242,7 +242,7 @@ fate-swr-resample-s32p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample-s32p-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample-s32p-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample-s32p-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample-s32p-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample-s32p-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample-s32p-8000-44100: CMP_TARGET = 15.09
@@ -254,13 +254,13 @@ fate-swr-resample-s32p-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample-s32p-8000-96000: CMP_TARGET = 13.81
 fate-swr-resample-s32p-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample-s32p-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample-s32p-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample-s32p-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample-s32p-96000-44100: CMP_TARGET = 1.45
+fate-swr-resample-s32p-96000-44100: CMP_TARGET = 1.44
 fate-swr-resample-s32p-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample-s32p-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample-s32p-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample-s32p-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample-s32p-96000-8000: CMP_TARGET = 58.57
@@ -290,10 +290,10 @@ fate-swr-resample_lin-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 fate-swr-resample_lin-s16p-44100-48000: CMP_TARGET = 9.66
 fate-swr-resample_lin-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
-fate-swr-resample_lin-s16p-48000-8000: CMP_TARGET = 62.39
+fate-swr-resample_lin-s16p-48000-8000: CMP_TARGET = 62.38
 fate-swr-resample_lin-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_lin-s16p-48000-44100: CMP_TARGET = 0.68
+fate-swr-resample_lin-s16p-48000-44100: CMP_TARGET = 0.65
 fate-swr-resample_lin-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_lin-fltp-8000-44100: CMP_TARGET = 14.59
@@ -305,13 +305,13 @@ fate-swr-resample_lin-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_lin-fltp-44100-8000: CMP_TARGET = 75.38
 fate-swr-resample_lin-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_lin-fltp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_lin-fltp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_lin-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_lin-fltp-48000-8000: CMP_TARGET = 62.36
 fate-swr-resample_lin-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_lin-fltp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_lin-fltp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_lin-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_lin-dblp-8000-44100: CMP_TARGET = 14.59
@@ -323,13 +323,13 @@ fate-swr-resample_lin-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_lin-dblp-44100-8000: CMP_TARGET = 75.38
 fate-swr-resample_lin-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_lin-dblp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_lin-dblp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_lin-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_lin-dblp-48000-8000: CMP_TARGET = 62.36
 fate-swr-resample_lin-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_lin-dblp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_lin-dblp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_lin-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 define ARESAMPLE_NN
@@ -343,13 +343,13 @@ fate-swr-resample_nn-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_nn-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_nn-fltp-44100-8000: CMP_TARGET = 590.98
+fate-swr-resample_nn-fltp-44100-8000: CMP_TARGET = 591.03
 fate-swr-resample_nn-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
 fate-swr-resample_nn-fltp-8000-44100: CMP_TARGET = 3163.32
 fate-swr-resample_nn-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_nn-s16p-44100-8000: CMP_TARGET = 590.97
+fate-swr-resample_nn-s16p-44100-8000: CMP_TARGET = 590.98
 fate-swr-resample_nn-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
 fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3163.39
@@ -366,16 +366,16 @@ fate-swr-resample_async-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_async-fltp-44100-8000: CMP_TARGET = 4020.62
+fate-swr-resample_async-fltp-44100-8000: CMP_TARGET = 4020.60
 fate-swr-resample_async-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_async-fltp-8000-44100: CMP_TARGET = 11186.69
+fate-swr-resample_async-fltp-8000-44100: CMP_TARGET = 11186.66
 fate-swr-resample_async-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_async-s16p-44100-8000: CMP_TARGET = 4020.73
+fate-swr-resample_async-s16p-44100-8000: CMP_TARGET = 4020.71
 fate-swr-resample_async-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_async-s16p-8000-44100: CMP_TARGET = 11187.01
+fate-swr-resample_async-s16p-8000-44100: CMP_TARGET = 11186.94
 fate-swr-resample_async-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
 define ARESAMPLE_EXACT
@@ -389,13 +389,13 @@ fate-swr-resample_exact-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_exact-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_exact-dblp-2626-44100: CMP_TARGET = 1352.68
+fate-swr-resample_exact-dblp-2626-44100: CMP_TARGET = 1352.67
 fate-swr-resample_exact-dblp-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-dblp-2626-48000: CMP_TARGET = 1352.65
+fate-swr-resample_exact-dblp-2626-48000: CMP_TARGET = 1352.66
 fate-swr-resample_exact-dblp-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-dblp-2626-8000: CMP_TARGET = 1353.08
+fate-swr-resample_exact-dblp-2626-8000: CMP_TARGET = 1352.56
 fate-swr-resample_exact-dblp-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample_exact-dblp-2626-96000: CMP_TARGET = 1352.67
@@ -404,7 +404,7 @@ fate-swr-resample_exact-dblp-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample_exact-dblp-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample_exact-dblp-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample_exact-dblp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact-dblp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact-dblp-44100-8000: CMP_TARGET = 75.38
@@ -416,7 +416,7 @@ fate-swr-resample_exact-dblp-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_exact-dblp-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample_exact-dblp-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample_exact-dblp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact-dblp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact-dblp-48000-8000: CMP_TARGET = 62.36
@@ -425,7 +425,7 @@ fate-swr-resample_exact-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample_exact-dblp-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample_exact-dblp-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample_exact-dblp-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample_exact-dblp-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample_exact-dblp-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample_exact-dblp-8000-44100: CMP_TARGET = 14.59
@@ -437,25 +437,25 @@ fate-swr-resample_exact-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact-dblp-8000-96000: CMP_TARGET = 13.62
 fate-swr-resample_exact-dblp-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact-dblp-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample_exact-dblp-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample_exact-dblp-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample_exact-dblp-96000-44100: CMP_TARGET = 1.26
+fate-swr-resample_exact-dblp-96000-44100: CMP_TARGET = 1.23
 fate-swr-resample_exact-dblp-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample_exact-dblp-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample_exact-dblp-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample_exact-dblp-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample_exact-dblp-96000-8000: CMP_TARGET = 58.52
 fate-swr-resample_exact-dblp-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample_exact-fltp-2626-44100: CMP_TARGET = 1352.68
+fate-swr-resample_exact-fltp-2626-44100: CMP_TARGET = 1352.67
 fate-swr-resample_exact-fltp-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-fltp-2626-48000: CMP_TARGET = 1352.65
+fate-swr-resample_exact-fltp-2626-48000: CMP_TARGET = 1352.66
 fate-swr-resample_exact-fltp-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-fltp-2626-8000: CMP_TARGET = 1353.08
+fate-swr-resample_exact-fltp-2626-8000: CMP_TARGET = 1352.56
 fate-swr-resample_exact-fltp-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample_exact-fltp-2626-96000: CMP_TARGET = 1352.67
@@ -464,7 +464,7 @@ fate-swr-resample_exact-fltp-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample_exact-fltp-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample_exact-fltp-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample_exact-fltp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact-fltp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact-fltp-44100-8000: CMP_TARGET = 75.38
@@ -476,7 +476,7 @@ fate-swr-resample_exact-fltp-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_exact-fltp-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample_exact-fltp-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample_exact-fltp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact-fltp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact-fltp-48000-8000: CMP_TARGET = 62.36
@@ -485,7 +485,7 @@ fate-swr-resample_exact-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample_exact-fltp-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample_exact-fltp-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample_exact-fltp-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample_exact-fltp-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample_exact-fltp-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample_exact-fltp-8000-44100: CMP_TARGET = 14.59
@@ -497,34 +497,34 @@ fate-swr-resample_exact-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact-fltp-8000-96000: CMP_TARGET = 13.62
 fate-swr-resample_exact-fltp-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact-fltp-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample_exact-fltp-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample_exact-fltp-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample_exact-fltp-96000-44100: CMP_TARGET = 1.26
+fate-swr-resample_exact-fltp-96000-44100: CMP_TARGET = 1.23
 fate-swr-resample_exact-fltp-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample_exact-fltp-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample_exact-fltp-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample_exact-fltp-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample_exact-fltp-96000-8000: CMP_TARGET = 58.52
 fate-swr-resample_exact-fltp-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample_exact-s16p-2626-44100: CMP_TARGET = 1393.01
+fate-swr-resample_exact-s16p-2626-44100: CMP_TARGET = 1392.98
 fate-swr-resample_exact-s16p-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-s16p-2626-48000: CMP_TARGET = 1392.99
+fate-swr-resample_exact-s16p-2626-48000: CMP_TARGET = 1393.01
 fate-swr-resample_exact-s16p-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-s16p-2626-8000: CMP_TARGET = 1393.90
+fate-swr-resample_exact-s16p-2626-8000: CMP_TARGET = 1393.36
 fate-swr-resample_exact-s16p-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
-fate-swr-resample_exact-s16p-2626-96000: CMP_TARGET = 1393.08
+fate-swr-resample_exact-s16p-2626-96000: CMP_TARGET = 1393.07
 fate-swr-resample_exact-s16p-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 
 fate-swr-resample_exact-s16p-44100-2626: CMP_TARGET = 185.84
 fate-swr-resample_exact-s16p-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample_exact-s16p-44100-48000: CMP_TARGET = 9.67
+fate-swr-resample_exact-s16p-44100-48000: CMP_TARGET = 9.66
 fate-swr-resample_exact-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact-s16p-44100-8000: CMP_TARGET = 75.43
@@ -536,16 +536,16 @@ fate-swr-resample_exact-s16p-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_exact-s16p-48000-2626: CMP_TARGET = 456.55
 fate-swr-resample_exact-s16p-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample_exact-s16p-48000-44100: CMP_TARGET = 0.72
+fate-swr-resample_exact-s16p-48000-44100: CMP_TARGET = 0.68
 fate-swr-resample_exact-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact-s16p-48000-8000: CMP_TARGET = 62.39
 fate-swr-resample_exact-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 
-fate-swr-resample_exact-s16p-48000-96000: CMP_TARGET = 0.50
+fate-swr-resample_exact-s16p-48000-96000: CMP_TARGET = 0.73
 fate-swr-resample_exact-s16p-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample_exact-s16p-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample_exact-s16p-8000-2626: CMP_TARGET = 2503.32
 fate-swr-resample_exact-s16p-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample_exact-s16p-8000-44100: CMP_TARGET = 14.63
@@ -557,25 +557,25 @@ fate-swr-resample_exact-s16p-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact-s16p-8000-96000: CMP_TARGET = 13.65
 fate-swr-resample_exact-s16p-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact-s16p-96000-2626: CMP_TARGET = 675.14
+fate-swr-resample_exact-s16p-96000-2626: CMP_TARGET = 675.15
 fate-swr-resample_exact-s16p-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample_exact-s16p-96000-44100: CMP_TARGET = 1.45
+fate-swr-resample_exact-s16p-96000-44100: CMP_TARGET = 1.44
 fate-swr-resample_exact-s16p-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample_exact-s16p-96000-48000: CMP_TARGET = 1.03
+fate-swr-resample_exact-s16p-96000-48000: CMP_TARGET = 1.12
 fate-swr-resample_exact-s16p-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample_exact-s16p-96000-8000: CMP_TARGET = 58.56
 fate-swr-resample_exact-s16p-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
-fate-swr-resample_exact-s32p-2626-44100: CMP_TARGET = 1393.01
+fate-swr-resample_exact-s32p-2626-44100: CMP_TARGET = 1392.99
 fate-swr-resample_exact-s32p-2626-44100: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-s32p-2626-48000: CMP_TARGET = 1392.99
+fate-swr-resample_exact-s32p-2626-48000: CMP_TARGET = 1393.01
 fate-swr-resample_exact-s32p-2626-48000: SIZE_TOLERANCE = 31512 - 20480
 
-fate-swr-resample_exact-s32p-2626-8000: CMP_TARGET = 1393.89
+fate-swr-resample_exact-s32p-2626-8000: CMP_TARGET = 1393.36
 fate-swr-resample_exact-s32p-2626-8000: SIZE_TOLERANCE = 31512 - 20482
 
 fate-swr-resample_exact-s32p-2626-96000: CMP_TARGET = 1393.00
@@ -584,7 +584,7 @@ fate-swr-resample_exact-s32p-2626-96000: SIZE_TOLERANCE = 31512 - 20480
 fate-swr-resample_exact-s32p-44100-2626: CMP_TARGET = 185.82
 fate-swr-resample_exact-s32p-44100-2626: SIZE_TOLERANCE = 529200 - 20490
 
-fate-swr-resample_exact-s32p-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact-s32p-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact-s32p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact-s32p-44100-8000: CMP_TARGET = 75.38
@@ -596,7 +596,7 @@ fate-swr-resample_exact-s32p-44100-96000: SIZE_TOLERANCE = 529200 - 20482
 fate-swr-resample_exact-s32p-48000-2626: CMP_TARGET = 456.51
 fate-swr-resample_exact-s32p-48000-2626: SIZE_TOLERANCE = 576000 - 20510
 
-fate-swr-resample_exact-s32p-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact-s32p-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact-s32p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact-s32p-48000-8000: CMP_TARGET = 62.36
@@ -605,7 +605,7 @@ fate-swr-resample_exact-s32p-48000-8000: SIZE_TOLERANCE = 576000 - 20484
 fate-swr-resample_exact-s32p-48000-96000: CMP_TARGET = 0.47
 fate-swr-resample_exact-s32p-48000-96000: SIZE_TOLERANCE = 576000 - 20480
 
-fate-swr-resample_exact-s32p-8000-2626: CMP_TARGET = 2506.02
+fate-swr-resample_exact-s32p-8000-2626: CMP_TARGET = 2503.33
 fate-swr-resample_exact-s32p-8000-2626: SIZE_TOLERANCE = 96000 - 20486
 
 fate-swr-resample_exact-s32p-8000-44100: CMP_TARGET = 14.59
@@ -617,13 +617,13 @@ fate-swr-resample_exact-s32p-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact-s32p-8000-96000: CMP_TARGET = 13.62
 fate-swr-resample_exact-s32p-8000-96000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact-s32p-96000-2626: CMP_TARGET = 675.08
+fate-swr-resample_exact-s32p-96000-2626: CMP_TARGET = 675.07
 fate-swr-resample_exact-s32p-96000-2626: SIZE_TOLERANCE = 1152000 - 20474
 
-fate-swr-resample_exact-s32p-96000-44100: CMP_TARGET = 1.26
+fate-swr-resample_exact-s32p-96000-44100: CMP_TARGET = 1.23
 fate-swr-resample_exact-s32p-96000-44100: SIZE_TOLERANCE = 1152000 - 20480
 
-fate-swr-resample_exact-s32p-96000-48000: CMP_TARGET = 1.00
+fate-swr-resample_exact-s32p-96000-48000: CMP_TARGET = 0.99
 fate-swr-resample_exact-s32p-96000-48000: SIZE_TOLERANCE = 1152000 - 20480
 
 fate-swr-resample_exact-s32p-96000-8000: CMP_TARGET = 58.52
@@ -640,76 +640,76 @@ fate-swr-resample_exact_async-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_exact_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_exact_async-dblp-44100-48000: CMP_TARGET = 7791.55
+fate-swr-resample_exact_async-dblp-44100-48000: CMP_TARGET = 7791.50
 fate-swr-resample_exact_async-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_async-dblp-44100-8000: CMP_TARGET = 4022.89
+fate-swr-resample_exact_async-dblp-44100-8000: CMP_TARGET = 4022.87
 fate-swr-resample_exact_async-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_async-dblp-48000-44100: CMP_TARGET = 1923.99
+fate-swr-resample_exact_async-dblp-48000-44100: CMP_TARGET = 1923.97
 fate-swr-resample_exact_async-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_async-dblp-48000-8000: CMP_TARGET = 2592.02
+fate-swr-resample_exact_async-dblp-48000-8000: CMP_TARGET = 2592.00
 fate-swr-resample_exact_async-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_async-dblp-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_async-dblp-8000-44100: CMP_TARGET = 11187.24
 fate-swr-resample_exact_async-dblp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-dblp-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_async-dblp-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_async-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-fltp-44100-48000: CMP_TARGET = 7791.55
+fate-swr-resample_exact_async-fltp-44100-48000: CMP_TARGET = 7791.50
 fate-swr-resample_exact_async-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_async-fltp-44100-8000: CMP_TARGET = 4022.89
+fate-swr-resample_exact_async-fltp-44100-8000: CMP_TARGET = 4022.87
 fate-swr-resample_exact_async-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_async-fltp-48000-44100: CMP_TARGET = 1923.98
+fate-swr-resample_exact_async-fltp-48000-44100: CMP_TARGET = 1923.97
 fate-swr-resample_exact_async-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_async-fltp-48000-8000: CMP_TARGET = 2592.02
+fate-swr-resample_exact_async-fltp-48000-8000: CMP_TARGET = 2592.00
 fate-swr-resample_exact_async-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_async-fltp-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_async-fltp-8000-44100: CMP_TARGET = 11187.24
 fate-swr-resample_exact_async-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-fltp-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_async-fltp-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_async-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-s16p-44100-48000: CMP_TARGET = 7791.56
+fate-swr-resample_exact_async-s16p-44100-48000: CMP_TARGET = 7791.50
 fate-swr-resample_exact_async-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_async-s16p-44100-8000: CMP_TARGET = 4023.06
+fate-swr-resample_exact_async-s16p-44100-8000: CMP_TARGET = 4023.05
 fate-swr-resample_exact_async-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_async-s16p-48000-44100: CMP_TARGET = 1923.98
+fate-swr-resample_exact_async-s16p-48000-44100: CMP_TARGET = 1923.96
 fate-swr-resample_exact_async-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
 fate-swr-resample_exact_async-s16p-48000-8000: CMP_TARGET = 2592.15
 fate-swr-resample_exact_async-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_async-s16p-8000-44100: CMP_TARGET = 11187.62
+fate-swr-resample_exact_async-s16p-8000-44100: CMP_TARGET = 11187.58
 fate-swr-resample_exact_async-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-s16p-8000-48000: CMP_TARGET = 11327.50
+fate-swr-resample_exact_async-s16p-8000-48000: CMP_TARGET = 11327.48
 fate-swr-resample_exact_async-s16p-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-s32p-44100-48000: CMP_TARGET = 7791.55
+fate-swr-resample_exact_async-s32p-44100-48000: CMP_TARGET = 7791.50
 fate-swr-resample_exact_async-s32p-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_async-s32p-44100-8000: CMP_TARGET = 4022.89
+fate-swr-resample_exact_async-s32p-44100-8000: CMP_TARGET = 4022.87
 fate-swr-resample_exact_async-s32p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_async-s32p-48000-44100: CMP_TARGET = 1923.98
+fate-swr-resample_exact_async-s32p-48000-44100: CMP_TARGET = 1923.97
 fate-swr-resample_exact_async-s32p-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_async-s32p-48000-8000: CMP_TARGET = 2592.02
+fate-swr-resample_exact_async-s32p-48000-8000: CMP_TARGET = 2592.00
 fate-swr-resample_exact_async-s32p-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_async-s32p-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_async-s32p-8000-44100: CMP_TARGET = 11187.24
 fate-swr-resample_exact_async-s32p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_async-s32p-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_async-s32p-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_async-s32p-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
 define ARESAMPLE_EXACT_LIN
@@ -723,13 +723,13 @@ fate-swr-resample_exact_lin-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_exact_lin-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_exact_lin-dblp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact_lin-dblp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact_lin-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact_lin-dblp-44100-8000: CMP_TARGET = 75.38
 fate-swr-resample_exact_lin-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_exact_lin-dblp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact_lin-dblp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact_lin-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact_lin-dblp-48000-8000: CMP_TARGET = 62.36
@@ -741,13 +741,13 @@ fate-swr-resample_exact_lin-dblp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact_lin-dblp-8000-48000: CMP_TARGET = 14.50
 fate-swr-resample_exact_lin-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact_lin-fltp-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact_lin-fltp-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact_lin-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact_lin-fltp-44100-8000: CMP_TARGET = 75.38
 fate-swr-resample_exact_lin-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_exact_lin-fltp-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact_lin-fltp-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact_lin-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact_lin-fltp-48000-8000: CMP_TARGET = 62.36
@@ -759,13 +759,13 @@ fate-swr-resample_exact_lin-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact_lin-fltp-8000-48000: CMP_TARGET = 14.50
 fate-swr-resample_exact_lin-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact_lin-s16p-44100-48000: CMP_TARGET = 9.67
+fate-swr-resample_exact_lin-s16p-44100-48000: CMP_TARGET = 9.66
 fate-swr-resample_exact_lin-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact_lin-s16p-44100-8000: CMP_TARGET = 75.43
 fate-swr-resample_exact_lin-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_exact_lin-s16p-48000-44100: CMP_TARGET = 0.72
+fate-swr-resample_exact_lin-s16p-48000-44100: CMP_TARGET = 0.68
 fate-swr-resample_exact_lin-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact_lin-s16p-48000-8000: CMP_TARGET = 62.39
@@ -777,13 +777,13 @@ fate-swr-resample_exact_lin-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 fate-swr-resample_exact_lin-s16p-8000-48000: CMP_TARGET = 14.54
 fate-swr-resample_exact_lin-s16p-8000-48000: SIZE_TOLERANCE = 96000 - 20480
 
-fate-swr-resample_exact_lin-s32p-44100-48000: CMP_TARGET = 9.65
+fate-swr-resample_exact_lin-s32p-44100-48000: CMP_TARGET = 9.64
 fate-swr-resample_exact_lin-s32p-44100-48000: SIZE_TOLERANCE = 529200 - 20482
 
 fate-swr-resample_exact_lin-s32p-44100-8000: CMP_TARGET = 75.38
 fate-swr-resample_exact_lin-s32p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_exact_lin-s32p-48000-44100: CMP_TARGET = 0.26
+fate-swr-resample_exact_lin-s32p-48000-44100: CMP_TARGET = 0.23
 fate-swr-resample_exact_lin-s32p-48000-44100: SIZE_TOLERANCE = 576000 - 20480
 
 fate-swr-resample_exact_lin-s32p-48000-8000: CMP_TARGET = 62.36
@@ -806,76 +806,76 @@ fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): FUZZ = 0.1
 fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): REF = tests/data/asynth-$(1)-1.wav
 endef
 
-fate-swr-resample_exact_lin_async-dblp-44100-48000: CMP_TARGET = 7791.78
+fate-swr-resample_exact_lin_async-dblp-44100-48000: CMP_TARGET = 7791.72
 fate-swr-resample_exact_lin_async-dblp-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_lin_async-dblp-44100-8000: CMP_TARGET = 4023.03
+fate-swr-resample_exact_lin_async-dblp-44100-8000: CMP_TARGET = 4023.01
 fate-swr-resample_exact_lin_async-dblp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_lin_async-dblp-48000-44100: CMP_TARGET = 1923.80
+fate-swr-resample_exact_lin_async-dblp-48000-44100: CMP_TARGET = 1923.79
 fate-swr-resample_exact_lin_async-dblp-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_lin_async-dblp-48000-8000: CMP_TARGET = 2591.73
+fate-swr-resample_exact_lin_async-dblp-48000-8000: CMP_TARGET = 2591.72
 fate-swr-resample_exact_lin_async-dblp-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_lin_async-dblp-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_lin_async-dblp-8000-44100: CMP_TARGET = 11187.25
 fate-swr-resample_exact_lin_async-dblp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-dblp-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_lin_async-dblp-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_lin_async-dblp-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-fltp-44100-48000: CMP_TARGET = 7791.78
+fate-swr-resample_exact_lin_async-fltp-44100-48000: CMP_TARGET = 7791.72
 fate-swr-resample_exact_lin_async-fltp-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_lin_async-fltp-44100-8000: CMP_TARGET = 4023.03
+fate-swr-resample_exact_lin_async-fltp-44100-8000: CMP_TARGET = 4023.01
 fate-swr-resample_exact_lin_async-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_lin_async-fltp-48000-44100: CMP_TARGET = 1923.81
+fate-swr-resample_exact_lin_async-fltp-48000-44100: CMP_TARGET = 1923.79
 fate-swr-resample_exact_lin_async-fltp-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_lin_async-fltp-48000-8000: CMP_TARGET = 2591.73
+fate-swr-resample_exact_lin_async-fltp-48000-8000: CMP_TARGET = 2591.72
 fate-swr-resample_exact_lin_async-fltp-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_lin_async-fltp-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_lin_async-fltp-8000-44100: CMP_TARGET = 11187.25
 fate-swr-resample_exact_lin_async-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-fltp-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_lin_async-fltp-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_lin_async-fltp-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-s16p-44100-48000: CMP_TARGET = 7791.78
+fate-swr-resample_exact_lin_async-s16p-44100-48000: CMP_TARGET = 7791.72
 fate-swr-resample_exact_lin_async-s16p-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_lin_async-s16p-44100-8000: CMP_TARGET = 4023.20
+fate-swr-resample_exact_lin_async-s16p-44100-8000: CMP_TARGET = 4023.19
 fate-swr-resample_exact_lin_async-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_lin_async-s16p-48000-44100: CMP_TARGET = 1923.81
+fate-swr-resample_exact_lin_async-s16p-48000-44100: CMP_TARGET = 1923.79
 fate-swr-resample_exact_lin_async-s16p-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_lin_async-s16p-48000-8000: CMP_TARGET = 2591.86
+fate-swr-resample_exact_lin_async-s16p-48000-8000: CMP_TARGET = 2591.85
 fate-swr-resample_exact_lin_async-s16p-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_lin_async-s16p-8000-44100: CMP_TARGET = 11187.62
+fate-swr-resample_exact_lin_async-s16p-8000-44100: CMP_TARGET = 11187.57
 fate-swr-resample_exact_lin_async-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-s16p-8000-48000: CMP_TARGET = 11327.49
+fate-swr-resample_exact_lin_async-s16p-8000-48000: CMP_TARGET = 11327.48
 fate-swr-resample_exact_lin_async-s16p-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-s32p-44100-48000: CMP_TARGET = 7791.78
+fate-swr-resample_exact_lin_async-s32p-44100-48000: CMP_TARGET = 7791.72
 fate-swr-resample_exact_lin_async-s32p-44100-48000: SIZE_TOLERANCE = 529200 - 20300
 
-fate-swr-resample_exact_lin_async-s32p-44100-8000: CMP_TARGET = 4023.03
+fate-swr-resample_exact_lin_async-s32p-44100-8000: CMP_TARGET = 4023.01
 fate-swr-resample_exact_lin_async-s32p-44100-8000: SIZE_TOLERANCE = 529200 - 20310
 
-fate-swr-resample_exact_lin_async-s32p-48000-44100: CMP_TARGET = 1923.81
+fate-swr-resample_exact_lin_async-s32p-48000-44100: CMP_TARGET = 1923.79
 fate-swr-resample_exact_lin_async-s32p-48000-44100: SIZE_TOLERANCE = 576000 - 20298
 
-fate-swr-resample_exact_lin_async-s32p-48000-8000: CMP_TARGET = 2591.73
+fate-swr-resample_exact_lin_async-s32p-48000-8000: CMP_TARGET = 2591.72
 fate-swr-resample_exact_lin_async-s32p-48000-8000: SIZE_TOLERANCE = 576000 - 20304
 
-fate-swr-resample_exact_lin_async-s32p-8000-44100: CMP_TARGET = 11187.37
+fate-swr-resample_exact_lin_async-s32p-8000-44100: CMP_TARGET = 11187.25
 fate-swr-resample_exact_lin_async-s32p-8000-44100: SIZE_TOLERANCE = 96000 - 20344
 
-fate-swr-resample_exact_lin_async-s32p-8000-48000: CMP_TARGET = 11326.82
+fate-swr-resample_exact_lin_async-s32p-8000-48000: CMP_TARGET = 11326.80
 fate-swr-resample_exact_lin_async-s32p-8000-48000: SIZE_TOLERANCE = 96000 - 20344
 
 $(call CROSS_TEST,$(SAMPLERATES),ARESAMPLE,s16p,s16le,s16)

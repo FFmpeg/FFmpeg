@@ -3095,12 +3095,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         ac->oc[1].status = OC_LOCKED;
     }
 
-    if (multiplier) {
-        int side_size;
-        const uint8_t *side = av_packet_get_side_data(avpkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
-        if (side && side_size>=4)
-            AV_WL32(side, 2*AV_RL32(side));
-    }
+    if (multiplier)
+        avctx->internal->skip_samples_multiplier = 2;
 
     if (!ac->frame->data[0] && samples) {
         av_log(avctx, AV_LOG_ERROR, "no frame data found\n");

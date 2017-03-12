@@ -459,6 +459,8 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     end = ptr + FFMIN(2 + text_length, avpkt->size);
     ptr += 2;
 
+    mov_text_cleanup(m);
+
     tsmb_size = 0;
     m->tracksize = 2 + text_length;
     m->style_entries = 0;
@@ -521,6 +523,7 @@ static int mov_text_decode_close(AVCodecContext *avctx)
 {
     MovTextContext *m = avctx->priv_data;
     mov_text_cleanup_ftab(m);
+    mov_text_cleanup(m);
     return 0;
 }
 

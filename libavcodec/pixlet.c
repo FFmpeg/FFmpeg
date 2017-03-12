@@ -55,7 +55,7 @@ typedef struct PixletContext {
 
     int16_t *filter[2];
     int16_t *prediction;
-    float scaling[4][2][NB_LEVELS];
+    int64_t scaling[4][2][NB_LEVELS];
     SubBand band[4][NB_LEVELS * 3 + 1];
 } PixletContext;
 
@@ -360,11 +360,11 @@ static void lowpass_prediction(int16_t *dst, int16_t *pred, int width, int heigh
     }
 }
 
-static void filter(int16_t *dest, int16_t *tmp, unsigned size, float SCALE)
+static void filterfn(int16_t *dest, int16_t *tmp, unsigned size, int64_t scale)
 {
     int16_t *low, *high, *ll, *lh, *hl, *hh;
     int hsize, i, j;
-    float value;
+    int64_t value;
 
     hsize = size >> 1;
     low = tmp + 4;
@@ -385,33 +385,33 @@ static void filter(int16_t *dest, int16_t *tmp, unsigned size, float SCALE)
     }
 
     for (i = 0; i < hsize; i++) {
-        value = low [i+1] * -0.07576144003329376f +
-                low [i  ] *  0.8586296626673486f  +
-                low [i-1] * -0.07576144003329376f +
-                high[i  ] *  0.3535533905932737f  +
-                high[i-1] *  0.3535533905932737f;
-        dest[i * 2] = av_clipf(value * SCALE, INT16_MIN, INT16_MAX);
+        value = (int64_t) low [i + 1] * -INT64_C(325392907)  +
+                (int64_t) low [i + 0] *  INT64_C(3687786320) +
+                (int64_t) low [i - 1] * -INT64_C(325392907)  +
+                (int64_t) high[i + 0] *  INT64_C(1518500249) +
+                (int64_t) high[i - 1] *  INT64_C(1518500249);
+        dest[i * 2] = av_clip_int16(((value >> 32) * scale) >> 32);
     }
 
     for (i = 0; i < hsize; i++) {
-        value = low [i+2] * -0.01515228715813062f +
-                low [i+1] *  0.3687056777514043f  +
-                low [i  ] *  0.3687056777514043f  +
-                low [i-1] * -0.01515228715813062f +
-                high[i+1] *  0.07071067811865475f +
-                high[i  ] * -0.8485281374238569f  +
-                high[i-1] *  0.07071067811865475f;
-        dest[i * 2 + 1] = av_clipf(value * SCALE, INT16_MIN, INT16_MAX);
+        value = (int64_t) low [i + 2] * -INT64_C(65078576)   +
+                (int64_t) low [i + 1] *  INT64_C(1583578880) +
+                (int64_t) low [i + 0] *  INT64_C(1583578880) +
+                (int64_t) low [i - 1] * -INT64_C(65078576)   +
+                (int64_t) high[i + 1] *  INT64_C(303700064)  +
+                (int64_t) high[i + 0] * -INT64_C(3644400640) +
+                (int64_t) high[i - 1] *  INT64_C(303700064);
+        dest[i * 2 + 1] = av_clip_int16(((value >> 32) * scale) >> 32);
     }
 }
 
 static void reconstruction(AVCodecContext *avctx,
                            int16_t *dest, unsigned width, unsigned height, ptrdiff_t stride, int nb_levels,
-                           float *scaling_H, float *scaling_V)
+                           int64_t *scaling_H, int64_t *scaling_V)
 {
     PixletContext *ctx = avctx->priv_data;
     unsigned scaled_width, scaled_height;
-    float scale_H, scale_V;
+    int64_t scale_H, scale_V;
     int16_t *ptr, *tmp;
     int i, j, k;
 
@@ -427,7 +427,7 @@ static void reconstruction(AVCodecContext *avctx,
 
         ptr = dest;
         for (j = 0; j < scaled_height; j++) {
-            filter(ptr, ctx->filter[1], scaled_width, scale_V);
+            filterfn(ptr, ctx->filter[1], scaled_width, scale_V);
             ptr += stride;
         }
 
@@ -438,7 +438,7 @@ static void reconstruction(AVCodecContext *avctx,
                 ptr += stride;
             }
 
-            filter(tmp, ctx->filter[1], scaled_height, scale_H);
+            filterfn(tmp, ctx->filter[1], scaled_height, scale_H);
 
             ptr = dest + j;
             for (k = 0; k < scaled_height; k++) {
@@ -449,19 +449,22 @@ static void reconstruction(AVCodecContext *avctx,
     }
 }
 
-#define SQR(a) ((a) * (a))
-
 static void postprocess_luma(AVFrame *frame, int w, int h, int depth)
 {
     uint16_t *dsty = (uint16_t *)frame->data[0];
     int16_t *srcy  = (int16_t *)frame->data[0];
     ptrdiff_t stridey = frame->linesize[0] / 2;
-    const float factor = 1.0f / ((1 << depth) - 1);
     int i, j;
 
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
-            dsty[i] = SQR(FFMAX(srcy[i], 0) * factor) * 65535;
+            if (srcy[i] <= 0)
+                dsty[i] = 0;
+            else if (srcy[i] > ((1 << depth) - 1))
+                dsty[i] = 65535;
+            else
+                dsty[i] = ((int64_t) srcy[i] * srcy[i] * 65535) /
+                          ((1 << depth) - 1) / ((1 << depth) - 1);
         }
         dsty += stridey;
         srcy += stridey;
@@ -507,8 +510,8 @@ static int decode_plane(AVCodecContext *avctx, int plane, AVPacket *avpkt, AVFra
         if (!h || !v)
             return AVERROR_INVALIDDATA;
 
-        ctx->scaling[plane][H][i] = 1000000.0f / h;
-        ctx->scaling[plane][V][i] = 1000000.0f / v;
+        ctx->scaling[plane][H][i] = (1000000ULL << 32) / h;
+        ctx->scaling[plane][V][i] = (1000000ULL << 32) / v;
     }
 
     bytestream2_skip(&ctx->gb, 4);

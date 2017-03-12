@@ -322,6 +322,7 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     if (!cat->avf)
         return AVERROR(ENOMEM);
 
+    cat->avf->flags |= avf->flags;
     cat->avf->interrupt_callback = avf->interrupt_callback;
 
     if ((ret = ff_copy_whiteblacklists(cat->avf, avf)) < 0)

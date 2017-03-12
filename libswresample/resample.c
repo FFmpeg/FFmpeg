@@ -149,10 +149,13 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
     double *tab = av_malloc_array(tap_count+1,  sizeof(*tab));
     double *sin_lut = av_malloc_array(ph_nb, sizeof(*sin_lut));
     const int center= (tap_count-1)/2;
+    double norm = 0;
     int ret = AVERROR(ENOMEM);
 
     if (!tab || !sin_lut)
         goto fail;
+
+    av_assert0(tap_count == 1 || tap_count % 2 == 0);
 
     /* if upsampling, only need to interpolate, no filter */
     if (factor > 1.0)
@@ -160,12 +163,11 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 
     if (factor == 1.0) {
         for (ph = 0; ph < ph_nb; ph++)
-            sin_lut[ph] = sin(M_PI * ph / phase_count);
+            sin_lut[ph] = sin(M_PI * ph / phase_count) * (center & 1 ? 1 : -1);
     }
     for(ph = 0; ph < ph_nb; ph++) {
-        double norm = 0;
         s = sin_lut[ph];
-        for(i=0;i<=tap_count;i++) {
+        for(i=0;i<tap_count;i++) {
             x = M_PI * ((double)(i - center) - (double)ph / phase_count) * factor;
             if (x == 0) y = 1.0;
             else if (factor == 1.0)
@@ -194,7 +196,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 
             tab[i] = y;
             s = -s;
-            if (i < tap_count)
+            if (!ph)
                 norm += y;
         }
 
@@ -204,55 +206,29 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             for(i=0;i<tap_count;i++)
                 ((int16_t*)filter)[ph * alloc + i] = av_clip_int16(lrintf(tab[i] * scale / norm));
             if (phase_count % 2) break;
-            if (tap_count % 2 == 0 || tap_count == 1) {
-                for (i = 0; i < tap_count; i++)
-                    ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int16_t*)filter)[ph * alloc + i];
-            }
-            else {
-                for (i = 1; i <= tap_count; i++)
-                    ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-i] =
-                        av_clip_int16(lrintf(tab[i] * scale / (norm - tab[0] + tab[tap_count])));
-            }
+            for (i = 0; i < tap_count; i++)
+                ((int16_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int16_t*)filter)[ph * alloc + i];
             break;
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
                 ((int32_t*)filter)[ph * alloc + i] = av_clipl_int32(llrint(tab[i] * scale / norm));
             if (phase_count % 2) break;
-            if (tap_count % 2 == 0 || tap_count == 1) {
-                for (i = 0; i < tap_count; i++)
-                    ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int32_t*)filter)[ph * alloc + i];
-            }
-            else {
-                for (i = 1; i <= tap_count; i++)
-                    ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-i] =
-                        av_clipl_int32(llrint(tab[i] * scale / (norm - tab[0] + tab[tap_count])));
-            }
+            for (i = 0; i < tap_count; i++)
+                ((int32_t*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((int32_t*)filter)[ph * alloc + i];
             break;
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
                 ((float*)filter)[ph * alloc + i] = tab[i] * scale / norm;
             if (phase_count % 2) break;
-            if (tap_count % 2 == 0 || tap_count == 1) {
-                for (i = 0; i < tap_count; i++)
-                    ((float*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((float*)filter)[ph * alloc + i];
-            }
-            else {
-                for (i = 1; i <= tap_count; i++)
-                    ((float*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / (norm - tab[0] + tab[tap_count]);
-            }
+            for (i = 0; i < tap_count; i++)
+                ((float*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((float*)filter)[ph * alloc + i];
             break;
         case AV_SAMPLE_FMT_DBLP:
             for(i=0;i<tap_count;i++)
                 ((double*)filter)[ph * alloc + i] = tab[i] * scale / norm;
             if (phase_count % 2) break;
-            if (tap_count % 2 == 0 || tap_count == 1) {
-                for (i = 0; i < tap_count; i++)
-                    ((double*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((double*)filter)[ph * alloc + i];
-            }
-            else {
-                for (i = 1; i <= tap_count; i++)
-                    ((double*)filter)[(phase_count-ph) * alloc + tap_count-i] = tab[i] * scale / (norm - tab[0] + tab[tap_count]);
-            }
+            for (i = 0; i < tap_count; i++)
+                ((double*)filter)[(phase_count-ph) * alloc + tap_count-1-i] = ((double*)filter)[ph * alloc + i];
             break;
         }
     }
@@ -308,6 +284,10 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
     int phase_count_compensation = phase_count;
+    int filter_length = FFMAX((int)ceil(filter_size/factor), 1);
+
+    if (filter_length > 1)
+        filter_length = FFALIGN(filter_length, 2);
 
     if (exact_rational) {
         int phase_count_exact, phase_count_exact_den;
@@ -320,7 +300,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     }
 
     if (!c || c->phase_count != phase_count || c->linear!=linear || c->factor != factor
-           || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format
+           || c->filter_length != filter_length || c->format != format
            || c->filter_type != filter_type || c->kaiser_beta != kaiser_beta) {
         c = av_mallocz(sizeof(*c));
         if (!c)
@@ -354,7 +334,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
         c->phase_count   = phase_count;
         c->linear        = linear;
         c->factor        = factor;
-        c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
+        c->filter_length = filter_length;
         c->filter_alloc  = FFALIGN(c->filter_length, 8);
         c->filter_bank   = av_calloc(c->filter_alloc, (phase_count+1)*c->felem_size);
         c->filter_type   = filter_type;

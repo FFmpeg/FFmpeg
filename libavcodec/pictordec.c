@@ -57,7 +57,7 @@ static void picmemset_8bpp(PicContext *s, AVFrame *frame, int value, int run,
     }
 }
 
-static void picmemset(PicContext *s, AVFrame *frame, int value, int run,
+static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
                       int *x, int *y, int *plane, int bits_per_plane)
 {
     uint8_t *d;

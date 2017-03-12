@@ -108,6 +108,7 @@ typedef struct VPxEncoderContext {
     int noise_sensitivity;
     int vpx_cs;
     float level;
+    int row_mt;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -138,6 +139,9 @@ static const char *const ctlidstr[] = {
 #if VPX_ENCODER_ABI_VERSION >= 12
     [VP9E_SET_TARGET_LEVEL]            = "VP9E_SET_TARGET_LEVEL",
     [VP9E_GET_LEVEL]                   = "VP9E_GET_LEVEL",
+#endif
+#ifdef VPX_CTRL_VP9E_SET_ROW_MT
+    [VP9E_SET_ROW_MT]                  = "VP9E_SET_ROW_MT",
 #endif
 #endif
 };
@@ -720,6 +724,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #if VPX_ENCODER_ABI_VERSION >= 12
         codecctl_int(avctx, VP9E_SET_TARGET_LEVEL, ctx->level < 0 ? 255 : lrint(ctx->level * 10));
 #endif
+#ifdef VPX_CTRL_VP9E_SET_ROW_MT
+        if (ctx->row_mt >= 0)
+            codecctl_int(avctx, VP9E_SET_ROW_MT, ctx->row_mt);
+#endif
     }
 #endif
 
@@ -1131,6 +1139,9 @@ static const AVOption vp9_options[] = {
     { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode" },
 #if VPX_ENCODER_ABI_VERSION >= 12
     {"level", "Specify level", OFFSET(level), AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1, 6.2, VE},
+#endif
+#ifdef VPX_CTRL_VP9E_SET_ROW_MT
+    {"row-mt", "Row based multi-threading", OFFSET(row_mt), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
 #endif
     LEGACY_OPTIONS
     { NULL }

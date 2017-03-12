@@ -44,6 +44,109 @@
         vtrn.8          \r2,  \r3
 .endm
 
+@ The input to and output from this macro is in the registers q8-q15,
+@ and q0-q7 are used as scratch registers.
+@ p3 = q8, p0 = q11, q0 = q12, q3 = q15
+.macro loop_filter_q
+        vdup.u8         d0,  r2          @ E
+        lsr             r2,  r2,  #8
+        vdup.u8         d2,  r3          @ I
+        lsr             r3,  r3,  #8
+        vdup.u8         d1,  r2          @ E
+        vdup.u8         d3,  r3          @ I
+
+        vabd.u8         q2,  q8,  q9     @ abs(p3 - p2)
+        vabd.u8         q3,  q9,  q10    @ abs(p2 - p1)
+        vabd.u8         q4,  q10, q11    @ abs(p1 - p0)
+        vabd.u8         q5,  q12, q13    @ abs(q0 - q1)
+        vabd.u8         q6,  q13, q14    @ abs(q1 - q2)
+        vabd.u8         q7,  q14, q15    @ abs(q2 - q3)
+        vmax.u8         q2,  q2,  q3
+        vmax.u8         q3,  q4,  q5
+        vmax.u8         q4,  q6,  q7
+        vabd.u8         q5,  q11, q12    @ abs(p0 - q0)
+        vmax.u8         q2,  q2,  q3
+        vqadd.u8        q5,  q5,  q5     @ abs(p0 - q0) * 2
+        vabd.u8         q7,  q10, q13    @ abs(p1 - q1)
+        vmax.u8         q2,  q2,  q4     @ max(abs(p3 - p2), ..., abs(q2 - q3))
+        vshr.u8         q7,  q7,  #1
+        vcle.u8         q2,  q2,  q1     @ max(abs()) <= I
+        vqadd.u8        q5,  q5,  q7     @ abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
+        vcle.u8         q5,  q5,  q0
+        vand            q2,  q2,  q5     @ fm
+
+        vshrn.u16       d10, q2,  #4
+        vmov            r2,  r3,  d10
+        orrs            r2,  r2,  r3
+        @ If no pixels need filtering, just exit as soon as possible
+        beq             9f
+
+        @ Calculate the normal inner loop filter for 2 or 4 pixels
+        ldr             r3,  [sp, #64]
+        vabd.u8         q3,  q10, q11    @ abs(p1 - p0)
+        vabd.u8         q4,  q13, q12    @ abs(q1 - q0)
+
+        vsubl.u8        q5,  d20, d26    @ p1 - q1
+        vsubl.u8        q6,  d21, d27    @ p1 - q1
+        vmax.u8         q3,  q3,  q4     @ max(abs(p1 - p0), abs(q1 - q0))
+        vqmovn.s16      d10, q5          @ av_clip_int8p(p1 - q1)
+        vqmovn.s16      d11, q6          @ av_clip_int8p(p1 - q1)
+        vdup.u8         d8,  r3          @ H
+        lsr             r3,  r3,  #8
+        vdup.u8         d9,  r3          @ H
+        vsubl.u8        q6,  d24, d22    @ q0 - p0
+        vsubl.u8        q7,  d25, d23    @ q0 - p0
+        vcle.u8         q3,  q3,  q4     @ hev
+        vmov.s16        q0,  #3
+        vand            q3,  q3,  q2     @ !hev && fm && !flat8in
+
+        vmul.s16        q6,  q6,  q0     @ 3 * (q0 - p0)
+        vmul.s16        q7,  q7,  q0     @ 3 * (q0 - p0)
+        vbic            q5,  q5,  q3     @ if (!hev) av_clip_int8 = 0
+        vaddw.s8        q6,  q6,  d10    @ 3 * (q0 - p0) [+ av_clip_int8(p1 - q1)]
+        vaddw.s8        q7,  q7,  d11    @ 3 * (q0 - p0) [+ av_clip_int8(p1 - q1)]
+        vmov.s8         q5,  #4
+        vqmovn.s16      d12, q6
+        vqmovn.s16      d13, q7          @ av_clip_int8(3 * (q0 - p0) [+ av_clip_int8(p1 - q1)], BIT_DEPTH - 1) = f
+        vmov.s8         q0,  #3
+
+        vqadd.s8        q5,  q6,  q5     @ FFMIN(f + 4, 127)
+        vqadd.s8        q0,  q6,  q0     @ FFMIN(f + 3, 127)
+        vmovl.u8        q6,  d22         @ p0
+        vmovl.u8        q7,  d23         @ p0
+        vshr.s8         q5,  q5,  #3     @ f1
+        vshr.s8         q0,  q0,  #3     @ f2
+
+        vaddw.s8        q6,  q6,  d0     @ p0 + f2
+        vaddw.s8        q7,  q7,  d1     @ p0 + f2
+        vqmovun.s16     d0,  q6          @ out p0
+        vmovl.u8        q6,  d24         @ q0
+        vqmovun.s16     d1,  q7          @ out p0
+        vmovl.u8        q7,  d25         @ q0
+        vsubw.s8        q6,  q6,  d10    @ q0 - f1
+        vsubw.s8        q7,  q7,  d11    @ q0 - f1
+        vqmovun.s16     d12, q6          @ out q0
+        vqmovun.s16     d13, q7          @ out q0
+        vrshr.s8        q5,  q5,  #1     @ f = (f1 + 1) >> 1
+        vbit            q11, q0,  q2     @ if (fm && !flat8in)
+        vbit            q12, q6,  q2
+
+        vmovl.u8        q0,  d20         @ p1
+        vmovl.u8        q2,  d21         @ p1
+        vmovl.u8        q6,  d26         @ q1
+        vmovl.u8        q7,  d27         @ q1
+        vaddw.s8        q0,  q0,  d10    @ p1 + f
+        vaddw.s8        q2,  q2,  d11    @ p1 + f
+        vsubw.s8        q6,  q6,  d10    @ q1 - f
+        vsubw.s8        q7,  q7,  d11    @ q1 - f
+        vqmovun.s16     d0,  q0          @ out p1
+        vqmovun.s16     d1,  q2          @ out p1
+        vqmovun.s16     d12, q6          @ out q1
+        vqmovun.s16     d13, q7          @ out q1
+        vbit            q10, q0,  q3     @ if (!hev && fm && !flat8in)
+        vbit            q13, q6,  q3
+.endm
+
 @ The input to and output from this macro is in the registers d16-d31,
 @ and d0-d7 are used as scratch registers.
 @ p7 = d16 .. p3 = d20, p0 = d23, q0 = d24, q3 = d27, q7 = d31
@@ -51,7 +154,7 @@
 @ and d28-d31 as temp registers, or d8-d15.
 @ tmp1,tmp2 = tmpq1, tmp3,tmp4 = tmpq2, tmp5,tmp6 = tmpq3, tmp7,tmp8 = tmpq4
 .macro loop_filter wd, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmpq1, tmpq2, tmpq3, tmpq4
-        vdup.u16        q0,  r2 @ E
+        vdup.u8         d0,  r2 @ E
         vdup.u8         d2,  r3 @ I
         ldr             r3,  [sp]
 
@@ -64,22 +167,20 @@
         vmax.u8         d4,  d4,  d5
         vmax.u8         d5,  d6,  d7
         vmax.u8         \tmp1,  \tmp1,  \tmp2
-        vabdl.u8        q3,  d23, d24    @ abs(p0 - q0)
+        vabd.u8         d6,  d23, d24    @ abs(p0 - q0)
         vmax.u8         d4,  d4,  d5
-        vadd.u16        q3,  q3,  q3     @ abs(p0 - q0) * 2
+        vqadd.u8        d6,  d6,  d6     @ abs(p0 - q0) * 2
         vabd.u8         d5,  d22, d25    @ abs(p1 - q1)
         vmax.u8         d4,  d4,  \tmp1  @ max(abs(p3 - p2), ..., abs(q2 - q3))
         vshr.u8         d5,  d5,  #1
         vcle.u8         d4,  d4,  d2     @ max(abs()) <= I
-        vaddw.u8        q3,  q3,  d5     @ abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
-        vcle.u16        q3,  q3,  q0
-        vmovn.u16       d5,  q3
+        vqadd.u8        d6,  d6,  d5     @ abs(p0 - q0) * 2 + abs(p1 - q1) >> 1
+        vcle.u8         d5,  d6,  d0
         vand            d4,  d4,  d5     @ fm
 
         vdup.u8         d3,  r3          @ H
         vmov            r2,  r3,  d4
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels need filtering, just exit as soon as possible
         beq             9f
 
@@ -141,7 +242,7 @@
 .if \wd == 8
         vcle.u8         d6,  d6,  d0            @ flat8in
 .endif
-        vcgt.u8         d5,  d5,  d3            @ hev
+        vcle.u8         d5,  d5,  d3            @ !hev
 .if \wd == 8
         vand            d6,  d6,  d4            @ flat8in && fm
 .endif
@@ -151,11 +252,10 @@
 .elseif \wd == 8
         vbic            d4,  d4,  d6            @ fm && !flat8in
 .endif
-        vmvn            d5,  d5                 @ !hev
+        vand            d5,  d5,  d4            @ !hev && fm && !flat8in
 .if \wd == 16
         vand            d7,  d7,  d6            @ flat8out && flat8in && fm
 .endif
-        vand            d5,  d5,  d4            @ !hev && fm && !flat8in
 
         vmul.s16        \tmpq2,  \tmpq2, \tmpq3 @ 3 * (q0 - p0)
         vbic            \tmp1,   \tmp1,   d5    @ if (!hev) av_clip_int8 = 0
@@ -184,17 +284,20 @@
 
         vmovl.u8        q0,  d22                @ p1
         vmovl.u8        q1,  d25                @ q1
+.if \wd >= 8
+        vmov            r2,  r3,  d6
+.endif
         vaddw.s8        q0,  q0,  \tmp3         @ p1 + f
         vsubw.s8        q1,  q1,  \tmp3         @ q1 - f
+.if \wd >= 8
+        orrs            r2,  r2,  r3
+.endif
         vqmovun.s16     d0,  q0                 @ out p1
         vqmovun.s16     d2,  q1                 @ out q1
         vbit            d22, d0,  d5            @ if (!hev && fm && !flat8in)
         vbit            d25, d2,  d5
 
 .if \wd >= 8
-        vmov            r2,  r3,  d6
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
         @ If no pixels need flat8in, jump to flat8out
         @ (or to a writeout of the inner 4 pixels, for wd=8)
         beq             6f
@@ -249,14 +352,12 @@
 6:
         vorr            d2,  d6,  d7
         vmov            r2,  r3,  d2
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels needed flat8in nor flat8out, jump to a
         @ writeout of the inner 4 pixels
         beq             7f
         vmov            r2,  r3,  d7
-        orr             r2,  r2,  r3
-        cmp             r2,  #0
+        orrs            r2,  r2,  r3
         @ If no pixels need flat8out, jump to a writeout of the inner 6 pixels
         beq             8f
 
@@ -454,6 +555,94 @@ function ff_vp9_loop_filter_h_4_8_neon, export=1
         vst1.32         {d25[0]}, [r12], r1
         vst1.32         {d25[1]}, [r0],  r1
 9:
+        bx              lr
+endfunc
+
+function ff_vp9_loop_filter_v_44_16_neon, export=1
+        vpush           {q4-q7}
+        sub             r12, r0,  r1, lsl #2
+        vld1.8          {q8},  [r12,:128], r1 @ p3
+        vld1.8          {q12}, [r0, :128], r1 @ q0
+        vld1.8          {q9},  [r12,:128], r1 @ p2
+        vld1.8          {q13}, [r0, :128], r1 @ q1
+        vld1.8          {q10}, [r12,:128], r1 @ p1
+        vld1.8          {q14}, [r0, :128], r1 @ q2
+        vld1.8          {q11}, [r12,:128], r1 @ p0
+        vld1.8          {q15}, [r0, :128], r1 @ q3
+        sub             r0,  r0,  r1, lsl #2
+        sub             r12, r12, r1, lsl #1
+
+        loop_filter_q
+
+        vst1.8          {q10}, [r12,:128], r1
+        vst1.8          {q12}, [r0, :128], r1
+        vst1.8          {q11}, [r12,:128], r1
+        vst1.8          {q13}, [r0, :128], r1
+9:
+        vpop            {q4-q7}
+        bx              lr
+endfunc
+
+function ff_vp9_loop_filter_h_44_16_neon, export=1
+        vpush           {q4-q7}
+        sub             r12, r0,  #4
+        add             r0,  r12, r1, lsl #2
+        vld1.8          {d16}, [r12], r1
+        vld1.8          {d24}, [r0],  r1
+        vld1.8          {d18}, [r12], r1
+        vld1.8          {d26}, [r0],  r1
+        vld1.8          {d20}, [r12], r1
+        vld1.8          {d28}, [r0],  r1
+        vld1.8          {d22}, [r12], r1
+        vld1.8          {d30}, [r0],  r1
+        mov             r12, r0
+        add             r0,  r0,  r1, lsl #2
+        vld1.8          {d17}, [r12], r1
+        vld1.8          {d25}, [r0],  r1
+        vld1.8          {d19}, [r12], r1
+        vld1.8          {d27}, [r0],  r1
+        vld1.8          {d21}, [r12], r1
+        vld1.8          {d29}, [r0],  r1
+        vld1.8          {d23}, [r12], r1
+        vld1.8          {d31}, [r0],  r1
+
+        @ Transpose the 16x8 pixels, as two 8x8 parts
+        transpose_8x8   q8,  q9,  q10, q11, q12, q13, q14, q15
+
+        loop_filter_q
+
+        sub             r12, r0,  r1, lsl #4
+        add             r0,  r12, r1, lsl #3
+        @ Move r0/r12 forward by 2 pixels; we don't need to rewrite the
+        @ outermost 2 pixels since they aren't changed.
+        add             r12, r12, #2
+        add             r0,  r0,  #2
+
+        @ We only will write the mid 4 pixels back; after the loop filter,
+        @ these are in q10, q11, q12, q13, ordered as rows (16x4 pixels).
+        @ We need to transpose them to columns, done with a 4x4 transpose
+        @ (which in practice is four 4x4 transposes of the 4x4 blocks of
+        @ the 16x4 pixels; into 4x16 pixels).
+        transpose_4x4   q10, q11, q12, q13
+
+        vst1.32         {d20[0]}, [r12], r1
+        vst1.32         {d21[0]}, [r0],  r1
+        vst1.32         {d22[0]}, [r12], r1
+        vst1.32         {d23[0]}, [r0],  r1
+        vst1.32         {d24[0]}, [r12], r1
+        vst1.32         {d25[0]}, [r0],  r1
+        vst1.32         {d26[0]}, [r12], r1
+        vst1.32         {d27[0]}, [r0],  r1
+        vst1.32         {d20[1]}, [r12], r1
+        vst1.32         {d21[1]}, [r0],  r1
+        vst1.32         {d22[1]}, [r12], r1
+        vst1.32         {d23[1]}, [r0],  r1
+        vst1.32         {d24[1]}, [r12], r1
+        vst1.32         {d25[1]}, [r0],  r1
+        vst1.32         {d26[1]}, [r12], r1
+        vst1.32         {d27[1]}, [r0],  r1
+9:
+        vpop            {q4-q7}
         bx              lr
 endfunc
 

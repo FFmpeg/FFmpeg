@@ -261,6 +261,7 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
 {
     const uint8_t *sizes = buf;
     int i;
+    int ret;
 
     s->num_coeff_partitions = 1 << vp8_rac_get_uint(&s->c, 2);
 
@@ -274,13 +275,13 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
         if (buf_size - size < 0)
             return -1;
 
-        ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, size);
+        ret = ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, size);
+        if (ret < 0)
+            return ret;
         buf      += size;
         buf_size -= size;
     }
-    ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
-
-    return 0;
+    return ff_vp56_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
 }
 
 static void vp7_get_quants(VP8Context *s)
@@ -518,7 +519,9 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 
     memcpy(s->put_pixels_tab, s->vp8dsp.put_vp8_epel_pixels_tab, sizeof(s->put_pixels_tab));
 
-    ff_vp56_init_range_decoder(c, buf, part1_size);
+    ret = ff_vp56_init_range_decoder(c, buf, part1_size);
+    if (ret < 0)
+        return ret;
     buf      += part1_size;
     buf_size -= part1_size;
 
@@ -570,7 +573,9 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     s->lf_delta.enabled        = 0;
 
     s->num_coeff_partitions = 1;
-    ff_vp56_init_range_decoder(&s->coeff_partition[0], buf, buf_size);
+    ret = ff_vp56_init_range_decoder(&s->coeff_partition[0], buf, buf_size);
+    if (ret < 0)
+        return ret;
 
     if (!s->macroblocks_base || /* first frame */
         width != s->avctx->width || height != s->avctx->height ||
@@ -699,7 +704,9 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         memset(&s->lf_delta, 0, sizeof(s->lf_delta));
     }
 
-    ff_vp56_init_range_decoder(c, buf, header_size);
+    ret = ff_vp56_init_range_decoder(c, buf, header_size);
+    if (ret < 0)
+        return ret;
     buf      += header_size;
     buf_size -= header_size;
 
@@ -2323,6 +2330,8 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     s->mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
+        if (c->end <= c->buffer && c->bits >= 0)
+            return AVERROR_INVALIDDATA;
         // Wait for previous thread to read mb_x+2, and reach mb_y-1.
         if (prev_td != td) {
             if (threadnr != 0) {
@@ -2497,12 +2506,12 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
 
     td->thread_nr = threadnr;
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
-        if (mb_y >= s->mb_height)
-            break;
         td->thread_mb_pos = mb_y << 16;
         ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
-        if (ret < 0)
+        if (ret < 0) {
+            update_pos(td, s->mb_height, INT_MAX & 0xFFFF);
             return ret;
+        }
         if (s->deblock_filter)
             s->filter_mb_row(avctx, tdata, jobnr, threadnr);
         update_pos(td, mb_y, INT_MAX & 0xFFFF);

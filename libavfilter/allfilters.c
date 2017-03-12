@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/thread.h"
 #include "avfilter.h"
 #include "config.h"
 #include "opencl_allkernels.h"
@@ -37,14 +38,8 @@
         avfilter_register(&ff_##x);                                     \
     }
 
-void avfilter_register_all(void)
+static void register_all(void)
 {
-    static int initialized;
-
-    if (initialized)
-        return;
-    initialized = 1;
-
     REGISTER_FILTER(ABENCH,         abench,         af);
     REGISTER_FILTER(ACOMPRESSOR,    acompressor,    af);
     REGISTER_FILTER(ACROSSFADE,     acrossfade,     af);
@@ -379,4 +374,11 @@ void avfilter_register_all(void)
     REGISTER_FILTER_UNCONDITIONAL(af_afifo);
     REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
     ff_opencl_register_filter_kernel_code_all();
+}
+
+void avfilter_register_all(void)
+{
+    AVOnce control = AV_ONCE_INIT;
+
+    ff_thread_once(&control, register_all);
 }

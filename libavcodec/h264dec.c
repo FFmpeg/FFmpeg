@@ -850,7 +850,12 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     AVFrame *src = srcp->f;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
     int i;
-    int ret = av_frame_ref(dst, src);
+    int ret;
+
+    if (src->format == AV_PIX_FMT_VIDEOTOOLBOX && src->buf[0]->size == 1)
+        return AVERROR_EXTERNAL;
+
+    ret = av_frame_ref(dst, src);
     if (ret < 0)
         return ret;
 
