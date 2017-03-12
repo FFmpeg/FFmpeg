@@ -328,28 +328,21 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
-    if (ncolors <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of colors: %d\n", ncolors);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (cpp <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of chars per pixel: %d\n", cpp);
+    if (cpp <= 0 || cpp >= 5) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported/invalid number of chars per pixel: %d\n", cpp);
         return AVERROR_INVALIDDATA;
     }
 
     size = 1;
-    j = 1;
-    for (i = 0; i < cpp; i++) {
-        size += j * 94;
-        j *= 95;
-    }
-    size *= 4;
+    for (i = 0; i < cpp; i++)
+        size *= 94;
 
-    if (size < 0) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported number of chars per pixel: %d\n", cpp);
-        return AVERROR(ENOMEM);
+    if (ncolors <= 0 || ncolors > size) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of colors: %d\n", ncolors);
+        return AVERROR_INVALIDDATA;
     }
+
+    size *= 4;
 
     av_fast_padded_malloc(&x->pixels, &x->pixels_size, size);
     if (!x->pixels)
