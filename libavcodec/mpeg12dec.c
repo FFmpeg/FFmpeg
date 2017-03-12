@@ -994,7 +994,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 
             cbp = get_vlc2(&s->gb, ff_mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
             if (mb_block_count > 6) {
-                cbp <<= mb_block_count - 6;
+                cbp *= 1 << mb_block_count - 6;
                 cbp  |= get_bits(&s->gb, mb_block_count - 6);
                 s->bdsp.clear_blocks(s->block[6]);
             }
