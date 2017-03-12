@@ -399,6 +399,7 @@ EXPORTS
     av_shr_i
     av_small_strptime
     av_spherical_alloc
+    av_spherical_tile_bounds
     av_stereo3d_alloc
     av_stereo3d_create_side_data
     av_stereo3d_from_name
