@@ -185,7 +185,7 @@ static const ColorEntry color_table[] = {
     { "YellowGreen",          0xFF9ACD32 }
 };
 
-static unsigned convert(uint8_t x)
+static unsigned hex_char_to_number(uint8_t x)
 {
     if (x >= 'a' && x <= 'f')
         x -= 87;
@@ -237,30 +237,30 @@ static uint32_t hexstring_to_rgba(const char *p, int len)
         p++;
         len--;
         if (len == 3) {
-            ret |= (convert(p[2]) <<  4) |
-                   (convert(p[1]) << 12) |
-                   (convert(p[0]) << 20);
+            ret |= (hex_char_to_number(p[2]) <<  4) |
+                   (hex_char_to_number(p[1]) << 12) |
+                   (hex_char_to_number(p[0]) << 20);
         } else if (len == 4) {
-            ret  = (convert(p[3]) <<  4) |
-                   (convert(p[2]) << 12) |
-                   (convert(p[1]) << 20) |
-                   (convert(p[0]) << 28);
+            ret  = (hex_char_to_number(p[3]) <<  4) |
+                   (hex_char_to_number(p[2]) << 12) |
+                   (hex_char_to_number(p[1]) << 20) |
+                   (hex_char_to_number(p[0]) << 28);
         } else if (len == 6) {
-            ret |=  convert(p[5])        |
-                   (convert(p[4]) <<  4) |
-                   (convert(p[3]) <<  8) |
-                   (convert(p[2]) << 12) |
-                   (convert(p[1]) << 16) |
-                   (convert(p[0]) << 20);
+            ret |=  hex_char_to_number(p[5])        |
+                   (hex_char_to_number(p[4]) <<  4) |
+                   (hex_char_to_number(p[3]) <<  8) |
+                   (hex_char_to_number(p[2]) << 12) |
+                   (hex_char_to_number(p[1]) << 16) |
+                   (hex_char_to_number(p[0]) << 20);
         } else if (len == 8) {
-            ret  =  convert(p[7])        |
-                   (convert(p[6]) <<  4) |
-                   (convert(p[5]) <<  8) |
-                   (convert(p[4]) << 12) |
-                   (convert(p[3]) << 16) |
-                   (convert(p[2]) << 20) |
-                   (convert(p[1]) << 24) |
-                   (convert(p[0]) << 28);
+            ret  =  hex_char_to_number(p[7])        |
+                   (hex_char_to_number(p[6]) <<  4) |
+                   (hex_char_to_number(p[5]) <<  8) |
+                   (hex_char_to_number(p[4]) << 12) |
+                   (hex_char_to_number(p[3]) << 16) |
+                   (hex_char_to_number(p[2]) << 20) |
+                   (hex_char_to_number(p[1]) << 24) |
+                   (hex_char_to_number(p[0]) << 28);
         }
     } else {
         strncpy(color_name, p, len);
