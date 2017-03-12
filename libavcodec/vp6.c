@@ -108,7 +108,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 
         ret = ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
         if (ret < 0)
-            return ret;
+            goto fail;
         vp56_rac_gets(c, 2);
 
         parse_filter_info = s->filter_header;
@@ -162,9 +162,8 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
         buf      += coeff_offset;
         buf_size -= coeff_offset;
         if (buf_size < 0) {
-            if (s->frames[VP56_FRAME_CURRENT]->key_frame)
-                ff_set_dimensions(s->avctx, 0, 0);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
         if (s->use_huffman) {
             s->parse_coeff = vp6_parse_coeff_huffman;
@@ -172,7 +171,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
         } else {
             ret = ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
             if (ret < 0)
-                return ret;
+                goto fail;
             s->ccp = &s->cc;
         }
     } else {
@@ -180,6 +179,10 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     }
 
     return res;
+fail:
+    if (res == VP56_SIZE_CHANGE)
+        ff_set_dimensions(s->avctx, 0, 0);
+    return ret;
 }
 
 static void vp6_coeff_order_table_init(VP56Context *s)
