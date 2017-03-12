@@ -185,15 +185,16 @@ static const ColorEntry color_table[] = {
     { "YellowGreen",          0xFF9ACD32 }
 };
 
-static int convert(uint8_t x)
+static unsigned convert(uint8_t x)
 {
-    if (x >= 'a') {
+    if (x >= 'a' && x <= 'f')
         x -= 87;
-    } else if (x >= 'A') {
+    else if (x >= 'A' && x <= 'F')
         x -= 55;
-    } else {
+    else if (x >= '0' && x <= '9')
         x -= '0';
-    }
+    else
+        x = 0;
     return x;
 }
 
