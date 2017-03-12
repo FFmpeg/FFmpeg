@@ -197,19 +197,22 @@ static int seek_test(const char *input_filename, const char *start, const char *
     result = avformat_find_stream_info(fmt_ctx, NULL);
     if (result < 0) {
         av_log(NULL, AV_LOG_ERROR, "Can't get stream info\n");
-        return result;
+        goto end;
     }
 
     start_ts = read_seek_range(start);
     end_ts = read_seek_range(end);
-    if ((start_ts < 0) || (end_ts < 0))
-        return -1;
+    if ((start_ts < 0) || (end_ts < 0)) {
+        result = -1;
+        goto end;
+    }
 
     //TODO: add ability to work with audio format
     video_stream = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     if (video_stream < 0) {
       av_log(NULL, AV_LOG_ERROR, "Can't find video stream in input file\n");
-      return -1;
+      result = video_stream;
+      goto end;
     }
 
     origin_par = fmt_ctx->streams[video_stream]->codecpar;
@@ -217,52 +220,56 @@ static int seek_test(const char *input_filename, const char *start, const char *
     codec = avcodec_find_decoder(origin_par->codec_id);
     if (!codec) {
         av_log(NULL, AV_LOG_ERROR, "Can't find decoder\n");
-        return -1;
+        result = AVERROR_DECODER_NOT_FOUND;
+        goto end;
     }
 
     ctx = avcodec_alloc_context3(codec);
     if (!ctx) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate decoder context\n");
-        return AVERROR(ENOMEM);
+        result = AVERROR(ENOMEM);
+        goto end;
     }
 
     result = avcodec_parameters_to_context(ctx, origin_par);
     if (result) {
         av_log(NULL, AV_LOG_ERROR, "Can't copy decoder context\n");
-        return result;
+        goto end;
     }
 
     result = avcodec_open2(ctx, codec, NULL);
     if (result < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't open decoder\n");
-        return result;
+        goto end;
     }
 
     fr = av_frame_alloc();
     if (!fr) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate frame\n");
-        return AVERROR(ENOMEM);
+        result = AVERROR(ENOMEM);
+        goto end;
     }
 
     result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, 0, 0, 1);
     if (result != 0)
-        return -1;
+        goto end;
 
     for (i = start_ts; i < end_ts; i += 100) {
         for (j = i + 100; j < end_ts; j += 100) {
             result = compute_crc_of_packets(fmt_ctx, video_stream, ctx, fr, i, j, 0);
             if (result != 0)
-                return -1;
+                break;
         }
     }
 
+end:
     av_freep(&crc_array);
     av_freep(&pts_array);
     av_frame_free(&fr);
     avcodec_close(ctx);
     avformat_close_input(&fmt_ctx);
     avcodec_free_context(&ctx);
-    return 0;
+    return result;
 }
 
 int main(int argc, char **argv)
