@@ -1636,7 +1636,7 @@ static AVRational update_sar(int old_w, int old_h, AVRational sar, int new_w, in
     if (!sar.num)
         sar = (AVRational){1, 1};
 
-    sar = av_mul_q(sar, (AVRational){new_h * old_w, new_w * old_h});
+    sar = av_mul_q(sar, av_mul_q((AVRational){new_h, new_w}, (AVRational){old_w, old_h}));
     return sar;
 }
 
