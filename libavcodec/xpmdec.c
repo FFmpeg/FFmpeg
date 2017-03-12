@@ -307,7 +307,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
     avctx->pix_fmt = AV_PIX_FMT_BGRA;
 
     end = avpkt->data + avpkt->size;
-    while (memcmp(ptr, "/* XPM */\n", 10) && ptr < end - 10)
+    while (memcmp(ptr, "/* XPM */", 9) && ptr < end - 9)
         ptr++;
 
     if (ptr >= end) {
