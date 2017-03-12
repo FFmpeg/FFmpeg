@@ -2437,6 +2437,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eo
 
     best_effort_timestamp= av_frame_get_best_effort_timestamp(decoded_frame);
 
+    if (ist->framerate.num)
+        best_effort_timestamp = ist->cfr_next_pts++;
+
     if (eof && best_effort_timestamp == AV_NOPTS_VALUE && ist->nb_dts_buffer > 0) {
         best_effort_timestamp = ist->dts_buffer[0];
 
