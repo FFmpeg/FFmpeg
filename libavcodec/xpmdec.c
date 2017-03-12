@@ -227,7 +227,7 @@ static size_t mod_strcspn(const char *string, const char *reject)
     return i;
 }
 
-static uint32_t hexstring_to_rgba(const char *p, int len)
+static uint32_t color_string_to_rgba(const char *p, int len)
 {
     uint32_t ret = 0xFF000000;
     const ColorEntry *entry;
@@ -378,7 +378,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
         if ((ret = ascii2index(index, cpp)) < 0)
             return ret;
 
-        x->pixels[ret] = hexstring_to_rgba(ptr, len);
+        x->pixels[ret] = color_string_to_rgba(ptr, len);
         ptr += mod_strcspn(ptr, ",") + 1;
     }
 
