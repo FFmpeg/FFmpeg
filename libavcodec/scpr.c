@@ -656,7 +656,7 @@ static int decompress_p(AVCodecContext *avctx,
                             if (by >= avctx->height)
                                 return AVERROR_INVALIDDATA;
 
-                            clr = prev[by * linesize + bx];
+                            clr = prev[by * plinesize + bx];
                             dst[by * linesize + bx] = clr;
                             bx++;
                             if (bx >= x * 16 + sx2 || bx >= avctx->width) {
