@@ -470,17 +470,9 @@ static HLSSegment *find_segment_by_filename(HLSSegment *segment, const char *fil
     return (HLSSegment *) NULL;
 }
 
-/* Create a new segment and append it to the segment list */
-static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double duration,
-                              int64_t pos, int64_t size)
+static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls, HLSSegment *en, double duration,
+                                         int64_t pos, int64_t size)
 {
-    HLSSegment *en = av_malloc(sizeof(*en));
-    const char  *filename;
-    int ret;
-
-    if (!en)
-        return AVERROR(ENOMEM);
-
     if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
         strlen(hls->current_segment_final_filename_fmt)) {
         av_strlcpy(hls->avf->filename, hls->current_segment_final_filename_fmt, sizeof(hls->avf->filename));
@@ -521,7 +513,127 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
             av_free(filename);
         }
     }
+    return 0;
+}
 
+static int sls_flag_check_duration_size_index(HLSContext *hls)
+{
+    int ret = 0;
+
+    if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
+         av_log(hls, AV_LOG_ERROR,
+                "second_level_segment_duration hls_flag requires use_localtime to be true\n");
+         ret = AVERROR(EINVAL);
+    }
+    if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
+         av_log(hls, AV_LOG_ERROR,
+                "second_level_segment_size hls_flag requires use_localtime to be true\n");
+         ret = AVERROR(EINVAL);
+    }
+    if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
+        av_log(hls, AV_LOG_ERROR,
+               "second_level_segment_index hls_flag requires use_localtime to be true\n");
+        ret = AVERROR(EINVAL);
+    }
+
+    return ret;
+}
+
+static int sls_flag_check_duration_size(HLSContext *hls)
+{
+    const char *proto = avio_find_protocol_name(hls->basename);
+    int segment_renaming_ok = proto && !strcmp(proto, "file");
+    int ret = 0;
+
+    if ((hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) && !segment_renaming_ok) {
+         av_log(hls, AV_LOG_ERROR,
+                "second_level_segment_duration hls_flag works only with file protocol segment names\n");
+         ret = AVERROR(EINVAL);
+    }
+    if ((hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) && !segment_renaming_ok) {
+         av_log(hls, AV_LOG_ERROR,
+                "second_level_segment_size hls_flag works only with file protocol segment names\n");
+         ret = AVERROR(EINVAL);
+    }
+
+    return ret;
+}
+
+static void sls_flag_file_rename(HLSContext *hls, char *old_filename) {
+    if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
+        strlen(hls->current_segment_final_filename_fmt)) {
+        ff_rename(old_filename, hls->avf->filename, hls);
+    }
+}
+
+static int sls_flag_use_localtime_filename(AVFormatContext *oc, HLSContext *c)
+{
+    if (c->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
+        char * filename = av_strdup(oc->filename);  // %%d will be %d after strftime
+        if (!filename)
+            return AVERROR(ENOMEM);
+        if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+#if FF_API_HLS_WRAP
+            filename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
+#else
+            filename, 'd', c->sequence) < 1) {
+#endif
+            av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
+                    "you can try to remove second_level_segment_index flag\n",
+                   filename);
+            av_free(filename);
+            return AVERROR(EINVAL);
+        }
+        av_free(filename);
+    }
+    if (c->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) {
+        av_strlcpy(c->current_segment_final_filename_fmt, oc->filename,
+                   sizeof(c->current_segment_final_filename_fmt));
+        if (c->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
+            char * filename = av_strdup(oc->filename);  // %%s will be %s after strftime
+            if (!filename)
+                return AVERROR(ENOMEM);
+            if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 's', 0) < 1) {
+                av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
+                        "you can try to remove second_level_segment_size flag\n",
+                       filename);
+                av_free(filename);
+                return AVERROR(EINVAL);
+            }
+            av_free(filename);
+        }
+        if (c->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
+            char * filename = av_strdup(oc->filename);  // %%t will be %t after strftime
+            if (!filename)
+                return AVERROR(ENOMEM);
+            if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 't', 0) < 1) {
+                av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
+                        "you can try to remove second_level_segment_time flag\n",
+                       filename);
+                av_free(filename);
+                return AVERROR(EINVAL);
+            }
+            av_free(filename);
+        }
+    }
+    return 0;
+}
+
+/* Create a new segment and append it to the segment list */
+static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double duration,
+                              int64_t pos, int64_t size)
+{
+    HLSSegment *en = av_malloc(sizeof(*en));
+    const char  *filename;
+    int ret;
+
+    if (!en)
+        return AVERROR(ENOMEM);
+
+    ret = sls_flags_filename_process(s, hls, en, duration, pos, size);
+    if (ret < 0) {
+        return ret;
+    }
 
     filename = av_basename(hls->avf->filename);
 
@@ -870,57 +982,12 @@ static int hls_start(AVFormatContext *s)
                 av_log(oc, AV_LOG_ERROR, "Could not get segment filename with use_localtime\n");
                 return AVERROR(EINVAL);
             }
-            if (c->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
-                char * filename = av_strdup(oc->filename);  // %%d will be %d after strftime
-                if (!filename)
-                    return AVERROR(ENOMEM);
-                if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
-#if FF_API_HLS_WRAP
-                    filename, 'd', c->wrap ? c->sequence % c->wrap : c->sequence) < 1) {
-#else
-                    filename, 'd', c->sequence) < 1) {
-#endif
-                    av_log(c, AV_LOG_ERROR,
-                           "Invalid second level segment filename template '%s', "
-                            "you can try to remove second_level_segment_index flag\n",
-                           filename);
-                    av_free(filename);
-                    return AVERROR(EINVAL);
-                }
-                av_free(filename);
+
+            err = sls_flag_use_localtime_filename(oc, c);
+            if (err < 0) {
+                return AVERROR(ENOMEM);
             }
-            if (c->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) {
-                av_strlcpy(c->current_segment_final_filename_fmt, oc->filename,
-                           sizeof(c->current_segment_final_filename_fmt));
-                if (c->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
-                    char * filename = av_strdup(oc->filename);  // %%s will be %s after strftime
-                    if (!filename)
-                        return AVERROR(ENOMEM);
-                    if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 's', 0) < 1) {
-                        av_log(c, AV_LOG_ERROR,
-                               "Invalid second level segment filename template '%s', "
-                                "you can try to remove second_level_segment_size flag\n",
-                               filename);
-                        av_free(filename);
-                        return AVERROR(EINVAL);
-                    }
-                    av_free(filename);
-                }
-                if (c->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
-                    char * filename = av_strdup(oc->filename);  // %%t will be %t after strftime
-                    if (!filename)
-                        return AVERROR(ENOMEM);
-                    if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 't', 0) < 1) {
-                        av_log(c, AV_LOG_ERROR,
-                               "Invalid second level segment filename template '%s', "
-                                "you can try to remove second_level_segment_time flag\n",
-                               filename);
-                        av_free(filename);
-                        return AVERROR(EINVAL);
-                    }
-                    av_free(filename);
-                }
-            }
+
             if (c->use_localtime_mkdir) {
                 const char *dir;
                 char *fn_copy = av_strdup(oc->filename);
@@ -1043,7 +1110,8 @@ static int hls_write_header(AVFormatContext *s)
     int basename_size;
     int vtt_basename_size;
 
-    if (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH || hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_FORMATTED_DATETIME) {
+    if ((hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH) ||
+        (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_FORMATTED_DATETIME)) {
         time_t t = time(NULL); // we will need it in either case
         if (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH) {
             hls->start_sequence = (int64_t)t;
@@ -1138,38 +1206,13 @@ static int hls_write_header(AVFormatContext *s)
         }
     }
     if (!hls->use_localtime) {
-        if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
-             av_log(hls, AV_LOG_ERROR,
-                    "second_level_segment_duration hls_flag requires use_localtime to be true\n");
-             ret = AVERROR(EINVAL);
+        ret = sls_flag_check_duration_size_index(hls);
+        if (ret < 0) {
              goto fail;
-        }
-        if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
-             av_log(hls, AV_LOG_ERROR,
-                    "second_level_segment_size hls_flag requires use_localtime to be true\n");
-             ret = AVERROR(EINVAL);
-             goto fail;
-        }
-        if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
-            av_log(hls, AV_LOG_ERROR,
-                   "second_level_segment_index hls_flag requires use_localtime to be true\n");
-            ret = AVERROR(EINVAL);
-            goto fail;
         }
     } else {
-        const char *proto = avio_find_protocol_name(hls->basename);
-        int segment_renaming_ok = proto && !strcmp(proto, "file");
-
-        if ((hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) && !segment_renaming_ok) {
-             av_log(hls, AV_LOG_ERROR,
-                    "second_level_segment_duration hls_flag works only with file protocol segment names\n");
-             ret = AVERROR(EINVAL);
-             goto fail;
-        }
-        if ((hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) && !segment_renaming_ok) {
-             av_log(hls, AV_LOG_ERROR,
-                    "second_level_segment_size hls_flag works only with file protocol segment names\n");
-             ret = AVERROR(EINVAL);
+        ret = sls_flag_check_duration_size(hls);
+        if (ret < 0) {
              goto fail;
         }
     }
@@ -1355,10 +1398,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else if (hls->max_seg_size > 0) {
             if (hls->start_pos >= hls->max_seg_size) {
                 hls->sequence++;
-                if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
-                     strlen(hls->current_segment_final_filename_fmt)) {
-                    ff_rename(old_filename, hls->avf->filename, hls);
-                }
+                sls_flag_file_rename(hls, old_filename);
                 ret = hls_start(s);
                 hls->start_pos = 0;
                 /* When split segment by byte, the duration is short than hls_time,
@@ -1367,11 +1407,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             hls->number++;
         } else {
-            if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
-                strlen(hls->current_segment_final_filename_fmt)) {
-                ff_rename(old_filename, hls->avf->filename, hls);
-            }
-
+            sls_flag_file_rename(hls, old_filename);
             ret = hls_start(s);
         }
 
@@ -1416,10 +1452,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         hls_append_segment(s, hls, hls->duration + hls->dpp, hls->start_pos, hls->size);
     }
 
-    if ((hls->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) &&
-         strlen(hls->current_segment_final_filename_fmt)) {
-         ff_rename(old_filename, hls->avf->filename, hls);
-    }
+    sls_flag_file_rename(hls, old_filename);
 
     if (vtt_oc) {
         if (vtt_oc->pb)
