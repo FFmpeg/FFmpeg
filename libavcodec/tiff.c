@@ -1045,6 +1045,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         ADD_METADATA(count, "ModelTiepointTag", NULL);
         break;
     case TIFF_GEO_KEY_DIRECTORY:
+        if (s->geotag_count) {
+            avpriv_request_sample(s->avctx, "Multiple geo key directories\n");
+            return AVERROR_INVALIDDATA;
+        }
         ADD_METADATA(1, "GeoTIFF_Version", NULL);
         ADD_METADATA(2, "GeoTIFF_Key_Revision", ".");
         s->geotag_count   = ff_tget_short(&s->gb, s->le);
