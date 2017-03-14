@@ -996,6 +996,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         bytestream2_skip(&pal_gb[2], count / 3 * off * 2);
 
         off = (type_sizes[type] - 1) << 3;
+        if (off > 31U) {
+            av_log(s->avctx, AV_LOG_ERROR, "palette shift %d is out of range\n", off);
+            return AVERROR_INVALIDDATA;
+        }
+
         for (i = 0; i < count / 3; i++) {
             uint32_t p = 0xFF000000;
             p |= (ff_tget(&pal_gb[0], type, s->le) >> off) << 16;
