@@ -83,6 +83,7 @@
     <xsd:complexType name="frameType">
       <xsd:sequence>
             <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="logs" type="ffprobe:logsType" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="side_data_list" type="ffprobe:frameSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
@@ -119,6 +120,20 @@
       <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
       <xsd:attribute name="top_field_first"        type="xsd:int"   />
       <xsd:attribute name="repeat_pict"            type="xsd:int"   />
+    </xsd:complexType>
+
+    <xsd:complexType name="logsType">
+        <xsd:sequence>
+            <xsd:element name="log" type="ffprobe:logType" minOccurs="1" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="logType">
+        <xsd:attribute name="context"                     type="xsd:string"/>
+        <xsd:attribute name="level"                       type="xsd:int"   />
+        <xsd:attribute name="category"                    type="xsd:int"   />
+        <xsd:attribute name="parent_context"              type="xsd:string"/>
+        <xsd:attribute name="parent_category"             type="xsd:int"   />
+        <xsd:attribute name="message"                     type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="frameSideDataListType">
