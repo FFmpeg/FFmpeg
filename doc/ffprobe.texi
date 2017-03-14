@@ -208,6 +208,13 @@ multimedia stream.
 The information for each single frame is printed within a dedicated
 section with name "FRAME" or "SUBTITLE".
 
+@item -show_log @var{loglevel}
+Show logging information from the decoder about each frame according to
+the value set in @var{loglevel}, (see @code{-loglevel}). This option requires @code{-show_frames}.
+
+The information for each log message is printed within a dedicated
+section with name "LOG".
+
 @item -show_streams
 Show information about each media stream contained in the input
 multimedia stream.
