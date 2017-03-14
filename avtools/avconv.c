@@ -359,7 +359,8 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     }
 }
 
-static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+static void output_packet(OutputFile *of, AVPacket *pkt,
+                          OutputStream *ost, int eof)
 {
     int ret = 0;
 
@@ -367,10 +368,11 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     if (ost->nb_bitstream_filters) {
         int idx;
 
-        ret = av_bsf_send_packet(ost->bsf_ctx[0], pkt);
+        ret = av_bsf_send_packet(ost->bsf_ctx[0], eof ? NULL : pkt);
         if (ret < 0)
             goto finish;
 
+        eof = 0;
         idx = 1;
         while (idx) {
             /* get a packet from the previous filter up the chain */
@@ -379,19 +381,24 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                 ret = 0;
                 idx--;
                 continue;
+            } else if (ret == AVERROR_EOF) {
+                eof = 1;
             } else if (ret < 0)
                 goto finish;
 
             /* send it to the next filter down the chain or to the muxer */
             if (idx < ost->nb_bitstream_filters) {
-                ret = av_bsf_send_packet(ost->bsf_ctx[idx], pkt);
+                ret = av_bsf_send_packet(ost->bsf_ctx[idx], eof ? NULL : pkt);
                 if (ret < 0)
                     goto finish;
                 idx++;
-            } else
+                eof = 0;
+            } else if (eof)
+                goto finish;
+            else
                 write_packet(of, pkt, ost);
         }
-    } else
+    } else if (!eof)
         write_packet(of, pkt, ost);
 
 finish:
@@ -444,7 +451,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
         if (ret < 0)
             goto error;
 
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
     }
 
     return;
@@ -518,7 +525,7 @@ static void do_subtitle_out(OutputFile *of,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
     }
 }
 
@@ -594,7 +601,7 @@ static void do_video_out(OutputFile *of,
         if (ret < 0)
             goto error;
 
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
         *frame_size = pkt.size;
 
         /* if two pass, output log */
@@ -1082,11 +1089,11 @@ static void flush_encoders(void)
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
                 }
+                output_packet(of, &pkt, ost, ret == AVERROR_EOF);
                 if (ret == AVERROR_EOF) {
                     stop_encoding = 1;
                     break;
                 }
-                output_packet(of, &pkt, ost);
             }
 
             if (stop_encoding)
@@ -1179,7 +1186,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = pkt->size;
     }
 
-    output_packet(of, &opkt, ost);
+    output_packet(of, &opkt, ost, 0);
 }
 
 static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
