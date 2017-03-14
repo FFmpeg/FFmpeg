@@ -203,6 +203,7 @@ External library support:
   --enable-libgsm            GSM audio encoding/decoding
   --enable-libhdcd           HDCD decoding filter
   --enable-libilbc           ILBC audio encoding/decoding
+  --enable-libjack           JACK audio sound server
   --enable-libkvazaar        HEVC video encoding
   --enable-libmp3lame        MP3 audio encoding
   --enable-libopencore-amrnb AMR-NB audio encoding/decoding
@@ -1315,6 +1316,7 @@ EXTERNAL_LIBRARY_LIST="
     libgsm
     libhdcd
     libilbc
+    libjack
     libkvazaar
     libmp3lame
     libopencv
@@ -2418,7 +2420,7 @@ bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
-jack_indev_deps="jack"
+jack_indev_deps="libjack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
@@ -4836,8 +4838,10 @@ check_header soundcard.h
 enabled_any alsa_indev alsa_outdev &&
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib jack jack/jack.h jack_client_open -ljack &&
-    check_func jack_port_get_latency_range -ljack
+if enabled libjack; then
+    check_pkg_config libjack jack jack/jack.h jack_port_get_latency_range ||
+    require_pkg_config libjack jack jack/jack.h jack_client_open
+fi
 
 enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
 
