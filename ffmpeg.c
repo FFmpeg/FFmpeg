@@ -814,7 +814,19 @@ static void close_output_stream(OutputStream *ost)
     }
 }
 
-static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+/*
+ * Send a single packet to the output, applying any bitstream filters
+ * associated with the output stream.  This may result in any number
+ * of packets actually being written, depending on what bitstream
+ * filters are applied.  The supplied packet is consumed and will be
+ * blank (as if newly-allocated) when this function returns.
+ *
+ * If eof is set, instead indicate EOF to all bitstream filters and
+ * therefore flush any delayed packets to the output.  A blank packet
+ * must be supplied in this case.
+ */
+static void output_packet(OutputFile *of, AVPacket *pkt,
+                          OutputStream *ost, int eof)
 {
     int ret = 0;
 
@@ -822,10 +834,11 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     if (ost->nb_bitstream_filters) {
         int idx;
 
-        ret = av_bsf_send_packet(ost->bsf_ctx[0], pkt);
+        ret = av_bsf_send_packet(ost->bsf_ctx[0], eof ? NULL : pkt);
         if (ret < 0)
             goto finish;
 
+        eof = 0;
         idx = 1;
         while (idx) {
             /* get a packet from the previous filter up the chain */
@@ -834,19 +847,24 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                 ret = 0;
                 idx--;
                 continue;
+            } else if (ret == AVERROR_EOF) {
+                eof = 1;
             } else if (ret < 0)
                 goto finish;
 
             /* send it to the next filter down the chain or to the muxer */
             if (idx < ost->nb_bitstream_filters) {
-                ret = av_bsf_send_packet(ost->bsf_ctx[idx], pkt);
+                ret = av_bsf_send_packet(ost->bsf_ctx[idx], eof ? NULL : pkt);
                 if (ret < 0)
                     goto finish;
                 idx++;
-            } else
+                eof = 0;
+            } else if (eof)
+                goto finish;
+            else
                 write_packet(of, pkt, ost, 0);
         }
-    } else
+    } else if (!eof)
         write_packet(of, pkt, ost, 0);
 
 finish:
@@ -922,7 +940,7 @@ static void do_audio_out(OutputFile *of, OutputStream *ost,
                    av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &enc->time_base));
         }
 
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
     }
 
     return;
@@ -1010,7 +1028,7 @@ static void do_subtitle_out(OutputFile *of,
                 pkt.pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, ost->mux_timebase);
         }
         pkt.dts = pkt.pts;
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
     }
 }
 
@@ -1196,7 +1214,7 @@ static void do_video_out(OutputFile *of,
         pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->mux_timebase);
         pkt.flags |= AV_PKT_FLAG_KEY;
 
-        output_packet(of, &pkt, ost);
+        output_packet(of, &pkt, ost, 0);
     } else
 #endif
     {
@@ -1299,7 +1317,7 @@ static void do_video_out(OutputFile *of,
             }
 
             frame_size = pkt.size;
-            output_packet(of, &pkt, ost);
+            output_packet(of, &pkt, ost, 0);
 
             /* if two pass, output log */
             if (ost->logfile && enc->stats_out) {
@@ -1930,6 +1948,7 @@ static void flush_encoders(void)
                     fprintf(ost->logfile, "%s", enc->stats_out);
                 }
                 if (ret == AVERROR_EOF) {
+                    output_packet(of, &pkt, ost, 1);
                     break;
                 }
                 if (ost->finished & MUXER_FINISHED) {
@@ -1938,7 +1957,7 @@ static void flush_encoders(void)
                 }
                 av_packet_rescale_ts(&pkt, enc->time_base, ost->mux_timebase);
                 pkt_size = pkt.size;
-                output_packet(of, &pkt, ost);
+                output_packet(of, &pkt, ost, 0);
                 if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
                     do_video_stats(ost, pkt_size);
                 }
@@ -2077,7 +2096,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 #endif
 
-    output_packet(of, &opkt, ost);
+    output_packet(of, &opkt, ost, 0);
 }
 
 int guess_input_channel_layout(InputStream *ist)
