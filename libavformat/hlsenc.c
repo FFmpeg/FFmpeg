@@ -1354,7 +1354,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                                        * st->time_base.num / st->time_base.den;
             hls->dpp = (double)(pkt->duration) * st->time_base.num / st->time_base.den;
         } else {
-            hls->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
+            if (pkt->duration) {
+                hls->duration += (double)(pkt->duration) * st->time_base.num / st->time_base.den;
+            } else {
+                av_log(s, AV_LOG_WARNING, "pkt->duration = 0, maybe the hls segment duration will not precise\n");
+                hls->duration = (double)(pkt->pts - hls->end_pts) * st->time_base.num / st->time_base.den;
+            }
         }
 
     }
