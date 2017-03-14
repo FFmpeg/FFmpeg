@@ -1362,6 +1362,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
         char *old_filename = av_strdup(hls->avf->filename);
+        int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
 
         if (!old_filename) {
             return AVERROR(ENOMEM);
@@ -1372,9 +1373,11 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         new_start_pos = avio_tell(hls->avf->pb);
         hls->size = new_start_pos - hls->start_pos;
 
-        ff_format_io_close(s, &oc->pb);
-        if (hls->vtt_avf) {
-            ff_format_io_close(s, &hls->vtt_avf->pb);
+        if (!byterange_mode) {
+            ff_format_io_close(s, &oc->pb);
+            if (hls->vtt_avf) {
+                ff_format_io_close(s, &hls->vtt_avf->pb);
+            }
         }
         if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
             if (!(hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size <= 0))
