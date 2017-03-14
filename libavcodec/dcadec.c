@@ -947,15 +947,16 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
 
         /* 64 subbands QMF */
         for (k = 0; k < s->audio_header.prim_channels; k++) {
+            int channel = s->channel_order_tab[k];
             int32_t (*subband_samples)[SAMPLES_PER_SUBBAND] =
                      s->dca_chan[k].subband_samples[block_index];
 
             s->fmt_conv.int32_to_float(samples[0], subband_samples[0],
                                        DCA_SUBBANDS_X96K * SAMPLES_PER_SUBBAND);
 
-            if (s->channel_order_tab[k] >= 0)
+            if (channel >= 0)
                 qmf_64_subbands(s, k, samples,
-                                s->samples_chanptr[s->channel_order_tab[k]],
+                                s->samples_chanptr[channel],
                                 /* Upsampling needs a factor 2 here. */
                                 M_SQRT2 / 32768.0);
         }
@@ -964,15 +965,16 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
         LOCAL_ALIGNED(32, float, samples, [DCA_SUBBANDS], [SAMPLES_PER_SUBBAND]);
 
         for (k = 0; k < s->audio_header.prim_channels; k++) {
+            int channel = s->channel_order_tab[k];
             int32_t (*subband_samples)[SAMPLES_PER_SUBBAND] =
                      s->dca_chan[k].subband_samples[block_index];
 
             s->fmt_conv.int32_to_float(samples[0], subband_samples[0],
                                        DCA_SUBBANDS * SAMPLES_PER_SUBBAND);
 
-            if (s->channel_order_tab[k] >= 0)
+            if (channel >= 0)
                 qmf_32_subbands(s, k, samples,
-                                s->samples_chanptr[s->channel_order_tab[k]],
+                                s->samples_chanptr[channel],
                                 M_SQRT1_2 / 32768.0);
         }
     }
