@@ -1907,12 +1907,39 @@ redirect:
 #endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
 #if CONFIG_RTPDEC
+static int parse_rtsp_message(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    int ret;
+
+    if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
+        if (rt->state == RTSP_STATE_STREAMING) {
+            if (!ff_rtsp_parse_streaming_commands(s))
+                return AVERROR_EOF;
+            else
+                av_log(s, AV_LOG_WARNING,
+                       "Unable to answer to TEARDOWN\n");
+        } else
+            return 0;
+    } else {
+        RTSPMessageHeader reply;
+        ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
+        if (ret < 0)
+            return ret;
+        /* XXX: parse message */
+        if (rt->state != RTSP_STATE_STREAMING)
+            return 0;
+    }
+
+    return 0;
+}
+
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                            uint8_t *buf, int buf_size, int64_t wait_end)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
-    int n, i, ret, tcp_fd, timeout_cnt = 0;
+    int n, i, ret, timeout_cnt = 0;
     struct pollfd *p = rt->p;
     int *fds = NULL, fdsnum, fdsidx;
 
@@ -1922,11 +1949,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             return AVERROR(ENOMEM);
 
         if (rt->rtsp_hd) {
-            tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
-            p[rt->max_p].fd = tcp_fd;
+            p[rt->max_p].fd = ffurl_get_file_handle(rt->rtsp_hd);
             p[rt->max_p++].events = POLLIN;
-        } else {
-            tcp_fd = -1;
         }
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
@@ -1957,7 +1981,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             return AVERROR(EAGAIN);
         n = poll(p, rt->max_p, POLL_TIMEOUT_MS);
         if (n > 0) {
-            int j = 1 - (tcp_fd == -1);
+            int j = rt->rtsp_hd ? 1 : 0;
             timeout_cnt = 0;
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
@@ -1973,25 +1997,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 }
             }
 #if CONFIG_RTSP_DEMUXER
-            if (tcp_fd != -1 && p[0].revents & POLLIN) {
-                if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
-                    if (rt->state == RTSP_STATE_STREAMING) {
-                        if (!ff_rtsp_parse_streaming_commands(s))
-                            return AVERROR_EOF;
-                        else
-                            av_log(s, AV_LOG_WARNING,
-                                   "Unable to answer to TEARDOWN\n");
-                    } else
-                        return 0;
-                } else {
-                    RTSPMessageHeader reply;
-                    ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
-                    if (ret < 0)
-                        return ret;
-                    /* XXX: parse message */
-                    if (rt->state != RTSP_STATE_STREAMING)
-                        return 0;
-                }
+            if (rt->rtsp_hd && p[0].revents & POLLIN) {
+                return parse_rtsp_message(s);
             }
 #endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
