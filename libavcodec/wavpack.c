@@ -268,7 +268,7 @@ error:
 }
 
 static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc,
-                                       int S)
+                                       unsigned S)
 {
     unsigned bit;
 
@@ -415,11 +415,11 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
             if (t > 0) {
                 if (t > 8) {
                     if (t & 1) {
-                        A = 2 * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1];
-                        B = 2 * s->decorr[i].samplesB[0] - s->decorr[i].samplesB[1];
+                        A = 2U * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1];
+                        B = 2U * s->decorr[i].samplesB[0] - s->decorr[i].samplesB[1];
                     } else {
-                        A = (3 * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1]) >> 1;
-                        B = (3 * s->decorr[i].samplesB[0] - s->decorr[i].samplesB[1]) >> 1;
+                        A = (int)(3U * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1]) >> 1;
+                        B = (int)(3U * s->decorr[i].samplesB[0] - s->decorr[i].samplesB[1]) >> 1;
                     }
                     s->decorr[i].samplesA[1] = s->decorr[i].samplesA[0];
                     s->decorr[i].samplesB[1] = s->decorr[i].samplesB[0];
@@ -488,7 +488,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
 
         pos = (pos + 1) & 7;
         if (s->joint)
-            L += (R -= (L >> 1));
+            L += (unsigned)(R -= (unsigned)(L >> 1));
         crc = (crc * 3 + L) * 3 + R;
 
         if (type == AV_SAMPLE_FMT_FLTP) {
