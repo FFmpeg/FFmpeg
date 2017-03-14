@@ -164,10 +164,10 @@ typedef struct AVSphericalMapping {
      *       projection type (@ref AV_SPHERICAL_EQUIRECTANGULAR_TILE),
      *       and should be ignored in all other cases.
      */
-    size_t bound_left;   ///< Distance from the left edge
-    size_t bound_top;    ///< Distance from the top edge
-    size_t bound_right;  ///< Distance from the right edge
-    size_t bound_bottom; ///< Distance from the bottom edge
+    uint32_t bound_left;   ///< Distance from the left edge
+    uint32_t bound_top;    ///< Distance from the top edge
+    uint32_t bound_right;  ///< Distance from the right edge
+    uint32_t bound_bottom; ///< Distance from the bottom edge
     /**
      * @}
      */
@@ -179,7 +179,7 @@ typedef struct AVSphericalMapping {
      *       (@ref AV_SPHERICAL_CUBEMAP), and should be ignored in all other
      *       cases.
      */
-    size_t padding;
+    uint32_t padding;
 } AVSphericalMapping;
 
 /**
