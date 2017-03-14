@@ -674,28 +674,6 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb)
-{
-    AVStream *st;
-    int tag;
-
-    if (fc->nb_streams < 1)
-        return 0;
-    st = fc->streams[fc->nb_streams-1];
-
-    avio_rb32(pb); /* version + flags */
-    ff_mp4_read_descr(fc, pb, &tag);
-    if (tag == MP4ESDescrTag) {
-        ff_mp4_parse_es_descr(pb, NULL);
-    } else
-        avio_rb16(pb); /* ID */
-
-    ff_mp4_read_descr(fc, pb, &tag);
-    if (tag == MP4DecConfigDescrTag)
-        ff_mp4_read_dec_config_descr(fc, st, pb);
-    return 0;
-}
-
 static int mov_read_esds(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     return ff_mov_read_esds(c->fc, pb);
@@ -1375,20 +1353,6 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_EOF;
 
     return 0;
-}
-
-/**
- * Compute codec id for 'lpcm' tag.
- * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
- */
-enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
-{
-    /* lpcm flags:
-     * 0x1 = float
-     * 0x2 = big-endian
-     * 0x4 = signed
-     */
-    return ff_get_pcm_codec_id(bps, flags & 1, flags & 2, flags & 4 ? -1 : 0);
 }
 
 static int mov_codec_id(AVStream *st, uint32_t format)
