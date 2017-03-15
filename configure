@@ -290,7 +290,6 @@ External library support:
   --disable-sdl2           disable sdl2 [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
-  --enable-x11grab         enable X11 grabbing (legacy) [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -1520,7 +1519,6 @@ EXTERNAL_LIBRARY_GPL_LIST="
     libx265
     libxavs
     libxvid
-    x11grab
 "
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
@@ -3033,7 +3031,6 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11grab_indev_deps="x11grab"
 x11grab_xcb_indev_deps="libxcb"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
@@ -6035,7 +6032,7 @@ enabled xlib &&
 if ! disabled libxcb; then
     check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || {
         enabled libxcb && die "ERROR: libxcb >= 1.4 not found";
-    } && disable x11grab && enable libxcb
+    } && enable libxcb
 
 if enabled libxcb; then
     disabled libxcb_shm || {
@@ -6056,12 +6053,6 @@ if enabled libxcb; then
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
     add_extralibs $xcb_libs $xcb_shm_libs $xcb_xfixes_libs $xcb_shape_libs
 fi
-fi
-
-if enabled x11grab; then
-    enabled xlib || die "ERROR: Xlib not found"
-    require Xext X11/extensions/XShm.h XShmCreateImage -lXext
-    require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
