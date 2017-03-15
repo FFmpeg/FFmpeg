@@ -142,8 +142,9 @@
  *
  * Not all codecs will follow a rigid and predictable dataflow; the only
  * guarantee is that an AVERROR(EAGAIN) return value on a send/receive call on
- * one end implies that a receive/send call on the other end will succeed. In
- * general, no codec will permit unlimited buffering of input or output.
+ * one end implies that a receive/send call on the other end will succeed, or
+ * at least will not fail with AVERROR(EAGAIN). In general, no codec will
+ * permit unlimited buffering of input or output.
  *
  * This API replaces the following legacy functions:
  * - avcodec_decode_video2() and avcodec_decode_audio4():
