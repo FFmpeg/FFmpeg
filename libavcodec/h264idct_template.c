@@ -304,7 +304,7 @@ void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
 void FUNCC(ff_h264_chroma_dc_dequant_idct)(int16_t *_block, int qmul){
     const int stride= 16*2;
     const int xStride= 16;
-    int a,b,c,d,e;
+    SUINT a,b,c,d,e;
     dctcoef *block = (dctcoef*)_block;
 
     a= block[stride*0 + xStride*0];
@@ -317,8 +317,8 @@ void FUNCC(ff_h264_chroma_dc_dequant_idct)(int16_t *_block, int qmul){
     b= c-d;
     c= c+d;
 
-    block[stride*0 + xStride*0]= ((a+c)*qmul) >> 7;
-    block[stride*0 + xStride*1]= ((e+b)*qmul) >> 7;
-    block[stride*1 + xStride*0]= ((a-c)*qmul) >> 7;
-    block[stride*1 + xStride*1]= ((e-b)*qmul) >> 7;
+    block[stride*0 + xStride*0]= (int)((a+c)*qmul) >> 7;
+    block[stride*0 + xStride*1]= (int)((e+b)*qmul) >> 7;
+    block[stride*1 + xStride*0]= (int)((a-c)*qmul) >> 7;
+    block[stride*1 + xStride*1]= (int)((e-b)*qmul) >> 7;
 }
