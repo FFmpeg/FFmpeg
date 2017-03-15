@@ -2240,6 +2240,45 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
         return 1;
+    } else if (buf_size >= 2 &&
+               p[0] == 0x03 && (p[1]&0x7f) == 0x01) {
+        /* extract SCTE-20 CC data */
+        GetBitContext gb;
+        int cc_count = 0;
+        int i;
+
+        init_get_bits(&gb, p + 2, buf_size - 2);
+        cc_count = get_bits(&gb, 5);
+        if (cc_count > 0) {
+            av_freep(&s1->a53_caption);
+            s1->a53_caption_size = cc_count * 3;
+            s1->a53_caption      = av_mallocz(s1->a53_caption_size);
+            if (s1->a53_caption) {
+                uint8_t field, cc1, cc2;
+                uint8_t *cap = s1->a53_caption;
+                for (i = 0; i < cc_count && get_bits_left(&gb) >= 26; i++) {
+                    skip_bits(&gb, 2); // priority
+                    field = get_bits(&gb, 2);
+                    skip_bits(&gb, 5); // line_offset
+                    cc1 = get_bits(&gb, 8);
+                    cc2 = get_bits(&gb, 8);
+                    skip_bits(&gb, 1); // marker
+
+                    if (!field) { // forbidden
+                        cap[0] = cap[1] = cap[2] = 0x00;
+                    } else {
+                        field = (field == 2 ? 1 : 0);
+                        if (!s1->mpeg_enc_ctx.top_field_first) field = !field;
+                        cap[0] = 0x04 | field;
+                        cap[1] = ff_reverse[cc1];
+                        cap[2] = ff_reverse[cc2];
+                    }
+                    cap += 3;
+                }
+            }
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+        }
+        return 1;
     } else if (buf_size >= 11 &&
                p[0] == 'C' && p[1] == 'C' && p[2] == 0x01 && p[3] == 0xf8) {
         /* extract DVD CC data
