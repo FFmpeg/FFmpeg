@@ -5055,6 +5055,10 @@ probe_libc(){
 #endif
 #endif
 EOF
+        if [ "$pfx" = "" ]; then
+            check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+            check_func strtoull || add_cflags -Dstrtoull=_strtoui64
+        fi
     elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
     elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
@@ -6330,8 +6334,6 @@ elif enabled_any msvc icl; then
 __declspec($_restrict) void* foo(int);
 EOF
     fi
-    check_func strtoll || add_cflags -Dstrtoll=_strtoi64
-    check_func strtoull || add_cflags -Dstrtoull=_strtoui64
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
     # Issue has been fixed in MSVC v19.00.24218.
     check_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
