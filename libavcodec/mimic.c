@@ -446,9 +446,6 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ctx->prev_index = ctx->next_prev_index;
     ctx->cur_index  = ctx->next_cur_index;
 
-    /* Only release frames that aren't used for backreferences anymore */
-    ff_thread_release_buffer(avctx, &ctx->frames[ctx->cur_index]);
-
     return buf_size;
 }
 
