@@ -2235,8 +2235,11 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             av_freep(&s1->a53_caption);
             s1->a53_caption_size = cc_count * 3;
             s1->a53_caption      = av_malloc(s1->a53_caption_size);
-            if (s1->a53_caption)
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
                 memcpy(s1->a53_caption, p + 7, s1->a53_caption_size);
+            }
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
         return 1;
@@ -2253,7 +2256,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             av_freep(&s1->a53_caption);
             s1->a53_caption_size = cc_count * 3;
             s1->a53_caption      = av_mallocz(s1->a53_caption_size);
-            if (s1->a53_caption) {
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
                 uint8_t field, cc1, cc2;
                 uint8_t *cap = s1->a53_caption;
                 for (i = 0; i < cc_count && get_bits_left(&gb) >= 26; i++) {
@@ -2317,7 +2322,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             av_freep(&s1->a53_caption);
             s1->a53_caption_size = cc_count * 6;
             s1->a53_caption      = av_malloc(s1->a53_caption_size);
-            if (s1->a53_caption) {
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
                 uint8_t field1 = !!(p[4] & 0x80);
                 uint8_t *cap = s1->a53_caption;
                 p += 5;
