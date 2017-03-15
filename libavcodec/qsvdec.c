@@ -106,7 +106,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
             return AVERROR(ENOMEM);
     }
 
-    if (avctx->hwaccel_context) {
+    if (avctx->pix_fmt == AV_PIX_FMT_QSV && avctx->hwaccel_context) {
         AVQSVContext *user_ctx = avctx->hwaccel_context;
         session           = user_ctx->session;
         iopattern         = user_ctx->iopattern;
