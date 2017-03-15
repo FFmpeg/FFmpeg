@@ -560,44 +560,44 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
         AVPacket pkt;
 
         if (d->queue->serial == d->pkt_serial) {
-        do {
-        if (d->queue->abort_request)
-            return -1;
+            do {
+                if (d->queue->abort_request)
+                    return -1;
 
-        switch (d->avctx->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:
-                ret = avcodec_receive_frame(d->avctx, frame);
-                if (ret >= 0) {
-                    if (decoder_reorder_pts == -1) {
-                        frame->pts = av_frame_get_best_effort_timestamp(frame);
-                    } else if (!decoder_reorder_pts) {
-                        frame->pts = frame->pkt_dts;
-                    }
+                switch (d->avctx->codec_type) {
+                    case AVMEDIA_TYPE_VIDEO:
+                        ret = avcodec_receive_frame(d->avctx, frame);
+                        if (ret >= 0) {
+                            if (decoder_reorder_pts == -1) {
+                                frame->pts = av_frame_get_best_effort_timestamp(frame);
+                            } else if (!decoder_reorder_pts) {
+                                frame->pts = frame->pkt_dts;
+                            }
+                        }
+                        break;
+                    case AVMEDIA_TYPE_AUDIO:
+                        ret = avcodec_receive_frame(d->avctx, frame);
+                        if (ret >= 0) {
+                            AVRational tb = (AVRational){1, frame->sample_rate};
+                            if (frame->pts != AV_NOPTS_VALUE)
+                                frame->pts = av_rescale_q(frame->pts, av_codec_get_pkt_timebase(d->avctx), tb);
+                            else if (d->next_pts != AV_NOPTS_VALUE)
+                                frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
+                            if (frame->pts != AV_NOPTS_VALUE) {
+                                d->next_pts = frame->pts + frame->nb_samples;
+                                d->next_pts_tb = tb;
+                            }
+                        }
+                        break;
                 }
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                ret = avcodec_receive_frame(d->avctx, frame);
-                if (ret >= 0) {
-                    AVRational tb = (AVRational){1, frame->sample_rate};
-                    if (frame->pts != AV_NOPTS_VALUE)
-                        frame->pts = av_rescale_q(frame->pts, av_codec_get_pkt_timebase(d->avctx), tb);
-                    else if (d->next_pts != AV_NOPTS_VALUE)
-                        frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
-                    if (frame->pts != AV_NOPTS_VALUE) {
-                        d->next_pts = frame->pts + frame->nb_samples;
-                        d->next_pts_tb = tb;
-                    }
+                if (ret == AVERROR_EOF) {
+                    d->finished = d->pkt_serial;
+                    avcodec_flush_buffers(d->avctx);
+                    return 0;
                 }
-                break;
-        }
-        if (ret == AVERROR_EOF) {
-            d->finished = d->pkt_serial;
-            avcodec_flush_buffers(d->avctx);
-            return 0;
-        }
-        if (ret >= 0)
-            return 1;
-        } while (ret != AVERROR(EAGAIN));
+                if (ret >= 0)
+                    return 1;
+            } while (ret != AVERROR(EAGAIN));
         }
 
         do {
