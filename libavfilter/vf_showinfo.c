@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 
 #include "avfilter.h"
@@ -38,6 +39,43 @@
 typedef struct ShowInfoContext {
     unsigned int frame;
 } ShowInfoContext;
+
+static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, AVFrameSideData *sd)
+{
+    AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
+    double yaw, pitch, roll;
+
+    av_log(ctx, AV_LOG_INFO, "spherical information: ");
+    if (sd->size < sizeof(*spherical)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+        av_log(ctx, AV_LOG_INFO, "equirectangular ");
+    else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+        av_log(ctx, AV_LOG_INFO, "cubemap ");
+    else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE)
+        av_log(ctx, AV_LOG_INFO, "tiled equirectangular ");
+    else {
+        av_log(ctx, AV_LOG_WARNING, "unknown");
+        return;
+    }
+
+    yaw = ((double)spherical->yaw) / (1 << 16);
+    pitch = ((double)spherical->pitch) / (1 << 16);
+    roll = ((double)spherical->roll) / (1 << 16);
+    av_log(ctx, AV_LOG_INFO, "(%f/%f/%f) ", yaw, pitch, roll);
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
+        size_t l, t, r, b;
+        av_spherical_tile_bounds(spherical, frame->width, frame->height,
+                                 &l, &t, &r, &b);
+        av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ", l, t, r, b);
+    } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
+        av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
+    }
+}
 
 static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
 {
@@ -104,6 +142,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_A53_CC:
             av_log(ctx, AV_LOG_INFO, "A/53 closed captions (%d bytes)", sd->size);
+            break;
+        case AV_FRAME_DATA_SPHERICAL:
+            dump_spherical(ctx, frame, sd);
             break;
         case AV_FRAME_DATA_STEREO3D:
             dump_stereo3d(ctx, sd);
