@@ -5173,7 +5173,8 @@ die_license_disabled_gpl() {
 map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
 map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
 
-enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST $HWACCEL_LIBRARY_NONFREE_LIST
+enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST
+map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
