@@ -4094,6 +4094,18 @@ probe_cc(){
         # with MSVC which enables it by default.
         _cflags='-Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
+    elif $_cc -? 2>/dev/null | grep -q 'LLVM.*Linker'; then
+        # lld can emulate multiple different linkers; in ms link.exe mode,
+        # the -? parameter gives the help output which contains an identifyable
+        # string, while it gives an error in other modes.
+        _type=lld-link
+        # The link.exe mode doesn't have a switch for getting the version,
+        # but we can force it back to gnu mode and get the version from there.
+        _ident=$($_cc -flavor gnu --version)
+        _ld_o='-out:$@'
+        _flags_filter=msvc_flags
+        _ld_lib='lib%.a'
+        _ld_path='-libpath:'
     elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($_cc 2>&1 | head -n1)
