@@ -1511,15 +1511,45 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     zlib
 "
 
+EXTERNAL_LIBRARY_GPL_LIST="
+    frei0r
+    libcdio
+    librubberband
+    libvidstab
+    libx264
+    libx265
+    libxavs
+    libxvid
+    x11grab
+"
+
+EXTERNAL_LIBRARY_NONFREE_LIST="
+    libfdk_aac
+    openssl
+"
+
+EXTERNAL_LIBRARY_VERSION3_LIST="
+    gmp
+    libopencore_amrnb
+    libopencore_amrwb
+    libvo_amrwbenc
+"
+
+EXTERNAL_LIBRARY_GPLV3_LIST="
+    libsmbclient
+"
+
 EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    $EXTERNAL_LIBRARY_GPL_LIST
+    $EXTERNAL_LIBRARY_NONFREE_LIST
+    $EXTERNAL_LIBRARY_VERSION3_LIST
+    $EXTERNAL_LIBRARY_GPLV3_LIST
     avisynth
     chromaprint
     crystalhd
     decklink
-    frei0r
     gcrypt
-    gmp
     gnutls
     jni
     ladspa
@@ -1527,10 +1557,8 @@ EXTERNAL_LIBRARY_LIST="
     libbluray
     libbs2b
     libcaca
-    libcdio
     libcelt
     libdc1394
-    libfdk_aac
     libflite
     libfontconfig
     libfreetype
@@ -1543,8 +1571,6 @@ EXTERNAL_LIBRARY_LIST="
     libmodplug
     libmp3lame
     libnut
-    libopencore_amrnb
-    libopencore_amrwb
     libopencv
     libopenh264
     libopenjpeg
@@ -1552,7 +1578,6 @@ EXTERNAL_LIBRARY_LIST="
     libopus
     libpulse
     librtmp
-    librubberband
     libschroedinger
     libshine
     libsmbclient
@@ -1564,16 +1589,10 @@ EXTERNAL_LIBRARY_LIST="
     libtheora
     libtwolame
     libv4l2
-    libvidstab
-    libvo_amrwbenc
     libvorbis
     libvpx
     libwavpack
     libwebp
-    libx264
-    libx265
-    libxavs
-    libxvid
     libzimg
     libzmq
     libzvbi
@@ -1582,9 +1601,7 @@ EXTERNAL_LIBRARY_LIST="
     openal
     opencl
     opengl
-    openssl
     videotoolbox
-    x11grab
 "
 HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
@@ -1600,10 +1617,14 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     xvmc
 "
 
+HWACCEL_LIBRARY_NONFREE_LIST="
+    libnpp
+"
+
 HWACCEL_LIBRARY_LIST="
     $HWACCEL_AUTODETECT_LIBRARY_LIST
+    $HWACCEL_LIBRARY_NONFREE_LIST
     libmfx
-    libnpp
     mmal
     omx
 "
@@ -5145,33 +5166,17 @@ EOF
 fi
 
 die_license_disabled() {
-    enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
+    enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
 }
 
 die_license_disabled_gpl() {
-    enabled $1 || { enabled $2 && die "$2 is incompatible with the gpl and --enable-$1 is not specified."; }
+    enabled $1 || { enabled $v && die "$v is incompatible with the gpl and --enable-$1 is not specified."; }
 }
 
-die_license_disabled gpl frei0r
-die_license_disabled gpl libcdio
-die_license_disabled gpl librubberband
-die_license_disabled gpl libsmbclient
-die_license_disabled gpl libvidstab
-die_license_disabled gpl libx264
-die_license_disabled gpl libx265
-die_license_disabled gpl libxavs
-die_license_disabled gpl libxvid
-die_license_disabled gpl x11grab
+map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
+map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
 
-die_license_disabled nonfree libnpp
-enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
-enabled gpl && die_license_disabled_gpl nonfree openssl
-
-die_license_disabled version3 gmp
-die_license_disabled version3 libopencore_amrnb
-die_license_disabled version3 libopencore_amrwb
-die_license_disabled version3 libsmbclient
-die_license_disabled version3 libvo_amrwbenc
+enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
