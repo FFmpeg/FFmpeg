@@ -42,6 +42,8 @@ RESAMPLE_FUNCS(float,  avx);
 RESAMPLE_FUNCS(float,  fma3);
 RESAMPLE_FUNCS(float,  fma4);
 RESAMPLE_FUNCS(double, sse2);
+RESAMPLE_FUNCS(double, avx);
+RESAMPLE_FUNCS(double, fma3);
 
 av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
 {
@@ -84,6 +86,14 @@ av_cold void swri_resample_dsp_x86_init(ResampleContext *c)
         if (EXTERNAL_SSE2(mm_flags)) {
             c->dsp.resample_linear = ff_resample_linear_double_sse2;
             c->dsp.resample_common = ff_resample_common_double_sse2;
+        }
+        if (EXTERNAL_AVX_FAST(mm_flags)) {
+            c->dsp.resample_linear = ff_resample_linear_double_avx;
+            c->dsp.resample_common = ff_resample_common_double_avx;
+        }
+        if (EXTERNAL_FMA3_FAST(mm_flags)) {
+            c->dsp.resample_linear = ff_resample_linear_double_fma3;
+            c->dsp.resample_common = ff_resample_common_double_fma3;
         }
         break;
     }
