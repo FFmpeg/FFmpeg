@@ -1158,7 +1158,27 @@ INIT_XMM avx
     movd  [%7+%8], %4
 %endmacro
 
+%macro DC_ADD_INIT 1
+    add      %1d, 32
+    sar      %1d, 6
+    movd     m0, %1d
+    pshuflw  m0, m0, 0
+    lea      %1, [3*stride_q]
+    pxor     m1, m1
+    psubw    m1, m0
+    packuswb m0, m0
+    packuswb m1, m1
+%endmacro
+
 cglobal h264_idct_add_8, 3, 3, 8, dst_, block_, stride_
     movsxdifnidn stride_q, stride_d
     IDCT4_ADD    dst_q, block_q, stride_q
+RET
+
+cglobal h264_idct_dc_add_8, 3, 4, 6, dst_, block_, stride_
+    movsxdifnidn stride_q, stride_d
+    movsx             r3d, word [block_q]
+    mov   dword [block_q], 0
+    DC_ADD_INIT r3
+    DC_ADD_MMXEXT_OP movd, dst_q, stride_q, r3
 RET
