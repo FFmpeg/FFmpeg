@@ -818,7 +818,6 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
     if (ost->nb_bitstream_filters) {
         int idx;
 
-        av_packet_split_side_data(pkt);
         ret = av_bsf_send_packet(ost->bsf_ctx[0], pkt);
         if (ret < 0)
             goto finish;
@@ -4247,8 +4246,6 @@ static int process_input(int file_index)
 
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1) {
-        if (ist->st->nb_side_data)
-            av_packet_split_side_data(&pkt);
         for (i = 0; i < ist->st->nb_side_data; i++) {
             AVPacketSideData *src_sd = &ist->st->side_data[i];
             uint8_t *dst_data;
