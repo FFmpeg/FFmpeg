@@ -91,10 +91,10 @@
 #define FF_API_CRYPTO_CONTEXT           (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_PLUS1_MINUS1
-#define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_ERROR_FRAME
-#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_VAAPI
 #define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 57)

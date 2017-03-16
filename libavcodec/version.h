@@ -47,11 +47,8 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_STREAM_CODEC_TAG
-#define FF_API_STREAM_CODEC_TAG  (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_CODED_FRAME
-#define FF_API_CODED_FRAME       (LIBAVCODEC_VERSION_MAJOR < 58)
+#define FF_API_CODED_FRAME       (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
 #ifndef FF_API_SIDEDATA_ONLY_PKT
 #define FF_API_SIDEDATA_ONLY_PKT (LIBAVCODEC_VERSION_MAJOR < 59)
