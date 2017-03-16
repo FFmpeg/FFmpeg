@@ -375,7 +375,7 @@ static void dump_spherical(void *ctx, AVCodecParameters *par, AVPacketSideData *
                                  &l, &t, &r, &b);
         av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ", l, t, r, b);
     } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
-        av_log(ctx, AV_LOG_INFO, "[pad %zu] ", spherical->padding);
+        av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
     }
 }
 

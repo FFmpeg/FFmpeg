@@ -1913,8 +1913,8 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
     AVSphericalMapping *spherical;
     enum AVSphericalProjection projection;
     size_t spherical_size;
-    size_t l = 0, t = 0, r = 0, b = 0;
-    size_t padding = 0;
+    uint32_t l = 0, t = 0, r = 0, b = 0;
+    uint32_t padding = 0;
     int ret;
     GetByteContext gb;
 
@@ -1939,8 +1939,7 @@ static int mkv_parse_video_projection(AVStream *st, const MatroskaTrack *track) 
             if (b >= UINT_MAX - t || r >= UINT_MAX - l) {
                 av_log(NULL, AV_LOG_ERROR,
                        "Invalid bounding rectangle coordinates "
-                       "%"SIZE_SPECIFIER",%"SIZE_SPECIFIER","
-                       "%"SIZE_SPECIFIER",%"SIZE_SPECIFIER"\n",
+                       "%"PRIu32",%"PRIu32",%"PRIu32",%"PRIu32"\n",
                        l, t, r, b);
                 return AVERROR_INVALIDDATA;
             }

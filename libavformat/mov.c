@@ -4637,9 +4637,8 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     int size, layout;
     int32_t yaw, pitch, roll;
-    size_t l = 0, t = 0, r = 0, b = 0;
-    size_t padding = 0;
-    uint32_t tag;
+    uint32_t l = 0, t = 0, r = 0, b = 0;
+    uint32_t tag, padding = 0;
     enum AVSphericalProjection projection;
 
     if (c->fc->nb_streams < 1)
@@ -4717,8 +4716,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (b >= UINT_MAX - t || r >= UINT_MAX - l) {
             av_log(c->fc, AV_LOG_ERROR,
                    "Invalid bounding rectangle coordinates %"SIZE_SPECIFIER","
-                   "%"SIZE_SPECIFIER",%"SIZE_SPECIFIER",%"SIZE_SPECIFIER"\n",
-                   l, t, r, b);
+                   "%"PRIu32",%"PRIu32",%"PRIu32",%"PRIu32"\n", l, t, r, b);
             return AVERROR_INVALIDDATA;
         }
 
