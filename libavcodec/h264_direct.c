@@ -48,8 +48,13 @@ static int get_scale_factor(H264SliceContext *sl,
     if (td == 0 || sl->ref_list[0][i].parent->long_ref) {
         return 256;
     } else {
-        int tb = av_clip_int8(poc - poc0);
+        int64_t pocdiff0 = poc - (int64_t)poc0;
+        int tb = av_clip_int8(pocdiff0);
         int tx = (16384 + (FFABS(td) >> 1)) / td;
+
+        if (pocdiff0 != (int)pocdiff0)
+            av_log(sl->h264->avctx, AV_LOG_DEBUG, "pocdiff0 overflow\n");
+
         return av_clip_intp2((tb * tx + 32) >> 6, 10);
     }
 }
