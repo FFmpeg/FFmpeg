@@ -712,7 +712,7 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
                 int ret = vp56_decode_mb(s, mb_row, mb_col, is_alpha);
                 if (ret < 0) {
                     damaged = 1;
-                    if (!s->have_undamaged_frame) {
+                    if (!s->have_undamaged_frame || !avctx->error_concealment) {
                         s->discard_frame = 1;
                         return AVERROR_INVALIDDATA;
                     }
