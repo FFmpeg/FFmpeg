@@ -5764,7 +5764,7 @@ int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes);
 #if FF_API_OLD_BSF
 typedef struct AVBitStreamFilterContext {
     void *priv_data;
-    struct AVBitStreamFilter *filter;
+    const struct AVBitStreamFilter *filter;
     AVCodecParserContext *parser;
     struct AVBitStreamFilterContext *next;
     /**
