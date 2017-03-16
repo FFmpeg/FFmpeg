@@ -2176,11 +2176,6 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
         if (flags & 0x40) {
             if (buf_end - p < 1)
                 return;
-#if FF_API_AFD
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->dtg_active_format = p[0] & 0x0f;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_AFD */
             s1->has_afd = 1;
             s1->afd     = p[0] & 0x0f;
         }
