@@ -677,6 +677,29 @@ static int mov_write_dfla_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_dops_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "dOps");
+    avio_w8(pb, 0); /* Version */
+    if (track->par->extradata_size < 19) {
+        av_log(pb, AV_LOG_ERROR, "invalid extradata size\n");
+        return AVERROR_INVALIDDATA;
+    }
+    /* extradata contains an Ogg OpusHead, other than byte-ordering and
+       OpusHead's preceeding magic/version, OpusSpecificBox is currently
+       identical. */
+    avio_w8(pb, AV_RB8(track->par->extradata + 9)); /* OuputChannelCount */
+    avio_wb16(pb, AV_RL16(track->par->extradata + 10)); /* PreSkip */
+    avio_wb32(pb, AV_RL32(track->par->extradata + 12)); /* InputSampleRate */
+    avio_wb16(pb, AV_RL16(track->par->extradata + 16)); /* OutputGain */
+    /* Write the rest of the header out without byte-swapping. */
+    avio_write(pb, track->par->extradata + 18, track->par->extradata_size - 18);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_chan_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     uint32_t layout_tag, bitmap;
@@ -986,19 +1009,26 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
                 avio_wb16(pb, 16);
             avio_wb16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
         } else { /* reserved for mp4/3gp */
-            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
+            if (track->par->codec_id == AV_CODEC_ID_FLAC ||
+                track->par->codec_id == AV_CODEC_ID_OPUS) {
                 avio_wb16(pb, track->par->channels);
-                avio_wb16(pb, track->par->bits_per_raw_sample);
             } else {
                 avio_wb16(pb, 2);
+            }
+            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
+                avio_wb16(pb, track->par->bits_per_raw_sample);
+            } else {
                 avio_wb16(pb, 16);
             }
             avio_wb16(pb, 0);
         }
 
         avio_wb16(pb, 0); /* packet size (= 0) */
-        avio_wb16(pb, track->par->sample_rate <= UINT16_MAX ?
-                      track->par->sample_rate : 0);
+        if (track->par->codec_id == AV_CODEC_ID_OPUS)
+            avio_wb16(pb, 48000);
+        else
+            avio_wb16(pb, track->par->sample_rate <= UINT16_MAX ?
+                          track->par->sample_rate : 0);
         avio_wb16(pb, 0); /* Reserved */
     }
 
@@ -1039,6 +1069,8 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         mov_write_wfex_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_FLAC)
         mov_write_dfla_tag(pb, track);
+    else if (track->par->codec_id == AV_CODEC_ID_OPUS)
+        mov_write_dops_tag(pb, track);
     else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
@@ -1208,6 +1240,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->par->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
     else if (track->par->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
     else if (track->par->codec_id == AV_CODEC_ID_FLAC)      tag = MKTAG('f','L','a','C');
+    else if (track->par->codec_id == AV_CODEC_ID_OPUS)      tag = MKTAG('O','p','u','s');
     else if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)  tag = MKTAG('m','p','4','v');
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)  tag = MKTAG('m','p','4','a');
     else if (track->par->codec_id == AV_CODEC_ID_DVD_SUBTITLE)  tag = MKTAG('m','p','4','s');
@@ -2199,6 +2232,90 @@ static int mov_write_dref_tag(AVIOContext *pb)
     return 28;
 }
 
+static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
+{
+    struct sgpd_entry {
+        int count;
+        int16_t roll_distance;
+        int group_description_index;
+    };
+
+    struct sgpd_entry *sgpd_entries = NULL;
+    int entries = -1;
+    int group = 0;
+
+    const int OPUS_SEEK_PREROLL_MS = 80;
+    int roll_samples = av_rescale_q(OPUS_SEEK_PREROLL_MS,
+                                    (AVRational){1, 1000},
+                                    (AVRational){1, 48000});
+
+    if (track->entry) {
+        sgpd_entries = av_malloc_array(track->entry, sizeof(*sgpd_entries));
+        if (!sgpd_entries)
+            return AVERROR(ENOMEM);
+    }
+
+    av_assert0(track->par->codec_id == AV_CODEC_ID_OPUS);
+
+    for (int i = 0; i < track->entry; i++) {
+        int roll_samples_remaining = roll_samples;
+        int distance = 0;
+        for (int j = i - 1; j >= 0; j--) {
+            roll_samples_remaining -= get_cluster_duration(track, j);
+            distance++;
+            if (roll_samples_remaining <= 0)
+                break;
+        }
+        /* We don't have enough preceeding samples to compute a valid
+           roll_distance here, so this sample can't be independently
+           decoded. */
+        if (roll_samples_remaining > 0)
+            distance = 0;
+        /* Verify distance is a minimum of 2 (60ms) packets and a maximum of
+           32 (2.5ms) packets. */
+        av_assert0(distance == 0 || (distance >= 2 && distance <= 32));
+        if (i && distance == sgpd_entries[entries].roll_distance) {
+            sgpd_entries[entries].count++;
+        } else {
+            entries++;
+            sgpd_entries[entries].count = 1;
+            sgpd_entries[entries].roll_distance = distance;
+            sgpd_entries[entries].group_description_index = distance ? ++group : 0;
+        }
+    }
+    entries++;
+
+    if (!group)
+        return 0;
+
+    /* Write sgpd tag */
+    avio_wb32(pb, 24 + (group * 2)); /* size */
+    ffio_wfourcc(pb, "sgpd");
+    avio_wb32(pb, 1 << 24); /* fullbox */
+    ffio_wfourcc(pb, "roll");
+    avio_wb32(pb, 2); /* default_length */
+    avio_wb32(pb, group); /* entry_count */
+    for (int i = 0; i < entries; i++) {
+        if (sgpd_entries[i].group_description_index) {
+            avio_wb16(pb, -sgpd_entries[i].roll_distance); /* roll_distance */
+        }
+    }
+
+    /* Write sbgp tag */
+    avio_wb32(pb, 20 + (entries * 8)); /* size */
+    ffio_wfourcc(pb, "sbgp");
+    avio_wb32(pb, 0); /* fullbox */
+    ffio_wfourcc(pb, "roll");
+    avio_wb32(pb, entries); /* entry_count */
+    for (int i = 0; i < entries; i++) {
+        avio_wb32(pb, sgpd_entries[i].count); /* sample_count */
+        avio_wb32(pb, sgpd_entries[i].group_description_index); /* group_description_index */
+    }
+
+    av_free(sgpd_entries);
+    return 0;
+}
+
 static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2225,6 +2342,9 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     mov_write_stco_tag(pb, track);
     if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
         ff_mov_cenc_write_stbl_atoms(&track->cenc, pb);
+    }
+    if (track->par->codec_id == AV_CODEC_ID_OPUS) {
+        mov_preroll_write_stbl_atoms(pb, track);
     }
     return update_size(pb, pos);
 }
@@ -5904,16 +6024,17 @@ static int mov_init(AVFormatContext *s)
                            i, track->par->sample_rate);
                 }
             }
-            if (track->par->codec_id == AV_CODEC_ID_FLAC) {
+            if (track->par->codec_id == AV_CODEC_ID_FLAC ||
+                track->par->codec_id == AV_CODEC_ID_OPUS) {
                 if (track->mode != MODE_MP4) {
-                    av_log(s, AV_LOG_ERROR, "FLAC only supported in MP4.\n");
+                    av_log(s, AV_LOG_ERROR, "%s only supported in MP4.\n", avcodec_get_name(track->par->codec_id));
                     return AVERROR(EINVAL);
                 }
                 if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
                     av_log(s, AV_LOG_ERROR,
-                           "FLAC in MP4 support is experimental, add "
+                           "%s in MP4 support is experimental, add "
                            "'-strict %d' if you want to use it.\n",
-                           FF_COMPLIANCE_EXPERIMENTAL);
+                           avcodec_get_name(track->par->codec_id), FF_COMPLIANCE_EXPERIMENTAL);
                     return AVERROR_EXPERIMENTAL;
                 }
             }
