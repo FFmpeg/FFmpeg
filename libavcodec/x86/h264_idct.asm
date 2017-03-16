@@ -65,7 +65,15 @@ SECTION .text
 
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     mova         m6, [pw_32]
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
+    %if mmsize == 8
+        TRANSPOSE4x4W 0, 1, 2, 3, 4
+    %else
+        punpcklwd m0, m1
+        punpcklwd m2, m3
+        SBUTTERFLY dq, 0, 2, 4
+        MOVHL m1, m0
+        MOVHL m3, m2
+    %endif
     paddw        m0, m6
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     pxor         m7, m7
@@ -1131,3 +1139,26 @@ INIT_MMX mmx
 IDCT_DC_DEQUANT 0
 INIT_MMX sse2
 IDCT_DC_DEQUANT 7
+
+INIT_XMM avx
+
+; %unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
+%macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
+    movd       %3, [%7]
+    movd       %4, [%7+%8]
+    psraw      %1, %6
+    psraw      %2, %6
+    punpcklbw  %3, %5
+    punpcklbw  %4, %5
+    paddw      %3, %1
+    paddw      %4, %2
+    packuswb   %3, %5
+    packuswb   %4, %5
+    movd     [%7], %3
+    movd  [%7+%8], %4
+%endmacro
+
+cglobal h264_idct_add_8, 3, 3, 8, dst_, block_, stride_
+    movsxdifnidn stride_q, stride_d
+    IDCT4_ADD    dst_q, block_q, stride_q
+RET
