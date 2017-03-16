@@ -91,7 +91,7 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
                 goto fail;
             }
             init_put_bits(&pb, pce_data, MAX_PCE_SIZE);
-            pce_size = avpriv_copy_pce_data(&pb, &gb)/8;
+            pce_size = ff_copy_pce_data(&pb, &gb) / 8;
             flush_put_bits(&pb);
             in->size -= get_bits_count(&gb)/8;
             in->data += get_bits_count(&gb)/8;

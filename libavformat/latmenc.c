@@ -111,7 +111,7 @@ static int latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
             avpriv_copy_bits(bs, par->extradata, ctx->off + 3);
 
             if (!ctx->channel_conf) {
-                avpriv_copy_pce_data(bs, &gb);
+                ff_copy_pce_data(bs, &gb);
             }
         }
 
