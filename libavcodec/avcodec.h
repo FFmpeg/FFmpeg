@@ -658,25 +658,6 @@ typedef struct AVCodecDescriptor {
 #define AV_INPUT_BUFFER_MIN_SIZE 16384
 
 /**
- * @ingroup lavc_encoding
- * motion estimation type.
- * @deprecated use codec private option instead
- */
-#if FF_API_MOTION_EST
-enum Motion_Est_ID {
-    ME_ZERO = 1,    ///< no search, that is use 0,0 vector whenever one is needed
-    ME_FULL,
-    ME_LOG,
-    ME_PHODS,
-    ME_EPZS,        ///< enhanced predictive zonal search
-    ME_X1,          ///< reserved for experiments
-    ME_HEX,         ///< hexagon based search
-    ME_UMH,         ///< uneven multi-hexagon search
-    ME_TESA,        ///< transformed exhaustive search algorithm
-};
-#endif
-
-/**
  * @ingroup lavc_decoding
  */
 enum AVDiscard{
@@ -1412,14 +1393,6 @@ typedef struct AVCodecContext {
      */
     enum AVPixelFormat pix_fmt;
 
-#if FF_API_MOTION_EST
-    /**
-     * This option does nothing
-     * @deprecated use codec private options instead
-     */
-    attribute_deprecated int me_method;
-#endif
-
     /**
      * If non NULL, 'draw_horiz_band' is called by the libavcodec
      * decoder to draw a horizontal band. It improves cache usage. Not
@@ -1478,12 +1451,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     float b_quant_factor;
-
-#if FF_API_RC_STRATEGY
-    /** @deprecated use codec private option instead */
-    attribute_deprecated int rc_strategy;
-#define FF_RC_STRATEGY_XVID 1
-#endif
 
 #if FF_API_PRIVATE_OPT
     /** @deprecated use encoder private options instead */
@@ -1684,19 +1651,6 @@ typedef struct AVCodecContext {
      */
     int me_range;
 
-#if FF_API_QUANT_BIAS
-    /**
-     * @deprecated use encoder private option instead
-     */
-    attribute_deprecated int intra_quant_bias;
-#define FF_DEFAULT_QUANT_BIAS 999999
-
-    /**
-     * @deprecated use encoder private option instead
-     */
-    attribute_deprecated int inter_quant_bias;
-#endif
-
     /**
      * slice flags
      * - encoding: unused
@@ -1741,20 +1695,6 @@ typedef struct AVCodecContext {
     int noise_reduction;
 #endif
 
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated
-    int me_threshold;
-
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated
-    int mb_threshold;
-#endif
-
     /**
      * precision of the intra DC coefficient - 8
      * - encoding: Set by user.
@@ -1775,14 +1715,6 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int skip_bottom;
-
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    float border_masking;
-#endif
 
     /**
      * minimum MB Lagrange multiplier
@@ -2096,19 +2028,6 @@ typedef struct AVCodecContext {
      */
     int max_qdiff;
 
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    float rc_qsquish;
-
-    attribute_deprecated
-    float rc_qmod_amp;
-    attribute_deprecated
-    int rc_qmod_freq;
-#endif
-
     /**
      * decoder bitstream buffer size
      * - encoding: Set by user.
@@ -2124,14 +2043,6 @@ typedef struct AVCodecContext {
     int rc_override_count;
     RcOverride *rc_override;
 
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    const char *rc_eq;
-#endif
-
     /**
      * maximum bitrate
      * - encoding: Set by user.
@@ -2145,17 +2056,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int rc_min_rate;
-
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    float rc_buffer_aggressivity;
-
-    attribute_deprecated
-    float rc_initial_cplx;
-#endif
 
     /**
      * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.
@@ -2194,20 +2094,6 @@ typedef struct AVCodecContext {
     /** @deprecated use encoder private options instead */
     attribute_deprecated
     int context_model;
-#endif
-
-#if FF_API_MPV_OPT
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    int lmin;
-
-    /**
-     * @deprecated use encoder private options instead
-     */
-    attribute_deprecated
-    int lmax;
 #endif
 
 #if FF_API_PRIVATE_OPT

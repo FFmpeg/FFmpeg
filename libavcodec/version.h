@@ -47,23 +47,11 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_MPV_OPT
-#define FF_API_MPV_OPT           (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_STREAM_CODEC_TAG
 #define FF_API_STREAM_CODEC_TAG  (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
-#ifndef FF_API_QUANT_BIAS
-#define FF_API_QUANT_BIAS        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_RC_STRATEGY
-#define FF_API_RC_STRATEGY       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_CODED_FRAME
 #define FF_API_CODED_FRAME       (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_MOTION_EST
-#define FF_API_MOTION_EST        (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_SIDEDATA_ONLY_PKT
 #define FF_API_SIDEDATA_ONLY_PKT (LIBAVCODEC_VERSION_MAJOR < 59)

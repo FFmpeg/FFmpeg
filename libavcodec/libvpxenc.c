@@ -362,15 +362,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, ctx->noise_sensitivity);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     }
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->mb_threshold) {
-        av_log(avctx, AV_LOG_WARNING, "The mb_threshold option is deprecated, "
-               "use the static-thresh private option instead.\n");
-        ctx->static_thresh = avctx->mb_threshold;
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  ctx->static_thresh);
     codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
 

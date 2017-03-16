@@ -335,21 +335,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->intra_only = 0;
     }
 
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->me_method = avctx->me_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->border_masking != 0.0)
-        s->border_masking = avctx->border_masking;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
@@ -582,15 +569,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         // (a - x / 4) / x
         s->inter_quant_bias = -(1 << (QUANT_BIAS_SHIFT - 2));
     }
-
-#if FF_API_QUANT_BIAS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->intra_quant_bias = avctx->intra_quant_bias;
-    if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->inter_quant_bias = avctx->inter_quant_bias;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
         s->avctx->time_base.den > (1 << 16) - 1) {
@@ -873,32 +851,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (ff_rate_control_init(s) < 0)
         return -1;
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->rc_qsquish != 0.0)
-        s->rc_qsquish = avctx->rc_qsquish;
-    if (avctx->rc_qmod_amp != 0.0)
-        s->rc_qmod_amp = avctx->rc_qmod_amp;
-    if (avctx->rc_qmod_freq)
-        s->rc_qmod_freq = avctx->rc_qmod_freq;
-    if (avctx->rc_buffer_aggressivity != 1.0)
-        s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
-    if (avctx->rc_initial_cplx != 0.0)
-        s->rc_initial_cplx = avctx->rc_initial_cplx;
-    if (avctx->lmin)
-        s->lmin = avctx->lmin;
-    if (avctx->lmax)
-        s->lmax = avctx->lmax;
-
-    if (avctx->rc_eq) {
-        av_freep(&s->rc_eq);
-        s->rc_eq = av_strdup(avctx->rc_eq);
-        if (!s->rc_eq)
-            return AVERROR(ENOMEM);
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS

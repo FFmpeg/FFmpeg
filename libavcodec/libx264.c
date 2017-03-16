@@ -547,24 +547,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (x4->nal_hrd >= 0)
         x4->params.i_nal_hrd = x4->nal_hrd;
 
-    if (x4->motion_est >= 0) {
+    if (x4->motion_est >= 0)
         x4->params.analyse.i_me_method = x4->motion_est;
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    } else {
-        if (avctx->me_method == ME_EPZS)
-            x4->params.analyse.i_me_method = X264_ME_DIA;
-        else if (avctx->me_method == ME_HEX)
-            x4->params.analyse.i_me_method = X264_ME_HEX;
-        else if (avctx->me_method == ME_UMH)
-            x4->params.analyse.i_me_method = X264_ME_UMH;
-        else if (avctx->me_method == ME_FULL)
-            x4->params.analyse.i_me_method = X264_ME_ESA;
-        else if (avctx->me_method == ME_TESA)
-            x4->params.analyse.i_me_method = X264_ME_TESA;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-    }
 
     if (x4->coder >= 0)
         x4->params.b_cabac = x4->coder;
@@ -803,9 +787,6 @@ static const AVCodecDefault x264_defaults[] = {
     { "nr",               "-1" },
 #endif
     { "me_range",         "-1" },
-#if FF_API_MOTION_EST
-    { "me_method",        "-1" },
-#endif
     { "subq",             "-1" },
 #if FF_API_PRIVATE_OPT
     { "b_strategy",       "-1" },

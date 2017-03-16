@@ -432,30 +432,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)
     case 1:
         x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
                        XVID_ME_HALFPELREFINE16;
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-        break;
-    default:
-        switch (avctx->me_method) {
-        case ME_FULL:   /* Quality 6 */
-             x->me_flags |= XVID_ME_EXTSEARCH16 |
-                            XVID_ME_EXTSEARCH8;
-        case ME_EPZS:   /* Quality 4 */
-             x->me_flags |= XVID_ME_ADVANCEDDIAMOND8 |
-                            XVID_ME_HALFPELREFINE8   |
-                            XVID_ME_CHROMA_PVOP      |
-                            XVID_ME_CHROMA_BVOP;
-        case ME_LOG:    /* Quality 2 */
-        case ME_PHODS:
-        case ME_X1:
-             x->me_flags |= XVID_ME_ADVANCEDDIAMOND16 |
-                            XVID_ME_HALFPELREFINE16;
-        case ME_ZERO:   /* Quality 0 */
-        default:
-            break;
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     /* Decide how we should decide blocks */

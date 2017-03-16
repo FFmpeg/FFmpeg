@@ -73,9 +73,7 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
 
 #define FF_SANE_NB_CHANNELS 63U
 

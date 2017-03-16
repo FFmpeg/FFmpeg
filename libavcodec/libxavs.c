@@ -285,32 +285,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (x4->cplxblur >= 0)
         x4->params.rc.f_complexity_blur = x4->cplxblur;
 
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (x4->motion_est < 0) {
-        switch (avctx->me_method) {
-        case  ME_EPZS:
-            x4->params.analyse.i_me_method = XAVS_ME_DIA;
-            break;
-        case  ME_HEX:
-            x4->params.analyse.i_me_method = XAVS_ME_HEX;
-            break;
-        case  ME_UMH:
-            x4->params.analyse.i_me_method = XAVS_ME_UMH;
-            break;
-        case  ME_FULL:
-            x4->params.analyse.i_me_method = XAVS_ME_ESA;
-            break;
-        case  ME_TESA:
-            x4->params.analyse.i_me_method = XAVS_ME_TESA;
-            break;
-        default:
-            x4->params.analyse.i_me_method = XAVS_ME_HEX;
-        }
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     x4->params.i_bframe          = avctx->max_b_frames;
     /* cabac is not included in AVS JiZhun Profile */
     x4->params.b_cabac           = 0;
