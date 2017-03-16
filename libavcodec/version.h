@@ -47,9 +47,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_AVCTX_TIMEBASE
-#define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_MPV_OPT
 #define FF_API_MPV_OPT           (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif

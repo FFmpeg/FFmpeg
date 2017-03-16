@@ -163,11 +163,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         s->coded_width  = FFALIGN(pc->width,  16);
         s->coded_height = FFALIGN(pc->height, 16);
     }
-
-#if FF_API_AVCTX_TIMEBASE
-    if (avctx->framerate.num)
-        avctx->time_base = av_inv_q(avctx->framerate);
-#endif
 }
 
 static int mpegvideo_parse(AVCodecParserContext *s,

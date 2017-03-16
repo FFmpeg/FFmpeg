@@ -354,11 +354,6 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO)
         ret = pkt->size;
 
-#if FF_API_AVCTX_TIMEBASE
-    if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
-        avctx->time_base = av_inv_q(avctx->framerate);
-#endif
-
     if (avctx->internal->draining && !got_frame)
         avci->draining_done = 1;
 
