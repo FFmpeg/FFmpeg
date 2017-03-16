@@ -249,20 +249,6 @@ void av_log_default_callback(void *avcl, int level, const char *fmt,
  */
 const char* av_default_item_name(void* ctx);
 
-#if FF_API_DLOG
-/**
- * av_dlog macros
- * @deprecated unused
- * Useful to print debug messages that shouldn't get compiled in normally.
- */
-
-#ifdef DEBUG
-#    define av_dlog(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
-#else
-#    define av_dlog(pctx, ...)
-#endif
-#endif /* FF_API_DLOG */
-
 /**
  * Skip repeated messages, this requires the user app to use av_log() instead of
  * (f)printf as the 2 would otherwise interfere and lead to
