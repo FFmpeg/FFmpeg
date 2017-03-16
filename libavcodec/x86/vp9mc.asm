@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* VP9 MC SIMD optimizations
+;* VP9 motion compensation SIMD optimizations
 ;*
 ;* Copyright (c) 2013 Ronald S. Bultje <rsbultje gmail com>
 ;*
