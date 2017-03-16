@@ -646,11 +646,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-#if FF_API_AUDIOENC_DELAY
-    if (av_codec_is_encoder(avctx->codec))
-        avctx->delay = avctx->initial_padding;
-#endif
-
     if (av_codec_is_decoder(avctx->codec)) {
         /* validate channel layout from the decoder */
         if (avctx->channel_layout) {

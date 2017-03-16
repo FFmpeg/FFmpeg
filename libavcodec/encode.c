@@ -194,10 +194,6 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
 end:
     av_frame_free(&padded_frame);
 
-#if FF_API_AUDIOENC_DELAY
-    avctx->delay = avctx->initial_padding;
-#endif
-
     return ret;
 }
 
