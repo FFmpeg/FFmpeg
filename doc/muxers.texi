@@ -1091,69 +1091,35 @@ This muxer implements ISO 13818-1 and part of ETSI EN 300 468.
 
 The recognized metadata settings in mpegts muxer are @code{service_provider}
 and @code{service_name}. If they are not set the default for
-@code{service_provider} is "FFmpeg" and the default for
-@code{service_name} is "Service01".
+@code{service_provider} is @samp{FFmpeg} and the default for
+@code{service_name} is @samp{Service01}.
 
 @subsection Options
 
 The muxer options are:
 
 @table @option
-@item mpegts_original_network_id @var{number}
-Set the original_network_id (default 0x0001). This is unique identifier
-of a network in DVB. Its main use is in the unique identification of a
-service through the path Original_Network_ID, Transport_Stream_ID.
-@item mpegts_transport_stream_id @var{number}
-Set the transport_stream_id (default 0x0001). This identifies a
-transponder in DVB.
-@item mpegts_service_id @var{number}
-Set the service_id (default 0x0001) also known as program in DVB.
-@item mpegts_service_type @var{number}
-Set the program service_type (default @var{digital_tv}), see below
-a list of pre defined values.
-@item mpegts_pmt_start_pid @var{number}
-Set the first PID for PMT (default 0x1000, max 0x1f00).
-@item mpegts_start_pid @var{number}
-Set the first PID for data packets (default 0x0100, max 0x0f00).
-@item mpegts_m2ts_mode @var{number}
-Enable m2ts mode if set to 1. Default value is -1 which disables m2ts mode.
-@item muxrate @var{number}
-Set a constant muxrate (default VBR).
-@item pcr_period @var{numer}
-Override the default PCR retransmission time (default 20ms), ignored
-if variable muxrate is selected.
-@item pat_period @var{number}
-Maximal time in seconds between PAT/PMT tables.
-@item sdt_period @var{number}
-Maximal time in seconds between SDT tables.
-@item pes_payload_size @var{number}
-Set minimum PES packet payload in bytes.
-@item mpegts_flags @var{flags}
-Set flags (see below).
-@item mpegts_copyts @var{number}
-Preserve original timestamps, if value is set to 1. Default value is -1, which
-results in shifting timestamps so that they start from 0.
-@item tables_version @var{number}
-Set PAT, PMT and SDT version (default 0, valid values are from 0 to 31, inclusively).
-This option allows updating stream structure so that standard consumer may
-detect the change. To do so, reopen output AVFormatContext (in case of API
-usage) or restart ffmpeg instance, cyclically changing tables_version value:
-@example
-ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
-ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
-...
-ffmpeg -i source3.ts -codec copy -f mpegts -tables_version 31 udp://1.1.1.1:1111
-ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
-ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
-...
-@end example
-@end table
+@item mpegts_transport_stream_id @var{integer}
+Set the @samp{transport_stream_id}. This identifies a transponder in DVB.
+Default is @code{0x0001}.
 
-Option @option{mpegts_service_type} accepts the following values:
+@item mpegts_original_network_id @var{integer}
+Set the @samp{original_network_id}. This is unique identifier of a
+network in DVB. Its main use is in the unique identification of a service
+through the path @samp{Original_Network_ID, Transport_Stream_ID}. Default
+is @code{0x0001}.
 
-@table @option
+@item mpegts_service_id @var{integer}
+Set the @samp{service_id}, also known as program in DVB. Default is
+@code{0x0001}.
+
+@item mpegts_service_type @var{integer}
+Set the program @samp{service_type}. Default is @code{digital_tv}.
+Accepts the following options:
+@table @samp
 @item hex_value
-Any hexdecimal value between 0x01 to 0xff as defined in ETSI 300 468.
+Any hexdecimal value between @code{0x01} to @code{0xff} as defined in
+ETSI 300 468.
 @item digital_tv
 Digital TV service.
 @item digital_radio
@@ -1170,9 +1136,26 @@ Advanced Codec Digital SDTV service.
 Advanced Codec Digital HDTV service.
 @end table
 
-Option @option{mpegts_flags} may take a set of such flags:
+@item mpegts_pmt_start_pid @var{integer}
+Set the first PID for PMT. Default is @code{0x1000}. Max is @code{0x1f00}.
 
-@table @option
+@item mpegts_start_pid @var{integer}
+Set the first PID for data packets. Default is @code{0x0100}. Max is
+@code{0x0f00}.
+
+@item mpegts_m2ts_mode @var{boolean}
+Enable m2ts mode if set to @code{1}. Default value is @code{-1} which
+disables m2ts mode.
+
+@item muxrate @var{integer}
+Set a constant muxrate. Default is VBR.
+
+@item pes_payload_size @var{integer}
+Set minimum PES packet payload in bytes. Default is @code{2930}.
+
+@item mpegts_flags @var{flags}
+Set mpegts flags. Accepts the following options:
+@table @samp
 @item resend_headers
 Reemit PAT/PMT before writing the next packet.
 @item latm
@@ -1183,6 +1166,45 @@ Reemit PAT and PMT at each video frame.
 Conform to System B (DVB) instead of System A (ATSC).
 @item initial_discontinuity
 Mark the initial packet of each stream as discontinuity.
+@end table
+
+@item resend_headers @var{integer}
+Reemit PAT/PMT before writing the next packet. This option is deprecated:
+use @option{mpegts_flags} instead.
+
+@item mpegts_copyts @var{boolean}
+Preserve original timestamps, if value is set to @code{1}. Default value
+is @code{-1}, which results in shifting timestamps so that they start from 0.
+
+@item omit_video_pes_length @var{boolean}
+Omit the PES packet length for video packets. Default is @code{1} (true).
+
+@item pcr_period @var{integer}
+Override the default PCR retransmission time in milliseconds. Ignored if
+variable muxrate is selected. Default is @code{20}.
+
+@item pat_period @var{double}
+Maximum time in seconds between PAT/PMT tables.
+
+@item sdt_period @var{double}
+Maximum time in seconds between SDT tables.
+
+@item tables_version @var{integer}
+Set PAT, PMT and SDT version (default @code{0}, valid values are from 0 to 31, inclusively).
+This option allows updating stream structure so that standard consumer may
+detect the change. To do so, reopen output @code{AVFormatContext} (in case of API
+usage) or restart @command{ffmpeg} instance, cyclically changing
+@option{tables_version} value:
+
+@example
+ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
+ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
+...
+ffmpeg -i source3.ts -codec copy -f mpegts -tables_version 31 udp://1.1.1.1:1111
+ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
+ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
+...
+@end example
 @end table
 
 @subsection Example
@@ -1196,7 +1218,7 @@ ffmpeg -i file.mpg -c copy \
      -mpegts_start_pid 0x150 \
      -metadata service_provider="Some provider" \
      -metadata service_name="Some Channel" \
-     -y out.ts
+     out.ts
 @end example
 
 @section mxf, mxf_d10
