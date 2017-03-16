@@ -1835,7 +1835,9 @@ ARCH_FEATURES="
     local_aligned_8
     local_aligned_16
     local_aligned_32
+    simd_align
     simd_align_16
+    simd_align_32
 "
 
 BUILTIN_LIST="
@@ -2333,7 +2335,9 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
+simd_align_if_any="simd_align_16 simd_align_32"
 simd_align_16_if_any="altivec neon sse"
+simd_align_32_if_any="avx"
 
 # system capabilities
 symver_if_any="symver_asm_label symver_gnu_asm"
@@ -6405,7 +6409,7 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled simd_align_16 && enable memalign_hack
+    enabled simd_align && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
