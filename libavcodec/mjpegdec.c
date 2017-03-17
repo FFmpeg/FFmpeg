@@ -686,7 +686,7 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 
 /* decode block and dequantize */
 static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
-                        int dc_index, int ac_index, int16_t *quant_matrix)
+                        int dc_index, int ac_index, uint16_t *quant_matrix)
 {
     int code, i, j, level, val;
 
@@ -736,7 +736,7 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
 
 static int decode_dc_progressive(MJpegDecodeContext *s, int16_t *block,
                                  int component, int dc_index,
-                                 int16_t *quant_matrix, int Al)
+                                 uint16_t *quant_matrix, int Al)
 {
     int val;
     s->bdsp.clear_block(block);
@@ -754,7 +754,7 @@ static int decode_dc_progressive(MJpegDecodeContext *s, int16_t *block,
 /* decode block and dequantize - progressive JPEG version */
 static int decode_block_progressive(MJpegDecodeContext *s, int16_t *block,
                                     uint8_t *last_nnz, int ac_index,
-                                    int16_t *quant_matrix,
+                                    uint16_t *quant_matrix,
                                     int ss, int se, int Al, int *EOBRUN)
 {
     int code, i, j, level, val, run;
@@ -852,7 +852,7 @@ for (; ; i++) {                                                     \
 /* decode block and dequantize - progressive JPEG refinement pass */
 static int decode_block_refinement(MJpegDecodeContext *s, int16_t *block,
                                    uint8_t *last_nnz,
-                                   int ac_index, int16_t *quant_matrix,
+                                   int ac_index, uint16_t *quant_matrix,
                                    int ss, int se, int Al, int *EOBRUN)
 {
     int code, i = ss, j, sign, val, run;
@@ -1383,7 +1383,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     int mb_x, mb_y;
     int EOBRUN = 0;
     int c = s->comp_index[0];
-    int16_t *quant_matrix = s->quant_matrixes[s->quant_sindex[0]];
+    uint16_t *quant_matrix = s->quant_matrixes[s->quant_sindex[0]];
 
     av_assert0(ss>=0 && Ah>=0 && Al>=0);
     if (se < ss || se > 63) {
