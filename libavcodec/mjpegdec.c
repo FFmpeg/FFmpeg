@@ -188,6 +188,10 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
         /* read quant table */
         for (i = 0; i < 64; i++) {
             s->quant_matrixes[index][i] = get_bits(&s->gb, pr ? 16 : 8);
+            if (s->quant_matrixes[index][i] == 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "dqt: 0 quant value\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         // XXX FIXME fine-tune, and perhaps add dc too
