@@ -4715,7 +4715,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         if (b >= UINT_MAX - t || r >= UINT_MAX - l) {
             av_log(c->fc, AV_LOG_ERROR,
-                   "Invalid bounding rectangle coordinates %"SIZE_SPECIFIER","
+                   "Invalid bounding rectangle coordinates "
                    "%"PRIu32",%"PRIu32",%"PRIu32",%"PRIu32"\n", l, t, r, b);
             return AVERROR_INVALIDDATA;
         }
