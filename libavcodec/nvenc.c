@@ -511,10 +511,26 @@ static int nvenc_map_preset(NVENCContext *ctx)
 
 static void set_constqp(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
 {
+    NVENCContext *ctx = avctx->priv_data;
     rc->rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-    rc->constQP.qpInterB = avctx->global_quality;
-    rc->constQP.qpInterP = avctx->global_quality;
-    rc->constQP.qpIntra  = avctx->global_quality;
+
+    if (ctx->init_qp_p >= 0) {
+        rc->constQP.qpInterP = ctx->init_qp_p;
+        if (ctx->init_qp_i >= 0 && ctx->init_qp_b >= 0) {
+            rc->constQP.qpIntra  = ctx->init_qp_i;
+            rc->constQP.qpInterB = ctx->init_qp_b;
+        } else if (avctx->i_quant_factor != 0.0 && avctx->b_quant_factor != 0.0) {
+            rc->constQP.qpIntra  = av_clip(rc->constQP.qpInterP * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
+            rc->constQP.qpInterB = av_clip(rc->constQP.qpInterP * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+        } else {
+            rc->constQP.qpIntra  = rc->constQP.qpInterP;
+            rc->constQP.qpInterB = rc->constQP.qpInterP;
+        }
+    } else if (avctx->global_quality >= 0) {
+        rc->constQP.qpInterP = avctx->global_quality;
+        rc->constQP.qpInterB = avctx->global_quality;
+        rc->constQP.qpIntra  = avctx->global_quality;
+    }
 }
 
 static void set_vbr(AVCodecContext *avctx, NV_ENC_RC_PARAMS *rc)
@@ -575,12 +591,6 @@ static void nvenc_override_rate_control(AVCodecContext *avctx,
 
     switch (ctx->rc) {
     case NV_ENC_PARAMS_RC_CONSTQP:
-        if (avctx->global_quality < 0) {
-            av_log(avctx, AV_LOG_WARNING,
-                   "The constant quality rate-control requires "
-                   "the 'global_quality' option set.\n");
-            return;
-        }
         set_constqp(avctx, rc);
         return;
     case NV_ENC_PARAMS_RC_2_PASS_VBR:
