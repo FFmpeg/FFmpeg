@@ -388,7 +388,7 @@ static int rebuild_filter_bank_with_compensation(ResampleContext *c)
     if (phase_count == c->phase_count)
         return 0;
 
-    av_assert0(!c->frac && !c->dst_incr_mod && !c->compensation_distance);
+    av_assert0(!c->frac && !c->dst_incr_mod);
 
     new_filter_bank = av_calloc(c->filter_alloc, (phase_count + 1) * c->felem_size);
     if (!new_filter_bank)
