@@ -199,13 +199,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         }
 
         pthread_mutex_lock(&p->progress_mutex);
-#if 0 //BUFREF-FIXME
-        for (i = 0; i < MAX_BUFFERS; i++)
-            if (p->progress_used[i] && (p->got_frame || p->result<0 || avctx->codec_id != AV_CODEC_ID_H264)) {
-                p->progress[i][0] = INT_MAX;
-                p->progress[i][1] = INT_MAX;
-            }
-#endif
+
         atomic_store(&p->state, STATE_INPUT_READY);
 
         pthread_cond_broadcast(&p->progress_cond);
