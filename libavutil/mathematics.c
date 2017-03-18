@@ -117,6 +117,7 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
         return t1;
     }
 #else
+        /* reference code doing (a*b + r) / c, requires libavutil/integer.h */
         AVInteger ai;
         ai = av_mul_i(av_int2i(a), av_int2i(b));
         ai = av_add_i(ai, av_int2i(r));
