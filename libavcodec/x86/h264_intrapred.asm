@@ -268,6 +268,43 @@ cglobal pred16x16_tm_vp8_8, 2,6,6
     jg .loop
     REP_RET
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal pred16x16_tm_vp8_8, 2, 4, 5, dst, stride, stride3, iteration
+    sub                       dstq, strideq
+    pmovzxbw                    m0, [dstq]
+    vpbroadcastb               xm1, [r0-1]
+    pmovzxbw                    m1, xm1
+    psubw                       m0, m1
+    mov                 iterationd, 4
+    lea                   stride3q, [strideq*3]
+.loop:
+    vpbroadcastb               xm1, [dstq+strideq*1-1]
+    vpbroadcastb               xm2, [dstq+strideq*2-1]
+    vpbroadcastb               xm3, [dstq+stride3q-1]
+    vpbroadcastb               xm4, [dstq+strideq*4-1]
+    pmovzxbw                    m1, xm1
+    pmovzxbw                    m2, xm2
+    pmovzxbw                    m3, xm3
+    pmovzxbw                    m4, xm4
+    paddw                       m1, m0
+    paddw                       m2, m0
+    paddw                       m3, m0
+    paddw                       m4, m0
+    vpackuswb                   m1, m1, m2
+    vpackuswb                   m3, m3, m4
+    vpermq                      m1, m1, q3120
+    vpermq                      m3, m3, q3120
+    movdqa        [dstq+strideq*1], xm1
+    vextracti128  [dstq+strideq*2], m1, 1
+    movdqa       [dstq+stride3q*1], xm3
+    vextracti128  [dstq+strideq*4], m3, 1
+    lea                       dstq, [dstq+strideq*4]
+    dec                 iterationd
+    jg .loop
+    REP_RET
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_pred16x16_plane_*_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
