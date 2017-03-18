@@ -247,6 +247,12 @@ fate-exr-rgb-scanline-raw-half-float-l1: CMD = framecrc -i $(TARGET_SAMPLES)/exr
 FATE_EXR += fate-exr-rgb-scanline-raw-half-float-l2
 fate-exr-rgb-scanline-raw-half-float-l2: CMD = framecrc -layer "VRaySamplerInfo" -i $(TARGET_SAMPLES)/exr/rgb_scanline_raw_half_float.exr -pix_fmt rgba64le
 
+FATE_EXR += fate-exr-rgb-scanline-b44-uint32
+fate-exr-rgb-scanline-b44-uint32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_b44_uint32.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-rgb-scanline-pxr24-uint32
+fate-exr-rgb-scanline-pxr24-uint32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_uint32.exr -pix_fmt rgb48le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)
