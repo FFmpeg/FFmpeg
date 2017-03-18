@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Industrial Light & Magic, a division of Lucas Digital Ltd. LLC
  * Copyright (c) 2009 Jimmy Christensen
  *
- * B44/B44A, Tile added by Jokyo Images support by CNC - French National Center for Cinema
+ * B44/B44A, Tile, UINT32 added by Jokyo Images support by CNC - French National Center for Cinema
  *
  * This file is part of FFmpeg.
  *
@@ -1236,7 +1236,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             }
-        } else {
+        } else if (s->pixel_type == EXR_HALF) {
             // 16-bit
             for (x = 0; x < td->xsize; x++) {
                 int c;
@@ -1246,6 +1246,15 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
                 if (channel_buffer[3])
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&a));
+            }
+        } else if (s->pixel_type == EXR_UINT) {
+            for (x = 0; x < td->xsize; x++) {
+                for (c = 0; c < rgb_channel_count; c++) {
+                    *ptr_x++ = bytestream_get_le32(&rgb[c]) >> 16;
+                }
+
+                if (channel_buffer[3])
+                    *ptr_x++ = bytestream_get_le32(&a) >> 16;
             }
         }
 
@@ -1648,6 +1657,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     switch (s->pixel_type) {
     case EXR_FLOAT:
     case EXR_HALF:
+    case EXR_UINT:
         if (s->channel_offsets[3] >= 0) {
             if (!s->is_luma) {
                 avctx->pix_fmt = AV_PIX_FMT_RGBA64;
@@ -1662,9 +1672,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
-    case EXR_UINT:
-        avpriv_request_sample(avctx, "32-bit unsigned int");
-        return AVERROR_PATCHWELCOME;
     default:
         av_log(avctx, AV_LOG_ERROR, "Missing channel list.\n");
         return AVERROR_INVALIDDATA;
