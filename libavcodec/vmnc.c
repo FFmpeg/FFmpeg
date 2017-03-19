@@ -287,17 +287,24 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
                     return AVERROR_INVALIDDATA;
                 }
                 for (k = 0; k < rects; k++) {
+                    int rect_x, rect_y, rect_w, rect_h;
                     if (color)
                         fg = vmnc_get_pixel(gb, bpp, c->bigendian);
                     xy = bytestream2_get_byte(gb);
                     wh = bytestream2_get_byte(gb);
-                    if (   (xy >> 4) + (wh >> 4) + 1 > w - i
-                        || (xy & 0xF) + (wh & 0xF)+1 > h - j) {
+
+                    rect_x = xy >> 4;
+                    rect_y = xy & 0xF;
+                    rect_w = (wh >> 4) + 1;
+                    rect_h = (wh & 0xF) + 1;
+
+                    if (rect_x + rect_w > w - i || rect_y + rect_h > h - j) {
                         av_log(c->avctx, AV_LOG_ERROR, "Rectangle outside picture\n");
                         return AVERROR_INVALIDDATA;
                     }
-                    paint_rect(dst2, xy >> 4, xy & 0xF,
-                               (wh>>4)+1, (wh & 0xF)+1, fg, bpp, stride);
+
+                    paint_rect(dst2, rect_x, rect_y,
+                               rect_w, rect_h, fg, bpp, stride);
                 }
             }
         }
