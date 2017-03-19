@@ -631,6 +631,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     if ((ret = ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                             avctx->codec->id == AV_CODEC_ID_VP6A)) < 0)
         return ret;
+    ff_vp6dsp_init(&s->vp56dsp);
 
     vp6_decode_init_context(s);
 
@@ -638,6 +639,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
         s->alpha_context = av_mallocz(sizeof(VP56Context));
         ff_vp56_init_context(avctx, s->alpha_context,
                              s->flip == -1, s->has_alpha);
+        ff_vp6dsp_init(&s->alpha_context->vp56dsp);
         vp6_decode_init_context(s->alpha_context);
     }
 
