@@ -279,16 +279,6 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
                     s->exponent_high_bands[k][j++] = end - start;
             }
             s->exponent_high_sizes[k] = j;
-#if 0
-            ff_tlog(s->avctx, "%5d: coefs_end=%d high_band_start=%d nb_high_bands=%d: ",
-                    s->frame_len >> k,
-                    s->coefs_end[k],
-                    s->high_band_start[k],
-                    s->exponent_high_sizes[k]);
-            for (j = 0; j < s->exponent_high_sizes[k]; j++)
-                ff_tlog(s->avctx, " %d", s->exponent_high_bands[k][j]);
-            ff_tlog(s->avctx, "\n");
-#endif /* 0 */
         }
     }
 
