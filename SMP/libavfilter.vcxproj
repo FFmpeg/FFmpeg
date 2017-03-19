@@ -215,6 +215,7 @@
     <ClCompile Include="..\libavfilter\vf_deband.c" />
     <ClCompile Include="..\libavfilter\vf_decimate.c" />
     <ClCompile Include="..\libavfilter\vf_neighbor.c" />
+    <ClCompile Include="..\libavfilter\vf_deinterlace_qsv.c" />
     <ClCompile Include="..\libavfilter\vf_dejudder.c" />
     <ClCompile Include="..\libavfilter\vf_delogo.c" />
     <ClCompile Include="..\libavfilter\vf_deshake.c" />
@@ -290,6 +291,7 @@
     <ClCompile Include="..\libavfilter\vf_sab.c" />
     <ClCompile Include="..\libavfilter\vf_scale.c" />
     <ClCompile Include="..\libavfilter\scale.c" />
+    <ClCompile Include="..\libavfilter\vf_scale_qsv.c" />
     <ClCompile Include="..\libavfilter\vf_selectivecolor.c" />
     <ClCompile Include="..\libavfilter\vf_separatefields.c" />
     <ClCompile Include="..\libavfilter\vf_aspect.c" />
@@ -698,7 +700,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -736,7 +738,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -770,7 +772,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -808,7 +810,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -845,7 +847,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;assd.lib;fontconfigd.lib;freetyped.lib;fribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;assd.lib;fontconfigd.lib;freetyped.lib;fribidid.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -886,7 +888,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -924,7 +926,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;assd.lib;fontconfigd.lib;freetyped.lib;fribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;assd.lib;fontconfigd.lib;freetyped.lib;fribidid.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -963,7 +965,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1000,7 +1002,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1041,7 +1043,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1078,7 +1080,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1118,7 +1120,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1158,7 +1160,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1196,7 +1198,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1236,7 +1238,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1274,7 +1276,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1320,7 +1322,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1360,7 +1362,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1406,7 +1408,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1445,7 +1447,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1491,7 +1493,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1531,7 +1533,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1577,7 +1579,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1616,7 +1618,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1656,7 +1658,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1694,7 +1696,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1734,7 +1736,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1772,7 +1774,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>

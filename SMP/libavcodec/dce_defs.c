@@ -3412,6 +3412,8 @@ void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags) {return;}
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags) {return;}
 void ff_hpeldsp_init_mips(HpelDSPContext *c, int flags) {return;}
 void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags) {return;}
+void ff_idctdsp_init_aarch64(IDCTDSPContext *c, AVCodecContext *avctx,
+                             unsigned high_bit_depth) {return;}
 void ff_idctdsp_init_alpha(IDCTDSPContext *c, AVCodecContext *avctx,
                            unsigned high_bit_depth) {return;}
 void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,

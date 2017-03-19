@@ -397,7 +397,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -466,7 +466,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -541,7 +541,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -615,7 +615,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -690,7 +690,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -764,7 +764,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -839,7 +839,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -914,7 +914,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -997,7 +997,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1079,7 +1079,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1162,7 +1162,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1244,7 +1244,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1319,7 +1319,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1394,7 +1394,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>

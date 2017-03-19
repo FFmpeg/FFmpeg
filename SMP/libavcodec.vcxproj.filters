@@ -2184,6 +2184,9 @@
     <ClCompile Include="..\libavcodec\xl.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\xpmdec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\xsubdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

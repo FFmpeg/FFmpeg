@@ -787,6 +787,7 @@
     <ClCompile Include="..\libavcodec\xface.c" />
     <ClCompile Include="..\libavcodec\xfaceenc.c" />
     <ClCompile Include="..\libavcodec\xl.c" />
+    <ClCompile Include="..\libavcodec\xpmdec.c" />
     <ClCompile Include="..\libavcodec\xsubdec.c" />
     <ClCompile Include="..\libavcodec\xsubenc.c" />
     <ClCompile Include="..\libavcodec\xwddec.c" />
@@ -1391,7 +1392,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1441,7 +1442,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1475,7 +1476,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1525,7 +1526,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1562,7 +1563,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;lzmad.lib;zlibd.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;lzmad.lib;zlibd.lib;x264d.lib;x265d.lib;xvidcored.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1615,7 +1616,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1653,7 +1654,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;lzmad.lib;zlibd.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;x264d.lib;x265d.lib;xvidcored.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;bz2d.lib;iconvd.lib;lzmad.lib;zlibd.lib;x264d.lib;x265d.lib;xvidcored.lib;ilbcd.lib;mp3lamed.lib;opusd.lib;speexd.lib;theorad.lib;vorbisd.lib;vpxd.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1704,7 +1705,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1741,7 +1742,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1794,7 +1795,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1831,7 +1832,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutild.lib;swresampled.lib;libbz2d.lib;libiconvd.lib;liblzmad.lib;libzlibd.lib;libx264d.lib;libx265d.lib;libxvidcored.lib;libilbcd.lib;libmp3lamed.lib;libopusd.lib;libspeexd.lib;libtheorad.lib;libvorbisd.lib;libvpxd.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -1883,7 +1884,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -1923,7 +1924,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -1973,7 +1974,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2013,7 +2014,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2063,7 +2064,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2109,7 +2110,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;lzma.lib;zlib.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;lzma.lib;zlib.lib;x264.lib;x265.lib;xvidcore.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -2161,7 +2162,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2207,7 +2208,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;lzma.lib;zlib.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;x264.lib;x265.lib;xvidcore.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;bz2.lib;iconv.lib;lzma.lib;zlib.lib;x264.lib;x265.lib;xvidcore.lib;ilbc.lib;mp3lame.lib;opus.lib;speex.lib;theora.lib;vorbis.lib;vpx.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -2258,7 +2259,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2304,7 +2305,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
@@ -2356,7 +2357,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2402,7 +2403,7 @@ cd $(ProjectDir)
       <ProgramDatabaseFile>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDatabaseFile>
       <ModuleDefinitionFile>.\libavcodec.def</ModuleDefinitionFile>
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
-      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avutil.lib;swresample.lib;libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -2453,7 +2454,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2493,7 +2494,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX86</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2543,7 +2544,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
@@ -2583,7 +2584,7 @@ cd $(ProjectDir)
       <TargetMachine>MachineX64</TargetMachine>
       <SubSystem>Windows</SubSystem>
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libx264.lib;libx265.lib;libxvidcore.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbz2.lib;libiconv.lib;liblzma.lib;libzlib.lib;libx264.lib;libx265.lib;libxvidcore.lib;libilbc.lib;libmp3lame.lib;libopus.lib;libspeex.lib;libtheora.lib;libvorbis.lib;libvpx.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
@@ -2633,7 +2634,7 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
       <PreIncludeFile>config.asm</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
