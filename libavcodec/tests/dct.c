@@ -94,7 +94,9 @@ static const struct algo idct_tab[] = {
 #endif /* CONFIG_MPEG4_DECODER */
 };
 
-#if ARCH_ARM
+#if ARCH_AARCH64
+#include "aarch64/dct.c"
+#elif ARCH_ARM
 #include "arm/dct.c"
 #elif ARCH_PPC
 #include "ppc/dct.c"

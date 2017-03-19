@@ -24,6 +24,18 @@
 #include "internal.h"
 #include "bytestream.h"
 
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    int aligned_width = FFALIGN(avctx->width,
+                                avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);
+
+    avctx->bits_per_coded_sample = 32;
+    if (avctx->width > 0)
+        avctx->bit_rate = ff_guess_coded_bitrate(avctx) * aligned_width / avctx->width;
+
+    return 0;
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pic, int *got_packet)
 {
@@ -73,6 +85,7 @@ AVCodec ff_r210_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R210,
+    .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
@@ -84,6 +97,7 @@ AVCodec ff_r10k_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R10K,
+    .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
@@ -95,6 +109,7 @@ AVCodec ff_avrp_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVRP,
+    .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_INTRA_ONLY,

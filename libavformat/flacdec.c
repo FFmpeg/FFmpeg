@@ -231,16 +231,27 @@ static int flac_probe(AVProbeData *p)
 {
     if ((AV_RB16(p->buf) & 0xFFFE) == 0xFFF8)
         return raw_flac_probe(p);
-    if (p->buf_size < 4 || memcmp(p->buf, "fLaC", 4))
-        return 0;
-    if (   p->buf[4] & 0x7f != FLAC_METADATA_TYPE_STREAMINFO
-        || AV_RB24(p->buf + 5) != FLAC_STREAMINFO_SIZE
-        || AV_RB16(p->buf + 8) < 16
-        || AV_RB16(p->buf + 8) > AV_RB16(p->buf + 10)
-        || !(AV_RB24(p->buf + 18) >> 4)
-        || AV_RB24(p->buf + 18) >> 4 > 655350)
+
+    /* file header + metadata header + checked bytes of streaminfo */
+    if (p->buf_size >= 4 + 4 + 13) {
+        int type           = p->buf[4] & 0x7f;
+        int size           = AV_RB24(p->buf + 5);
+        int min_block_size = AV_RB16(p->buf + 8);
+        int max_block_size = AV_RB16(p->buf + 10);
+        int sample_rate    = AV_RB24(p->buf + 18) >> 4;
+
+        if (memcmp(p->buf, "fLaC", 4))
+            return 0;
+        if (type == FLAC_METADATA_TYPE_STREAMINFO &&
+            size == FLAC_STREAMINFO_SIZE          &&
+            min_block_size >= 16                  &&
+            max_block_size >= min_block_size      &&
+            sample_rate && sample_rate <= 655350)
+            return AVPROBE_SCORE_MAX;
         return AVPROBE_SCORE_EXTENSION;
-    return AVPROBE_SCORE_MAX;
+    }
+
+    return 0;
 }
 
 static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,

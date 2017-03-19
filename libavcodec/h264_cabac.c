@@ -1725,7 +1725,7 @@ decode_cabac_residual_internal(const H264Context *h, H264SliceContext *sl,
                 ((type*)block)[j] = (get_cabac_bypass_sign( CC, -qmul[j]) + 32) >> 6; \
             } \
         } else { \
-            int coeff_abs = 2; \
+            unsigned coeff_abs = 2; \
             ctx = coeff_abs_levelgt1_ctx[is_dc && chroma422][node_ctx] + abs_level_m1_ctx_base; \
             node_ctx = coeff_abs_level_transition[1][node_ctx]; \
 \

@@ -898,7 +898,14 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 {
     VTEncContext *vtctx = avctx->priv_data;
     SInt32       bit_rate = avctx->bit_rate;
+    SInt32       max_rate = avctx->rc_max_rate;
     CFNumberRef  bit_rate_num;
+    CFNumberRef  bytes_per_second;
+    CFNumberRef  one_second;
+    CFArrayRef   data_rate_limits;
+    int64_t      bytes_per_second_value = 0;
+    int64_t      one_second_value = 0;
+    void         *nums[2];
 
     int status = VTCompressionSessionCreate(kCFAllocatorDefault,
                                             avctx->width,
@@ -935,6 +942,46 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error setting bitrate property: %d\n", status);
+        return AVERROR_EXTERNAL;
+    }
+
+    bytes_per_second_value = max_rate >> 3;
+    bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
+                                      kCFNumberSInt64Type,
+                                      &bytes_per_second_value);
+    if (!bytes_per_second) {
+        return AVERROR(ENOMEM);
+    }
+    one_second_value = 1;
+    one_second = CFNumberCreate(kCFAllocatorDefault,
+                                kCFNumberSInt64Type,
+                                &one_second_value);
+    if (!one_second) {
+        CFRelease(bytes_per_second);
+        return AVERROR(ENOMEM);
+    }
+    nums[0] = bytes_per_second;
+    nums[1] = one_second;
+    data_rate_limits = CFArrayCreate(kCFAllocatorDefault,
+                                     nums,
+                                     2,
+                                     &kCFTypeArrayCallBacks);
+
+    if (!data_rate_limits) {
+        CFRelease(bytes_per_second);
+        CFRelease(one_second);
+        return AVERROR(ENOMEM);
+    }
+    status = VTSessionSetProperty(vtctx->session,
+                                  kVTCompressionPropertyKey_DataRateLimits,
+                                  data_rate_limits);
+
+    CFRelease(bytes_per_second);
+    CFRelease(one_second);
+    CFRelease(data_rate_limits);
+
+    if (status) {
+        av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
         return AVERROR_EXTERNAL;
     }
 

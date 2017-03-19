@@ -745,7 +745,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
     }
 }
 
-static int add_metadata_from_side_data(AVPacket *avpkt, AVFrame *frame)
+static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 {
     int size;
     const uint8_t *side_metadata;
@@ -759,7 +759,7 @@ static int add_metadata_from_side_data(AVPacket *avpkt, AVFrame *frame)
 
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    AVPacket *pkt = avctx->internal->pkt;
+    const AVPacket *pkt = avctx->internal->pkt;
     int i;
     static const struct {
         enum AVPacketSideDataType packet;
@@ -1593,6 +1593,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
+            if (avctx->sw_pix_fmt != AV_PIX_FMT_NONE &&
+                avctx->sw_pix_fmt != frames_ctx->sw_format) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Mismatching AVCodecContext.sw_pix_fmt (%s) "
+                       "and AVHWFramesContext.sw_format (%s)\n",
+                       av_get_pix_fmt_name(avctx->sw_pix_fmt),
+                       av_get_pix_fmt_name(frames_ctx->sw_format));
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            }
+            avctx->sw_pix_fmt = frames_ctx->sw_format;
         }
     }
 
@@ -1717,9 +1728,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
-        av_packet_free(&avctx->internal->buffer_pkt);
-        av_frame_free(&avctx->internal->buffer_frame);
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->buffer_frame);
+        av_packet_free(&avctx->internal->buffer_pkt);
         av_freep(&avctx->internal->pool);
     }
     av_freep(&avctx->internal);
@@ -2776,7 +2787,7 @@ void avsubtitle_free(AVSubtitle *sub)
 
 static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
 {
-    int got_frame;
+    int got_frame = 0;
     int ret;
 
     av_assert0(!avctx->internal->buffer_frame->buf[0]);
@@ -4331,4 +4342,25 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
     sei_data[side_data->size+10] = 255;
 
     return 0;
+}
+
+int64_t ff_guess_coded_bitrate(AVCodecContext *avctx)
+{
+    AVRational framerate = avctx->framerate;
+    int bits_per_coded_sample = avctx->bits_per_coded_sample;
+    int64_t bitrate;
+
+    if (!(framerate.num && framerate.den))
+        framerate = av_inv_q(avctx->time_base);
+    if (!(framerate.num && framerate.den))
+        return 0;
+
+    if (!bits_per_coded_sample) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        bits_per_coded_sample = av_get_bits_per_pixel(desc);
+    }
+    bitrate = (int64_t)bits_per_coded_sample * avctx->width * avctx->height *
+              framerate.num / framerate.den;
+
+    return bitrate;
 }

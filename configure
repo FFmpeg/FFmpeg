@@ -290,7 +290,6 @@ External library support:
   --disable-sdl2           disable sdl2 [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
-  --enable-x11grab         enable X11 grabbing (legacy) [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -1511,15 +1510,44 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     zlib
 "
 
+EXTERNAL_LIBRARY_GPL_LIST="
+    frei0r
+    libcdio
+    librubberband
+    libvidstab
+    libx264
+    libx265
+    libxavs
+    libxvid
+"
+
+EXTERNAL_LIBRARY_NONFREE_LIST="
+    libfdk_aac
+    openssl
+"
+
+EXTERNAL_LIBRARY_VERSION3_LIST="
+    gmp
+    libopencore_amrnb
+    libopencore_amrwb
+    libvo_amrwbenc
+"
+
+EXTERNAL_LIBRARY_GPLV3_LIST="
+    libsmbclient
+"
+
 EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    $EXTERNAL_LIBRARY_GPL_LIST
+    $EXTERNAL_LIBRARY_NONFREE_LIST
+    $EXTERNAL_LIBRARY_VERSION3_LIST
+    $EXTERNAL_LIBRARY_GPLV3_LIST
     avisynth
     chromaprint
     crystalhd
     decklink
-    frei0r
     gcrypt
-    gmp
     gnutls
     jni
     ladspa
@@ -1527,10 +1555,8 @@ EXTERNAL_LIBRARY_LIST="
     libbluray
     libbs2b
     libcaca
-    libcdio
     libcelt
     libdc1394
-    libfdk_aac
     libflite
     libfontconfig
     libfreetype
@@ -1543,8 +1569,6 @@ EXTERNAL_LIBRARY_LIST="
     libmodplug
     libmp3lame
     libnut
-    libopencore_amrnb
-    libopencore_amrwb
     libopencv
     libopenh264
     libopenjpeg
@@ -1552,7 +1576,6 @@ EXTERNAL_LIBRARY_LIST="
     libopus
     libpulse
     librtmp
-    librubberband
     libschroedinger
     libshine
     libsmbclient
@@ -1564,16 +1587,10 @@ EXTERNAL_LIBRARY_LIST="
     libtheora
     libtwolame
     libv4l2
-    libvidstab
-    libvo_amrwbenc
     libvorbis
     libvpx
     libwavpack
     libwebp
-    libx264
-    libx265
-    libxavs
-    libxvid
     libzimg
     libzmq
     libzvbi
@@ -1582,9 +1599,7 @@ EXTERNAL_LIBRARY_LIST="
     openal
     opencl
     opengl
-    openssl
     videotoolbox
-    x11grab
 "
 HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
@@ -1600,10 +1615,14 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     xvmc
 "
 
+HWACCEL_LIBRARY_NONFREE_LIST="
+    libnpp
+"
+
 HWACCEL_LIBRARY_LIST="
     $HWACCEL_AUTODETECT_LIBRARY_LIST
+    $HWACCEL_LIBRARY_NONFREE_LIST
     libmfx
-    libnpp
     mmal
     omx
 "
@@ -1816,7 +1835,9 @@ ARCH_FEATURES="
     local_aligned_8
     local_aligned_16
     local_aligned_32
+    simd_align
     simd_align_16
+    simd_align_32
 "
 
 BUILTIN_LIST="
@@ -2314,7 +2335,9 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
+simd_align_if_any="simd_align_16 simd_align_32"
 simd_align_16_if_any="altivec neon sse"
+simd_align_32_if_any="avx"
 
 # system capabilities
 symver_if_any="symver_asm_label symver_gnu_asm"
@@ -3012,8 +3035,7 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
-x11grab_indev_deps="x11grab"
-x11grab_xcb_indev_deps="libxcb"
+xcbgrab_indev_deps="libxcb"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
 
@@ -3083,6 +3105,7 @@ bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
 cover_rect_filter_deps="avcodec avformat gpl"
 cropdetect_filter_deps="gpl"
+deinterlace_qsv_filter_deps="libmfx"
 deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
@@ -3127,6 +3150,7 @@ rubberband_filter_deps="librubberband"
 sab_filter_deps="gpl swscale"
 scale2ref_filter_deps="swscale"
 scale_filter_deps="swscale"
+scale_qsv_filter_deps="libmfx"
 select_filter_select="pixelutils"
 showcqt_filter_deps="avcodec avformat swscale"
 showcqt_filter_select="fft"
@@ -3192,7 +3216,7 @@ swscale_deps="avutil"
 ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
-               setpts_filter trim_filter"
+               trim_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl2"
 ffplay_libs='$sdl2_libs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
@@ -4030,7 +4054,7 @@ probe_cc(){
         _ident=$($_cc --version 2>/dev/null | head -n1)
         _depflags='-MMD -MF $(@:.o=.d) -MT $@'
         _cflags_speed='-O3'
-        _cflags_size='-Os'
+        _cflags_size='-Oz'
     elif $_cc -V 2>&1 | grep -q Sun; then
         _type=suncc
         _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
@@ -4090,8 +4114,20 @@ probe_cc(){
         _flags='-nologo -Qdiag-error:4044,10157'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS, fp:precise for consistency
         # with MSVC which enables it by default.
-        _cflags='-D_USE_MATH_DEFINES -Qms0 -Qvec- -Qsimd- -GS -fp:precise'
+        _cflags='-Qms0 -Qvec- -Qsimd- -GS -fp:precise'
         disable stripping
+    elif $_cc -? 2>/dev/null | grep -q 'LLVM.*Linker'; then
+        # lld can emulate multiple different linkers; in ms link.exe mode,
+        # the -? parameter gives the help output which contains an identifyable
+        # string, while it gives an error in other modes.
+        _type=lld-link
+        # The link.exe mode doesn't have a switch for getting the version,
+        # but we can force it back to gnu mode and get the version from there.
+        _ident=$($_cc -flavor gnu --version)
+        _ld_o='-out:$@'
+        _flags_filter=msvc_flags
+        _ld_lib='lib%.a'
+        _ld_path='-libpath:'
     elif $_cc -nologo- 2>&1 | grep -q Microsoft; then
         _type=msvc
         _ident=$($_cc 2>&1 | head -n1)
@@ -4110,7 +4146,6 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS'
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -5034,6 +5069,7 @@ probe_libc(){
                                              vsnprintf=avpriv_vsnprintf
             fi
         fi
+        add_${pfx}cppflags -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
         # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
         # 0x601 by default unless something else is set by the user.
         # This can easily lead to us detecting functions only present
@@ -5053,6 +5089,10 @@ probe_libc(){
 #endif
 #endif
 EOF
+        if [ "$pfx" = "" ]; then
+            check_func strtoll || add_cflags -Dstrtoll=_strtoi64
+            check_func strtoull || add_cflags -Dstrtoull=_strtoui64
+        fi
     elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
     elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
@@ -5127,33 +5167,18 @@ EOF
 fi
 
 die_license_disabled() {
-    enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
+    enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
 }
 
 die_license_disabled_gpl() {
-    enabled $1 || { enabled $2 && die "$2 is incompatible with the gpl and --enable-$1 is not specified."; }
+    enabled $1 || { enabled $v && die "$v is incompatible with the gpl and --enable-$1 is not specified."; }
 }
 
-die_license_disabled gpl frei0r
-die_license_disabled gpl libcdio
-die_license_disabled gpl librubberband
-die_license_disabled gpl libsmbclient
-die_license_disabled gpl libvidstab
-die_license_disabled gpl libx264
-die_license_disabled gpl libx265
-die_license_disabled gpl libxavs
-die_license_disabled gpl libxvid
-die_license_disabled gpl x11grab
+map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
+map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
 
-die_license_disabled nonfree libnpp
-enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
-enabled gpl && die_license_disabled_gpl nonfree openssl
-
-die_license_disabled version3 gmp
-die_license_disabled version3 libopencore_amrnb
-die_license_disabled version3 libopencore_amrwb
-die_license_disabled version3 libsmbclient
-die_license_disabled version3 libvo_amrwbenc
+enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST
+map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
@@ -6012,7 +6037,7 @@ enabled xlib &&
 if ! disabled libxcb; then
     check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || {
         enabled libxcb && die "ERROR: libxcb >= 1.4 not found";
-    } && disable x11grab && enable libxcb
+    } && enable libxcb
 
 if enabled libxcb; then
     disabled libxcb_shm || {
@@ -6033,12 +6058,6 @@ if enabled libxcb; then
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
     add_extralibs $xcb_libs $xcb_shm_libs $xcb_xfixes_libs $xcb_shape_libs
 fi
-fi
-
-if enabled x11grab; then
-    enabled xlib || die "ERROR: Xlib not found"
-    require Xext X11/extensions/XShm.h XShmCreateImage -lXext
-    require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
@@ -6328,8 +6347,6 @@ elif enabled_any msvc icl; then
 __declspec($_restrict) void* foo(int);
 EOF
     fi
-    check_func strtoll || add_cflags -Dstrtoll=_strtoi64
-    check_func strtoull || add_cflags -Dstrtoull=_strtoui64
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
     # Issue has been fixed in MSVC v19.00.24218.
     check_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
@@ -6392,7 +6409,7 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     enable dxva2_lib
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled simd_align_16 && enable memalign_hack
+    enabled simd_align && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}

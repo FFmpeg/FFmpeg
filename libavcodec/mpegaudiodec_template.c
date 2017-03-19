@@ -253,7 +253,7 @@ static inline int l3_unscale(int value, int exponent)
 #endif
     if (e > (SUINT)31)
         return 0;
-    m = (m + (1 << (e - 1))) >> e;
+    m = (m + ((1U << e)>>1)) >> e;
 
     return m;
 }

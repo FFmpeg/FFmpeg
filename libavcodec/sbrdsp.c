@@ -153,8 +153,8 @@ static void sbr_autocorrelate_c(const float x[40][2], float phi[3][2][2])
     phi[2 - 1][1][1] = imag_sum1 + x[ 0][0] * x[ 1][1] - x[ 0][1] * x[ 1][0];
     phi[0    ][0][0] = real_sum1 + x[38][0] * x[39][0] + x[38][1] * x[39][1];
     phi[0    ][0][1] = imag_sum1 + x[38][0] * x[39][1] - x[38][1] * x[39][0];
-#endif
 }
+#endif
 
 static void sbr_hf_gen_c(float (*X_high)[2], const float (*X_low)[2],
                          const float alpha0[2], const float alpha1[2],

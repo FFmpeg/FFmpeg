@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* VP9 MC SIMD optimizations
+;* VP9 motion compensation SIMD optimizations
 ;*
 ;* Copyright (c) 2013 Ronald S. Bultje <rsbultje gmail com>
 ;*
@@ -440,9 +440,8 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 11, dst, dstride, src, sstride, f
     mova       m10, [filteryq+96]
 %endif
 .loop:
-    ; FIXME maybe reuse loads from previous rows, or just
-    ; more generally unroll this to prevent multiple loads of
-    ; the same data?
+    ; FIXME maybe reuse loads from previous rows, or just more generally
+    ; unroll this to prevent multiple loads of the same data?
     movh        m0, [srcq]
     movh        m1, [srcq+sstrideq]
     movh        m2, [srcq+sstrideq*2]

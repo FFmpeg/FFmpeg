@@ -802,23 +802,6 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
             return ret;
     }
 
-    if (ist->framerate.num) {
-        AVFilterContext *setpts;
-
-        snprintf(name, sizeof(name), "forcecfr_in_%d_%d",
-                 ist->file_index, ist->st->index);
-        if ((ret = avfilter_graph_create_filter(&setpts,
-                                                avfilter_get_by_name("setpts"),
-                                                name, "N", NULL,
-                                                fg->graph)) < 0)
-            return ret;
-
-        if ((ret = avfilter_link(last_filter, 0, setpts, 0)) < 0)
-            return ret;
-
-        last_filter = setpts;
-    }
-
     if (do_deinterlace) {
         AVFilterContext *yadif;
 
@@ -1037,7 +1020,6 @@ int configure_filtergraph(FilterGraph *fg)
         }
         if (strlen(args))
             args[strlen(args) - 1] = '\0';
-        fg->graph->resample_lavr_opts = av_strdup(args);
 
         e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
         if (e)

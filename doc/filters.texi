@@ -5260,14 +5260,23 @@ The accepted values are:
 @item bt709
 BT.709
 
+@item fcc
+FCC
+
 @item bt601
 BT.601
 
+@item bt470
+BT.470
+
+@item bt470bg
+BT.470BG
+
+@item smpte170m
+SMPTE-170M
+
 @item smpte240m
 SMPTE-240M
-
-@item fcc
-FCC
 
 @item bt2020
 BT.2020

@@ -848,20 +848,22 @@ end:
         avio_seek(pb, flv->datasize_offset, SEEK_SET);
         put_amf_double(pb, flv->datasize);
     }
-    if (!(flv->flags & FLV_NO_DURATION_FILESIZE)) {
-        /* update information */
-        if (avio_seek(pb, flv->duration_offset, SEEK_SET) < 0) {
-            av_log(s, AV_LOG_WARNING, "Failed to update header with correct duration.\n");
-        } else {
-            put_amf_double(pb, flv->duration / (double)1000);
-        }
-        if (avio_seek(pb, flv->filesize_offset, SEEK_SET) < 0) {
-            av_log(s, AV_LOG_WARNING, "Failed to update header with correct filesize.\n");
-        } else {
-            put_amf_double(pb, file_size);
+    if (!(flv->flags & FLV_NO_METADATA)) {
+        if (!(flv->flags & FLV_NO_DURATION_FILESIZE)) {
+            /* update information */
+            if (avio_seek(pb, flv->duration_offset, SEEK_SET) < 0) {
+                av_log(s, AV_LOG_WARNING, "Failed to update header with correct duration.\n");
+            } else {
+                put_amf_double(pb, flv->duration / (double)1000);
+            }
+            if (avio_seek(pb, flv->filesize_offset, SEEK_SET) < 0) {
+                av_log(s, AV_LOG_WARNING, "Failed to update header with correct filesize.\n");
+            } else {
+                put_amf_double(pb, file_size);
+            }
         }
     }
-    avio_seek(pb, file_size, SEEK_SET);
+
     return 0;
 }
 

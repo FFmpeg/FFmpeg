@@ -74,7 +74,7 @@
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
-#if HAVE_AVX
+#if HAVE_SIMD_ALIGN_32
 #   define STRIDE_ALIGN 32
 #elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
@@ -141,7 +141,7 @@ typedef struct AVCodecInternal {
      * Current packet as passed into the decoder, to avoid having to pass the
      * packet into every function.
      */
-    AVPacket *pkt;
+    const AVPacket *pkt;
 
     /**
      * temporary buffer used for encoders to store their bitstream
@@ -362,5 +362,11 @@ int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, i
  */
 int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
                      void **data, size_t *sei_size);
+
+/**
+ * Get an estimated video bitrate based on frame size, frame rate and coded
+ * bits per pixel.
+ */
+int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
 
 #endif /* AVCODEC_INTERNAL_H */

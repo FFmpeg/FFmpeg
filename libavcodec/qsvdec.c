@@ -106,7 +106,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
             return AVERROR(ENOMEM);
     }
 
-    if (avctx->hwaccel_context) {
+    if (avctx->pix_fmt == AV_PIX_FMT_QSV && avctx->hwaccel_context) {
         AVQSVContext *user_ctx = avctx->hwaccel_context;
         session           = user_ctx->session;
         iopattern         = user_ctx->iopattern;
@@ -176,16 +176,9 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     param.NumExtParam = q->nb_ext_buffers;
 
     ret = MFXVideoDECODE_Init(q->session, &param);
-    if (ret < 0) {
-        if (MFX_ERR_INVALID_VIDEO_PARAM==ret) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Error initializing the MFX video decoder, unsupported video\n");
-        } else {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Error initializing the MFX video decoder %d\n", ret);
-        }
-        return ff_qsv_error(ret);
-    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error initializing the MFX video decoder");
 
     q->frame_info = param.mfx.FrameInfo;
 
@@ -321,9 +314,9 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ret != MFX_ERR_MORE_DATA &&
         ret != MFX_WRN_VIDEO_PARAM_CHANGED &&
         ret != MFX_ERR_MORE_SURFACE) {
-        av_log(avctx, AV_LOG_ERROR, "Error during QSV decoding.\n");
         av_freep(&sync);
-        return ff_qsv_error(ret);
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error during QSV decoding.");
     }
 
     /* make sure we do not enter an infinite loop if the SDK

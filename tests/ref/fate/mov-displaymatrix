@@ -1,7 +1,6 @@
 [STREAM]
 [SIDE_DATA]
 side_data_type=Display Matrix
-side_data_size=36
 displaymatrix=
 00000000:            0      131072           0
 00000001:       -65536           0           0

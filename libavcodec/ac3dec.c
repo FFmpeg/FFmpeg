@@ -593,8 +593,8 @@ static void remove_dithering(AC3DecodeContext *s) {
     }
 }
 
-static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
-                                       mant_groups *m)
+static inline void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk,
+                                              int ch, mant_groups *m)
 {
     if (!s->channel_uses_aht[ch]) {
         ac3_decode_transform_coeffs_ch(s, ch, m);
@@ -613,7 +613,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
 /**
  * Decode the transform coefficients.
  */
-static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
+static inline void decode_transform_coeffs(AC3DecodeContext *s, int blk)
 {
     int ch, end;
     int got_cplchan = 0;
@@ -801,6 +801,252 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
         memcpy(band_sizes, bnd_sz, n_bands);
 }
 
+static inline int spx_strategy(AC3DecodeContext *s, int blk)
+{
+    GetBitContext *bc = &s->gbc;
+    int fbw_channels = s->fbw_channels;
+    int dst_start_freq, dst_end_freq, src_start_freq,
+        start_subband, end_subband, ch;
+
+    /* determine which channels use spx */
+    if (s->channel_mode == AC3_CHMODE_MONO) {
+        s->channel_uses_spx[1] = 1;
+    } else {
+        for (ch = 1; ch <= fbw_channels; ch++)
+            s->channel_uses_spx[ch] = get_bits1(bc);
+    }
+
+    /* get the frequency bins of the spx copy region and the spx start
+       and end subbands */
+    dst_start_freq = get_bits(bc, 2);
+    start_subband  = get_bits(bc, 3) + 2;
+    if (start_subband > 7)
+        start_subband += start_subband - 7;
+    end_subband    = get_bits(bc, 3) + 5;
+#if USE_FIXED
+    s->spx_dst_end_freq = end_freq_inv_tab[end_subband-5];
+#endif
+    if (end_subband   > 7)
+        end_subband   += end_subband   - 7;
+    dst_start_freq = dst_start_freq * 12 + 25;
+    src_start_freq = start_subband  * 12 + 25;
+    dst_end_freq   = end_subband    * 12 + 25;
+
+    /* check validity of spx ranges */
+    if (start_subband >= end_subband) {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid spectral extension "
+               "range (%d >= %d)\n", start_subband, end_subband);
+        return AVERROR_INVALIDDATA;
+    }
+    if (dst_start_freq >= src_start_freq) {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid spectral extension "
+               "copy start bin (%d >= %d)\n", dst_start_freq, src_start_freq);
+        return AVERROR_INVALIDDATA;
+    }
+
+    s->spx_dst_start_freq = dst_start_freq;
+    s->spx_src_start_freq = src_start_freq;
+    if (!USE_FIXED)
+        s->spx_dst_end_freq   = dst_end_freq;
+
+    decode_band_structure(bc, blk, s->eac3, 0,
+                          start_subband, end_subband,
+                          ff_eac3_default_spx_band_struct,
+                          &s->num_spx_bands,
+                          s->spx_band_sizes);
+    return 0;
+}
+
+static inline void spx_coordinates(AC3DecodeContext *s)
+{
+    GetBitContext *bc = &s->gbc;
+    int fbw_channels = s->fbw_channels;
+    int ch, bnd;
+
+    for (ch = 1; ch <= fbw_channels; ch++) {
+        if (s->channel_uses_spx[ch]) {
+            if (s->first_spx_coords[ch] || get_bits1(bc)) {
+                INTFLOAT spx_blend;
+                int bin, master_spx_coord;
+
+                s->first_spx_coords[ch] = 0;
+                spx_blend = AC3_SPX_BLEND(get_bits(bc, 5));
+                master_spx_coord = get_bits(bc, 2) * 3;
+
+                bin = s->spx_src_start_freq;
+                for (bnd = 0; bnd < s->num_spx_bands; bnd++) {
+                    int bandsize = s->spx_band_sizes[bnd];
+                    int spx_coord_exp, spx_coord_mant;
+                    INTFLOAT nratio, sblend, nblend;
+#if USE_FIXED
+                    /* calculate blending factors */
+                    int64_t accu = ((bin << 23) + (bandsize << 22))
+                                 * (int64_t)s->spx_dst_end_freq;
+                    nratio = (int)(accu >> 32);
+                    nratio -= spx_blend << 18;
+
+                    if (nratio < 0) {
+                        nblend = 0;
+                        sblend = 0x800000;
+                    } else if (nratio > 0x7fffff) {
+                        nblend = 14529495; // sqrt(3) in FP.23
+                        sblend = 0;
+                    } else {
+                        nblend = fixed_sqrt(nratio, 23);
+                        accu = (int64_t)nblend * 1859775393;
+                        nblend = (int)((accu + (1<<29)) >> 30);
+                        sblend = fixed_sqrt(0x800000 - nratio, 23);
+                    }
+#else
+                    float spx_coord;
+
+                    /* calculate blending factors */
+                    nratio = ((float)((bin + (bandsize >> 1))) / s->spx_dst_end_freq) - spx_blend;
+                    nratio = av_clipf(nratio, 0.0f, 1.0f);
+                    nblend = sqrtf(3.0f * nratio); // noise is scaled by sqrt(3)
+                                                   // to give unity variance
+                    sblend = sqrtf(1.0f - nratio);
+#endif
+                    bin += bandsize;
+
+                    /* decode spx coordinates */
+                    spx_coord_exp  = get_bits(bc, 4);
+                    spx_coord_mant = get_bits(bc, 2);
+                    if (spx_coord_exp == 15) spx_coord_mant <<= 1;
+                    else                     spx_coord_mant += 4;
+                    spx_coord_mant <<= (25 - spx_coord_exp - master_spx_coord);
+
+                    /* multiply noise and signal blending factors by spx coordinate */
+#if USE_FIXED
+                    accu = (int64_t)nblend * spx_coord_mant;
+                    s->spx_noise_blend[ch][bnd]  = (int)((accu + (1<<22)) >> 23);
+                    accu = (int64_t)sblend * spx_coord_mant;
+                    s->spx_signal_blend[ch][bnd] = (int)((accu + (1<<22)) >> 23);
+#else
+                    spx_coord = spx_coord_mant * (1.0f / (1 << 23));
+                    s->spx_noise_blend [ch][bnd] = nblend * spx_coord;
+                    s->spx_signal_blend[ch][bnd] = sblend * spx_coord;
+#endif
+                }
+            }
+        } else {
+            s->first_spx_coords[ch] = 1;
+        }
+    }
+}
+
+static inline int coupling_strategy(AC3DecodeContext *s, int blk,
+                                    uint8_t *bit_alloc_stages)
+{
+    GetBitContext *bc = &s->gbc;
+    int fbw_channels = s->fbw_channels;
+    int channel_mode = s->channel_mode;
+    int ch;
+
+    memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
+    if (!s->eac3)
+        s->cpl_in_use[blk] = get_bits1(bc);
+    if (s->cpl_in_use[blk]) {
+        /* coupling in use */
+        int cpl_start_subband, cpl_end_subband;
+
+        if (channel_mode < AC3_CHMODE_STEREO) {
+            av_log(s->avctx, AV_LOG_ERROR, "coupling not allowed in mono or dual-mono\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* check for enhanced coupling */
+        if (s->eac3 && get_bits1(bc)) {
+            /* TODO: parse enhanced coupling strategy info */
+            avpriv_request_sample(s->avctx, "Enhanced coupling");
+            return AVERROR_PATCHWELCOME;
+        }
+
+        /* determine which channels are coupled */
+        if (s->eac3 && s->channel_mode == AC3_CHMODE_STEREO) {
+            s->channel_in_cpl[1] = 1;
+            s->channel_in_cpl[2] = 1;
+        } else {
+            for (ch = 1; ch <= fbw_channels; ch++)
+                s->channel_in_cpl[ch] = get_bits1(bc);
+        }
+
+        /* phase flags in use */
+        if (channel_mode == AC3_CHMODE_STEREO)
+            s->phase_flags_in_use = get_bits1(bc);
+
+        /* coupling frequency range */
+        cpl_start_subband = get_bits(bc, 4);
+        cpl_end_subband = s->spx_in_use ? (s->spx_src_start_freq - 37) / 12 :
+                                          get_bits(bc, 4) + 3;
+        if (cpl_start_subband >= cpl_end_subband) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d >= %d)\n",
+                   cpl_start_subband, cpl_end_subband);
+            return AVERROR_INVALIDDATA;
+        }
+        s->start_freq[CPL_CH] = cpl_start_subband * 12 + 37;
+        s->end_freq[CPL_CH]   = cpl_end_subband   * 12 + 37;
+
+        decode_band_structure(bc, blk, s->eac3, 0, cpl_start_subband,
+                              cpl_end_subband,
+                              ff_eac3_default_cpl_band_struct,
+                              &s->num_cpl_bands, s->cpl_band_sizes);
+    } else {
+        /* coupling not in use */
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->channel_in_cpl[ch] = 0;
+            s->first_cpl_coords[ch] = 1;
+        }
+        s->first_cpl_leak = s->eac3;
+        s->phase_flags_in_use = 0;
+    }
+
+    return 0;
+}
+
+static inline int coupling_coordinates(AC3DecodeContext *s, int blk)
+{
+    GetBitContext *bc = &s->gbc;
+    int fbw_channels = s->fbw_channels;
+    int ch, bnd;
+    int cpl_coords_exist = 0;
+
+    for (ch = 1; ch <= fbw_channels; ch++) {
+        if (s->channel_in_cpl[ch]) {
+            if ((s->eac3 && s->first_cpl_coords[ch]) || get_bits1(bc)) {
+                int master_cpl_coord, cpl_coord_exp, cpl_coord_mant;
+                s->first_cpl_coords[ch] = 0;
+                cpl_coords_exist = 1;
+                master_cpl_coord = 3 * get_bits(bc, 2);
+                for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                    cpl_coord_exp  = get_bits(bc, 4);
+                    cpl_coord_mant = get_bits(bc, 4);
+                    if (cpl_coord_exp == 15)
+                        s->cpl_coords[ch][bnd] = cpl_coord_mant << 22;
+                    else
+                        s->cpl_coords[ch][bnd] = (cpl_coord_mant + 16) << 21;
+                    s->cpl_coords[ch][bnd] >>= (cpl_coord_exp + master_cpl_coord);
+                }
+            } else if (!blk) {
+                av_log(s->avctx, AV_LOG_ERROR, "new coupling coordinates must "
+                       "be present in block 0\n");
+                return AVERROR_INVALIDDATA;
+            }
+        } else {
+            /* channel not in coupling */
+            s->first_cpl_coords[ch] = 1;
+        }
+    }
+    /* phase flags */
+    if (s->channel_mode == AC3_CHMODE_STEREO && cpl_coords_exist) {
+        for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+            s->phase_flags[bnd] = s->phase_flags_in_use ? get_bits1(bc) : 0;
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Decode a single audio block from the AC-3 bitstream.
  */
@@ -808,7 +1054,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 {
     int fbw_channels = s->fbw_channels;
     int channel_mode = s->channel_mode;
-    int i, bnd, seg, ch;
+    int i, bnd, seg, ch, ret;
     int different_transforms;
     int downmix_output;
     int cpl_in_use;
@@ -853,55 +1099,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     if (s->eac3 && (!blk || get_bits1(gbc))) {
         s->spx_in_use = get_bits1(gbc);
         if (s->spx_in_use) {
-            int dst_start_freq, dst_end_freq, src_start_freq,
-                start_subband, end_subband;
-
-            /* determine which channels use spx */
-            if (s->channel_mode == AC3_CHMODE_MONO) {
-                s->channel_uses_spx[1] = 1;
-            } else {
-                for (ch = 1; ch <= fbw_channels; ch++)
-                    s->channel_uses_spx[ch] = get_bits1(gbc);
-            }
-
-            /* get the frequency bins of the spx copy region and the spx start
-               and end subbands */
-            dst_start_freq = get_bits(gbc, 2);
-            start_subband  = get_bits(gbc, 3) + 2;
-            if (start_subband > 7)
-                start_subband += start_subband - 7;
-            end_subband    = get_bits(gbc, 3) + 5;
-#if USE_FIXED
-            s->spx_dst_end_freq = end_freq_inv_tab[end_subband-5];
-#endif
-            if (end_subband   > 7)
-                end_subband   += end_subband   - 7;
-            dst_start_freq = dst_start_freq * 12 + 25;
-            src_start_freq = start_subband  * 12 + 25;
-            dst_end_freq   = end_subband    * 12 + 25;
-
-            /* check validity of spx ranges */
-            if (start_subband >= end_subband) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid spectral extension "
-                       "range (%d >= %d)\n", start_subband, end_subband);
-                return AVERROR_INVALIDDATA;
-            }
-            if (dst_start_freq >= src_start_freq) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid spectral extension "
-                       "copy start bin (%d >= %d)\n", dst_start_freq, src_start_freq);
-                return AVERROR_INVALIDDATA;
-            }
-
-            s->spx_dst_start_freq = dst_start_freq;
-            s->spx_src_start_freq = src_start_freq;
-            if (!USE_FIXED)
-                s->spx_dst_end_freq   = dst_end_freq;
-
-            decode_band_structure(gbc, blk, s->eac3, 0,
-                                  start_subband, end_subband,
-                                  ff_eac3_default_spx_band_struct,
-                                  &s->num_spx_bands,
-                                  s->spx_band_sizes);
+            if ((ret = spx_strategy(s, blk)) < 0)
+                return ret;
         }
     }
     if (!s->eac3 || !s->spx_in_use) {
@@ -913,138 +1112,13 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* spectral extension coordinates */
-    if (s->spx_in_use) {
-        for (ch = 1; ch <= fbw_channels; ch++) {
-            if (s->channel_uses_spx[ch]) {
-                if (s->first_spx_coords[ch] || get_bits1(gbc)) {
-                    INTFLOAT spx_blend;
-                    int bin, master_spx_coord;
-
-                    s->first_spx_coords[ch] = 0;
-                    spx_blend = AC3_SPX_BLEND(get_bits(gbc, 5));
-                    master_spx_coord = get_bits(gbc, 2) * 3;
-
-                    bin = s->spx_src_start_freq;
-                    for (bnd = 0; bnd < s->num_spx_bands; bnd++) {
-                        int bandsize = s->spx_band_sizes[bnd];
-                        int spx_coord_exp, spx_coord_mant;
-                        INTFLOAT nratio, sblend, nblend;
-#if USE_FIXED
-                        /* calculate blending factors */
-                        int64_t accu = ((bin << 23) + (bandsize << 22))
-                                     * (int64_t)s->spx_dst_end_freq;
-                        nratio = (int)(accu >> 32);
-                        nratio -= spx_blend << 18;
-
-                        if (nratio < 0) {
-                            nblend = 0;
-                            sblend = 0x800000;
-                        } else if (nratio > 0x7fffff) {
-                            nblend = 14529495; // sqrt(3) in FP.23
-                            sblend = 0;
-                        } else {
-                            nblend = fixed_sqrt(nratio, 23);
-                            accu = (int64_t)nblend * 1859775393;
-                            nblend = (int)((accu + (1<<29)) >> 30);
-                            sblend = fixed_sqrt(0x800000 - nratio, 23);
-                        }
-#else
-                        float spx_coord;
-
-                        /* calculate blending factors */
-                        nratio = ((float)((bin + (bandsize >> 1))) / s->spx_dst_end_freq) - spx_blend;
-                        nratio = av_clipf(nratio, 0.0f, 1.0f);
-                        nblend = sqrtf(3.0f * nratio); // noise is scaled by sqrt(3)
-                                                       // to give unity variance
-                        sblend = sqrtf(1.0f - nratio);
-#endif
-                        bin += bandsize;
-
-                        /* decode spx coordinates */
-                        spx_coord_exp  = get_bits(gbc, 4);
-                        spx_coord_mant = get_bits(gbc, 2);
-                        if (spx_coord_exp == 15) spx_coord_mant <<= 1;
-                        else                     spx_coord_mant += 4;
-                        spx_coord_mant <<= (25 - spx_coord_exp - master_spx_coord);
-
-                        /* multiply noise and signal blending factors by spx coordinate */
-#if USE_FIXED
-                        accu = (int64_t)nblend * spx_coord_mant;
-                        s->spx_noise_blend[ch][bnd]  = (int)((accu + (1<<22)) >> 23);
-                        accu = (int64_t)sblend * spx_coord_mant;
-                        s->spx_signal_blend[ch][bnd] = (int)((accu + (1<<22)) >> 23);
-#else
-                        spx_coord = spx_coord_mant * (1.0f / (1 << 23));
-                        s->spx_noise_blend [ch][bnd] = nblend * spx_coord;
-                        s->spx_signal_blend[ch][bnd] = sblend * spx_coord;
-#endif
-                    }
-                }
-            } else {
-                s->first_spx_coords[ch] = 1;
-            }
-        }
-    }
+    if (s->spx_in_use)
+        spx_coordinates(s);
 
     /* coupling strategy */
     if (s->eac3 ? s->cpl_strategy_exists[blk] : get_bits1(gbc)) {
-        memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
-        if (!s->eac3)
-            s->cpl_in_use[blk] = get_bits1(gbc);
-        if (s->cpl_in_use[blk]) {
-            /* coupling in use */
-            int cpl_start_subband, cpl_end_subband;
-
-            if (channel_mode < AC3_CHMODE_STEREO) {
-                av_log(s->avctx, AV_LOG_ERROR, "coupling not allowed in mono or dual-mono\n");
-                return AVERROR_INVALIDDATA;
-            }
-
-            /* check for enhanced coupling */
-            if (s->eac3 && get_bits1(gbc)) {
-                /* TODO: parse enhanced coupling strategy info */
-                avpriv_request_sample(s->avctx, "Enhanced coupling");
-                return AVERROR_PATCHWELCOME;
-            }
-
-            /* determine which channels are coupled */
-            if (s->eac3 && s->channel_mode == AC3_CHMODE_STEREO) {
-                s->channel_in_cpl[1] = 1;
-                s->channel_in_cpl[2] = 1;
-            } else {
-                for (ch = 1; ch <= fbw_channels; ch++)
-                    s->channel_in_cpl[ch] = get_bits1(gbc);
-            }
-
-            /* phase flags in use */
-            if (channel_mode == AC3_CHMODE_STEREO)
-                s->phase_flags_in_use = get_bits1(gbc);
-
-            /* coupling frequency range */
-            cpl_start_subband = get_bits(gbc, 4);
-            cpl_end_subband = s->spx_in_use ? (s->spx_src_start_freq - 37) / 12 :
-                                              get_bits(gbc, 4) + 3;
-            if (cpl_start_subband >= cpl_end_subband) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d >= %d)\n",
-                       cpl_start_subband, cpl_end_subband);
-                return AVERROR_INVALIDDATA;
-            }
-            s->start_freq[CPL_CH] = cpl_start_subband * 12 + 37;
-            s->end_freq[CPL_CH]   = cpl_end_subband   * 12 + 37;
-
-            decode_band_structure(gbc, blk, s->eac3, 0, cpl_start_subband,
-                                  cpl_end_subband,
-                                  ff_eac3_default_cpl_band_struct,
-                                  &s->num_cpl_bands, s->cpl_band_sizes);
-        } else {
-            /* coupling not in use */
-            for (ch = 1; ch <= fbw_channels; ch++) {
-                s->channel_in_cpl[ch] = 0;
-                s->first_cpl_coords[ch] = 1;
-            }
-            s->first_cpl_leak = s->eac3;
-            s->phase_flags_in_use = 0;
-        }
+        if ((ret = coupling_strategy(s, blk, bit_alloc_stages)) < 0)
+            return ret;
     } else if (!s->eac3) {
         if (!blk) {
             av_log(s->avctx, AV_LOG_ERROR, "new coupling strategy must "
@@ -1058,40 +1132,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* coupling coordinates */
     if (cpl_in_use) {
-        int cpl_coords_exist = 0;
-
-        for (ch = 1; ch <= fbw_channels; ch++) {
-            if (s->channel_in_cpl[ch]) {
-                if ((s->eac3 && s->first_cpl_coords[ch]) || get_bits1(gbc)) {
-                    int master_cpl_coord, cpl_coord_exp, cpl_coord_mant;
-                    s->first_cpl_coords[ch] = 0;
-                    cpl_coords_exist = 1;
-                    master_cpl_coord = 3 * get_bits(gbc, 2);
-                    for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                        cpl_coord_exp = get_bits(gbc, 4);
-                        cpl_coord_mant = get_bits(gbc, 4);
-                        if (cpl_coord_exp == 15)
-                            s->cpl_coords[ch][bnd] = cpl_coord_mant << 22;
-                        else
-                            s->cpl_coords[ch][bnd] = (cpl_coord_mant + 16) << 21;
-                        s->cpl_coords[ch][bnd] >>= (cpl_coord_exp + master_cpl_coord);
-                    }
-                } else if (!blk) {
-                    av_log(s->avctx, AV_LOG_ERROR, "new coupling coordinates must "
-                           "be present in block 0\n");
-                    return AVERROR_INVALIDDATA;
-                }
-            } else {
-                /* channel not in coupling */
-                s->first_cpl_coords[ch] = 1;
-            }
-        }
-        /* phase flags */
-        if (channel_mode == AC3_CHMODE_STEREO && cpl_coords_exist) {
-            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                s->phase_flags[bnd] = s->phase_flags_in_use? get_bits1(gbc) : 0;
-            }
-        }
+        if ((ret = coupling_coordinates(s, blk)) < 0)
+            return ret;
     }
 
     /* stereo rematrixing strategy and band structure */
@@ -1317,8 +1359,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* unused dummy data */
     if (s->skip_syntax && get_bits1(gbc)) {
         int skipl = get_bits(gbc, 9);
-        while (skipl--)
-            skip_bits(gbc, 8);
+        skip_bits_long(gbc, 8 * skipl);
     }
 
     /* unpack the transform coefficients

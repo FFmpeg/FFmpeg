@@ -1305,9 +1305,6 @@ To enable this input device during configuration you need libxcb
 installed on your system. It will be automatically detected during
 configuration.
 
-Alternatively, the configure option @option{--enable-x11grab} exists
-for legacy Xlib users.
-
 This device allows one to capture a region of an X11 display.
 
 The filename passed as input has the syntax:
@@ -1394,11 +1391,6 @@ ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_siz
 
 @item video_size
 Set the video frame size. Default value is @code{vga}.
-
-@item use_shm
-Use the MIT-SHM extension for shared memory. Default value is @code{1}.
-It may be necessary to disable it for remote displays (legacy x11grab
-only).
 
 @item grab_x
 @item grab_y

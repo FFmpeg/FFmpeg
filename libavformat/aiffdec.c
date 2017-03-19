@@ -330,9 +330,13 @@ static int aiff_read_header(AVFormatContext *s)
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND
                 goto got_sound;
         default: /* Jump */
-            if (size & 1)   /* Always even aligned */
-                size++;
             avio_skip(pb, size);
+        }
+
+        /* Skip required padding byte for odd-sized chunks. */
+        if (size & 1) {
+            filesize--;
+            avio_skip(pb, 1);
         }
     }
 

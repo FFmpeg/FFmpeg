@@ -996,6 +996,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         bytestream2_skip(&pal_gb[2], count / 3 * off * 2);
 
         off = (type_sizes[type] - 1) << 3;
+        if (off > 31U) {
+            av_log(s->avctx, AV_LOG_ERROR, "palette shift %d is out of range\n", off);
+            return AVERROR_INVALIDDATA;
+        }
+
         for (i = 0; i < count / 3; i++) {
             uint32_t p = 0xFF000000;
             p |= (ff_tget(&pal_gb[0], type, s->le) >> off) << 16;
@@ -1045,6 +1050,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         ADD_METADATA(count, "ModelTiepointTag", NULL);
         break;
     case TIFF_GEO_KEY_DIRECTORY:
+        if (s->geotag_count) {
+            avpriv_request_sample(s->avctx, "Multiple geo key directories\n");
+            return AVERROR_INVALIDDATA;
+        }
         ADD_METADATA(1, "GeoTIFF_Version", NULL);
         ADD_METADATA(2, "GeoTIFF_Key_Revision", ".");
         s->geotag_count   = ff_tget_short(&s->gb, s->le);
