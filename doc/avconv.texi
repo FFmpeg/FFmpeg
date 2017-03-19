@@ -594,6 +594,56 @@ The timestamps must be specified in ascending order.
 When doing stream copy, copy also non-key frames found at the
 beginning.
 
+@item -init_hw_device @var{type}[=@var{name}][:@var{device}[,@var{key=value}...]]
+Initialise a new hardware device of type @var{type} called @var{name}, using the
+given device parameters.
+If no name is specified it will receive a default name of the form "@var{type}%d".
+
+The meaning of @var{device} and the following arguments depends on the
+device type:
+@table @option
+
+@item cuda
+@var{device} is the number of the CUDA device.
+
+@item dxva2
+@var{device} is the number of the Direct3D 9 display adapter.
+
+@item vaapi
+@var{device} is either an X11 display name or a DRM render node.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY})
+and then the first DRM render node (@emph{/dev/dri/renderD128}).
+
+@item vdpau
+@var{device} is an X11 display name.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY}).
+
+@item qsv
+@var{device} selects a value in @samp{MFX_IMPL_*}. Allowed values are:
+@table @option
+@item auto
+@item sw
+@item hw
+@item auto_any
+@item hw_any
+@item hw2
+@item hw3
+@item hw4
+@end table
+If not specified, @samp{auto_any} is used.
+(Note that it may be easier to achieve the desired result for QSV by creating the
+platform-appropriate subdevice (@samp{dxva2} or @samp{vaapi}) and then deriving a
+QSV device from that.)
+
+@end table
+
+@item -init_hw_device @var{type}[=@var{name}]@@@var{source}
+Initialise a new hardware device of type @var{type} called @var{name},
+deriving it from the existing device with the name @var{source}.
+
+@item -init_hw_device list
+List all hardware device types supported in this build of avconv.
+
 @item -hwaccel[:@var{stream_specifier}] @var{hwaccel} (@emph{input,per-stream})
 Use hardware acceleration to decode the matching stream(s). The allowed values
 of @var{hwaccel} are:
@@ -612,6 +662,9 @@ Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item vaapi
+Use VAAPI (Video Acceleration API) hardware acceleration.
 
 @item qsv
 Use the Intel QuickSync Video acceleration for video transcoding.
@@ -636,33 +689,11 @@ useful for testing.
 @item -hwaccel_device[:@var{stream_specifier}] @var{hwaccel_device} (@emph{input,per-stream})
 Select a device to use for hardware acceleration.
 
-This option only makes sense when the @option{-hwaccel} option is also
-specified. Its exact meaning depends on the specific hardware acceleration
-method chosen.
-
-@table @option
-@item vdpau
-For VDPAU, this option specifies the X11 display/screen to use. If this option
-is not specified, the value of the @var{DISPLAY} environment variable is used
-
-@item dxva2
-For DXVA2, this option should contain the number of the display adapter to use.
-If this option is not specified, the default adapter is used.
-
-@item qsv
-For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
-are:
-@table @option
-@item auto
-@item sw
-@item hw
-@item auto_any
-@item hw_any
-@item hw2
-@item hw3
-@item hw4
-@end table
-@end table
+This option only makes sense when the @option{-hwaccel} option is also specified.
+It can either refer to an existing device created with @option{-init_hw_device}
+by name, or it can create a new device as if
+@samp{-init_hw_device} @var{type}:@var{hwaccel_device}
+were called immediately before.
 
 @item -hwaccels
 List all hardware acceleration methods supported in this build of avconv.
