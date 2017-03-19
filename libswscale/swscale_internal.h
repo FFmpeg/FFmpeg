@@ -784,30 +784,15 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
     return desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 }
 
-#if 1
-#define isPacked(x)         (       \
-           (x)==AV_PIX_FMT_PAL8        \
-        || (x)==AV_PIX_FMT_YUYV422     \
-        || (x)==AV_PIX_FMT_YVYU422     \
-        || (x)==AV_PIX_FMT_UYVY422     \
-        || (x)==AV_PIX_FMT_YA8       \
-        || (x)==AV_PIX_FMT_YA16LE      \
-        || (x)==AV_PIX_FMT_YA16BE      \
-        || (x)==AV_PIX_FMT_AYUV64LE    \
-        || (x)==AV_PIX_FMT_AYUV64BE    \
-        ||  isRGBinInt(x)           \
-        ||  isBGRinInt(x)           \
-    )
-#else
 static av_always_inline int isPacked(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
-    return ((desc->nb_components >= 2 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) ||
-            pix_fmt == AV_PIX_FMT_PAL8);
+    return (desc->nb_components >= 2 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) ||
+            pix_fmt == AV_PIX_FMT_PAL8 ||
+            pix_fmt == AV_PIX_FMT_MONOBLACK || pix_fmt == AV_PIX_FMT_MONOWHITE;
 }
 
-#endif
 static av_always_inline int isPlanar(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);

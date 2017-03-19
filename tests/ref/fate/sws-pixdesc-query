@@ -594,6 +594,7 @@ Packed:
   monob
   pal8
   uyvy422
+  uyyvyy411
   bgr8
   bgr4
   bgr4_byte
@@ -621,6 +622,8 @@ Packed:
   ya8
   bgr48be
   bgr48le
+  xyz12le
+  xyz12be
   rgba64be
   rgba64le
   bgra64be
@@ -628,6 +631,22 @@ Packed:
   yvyu422
   ya16be
   ya16le
+  0rgb
+  rgb0
+  0bgr
+  bgr0
+  bayer_bggr8
+  bayer_rggb8
+  bayer_gbrg8
+  bayer_grbg8
+  bayer_bggr16le
+  bayer_bggr16be
+  bayer_rggb16le
+  bayer_rggb16be
+  bayer_gbrg16le
+  bayer_gbrg16be
+  bayer_grbg16le
+  bayer_grbg16be
   ayuv64le
   ayuv64be
 
