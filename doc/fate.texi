@@ -197,6 +197,11 @@ through @command{ssh}.
 
 @item GEN
 Set to @samp{1} to generate the missing or mismatched references.
+
+@item HWACCEL
+Specify which hardware acceleration to use while running regression tests,
+by default @samp{none} is used.
+
 @end table
 
 @section Examples
