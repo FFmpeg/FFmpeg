@@ -539,9 +539,10 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
 
-    if (mode_num > 0) {
+    if (mode_num > 0 || cctx->format_code) {
         if (ff_decklink_set_format(avctx, DIRECTION_IN, mode_num) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Could not set mode %d for %s\n", mode_num, fname);
+            av_log(avctx, AV_LOG_ERROR, "Could not set mode number %d or format code %s for %s\n",
+                mode_num, (cctx->format_code) ? cctx->format_code : "(unset)", fname);
             ret = AVERROR(EIO);
             goto error;
         }

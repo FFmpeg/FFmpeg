@@ -47,6 +47,7 @@ struct decklink_cctx {
     int audio_input;
     int video_input;
     int draw_bars;
+    char *format_code;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */
