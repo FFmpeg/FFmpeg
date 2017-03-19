@@ -252,8 +252,9 @@ const char *av_hwdevice_get_type_name(enum AVHWDeviceType type);
 enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev);
 
 /**
- * Allocate an AVHWDeviceContext for a given pixel format.
+ * Allocate an AVHWDeviceContext for a given hardware type.
  *
+ * @param type the type of the hardware device to allocate.
  * @return a reference to the newly created AVHWDeviceContext on success or NULL
  *         on failure.
  */
