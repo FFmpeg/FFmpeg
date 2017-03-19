@@ -435,8 +435,8 @@ static void copy_chroma(AVFrame *dst, AVFrame *src, int width, int height)
     }
 }
 
-static void fade(uint8_t *dst, int dst_linesize,
-                 const uint8_t *src, int src_linesize,
+static void fade(uint8_t *dst, ptrdiff_t dst_linesize,
+                 const uint8_t *src, ptrdiff_t src_linesize,
                  int width, int height,
                  int alpha, int beta)
 {
@@ -1468,7 +1468,7 @@ void decode_mb_coeffs(VP8Context *s, VP8ThreadData *td, VP56RangeCoder *c,
 static av_always_inline
 void backup_mb_border(uint8_t *top_border, uint8_t *src_y,
                       uint8_t *src_cb, uint8_t *src_cr,
-                      int linesize, int uvlinesize, int simple)
+                      ptrdiff_t linesize, ptrdiff_t uvlinesize, int simple)
 {
     AV_COPY128(top_border, src_y + 15 * linesize);
     if (!simple) {
@@ -1479,7 +1479,7 @@ void backup_mb_border(uint8_t *top_border, uint8_t *src_y,
 
 static av_always_inline
 void xchg_mb_border(uint8_t *top_border, uint8_t *src_y, uint8_t *src_cb,
-                    uint8_t *src_cr, int linesize, int uvlinesize, int mb_x,
+                    uint8_t *src_cr, ptrdiff_t linesize, ptrdiff_t uvlinesize, int mb_x,
                     int mb_y, int mb_width, int simple, int xchg)
 {
     uint8_t *top_border_m1 = top_border - 32;     // for TL prediction
@@ -1632,7 +1632,8 @@ void intra_predict(VP8Context *s, VP8ThreadData *td, uint8_t *dst[3],
         for (y = 0; y < 4; y++) {
             uint8_t *topright = ptr + 4 - s->linesize;
             for (x = 0; x < 4; x++) {
-                int copy = 0, linesize = s->linesize;
+                int copy = 0;
+                ptrdiff_t linesize = s->linesize;
                 uint8_t *dst = ptr + 4 * x;
                 LOCAL_ALIGNED(4, uint8_t, copy_dst, [5 * 8]);
 
@@ -1738,7 +1739,7 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
     uint8_t *src = ref->f->data[0];
 
     if (AV_RN32A(mv)) {
-        int src_linesize = linesize;
+        ptrdiff_t src_linesize = linesize;
 
         int mx = (mv->x * 2) & 7, mx_idx = subpel_idx[0][mx];
         int my = (mv->y * 2) & 7, my_idx = subpel_idx[0][my];
@@ -2084,8 +2085,8 @@ void filter_mb(VP8Context *s, uint8_t *dst[3], VP8FilterStrength *f,
     int filter_level = f->filter_level;
     int inner_limit = f->inner_limit;
     int inner_filter = f->inner_filter;
-    int linesize = s->linesize;
-    int uvlinesize = s->uvlinesize;
+    ptrdiff_t linesize   = s->linesize;
+    ptrdiff_t uvlinesize = s->uvlinesize;
     static const uint8_t hev_thresh_lut[2][64] = {
         { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
           2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -2171,7 +2172,7 @@ void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f,
     int filter_level = f->filter_level;
     int inner_limit  = f->inner_limit;
     int inner_filter = f->inner_filter;
-    int linesize     = s->linesize;
+    ptrdiff_t linesize = s->linesize;
 
     if (!filter_level)
         return;

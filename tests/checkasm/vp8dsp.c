@@ -171,7 +171,7 @@ static void check_idct_dc4(void)
     for (chroma = 0; chroma <= 1; chroma++) {
         void (*idct4dc)(uint8_t *, int16_t[4][16], ptrdiff_t) = chroma ? d.vp8_idct_dc_add4uv : d.vp8_idct_dc_add4y;
         if (check_func(idct4dc, "vp8_idct_dc_add4%s", chroma ? "uv" : "y")) {
-            int stride = chroma ? 8 : 16;
+            ptrdiff_t stride = chroma ? 8 : 16;
             int w      = chroma ? 2 : 4;
             for (i = 0; i < 4; i++) {
                 int blockx = 4 * (i % w);
@@ -365,7 +365,7 @@ static void randomize_loopfilter_buffers(int lineoff, int str,
 }
 
 // Fill the buffer with random pixels
-static void fill_loopfilter_buffers(uint8_t *buf, int stride, int w, int h)
+static void fill_loopfilter_buffers(uint8_t *buf, ptrdiff_t stride, int w, int h)
 {
     int x, y;
     for (y = 0; y < h; y++)
