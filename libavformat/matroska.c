@@ -77,6 +77,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"S_HDMV/PGS"       , AV_CODEC_ID_HDMV_PGS_SUBTITLE},
     {"S_HDMV/TEXTST"    , AV_CODEC_ID_HDMV_TEXT_SUBTITLE},
 
+    {"V_AV1"            , AV_CODEC_ID_AV1},
     {"V_DIRAC"          , AV_CODEC_ID_DIRAC},
     {"V_FFV1"           , AV_CODEC_ID_FFV1},
     {"V_MJPEG"          , AV_CODEC_ID_MJPEG},
