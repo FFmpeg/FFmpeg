@@ -58,7 +58,8 @@ static int vp6_adjust(int v, int t)
 
 
 #define VP56_EDGE_FILTER(pfx, suf, pix_inc, line_inc)                   \
-static void pfx##_edge_filter_##suf(uint8_t *yuv, int stride, int t)    \
+static void pfx ## _edge_filter_ ## suf(uint8_t *yuv, ptrdiff_t stride, \
+                                        int t)                          \
 {                                                                       \
     int pix2_inc = 2 * pix_inc;                                         \
     int i, v;                                                           \
