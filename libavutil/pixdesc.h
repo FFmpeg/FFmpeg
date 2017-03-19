@@ -173,6 +173,11 @@ typedef struct AVPixFmtDescriptor {
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
 
 /**
+ * The pixel format is following a Bayer pattern
+ */
+#define AV_PIX_FMT_FLAG_BAYER        (1 << 8)
+
+/**
  * Return the number of bits per pixel used by the pixel format
  * described by pixdesc. Note that this is not the same as the number
  * of bits per sample.
