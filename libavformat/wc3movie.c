@@ -242,9 +242,6 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case TEXT_TAG:
             /* subtitle chunk */
-#if 0
-            avio_skip(pb, size);
-#else
             if ((unsigned)size > sizeof(text) || (ret = avio_read(pb, text, size)) != size)
                 ret = AVERROR(EIO);
             else {
@@ -262,7 +259,6 @@ static int wc3_read_packet(AVFormatContext *s,
                     return AVERROR_INVALIDDATA;
                 av_log (s, AV_LOG_DEBUG, "  fronsay: %s\n", &text[i + 1]);
             }
-#endif
             break;
 
         case AUDI_TAG:
