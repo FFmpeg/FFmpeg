@@ -545,7 +545,7 @@ static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
  */
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const struct dec_2dvlc *r, int esc_golomb_order,
-                                 int qp, uint8_t *dst, int stride)
+                                 int qp, uint8_t *dst, ptrdiff_t stride)
 {
     int i, esc_code, level, mask, ret;
     unsigned int level_code, run;
