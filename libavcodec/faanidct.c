@@ -62,17 +62,8 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest, int s
         od07=  s17 + s53;
         od25= (s17 - s53)*(2*A4);
 
-#if 0 //these 2 are equivalent
-        {
-            FLOAT tmp0;
-            tmp0 = (d17 + d53) *  (2 * A2);
-            od34 =  d17        *  (2 * B6) - tmp0;
-            od16 =  d53        * (-2 * B2) + tmp0;
-        }
-#else
         od34=  d17*(2*(B6-A2)) - d53*(2*A2);
         od16=  d53*(2*(A2-B2)) + d17*(2*A2);
-#endif
 
         od16 -= od07;
         od25 -= od16;
