@@ -698,9 +698,8 @@ static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
            pix_fmt != AV_PIX_FMT_MONOWHITE;
 }
 
-#define isRGBinInt(x) \
-    (           \
-     (x) == AV_PIX_FMT_RGB48BE     ||  \
+#define isRGBinInt(x)                  \
+    ((x) == AV_PIX_FMT_RGB48BE     ||  \
      (x) == AV_PIX_FMT_RGB48LE     ||  \
      (x) == AV_PIX_FMT_RGB32       ||  \
      (x) == AV_PIX_FMT_RGB32_1     ||  \
@@ -717,11 +716,10 @@ static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
      (x) == AV_PIX_FMT_RGBA64BE    ||  \
      (x) == AV_PIX_FMT_RGBA64LE    ||  \
      (x) == AV_PIX_FMT_MONOBLACK   ||  \
-     (x) == AV_PIX_FMT_MONOWHITE   \
-    )
-#define isBGRinInt(x) \
-    (           \
-     (x) == AV_PIX_FMT_BGR48BE     ||  \
+     (x) == AV_PIX_FMT_MONOWHITE)
+
+#define isBGRinInt(x)                  \
+    ((x) == AV_PIX_FMT_BGR48BE     ||  \
      (x) == AV_PIX_FMT_BGR48LE     ||  \
      (x) == AV_PIX_FMT_BGR32       ||  \
      (x) == AV_PIX_FMT_BGR32_1     ||  \
@@ -738,8 +736,7 @@ static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
      (x) == AV_PIX_FMT_BGRA64BE    ||  \
      (x) == AV_PIX_FMT_BGRA64LE    ||  \
      (x) == AV_PIX_FMT_MONOBLACK   ||  \
-     (x) == AV_PIX_FMT_MONOWHITE   \
-    )
+     (x) == AV_PIX_FMT_MONOWHITE)
 
 static av_always_inline int isBayer(enum AVPixelFormat pix_fmt)
 {
