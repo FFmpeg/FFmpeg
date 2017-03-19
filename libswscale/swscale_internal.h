@@ -767,13 +767,13 @@ static av_always_inline int isBayer(enum AVPixelFormat pix_fmt)
     return !!(desc->flags & AV_PIX_FMT_FLAG_BAYER);
 }
 
-#define isAnyRGB(x) \
-    (           \
-          isBayer(x)          ||    \
-          isRGBinInt(x)       ||    \
-          isBGRinInt(x)       ||    \
-          isRGB(x)      \
-    )
+static av_always_inline int isAnyRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
+            pix_fmt == AV_PIX_FMT_MONOBLACK || pix_fmt == AV_PIX_FMT_MONOWHITE;
+}
 
 static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
 {
