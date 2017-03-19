@@ -36,8 +36,6 @@ DECLARE_WRAPPER(isRGB)
 DECLARE_WRAPPER(isGray)
 DECLARE_WRAPPER(isRGBinInt)
 DECLARE_WRAPPER(isBGRinInt)
-DECLARE_WRAPPER(isRGBinBytes)
-DECLARE_WRAPPER(isBGRinBytes)
 DECLARE_WRAPPER(isBayer)
 DECLARE_WRAPPER(isAnyRGB)
 DECLARE_WRAPPER(isALPHA)
@@ -60,8 +58,6 @@ static const struct {
     {"Gray",        isGray_func},
     {"RGBinInt",    isRGBinInt_func},
     {"BGRinInt",    isBGRinInt_func},
-    {"RGBinBytes",  isRGBinBytes_func},
-    {"BGRinBytes",  isBGRinBytes_func},
     {"Bayer",       isBayer_func},
     {"AnyRGB",      isAnyRGB_func},
     {"ALPHA",       isALPHA_func},

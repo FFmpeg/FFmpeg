@@ -741,25 +741,6 @@ static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
      (x) == AV_PIX_FMT_MONOWHITE   \
     )
 
-#define isRGBinBytes(x) (           \
-           (x) == AV_PIX_FMT_RGB48BE     \
-        || (x) == AV_PIX_FMT_RGB48LE     \
-        || (x) == AV_PIX_FMT_RGBA64BE    \
-        || (x) == AV_PIX_FMT_RGBA64LE    \
-        || (x) == AV_PIX_FMT_RGBA        \
-        || (x) == AV_PIX_FMT_ARGB        \
-        || (x) == AV_PIX_FMT_RGB24       \
-    )
-#define isBGRinBytes(x) (           \
-           (x) == AV_PIX_FMT_BGR48BE     \
-        || (x) == AV_PIX_FMT_BGR48LE     \
-        || (x) == AV_PIX_FMT_BGRA64BE    \
-        || (x) == AV_PIX_FMT_BGRA64LE    \
-        || (x) == AV_PIX_FMT_BGRA        \
-        || (x) == AV_PIX_FMT_ABGR        \
-        || (x) == AV_PIX_FMT_BGR24       \
-    )
-
 static av_always_inline int isBayer(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);

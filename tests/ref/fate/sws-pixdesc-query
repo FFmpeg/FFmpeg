@@ -440,24 +440,6 @@ BGRinInt:
   bgra64be
   bgra64le
 
-RGBinBytes:
-  rgb24
-  argb
-  rgba
-  rgb48be
-  rgb48le
-  rgba64be
-  rgba64le
-
-BGRinBytes:
-  bgr24
-  abgr
-  bgra
-  bgr48be
-  bgr48le
-  bgra64be
-  bgra64le
-
 Bayer:
   bayer_bggr8
   bayer_rggb8
