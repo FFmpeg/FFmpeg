@@ -687,23 +687,16 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     return (desc->flags & AV_PIX_FMT_FLAG_RGB);
 }
 
-#if 0 // FIXME
-#define isGray(x) \
-    (!(av_pix_fmt_desc_get(x)->flags & AV_PIX_FMT_FLAG_PAL) && \
-     av_pix_fmt_desc_get(x)->nb_components <= 2)
-#else
-#define isGray(x)                      \
-    ((x) == AV_PIX_FMT_GRAY8       ||  \
-     (x) == AV_PIX_FMT_YA8         ||  \
-     (x) == AV_PIX_FMT_GRAY10BE    ||  \
-     (x) == AV_PIX_FMT_GRAY10LE    ||  \
-     (x) == AV_PIX_FMT_GRAY12BE    ||  \
-     (x) == AV_PIX_FMT_GRAY12LE    ||  \
-     (x) == AV_PIX_FMT_GRAY16BE    ||  \
-     (x) == AV_PIX_FMT_GRAY16LE    ||  \
-     (x) == AV_PIX_FMT_YA16BE      ||  \
-     (x) == AV_PIX_FMT_YA16LE)
-#endif
+static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !(desc->flags & AV_PIX_FMT_FLAG_PAL) &&
+           !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+           desc->nb_components <= 2 &&
+           pix_fmt != AV_PIX_FMT_MONOBLACK &&
+           pix_fmt != AV_PIX_FMT_MONOWHITE;
+}
 
 #define isRGBinInt(x) \
     (           \
