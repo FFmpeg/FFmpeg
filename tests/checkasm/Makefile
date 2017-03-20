@@ -1,5 +1,6 @@
 # libavcodec tests
 # subsystems
+AVCODECOBJS-$(CONFIG_BLOCKDSP)          += blockdsp.o
 AVCODECOBJS-$(CONFIG_BSWAPDSP)          += bswapdsp.o
 AVCODECOBJS-$(CONFIG_FLACDSP)           += flacdsp.o
 AVCODECOBJS-$(CONFIG_FMTCONVERT)        += fmtconvert.o

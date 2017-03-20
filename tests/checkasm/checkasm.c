@@ -68,6 +68,9 @@ static const struct {
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
     #endif
+    #if CONFIG_BLOCKDSP
+        { "blockdsp", checkasm_check_blockdsp },
+    #endif
     #if CONFIG_BSWAPDSP
         { "bswapdsp", checkasm_check_bswapdsp },
     #endif
