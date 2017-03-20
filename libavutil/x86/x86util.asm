@@ -833,7 +833,9 @@
 %if cpuflag(avx)
     vbroadcastss %1, %2
 %else ; sse
+%ifnidn %1, %2
     movss        %1, %2
+%endif
     shufps       %1, %1, 0
 %endif
 %endmacro
