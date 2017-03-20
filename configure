@@ -1702,7 +1702,6 @@ CONFIG_LIST="
     memory_poisoning
     neon_clobber_test
     pic
-    pod2man
     raise_major
     thumb
     valgrind_backtrace
