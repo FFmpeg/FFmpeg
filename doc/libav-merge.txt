@@ -94,6 +94,7 @@ Stuff that didn't reach the codebase:
   - a853388d2 hevc: change the stride of the MC buffer to be in bytes instead of elements
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
+- VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
 
 Collateral damage that needs work locally:
 ------------------------------------------
