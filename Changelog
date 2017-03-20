@@ -27,6 +27,7 @@ version <next>:
 - ScreenPressor decoder
 - incomplete ClearVideo decoder
 - Intel QSV video scaling and deinterlacing filters
+- Support MOV with multiple sample description tables
 - XPM decoder
 - Removed the legacy X11 screen grabber, use XCB instead
 
