@@ -1038,7 +1038,8 @@ static void compute_stereo(MPADecodeContext *s, GranuleDef *g0, GranuleDef *g1)
 {
     int i, j, k, l;
     int sf_max, sf, len, non_zero_found;
-    INTFLOAT (*is_tab)[16], *tab0, *tab1, tmp0, tmp1, v1, v2;
+    INTFLOAT (*is_tab)[16], *tab0, *tab1, v1, v2;
+    SUINTFLOAT tmp0, tmp1;
     int non_zero_found_short[3];
 
     /* intensity stereo */
