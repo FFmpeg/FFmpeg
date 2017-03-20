@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2016-03-20 - xxxxxxx - lavu 55.50.100 / 55.21.0 - imgutils.h
+  Add av_image_copy_uc_from(), a version of av_image_copy() for copying
+  from GPU mapped memory.
+
 2017-03-20 - 9c2436e - lavu 55.49.100 - pixdesc.h
   Add AV_PIX_FMT_FLAG_BAYER pixel format flag.
 
