@@ -242,8 +242,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
-                              int step, int stride, int width, int height)
+static void mangle_rgb_planes(uint8_t *dst[4], ptrdiff_t dst_stride,
+                              uint8_t *src, int step, ptrdiff_t stride,
+                              int width, int height)
 {
     int i, j;
     int k = 2 * dst_stride;
@@ -276,7 +277,7 @@ static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
 }
 
 /* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, int stride,
+static void left_predict(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                          int width, int height)
 {
     int i, j;
@@ -296,8 +297,8 @@ static void left_predict(uint8_t *src, uint8_t *dst, int stride,
 #undef B
 
 /* Write data to a plane with median prediction */
-static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
-                           int width, int height)
+static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst,
+                           ptrdiff_t stride, int width, int height)
 {
     int i, j;
     int A, B;
@@ -398,7 +399,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
-                        uint8_t *dst, int stride, int plane_no,
+                        uint8_t *dst, ptrdiff_t stride, int plane_no,
                         int width, int height, PutByteContext *pb)
 {
     UtvideoContext *c        = avctx->priv_data;

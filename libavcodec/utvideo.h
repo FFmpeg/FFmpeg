@@ -81,7 +81,7 @@ typedef struct UtvideoContext {
     int      frame_pred;
     int      pro;
 
-    int      slice_stride;
+    ptrdiff_t slice_stride;
     uint8_t *slice_bits, *slice_buffer[4];
     int      slice_bits_size;
 } UtvideoContext;

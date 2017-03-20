@@ -124,7 +124,7 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 }
 
 static int decode_plane10(UtvideoContext *c, int plane_no,
-                          uint16_t *dst, int step, int stride,
+                          uint16_t *dst, int step, ptrdiff_t stride,
                           int width, int height,
                           const uint8_t *src, const uint8_t *huff,
                           int use_pred)
@@ -229,7 +229,7 @@ fail:
 }
 
 static int decode_plane(UtvideoContext *c, int plane_no,
-                        uint8_t *dst, int step, int stride,
+                        uint8_t *dst, int step, ptrdiff_t stride,
                         int width, int height,
                         const uint8_t *src, int use_pred)
 {
@@ -333,8 +333,8 @@ fail:
     return AVERROR_INVALIDDATA;
 }
 
-static void restore_rgb_planes(uint8_t *src, int step, int stride, int width,
-                               int height)
+static void restore_rgb_planes(uint8_t *src, int step, ptrdiff_t stride,
+                               int width, int height)
 {
     int i, j;
     uint8_t r, g, b;
@@ -377,7 +377,7 @@ static void restore_rgb_planes10(AVFrame *frame, int width, int height)
 #undef B
 #undef C
 
-static void restore_median_planar(UtvideoContext *c, uint8_t *src, int stride,
+static void restore_median_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t stride,
                                   int width, int height, int slices, int rmode)
 {
     int i, j, slice;
@@ -425,7 +425,7 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, int stride,
  * so restoring function should take care of possible padding between
  * two parts of the same "line".
  */
-static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride,
+static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_t stride,
                                      int width, int height, int slices, int rmode)
 {
     int i, j, slice;
@@ -433,7 +433,7 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride
     uint8_t *bsrc;
     int slice_start, slice_height;
     const int cmask   = ~(rmode ? 3 : 1);
-    const int stride2 = stride << 1;
+    const ptrdiff_t stride2 = stride << 1;
 
     for (slice = 0; slice < slices; slice++) {
         slice_start    = ((slice * height) / slices) & cmask;
@@ -476,7 +476,7 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, int stride
     }
 }
 
-static void restore_median_packed(uint8_t *src, int step, int stride,
+static void restore_median_packed(uint8_t *src, int step, ptrdiff_t stride,
                                   int width, int height, int slices, int rmode)
 {
     int i, j, slice;
@@ -532,7 +532,7 @@ static void restore_median_packed(uint8_t *src, int step, int stride,
  * so restoring function should take care of possible padding between
  * two parts of the same "line".
  */
-static void restore_median_packed_il(uint8_t *src, int step, int stride,
+static void restore_median_packed_il(uint8_t *src, int step, ptrdiff_t stride,
                                      int width, int height, int slices, int rmode)
 {
     int i, j, slice;
@@ -540,7 +540,7 @@ static void restore_median_packed_il(uint8_t *src, int step, int stride,
     uint8_t *bsrc;
     int slice_start, slice_height;
     const int cmask   = ~(rmode ? 3 : 1);
-    const int stride2 = stride << 1;
+    const ptrdiff_t stride2 = stride << 1;
 
     for (slice = 0; slice < slices; slice++) {
         slice_start    = ((slice * height) / slices) & cmask;
