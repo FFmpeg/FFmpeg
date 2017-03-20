@@ -26,7 +26,7 @@ SECTION .text
 %macro SCALARPRODUCT 0
 ; int ff_scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
 cglobal scalarproduct_int16, 3,3,3, v1, v2, order
-    shl orderq, 1
+    add orderd, orderd
     add v1q, orderq
     add v2q, orderq
     neg orderq
