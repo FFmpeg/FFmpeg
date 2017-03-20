@@ -24,14 +24,14 @@
  * RTMFP protocol based on https://github.com/MonaSolutions/librtmfp librtmfp
  */
 
-/*#include "libavutil/avstring.h"
-#include "libavutil/mathematics.h"*/
+#include "libavutil/avstring.h"
+//#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #if CONFIG_NETWORK
 #include "network.h"
 #endif
-#include <sys/timeb.h>
+#include <sys/time.h>
 
 #include <librtmfp/librtmfp.h>
 
@@ -58,24 +58,24 @@ static void rtmfp_log(unsigned int level, const char* fileName, long line, const
     const char* strLevel = "";
     time_t today2 ;
     struct tm *today = NULL;
-    struct timeb msec;
+    struct timeval tv;
 
     switch (level) {
     default:
     case 1: level = AV_LOG_FATAL; strLevel = "FATAL"; break;
     case 2:
-    case 3: level = AV_LOG_ERROR; strLevel = "ERROR";  break;
+    case 3: level = AV_LOG_ERROR; strLevel = "ERROR"; break;
     case 4: level = AV_LOG_WARNING; strLevel = "WARN"; break;
     case 5:
-    case 6: level = AV_LOG_INFO; strLevel = "INFO";   break;
-    case 7: level = AV_LOG_DEBUG; strLevel = "DEBUG";  break;
+    case 6: level = AV_LOG_INFO; strLevel = "INFO"; break;
+    case 7: level = AV_LOG_DEBUG; strLevel = "DEBUG"; break;
     case 8: level = AV_LOG_TRACE; strLevel = "TRACE"; break;
     }
 
     today2 = time(NULL);
     today = localtime(&today2);
-    ftime(&msec);
-    av_log(NULL, level, "%.2d:%.2d:%.2d.%d [%s] %s\n", today->tm_hour, today->tm_min, today->tm_sec, msec.millitm / 100, strLevel, message);
+    gettimeofday(&tv, NULL);
+    av_log(NULL, level, "%.2d:%.2d:%.2d.%d [%s] %s\n", today->tm_hour, today->tm_min, today->tm_sec, (int)((tv.tv_usec / 1000) / 100), strLevel, message);
 }
 
 /*static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
@@ -149,22 +149,22 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     token = strtok(NULL, " ");
     while( token != NULL ) {
 
-        if (strlen(token) > 9 && strncasecmp(token, "netgroup=", 9) == 0) // groupspec for NetGroup
-            ctx->netgroup = token + 9;
-        else if (strlen(token) > 7 && strncasecmp(token, "peerId=", 7) == 0) // peerId
-            ctx->peerId = token + 7;
-        else if (strcmp(token, "p2pPublishing=true") == 0) // is P2P publisher?
+        if (av_strncasecmp(token, "netgroup=", 9) == 0) // groupspec for NetGroup
+            ctx->netgroup = token + sizeof("netgroup=");
+        else if (av_strncasecmp(token, "peerId=", 7) == 0) // peerId
+            ctx->peerId = token + sizeof("peerId=");
+        else if (av_strcasecmp(token, "p2pPublishing=true") == 0) // is P2P publisher?
             ctx->p2pPublishing = 1;
-        else if (strcmp(token, "audioUnbuffered=true") == 0) // audio unbuffered?
+        else if (av_strcasecmp(token, "audioUnbuffered=true") == 0) // audio unbuffered?
             ctx->audioUnbuffered = 1;
-        else if (strcmp(token, "videoUnbuffered=true") == 0) // video unbuffered?
+        else if (av_strcasecmp(token, "videoUnbuffered=true") == 0) // video unbuffered?
             ctx->videoUnbuffered = 1;
-        else if (strlen(token) > 13 && strncasecmp(token, "updatePeriod=", 13) == 0) // NetGroup update period option
-            ctx->updatePeriod = atoi(token + 13);
-        else if (strlen(token) > 15 && strncasecmp(token, "windowDuration=", 15) == 0) // NetGroup window duration option
-            ctx->windowDuration = atoi(token + 15);
-        else if (strlen(token) > 10 && strncasecmp(token, "pushLimit=", 10) == 0) // NetGroup push limit option
-            ctx->pushLimit = atoi(token + 10);
+        else if (av_strncasecmp(token, "updatePeriod=", 13) == 0) // NetGroup update period option
+            ctx->updatePeriod = atoi(token + sizeof("updatePeriod="));
+        else if (av_strncasecmp(token, "windowDuration=", 15) == 0) // NetGroup window duration option
+            ctx->windowDuration = atoi(token + sizeof("windowDuration="));
+        else if (av_strncasecmp(token, "pushLimit=", 10) == 0) // NetGroup push limit option
+            ctx->pushLimit = atoi(token + sizeof("pushLimit="));
         else
             av_log(NULL, AV_LOG_INFO, "Unknown inline argument : %s\n", token);
 
