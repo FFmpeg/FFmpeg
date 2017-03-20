@@ -121,7 +121,7 @@ static void sum_square_butterfly(AC3EncodeContext *s, float sum[4],
 static void clip_coefficients(AudioDSPContext *adsp, float *coef,
                               unsigned int len)
 {
-    adsp->vector_clipf(coef, coef, COEF_MIN, COEF_MAX, len);
+    adsp->vector_clipf(coef, coef, len, COEF_MIN, COEF_MAX);
 }
 
 

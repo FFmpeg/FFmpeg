@@ -24,9 +24,8 @@
 function ff_vector_clipf_neon, export=1
 VFP     vdup.32         q1,  d0[1]
 VFP     vdup.32         q0,  d0[0]
-NOVFP   vdup.32         q0,  r2
-NOVFP   vdup.32         q1,  r3
-NOVFP   ldr             r2,  [sp]
+NOVFP   vdup.32         q0,  r3
+NOVFP   vld1.32         {d2[],d3[]}, [sp]
         vld1.f32        {q2},[r1,:128]!
         vmin.f32        q10, q2,  q1
         vld1.f32        {q3},[r1,:128]!

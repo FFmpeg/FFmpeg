@@ -120,7 +120,7 @@ void checkasm_check_audiodsp(void)
         int i, len;
 
         declare_func_emms(AV_CPU_FLAG_MMX, void, float *dst, const float *src,
-                          float min, float max, unsigned int len);
+                          int len, float min, float max);
 
         val1 = (float)rnd() / (UINT_MAX >> 1) - 1.0f;
         val2 = (float)rnd() / (UINT_MAX >> 1) - 1.0f;
@@ -133,13 +133,13 @@ void checkasm_check_audiodsp(void)
         len = rnd() % 128;
         len = 16 * FFMAX(len, 1);
 
-        call_ref(dst0, src, min, max, len);
-        call_new(dst1, src, min, max, len);
+        call_ref(dst0, src, len, min, max);
+        call_new(dst1, src, len, min, max);
         for (i = 0; i < len; i++) {
             if (!float_near_ulp_array(dst0, dst1, 3, len))
                 fail();
         }
-        bench_new(dst1, src, min, max, MAX_SIZE);
+        bench_new(dst1, src, MAX_SIZE, min, max);
     }
 
     report("audiodsp");

@@ -132,46 +132,45 @@ VECTOR_CLIP_INT32 11, 1, 1, 0
 VECTOR_CLIP_INT32 6, 1, 0, 0
 %endif
 
-;-----------------------------------------------------
-;void ff_vector_clipf(float *dst, const float *src,
-;                     float min, float max, int len)
-;-----------------------------------------------------
+; void ff_vector_clipf_sse(float *dst, const float *src,
+;                          int len, float min, float max)
 INIT_XMM sse
-%if UNIX64
-cglobal vector_clipf, 3,3,6, dst, src, len
-%else
-cglobal vector_clipf, 5,5,6, dst, src, min, max, len
+cglobal vector_clipf, 3, 3, 6, dst, src, len, min, max
+%if ARCH_X86_32
+    VBROADCASTSS m0, minm
+    VBROADCASTSS m1, maxm
+%elif WIN64
+    VBROADCASTSS m0, m3
+    VBROADCASTSS m1, maxm
+%else ; 64bit sysv
+    VBROADCASTSS m0, m0
+    VBROADCASTSS m1, m1
 %endif
-%if WIN64
-    SWAP 0, 2
-    SWAP 1, 3
-%elif ARCH_X86_32
-    movss   m0, minm
-    movss   m1, maxm
-%endif
-    SPLATD  m0
-    SPLATD  m1
-        shl lend, 2
-        add srcq, lenq
-        add dstq, lenq
-        neg lenq
-.loop:
-    mova    m2,  [srcq+lenq+mmsize*0]
-    mova    m3,  [srcq+lenq+mmsize*1]
-    mova    m4,  [srcq+lenq+mmsize*2]
-    mova    m5,  [srcq+lenq+mmsize*3]
-    maxps   m2, m0
-    maxps   m3, m0
-    maxps   m4, m0
-    maxps   m5, m0
-    minps   m2, m1
-    minps   m3, m1
-    minps   m4, m1
-    minps   m5, m1
-    mova    [dstq+lenq+mmsize*0], m2
-    mova    [dstq+lenq+mmsize*1], m3
-    mova    [dstq+lenq+mmsize*2], m4
-    mova    [dstq+lenq+mmsize*3], m5
-    add     lenq, mmsize*4
-    jl .loop
-    REP_RET
+
+    movsxdifnidn lenq, lend
+
+.loop
+    mova m2, [srcq + 4 * lenq - 4 * mmsize]
+    mova m3, [srcq + 4 * lenq - 3 * mmsize]
+    mova m4, [srcq + 4 * lenq - 2 * mmsize]
+    mova m5, [srcq + 4 * lenq - 1 * mmsize]
+
+    maxps m2, m0
+    maxps m3, m0
+    maxps m4, m0
+    maxps m5, m0
+
+    minps m2, m1
+    minps m3, m1
+    minps m4, m1
+    minps m5, m1
+
+    mova [dstq + 4 * lenq - 4 * mmsize], m2
+    mova [dstq + 4 * lenq - 3 * mmsize], m3
+    mova [dstq + 4 * lenq - 2 * mmsize], m4
+    mova [dstq + 4 * lenq - 1 * mmsize], m5
+
+    sub lenq, mmsize
+    jg .loop
+
+    RET
