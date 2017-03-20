@@ -8,9 +8,7 @@ clone_depth: 10
 
 configuration: Release+ReleaseDLLStaticDeps
 
-platform:
-- x86
-- x64
+platform: x86+x64
 
 environment:
   GITHUBTOKEN:
@@ -79,32 +77,35 @@ before_build:
 # Setup msvc environment for required compiler version (specified by MSVC_VER)
 - ps: >-
     if ($env:MSVC_VER -eq 15) {
-
         $env:VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
-
     } else {
-
         $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
-
         $env:VCVARS="%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat"
-
     }
 
 - cmd: call "%VCVARS%" amd64
-    
+
 # Reset platform
 - cmd: SET PLATFORM=%PLATFORMBACK%
+
+# Set Targets path so that gitlink works correctly
+- ps: $env:MSBUILDDIR=((Get-Command msbuild.exe).Path | Split-Path -parent)
+- ps: >-
+    if ($env:MSVC_VER -eq 15) {
+        $env:VCTargetsPath="$env:MSBUILDDIR\..\..\..\Common7\IDE\VC\VCTargets"
+    } else {
+        $env:VCTargetsPath="$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0"
+    }
 
 # Download and install yasm integration
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.tortall.net/projects/yasm/releases/vsyasm-1.3.0-win64.zip', "$pwd\yasm.zip")
 - ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\yasm.zip", "$pwd\TempYASMUnpack")
-- ps: Move-Item -Force "TempYASMUnpack\*.exe" "$env:VSCOMNTOOLS\..\..\VC\bin"
-- ps: $env:MSBUILDDIR=((Get-Command msbuild.exe).Path | Split-Path -parent)
+- ps: New-Item -ItemType Directory -Force -Path "$env:VCINSTALLDIR\bin\"
+- ps: Move-Item -Force "TempYASMUnpack\*.exe" "$env:VCINSTALLDIR\bin\"
 - ps: (Get-Content "$pwd\TempYASMUnpack\vsyasm.props") -replace '\$\(Platform\)', 'win$(PlatformArchitecture)' | Set-Content "$pwd\TempYASMUnpack\vsyasm.props"
-- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0\BuildCustomizations"
-# Make additional copy so its available to GitLink (which currently looks in the wrong location)
-- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\BuildCustomizations"
-- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V120\BuildCustomizations"
+- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:VCTargetsPath\BuildCustomizations"
+# Additional yasm location in order to fix gitlink error
+- ps: if ($env:MSVC_VER -ne 15) { Copy-Item -Force "TempYASMUnpack\*.*" "$env:VCTargetsPath\..\BuildCustomizations" }
 
 # Use project supplied script to download all required dependency libraries
 - cmd: call "%APPVEYOR_BUILD_FOLDER%\SMP\project_get_dependencies.bat"
@@ -123,9 +124,18 @@ after_build:
 # Copy licenses for dependencies
 - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\..\prebuilt\licenses\*.* %APPVEYOR_BUILD_FOLDER%\build_out\licenses\
 
+# Copy binary files to seperate artifact folder
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin >NUL 2>&1
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\*\*.exe %APPVEYOR_BUILD_FOLDER%\build_bin
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\licenses >NUL 2>&1
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\licenses\ %APPVEYOR_BUILD_FOLDER%\build_bin\licenses\
+
 artifacts:
 - path: build_out
-  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
+  name: lib$(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)_msvc$(MSVC_VER)
+  type: zip
+- path: build_bin
+  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_$(PLATFORM)
   type: zip
 
 deploy:
