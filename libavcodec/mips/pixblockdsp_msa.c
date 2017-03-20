@@ -137,7 +137,7 @@ void ff_get_pixels_8_msa(int16_t *av_restrict dest, const uint8_t *src,
 }
 
 void ff_diff_pixels_msa(int16_t *av_restrict block, const uint8_t *src1,
-                        const uint8_t *src2, int stride)
+                        const uint8_t *src2, ptrdiff_t stride)
 {
     diff_pixels_msa(block, src1, src2, stride);
 }
