@@ -371,7 +371,6 @@ Advanced options (experts only):
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
-  --enable-memalign-hack   emulate memalign, interferes with memory debuggers
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
@@ -1700,7 +1699,6 @@ CONFIG_LIST="
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
     fontconfig
-    memalign_hack
     memory_poisoning
     neon_clobber_test
     pic
@@ -1835,7 +1833,6 @@ ARCH_FEATURES="
     local_aligned_8
     local_aligned_16
     local_aligned_32
-    simd_align
     simd_align_16
     simd_align_32
 "
@@ -2335,7 +2332,6 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
-simd_align_if_any="simd_align_16 simd_align_32"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
 
@@ -6409,9 +6405,6 @@ fi
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
-
-! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled simd_align && enable memalign_hack
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
