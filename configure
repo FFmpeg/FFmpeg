@@ -5848,7 +5848,7 @@ enabled libwebp           && {
     enabled libwebp_encoder      && require_pkg_config "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
     enabled libwebp_anim_encoder && { use_pkg_config "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit || disable libwebp_anim_encoder; } }
 enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encoder_encode ||
-                               { require libx264 x264.h x264_encoder_encode -lx264 &&
+                               { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; } &&
@@ -5857,7 +5857,7 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 68" ||
                                die "ERROR: libx265 version must be >= 68."; }
-enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
+enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config "zimg >= 2.3.0" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
