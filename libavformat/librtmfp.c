@@ -115,6 +115,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
     int level = 0, res = 0;
+    char *token;
 
     switch (av_log_get_level()) {
         case AV_LOG_FATAL:   level = 1; break;
@@ -137,9 +138,42 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     RTMFP_DumpSetCallback(rtmfp_dump);*/
     RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
-    RTMFP_GetPublicationAndUrlFromUri(uri, &ctx->publication);
+     // url
+    token = strtok(s->filename, " ");
+    if (!token) {
+        av_log(NULL, AV_LOG_ERROR, "Unable to read the url : %s\n", (s->filename? s->filename : "(empty)"));
+        return -1;
+    }
 
-    if ((ctx->id = RTMFP_Connect(uri, &ctx->rtmfp)) == 0)
+    // value=key arguments (prefer passing arguments with -<option> <value> in command line)
+    token = strtok(NULL, " ");
+    while( token != NULL ) {
+
+        if (strlen(token) > 9 && strncasecmp(token, "netgroup=", 9) == 0) // groupspec for NetGroup
+            ctx->netgroup = token + 9;
+        else if (strlen(token) > 7 && strncasecmp(token, "peerId=", 7) == 0) // peerId
+            ctx->peerId = token + 7;
+        else if (strcmp(token, "p2pPublishing=true") == 0) // is P2P publisher?
+            ctx->p2pPublishing = 1;
+        else if (strcmp(token, "audioUnbuffered=true") == 0) // audio unbuffered?
+            ctx->audioUnbuffered = 1;
+        else if (strcmp(token, "videoUnbuffered=true") == 0) // video unbuffered?
+            ctx->videoUnbuffered = 1;
+        else if (strlen(token) > 13 && strncasecmp(token, "updatePeriod=", 13) == 0) // NetGroup update period option
+            ctx->updatePeriod = atoi(token + 13);
+        else if (strlen(token) > 15 && strncasecmp(token, "windowDuration=", 15) == 0) // NetGroup window duration option
+            ctx->windowDuration = atoi(token + 15);
+        else if (strlen(token) > 10 && strncasecmp(token, "pushLimit=", 10) == 0) // NetGroup push limit option
+            ctx->pushLimit = atoi(token + 10);
+        else
+            av_log(NULL, AV_LOG_INFO, "Unknown inline argument : %s\n", token);
+
+        token = strtok(NULL, " ");
+    }
+
+    RTMFP_GetPublicationAndUrlFromUri(s->filename, &ctx->publication);
+
+    if ((ctx->id = RTMFP_Connect(s->filename, &ctx->rtmfp)) == 0)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
