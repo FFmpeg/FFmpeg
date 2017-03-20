@@ -861,6 +861,12 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 s->and   = 1;
                 s->shift = val[3];
             }
+            if (s->shift > 31) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid INT32INFO, shift = %d (> 31)\n", s->shift);
+                s->and = s->or = s->shift = 0;
+                continue;
+            }
             /* original WavPack decoder forces 32-bit lossy sound to be treated
              * as 24-bit one in order to have proper clipping */
             if (s->hybrid && bpp == 4 && s->post_shift < 8 && s->shift > 8) {
