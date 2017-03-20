@@ -27,11 +27,10 @@
 static inline void copy_block2(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)
 {
     int i;
-    for(i=0; i<h; i++)
-    {
+    for (i = 0; i < h; i++) {
         AV_COPY16U(dst, src);
-        dst+=dstStride;
-        src+=srcStride;
+        dst += dstStride;
+        src += srcStride;
     }
 }
 
