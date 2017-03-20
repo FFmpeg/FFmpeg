@@ -189,7 +189,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t *dst,
         dst += dstStride;
     }
 }
-#endif
+#endif /* PREFIX_h264_qpel16_h_lowpass_altivec */
 
 /* this code assume stride % 16 == 0 */
 #ifdef PREFIX_h264_qpel16_v_lowpass_altivec
@@ -291,7 +291,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t *dst,
         dst += dstStride;
     }
 }
-#endif
+#endif /* PREFIX_h264_qpel16_v_lowpass_altivec */
 
 /* this code assume stride % 16 == 0 *and* tmp is properly aligned */
 #ifdef PREFIX_h264_qpel16_hv_lowpass_altivec
@@ -481,4 +481,4 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t *dst, int16_t *tmp,
         dst += dstStride;
     }
 }
-#endif
+#endif /* PREFIX_h264_qpel16_hv_lowpass_altivec */
