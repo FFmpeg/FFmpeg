@@ -15,7 +15,7 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
-2017-03-xx - xxxxxxx - lavu 55.49.100 - pixdesc.h
+2017-03-20 - 9c2436e - lavu 55.49.100 - pixdesc.h
   Add AV_PIX_FMT_FLAG_BAYER pixel format flag.
 
 2017-03-18 - xxxxxxx - lavfi 6.77.100 - avfilter.h
