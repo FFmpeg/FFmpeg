@@ -1137,6 +1137,7 @@ int AAC_RENAME(ff_decode_sbr_extension)(AACContext *ac, SpectralBandReplication 
     if (bytes_read > cnt) {
         av_log(ac->avctx, AV_LOG_ERROR,
                "Expected to read %d SBR bytes actually read %d.\n", cnt, bytes_read);
+        sbr_turnoff(sbr);
     }
     return cnt;
 }
