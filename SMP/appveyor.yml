@@ -4,7 +4,7 @@ branches:
   only:
   - master
 skip_non_tags: true
-shallow_clone: true
+clone_depth: 10
 
 configuration: Release+ReleaseDLLStaticDeps
 
@@ -17,7 +17,11 @@ environment:
     secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
   matrix:
   - MSVC_VER: 12
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
   - MSVC_VER: 14
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  - MSVC_VER: 15
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
 install:
 # Install GitLink
@@ -28,7 +32,7 @@ before_build:
 - ps: >-
     $script = @'
 
-    <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="GitLink" ToolsVersion="4.0">
+    <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="GitLink" ToolsVersion="APPVEYOR_MSVC_VER.0">
       <ItemGroup>
         <ConfigurationList Condition="'@(ConfigurationList)' == '' and $(Configuration) != ''" Include="$(Configuration.Split('+'))" />
         <ConfigurationList Condition="'@(ConfigurationList)' == ''" Include="Release" />
@@ -65,14 +69,28 @@ before_build:
 
     $script = $script -replace "APPVEYOR_REPO_COMMIT", "$env:APPVEYOR_REPO_COMMIT"
 
+    $script = $script -replace "APPVEYOR_MSVC_VER", "$env:MSVC_VER"
+
     $script | Out-File build.vcxproj
     
 # Backup platform so it is not affected by vcvars
 - cmd: SET PLATFORMBACK=%PLATFORM%
     
 # Setup msvc environment for required compiler version (specified by MSVC_VER)
-- ps: $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
-- cmd: call "%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
+- ps: >-
+    if ($env:MSVC_VER -eq 15) {
+
+        $env:VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+
+    } else {
+
+        $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
+
+        $env:VCVARS="%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat"
+
+    }
+
+- cmd: call "%VCVARS%" amd64
     
 # Reset platform
 - cmd: SET PLATFORM=%PLATFORMBACK%
