@@ -91,6 +91,10 @@ Currently only up to VS2010 is supported on the web page so just download that.
         C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\BuildCustomizations
         and the path for Visual Studio 2015 would be:
         C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\BuildCustomizations
+        and the path for Visual Studio 2017 would be:
+        C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\BuildCustomizations
+
+    The exact location can vary based on installation paths and can be found within Visual Studio in $(VCTargetsPath) macro
 
 3) In order to use version 1.3.0 of vsyasm you will also have to fix a error in the distributed build customizations
     a) Open vsyasm.props
