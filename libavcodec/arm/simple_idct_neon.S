@@ -261,7 +261,7 @@ endconst
         pop             {r4-r7, pc}
         .endm
 
-/* void ff_simple_idct_put_neon(uint8_t *dst, int line_size, int16_t *data); */
+/* void ff_simple_idct_put_neon(uint8_t *dst, ptrdiff_t line_size, int16_t *data); */
 function ff_simple_idct_put_neon, export=1
         idct_start      r2
 
@@ -316,7 +316,7 @@ function idct_col4_add8_neon
         bx              lr
 endfunc
 
-/* void ff_simple_idct_add_neon(uint8_t *dst, int line_size, int16_t *data); */
+/* void ff_simple_idct_add_neon(uint8_t *dst, ptrdiff_t line_size, int16_t *data); */
 function ff_simple_idct_add_neon, export=1
         idct_start      r2
 

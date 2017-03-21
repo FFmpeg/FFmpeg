@@ -318,13 +318,13 @@ void ff_xvid_idct(int16_t *const in)
     }
 }
 
-static void xvid_idct_put(uint8_t *dest, int line_size, int16_t *block)
+static void xvid_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct(block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
 
-static void xvid_idct_add(uint8_t *dest, int line_size, int16_t *block)
+static void xvid_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_xvid_idct(block);
     ff_add_pixels_clamped(block, dest, line_size);

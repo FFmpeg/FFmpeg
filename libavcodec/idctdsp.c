@@ -207,33 +207,33 @@ static void add_pixels_clamped2_c(const int16_t *block, uint8_t *av_restrict pix
     }
 }
 
-static void ff_jref_idct4_put(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct4_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct4 (block);
     put_pixels_clamped4_c(block, dest, line_size);
 }
-static void ff_jref_idct4_add(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct4_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct4 (block);
     add_pixels_clamped4_c(block, dest, line_size);
 }
 
-static void ff_jref_idct2_put(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct2_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct2 (block);
     put_pixels_clamped2_c(block, dest, line_size);
 }
-static void ff_jref_idct2_add(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct2_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct2 (block);
     add_pixels_clamped2_c(block, dest, line_size);
 }
 
-static void ff_jref_idct1_put(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct1_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     dest[0] = av_clip_uint8((block[0] + 4)>>3);
 }
-static void ff_jref_idct1_add(uint8_t *dest, int line_size, int16_t *block)
+static void ff_jref_idct1_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     dest[0] = av_clip_uint8(dest[0] + ((block[0] + 4)>>3));
 }

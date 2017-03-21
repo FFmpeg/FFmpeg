@@ -25,14 +25,14 @@
 #include "config.h"
 
 void ff_vc1_inv_trans_8x8_neon(int16_t *block);
-void ff_vc1_inv_trans_4x8_neon(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_8x4_neon(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x4_neon(uint8_t *dest, int linesize, int16_t *block);
+void ff_vc1_inv_trans_4x8_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_8x4_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x4_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vc1_inv_trans_8x8_dc_neon(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x8_dc_neon(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_8x4_dc_neon(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x4_dc_neon(uint8_t *dest, int linesize, int16_t *block);
+void ff_vc1_inv_trans_8x8_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x8_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_8x4_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x4_dc_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
 void ff_put_pixels8x8_neon(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int rnd);
