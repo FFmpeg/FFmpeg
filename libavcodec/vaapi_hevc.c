@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "hevc.h"
+#include "hwaccel.h"
 #include "vaapi_decode.h"
 
 typedef struct VAAPIDecodePictureHEVC {
@@ -434,4 +435,5 @@ AVHWAccel ff_hevc_vaapi_hwaccel = {
     .init                 = ff_vaapi_decode_init,
     .uninit               = ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
