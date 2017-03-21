@@ -948,7 +948,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             pos = avio_tell(pb);
-            if (pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+            if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !(s->flags & AVFMT_FLAG_IGNIDX) &&
                 avi->use_odml &&
                 read_odml_index(s, 0) < 0 &&
                 (s->error_recognition & AV_EF_EXPLODE))
@@ -1022,7 +1022,7 @@ fail:
         return AVERROR_INVALIDDATA;
     }
 
-    if (!avi->index_loaded && pb->seekable)
+    if (!avi->index_loaded && (pb->seekable & AVIO_SEEKABLE_NORMAL))
         avi_load_index(s);
     calculate_bitrate(s);
     avi->index_loaded    |= 1;

@@ -333,7 +333,7 @@ static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matros
     if ((ret = avio_open_dyn_buf(dyn_cp)) < 0)
         return ret;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         *master = start_ebml_master(pb, elementid, expectedsize);
         if (mkv->write_crc && mkv->mode != MODE_WEBM)
             put_ebml_void(*dyn_cp, 6); /* Reserve space for CRC32 so position/size calculations using avio_tell() take it into account */
@@ -349,7 +349,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
     uint8_t *buf, crc[4];
     int size, skip = 0;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         size = avio_close_dyn_buf(*dyn_cp, &buf);
         if (mkv->write_crc && mkv->mode != MODE_WEBM) {
             skip = 6; /* Skip reserved 6-byte long void element from the dynamic buffer. */
@@ -373,7 +373,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
     ebml_master master)
 {
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
 
         uint8_t *buf;
         int size = avio_get_dyn_buf(*dyn_cp, &buf);
@@ -1419,7 +1419,7 @@ static int mkv_write_tracks(AVFormatContext *s)
             return ret;
     }
 
-    if (pb->seekable && !mkv->is_live)
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
         end_ebml_master_crc32_preliminary(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
     else
         end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
@@ -1614,7 +1614,7 @@ static int mkv_write_tags(AVFormatContext *s)
         if (ret < 0) return ret;
     }
 
-    if (s->pb->seekable && !mkv->is_live) {
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
         for (i = 0; i < s->nb_streams; i++) {
             AVIOContext *pb;
             AVStream *st = s->streams[i];
@@ -1664,7 +1664,7 @@ static int mkv_write_tags(AVFormatContext *s)
     }
 
     if (mkv->tags.pos) {
-        if (s->pb->seekable && !mkv->is_live)
+        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
             end_ebml_master_crc32_preliminary(s->pb, &mkv->tags_bc, mkv, mkv->tags);
         else
             end_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, mkv->tags);
@@ -1921,7 +1921,7 @@ static int mkv_write_header(AVFormatContext *s)
             put_ebml_void(pb, 11);              // assumes double-precision float to be written
         }
     }
-    if (s->pb->seekable && !mkv->is_live)
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
         end_ebml_master_crc32_preliminary(s->pb, &mkv->info_bc, mkv, mkv->info);
     else
         end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, mkv->info);
@@ -1952,7 +1952,7 @@ static int mkv_write_header(AVFormatContext *s)
             goto fail;
     }
 
-    if (!s->pb->seekable && !mkv->is_live)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
         mkv_write_seekhead(pb, mkv);
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
@@ -1960,7 +1960,7 @@ static int mkv_write_header(AVFormatContext *s)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    if (pb->seekable && mkv->reserve_cues_space) {
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
         mkv->cues_pos = avio_tell(pb);
         put_ebml_void(pb, mkv->reserve_cues_space);
     }
@@ -1973,7 +1973,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (mkv->cluster_time_limit < 0)
             mkv->cluster_time_limit = 5000;
         if (mkv->cluster_size_limit < 0)
@@ -2198,7 +2198,7 @@ static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
 
     end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
     mkv->cluster_pos = -1;
-    if (s->pb->seekable)
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         av_log(s, AV_LOG_DEBUG,
                "Starting new cluster at offset %" PRIu64 " bytes, "
                "pts %" PRIu64 "dts %" PRIu64 "\n",
@@ -2223,7 +2223,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_FLAC:
-        if (side_data_size && s->pb->seekable) {
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             AVCodecParameters *codecpriv_par;
             int64_t curpos;
             if (side_data_size != par->extradata_size) {
@@ -2296,7 +2296,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
 
     if (par->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe);
-        if (s->pb->seekable && (par->codec_type == AVMEDIA_TYPE_VIDEO && keyframe || add_cue)) {
+        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && (par->codec_type == AVMEDIA_TYPE_VIDEO && keyframe || add_cue)) {
             ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts, mkv->cluster_pos, relative_packet_pos, -1);
             if (ret < 0) return ret;
         }
@@ -2321,7 +2321,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             end_ebml_master(pb, blockgroup);
         }
 
-        if (s->pb->seekable) {
+        if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
             ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, dash_tracknum, ts,
                                    mkv->cluster_pos, relative_packet_pos, duration);
             if (ret < 0)
@@ -2421,7 +2421,7 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
         if (mkv->cluster_pos != -1) {
             end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
             mkv->cluster_pos = -1;
-            if (s->pb->seekable)
+            if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
                 av_log(s, AV_LOG_DEBUG,
                        "Flushing cluster at offset %" PRIu64 " bytes\n",
                        avio_tell(s->pb));
@@ -2462,7 +2462,7 @@ static int mkv_write_trailer(AVFormatContext *s)
             return ret;
     }
 
-    if (pb->seekable && !mkv->is_live) {
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
         if (mkv->cues->num_entries) {
             if (mkv->reserve_cues_space) {
                 int64_t cues_end;

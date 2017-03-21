@@ -41,7 +41,7 @@ static int read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     avio_seek(pb, avio_size(pb) - 36, SEEK_SET);

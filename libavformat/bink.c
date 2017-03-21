@@ -292,7 +292,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
     /* seek to the first frame */

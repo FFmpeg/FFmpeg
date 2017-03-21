@@ -89,7 +89,7 @@ static int adts_aac_read_header(AVFormatContext *s)
     st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
     ff_id3v1_read(s);
-    if (s->pb->seekable &&
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         !av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);

@@ -307,7 +307,7 @@ static int cine_read_seek(AVFormatContext *avctx, int stream_index, int64_t time
     if ((flags & AVSEEK_FLAG_FRAME) || (flags & AVSEEK_FLAG_BYTE))
         return AVERROR(ENOSYS);
 
-    if (!avctx->pb->seekable)
+    if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     cine->pts = timestamp;

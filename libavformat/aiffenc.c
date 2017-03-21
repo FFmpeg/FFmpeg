@@ -49,7 +49,7 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     AVIOContext *pb = s->pb;
     AVPacketList *pict_list = aiff->pict_list;
 
-    if (!pb->seekable)
+    if (!pb->seekable & AVIO_SEEKABLE_NORMAL)
         return 0;
 
     if (!s->metadata && !aiff->pict_list)
@@ -267,7 +267,7 @@ static int aiff_write_trailer(AVFormatContext *s)
         end_size++;
     }
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* Number of sample frames */
         avio_seek(pb, aiff->frames, SEEK_SET);
         avio_wb32(pb, (file_size - aiff->ssnd - 12) / par->block_align);

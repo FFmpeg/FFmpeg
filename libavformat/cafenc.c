@@ -126,7 +126,7 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!par->block_align && !pb->seekable) {
+    if (!par->block_align && !(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
@@ -236,7 +236,7 @@ static int caf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
 
         avio_seek(pb, caf->data, SEEK_SET);

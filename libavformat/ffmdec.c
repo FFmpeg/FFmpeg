@@ -300,7 +300,7 @@ static int ffm2_read_header(AVFormatContext *s)
 
     ffm->write_index = avio_rb64(pb);
     /* get also filesize */
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ffm->file_size = avio_size(pb);
         if (ffm->write_index && 0)
             adjust_write_index(s);
@@ -559,7 +559,7 @@ static int ffm_read_header(AVFormatContext *s)
     }
     ffm->write_index = avio_rb64(pb);
     /* get also filesize */
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ffm->file_size = avio_size(pb);
         if (ffm->write_index && 0)
             adjust_write_index(s);

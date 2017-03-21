@@ -344,7 +344,7 @@ static int wav_write_header(AVFormatContext *s)
     }
 
     if (s->streams[0]->codecpar->codec_tag != 0x01 /* hence for all other than PCM */
-        && s->pb->seekable) {
+        && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         wav->fact_pos = ff_start_tag(pb, "fact");
         avio_wl32(pb, 0);
         ff_end_tag(pb, wav->fact_pos);
@@ -425,7 +425,7 @@ static int wav_write_trailer(AVFormatContext *s)
 
     avio_flush(pb);
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (wav->write_peak != 2 && avio_tell(pb) - wav->data < UINT32_MAX) {
             ff_end_tag(pb, wav->data);
             avio_flush(pb);
@@ -584,7 +584,7 @@ static int w64_write_header(AVFormatContext *s)
     end_guid(pb, start);
 
     if (s->streams[0]->codecpar->codec_tag != 0x01 /* hence for all other than PCM */
-        && s->pb->seekable) {
+        && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         start_guid(pb, ff_w64_guid_fact, &wav->fact_pos);
         avio_wl64(pb, 0);
         end_guid(pb, wav->fact_pos);
@@ -601,7 +601,7 @@ static int w64_write_trailer(AVFormatContext *s)
     WAVMuxContext *wav = s->priv_data;
     int64_t file_size;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         end_guid(pb, wav->data);
 
         file_size = avio_tell(pb);

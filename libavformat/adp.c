@@ -59,7 +59,7 @@ static int adp_read_header(AVFormatContext *s)
     st->codecpar->channels       = 2;
     st->codecpar->sample_rate    = 48000;
     st->start_time            = 0;
-    if (s->pb->seekable)
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         st->duration          = av_get_audio_frame_duration2(st->codecpar, avio_size(s->pb));
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);

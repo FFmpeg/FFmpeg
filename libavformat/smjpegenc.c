@@ -121,7 +121,7 @@ static int smjpeg_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t currentpos;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         currentpos = avio_tell(pb);
         avio_seek(pb, 12, SEEK_SET);
         avio_wb32(pb, smc->duration);

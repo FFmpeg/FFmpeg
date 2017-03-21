@@ -106,12 +106,12 @@ static int rsd_read_header(AVFormatContext *s)
         break;
     case AV_CODEC_ID_ADPCM_PSX:
         par->block_align = 16 * par->channels;
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = av_get_audio_frame_duration2(par, avio_size(pb) - start);
         break;
     case AV_CODEC_ID_ADPCM_IMA_RAD:
         par->block_align = 20 * par->channels;
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = av_get_audio_frame_duration2(par, avio_size(pb) - start);
         break;
     case AV_CODEC_ID_ADPCM_IMA_WAV:
@@ -120,7 +120,7 @@ static int rsd_read_header(AVFormatContext *s)
 
         par->bits_per_coded_sample = 4;
         par->block_align = 36 * par->channels;
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = av_get_audio_frame_duration2(par, avio_size(pb) - start);
         break;
     case AV_CODEC_ID_ADPCM_THP_LE:
@@ -131,7 +131,7 @@ static int rsd_read_header(AVFormatContext *s)
 
         if ((ret = ff_get_extradata(s, par, s->pb, 32)) < 0)
             return ret;
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = av_get_audio_frame_duration2(par, avio_size(pb) - start);
         break;
     case AV_CODEC_ID_ADPCM_THP:
@@ -145,7 +145,7 @@ static int rsd_read_header(AVFormatContext *s)
             avio_read(s->pb, st->codecpar->extradata + 32 * i, 32);
             avio_skip(s->pb, 8);
         }
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = (avio_size(pb) - start) / (8 * par->channels) * 14;
         break;
     case AV_CODEC_ID_PCM_S16LE:
@@ -153,7 +153,7 @@ static int rsd_read_header(AVFormatContext *s)
         if (version != 4)
             start = avio_rl32(pb);
 
-        if (pb->seekable)
+        if (pb->seekable & AVIO_SEEKABLE_NORMAL)
             st->duration = (avio_size(pb) - start) / 2 / par->channels;
         break;
     }

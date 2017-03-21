@@ -410,7 +410,7 @@ static int wav_read_header(AVFormatContext *s)
             got_xma2 = 1;
             break;
         case MKTAG('d', 'a', 't', 'a'):
-            if (!pb->seekable && !got_fmt && !got_xma2) {
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) && !got_fmt && !got_xma2) {
                 av_log(s, AV_LOG_ERROR,
                        "found no 'fmt ' tag before the 'data' tag\n");
                 return AVERROR_INVALIDDATA;
@@ -433,7 +433,7 @@ static int wav_read_header(AVFormatContext *s)
             /* don't look for footer metadata if we can't seek or if we don't
              * know where the data tag ends
              */
-            if (!pb->seekable || (!rf64 && !size))
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || (!rf64 && !size))
                 goto break_loop;
             break;
         case MKTAG('f', 'a', 'c', 't'):
@@ -821,7 +821,7 @@ static int w64_read_header(AVFormatContext *s)
             wav->data_end = avio_tell(pb) + size - 24;
 
             data_ofs = avio_tell(pb);
-            if (!pb->seekable)
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
                 break;
 
             avio_skip(pb, size - 24);

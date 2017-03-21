@@ -136,7 +136,7 @@ static int tta_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = samplerate;
     st->codecpar->bits_per_coded_sample = bps;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t pos = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         avio_seek(s->pb, pos, SEEK_SET);

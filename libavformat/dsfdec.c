@@ -77,7 +77,7 @@ static int dsf_read_header(AVFormatContext *s)
 
     avio_skip(pb, 8);
     id3pos = avio_rl64(pb);
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         read_id3(s, id3pos);
         avio_seek(pb, 28, SEEK_SET);
     }

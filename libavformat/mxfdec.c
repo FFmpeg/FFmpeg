@@ -2590,7 +2590,7 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
         /* remember where we were so we don't end up seeking further back than this */
         mxf->last_forward_tell = avio_tell(pb);
 
-        if (!pb->seekable) {
+        if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             av_log(mxf->fc, AV_LOG_INFO, "file is not seekable - not parsing FooterPartition\n");
             return -1;
         }
@@ -2777,7 +2777,7 @@ static void mxf_read_random_index_pack(AVFormatContext *s)
     int64_t file_size, max_rip_length, min_rip_length;
     KLVPacket klv;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return;
 
     file_size = avio_size(s->pb);

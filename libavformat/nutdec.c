@@ -876,7 +876,7 @@ static int nut_read_header(AVFormatContext *s)
 
     s->internal->data_offset = pos - 8;
 
-    if (bc->seekable) {
+    if (bc->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t orig_pos = avio_tell(bc);
         find_and_decode_index(nut);
         avio_seek(bc, orig_pos, SEEK_SET);

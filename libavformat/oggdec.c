@@ -209,7 +209,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
     const struct ogg_codec *codec;
     int i = 0;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         uint8_t magic[8];
         int64_t pos = avio_tell(s->pb);
         avio_skip(s->pb, nsegs);
@@ -355,7 +355,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
             sync[(sp + 2) & 3] == 'g' && sync[(sp + 3) & 3] == 'S')
             break;
 
-        if(!i && bc->seekable && ogg->page_pos > 0) {
+        if(!i && (bc->seekable & AVIO_SEEKABLE_NORMAL) && ogg->page_pos > 0) {
             memset(sync, 0, 4);
             avio_seek(bc, ogg->page_pos+4, SEEK_SET);
             ogg->page_pos = -1;
@@ -613,7 +613,7 @@ static int ogg_get_length(AVFormatContext *s)
     int64_t size, end;
     int streams_left=0;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
 
 // already set
