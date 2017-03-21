@@ -24,7 +24,7 @@
 #include "blockdsp_mips.h"
 #include "libavutil/mips/mmiutils.h"
 
-void ff_fill_block16_mmi(uint8_t *block, uint8_t value, int line_size, int h)
+void ff_fill_block16_mmi(uint8_t *block, uint8_t value, ptrdiff_t line_size, int h)
 {
     double ftmp[1];
     DECLARE_VAR_ALL64;
@@ -48,7 +48,7 @@ void ff_fill_block16_mmi(uint8_t *block, uint8_t value, int line_size, int h)
     );
 }
 
-void ff_fill_block8_mmi(uint8_t *block, uint8_t value, int line_size, int h)
+void ff_fill_block8_mmi(uint8_t *block, uint8_t value, ptrdiff_t line_size, int h)
 {
     double ftmp0;
     DECLARE_VAR_ALL64;
