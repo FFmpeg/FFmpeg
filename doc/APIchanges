@@ -15,6 +15,14 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-xx - xxxxxxx - lavf 57.68.100 - avformat.h
+  Deprecate that demuxers export the stream rotation angle in AVStream.metadata
+  (via an entry named "rotate"). Use av_stream_get_side_data() with
+  AV_PKT_DATA_DISPLAYMATRIX instead, and read the rotation angle with
+  av_display_rotation_get(). The same is done for muxing. Instead of adding a
+  "rotate" entry to AVStream.metadata, AV_PKT_DATA_DISPLAYMATRIX side data has
+  to be added to the AVStream.
+
 2017-03-xx - xxxxxxx - lavc 57.85.101 - avcodec.h
   vdpau hardware accelerated decoding now supports the new hwaccel API, which
   can create the decoder context and allocate hardware frame automatically.

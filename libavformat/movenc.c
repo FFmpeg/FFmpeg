@@ -2496,19 +2496,23 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb16(pb, 0); /* reserved */
 
     /* Matrix structure */
+#if FF_API_OLD_ROTATE_API
     if (st && st->metadata) {
         AVDictionaryEntry *rot = av_dict_get(st->metadata, "rotate", NULL, 0);
         rotation = (rot && rot->value) ? atoi(rot->value) : 0;
     }
+#endif
     if (display_matrix) {
         for (i = 0; i < 9; i++)
             avio_wb32(pb, display_matrix[i]);
+#if FF_API_OLD_ROTATE_API
     } else if (rotation == 90) {
         write_matrix(pb,  0,  1, -1,  0, track->par->height, 0);
     } else if (rotation == 180) {
         write_matrix(pb, -1,  0,  0, -1, track->par->width, track->par->height);
     } else if (rotation == 270) {
         write_matrix(pb,  0, -1,  1,  0, 0, track->par->width);
+#endif
     } else {
         write_matrix(pb,  1,  0,  0,  1, 0, 0);
     }

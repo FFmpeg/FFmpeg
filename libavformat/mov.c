@@ -4027,6 +4027,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             for (j = 0; j < 3; j++)
                 sc->display_matrix[i * 3 + j] = res_display_matrix[i][j];
 
+#if FF_API_OLD_ROTATE_API
         rotate = av_display_rotation_get(sc->display_matrix);
         if (!isnan(rotate)) {
             char rotate_buf[64];
@@ -4036,6 +4037,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             snprintf(rotate_buf, sizeof(rotate_buf), "%g", rotate);
             av_dict_set(&st->metadata, "rotate", rotate_buf, 0);
         }
+#endif
     }
 
     // transform the display width/height according to the matrix

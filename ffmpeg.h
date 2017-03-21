@@ -475,6 +475,7 @@ typedef struct OutputStream {
     int force_fps;
     int top_field_first;
     int rotate_overridden;
+    double rotate_override_value;
 
     AVRational frame_aspect_ratio;
 
