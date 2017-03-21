@@ -276,6 +276,14 @@ fail:
     return ret;
 }
 
+static void resample_free(ResampleContext **cc){
+    ResampleContext *c = *cc;
+    if(!c)
+        return;
+    av_freep(&c->filter_bank);
+    av_freep(cc);
+}
+
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
                                     double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta,
                                     double precision, int cheby, int exact_rational)
@@ -369,13 +377,6 @@ error:
     av_freep(&c->filter_bank);
     av_free(c);
     return NULL;
-}
-
-static void resample_free(ResampleContext **c){
-    if(!*c)
-        return;
-    av_freep(&(*c)->filter_bank);
-    av_freep(c);
 }
 
 static int rebuild_filter_bank_with_compensation(ResampleContext *c)
