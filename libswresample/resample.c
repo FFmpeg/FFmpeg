@@ -314,6 +314,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
     if (!c || c->phase_shift != phase_shift || c->linear!=linear || c->factor != factor
            || c->filter_length != FFMAX((int)ceil(filter_size/factor), 1) || c->format != format
            || c->filter_type != filter_type || c->kaiser_beta != kaiser_beta) {
+        resample_free(&c);
         c = av_mallocz(sizeof(*c));
         if (!c)
             return NULL;
