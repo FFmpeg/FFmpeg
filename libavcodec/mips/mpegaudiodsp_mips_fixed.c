@@ -61,7 +61,7 @@
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 
 static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *window,
-                               int *dither_state, int16_t *samples, int incr)
+                               int *dither_state, int16_t *samples, ptrdiff_t incr)
 {
     register const int32_t *w, *w2, *p;
     int j;
