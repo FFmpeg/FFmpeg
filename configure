@@ -477,13 +477,13 @@ sanitize_var_name(){
     echo $@ | sed 's/[^A-Za-z0-9_]/_/g'
 }
 
-set_safe(){
+set_sanitized(){
     var=$1
     shift
     eval $(sanitize_var_name "$var")='$*'
 }
 
-get_safe(){
+get_sanitized(){
     eval echo \$$(sanitize_var_name "$1")
 }
 
@@ -522,13 +522,13 @@ disable_weak(){
     set_weak no $*
 }
 
-enable_safe(){
+enable_sanitized(){
     for var; do
         enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
 }
 
-disable_safe(){
+disable_sanitized(){
     for var; do
         disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
@@ -937,8 +937,8 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    disable_safe $header
-    check_cpp "$@" <<EOF && enable_safe $header
+    disable_sanitized $header
+    check_cpp "$@" <<EOF && enable_sanitized $header
 #include <$header>
 int x;
 EOF
@@ -982,7 +982,7 @@ check_func_headers(){
             echo "long check_$func(void) { return (long) $func; }"
         done
         echo "int main(void) { return 0; }"
-    } | check_ld "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "$@" && enable $funcs && enable_sanitized $headers
 }
 
 check_cpp_condition(){
@@ -1080,8 +1080,8 @@ check_type(){
     headers=$1
     type=$2
     shift 2
-    disable_safe "$type"
-    check_code cc "$headers" "$type v" "$@" && enable_safe "$type"
+    disable_sanitized "$type"
+    check_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
 }
 
 check_struct(){
@@ -1090,9 +1090,9 @@ check_struct(){
     struct=$2
     member=$3
     shift 3
-    disable_safe "${struct}_${member}"
+    disable_sanitized "${struct}_${member}"
     check_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
-        enable_safe "${struct}_${member}"
+        enable_sanitized "${struct}_${member}"
 }
 
 check_builtin(){
