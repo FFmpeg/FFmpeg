@@ -1638,7 +1638,6 @@ SYSTEM_FUNCS="
     gmtime_r
     inet_aton
     isatty
-    jack_port_get_latency_range
     LoadLibrary
     localtime_r
     mach_absolute_time
@@ -4835,10 +4834,8 @@ check_header soundcard.h
 enabled_any alsa_indev alsa_outdev &&
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-if enabled libjack; then
-    check_pkg_config libjack jack jack/jack.h jack_port_get_latency_range ||
-    require_pkg_config libjack jack jack/jack.h jack_client_open
-fi
+enabled libjack &&
+    require_pkg_config libjack jack jack/jack.h jack_port_get_latency_range
 
 enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
 
