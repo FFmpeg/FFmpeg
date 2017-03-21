@@ -1071,7 +1071,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->geotag_count = count / 4 - 1;
             av_log(s->avctx, AV_LOG_WARNING, "GeoTIFF key directory buffer shorter than specified\n");
         }
-        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4) {
+        if (   bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4
+            || s->geotag_count == 0) {
             s->geotag_count = 0;
             return -1;
         }
