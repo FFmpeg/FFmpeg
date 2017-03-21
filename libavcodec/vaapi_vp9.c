@@ -21,6 +21,8 @@
  */
 
 #include "libavutil/pixdesc.h"
+
+#include "hwaccel.h"
 #include "vaapi_decode.h"
 #include "vp9.h"
 
@@ -178,4 +180,5 @@ AVHWAccel ff_vp9_vaapi_hwaccel = {
     .init                 = ff_vaapi_decode_init,
     .uninit               = ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
