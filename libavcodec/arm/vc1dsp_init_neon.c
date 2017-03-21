@@ -70,14 +70,14 @@ DECL_PUT(3, 1)
 DECL_PUT(3, 2)
 DECL_PUT(3, 3)
 
-void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
-void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, int stride, int h,
-                                int x, int y);
+void ff_put_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_avg_vc1_chroma_mc8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_put_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
+void ff_avg_vc1_chroma_mc4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                                int h, int x, int y);
 
 #define FN_ASSIGN(X, Y) \
     dsp->put_vc1_mspel_pixels_tab[0][X+4*Y] = ff_put_vc1_mspel_mc##X##Y##_16_neon; \

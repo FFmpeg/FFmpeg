@@ -782,7 +782,7 @@ PUT_VC1_MSPEL(3, 3)
       C * src[stride + a] + D * src[stride + a + 1] + 32 - 4) >> 6)
 static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
                                         uint8_t *src /* align 1 */,
-                                        int stride, int h, int x, int y)
+                                        ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -807,7 +807,7 @@ static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
 }
 
 static void put_no_rnd_vc1_chroma_mc4_c(uint8_t *dst, uint8_t *src,
-                                        int stride, int h, int x, int y)
+                                        ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -830,7 +830,7 @@ static void put_no_rnd_vc1_chroma_mc4_c(uint8_t *dst, uint8_t *src,
 #define avg2(a, b) (((a) + (b) + 1) >> 1)
 static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
                                         uint8_t *src /* align 1 */,
-                                        int stride, int h, int x, int y)
+                                        ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -856,7 +856,7 @@ static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst /* align 8 */,
 
 static void avg_no_rnd_vc1_chroma_mc4_c(uint8_t *dst /* align 8 */,
                                         uint8_t *src /* align 1 */,
-                                        int stride, int h, int x, int y)
+                                        ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B = (    x) * (8 - y);

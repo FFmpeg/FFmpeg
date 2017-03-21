@@ -19,12 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
 
+#include <stddef.h>
+
+#include "libavutil/avassert.h"
 #include "bit_depth_template.c"
 
 #define H264_CHROMA_MC(OPNAME, OP)\
-static void FUNCC(OPNAME ## h264_chroma_mc1)(uint8_t *_dst/*align 8*/, uint8_t *_src/*align 1*/, int stride, int h, int x, int y){\
+static void FUNCC(OPNAME ## h264_chroma_mc1)(uint8_t *_dst /*align 8*/, uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y){\
     pixel *dst = (pixel*)_dst;\
     pixel *src = (pixel*)_src;\
     const int A=(8-x)*(8-y);\
@@ -58,7 +60,8 @@ static void FUNCC(OPNAME ## h264_chroma_mc1)(uint8_t *_dst/*align 8*/, uint8_t *
         }\
     }\
 }\
-static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *_dst/*align 8*/, uint8_t *_src/*align 1*/, int stride, int h, int x, int y){\
+static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *_dst /*align 8*/, uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+{\
     pixel *dst = (pixel*)_dst;\
     pixel *src = (pixel*)_src;\
     const int A=(8-x)*(8-y);\
@@ -79,7 +82,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *_dst/*align 8*/, uint8_t *
         }\
     } else if (B + C) {\
         const int E= B+C;\
-        const int step= C ? stride : 1;\
+        const ptrdiff_t step = C ? stride : 1;\
         for(i=0; i<h; i++){\
             OP(dst[0], (A*src[0] + E*src[step+0]));\
             OP(dst[1], (A*src[1] + E*src[step+1]));\
@@ -96,7 +99,8 @@ static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *_dst/*align 8*/, uint8_t *
     }\
 }\
 \
-static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst/*align 8*/, uint8_t *_src/*align 1*/, int stride, int h, int x, int y){\
+static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst /*align 8*/, uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+{\
     pixel *dst = (pixel*)_dst;\
     pixel *src = (pixel*)_src;\
     const int A=(8-x)*(8-y);\
@@ -119,7 +123,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst/*align 8*/, uint8_t *
         }\
     } else if (B + C) {\
         const int E= B+C;\
-        const int step= C ? stride : 1;\
+        const ptrdiff_t step = C ? stride : 1;\
         for(i=0; i<h; i++){\
             OP(dst[0], (A*src[0] + E*src[step+0]));\
             OP(dst[1], (A*src[1] + E*src[step+1]));\
@@ -140,7 +144,8 @@ static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst/*align 8*/, uint8_t *
     }\
 }\
 \
-static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *_dst/*align 8*/, uint8_t *_src/*align 1*/, int stride, int h, int x, int y){\
+static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *_dst /*align 8*/, uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+{\
     pixel *dst = (pixel*)_dst;\
     pixel *src = (pixel*)_src;\
     const int A=(8-x)*(8-y);\
@@ -167,7 +172,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *_dst/*align 8*/, uint8_t *
         }\
     } else if (B + C) {\
         const int E= B+C;\
-        const int step= C ? stride : 1;\
+        const ptrdiff_t step = C ? stride : 1;\
         for(i=0; i<h; i++){\
             OP(dst[0], (A*src[0] + E*src[step+0]));\
             OP(dst[1], (A*src[1] + E*src[step+1]));\

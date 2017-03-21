@@ -1869,7 +1869,7 @@ static void avg_width8_msa(uint8_t *src, int32_t src_stride,
 }
 
 void ff_put_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -1886,7 +1886,7 @@ void ff_put_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_put_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     int32_t cnt;
 
@@ -1910,7 +1910,7 @@ void ff_put_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_put_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     int32_t cnt;
 
@@ -1934,7 +1934,7 @@ void ff_put_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_avg_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -1955,7 +1955,7 @@ void ff_avg_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_avg_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
@@ -1975,7 +1975,7 @@ void ff_avg_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_avg_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
-                                int stride, int height, int x, int y)
+                                ptrdiff_t stride, int height, int x, int y)
 {
     int32_t cnt;
 
