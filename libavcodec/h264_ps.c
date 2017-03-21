@@ -800,8 +800,8 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
 
     pps->weighted_pred                        = get_bits1(gb);
     pps->weighted_bipred_idc                  = get_bits(gb, 2);
-    pps->init_qp                              = get_se_golomb(gb) + 26 + qp_bd_offset;
-    pps->init_qs                              = get_se_golomb(gb) + 26 + qp_bd_offset;
+    pps->init_qp                              = get_se_golomb(gb) + 26U + qp_bd_offset;
+    pps->init_qs                              = get_se_golomb(gb) + 26U + qp_bd_offset;
     pps->chroma_qp_index_offset[0]            = get_se_golomb(gb);
     if (pps->chroma_qp_index_offset[0] < -12 || pps->chroma_qp_index_offset[0] > 12) {
         ret = AVERROR_INVALIDDATA;
