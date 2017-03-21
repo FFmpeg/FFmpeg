@@ -62,7 +62,7 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
 {
     uint8_t *d;
     int shift = *plane * bits_per_plane;
-    unsigned mask  = ((1 << bits_per_plane) - 1) << shift;
+    unsigned mask  = ((1U << bits_per_plane) - 1) << shift;
     value   <<= shift;
 
     while (run > 0) {
