@@ -40,6 +40,11 @@
 #define AVIO_SEEKABLE_NORMAL (1 << 0)
 
 /**
+ * Seeking by timestamp with avio_seek_time() is possible.
+ */
+#define AVIO_SEEKABLE_TIME   (1 << 1)
+
+/**
  * Callback for checking whether to abort blocking functions.
  * AVERROR_EXIT is returned in this case by the interrupted
  * function. During blocking operations, callback is called with

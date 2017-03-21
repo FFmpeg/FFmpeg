@@ -934,6 +934,9 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if(h->prot) {
         (*s)->read_pause = io_read_pause;
         (*s)->read_seek  = io_read_seek;
+
+        if (h->prot->url_read_seek)
+            (*s)->seekable |= AVIO_SEEKABLE_TIME;
     }
     (*s)->short_seek_get = io_short_seek;
     (*s)->av_class = &ff_avio_class;
