@@ -197,7 +197,7 @@ static av_always_inline int decode_pixel(ArithCoder *acoder, PixContext *pctx,
 }
 
 static int decode_pixel_in_context(ArithCoder *acoder, PixContext *pctx,
-                                   uint8_t *src, int stride, int x, int y,
+                                   uint8_t *src, ptrdiff_t stride, int x, int y,
                                    int has_right)
 {
     uint8_t neighbours[4];
@@ -290,8 +290,9 @@ static int decode_pixel_in_context(ArithCoder *acoder, PixContext *pctx,
 }
 
 static int decode_region(ArithCoder *acoder, uint8_t *dst, uint8_t *rgb_pic,
-                         int x, int y, int width, int height, int stride,
-                         int rgb_stride, PixContext *pctx, const uint32_t *pal)
+                         int x, int y, int width, int height, ptrdiff_t stride,
+                         ptrdiff_t rgb_stride, PixContext *pctx,
+                         const uint32_t *pal)
 {
     int i, j, p;
     uint8_t *rgb_dst = rgb_pic + x * 3 + y * rgb_stride;
@@ -368,8 +369,8 @@ static int motion_compensation(MSS12Context const *c,
 }
 
 static int decode_region_masked(MSS12Context const *c, ArithCoder *acoder,
-                                uint8_t *dst, int stride, uint8_t *mask,
-                                int mask_stride, int x, int y,
+                                uint8_t *dst, ptrdiff_t stride, uint8_t *mask,
+                                ptrdiff_t mask_stride, int x, int y,
                                 int width, int height,
                                 PixContext *pctx)
 {
@@ -466,8 +467,8 @@ static int decode_region_intra(SliceContext *sc, ArithCoder *acoder,
 
     if (!mode) {
         int i, j, pix, rgb_pix;
-        int stride       = c->pal_stride;
-        int rgb_stride   = c->rgb_stride;
+        ptrdiff_t stride     = c->pal_stride;
+        ptrdiff_t rgb_stride = c->rgb_stride;
         uint8_t *dst     = c->pal_pic + x     + y * stride;
         uint8_t *rgb_dst = c->rgb_pic + x * 3 + y * rgb_stride;
 

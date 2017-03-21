@@ -136,7 +136,7 @@ typedef struct MSS4Context {
     uint16_t   quant_mat[2][64];
 
     int        *prev_dc[3];
-    int        dc_stride[3];
+    ptrdiff_t  dc_stride[3];
     int        dc_cache[4][4];
 
     int        prev_vec[3][4];
