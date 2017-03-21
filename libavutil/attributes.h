@@ -117,7 +117,7 @@
 #    define av_printf_format(fmtpos, attrpos)
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(2,5)
+#if AV_GCC_VERSION_AT_LEAST(2,5) || defined(__clang__)
 #    define av_noreturn __attribute__((noreturn))
 #else
 #    define av_noreturn
