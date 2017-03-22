@@ -297,7 +297,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ff_huffyuvdsp_init(&s->hdsp, avctx);
+    ff_huffyuvdsp_init(&s->hdsp, avctx->pix_fmt);
     ff_llviddsp_init(&s->llviddsp);
     memset(s->vlc, 0, 4 * sizeof(VLC));
 
