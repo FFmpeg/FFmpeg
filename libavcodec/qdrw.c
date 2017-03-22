@@ -434,7 +434,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
             if (bppcnt == 3 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB24;
-            } else if (bppcnt == 3 && bpp == 5) {
+            } else if (bppcnt == 3 && bpp == 5 || bppcnt == 2 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB555;
             } else if (bppcnt == 4 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_ARGB;
