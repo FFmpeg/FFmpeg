@@ -362,52 +362,62 @@ static int parse_frame_header(AC3DecodeContext *s)
  * Set stereo downmixing coefficients based on frame header info.
  * reference: Section 7.8.2 Downmixing Into Two Channels
  */
-static void set_downmix_coeffs(AC3DecodeContext *s)
+static int set_downmix_coeffs(AC3DecodeContext *s)
 {
     int i;
     float cmix = gain_levels[s->  center_mix_level];
     float smix = gain_levels[s->surround_mix_level];
     float norm0, norm1;
-    float downmix_coeffs[AC3_MAX_CHANNELS][2];
+    float downmix_coeffs[2][AC3_MAX_CHANNELS];
+
+    if (!s->downmix_coeffs[0]) {
+        s->downmix_coeffs[0] = av_malloc_array(2 * AC3_MAX_CHANNELS,
+                                               sizeof(**s->downmix_coeffs));
+        if (!s->downmix_coeffs[0])
+            return AVERROR(ENOMEM);
+        s->downmix_coeffs[1] = s->downmix_coeffs[0] + AC3_MAX_CHANNELS;
+    }
 
     for (i = 0; i < s->fbw_channels; i++) {
-        downmix_coeffs[i][0] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
-        downmix_coeffs[i][1] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
+        downmix_coeffs[0][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
+        downmix_coeffs[1][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
     }
     if (s->channel_mode > 1 && s->channel_mode & 1) {
-        downmix_coeffs[1][0] = downmix_coeffs[1][1] = cmix;
+        downmix_coeffs[0][1] = downmix_coeffs[1][1] = cmix;
     }
     if (s->channel_mode == AC3_CHMODE_2F1R || s->channel_mode == AC3_CHMODE_3F1R) {
         int nf = s->channel_mode - 2;
-        downmix_coeffs[nf][0] = downmix_coeffs[nf][1] = smix * LEVEL_MINUS_3DB;
+        downmix_coeffs[0][nf] = downmix_coeffs[1][nf] = smix * LEVEL_MINUS_3DB;
     }
     if (s->channel_mode == AC3_CHMODE_2F2R || s->channel_mode == AC3_CHMODE_3F2R) {
         int nf = s->channel_mode - 4;
-        downmix_coeffs[nf][0] = downmix_coeffs[nf+1][1] = smix;
+        downmix_coeffs[0][nf] = downmix_coeffs[1][nf+1] = smix;
     }
 
     /* renormalize */
     norm0 = norm1 = 0.0;
     for (i = 0; i < s->fbw_channels; i++) {
-        norm0 += downmix_coeffs[i][0];
-        norm1 += downmix_coeffs[i][1];
+        norm0 += downmix_coeffs[0][i];
+        norm1 += downmix_coeffs[1][i];
     }
     norm0 = 1.0f / norm0;
     norm1 = 1.0f / norm1;
     for (i = 0; i < s->fbw_channels; i++) {
-        downmix_coeffs[i][0] *= norm0;
-        downmix_coeffs[i][1] *= norm1;
+        downmix_coeffs[0][i] *= norm0;
+        downmix_coeffs[1][i] *= norm1;
     }
 
     if (s->output_mode == AC3_CHMODE_MONO) {
         for (i = 0; i < s->fbw_channels; i++)
-            downmix_coeffs[i][0] = (downmix_coeffs[i][0] +
-                                    downmix_coeffs[i][1]) * LEVEL_MINUS_3DB;
+            downmix_coeffs[0][i] = (downmix_coeffs[0][i] +
+                                    downmix_coeffs[1][i]) * LEVEL_MINUS_3DB;
     }
     for (i = 0; i < s->fbw_channels; i++) {
-        s->downmix_coeffs[i][0] = FIXR12(downmix_coeffs[i][0]);
-        s->downmix_coeffs[i][1] = FIXR12(downmix_coeffs[i][1]);
+        s->downmix_coeffs[0][i] = FIXR12(downmix_coeffs[0][i]);
+        s->downmix_coeffs[1][i] = FIXR12(downmix_coeffs[1][i]);
     }
+
+    return 0;
 }
 
 /**
@@ -1562,7 +1572,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         /* set downmixing coefficients if needed */
         if (s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
                 s->fbw_channels == s->out_channels)) {
-            set_downmix_coeffs(s);
+            if ((ret = set_downmix_coeffs(s)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "error setting downmix coeffs\n");
+                return ret;
+            }
         }
     } else if (!s->channels) {
         av_log(avctx, AV_LOG_ERROR, "unable to determine channel mode\n");
@@ -1685,6 +1698,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->imdct_512);
     ff_mdct_end(&s->imdct_256);
     av_freep(&s->fdsp);
+    av_freep(&s->downmix_coeffs[0]);
 
     return 0;
 }

@@ -76,8 +76,8 @@ void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
 #define MIX5(mono, stereo)                                      \
     __asm__ volatile (                                          \
         "movss           0(%1), %%xmm5          \n"             \
-        "movss           8(%1), %%xmm6          \n"             \
-        "movss          24(%1), %%xmm7          \n"             \
+        "movss           4(%1), %%xmm6          \n"             \
+        "movss          12(%1), %%xmm7          \n"             \
         "shufps     $0, %%xmm5, %%xmm5          \n"             \
         "shufps     $0, %%xmm6, %%xmm6          \n"             \
         "shufps     $0, %%xmm7, %%xmm7          \n"             \
@@ -102,7 +102,7 @@ void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
         "add               $16, %0              \n"             \
         "jl                 1b                  \n"             \
         : "+&r"(i)                                              \
-        : "r"(matrix),                                          \
+        : "r"(matrix[0]),                                          \
           "r"(samples[0] + len),                                \
           "r"(samples[1] + len),                                \
           "r"(samples[2] + len),                                \
@@ -146,22 +146,22 @@ void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
         : "memory"                                              \
     );
 
-static void ac3_downmix_sse(float **samples, float (*matrix)[2],
+static void ac3_downmix_sse(float **samples, float **matrix,
                             int out_ch, int in_ch, int len)
 {
-    int (*matrix_cmp)[2] = (int(*)[2])matrix;
+    int **matrix_cmp = (int **)matrix;
     intptr_t i, j, k, m;
 
     i = -len * sizeof(float);
     if (in_ch == 5 && out_ch == 2 &&
-        !(matrix_cmp[0][1] | matrix_cmp[2][0]   |
-          matrix_cmp[3][1] | matrix_cmp[4][0]   |
-          (matrix_cmp[1][0] ^ matrix_cmp[1][1]) |
-          (matrix_cmp[0][0] ^ matrix_cmp[2][1]))) {
+        !(matrix_cmp[1][0] | matrix_cmp[0][2]   |
+          matrix_cmp[1][3] | matrix_cmp[0][4]   |
+          (matrix_cmp[0][1] ^ matrix_cmp[1][1]) |
+          (matrix_cmp[0][0] ^ matrix_cmp[1][2]))) {
         MIX5(IF0, IF1);
     } else if (in_ch == 5 && out_ch == 1 &&
-               matrix_cmp[0][0] == matrix_cmp[2][0] &&
-               matrix_cmp[3][0] == matrix_cmp[4][0]) {
+               matrix_cmp[0][0] == matrix_cmp[0][2] &&
+               matrix_cmp[0][3] == matrix_cmp[0][4]) {
         MIX5(IF1, IF0);
     } else {
         LOCAL_ALIGNED(16, float, matrix_simd, [AC3_MAX_CHANNELS], [2][4]);
@@ -171,18 +171,20 @@ static void ac3_downmix_sse(float **samples, float (*matrix)[2],
             samp[j] = samples[j] + len;
 
         j = 2 * in_ch * sizeof(float);
+        k =     in_ch * sizeof(float);
         __asm__ volatile (
             "1:                                 \n"
+            "sub             $4, %1             \n"
             "sub             $8, %0             \n"
-            "movss     (%2, %0), %%xmm4         \n"
-            "movss    4(%2, %0), %%xmm5         \n"
+            "movss     (%3, %1), %%xmm4         \n"
+            "movss     (%4, %1), %%xmm5         \n"
             "shufps          $0, %%xmm4, %%xmm4 \n"
             "shufps          $0, %%xmm5, %%xmm5 \n"
-            "movaps      %%xmm4,   (%1, %0, 4)  \n"
-            "movaps      %%xmm5, 16(%1, %0, 4)  \n"
+            "movaps      %%xmm4,   (%2, %0, 4)  \n"
+            "movaps      %%xmm5, 16(%2, %0, 4)  \n"
             "jg              1b                 \n"
-            : "+&r"(j)
-            : "r"(matrix_simd), "r"(matrix)
+            : "+&r"(j), "+&r"(k)
+            : "r"(matrix_simd), "r"(matrix[0]), "r"(matrix[1])
             : "memory"
         );
         if (out_ch == 2) {

@@ -132,10 +132,10 @@ typedef struct AC3DSPContext {
     void (*sum_square_butterfly_float)(float sum[4], const float *coef0,
                                        const float *coef1, int len);
 
-    void (*downmix)(float **samples, float (*matrix)[2], int out_ch,
+    void (*downmix)(float **samples, float **matrix, int out_ch,
                     int in_ch, int len);
 
-    void (*downmix_fixed)(int32_t **samples, int16_t (*matrix)[2], int out_ch,
+    void (*downmix_fixed)(int32_t **samples, int16_t **matrix, int out_ch,
                           int in_ch, int len);
 
     /**

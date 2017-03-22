@@ -159,7 +159,7 @@ typedef struct AC3DecodeContext {
     int fbw_channels;                           ///< number of full-bandwidth channels
     int channels;                               ///< number of total channels
     int lfe_ch;                                 ///< index of LFE channel
-    SHORTFLOAT downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
+    SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
     int downmixed;                              ///< indicates if coeffs are currently downmixed
     int output_mode;                            ///< output channel configuration
     int out_channels;                           ///< number of output channels
