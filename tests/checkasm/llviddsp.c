@@ -41,7 +41,7 @@ static void check_add_bytes(LLVidDSPContext c, int width)
     uint8_t *src1 = av_mallocz(width);
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, int w);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w);
 
     if (!src0 || !src1 || !dst0 || !dst1)
         fail();
