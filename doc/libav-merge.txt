@@ -95,7 +95,6 @@ Stuff that didn't reach the codebase:
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
 - VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
-- Switching examples to the new encode/decode API (see 67d28f4a0f)
 
 Collateral damage that needs work locally:
 ------------------------------------------
@@ -103,3 +102,9 @@ Collateral damage that needs work locally:
 - Merge proresdec2.c and proresdec_lgpl.c
 - Merge proresenc_anatoliy.c and proresenc_kostya.c
 - Remove ADVANCED_PARSER in libavcodec/hevc_parser.c
+
+Extra changes needed to be aligned with Libav:
+----------------------------------------------
+
+- Switching our examples to the new encode/decode API (see 67d28f4a0f)
+- AC3 speed-up for our fixed version (see a9ba59591e)
