@@ -26,8 +26,6 @@
 
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
-#define USE_ATOMICS 0
-
 #if HAVE_PTHREADS
 #include <pthread.h>
 
@@ -145,8 +143,6 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 #define ff_thread_once(control, routine) pthread_once(control, routine)
 
 #else
-
-#define USE_ATOMICS 1
 
 #define AVMutex char
 

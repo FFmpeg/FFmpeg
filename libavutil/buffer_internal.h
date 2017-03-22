@@ -87,8 +87,6 @@ struct AVBufferPool {
      */
     volatile int refcount;
 
-    volatile int nb_allocated;
-
     int size;
     void *opaque;
     AVBufferRef* (*alloc)(int size);
