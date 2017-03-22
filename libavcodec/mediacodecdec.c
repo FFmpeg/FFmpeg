@@ -29,7 +29,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/atomic.h"
 
 #include "avcodec.h"
 #include "h264_parse.h"
