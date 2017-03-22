@@ -47,7 +47,6 @@ typedef struct HuffYUVDSPContext {
 } HuffYUVDSPContext;
 
 void ff_huffyuvdsp_init(HuffYUVDSPContext *c, AVCodecContext *avctx);
-void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c, AVCodecContext *avctx);
 void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_HUFFYUVDSP_H */
