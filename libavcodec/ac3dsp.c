@@ -279,6 +279,49 @@ static void ac3_downmix_c(float **samples, float **matrix,
     }
 }
 
+static void ac3_downmix_5_to_2_symmetric_c_fixed(int32_t **samples, int16_t **matrix,
+                                           int len)
+{
+    int i;
+    int64_t v0, v1;
+    int16_t front_mix    = matrix[0][0];
+    int16_t center_mix   = matrix[0][1];
+    int16_t surround_mix = matrix[0][3];
+
+    for (i = 0; i < len; i++) {
+        v0 = (int64_t)samples[0][i] * front_mix  +
+             (int64_t)samples[1][i] * center_mix +
+             (int64_t)samples[3][i] * surround_mix;
+
+        v1 = (int64_t)samples[1][i] * center_mix +
+             (int64_t)samples[2][i] * front_mix  +
+             (int64_t)samples[4][i] * surround_mix;
+
+        samples[0][i] = (v0+2048)>>12;
+        samples[1][i] = (v1+2048)>>12;
+    }
+}
+
+static void ac3_downmix_5_to_1_symmetric_c_fixed(int32_t **samples, int16_t **matrix,
+                                                 int len)
+{
+    int i;
+    int64_t v0;
+    int16_t front_mix    = matrix[0][0];
+    int16_t center_mix   = matrix[0][1];
+    int16_t surround_mix = matrix[0][3];
+
+    for (i = 0; i < len; i++) {
+        v0 = (int64_t)samples[0][i] * front_mix    +
+             (int64_t)samples[1][i] * center_mix   +
+             (int64_t)samples[2][i] * front_mix    +
+             (int64_t)samples[3][i] * surround_mix +
+             (int64_t)samples[4][i] * surround_mix;
+
+        samples[0][i] = (v0+2048)>>12;
+    }
+}
+
 static void ac3_downmix_c_fixed(int32_t **samples, int16_t **matrix,
                                 int out_ch, int in_ch, int len)
 {
@@ -307,6 +350,24 @@ static void ac3_downmix_c_fixed(int32_t **samples, int16_t **matrix,
 void ff_ac3dsp_downmix_fixed(AC3DSPContext *c, int32_t **samples, int16_t **matrix,
                              int out_ch, int in_ch, int len)
 {
+    if (c->in_channels != in_ch || c->out_channels != out_ch) {
+        c->in_channels  = in_ch;
+        c->out_channels = out_ch;
+        c->downmix_fixed = NULL;
+
+        if (in_ch == 5 && out_ch == 2 &&
+            !(matrix[1][0] | matrix[0][2]  |
+              matrix[1][3] | matrix[0][4]  |
+             (matrix[0][1] ^ matrix[1][1]) |
+             (matrix[0][0] ^ matrix[1][2]))) {
+            c->downmix_fixed = ac3_downmix_5_to_2_symmetric_c_fixed;
+        } else if (in_ch == 5 && out_ch == 1 &&
+                   matrix[0][0] == matrix[0][2] &&
+                   matrix[0][3] == matrix[0][4]) {
+            c->downmix_fixed = ac3_downmix_5_to_1_symmetric_c_fixed;
+        }
+    }
+
     if (c->downmix_fixed)
         c->downmix_fixed(samples, matrix, len);
     else
