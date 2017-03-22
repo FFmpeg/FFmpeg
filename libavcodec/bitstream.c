@@ -28,7 +28,6 @@
  * bitstream api.
  */
 
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/qsort.h"
 #include "avcodec.h"
