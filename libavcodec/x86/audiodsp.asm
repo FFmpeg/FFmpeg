@@ -140,7 +140,8 @@ cglobal vector_clipf, 3, 3, 6, dst, src, len, min, max
     VBROADCASTSS m0, minm
     VBROADCASTSS m1, maxm
 %elif WIN64
-    VBROADCASTSS m0, m3
+    SWAP 0, 3
+    VBROADCASTSS m0, m0
     VBROADCASTSS m1, maxm
 %else ; 64bit sysv
     VBROADCASTSS m0, m0
