@@ -23,6 +23,8 @@
 #ifndef AVCODEC_HEVC_H
 #define AVCODEC_HEVC_H
 
+#include <stdatomic.h>
+
 #include "libavutil/buffer.h"
 #include "libavutil/md5.h"
 
@@ -885,7 +887,7 @@ typedef struct HEVCContext {
     uint16_t seq_output;
 
     int enable_parallel_tiles;
-    int wpp_err;
+    atomic_int wpp_err;
 
     const uint8_t *data;
 

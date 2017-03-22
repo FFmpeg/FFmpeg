@@ -23,7 +23,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/display.h"
@@ -2406,7 +2405,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
 
-        if (avpriv_atomic_int_get(&s1->wpp_err)){
+        if (atomic_load(&s1->wpp_err)) {
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return 0;
         }
@@ -2417,7 +2416,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
         if (more_data < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
-            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            atomic_store(&s1->wpp_err, 1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return more_data;
         }
@@ -2429,7 +2428,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ff_hevc_hls_filters(s, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->ps.sps->width && ctb_row != s->sh.num_entry_point_offsets) {
-            avpriv_atomic_int_set(&s1->wpp_err,  1);
+            atomic_store(&s1->wpp_err, 1);
             ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
             return 0;
         }
@@ -2530,7 +2529,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         s->sList[i]->HEVClc = s->HEVClcList[i];
     }
 
-    avpriv_atomic_int_set(&s->wpp_err, 0);
+    atomic_store(&s->wpp_err, 0);
     ff_reset_entries(s->avctx);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++) {
@@ -3339,6 +3338,8 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     s->enable_parallel_tiles = 0;
     s->picture_struct = 0;
     s->eos = 1;
+
+    atomic_init(&s->wpp_err, 0);
 
     if(avctx->active_thread_type & FF_THREAD_SLICE)
         s->threads_number = avctx->thread_count;
