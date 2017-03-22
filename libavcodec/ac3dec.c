@@ -1430,19 +1430,19 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             ac3_downmix_c_fixed16(s->outptr, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
 #else
-            s->ac3dsp.downmix(s->outptr, s->downmix_coeffs,
+            ff_ac3dsp_downmix(&s->ac3dsp, s->outptr, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
 #endif
         }
     } else {
         if (downmix_output) {
-            s->ac3dsp.AC3_RENAME(downmix)(s->xcfptr + 1, s->downmix_coeffs,
+            AC3_RENAME(ff_ac3dsp_downmix)(&s->ac3dsp, s->xcfptr + 1, s->downmix_coeffs,
                                           s->out_channels, s->fbw_channels, 256);
         }
 
         if (downmix_output && !s->downmixed) {
             s->downmixed = 1;
-            s->ac3dsp.AC3_RENAME(downmix)(s->dlyptr, s->downmix_coeffs,
+            AC3_RENAME(ff_ac3dsp_downmix)(&s->ac3dsp, s->dlyptr, s->downmix_coeffs,
                                           s->out_channels, s->fbw_channels, 128);
         }
 

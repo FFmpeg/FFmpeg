@@ -87,7 +87,8 @@ MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
 
 # subsystems
-YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o                  \
+                                          x86/ac3dsp_downmix.o
 YASM-OBJS-$(CONFIG_AUDIODSP)           += x86/audiodsp.o
 YASM-OBJS-$(CONFIG_BLOCKDSP)           += x86/blockdsp.o
 YASM-OBJS-$(CONFIG_BSWAPDSP)           += x86/bswapdsp.o
