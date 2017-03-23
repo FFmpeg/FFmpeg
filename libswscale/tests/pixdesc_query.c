@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
 #include "libswscale/swscale_internal.h"
 
 static const struct {
@@ -45,17 +46,27 @@ static const struct {
 
 int main(void)
 {
-    int i;
+    int i, j;
 
     for (i = 0; i < FF_ARRAY_ELEMS(query_tab); i++) {
+        const char **pix_fmts = NULL;
+        int nb_pix_fmts = 0;
         const AVPixFmtDescriptor *pix_desc = NULL;
-        printf("%s:\n", query_tab[i].class);
+
         while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
             enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
             if (query_tab[i].cond(pix_fmt))
-                printf("  %s\n", pix_desc->name);
+                av_dynarray_add(&pix_fmts, &nb_pix_fmts, (void *)pix_desc->name);
         }
-        printf("\n");
+
+        if (pix_fmts) {
+            printf("%s:\n", query_tab[i].class);
+            for (j = 0; j < nb_pix_fmts; j++)
+                printf("  %s\n", pix_fmts[j]);
+            printf("\n");
+
+            free(pix_fmts);
+        }
     }
     return 0;
 }
