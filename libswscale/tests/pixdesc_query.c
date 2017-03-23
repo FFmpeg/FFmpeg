@@ -64,8 +64,15 @@ int main(void)
 
         while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
             enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
-            if (query_tab[i].cond(pix_fmt))
-                av_dynarray_add(&pix_fmts, &nb_pix_fmts, (void *)pix_desc->name);
+            if (query_tab[i].cond(pix_fmt)) {
+                const char *pix_name = pix_desc->name;
+                if      (pix_fmt == AV_PIX_FMT_RGB32)   pix_name = "rgb32";
+                else if (pix_fmt == AV_PIX_FMT_RGB32_1) pix_name = "rgb32_1";
+                else if (pix_fmt == AV_PIX_FMT_BGR32)   pix_name = "bgr32";
+                else if (pix_fmt == AV_PIX_FMT_BGR32_1) pix_name = "bgr32_1";
+
+                av_dynarray_add(&pix_fmts, &nb_pix_fmts, (void *)pix_name);
+            }
         }
 
         if (pix_fmts) {

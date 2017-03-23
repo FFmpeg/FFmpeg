@@ -323,8 +323,6 @@ isPlanarYUV:
 isRGB:
   0bgr
   0rgb
-  abgr
-  argb
   bayer_bggr16be
   bayer_bggr16le
   bayer_bggr8
@@ -339,6 +337,8 @@ isRGB:
   bayer_rggb8
   bgr0
   bgr24
+  bgr32
+  bgr32_1
   bgr4
   bgr444be
   bgr444le
@@ -350,7 +350,6 @@ isRGB:
   bgr565be
   bgr565le
   bgr8
-  bgra
   bgra64be
   bgra64le
   gbrap
@@ -373,6 +372,8 @@ isRGB:
   gbrp9le
   rgb0
   rgb24
+  rgb32
+  rgb32_1
   rgb4
   rgb444be
   rgb444le
@@ -384,7 +385,6 @@ isRGB:
   rgb565be
   rgb565le
   rgb8
-  rgba
   rgba64be
   rgba64le
 
@@ -401,11 +401,11 @@ Gray:
   ya8
 
 RGBinInt:
-  abgr
-  bgra
   monob
   monow
   rgb24
+  rgb32
+  rgb32_1
   rgb4
   rgb444be
   rgb444le
@@ -421,8 +421,9 @@ RGBinInt:
   rgba64le
 
 BGRinInt:
-  argb
   bgr24
+  bgr32
+  bgr32_1
   bgr4
   bgr444be
   bgr444le
@@ -438,7 +439,6 @@ BGRinInt:
   bgra64le
   monob
   monow
-  rgba
 
 Bayer:
   bayer_bggr16be
@@ -457,8 +457,6 @@ Bayer:
 AnyRGB:
   0bgr
   0rgb
-  abgr
-  argb
   bayer_bggr16be
   bayer_bggr16le
   bayer_bggr8
@@ -473,6 +471,8 @@ AnyRGB:
   bayer_rggb8
   bgr0
   bgr24
+  bgr32
+  bgr32_1
   bgr4
   bgr444be
   bgr444le
@@ -484,7 +484,6 @@ AnyRGB:
   bgr565be
   bgr565le
   bgr8
-  bgra
   bgra64be
   bgra64le
   gbrap
@@ -509,6 +508,8 @@ AnyRGB:
   monow
   rgb0
   rgb24
+  rgb32
+  rgb32_1
   rgb4
   rgb444be
   rgb444le
@@ -520,16 +521,14 @@ AnyRGB:
   rgb565be
   rgb565le
   rgb8
-  rgba
   rgba64be
   rgba64le
 
 ALPHA:
-  abgr
-  argb
   ayuv64be
   ayuv64le
-  bgra
+  bgr32
+  bgr32_1
   bgra64be
   bgra64le
   gbrap
@@ -540,7 +539,8 @@ ALPHA:
   gbrap16be
   gbrap16le
   pal8
-  rgba
+  rgb32
+  rgb32_1
   rgba64be
   rgba64le
   ya16be
@@ -571,8 +571,6 @@ ALPHA:
 Packed:
   0bgr
   0rgb
-  abgr
-  argb
   ayuv64be
   ayuv64le
   bayer_bggr16be
@@ -589,6 +587,8 @@ Packed:
   bayer_rggb8
   bgr0
   bgr24
+  bgr32
+  bgr32_1
   bgr4
   bgr444be
   bgr444le
@@ -600,7 +600,6 @@ Packed:
   bgr565be
   bgr565le
   bgr8
-  bgra
   bgra64be
   bgra64le
   monob
@@ -608,6 +607,8 @@ Packed:
   pal8
   rgb0
   rgb24
+  rgb32
+  rgb32_1
   rgb4
   rgb444be
   rgb444le
@@ -619,7 +620,6 @@ Packed:
   rgb565be
   rgb565le
   rgb8
-  rgba
   rgba64be
   rgba64le
   uyvy422
@@ -730,8 +730,6 @@ Planar:
 PackedRGB:
   0bgr
   0rgb
-  abgr
-  argb
   bayer_bggr16be
   bayer_bggr16le
   bayer_bggr8
@@ -746,6 +744,8 @@ PackedRGB:
   bayer_rggb8
   bgr0
   bgr24
+  bgr32
+  bgr32_1
   bgr4
   bgr444be
   bgr444le
@@ -757,11 +757,12 @@ PackedRGB:
   bgr565be
   bgr565le
   bgr8
-  bgra
   bgra64be
   bgra64le
   rgb0
   rgb24
+  rgb32
+  rgb32_1
   rgb4
   rgb444be
   rgb444le
@@ -773,7 +774,6 @@ PackedRGB:
   rgb565be
   rgb565le
   rgb8
-  rgba
   rgba64be
   rgba64le
 
