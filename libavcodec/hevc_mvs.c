@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hevc.h"
+#include "hevcdec.h"
 
 static const uint8_t l0_l1_cand_idx[12][2] = {
     { 0, 1, },

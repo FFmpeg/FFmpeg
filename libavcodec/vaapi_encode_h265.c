@@ -25,7 +25,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"

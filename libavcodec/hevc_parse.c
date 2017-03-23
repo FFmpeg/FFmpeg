@@ -18,7 +18,7 @@
 
 #include "bytestream.h"
 #include "h2645_parse.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "hevc_parse.h"
 
 static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets *ps,

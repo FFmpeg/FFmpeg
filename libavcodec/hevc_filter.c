@@ -26,7 +26,7 @@
 #include "libavutil/internal.h"
 
 #include "cabac_functions.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 

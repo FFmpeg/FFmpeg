@@ -23,7 +23,7 @@
  */
 
 #include "golomb.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 enum HEVC_SEI_TYPE {
     SEI_TYPE_BUFFERING_PERIOD                     = 0,

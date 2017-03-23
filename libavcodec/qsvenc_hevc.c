@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "h2645_parse.h"
 #include "internal.h"
 #include "qsv.h"

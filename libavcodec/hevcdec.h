@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_HEVC_H
-#define AVCODEC_HEVC_H
+#ifndef AVCODEC_HEVCDEC_H
+#define AVCODEC_HEVCDEC_H
 
 #include <stdatomic.h>
 
@@ -1083,4 +1083,4 @@ extern const uint8_t ff_hevc_diag_scan4x4_y[16];
 extern const uint8_t ff_hevc_diag_scan8x8_x[64];
 extern const uint8_t ff_hevc_diag_scan8x8_y[64];
 
-#endif /* AVCODEC_HEVC_H */
+#endif /* AVCODEC_HEVCDEC_H */

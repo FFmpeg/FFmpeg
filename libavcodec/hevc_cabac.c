@@ -25,7 +25,7 @@
 #include "libavutil/common.h"
 
 #include "cabac_functions.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #define CABAC_MAX_BIN 31
 

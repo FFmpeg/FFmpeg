@@ -26,7 +26,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#include "hevc.h"
+#include "hevcdec.h"
 #include "h2645_parse.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,

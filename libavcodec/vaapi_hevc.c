@@ -24,7 +24,7 @@
 #include <va/va_dec_hevc.h>
 
 #include "avcodec.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "hwaccel.h"
 #include "vaapi_decode.h"
 

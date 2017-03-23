@@ -37,7 +37,7 @@
 #include "bytestream.h"
 #include "cabac_functions.h"
 #include "golomb.h"
-#include "hevc.h"
+#include "hevcdec.h"
 #include "profiles.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
