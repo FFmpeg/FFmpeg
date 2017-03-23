@@ -25,12 +25,12 @@
 #include "pixfmt.h"
 
 enum AVHWDeviceType {
+    AV_HWDEVICE_TYPE_NONE,
     AV_HWDEVICE_TYPE_VDPAU,
     AV_HWDEVICE_TYPE_CUDA,
     AV_HWDEVICE_TYPE_VAAPI,
     AV_HWDEVICE_TYPE_DXVA2,
     AV_HWDEVICE_TYPE_QSV,
-    AV_HWDEVICE_TYPE_NONE,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;

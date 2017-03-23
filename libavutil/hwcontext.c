@@ -67,7 +67,8 @@ enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name)
 
 const char *av_hwdevice_get_type_name(enum AVHWDeviceType type)
 {
-    if (type >= 0 && type < FF_ARRAY_ELEMS(hw_type_names))
+    if (type > AV_HWDEVICE_TYPE_NONE &&
+        type < FF_ARRAY_ELEMS(hw_type_names))
         return hw_type_names[type];
     else
         return NULL;
