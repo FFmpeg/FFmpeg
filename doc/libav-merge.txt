@@ -110,3 +110,4 @@ Extra changes needed to be aligned with Libav:
 
 - Switching our examples to the new encode/decode API (see 67d28f4a0f)
 - AC3 speed-up for our fixed version (see a9ba59591e)
+- HEVC IDCT bit depth 12-bit support (Libav added 8 and 10 but doesn't have 12)
