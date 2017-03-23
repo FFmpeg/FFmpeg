@@ -44,6 +44,9 @@ fate-g2m: $(FATE_G2M)
 FATE_RSCC += fate-iscc
 fate-iscc: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/pip.avi -an
 
+FATE_RSCC += fate-rscc-8bit
+fate-rscc-8bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/8bpp.avi -an -pix_fmt rgb24
+
 FATE_RSCC += fate-rscc-16bit
 fate-rscc-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/rscc/16bpp_555.avi -an
 
