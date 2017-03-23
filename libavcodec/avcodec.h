@@ -5836,12 +5836,15 @@ typedef struct AVBSFContext {
     void *priv_data;
 
     /**
-     * Parameters of the input stream. Set by the caller before av_bsf_init().
+     * Parameters of the input stream. This field is allocated in
+     * av_bsf_alloc(), it needs to be filled by the caller before
+     * av_bsf_init().
      */
     AVCodecParameters *par_in;
 
     /**
-     * Parameters of the output stream. Set by the filter in av_bsf_init().
+     * Parameters of the output stream. This field is allocated in
+     * av_bsf_alloc(), it is set by the filter in av_bsf_init().
      */
     AVCodecParameters *par_out;
 
