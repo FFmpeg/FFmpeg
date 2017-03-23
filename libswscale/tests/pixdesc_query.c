@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdlib.h>
+
 #include "libavutil/mem.h"
 #include "libswscale/swscale_internal.h"
 
@@ -44,6 +46,13 @@ static const struct {
     {"usePal",      usePal},
 };
 
+static int cmp_str(const void *a, const void *b)
+{
+    const char *s1 = *(const char **)a;
+    const char *s2 = *(const char **)b;
+    return strcmp(s1, s2);
+}
+
 int main(void)
 {
     int i, j;
@@ -60,6 +69,8 @@ int main(void)
         }
 
         if (pix_fmts) {
+            qsort(pix_fmts, nb_pix_fmts, sizeof(*pix_fmts), cmp_str);
+
             printf("%s:\n", query_tab[i].class);
             for (j = 0; j < nb_pix_fmts; j++)
                 printf("  %s\n", pix_fmts[j]);
