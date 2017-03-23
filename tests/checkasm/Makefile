@@ -30,7 +30,9 @@ AVFILTEROBJS-$(CONFIG_COLORSPACE_FILTER) += vf_colorspace.o
 CHECKASMOBJS-$(CONFIG_AVFILTER) += $(AVFILTEROBJS-yes)
 
 
--include $(SRC_PATH)/tests/checkasm/$(ARCH)/Makefile
+CHECKASMOBJS-$(ARCH_AARCH64)            += aarch64/checkasm.o
+CHECKASMOBJS-$(HAVE_ARMV5TE_EXTERNAL)   += arm/checkasm.o
+CHECKASMOBJS-$(HAVE_YASM)               += x86/checkasm.o
 
 CHECKASMOBJS += $(CHECKASMOBJS-yes) checkasm.o
 CHECKASMOBJS := $(sort $(CHECKASMOBJS:%=tests/checkasm/%))
