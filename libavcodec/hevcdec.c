@@ -38,6 +38,7 @@
 #include "cabac_functions.h"
 #include "golomb.h"
 #include "hevc.h"
+#include "hevc_data.h"
 #include "hevcdec.h"
 #include "profiles.h"
 

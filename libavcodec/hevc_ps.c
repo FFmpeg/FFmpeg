@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "golomb.h"
 #include "hevcdec.h"
+#include "hevc_data.h"
 
 static const uint8_t default_scaling_list_intra[] = {
     16, 16, 16, 16, 17, 18, 21, 24,
