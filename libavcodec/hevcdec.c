@@ -620,7 +620,7 @@ static int hls_slice_header(HEVCContext *s)
                 if (sh->slice_type == B_SLICE)
                     sh->nb_refs[L1] = get_ue_golomb_long(gb) + 1;
             }
-            if (sh->nb_refs[L0] > MAX_REFS || sh->nb_refs[L1] > MAX_REFS) {
+            if (sh->nb_refs[L0] > HEVC_MAX_REFS || sh->nb_refs[L1] > HEVC_MAX_REFS) {
                 av_log(s->avctx, AV_LOG_ERROR, "Too many refs: %d/%d.\n",
                        sh->nb_refs[L0], sh->nb_refs[L1]);
                 return AVERROR_INVALIDDATA;

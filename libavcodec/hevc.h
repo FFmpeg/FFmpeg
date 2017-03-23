@@ -62,4 +62,9 @@ enum HEVCNALUnitType {
 #define HEVC_MAX_SHORT_TERM_RPS_COUNT 64
 #define HEVC_MAX_CU_SIZE 128
 
+#define HEVC_MAX_REFS 16
+#define HEVC_MAX_DPB_SIZE 16 // A.4.1
+
+#define HEVC_MAX_LOG2_CTB_SIZE 6
+
 #endif /* AVCODEC_HEVC_H */
