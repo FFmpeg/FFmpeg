@@ -1395,6 +1395,11 @@ typedef struct AVCPBProperties {
  * @{
  */
 enum AVPacketSideDataType {
+    /**
+     * An AV_PKT_DATA_PALETTE side data packet contains exactly AVPALETTE_SIZE
+     * bytes worth of palette. This side data signals that a new palette is
+     * present.
+     */
     AV_PKT_DATA_PALETTE,
 
     /**
