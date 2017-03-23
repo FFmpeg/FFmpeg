@@ -799,7 +799,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             !memcmp(st->codecpar->extradata + st->codecpar->extradata_size - 9, "BottomUp", 9))
                             pal_src -= 9;
                         for (i = 0; i < pal_size / 4; i++)
-                            ast->pal[i] = 0xFFU<<24 | AV_RL32(pal_src+4*i);
+                            ast->pal[i] = 0xFFU<<24 | AV_RL32(pal_src + 4 * i);
                         ast->has_pal = 1;
                     }
 
