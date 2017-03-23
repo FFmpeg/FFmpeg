@@ -523,9 +523,11 @@ static av_cold void set_constqp(AVCodecContext *avctx)
             rc->constQP.qpInterB = rc->constQP.qpInterP;
         }
     } else if (ctx->cqp >= 0) {
-        rc->constQP.qpInterP = ctx->cqp;
-        rc->constQP.qpInterB = ctx->cqp;
-        rc->constQP.qpIntra = ctx->cqp;
+        rc->constQP.qpInterP = rc->constQP.qpInterB = rc->constQP.qpIntra = ctx->cqp;
+        if (avctx->b_quant_factor != 0.0)
+            rc->constQP.qpInterB = av_clip(ctx->cqp * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+        if (avctx->i_quant_factor != 0.0)
+            rc->constQP.qpIntra = av_clip(ctx->cqp * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
     }
 
     avctx->qmin = -1;
