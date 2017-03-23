@@ -1909,9 +1909,6 @@ static int write_status(URLContext *s, RTMPPacket *pkt,
     ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_field_name(&pp, "details");
     ff_amf_write_string(&pp, filename);
-    ff_amf_write_field_name(&pp, "clientid");
-    snprintf(statusmsg, sizeof(statusmsg), "%s", LIBAVFORMAT_IDENT);
-    ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_object_end(&pp);
 
     spkt.size = pp - spkt.data;
