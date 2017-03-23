@@ -102,6 +102,16 @@ static int decode_nal_sei_mastering_display_info(HEVCContext *s)
     return 0;
 }
 
+static int decode_nal_sei_content_light_level_info(HEVCContext *s)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+
+    s->max_content_light_level = get_bits(gb, 16);
+    s->max_frame_average_light_level = get_bits(gb, 16);
+
+    return 0;
+}
+
 static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -304,6 +314,8 @@ static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
         }
     case SEI_TYPE_MASTERING_DISPLAY_INFO:
         return decode_nal_sei_mastering_display_info(s);
+    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+        return decode_nal_sei_content_light_level_info(s);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         active_parameter_sets(s);
         av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
