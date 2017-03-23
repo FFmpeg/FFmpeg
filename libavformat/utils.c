@@ -3370,104 +3370,6 @@ void ff_rfps_calculate(AVFormatContext *ic)
     }
 }
 
-static int extract_extradata_init(AVStream *st)
-{
-    AVStreamInternal *i = st->internal;
-    const AVBitStreamFilter *f;
-    int ret;
-
-    f = av_bsf_get_by_name("extract_extradata");
-    if (!f)
-        goto finish;
-
-    i->extract_extradata.pkt = av_packet_alloc();
-    if (!i->extract_extradata.pkt)
-        return AVERROR(ENOMEM);
-
-    ret = av_bsf_alloc(f, &i->extract_extradata.bsf);
-    if (ret < 0)
-        goto fail;
-
-    ret = avcodec_parameters_copy(i->extract_extradata.bsf->par_in,
-                                  st->codecpar);
-    if (ret < 0)
-        goto fail;
-
-    i->extract_extradata.bsf->time_base_in = st->time_base;
-
-    /* if init fails here, we assume extracting extradata is just not
-     * supported for this codec, so we return success */
-    ret = av_bsf_init(i->extract_extradata.bsf);
-    if (ret < 0) {
-        av_bsf_free(&i->extract_extradata.bsf);
-        ret = 0;
-    }
-
-finish:
-    i->extract_extradata.inited = 1;
-
-    return 0;
-fail:
-    av_bsf_free(&i->extract_extradata.bsf);
-    av_packet_free(&i->extract_extradata.pkt);
-    return ret;
-}
-
-static int extract_extradata(AVStream *st, AVPacket *pkt)
-{
-    AVStreamInternal *i = st->internal;
-    AVPacket *pkt_ref;
-    int ret;
-
-    if (!i->extract_extradata.inited) {
-        ret = extract_extradata_init(st);
-        if (ret < 0)
-            return ret;
-    }
-
-    if (i->extract_extradata.inited && !i->extract_extradata.bsf)
-        return 0;
-
-    pkt_ref = i->extract_extradata.pkt;
-    ret = av_packet_ref(pkt_ref, pkt);
-    if (ret < 0)
-        return ret;
-
-    ret = av_bsf_send_packet(i->extract_extradata.bsf, pkt_ref);
-    if (ret < 0) {
-        av_packet_unref(pkt_ref);
-        return ret;
-    }
-
-    while (ret >= 0 && !i->avctx->extradata) {
-        int extradata_size;
-        uint8_t *extradata;
-
-        ret = av_bsf_receive_packet(i->extract_extradata.bsf, pkt_ref);
-        if (ret < 0) {
-            if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
-                return ret;
-            continue;
-        }
-
-        extradata = av_packet_get_side_data(pkt_ref, AV_PKT_DATA_NEW_EXTRADATA,
-                                            &extradata_size);
-
-        if (extradata) {
-            i->avctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!i->avctx->extradata) {
-                av_packet_unref(pkt_ref);
-                return AVERROR(ENOMEM);
-            }
-            memcpy(i->avctx->extradata, extradata, extradata_size);
-            i->avctx->extradata_size = extradata_size;
-        }
-        av_packet_unref(pkt_ref);
-    }
-
-    return 0;
-}
-
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count = 0, ret = 0, j;
@@ -3627,10 +3529,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (count < fps_analyze_framecount)
                     break;
             }
-            if (!st->codecpar->extradata &&
-                !st->internal->avctx->extradata &&
-                (!st->internal->extract_extradata.inited ||
-                 st->internal->extract_extradata.bsf))
+            if (st->parser && st->parser->parser->split &&
+                !st->internal->avctx->extradata)
                 break;
             if (st->first_dts == AV_NOPTS_VALUE &&
                 !(ic->iformat->flags & AVFMT_NOTIMESTAMPS) &&
@@ -3780,10 +3680,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             ff_rfps_add_frame(ic, st, pkt->dts);
 #endif
-        if (!st->internal->avctx->extradata) {
-            ret = extract_extradata(st, pkt);
-            if (ret < 0)
-                goto find_stream_info_err;
+        if (st->parser && st->parser->parser->split && !avctx->extradata) {
+            int i = st->parser->parser->split(avctx, pkt->data, pkt->size);
+            if (i > 0 && i < FF_MAX_EXTRADATA_SIZE) {
+                avctx->extradata_size = i;
+                avctx->extradata      = av_mallocz(avctx->extradata_size +
+                                                   AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!avctx->extradata)
+                    return AVERROR(ENOMEM);
+                memcpy(avctx->extradata, pkt->data,
+                       avctx->extradata_size);
+            }
         }
 
         /* If still no information, we try to open the codec and to
@@ -4043,8 +3950,6 @@ find_stream_info_err:
         if (st->info)
             av_freep(&st->info->duration_error);
         av_freep(&ic->streams[i]->info);
-        av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
-        av_packet_free(&ic->streams[i]->internal->extract_extradata.pkt);
     }
     if (ic->pb)
         av_log(ic, AV_LOG_DEBUG, "After avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d frames:%d\n",
@@ -4232,8 +4137,6 @@ static void free_stream(AVStream **pst)
             av_bsf_free(&st->internal->bsfcs[i]);
             av_freep(&st->internal->bsfcs);
         }
-        av_bsf_free(&st->internal->extract_extradata.bsf);
-        av_packet_free(&st->internal->extract_extradata.pkt);
     }
     av_freep(&st->internal);
 
