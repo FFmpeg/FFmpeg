@@ -79,8 +79,13 @@ tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
 tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 
+CONFIGURABLE_COMPONENTS =                                           \
+    $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
+    $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
+    $(SRC_PATH)/libavformat/protocols.c                             \
+
 config.h: .config
-.config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
+.config: $(CONFIGURABLE_COMPONENTS)
 	@-tput bold 2>/dev/null
 	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
