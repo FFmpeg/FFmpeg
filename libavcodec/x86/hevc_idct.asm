@@ -74,50 +74,23 @@ cglobal hevc_idct_%1x%1_dc_%2, 1, 2, 1, coeff, tmp
     RET
 %endmacro
 
-; 8-bit
+%macro INIT_IDCT_DC 1
 INIT_MMX mmxext
-IDCT_DC_NL  4,      8
-IDCT_DC     8,  2,  8
+IDCT_DC_NL  4,      %1
+IDCT_DC     8,  2,  %1
 
 INIT_XMM sse2
-IDCT_DC_NL  8,      8
-IDCT_DC    16,  4,  8
-IDCT_DC    32, 16,  8
+IDCT_DC_NL  8,      %1
+IDCT_DC    16,  4,  %1
+IDCT_DC    32, 16,  %1
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-IDCT_DC    16,  2,  8
-IDCT_DC    32,  8,  8
+IDCT_DC    16,  2,  %1
+IDCT_DC    32,  8,  %1
 %endif ;HAVE_AVX2_EXTERNAL
+%endmacro
 
-; 10-bit
-INIT_MMX mmxext
-IDCT_DC_NL  4,     10
-IDCT_DC     8,  2, 10
-
-INIT_XMM sse2
-IDCT_DC_NL  8,     10
-IDCT_DC    16,  4, 10
-IDCT_DC    32, 16, 10
-
-%if HAVE_AVX2_EXTERNAL
-INIT_YMM avx2
-IDCT_DC    16,  2, 10
-IDCT_DC    32,  8, 10
-%endif ;HAVE_AVX2_EXTERNAL
-
-; 12-bit
-INIT_MMX mmxext
-IDCT_DC_NL  4,     12
-IDCT_DC     8,  2, 12
-
-INIT_XMM sse2
-IDCT_DC_NL  8,     12
-IDCT_DC    16,  4, 12
-IDCT_DC    32, 16, 12
-
-%if HAVE_AVX2_EXTERNAL
-INIT_YMM avx2
-IDCT_DC    16,  2, 12
-IDCT_DC    32,  8, 12
-%endif ;HAVE_AVX2_EXTERNAL
+INIT_IDCT_DC  8
+INIT_IDCT_DC 10
+INIT_IDCT_DC 12
