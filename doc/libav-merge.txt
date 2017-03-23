@@ -96,6 +96,7 @@ Stuff that didn't reach the codebase:
   - e7078e842 hevcdsp: add x86 SIMD for MC
 - VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
+- Use the new bitstream filter for extracting extradata (see 8e2ea69135 and 096a8effa3)
 
 Collateral damage that needs work locally:
 ------------------------------------------
