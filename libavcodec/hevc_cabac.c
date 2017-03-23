@@ -26,6 +26,7 @@
 
 #include "cabac_functions.h"
 #include "hevc_data.h"
+#include "hevc.h"
 #include "hevcdec.h"
 
 #define CABAC_MAX_BIN 31
@@ -481,7 +482,7 @@ static void cabac_init_state(HEVCContext *s)
     int init_type = 2 - s->sh.slice_type;
     int i;
 
-    if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
+    if (s->sh.cabac_init_flag && s->sh.slice_type != HEVC_SLICE_I)
         init_type ^= 3;
 
     for (i = 0; i < HEVC_CONTEXTS; i++) {

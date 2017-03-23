@@ -360,14 +360,14 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
 
             sh->slice_type = get_ue_golomb(gb);
-            if (!(sh->slice_type == I_SLICE || sh->slice_type == P_SLICE ||
-                  sh->slice_type == B_SLICE)) {
+            if (!(sh->slice_type == HEVC_SLICE_I || sh->slice_type == HEVC_SLICE_P ||
+                  sh->slice_type == HEVC_SLICE_B)) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",
                        sh->slice_type);
                 return AVERROR_INVALIDDATA;
             }
-            s->pict_type = sh->slice_type == B_SLICE ? AV_PICTURE_TYPE_B :
-                           sh->slice_type == P_SLICE ? AV_PICTURE_TYPE_P :
+            s->pict_type = sh->slice_type == HEVC_SLICE_B ? AV_PICTURE_TYPE_B :
+                           sh->slice_type == HEVC_SLICE_P ? AV_PICTURE_TYPE_P :
                                                        AV_PICTURE_TYPE_I;
 
             if (ps->pps->output_flag_present_flag)

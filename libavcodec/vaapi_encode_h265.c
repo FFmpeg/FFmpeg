@@ -25,7 +25,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "hevcdec.h"
+#include "hevc.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"
@@ -630,11 +630,11 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
             }
         }
 
-        if (vslice->slice_type == P_SLICE || vslice->slice_type == B_SLICE) {
+        if (vslice->slice_type == HEVC_SLICE_P || vslice->slice_type == HEVC_SLICE_B) {
             u(1, vslice_field(num_ref_idx_active_override_flag));
             if (vslice->slice_fields.bits.num_ref_idx_active_override_flag) {
                 ue(vslice_var(num_ref_idx_l0_active_minus1));
-                if (vslice->slice_type == B_SLICE) {
+                if (vslice->slice_type == HEVC_SLICE_B) {
                     ue(vslice_var(num_ref_idx_l1_active_minus1));
                 }
             }
@@ -643,21 +643,21 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
                 av_assert0(0);
                 // ref_pic_lists_modification()
             }
-            if (vslice->slice_type == B_SLICE) {
+            if (vslice->slice_type == HEVC_SLICE_B) {
                 u(1, vslice_field(mvd_l1_zero_flag));
             }
             if (mseq->cabac_init_present_flag) {
                 u(1, vslice_field(cabac_init_flag));
             }
             if (vslice->slice_fields.bits.slice_temporal_mvp_enabled_flag) {
-                if (vslice->slice_type == B_SLICE)
+                if (vslice->slice_type == HEVC_SLICE_B)
                     u(1, vslice_field(collocated_from_l0_flag));
                 ue(vpic->collocated_ref_pic_index, collocated_ref_idx);
             }
             if ((vpic->pic_fields.bits.weighted_pred_flag &&
-                 vslice->slice_type == P_SLICE) ||
+                 vslice->slice_type == HEVC_SLICE_P) ||
                 (vpic->pic_fields.bits.weighted_bipred_flag &&
-                 vslice->slice_type == B_SLICE)) {
+                 vslice->slice_type == HEVC_SLICE_B)) {
                 av_assert0(0);
                 // pred_weight_table()
             }
@@ -1055,13 +1055,13 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
     case PICTURE_TYPE_I:
-        vslice->slice_type = I_SLICE;
+        vslice->slice_type = HEVC_SLICE_I;
         break;
     case PICTURE_TYPE_P:
-        vslice->slice_type = P_SLICE;
+        vslice->slice_type = HEVC_SLICE_P;
         break;
     case PICTURE_TYPE_B:
-        vslice->slice_type = B_SLICE;
+        vslice->slice_type = HEVC_SLICE_B;
         break;
     default:
         av_assert0(0 && "invalid picture type");
