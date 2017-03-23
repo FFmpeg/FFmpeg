@@ -25,7 +25,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "hevcdec.h"
+#include "hevc.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"
@@ -275,7 +275,7 @@ static void vaapi_encode_h265_write_vps(PutBitContext *pbc,
     VAAPIEncodeH265MiscSequenceParams *mseq = &priv->misc_sequence_params;
     int i, j;
 
-    vaapi_encode_h265_write_nal_unit_header(pbc, NAL_VPS);
+    vaapi_encode_h265_write_nal_unit_header(pbc, HEVC_NAL_VPS);
 
     u(4, mseq->video_parameter_set_id, vps_video_parameter_set_id);
 
@@ -395,7 +395,7 @@ static void vaapi_encode_h265_write_sps(PutBitContext *pbc,
     VAAPIEncodeH265MiscSequenceParams *mseq = &priv->misc_sequence_params;
     int i;
 
-    vaapi_encode_h265_write_nal_unit_header(pbc, NAL_SPS);
+    vaapi_encode_h265_write_nal_unit_header(pbc, HEVC_NAL_SPS);
 
     u(4, mseq->video_parameter_set_id, sps_video_parameter_set_id);
 
@@ -491,7 +491,7 @@ static void vaapi_encode_h265_write_pps(PutBitContext *pbc,
     VAAPIEncodeH265MiscSequenceParams *mseq = &priv->misc_sequence_params;
     int i;
 
-    vaapi_encode_h265_write_nal_unit_header(pbc, NAL_PPS);
+    vaapi_encode_h265_write_nal_unit_header(pbc, HEVC_NAL_PPS);
 
     ue(vpic->slice_pic_parameter_set_id, pps_pic_parameter_set_id);
     ue(mseq->seq_parameter_set_id, pps_seq_parameter_set_id);
@@ -576,7 +576,7 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
     vaapi_encode_h265_write_nal_unit_header(pbc, vpic->nal_unit_type);
 
     u(1, mslice_var(first_slice_segment_in_pic_flag));
-    if (vpic->nal_unit_type >= NAL_BLA_W_LP &&
+    if (vpic->nal_unit_type >= HEVC_NAL_BLA_W_LP &&
        vpic->nal_unit_type <= 23)
         u(1, mslice_var(no_output_of_prior_pics_flag));
 
@@ -597,8 +597,8 @@ static void vaapi_encode_h265_write_slice_header2(PutBitContext *pbc,
             u(1, 1, pic_output_flag);
         if (vseq->seq_fields.bits.separate_colour_plane_flag)
             u(2, vslice_field(colour_plane_id));
-        if (vpic->nal_unit_type != NAL_IDR_W_RADL &&
-           vpic->nal_unit_type != NAL_IDR_N_LP) {
+        if (vpic->nal_unit_type != HEVC_NAL_IDR_W_RADL &&
+           vpic->nal_unit_type != HEVC_NAL_IDR_N_LP) {
             u(4 + mseq->log2_max_pic_order_cnt_lsb_minus4,
               (pslice->pic_order_cnt &
                ((1 << (mseq->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1)),
@@ -998,25 +998,25 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
-        vpic->nal_unit_type = NAL_IDR_W_RADL;
+        vpic->nal_unit_type = HEVC_NAL_IDR_W_RADL;
         vpic->pic_fields.bits.idr_pic_flag = 1;
         vpic->pic_fields.bits.coding_type  = 1;
         vpic->pic_fields.bits.reference_pic_flag = 1;
         break;
     case PICTURE_TYPE_I:
-        vpic->nal_unit_type = NAL_TRAIL_R;
+        vpic->nal_unit_type = HEVC_NAL_TRAIL_R;
         vpic->pic_fields.bits.idr_pic_flag = 0;
         vpic->pic_fields.bits.coding_type  = 1;
         vpic->pic_fields.bits.reference_pic_flag = 1;
         break;
     case PICTURE_TYPE_P:
-        vpic->nal_unit_type = NAL_TRAIL_R;
+        vpic->nal_unit_type = HEVC_NAL_TRAIL_R;
         vpic->pic_fields.bits.idr_pic_flag = 0;
         vpic->pic_fields.bits.coding_type  = 2;
         vpic->pic_fields.bits.reference_pic_flag = 1;
         break;
     case PICTURE_TYPE_B:
-        vpic->nal_unit_type = NAL_TRAIL_R;
+        vpic->nal_unit_type = HEVC_NAL_TRAIL_R;
         vpic->pic_fields.bits.idr_pic_flag = 0;
         vpic->pic_fields.bits.coding_type  = 3;
         vpic->pic_fields.bits.reference_pic_flag = 0;

@@ -272,7 +272,7 @@ static int active_parameter_sets(HEVCContext *s)
     }
 
     active_seq_parameter_set_id = get_ue_golomb_long(gb);
-    if (active_seq_parameter_set_id >= MAX_SPS_COUNT) {
+    if (active_seq_parameter_set_id >= HEVC_MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "active_parameter_set_id %d invalid\n", active_seq_parameter_set_id);
         return AVERROR_INVALIDDATA;
     }
@@ -349,7 +349,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->nal_unit_type == NAL_SEI_PREFIX) {
+    if (s->nal_unit_type == HEVC_NAL_SEI_PREFIX) {
         return decode_nal_sei_prefix(s, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         return decode_nal_sei_suffix(s, payload_type, payload_size);

@@ -207,14 +207,14 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
         goto done;
     }
 
-    for (i = 0; i < MAX_VPS_COUNT; i++) {
+    for (i = 0; i < HEVC_MAX_VPS_COUNT; i++) {
         if (ps.vps_list[i]) {
             vps = (const HEVCVPS*)ps.vps_list[i]->data;
             break;
         }
     }
 
-    for (i = 0; i < MAX_PPS_COUNT; i++) {
+    for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
         if (ps.pps_list[i]) {
             pps = (const HEVCPPS*)ps.pps_list[i]->data;
             break;
