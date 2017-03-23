@@ -264,6 +264,7 @@ endfunc
 
 function ff_h264_idct8_add_neon, export=1
         movi            v19.8H,   #0
+        sxtw            x2,       w2
         ld1             {v24.8H, v25.8H}, [x1]
         st1             {v19.8H},  [x1],   #16
         st1             {v19.8H},  [x1],   #16
