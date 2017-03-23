@@ -28,10 +28,10 @@ cglobal image_copy_plane_uc_from, 6, 7, 4, dst, dst_linesize, src, src_linesize,
     add srcq, bwq
     neg bwq
 
-.row_start
+.row_start:
     mov rowposq, bwq
 
-.loop
+.loop:
     movntdqa m0, [srcq + rowposq + 0 * mmsize]
     movntdqa m1, [srcq + rowposq + 1 * mmsize]
     movntdqa m2, [srcq + rowposq + 2 * mmsize]

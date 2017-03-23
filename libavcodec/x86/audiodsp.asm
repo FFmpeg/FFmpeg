@@ -150,7 +150,7 @@ cglobal vector_clipf, 3, 3, 6, dst, src, len, min, max
 
     movsxdifnidn lenq, lend
 
-.loop
+.loop:
     mova m2, [srcq + 4 * lenq - 4 * mmsize]
     mova m3, [srcq + 4 * lenq - 3 * mmsize]
     mova m4, [srcq + 4 * lenq - 2 * mmsize]
