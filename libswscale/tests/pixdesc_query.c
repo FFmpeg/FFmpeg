@@ -20,52 +20,27 @@
 
 #include "libswscale/swscale_internal.h"
 
-/* TODO: drop this wrapper when all the is*() becomes functions */
-#define DECLARE_WRAPPER(macro)                       \
-static int macro##_func(enum AVPixelFormat pix_fmt)  \
-{                                                    \
-    return macro(pix_fmt);                           \
-}
-
-DECLARE_WRAPPER(is16BPS)
-DECLARE_WRAPPER(isNBPS)
-DECLARE_WRAPPER(isBE)
-DECLARE_WRAPPER(isYUV)
-DECLARE_WRAPPER(isPlanarYUV)
-DECLARE_WRAPPER(isRGB)
-DECLARE_WRAPPER(isGray)
-DECLARE_WRAPPER(isRGBinInt)
-DECLARE_WRAPPER(isBGRinInt)
-DECLARE_WRAPPER(isBayer)
-DECLARE_WRAPPER(isAnyRGB)
-DECLARE_WRAPPER(isALPHA)
-DECLARE_WRAPPER(isPacked)
-DECLARE_WRAPPER(isPlanar)
-DECLARE_WRAPPER(isPackedRGB)
-DECLARE_WRAPPER(isPlanarRGB)
-DECLARE_WRAPPER(usePal)
-
 static const struct {
     const char *class;
     int (*cond)(enum AVPixelFormat pix_fmt);
 } query_tab[] = {
-    {"is16BPS",     is16BPS_func},
-    {"isNBPS",      isNBPS_func},
-    {"isBE",        isBE_func},
-    {"isYUV",       isYUV_func},
-    {"isPlanarYUV", isPlanarYUV_func},
-    {"isRGB",       isRGB_func},
-    {"Gray",        isGray_func},
-    {"RGBinInt",    isRGBinInt_func},
-    {"BGRinInt",    isBGRinInt_func},
-    {"Bayer",       isBayer_func},
-    {"AnyRGB",      isAnyRGB_func},
-    {"ALPHA",       isALPHA_func},
-    {"Packed",      isPacked_func},
-    {"Planar",      isPlanar_func},
-    {"PackedRGB",   isPackedRGB_func},
-    {"PlanarRGB",   isPlanarRGB_func},
-    {"usePal",      usePal_func},
+    {"is16BPS",     is16BPS},
+    {"isNBPS",      isNBPS},
+    {"isBE",        isBE},
+    {"isYUV",       isYUV},
+    {"isPlanarYUV", isPlanarYUV},
+    {"isRGB",       isRGB},
+    {"Gray",        isGray},
+    {"RGBinInt",    isRGBinInt},
+    {"BGRinInt",    isBGRinInt},
+    {"Bayer",       isBayer},
+    {"AnyRGB",      isAnyRGB},
+    {"ALPHA",       isALPHA},
+    {"Packed",      isPacked},
+    {"Planar",      isPlanar},
+    {"PackedRGB",   isPackedRGB},
+    {"PlanarRGB",   isPlanarRGB},
+    {"usePal",      usePal},
 };
 
 int main(void)
