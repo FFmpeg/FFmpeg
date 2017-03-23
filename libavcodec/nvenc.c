@@ -522,10 +522,10 @@ static av_cold void set_constqp(AVCodecContext *avctx)
             rc->constQP.qpIntra = rc->constQP.qpInterP;
             rc->constQP.qpInterB = rc->constQP.qpInterP;
         }
-    } else if (avctx->global_quality > 0) {
-        rc->constQP.qpInterP = avctx->global_quality;
-        rc->constQP.qpInterB = avctx->global_quality;
-        rc->constQP.qpIntra = avctx->global_quality;
+    } else if (ctx->cqp >= 0) {
+        rc->constQP.qpInterP = ctx->cqp;
+        rc->constQP.qpInterB = ctx->cqp;
+        rc->constQP.qpIntra = ctx->cqp;
     }
 
     avctx->qmin = -1;
@@ -664,6 +664,12 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
 
+    if (avctx->global_quality > 0)
+        av_log(avctx, AV_LOG_WARNING, "Using global_quality with nvenc is deprecated. Use qp instead.\n");
+
+    if (ctx->cqp < 0 && avctx->global_quality > 0)
+        ctx->cqp = avctx->global_quality;
+
     if (avctx->bit_rate > 0) {
         ctx->encode_config.rcParams.averageBitRate = avctx->bit_rate;
     } else if (ctx->encode_config.rcParams.averageBitRate > 0) {
@@ -688,7 +694,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
             } else {
                 ctx->rc = NV_ENC_PARAMS_RC_CBR;
             }
-        } else if (avctx->global_quality > 0) {
+        } else if (ctx->cqp >= 0) {
             ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
         } else if (ctx->twopass) {
             ctx->rc = NV_ENC_PARAMS_RC_2_PASS_VBR;
