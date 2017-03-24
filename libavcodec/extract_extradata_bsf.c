@@ -137,20 +137,16 @@ static int extract_extradata_vc1(AVBSFContext *ctx, AVPacket *pkt,
                                  uint8_t **data, int *size)
 {
     ExtractExtradataContext *s = ctx->priv_data;
+    const uint8_t *ptr = pkt->data, *end = pkt->data + pkt->size;
     uint32_t state = UINT32_MAX;
     int has_extradata = 0, extradata_size = 0;
-    int i;
 
-    for (i = 0; i < pkt->size; i++) {
-        state = (state << 8) | pkt->data[i];
-        if (IS_MARKER(state)) {
-            if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
-                has_extradata = 1;
-            } else if (has_extradata) {
-                extradata_size = i - 3;
-                break;
-            }
-        }
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
+            has_extradata = 1;
+        } else if (has_extradata && IS_MARKER(state))
+            extradata_size = ptr - 4 - pkt->data;
     }
 
     if (extradata_size) {
