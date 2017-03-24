@@ -226,8 +226,6 @@ static int nsv_resync(AVFormatContext *s)
     uint32_t v = 0;
     int i;
 
-    av_log(s, AV_LOG_TRACE, "%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, avio_tell(pb), nsv->state);
-
     for (i = 0; i < NSV_MAX_RESYNC; i++) {
         if (avio_feof(pb)) {
             av_log(s, AV_LOG_TRACE, "NSV EOF\n");
@@ -272,8 +270,6 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
     int strings_size;
     int table_entries;
     int table_entries_used;
-
-    av_log(s, AV_LOG_TRACE, "%s()\n", __FUNCTION__);
 
     nsv->state = NSV_UNSYNC; /* in case we fail */
 
@@ -380,7 +376,6 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
     int i;
     AVStream *st;
     NSVStream *nst;
-    av_log(s, AV_LOG_TRACE, "%s()\n", __FUNCTION__);
 
     vtag = avio_rl32(pb);
     atag = avio_rl32(pb);
@@ -492,9 +487,6 @@ static int nsv_read_header(AVFormatContext *s)
     NSVContext *nsv = s->priv_data;
     int i, err;
 
-    av_log(s, AV_LOG_TRACE, "%s()\n", __FUNCTION__);
-    av_log(s, AV_LOG_TRACE, "filename '%s'\n", s->filename);
-
     nsv->state = NSV_UNSYNC;
     nsv->ahead[0].data = nsv->ahead[1].data = NULL;
 
@@ -536,8 +528,6 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint16_t asize;
     uint16_t auxsize;
     int ret;
-
-    av_log(s, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, fill_header);
 
     if (nsv->ahead[0].data || nsv->ahead[1].data)
         return 0; //-1; /* hey! eat what you've in your plate first! */
@@ -660,8 +650,6 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     NSVContext *nsv = s->priv_data;
     int i, err = 0;
 
-    av_log(s, AV_LOG_TRACE, "%s()\n", __FUNCTION__);
-
     /* in case we don't already have something to eat ... */
     if (!nsv->ahead[0].data && !nsv->ahead[1].data)
         err = nsv_read_chunk(s, 0);
@@ -671,7 +659,6 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now pick one of the plates */
     for (i = 0; i < 2; i++) {
         if (nsv->ahead[i].data) {
-            av_log(s, AV_LOG_TRACE, "%s: using cached packet[%d]\n", __FUNCTION__, i);
             /* avoid the cost of new_packet + memcpy(->data) */
             memcpy(pkt, &nsv->ahead[i], sizeof(AVPacket));
             nsv->ahead[i].data = NULL; /* we ate that one */
