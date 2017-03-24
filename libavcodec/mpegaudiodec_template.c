@@ -898,8 +898,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             exponent= exponents[s_index];
 
-            ff_dlog(s->avctx, "region=%d n=%d x=%d y=%d exp=%d\n",
-                    i, g->region_size[i] - j, x, y, exponent);
+            ff_dlog(s->avctx, "region=%d n=%d y=%d exp=%d\n",
+                    i, g->region_size[i] - j, y, exponent);
             if (y & 16) {
                 x = y >> 5;
                 y = y & 0x0f;
