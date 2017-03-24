@@ -201,14 +201,14 @@ static int extract_extradata_mpeg4(AVBSFContext *ctx, AVPacket *pkt,
                                    uint8_t **data, int *size)
 {
     ExtractExtradataContext *s = ctx->priv_data;
+    const uint8_t *ptr = pkt->data, *end = pkt->data + pkt->size;
     uint32_t state = UINT32_MAX;
-    int i;
 
-    for (i = 0; i < pkt->size; i++) {
-        state = (state << 8) | pkt->data[i];
-        if ((state == 0x1B3 || state == 0x1B6)) {
-            if (i > 3) {
-                *size = i - 3;
+    while (ptr < end) {
+        ptr = avpriv_find_start_code(ptr, end, &state);
+        if (state == 0x1B3 || state == 0x1B6) {
+            if (ptr - pkt->data > 4) {
+                *size = ptr - 4 - pkt->data;
                 *data = av_malloc(*size + AV_INPUT_BUFFER_PADDING_SIZE);
                 if (!*data)
                     return AVERROR(ENOMEM);
