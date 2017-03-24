@@ -140,7 +140,7 @@ static int tak_read_header(AVFormatContext *s)
                               bitstream_read(&bc, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {
-            av_log(s, AV_LOG_VERBOSE, "encoder version: %0X\n",
+            av_log(s, AV_LOG_VERBOSE, "encoder version: %0"PRIX32"\n",
                    bitstream_read(&bc, TAK_ENCODER_VERSION_BITS));
             av_freep(&buffer);
         }
