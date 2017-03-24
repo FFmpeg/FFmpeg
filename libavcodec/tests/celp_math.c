@@ -19,6 +19,15 @@
 #include "libavutil/libm.h"
 #include "libavcodec/celp_math.c"
 
+static inline void IsAlmostEqual(float A, float B, float epsilon)
+{
+    float diff = fabsf(A - B);
+    float absa = fabsf(A);
+    float absb = fabsf(B);
+    float largest = (absb > absa) ? absb : absa;
+    av_assert0(diff <= largest * epsilon);
+}
+
 int main(void)
 {
     int i;
@@ -26,17 +35,9 @@ int main(void)
     const float f2[3]   = {3.3,  4.4,  5.5};
     const int16_t i1[3] = {6,  7,  8};
     const int16_t i2[3] = {9, 10, 11};
-    float diff, largest, absa, absb;
 
     float   r = ff_dot_productf(f1, f2, FF_ARRAY_ELEMS(f1));
     int64_t d = ff_dot_product(i1, i2, FF_ARRAY_ELEMS(i1));
-
-#   define IsAlmostEqual(A, B, epsilon) \
-        diff = fabsf(A - B); \
-        absa = fabsf(A); \
-        absb = fabsf(B); \
-        largest = (absb > absa) ? absb : absa; \
-        av_assert0(diff <= largest * epsilon);
 
     IsAlmostEqual(16.94f, r, 0.000001f);
     av_assert0(212 == d);
