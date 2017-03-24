@@ -211,13 +211,6 @@ static const AVCodecTag nsv_codec_audio_tags[] = {
 //static int nsv_load_index(AVFormatContext *s);
 static int nsv_read_chunk(AVFormatContext *s, int fill_header);
 
-#define print_tag(str, tag, size)       \
-    av_log(NULL, AV_LOG_TRACE, "%s: tag=%c%c%c%c\n", \
-            str, tag & 0xff,            \
-            (tag >> 8) & 0xff,          \
-            (tag >> 16) & 0xff,         \
-            (tag >> 24) & 0xff);
-
 /* try to find something we recognize, and set the state accordingly */
 static int nsv_resync(AVFormatContext *s)
 {
@@ -404,8 +397,6 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
     nsv->avsync = avio_rl16(pb);
     nsv->framerate = framerate;
 
-    print_tag("NSV NSVs vtag", vtag, 0);
-    print_tag("NSV NSVs atag", atag, 0);
     av_log(s, AV_LOG_TRACE, "NSV NSVs vsize %dx%d\n", vwidth, vheight);
 
     /* XXX change to ap != NULL ? */
@@ -558,12 +549,6 @@ null_chunk_retry:
         uint32_t av_unused auxtag;
         auxsize = avio_rl16(pb);
         auxtag = avio_rl32(pb);
-        av_log(s, AV_LOG_TRACE, "NSV aux data: '%c%c%c%c', %d bytes\n",
-              (auxtag & 0x0ff),
-              ((auxtag >> 8) & 0x0ff),
-              ((auxtag >> 16) & 0x0ff),
-              ((auxtag >> 24) & 0x0ff),
-              auxsize);
         avio_skip(pb, auxsize);
         vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming brain-dead */
     }
