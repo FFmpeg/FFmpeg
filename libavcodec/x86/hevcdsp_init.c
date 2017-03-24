@@ -713,7 +713,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->idct_dc[0] = ff_hevc_idct_4x4_dc_8_mmxext;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_mmxext;
-            c->add_residual[0] = ff_hevc_add_residual4_8_mmxext;
+
+            c->add_residual[0] = ff_hevc_add_residual_4_8_mmxext;
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
@@ -734,9 +735,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct[0]    = ff_hevc_idct_4x4_8_sse2;
             c->idct[1]    = ff_hevc_idct_8x8_8_sse2;
 
-            c->add_residual[1] = ff_hevc_add_residual8_8_sse2;
-            c->add_residual[2] = ff_hevc_add_residual16_8_sse2;
-            c->add_residual[3] = ff_hevc_add_residual32_8_sse2;
+            c->add_residual[1] = ff_hevc_add_residual_8_8_sse2;
+            c->add_residual[2] = ff_hevc_add_residual_16_8_sse2;
+            c->add_residual[3] = ff_hevc_add_residual_32_8_sse2;
         }
         if (EXTERNAL_SSSE3(cpu_flags)) {
             if(ARCH_X86_64) {
@@ -772,9 +773,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct[0] = ff_hevc_idct_4x4_8_avx;
             c->idct[1] = ff_hevc_idct_8x8_8_avx;
 
-            c->add_residual[1] = ff_hevc_add_residual8_8_avx;
-            c->add_residual[2] = ff_hevc_add_residual16_8_avx;
-            c->add_residual[3] = ff_hevc_add_residual32_8_avx;
+            c->add_residual[1] = ff_hevc_add_residual_8_8_avx;
+            c->add_residual[2] = ff_hevc_add_residual_16_8_avx;
+            c->add_residual[3] = ff_hevc_add_residual_32_8_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->sao_band_filter[0] = ff_hevc_sao_band_filter_8_8_avx2;
@@ -874,11 +875,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_48_8_avx2;
             c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_64_8_avx2;
 
-            c->add_residual[3] = ff_hevc_add_residual32_8_avx2;
+            c->add_residual[3] = ff_hevc_add_residual_32_8_avx2;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
-            c->add_residual[0] = ff_hevc_add_residual4_10_mmxext;
+            c->add_residual[0] = ff_hevc_add_residual_4_10_mmxext;
             c->idct_dc[0] = ff_hevc_idct_4x4_dc_10_mmxext;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_10_mmxext;
         }
@@ -902,9 +903,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct[0]    = ff_hevc_idct_4x4_10_sse2;
             c->idct[1]    = ff_hevc_idct_8x8_10_sse2;
 
-            c->add_residual[1] = ff_hevc_add_residual8_10_sse2;
-            c->add_residual[2] = ff_hevc_add_residual16_10_sse2;
-            c->add_residual[3] = ff_hevc_add_residual32_10_sse2;
+            c->add_residual[1] = ff_hevc_add_residual_8_10_sse2;
+            c->add_residual[2] = ff_hevc_add_residual_16_10_sse2;
+            c->add_residual[3] = ff_hevc_add_residual_32_10_sse2;
         }
         if (EXTERNAL_SSSE3(cpu_flags) && ARCH_X86_64) {
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
@@ -1090,9 +1091,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SAO_BAND_INIT(10, avx2);
             SAO_EDGE_INIT(10, avx2);
 
-            c->add_residual[2] = ff_hevc_add_residual16_10_avx2;
-            c->add_residual[3] = ff_hevc_add_residual32_10_avx2;
-
+            c->add_residual[2] = ff_hevc_add_residual_16_10_avx2;
+            c->add_residual[3] = ff_hevc_add_residual_32_10_avx2;
         }
     } else if (bit_depth == 12) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
