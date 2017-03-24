@@ -52,7 +52,7 @@ cextern pw_1023
 
 INIT_MMX mmxext
 ; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, int16_t *res, ptrdiff_t stride)
-cglobal hevc_add_residual_4_8, 3, 4, 6
+cglobal hevc_add_residual_4_8, 3, 3, 6
     ADD_RES_MMX_4_8
     add               r1, 16
     lea               r0, [r0+r2*2]
@@ -145,30 +145,30 @@ cglobal hevc_add_residual_8_8, 3, 4, 8
     RET
 
 ; void ff_hevc_add_residual_16_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
-cglobal hevc_add_residual_16_8, 3, 4, 7
+cglobal hevc_add_residual_16_8, 3, 5, 7
     pxor                m0, m0
     lea                 r3, [r2*3]
+    mov                r4d, 4
+.loop:
     ADD_RES_SSE_16_32_8  0, r0,      r0+r2
     ADD_RES_SSE_16_32_8 64, r0+r2*2, r0+r3
-%rep 3
     add                 r1, 128
     lea                 r0, [r0+r2*4]
-    ADD_RES_SSE_16_32_8  0, r0,      r0+r2
-    ADD_RES_SSE_16_32_8 64, r0+r2*2, r0+r3
-%endrep
+    dec                r4d
+    jg .loop
     RET
 
 ; void ff_hevc_add_residual_32_8_<opt>(uint8_t *dst, int16_t *res, ptrdiff_t stride)
-cglobal hevc_add_residual_32_8, 3, 4, 7
+cglobal hevc_add_residual_32_8, 3, 5, 7
     pxor                m0, m0
+    mov                r4d, 16
+.loop:
     ADD_RES_SSE_16_32_8  0, r0,    r0+16
     ADD_RES_SSE_16_32_8 64, r0+r2, r0+r2+16
-%rep 15
     add                 r1, 128
     lea                 r0, [r0+r2*2]
-    ADD_RES_SSE_16_32_8  0, r0,    r0+16
-    ADD_RES_SSE_16_32_8 64, r0+r2, r0+r2+16
-%endrep
+    dec                r4d
+    jg .loop
     RET
 %endmacro
 
@@ -180,17 +180,17 @@ TRANSFORM_ADD_8
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 ; void ff_hevc_add_residual_32_8_avx2(uint8_t *dst, int16_t *res, ptrdiff_t stride)
-cglobal hevc_add_residual_32_8, 3, 4, 7
+cglobal hevc_add_residual_32_8, 3, 5, 7
     pxor                 m0, m0
     lea                  r3, [r2*3]
+    mov                 r4d, 8
+.loop:
     ADD_RES_SSE_16_32_8   0, r0,      r0+r2
     ADD_RES_SSE_16_32_8 128, r0+r2*2, r0+r3
-%rep 7
     add                  r1, 256
     lea                  r0, [r0+r2*4]
-    ADD_RES_SSE_16_32_8   0, r0,      r0+r2
-    ADD_RES_SSE_16_32_8 128, r0+r2*2, r0+r3
-%endrep
+    dec                 r4d
+    jg .loop
     RET
 %endif
 
@@ -307,7 +307,7 @@ cglobal hevc_add_residual_32_8, 3, 4, 7
 
 ; void ff_hevc_add_residual_<4|8|16|32>_10(pixel *dst, int16_t *block, ptrdiff_t stride)
 INIT_MMX mmxext
-cglobal hevc_add_residual_4_10, 3, 4, 6
+cglobal hevc_add_residual_4_10, 3, 3, 6
     pxor              m2, m2
     mova              m3, [max_pixels_10]
     ADD_RES_MMX_4_10  r0, r2, r1
@@ -328,54 +328,58 @@ cglobal hevc_add_residual_8_10, 3, 4, 6
     ADD_RES_SSE_8_10  r0, r2, r3, r1
     RET
 
-cglobal hevc_add_residual_16_10, 3, 4, 6
+cglobal hevc_add_residual_16_10, 3, 5, 6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
+    mov              r4d, 8
+.loop:
     ADD_RES_SSE_16_10 r0, r2, r1
-%rep 7
     lea               r0, [r0+r2*2]
     add               r1, 64
-    ADD_RES_SSE_16_10 r0, r2, r1
-%endrep
+    dec              r4d
+    jg .loop
     RET
 
-cglobal hevc_add_residual_32_10, 3, 4, 6
+cglobal hevc_add_residual_32_10, 3, 5, 6
     pxor              m4, m4
     mova              m5, [max_pixels_10]
 
+    mov              r4d, 32
+.loop:
     ADD_RES_SSE_32_10 r0, r1
-%rep 31
     lea               r0, [r0+r2]
     add               r1, 64
-    ADD_RES_SSE_32_10 r0, r1
-%endrep
+    dec              r4d
+    jg .loop
     RET
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-cglobal hevc_add_residual_16_10, 3, 4, 6
+cglobal hevc_add_residual_16_10, 3, 5, 6
     pxor               m4, m4
     mova               m5, [max_pixels_10]
     lea                r3, [r2*3]
 
+    mov               r4d, 4
+.loop:
     ADD_RES_AVX2_16_10 r0, r2, r3, r1
-%rep 3
     lea                r0, [r0+r2*4]
     add                r1, 128
-    ADD_RES_AVX2_16_10 r0, r2, r3, r1
-%endrep
+    dec               r4d
+    jg .loop
     RET
 
-cglobal hevc_add_residual_32_10, 3, 4, 6
+cglobal hevc_add_residual_32_10, 3, 5, 6
     pxor               m4, m4
     mova               m5, [max_pixels_10]
 
+    mov               r4d, 16
+.loop:
     ADD_RES_AVX2_32_10 r0, r2, r1
-%rep 15
     lea                r0, [r0+r2*2]
     add                r1, 128
-    ADD_RES_AVX2_32_10 r0, r2, r1
-%endrep
+    dec               r4d
+    jg .loop
     RET
 %endif ;HAVE_AVX2_EXTERNAL
