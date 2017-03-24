@@ -150,10 +150,10 @@ YASM-OBJS-$(CONFIG_FLAC_DECODER)       += x86/flacdsp.o
 ifdef CONFIG_GPL
 YASM-OBJS-$(CONFIG_FLAC_ENCODER)       += x86/flac_dsp_gpl.o
 endif
-YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_mc.o                 \
+YASM-OBJS-$(CONFIG_HEVC_DECODER)       += x86/hevc_add_res.o            \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
-                                          x86/hevc_res_add.o            \
+                                          x86/hevc_mc.o                 \
                                           x86/hevc_sao.o                \
                                           x86/hevc_sao_10bit.o
 YASM-OBJS-$(CONFIG_JPEG2000_DECODER)   += x86/jpeg2000dsp.o
