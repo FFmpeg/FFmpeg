@@ -41,6 +41,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/aes.h"
 #include "libavutil/aes_ctr.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/sha.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
@@ -1362,12 +1363,14 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         else
             st->codecpar->color_range = AVCOL_RANGE_MPEG;
     }
-    if (color_primaries >= AVCOL_PRI_NB)
+
+    if (!av_color_primaries_name(color_primaries))
         color_primaries = AVCOL_PRI_UNSPECIFIED;
-    if (color_trc >= AVCOL_TRC_NB)
+    if (!av_color_transfer_name(color_trc))
         color_trc = AVCOL_TRC_UNSPECIFIED;
-    if (color_matrix >= AVCOL_SPC_NB)
+    if (!av_color_space_name(color_matrix))
         color_matrix = AVCOL_SPC_UNSPECIFIED;
+
     st->codecpar->color_primaries = color_primaries;
     st->codecpar->color_trc       = color_trc;
     st->codecpar->color_space     = color_matrix;
