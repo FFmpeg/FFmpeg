@@ -56,7 +56,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     flags           = bytestream2_get_byte(&gb);
 
     if (version < 8 || version > 9) {
-        av_log(avctx, AV_LOG_ERROR, "texture data version %i is unsupported\n",
+        av_log(avctx, AV_LOG_ERROR, "texture data version %u is unsupported\n",
                                                                     version);
         return AVERROR_PATCHWELCOME;
     }
@@ -66,7 +66,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     } else if (depth == 16 || depth == 32) {
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "depth of %i is unsupported\n", depth);
+        av_log(avctx, AV_LOG_ERROR, "depth of %u is unsupported\n", depth);
         return AVERROR_PATCHWELCOME;
     }
 

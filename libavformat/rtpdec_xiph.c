@@ -247,7 +247,7 @@ parse_packed_headers(AVFormatContext *s,
 
     if (num_packed != 1 || num_headers > 3) {
         av_log(s, AV_LOG_ERROR,
-               "Unimplemented number of headers: %d packed headers, %d headers\n",
+               "Unimplemented number of headers: %u packed headers, %u headers\n",
                num_packed, num_headers);
         return AVERROR_PATCHWELCOME;
     }
@@ -255,7 +255,7 @@ parse_packed_headers(AVFormatContext *s,
     if (packed_headers_end - packed_headers != length ||
         length1 > length || length2 > length - length1) {
         av_log(s, AV_LOG_ERROR,
-               "Bad packed header lengths (%d,%d,%"PTRDIFF_SPECIFIER",%d)\n", length1,
+               "Bad packed header lengths (%d,%d,%"PTRDIFF_SPECIFIER",%u)\n", length1,
                length2, packed_headers_end - packed_headers, length);
         return AVERROR_INVALIDDATA;
     }
