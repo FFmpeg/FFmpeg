@@ -107,34 +107,34 @@ void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
     }
     for( i = 0; i < 8; i++ )
     {
-        const int a0 =  block[0+i*8] + block[4+i*8];
-        const int a2 =  block[0+i*8] - block[4+i*8];
-        const int a4 = (block[2+i*8]>>1) - block[6+i*8];
-        const int a6 = (block[6+i*8]>>1) + block[2+i*8];
+        const unsigned a0 =  block[0+i*8] + block[4+i*8];
+        const unsigned a2 =  block[0+i*8] - block[4+i*8];
+        const unsigned a4 = (block[2+i*8]>>1) - block[6+i*8];
+        const unsigned a6 = (block[6+i*8]>>1) + block[2+i*8];
 
-        const int b0 = a0 + a6;
-        const int b2 = a2 + a4;
-        const int b4 = a2 - a4;
-        const int b6 = a0 - a6;
+        const unsigned b0 = a0 + a6;
+        const unsigned b2 = a2 + a4;
+        const unsigned b4 = a2 - a4;
+        const unsigned b6 = a0 - a6;
 
-        const int a1 = -block[3+i*8] + block[5+i*8] - block[7+i*8] - (block[7+i*8]>>1);
-        const int a3 =  block[1+i*8] + block[7+i*8] - block[3+i*8] - (block[3+i*8]>>1);
-        const int a5 = -block[1+i*8] + block[7+i*8] + block[5+i*8] + (block[5+i*8]>>1);
-        const int a7 =  block[3+i*8] + block[5+i*8] + block[1+i*8] + (block[1+i*8]>>1);
+        const int a1 = -(unsigned)block[3+i*8] + block[5+i*8] - block[7+i*8] - (block[7+i*8]>>1);
+        const int a3 =  (unsigned)block[1+i*8] + block[7+i*8] - block[3+i*8] - (block[3+i*8]>>1);
+        const int a5 = -(unsigned)block[1+i*8] + block[7+i*8] + block[5+i*8] + (block[5+i*8]>>1);
+        const int a7 =  (unsigned)block[3+i*8] + block[5+i*8] + block[1+i*8] + (block[1+i*8]>>1);
 
-        const int b1 = (a7>>2) + a1;
-        const int b3 =  a3 + (a5>>2);
-        const int b5 = (a3>>2) - a5;
-        const int b7 =  a7 - (a1>>2);
+        const unsigned b1 = (a7>>2) + (unsigned)a1;
+        const unsigned b3 =  (unsigned)a3 + (a5>>2);
+        const unsigned b5 = (a3>>2) - (unsigned)a5;
+        const unsigned b7 =  (unsigned)a7 - (a1>>2);
 
-        dst[i + 0*stride] = av_clip_pixel( dst[i + 0*stride] + ((b0 + b7) >> 6) );
-        dst[i + 1*stride] = av_clip_pixel( dst[i + 1*stride] + ((b2 + b5) >> 6) );
-        dst[i + 2*stride] = av_clip_pixel( dst[i + 2*stride] + ((b4 + b3) >> 6) );
-        dst[i + 3*stride] = av_clip_pixel( dst[i + 3*stride] + ((b6 + b1) >> 6) );
-        dst[i + 4*stride] = av_clip_pixel( dst[i + 4*stride] + ((b6 - b1) >> 6) );
-        dst[i + 5*stride] = av_clip_pixel( dst[i + 5*stride] + ((b4 - b3) >> 6) );
-        dst[i + 6*stride] = av_clip_pixel( dst[i + 6*stride] + ((b2 - b5) >> 6) );
-        dst[i + 7*stride] = av_clip_pixel( dst[i + 7*stride] + ((b0 - b7) >> 6) );
+        dst[i + 0*stride] = av_clip_pixel( dst[i + 0*stride] + ((int)(b0 + b7) >> 6) );
+        dst[i + 1*stride] = av_clip_pixel( dst[i + 1*stride] + ((int)(b2 + b5) >> 6) );
+        dst[i + 2*stride] = av_clip_pixel( dst[i + 2*stride] + ((int)(b4 + b3) >> 6) );
+        dst[i + 3*stride] = av_clip_pixel( dst[i + 3*stride] + ((int)(b6 + b1) >> 6) );
+        dst[i + 4*stride] = av_clip_pixel( dst[i + 4*stride] + ((int)(b6 - b1) >> 6) );
+        dst[i + 5*stride] = av_clip_pixel( dst[i + 5*stride] + ((int)(b4 - b3) >> 6) );
+        dst[i + 6*stride] = av_clip_pixel( dst[i + 6*stride] + ((int)(b2 - b5) >> 6) );
+        dst[i + 7*stride] = av_clip_pixel( dst[i + 7*stride] + ((int)(b0 - b7) >> 6) );
     }
 
     memset(block, 0, 64 * sizeof(dctcoef));
