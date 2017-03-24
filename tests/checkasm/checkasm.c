@@ -96,6 +96,7 @@ static const struct {
         { "h264qpel", checkasm_check_h264qpel },
     #endif
     #if CONFIG_HEVC_DECODER
+        { "hevc_add_res", checkasm_check_hevc_add_res },
         { "hevc_idct", checkasm_check_hevc_idct },
     #endif
     #if CONFIG_JPEG2000_DECODER
