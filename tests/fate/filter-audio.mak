@@ -92,27 +92,27 @@ fate-filter-asetnsamples: CMD = framecrc -i $(SRC) -af asetnsamples=512:p=1
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, ASETRATE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-asetrate
 fate-filter-asetrate: tests/data/asynth-44100-2.wav
 fate-filter-asetrate: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-asetrate: CMD = framecrc -i $(SRC) -aframes 20 -af asetrate=20000
+fate-filter-asetrate: CMD = framecrc -i $(SRC) -frames:a 20 -af asetrate=20000
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHORUS, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-chorus
 fate-filter-chorus: tests/data/asynth-22050-1.wav
 fate-filter-chorus: SRC = $(TARGET_PATH)/tests/data/asynth-22050-1.wav
-fate-filter-chorus: CMD = framecrc -i $(SRC) -aframes 10 -af chorus=0.050001:0.050002:64:0.050001:0.025003:2.00004
+fate-filter-chorus: CMD = framecrc -i $(SRC) -frames:a 10 -af chorus=0.050001:0.050002:64:0.050001:0.025003:2.00004
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, DCSHIFT, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-dcshift
 fate-filter-dcshift: tests/data/asynth-44100-2.wav
 fate-filter-dcshift: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-dcshift: CMD = framecrc -i $(SRC) -aframes 20 -af dcshift=shift=0.25:limitergain=0.05
+fate-filter-dcshift: CMD = framecrc -i $(SRC) -frames:a 20 -af dcshift=shift=0.25:limitergain=0.05
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, EARWAX, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-earwax
 fate-filter-earwax: tests/data/asynth-44100-2.wav
 fate-filter-earwax: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-earwax: CMD = framecrc -i $(SRC) -aframes 20 -af earwax
+fate-filter-earwax: CMD = framecrc -i $(SRC) -frames:a 20 -af earwax
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, EXTRASTEREO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-extrastereo
 fate-filter-extrastereo: tests/data/asynth-44100-2.wav
 fate-filter-extrastereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-extrastereo: CMD = framecrc -i $(SRC) -aframes 20 -af extrastereo=m=2
+fate-filter-extrastereo: CMD = framecrc -i $(SRC) -frames:a 20 -af extrastereo=m=2
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, FIREQUALIZER ATRIM VOLUME, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-firequalizer
 fate-filter-firequalizer: tests/data/asynth-44100-2.wav
@@ -125,22 +125,22 @@ fate-filter-firequalizer: SIZE_TOLERANCE = 1058400 - 1097208
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, SILENCEREMOVE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-silenceremove
 fate-filter-silenceremove: SRC = $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav
-fate-filter-silenceremove: CMD = framecrc -i $(SRC) -aframes 30 -af silenceremove=0:0:0:-1:0:-90dB
+fate-filter-silenceremove: CMD = framecrc -i $(SRC) -frames:a 30 -af silenceremove=0:0:0:-1:0:-90dB
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, STEREOTOOLS, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-stereotools
 fate-filter-stereotools: SRC = $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
-fate-filter-stereotools: CMD = framecrc -i $(SRC) -aframes 20 -af stereotools=mlev=0.015625
+fate-filter-stereotools: CMD = framecrc -i $(SRC) -frames:a 20 -af stereotools=mlev=0.015625
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, TREMOLO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-tremolo
 fate-filter-tremolo: tests/data/asynth-44100-2.wav
 fate-filter-tremolo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-tremolo: CMD = framecrc -i $(SRC) -aframes 20 -af tremolo
+fate-filter-tremolo: CMD = framecrc -i $(SRC) -frames:a 20 -af tremolo
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, COMPAND, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-compand
 fate-filter-compand: tests/data/asynth-44100-2.wav
 fate-filter-compand: tests/data/filtergraphs/compand
 fate-filter-compand: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-compand: CMD = framecrc -i $(SRC) -aframes 20 -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/compand
+fate-filter-compand: CMD = framecrc -i $(SRC) -frames:a 20 -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/compand
 
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data

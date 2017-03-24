@@ -414,7 +414,8 @@ ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number} (@emph{output})
-Set the number of data frames to output. This is an alias for @code{-frames:d}.
+Set the number of data frames to output. This is an obsolete alias for
+@code{-frames:d}, which you should use instead.
 
 @item -frames[:@var{stream_specifier}] @var{framecount} (@emph{output,per-stream})
 Stop writing to the stream after @var{framecount} frames.
@@ -529,7 +530,8 @@ Disable automatically rotating video based on file metadata.
 
 @table @option
 @item -vframes @var{number} (@emph{output})
-Set the number of video frames to output. This is an alias for @code{-frames:v}.
+Set the number of video frames to output. This is an obsolete alias for
+@code{-frames:v}, which you should use instead.
 @item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
 Set frame rate (Hz value, fraction or abbreviation).
 
@@ -792,7 +794,8 @@ List all hardware acceleration methods supported in this build of ffmpeg.
 
 @table @option
 @item -aframes @var{number} (@emph{output})
-Set the number of audio frames to output. This is an alias for @code{-frames:a}.
+Set the number of audio frames to output. This is an obsolete alias for
+@code{-frames:a}, which you should use instead.
 @item -ar[:@var{stream_specifier}] @var{freq} (@emph{input/output,per-stream})
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
@@ -1574,8 +1577,8 @@ output them in files named @file{foo-001.jpeg}, @file{foo-002.jpeg},
 etc. Images will be rescaled to fit the new WxH values.
 
 If you want to extract just a limited number of frames, you can use the
-above command in combination with the -vframes or -t option, or in
-combination with -ss to start extracting from a certain point in time.
+above command in combination with the @code{-frames:v} or @code{-t} option,
+or in combination with -ss to start extracting from a certain point in time.
 
 For creating a video from many images:
 @example

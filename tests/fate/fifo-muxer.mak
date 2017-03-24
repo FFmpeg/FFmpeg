@@ -1,4 +1,4 @@
-fate-fifo-muxer-h264: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -vframes 11\
+fate-fifo-muxer-h264: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -frames:v 11\
                             -c:v copy -c:a copy -map v:0 -map a:0 -flags +bitexact\
                             -fflags +bitexact -f fifo -fifo_format framecrc -
 fate-fifo-muxer-h264: REF = $(SRC_PATH)/tests/ref/fate/mkv-1242
