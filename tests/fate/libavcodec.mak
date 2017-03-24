@@ -8,6 +8,11 @@ fate-cabac: libavcodec/tests/cabac$(EXESUF)
 fate-cabac: CMD = run libavcodec/tests/cabac
 fate-cabac: REF = /dev/null
 
+FATE_LIBAVCODEC-yes += fate-celp_math
+fate-celp_math: libavcodec/tests/celp_math$(EXESUF)
+fate-celp_math: CMD = run libavcodec/tests/celp_math
+fate-celp_math: REF = /dev/null
+
 FATE_LIBAVCODEC-$(CONFIG_GOLOMB) += fate-golomb
 fate-golomb: libavcodec/tests/golomb$(EXESUF)
 fate-golomb: CMD = run libavcodec/tests/golomb
