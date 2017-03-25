@@ -34,37 +34,6 @@
 #include "thread.h"
 #include "vp56.h"
 
-enum BlockLevel {
-    BL_64X64,
-    BL_32X32,
-    BL_16X16,
-    BL_8X8,
-};
-
-enum BlockPartition {
-    PARTITION_NONE,    // [ ] <-.
-    PARTITION_H,       // [-]   |
-    PARTITION_V,       // [|]   |
-    PARTITION_SPLIT,   // [+] --'
-};
-
-enum BlockSize {
-    BS_64x64,
-    BS_64x32,
-    BS_32x64,
-    BS_32x32,
-    BS_32x16,
-    BS_16x32,
-    BS_16x16,
-    BS_16x8,
-    BS_8x16,
-    BS_8x8,
-    BS_8x4,
-    BS_4x8,
-    BS_4x4,
-    N_BS_SIZES,
-};
-
 enum TxfmMode {
     TX_4X4,
     TX_8X8,
@@ -102,13 +71,6 @@ enum IntraPredMode {
     N_INTRA_PRED_MODES
 };
 
-enum InterPredMode {
-    NEARESTMV = 10,
-    NEARMV = 11,
-    ZEROMV = 12,
-    NEWMV = 13,
-};
-
 enum FilterMode {
     FILTER_8TAP_SMOOTH,
     FILTER_8TAP_REGULAR,
@@ -117,10 +79,18 @@ enum FilterMode {
     FILTER_SWITCHABLE,
 };
 
-enum CompPredMode {
-    PRED_SINGLEREF,
-    PRED_COMPREF,
-    PRED_SWITCHABLE,
+enum BlockPartition {
+    PARTITION_NONE,    // [ ] <-.
+    PARTITION_H,       // [-]   |
+    PARTITION_V,       // [|]   |
+    PARTITION_SPLIT,   // [+] --'
+};
+
+enum InterPredMode {
+    NEARESTMV = 10,
+    NEARMV    = 11,
+    ZEROMV    = 12,
+    NEWMV     = 13,
 };
 
 enum MVJoint {
@@ -248,6 +218,12 @@ typedef struct VP9DSPContext {
     vp9_scaled_mc_func smc[5][4][2];
 } VP9DSPContext;
 
+enum CompPredMode {
+    PRED_SINGLEREF,
+    PRED_COMPREF,
+    PRED_SWITCHABLE,
+};
+
 typedef struct VP9mvrefPair {
     VP56mv mv[2];
     int8_t ref[2];
@@ -269,6 +245,40 @@ typedef struct VP9Frame {
     AVBufferRef *hwaccel_priv_buf;
     void *hwaccel_picture_private;
 } VP9Frame;
+
+enum BlockLevel {
+    BL_64X64,
+    BL_32X32,
+    BL_16X16,
+    BL_8X8,
+};
+
+enum BlockSize {
+    BS_64x64,
+    BS_64x32,
+    BS_32x64,
+    BS_32x32,
+    BS_32x16,
+    BS_16x32,
+    BS_16x16,
+    BS_16x8,
+    BS_8x16,
+    BS_8x8,
+    BS_8x4,
+    BS_4x8,
+    BS_4x4,
+    N_BS_SIZES,
+};
+
+typedef struct VP9Block {
+    uint8_t seg_id, intra, comp, ref[2], mode[4], uvmode, skip;
+    enum FilterMode filter;
+    VP56mv mv[4 /* b_idx */][2 /* ref */];
+    enum BlockSize bs;
+    enum TxfmMode tx, uvtx;
+    enum BlockLevel bl;
+    enum BlockPartition bp;
+} VP9Block;
 
 typedef struct VP9BitstreamHeader {
     // bitstream header
@@ -344,16 +354,6 @@ typedef struct VP9SharedContext {
 #define REF_FRAME_SEGMAP 2
     VP9Frame frames[3];
 } VP9SharedContext;
-
-typedef struct VP9Block {
-    uint8_t seg_id, intra, comp, ref[2], mode[4], uvmode, skip;
-    enum FilterMode filter;
-    VP56mv mv[4 /* b_idx */][2 /* ref */];
-    enum BlockSize bs;
-    enum TxfmMode tx, uvtx;
-    enum BlockLevel bl;
-    enum BlockPartition bp;
-} VP9Block;
 
 typedef struct VP9Context {
     VP9SharedContext s;
