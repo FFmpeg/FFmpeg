@@ -36,7 +36,7 @@
 
 #define VP9_SYNCCODE 0x498342
 
-static void vp9_unref_frame(AVCodecContext *avctx, VP9Frame *f)
+static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
 {
     ff_thread_release_buffer(avctx, &f->tf);
     av_buffer_unref(&f->extradata);
@@ -45,7 +45,7 @@ static void vp9_unref_frame(AVCodecContext *avctx, VP9Frame *f)
     f->hwaccel_picture_private = NULL;
 }
 
-static int vp9_alloc_frame(AVCodecContext *avctx, VP9Frame *f)
+static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
 {
     VP9Context *s = avctx->priv_data;
     int ret, sz;
@@ -74,11 +74,11 @@ static int vp9_alloc_frame(AVCodecContext *avctx, VP9Frame *f)
     return 0;
 
 fail:
-    vp9_unref_frame(avctx, f);
+    vp9_frame_unref(avctx, f);
     return AVERROR(ENOMEM);
 }
 
-static int vp9_ref_frame(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
+static int vp9_frame_ref(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
 {
     int res;
 
@@ -102,7 +102,7 @@ static int vp9_ref_frame(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
     return 0;
 
 fail:
-    vp9_unref_frame(avctx, dst);
+    vp9_frame_unref(avctx, dst);
     return AVERROR(ENOMEM);
 }
 
@@ -1243,7 +1243,7 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
 
     for (i = 0; i < 3; i++) {
         if (s->s.frames[i].tf.f->buf[0])
-            vp9_unref_frame(avctx, &s->s.frames[i]);
+            vp9_frame_unref(avctx, &s->s.frames[i]);
         av_frame_free(&s->s.frames[i].tf.f);
     }
     for (i = 0; i < 8; i++) {
@@ -1306,19 +1306,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (!retain_segmap_ref || s->s.h.keyframe || s->s.h.intraonly) {
         if (s->s.frames[REF_FRAME_SEGMAP].tf.f->buf[0])
-            vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
+            vp9_frame_unref(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
         if (!s->s.h.keyframe && !s->s.h.intraonly && !s->s.h.errorres && s->s.frames[CUR_FRAME].tf.f->buf[0] &&
-            (res = vp9_ref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP], &s->s.frames[CUR_FRAME])) < 0)
+            (res = vp9_frame_ref(avctx, &s->s.frames[REF_FRAME_SEGMAP], &s->s.frames[CUR_FRAME])) < 0)
             return res;
     }
     if (s->s.frames[REF_FRAME_MVPAIR].tf.f->buf[0])
-        vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_MVPAIR]);
+        vp9_frame_unref(avctx, &s->s.frames[REF_FRAME_MVPAIR]);
     if (!s->s.h.intraonly && !s->s.h.keyframe && !s->s.h.errorres && s->s.frames[CUR_FRAME].tf.f->buf[0] &&
-        (res = vp9_ref_frame(avctx, &s->s.frames[REF_FRAME_MVPAIR], &s->s.frames[CUR_FRAME])) < 0)
+        (res = vp9_frame_ref(avctx, &s->s.frames[REF_FRAME_MVPAIR], &s->s.frames[CUR_FRAME])) < 0)
         return res;
     if (s->s.frames[CUR_FRAME].tf.f->buf[0])
-        vp9_unref_frame(avctx, &s->s.frames[CUR_FRAME]);
-    if ((res = vp9_alloc_frame(avctx, &s->s.frames[CUR_FRAME])) < 0)
+        vp9_frame_unref(avctx, &s->s.frames[CUR_FRAME]);
+    if ((res = vp9_frame_alloc(avctx, &s->s.frames[CUR_FRAME])) < 0)
         return res;
     f = s->s.frames[CUR_FRAME].tf.f;
     f->key_frame = s->s.h.keyframe;
@@ -1329,7 +1329,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->s.frames[REF_FRAME_SEGMAP].tf.f->buf[0] &&
         (s->s.frames[REF_FRAME_MVPAIR].tf.f->width  != s->s.frames[CUR_FRAME].tf.f->width ||
          s->s.frames[REF_FRAME_MVPAIR].tf.f->height != s->s.frames[CUR_FRAME].tf.f->height)) {
-        vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
+        vp9_frame_unref(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
     }
 
     // ref frame setup
@@ -1554,7 +1554,7 @@ static void vp9_decode_flush(AVCodecContext *avctx)
     int i;
 
     for (i = 0; i < 3; i++)
-        vp9_unref_frame(avctx, &s->s.frames[i]);
+        vp9_frame_unref(avctx, &s->s.frames[i]);
     for (i = 0; i < 8; i++)
         ff_thread_release_buffer(avctx, &s->s.refs[i]);
 }
@@ -1609,9 +1609,9 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
 
     for (i = 0; i < 3; i++) {
         if (s->s.frames[i].tf.f->buf[0])
-            vp9_unref_frame(dst, &s->s.frames[i]);
+            vp9_frame_unref(dst, &s->s.frames[i]);
         if (ssrc->s.frames[i].tf.f->buf[0]) {
-            if ((res = vp9_ref_frame(dst, &s->s.frames[i], &ssrc->s.frames[i])) < 0)
+            if ((res = vp9_frame_ref(dst, &s->s.frames[i], &ssrc->s.frames[i])) < 0)
                 return res;
         }
     }
