@@ -37,32 +37,32 @@ static void find_ref_mvs(VP9Context *s,
                          VP56mv *pmv, int ref, int z, int idx, int sb)
 {
     static const int8_t mv_ref_blk_off[N_BS_SIZES][8][2] = {
-        [BS_64x64] = {{  3, -1 }, { -1,  3 }, {  4, -1 }, { -1,  4 },
-                      { -1, -1 }, {  0, -1 }, { -1,  0 }, {  6, -1 }},
-        [BS_64x32] = {{  0, -1 }, { -1,  0 }, {  4, -1 }, { -1,  2 },
-                      { -1, -1 }, {  0, -3 }, { -3,  0 }, {  2, -1 }},
-        [BS_32x64] = {{ -1,  0 }, {  0, -1 }, { -1,  4 }, {  2, -1 },
-                      { -1, -1 }, { -3,  0 }, {  0, -3 }, { -1,  2 }},
-        [BS_32x32] = {{  1, -1 }, { -1,  1 }, {  2, -1 }, { -1,  2 },
-                      { -1, -1 }, {  0, -3 }, { -3,  0 }, { -3, -3 }},
-        [BS_32x16] = {{  0, -1 }, { -1,  0 }, {  2, -1 }, { -1, -1 },
-                      { -1,  1 }, {  0, -3 }, { -3,  0 }, { -3, -3 }},
-        [BS_16x32] = {{ -1,  0 }, {  0, -1 }, { -1,  2 }, { -1, -1 },
-                      {  1, -1 }, { -3,  0 }, {  0, -3 }, { -3, -3 }},
-        [BS_16x16] = {{  0, -1 }, { -1,  0 }, {  1, -1 }, { -1,  1 },
-                      { -1, -1 }, {  0, -3 }, { -3,  0 }, { -3, -3 }},
-        [BS_16x8]  = {{  0, -1 }, { -1,  0 }, {  1, -1 }, { -1, -1 },
-                      {  0, -2 }, { -2,  0 }, { -2, -1 }, { -1, -2 }},
-        [BS_8x16]  = {{ -1,  0 }, {  0, -1 }, { -1,  1 }, { -1, -1 },
-                      { -2,  0 }, {  0, -2 }, { -1, -2 }, { -2, -1 }},
-        [BS_8x8]   = {{  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
-                      { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 }},
-        [BS_8x4]   = {{  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
-                      { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 }},
-        [BS_4x8]   = {{  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
-                      { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 }},
-        [BS_4x4]   = {{  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
-                      { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 }},
+        [BS_64x64] = { {  3, -1 }, { -1,  3 }, {  4, -1 }, { -1,  4 },
+                       { -1, -1 }, {  0, -1 }, { -1,  0 }, {  6, -1 } },
+        [BS_64x32] = { {  0, -1 }, { -1,  0 }, {  4, -1 }, { -1,  2 },
+                       { -1, -1 }, {  0, -3 }, { -3,  0 }, {  2, -1 } },
+        [BS_32x64] = { { -1,  0 }, {  0, -1 }, { -1,  4 }, {  2, -1 },
+                       { -1, -1 }, { -3,  0 }, {  0, -3 }, { -1,  2 } },
+        [BS_32x32] = { {  1, -1 }, { -1,  1 }, {  2, -1 }, { -1,  2 },
+                       { -1, -1 }, {  0, -3 }, { -3,  0 }, { -3, -3 } },
+        [BS_32x16] = { {  0, -1 }, { -1,  0 }, {  2, -1 }, { -1, -1 },
+                       { -1,  1 }, {  0, -3 }, { -3,  0 }, { -3, -3 } },
+        [BS_16x32] = { { -1,  0 }, {  0, -1 }, { -1,  2 }, { -1, -1 },
+                       {  1, -1 }, { -3,  0 }, {  0, -3 }, { -3, -3 } },
+        [BS_16x16] = { {  0, -1 }, { -1,  0 }, {  1, -1 }, { -1,  1 },
+                       { -1, -1 }, {  0, -3 }, { -3,  0 }, { -3, -3 } },
+        [BS_16x8]  = { {  0, -1 }, { -1,  0 }, {  1, -1 }, { -1, -1 },
+                       {  0, -2 }, { -2,  0 }, { -2, -1 }, { -1, -2 } },
+        [BS_8x16]  = { { -1,  0 }, {  0, -1 }, { -1,  1 }, { -1, -1 },
+                       { -2,  0 }, {  0, -2 }, { -1, -2 }, { -2, -1 } },
+        [BS_8x8]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
+                       { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
+        [BS_8x4]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
+                       { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
+        [BS_4x8]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
+                       { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
+        [BS_4x4]   = { {  0, -1 }, { -1,  0 }, { -1, -1 }, {  0, -2 },
+                       { -2,  0 }, { -1, -2 }, { -2, -1 }, { -2, -2 } },
     };
     VP9Block *b = s->b;
     int row = s->row, col = s->col, row7 = s->row7;
@@ -71,18 +71,18 @@ static void find_ref_mvs(VP9Context *s,
     uint32_t mem = INVALID_MV, mem_sub8x8 = INVALID_MV;
     int i;
 
-#define RETURN_DIRECT_MV(mv) \
-    do { \
-        uint32_t m = AV_RN32A(&mv); \
-        if (!idx) { \
-            AV_WN32A(pmv, m); \
-            return; \
-        } else if (mem == INVALID_MV) { \
-            mem = m; \
-        } else if (m != mem) { \
-            AV_WN32A(pmv, m); \
-            return; \
-        } \
+#define RETURN_DIRECT_MV(mv)                    \
+    do {                                        \
+        uint32_t m = AV_RN32A(&mv);             \
+        if (!idx) {                             \
+            AV_WN32A(pmv, m);                   \
+            return;                             \
+        } else if (mem == INVALID_MV) {         \
+            mem = m;                            \
+        } else if (m != mem) {                  \
+            AV_WN32A(pmv, m);                   \
+            return;                             \
+        }                                       \
     } while (0)
 
     if (sb >= 0) {
@@ -94,79 +94,77 @@ static void find_ref_mvs(VP9Context *s,
             RETURN_DIRECT_MV(b->mv[0][z]);
         }
 
-#define RETURN_MV(mv) \
-    do { \
-        if (sb > 0) { \
-            VP56mv tmp; \
-            uint32_t m; \
-            av_assert2(idx == 1); \
-            av_assert2(mem != INVALID_MV); \
-            if (mem_sub8x8 == INVALID_MV) { \
-                clamp_mv(&tmp, &mv, s); \
-                m = AV_RN32A(&tmp); \
-                if (m != mem) { \
-                    AV_WN32A(pmv, m); \
-                    return; \
-                } \
-                mem_sub8x8 = AV_RN32A(&mv); \
-            } else if (mem_sub8x8 != AV_RN32A(&mv)) { \
-                clamp_mv(&tmp, &mv, s); \
-                m = AV_RN32A(&tmp); \
-                if (m != mem) { \
-                    AV_WN32A(pmv, m); \
-                } else { \
+#define RETURN_MV(mv)                                                  \
+    do {                                                               \
+        if (sb > 0) {                                                  \
+            VP56mv tmp;                                                \
+            uint32_t m;                                                \
+            av_assert2(idx == 1);                                      \
+            av_assert2(mem != INVALID_MV);                             \
+            if (mem_sub8x8 == INVALID_MV) {                            \
+                clamp_mv(&tmp, &mv, s);                                \
+                m = AV_RN32A(&tmp);                                    \
+                if (m != mem) {                                        \
+                    AV_WN32A(pmv, m);                                  \
+                    return;                                            \
+                }                                                      \
+                mem_sub8x8 = AV_RN32A(&mv);                            \
+            } else if (mem_sub8x8 != AV_RN32A(&mv)) {                  \
+                clamp_mv(&tmp, &mv, s);                                \
+                m = AV_RN32A(&tmp);                                    \
+                if (m != mem) {                                        \
+                    AV_WN32A(pmv, m);                                  \
+                } else {                                               \
                     /* BUG I'm pretty sure this isn't the intention */ \
-                    AV_WN32A(pmv, 0); \
-                } \
-                return; \
-            } \
-        } else { \
-            uint32_t m = AV_RN32A(&mv); \
-            if (!idx) { \
-                clamp_mv(pmv, &mv, s); \
-                return; \
-            } else if (mem == INVALID_MV) { \
-                mem = m; \
-            } else if (m != mem) { \
-                clamp_mv(pmv, &mv, s); \
-                return; \
-            } \
-        } \
+                    AV_WN32A(pmv, 0);                                  \
+                }                                                      \
+                return;                                                \
+            }                                                          \
+        } else {                                                       \
+            uint32_t m = AV_RN32A(&mv);                                \
+            if (!idx) {                                                \
+                clamp_mv(pmv, &mv, s);                                 \
+                return;                                                \
+            } else if (mem == INVALID_MV) {                            \
+                mem = m;                                               \
+            } else if (m != mem) {                                     \
+                clamp_mv(pmv, &mv, s);                                 \
+                return;                                                \
+            }                                                          \
+        }                                                              \
     } while (0)
 
         if (row > 0) {
             struct VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[(row - 1) * s->sb_cols * 8 + col];
-            if (mv->ref[0] == ref) {
+            if (mv->ref[0] == ref)
                 RETURN_MV(s->above_mv_ctx[2 * col + (sb & 1)][0]);
-            } else if (mv->ref[1] == ref) {
+            else if (mv->ref[1] == ref)
                 RETURN_MV(s->above_mv_ctx[2 * col + (sb & 1)][1]);
-            }
         }
         if (col > s->tile_col_start) {
             struct VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[row * s->sb_cols * 8 + col - 1];
-            if (mv->ref[0] == ref) {
+            if (mv->ref[0] == ref)
                 RETURN_MV(s->left_mv_ctx[2 * row7 + (sb >> 1)][0]);
-            } else if (mv->ref[1] == ref) {
+            else if (mv->ref[1] == ref)
                 RETURN_MV(s->left_mv_ctx[2 * row7 + (sb >> 1)][1]);
-            }
         }
         i = 2;
     } else {
         i = 0;
     }
 
-    // previously coded MVs in this neighbourhood, using same reference frame
+    // previously coded MVs in this neighborhood, using same reference frame
     for (; i < 8; i++) {
         int c = p[i][0] + col, r = p[i][1] + row;
 
-        if (c >= s->tile_col_start && c < s->cols && r >= 0 && r < s->rows) {
+        if (c >= s->tile_col_start && c < s->cols &&
+            r >= 0 && r < s->rows) {
             struct VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[r * s->sb_cols * 8 + c];
 
-            if (mv->ref[0] == ref) {
+            if (mv->ref[0] == ref)
                 RETURN_MV(mv->mv[0]);
-            } else if (mv->ref[1] == ref) {
+            else if (mv->ref[1] == ref)
                 RETURN_MV(mv->mv[1]);
-            }
         }
     }
 
@@ -176,33 +174,32 @@ static void find_ref_mvs(VP9Context *s,
 
         if (!s->s.frames[REF_FRAME_MVPAIR].uses_2pass)
             ff_thread_await_progress(&s->s.frames[REF_FRAME_MVPAIR].tf, row >> 3, 0);
-        if (mv->ref[0] == ref) {
+        if (mv->ref[0] == ref)
             RETURN_MV(mv->mv[0]);
-        } else if (mv->ref[1] == ref) {
+        else if (mv->ref[1] == ref)
             RETURN_MV(mv->mv[1]);
-        }
     }
 
-#define RETURN_SCALE_MV(mv, scale) \
-    do { \
-        if (scale) { \
-            VP56mv mv_temp = { -mv.x, -mv.y }; \
-            RETURN_MV(mv_temp); \
-        } else { \
-            RETURN_MV(mv); \
-        } \
+#define RETURN_SCALE_MV(mv, scale)              \
+    do {                                        \
+        if (scale) {                            \
+            VP56mv mv_temp = { -mv.x, -mv.y };  \
+            RETURN_MV(mv_temp);                 \
+        } else {                                \
+            RETURN_MV(mv);                      \
+        }                                       \
     } while (0)
 
-    // previously coded MVs in this neighbourhood, using different reference frame
+    // previously coded MVs in this neighborhood, using different reference frame
     for (i = 0; i < 8; i++) {
         int c = p[i][0] + col, r = p[i][1] + row;
 
         if (c >= s->tile_col_start && c < s->cols && r >= 0 && r < s->rows) {
             struct VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[r * s->sb_cols * 8 + c];
 
-            if (mv->ref[0] != ref && mv->ref[0] >= 0) {
-                RETURN_SCALE_MV(mv->mv[0], s->s.h.signbias[mv->ref[0]] != s->s.h.signbias[ref]);
-            }
+            if (mv->ref[0] != ref && mv->ref[0] >= 0)
+                RETURN_SCALE_MV(mv->mv[0],
+                                s->s.h.signbias[mv->ref[0]] != s->s.h.signbias[ref]);
             if (mv->ref[1] != ref && mv->ref[1] >= 0 &&
                 // BUG - libvpx has this condition regardless of whether
                 // we used the first ref MV and pre-scaling
@@ -217,9 +214,8 @@ static void find_ref_mvs(VP9Context *s,
         struct VP9mvrefPair *mv = &s->s.frames[REF_FRAME_MVPAIR].mv[row * s->sb_cols * 8 + col];
 
         // no need to await_progress, because we already did that above
-        if (mv->ref[0] != ref && mv->ref[0] >= 0) {
+        if (mv->ref[0] != ref && mv->ref[0] >= 0)
             RETURN_SCALE_MV(mv->mv[0], s->s.h.signbias[mv->ref[0]] != s->s.h.signbias[ref]);
-        }
         if (mv->ref[1] != ref && mv->ref[1] >= 0 &&
             // BUG - libvpx has this condition regardless of whether
             // we used the first ref MV and pre-scaling
@@ -252,8 +248,9 @@ static av_always_inline int read_mv_component(VP9Context *s, int idx, int hp)
             s->counts.mv_comp[idx].bits[m][bit]++;
         }
         n <<= 3;
-        bit = vp8_rac_get_tree(&s->c, ff_vp9_mv_fp_tree, s->prob.p.mv_comp[idx].fp);
-        n |= bit << 1;
+        bit = vp8_rac_get_tree(&s->c, ff_vp9_mv_fp_tree,
+                               s->prob.p.mv_comp[idx].fp);
+        n  |= bit << 1;
         s->counts.mv_comp[idx].fp[bit]++;
         if (hp) {
             bit = vp56_rac_get_prob(&s->c, s->prob.p.mv_comp[idx].hp);
@@ -302,7 +299,8 @@ void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb)
                      mode == NEWMV ? -1 : sb);
         // FIXME maybe move this code into find_ref_mvs()
         if ((mode == NEWMV || sb == -1) &&
-            !(hp = s->s.h.highprecisionmvs && abs(mv[0].x) < 64 && abs(mv[0].y) < 64)) {
+            !(hp = s->s.h.highprecisionmvs &&
+              abs(mv[0].x) < 64 && abs(mv[0].y) < 64)) {
             if (mv[0].y & 1) {
                 if (mv[0].y < 0)
                     mv[0].y++;
@@ -332,7 +330,8 @@ void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb)
             find_ref_mvs(s, &mv[1], b->ref[1], 1, mode == NEARMV,
                          mode == NEWMV ? -1 : sb);
             if ((mode == NEWMV || sb == -1) &&
-                !(hp = s->s.h.highprecisionmvs && abs(mv[1].x) < 64 && abs(mv[1].y) < 64)) {
+                !(hp = s->s.h.highprecisionmvs &&
+                  abs(mv[1].x) < 64 && abs(mv[1].y) < 64)) {
                 if (mv[1].y & 1) {
                     if (mv[1].y < 0)
                         mv[1].y++;

@@ -252,7 +252,7 @@ static int update_block_buffers(AVCodecContext *avctx)
     return 0;
 }
 
-// for some reason the sign bit is at the end, not the start, of a bit sequence
+// The sign bit is at the end, not the start, of a bit sequence
 static av_always_inline int get_sbits_inv(GetBitContext *gb, int n)
 {
     int v = get_bits(gb, n);
@@ -292,13 +292,13 @@ static int update_prob(VP56RangeCoder *c, int p)
 
     /* This code is trying to do a differential probability update. For a
      * current probability A in the range [1, 255], the difference to a new
-     * probability of any value can be expressed differentially as 1-A,255-A
+     * probability of any value can be expressed differentially as 1-A, 255-A
      * where some part of this (absolute range) exists both in positive as
      * well as the negative part, whereas another part only exists in one
      * half. We're trying to code this shared part differentially, i.e.
      * times two where the value of the lowest bit specifies the sign, and
      * the single part is then coded on top of this. This absolute difference
-     * then again has a value of [0,254], but a bigger value in this range
+     * then again has a value of [0, 254], but a bigger value in this range
      * indicates that we're further away from the original value A, so we
      * can code this as a VLC code, since higher values are increasingly
      * unlikely. The first 20 values in inv_map_table[] allow 'cheap, rough'
@@ -414,12 +414,15 @@ static int decode_frame_header(AVCodecContext *avctx,
         *ref = get_bits(&s->gb, 3);
         return 0;
     }
+
     s->last_keyframe  = s->s.h.keyframe;
-    s->s.h.keyframe     = !get_bits1(&s->gb);
-    last_invisible    = s->s.h.invisible;
-    s->s.h.invisible    = !get_bits1(&s->gb);
-    s->s.h.errorres     = get_bits1(&s->gb);
+    s->s.h.keyframe   = !get_bits1(&s->gb);
+
+    last_invisible   = s->s.h.invisible;
+    s->s.h.invisible = !get_bits1(&s->gb);
+    s->s.h.errorres  = get_bits1(&s->gb);
     s->s.h.use_last_frame_mvs = !s->s.h.errorres && !last_invisible;
+
     if (s->s.h.keyframe) {
         if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
             av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
@@ -434,8 +437,8 @@ static int decode_frame_header(AVCodecContext *avctx,
         if (get_bits1(&s->gb)) // display size
             skip_bits(&s->gb, 32);
     } else {
-        s->s.h.intraonly  = s->s.h.invisible ? get_bits1(&s->gb) : 0;
-        s->s.h.resetctx   = s->s.h.errorres ? 0 : get_bits(&s->gb, 2);
+        s->s.h.intraonly = s->s.h.invisible ? get_bits1(&s->gb) : 0;
+        s->s.h.resetctx  = s->s.h.errorres ? 0 : get_bits(&s->gb, 2);
         if (s->s.h.intraonly) {
             if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
                 av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
@@ -565,11 +568,10 @@ static int decode_frame_header(AVCodecContext *avctx,
             for (i = 0; i < 7; i++)
                 s->s.h.segmentation.prob[i] = get_bits1(&s->gb) ?
                                  get_bits(&s->gb, 8) : 255;
-            if ((s->s.h.segmentation.temporal = get_bits1(&s->gb))) {
+            if ((s->s.h.segmentation.temporal = get_bits1(&s->gb)))
                 for (i = 0; i < 3; i++)
                     s->s.h.segmentation.pred_prob[i] = get_bits1(&s->gb) ?
                                          get_bits(&s->gb, 8) : 255;
-            }
         }
 
         if (get_bits1(&s->gb)) {
@@ -734,9 +736,9 @@ static int decode_frame_header(AVCodecContext *avctx,
     } else {
         memset(&s->counts, 0, sizeof(s->counts));
     }
-    // FIXME is it faster to not copy here, but do it down in the fw updates
-    // as explicit copies if the fw update is missing (and skip the copy upon
-    // fw update)?
+    /* FIXME is it faster to not copy here, but do it down in the fw updates
+     * as explicit copies if the fw update is missing (and skip the copy upon
+     * fw update)? */
     s->prob.p = s->prob_ctx[c].p;
 
     // txfm updates
@@ -777,11 +779,10 @@ static int decode_frame_header(AVCodecContext *avctx,
                             if (m >= 3 && l == 0) // dc only has 3 pt
                                 break;
                             for (n = 0; n < 3; n++) {
-                                if (vp56_rac_get_prob_branchy(&s->c, 252)) {
+                                if (vp56_rac_get_prob_branchy(&s->c, 252))
                                     p[n] = update_prob(&s->c, r[n]);
-                                } else {
+                                else
                                     p[n] = r[n];
-                                }
                             }
                             p[3] = 0;
                         }
@@ -866,7 +867,8 @@ static int decode_frame_header(AVCodecContext *avctx,
                 for (k = 0; k < 3; k++)
                     if (vp56_rac_get_prob_branchy(&s->c, 252))
                         s->prob.p.partition[3 - i][j][k] =
-                            update_prob(&s->c, s->prob.p.partition[3 - i][j][k]);
+                            update_prob(&s->c,
+                                        s->prob.p.partition[3 - i][j][k]);
 
         // mv fields don't use the update_prob subexp model for some reason
         for (i = 0; i < 3; i++)
@@ -875,7 +877,8 @@ static int decode_frame_header(AVCodecContext *avctx,
 
         for (i = 0; i < 2; i++) {
             if (vp56_rac_get_prob_branchy(&s->c, 252))
-                s->prob.p.mv_comp[i].sign = (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                s->prob.p.mv_comp[i].sign =
+                    (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
@@ -883,7 +886,8 @@ static int decode_frame_header(AVCodecContext *avctx,
                         (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
 
             if (vp56_rac_get_prob_branchy(&s->c, 252))
-                s->prob.p.mv_comp[i].class0 = (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
+                s->prob.p.mv_comp[i].class0 =
+                    (vp8_rac_get_uint(&s->c, 7) << 1) | 1;
 
             for (j = 0; j < 10; j++)
                 if (vp56_rac_get_prob_branchy(&s->c, 252))
@@ -1210,11 +1214,11 @@ static void loopfilter_sb(AVCodecContext *avctx, struct VP9Filter *lflvl,
     uint8_t (*uv_masks)[8][4] = lflvl->mask[s->ss_h | s->ss_v];
     int p;
 
-    // FIXME in how far can we interleave the v/h loopfilter calls? E.g.
-    // if you think of them as acting on a 8x8 block max, we can interleave
-    // each v/h within the single x loop, but that only works if we work on
-    // 8 pixel blocks, and we won't always do that (we want at least 16px
-    // to use SSE2 optimizations, perhaps 32 for AVX2)
+    /* FIXME: In how far can we interleave the v/h loopfilter calls? E.g.
+     * if you think of them as acting on a 8x8 block max, we can interleave
+     * each v/h within the single x loop, but that only works if we work on
+     * 8 pixel blocks, and we won't always do that (we want at least 16px
+     * to use SSE2 optimizations, perhaps 32 for AVX2) */
 
     filter_plane_cols(s, col, 0, 0, lflvl->level, lflvl->mask[0][0], dst, ls_y);
     filter_plane_rows(s, row, 0, 0, lflvl->level, lflvl->mask[0][1], dst, ls_y);
@@ -1485,14 +1489,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                       yoff2, uvoff2, BL_64X64);
                         }
                     }
-                    if (s->pass != 2) {
+                    if (s->pass != 2)
                         memcpy(&s->c_b[tile_col], &s->c, sizeof(s->c));
-                    }
                 }
 
-                if (s->pass == 1) {
+                if (s->pass == 1)
                     continue;
-                }
 
                 // backup pre-loopfilter reconstruction data for intra
                 // prediction of next row of sb64s

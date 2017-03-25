@@ -76,33 +76,36 @@ void ff_vp9_adapt_probs(VP9Context *s)
 
     // skip flag
     for (i = 0; i < 3; i++)
-        adapt_prob(&p->skip[i], s->counts.skip[i][0], s->counts.skip[i][1], 20, 128);
+        adapt_prob(&p->skip[i], s->counts.skip[i][0],
+                   s->counts.skip[i][1], 20, 128);
 
     // intra/inter flag
     for (i = 0; i < 4; i++)
-        adapt_prob(&p->intra[i], s->counts.intra[i][0], s->counts.intra[i][1], 20, 128);
+        adapt_prob(&p->intra[i], s->counts.intra[i][0],
+                   s->counts.intra[i][1], 20, 128);
 
     // comppred flag
     if (s->s.h.comppredmode == PRED_SWITCHABLE) {
-      for (i = 0; i < 5; i++)
-          adapt_prob(&p->comp[i], s->counts.comp[i][0], s->counts.comp[i][1], 20, 128);
+        for (i = 0; i < 5; i++)
+            adapt_prob(&p->comp[i], s->counts.comp[i][0],
+                       s->counts.comp[i][1], 20, 128);
     }
 
     // reference frames
     if (s->s.h.comppredmode != PRED_SINGLEREF) {
-      for (i = 0; i < 5; i++)
-          adapt_prob(&p->comp_ref[i], s->counts.comp_ref[i][0],
-                     s->counts.comp_ref[i][1], 20, 128);
+        for (i = 0; i < 5; i++)
+            adapt_prob(&p->comp_ref[i], s->counts.comp_ref[i][0],
+                       s->counts.comp_ref[i][1], 20, 128);
     }
 
     if (s->s.h.comppredmode != PRED_COMPREF) {
-      for (i = 0; i < 5; i++) {
-          uint8_t *pp = p->single_ref[i];
-          unsigned (*c)[2] = s->counts.single_ref[i];
+        for (i = 0; i < 5; i++) {
+            uint8_t *pp = p->single_ref[i];
+            unsigned (*c)[2] = s->counts.single_ref[i];
 
-          adapt_prob(&pp[0], c[0][0], c[0][1], 20, 128);
-          adapt_prob(&pp[1], c[1][0], c[1][1], 20, 128);
-      }
+            adapt_prob(&pp[0], c[0][0], c[0][1], 20, 128);
+            adapt_prob(&pp[1], c[1][0], c[1][1], 20, 128);
+        }
     }
 
     // block partitioning
@@ -118,16 +121,17 @@ void ff_vp9_adapt_probs(VP9Context *s)
 
     // tx size
     if (s->s.h.txfmmode == TX_SWITCHABLE) {
-      for (i = 0; i < 2; i++) {
-          unsigned *c16 = s->counts.tx16p[i], *c32 = s->counts.tx32p[i];
+        for (i = 0; i < 2; i++) {
+            unsigned *c16 = s->counts.tx16p[i], *c32 = s->counts.tx32p[i];
 
-          adapt_prob(&p->tx8p[i], s->counts.tx8p[i][0], s->counts.tx8p[i][1], 20, 128);
-          adapt_prob(&p->tx16p[i][0], c16[0], c16[1] + c16[2], 20, 128);
-          adapt_prob(&p->tx16p[i][1], c16[1], c16[2], 20, 128);
-          adapt_prob(&p->tx32p[i][0], c32[0], c32[1] + c32[2] + c32[3], 20, 128);
-          adapt_prob(&p->tx32p[i][1], c32[1], c32[2] + c32[3], 20, 128);
-          adapt_prob(&p->tx32p[i][2], c32[2], c32[3], 20, 128);
-      }
+            adapt_prob(&p->tx8p[i], s->counts.tx8p[i][0],
+                       s->counts.tx8p[i][1], 20, 128);
+            adapt_prob(&p->tx16p[i][0], c16[0], c16[1] + c16[2], 20, 128);
+            adapt_prob(&p->tx16p[i][1], c16[1], c16[2], 20, 128);
+            adapt_prob(&p->tx32p[i][0], c32[0], c32[1] + c32[2] + c32[3], 20, 128);
+            adapt_prob(&p->tx32p[i][1], c32[1], c32[2] + c32[3], 20, 128);
+            adapt_prob(&p->tx32p[i][2], c32[2], c32[3], 20, 128);
+        }
     }
 
     // interpolation filter
@@ -169,9 +173,10 @@ void ff_vp9_adapt_probs(VP9Context *s)
         adapt_prob(&p->mv_comp[i].sign, s->counts.mv_comp[i].sign[0],
                    s->counts.mv_comp[i].sign[1], 20, 128);
 
-        pp = p->mv_comp[i].classes;
-        c = s->counts.mv_comp[i].classes;
-        sum = c[1] + c[2] + c[3] + c[4] + c[5] + c[6] + c[7] + c[8] + c[9] + c[10];
+        pp  = p->mv_comp[i].classes;
+        c   = s->counts.mv_comp[i].classes;
+        sum = c[1] + c[2] + c[3] + c[4] + c[5] +
+              c[6] + c[7] + c[8] + c[9] + c[10];
         adapt_prob(&pp[0], c[0], sum, 20, 128);
         sum -= c[1];
         adapt_prob(&pp[1], c[1], sum, 20, 128);
@@ -196,19 +201,20 @@ void ff_vp9_adapt_probs(VP9Context *s)
 
         for (j = 0; j < 2; j++) {
             pp = p->mv_comp[i].class0_fp[j];
-            c = s->counts.mv_comp[i].class0_fp[j];
+            c  = s->counts.mv_comp[i].class0_fp[j];
             adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
             adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
             adapt_prob(&pp[2], c[2], c[3], 20, 128);
         }
         pp = p->mv_comp[i].fp;
-        c = s->counts.mv_comp[i].fp;
+        c  = s->counts.mv_comp[i].fp;
         adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
         adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
         adapt_prob(&pp[2], c[2], c[3], 20, 128);
 
         if (s->s.h.highprecisionmvs) {
-            adapt_prob(&p->mv_comp[i].class0_hp, s->counts.mv_comp[i].class0_hp[0],
+            adapt_prob(&p->mv_comp[i].class0_hp,
+                       s->counts.mv_comp[i].class0_hp[0],
                        s->counts.mv_comp[i].class0_hp[1], 20, 128);
             adapt_prob(&p->mv_comp[i].hp, s->counts.mv_comp[i].hp[0],
                        s->counts.mv_comp[i].hp[1], 20, 128);
@@ -226,12 +232,13 @@ void ff_vp9_adapt_probs(VP9Context *s)
         adapt_prob(&pp[1], c[TM_VP8_PRED], sum, 20, 128);
         sum -= c[VERT_PRED];
         adapt_prob(&pp[2], c[VERT_PRED], sum, 20, 128);
-        s2 = c[HOR_PRED] + c[DIAG_DOWN_RIGHT_PRED] + c[VERT_RIGHT_PRED];
+        s2   = c[HOR_PRED] + c[DIAG_DOWN_RIGHT_PRED] + c[VERT_RIGHT_PRED];
         sum -= s2;
         adapt_prob(&pp[3], s2, sum, 20, 128);
         s2 -= c[HOR_PRED];
         adapt_prob(&pp[4], c[HOR_PRED], s2, 20, 128);
-        adapt_prob(&pp[5], c[DIAG_DOWN_RIGHT_PRED], c[VERT_RIGHT_PRED], 20, 128);
+        adapt_prob(&pp[5], c[DIAG_DOWN_RIGHT_PRED], c[VERT_RIGHT_PRED],
+                   20, 128);
         sum -= c[DIAG_DOWN_LEFT_PRED];
         adapt_prob(&pp[6], c[DIAG_DOWN_LEFT_PRED], sum, 20, 128);
         sum -= c[VERT_LEFT_PRED];
@@ -250,12 +257,13 @@ void ff_vp9_adapt_probs(VP9Context *s)
         adapt_prob(&pp[1], c[TM_VP8_PRED], sum, 20, 128);
         sum -= c[VERT_PRED];
         adapt_prob(&pp[2], c[VERT_PRED], sum, 20, 128);
-        s2 = c[HOR_PRED] + c[DIAG_DOWN_RIGHT_PRED] + c[VERT_RIGHT_PRED];
+        s2   = c[HOR_PRED] + c[DIAG_DOWN_RIGHT_PRED] + c[VERT_RIGHT_PRED];
         sum -= s2;
         adapt_prob(&pp[3], s2, sum, 20, 128);
         s2 -= c[HOR_PRED];
         adapt_prob(&pp[4], c[HOR_PRED], s2, 20, 128);
-        adapt_prob(&pp[5], c[DIAG_DOWN_RIGHT_PRED], c[VERT_RIGHT_PRED], 20, 128);
+        adapt_prob(&pp[5], c[DIAG_DOWN_RIGHT_PRED], c[VERT_RIGHT_PRED],
+                   20, 128);
         sum -= c[DIAG_DOWN_LEFT_PRED];
         adapt_prob(&pp[6], c[DIAG_DOWN_LEFT_PRED], sum, 20, 128);
         sum -= c[VERT_LEFT_PRED];

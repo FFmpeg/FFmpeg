@@ -23,9 +23,9 @@
 #include "vp9data.h"
 
 const int8_t ff_vp9_partition_tree[3][2] = {
-    { -PARTITION_NONE, 1 },               // '0'
-     { -PARTITION_H, 2 },                 // '10'
-      { -PARTITION_V, -PARTITION_SPLIT }, // '110', '111'
+    { -PARTITION_NONE, 1 },                      // '0'
+        { -PARTITION_H, 2 },                     // '10'
+            { -PARTITION_V, -PARTITION_SPLIT },  // '110', '111'
 };
 
 const uint8_t ff_vp9_default_kf_partition_probs[4][4][3] = {
@@ -54,24 +54,24 @@ const uint8_t ff_vp9_default_kf_partition_probs[4][4][3] = {
 
 const int8_t ff_vp9_segmentation_tree[7][2] = {
     { 1, 2 },
-     { 3, 4 },
-     { 5, 6 },
-      { -0, -1 }, // '00x'
-      { -2, -3 }, // '01x'
-      { -4, -5 }, // '10x'
-      { -6, -7 }, // '11x'
+        { 3, 4 },
+        { 5, 6 },
+            { -0, -1 },  // '00x'
+            { -2, -3 },  // '01x'
+            { -4, -5 },  // '10x'
+            { -6, -7 },  // '11x'
 };
 
 const int8_t ff_vp9_intramode_tree[9][2] = {
-    { -DC_PRED, 1 },                                  // '0'
-     { -TM_VP8_PRED, 2 },                             // '10'
-      { -VERT_PRED, 3 },                              // '110'
-       { 4, 6 },
-        { -HOR_PRED, 5 },                             // '11100'
-         { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED }, // '11101x'
-        { -DIAG_DOWN_LEFT_PRED, 7 },                  // '11110'
-         { -VERT_LEFT_PRED, 8 },                      // '111110'
-          { -HOR_DOWN_PRED, -HOR_UP_PRED },           // '111111x'
+    { -DC_PRED, 1 },                                                  // '0'
+        { -TM_VP8_PRED, 2 },                                          // '10'
+            { -VERT_PRED, 3 },                                        // '110'
+                { 4, 6 },
+                    { -HOR_PRED, 5 },                                 // '11100'
+                        { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED },  // '11101x'
+                    { -DIAG_DOWN_LEFT_PRED, 7 },                      // '11110'
+                        { -VERT_LEFT_PRED, 8 },                       // '111110'
+                            { -HOR_DOWN_PRED, -HOR_UP_PRED },         // '111111x'
 };
 
 const uint8_t ff_vp9_default_kf_ymode_probs[10][10][9] = {
@@ -202,14 +202,14 @@ const uint8_t ff_vp9_default_kf_uvmode_probs[10][9] = {
 };
 
 const int8_t ff_vp9_inter_mode_tree[3][2] = {
-    { -ZEROMV, 1 },        // '0'
-     { -NEARESTMV, 2 },    // '10'
-      { -NEARMV, -NEWMV }, // '11x'
+    { -ZEROMV, 1 },               // '0'
+        { -NEARESTMV, 2 },        // '10'
+            { -NEARMV, -NEWMV },  // '11x'
 };
 
 const int8_t ff_vp9_filter_tree[2][2] = {
-    { -0, 1 },   // '0'
-     { -1, -2 }, // '1x'
+    { -0,  1 },     // '0'
+        { -1, -2 }, // '1x'
 };
 
 const enum FilterMode ff_vp9_filter_lut[3] = {
@@ -1445,13 +1445,13 @@ const ProbContext ff_vp9_default_probs = {
         {  34,   3, },
         { 149, 144, },
     }, { /* mv_mode */
-        {  2, 173,  34},  // 0 = both zero mv
-        {  7, 145,  85},  // 1 = one zero mv + one a predicted mv
-        {  7, 166,  63},  // 2 = two predicted mvs
-        {  7,  94,  66},  // 3 = one predicted/zero and one new mv
-        {  8,  64,  46},  // 4 = two new mvs
-        { 17,  81,  31},  // 5 = one intra neighbour + x
-        { 25,  29,  30},  // 6 = two intra neighbours
+        {  2, 173,  34 },  // 0 = both zero mv
+        {  7, 145,  85 },  // 1 = one zero mv + one a predicted mv
+        {  7, 166,  63 },  // 2 = two predicted mvs
+        {  7,  94,  66 },  // 3 = one predicted/zero and one new mv
+        {  8,  64,  46 },  // 4 = two new mvs
+        { 17,  81,  31 },  // 5 = one intra neighbor + x
+        { 25,  29,  30 },  // 6 = two intra neighbors
     }, { /* intra */
         9, 102, 187, 225
     }, { /* comp */
@@ -1481,7 +1481,7 @@ const ProbContext ff_vp9_default_probs = {
             128, /* sign */
             { 224, 144, 192, 168, 192, 176, 192, 198, 198, 245 }, /* class */
             216, /* class0 */
-            { 136, 140, 148, 160, 176, 192, 224, 234, 234, 240}, /* bits */
+            { 136, 140, 148, 160, 176, 192, 224, 234, 234, 240 }, /* bits */
             { /* class0_fp */
                 { 128, 128, 64 },
                 {  96, 112, 64 }
@@ -2212,26 +2212,26 @@ const uint8_t ff_vp9_default_coef_probs[4][2][2][6][6][3] = {
 };
 
 const int8_t ff_vp9_mv_joint_tree[3][2] = {
-    { -MV_JOINT_ZERO, 1 },           // '0'
-     { -MV_JOINT_H, 2 },             // '10'
-      { -MV_JOINT_V, -MV_JOINT_HV }, // '11x'
+    { -MV_JOINT_ZERO, 1 },                  // '0'
+        { -MV_JOINT_H, 2 },                 // '10'
+            { -MV_JOINT_V, -MV_JOINT_HV },  // '11x'
 };
 
 const int8_t ff_vp9_mv_class_tree[10][2] = {
-    { -0, 1 },         // '0'
-     { -1, 2 },        // '10'
-      { 3, 4 },
-       { -2, -3 },     // '110x'
-       { 5, 6 },
-        { -4, -5 },    // '1110x'
-        { -6, 7 },     // '11110'
-         { 8, 9 },
-          { -7, -8 },  // '111110x'
-          { -9, -10 }, // '111111x'
+    { -0,   1 },                          // '0'
+        { -1,   2 },                      // '10'
+            {  3,   4 },
+                { -2,  -3 },              // '110x'
+                {  5,   6 },
+                    { -4,  -5 },          // '1110x'
+                    { -6,   7 },          // '11110'
+                        {  8,   9 },
+                            { -7,  -8 },  // '111110x'
+                            { -9, -10 },  // '111111x'
 };
 
 const int8_t ff_vp9_mv_fp_tree[3][2] = {
-    { -0, 1 },    // '0'
-     { -1, 2 },   // '10'
-      { -2, -3 }, // '11x'
+    { -0,  1 },          // '0'
+        { -1,  2 },      // '10'
+            { -2, -3 },  // '11x'
 };

@@ -33,10 +33,10 @@
 static const uint8_t bwh_tab[2][N_BS_SIZES][2] = {
     {
         { 16, 16 }, { 16, 8 }, { 8, 16 }, { 8, 8 }, { 8, 4 }, { 4, 8 },
-        { 4, 4 }, { 4, 2 }, { 2, 4 }, { 2, 2 }, { 2, 1 }, { 1, 2 }, { 1, 1 },
+        {  4,  4 }, {  4, 2 }, { 2,  4 }, { 2, 2 }, { 2, 1 }, { 1, 2 }, { 1, 1 },
     }, {
-        { 8, 8 }, { 8, 4 }, { 4, 8 }, { 4, 4 }, { 4, 2 }, { 2, 4 },
-        { 2, 2 }, { 2, 1 }, { 1, 2 }, { 1, 1 }, { 1, 1 }, { 1, 1 }, { 1, 1 },
+        {  8,  8 }, {  8, 4 }, { 4,  8 }, { 4, 4 }, { 4, 2 }, { 2, 4 },
+        {  2,  2 }, {  2, 1 }, { 1,  2 }, { 1, 1 }, { 1, 1 }, { 1, 1 }, { 1, 1 },
     }
 };
 
@@ -96,7 +96,7 @@ static void decode_mode(AVCodecContext *avctx)
     };
     static const uint8_t max_tx_for_bl_bp[N_BS_SIZES] = {
         TX_32X32, TX_32X32, TX_32X32, TX_32X32, TX_16X16, TX_16X16,
-        TX_16X16, TX_8X8, TX_8X8, TX_8X8, TX_4X4, TX_4X4, TX_4X4
+        TX_16X16, TX_8X8,   TX_8X8,   TX_8X8,   TX_4X4,   TX_4X4,  TX_4X4
     };
     VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
@@ -231,33 +231,45 @@ static void decode_mode(AVCodecContext *avctx)
             // FIXME the memory storage intermediates here aren't really
             // necessary, they're just there to make the code slightly
             // simpler for now
-            b->mode[0] = a[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
-                                    ff_vp9_default_kf_ymode_probs[a[0]][l[0]]);
+            b->mode[0] =
+            a[0]       = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                                          ff_vp9_default_kf_ymode_probs[a[0]][l[0]]);
             if (b->bs != BS_8x4) {
                 b->mode[1] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
-                                 ff_vp9_default_kf_ymode_probs[a[1]][b->mode[0]]);
-                l[0] = a[1] = b->mode[1];
+                                              ff_vp9_default_kf_ymode_probs[a[1]][b->mode[0]]);
+                l[0]       =
+                a[1]       = b->mode[1];
             } else {
-                l[0] = a[1] = b->mode[1] = b->mode[0];
+                l[0]       =
+                a[1]       =
+                b->mode[1] = b->mode[0];
             }
             if (b->bs != BS_4x8) {
-                b->mode[2] = a[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
-                                        ff_vp9_default_kf_ymode_probs[a[0]][l[1]]);
+                b->mode[2] =
+                a[0]       = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                                              ff_vp9_default_kf_ymode_probs[a[0]][l[1]]);
                 if (b->bs != BS_8x4) {
                     b->mode[3] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
-                                  ff_vp9_default_kf_ymode_probs[a[1]][b->mode[2]]);
-                    l[1] = a[1] = b->mode[3];
+                                                  ff_vp9_default_kf_ymode_probs[a[1]][b->mode[2]]);
+                    l[1]       =
+                    a[1]       = b->mode[3];
                 } else {
-                    l[1] = a[1] = b->mode[3] = b->mode[2];
+                    l[1]       =
+                    a[1]       =
+                    b->mode[3] = b->mode[2];
                 }
             } else {
                 b->mode[2] = b->mode[0];
-                l[1] = a[1] = b->mode[3] = b->mode[1];
+                l[1]       =
+                a[1]       =
+                b->mode[3] = b->mode[1];
             }
         } else {
             b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
                                           ff_vp9_default_kf_ymode_probs[*a][*l]);
-            b->mode[3] = b->mode[2] = b->mode[1] = b->mode[0];
+            b->mode[3] =
+            b->mode[2] =
+            b->mode[1] = b->mode[0];
             // FIXME this can probably be optimized
             memset(a, b->mode[0], bwh_tab[0][b->bs][0]);
             memset(l, b->mode[0], bwh_tab[0][b->bs][1]);
@@ -300,7 +312,9 @@ static void decode_mode(AVCodecContext *avctx)
 
             b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
                                           s->prob.p.y_mode[sz]);
-            b->mode[1] = b->mode[2] = b->mode[3] = b->mode[0];
+            b->mode[1] =
+            b->mode[2] =
+            b->mode[3] = b->mode[0];
             s->counts.y_mode[sz][b->mode[3]]++;
         }
         b->uvmode = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
@@ -349,8 +363,8 @@ static void decode_mode(AVCodecContext *avctx)
                         } else {
                             c = (!s->above_intra_ctx[col] &&
                                  s->above_ref_ctx[col] == s->s.h.fixcompref) ^
-                            (!s->left_intra_ctx[row7] &&
-                             s->left_ref_ctx[row & 7] == s->s.h.fixcompref);
+                                (!s->left_intra_ctx[row7] &&
+                                 s->left_ref_ctx[row & 7] == s->s.h.fixcompref);
                         }
                     } else {
                         c = s->above_comp_ctx[col] ? 3 :
@@ -369,7 +383,7 @@ static void decode_mode(AVCodecContext *avctx)
             // read actual references
             // FIXME probably cache a few variables here to prevent repetitive
             // memory accesses below
-            if (b->comp) /* two references */ {
+            if (b->comp) { /* two references */
                 int fix_idx = s->s.h.signbias[s->s.h.fixcompref], var_idx = !fix_idx, c, bit;
 
                 b->ref[fix_idx] = s->s.h.fixcompref;
@@ -537,7 +551,7 @@ static void decode_mode(AVCodecContext *avctx)
                                 c = 4 * (s->above_ref_ctx[col] == 1);
                             } else {
                                 c = 2 * (s->left_ref_ctx[row7] == 1) +
-                                2 * (s->above_ref_ctx[col] == 1);
+                                    2 * (s->above_ref_ctx[col] == 1);
                             }
                         } else {
                             if (s->above_intra_ctx[col] ||
@@ -570,7 +584,10 @@ static void decode_mode(AVCodecContext *avctx)
 
         if (b->bs <= BS_8x8) {
             if (s->s.h.segmentation.enabled && s->s.h.segmentation.feat[b->seg_id].skip_enabled) {
-                b->mode[0] = b->mode[1] = b->mode[2] = b->mode[3] = ZEROMV;
+                b->mode[0] =
+                b->mode[1] =
+                b->mode[2] =
+                b->mode[3] = ZEROMV;
             } else {
                 static const uint8_t off[10] = {
                     3, 0, 0, 1, 0, 0, 0, 0, 0, 0
@@ -583,7 +600,9 @@ static void decode_mode(AVCodecContext *avctx)
 
                 b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
                                               s->prob.p.mv_mode[c]);
-                b->mode[1] = b->mode[2] = b->mode[3] = b->mode[0];
+                b->mode[1] =
+                b->mode[2] =
+                b->mode[3] = b->mode[0];
                 s->counts.mv_mode[c][b->mode[0] - 10]++;
             }
         }
@@ -810,23 +829,23 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
         if (!val)
             break;
 
-    skip_eob:
+skip_eob:
         if (!vp56_rac_get_prob_branchy(c, tp[1])) { // zero
             cnt[band][nnz][0]++;
             if (!--band_left)
                 band_left = band_counts[++band];
             cache[scan[i]] = 0;
-            nnz = (1 + cache[nb[i][0]] + cache[nb[i][1]]) >> 1;
-            tp = p[band][nnz];
+            nnz            = (1 + cache[nb[i][0]] + cache[nb[i][1]]) >> 1;
+            tp             = p[band][nnz];
             if (++i == n_coeffs)
-                break; //invalid input; blocks should end with EOB
+                break;  //invalid input; blocks should end with EOB
             goto skip_eob;
         }
 
         rc = scan[i];
         if (!vp56_rac_get_prob_branchy(c, tp[2])) { // one
             cnt[band][nnz][1]++;
-            val = 1;
+            val       = 1;
             cache[rc] = 1;
         } else {
             // fill in p[3-10] (model fill) - only once per frame for each pos
@@ -838,16 +857,16 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
                 if (!vp56_rac_get_prob_branchy(c, tp[4])) {
                     cache[rc] = val = 2;
                 } else {
-                    val = 3 + vp56_rac_get_prob(c, tp[5]);
+                    val       = 3 + vp56_rac_get_prob(c, tp[5]);
                     cache[rc] = 3;
                 }
             } else if (!vp56_rac_get_prob_branchy(c, tp[6])) { // cat1/2
                 cache[rc] = 4;
                 if (!vp56_rac_get_prob_branchy(c, tp[7])) {
-                    val = 5 + vp56_rac_get_prob(c, 159);
+                    val  =  vp56_rac_get_prob(c, 159) + 5;
                 } else {
-                    val  = 7 + (vp56_rac_get_prob(c, 165) << 1);
-                    val +=      vp56_rac_get_prob(c, 145);
+                    val  = (vp56_rac_get_prob(c, 165) << 1) + 7;
+                    val +=  vp56_rac_get_prob(c, 145);
                 }
             } else { // cat 3-6
                 cache[rc] = 5;
@@ -863,11 +882,11 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
                         val +=       vp56_rac_get_prob(c, 135);
                     }
                 } else if (!vp56_rac_get_prob_branchy(c, tp[10])) {
-                    val  = 35 + (vp56_rac_get_prob(c, 180) << 4);
-                    val +=      (vp56_rac_get_prob(c, 157) << 3);
-                    val +=      (vp56_rac_get_prob(c, 141) << 2);
-                    val +=      (vp56_rac_get_prob(c, 134) << 1);
-                    val +=       vp56_rac_get_prob(c, 130);
+                    val  = (vp56_rac_get_prob(c, 180) << 4) + 35;
+                    val += (vp56_rac_get_prob(c, 157) << 3);
+                    val += (vp56_rac_get_prob(c, 141) << 2);
+                    val += (vp56_rac_get_prob(c, 134) << 1);
+                    val +=  vp56_rac_get_prob(c, 130);
                 } else {
                     val = 67;
                     if (!is8bitsperpixel) {
@@ -878,20 +897,20 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
                         val +=  (vp56_rac_get_prob(c, 255) << 15);
                         val +=  (vp56_rac_get_prob(c, 255) << 14);
                     }
-                    val +=      (vp56_rac_get_prob(c, 254) << 13);
-                    val +=      (vp56_rac_get_prob(c, 254) << 12);
-                    val +=      (vp56_rac_get_prob(c, 254) << 11);
-                    val +=      (vp56_rac_get_prob(c, 252) << 10);
-                    val +=      (vp56_rac_get_prob(c, 249) << 9);
-                    val +=      (vp56_rac_get_prob(c, 243) << 8);
-                    val +=      (vp56_rac_get_prob(c, 230) << 7);
-                    val +=      (vp56_rac_get_prob(c, 196) << 6);
-                    val +=      (vp56_rac_get_prob(c, 177) << 5);
-                    val +=      (vp56_rac_get_prob(c, 153) << 4);
-                    val +=      (vp56_rac_get_prob(c, 140) << 3);
-                    val +=      (vp56_rac_get_prob(c, 133) << 2);
-                    val +=      (vp56_rac_get_prob(c, 130) << 1);
-                    val +=       vp56_rac_get_prob(c, 129);
+                    val += (vp56_rac_get_prob(c, 254) << 13);
+                    val += (vp56_rac_get_prob(c, 254) << 12);
+                    val += (vp56_rac_get_prob(c, 254) << 11);
+                    val += (vp56_rac_get_prob(c, 252) << 10);
+                    val += (vp56_rac_get_prob(c, 249) << 9);
+                    val += (vp56_rac_get_prob(c, 243) << 8);
+                    val += (vp56_rac_get_prob(c, 230) << 7);
+                    val += (vp56_rac_get_prob(c, 196) << 6);
+                    val += (vp56_rac_get_prob(c, 177) << 5);
+                    val += (vp56_rac_get_prob(c, 153) << 4);
+                    val += (vp56_rac_get_prob(c, 140) << 3);
+                    val += (vp56_rac_get_prob(c, 133) << 2);
+                    val += (vp56_rac_get_prob(c, 130) << 1);
+                    val +=  vp56_rac_get_prob(c, 129);
                 }
             }
         }
@@ -966,7 +985,7 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
     int w4 = bwh_tab[1][b->bs][0] << 1, h4 = bwh_tab[1][b->bs][1] << 1;
     int end_x = FFMIN(2 * (s->cols - col), w4);
     int end_y = FFMIN(2 * (s->rows - row), h4);
-    int n, pl, x, y, res;
+    int n, pl, x, y, ret;
     int16_t (*qmul)[2] = s->s.h.segmentation.feat[b->seg_id].qmul;
     int tx = 4 * s->s.h.lossless + b->tx;
     const int16_t * const *yscans = ff_vp9_scans[tx];
@@ -999,16 +1018,16 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
     for (n = 0, y = 0; y < end_y; y += step) { \
         for (x = 0; x < end_x; x += step, n += step * step) { \
             enum TxfmType txtp = ff_vp9_intra_txfm_type[b->mode[mode_index]]; \
-            res = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
+            ret = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
                                     (s, s->block + 16 * n * bytesperpixel, 16 * step * step, \
                                      c, e, p, a[x] + l[y], yscans[txtp], \
                                      ynbs[txtp], y_band_counts, qmul[0]); \
-            a[x] = l[y] = !!res; \
-            total_coeff |= !!res; \
+            a[x] = l[y] = !!ret; \
+            total_coeff |= !!ret; \
             if (step >= 4) { \
-                AV_WN16A(&s->eob[n], res); \
+                AV_WN16A(&s->eob[n], ret); \
             } else { \
-                s->eob[n] = res; \
+                s->eob[n] = ret; \
             } \
         } \
     }
@@ -1073,16 +1092,16 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
 #define DECODE_UV_COEF_LOOP(step, v) \
     for (n = 0, y = 0; y < end_y; y += step) { \
         for (x = 0; x < end_x; x += step, n += step * step) { \
-            res = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
+            ret = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
                                     (s, s->uvblock[pl] + 16 * n * bytesperpixel, \
                                      16 * step * step, c, e, p, a[x] + l[y], \
                                      uvscan, uvnb, uv_band_counts, qmul[1]); \
-            a[x] = l[y] = !!res; \
-            total_coeff |= !!res; \
+            a[x] = l[y] = !!ret; \
+            total_coeff |= !!ret; \
             if (step >= 4) { \
-                AV_WN16A(&s->uveob[pl][n], res); \
+                AV_WN16A(&s->uveob[pl][n], ret); \
             } else { \
-                s->uveob[pl][n] = res; \
+                s->uveob[pl][n] = ret; \
             } \
         } \
     }
@@ -1144,26 +1163,26 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     int have_right = x < w - 1;
     int bpp = s->s.h.bpp;
     static const uint8_t mode_conv[10][2 /* have_left */][2 /* have_top */] = {
-        [VERT_PRED]            = { { DC_127_PRED,          VERT_PRED },
-                                   { DC_127_PRED,          VERT_PRED } },
-        [HOR_PRED]             = { { DC_129_PRED,          DC_129_PRED },
-                                   { HOR_PRED,             HOR_PRED } },
-        [DC_PRED]              = { { DC_128_PRED,          TOP_DC_PRED },
-                                   { LEFT_DC_PRED,         DC_PRED } },
-        [DIAG_DOWN_LEFT_PRED]  = { { DC_127_PRED,          DIAG_DOWN_LEFT_PRED },
-                                   { DC_127_PRED,          DIAG_DOWN_LEFT_PRED } },
+        [VERT_PRED]            = { { DC_127_PRED,          VERT_PRED            },
+                                   { DC_127_PRED,          VERT_PRED            } },
+        [HOR_PRED]             = { { DC_129_PRED,          DC_129_PRED          },
+                                   { HOR_PRED,             HOR_PRED             } },
+        [DC_PRED]              = { { DC_128_PRED,          TOP_DC_PRED          },
+                                   { LEFT_DC_PRED,         DC_PRED              } },
+        [DIAG_DOWN_LEFT_PRED]  = { { DC_127_PRED,          DIAG_DOWN_LEFT_PRED  },
+                                   { DC_127_PRED,          DIAG_DOWN_LEFT_PRED  } },
         [DIAG_DOWN_RIGHT_PRED] = { { DIAG_DOWN_RIGHT_PRED, DIAG_DOWN_RIGHT_PRED },
                                    { DIAG_DOWN_RIGHT_PRED, DIAG_DOWN_RIGHT_PRED } },
-        [VERT_RIGHT_PRED]      = { { VERT_RIGHT_PRED,      VERT_RIGHT_PRED },
-                                   { VERT_RIGHT_PRED,      VERT_RIGHT_PRED } },
-        [HOR_DOWN_PRED]        = { { HOR_DOWN_PRED,        HOR_DOWN_PRED },
-                                   { HOR_DOWN_PRED,        HOR_DOWN_PRED } },
-        [VERT_LEFT_PRED]       = { { DC_127_PRED,          VERT_LEFT_PRED },
-                                   { DC_127_PRED,          VERT_LEFT_PRED } },
-        [HOR_UP_PRED]          = { { DC_129_PRED,          DC_129_PRED },
-                                   { HOR_UP_PRED,          HOR_UP_PRED } },
-        [TM_VP8_PRED]          = { { DC_129_PRED,          VERT_PRED },
-                                   { HOR_PRED,             TM_VP8_PRED } },
+        [VERT_RIGHT_PRED]      = { { VERT_RIGHT_PRED,      VERT_RIGHT_PRED      },
+                                   { VERT_RIGHT_PRED,      VERT_RIGHT_PRED      } },
+        [HOR_DOWN_PRED]        = { { HOR_DOWN_PRED,        HOR_DOWN_PRED        },
+                                   { HOR_DOWN_PRED,        HOR_DOWN_PRED        } },
+        [VERT_LEFT_PRED]       = { { DC_127_PRED,          VERT_LEFT_PRED       },
+                                   { DC_127_PRED,          VERT_LEFT_PRED       } },
+        [HOR_UP_PRED]          = { { DC_129_PRED,          DC_129_PRED          },
+                                   { HOR_UP_PRED,          HOR_UP_PRED          } },
+        [TM_VP8_PRED]          = { { DC_129_PRED,          VERT_PRED            },
+                                   { HOR_PRED,             TM_VP8_PRED          } },
     };
     static const struct {
         uint8_t needs_left:1;
@@ -1176,12 +1195,16 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
         [HOR_PRED]             = { .needs_left = 1 },
         [DC_PRED]              = { .needs_top  = 1, .needs_left = 1 },
         [DIAG_DOWN_LEFT_PRED]  = { .needs_top  = 1, .needs_topright = 1 },
-        [DIAG_DOWN_RIGHT_PRED] = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
-        [VERT_RIGHT_PRED]      = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
-        [HOR_DOWN_PRED]        = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
+        [DIAG_DOWN_RIGHT_PRED] = { .needs_left = 1, .needs_top = 1,
+                                   .needs_topleft = 1 },
+        [VERT_RIGHT_PRED]      = { .needs_left = 1, .needs_top = 1,
+                                   .needs_topleft = 1 },
+        [HOR_DOWN_PRED]        = { .needs_left = 1, .needs_top = 1,
+                                   .needs_topleft = 1 },
         [VERT_LEFT_PRED]       = { .needs_top  = 1, .needs_topright = 1 },
         [HOR_UP_PRED]          = { .needs_left = 1, .invert_left = 1 },
-        [TM_VP8_PRED]          = { .needs_left = 1, .needs_top = 1, .needs_topleft = 1 },
+        [TM_VP8_PRED]          = { .needs_left = 1, .needs_top = 1,
+                                   .needs_topleft = 1 },
         [LEFT_DC_PRED]         = { .needs_left = 1 },
         [TOP_DC_PRED]          = { .needs_top  = 1 },
         [DC_128_PRED]          = { 0 },
@@ -1353,7 +1376,7 @@ static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
     }
 
     // U/V
-    w4 >>= s->ss_h;
+    w4    >>= s->ss_h;
     end_x >>= s->ss_h;
     end_y >>= s->ss_v;
     step = 1 << (b->uvtx * 2);
@@ -1679,6 +1702,7 @@ static av_always_inline void inter_recon(AVCodecContext *avctx, int bytesperpixe
             inter_pred_16bpp(avctx);
         }
     }
+
     if (!b->skip) {
         /* mostly copied intra_recon() */
 
@@ -1808,8 +1832,8 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
 
         if (!skip_inter) {
             int mask_id = (tx == TX_8X8);
-            static const unsigned masks[4] = { 0xff, 0x55, 0x11, 0x01 };
             int l2 = tx + ss_h - 1, step1d;
+            static const unsigned masks[4] = { 0xff, 0x55, 0x11, 0x01 };
             int m_row = m_col & masks[l2];
 
             // at odd UV col/row edges tx16/tx32 loopfilter edges, force
@@ -1874,10 +1898,12 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
     s->row7 = row & 7;
     s->col = col;
     s->col7 = col & 7;
+
     s->min_mv.x = -(128 + col * 64);
     s->min_mv.y = -(128 + row * 64);
     s->max_mv.x = 128 + (s->cols - col - w4) * 64;
     s->max_mv.y = 128 + (s->rows - row - h4) * 64;
+
     if (s->pass < 2) {
         b->bs = bs;
         b->bl = bl;
