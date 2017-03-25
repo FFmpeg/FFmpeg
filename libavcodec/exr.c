@@ -1647,7 +1647,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     int y, ret;
     int out_line_size;
-    int nb_blocks;/* nb scanline or nb tile */
+    int nb_blocks;   /* nb scanline or nb tile */
+    uint64_t *table; /* scanline offset table */
+    uint8_t *marker; /* used to recreate invalid scanline offset table */
+    uint8_t *head;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -1732,6 +1735,20 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     if (bytestream2_get_bytes_left(&s->gb) < nb_blocks * 8)
         return AVERROR_INVALIDDATA;
+
+    // check offset table and recreate it if need
+    if (!s->is_tile && bytestream2_peek_le64(&s->gb) == 0) {
+        head = avpkt->data;
+        table = (uint64_t *)s->gb.buffer;
+        marker = head + bytestream2_tell(&s->gb) + nb_blocks * 8;
+
+        av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
+
+        for (y = 0; y < nb_blocks; y++) {
+            table[y] = marker - head;
+            marker += ((uint32_t *)marker)[1] + 8;
+        }
+    }
 
     // save pointer we are going to use in decode_block
     s->buf      = avpkt->data;
