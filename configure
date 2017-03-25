@@ -4649,7 +4649,7 @@ fi
 
 add_cppflags -D_ISOC99_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
-add_cxxflags -std=c++98
+check_cxxflags -std=c++11 || check_cxxflags -std=c++0x
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
