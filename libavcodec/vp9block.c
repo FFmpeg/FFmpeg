@@ -86,7 +86,7 @@ static av_always_inline void setctx_2d(uint8_t *ptr, int w, int h,
     }
 }
 
-static void decode_mode(AVCodecContext *ctx)
+static void decode_mode(AVCodecContext *avctx)
 {
     static const uint8_t left_ctx[N_BS_SIZES] = {
         0x0, 0x8, 0x0, 0x8, 0xc, 0x8, 0xc, 0xe, 0xc, 0xe, 0xf, 0xe, 0xf
@@ -98,7 +98,7 @@ static void decode_mode(AVCodecContext *ctx)
         TX_32X32, TX_32X32, TX_32X32, TX_32X32, TX_16X16, TX_16X16,
         TX_16X16, TX_8X8, TX_8X8, TX_8X8, TX_4X4, TX_4X4, TX_4X4
     };
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col, row7 = s->row7;
     enum TxfmMode max_tx = max_tx_for_bl_bp[b->bs];
@@ -955,9 +955,9 @@ static int decode_coeffs_b32_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static av_always_inline int decode_coeffs(AVCodecContext *ctx, int is8bitsperpixel)
+static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperpixel)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
     uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
@@ -1122,14 +1122,14 @@ static av_always_inline int decode_coeffs(AVCodecContext *ctx, int is8bitsperpix
     return total_coeff;
 }
 
-static int decode_coeffs_8bpp(AVCodecContext *ctx)
+static int decode_coeffs_8bpp(AVCodecContext *avctx)
 {
-    return decode_coeffs(ctx, 1);
+    return decode_coeffs(avctx, 1);
 }
 
-static int decode_coeffs_16bpp(AVCodecContext *ctx)
+static int decode_coeffs_16bpp(AVCodecContext *avctx)
 {
-    return decode_coeffs(ctx, 0);
+    return decode_coeffs(avctx, 0);
 }
 
 static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **a,
@@ -1313,10 +1313,10 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     return mode;
 }
 
-static av_always_inline void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off,
+static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
                                          ptrdiff_t uv_off, int bytesperpixel)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
     int w4 = bwh_tab[1][b->bs][0] << 1, step1d = 1 << b->tx, n;
@@ -1383,14 +1383,14 @@ static av_always_inline void intra_recon(AVCodecContext *ctx, ptrdiff_t y_off,
     }
 }
 
-static void intra_recon_8bpp(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
+static void intra_recon_8bpp(AVCodecContext *avctx, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
-    intra_recon(ctx, y_off, uv_off, 1);
+    intra_recon(avctx, y_off, uv_off, 1);
 }
 
-static void intra_recon_16bpp(AVCodecContext *ctx, ptrdiff_t y_off, ptrdiff_t uv_off)
+static void intra_recon_16bpp(AVCodecContext *avctx, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
-    intra_recon(ctx, y_off, uv_off, 2);
+    intra_recon(avctx, y_off, uv_off, 2);
 }
 
 static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
@@ -1660,23 +1660,23 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 #undef BYTES_PER_PIXEL
 #undef SCALED
 
-static av_always_inline void inter_recon(AVCodecContext *ctx, int bytesperpixel)
+static av_always_inline void inter_recon(AVCodecContext *avctx, int bytesperpixel)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
 
     if (s->mvscale[b->ref[0]][0] || (b->comp && s->mvscale[b->ref[1]][0])) {
         if (bytesperpixel == 1) {
-            inter_pred_scaled_8bpp(ctx);
+            inter_pred_scaled_8bpp(avctx);
         } else {
-            inter_pred_scaled_16bpp(ctx);
+            inter_pred_scaled_16bpp(avctx);
         }
     } else {
         if (bytesperpixel == 1) {
-            inter_pred_8bpp(ctx);
+            inter_pred_8bpp(avctx);
         } else {
-            inter_pred_16bpp(ctx);
+            inter_pred_16bpp(avctx);
         }
     }
     if (!b->skip) {
@@ -1726,14 +1726,14 @@ static av_always_inline void inter_recon(AVCodecContext *ctx, int bytesperpixel)
     }
 }
 
-static void inter_recon_8bpp(AVCodecContext *ctx)
+static void inter_recon_8bpp(AVCodecContext *avctx)
 {
-    inter_recon(ctx, 1);
+    inter_recon(avctx, 1);
 }
 
-static void inter_recon_16bpp(AVCodecContext *ctx)
+static void inter_recon_16bpp(AVCodecContext *avctx)
 {
-    inter_recon(ctx, 2);
+    inter_recon(avctx, 2);
 }
 
 static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_v,
@@ -1858,11 +1858,11 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
     }
 }
 
-void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
+void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
                          struct VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     enum BlockSize bs = bl * 3 + bp;
     int bytesperpixel = s->bytesperpixel;
@@ -1882,7 +1882,7 @@ void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
         b->bs = bs;
         b->bl = bl;
         b->bp = bp;
-        decode_mode(ctx);
+        decode_mode(avctx);
         b->uvtx = b->tx - ((s->ss_h && w4 * 2 == (1 << b->tx)) ||
                            (s->ss_v && h4 * 2 == (1 << b->tx)));
 
@@ -1890,9 +1890,9 @@ void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
             int has_coeffs;
 
             if (bytesperpixel == 1) {
-                has_coeffs = decode_coeffs_8bpp(ctx);
+                has_coeffs = decode_coeffs_8bpp(avctx);
             } else {
-                has_coeffs = decode_coeffs_16bpp(ctx);
+                has_coeffs = decode_coeffs_16bpp(avctx);
             }
             if (!has_coeffs && b->bs <= BS_8x8 && !b->intra) {
                 b->skip = 1;
@@ -1974,15 +1974,15 @@ void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
     }
     if (b->intra) {
         if (s->s.h.bpp > 8) {
-            intra_recon_16bpp(ctx, yoff, uvoff);
+            intra_recon_16bpp(avctx, yoff, uvoff);
         } else {
-            intra_recon_8bpp(ctx, yoff, uvoff);
+            intra_recon_8bpp(avctx, yoff, uvoff);
         }
     } else {
         if (s->s.h.bpp > 8) {
-            inter_recon_16bpp(ctx);
+            inter_recon_16bpp(avctx);
         } else {
-            inter_recon_8bpp(ctx);
+            inter_recon_8bpp(avctx);
         }
     }
     if (emu[0]) {

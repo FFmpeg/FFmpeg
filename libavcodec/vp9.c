@@ -36,21 +36,21 @@
 
 #define VP9_SYNCCODE 0x498342
 
-static void vp9_unref_frame(AVCodecContext *ctx, VP9Frame *f)
+static void vp9_unref_frame(AVCodecContext *avctx, VP9Frame *f)
 {
-    ff_thread_release_buffer(ctx, &f->tf);
+    ff_thread_release_buffer(avctx, &f->tf);
     av_buffer_unref(&f->extradata);
     av_buffer_unref(&f->hwaccel_priv_buf);
     f->segmentation_map = NULL;
     f->hwaccel_picture_private = NULL;
 }
 
-static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
+static int vp9_alloc_frame(AVCodecContext *avctx, VP9Frame *f)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int ret, sz;
 
-    if ((ret = ff_thread_get_buffer(ctx, &f->tf, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
     sz = 64 * s->sb_cols * s->sb_rows;
     if (!(f->extradata = av_buffer_allocz(sz * (1 + sizeof(struct VP9mvrefPair))))) {
@@ -60,8 +60,8 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
     f->segmentation_map = f->extradata->data;
     f->mv = (struct VP9mvrefPair *) (f->extradata->data + sz);
 
-    if (ctx->hwaccel) {
-        const AVHWAccel *hwaccel = ctx->hwaccel;
+    if (avctx->hwaccel) {
+        const AVHWAccel *hwaccel = avctx->hwaccel;
         av_assert0(!f->hwaccel_picture_private);
         if (hwaccel->frame_priv_data_size) {
             f->hwaccel_priv_buf = av_buffer_allocz(hwaccel->frame_priv_data_size);
@@ -74,11 +74,11 @@ static int vp9_alloc_frame(AVCodecContext *ctx, VP9Frame *f)
     return 0;
 
 fail:
-    vp9_unref_frame(ctx, f);
+    vp9_unref_frame(avctx, f);
     return AVERROR(ENOMEM);
 }
 
-static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
+static int vp9_ref_frame(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
 {
     int res;
 
@@ -102,22 +102,22 @@ static int vp9_ref_frame(AVCodecContext *ctx, VP9Frame *dst, VP9Frame *src)
     return 0;
 
 fail:
-    vp9_unref_frame(ctx, dst);
+    vp9_unref_frame(avctx, dst);
     return AVERROR(ENOMEM);
 }
 
-static int update_size(AVCodecContext *ctx, int w, int h)
+static int update_size(AVCodecContext *avctx, int w, int h)
 {
 #define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + CONFIG_VP9_D3D11VA_HWACCEL + CONFIG_VP9_VAAPI_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     uint8_t *p;
     int bytesperpixel = s->bytesperpixel, res, cols, rows;
 
     av_assert0(w > 0 && h > 0);
 
     if (!(s->pix_fmt == s->gf_fmt && w == s->w && h == s->h)) {
-        if ((res = ff_set_dimensions(ctx, w, h)) < 0)
+        if ((res = ff_set_dimensions(avctx, w, h)) < 0)
             return res;
 
         switch (s->pix_fmt) {
@@ -143,11 +143,11 @@ static int update_size(AVCodecContext *ctx, int w, int h)
         *fmtp++ = s->pix_fmt;
         *fmtp = AV_PIX_FMT_NONE;
 
-        res = ff_thread_get_format(ctx, pix_fmts);
+        res = ff_thread_get_format(avctx, pix_fmts);
         if (res < 0)
             return res;
 
-        ctx->pix_fmt = res;
+        avctx->pix_fmt = res;
         s->gf_fmt  = s->pix_fmt;
         s->w = w;
         s->h = h;
@@ -197,7 +197,7 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     av_freep(&s->block_base);
 
     if (s->s.h.bpp != s->last_bpp) {
-        ff_vp9dsp_init(&s->dsp, s->s.h.bpp, ctx->flags & AV_CODEC_FLAG_BITEXACT);
+        ff_vp9dsp_init(&s->dsp, s->s.h.bpp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
         ff_videodsp_init(&s->vdsp, s->s.h.bpp);
         s->last_bpp = s->s.h.bpp;
     }
@@ -205,9 +205,9 @@ static int update_size(AVCodecContext *ctx, int w, int h)
     return 0;
 }
 
-static int update_block_buffers(AVCodecContext *ctx)
+static int update_block_buffers(AVCodecContext *avctx)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int chroma_blocks, chroma_eobs, bytesperpixel = s->bytesperpixel;
 
     if (s->b_base && s->block_base && s->block_alloc_using_2pass == s->s.frames[CUR_FRAME].uses_2pass)
@@ -318,34 +318,34 @@ static int update_prob(VP56RangeCoder *c, int p)
                     255 - inv_recenter_nonneg(inv_map_table[d], 255 - p);
 }
 
-static int read_colorspace_details(AVCodecContext *ctx)
+static int read_colorspace_details(AVCodecContext *avctx)
 {
     static const enum AVColorSpace colorspaces[8] = {
         AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
         AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
     };
-    VP9Context *s = ctx->priv_data;
-    int bits = ctx->profile <= 1 ? 0 : 1 + get_bits1(&s->gb); // 0:8, 1:10, 2:12
+    VP9Context *s = avctx->priv_data;
+    int bits = avctx->profile <= 1 ? 0 : 1 + get_bits1(&s->gb); // 0:8, 1:10, 2:12
 
     s->bpp_index = bits;
     s->s.h.bpp = 8 + bits * 2;
     s->bytesperpixel = (7 + s->s.h.bpp) >> 3;
-    ctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
-    if (ctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
+    avctx->colorspace = colorspaces[get_bits(&s->gb, 3)];
+    if (avctx->colorspace == AVCOL_SPC_RGB) { // RGB = profile 1
         static const enum AVPixelFormat pix_fmt_rgb[3] = {
             AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12
         };
         s->ss_h = s->ss_v = 0;
-        ctx->color_range = AVCOL_RANGE_JPEG;
+        avctx->color_range = AVCOL_RANGE_JPEG;
         s->pix_fmt = pix_fmt_rgb[bits];
-        if (ctx->profile & 1) {
+        if (avctx->profile & 1) {
             if (get_bits1(&s->gb)) {
-                av_log(ctx, AV_LOG_ERROR, "Reserved bit set in RGB\n");
+                av_log(avctx, AV_LOG_ERROR, "Reserved bit set in RGB\n");
                 return AVERROR_INVALIDDATA;
             }
         } else {
-            av_log(ctx, AV_LOG_ERROR, "RGB not supported in profile %d\n",
-                   ctx->profile);
+            av_log(avctx, AV_LOG_ERROR, "RGB not supported in profile %d\n",
+                   avctx->profile);
             return AVERROR_INVALIDDATA;
         }
     } else {
@@ -357,18 +357,18 @@ static int read_colorspace_details(AVCodecContext *ctx)
             { { AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12 },
               { AV_PIX_FMT_YUV440P12, AV_PIX_FMT_YUV420P12 } }
         };
-        ctx->color_range = get_bits1(&s->gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-        if (ctx->profile & 1) {
+        avctx->color_range = get_bits1(&s->gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+        if (avctx->profile & 1) {
             s->ss_h = get_bits1(&s->gb);
             s->ss_v = get_bits1(&s->gb);
             s->pix_fmt = pix_fmt_for_ss[bits][s->ss_v][s->ss_h];
             if (s->pix_fmt == AV_PIX_FMT_YUV420P) {
-                av_log(ctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile %d\n",
-                       ctx->profile);
+                av_log(avctx, AV_LOG_ERROR, "YUV 4:2:0 not supported in profile %d\n",
+                       avctx->profile);
                 return AVERROR_INVALIDDATA;
             } else if (get_bits1(&s->gb)) {
-                av_log(ctx, AV_LOG_ERROR, "Profile %d color details reserved bit set\n",
-                       ctx->profile);
+                av_log(avctx, AV_LOG_ERROR, "Profile %d color details reserved bit set\n",
+                       avctx->profile);
                 return AVERROR_INVALIDDATA;
             }
         } else {
@@ -380,31 +380,31 @@ static int read_colorspace_details(AVCodecContext *ctx)
     return 0;
 }
 
-static int decode_frame_header(AVCodecContext *ctx,
+static int decode_frame_header(AVCodecContext *avctx,
                                const uint8_t *data, int size, int *ref)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int c, i, j, k, l, m, n, w, h, max, size2, res, sharp;
     int last_invisible;
     const uint8_t *data2;
 
     /* general header */
     if ((res = init_get_bits8(&s->gb, data, size)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to initialize bitstream reader\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to initialize bitstream reader\n");
         return res;
     }
     if (get_bits(&s->gb, 2) != 0x2) { // frame marker
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame marker\n");
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame marker\n");
         return AVERROR_INVALIDDATA;
     }
-    ctx->profile  = get_bits1(&s->gb);
-    ctx->profile |= get_bits1(&s->gb) << 1;
-    if (ctx->profile == 3) ctx->profile += get_bits1(&s->gb);
-    if (ctx->profile > 3) {
-        av_log(ctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", ctx->profile);
+    avctx->profile  = get_bits1(&s->gb);
+    avctx->profile |= get_bits1(&s->gb) << 1;
+    if (avctx->profile == 3) avctx->profile += get_bits1(&s->gb);
+    if (avctx->profile > 3) {
+        av_log(avctx, AV_LOG_ERROR, "Profile %d is not yet supported\n", avctx->profile);
         return AVERROR_INVALIDDATA;
     }
-    s->s.h.profile = ctx->profile;
+    s->s.h.profile = avctx->profile;
     if (get_bits1(&s->gb)) {
         *ref = get_bits(&s->gb, 3);
         return 0;
@@ -417,10 +417,10 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->s.h.use_last_frame_mvs = !s->s.h.errorres && !last_invisible;
     if (s->s.h.keyframe) {
         if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
-            av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
             return AVERROR_INVALIDDATA;
         }
-        if ((res = read_colorspace_details(ctx)) < 0)
+        if ((res = read_colorspace_details(avctx)) < 0)
             return res;
         // for profile 1, here follows the subsampling bits
         s->s.h.refreshrefmask = 0xff;
@@ -433,11 +433,11 @@ static int decode_frame_header(AVCodecContext *ctx,
         s->s.h.resetctx   = s->s.h.errorres ? 0 : get_bits(&s->gb, 2);
         if (s->s.h.intraonly) {
             if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
-                av_log(ctx, AV_LOG_ERROR, "Invalid sync code\n");
+                av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
                 return AVERROR_INVALIDDATA;
             }
-            if (ctx->profile >= 1) {
-                if ((res = read_colorspace_details(ctx)) < 0)
+            if (avctx->profile >= 1) {
+                if ((res = read_colorspace_details(avctx)) < 0)
                     return res;
             } else {
                 s->ss_h = s->ss_v = 1;
@@ -445,8 +445,8 @@ static int decode_frame_header(AVCodecContext *ctx,
                 s->bpp_index = 0;
                 s->bytesperpixel = 1;
                 s->pix_fmt = AV_PIX_FMT_YUV420P;
-                ctx->colorspace = AVCOL_SPC_BT470BG;
-                ctx->color_range = AVCOL_RANGE_JPEG;
+                avctx->colorspace = AVCOL_SPC_BT470BG;
+                avctx->color_range = AVCOL_RANGE_JPEG;
             }
             s->s.h.refreshrefmask = get_bits(&s->gb, 8);
             w = get_bits(&s->gb, 16) + 1;
@@ -464,7 +464,7 @@ static int decode_frame_header(AVCodecContext *ctx,
             if (!s->s.refs[s->s.h.refidx[0]].f->buf[0] ||
                 !s->s.refs[s->s.h.refidx[1]].f->buf[0] ||
                 !s->s.refs[s->s.h.refidx[2]].f->buf[0]) {
-                av_log(ctx, AV_LOG_ERROR, "Not all references are available\n");
+                av_log(avctx, AV_LOG_ERROR, "Not all references are available\n");
                 return AVERROR_INVALIDDATA;
             }
             if (get_bits1(&s->gb)) {
@@ -552,7 +552,7 @@ static int decode_frame_header(AVCodecContext *ctx,
     s->s.h.lossless    = s->s.h.yac_qi == 0 && s->s.h.ydc_qdelta == 0 &&
                        s->s.h.uvdc_qdelta == 0 && s->s.h.uvac_qdelta == 0;
     if (s->s.h.lossless)
-        ctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
+        avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
 
     /* segmentation header info */
     if ((s->s.h.segmentation.enabled = get_bits1(&s->gb))) {
@@ -631,8 +631,8 @@ static int decode_frame_header(AVCodecContext *ctx,
     }
 
     /* tiling info */
-    if ((res = update_size(ctx, w, h)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to initialize decoder for %dx%d @ %d\n",
+    if ((res = update_size(avctx, w, h)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to initialize decoder for %dx%d @ %d\n",
                w, h, s->pix_fmt);
         return res;
     }
@@ -654,7 +654,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         s->c_b = av_fast_realloc(s->c_b, &s->c_b_size,
                                  sizeof(VP56RangeCoder) * s->s.h.tiling.tile_cols);
         if (!s->c_b) {
-            av_log(ctx, AV_LOG_ERROR, "Ran out of memory during range coder init\n");
+            av_log(avctx, AV_LOG_ERROR, "Ran out of memory during range coder init\n");
             return AVERROR(ENOMEM);
         }
     }
@@ -665,17 +665,17 @@ static int decode_frame_header(AVCodecContext *ctx,
             AVFrame *ref = s->s.refs[s->s.h.refidx[i]].f;
             int refw = ref->width, refh = ref->height;
 
-            if (ref->format != ctx->pix_fmt) {
-                av_log(ctx, AV_LOG_ERROR,
+            if (ref->format != avctx->pix_fmt) {
+                av_log(avctx, AV_LOG_ERROR,
                        "Ref pixfmt (%s) did not match current frame (%s)",
                        av_get_pix_fmt_name(ref->format),
-                       av_get_pix_fmt_name(ctx->pix_fmt));
+                       av_get_pix_fmt_name(avctx->pix_fmt));
                 return AVERROR_INVALIDDATA;
             } else if (refw == w && refh == h) {
                 s->mvscale[i][0] = s->mvscale[i][1] = 0;
             } else {
                 if (w * 2 < refw || h * 2 < refh || w > 16 * refw || h > 16 * refh) {
-                    av_log(ctx, AV_LOG_ERROR,
+                    av_log(avctx, AV_LOG_ERROR,
                            "Invalid ref frame dimensions %dx%d for frame size %dx%d\n",
                            refw, refh, w, h);
                     return AVERROR_INVALIDDATA;
@@ -711,7 +711,7 @@ static int decode_frame_header(AVCodecContext *ctx,
 
     data2 = align_get_bits(&s->gb);
     if (size2 > size - (data2 - data)) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid compressed header size\n");
+        av_log(avctx, AV_LOG_ERROR, "Invalid compressed header size\n");
         return AVERROR_INVALIDDATA;
     }
     res = ff_vp56_init_range_decoder(&s->c, data2, size2);
@@ -719,7 +719,7 @@ static int decode_frame_header(AVCodecContext *ctx,
         return res;
 
     if (vp56_rac_get_prob_branchy(&s->c, 128)) { // marker bit
-        av_log(ctx, AV_LOG_ERROR, "Marker bit was set\n");
+        av_log(avctx, AV_LOG_ERROR, "Marker bit was set\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -915,10 +915,10 @@ static int decode_frame_header(AVCodecContext *ctx,
     return (data2 - data) + size2;
 }
 
-static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *lflvl,
+static void decode_sb(AVCodecContext *avctx, int row, int col, struct VP9Filter *lflvl,
                       ptrdiff_t yoff, ptrdiff_t uvoff, enum BlockLevel bl)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int c = ((s->above_partition_ctx[col] >> (3 - bl)) & 1) |
             (((s->left_partition_ctx[row & 0x7] >> (3 - bl)) & 1) << 1);
     const uint8_t *p = s->s.h.keyframe || s->s.h.intraonly ? ff_vp9_default_kf_partition_probs[bl][c] :
@@ -931,35 +931,35 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
 
     if (bl == BL_8X8) {
         bp = vp8_rac_get_tree(&s->c, ff_vp9_partition_tree, p);
-        ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+        ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
     } else if (col + hbs < s->cols) { // FIXME why not <=?
         if (row + hbs < s->rows) { // FIXME why not <=?
             bp = vp8_rac_get_tree(&s->c, ff_vp9_partition_tree, p);
             switch (bp) {
             case PARTITION_NONE:
-                ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+                ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
                 break;
             case PARTITION_H:
-                ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+                ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
                 yoff  += hbs * 8 * y_stride;
                 uvoff += hbs * 8 * uv_stride >> s->ss_v;
-                ff_vp9_decode_block(ctx, row + hbs, col, lflvl, yoff, uvoff, bl, bp);
+                ff_vp9_decode_block(avctx, row + hbs, col, lflvl, yoff, uvoff, bl, bp);
                 break;
             case PARTITION_V:
-                ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+                ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
                 yoff  += hbs * 8 * bytesperpixel;
                 uvoff += hbs * 8 * bytesperpixel >> s->ss_h;
-                ff_vp9_decode_block(ctx, row, col + hbs, lflvl, yoff, uvoff, bl, bp);
+                ff_vp9_decode_block(avctx, row, col + hbs, lflvl, yoff, uvoff, bl, bp);
                 break;
             case PARTITION_SPLIT:
-                decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
-                decode_sb(ctx, row, col + hbs, lflvl,
+                decode_sb(avctx, row, col, lflvl, yoff, uvoff, bl + 1);
+                decode_sb(avctx, row, col + hbs, lflvl,
                           yoff + 8 * hbs * bytesperpixel,
                           uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
                 yoff  += hbs * 8 * y_stride;
                 uvoff += hbs * 8 * uv_stride >> s->ss_v;
-                decode_sb(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
-                decode_sb(ctx, row + hbs, col + hbs, lflvl,
+                decode_sb(avctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
+                decode_sb(avctx, row + hbs, col + hbs, lflvl,
                           yoff + 8 * hbs * bytesperpixel,
                           uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
                 break;
@@ -968,36 +968,36 @@ static void decode_sb(AVCodecContext *ctx, int row, int col, struct VP9Filter *l
             }
         } else if (vp56_rac_get_prob_branchy(&s->c, p[1])) {
             bp = PARTITION_SPLIT;
-            decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
-            decode_sb(ctx, row, col + hbs, lflvl,
+            decode_sb(avctx, row, col, lflvl, yoff, uvoff, bl + 1);
+            decode_sb(avctx, row, col + hbs, lflvl,
                       yoff + 8 * hbs * bytesperpixel,
                       uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
         } else {
             bp = PARTITION_H;
-            ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+            ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
         }
     } else if (row + hbs < s->rows) { // FIXME why not <=?
         if (vp56_rac_get_prob_branchy(&s->c, p[2])) {
             bp = PARTITION_SPLIT;
-            decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
+            decode_sb(avctx, row, col, lflvl, yoff, uvoff, bl + 1);
             yoff  += hbs * 8 * y_stride;
             uvoff += hbs * 8 * uv_stride >> s->ss_v;
-            decode_sb(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
+            decode_sb(avctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
         } else {
             bp = PARTITION_V;
-            ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, bl, bp);
+            ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, bl, bp);
         }
     } else {
         bp = PARTITION_SPLIT;
-        decode_sb(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
+        decode_sb(avctx, row, col, lflvl, yoff, uvoff, bl + 1);
     }
     s->counts.partition[bl][c][bp]++;
 }
 
-static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filter *lflvl,
+static void decode_sb_mem(AVCodecContext *avctx, int row, int col, struct VP9Filter *lflvl,
                           ptrdiff_t yoff, ptrdiff_t uvoff, enum BlockLevel bl)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     ptrdiff_t hbs = 4 >> bl;
     AVFrame *f = s->s.frames[CUR_FRAME].tf.f;
@@ -1006,39 +1006,39 @@ static void decode_sb_mem(AVCodecContext *ctx, int row, int col, struct VP9Filte
 
     if (bl == BL_8X8) {
         av_assert2(b->bl == BL_8X8);
-        ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
+        ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
     } else if (s->b->bl == bl) {
-        ff_vp9_decode_block(ctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
+        ff_vp9_decode_block(avctx, row, col, lflvl, yoff, uvoff, b->bl, b->bp);
         if (b->bp == PARTITION_H && row + hbs < s->rows) {
             yoff  += hbs * 8 * y_stride;
             uvoff += hbs * 8 * uv_stride >> s->ss_v;
-            ff_vp9_decode_block(ctx, row + hbs, col, lflvl, yoff, uvoff, b->bl, b->bp);
+            ff_vp9_decode_block(avctx, row + hbs, col, lflvl, yoff, uvoff, b->bl, b->bp);
         } else if (b->bp == PARTITION_V && col + hbs < s->cols) {
             yoff  += hbs * 8 * bytesperpixel;
             uvoff += hbs * 8 * bytesperpixel >> s->ss_h;
-            ff_vp9_decode_block(ctx, row, col + hbs, lflvl, yoff, uvoff, b->bl, b->bp);
+            ff_vp9_decode_block(avctx, row, col + hbs, lflvl, yoff, uvoff, b->bl, b->bp);
         }
     } else {
-        decode_sb_mem(ctx, row, col, lflvl, yoff, uvoff, bl + 1);
+        decode_sb_mem(avctx, row, col, lflvl, yoff, uvoff, bl + 1);
         if (col + hbs < s->cols) { // FIXME why not <=?
             if (row + hbs < s->rows) {
-                decode_sb_mem(ctx, row, col + hbs, lflvl, yoff + 8 * hbs * bytesperpixel,
+                decode_sb_mem(avctx, row, col + hbs, lflvl, yoff + 8 * hbs * bytesperpixel,
                               uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
                 yoff  += hbs * 8 * y_stride;
                 uvoff += hbs * 8 * uv_stride >> s->ss_v;
-                decode_sb_mem(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
-                decode_sb_mem(ctx, row + hbs, col + hbs, lflvl,
+                decode_sb_mem(avctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
+                decode_sb_mem(avctx, row + hbs, col + hbs, lflvl,
                               yoff + 8 * hbs * bytesperpixel,
                               uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
             } else {
                 yoff  += hbs * 8 * bytesperpixel;
                 uvoff += hbs * 8 * bytesperpixel >> s->ss_h;
-                decode_sb_mem(ctx, row, col + hbs, lflvl, yoff, uvoff, bl + 1);
+                decode_sb_mem(avctx, row, col + hbs, lflvl, yoff, uvoff, bl + 1);
             }
         } else if (row + hbs < s->rows) {
             yoff  += hbs * 8 * y_stride;
             uvoff += hbs * 8 * uv_stride >> s->ss_v;
-            decode_sb_mem(ctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
+            decode_sb_mem(avctx, row + hbs, col, lflvl, yoff, uvoff, bl + 1);
         }
     }
 }
@@ -1195,10 +1195,10 @@ static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss_h,
     }
 }
 
-static void loopfilter_sb(AVCodecContext *ctx, struct VP9Filter *lflvl,
+static void loopfilter_sb(AVCodecContext *avctx, struct VP9Filter *lflvl,
                           int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     AVFrame *f = s->s.frames[CUR_FRAME].tf.f;
     uint8_t *dst = f->data[0] + yoff;
     ptrdiff_t ls_y = f->linesize[0], ls_uv = f->linesize[1];
@@ -1236,22 +1236,22 @@ static void free_buffers(VP9Context *s)
     av_freep(&s->block_base);
 }
 
-static av_cold int vp9_decode_free(AVCodecContext *ctx)
+static av_cold int vp9_decode_free(AVCodecContext *avctx)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int i;
 
     for (i = 0; i < 3; i++) {
         if (s->s.frames[i].tf.f->buf[0])
-            vp9_unref_frame(ctx, &s->s.frames[i]);
+            vp9_unref_frame(avctx, &s->s.frames[i]);
         av_frame_free(&s->s.frames[i].tf.f);
     }
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
-            ff_thread_release_buffer(ctx, &s->s.refs[i]);
+            ff_thread_release_buffer(avctx, &s->s.refs[i]);
         av_frame_free(&s->s.refs[i].f);
         if (s->next_refs[i].f->buf[0])
-            ff_thread_release_buffer(ctx, &s->next_refs[i]);
+            ff_thread_release_buffer(avctx, &s->next_refs[i]);
         av_frame_free(&s->next_refs[i].f);
     }
     free_buffers(s);
@@ -1262,12 +1262,12 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
 }
 
 
-static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
+static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
                             int *got_frame, AVPacket *pkt)
 {
     const uint8_t *data = pkt->data;
     int size = pkt->size;
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int res, tile_row, tile_col, i, ref, row, col;
     int retain_segmap_ref = s->s.frames[REF_FRAME_SEGMAP].segmentation_map &&
                             (!s->s.h.segmentation.enabled || !s->s.h.segmentation.update_map);
@@ -1275,11 +1275,11 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *frame,
     AVFrame *f;
     int bytesperpixel;
 
-    if ((res = decode_frame_header(ctx, data, size, &ref)) < 0) {
+    if ((res = decode_frame_header(avctx, data, size, &ref)) < 0) {
         return res;
     } else if (res == 0) {
         if (!s->s.refs[ref].f->buf[0]) {
-            av_log(ctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
+            av_log(avctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
             return AVERROR_INVALIDDATA;
         }
         if ((res = av_frame_ref(frame, s->s.refs[ref].f)) < 0)
@@ -1293,7 +1293,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ((AVFrame *)frame)->pkt_dts = pkt->dts;
         for (i = 0; i < 8; i++) {
             if (s->next_refs[i].f->buf[0])
-                ff_thread_release_buffer(ctx, &s->next_refs[i]);
+                ff_thread_release_buffer(avctx, &s->next_refs[i]);
             if (s->s.refs[i].f->buf[0] &&
                 (res = ff_thread_ref_frame(&s->next_refs[i], &s->s.refs[i])) < 0)
                 return res;
@@ -1306,19 +1306,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (!retain_segmap_ref || s->s.h.keyframe || s->s.h.intraonly) {
         if (s->s.frames[REF_FRAME_SEGMAP].tf.f->buf[0])
-            vp9_unref_frame(ctx, &s->s.frames[REF_FRAME_SEGMAP]);
+            vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
         if (!s->s.h.keyframe && !s->s.h.intraonly && !s->s.h.errorres && s->s.frames[CUR_FRAME].tf.f->buf[0] &&
-            (res = vp9_ref_frame(ctx, &s->s.frames[REF_FRAME_SEGMAP], &s->s.frames[CUR_FRAME])) < 0)
+            (res = vp9_ref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP], &s->s.frames[CUR_FRAME])) < 0)
             return res;
     }
     if (s->s.frames[REF_FRAME_MVPAIR].tf.f->buf[0])
-        vp9_unref_frame(ctx, &s->s.frames[REF_FRAME_MVPAIR]);
+        vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_MVPAIR]);
     if (!s->s.h.intraonly && !s->s.h.keyframe && !s->s.h.errorres && s->s.frames[CUR_FRAME].tf.f->buf[0] &&
-        (res = vp9_ref_frame(ctx, &s->s.frames[REF_FRAME_MVPAIR], &s->s.frames[CUR_FRAME])) < 0)
+        (res = vp9_ref_frame(avctx, &s->s.frames[REF_FRAME_MVPAIR], &s->s.frames[CUR_FRAME])) < 0)
         return res;
     if (s->s.frames[CUR_FRAME].tf.f->buf[0])
-        vp9_unref_frame(ctx, &s->s.frames[CUR_FRAME]);
-    if ((res = vp9_alloc_frame(ctx, &s->s.frames[CUR_FRAME])) < 0)
+        vp9_unref_frame(avctx, &s->s.frames[CUR_FRAME]);
+    if ((res = vp9_alloc_frame(avctx, &s->s.frames[CUR_FRAME])) < 0)
         return res;
     f = s->s.frames[CUR_FRAME].tf.f;
     f->key_frame = s->s.h.keyframe;
@@ -1329,13 +1329,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->s.frames[REF_FRAME_SEGMAP].tf.f->buf[0] &&
         (s->s.frames[REF_FRAME_MVPAIR].tf.f->width  != s->s.frames[CUR_FRAME].tf.f->width ||
          s->s.frames[REF_FRAME_MVPAIR].tf.f->height != s->s.frames[CUR_FRAME].tf.f->height)) {
-        vp9_unref_frame(ctx, &s->s.frames[REF_FRAME_SEGMAP]);
+        vp9_unref_frame(avctx, &s->s.frames[REF_FRAME_SEGMAP]);
     }
 
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->next_refs[i].f->buf[0])
-            ff_thread_release_buffer(ctx, &s->next_refs[i]);
+            ff_thread_release_buffer(avctx, &s->next_refs[i]);
         if (s->s.h.refreshrefmask & (1 << i)) {
             res = ff_thread_ref_frame(&s->next_refs[i], &s->s.frames[CUR_FRAME].tf);
         } else if (s->s.refs[i].f->buf[0]) {
@@ -1345,14 +1345,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return res;
     }
 
-    if (ctx->hwaccel) {
-        res = ctx->hwaccel->start_frame(ctx, NULL, 0);
+    if (avctx->hwaccel) {
+        res = avctx->hwaccel->start_frame(avctx, NULL, 0);
         if (res < 0)
             return res;
-        res = ctx->hwaccel->decode_slice(ctx, pkt->data, pkt->size);
+        res = avctx->hwaccel->decode_slice(avctx, pkt->data, pkt->size);
         if (res < 0)
             return res;
-        res = ctx->hwaccel->end_frame(ctx);
+        res = avctx->hwaccel->end_frame(avctx);
         if (res < 0)
             return res;
         goto finish;
@@ -1372,9 +1372,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     memset(s->above_uv_nnz_ctx[1], 0, s->sb_cols * 16 >> s->ss_h);
     memset(s->above_segpred_ctx, 0, s->cols);
     s->pass = s->s.frames[CUR_FRAME].uses_2pass =
-        ctx->active_thread_type == FF_THREAD_FRAME && s->s.h.refreshctx && !s->s.h.parallelmode;
-    if ((res = update_block_buffers(ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR,
+        avctx->active_thread_type == FF_THREAD_FRAME && s->s.h.refreshctx && !s->s.h.parallelmode;
+    if ((res = update_block_buffers(avctx)) < 0) {
+        av_log(avctx, AV_LOG_ERROR,
                "Failed to allocate block buffers\n");
         return res;
     }
@@ -1392,9 +1392,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 break;
         }
         s->prob_ctx[s->s.h.framectxid].p = s->prob.p;
-        ff_thread_finish_setup(ctx);
+        ff_thread_finish_setup(avctx);
     } else if (!s->s.h.refreshctx) {
-        ff_thread_finish_setup(ctx);
+        ff_thread_finish_setup(avctx);
     }
 
     do {
@@ -1473,10 +1473,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                         }
 
                         if (s->pass == 2) {
-                            decode_sb_mem(ctx, row, col, lflvl_ptr,
+                            decode_sb_mem(avctx, row, col, lflvl_ptr,
                                           yoff2, uvoff2, BL_64X64);
                         } else {
-                            decode_sb(ctx, row, col, lflvl_ptr,
+                            decode_sb(avctx, row, col, lflvl_ptr,
                                       yoff2, uvoff2, BL_64X64);
                         }
                     }
@@ -1511,7 +1511,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     for (col = 0; col < s->cols;
                          col += 8, yoff2 += 64 * bytesperpixel,
                          uvoff2 += 64 * bytesperpixel >> s->ss_h, lflvl_ptr++) {
-                        loopfilter_sb(ctx, lflvl_ptr, row, col, yoff2, uvoff2);
+                        loopfilter_sb(avctx, lflvl_ptr, row, col, yoff2, uvoff2);
                     }
                 }
 
@@ -1524,7 +1524,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (s->pass < 2 && s->s.h.refreshctx && !s->s.h.parallelmode) {
             ff_vp9_adapt_probs(s);
-            ff_thread_finish_setup(ctx);
+            ff_thread_finish_setup(avctx);
         }
     } while (s->pass++ == 1);
     ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
@@ -1533,7 +1533,7 @@ finish:
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
-            ff_thread_release_buffer(ctx, &s->s.refs[i]);
+            ff_thread_release_buffer(avctx, &s->s.refs[i]);
         if (s->next_refs[i].f->buf[0] &&
             (res = ff_thread_ref_frame(&s->s.refs[i], &s->next_refs[i])) < 0)
             return res;
@@ -1548,27 +1548,27 @@ finish:
     return pkt->size;
 }
 
-static void vp9_decode_flush(AVCodecContext *ctx)
+static void vp9_decode_flush(AVCodecContext *avctx)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int i;
 
     for (i = 0; i < 3; i++)
-        vp9_unref_frame(ctx, &s->s.frames[i]);
+        vp9_unref_frame(avctx, &s->s.frames[i]);
     for (i = 0; i < 8; i++)
-        ff_thread_release_buffer(ctx, &s->s.refs[i]);
+        ff_thread_release_buffer(avctx, &s->s.refs[i]);
 }
 
-static int init_frames(AVCodecContext *ctx)
+static int init_frames(AVCodecContext *avctx)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     int i;
 
     for (i = 0; i < 3; i++) {
         s->s.frames[i].tf.f = av_frame_alloc();
         if (!s->s.frames[i].tf.f) {
-            vp9_decode_free(ctx);
-            av_log(ctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
+            vp9_decode_free(avctx);
+            av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
             return AVERROR(ENOMEM);
         }
     }
@@ -1576,8 +1576,8 @@ static int init_frames(AVCodecContext *ctx)
         s->s.refs[i].f = av_frame_alloc();
         s->next_refs[i].f = av_frame_alloc();
         if (!s->s.refs[i].f || !s->next_refs[i].f) {
-            vp9_decode_free(ctx);
-            av_log(ctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
+            vp9_decode_free(avctx);
+            av_log(avctx, AV_LOG_ERROR, "Failed to allocate frame buffer %d\n", i);
             return AVERROR(ENOMEM);
         }
     }
@@ -1585,15 +1585,15 @@ static int init_frames(AVCodecContext *ctx)
     return 0;
 }
 
-static av_cold int vp9_decode_init(AVCodecContext *ctx)
+static av_cold int vp9_decode_init(AVCodecContext *avctx)
 {
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
 
-    ctx->internal->allocate_progress = 1;
+    avctx->internal->allocate_progress = 1;
     s->last_bpp = 0;
     s->s.h.filter.sharpness = -1;
 
-    return init_frames(ctx);
+    return init_frames(avctx);
 }
 
 #if HAVE_THREADS

@@ -27,13 +27,13 @@
     (VP56mv) { .x = ROUNDED_DIV(a.x + b.x + c.x + d.x, 4), \
                .y = ROUNDED_DIV(a.y + b.y + c.y + d.y, 4) }
 
-static void FN(inter_pred)(AVCodecContext *ctx)
+static void FN(inter_pred)(AVCodecContext *avctx)
 {
     static const uint8_t bwlog_tab[2][N_BS_SIZES] = {
         { 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
         { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4 },
     };
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
     ThreadFrame *tref1 = &s->s.refs[s->s.h.refidx[b->ref[0]]], *tref2;
