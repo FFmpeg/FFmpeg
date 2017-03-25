@@ -286,7 +286,6 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
     IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkDisplayMode *mode;
     uint32_t format_code;
-    int i=0;
     HRESULT res;
 
     if (direction == DIRECTION_IN) {
@@ -307,14 +306,14 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
             return AVERROR(EIO);
     }
 
-    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n\tmode\tformat_code\tdescription",
+    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n\tformat_code\tdescription",
                avctx->filename);
     while (itermode->Next(&mode) == S_OK) {
         BMDTimeValue tb_num, tb_den;
         mode->GetFrameRate(&tb_num, &tb_den);
         format_code = av_bswap32(mode->GetDisplayMode());
-        av_log(avctx, AV_LOG_INFO, "\n\t%d\t%.4s\t\t%ldx%ld at %d/%d fps",
-                ++i, (char*) &format_code, mode->GetWidth(), mode->GetHeight(),
+        av_log(avctx, AV_LOG_INFO, "\n\t%.4s\t\t%ldx%ld at %d/%d fps",
+                (char*) &format_code, mode->GetWidth(), mode->GetHeight(),
                 (int) tb_den, (int) tb_num);
         switch (mode->GetFieldDominance()) {
         case bmdLowerFieldFirst:

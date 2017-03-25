@@ -516,6 +516,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     strcpy (fname, avctx->filename);
     tmp=strchr (fname, '@');
     if (tmp != NULL) {
+        av_log(avctx, AV_LOG_WARNING, "The @mode syntax is deprecated and will be removed. Please use the -format_code option.\n");
         mode_num = atoi (tmp+1);
         *tmp = 0;
     }
