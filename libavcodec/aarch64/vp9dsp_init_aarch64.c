@@ -22,7 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/aarch64/cpu.h"
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 #include "vp9dsp_init.h"
 
 #define declare_fpel(type, sz)                                          \
