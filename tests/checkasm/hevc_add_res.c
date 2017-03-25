@@ -45,10 +45,10 @@
 static void check_add_res(HEVCDSPContext h, int bit_depth)
 {
     int i;
-    LOCAL_ALIGNED(32, int16_t, res0, [32 * 32]);
-    LOCAL_ALIGNED(32, int16_t, res1, [32 * 32]);
-    LOCAL_ALIGNED(32, uint8_t, dst0, [32 * 32 * 2]);
-    LOCAL_ALIGNED(32, uint8_t, dst1, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(int16_t, res0, [32 * 32]);
+    LOCAL_ALIGNED_32(int16_t, res1, [32 * 32]);
+    LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
 
     for (i = 2; i <= 5; i++) {
         int block_size = 1 << i;
