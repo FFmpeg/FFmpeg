@@ -1856,12 +1856,12 @@ static void print_pkt_side_data(WriterContext *w,
 {
     int i;
 
-    writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA_LIST);
+    writer_print_section_header(w, id_data_list);
     for (i = 0; i < nb_side_data; i++) {
         const AVPacketSideData *sd = &side_data[i];
         const char *name = av_packet_side_data_name(sd->type);
 
-        writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA);
+        writer_print_section_header(w, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
