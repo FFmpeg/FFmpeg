@@ -1806,6 +1806,11 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("yaw", (double) spherical->yaw / (1 << 16));
             print_int("pitch", (double) spherical->pitch / (1 << 16));
             print_int("roll", (double) spherical->roll / (1 << 16));
+        } else if (sd->type == AV_PKT_DATA_SKIP_SAMPLES && sd->size == 10) {
+            print_int("skip_samples",    AV_RL32(sd->data));
+            print_int("discard_padding", AV_RL32(sd->data + 4));
+            print_int("skip_reason",     AV_RL8(sd->data + 8));
+            print_int("discard_reason",  AV_RL8(sd->data + 9));
         }
         writer_print_section_footer(w);
     }
