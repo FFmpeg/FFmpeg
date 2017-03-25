@@ -50,10 +50,13 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     VP9Context *s = avctx->priv_data;
     int ret, sz;
 
-    if ((ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF)) < 0)
+    ret = ff_thread_get_buffer(avctx, &f->tf, AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
         return ret;
+
     sz = 64 * s->sb_cols * s->sb_rows;
-    if (!(f->extradata = av_buffer_allocz(sz * (1 + sizeof(struct VP9mvrefPair))))) {
+    f->extradata = av_buffer_allocz(sz * (1 + sizeof(struct VP9mvrefPair)));
+    if (!f->extradata) {
         goto fail;
     }
 
@@ -82,11 +85,13 @@ static int vp9_frame_ref(AVCodecContext *avctx, VP9Frame *dst, VP9Frame *src)
 {
     int res;
 
-    if ((res = ff_thread_ref_frame(&dst->tf, &src->tf)) < 0) {
+    res = ff_thread_ref_frame(&dst->tf, &src->tf);
+    if (res < 0)
         return res;
-    } else if (!(dst->extradata = av_buffer_ref(src->extradata))) {
+
+    dst->extradata = av_buffer_ref(src->extradata);
+    if (!dst->extradata)
         goto fail;
-    }
 
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
