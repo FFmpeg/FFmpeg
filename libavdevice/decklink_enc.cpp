@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <atomic>
+using std::atomic;
+
 #include <DeckLinkAPI.h>
 
 #include <pthread.h>
@@ -28,7 +31,6 @@ extern "C" {
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/atomic.h"
 }
 
 #include "decklink_common.h"
@@ -60,10 +62,10 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAncillaryData(IDeckLinkVideoFrameAncillary **ancillary)               { return S_FALSE; }
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
-    virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return avpriv_atomic_int_add_and_fetch(&_refs, 1); }
+    virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return ++_refs; }
     virtual ULONG   STDMETHODCALLTYPE Release(void)
     {
-        int ret = avpriv_atomic_int_add_and_fetch(&_refs, -1);
+        int ret = --_refs;
         if (!ret) {
             av_frame_free(&_avframe);
             delete this;
@@ -75,7 +77,7 @@ public:
     AVFrame *_avframe;
 
 private:
-    volatile int   _refs;
+    std::atomic<int>  _refs;
 };
 
 class decklink_output_callback : public IDeckLinkVideoOutputCallback
