@@ -48,6 +48,8 @@ typedef struct DNXHDEncContext {
 
     int cid;
     int profile;
+    int bit_depth;
+    int is_444;
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
@@ -72,9 +74,9 @@ typedef struct DNXHDEncContext {
     unsigned min_padding;
     int intra_quant_bias;
 
-    DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
+    DECLARE_ALIGNED(16, int16_t, blocks)[12][64];
     DECLARE_ALIGNED(16, uint8_t, edge_buf_y)[256];
-    DECLARE_ALIGNED(16, uint8_t, edge_buf_uv)[2][128];
+    DECLARE_ALIGNED(16, uint8_t, edge_buf_uv)[2][256];
 
     int      (*qmatrix_c)     [64];
     int      (*qmatrix_l)     [64];
