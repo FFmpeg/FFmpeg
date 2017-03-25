@@ -785,7 +785,7 @@ static void decode_mode(AVCodecContext *avctx)
     // FIXME kinda ugly
     for (y = 0; y < h4; y++) {
         int x, o = (row + y) * s->sb_cols * 8 + col;
-        struct VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[o];
+        VP9mvrefPair *mv = &s->s.frames[CUR_FRAME].mv[o];
 
         if (b->intra) {
             for (x = 0; x < w4; x++) {
@@ -1883,7 +1883,7 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
 }
 
 void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
-                         struct VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
+                         VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp)
 {
     VP9Context *s = avctx->priv_data;

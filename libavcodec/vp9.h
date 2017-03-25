@@ -248,23 +248,22 @@ typedef struct VP9DSPContext {
     vp9_scaled_mc_func smc[5][4][2];
 } VP9DSPContext;
 
-
-struct VP9mvrefPair {
+typedef struct VP9mvrefPair {
     VP56mv mv[2];
     int8_t ref[2];
-};
+} VP9mvrefPair;
 
-struct VP9Filter {
+typedef struct VP9Filter {
     uint8_t level[8 * 8];
     uint8_t /* bit=col */ mask[2 /* 0=y, 1=uv */][2 /* 0=col, 1=row */]
                               [8 /* rows */][4 /* 0=16, 1=8, 2=4, 3=inner4 */];
-};
+} VP9Filter;
 
 typedef struct VP9Frame {
     ThreadFrame tf;
     AVBufferRef *extradata;
     uint8_t *segmentation_map;
-    struct VP9mvrefPair *mv;
+    VP9mvrefPair *mv;
     int uses_2pass;
 
     AVBufferRef *hwaccel_priv_buf;
@@ -454,7 +453,7 @@ typedef struct VP9Context {
 
     // whole-frame cache
     uint8_t *intra_pred_data[3];
-    struct VP9Filter *lflvl;
+    VP9Filter *lflvl;
     DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[135 * 144 * 2];
 
     // block reconstruction intermediates
@@ -486,7 +485,7 @@ void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb);
 void ff_vp9_adapt_probs(VP9Context *s);
 
 void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
-                         struct VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
+                         VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp);
 
 #endif /* AVCODEC_VP9_H */

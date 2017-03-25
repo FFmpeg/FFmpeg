@@ -55,13 +55,13 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
         return ret;
 
     sz = 64 * s->sb_cols * s->sb_rows;
-    f->extradata = av_buffer_allocz(sz * (1 + sizeof(struct VP9mvrefPair)));
+    f->extradata = av_buffer_allocz(sz * (1 + sizeof(VP9mvrefPair)));
     if (!f->extradata) {
         goto fail;
     }
 
     f->segmentation_map = f->extradata->data;
-    f->mv = (struct VP9mvrefPair *) (f->extradata->data + sz);
+    f->mv = (VP9mvrefPair *) (f->extradata->data + sz);
 
     if (avctx->hwaccel) {
         const AVHWAccel *hwaccel = avctx->hwaccel;
@@ -194,7 +194,7 @@ static int update_size(AVCodecContext *avctx, int w, int h)
     assign(s->above_comp_ctx,      uint8_t *,              8);
     assign(s->above_ref_ctx,       uint8_t *,              8);
     assign(s->above_filter_ctx,    uint8_t *,              8);
-    assign(s->lflvl,               struct VP9Filter *,     1);
+    assign(s->lflvl,               VP9Filter *,            1);
 #undef assign
 
     // these will be re-allocated a little later
@@ -924,7 +924,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     return (data2 - data) + size2;
 }
 
-static void decode_sb(AVCodecContext *avctx, int row, int col, struct VP9Filter *lflvl,
+static void decode_sb(AVCodecContext *avctx, int row, int col, VP9Filter *lflvl,
                       ptrdiff_t yoff, ptrdiff_t uvoff, enum BlockLevel bl)
 {
     VP9Context *s = avctx->priv_data;
@@ -1003,7 +1003,7 @@ static void decode_sb(AVCodecContext *avctx, int row, int col, struct VP9Filter 
     s->counts.partition[bl][c][bp]++;
 }
 
-static void decode_sb_mem(AVCodecContext *avctx, int row, int col, struct VP9Filter *lflvl,
+static void decode_sb_mem(AVCodecContext *avctx, int row, int col, VP9Filter *lflvl,
                           ptrdiff_t yoff, ptrdiff_t uvoff, enum BlockLevel bl)
 {
     VP9Context *s = avctx->priv_data;
@@ -1204,7 +1204,7 @@ static av_always_inline void filter_plane_rows(VP9Context *s, int row, int ss_h,
     }
 }
 
-static void loopfilter_sb(AVCodecContext *avctx, struct VP9Filter *lflvl,
+static void loopfilter_sb(AVCodecContext *avctx, VP9Filter *lflvl,
                           int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff)
 {
     VP9Context *s = avctx->priv_data;
@@ -1449,7 +1449,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             for (row = s->tile_row_start; row < s->tile_row_end;
                  row += 8, yoff += ls_y * 64, uvoff += ls_uv * 64 >> s->ss_v) {
-                struct VP9Filter *lflvl_ptr = s->lflvl;
+                VP9Filter *lflvl_ptr = s->lflvl;
                 ptrdiff_t yoff2 = yoff, uvoff2 = uvoff;
 
                 for (tile_col = 0; tile_col < s->s.h.tiling.tile_cols; tile_col++) {
