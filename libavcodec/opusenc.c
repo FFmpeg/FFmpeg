@@ -1047,7 +1047,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
         avctx->bit_rate = coupled*(96000) + (s->channels - coupled*2)*(48000);
     } else if (avctx->bit_rate < 6000 || avctx->bit_rate > 255000 * s->channels) {
         int64_t clipped_rate = av_clip(avctx->bit_rate, 6000, 255000 * s->channels);
-        av_log(avctx, AV_LOG_ERROR, "Unsupported bitrate %li kbps, clipping to %li kbps\n",
+        av_log(avctx, AV_LOG_ERROR, "Unsupported bitrate %"PRId64" kbps, clipping to %"PRId64" kbps\n",
                avctx->bit_rate/1000, clipped_rate/1000);
         avctx->bit_rate = clipped_rate;
     }
