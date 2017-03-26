@@ -1541,7 +1541,7 @@ static void print_final_stats(int64_t total_size)
         }
         extra_size += ost->enc_ctx->extradata_size;
         data_size  += ost->data_size;
-        if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))
+        if (   (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
             != AV_CODEC_FLAG_PASS1)
             pass1_used = 0;
     }
