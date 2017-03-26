@@ -48,7 +48,6 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
     uint8_t *data[4] = { 0 };
     int linesize[4] = { 0 };
     int planes, ret, i;
-    char codec_str[32];
 
     av_frame_unref(vt->tmp_frame);
 
@@ -60,9 +59,9 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange: vt->tmp_frame->format = AV_PIX_FMT_NV12; break;
 #endif
     default:
-        av_get_codec_tag_string(codec_str, sizeof(codec_str), s->codec_tag);
         av_log(NULL, AV_LOG_ERROR,
-               "%s: Unsupported pixel format: %s\n", codec_str, videotoolbox_pixfmt);
+               "%s: Unsupported pixel format: %s\n",
+               av_fourcc2str(s->codec_tag), videotoolbox_pixfmt);
         return AVERROR(ENOSYS);
     }
 
