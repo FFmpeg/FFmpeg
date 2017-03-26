@@ -71,7 +71,7 @@ AVFILTER_DEFINE_CLASS(signature);
 
 static int query_formats(AVFilterContext *ctx)
 {
-    /* all formats with a seperate gray value */
+    /* all formats with a separate gray value */
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
