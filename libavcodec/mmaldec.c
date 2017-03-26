@@ -228,9 +228,8 @@ static void control_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
         status = *(uint32_t *)buffer->data;
         av_log(avctx, AV_LOG_ERROR, "MMAL error %d on control port\n", (int)status);
     } else {
-        char s[20];
-        av_get_codec_tag_string(s, sizeof(s), buffer->cmd);
-        av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on control port\n", s);
+        av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on control port\n",
+               av_fourcc2str(buffer->cmd));
     }
 
     mmal_buffer_header_release(buffer);
@@ -352,7 +351,6 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     MMAL_STATUS_T status;
     MMAL_ES_FORMAT_T *format_in;
     MMAL_COMPONENT_T *decoder;
-    char tmp[32];
     int ret = 0;
 
     bcm_host_init();
@@ -399,8 +397,8 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in->es->video.par.den = avctx->sample_aspect_ratio.den;
     format_in->flags = MMAL_ES_FORMAT_FLAG_FRAMED;
 
-    av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
-    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
+    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n",
+           av_fourcc2str(format_in->encoding));
 
 #if HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
@@ -742,9 +740,8 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
             mmal_buffer_header_release(buffer);
             continue;
         } else if (buffer->cmd) {
-            char s[20];
-            av_get_codec_tag_string(s, sizeof(s), buffer->cmd);
-            av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on output port\n", s);
+            av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on output port\n",
+                   av_fourcc2str(buffer->cmd));
             goto done;
         } else if (buffer->length == 0) {
             // Unused output buffer that got drained after format change.
