@@ -557,13 +557,13 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
     int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
         * (lambda / 120.f);
 
     /** Keep this in sync with twoloop's cutoff selection */
     float rate_bandwidth_multiplier = 1.5f;
     int prev = -1000, prev_sf = -1;
-    int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
+    int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
         : (avctx->bit_rate / avctx->channels);
 
@@ -694,12 +694,12 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
     int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
         * (lambda / 120.f);
 
     /** Keep this in sync with twoloop's cutoff selection */
     float rate_bandwidth_multiplier = 1.5f;
-    int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
+    int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
         : (avctx->bit_rate / avctx->channels);
 

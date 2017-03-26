@@ -71,7 +71,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g, recomprd;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
         * (lambda / 120.f);
     int refbits = destbits;
     int toomanybits, toofewbits;
@@ -136,7 +136,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             * (lambda / (avctx->global_quality ? avctx->global_quality : 120));
     }
 
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /**
          * Constant Q-scale doesn't compensate MS coding on its own
          * No need to be overly precise, this only controls RD
@@ -184,7 +184,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
          * AAC_CUTOFF_FROM_BITRATE is calibrated for effective bitrate.
          */
         float rate_bandwidth_multiplier = 1.5f;
-        int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
+        int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
             ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
             : (avctx->bit_rate / avctx->channels);
 
@@ -332,7 +332,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     sce->coeffs + start,
                     nzslope * cleanup_factor);
                 energy2uplim *= de_psy_factor;
-                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
                     /** In ABR, we need to priorize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }
@@ -346,7 +346,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     sce->coeffs + start,
                     2.0f);
                 energy2uplim *= de_psy_factor;
-                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
                     /** In ABR, we need to priorize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }

@@ -382,6 +382,6 @@ AVCodec ff_clearvideo_decoder = {
     .init           = clv_decode_init,
     .close          = clv_decode_end,
     .decode         = clv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
 };
