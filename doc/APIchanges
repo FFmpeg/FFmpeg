@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-xx - xxxxxxx - lavu 55.52.100 - avutil.h
+  add av_fourcc_make_string() function and av_fourcc2str() macro to replace
+  av_get_codec_tag_string() from lavc.
+
 2017-03-xx - xxxxxxx - lavf 57.68.100 - avformat.h
   Deprecate that demuxers export the stream rotation angle in AVStream.metadata
   (via an entry named "rotate"). Use av_stream_get_side_data() with

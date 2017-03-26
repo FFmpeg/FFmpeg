@@ -343,6 +343,20 @@ FILE *av_fopen_utf8(const char *path, const char *mode);
  */
 AVRational av_get_time_base_q(void);
 
+#define AV_FOURCC_MAX_STRING_SIZE 32
+
+#define av_fourcc2str(fourcc) av_fourcc_make_string((char[AV_FOURCC_MAX_STRING_SIZE]){0}, fourcc)
+
+/**
+ * Fill the provided buffer with a string containing a FourCC (four-character
+ * code) representation.
+ *
+ * @param buf    a buffer with size in bytes of at least AV_FOURCC_MAX_STRING_SIZE
+ * @param fourcc the fourcc to represent
+ * @return the buffer in input
+ */
+char *av_fourcc_make_string(char *buf, uint32_t fourcc);
+
 /**
  * @}
  * @}
