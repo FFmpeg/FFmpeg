@@ -2382,8 +2382,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 #endif
 
     /* print AVI/FourCC tag */
-    av_get_codec_tag_string(val_str, sizeof(val_str), par->codec_tag);
-    print_str("codec_tag_string",    val_str);
+    print_str("codec_tag_string",    av_fourcc2str(par->codec_tag));
     print_fmt("codec_tag", "0x%04x", par->codec_tag);
 
     switch (par->codec_type) {
