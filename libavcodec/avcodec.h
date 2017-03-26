@@ -153,7 +153,7 @@
  *   Unlike with the old video decoding API, multiple frames might result from
  *   a packet. For audio, splitting the input packet into frames by partially
  *   decoding packets becomes transparent to the API user. You never need to
- *   feed an AVPacket to the API twice (unless it is rejected with EAGAIN - then
+ *   feed an AVPacket to the API twice (unless it is rejected with AVERROR(EAGAIN) - then
  *   no data was read from the packet).
  *   Additionally, sending a flush/draining packet is required only once.
  * - avcodec_encode_video2()/avcodec_encode_audio2():
@@ -169,10 +169,10 @@
  * Some codecs might require using the new API; using the old API will return
  * an error when calling it. All codecs support the new API.
  *
- * A codec is not allowed to return EAGAIN for both sending and receiving. This
+ * A codec is not allowed to return AVERROR(EAGAIN) for both sending and receiving. This
  * would be an invalid state, which could put the codec user into an endless
  * loop. The API has no concept of time either: it cannot happen that trying to
- * do avcodec_send_packet() results in EAGAIN, but a repeated call 1 second
+ * do avcodec_send_packet() results in AVERROR(EAGAIN), but a repeated call 1 second
  * later accepts the packet (with no other receive/flush API calls involved).
  * The API is a strict state machine, and the passage of time is not supposed
  * to influence it. Some timing-dependent behavior might still be deemed
@@ -181,7 +181,7 @@
  * avoided that the current state is "unstable" and can "flip-flop" between
  * the send/receive APIs allowing progress. For example, it's not allowed that
  * the codec randomly decides that it actually wants to consume a packet now
- * instead of returning a frame, after it just returned EAGAIN on an
+ * instead of returning a frame, after it just returned AVERROR(EAGAIN) on an
  * avcodec_send_packet() call.
  * @}
  */
