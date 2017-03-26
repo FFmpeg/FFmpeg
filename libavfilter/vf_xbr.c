@@ -37,6 +37,10 @@
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
 
+#ifdef PI
+#undef PI
+#endif
+
 typedef int (*xbrfunc_t)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
 typedef struct {
