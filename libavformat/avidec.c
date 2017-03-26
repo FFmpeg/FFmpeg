@@ -811,14 +811,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                             tag1);
                     /* If codec is not found yet, try with the mov tags. */
                     if (!st->codecpar->codec_id) {
-                        char tag_buf[32];
-                        av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag1);
                         st->codecpar->codec_id =
                             ff_codec_get_id(ff_codec_movvideo_tags, tag1);
                         if (st->codecpar->codec_id)
                            av_log(s, AV_LOG_WARNING,
                                   "mov tag found in avi (fourcc %s)\n",
-                                  tag_buf);
+                                  av_fourcc2str(tag1));
                     }
                     /* This is needed to get the pict type which is necessary
                      * for generating correct pts. */
@@ -992,13 +990,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         default:
             if (size > 1000000) {
-                char tag_buf[32];
-                av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag);
                 av_log(s, AV_LOG_ERROR,
                        "Something went wrong during header parsing, "
                        "tag %s has size %u, "
                        "I will ignore it and try to continue anyway.\n",
-                       tag_buf, size);
+                       av_fourcc2str(tag), size);
                 if (s->error_recognition & AV_EF_EXPLODE)
                     goto fail;
                 avi->movi_list = avio_tell(pb) - 4;

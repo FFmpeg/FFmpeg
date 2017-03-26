@@ -370,12 +370,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (par->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
-                    char tagbuf[32], tagbuf2[32];
-                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), par->codec_tag);
-                    av_get_codec_tag_string(tagbuf2, sizeof(tagbuf2), av_codec_get_tag(s->oformat->codec_tag, par->codec_id));
+                    const uint32_t otag = av_codec_get_tag(s->oformat->codec_tag, par->codec_id);
                     av_log(s, AV_LOG_ERROR,
                            "Tag %s/0x%08x incompatible with output codec id '%d' (%s)\n",
-                           tagbuf, par->codec_tag, par->codec_id, tagbuf2);
+                           av_fourcc2str(par->codec_tag), par->codec_tag,
+                           par->codec_id, av_fourcc2str(otag));
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }

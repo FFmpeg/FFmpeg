@@ -2212,12 +2212,9 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 fourcc = MKTAG('S','V','Q','3');
                 codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
             }
-            if (codec_id == AV_CODEC_ID_NONE) {
-                char buf[32];
-                av_get_codec_tag_string(buf, sizeof(buf), fourcc);
+            if (codec_id == AV_CODEC_ID_NONE)
                 av_log(matroska->ctx, AV_LOG_ERROR,
-                       "mov FourCC not found %s.\n", buf);
-            }
+                       "mov FourCC not found %s.\n", av_fourcc2str(fourcc));
             if (track->codec_priv.size >= 86) {
                 bit_depth = AV_RB16(track->codec_priv.data + 82);
                 ffio_init_context(&b, track->codec_priv.data,

@@ -2377,13 +2377,9 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
             hdlr_type = "tmcd";
             descr = "TimeCodeHandler";
         } else {
-            char tag_buf[32];
-            av_get_codec_tag_string(tag_buf, sizeof(tag_buf),
-                                    track->par->codec_tag);
-
             av_log(s, AV_LOG_WARNING,
                    "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
-                   tag_buf, track->par->codec_tag);
+                   av_fourcc2str(track->par->codec_tag), track->par->codec_tag);
         }
         if (track->st) {
             // hdlr.name is used by some players to identify the content title
