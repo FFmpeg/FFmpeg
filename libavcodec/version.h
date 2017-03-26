@@ -235,6 +235,9 @@
 #ifndef FF_API_MERGE_SD_API
 #define FF_API_MERGE_SD_API      (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_TAG_STRING
+#define FF_API_TAG_STRING        (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
 
 
 #endif /* AVCODEC_VERSION_H */

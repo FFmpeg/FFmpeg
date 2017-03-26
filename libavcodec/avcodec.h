@@ -5667,6 +5667,7 @@ attribute_deprecated
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 #endif
 
+#if FF_API_TAG_STRING
 /**
  * Put a string representing the codec tag codec_tag in buf.
  *
@@ -5675,8 +5676,12 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
  * @param codec_tag codec tag to assign
  * @return the length of the string that would have been generated if
  * enough space had been available, excluding the trailing null
+ *
+ * @deprecated see av_fourcc_make_string() and av_fourcc2str().
  */
+attribute_deprecated
 size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag);
+#endif
 
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
