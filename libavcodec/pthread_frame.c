@@ -468,7 +468,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     FrameThreadContext *fctx = avctx->internal->thread_ctx;
     int finished = fctx->next_finished;
     PerThreadContext *p;
-    int err, ret = 0;
+    int err;
 
     /* release the async lock, permitting blocked hwaccel threads to
      * go forward while we are in this function */
@@ -496,7 +496,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     if (fctx->delaying) {
         *got_picture_ptr=0;
         if (avpkt->size) {
-            ret = avpkt->size;
+            err = avpkt->size;
             goto finish;
         }
     }
@@ -542,21 +542,12 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 
     fctx->next_finished = finished;
 
-    /*
-     * When no frame was found while flushing, but an error occurred in
-     * any thread, return it instead of 0.
-     * Otherwise the error can get lost.
-     */
-    if (!avpkt->size && !*got_picture_ptr)
-        goto finish;
-
     /* return the size of the consumed packet if no error occurred */
-    ret = (p->result >= 0) ? avpkt->size : p->result;
+    if (err >= 0)
+        err = avpkt->size;
 finish:
     async_lock(fctx);
-    if (err < 0)
-        return err;
-    return ret;
+    return err;
 }
 
 void ff_thread_report_progress(ThreadFrame *f, int n, int field)
