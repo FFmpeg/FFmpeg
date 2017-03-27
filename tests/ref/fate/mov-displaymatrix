@@ -1,4 +1,6 @@
 [STREAM]
+sample_aspect_ratio=1:2
+display_aspect_ratio=1:3
 [SIDE_DATA]
 side_data_type=Display Matrix
 displaymatrix=
