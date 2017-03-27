@@ -26,6 +26,7 @@
  * @author Marco Gerards <marco@gnu.org>, David Conrad, Jordi Ortiz <nenjordi@gmail.com>
  */
 
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"
@@ -379,10 +380,12 @@ static void free_sequence_buffers(DiracContext *s)
     av_freep(&s->mcscratch);
 }
 
+static AVOnce dirac_arith_init = AV_ONCE_INIT;
+
 static av_cold int dirac_decode_init(AVCodecContext *avctx)
 {
     DiracContext *s = avctx->priv_data;
-    int i;
+    int i, ret;
 
     s->avctx = avctx;
     s->frame_number = -1;
@@ -404,6 +407,9 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         }
     }
+    ret = ff_thread_once(&dirac_arith_init, ff_dirac_init_arith_tables);
+    if (ret != 0)
+        return AVERROR_UNKNOWN;
 
     return 0;
 }
@@ -2299,5 +2305,6 @@ AVCodec ff_dirac_decoder = {
     .close          = dirac_decode_end,
     .decode         = dirac_decode_frame,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .flush          = dirac_decode_flush,
 };
