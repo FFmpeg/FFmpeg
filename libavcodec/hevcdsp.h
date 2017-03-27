@@ -115,6 +115,7 @@ typedef struct HEVCDSPContext {
 
 void ff_hevc_dsp_init(HEVCDSPContext *hpc, int bit_depth);
 
+void ff_hevc_dsp_init_arm(HEVCDSPContext *c, const int bit_depth);
 void ff_hevc_dsp_init_ppc(HEVCDSPContext *c, const int bit_depth);
 void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 
