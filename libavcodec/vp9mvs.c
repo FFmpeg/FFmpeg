@@ -25,6 +25,7 @@
 #include "vp56.h"
 #include "vp9.h"
 #include "vp9data.h"
+#include "vp9dec.h"
 
 static av_always_inline void clamp_mv(VP56mv *dst, const VP56mv *src,
                                       VP9Context *s)

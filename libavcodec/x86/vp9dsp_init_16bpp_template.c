@@ -24,7 +24,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/vp9.h"
+#include "libavcodec/vp9dsp.h"
 #include "libavcodec/x86/vp9dsp_init.h"
 
 #if HAVE_YASM

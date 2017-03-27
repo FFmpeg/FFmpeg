@@ -29,6 +29,7 @@
 #include "vp56.h"
 #include "vp9.h"
 #include "vp9data.h"
+#include "vp9dec.h"
 
 static const uint8_t bwh_tab[2][N_BS_SIZES][2] = {
     {

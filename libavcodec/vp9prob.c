@@ -24,6 +24,7 @@
 #include "vp56.h"
 #include "vp9.h"
 #include "vp9data.h"
+#include "vp9dec.h"
 
 static av_always_inline void adapt_prob(uint8_t *p, unsigned ct0, unsigned ct1,
                                         int max_count, int update_factor)

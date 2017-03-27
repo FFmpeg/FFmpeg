@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-#include "vp9.h"
+#include "vp9dec.h"
 
 extern const int8_t ff_vp9_partition_tree[3][2];
 extern const uint8_t ff_vp9_default_kf_partition_probs[4][4][3];
