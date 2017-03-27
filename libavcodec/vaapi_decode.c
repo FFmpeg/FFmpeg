@@ -283,14 +283,6 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     int profile_count, exact_match, alt_profile;
     const AVPixFmtDescriptor *sw_desc, *desc;
 
-    // Allowing a profile mismatch can be useful because streams may
-    // over-declare their required capabilities - in particular, many
-    // H.264 baseline profile streams (notably some of those in FATE)
-    // only use the feature set of constrained baseline.  This flag
-    // would have to be be set by some external means in order to
-    // actually be useful.  (AV_HWACCEL_FLAG_IGNORE_PROFILE?)
-    int allow_profile_mismatch = 0;
-
     codec_desc = avcodec_descriptor_get(avctx->codec_id);
     if (!codec_desc) {
         err = AVERROR(EINVAL);
@@ -346,7 +338,8 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
     if (!exact_match) {
-        if (allow_profile_mismatch) {
+        if (avctx->hwaccel_flags &
+            AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH) {
             av_log(avctx, AV_LOG_VERBOSE, "Codec %s profile %d not "
                    "supported for hardware decode.\n",
                    codec_desc->name, avctx->profile);
