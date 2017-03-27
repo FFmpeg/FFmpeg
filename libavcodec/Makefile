@@ -610,7 +610,7 @@ OBJS-$(CONFIG_VP8_DECODER)             += vp8.o vp56rac.o
 OBJS-$(CONFIG_VP8_CUVID_DECODER)       += cuvid.o
 OBJS-$(CONFIG_VP8_MEDIACODEC_DECODER)  += mediacodecdec.o
 OBJS-$(CONFIG_VP8_VAAPI_ENCODER)       += vaapi_encode_vp8.o
-OBJS-$(CONFIG_VP9_DECODER)             += vp9.o vp9data.o vp9dsp.o \
+OBJS-$(CONFIG_VP9_DECODER)             += vp9.o vp9data.o vp9dsp.o vp9lpf.o \
                                           vp9block.o vp9prob.o vp9mvs.o vp56rac.o \
                                           vp9dsp_8bpp.o vp9dsp_10bpp.o vp9dsp_12bpp.o
 OBJS-$(CONFIG_VP9_CUVID_DECODER)       += cuvid.o

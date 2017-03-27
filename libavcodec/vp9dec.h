@@ -203,4 +203,7 @@ void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
                          VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp);
 
+void ff_vp9_loopfilter_sb(AVCodecContext *avctx, VP9Filter *lflvl,
+                          int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff);
+
 #endif /* AVCODEC_VP9DEC_H */
