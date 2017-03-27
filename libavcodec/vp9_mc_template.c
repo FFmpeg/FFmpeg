@@ -405,8 +405,10 @@ static void FN(inter_pred)(AVCodecContext *avctx)
         }
     } else {
         int bwl = bwlog_tab[0][b->bs];
-        int bw = bwh_tab[0][b->bs][0] * 4, bh = bwh_tab[0][b->bs][1] * 4;
-        int uvbw = bwh_tab[s->ss_h][b->bs][0] * 4, uvbh = bwh_tab[s->ss_v][b->bs][1] * 4;
+        int bw = ff_vp9_bwh_tab[0][b->bs][0] * 4;
+        int bh = ff_vp9_bwh_tab[0][b->bs][1] * 4;
+        int uvbw = ff_vp9_bwh_tab[s->ss_h][b->bs][0] * 4;
+        int uvbh = ff_vp9_bwh_tab[s->ss_v][b->bs][1] * 4;
 
         mc_luma_dir(s, mc[bwl][b->filter][0], s->dst[0], ls_y,
                     ref1->data[0], ref1->linesize[0], tref1,

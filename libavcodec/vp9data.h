@@ -26,6 +26,7 @@
 
 #include "vp9dec.h"
 
+extern const uint8_t ff_vp9_bwh_tab[2][N_BS_SIZES][2];
 extern const int8_t ff_vp9_partition_tree[3][2];
 extern const uint8_t ff_vp9_default_kf_partition_probs[4][4][3];
 extern const int8_t ff_vp9_segmentation_tree[7][2];

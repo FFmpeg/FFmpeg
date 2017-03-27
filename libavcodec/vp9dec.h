@@ -206,4 +206,11 @@ void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
 void ff_vp9_loopfilter_sb(AVCodecContext *avctx, VP9Filter *lflvl,
                           int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff);
 
+void ff_vp9_intra_recon_8bpp(AVCodecContext *avctx,
+                             ptrdiff_t y_off, ptrdiff_t uv_off);
+void ff_vp9_intra_recon_16bpp(AVCodecContext *avctx,
+                              ptrdiff_t y_off, ptrdiff_t uv_off);
+void ff_vp9_inter_recon_8bpp(AVCodecContext *avctx);
+void ff_vp9_inter_recon_16bpp(AVCodecContext *avctx);
+
 #endif /* AVCODEC_VP9DEC_H */
