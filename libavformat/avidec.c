@@ -117,13 +117,9 @@ static const AVMetadataConv avi_metadata_conv[] = {
 static int avi_load_index(AVFormatContext *s);
 static int guess_ni_flag(AVFormatContext *s);
 
-#define print_tag(str, tag, size)                        \
-    av_log(NULL, AV_LOG_TRACE, "pos:%"PRIX64" %s: tag=%c%c%c%c size=0x%x\n", \
-            avio_tell(pb), str, tag & 0xff,              \
-            (tag >> 8) & 0xff,                           \
-            (tag >> 16) & 0xff,                          \
-            (tag >> 24) & 0xff,                          \
-            size)
+#define print_tag(str, tag, size)                                      \
+    av_log(NULL, AV_LOG_TRACE, "pos:%"PRIX64" %s: tag=%s size=0x%x\n", \
+           avio_tell(pb), str, av_fourcc2str(tag), size)                  \
 
 static inline int get_duration(AVIStream *ast, int len)
 {

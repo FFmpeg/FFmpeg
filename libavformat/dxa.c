@@ -171,11 +171,13 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     avio_seek(s->pb, c->vidpos, SEEK_SET);
     while(!avio_feof(s->pb) && c->frames){
+        uint32_t tag;
         if ((ret = avio_read(s->pb, buf, 4)) != 4) {
             av_log(s, AV_LOG_ERROR, "failed reading chunk type\n");
             return ret < 0 ? ret : AVERROR_INVALIDDATA;
         }
-        switch(AV_RL32(buf)){
+        tag = AV_RL32(buf);
+        switch (tag) {
         case MKTAG('N', 'U', 'L', 'L'):
             if(av_new_packet(pkt, 4 + pal_size) < 0)
                 return AVERROR(ENOMEM);
@@ -217,7 +219,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             c->readvid = 0;
             return 0;
         default:
-            av_log(s, AV_LOG_ERROR, "Unknown tag %c%c%c%c\n", buf[0], buf[1], buf[2], buf[3]);
+            av_log(s, AV_LOG_ERROR, "Unknown tag %s\n", av_fourcc2str(tag));
             return AVERROR_INVALIDDATA;
         }
     }

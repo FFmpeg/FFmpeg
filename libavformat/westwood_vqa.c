@@ -144,9 +144,8 @@ static int wsvqa_read_header(AVFormatContext *s)
             break;
 
         default:
-            av_log (s, AV_LOG_ERROR, " note: unknown chunk seen (%c%c%c%c)\n",
-                scratch[0], scratch[1],
-                scratch[2], scratch[3]);
+            av_log(s, AV_LOG_ERROR, " note: unknown chunk seen (%s)\n",
+                   av_fourcc2str(chunk_tag));
             break;
         }
 
