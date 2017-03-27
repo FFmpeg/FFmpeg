@@ -13,6 +13,9 @@ libavutil:     2017-03-23
 
 API changes, most recent first:
 
+2017-04-26 - xxxxxxx - lavc 58.3.1 - avcodec.h
+  Add AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH.
+
 2017-03-xx - xxxxxxx - lavc 57.37.0 - avcodec.h
   Add AVCodecContext.hwaccel_flags field. This will control some hwaccels at
   a later point.
