@@ -383,9 +383,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->picture_structure    = h1->picture_structure;
     h->mb_aff_frame         = h1->mb_aff_frame;
     h->droppable            = h1->droppable;
-    h->backup_width         = h1->backup_width;
-    h->backup_height        = h1->backup_height;
-    h->backup_pix_fmt       = h1->backup_pix_fmt;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         ff_h264_unref_picture(h, &h->DPB[i]);

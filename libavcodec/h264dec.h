@@ -363,14 +363,6 @@ typedef struct H264Context {
     int width, height;
     int chroma_x_shift, chroma_y_shift;
 
-    /**
-     * Backup frame properties: needed, because they can be different
-     * between returned frame and last decoded frame.
-     **/
-    int backup_width;
-    int backup_height;
-    enum AVPixelFormat backup_pix_fmt;
-
     int droppable;
     int coded_picture_number;
 
