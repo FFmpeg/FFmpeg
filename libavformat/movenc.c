@@ -46,6 +46,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 #include "libavutil/color_utils.h"
 #include "hevc.h"
@@ -1603,6 +1604,94 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_st3d_tag(AVIOContext *pb, AVStereo3D *stereo_3d)
+{
+    int8_t stereo_mode;
+
+    if (stereo_3d->flags != 0) {
+        av_log(pb, AV_LOG_WARNING, "Unsupported stereo_3d flags %x. st3d not written.\n", stereo_3d->flags);
+        return 0;
+    }
+
+    switch (stereo_3d->type) {
+    case AV_STEREO3D_2D:
+        stereo_mode = 0;
+        break;
+    case AV_STEREO3D_TOPBOTTOM:
+        stereo_mode = 1;
+        break;
+    case AV_STEREO3D_SIDEBYSIDE:
+        stereo_mode = 2;
+        break;
+    default:
+        av_log(pb, AV_LOG_WARNING, "Unsupported stereo_3d type %s. st3d not written.\n", av_stereo3d_type_name(stereo_3d->type));
+        return 0;
+    }
+    avio_wb32(pb, 13); /* size */
+    ffio_wfourcc(pb, "st3d");
+    avio_wb32(pb, 0); /* version = 0 & flags = 0 */
+    avio_w8(pb, stereo_mode);
+    return 13;
+}
+
+static int mov_write_sv3d_tag(AVFormatContext *s, AVIOContext *pb, AVSphericalMapping *spherical_mapping)
+{
+    int64_t sv3d_pos, svhd_pos, proj_pos;
+    const char* metadata_source = s->flags & AVFMT_FLAG_BITEXACT ? "Lavf" : LIBAVFORMAT_IDENT;
+
+    if (spherical_mapping->projection != AV_SPHERICAL_EQUIRECTANGULAR &&
+        spherical_mapping->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
+        spherical_mapping->projection != AV_SPHERICAL_CUBEMAP) {
+        av_log(pb, AV_LOG_WARNING, "Unsupported projection %d. sv3d not written.\n", spherical_mapping->projection);
+        return 0;
+    }
+
+    sv3d_pos = avio_tell(pb);
+    avio_wb32(pb, 0);  /* size */
+    ffio_wfourcc(pb, "sv3d");
+
+    svhd_pos = avio_tell(pb);
+    avio_wb32(pb, 0);  /* size */
+    ffio_wfourcc(pb, "svhd");
+    avio_wb32(pb, 0); /* version = 0 & flags = 0 */
+    avio_put_str(pb, metadata_source);
+    update_size(pb, svhd_pos);
+
+    proj_pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "proj");
+
+    avio_wb32(pb, 24); /* size */
+    ffio_wfourcc(pb, "prhd");
+    avio_wb32(pb, 0); /* version = 0 & flags = 0 */
+    avio_wb32(pb, spherical_mapping->yaw);
+    avio_wb32(pb, spherical_mapping->pitch);
+    avio_wb32(pb, spherical_mapping->roll);
+
+    switch (spherical_mapping->projection) {
+    case AV_SPHERICAL_EQUIRECTANGULAR:
+    case AV_SPHERICAL_EQUIRECTANGULAR_TILE:
+        avio_wb32(pb, 28);    /* size */
+        ffio_wfourcc(pb, "equi");
+        avio_wb32(pb, 0); /* version = 0 & flags = 0 */
+        avio_wb32(pb, spherical_mapping->bound_top);
+        avio_wb32(pb, spherical_mapping->bound_bottom);
+        avio_wb32(pb, spherical_mapping->bound_left);
+        avio_wb32(pb, spherical_mapping->bound_right);
+        break;
+    case AV_SPHERICAL_CUBEMAP:
+        avio_wb32(pb, 20);    /* size */
+        ffio_wfourcc(pb, "cbmp");
+        avio_wb32(pb, 0); /* version = 0 & flags = 0 */
+        avio_wb32(pb, 0); /* layout */
+        avio_wb32(pb, spherical_mapping->padding); /* padding */
+        break;
+    }
+    update_size(pb, proj_pos);
+
+    return update_size(pb, sv3d_pos);
+}
+
 static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 {
     AVRational sar;
@@ -1871,6 +1960,16 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
             mov_write_colr_tag(pb, track);
         else
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
+    }
+
+    if (mov->fc->strict_std_compliance <= FF_COMPLIANCE_EXPERIMENTAL) {
+        AVStereo3D* stereo_3d = (AVStereo3D*) av_stream_get_side_data(track->st, AV_PKT_DATA_STEREO3D, NULL);
+        AVSphericalMapping* spherical_mapping = (AVSphericalMapping*)av_stream_get_side_data(track->st, AV_PKT_DATA_SPHERICAL, NULL);
+
+        if (stereo_3d)
+            mov_write_st3d_tag(pb, stereo_3d);
+        if (spherical_mapping)
+            mov_write_sv3d_tag(mov->fc, pb, spherical_mapping);
     }
 
     if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num) {
