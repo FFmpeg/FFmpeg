@@ -1143,11 +1143,8 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
         }
         tag = bytestream2_get_le32(&s->gb);
         if (avctx->debug & FF_DEBUG_STARTCODE)
-            av_log(avctx, AV_LOG_DEBUG, "png: tag=%c%c%c%c length=%u\n",
-                (tag & 0xff),
-                ((tag >> 8) & 0xff),
-                ((tag >> 16) & 0xff),
-                ((tag >> 24) & 0xff), length);
+            av_log(avctx, AV_LOG_DEBUG, "png: tag=%s length=%u\n",
+                   av_fourcc2str(tag), length);
 
         if (avctx->codec_id == AV_CODEC_ID_PNG &&
             avctx->skip_frame == AVDISCARD_ALL) {
