@@ -250,7 +250,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
             case CMDS_TAG:
                 break;
             default:
-                av_log(s, AV_LOG_INFO, "Skipping unknown chunk 0x%08X\n", chunk_type);
+                av_log(s, AV_LOG_INFO, "Skipping unknown chunk %s\n",
+                       av_fourcc2str(av_bswap32(chunk_type)));
             }
             avio_skip(pb, chunk_size + skip_byte);
         }

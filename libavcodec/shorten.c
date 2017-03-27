@@ -491,7 +491,8 @@ static int read_header(ShortenContext *s)
         if ((ret = decode_aiff_header(s->avctx, s->header, s->header_size)) < 0)
             return ret;
     } else {
-        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %X", AV_RL32(s->header));
+        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %"
+                                      PRIX32, AV_RL32(s->header));
         return AVERROR_PATCHWELCOME;
     }
 

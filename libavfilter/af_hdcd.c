@@ -1077,7 +1077,8 @@ static int hdcd_integrate(HDCDContext *ctx, hdcd_state *states, int channels, in
                         /* one of bits 3, 6, or 7 was not 0 */
                         states[i].code_counterA_almost++;
                         av_log(ctx->fctx, AV_LOG_VERBOSE,
-                            "hdcd error: Control A almost: 0x%02x near %d\n", wbits & 0xff, ctx->sample_count);
+                               "hdcd error: Control A almost: 0x%02"PRIx32" near %d\n",
+                               wbits & 0xff, ctx->sample_count);
                     }
                 } else if ((wbits & 0xa0060000) == 0xa0060000) {
                     /* B: 8-bit code, 8-bit XOR check, 0x7e0fa006[....] */
@@ -1091,7 +1092,9 @@ static int hdcd_integrate(HDCDContext *ctx, hdcd_state *states, int channels, in
                         /* XOR check failed */
                         states[i].code_counterB_checkfails++;
                         av_log(ctx->fctx, AV_LOG_VERBOSE,
-                            "hdcd error: Control B check failed: 0x%04x (0x%02x vs 0x%02x) near %d\n", wbits & 0xffff, (wbits & 0xff00) >> 8, ~wbits & 0xff, ctx->sample_count);
+                               "hdcd error: Control B check failed: 0x%04"PRIx32
+                               " (0x%02"PRIx32" vs 0x%02"PRIx32") near %d\n",
+                               wbits & 0xffff, (wbits & 0xff00) >> 8, ~wbits & 0xff, ctx->sample_count);
                     }
                 }
                 if (f) {

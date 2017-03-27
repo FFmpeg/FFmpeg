@@ -649,7 +649,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->vui_num_units_in_tick               = get_bits_long(gb, 32);
         vui->vui_time_scale                      = get_bits_long(gb, 32);
         if (alt) {
-            av_log(avctx, AV_LOG_INFO, "Retry got %i/%i fps\n",
+            av_log(avctx, AV_LOG_INFO, "Retry got %"PRIu32"/%"PRIu32" fps\n",
                    vui->vui_time_scale, vui->vui_num_units_in_tick);
         }
         vui->vui_poc_proportional_to_timing_flag = get_bits1(gb);

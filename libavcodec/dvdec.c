@@ -222,8 +222,8 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
 
     /* get the AC coefficients until last_index is reached */
     for (;;) {
-        ff_dlog(NULL, "%2d: bits=%04x index=%u\n", pos, SHOW_UBITS(re, gb, 16),
-                re_index);
+        ff_dlog(NULL, "%2d: bits=%04"PRIx32" index=%u\n",
+                pos, SHOW_UBITS(re, gb, 16), re_index);
         /* our own optimized GET_RL_VLC */
         index   = NEG_USR32(re_cache, TEX_VLC_BITS);
         vlc_len = ff_dv_rl_vlc[index].len;

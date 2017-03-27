@@ -421,7 +421,8 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
             dump_audioservicetype(ctx, &sd);
             break;
         case AV_PKT_DATA_QUALITY_STATS:
-            av_log(ctx, AV_LOG_INFO, "quality factor: %d, pict_type: %c", AV_RL32(sd.data), av_get_picture_type_char(sd.data[4]));
+            av_log(ctx, AV_LOG_INFO, "quality factor: %"PRId32", pict_type: %c",
+                   AV_RL32(sd.data), av_get_picture_type_char(sd.data[4]));
             break;
         case AV_PKT_DATA_CPB_PROPERTIES:
             av_log(ctx, AV_LOG_INFO, "cpb: ");

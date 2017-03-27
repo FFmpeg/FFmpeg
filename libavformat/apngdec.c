@@ -404,7 +404,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         return 0;
     default:
-        avpriv_request_sample(s, "In-stream tag=%s (0x%08X) len=%"PRIu32,
+        avpriv_request_sample(s, "In-stream tag=%s (0x%08"PRIX32") len=%"PRIu32,
                               av_fourcc2str(tag), tag, len);
         avio_skip(pb, len + 4);
     }

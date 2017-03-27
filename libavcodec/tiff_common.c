@@ -97,7 +97,7 @@ int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
     for (i = 0; i < count; i++) {
         nom   = ff_tget_long(gb, le);
         denom = ff_tget_long(gb, le);
-        av_bprintf(&bp, "%s%7i:%-7i", auto_sep(count, sep, i, 4), nom, denom);
+        av_bprintf(&bp, "%s%7"PRId32":%-7"PRId32, auto_sep(count, sep, i, 4), nom, denom);
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {

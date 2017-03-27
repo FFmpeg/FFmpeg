@@ -372,9 +372,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (!validate_codec_tag(s, st)) {
                     const uint32_t otag = av_codec_get_tag(s->oformat->codec_tag, par->codec_id);
                     av_log(s, AV_LOG_ERROR,
-                           "Tag %s/0x%08x incompatible with output codec id '%d' (%s)\n",
-                           av_fourcc2str(par->codec_tag), par->codec_tag,
-                           par->codec_id, av_fourcc2str(otag));
+                           "Tag %s incompatible with output codec id '%d' (%s)\n",
+                           av_fourcc2str(par->codec_tag), par->codec_id, av_fourcc2str(otag));
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }

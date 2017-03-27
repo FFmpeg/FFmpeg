@@ -102,7 +102,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = 0;
         pkt->pos = pos;
     } else {
-        av_log(s, AV_LOG_ERROR, "unknown chunk %x\n", type);
+        av_log(s, AV_LOG_ERROR, "unknown chunk %"PRIx32"\n", type);
         avio_skip(s->pb, size);
         ret = AVERROR_INVALIDDATA;
     }

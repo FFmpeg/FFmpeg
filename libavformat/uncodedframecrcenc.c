@@ -115,7 +115,7 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
         default:
             av_assert0(!"reached");
         }
-        av_bprintf(bp, ", 0x%08x", cksum);
+        av_bprintf(bp, ", 0x%08"PRIx32, cksum);
     }
 }
 

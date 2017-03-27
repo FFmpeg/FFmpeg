@@ -1716,7 +1716,7 @@ static int mov_write_gama_tag(AVIOContext *pb, MOVTrack *track, double gamma)
 
     if (gamma > 1e-6) {
         gama = (uint32_t)lrint((double)(1<<16) * gamma);
-        av_log(pb, AV_LOG_DEBUG, "writing gama value %d\n", gama);
+        av_log(pb, AV_LOG_DEBUG, "writing gama value %"PRId32"\n", gama);
 
         av_assert0(track->mode == MODE_MOV);
         avio_wb32(pb, 12);
@@ -2378,8 +2378,8 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
             descr = "TimeCodeHandler";
         } else {
             av_log(s, AV_LOG_WARNING,
-                   "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
-                   av_fourcc2str(track->par->codec_tag), track->par->codec_tag);
+                   "Unknown hldr_type for %s, writing dummy values\n",
+                   av_fourcc2str(track->par->codec_tag));
         }
         if (track->st) {
             // hdlr.name is used by some players to identify the content title

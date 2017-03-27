@@ -176,7 +176,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         n      = codes[i].bits;
         code   = codes[i].code;
         symbol = codes[i].symbol;
-        ff_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
+        ff_dlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
@@ -310,7 +310,8 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
         }                                                                   \
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
         if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
-            av_log(NULL, AV_LOG_ERROR, "Invalid code %x for %d in init_vlc\n", buf[j].code, i);\
+            av_log(NULL, AV_LOG_ERROR, "Invalid code %"PRIx32" for %d in "  \
+                   "init_vlc\n", buf[j].code, i);                           \
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
             return -1;                                                      \
