@@ -145,6 +145,7 @@ static av_cold int dnxhd_decode_init_thread_copy(AVCodecContext *avctx)
 {
     DNXHDContext *ctx = avctx->priv_data;
 
+    ctx->avctx = avctx;
     // make sure VLC tables will be loaded when cid is parsed
     ctx->cid = -1;
 
