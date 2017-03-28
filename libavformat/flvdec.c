@@ -709,6 +709,7 @@ static int flv_read_header(AVFormatContext *s)
     int flags;
     FLVContext *flv = s->priv_data;
     int offset;
+    int pre_tag_size = 0;
 
     avio_skip(s->pb, 4);
     flags = avio_r8(s->pb);
@@ -719,7 +720,16 @@ static int flv_read_header(AVFormatContext *s)
 
     offset = avio_rb32(s->pb);
     avio_seek(s->pb, offset, SEEK_SET);
-    avio_skip(s->pb, 4);
+
+    /* Annex E. The FLV File Format
+     * E.3 TheFLVFileBody
+     *     Field               Type    Comment
+     *     PreviousTagSize0    UI32    Always 0
+     * */
+    pre_tag_size = avio_rb32(s->pb);
+    if (pre_tag_size) {
+        av_log(s, AV_LOG_WARNING, "Read FLV header error, input file is not a standard flv format, first PreviousTagSize0 always is 0\n");
+    }
 
     s->start_time = 0;
     flv->sum_flv_tag_size = 0;
