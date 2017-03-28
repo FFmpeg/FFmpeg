@@ -917,8 +917,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
     int vshift       = s->ps.sps->vshift[c_idx];
     uint8_t *dst     = &s->frame->data[c_idx][(y0 >> vshift) * stride +
                                               ((x0 >> hshift) << s->ps.sps->pixel_shift)];
-    DECLARE_ALIGNED(32, int16_t, coeffs[MAX_TB_SIZE * MAX_TB_SIZE]) = { 0 };
-    DECLARE_ALIGNED(8, uint8_t, significant_coeff_group_flag[8][8]) = { { 0 } };
+    LOCAL_ALIGNED_32(int16_t, coeffs, [MAX_TB_SIZE * MAX_TB_SIZE]);
+    LOCAL_ALIGNED_8(uint8_t, significant_coeff_group_flag, [8], [8]);
 
     int trafo_size = 1 << log2_trafo_size;
     int i, qp, shift, add, scale, scale_m;
@@ -926,6 +926,8 @@ static void hls_residual_coding(HEVCContext *s, int x0, int y0,
     const uint8_t *scale_matrix;
     uint8_t dc_scale;
 
+    memset(coeffs, 0, sizeof(int16_t) * MAX_TB_SIZE * MAX_TB_SIZE);
+    memset(significant_coeff_group_flag, 0, sizeof(uint8_t) * 8 * 8);
     // Derive QP for dequant
     if (!lc->cu.cu_transquant_bypass_flag) {
         static const int qp_c[] = {
@@ -1755,8 +1757,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
     }
 
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t,  tmp[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t,  tmp, [MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp2, [MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
@@ -1789,8 +1791,8 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             s->hevcdsp.put_unweighted_pred_chroma[pred_idx](dst2, s->frame->linesize[2], tmp2, tmpstride, nPbH / 2);
         }
     } else if (!current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp,  [MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp2, [MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref1->frame,
                 &current_mv.mv[1], x0, y0, nPbW, nPbH, pred_idx);
@@ -1822,10 +1824,10 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
             s->hevcdsp.put_unweighted_pred_chroma[pred_idx](dst2, s->frame->linesize[2], tmp2, tmpstride, nPbH / 2);
         }
     } else if (current_mv.pred_flag[0] && current_mv.pred_flag[1]) {
-        DECLARE_ALIGNED(16, int16_t, tmp [MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp2[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp3[MAX_PB_SIZE * MAX_PB_SIZE]);
-        DECLARE_ALIGNED(16, int16_t, tmp4[MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp,  [MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp2, [MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp3, [MAX_PB_SIZE * MAX_PB_SIZE]);
+        LOCAL_ALIGNED_16(int16_t, tmp4, [MAX_PB_SIZE * MAX_PB_SIZE]);
 
         luma_mc(s, tmp, tmpstride, ref0->frame,
                 &current_mv.mv[0], x0, y0, nPbW, nPbH, pred_idx);
