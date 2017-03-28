@@ -527,7 +527,7 @@ static int qsvdeint_request_frame(AVFilterLink *outlink)
 }
 
 #define OFFSET(x) offsetof(QSVDeintContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { NULL },
 };
