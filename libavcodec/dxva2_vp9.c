@@ -23,7 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 
-#include "vp9.h"
+#include "vp9shared.h"
 
 // The headers above may include w32threads.h, which uses the original
 // _WIN32_WINNT define, while dxva2_internal.h redefines it to target a

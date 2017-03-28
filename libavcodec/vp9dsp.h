@@ -111,13 +111,13 @@ typedef struct VP9DSPContext {
      *
      * dst/stride are aligned by hsize
      */
-    vp9_mc_func mc[5][4][2][2][2];
+    vp9_mc_func mc[5][N_FILTERS][2][2][2];
 
     /*
      * for scalable MC, first 3 dimensions identical to above, the other two
      * don't exist since it changes per stepsize.
      */
-    vp9_scaled_mc_func smc[5][4][2];
+    vp9_scaled_mc_func smc[5][N_FILTERS][2];
 } VP9DSPContext;
 
 extern const int16_t ff_vp9_subpel_filters[3][16][8];

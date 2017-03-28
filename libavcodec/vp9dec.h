@@ -32,6 +32,7 @@
 
 #include "vp9.h"
 #include "vp9dsp.h"
+#include "vp9shared.h"
 
 enum MVJoint {
     MV_JOINT_ZERO,

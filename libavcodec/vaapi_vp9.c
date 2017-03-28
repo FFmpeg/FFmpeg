@@ -24,7 +24,7 @@
 
 #include "hwaccel.h"
 #include "vaapi_decode.h"
-#include "vp9.h"
+#include "vp9shared.h"
 
 static VASurfaceID vaapi_vp9_surface_id(const VP9Frame *vf)
 {
