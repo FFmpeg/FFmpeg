@@ -156,8 +156,8 @@ SECTION .text
 ;-------------------------------------------------------------------------------
 ; subpel MC functions:
 ;
-; void ff_put_vp8_epel<size>_h<htap>v<vtap>_<opt>(uint8_t *dst, int deststride,
-;                                                 uint8_t *src, int srcstride,
+; void ff_put_vp8_epel<size>_h<htap>v<vtap>_<opt>(uint8_t *dst, ptrdiff_t deststride,
+;                                                 uint8_t *src, ptrdiff_t srcstride,
 ;                                                 int height,   int mx, int my);
 ;-------------------------------------------------------------------------------
 
@@ -884,7 +884,7 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void ff_vp8_idct_dc_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
+; void ff_vp8_idct_dc_add_<opt>(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
 %macro ADD_DC 4
@@ -979,7 +979,7 @@ INIT_XMM sse4
 VP8_IDCT_DC_ADD
 
 ;-----------------------------------------------------------------------------
-; void ff_vp8_idct_dc_add4y_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
+; void ff_vp8_idct_dc_add4y_<opt>(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
 %if ARCH_X86_32
@@ -1052,7 +1052,7 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_vp8_idct_dc_add4uv_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
+; void ff_vp8_idct_dc_add4uv_<opt>(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmx
@@ -1094,7 +1094,7 @@ cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_vp8_idct_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
+; void ff_vp8_idct_add_<opt>(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
 ; calculate %1=mul_35468(%1)-mul_20091(%2); %2=mul_20091(%1)+mul_35468(%2)

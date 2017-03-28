@@ -371,7 +371,6 @@ Advanced options (experts only):
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
-  --enable-memalign-hack   emulate memalign, interferes with memory debuggers
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
@@ -1217,14 +1216,6 @@ EOF
 
 check_lib(){
     log check_lib "$@"
-    header="$1"
-    func="$2"
-    shift 2
-    check_header $header && check_func $func "$@" && add_extralibs "$@"
-}
-
-check_lib2(){
-    log check_lib2 "$@"
     headers="$1"
     funcs="$2"
     shift 2
@@ -1330,18 +1321,10 @@ check_compile_assert(){
 
 require(){
     name="$1"
-    header="$2"
-    func="$3"
-    shift 3
-    check_lib $header $func "$@" || die "ERROR: $name not found"
-}
-
-require2(){
-    name="$1"
     headers="$2"
     func="$3"
     shift 3
-    check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+    check_lib "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
 require_cpp(){
@@ -1700,11 +1683,9 @@ CONFIG_LIST="
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
     fontconfig
-    memalign_hack
     memory_poisoning
     neon_clobber_test
     pic
-    pod2man
     raise_major
     thumb
     valgrind_backtrace
@@ -1835,7 +1816,6 @@ ARCH_FEATURES="
     local_aligned_8
     local_aligned_16
     local_aligned_32
-    simd_align
     simd_align_16
     simd_align_32
 "
@@ -2335,7 +2315,6 @@ aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
-simd_align_if_any="simd_align_16 simd_align_32"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
 
@@ -2625,6 +2604,7 @@ h263_videotoolbox_hwaccel_deps="videotoolbox"
 h263_videotoolbox_hwaccel_select="h263_decoder"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_cuvid_hwaccel_deps="cuda cuvid"
+h264_cuvid_hwaccel_select="h264_cuvid_decoder"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
@@ -2652,6 +2632,7 @@ h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
 h264_videotoolbox_hwaccel_select="h264_decoder"
 hevc_cuvid_hwaccel_deps="cuda cuvid"
+hevc_cuvid_hwaccel_select="hevc_cuvid_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_mediacodec_decoder_deps="mediacodec"
@@ -2665,11 +2646,13 @@ hevc_vaapi_hwaccel_select="hevc_decoder"
 hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
 mjpeg_cuvid_hwaccel_deps="cuda cuvid"
+mjpeg_cuvid_hwaccel_select="mjpeg_cuvid_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
 mpeg_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg1_cuvid_hwaccel_deps="cuda cuvid"
+mpeg1_cuvid_hwaccel_select="mpeg1_cuvid_decoder"
 mpeg1_vdpau_decoder_deps="vdpau"
 mpeg1_vdpau_decoder_select="mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
@@ -2680,6 +2663,7 @@ mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
 mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_hwaccel_deps="cuda cuvid"
+mpeg2_cuvid_hwaccel_select="mpeg2_cuvid_decoder"
 mpeg2_d3d11va_hwaccel_deps="d3d11va"
 mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
@@ -2699,6 +2683,7 @@ mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_hwaccel_deps="cuda cuvid"
+mpeg4_cuvid_hwaccel_select="mpeg4_cuvid_decoder"
 mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mediacodec_hwaccel_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
@@ -2716,6 +2701,7 @@ mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_cuvid_hwaccel_deps="cuda cuvid"
+vc1_cuvid_hwaccel_select="vc1_cuvid_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
@@ -2732,7 +2718,9 @@ vc1_vdpau_decoder_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
 vp8_cuvid_hwaccel_deps="cuda cuvid"
+vp8_cuvid_hwaccel_select="vp8_cuvid_decoder"
 vp9_cuvid_hwaccel_deps="cuda cuvid"
+vp9_cuvid_hwaccel_select="vp9_cuvid_decoder"
 vp8_mediacodec_decoder_deps="mediacodec"
 vp8_mediacodec_hwaccel_deps="mediacodec"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
@@ -2764,7 +2752,7 @@ nvenc_deps="cuda"
 nvenc_deps_any="dlopen LoadLibrary"
 nvenc_encoder_deps="nvenc"
 h264_cuvid_decoder_deps="cuda cuvid"
-h264_cuvid_decoder_select="h264_mp4toannexb_bsf h264_cuvid_hwaccel"
+h264_cuvid_decoder_select="h264_mp4toannexb_bsf"
 h264_nvenc_encoder_deps="nvenc"
 h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
@@ -2774,7 +2762,7 @@ h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="vaapi_encode golomb"
 
 hevc_cuvid_decoder_deps="cuda cuvid"
-hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf hevc_cuvid_hwaccel"
+hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
 hevc_nvenc_encoder_deps="nvenc"
 hevc_qsv_decoder_deps="libmfx"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
@@ -2783,11 +2771,8 @@ hevc_qsv_encoder_select="qsvenc"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="vaapi_encode golomb"
 mjpeg_cuvid_decoder_deps="cuda cuvid"
-mjpeg_cuvid_decoder_select="mjpeg_cuvid_hwaccel"
 mpeg1_cuvid_decoder_deps="cuda cuvid"
-mpeg1_cuvid_decoder_select="mpeg1_cuvid_hwaccel"
 mpeg2_cuvid_decoder_deps="cuda cuvid"
-mpeg2_cuvid_decoder_select="mpeg2_cuvid_hwaccel"
 mpeg2_qsv_decoder_deps="libmfx"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
 mpeg2_qsv_encoder_deps="libmfx"
@@ -2795,18 +2780,14 @@ mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
 mpeg2_vaapi_encoder_select="vaapi_encode"
 mpeg4_cuvid_decoder_deps="cuda cuvid"
-mpeg4_cuvid_decoder_select="mpeg4_cuvid_hwaccel"
 nvenc_h264_encoder_deps="nvenc"
 nvenc_hevc_encoder_deps="nvenc"
 
 vc1_cuvid_decoder_deps="cuda cuvid"
-vc1_cuvid_decoder_select="vc1_cuvid_hwaccel"
 vp8_cuvid_decoder_deps="cuda cuvid"
-vp8_cuvid_decoder_select="vp8_cuvid_hwaccel"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
 vp8_vaapi_encoder_select="vaapi_encode"
 vp9_cuvid_decoder_deps="cuda cuvid"
-vp9_cuvid_decoder_select="vp9_cuvid_hwaccel"
 
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
@@ -3095,7 +3076,6 @@ afftfilt_filter_select="fft"
 amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
-asyncts_filter_deps="avresample"
 atempo_filter_deps="avcodec"
 atempo_filter_select="rdft"
 azmq_filter_deps="libzmq"
@@ -3160,6 +3140,7 @@ showspectrum_filter_deps="avcodec"
 showspectrum_filter_select="fft"
 showspectrumpic_filter_deps="avcodec"
 showspectrumpic_filter_select="fft"
+signature_filter_deps="gpl avcodec avformat"
 smartblur_filter_deps="gpl swscale"
 sofalizer_filter_deps="netcdf avcodec"
 sofalizer_filter_select="fft"
@@ -5055,6 +5036,8 @@ probe_libc(){
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
         check_${pfx}cpp_condition _mingw.h "defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0502" ||
             add_${pfx}cppflags -D_WIN32_WINNT=0x0502
+        check_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700__" &&
+            add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
@@ -5583,7 +5566,8 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  access
 check_func_headers stdlib.h arc4random
-check_func_headers time.h clock_gettime || { check_func_headers time.h clock_gettime -lrt && add_extralibs -lrt && LIBRT="-lrt"; }
+check_func_headers time.h clock_gettime ||
+    { check_lib time.h clock_gettime -lrt && LIBRT="-lrt"; }
 check_func  fcntl
 check_func  fork
 check_func  gethrtime
@@ -5596,7 +5580,8 @@ check_func  mkstemp
 check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func_headers time.h nanosleep || { check_func_headers time.h nanosleep -lrt && add_extralibs -lrt && LIBRT="-lrt"; }
+check_func_headers time.h nanosleep ||
+    { check_lib time.h nanosleep -lrt && LIBRT="-lrt"; }
 check_func  sched_getaffinity
 check_func  setrlimit
 check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE
@@ -5664,9 +5649,10 @@ check_header asm/types.h
 # so we also check that atomics actually work here
 check_builtin stdatomic_h stdatomic.h "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0)"
 
-check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
-check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
-check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
+check_lib "windows.h shellapi.h" CommandLineToArgvW   -lshell32
+check_lib "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
+check_lib "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
+
 check_lib "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
@@ -5730,12 +5716,12 @@ fi
 enabled pthreads &&
     check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
-disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
-disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
-disabled  lzma || check_lib2  lzma.h lzma_version_number -llzma || disable lzma
+disabled  zlib || check_lib  zlib.h      zlibVersion    -lz    || disable  zlib
+disabled bzlib || check_lib bzlib.h BZ2_bzlibVersion    -lbz2  || disable bzlib
+disabled  lzma || check_lib  lzma.h lzma_version_number -llzma || disable lzma
 
 check_lib math.h sin -lm && LIBM="-lm"
-disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
+disabled crystalhd || check_lib "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 
 atan2f_args=2
 copysign_args=2
@@ -5753,8 +5739,8 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
-enabled avfoundation_indev && { check_lib2 CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
-                                check_lib2 ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
+enabled avfoundation_indev && { check_lib CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
+                                check_lib ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
 enabled cuda              && check_header cuda.h # this is not a dependency
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
@@ -5764,10 +5750,10 @@ enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || di
 enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled gmp               && require2 gmp gmp.h mpz_export -lgmp
+enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads &&
-                               check_lib2 "dlfcn.h" dlopen -ldl; }
+                               check_lib "dlfcn.h" dlopen -ldl || die "ERROR: jni not found"; }
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
@@ -5781,7 +5767,7 @@ enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aac
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
-enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
+enabled libflite          && require libflite "flite/flite.h" flite_init $flite_libs
 enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_libfreetype
@@ -5804,11 +5790,11 @@ enabled libopencv         && { check_header opencv2/core/core_c.h &&
                                  require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { { check_lib2 openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               check_lib2 openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
-                               { check_lib2 openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib2 openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib2 openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+enabled libopenjpeg       && { { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
+                               { check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               { check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
@@ -5836,22 +5822,22 @@ enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_in
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
         use_pkg_config "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
-            check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
+            check_lib "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                 die "ERROR: libvpx decoder version must be >=0.9.1";
     }
     enabled libvpx_vp8_encoder && {
         use_pkg_config "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
-            check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
+            check_lib "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                 die "ERROR: libvpx encoder version must be >=0.9.7";
     }
     enabled libvpx_vp9_decoder && {
         use_pkg_config "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
-            check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx ||
+            check_lib "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx ||
                 disable libvpx_vp9_decoder;
     }
     enabled libvpx_vp9_encoder && {
         use_pkg_config "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
-            check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx ||
+            check_lib "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx ||
                 disable libvpx_vp9_encoder;
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
@@ -5864,7 +5850,7 @@ enabled libwebp           && {
     enabled libwebp_encoder      && require_pkg_config "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
     enabled libwebp_anim_encoder && { use_pkg_config "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit || disable libwebp_anim_encoder; } }
 enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encoder_encode ||
-                               { require libx264 x264.h x264_encoder_encode -lx264 &&
+                               { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 must be installed and version must be >= 0.118."; } &&
@@ -5873,7 +5859,7 @@ enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encode
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
                              { check_cpp_condition x265.h "X265_BUILD >= 68" ||
                                die "ERROR: libx265 version must be >= 68."; }
-enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
+enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config "zimg >= 2.3.0" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
@@ -5896,16 +5882,16 @@ enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lO
                                die "ERROR: openal not found"; } &&
                              { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                                die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
-enabled opencl            && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
-                               check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
+enabled opencl            && { check_lib OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
+                               check_lib CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
                                die "ERROR: opencl not found"; } &&
                              { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
                                die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
 enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
-                               check_lib2 windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
-                               check_lib2 OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
-                               check_lib2 ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
+                               check_lib windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
+                               check_lib OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
+                               check_lib ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
 enabled omx_rpi && enable omx
@@ -5940,7 +5926,7 @@ if enabled gcrypt; then
             die "ERROR: gcrypt not found"
         add_cflags $gcrypt_cflags && add_extralibs $gcrypt_libs
     else
-        require2 gcrypt gcrypt.h gcry_mpi_new -lgcrypt
+        require gcrypt gcrypt.h gcry_mpi_new -lgcrypt
     fi
 fi
 
@@ -5967,7 +5953,7 @@ fi
 enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    check_lib2 "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
+    check_lib "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     enable securetransport; }
 
 disabled schannel || { check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
@@ -6018,16 +6004,16 @@ fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
-    check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack &&
+enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
+enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio
 
 if enabled libcdio; then
-    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
-    check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
@@ -6082,10 +6068,10 @@ enabled vaapi &&
 
 if enabled vaapi ; then
     enabled xlib &&
-    check_lib2 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
+    check_lib "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 &&
     enable vaapi_x11
 
-    check_lib2 "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
+    check_lib "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
     enable vaapi_drm
 fi
 
@@ -6094,7 +6080,7 @@ enabled vdpau &&
     disable vdpau
 
 enabled vdpau && enabled xlib &&
-    check_lib2 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
+    check_lib "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau &&
     enable vdpau_x11
 
 if enabled x86; then
@@ -6118,7 +6104,7 @@ int main(void) { return 0; }
 EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
+disabled iconv || check_func_headers iconv.h iconv || check_lib iconv.h iconv -liconv || disable iconv
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
@@ -6167,11 +6153,11 @@ enabled neon_clobber_test &&
                   -Wl,--wrap,avcodec_decode_subtitle2   \
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video2      \
-                  -Wl,--wrap,avcodec_send_packet        \
-                  -Wl,--wrap,avcodec_receive_frame      \
-                  -Wl,--wrap,avcodec_send_frame         \
-                  -Wl,--wrap,avcodec_receive_packet     \
                   -Wl,--wrap,avcodec_encode_subtitle    \
+                  -Wl,--wrap,avcodec_send_packet        \
+                  -Wl,--wrap,avcodec_receive_packet     \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert ||
     disable neon_clobber_test
@@ -6185,9 +6171,9 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
                   -Wl,--wrap,avcodec_send_packet        \
-                  -Wl,--wrap,avcodec_receive_frame      \
-                  -Wl,--wrap,avcodec_send_frame         \
                   -Wl,--wrap,avcodec_receive_packet     \
+                  -Wl,--wrap,avcodec_send_frame         \
+                  -Wl,--wrap,avcodec_receive_frame      \
                   -Wl,--wrap,swr_convert                \
                   -Wl,--wrap,avresample_convert         \
                   -Wl,--wrap,sws_scale ||
@@ -6408,9 +6394,6 @@ enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
     prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
 
-! enabled_any memalign posix_memalign aligned_malloc &&
-    enabled simd_align && enable memalign_hack
-
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
 # -> add $dep to ${lib}_deps only once
@@ -6475,7 +6458,6 @@ enabled zlib && add_cppflags -DZLIB_CONST
 enabled afftfilt_filter     && prepend avfilter_deps "avcodec"
 enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
 enabled aresample_filter    && prepend avfilter_deps "swresample"
-enabled asyncts_filter      && prepend avfilter_deps "avresample"
 enabled atempo_filter       && prepend avfilter_deps "avcodec"
 enabled cover_rect_filter   && prepend avfilter_deps "avformat avcodec"
 enabled ebur128_filter && enabled swresample && prepend avfilter_deps "swresample"
@@ -6861,11 +6843,6 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
-if test -n "$WARNINGS"; then
-    printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
-    enabled fatal_warnings && exit 1
-fi
-
 # generate the lists of enabled components
 print_enabled_components(){
     file=$1
@@ -6882,6 +6859,11 @@ print_enabled_components(){
 
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
+
+if test -n "$WARNINGS"; then
+    printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
+    enabled fatal_warnings && exit 1
+fi
 
 # build pkg-config files
 

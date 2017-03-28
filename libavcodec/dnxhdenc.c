@@ -934,9 +934,6 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
             if (bits > ctx->frame_bits)
                 break;
         }
-        // ff_dlog(ctx->m.avctx,
-        //         "lambda %d, up %u, down %u, bits %d, frame %d\n",
-        //         lambda, last_higher, last_lower, bits, ctx->frame_bits);
         if (end) {
             if (bits > ctx->frame_bits)
                 return AVERROR(EINVAL);
@@ -965,7 +962,6 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
             down_step = 1<<LAMBDA_FRAC_BITS;
         }
     }
-    //ff_dlog(ctx->m.avctx, "out lambda %d\n", lambda);
     ctx->lambda = lambda;
     return 0;
 }
@@ -994,10 +990,6 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
             if (bits > ctx->frame_bits)
                 break;
         }
-        // ff_dlog(ctx->m.avctx,
-        //         "%d, qscale %d, bits %d, frame %d, higher %d, lower %d\n",
-        //         ctx->m.avctx->frame_number, qscale, bits, ctx->frame_bits,
-        //         last_higher, last_lower);
         if (bits < ctx->frame_bits) {
             if (qscale == 1)
                 return 1;
@@ -1026,7 +1018,6 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
                 return AVERROR(EINVAL);
         }
     }
-    //ff_dlog(ctx->m.avctx, "out qscale %d\n", qscale);
     ctx->qscale = qscale;
     return 0;
 }

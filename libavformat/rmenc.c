@@ -123,7 +123,7 @@ static int rv10_write_header(AVFormatContext *ctx,
     avio_wb32(s, 0);           /* data offset : will be patched after */
     avio_wb16(s, ctx->nb_streams);    /* num streams */
     flags = 1 | 2; /* save allowed & perfect play */
-    if (!s->seekable)
+    if (!(s->seekable & AVIO_SEEKABLE_NORMAL))
         flags |= 4; /* live broadcast */
     avio_wb16(s, flags);
 
@@ -175,7 +175,7 @@ static int rv10_write_header(AVFormatContext *ctx,
         avio_wb32(s, 0);           /* start time */
         avio_wb32(s, BUFFER_DURATION);           /* preroll */
         /* duration */
-        if (!s->seekable || !stream->total_frames)
+        if (!(s->seekable & AVIO_SEEKABLE_NORMAL) || !stream->total_frames)
             avio_wb32(s, (int)(3600 * 1000));
         else
             avio_wb32(s, av_rescale_q_rnd(stream->total_frames, (AVRational){1000, 1},  stream->frame_rate, AV_ROUND_ZERO));
@@ -400,7 +400,6 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     /* Well, I spent some time finding the meaning of these bits. I am
        not sure I understood everything, but it works !! */
-#if 1
     if (size > MAX_PACKET_SIZE) {
         av_log(s, AV_LOG_ERROR, "Muxing packets larger than 64 kB (%d) is not supported\n", size);
         return AVERROR_PATCHWELCOME;
@@ -422,13 +421,6 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
         avio_wb16(pb, 0x4000 | size); /* total frame size */
         avio_wb16(pb, 0x4000 | size); /* offset from the start or the end */
     }
-#else
-    /* full frame */
-    write_packet_header(s, size + 6);
-    avio_w8(pb, 0xc0);
-    avio_wb16(pb, 0x4000 + size); /* total frame size */
-    avio_wb16(pb, 0x4000 + packet_number * 126); /* position in stream */
-#endif
     avio_w8(pb, stream->nb_frames & 0xff);
 
     avio_write(pb, buf, size);
@@ -452,7 +444,7 @@ static int rm_write_trailer(AVFormatContext *s)
     int data_size, index_pos, i;
     AVIOContext *pb = s->pb;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* end of file: finish to write header */
         index_pos = avio_tell(pb);
         data_size = index_pos - rm->data_pos;

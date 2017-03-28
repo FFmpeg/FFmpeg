@@ -119,7 +119,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     }
     if ((rate == -1 || !chan) && !wc->block_parsed) {
         int64_t block_end = avio_tell(pb) + wc->header.blocksize;
-        if (!pb->seekable) {
+        if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot determine additional parameters\n");
             return AVERROR_INVALIDDATA;
@@ -241,7 +241,7 @@ static int wv_read_header(AVFormatContext *s)
     if (wc->header.total_samples != 0xFFFFFFFFu)
         st->duration = wc->header.total_samples;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t cur = avio_tell(s->pb);
         wc->apetag_start = ff_ape_parse_tag(s);
         if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))

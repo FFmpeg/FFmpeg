@@ -86,17 +86,15 @@ static int url_bio_destroy(BIO *b)
 }
 
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-#define GET_BIO_DATA(x) BIO_get_data(x);
+#define GET_BIO_DATA(x) BIO_get_data(x)
 #else
-#define GET_BIO_DATA(x) (x)->ptr;
+#define GET_BIO_DATA(x) (x)->ptr
 #endif
 
 static int url_bio_bread(BIO *b, char *buf, int len)
 {
-    URLContext *h;
-    int ret;
-    h = GET_BIO_DATA(b);
-    ret = ffurl_read(h, buf, len);
+    URLContext *h = GET_BIO_DATA(b);
+    int ret = ffurl_read(h, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
@@ -107,10 +105,8 @@ static int url_bio_bread(BIO *b, char *buf, int len)
 
 static int url_bio_bwrite(BIO *b, const char *buf, int len)
 {
-    URLContext *h;
-    int ret;
-    h = GET_BIO_DATA(b);
-    ret = ffurl_write(h, buf, len);
+    URLContext *h = GET_BIO_DATA(b);
+    int ret = ffurl_write(h, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);

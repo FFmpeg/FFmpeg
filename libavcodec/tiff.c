@@ -914,6 +914,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_STRIP_OFFS:
         if (count == 1) {
+            if (value > INT_MAX) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                    "strippos %u too large\n", value);
+                return AVERROR_INVALIDDATA;
+            }
             s->strippos = 0;
             s->stripoff = value;
         } else
@@ -925,6 +930,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_STRIP_SIZE:
         if (count == 1) {
+            if (value > INT_MAX) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                    "stripsize %u too large\n", value);
+                return AVERROR_INVALIDDATA;
+            }
             s->stripsizesoff = 0;
             s->stripsize     = value;
             s->strips        = 1;
@@ -1061,7 +1071,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->geotag_count = count / 4 - 1;
             av_log(s->avctx, AV_LOG_WARNING, "GeoTIFF key directory buffer shorter than specified\n");
         }
-        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4) {
+        if (   bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4
+            || s->geotag_count == 0) {
             s->geotag_count = 0;
             return -1;
         }

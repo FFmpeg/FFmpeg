@@ -26,7 +26,7 @@
 #include "constants.h"
 #include "libavutil/mips/mmiutils.h"
 
-void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
@@ -207,7 +207,7 @@ void ff_put_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
     }
 }
 
-void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
@@ -396,7 +396,7 @@ void ff_avg_h264_chroma_mc8_mmi(uint8_t *dst, uint8_t *src, int stride,
     }
 }
 
-void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
@@ -546,7 +546,7 @@ void ff_put_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, int stride,
     }
 }
 
-void ff_avg_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, int stride,
+void ff_avg_h264_chroma_mc4_mmi(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         int h, int x, int y)
 {
     const int A = (8 - x) *(8 - y);

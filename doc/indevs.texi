@@ -233,6 +233,12 @@ Defaults to @option{false}.
 If set to @option{true}, print a list of supported formats and exit.
 Defaults to @option{false}.
 
+@item format_code <FourCC>
+This sets the input video format to the format given by the FourCC. To see
+the supported values of your device(s) use @option{list_formats}.
+Note that there is a FourCC @option{'pal '} that can also be used
+as @option{pal} (3 letters).
+
 @item bm_v210
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
@@ -296,21 +302,21 @@ ffmpeg -f decklink -list_formats 1 -i 'Intensity Pro'
 @end example
 
 @item
-Capture video clip at 1080i50 (format 11):
+Capture video clip at 1080i50:
 @example
-ffmpeg -f decklink -i 'Intensity Pro@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -format_code Hi50 -f decklink -i 'Intensity Pro' -acodec copy -vcodec copy output.avi
 @end example
 
 @item
 Capture video clip at 1080i50 10 bit:
 @example
-ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -bm_v210 1 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -acodec copy -vcodec copy output.avi
 @end example
 
 @item
 Capture video clip at 1080i50 with 16 audio channels:
 @example
-ffmpeg -channels 16 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -channels 16 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -acodec copy -vcodec copy output.avi
 @end example
 
 @end itemize

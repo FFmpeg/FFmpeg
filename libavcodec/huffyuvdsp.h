@@ -20,8 +20,8 @@
 #define AVCODEC_HUFFYUVDSP_H
 
 #include <stdint.h>
+#include "libavutil/pixfmt.h"
 #include "config.h"
-#include "avcodec.h"
 
 #if HAVE_BIGENDIAN
 #define B 3
@@ -46,8 +46,7 @@ typedef struct HuffYUVDSPContext {
                                      intptr_t w, uint8_t *left);
 } HuffYUVDSPContext;
 
-void ff_huffyuvdsp_init(HuffYUVDSPContext *c, AVCodecContext *avctx);
-void ff_huffyuvdsp_init_ppc(HuffYUVDSPContext *c, AVCodecContext *avctx);
-void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c, AVCodecContext *avctx);
+void ff_huffyuvdsp_init(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt);
+void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt);
 
 #endif /* AVCODEC_HUFFYUVDSP_H */

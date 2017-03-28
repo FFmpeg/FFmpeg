@@ -34,6 +34,16 @@
     [base],           [base  + stride],   [base  + 2*stride], [base3], \
     [base3 + stride], [base3 + 2*stride], [base3 + stride3],  [base3 + stride*4]
 
+; Interleave low src0 with low src1 and store in src0,
+; interleave high src0 with high src1 and store in src1.
+; %1 - types
+; %2 - index of the register with src0
+; %3 - index of the register with src1
+; %4 - index of the register for intermediate results
+; example for %1 - wd: input: src0: x0 x1 x2 x3 z0 z1 z2 z3
+;                             src1: y0 y1 y2 y3 q0 q1 q2 q3
+;                     output: src0: x0 y0 x1 y1 x2 y2 x3 y3
+;                             src1: z0 q0 z1 q1 z2 q2 z3 q3
 %macro SBUTTERFLY 4
 %ifidn %1, dqqq
     vperm2i128  m%4, m%2, m%3, q0301
@@ -823,7 +833,9 @@
 %if cpuflag(avx)
     vbroadcastss %1, %2
 %else ; sse
+%ifnidn %1, %2
     movss        %1, %2
+%endif
     shufps       %1, %1, 0
 %endif
 %endmacro

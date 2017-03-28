@@ -68,6 +68,12 @@ static const struct {
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
     #endif
+    #if CONFIG_AUDIODSP
+        { "audiodsp", checkasm_check_audiodsp },
+    #endif
+    #if CONFIG_BLOCKDSP
+        { "blockdsp", checkasm_check_blockdsp },
+    #endif
     #if CONFIG_BSWAPDSP
         { "bswapdsp", checkasm_check_bswapdsp },
     #endif
@@ -90,10 +96,14 @@ static const struct {
         { "h264qpel", checkasm_check_h264qpel },
     #endif
     #if CONFIG_HEVC_DECODER
+        { "hevc_add_res", checkasm_check_hevc_add_res },
         { "hevc_idct", checkasm_check_hevc_idct },
     #endif
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
+    #endif
+    #if CONFIG_HUFFYUVDSP
+        { "llviddsp", checkasm_check_llviddsp },
     #endif
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
@@ -502,7 +512,8 @@ static void print_cpu_name(void)
 
 int main(int argc, char *argv[])
 {
-    int i, seed, ret = 0;
+    unsigned int seed;
+    int i, ret = 0;
 
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
@@ -529,7 +540,7 @@ int main(int argc, char *argv[])
         argv++;
     }
 
-    seed = (argc > 1) ? atoi(argv[1]) : av_get_random_seed();
+    seed = (argc > 1) ? strtoul(argv[1], NULL, 10) : av_get_random_seed();
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
     av_lfg_init(&checkasm_lfg, seed);
 

@@ -22,7 +22,7 @@
 #include <string.h>
 #include "checkasm.h"
 #include "libavcodec/vp9data.h"
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -259,7 +259,7 @@ static int copy_subcoefs(int16_t *out, const int16_t *in, enum TxfmMode tx,
     // test
 
     int n;
-    const int16_t *scan = vp9_scans[tx][txtp];
+    const int16_t *scan = ff_vp9_scans[tx][txtp];
     int eob;
 
     for (n = 0; n < sz * sz; n++) {

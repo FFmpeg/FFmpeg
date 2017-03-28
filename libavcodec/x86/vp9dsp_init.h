@@ -23,7 +23,7 @@
 #ifndef AVCODEC_X86_VP9DSP_INIT_H
 #define AVCODEC_X86_VP9DSP_INIT_H
 
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 
 // hack to force-expand BPC
 #define cat(a, bpp, b) a##bpp##b

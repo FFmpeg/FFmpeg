@@ -799,7 +799,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             !memcmp(st->codecpar->extradata + st->codecpar->extradata_size - 9, "BottomUp", 9))
                             pal_src -= 9;
                         for (i = 0; i < pal_size / 4; i++)
-                            ast->pal[i] = 0xFFU<<24 | AV_RL32(pal_src+4*i);
+                            ast->pal[i] = 0xFFU<<24 | AV_RL32(pal_src + 4 * i);
                         ast->has_pal = 1;
                     }
 
@@ -948,7 +948,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             pos = avio_tell(pb);
-            if (pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+            if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !(s->flags & AVFMT_FLAG_IGNIDX) &&
                 avi->use_odml &&
                 read_odml_index(s, 0) < 0 &&
                 (s->error_recognition & AV_EF_EXPLODE))
@@ -1022,7 +1022,7 @@ fail:
         return AVERROR_INVALIDDATA;
     }
 
-    if (!avi->index_loaded && pb->seekable)
+    if (!avi->index_loaded && (pb->seekable & AVIO_SEEKABLE_NORMAL))
         avi_load_index(s);
     calculate_bitrate(s);
     avi->index_loaded    |= 1;
@@ -1479,17 +1479,6 @@ resync:
 //                pkt->dts += ast->start;
             if (ast->sample_size)
                 pkt->dts /= ast->sample_size;
-            av_log(s, AV_LOG_TRACE,
-                    "dts:%"PRId64" offset:%"PRId64" %d/%d smpl_siz:%d "
-                    "base:%d st:%d size:%d\n",
-                    pkt->dts,
-                    ast->frame_offset,
-                    ast->scale,
-                    ast->rate,
-                    ast->sample_size,
-                    AV_TIME_BASE,
-                    avi->stream_index,
-                    size);
             pkt->stream_index = avi->stream_index;
 
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->index_entries) {
@@ -1759,13 +1748,6 @@ static int avi_load_index(AVFormatContext *s)
         if (avio_feof(pb))
             break;
         next = avio_tell(pb) + size + (size & 1);
-
-        av_log(s, AV_LOG_TRACE, "tag=%c%c%c%c size=0x%x\n",
-                 tag        & 0xff,
-                (tag >>  8) & 0xff,
-                (tag >> 16) & 0xff,
-                (tag >> 24) & 0xff,
-                size);
 
         if (tag == MKTAG('i', 'd', 'x', '1') &&
             avi_read_idx1(s, size) >= 0) {

@@ -69,12 +69,7 @@
 #define GLOBAL(x) x
 #define RIGHT_SHIFT(x, n) ((x) >> (n))
 #define MULTIPLY16C16(var,const) ((var)*(const))
-
-#if 1 //def USE_ACCURATE_ROUNDING
 #define DESCALE(x,n)  RIGHT_SHIFT((x) + (1 << ((n) - 1)), n)
-#else
-#define DESCALE(x,n)  RIGHT_SHIFT(x, n)
-#endif
 
 
 /*

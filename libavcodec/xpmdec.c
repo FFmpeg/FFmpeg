@@ -415,6 +415,6 @@ AVCodec ff_xpm_decoder = {
     .priv_data_size = sizeof(XPMDecContext),
     .close          = xpm_decode_close,
     .decode         = xpm_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("XPM (X PixMap) image")
 };

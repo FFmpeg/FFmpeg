@@ -89,7 +89,7 @@ static int dtshd_read_header(AVFormatContext *s)
             dtshd->data_end = data_start + chunk_size;
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
-            if (!pb->seekable)
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
                 goto break_loop;
             goto skip;
             break;

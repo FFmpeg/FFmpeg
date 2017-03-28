@@ -57,8 +57,8 @@ typedef struct ERContext {
     int *mb_index2xy;
     int mb_num;
     int mb_width, mb_height;
-    int mb_stride;
-    int b8_stride;
+    ptrdiff_t mb_stride;
+    ptrdiff_t b8_stride;
 
     volatile int error_count;
     int error_occurred;

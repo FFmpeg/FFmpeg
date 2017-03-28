@@ -97,15 +97,6 @@ static av_always_inline unsigned UMULH(unsigned a, unsigned b){
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
 {
-#if 0
-    int t= (a-b)&((a-b)>>31);
-    a-=t;
-    b+=t;
-    b-= (b-c)&((b-c)>>31);
-    b+= (a-b)&((a-b)>>31);
-
-    return b;
-#else
     if(a>b){
         if(c>b){
             if(c>a) b=a;
@@ -118,7 +109,6 @@ static inline av_const int mid_pred(int a, int b, int c)
         }
     }
     return b;
-#endif
 }
 #endif
 

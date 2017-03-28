@@ -223,10 +223,9 @@ typedef struct AVHWFramesContext {
 } AVHWFramesContext;
 
 /**
- * Allocate an AVHWDeviceContext for a given pixel format.
+ * Allocate an AVHWDeviceContext for a given hardware type.
  *
- * @param format a hwaccel pixel format (AV_PIX_FMT_FLAG_HWACCEL must be set
- *               on the corresponding format descriptor)
+ * @param type the type of the hardware device to allocate.
  * @return a reference to the newly created AVHWDeviceContext on success or NULL
  *         on failure.
  */

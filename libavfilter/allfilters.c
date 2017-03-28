@@ -79,7 +79,6 @@ static void register_all(void)
     REGISTER_FILTER(ASPLIT,         asplit,         af);
     REGISTER_FILTER(ASTATS,         astats,         af);
     REGISTER_FILTER(ASTREAMSELECT,  astreamselect,  af);
-    REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATEMPO,         atempo,         af);
     REGISTER_FILTER(ATRIM,          atrim,          af);
     REGISTER_FILTER(AZMQ,           azmq,           af);
@@ -290,6 +289,7 @@ static void register_all(void)
     REGISTER_FILTER(SHUFFLEPLANES,  shuffleplanes,  vf);
     REGISTER_FILTER(SIDEDATA,       sidedata,       vf);
     REGISTER_FILTER(SIGNALSTATS,    signalstats,    vf);
+    REGISTER_FILTER(SIGNATURE,      signature,      vf);
     REGISTER_FILTER(SMARTBLUR,      smartblur,      vf);
     REGISTER_FILTER(SOBEL,          sobel,          vf);
     REGISTER_FILTER(SPLIT,          split,          vf);

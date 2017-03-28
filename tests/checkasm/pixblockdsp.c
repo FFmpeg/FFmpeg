@@ -64,7 +64,7 @@
 #define check_diff_pixels(type)                                                            \
     do {                                                                                   \
         int i;                                                                             \
-        declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, int stride); \
+        declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *av_restrict block, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride); \
                                                                                            \
         for (i = 0; i < BUF_UNITS; i++) {                                              \
             int src_offset = i * 64 * sizeof(type) + 8 * i; /* Test various alignments */      \

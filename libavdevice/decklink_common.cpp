@@ -33,6 +33,8 @@ extern "C" {
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/bswap.h"
 }
 
 #include "decklink_common.h"
@@ -157,8 +159,8 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     int i = 1;
     HRESULT res;
 
-    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, field order %d, direction %d, mode number %d\n",
-        width, height, tb_num, tb_den, field_order, direction, num);
+    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, field order %d, direction %d, mode number %d, format code %s\n",
+        width, height, tb_num, tb_den, field_order, direction, num, (cctx->format_code) ? cctx->format_code : "(unset)");
 
     if (ctx->duplex_mode) {
         DECKLINK_BOOL duplex_supported = false;
@@ -195,12 +197,17 @@ int ff_decklink_set_format(AVFormatContext *avctx,
             return AVERROR(EIO);
     }
 
+    char format_buf[] = "    ";
+    if (cctx->format_code)
+        memcpy(format_buf, cctx->format_code, FFMIN(strlen(cctx->format_code), sizeof(format_buf)));
+    BMDDisplayMode target_mode = (BMDDisplayMode)AV_RB32(format_buf);
     AVRational target_tb = av_make_q(tb_num, tb_den);
     ctx->bmd_mode = bmdModeUnknown;
     while ((ctx->bmd_mode == bmdModeUnknown) && itermode->Next(&mode) == S_OK) {
         BMDTimeValue bmd_tb_num, bmd_tb_den;
         int bmd_width  = mode->GetWidth();
         int bmd_height = mode->GetHeight();
+        BMDDisplayMode bmd_mode = mode->GetDisplayMode();
         BMDFieldDominance bmd_field_dominance = mode->GetFieldDominance();
 
         mode->GetFrameRate(&bmd_tb_num, &bmd_tb_den);
@@ -209,8 +216,10 @@ int ff_decklink_set_format(AVFormatContext *avctx,
         if ((bmd_width == width &&
              bmd_height == height &&
              !av_cmp_q(mode_tb, target_tb) &&
-             field_order_eq(field_order, bmd_field_dominance)) || i == num) {
-            ctx->bmd_mode   = mode->GetDisplayMode();
+             field_order_eq(field_order, bmd_field_dominance))
+             || i == num
+             || target_mode == bmd_mode) {
+            ctx->bmd_mode   = bmd_mode;
             ctx->bmd_width  = bmd_width;
             ctx->bmd_height = bmd_height;
             ctx->bmd_tb_den = bmd_tb_den;
@@ -276,6 +285,7 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkDisplayMode *mode;
+    uint32_t format_code;
     int i=0;
     HRESULT res;
 
@@ -297,13 +307,14 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
             return AVERROR(EIO);
     }
 
-    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n",
+    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n\tmode\tformat_code\tdescription",
                avctx->filename);
     while (itermode->Next(&mode) == S_OK) {
         BMDTimeValue tb_num, tb_den;
         mode->GetFrameRate(&tb_num, &tb_den);
-        av_log(avctx, AV_LOG_INFO, "\t%d\t%ldx%ld at %d/%d fps",
-                ++i,mode->GetWidth(), mode->GetHeight(),
+        format_code = av_bswap32(mode->GetDisplayMode());
+        av_log(avctx, AV_LOG_INFO, "\n\t%d\t%.4s\t\t%ldx%ld at %d/%d fps",
+                ++i, (char*) &format_code, mode->GetWidth(), mode->GetHeight(),
                 (int) tb_den, (int) tb_num);
         switch (mode->GetFieldDominance()) {
         case bmdLowerFieldFirst:
@@ -311,9 +322,9 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
         case bmdUpperFieldFirst:
         av_log(avctx, AV_LOG_INFO, " (interlaced, upper field first)"); break;
         }
-        av_log(avctx, AV_LOG_INFO, "\n");
         mode->Release();
     }
+    av_log(avctx, AV_LOG_INFO, "\n");
 
     itermode->Release();
 

@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
-#include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"

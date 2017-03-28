@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "thread.h"
 #include "hevc.h"
+#include "hevcdec.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {
@@ -299,7 +300,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 {
     SliceHeader *sh = &s->sh;
 
-    uint8_t nb_list = sh->slice_type == B_SLICE ? 2 : 1;
+    uint8_t nb_list = sh->slice_type == HEVC_SLICE_B ? 2 : 1;
     uint8_t list_idx;
     int i, j, ret;
 
@@ -328,7 +329,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         while (rpl_tmp.nb_refs < sh->nb_refs[list_idx]) {
             for (i = 0; i < FF_ARRAY_ELEMS(cand_lists); i++) {
                 RefPicList *rps = &s->rps[cand_lists[i]];
-                for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < MAX_REFS; j++) {
+                for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < HEVC_MAX_REFS; j++) {
                     rpl_tmp.list[rpl_tmp.nb_refs]       = rps->list[j];
                     rpl_tmp.ref[rpl_tmp.nb_refs]        = rps->ref[j];
                     rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = i == 2;
@@ -386,7 +387,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
         }
     }
 
-    if (s->nal_unit_type != NAL_CRA_NUT && !IS_BLA(s))
+    if (s->nal_unit_type != HEVC_NAL_CRA_NUT && !IS_BLA(s))
         av_log(s->avctx, AV_LOG_ERROR,
                "Could not find ref with POC %d\n", poc);
     return NULL;
@@ -530,9 +531,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
         poc_msb = prev_poc_msb;
 
     // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == NAL_BLA_W_LP   ||
-        s->nal_unit_type == NAL_BLA_W_RADL ||
-        s->nal_unit_type == NAL_BLA_N_LP)
+    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
+        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
+        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
         poc_msb = 0;
 
     return poc_msb + poc_lsb;

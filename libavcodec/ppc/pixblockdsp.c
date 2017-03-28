@@ -37,7 +37,7 @@
 
 #if HAVE_VSX
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
-                               ptrdiff_t line_size)
+                               ptrdiff_t stride)
 {
     int i;
     vector unsigned char perm =
@@ -59,12 +59,12 @@ static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
         // Save the data to the block, we assume the block is 16-byte aligned.
         vec_vsx_st(shorts, i * 16, (vector signed short *) block);
 
-        pixels += line_size;
+        pixels += stride;
     }
 }
 #else
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
-                               ptrdiff_t line_size)
+                               ptrdiff_t stride)
 {
     int i;
     const vec_u8 zero = (const vec_u8)vec_splat_u8(0);
@@ -84,7 +84,7 @@ static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
         // Save the data to the block, we assume the block is 16-byte aligned.
         vec_st(shorts, i * 16, (vec_s16 *)block);
 
-        pixels += line_size;
+        pixels += stride;
     }
 }
 
@@ -92,7 +92,7 @@ static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
 
 #if HAVE_VSX
 static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
-                                const uint8_t *s2, int stride)
+                                const uint8_t *s2, ptrdiff_t stride)
 {
   int i;
   const vector unsigned char zero =
@@ -154,7 +154,7 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 }
 #else
 static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
-                                const uint8_t *s2, int stride)
+                                const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
     vec_u8 perm;
@@ -233,7 +233,7 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 
 #if HAVE_VSX
 static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
-                           ptrdiff_t line_size)
+                           ptrdiff_t stride)
 {
     int i;
     for (i = 0; i < 8; i++) {
@@ -241,12 +241,12 @@ static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
 
         vec_vsx_st(shorts, i * 16, block);
 
-        pixels += line_size;
+        pixels += stride;
     }
 }
 
 static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
-                            const uint8_t *s2, int stride)
+                            const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
     vec_s16 shorts1, shorts2;

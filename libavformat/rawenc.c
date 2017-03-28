@@ -65,7 +65,7 @@ static int adx_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
         uint64_t sample_count = (file_size - 36) / par->channels / 18 * 32;
         if (sample_count <= UINT32_MAX) {

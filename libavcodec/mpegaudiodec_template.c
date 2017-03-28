@@ -898,8 +898,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             exponent= exponents[s_index];
 
-            ff_dlog(s->avctx, "region=%d n=%d x=%d y=%d exp=%d\n",
-                    i, g->region_size[i] - j, x, y, exponent);
+            ff_dlog(s->avctx, "region=%d n=%d y=%d exp=%d\n",
+                    i, g->region_size[i] - j, y, exponent);
             if (y & 16) {
                 x = y >> 5;
                 y = y & 0x0f;
@@ -1038,7 +1038,8 @@ static void compute_stereo(MPADecodeContext *s, GranuleDef *g0, GranuleDef *g1)
 {
     int i, j, k, l;
     int sf_max, sf, len, non_zero_found;
-    INTFLOAT (*is_tab)[16], *tab0, *tab1, tmp0, tmp1, v1, v2;
+    INTFLOAT (*is_tab)[16], *tab0, *tab1, v1, v2;
+    SUINTFLOAT tmp0, tmp1;
     int non_zero_found_short[3];
 
     /* intensity stereo */

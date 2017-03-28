@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "hevc.h"
+#include "hevcdec.h"
 #include "h2645_parse.h"
 #include "internal.h"
 #include "qsv.h"
@@ -83,7 +84,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
 
     get_bits(&gb, 1);
     type = get_bits(&gb, 6);
-    if (type != NAL_SPS) {
+    if (type != HEVC_NAL_SPS) {
         av_log(avctx, AV_LOG_ERROR, "Unexpected NAL type in the extradata: %d\n",
                type);
         av_freep(&sps_nal.rbsp_buffer);
@@ -103,7 +104,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     vps.vps_max_sub_layers = sps.max_sub_layers;
     memcpy(&vps.ptl, &sps.ptl, sizeof(vps.ptl));
     vps.vps_sub_layer_ordering_info_present_flag = 1;
-    for (i = 0; i < MAX_SUB_LAYERS; i++) {
+    for (i = 0; i < HEVC_MAX_SUB_LAYERS; i++) {
         vps.vps_max_dec_pic_buffering[i] = sps.temporal_layer[i].max_dec_pic_buffering;
         vps.vps_num_reorder_pics[i]      = sps.temporal_layer[i].num_reorder_pics;
         vps.vps_max_latency_increase[i]  = sps.temporal_layer[i].max_latency_increase;
@@ -127,9 +128,9 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     bytestream2_init(&gbc, vps_rbsp_buf, ret);
     bytestream2_init_writer(&pbc, vps_buf, sizeof(vps_buf));
 
-    bytestream2_put_be32(&pbc, 1);              // startcode
-    bytestream2_put_byte(&pbc, NAL_VPS << 1);   // NAL
-    bytestream2_put_byte(&pbc, 1);              // header
+    bytestream2_put_be32(&pbc, 1);                 // startcode
+    bytestream2_put_byte(&pbc, HEVC_NAL_VPS << 1); // NAL
+    bytestream2_put_byte(&pbc, 1);                 // header
 
     while (bytestream2_get_bytes_left(&gbc)) {
         uint32_t b = bytestream2_peek_be24(&gbc);

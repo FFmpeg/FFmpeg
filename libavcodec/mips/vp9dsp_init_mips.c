@@ -20,7 +20,7 @@
 
 #include "config.h"
 #include "libavutil/common.h"
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 #include "vp9dsp_mips.h"
 
 #if HAVE_MSA

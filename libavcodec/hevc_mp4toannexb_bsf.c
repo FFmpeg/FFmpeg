@@ -55,8 +55,8 @@ static int hevc_extradata_to_annexb(AVBSFContext *ctx)
         int type = bytestream2_get_byte(&gb) & 0x3f;
         int cnt  = bytestream2_get_be16(&gb);
 
-        if (!(type == NAL_VPS || type == NAL_SPS || type == NAL_PPS ||
-              type == NAL_SEI_PREFIX || type == NAL_SEI_SUFFIX)) {
+        if (!(type == HEVC_NAL_VPS || type == HEVC_NAL_SPS || type == HEVC_NAL_PPS ||
+              type == HEVC_NAL_SEI_PREFIX || type == HEVC_NAL_SEI_SUFFIX)) {
             av_log(ctx, AV_LOG_ERROR, "Invalid NAL unit type in extradata: %d\n",
                    type);
             ret = AVERROR_INVALIDDATA;

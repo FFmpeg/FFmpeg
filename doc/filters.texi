@@ -1642,39 +1642,6 @@ Number of occasions (not the number of samples) that the signal attained either
 Overall bit depth of audio. Number of bits used for each sample.
 @end table
 
-@section asyncts
-
-Synchronize audio data with timestamps by squeezing/stretching it and/or
-dropping samples/adding silence when needed.
-
-This filter is not built by default, please use @ref{aresample} to do squeezing/stretching.
-
-It accepts the following parameters:
-@table @option
-
-@item compensate
-Enable stretching/squeezing the data to make it match the timestamps. Disabled
-by default. When disabled, time gaps are covered with silence.
-
-@item min_delta
-The minimum difference between timestamps and audio data (in seconds) to trigger
-adding/dropping samples. The default value is 0.1. If you get an imperfect
-sync with this filter, try setting this parameter to 0.
-
-@item max_comp
-The maximum compensation in samples per second. Only relevant with compensate=1.
-The default value is 500.
-
-@item first_pts
-Assume that the first PTS should be this value. The time base is 1 / sample
-rate. This allows for padding/trimming at the start of the stream. By default,
-no assumption is made about the first frame's expected PTS, so no padding or
-trimming is done. For example, this could be set to 0 to pad the beginning with
-silence if an audio stream starts after the video stream or to trim any samples
-with a negative PTS due to encoder delay.
-
-@end table
-
 @section atempo
 
 Adjust audio tempo.
@@ -12658,6 +12625,95 @@ V (%@{metadata:lavfi.signalstats.VMIN@}-%@{metadata:lavfi.signalstats.VMAX@})
 saturation maximum: %@{metadata:lavfi.signalstats.SATMAX@}
 
 @end example
+@end itemize
+
+@anchor{signature}
+@section signature
+
+Calculates the MPEG-7 Video Signature. The filter can handle more than one
+input. In this case the matching between the inputs can be calculated additionally.
+The filter always passes through the first input. The signature of each stream can
+be written into a file.
+
+It accepts the following options:
+
+@table @option
+@item detectmode
+Enable or disable the matching process.
+
+Available values are:
+
+@table @samp
+@item off
+Disable the calculation of a matching (default).
+@item full
+Calculate the matching for the whole video and output whether the whole video
+matches or only parts.
+@item fast
+Calculate only until a matching is found or the video ends. Should be faster in
+some cases.
+@end table
+
+@item nb_inputs
+Set the number of inputs. The option value must be a non negative integer.
+Default value is 1.
+
+@item filename
+Set the path to which the output is written. If there is more than one input,
+the path must be a prototype, i.e. must contain %d or %0nd (where n is a positive
+integer), that will be replaced with the input number. If no filename is
+specified, no output will be written. This is the default.
+
+@item format
+Choose the output format.
+
+Available values are:
+
+@table @samp
+@item binary
+Use the specified binary representation (default).
+@item xml
+Use the specified xml representation.
+@end table
+
+@item th_d
+Set threshold to detect one word as similar. The option value must be an integer
+greater than zero. The default value is 9000.
+
+@item th_dc
+Set threshold to detect all words as similar. The option value must be an integer
+greater than zero. The default value is 60000.
+
+@item th_xh
+Set threshold to detect frames as similar. The option value must be an integer
+greater than zero. The default value is 116.
+
+@item th_di
+Set the minimum length of a sequence in frames to recognize it as matching
+sequence. The option value must be a non negative integer value.
+The default value is 0.
+
+@item th_it
+Set the minimum relation, that matching frames to all frames must have.
+The option value must be a double value between 0 and 1. The default value is 0.5.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+To calculate the signature of an input video and store it in signature.bin:
+@example
+ffmpeg -i input.mkv -vf signature=filename=signature.bin -map 0:v -f null -
+@end example
+
+@item
+To detect whether two videos match and store the signatures in XML format in
+signature0.xml and signature1.xml:
+@example
+ffmpeg -i input1.mkv -i input2.mkv -filter_complex "[0:v][1:v] signature=nb_inputs=2:detectmode=full:format=xml:filename=signature%d.xml" -map :v -f null -
+@end example
+
 @end itemize
 
 @anchor{smartblur}

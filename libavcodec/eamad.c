@@ -80,8 +80,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static inline void comp(unsigned char *dst, int dst_stride,
-                        unsigned char *src, int src_stride, int add)
+static inline void comp(unsigned char *dst, ptrdiff_t dst_stride,
+                        unsigned char *src, ptrdiff_t src_stride, int add)
 {
     int j, i;
     for (j=0; j<8; j++)

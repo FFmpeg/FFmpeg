@@ -736,21 +736,6 @@ static void reconstruct_and_encode_image(RoqContext *enc, RoqTempdata *tempData,
     /* Flush the remainder of the argument/type spool */
     while (spool.typeSpoolLength)
         write_typecode(&spool, 0x0);
-
-#if 0
-    uint8_t *fdata[3] = {enc->frame_to_enc->data[0],
-                           enc->frame_to_enc->data[1],
-                           enc->frame_to_enc->data[2]};
-    uint8_t *cdata[3] = {enc->current_frame->data[0],
-                           enc->current_frame->data[1],
-                           enc->current_frame->data[2]};
-    av_log(enc->avctx, AV_LOG_ERROR, "Expected distortion: %i Actual: %i\n",
-           dist,
-           block_sse(fdata, cdata, 0, 0, 0, 0,
-                     enc->frame_to_enc->linesize,
-                     enc->current_frame->linesize,
-                     enc->width));  //WARNING: Square dimensions implied...
-#endif
 }
 
 

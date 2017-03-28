@@ -204,7 +204,7 @@ static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
 }
 
 static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data,
-                                              int linesize)
+                                              ptrdiff_t linesize)
 {
     if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         int ps = s->ildct_cmp(NULL, data, NULL, linesize, 8) - 400;
@@ -241,8 +241,8 @@ static const int dv_weight_248[64] = {
 };
 
 static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
-                                              int linesize, DVVideoContext *s,
-                                              int bias)
+                                              ptrdiff_t linesize,
+                                              DVVideoContext *s, int bias)
 {
     const int *weight;
     const uint8_t *zigzag_scan;
@@ -420,7 +420,8 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     DVVideoContext *s = avctx->priv_data;
     DVwork_chunk *work_chunk = arg;
     int mb_index, i, j;
-    int mb_x, mb_y, c_offset, linesize, y_stride;
+    int mb_x, mb_y, c_offset;
+    ptrdiff_t linesize, y_stride;
     uint8_t *y_ptr;
     uint8_t *dif;
     LOCAL_ALIGNED_8(uint8_t, scratch, [128]);

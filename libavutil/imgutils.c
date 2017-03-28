@@ -24,6 +24,7 @@
 #include "avassert.h"
 #include "common.h"
 #include "imgutils.h"
+#include "imgutils_internal.h"
 #include "internal.h"
 #include "intreadwrite.h"
 #include "log.h"
@@ -303,9 +304,9 @@ int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar)
     return AVERROR(EINVAL);
 }
 
-void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
-                         const uint8_t *src, int src_linesize,
-                         int bytewidth, int height)
+static void image_copy_plane(uint8_t       *dst, ptrdiff_t dst_linesize,
+                             const uint8_t *src, ptrdiff_t src_linesize,
+                             ptrdiff_t bytewidth, int height)
 {
     if (!dst || !src)
         return;
@@ -318,9 +319,33 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
     }
 }
 
-void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
-                   const uint8_t *src_data[4], const int src_linesizes[4],
-                   enum AVPixelFormat pix_fmt, int width, int height)
+static void image_copy_plane_uc_from(uint8_t       *dst, ptrdiff_t dst_linesize,
+                                     const uint8_t *src, ptrdiff_t src_linesize,
+                                     ptrdiff_t bytewidth, int height)
+{
+    int ret = -1;
+
+#if ARCH_X86
+    ret = ff_image_copy_plane_uc_from_x86(dst, dst_linesize, src, src_linesize,
+                                          bytewidth, height);
+#endif
+
+    if (ret < 0)
+        image_copy_plane(dst, dst_linesize, src, src_linesize, bytewidth, height);
+}
+
+void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
+                         const uint8_t *src, int src_linesize,
+                         int bytewidth, int height)
+{
+    image_copy_plane(dst, dst_linesize, src, src_linesize, bytewidth, height);
+}
+
+static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
+                       const uint8_t *src_data[4], const ptrdiff_t src_linesizes[4],
+                       enum AVPixelFormat pix_fmt, int width, int height,
+                       void (*copy_plane)(uint8_t *, ptrdiff_t, const uint8_t *,
+                                          ptrdiff_t, ptrdiff_t, int))
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
@@ -329,9 +354,9 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
         desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
-        av_image_copy_plane(dst_data[0], dst_linesizes[0],
-                            src_data[0], src_linesizes[0],
-                            width, height);
+        copy_plane(dst_data[0], dst_linesizes[0],
+                   src_data[0], src_linesizes[0],
+                   width, height);
         /* copy the palette */
         memcpy(dst_data[1], src_data[1], 4*256);
     } else {
@@ -342,7 +367,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
 
         for (i = 0; i < planes_nb; i++) {
             int h = height;
-            int bwidth = av_image_get_linesize(pix_fmt, width, i);
+            ptrdiff_t bwidth = av_image_get_linesize(pix_fmt, width, i);
             if (bwidth < 0) {
                 av_log(NULL, AV_LOG_ERROR, "av_image_get_linesize failed\n");
                 return;
@@ -350,11 +375,35 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
             if (i == 1 || i == 2) {
                 h = AV_CEIL_RSHIFT(height, desc->log2_chroma_h);
             }
-            av_image_copy_plane(dst_data[i], dst_linesizes[i],
-                                src_data[i], src_linesizes[i],
-                                bwidth, h);
+            copy_plane(dst_data[i], dst_linesizes[i],
+                       src_data[i], src_linesizes[i],
+                       bwidth, h);
         }
     }
+}
+
+void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
+                   const uint8_t *src_data[4], const int src_linesizes[4],
+                   enum AVPixelFormat pix_fmt, int width, int height)
+{
+    ptrdiff_t dst_linesizes1[4], src_linesizes1[4];
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        dst_linesizes1[i] = dst_linesizes[i];
+        src_linesizes1[i] = src_linesizes[i];
+    }
+
+    image_copy(dst_data, dst_linesizes1, src_data, src_linesizes1, pix_fmt,
+               width, height, image_copy_plane);
+}
+
+void av_image_copy_uc_from(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
+                           const uint8_t *src_data[4], const ptrdiff_t src_linesizes[4],
+                           enum AVPixelFormat pix_fmt, int width, int height)
+{
+    image_copy(dst_data, dst_linesizes, src_data, src_linesizes, pix_fmt,
+               width, height, image_copy_plane_uc_from);
 }
 
 int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],

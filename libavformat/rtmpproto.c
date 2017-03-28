@@ -521,7 +521,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
         return ret;
 
     // Chunk size
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
                                      RTMP_PT_CHUNK_SIZE, 0, 4)) < 0)
         return ret;
 
@@ -1909,9 +1909,6 @@ static int write_status(URLContext *s, RTMPPacket *pkt,
     ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_field_name(&pp, "details");
     ff_amf_write_string(&pp, filename);
-    ff_amf_write_field_name(&pp, "clientid");
-    snprintf(statusmsg, sizeof(statusmsg), "%s", LIBAVFORMAT_IDENT);
-    ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_object_end(&pp);
 
     spkt.size = pp - spkt.data;
@@ -1926,7 +1923,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     double seqnum;
-    char filename[64];
+    char filename[128];
     char command[64];
     int stringlen;
     char *pchar;
@@ -1953,6 +1950,13 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         !strcmp(command, "publish")) {
         ret = ff_amf_read_string(&gbc, filename,
                                  sizeof(filename), &stringlen);
+        if (ret) {
+            if (ret == AVERROR(EINVAL))
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name - name too long?\n");
+            else
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name\n");
+            return ret;
+        }
         // check with url
         if (s->filename) {
             pchar = strrchr(s->filename, '/');
@@ -2604,14 +2608,13 @@ static int inject_fake_duration_metadata(RTMPContext *rt)
  *             and 'playpath' is a file name (the rest of the path,
  *             may be prefixed with "mp4:")
  */
-static int rtmp_open(URLContext *s, const char *uri, int flags)
+static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **opts)
 {
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], auth[100], *fname;
     char *old_app, *qmark, *n, fname_buffer[1024];
     uint8_t buf[2048];
     int port;
-    AVDictionary *opts = NULL;
     int ret;
 
     if (rt->listen_timeout > 0)
@@ -2648,7 +2651,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
     if (!strcmp(proto, "rtmpt") || !strcmp(proto, "rtmpts")) {
         if (!strcmp(proto, "rtmpts"))
-            av_dict_set(&opts, "ffrtmphttp_tls", "1", 1);
+            av_dict_set(opts, "ffrtmphttp_tls", "1", 1);
 
         /* open the http tunneling connection */
         ff_url_join(buf, sizeof(buf), "ffrtmphttp", NULL, hostname, port, NULL);
@@ -2659,7 +2662,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         ff_url_join(buf, sizeof(buf), "tls", NULL, hostname, port, NULL);
     } else if (!strcmp(proto, "rtmpe") || (!strcmp(proto, "rtmpte"))) {
         if (!strcmp(proto, "rtmpte"))
-            av_dict_set(&opts, "ffrtmpcrypt_tunneling", "1", 1);
+            av_dict_set(opts, "ffrtmpcrypt_tunneling", "1", 1);
 
         /* open the encrypted connection */
         ff_url_join(buf, sizeof(buf), "ffrtmpcrypt", NULL, hostname, port, NULL);
@@ -2678,7 +2681,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
 reconnect:
     if ((ret = ffurl_open_whitelist(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
-                                    &s->interrupt_callback, &opts,
+                                    &s->interrupt_callback, opts,
                                     s->protocol_whitelist, s->protocol_blacklist, s)) < 0) {
         av_log(s , AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
@@ -2896,7 +2899,7 @@ reconnect:
     return 0;
 
 fail:
-    av_dict_free(&opts);
+    av_dict_free(opts);
     rtmp_close(s);
     return ret;
 }
@@ -3141,7 +3144,7 @@ static const AVClass flavor##_class = {          \
                                                  \
 const URLProtocol ff_##flavor##_protocol = {     \
     .name           = #flavor,                   \
-    .url_open       = rtmp_open,                 \
+    .url_open2      = rtmp_open,                 \
     .url_read       = rtmp_read,                 \
     .url_read_seek  = rtmp_seek,                 \
     .url_read_pause = rtmp_pause,                \

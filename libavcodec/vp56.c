@@ -712,7 +712,7 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
                 int ret = vp56_decode_mb(s, mb_row, mb_col, is_alpha);
                 if (ret < 0) {
                     damaged = 1;
-                    if (!s->have_undamaged_frame) {
+                    if (!s->have_undamaged_frame || !avctx->error_concealment) {
                         s->discard_frame = 1;
                         return AVERROR_INVALIDDATA;
                     }
@@ -768,7 +768,6 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
-    ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
     for (i = 0; i < 64; i++) {
 #define TRANSPOSE(x) (((x) >> 3) | (((x) & 7) << 3))
         s->idct_scantable[i] = TRANSPOSE(ff_zigzag_direct[i]);

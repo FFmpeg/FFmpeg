@@ -86,7 +86,7 @@ report(){
     date=$(date -u +%Y%m%d%H%M%S)
     echo "fate:1:${date}:${slot}:${version}:$1:$2:${branch}:${comment}" >report
     cat ${build}/config.fate >>report
-    cat ${build}/tests/data/fate/*.rep >>report || for i in ${build}/tests/data/fate/*.rep ; do cat "$i" >>report 2>/dev/null; done
+    cat ${build}/tests/data/fate/*.rep >>report 2>/dev/null || for i in ${build}/tests/data/fate/*.rep ; do cat "$i" >>report 2>/dev/null; done
     test -n "$fate_recv" && $tar report *.log | gzip | $fate_recv
 }
 

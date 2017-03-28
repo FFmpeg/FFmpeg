@@ -227,7 +227,7 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
         for (x = 0; x < s->avctx->width / 4; x++) {
             unsigned int vector = get_bits(&gb, vector_bits);
             const uint8_t *src;
-            int src_stride;
+            ptrdiff_t src_stride;
 
             if (vector < num_mvs) {
                 int mx = x * 4 + s->mv_codebook[vector][0];

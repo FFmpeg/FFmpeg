@@ -256,7 +256,7 @@ void ff_cavs_load_intra_pred_chroma(AVSContext *h)
     }
 }
 
-static void intra_pred_vert(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_vert(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int y;
     uint64_t a = AV_RN64(&top[1]);
@@ -264,7 +264,7 @@ static void intra_pred_vert(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
         *((uint64_t *)(d + y * stride)) = a;
 }
 
-static void intra_pred_horiz(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_horiz(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int y;
     uint64_t a;
@@ -274,7 +274,7 @@ static void intra_pred_horiz(uint8_t *d, uint8_t *top, uint8_t *left, int stride
     }
 }
 
-static void intra_pred_dc_128(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_dc_128(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int y;
     uint64_t a = 0x8080808080808080ULL;
@@ -282,7 +282,7 @@ static void intra_pred_dc_128(uint8_t *d, uint8_t *top, uint8_t *left, int strid
         *((uint64_t *)(d + y * stride)) = a;
 }
 
-static void intra_pred_plane(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_plane(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y, ia;
     int ih = 0;
@@ -304,7 +304,7 @@ static void intra_pred_plane(uint8_t *d, uint8_t *top, uint8_t *left, int stride
 #define LOWPASS(ARRAY, INDEX)                                           \
     ((ARRAY[(INDEX) - 1] + 2 * ARRAY[(INDEX)] + ARRAY[(INDEX) + 1] + 2) >> 2)
 
-static void intra_pred_lp(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_lp(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -312,7 +312,7 @@ static void intra_pred_lp(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
             d[y * stride + x] = (LOWPASS(top, x + 1) + LOWPASS(left, y + 1)) >> 1;
 }
 
-static void intra_pred_down_left(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_down_left(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -320,7 +320,7 @@ static void intra_pred_down_left(uint8_t *d, uint8_t *top, uint8_t *left, int st
             d[y * stride + x] = (LOWPASS(top, x + y + 2) + LOWPASS(left, x + y + 2)) >> 1;
 }
 
-static void intra_pred_down_right(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_down_right(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -333,7 +333,7 @@ static void intra_pred_down_right(uint8_t *d, uint8_t *top, uint8_t *left, int s
                 d[y * stride + x] = LOWPASS(left, y - x);
 }
 
-static void intra_pred_lp_left(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_lp_left(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -341,7 +341,7 @@ static void intra_pred_lp_left(uint8_t *d, uint8_t *top, uint8_t *left, int stri
             d[y * stride + x] = LOWPASS(left, y + 1);
 }
 
-static void intra_pred_lp_top(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
+static void intra_pred_lp_top(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)

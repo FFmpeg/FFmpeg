@@ -127,13 +127,6 @@ static int vdpau_init_pixmfts(AVHWDeviceContext *ctx)
     return 0;
 }
 
-static int vdpau_device_init(AVHWDeviceContext *ctx)
-{
-    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
-    VDPAUDeviceContext   *priv  = ctx->internal->priv;
-    VdpStatus             err;
-    int                   ret;
-
 #define GET_CALLBACK(id, result)                                                \
 do {                                                                            \
     void *tmp;                                                                  \
@@ -142,15 +135,22 @@ do {                                                                            
         av_log(ctx, AV_LOG_ERROR, "Error getting the " #id " callback.\n");     \
         return AVERROR_UNKNOWN;                                                 \
     }                                                                           \
-    priv->result = tmp;                                                         \
+    result = tmp;                                                               \
 } while (0)
 
+static int vdpau_device_init(AVHWDeviceContext *ctx)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+    VDPAUDeviceContext   *priv  = ctx->internal->priv;
+    VdpStatus             err;
+    int                   ret;
+
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_QUERY_GET_PUT_BITS_Y_CB_CR_CAPABILITIES,
-                 get_transfer_caps);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, get_data);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_PUT_BITS_Y_CB_CR, put_data);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           surf_create);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          surf_destroy);
+                 priv->get_transfer_caps);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, priv->get_data);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_PUT_BITS_Y_CB_CR, priv->put_data);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           priv->surf_create);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          priv->surf_destroy);
 
     ret = vdpau_init_pixmfts(ctx);
     if (ret < 0) {
@@ -160,7 +160,6 @@ do {                                                                            
 
     return 0;
 }
-#undef GET_CALLBACK
 
 static void vdpau_device_uninit(AVHWDeviceContext *ctx)
 {
@@ -444,17 +443,6 @@ static int vdpau_device_create(AVHWDeviceContext *ctx, const char *device,
                display);
         return AVERROR_UNKNOWN;
     }
-
-#define GET_CALLBACK(id, result)                                                \
-do {                                                                            \
-    void *tmp;                                                                  \
-    err = hwctx->get_proc_address(hwctx->device, id, &tmp);                     \
-    if (err != VDP_STATUS_OK) {                                                 \
-        av_log(ctx, AV_LOG_ERROR, "Error getting the " #id " callback.\n");     \
-        return AVERROR_UNKNOWN;                                                 \
-    }                                                                           \
-    result = tmp;                                                               \
-} while (0)
 
     GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING, get_information_string);
     GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,         priv->device_destroy);

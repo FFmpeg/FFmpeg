@@ -315,9 +315,9 @@ void ff_xface_generate_face(uint8_t *dst, uint8_t * const src)
 
             for (l = i - 2; l <= i + 2; l++) {
                 for (m = j - 2; m <= j; m++) {
-                    if (l >= i && m == j)
+                    if (l <= 0 || l >= i && m == j)
                         continue;
-                    if (l > 0 && l <= XFACE_WIDTH && m > 0)
+                    if (l <= XFACE_WIDTH && m > 0)
                         k = 2*k + src[l + m * XFACE_WIDTH];
                 }
             }

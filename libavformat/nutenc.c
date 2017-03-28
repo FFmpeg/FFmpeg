@@ -299,25 +299,6 @@ static void put_s(AVIOContext *bc, int64_t val)
     ff_put_v(bc, 2 * FFABS(val) - (val > 0));
 }
 
-#ifdef TRACE
-static inline void ff_put_v_trace(AVIOContext *bc, uint64_t v, const char *file,
-                                  const char *func, int line)
-{
-    av_log(NULL, AV_LOG_DEBUG, "ff_put_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
-
-    ff_put_v(bc, v);
-}
-
-static inline void put_s_trace(AVIOContext *bc, int64_t v, const char *file, const char *func, int line)
-{
-    av_log(NULL, AV_LOG_DEBUG, "put_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
-
-    put_s(bc, v);
-}
-#define ff_put_v(bc, v)  ff_put_v_trace(bc, v, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define put_s(bc, v)  put_s_trace(bc, v, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#endif
-
 //FIXME remove calculate_checksum
 static void put_packet(NUTContext *nut, AVIOContext *bc, AVIOContext *dyn_bc,
                        int calculate_checksum, uint64_t startcode)

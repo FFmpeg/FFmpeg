@@ -21,7 +21,7 @@
  */
 
 #include "get_bits.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
@@ -393,8 +393,8 @@ static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val   = sao_offset_val[0];
-            int y_stride_dst = stride_dst * (height - 1);
-            int y_stride_src = stride_src * (height - 1);
+            ptrdiff_t y_stride_dst = stride_dst * (height - 1);
+            ptrdiff_t y_stride_src = stride_src * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
             height--;
@@ -444,8 +444,8 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val   = sao_offset_val[0];
-            int y_stride_dst = stride_dst * (height - 1);
-            int y_stride_src = stride_src * (height - 1);
+            ptrdiff_t y_stride_dst = stride_dst * (height - 1);
+            ptrdiff_t y_stride_src = stride_src * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
             height--;

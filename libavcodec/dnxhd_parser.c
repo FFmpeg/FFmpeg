@@ -31,7 +31,23 @@ typedef struct {
     ParseContext pc;
     int interlaced;
     int cur_field; /* first field is 0, second is 1 */
+    int cur_byte;
+    int remaining;
+    int w, h;
 } DNXHDParserContext;
+
+static int dnxhd_get_hr_frame_size(int cid, int w, int h)
+{
+    int result, i = ff_dnxhd_get_cid_table(cid);
+
+    if (i < 0)
+        return i;
+
+    result = ((h + 15) / 16) * ((w + 15) / 16) * ff_dnxhd_cid_table[i].packet_scale.num / ff_dnxhd_cid_table[i].packet_scale.den;
+    result = (result + 2048) / 4096 * 4096;
+
+    return FFMAX(result, 8192);
+}
 
 static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
                                 const uint8_t *buf, int buf_size)
@@ -51,29 +67,64 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
                 pic_found = 1;
                 interlaced = (state&2)>>1; /* byte following the 5-byte header prefix */
                 cur_field = state&1;
+                dctx->cur_byte = 0;
+                dctx->remaining = 0;
                 break;
             }
         }
     }
 
-    if (pic_found) {
+    if (pic_found && !dctx->remaining) {
         if (!buf_size) /* EOF considered as end of frame */
             return 0;
         for (; i < buf_size; i++) {
+            dctx->cur_byte++;
             state = (state << 8) | buf[i];
-            if (ff_dnxhd_check_header_prefix(state & 0xffffffffff00LL) != 0) {
-                if (!interlaced || dctx->cur_field) {
+
+            if (dctx->cur_byte == 24) {
+                dctx->h = (state >> 32) & 0xFFFF;
+            } else if (dctx->cur_byte == 26) {
+                dctx->w = (state >> 32) & 0xFFFF;
+            } else if (dctx->cur_byte == 42) {
+                int cid = (state >> 32) & 0xFFFFFFFF;
+
+                if (cid <= 0)
+                    continue;
+
+                dctx->remaining = avpriv_dnxhd_get_frame_size(cid);
+                if (dctx->remaining <= 0) {
+                    dctx->remaining = dnxhd_get_hr_frame_size(cid, dctx->w, dctx->h);
+                    if (dctx->remaining <= 0)
+                        return dctx->remaining;
+                }
+                if (buf_size - i >= dctx->remaining && (!dctx->interlaced || dctx->cur_field)) {
+                    int remaining = dctx->remaining;
+
                     pc->frame_start_found = 0;
                     pc->state64 = -1;
                     dctx->interlaced = interlaced;
                     dctx->cur_field = 0;
-                    return i - 5;
+                    dctx->cur_byte = 0;
+                    dctx->remaining = 0;
+                    return remaining;
                 } else {
-                    /* continue, to get the second field */
-                    dctx->interlaced = interlaced = (state&2)>>1;
-                    dctx->cur_field = cur_field = state&1;
+                    dctx->remaining -= buf_size;
                 }
             }
+        }
+    } else if (pic_found) {
+        if (dctx->remaining > buf_size) {
+            dctx->remaining -= buf_size;
+        } else {
+            int remaining = dctx->remaining;
+
+            pc->frame_start_found = 0;
+            pc->state64 = -1;
+            dctx->interlaced = interlaced;
+            dctx->cur_field = 0;
+            dctx->cur_byte = 0;
+            dctx->remaining = 0;
+            return remaining;
         }
     }
     pc->frame_start_found = pic_found;

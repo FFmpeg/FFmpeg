@@ -1760,6 +1760,10 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
             memcpy(&s->samples[s->current_stream * 2 + 1][s->offset[s->current_stream] * 512],
                    s->frames[s->current_stream]->extended_data[1], 512 * 4);
         s->offset[s->current_stream]++;
+    } else if (ret < 0) {
+        memset(s->offset, 0, sizeof(s->offset));
+        s->current_stream = 0;
+        return ret;
     }
 
     if (s->xma[s->current_stream].packet_done ||

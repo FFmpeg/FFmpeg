@@ -278,7 +278,8 @@ av_cold struct FFIIRFilterState *ff_iir_filter_init_state(int order)
 
 void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
                    struct FFIIRFilterState *s, int size,
-                   const int16_t *src, int sstep, int16_t *dst, int dstep)
+                   const int16_t *src, ptrdiff_t sstep,
+                   int16_t *dst, ptrdiff_t dstep)
 {
     if (c->order == 2) {
         FILTER_O2(int16_t, S16)
@@ -291,7 +292,8 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *c,
 
 void ff_iir_filter_flt(const struct FFIIRFilterCoeffs *c,
                        struct FFIIRFilterState *s, int size,
-                       const float *src, int sstep, float *dst, int dstep)
+                       const float *src, ptrdiff_t sstep,
+                       float *dst, ptrdiff_t dstep)
 {
     if (c->order == 2) {
         FILTER_O2(float, FLT)

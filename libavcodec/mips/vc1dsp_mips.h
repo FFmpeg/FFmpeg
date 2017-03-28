@@ -157,14 +157,14 @@ void ff_avg_vc1_mspel_mc33_16_mmi(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride, int rnd);
 
 void ff_vc1_inv_trans_8x8_mmi(int16_t block[64]);
-void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, int linesize, int16_t *block);
+void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
 
-void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block);
-void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, int linesize, int16_t *block);
+void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
 
 void ff_vc1_v_overlap_mmi(uint8_t *src, int stride);
 void ff_vc1_h_overlap_mmi(uint8_t *src, int stride);

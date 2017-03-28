@@ -22,7 +22,8 @@
 
 #include "libavutil/avassert.h"
 
-#include "hevc.h"
+#include "hevc_data.h"
+#include "hevcdec.h"
 
 // The headers above may include w32threads.h, which uses the original
 // _WIN32_WINNT define, while dxva2_internal.h redefines it to target a

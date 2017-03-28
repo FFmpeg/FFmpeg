@@ -166,7 +166,7 @@ static void av_noinline qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                     if ((me_x + filled < 0) || (me_x + me_w + filled > width) ||
                        (height - me_y - me_h < 0) || (height - me_y >= orig_height) ||
                        (filled + me_w > width) || (height - me_h < 0))
-                        av_log(NULL, AV_LOG_ERROR, "Bogus motion vector (%i,%i), block size %ix%i at %i,%i\n",
+                        av_log(qctx->avctx, AV_LOG_ERROR, "Bogus motion vector (%i,%i), block size %ix%i at %i,%i\n",
                                me_x, me_y, me_w, me_h, filled, height);
                     else {
                         /* do motion compensation */

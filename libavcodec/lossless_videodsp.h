@@ -22,20 +22,23 @@
 #ifndef AVCODEC_LOSSLESS_VIDEODSP_H
 #define AVCODEC_LOSSLESS_VIDEODSP_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include "avcodec.h"
 #include "libavutil/cpu.h"
 
 typedef struct LLVidDSPContext {
     void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
-                      intptr_t w);
+                      ptrdiff_t w);
     void (*add_median_pred)(uint8_t *dst, const uint8_t *top,
-                            const uint8_t *diff, intptr_t w,
+                            const uint8_t *diff, ptrdiff_t w,
                             int *left, int *left_top);
     int (*add_left_pred)(uint8_t *dst, const uint8_t *src,
-                         intptr_t w, int left);
+                         ptrdiff_t w, int left);
 
     int  (*add_left_pred_int16)(uint16_t *dst, const uint16_t *src,
-                                unsigned mask, int w, unsigned left);
+                                unsigned mask, ptrdiff_t w, unsigned left);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp);

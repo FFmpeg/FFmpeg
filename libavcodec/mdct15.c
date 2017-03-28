@@ -88,7 +88,7 @@ static inline int init_pfa_reindex_tabs(MDCT15Context *s)
         for (j = 0; j < 15; j++) {
             const int q_pre = ((l_ptwo * j)/15 + i) >> b_ptwo;
             const int q_post = (((j*inv_1)/15) + (i*inv_2)) >> b_ptwo;
-            const int k_pre = 15*i + ((j - q_pre*15) << b_ptwo);
+            const int k_pre = 15*i + (j - q_pre*15)*(1 << b_ptwo);
             const int k_post = i*inv_2*15 + j*inv_1 - 15*q_post*l_ptwo;
             s->pfa_prereindex[i*15 + j] = k_pre;
             s->pfa_postreindex[k_post] = l_ptwo*j + i;

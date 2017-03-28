@@ -23,7 +23,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "libavutil/atomic.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
@@ -143,7 +142,7 @@ static enum AVPixelFormat mcdec_map_color_format(AVCodecContext *avctx,
 
 static void ff_mediacodec_dec_ref(MediaCodecDecContext *s)
 {
-    avpriv_atomic_int_add_and_fetch(&s->refcount, 1);
+    atomic_fetch_add(&s->refcount, 1);
 }
 
 static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
@@ -151,7 +150,7 @@ static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
     if (!s)
         return;
 
-    if (!avpriv_atomic_int_add_and_fetch(&s->refcount, -1)) {
+    if (atomic_fetch_sub(&s->refcount, 1) == 1) {
         if (s->codec) {
             ff_AMediaCodec_delete(s->codec);
             s->codec = NULL;
@@ -176,7 +175,7 @@ static void mediacodec_buffer_release(void *opaque, uint8_t *data)
 {
     AVMediaCodecBuffer *buffer = opaque;
     MediaCodecDecContext *ctx = buffer->ctx;
-    int released = avpriv_atomic_int_get(&buffer->released);
+    int released = atomic_load(&buffer->released);
 
     if (!released) {
         ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
@@ -221,7 +220,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         goto fail;
     }
 
-    buffer->released = 0;
+    atomic_init(&buffer->released, 0);
 
     frame->buf[0] = av_buffer_create(NULL,
                                      0,
@@ -465,7 +464,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
         AV_PIX_FMT_NONE,
     };
 
-    s->refcount = 1;
+    atomic_init(&s->refcount, 1);
 
     pix_fmt = ff_get_format(avctx, pix_fmts);
     if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {
@@ -725,7 +724,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
 
 int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
-    if (!s->surface || avpriv_atomic_int_get(&s->refcount) == 1) {
+    if (!s->surface || atomic_load(&s->refcount) == 1) {
         int ret;
 
         /* No frames (holding a reference to the codec) are retained by the

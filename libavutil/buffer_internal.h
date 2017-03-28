@@ -19,6 +19,7 @@
 #ifndef AVUTIL_BUFFER_INTERNAL_H
 #define AVUTIL_BUFFER_INTERNAL_H
 
+#include <stdatomic.h>
 #include <stdint.h>
 
 #include "buffer.h"
@@ -40,7 +41,7 @@ struct AVBuffer {
     /**
      *  number of existing AVBufferRef instances referring to this buffer
      */
-    volatile int refcount;
+    atomic_uint refcount;
 
     /**
      * a callback for freeing the data
@@ -85,9 +86,7 @@ struct AVBufferPool {
      * buffers have been released, then it's safe to free the pool and all
      * the buffers in it.
      */
-    volatile int refcount;
-
-    volatile int nb_allocated;
+    atomic_uint refcount;
 
     int size;
     void *opaque;

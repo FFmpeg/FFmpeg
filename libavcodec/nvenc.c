@@ -48,8 +48,8 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-#define IS_10BIT(pix_fmt) (pix_fmt == AV_PIX_FMT_P010 ||    \
-                           pix_fmt == AV_PIX_FMT_YUV444P16)
+#define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010    || \
+                            pix_fmt == AV_PIX_FMT_YUV444P16)
 
 #define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P || \
                             pix_fmt == AV_PIX_FMT_YUV444P16)
@@ -103,7 +103,7 @@ static int nvenc_map_error(NVENCSTATUS err, const char **desc)
 }
 
 static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
-                                     const char *error_string)
+                             const char *error_string)
 {
     const char *desc;
     int ret;
@@ -114,7 +114,7 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
 
 static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
-    NvencContext *ctx = avctx->priv_data;
+    NvencContext *ctx            = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     NVENCSTATUS err;
     uint32_t nvenc_max_ver;
@@ -176,7 +176,7 @@ static av_cold int nvenc_open_session(AVCodecContext *avctx)
 
 static int nvenc_check_codec_support(AVCodecContext *avctx)
 {
-    NvencContext *ctx = avctx->priv_data;
+    NvencContext *ctx                    = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &ctx->nvenc_dload_funcs.nvenc_funcs;
     int i, ret, count = 0;
     GUID *guids = NULL;
@@ -386,7 +386,7 @@ fail:
 
 static av_cold int nvenc_setup_device(AVCodecContext *avctx)
 {
-    NvencContext *ctx = avctx->priv_data;
+    NvencContext *ctx            = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
 
     switch (avctx->codec->id) {
@@ -522,10 +522,12 @@ static av_cold void set_constqp(AVCodecContext *avctx)
             rc->constQP.qpIntra = rc->constQP.qpInterP;
             rc->constQP.qpInterB = rc->constQP.qpInterP;
         }
-    } else if (avctx->global_quality > 0) {
-        rc->constQP.qpInterP = avctx->global_quality;
-        rc->constQP.qpInterB = avctx->global_quality;
-        rc->constQP.qpIntra = avctx->global_quality;
+    } else if (ctx->cqp >= 0) {
+        rc->constQP.qpInterP = rc->constQP.qpInterB = rc->constQP.qpIntra = ctx->cqp;
+        if (avctx->b_quant_factor != 0.0)
+            rc->constQP.qpInterB = av_clip(ctx->cqp * fabs(avctx->b_quant_factor) + avctx->b_quant_offset + 0.5, 0, 51);
+        if (avctx->i_quant_factor != 0.0)
+            rc->constQP.qpIntra = av_clip(ctx->cqp * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, 51);
     }
 
     avctx->qmin = -1;
@@ -544,7 +546,7 @@ static av_cold void set_vbr(AVCodecContext *avctx)
 
         rc->minQP.qpInterB = avctx->qmin;
         rc->minQP.qpInterP = avctx->qmin;
-        rc->minQP.qpIntra = avctx->qmin;
+        rc->minQP.qpIntra  = avctx->qmin;
 
         rc->maxQP.qpInterB = avctx->qmax;
         rc->maxQP.qpInterP = avctx->qmax;
@@ -602,7 +604,7 @@ static av_cold void set_lossless(AVCodecContext *avctx)
     rc->rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
     rc->constQP.qpInterB = 0;
     rc->constQP.qpInterP = 0;
-    rc->constQP.qpIntra = 0;
+    rc->constQP.qpIntra  = 0;
 
     avctx->qmin = -1;
     avctx->qmax = -1;
@@ -664,6 +666,12 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
 
+    if (avctx->global_quality > 0)
+        av_log(avctx, AV_LOG_WARNING, "Using global_quality with nvenc is deprecated. Use qp instead.\n");
+
+    if (ctx->cqp < 0 && avctx->global_quality > 0)
+        ctx->cqp = avctx->global_quality;
+
     if (avctx->bit_rate > 0) {
         ctx->encode_config.rcParams.averageBitRate = avctx->bit_rate;
     } else if (ctx->encode_config.rcParams.averageBitRate > 0) {
@@ -688,7 +696,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
             } else {
                 ctx->rc = NV_ENC_PARAMS_RC_CBR;
             }
-        } else if (avctx->global_quality > 0) {
+        } else if (ctx->cqp >= 0) {
             ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
         } else if (ctx->twopass) {
             ctx->rc = NV_ENC_PARAMS_RC_2_PASS_VBR;
@@ -883,18 +891,18 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->outputPictureTimingSEI   = 1;
     }
 
-    switch(ctx->profile) {
+    switch (ctx->profile) {
     case NV_ENC_HEVC_PROFILE_MAIN:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN_GUID;
-        avctx->profile = FF_PROFILE_HEVC_MAIN;
+        avctx->profile  = FF_PROFILE_HEVC_MAIN;
         break;
     case NV_ENC_HEVC_PROFILE_MAIN_10:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
-        avctx->profile = FF_PROFILE_HEVC_MAIN_10;
+        avctx->profile  = FF_PROFILE_HEVC_MAIN_10;
         break;
     case NV_ENC_HEVC_PROFILE_REXT:
         cc->profileGUID = NV_ENC_HEVC_PROFILE_FREXT_GUID;
-        avctx->profile = FF_PROFILE_HEVC_REXT;
+        avctx->profile  = FF_PROFILE_HEVC_REXT;
         break;
     }
 
@@ -1299,7 +1307,7 @@ static NvencSurface *get_free_frame(NvencContext *ctx)
 {
     int i;
 
-    for (i = 0; i < ctx->nb_surfaces; ++i) {
+    for (i = 0; i < ctx->nb_surfaces; i++) {
         if (!ctx->surfaces[i].lockCount) {
             ctx->surfaces[i].lockCount = 1;
             return &ctx->surfaces[i];

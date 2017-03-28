@@ -82,7 +82,7 @@ static int ico_write_header(AVFormatContext *s)
     int ret;
     int i;
 
-    if (!pb->seekable) {
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "Output is not seekable\n");
         return AVERROR(EINVAL);
     }

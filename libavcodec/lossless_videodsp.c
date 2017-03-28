@@ -25,7 +25,7 @@
 #define pb_7f (~0UL / 255 * 0x7f)
 #define pb_80 (~0UL / 255 * 0x80)
 
-static void add_bytes_c(uint8_t *dst, uint8_t *src, intptr_t w)
+static void add_bytes_c(uint8_t *dst, uint8_t *src, ptrdiff_t w)
 {
     long i;
 
@@ -39,7 +39,7 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, intptr_t w)
 }
 
 static void add_median_pred_c(uint8_t *dst, const uint8_t *src1,
-                              const uint8_t *diff, intptr_t w,
+                              const uint8_t *diff, ptrdiff_t w,
                               int *left, int *left_top)
 {
     int i;
@@ -58,7 +58,7 @@ static void add_median_pred_c(uint8_t *dst, const uint8_t *src1,
     *left_top = lt;
 }
 
-static int add_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
+static int add_left_pred_c(uint8_t *dst, const uint8_t *src, ptrdiff_t w,
                            int acc)
 {
     int i;
@@ -79,7 +79,7 @@ static int add_left_pred_c(uint8_t *dst, const uint8_t *src, intptr_t w,
     return acc;
 }
 
-static int add_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, int w, unsigned acc){
+static int add_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc){
     int i;
 
     for(i=0; i<w-1; i++){

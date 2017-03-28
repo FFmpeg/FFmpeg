@@ -23,7 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
-#include "vp9dsp.h"
+#include "vp9.h"
 
 const DECLARE_ALIGNED(16, int16_t, ff_vp9_subpel_filters)[3][16][8] = {
     [FILTER_8TAP_REGULAR] = {

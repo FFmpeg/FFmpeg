@@ -41,18 +41,18 @@ static void op##_rv40_qpel##size##_mc33_##insn(uint8_t *dst, const uint8_t *src,
 
 #if HAVE_YASM
 void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,
-                                  int stride, int h, int x, int y);
+                                  ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc8_mmxext(uint8_t *dst, uint8_t *src,
-                                   int stride, int h, int x, int y);
+                                   ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc8_3dnow(uint8_t *dst, uint8_t *src,
-                                  int stride, int h, int x, int y);
+                                  ptrdiff_t stride, int h, int x, int y);
 
 void ff_put_rv40_chroma_mc4_mmx  (uint8_t *dst, uint8_t *src,
-                                  int stride, int h, int x, int y);
+                                  ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc4_mmxext(uint8_t *dst, uint8_t *src,
-                                   int stride, int h, int x, int y);
+                                   ptrdiff_t stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc4_3dnow(uint8_t *dst, uint8_t *src,
-                                  int stride, int h, int x, int y);
+                                  ptrdiff_t stride, int h, int x, int y);
 
 #define DECLARE_WEIGHT(opt) \
 void ff_rv40_weight_func_rnd_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *src2, \

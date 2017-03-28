@@ -94,6 +94,11 @@ Stuff that didn't reach the codebase:
   - a853388d2 hevc: change the stride of the MC buffer to be in bytes instead of elements
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
+- VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
+- Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
+- Use the new bitstream filter for extracting extradata (see 8e2ea69135 and 096a8effa3)
+- ADD_RES_MMX_4_8 in libavcodec/x86/hevc_add_res.asm probably needs updating (see 589880710)
+- ISO printf warnings raised by DJGPP (c454dfcff9, currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209239.html)
 
 Collateral damage that needs work locally:
 ------------------------------------------
@@ -101,3 +106,11 @@ Collateral damage that needs work locally:
 - Merge proresdec2.c and proresdec_lgpl.c
 - Merge proresenc_anatoliy.c and proresenc_kostya.c
 - Remove ADVANCED_PARSER in libavcodec/hevc_parser.c
+- Fix MIPS AC3 downmix
+
+Extra changes needed to be aligned with Libav:
+----------------------------------------------
+
+- Switching our examples to the new encode/decode API (see 67d28f4a0f)
+- AC3 speed-up for our fixed version (see a9ba59591e)
+- HEVC IDCT bit depth 12-bit support (Libav added 8 and 10 but doesn't have 12)

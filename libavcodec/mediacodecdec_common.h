@@ -24,6 +24,7 @@
 #define AVCODEC_MEDIACODECDEC_COMMON_H
 
 #include <stdint.h>
+#include <stdatomic.h>
 #include <sys/types.h>
 
 #include "libavutil/frame.h"
@@ -34,7 +35,7 @@
 
 typedef struct MediaCodecDecContext {
 
-    volatile int refcount;
+    atomic_int refcount;
 
     char *codec_name;
 
@@ -88,7 +89,7 @@ typedef struct MediaCodecBuffer {
     MediaCodecDecContext *ctx;
     ssize_t index;
     int64_t pts;
-    volatile int released;
+    atomic_int released;
 
 } MediaCodecBuffer;
 

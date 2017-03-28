@@ -83,22 +83,22 @@ DECLARE_FUNCTION(avg_, 16, _sse2)
 #endif /* HAVE_YASM */
 
 void ff_put_vc1_chroma_mc8_nornd_mmx  (uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_mmxext(uint8_t *dst, uint8_t *src,
-                                        int stride, int h, int x, int y);
+                                        ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_3dnow(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
-void ff_vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
+                                       ptrdiff_t stride, int h, int x, int y);
+void ff_vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
 
 

@@ -77,20 +77,7 @@ int main(void)
                     }
                 }
             } while (better);
-#if 0
-            double lastfil = 9;
-            TimeFilter *tf = ff_timefilter_new(1, bestpar0, bestpar1);
-            for (i = 0; i < SAMPLES; i++) {
-                double filtered;
-                filtered = ff_timefilter_update(tf, samples[i], 1);
-                printf("%f %f %f %f\n", i - samples[i] + 10, filtered - samples[i],
-                       samples[FFMAX(i, 1)] - samples[FFMAX(i - 1, 0)], filtered - lastfil);
-                lastfil = filtered;
-            }
-            ff_timefilter_destroy(tf);
-#else
             printf(" [%12f %11f %9f]", bestpar0, bestpar1, best_error);
-#endif
         }
         printf("\n");
     }

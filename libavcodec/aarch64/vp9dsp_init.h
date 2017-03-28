@@ -21,7 +21,7 @@
 #ifndef AVCODEC_AARCH64_VP9DSP_INIT_H
 #define AVCODEC_AARCH64_VP9DSP_INIT_H
 
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 
 void ff_vp9dsp_init_10bpp_aarch64(VP9DSPContext *dsp);
 void ff_vp9dsp_init_12bpp_aarch64(VP9DSPContext *dsp);

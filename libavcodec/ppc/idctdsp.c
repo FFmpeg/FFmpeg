@@ -169,7 +169,7 @@ static void idct_altivec(int16_t *blk)
     block[7] = vx7;
 }
 
-static void idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_put_altivec(uint8_t *dest, ptrdiff_t stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;
@@ -198,7 +198,7 @@ static void idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
     COPY(dest, vx7);
 }
 
-static void idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_add_altivec(uint8_t *dest, ptrdiff_t stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;

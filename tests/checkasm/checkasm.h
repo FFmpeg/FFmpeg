@@ -32,7 +32,9 @@
 #include "libavutil/timer.h"
 
 void checkasm_check_alacdsp(void);
+void checkasm_check_audiodsp(void);
 void checkasm_check_blend(void);
+void checkasm_check_blockdsp(void);
 void checkasm_check_bswapdsp(void);
 void checkasm_check_colorspace(void);
 void checkasm_check_flacdsp(void);
@@ -40,8 +42,10 @@ void checkasm_check_fmtconvert(void);
 void checkasm_check_h264dsp(void);
 void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
+void checkasm_check_hevc_add_res(void);
 void checkasm_check_hevc_idct(void);
 void checkasm_check_jpeg2000dsp(void);
+void checkasm_check_llviddsp(void);
 void checkasm_check_pixblockdsp(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_v210enc(void);
@@ -136,9 +140,14 @@ extern void (*checkasm_checked_call)(void *func, int dummy, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__) = (void *)checkasm_checked_call;
 #define call_new(...) checked_call(func_new, 0, __VA_ARGS__)
 #elif ARCH_AARCH64 && !defined(__APPLE__)
+void checkasm_stack_clobber(uint64_t clobber, ...);
 void checkasm_checked_call(void *func, ...);
-#define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
-#define call_new(...) checked_call(func_new, __VA_ARGS__)
+#define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, int, int, __VA_ARGS__)\
+                              = (void *)checkasm_checked_call;
+#define CLOB (UINT64_C(0xdeadbeefdeadbeef))
+#define call_new(...) (checkasm_stack_clobber(CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,\
+                                              CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB),\
+                      checked_call(func_new, 0, 0, 0, 0, 0, 0, 0, __VA_ARGS__))
 #else
 #define declare_new(ret, ...)
 #define declare_new_emms(cpu_flags, ret, ...)

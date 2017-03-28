@@ -74,10 +74,10 @@ static VLC ivi_mb_vlc_tabs [8]; ///< static macroblock Huffman tables
 static VLC ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 
 typedef void (*ivi_mc_func) (int16_t *buf, const int16_t *ref_buf,
-                             uint32_t pitch, int mc_type);
+                             ptrdiff_t pitch, int mc_type);
 typedef void (*ivi_mc_avg_func) (int16_t *buf, const int16_t *ref_buf1,
                                  const int16_t *ref_buf2,
-                                 uint32_t pitch, int mc_type, int mc_type2);
+                                 ptrdiff_t pitch, int mc_type, int mc_type2);
 
 static int ivi_mc(IVIBandDesc *band, ivi_mc_func mc, ivi_mc_avg_func mc_avg,
                   int offs, int mv_x, int mv_y, int mv_x2, int mv_y2,
@@ -903,11 +903,11 @@ static uint16_t ivi_calc_band_checksum(IVIBandDesc *band)
  *  @param[out]  dst        pointer to the buffer receiving converted pixels
  *  @param[in]   dst_pitch  pitch for moving to the next y line
  */
-static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch)
+static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, ptrdiff_t dst_pitch)
 {
     int             x, y;
     const int16_t   *src  = plane->bands[0].buf;
-    uint32_t        pitch = plane->bands[0].pitch;
+    ptrdiff_t       pitch = plane->bands[0].pitch;
 
     if (!src)
         return;

@@ -769,7 +769,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             start_ch += chans;
         }
 
-        if (avctx->flags & CODEC_FLAG_QSCALE) {
+        if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
             /* When using a constant Q-scale, don't mess with lambda */
             break;
         }

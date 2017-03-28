@@ -651,7 +651,8 @@ static int rm_read_header(AVFormatContext *s)
 
     if (!data_off)
         data_off = avio_tell(pb) - 18;
-    if (indx_off && pb->seekable && !(s->flags & AVFMT_FLAG_IGNIDX) &&
+    if (indx_off && (pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+        !(s->flags & AVFMT_FLAG_IGNIDX) &&
         avio_seek(pb, indx_off, SEEK_SET) >= 0) {
         rm_read_index(s);
         avio_seek(pb, data_off + 18, SEEK_SET);
@@ -963,19 +964,6 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
     }
 
     pkt->stream_index = st->index;
-
-#if 0
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if(st->codecpar->codec_id == AV_CODEC_ID_RV20){
-            int seq= 128*(pkt->data[2]&0x7F) + (pkt->data[3]>>1);
-            av_log(s, AV_LOG_DEBUG, "%d %"PRId64" %d\n", *timestamp, *timestamp*512LL/25, seq);
-
-            seq |= (timestamp&~0x3FFF);
-            if(seq - timestamp >  0x2000) seq -= 0x4000;
-            if(seq - timestamp < -0x2000) seq += 0x4000;
-        }
-    }
-#endif
 
     pkt->pts = timestamp;
     if (flags & 2)

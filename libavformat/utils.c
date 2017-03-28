@@ -1675,8 +1675,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st->inject_global_side_data = 0;
         }
 
+#if FF_API_LAVF_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
         if (!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
             av_packet_merge_side_data(pkt);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
@@ -2853,7 +2857,7 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
          !strcmp(ic->iformat->name, "mpegts")) &&
-        file_size && ic->pb->seekable) {
+        file_size && (ic->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         /* get accurate estimate from the PTSes */
         estimate_timings_from_pts(ic, old_offset);
         ic->duration_estimation_method = AVFMT_DURATION_FROM_PTS;

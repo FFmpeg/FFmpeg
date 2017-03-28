@@ -96,17 +96,9 @@ static av_always_inline void row_fdct(FLOAT temp[64], int16_t *data)
         tmp5 += tmp6;
         tmp6 += tmp7;
 
-#if 0
-        {
-            FLOAT z5;
-            z5 = (tmp4 - tmp6) * A5;
-            z2 =  tmp4         * A2 + z5;
-            z4 =  tmp6         * A4 + z5;
-        }
-#else
         z2= tmp4*(A2+A5) - tmp6*A5;
         z4= tmp6*(A4-A5) + tmp4*A5;
-#endif
+
         tmp5*=A1;
 
         z11= tmp7 + tmp5;
@@ -158,17 +150,9 @@ void ff_faandct(int16_t *data)
         tmp5 += tmp6;
         tmp6 += tmp7;
 
-#if 0
-        {
-            FLOAT z5;
-            z5 = (tmp4 - tmp6) * A5;
-            z2 =  tmp4         * A2 + z5;
-            z4 =  tmp6         * A4 + z5;
-        }
-#else
         z2= tmp4*(A2+A5) - tmp6*A5;
         z4= tmp6*(A4-A5) + tmp4*A5;
-#endif
+
         tmp5*=A1;
 
         z11= tmp7 + tmp5;

@@ -19,15 +19,18 @@
 #ifndef AVCODEC_INTRAX8DSP_H
 #define AVCODEC_INTRAX8DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct IntraX8DSPContext {
-    void (*v_loop_filter)(uint8_t *src, int stride, int qscale);
-    void (*h_loop_filter)(uint8_t *src, int stride, int qscale);
+    void (*v_loop_filter)(uint8_t *src, ptrdiff_t stride, int qscale);
+    void (*h_loop_filter)(uint8_t *src, ptrdiff_t stride, int qscale);
 
-    void (*spatial_compensation[12])(uint8_t *src, uint8_t *dst, int linesize);
-    void (*setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
-                                       int *range, int *sum, int edges);
+    void (*spatial_compensation[12])(uint8_t *src, uint8_t *dst,
+                                     ptrdiff_t stride);
+    void (*setup_spatial_compensation)(uint8_t *src, uint8_t *dst,
+                                       ptrdiff_t stride, int *range,
+                                       int *sum, int edges);
 } IntraX8DSPContext;
 
 void ff_intrax8dsp_init(IntraX8DSPContext *dsp);

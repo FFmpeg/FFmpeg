@@ -960,7 +960,7 @@ static int asf_read_data(AVFormatContext *s, const GUIDParseTable *g)
                size, asf->nb_packets);
     avio_skip(pb, 2); // skip reserved field
     asf->first_packet_offset = avio_tell(pb);
-    if (pb->seekable && !(asf->b_flags & ASF_FLAG_BROADCAST))
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !(asf->b_flags & ASF_FLAG_BROADCAST))
         align_position(pb, asf->offset, asf->data_size);
 
     return 0;
@@ -1738,7 +1738,9 @@ static int asf_read_header(AVFormatContext *s)
             size = avio_rl64(pb);
             align_position(pb, asf->offset, size);
         }
-        if (asf->data_reached && (!pb->seekable || (asf->b_flags & ASF_FLAG_BROADCAST)))
+        if (asf->data_reached &&
+            (!(pb->seekable & AVIO_SEEKABLE_NORMAL) ||
+             (asf->b_flags & ASF_FLAG_BROADCAST)))
             break;
     }
 
@@ -1747,7 +1749,7 @@ static int asf_read_header(AVFormatContext *s)
         ret = AVERROR_INVALIDDATA;
         goto failed;
     }
-    if (pb->seekable)
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL)
         avio_seek(pb, asf->first_packet_offset, SEEK_SET);
 
     for (i = 0; i < asf->nb_streams; i++) {

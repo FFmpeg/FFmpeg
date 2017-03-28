@@ -186,7 +186,7 @@ static int r3d_read_header(AVFormatContext *s)
 
     s->internal->data_offset = avio_tell(s->pb);
     av_log(s, AV_LOG_TRACE, "data offset %#"PRIx64"\n", s->internal->data_offset);
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
     // find REOB/REOF/REOS to load index
     avio_seek(s->pb, avio_size(s->pb)-48-8, SEEK_SET);

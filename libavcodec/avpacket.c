@@ -379,6 +379,8 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     return NULL;
 }
 
+#if FF_API_MERGE_SD_API
+
 #define FF_MERGE_MARKER 0x8c4d9d108e25e9feULL
 
 int av_packet_merge_side_data(AVPacket *pkt){
@@ -459,6 +461,8 @@ int av_packet_split_side_data(AVPacket *pkt){
     }
     return 0;
 }
+
+#endif
 
 uint8_t *av_packet_pack_dictionary(AVDictionary *dict, int *size)
 {

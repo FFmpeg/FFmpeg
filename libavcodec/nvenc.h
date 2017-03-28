@@ -158,6 +158,7 @@ typedef struct NvencContext
     int init_qp_p;
     int init_qp_b;
     int init_qp_i;
+    int cqp;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

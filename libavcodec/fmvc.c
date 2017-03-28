@@ -380,18 +380,14 @@ static int decode_type1(GetByteContext *gb, PutByteContext *pb)
             bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
             bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
             bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
-            do {
-                bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
-                --len;
-            } while (len && bytestream2_get_bytes_left(&gbc) > 0);
         } else {
             bytestream2_put_le32(pb, bytestream2_get_le32(&gbc));
             len--;
-            do {
-                bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
-                len--;
-            } while (len && bytestream2_get_bytes_left(&gbc) > 0);
         }
+        do {
+            bytestream2_put_byte(pb, bytestream2_get_byte(&gbc));
+            len--;
+        } while (len && bytestream2_get_bytes_left(&gbc) > 0);
     }
 
     return 0;

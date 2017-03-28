@@ -104,26 +104,24 @@ static const struct frame_type_desc {
     uint8_t dbl_pulses;   ///< how many pulse vectors have pulse pairs
                           ///< (rather than just one single pulse)
                           ///< only if #fcb_type == #FCB_TYPE_EXC_PULSES
-    uint16_t frame_size;  ///< the amount of bits that make up the block
-                          ///< data (per frame)
 } frame_descs[17] = {
-    { 1, 0, ACB_TYPE_NONE,       FCB_TYPE_SILENCE,    0,   0 },
-    { 2, 1, ACB_TYPE_NONE,       FCB_TYPE_HARDCODED,  0,  28 },
-    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_AW_PULSES,  0,  46 },
-    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 2,  80 },
-    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 5, 104 },
-    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 0, 108 },
-    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 2, 132 },
-    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 5, 168 },
-    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0,  64 },
-    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2,  80 },
-    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5, 104 },
-    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0, 108 },
-    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2, 132 },
-    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5, 168 },
-    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0, 176 },
-    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2, 208 },
-    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5, 256 }
+    { 1, 0, ACB_TYPE_NONE,       FCB_TYPE_SILENCE,    0 },
+    { 2, 1, ACB_TYPE_NONE,       FCB_TYPE_HARDCODED,  0 },
+    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_AW_PULSES,  0 },
+    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 2 },
+    { 2, 1, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 5 },
+    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 0 },
+    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 2 },
+    { 4, 2, ACB_TYPE_ASYMMETRIC, FCB_TYPE_EXC_PULSES, 5 },
+    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0 },
+    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2 },
+    { 2, 1, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5 },
+    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0 },
+    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2 },
+    { 4, 2, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5 },
+    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 0 },
+    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 2 },
+    { 8, 3, ACB_TYPE_HAMMING,    FCB_TYPE_EXC_PULSES, 5 }
 };
 
 /**
@@ -160,10 +158,6 @@ typedef struct WMAVoiceContext {
     int lsp_q_mode;               ///< defines quantizer defaults [0, 1]
     int lsp_def_mode;             ///< defines different sets of LSP defaults
                                   ///< [0, 1]
-    int frame_lsp_bitsize;        ///< size (in bits) of LSPs, when encoded
-                                  ///< per-frame (independent coding)
-    int sframe_lsp_bitsize;       ///< size (in bits) of LSPs, when encoded
-                                  ///< per superframe (residual coding)
 
     int min_pitch_val;            ///< base value for pitch parsing code
     int max_pitch_val;            ///< max value + 1 for pitch parsing
@@ -423,12 +417,8 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     lsp16_flag           =    flags & 0x1000;
     if (lsp16_flag) {
         s->lsps               = 16;
-        s->frame_lsp_bitsize  = 34;
-        s->sframe_lsp_bitsize = 60;
     } else {
         s->lsps               = 10;
-        s->frame_lsp_bitsize  = 24;
-        s->sframe_lsp_bitsize = 48;
     }
     for (n = 0; n < s->lsps; n++)
         s->prev_lsps[n] = M_PI * (n + 1.0) / (s->lsps + 1.0);

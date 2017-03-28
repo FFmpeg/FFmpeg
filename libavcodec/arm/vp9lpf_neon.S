@@ -828,7 +828,7 @@ function ff_vp9_loop_filter_v_16_16_neon, export=1
 endfunc
 
 function vp9_loop_filter_h_16_neon
-        sub             r12,  r0,  #8
+        sub             r12, r0,  #8
         vld1.8          {d16}, [r12,:64], r1
         vld1.8          {d24}, [r0, :64], r1
         vld1.8          {d17}, [r12,:64], r1

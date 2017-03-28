@@ -64,7 +64,7 @@ static av_cold int wv_write_trailer(AVFormatContext *ctx)
     WvMuxContext *s = ctx->priv_data;
 
     /* update total number of samples in the first block */
-    if (ctx->pb->seekable && s->samples &&
+    if ((ctx->pb->seekable & AVIO_SEEKABLE_NORMAL) && s->samples &&
         s->samples < UINT32_MAX) {
         int64_t pos = avio_tell(ctx->pb);
         avio_seek(ctx->pb, 12, SEEK_SET);

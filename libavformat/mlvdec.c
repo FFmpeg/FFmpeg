@@ -449,7 +449,7 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
     if ((flags & AVSEEK_FLAG_FRAME) || (flags & AVSEEK_FLAG_BYTE))
         return AVERROR(ENOSYS);
 
-    if (!avctx->pb->seekable)
+    if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     mlv->pts = timestamp;

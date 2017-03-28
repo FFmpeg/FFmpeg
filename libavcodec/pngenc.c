@@ -873,7 +873,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         if (!pict)
             return AVERROR(EINVAL);
 
-        s->bytestream = s->extra_data = av_malloc(FF_MIN_BUFFER_SIZE);
+        s->bytestream = s->extra_data = av_malloc(AV_INPUT_BUFFER_MIN_SIZE);
         if (!s->extra_data)
             return AVERROR(ENOMEM);
 
@@ -1167,7 +1167,7 @@ AVCodec ff_apng_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     .encode2        = encode_apng,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,

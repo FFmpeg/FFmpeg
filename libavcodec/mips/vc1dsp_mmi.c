@@ -141,7 +141,7 @@
 
 
 /* Do inverse transform on 8x8 block */
-void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int dc = block[0];
     double ftmp[9];
@@ -368,7 +368,7 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
 #endif
 
 /* Do inverse transform on 8x4 part of block */
-void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int dc = block[0];
     double ftmp[9];
@@ -425,7 +425,7 @@ void ff_vc1_inv_trans_8x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
 }
 
 #if _MIPS_SIM != _ABIO32
-void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int16_t *src = block;
     int16_t *dst = block;
@@ -599,7 +599,7 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, int linesize, int16_t *block)
 #endif
 
 /* Do inverse transform on 4x8 parts of block */
-void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int dc = block[0];
     double ftmp[9];
@@ -672,7 +672,7 @@ void ff_vc1_inv_trans_4x8_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
 }
 
 #if _MIPS_SIM != _ABIO32
-void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int16_t *src = block;
     int16_t *dst = block;
@@ -838,7 +838,7 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, int linesize, int16_t *block)
 #endif
 
 /* Do inverse transform on 4x4 part of block */
-void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int dc = block[0];
     double ftmp[5];
@@ -886,7 +886,7 @@ void ff_vc1_inv_trans_4x4_dc_mmi(uint8_t *dest, int linesize, int16_t *block)
     );
 }
 
-void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, int linesize, int16_t *block)
+void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int16_t *src = block;
     int16_t *dst = block;

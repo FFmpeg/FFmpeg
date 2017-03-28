@@ -273,6 +273,7 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
     VASurfaceID input_surface, output_surface;
     VAProcPipelineParameterBuffer params;
     VABufferID params_id;
+    VARectangle input_region;
     VAStatus vas;
     int err;
 
@@ -306,8 +307,17 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
 
     memset(&params, 0, sizeof(params));
 
+    // If there were top/left cropping, it could be taken into
+    // account here.
+    input_region = (VARectangle) {
+        .x      = 0,
+        .y      = 0,
+        .width  = input_frame->width,
+        .height = input_frame->height,
+    };
+
     params.surface = input_surface;
-    params.surface_region = 0;
+    params.surface_region = &input_region;
     params.surface_color_standard =
         vaapi_proc_colour_standard(input_frame->colorspace);
 

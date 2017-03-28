@@ -94,7 +94,7 @@ static inline void tqi_idct_put(AVCodecContext *avctx, AVFrame *frame,
                                 int16_t (*block)[64])
 {
     TqiContext *t = avctx->priv_data;
-    int linesize = frame->linesize[0];
+    ptrdiff_t linesize = frame->linesize[0];
     uint8_t *dest_y  = frame->data[0] + t->mb_y * 16 * linesize           + t->mb_x * 16;
     uint8_t *dest_cb = frame->data[1] + t->mb_y *  8 * frame->linesize[1] + t->mb_x *  8;
     uint8_t *dest_cr = frame->data[2] + t->mb_y *  8 * frame->linesize[2] + t->mb_x *  8;

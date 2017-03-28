@@ -24,7 +24,9 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "hevc.h"
+#include "hevc_data.h"
+#include "hevcdec.h"
+#include "hwaccel.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
@@ -423,4 +425,5 @@ AVHWAccel ff_hevc_vdpau_hwaccel = {
     .init           = vdpau_hevc_init,
     .uninit         = ff_vdpau_common_uninit,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

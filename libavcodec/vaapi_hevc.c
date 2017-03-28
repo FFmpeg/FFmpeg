@@ -24,7 +24,8 @@
 #include <va/va_dec_hevc.h>
 
 #include "avcodec.h"
-#include "hevc.h"
+#include "hevcdec.h"
+#include "hwaccel.h"
 #include "vaapi_decode.h"
 
 typedef struct VAAPIDecodePictureHEVC {
@@ -296,9 +297,9 @@ static void fill_pred_weight_table(const HEVCContext *h,
     slice_param->delta_chroma_log2_weight_denom = 0;
     slice_param->luma_log2_weight_denom         = 0;
 
-    if (sh->slice_type == I_SLICE ||
-        (sh->slice_type == P_SLICE && !h->ps.pps->weighted_pred_flag) ||
-        (sh->slice_type == B_SLICE && !h->ps.pps->weighted_bipred_flag))
+    if (sh->slice_type == HEVC_SLICE_I ||
+        (sh->slice_type == HEVC_SLICE_P && !h->ps.pps->weighted_pred_flag) ||
+        (sh->slice_type == HEVC_SLICE_B && !h->ps.pps->weighted_bipred_flag))
         return;
 
     slice_param->luma_log2_weight_denom = sh->luma_log2_weight_denom;
@@ -316,7 +317,7 @@ static void fill_pred_weight_table(const HEVCContext *h,
         slice_param->ChromaOffsetL0[i][1] = sh->chroma_offset_l0[i][1];
     }
 
-    if (sh->slice_type == B_SLICE) {
+    if (sh->slice_type == HEVC_SLICE_B) {
         for (i = 0; i < 15 && i < sh->nb_refs[L1]; i++) {
             slice_param->delta_luma_weight_l1[i] = sh->luma_weight_l1[i] - (1 << sh->luma_log2_weight_denom);
             slice_param->luma_offset_l1[i] = sh->luma_offset_l1[i];
@@ -355,8 +356,8 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
     const SliceHeader       *sh = &h->sh;
     VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
 
-    int nb_list = (sh->slice_type == B_SLICE) ?
-                  2 : (sh->slice_type == I_SLICE ? 0 : 1);
+    int nb_list = (sh->slice_type == HEVC_SLICE_B) ?
+                  2 : (sh->slice_type == HEVC_SLICE_I ? 0 : 1);
 
     int err, i, list_idx;
 
@@ -386,7 +387,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
         .slice_beta_offset_div2        = sh->beta_offset / 2,
         .slice_tc_offset_div2          = sh->tc_offset / 2,
         .collocated_ref_idx            = sh->slice_temporal_mvp_enabled_flag ? sh->collocated_ref_idx : 0xFF,
-        .five_minus_max_num_merge_cand = sh->slice_type == I_SLICE ? 0 : 5 - sh->max_num_merge_cand,
+        .five_minus_max_num_merge_cand = sh->slice_type == HEVC_SLICE_I ? 0 : 5 - sh->max_num_merge_cand,
         .num_ref_idx_l0_active_minus1  = sh->nb_refs[L0] ? sh->nb_refs[L0] - 1 : 0,
         .num_ref_idx_l1_active_minus1  = sh->nb_refs[L1] ? sh->nb_refs[L1] - 1 : 0,
 
@@ -434,4 +435,5 @@ AVHWAccel ff_hevc_vaapi_hwaccel = {
     .init                 = ff_vaapi_decode_init,
     .uninit               = ff_vaapi_decode_uninit,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
+    .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };

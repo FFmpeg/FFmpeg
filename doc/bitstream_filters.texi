@@ -74,6 +74,24 @@ the header stored in extradata to the key packets:
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
 
+@section extract_extradata
+
+Extract the in-band extradata.
+
+Certain codecs allow the long-term headers (e.g. MPEG-2 sequence headers,
+or H.264/HEVC (VPS/)SPS/PPS) to be transmitted either "in-band" (i.e. as a part
+of the bitstream containing the coded frames) or "out of band" (e.g. on the
+container level). This latter form is called "extradata" in FFmpeg terminology.
+
+This bitstream filter detects the in-band headers and makes them available as
+extradata.
+
+@table @option
+@item remove
+When this option is enabled, the long-term headers are removed from the
+bitstream after extraction.
+@end table
+
 @section h264_mp4toannexb
 
 Convert an H.264 bitstream from length prefixed mode to start code

@@ -68,14 +68,14 @@ typedef struct IDCTDSPContext {
      * @param line_size size in bytes of a horizontal line of dest
      */
     void (*idct_put)(uint8_t *dest /* align 8 */,
-                     int line_size, int16_t *block /* align 16 */);
+                     ptrdiff_t line_size, int16_t *block /* align 16 */);
 
     /**
      * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
      * @param line_size size in bytes of a horizontal line of dest
      */
     void (*idct_add)(uint8_t *dest /* align 8 */,
-                     int line_size, int16_t *block /* align 16 */);
+                     ptrdiff_t line_size, int16_t *block /* align 16 */);
 
     /**
      * IDCT input permutation.

@@ -1076,11 +1076,6 @@ static int setup_hwaccel(AVCodecContext *avctx,
     AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
     int ret        = 0;
 
-    if (avctx->active_thread_type & FF_THREAD_FRAME) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Hardware accelerated decoding with frame threading is known to be unstable and its use is discouraged.\n");
-    }
-
     if (!hwa) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not find an AVHWAccel for the pixel format: %s",
@@ -2263,7 +2258,11 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
     if ((avctx->codec->capabilities & AV_CODEC_CAP_DELAY) || avpkt->size ||
         (avctx->active_thread_type & FF_THREAD_FRAME)) {
+#if FF_API_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
         int did_split = av_packet_split_side_data(&tmp);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         ret = apply_param_change(avctx, &tmp);
         if (ret < 0)
             goto fail;
@@ -2295,11 +2294,13 @@ fail:
         emms_c(); //needed to avoid an emms_c() call before every return;
 
         avctx->internal->pkt = NULL;
+#if FF_API_MERGE_SD
         if (did_split) {
             av_packet_free_side_data(&tmp);
             if(ret == tmp.size)
                 ret = avpkt->size;
         }
+#endif
         if (picture->flags & AV_FRAME_FLAG_DISCARD) {
             *got_picture_ptr = 0;
         }
@@ -2369,7 +2370,11 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         uint8_t discard_reason = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
+#if FF_API_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
         int did_split = av_packet_split_side_data(&tmp);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         ret = apply_param_change(avctx, &tmp);
         if (ret < 0)
             goto fail;
@@ -2481,11 +2486,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 fail:
         avctx->internal->pkt = NULL;
+#if FF_API_MERGE_SD
         if (did_split) {
             av_packet_free_side_data(&tmp);
             if(ret == tmp.size)
                 ret = avpkt->size;
         }
+#endif
 
         if (ret >= 0 && *got_frame_ptr) {
             if (!avctx->refcounted_frames) {
@@ -2682,6 +2689,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     if ((avctx->codec->capabilities & AV_CODEC_CAP_DELAY) || avpkt->size) {
         AVPacket pkt_recoded;
         AVPacket tmp = *avpkt;
+#if FF_API_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
         int did_split = av_packet_split_side_data(&tmp);
         //apply_param_change(avctx, &tmp);
 
@@ -2694,6 +2703,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             memset(tmp.data + tmp.size, 0,
                    FFMIN(avpkt->size - tmp.size, AV_INPUT_BUFFER_PADDING_SIZE));
         }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         pkt_recoded = tmp;
         ret = recode_subtitle(avctx, &pkt_recoded, &tmp);
@@ -2753,11 +2764,13 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             avctx->internal->pkt = NULL;
         }
 
+#if FF_API_MERGE_SD
         if (did_split) {
             av_packet_free_side_data(&tmp);
             if(ret == tmp.size)
                 ret = avpkt->size;
         }
+#endif
 
         if (*got_sub_ptr)
             avctx->frame_number++;
@@ -2873,12 +2886,18 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avctx->codec->send_packet) {
         if (avpkt) {
             AVPacket tmp = *avpkt;
+#if FF_API_MERGE_SD
+FF_DISABLE_DEPRECATION_WARNINGS
             int did_split = av_packet_split_side_data(&tmp);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             ret = apply_param_change(avctx, &tmp);
             if (ret >= 0)
                 ret = avctx->codec->send_packet(avctx, &tmp);
+#if FF_API_MERGE_SD
             if (did_split)
                 av_packet_free_side_data(&tmp);
+#endif
             return ret;
         } else {
             return avctx->codec->send_packet(avctx, NULL);
