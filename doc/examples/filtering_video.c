@@ -72,7 +72,12 @@ static int open_input_file(const char *filename)
         return ret;
     }
     video_stream_index = ret;
-    dec_ctx = fmt_ctx->streams[video_stream_index]->codec;
+
+    /* create decoding context */
+    dec_ctx = avcodec_alloc_context3(dec);
+    if (!dec_ctx)
+        return AVERROR(ENOMEM);
+    avcodec_parameters_to_context(dec_ctx, fmt_ctx->streams[video_stream_index]->codecpar);
     av_opt_set_int(dec_ctx, "refcounted_frames", 1, 0);
 
     /* init the video decoder */
@@ -266,7 +271,7 @@ int main(int argc, char **argv)
     }
 end:
     avfilter_graph_free(&filter_graph);
-    avcodec_close(dec_ctx);
+    avcodec_free_context(&dec_ctx);
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
     av_frame_free(&filt_frame);
