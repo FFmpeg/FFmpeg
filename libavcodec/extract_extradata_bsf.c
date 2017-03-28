@@ -145,8 +145,10 @@ static int extract_extradata_vc1(AVBSFContext *ctx, AVPacket *pkt,
         ptr = avpriv_find_start_code(ptr, end, &state);
         if (state == VC1_CODE_SEQHDR || state == VC1_CODE_ENTRYPOINT) {
             has_extradata = 1;
-        } else if (has_extradata && IS_MARKER(state))
+        } else if (has_extradata && IS_MARKER(state)) {
             extradata_size = ptr - 4 - pkt->data;
+            break;
+        }
     }
 
     if (extradata_size) {
