@@ -1872,22 +1872,18 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("inverted", !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
         } else if (sd->type == AV_PKT_DATA_SPHERICAL) {
             const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
-            if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
-                print_str("projection", "equirectangular");
-            else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
-                print_str("projection", "cubemap");
+            print_str("projection", av_spherical_projection_name(spherical->projection));
+            if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
                 print_int("padding", spherical->padding);
             } else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
                 size_t l, t, r, b;
                 av_spherical_tile_bounds(spherical, par->width, par->height,
                                          &l, &t, &r, &b);
-                print_str("projection", "tiled equirectangular");
                 print_int("bound_left", l);
                 print_int("bound_top", t);
                 print_int("bound_right", r);
                 print_int("bound_bottom", b);
-            } else
-                print_str("projection", "unknown");
+            }
 
             print_int("yaw", (double) spherical->yaw / (1 << 16));
             print_int("pitch", (double) spherical->pitch / (1 << 16));
