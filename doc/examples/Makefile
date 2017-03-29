@@ -14,9 +14,10 @@ LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 EXAMPLES=       avio_dir_cmd                       \
                 avio_reading                       \
                 decode_audio                       \
-                decoding_encoding                  \
+                decode_video                       \
                 demuxing_decoding                  \
                 encode_audio                       \
+                encode_video                       \
                 extract_mvs                        \
                 filtering_video                    \
                 filtering_audio                    \
