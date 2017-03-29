@@ -1263,9 +1263,10 @@ static int scan_for_extensions(AVCodecContext *avctx)
     return ret;
 }
 
-static int set_channel_layout(AVCodecContext *avctx, int channels, int num_core_channels)
+static int set_channel_layout(AVCodecContext *avctx, int channels)
 {
     DCAContext *s = avctx->priv_data;
+    int num_core_channels = s->audio_header.prim_channels;
     int i;
 
     if (s->amode < 16) {
@@ -1372,7 +1373,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
 
     int lfe_samples;
-    int num_core_channels = 0;
     int i, ret;
     float  **samples_flt;
     DCAContext *s = avctx->priv_data;
@@ -1406,9 +1406,6 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    /* record number of core channels incase less than max channels are requested */
-    num_core_channels = s->audio_header.prim_channels;
-
     if (s->ext_coding)
         s->core_ext_mask = dca_ext_audio_descr_mask[s->ext_descr];
     else
@@ -1420,7 +1417,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     full_channels = channels = s->audio_header.prim_channels + !!s->lfe;
 
-    ret = set_channel_layout(avctx, channels, num_core_channels);
+    ret = set_channel_layout(avctx, channels);
     if (ret < 0)
         return ret;
     avctx->channels = channels;
