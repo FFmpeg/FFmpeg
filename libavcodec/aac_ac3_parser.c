@@ -97,6 +97,12 @@ get_next:
                     avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
                     avctx->ch_layout.nb_channels = s->channels;
                 }
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+                avctx->channels = avctx->ch_layout.nb_channels;
+                avctx->channel_layout = s->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             }
             s1->duration = s->samples;
             avctx->audio_service_type = s->service_type;

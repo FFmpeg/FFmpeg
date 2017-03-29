@@ -123,6 +123,7 @@ av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
     return ff_ac3_encode_init(avctx);
 }
 
+FF_DISABLE_DEPRECATION_WARNINGS
 const AVCodec ff_ac3_encoder = {
     .name            = "ac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
@@ -137,7 +138,11 @@ const AVCodec ff_ac3_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class      = &ff_ac3enc_class,
     .supported_samplerates = ff_ac3_sample_rate_tab,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = ff_ac3_channel_layouts,
+#endif
+    .ch_layouts      = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
+FF_ENABLE_DEPRECATION_WARNINGS

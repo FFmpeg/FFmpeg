@@ -248,6 +248,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 }
 
 
+FF_DISABLE_DEPRECATION_WARNINGS
 const AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
@@ -262,7 +263,11 @@ const AVCodec ff_eac3_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class      = &eac3enc_class,
     .supported_samplerates = ff_ac3_sample_rate_tab,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = ff_ac3_channel_layouts,
+#endif
+    .ch_layouts      = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
+FF_ENABLE_DEPRECATION_WARNINGS

@@ -251,6 +251,8 @@ typedef struct AC3DecodeContext {
     DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
     DECLARE_ALIGNED(32, SHORTFLOAT, output_buffer)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE * 6];  ///< final output buffer
 ///@}
+
+    AVChannelLayout downmix_layout;
 } AC3DecodeContext;
 
 /**
