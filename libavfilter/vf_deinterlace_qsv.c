@@ -434,13 +434,11 @@ static int process_frame(AVFilterContext *ctx, const AVFrame *in,
     mfxStatus err;
     int ret, again = 0;
 
-    out = av_frame_alloc();
-    if (!out)
-        return AVERROR(ENOMEM);
-
-    ret = av_hwframe_get_buffer(s->hw_frames_ctx, out, 0);
-    if (ret < 0)
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     surf_out = (mfxFrameSurface1*)out->data[3];
     surf_out->Info.CropW     = outlink->w;
