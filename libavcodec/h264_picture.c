@@ -70,8 +70,8 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
 
     av_assert0(!dst->f->buf[0]);
     av_assert0(src->f->buf[0]);
+    av_assert0(src->tf.f == src->f);
 
-    src->tf.f = src->f;
     dst->tf.f = dst->f;
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
