@@ -206,6 +206,24 @@ void av_spherical_tile_bounds(const AVSphericalMapping *map,
                               size_t width, size_t height,
                               size_t *left, size_t *top,
                               size_t *right, size_t *bottom);
+
+/**
+ * Provide a human-readable name of a given AVSphericalProjection.
+ *
+ * @param projection The input AVSphericalProjection.
+ *
+ * @return The name of the AVSphericalProjection, or "unknown".
+ */
+const char *av_spherical_projection_name(enum AVSphericalProjection projection);
+
+/**
+ * Get the AVSphericalProjection form a human-readable name.
+ *
+ * @param name The input string.
+ *
+ * @return The AVSphericalProjection value, or -1 if not found.
+ */
+int av_spherical_from_name(const char *name);
 /**
  * @}
  * @}
