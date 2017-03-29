@@ -75,7 +75,9 @@ int main(int argc, char **argv)
     c->width = 352;
     c->height = 288;
     /* frames per second */
-    c->time_base = (AVRational){1,25};
+    c->time_base = (AVRational){1, 25};
+    c->framerate = (AVRational){25, 1};
+
     /* emit one intra frame every ten frames
      * check frame pict_type before passing frame
      * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
