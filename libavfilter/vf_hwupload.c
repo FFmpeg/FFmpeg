@@ -231,4 +231,5 @@ AVFilter ff_vf_hwupload = {
     .priv_class    = &hwupload_class,
     .inputs        = hwupload_inputs,
     .outputs       = hwupload_outputs,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -387,6 +387,12 @@ int ff_filter_activate(AVFilterContext *filter);
 void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter);
 
 /**
+ * The filter is aware of hardware frames, and any hardware frame context
+ * should not be automatically propagated through it.
+ */
+#define FF_FILTER_FLAG_HWFRAME_AWARE (1 << 0)
+
+/**
  * Run one round of processing on a filter graph.
  */
 int ff_filter_graph_run_once(AVFilterGraph *graph);

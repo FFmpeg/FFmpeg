@@ -477,4 +477,5 @@ AVFilter ff_vf_scale_vaapi = {
     .inputs        = scale_vaapi_inputs,
     .outputs       = scale_vaapi_outputs,
     .priv_class    = &scale_vaapi_class,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
