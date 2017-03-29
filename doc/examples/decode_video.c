@@ -79,7 +79,7 @@ static int decode_write_frame(const char *outfilename, AVCodecContext *avctx,
 int main(int argc, char **argv)
 {
     const char *filename, *outfilename;
-    AVCodec *codec;
+    const AVCodec *codec;
     AVCodecContext *c= NULL;
     int frame_count;
     FILE *f;
