@@ -2,6 +2,7 @@
 /avio_reading
 /decoding_encoding
 /demuxing_decoding
+/encode_audio
 /extract_mvs
 /filter_audio
 /filtering_audio
