@@ -112,12 +112,9 @@ int main(int argc, char **argv)
     frame->width  = c->width;
     frame->height = c->height;
 
-    /* the image can be allocated by any means and av_image_alloc() is
-     * just the most convenient way if av_malloc() is to be used */
-    ret = av_image_alloc(frame->data, frame->linesize, c->width, c->height,
-                         c->pix_fmt, 32);
+    ret = av_frame_get_buffer(frame, 32);
     if (ret < 0) {
-        fprintf(stderr, "Could not allocate raw picture buffer\n");
+        fprintf(stderr, "Could not allocate the video frame data\n");
         exit(1);
     }
 
@@ -128,6 +125,12 @@ int main(int argc, char **argv)
         pkt.size = 0;
 
         fflush(stdout);
+
+        /* make sure the frame data is writable */
+        ret = av_frame_make_writable(frame);
+        if (ret < 0)
+            exit(1);
+
         /* prepare a dummy image */
         /* Y */
         for (y = 0; y < c->height; y++) {
@@ -182,7 +185,6 @@ int main(int argc, char **argv)
     fclose(f);
 
     avcodec_free_context(&c);
-    av_freep(&frame->data[0]);
     av_frame_free(&frame);
 
     return 0;
