@@ -1,5 +1,6 @@
 /avio_dir_cmd
 /avio_reading
+/decode_audio
 /decoding_encoding
 /demuxing_decoding
 /encode_audio

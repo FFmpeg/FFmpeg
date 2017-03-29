@@ -1461,6 +1461,7 @@ COMPONENT_LIST="
 EXAMPLE_LIST="
     avio_dir_cmd_example
     avio_reading_example
+    decode_audio_example
     decoding_encoding_example
     demuxing_decoding_example
     encode_audio_example
@@ -3168,6 +3169,7 @@ scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 # examples
 avio_dir_cmd_deps="avformat avutil"
 avio_reading_deps="avformat avcodec avutil"
+decode_audio_example_deps="avcodec avutil"
 decoding_encoding_example_deps="avcodec avformat avutil"
 demuxing_decoding_example_deps="avcodec avformat avutil"
 encode_audio_example_deps="avcodec avutil"
