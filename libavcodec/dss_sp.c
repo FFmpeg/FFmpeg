@@ -290,10 +290,10 @@ static const int32_t dss_sp_sinc[67] = {
 static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
 {
     DssSpContext *p = avctx->priv_data;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
-    avctx->channels       = 1;
     avctx->sample_rate    = 11025;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     p->pulse_dec_mode = 1;
     p->avctx          = avctx;
