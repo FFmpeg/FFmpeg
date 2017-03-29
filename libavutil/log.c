@@ -174,14 +174,12 @@ static void colored_fputs(int level, int tint, const char *str)
                 str);
     } else if (tint && use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
-                (color[level] >> 16) & 0xff,
+                "\033[38;5;%dm%s\033[0m",
                 tint,
                 str);
     } else if (local_use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
-                (color[level] >> 16) & 0xff,
+                "\033[38;5;%dm%s\033[0m",
                 (color[level] >> 8) & 0xff,
                 str);
     } else
