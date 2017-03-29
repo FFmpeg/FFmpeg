@@ -730,6 +730,16 @@ static av_cold int lag_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
+static av_cold int lag_decode_init_thread_copy(AVCodecContext *avctx)
+{
+    LagarithContext *l = avctx->priv_data;
+    l->avctx = avctx;
+
+    return 0;
+}
+#endif
+
 static av_cold int lag_decode_end(AVCodecContext *avctx)
 {
     LagarithContext *l = avctx->priv_data;
@@ -746,6 +756,7 @@ AVCodec ff_lagarith_decoder = {
     .id             = AV_CODEC_ID_LAGARITH,
     .priv_data_size = sizeof(LagarithContext),
     .init           = lag_decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(lag_decode_init_thread_copy),
     .close          = lag_decode_end,
     .decode         = lag_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
