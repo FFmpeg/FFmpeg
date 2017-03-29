@@ -222,4 +222,6 @@ int main(int argc, char **argv)
 
     av_frame_free(&frame);
     avcodec_free_context(&c);
+
+    return 0;
 }
