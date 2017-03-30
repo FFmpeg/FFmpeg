@@ -28,8 +28,6 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
-    AC3HeaderInfo hdr;
-    GetBitContext gbc;
     enum AVCodecID codec_id = AV_CODEC_ID_AC3;
 
     max_frames = 0;
@@ -40,15 +38,20 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
         buf2 = buf;
 
         for(frames = 0; buf2 < end; frames++) {
-            init_get_bits(&gbc, buf2, 54);
-            if(avpriv_ac3_parse_header(&gbc, &hdr) < 0)
+            uint8_t bitstream_id;
+            uint16_t frame_size;
+            int ret;
+
+            ret = av_ac3_parse_header(buf2, end - buf2, &bitstream_id,
+                                      &frame_size);
+            if (ret < 0)
                 break;
-            if(buf2 + hdr.frame_size > end ||
-               av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
+            if (buf2 + frame_size > end ||
+                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, frame_size - 2))
                 break;
-            if (hdr.bitstream_id > 10)
+            if (bitstream_id > 10)
                 codec_id = AV_CODEC_ID_EAC3;
-            buf2 += hdr.frame_size;
+            buf2 += frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)

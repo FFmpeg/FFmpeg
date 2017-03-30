@@ -1,7 +1,8 @@
 NAME = avcodec
 DESC = Libav codec library
 
-HEADERS = avcodec.h                                                     \
+HEADERS = ac3_parser.h                                                  \
+          avcodec.h                                                     \
           avfft.h                                                       \
           d3d11va.h                                                     \
           dirac.h                                                       \
@@ -14,7 +15,8 @@ HEADERS = avcodec.h                                                     \
           version.h                                                     \
           vorbis_parser.h                                               \
 
-OBJS = allcodecs.o                                                      \
+OBJS = ac3_parser.o                                                     \
+       allcodecs.o                                                      \
        avpacket.o                                                       \
        avpicture.o                                                      \
        bitstream.o                                                      \
@@ -719,8 +721,7 @@ OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
 OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
                                           aacadtsdec.o mpeg4audio.o
-OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o \
-                                          aac_ac3_parser.o
+OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_BMP_PARSER)              += bmp_parser.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs_parser.o
