@@ -654,7 +654,7 @@ static int cluster_mvs(MIContext *mi_ctx)
                 dx = avg_x - mv_x;
                 dy = avg_y - mv_y;
 
-                if (FFABS(avg_x - mv_x) > CLUSTER_THRESHOLD || FFABS(avg_y - mv_y) > CLUSTER_THRESHOLD) {
+                if (FFABS(dx) > CLUSTER_THRESHOLD || FFABS(dy) > CLUSTER_THRESHOLD) {
 
                     for (d = 1; d < 5; d++)
                         for (y = FFMAX(mb_y - d, 0); y < FFMIN(mb_y + d + 1, mi_ctx->b_height); y++)
