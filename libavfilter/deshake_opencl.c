@@ -194,7 +194,5 @@ int ff_opencl_deshake_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
                                  deshake->opencl_ctx.cl_inbuf_size,
                                  0, in->data,deshake->opencl_ctx.in_plane_size,
                                  deshake->opencl_ctx.plane_num);
-    if(ret < 0)
-        return ret;
     return ret;
 }
