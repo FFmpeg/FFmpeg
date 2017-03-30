@@ -693,8 +693,10 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
 
 
             /* set the bitstream reader at the start of the second Sound Unit */
-            init_get_bits8(&q->gb,
+            ret = init_get_bits8(&q->gb,
                            ptr1, q->decoded_bytes_buffer + js_block_align - ptr1);
+            if (ret < 0)
+                return ret;
 
             /* Fill the Weighting coeffs delay buffer */
             memmove(q->weighting_delay[js_pair], &q->weighting_delay[js_pair][2],
