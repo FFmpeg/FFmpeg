@@ -186,6 +186,10 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     if (w <= 0 || h <= 0)
         return AVERROR_INVALIDDATA;
 
+    /* the decoder was not properly initialized and we cannot continue */
+    if (sprite_trajectory.table == NULL)
+        return AVERROR_INVALIDDATA;
+
     for (i = 0; i < ctx->num_sprite_warping_points; i++) {
         int length;
         int x = 0, y = 0;
