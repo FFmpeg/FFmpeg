@@ -203,6 +203,14 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
         frame->surface.Data.UV       = frame->frame->data[1];
     }
 
+    if (q->frames_ctx.mids) {
+        ret = ff_qsv_find_surface_idx(&q->frames_ctx, frame);
+        if (ret < 0)
+            return ret;
+
+        frame->surface.Data.MemId = &q->frames_ctx.mids[ret];
+    }
+
     frame->used = 1;
 
     return 0;

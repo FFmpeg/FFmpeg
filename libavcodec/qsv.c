@@ -160,6 +160,17 @@ int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc)
     }
 }
 
+int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame)
+{
+    int i;
+    for (i = 0; i < ctx->nb_mids; i++) {
+        QSVMid *mid = &ctx->mids[i];
+        if (mid->handle == frame->surface.Data.MemId)
+            return i;
+    }
+    return AVERROR_BUG;
+}
+
 static int qsv_load_plugins(mfxSession session, const char *load_plugins,
                             void *logctx)
 {
@@ -260,6 +271,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
     QSVFramesContext *ctx = pthis;
     mfxFrameInfo      *i  = &req->Info;
     mfxFrameInfo      *i1 = &ctx->info;
+    int j;
 
     if (!(req->Type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET) ||
         !(req->Type & (MFX_MEMTYPE_FROM_DECODE | MFX_MEMTYPE_FROM_ENCODE)) ||
@@ -274,7 +286,13 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
         return MFX_ERR_UNSUPPORTED;
     }
 
-    resp->mids           = ctx->mids;
+    resp->mids = av_mallocz_array(ctx->nb_mids, sizeof(*resp->mids));
+    if (!resp->mids)
+        return MFX_ERR_MEMORY_ALLOC;
+
+    for (j = 0; j < ctx->nb_mids; j++)
+        resp->mids[j] = &ctx->mids[j];
+
     resp->NumFrameActual = ctx->nb_mids;
 
     return MFX_ERR_NONE;
@@ -282,6 +300,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
 
 static mfxStatus qsv_frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
 {
+    av_freep(&resp->mids);
     return MFX_ERR_NONE;
 }
 
@@ -297,7 +316,8 @@ static mfxStatus qsv_frame_unlock(mfxHDL pthis, mfxMemId mid, mfxFrameData *ptr)
 
 static mfxStatus qsv_frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
 {
-    *hdl = mid;
+    QSVMid *qsv_mid = (QSVMid*)mid;
+    *hdl = qsv_mid->handle;
     return MFX_ERR_NONE;
 }
 
@@ -381,7 +401,7 @@ int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *psession,
         qsv_frames_ctx->info    = frames_hwctx->surfaces[0].Info;
         qsv_frames_ctx->nb_mids = frames_hwctx->nb_surfaces;
         for (i = 0; i < frames_hwctx->nb_surfaces; i++)
-            qsv_frames_ctx->mids[i] = frames_hwctx->surfaces[i].Data.MemId;
+            qsv_frames_ctx->mids[i].handle = frames_hwctx->surfaces[i].Data.MemId;
 
         err = MFXVideoCORE_SetFrameAllocator(session, &frame_allocator);
         if (err != MFX_ERR_NONE)
