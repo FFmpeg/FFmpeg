@@ -2176,8 +2176,10 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
                 if (!av_fifo_space(ifilter->frame_queue)) {
                     ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
-                    if (ret < 0)
+                    if (ret < 0) {
+                        av_frame_free(&tmp);
                         return ret;
+                    }
                 }
                 av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
                 return 0;
