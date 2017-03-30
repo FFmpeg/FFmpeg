@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "mpegvideo.h"
 #include "dnxhddata.h"
 
@@ -99,8 +101,8 @@ typedef struct DNXHDEncContext {
     RCCMPEntry *mb_cmp_tmp;
     RCEntry    *mb_rc;
 
-    void (*get_pixels_8x4_sym)(int16_t * /* align 16 */,
-                               const uint8_t *, ptrdiff_t);
+    void (*get_pixels_8x4_sym)(int16_t *av_restrict /* align 16 */ block,
+                               const uint8_t *pixels, ptrdiff_t line_size);
 } DNXHDEncContext;
 
 void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx);
