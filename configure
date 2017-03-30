@@ -4110,7 +4110,7 @@ probe_cc(){
         _type=lld-link
         # The link.exe mode doesn't have a switch for getting the version,
         # but we can force it back to gnu mode and get the version from there.
-        _ident=$($_cc -flavor gnu --version)
+        _ident=$($_cc -flavor gnu --version 2>/dev/null)
         _ld_o='-out:$@'
         _flags_filter=msvc_flags
         _ld_lib='lib%.a'
