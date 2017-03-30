@@ -450,8 +450,10 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
 
     err = MFXVideoVPP_Init(*session, &par);
     if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error opening the internal VPP session\n");
-        return AVERROR_UNKNOWN;
+        av_log(ctx, AV_LOG_VERBOSE, "Error opening the internal VPP session."
+               "Surface upload/download will not be possible\n");
+        MFXClose(*session);
+        *session = NULL;
     }
 
     return 0;
@@ -567,6 +569,11 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     mfxSyncPoint sync = NULL;
     mfxStatus err;
 
+    if (!s->session_download) {
+        av_log(ctx, AV_LOG_ERROR, "Surface download not possible\n");
+        return AVERROR(ENOSYS);
+    }
+
     out.Info = in->Info;
     out.Data.PitchLow = dst->linesize[0];
     out.Data.Y        = dst->data[0];
@@ -605,6 +612,11 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     mfxSyncPoint sync = NULL;
     mfxStatus err;
+
+    if (!s->session_upload) {
+        av_log(ctx, AV_LOG_ERROR, "Surface upload not possible\n");
+        return AVERROR(ENOSYS);
+    }
 
     in.Info = out->Info;
     in.Data.PitchLow = src->linesize[0];
