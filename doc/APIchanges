@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-03-30 - xxxxxxx - lavu 55.53.100 / 55.27.0 - hwcontext.h
+  Add av_hwframe_map() and associated AV_HWFRAME_MAP_* flags.
+  Add av_hwframe_ctx_create_derived().
+
 2017-03-xx - xxxxxxx - lavu 55.52.100 - avutil.h
   add av_fourcc_make_string() function and av_fourcc2str() macro to replace
   av_get_codec_tag_string() from lavc.

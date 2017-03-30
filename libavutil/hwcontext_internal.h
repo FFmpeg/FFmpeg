@@ -85,6 +85,11 @@ typedef struct HWContextType {
                                          const AVFrame *src);
     int              (*transfer_data_from)(AVHWFramesContext *ctx, AVFrame *dst,
                                            const AVFrame *src);
+
+    int              (*map_to)(AVHWFramesContext *ctx, AVFrame *dst,
+                               const AVFrame *src, int flags);
+    int              (*map_from)(AVHWFramesContext *ctx, AVFrame *dst,
+                                 const AVFrame *src, int flags);
 } HWContextType;
 
 struct AVHWDeviceInternal {
@@ -97,7 +102,42 @@ struct AVHWFramesInternal {
     void                *priv;
 
     AVBufferPool *pool_internal;
+
+    /**
+     * For a derived context, a reference to the original frames
+     * context it was derived from.
+     */
+    AVBufferRef *source_frames;
 };
+
+typedef struct HWMapDescriptor {
+    /**
+     * A reference to the original source of the mapping.
+     */
+    AVFrame *source;
+    /**
+     * A reference to the hardware frames context in which this
+     * mapping was made.  May be the same as source->hw_frames_ctx,
+     * but need not be.
+     */
+    AVBufferRef *hw_frames_ctx;
+    /**
+     * Unmap function.
+     */
+    void (*unmap)(AVHWFramesContext *ctx,
+                  struct HWMapDescriptor *hwmap);
+    /**
+     * Hardware-specific private data associated with the mapping.
+     */
+    void          *priv;
+} HWMapDescriptor;
+
+int ff_hwframe_map_create(AVBufferRef *hwframe_ref,
+                          AVFrame *dst, const AVFrame *src,
+                          void (*unmap)(AVHWFramesContext *ctx,
+                                        HWMapDescriptor *hwmap),
+                          void *priv);
+
 
 extern const HWContextType ff_hwcontext_type_cuda;
 extern const HWContextType ff_hwcontext_type_dxva2;
