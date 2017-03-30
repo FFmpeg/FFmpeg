@@ -433,8 +433,7 @@ int ff_qsv_decode_close(QSVContext *q)
         MFXClose(q->internal_session);
 
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
-    av_freep(&q->frames_ctx.mids);
-    q->frames_ctx.nb_mids = 0;
+    av_buffer_unref(&q->frames_ctx.mids_buf);
 
     return 0;
 }
