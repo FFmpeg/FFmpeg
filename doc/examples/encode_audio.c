@@ -62,7 +62,8 @@ static int select_sample_rate(const AVCodec *codec)
 
     p = codec->supported_samplerates;
     while (*p) {
-        best_samplerate = FFMAX(*p, best_samplerate);
+        if (!best_samplerate || abs(44100 - *p) < abs(44100 - best_samplerate))
+            best_samplerate = *p;
         p++;
     }
     return best_samplerate;
