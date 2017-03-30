@@ -191,7 +191,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     s->sws = sws_alloc_context();
     if (!s->sws) {
         ret = AVERROR(ENOMEM);
-        return ret;
+        goto error;
     }
 
     for (k = 0; in->data[k]; k++)
@@ -206,7 +206,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     av_opt_set_int(s->sws, "sws_flags", SWS_BICUBIC, 0);
 
     if ((ret = sws_init_context(s->sws, NULL, NULL)) < 0)
-        return ret;
+        goto error;
 
     sws_scale(s->sws, (const uint8_t *const *)&input, in->linesize, 0, h, out->data, out->linesize);
 
@@ -217,6 +217,9 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     sws_freeContext(s->sws);
     s->sws = NULL;
     s->current_frame++;
+    return ret;
+error:
+    av_frame_free(&out);
     return ret;
 }
 
