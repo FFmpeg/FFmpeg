@@ -63,7 +63,7 @@ void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
 
 float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
-void ff_butterflies_float_sse(float *src0, float *src1, int len);
+void ff_butterflies_float_sse(float *av_restrict src0, float *av_restrict src1, int len);
 
 av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
