@@ -56,6 +56,10 @@ static const D3DPRESENT_PARAMETERS dxva2_present_params = {
     .Flags            = D3DPRESENTFLAG_VIDEO,
 };
 
+typedef struct DXVA2Mapping {
+    uint32_t palette_dummy[256];
+} DXVA2Mapping;
+
 typedef struct DXVA2FramesContext {
     IDirect3DSurface9 **surfaces_internal;
     int              nb_surfaces_used;
@@ -82,6 +86,7 @@ static const struct {
 } supported_formats[] = {
     { MKTAG('N', 'V', '1', '2'), AV_PIX_FMT_NV12 },
     { MKTAG('P', '0', '1', '0'), AV_PIX_FMT_P010 },
+    { D3DFMT_P8,                 AV_PIX_FMT_PAL8 },
 };
 
 DEFINE_GUID(video_decoder_service,   0xfc51a551, 0xd5e7, 0x11d9, 0xaf, 0x55, 0x00, 0x05, 0x4e, 0x43, 0xff, 0x02);
@@ -261,12 +266,14 @@ static void dxva2_unmap_frame(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
 {
     IDirect3DSurface9 *surface = (IDirect3DSurface9*)hwmap->source->data[3];
     IDirect3DSurface9_UnlockRect(surface);
+    av_freep(&hwmap->priv);
 }
 
 static int dxva2_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *src,
                            int flags)
 {
     IDirect3DSurface9 *surface = (IDirect3DSurface9*)src->data[3];
+    DXVA2Mapping      *map;
     D3DSURFACE_DESC    surfaceDesc;
     D3DLOCKED_RECT     LockedRect;
     HRESULT            hr;
@@ -287,16 +294,25 @@ static int dxva2_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *
         return AVERROR_UNKNOWN;
     }
 
-    err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
-                                dxva2_unmap_frame, NULL);
-    if (err < 0)
+    map = av_mallocz(sizeof(*map));
+    if (!map)
         goto fail;
+
+    err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
+                                dxva2_unmap_frame, map);
+    if (err < 0) {
+        av_freep(&map);
+        goto fail;
+    }
 
     for (i = 0; i < nb_planes; i++)
         dst->linesize[i] = LockedRect.Pitch;
 
     av_image_fill_pointers(dst->data, dst->format, surfaceDesc.Height,
                            (uint8_t*)LockedRect.pBits, dst->linesize);
+
+    if (dst->format == AV_PIX_FMT_PAL8)
+        dst->data[1] = (uint8_t*)map->palette_dummy;
 
     return 0;
 fail:
