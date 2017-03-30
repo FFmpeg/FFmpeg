@@ -91,6 +91,7 @@ static const struct {
 } supported_pixel_formats[] = {
     { AV_PIX_FMT_NV12, MFX_FOURCC_NV12 },
     { AV_PIX_FMT_P010, MFX_FOURCC_P010 },
+    { AV_PIX_FMT_PAL8, MFX_FOURCC_P8   },
 };
 
 static int qsv_device_init(AVHWDeviceContext *ctx)
