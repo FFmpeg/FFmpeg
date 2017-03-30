@@ -450,7 +450,7 @@ static int get_speaker_pos(AVFilterContext *ctx,
 
     /* set speaker positions according to input channel configuration: */
     for (m = 0, ch = 0; ch < n_conv && m < 64; m++) {
-        uint64_t mask = channels_layout & (1 << m);
+        uint64_t mask = channels_layout & (1ULL << m);
 
         switch (mask) {
         case AV_CH_FRONT_LEFT:            azim[ch] =  30;      break;
