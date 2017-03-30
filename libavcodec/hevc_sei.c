@@ -354,7 +354,6 @@ static int decode_nal_sei_message(HEVCContext *s)
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         return decode_nal_sei_suffix(s, payload_type, payload_size);
     }
-    return 1;
 }
 
 static int more_rbsp_data(GetBitContext *gb)
