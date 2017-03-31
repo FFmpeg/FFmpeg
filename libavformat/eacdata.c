@@ -32,6 +32,8 @@
 #include "avformat.h"
 #include "internal.h"
 
+#include "libavutil/channel_layout.h"
+
 typedef struct CdataDemuxContext {
   unsigned int channels;
   unsigned int audio_pts;
@@ -52,18 +54,25 @@ static int cdata_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned int sample_rate, header;
     AVStream *st;
-    int64_t channel_layout = 0;
+    AVChannelLayout channel_layout;
 
     header = avio_rb16(pb);
     switch (header) {
-        case 0x0400: cdata->channels = 1; break;
-        case 0x0404: cdata->channels = 2; break;
-        case 0x040C: cdata->channels = 4; channel_layout = AV_CH_LAYOUT_QUAD;         break;
-        case 0x0414: cdata->channels = 6; channel_layout = AV_CH_LAYOUT_5POINT1_BACK; break;
+        case 0x0400:
+            channel_layout = (AVChannelLayout){ .nb_channels = 1, .order = AV_CHANNEL_ORDER_UNSPEC };
+            break;
+        case 0x0404:
+            channel_layout  = (AVChannelLayout){ .nb_channels = 2, .order = AV_CHANNEL_ORDER_UNSPEC };
+            break;
+        case 0x040C:
+            channel_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_QUAD;         break;
+        case 0x0414:
+            channel_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1_BACK; break;
         default:
             av_log(s, AV_LOG_INFO, "unknown header 0x%04x\n", header);
             return -1;
     };
+    cdata->channels = channel_layout.nb_channels;
 
     sample_rate = avio_rb16(pb);
     avio_skip(pb, (avio_r8(pb) & 0x20) ? 15 : 11);
@@ -74,8 +83,7 @@ static int cdata_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_tag = 0; /* no fourcc */
     st->codecpar->codec_id = AV_CODEC_ID_ADPCM_EA_XAS;
-    st->codecpar->channels = cdata->channels;
-    st->codecpar->channel_layout = channel_layout;
+    st->codecpar->ch_layout = channel_layout;
     st->codecpar->sample_rate = sample_rate;
     avpriv_set_pts_info(st, 64, 1, sample_rate);
 
