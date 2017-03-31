@@ -213,13 +213,13 @@ static int au_read_header(AVFormatContext *s)
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_tag   = id;
     st->codecpar->codec_id    = codec;
-    st->codecpar->channels    = channels;
+    st->codecpar->ch_layout.nb_channels = channels;
     st->codecpar->sample_rate = rate;
     st->codecpar->bits_per_coded_sample = bps;
     st->codecpar->bit_rate    = channels * rate * bps;
-    st->codecpar->block_align = ba ? ba : FFMAX(bps * st->codecpar->channels / 8, 1);
+    st->codecpar->block_align = ba ? ba : FFMAX(bps * channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)
-        st->duration = (((int64_t)data_size)<<3) / (st->codecpar->channels * (int64_t)bps);
+        st->duration = (((int64_t)data_size)<<3) / (channels * (int64_t)bps);
 
     st->start_time = 0;
     avpriv_set_pts_info(st, 64, 1, rate);
@@ -304,7 +304,7 @@ static int au_write_header(AVFormatContext *s)
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
     avio_wb32(pb, par->codec_tag);              /* codec ID */
     avio_wb32(pb, par->sample_rate);
-    avio_wb32(pb, par->channels);
+    avio_wb32(pb, par->ch_layout.nb_channels);
     avio_write(pb, annotations.str, annotations.len & ~7);
 
 fail:
