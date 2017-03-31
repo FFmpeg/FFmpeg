@@ -136,12 +136,12 @@ static int vqf_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
 
             avio_read(s->pb, comm_chunk, 12);
-            st->codecpar->channels = AV_RB32(comm_chunk    ) + 1;
+            st->codecpar->ch_layout.nb_channels = AV_RB32(comm_chunk) + 1;
             read_bitrate        = AV_RB32(comm_chunk + 4);
             rate_flag           = AV_RB32(comm_chunk + 8);
             avio_skip(s->pb, len-12);
 
-            if (st->codecpar->channels <= 0) {
+            if (st->codecpar->ch_layout.nb_channels <= 0) {
                 av_log(s, AV_LOG_ERROR, "Invalid number of channels\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -192,15 +192,15 @@ static int vqf_read_header(AVFormatContext *s)
         break;
     }
 
-    if (read_bitrate / st->codecpar->channels <  8 ||
-        read_bitrate / st->codecpar->channels > 48) {
+    if (read_bitrate / st->codecpar->ch_layout.nb_channels <  8 ||
+        read_bitrate / st->codecpar->ch_layout.nb_channels > 48) {
         av_log(s, AV_LOG_ERROR, "Invalid bitrate per channel %d\n",
-               read_bitrate / st->codecpar->channels);
+               read_bitrate / st->codecpar->ch_layout.nb_channels);
         return AVERROR_INVALIDDATA;
     }
 
     switch (((st->codecpar->sample_rate/1000) << 8) +
-            read_bitrate/st->codecpar->channels) {
+            read_bitrate/st->codecpar->ch_layout.nb_channels) {
     case (11<<8) + 8 :
     case (8 <<8) + 8 :
     case (11<<8) + 10:
