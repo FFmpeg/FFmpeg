@@ -311,7 +311,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
     if (!ctx->model_priv_data)
         return AVERROR(ENOMEM);
-    pctx = (AacPsyContext*) ctx->model_priv_data;
+    pctx = ctx->model_priv_data;
     pctx->global_quality = (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120) * 0.01f;
 
     if (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) {
