@@ -57,8 +57,7 @@ static int mxg_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     audio_st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     audio_st->codecpar->codec_id = AV_CODEC_ID_PCM_ALAW;
-    audio_st->codecpar->channels = 1;
-    audio_st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    audio_st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     audio_st->codecpar->sample_rate = 8000;
     audio_st->codecpar->bits_per_coded_sample = 8;
     audio_st->codecpar->block_align = 1;
