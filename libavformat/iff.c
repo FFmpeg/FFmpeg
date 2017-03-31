@@ -183,20 +183,20 @@ static const uint32_t dsd_5point0[] = { DSD_MLFT, DSD_MRGT, DSD_C, DSD_LS, DSD_R
 static const uint32_t dsd_5point1[] = { DSD_MLFT, DSD_MRGT, DSD_C, DSD_LFE, DSD_LS, DSD_RS };
 
 typedef struct {
-    uint64_t layout;
+    AVChannelLayout layout;
     const uint32_t * dsd_layout;
 } DSDLayoutDesc;
 
 static const DSDLayoutDesc dsd_channel_layout[] = {
-    { AV_CH_LAYOUT_STEREO,  dsd_stereo },
-    { AV_CH_LAYOUT_5POINT0, dsd_5point0 },
-    { AV_CH_LAYOUT_5POINT1, dsd_5point1 },
+    { AV_CHANNEL_LAYOUT_STEREO,  dsd_stereo },
+    { AV_CHANNEL_LAYOUT_5POINT0, dsd_5point0 },
+    { AV_CHANNEL_LAYOUT_5POINT1, dsd_5point1 },
 };
 
-static const uint64_t dsd_loudspeaker_config[] = {
-    AV_CH_LAYOUT_STEREO,
-    0, 0,
-    AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1,
+static const AVChannelLayout dsd_loudspeaker_config[] = {
+    AV_CHANNEL_LAYOUT_STEREO,
+    { 0 }, { 0 },
+    AV_CHANNEL_LAYOUT_5POINT0, AV_CHANNEL_LAYOUT_5POINT1,
 };
 
 static const char * dsd_source_comment[] = {
@@ -276,21 +276,21 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
         case MKTAG('C','H','N','L'):
             if (size < 2)
                 return AVERROR_INVALIDDATA;
-            st->codecpar->channels       = avio_rb16(pb);
-            if (size < 2 + st->codecpar->channels * 4)
+            st->codecpar->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            st->codecpar->ch_layout.nb_channels = avio_rb16(pb);
+            if (size < 2 + st->codecpar->ch_layout.nb_channels * 4)
                 return AVERROR_INVALIDDATA;
-            st->codecpar->channel_layout = 0;
-            if (st->codecpar->channels > FF_ARRAY_ELEMS(dsd_layout)) {
+            if (st->codecpar->ch_layout.nb_channels > FF_ARRAY_ELEMS(dsd_layout)) {
                 avpriv_request_sample(s, "channel layout");
                 break;
             }
-            for (i = 0; i < st->codecpar->channels; i++)
+            for (i = 0; i < st->codecpar->ch_layout.nb_channels; i++)
                 dsd_layout[i] = avio_rl32(pb);
             for (i = 0; i < FF_ARRAY_ELEMS(dsd_channel_layout); i++) {
                 const DSDLayoutDesc * d = &dsd_channel_layout[i];
-                if (av_get_channel_layout_nb_channels(d->layout) == st->codecpar->channels &&
-                    !memcmp(d->dsd_layout, dsd_layout, st->codecpar->channels * sizeof(uint32_t))) {
-                    st->codecpar->channel_layout = d->layout;
+                if (d->layout.nb_channels == st->codecpar->ch_layout.nb_channels &&
+                    !memcmp(d->dsd_layout, dsd_layout, d->layout.nb_channels * sizeof(uint32_t))) {
+                    st->codecpar->ch_layout = d->layout;
                     break;
                 }
             }
@@ -337,8 +337,8 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             config = avio_rb16(pb);
             if (config != 0xFFFF) {
                 if (config < FF_ARRAY_ELEMS(dsd_loudspeaker_config))
-                    st->codecpar->channel_layout = dsd_loudspeaker_config[config];
-                if (!st->codecpar->channel_layout)
+                    st->codecpar->ch_layout = dsd_loudspeaker_config[config];
+                if (!st->codecpar->ch_layout.nb_channels)
                     avpriv_request_sample(s, "loudspeaker configuration %d", config);
             }
             break;
@@ -431,8 +431,7 @@ static int iff_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codecpar->channels = 1;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     iff->is_64bit = avio_rl32(pb) == ID_FRM8;
     avio_skip(pb, iff->is_64bit ? 8 : 4);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
@@ -485,12 +484,13 @@ static int iff_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 2);
             st->codecpar->sample_rate = num / den;
-            st->codecpar->channels = avio_rb16(pb);
+            st->codecpar->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            st->codecpar->ch_layout.nb_channels = avio_rb16(pb);
             iff->maud_compression = avio_rb16(pb);
-            if (st->codecpar->channels == 1)
-                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-            else if (st->codecpar->channels == 2)
-                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+            if (st->codecpar->ch_layout.nb_channels == 1)
+                st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+            else if (st->codecpar->ch_layout.nb_channels == 2)
+                st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
             break;
 
         case ID_ABIT:
@@ -513,11 +513,9 @@ static int iff_read_header(AVFormatContext *s)
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
             if (avio_rb32(pb) < 6) {
-                st->codecpar->channels       = 1;
-                st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+                st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
             } else {
-                st->codecpar->channels       = 2;
-                st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+                st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
             }
             break;
 
@@ -760,8 +758,11 @@ static int iff_read_header(AVFormatContext *s)
         }
 
         st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
-        st->codecpar->bit_rate = (int64_t)st->codecpar->channels * st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample;
-        st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
+        st->codecpar->bit_rate    = (int64_t)st->codecpar->ch_layout.nb_channels *
+                                    st->codecpar->sample_rate *
+                                    st->codecpar->bits_per_coded_sample;
+        st->codecpar->block_align = st->codecpar->ch_layout.nb_channels *
+                                    st->codecpar->bits_per_coded_sample;
         if ((st->codecpar->codec_tag == ID_DSD || st->codecpar->codec_tag == ID_MAUD) && st->codecpar->block_align <= 0)
             return AVERROR_INVALIDDATA;
         break;
