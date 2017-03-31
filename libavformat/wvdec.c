@@ -98,7 +98,8 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     }
 
     if (wc->header.version < 0x402 || wc->header.version > 0x410) {
-        av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", wc->header.version);
+        avpriv_report_missing_feature(ctx, "WV version 0x%03X",
+                                      wc->header.version);
         return AVERROR_PATCHWELCOME;
     }
 

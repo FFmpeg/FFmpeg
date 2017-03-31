@@ -627,8 +627,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             case FN_BLOCKSIZE: {
                 unsigned blocksize = get_uint(s, av_log2(s->blocksize));
                 if (blocksize > s->blocksize) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Increasing block size is not supported\n");
+                    avpriv_report_missing_feature(avctx,
+                                                  "Increasing block size");
                     return AVERROR_PATCHWELCOME;
                 }
                 if (!blocksize || blocksize > MAX_BLOCKSIZE) {

@@ -774,8 +774,8 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     } else if (sps->bit_depth_luma == 11 || sps->bit_depth_luma == 13) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Unimplemented luma bit depth=%d\n",
+        avpriv_report_missing_feature(avctx,
+               "Unimplemented luma bit depth=%d",
                sps->bit_depth_luma);
         ret = AVERROR_PATCHWELCOME;
         goto fail;

@@ -1340,8 +1340,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
     ffurl_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
     if (send_content_length > 0 && send_content) {
         if (rt->control_transport == RTSP_MODE_TUNNEL) {
-            av_log(s, AV_LOG_ERROR, "tunneling of RTSP requests "
-                                    "with content data not supported\n");
+            avpriv_report_missing_feature(s, "Tunneling of RTSP requests with content data");
             return AVERROR_PATCHWELCOME;
         }
         ffurl_write(rt->rtsp_hd_out, send_content, send_content_length);

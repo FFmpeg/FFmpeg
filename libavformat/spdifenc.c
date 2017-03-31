@@ -470,7 +470,8 @@ static int spdif_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "codec not supported\n");
+        avpriv_report_missing_feature(s, "Codec %d",
+                                      s->streams[0]->codecpar->codec_id);
         return AVERROR_PATCHWELCOME;
     }
     return 0;
