@@ -98,6 +98,7 @@ Stuff that didn't reach the codebase:
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
 - Use the new bitstream filter for extracting extradata (see 8e2ea69135 and 096a8effa3)
 - ADD_RES_MMX_4_8 in libavcodec/x86/hevc_add_res.asm probably needs updating (see 589880710)
+- Read aac_adtstoasc extradata updates from packet side data on Matroska once mov and the bsf in question are fixed (See 13a211e632 and 5ef1959080)
 
 Collateral damage that needs work locally:
 ------------------------------------------
