@@ -122,7 +122,7 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (par->codec_id == AV_CODEC_ID_OPUS && par->channels > 2) {
+    if (par->codec_id == AV_CODEC_ID_OPUS && par->ch_layout.nb_channels > 2) {
         av_log(s, AV_LOG_ERROR, "Only mono and stereo are supported for Opus\n");
         return AVERROR_INVALIDDATA;
     }
@@ -138,7 +138,7 @@ static int caf_write_header(AVFormatContext *s)
     }
 
     if (par->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
-        frame_size = samples_per_packet(par->codec_id, par->channels, par->block_align);
+        frame_size = samples_per_packet(par->codec_id, par->ch_layout.nb_channels, par->block_align);
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
@@ -151,13 +151,13 @@ static int caf_write_header(AVFormatContext *s)
     avio_wb32(pb, codec_flags(par->codec_id));        //< mFormatFlags
     avio_wb32(pb, par->block_align);                  //< mBytesPerPacket
     avio_wb32(pb, frame_size);                        //< mFramesPerPacket
-    avio_wb32(pb, par->channels);                     //< mChannelsPerFrame
+    avio_wb32(pb, par->ch_layout.nb_channels);        //< mChannelsPerFrame
     avio_wb32(pb, av_get_bits_per_sample(par->codec_id)); //< mBitsPerChannel
 
-    if (par->channel_layout) {
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) {
         ffio_wfourcc(pb, "chan");
         avio_wb64(pb, 12);
-        ff_mov_write_chan(pb, par->channel_layout);
+        ff_mov_write_chan(pb, par->ch_layout.u.mask);
     }
 
     if (par->codec_id == AV_CODEC_ID_ALAC) {
@@ -247,7 +247,7 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
         if (!par->block_align) {
-            int packet_size = samples_per_packet(par->codec_id, par->channels, par->block_align);
+            int packet_size = samples_per_packet(par->codec_id, par->ch_layout.nb_channels, par->block_align);
             if (!packet_size) {
                 packet_size = st->duration / (caf->packets - 1);
                 avio_seek(pb, FRAME_SIZE_OFFSET, SEEK_SET);

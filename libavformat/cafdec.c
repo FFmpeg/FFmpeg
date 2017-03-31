@@ -76,10 +76,10 @@ static int read_desc_chunk(AVFormatContext *s)
     caf->bytes_per_packet  = avio_rb32(pb);
     st->codecpar->block_align = caf->bytes_per_packet;
     caf->frames_per_packet = avio_rb32(pb);
-    st->codecpar->channels    = avio_rb32(pb);
+    st->codecpar->ch_layout.nb_channels = avio_rb32(pb);
     st->codecpar->bits_per_coded_sample = avio_rb32(pb);
 
-    if (caf->bytes_per_packet < 0 || caf->frames_per_packet < 0 || st->codecpar->channels < 0)
+    if (caf->bytes_per_packet < 0 || caf->frames_per_packet < 0 || st->codecpar->ch_layout.nb_channels < 0)
         return AVERROR_INVALIDDATA;
 
     /* calculate bit rate for constant size packets */
@@ -172,7 +172,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
         // The data layout for Opus is currently unknown, so we do not export
         // extradata at all. Multichannel streams are not supported.
-        if (st->codecpar->channels > 2) {
+        if (st->codecpar->ch_layout.nb_channels > 2) {
             avpriv_request_sample(s, "multichannel Opus in CAF");
             return AVERROR_PATCHWELCOME;
         }
