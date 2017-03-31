@@ -128,18 +128,21 @@ static int wsd_read_header(AVFormatContext *s)
     st->codecpar->codec_id    = s->iformat->raw_codec_id;
     st->codecpar->sample_rate = avio_rb32(pb) / 8;
     avio_skip(pb, 4);
-    st->codecpar->channels    = avio_r8(pb) & 0xF;
-    st->codecpar->bit_rate    = (int64_t)st->codecpar->channels * st->codecpar->sample_rate * 8LL;
-    if (!st->codecpar->channels)
+    st->codecpar->ch_layout.nb_channels = avio_r8(pb) & 0xF;
+    st->codecpar->bit_rate    = (int64_t)st->codecpar->ch_layout.nb_channels *
+                                st->codecpar->sample_rate * 8LL;
+    if (!st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
     avio_skip(pb, 3);
     channel_assign         = avio_rb32(pb);
     if (!(channel_assign & 1)) {
+        uint64_t ch_mask = 0;
         int i;
         for (i = 1; i < 32; i++)
             if ((channel_assign >> i) & 1)
-                st->codecpar->channel_layout |= wsd_to_av_channel_layoyt(s, i);
+                ch_mask |= wsd_to_av_channel_layoyt(s, i);
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ch_mask);
     }
 
     avio_skip(pb, 16);
