@@ -191,8 +191,7 @@ static int flac_read_header(AVFormatContext *s)
                         av_log(s, AV_LOG_WARNING,
                                "Invalid value of WAVEFORMATEXTENSIBLE_CHANNEL_MASK\n");
                     } else {
-                        st->codecpar->channel_layout = mask;
-                        st->codecpar->channels       = av_get_channel_layout_nb_channels(mask);
+                        av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
                         av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", NULL, 0);
                     }
                 }
