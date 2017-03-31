@@ -1501,6 +1501,7 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
 "
 
 EXTERNAL_LIBRARY_GPL_LIST="
+    avisynth
     frei0r
     libcdio
     librubberband
@@ -1533,7 +1534,6 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_NONFREE_LIST
     $EXTERNAL_LIBRARY_VERSION3_LIST
     $EXTERNAL_LIBRARY_GPLV3_LIST
-    avisynth
     chromaprint
     crystalhd
     decklink
