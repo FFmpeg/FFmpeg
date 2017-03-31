@@ -1009,9 +1009,9 @@ static int put_wv_codecpriv(AVIOContext *pb, const AVCodecParameters *par)
 static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
                               const AVCodecParameters *par)
 {
-    int write_comment = (par->channel_layout &&
-                         !(par->channel_layout & ~0x3ffffULL) &&
-                         !ff_flac_is_native_layout(par->channel_layout));
+    int write_comment = (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+                         !(par->ch_layout.u.mask & ~0x3ffffULL) &&
+                         !ff_flac_is_native_layout(par->ch_layout.u.mask));
     int ret = ff_flac_write_header(pb, par->extradata, par->extradata_size,
                                    !write_comment);
 
@@ -1025,7 +1025,7 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
         uint8_t buf[32];
         int64_t len;
 
-        snprintf(buf, sizeof(buf), "0x%"PRIx64, par->channel_layout);
+        snprintf(buf, sizeof(buf), "0x%"PRIx64, par->ch_layout.u.mask);
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
         len = ff_vorbiscomment_length(dict, vendor, NULL, 0);
@@ -1769,7 +1769,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             put_ebml_string(pb, MATROSKA_ID_CODECID, "A_MS/ACM");
 
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 6 + 4 * 9);
-        put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , par->channels);
+        put_ebml_uint(pb, MATROSKA_ID_AUDIOCHANNELS, par->ch_layout.nb_channels);
 
         track->sample_rate_offset = avio_tell(pb);
         put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);

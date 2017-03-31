@@ -2082,7 +2082,7 @@ static int matroska_parse_flac(AVFormatContext *s,
                     av_log(s, AV_LOG_WARNING,
                            "Invalid value of WAVEFORMATEXTENSIBLE_CHANNEL_MASK\n");
                 } else
-                    st->codecpar->channel_layout = mask;
+                    av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
             }
             av_dict_free(&dict);
         }
@@ -2945,7 +2945,11 @@ static int matroska_parse_tracks(AVFormatContext *s)
             st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
             st->codecpar->codec_tag   = fourcc;
             st->codecpar->sample_rate = track->audio.out_samplerate;
-            st->codecpar->channels    = track->audio.channels;
+            // channel layout may be already set by codec private checks above
+            if (st->codecpar->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+                !st->codecpar->ch_layout.u.mask)
+                st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+            st->codecpar->ch_layout.nb_channels = track->audio.channels;
             if (!st->codecpar->bits_per_coded_sample)
                 st->codecpar->bits_per_coded_sample = track->audio.bitdepth;
             if (st->codecpar->codec_id == AV_CODEC_ID_MP3 ||
