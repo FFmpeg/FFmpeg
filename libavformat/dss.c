@@ -155,8 +155,7 @@ static int dss_read_header(AVFormatContext *s)
     }
 
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-    st->codecpar->channels       = 1;
+    st->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     st->start_time = 0;
