@@ -21,7 +21,7 @@
 #ifndef AVCODEC_MIPS_HEVCPRED_MIPS_H
 #define AVCODEC_MIPS_HEVCPRED_MIPS_H
 
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevcpred.h"
 
 void ff_hevc_intra_pred_planar_0_msa(uint8_t *dst,
                                      const uint8_t *src_top,
@@ -67,7 +67,7 @@ void ff_pred_intra_pred_angular_3_msa(uint8_t *dst,
                                       const uint8_t *src_left,
                                       ptrdiff_t stride, int c_idx, int mode);
 
-void ff_intra_pred_8_16x16_msa(HEVCContext *s, int x0, int y0, int c_idx);
-void ff_intra_pred_8_32x32_msa(HEVCContext *s, int x0, int y0, int c_idx);
+void ff_intra_pred_8_16x16_msa(struct HEVCContext *s, int x0, int y0, int c_idx);
+void ff_intra_pred_8_32x32_msa(struct HEVCContext *s, int x0, int y0, int c_idx);
 
 #endif  // #ifndef AVCODEC_MIPS_HEVCPRED_MIPS_H
