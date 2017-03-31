@@ -124,8 +124,7 @@ static int read_header(AVFormatContext *s)
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_tag = 0; /* no fourcc */
         st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
-        st->codecpar->channels = 1;
-        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
         st->codecpar->sample_rate = 8000;
         avpriv_set_pts_info(st, 64, 1, 8000); /* 8000 hz */
     }
