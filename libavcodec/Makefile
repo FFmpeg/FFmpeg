@@ -414,7 +414,7 @@ OBJS-$(CONFIG_MPEGVIDEO_DECODER)       += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MPEG2_MMAL_DECODER)      += mmaldec.o
-OBJS-$(CONFIG_MPEG2_QSV_DECODER)       += qsvdec_mpeg2.o
+OBJS-$(CONFIG_MPEG2_QSV_DECODER)       += qsvdec_other.o
 OBJS-$(CONFIG_MPEG2_QSV_ENCODER)       += qsvenc_mpeg2.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
@@ -591,7 +591,7 @@ OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1_block.o vc1_loopfilter.o 
                                           wmv2dsp.o wmv2data.o
 OBJS-$(CONFIG_VC1_CUVID_DECODER)       += cuvid.o
 OBJS-$(CONFIG_VC1_MMAL_DECODER)        += mmaldec.o
-OBJS-$(CONFIG_VC1_QSV_DECODER)         += qsvdec_vc1.o
+OBJS-$(CONFIG_VC1_QSV_DECODER)         += qsvdec_other.o
 OBJS-$(CONFIG_VC2_ENCODER)             += vc2enc.o vc2enc_dwt.o diractab.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
