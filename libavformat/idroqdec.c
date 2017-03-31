@@ -185,18 +185,16 @@ static int roq_read_packet(AVFormatContext *s,
                 st->codecpar->codec_id = AV_CODEC_ID_ROQ_DPCM;
                 st->codecpar->codec_tag = 0;  /* no tag */
                 if (chunk_type == RoQ_SOUND_STEREO) {
-                    st->codecpar->channels       = 2;
-                    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+                    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
                 } else {
-                    st->codecpar->channels       = 1;
-                    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+                    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
                 }
-                roq->audio_channels    = st->codecpar->channels;
+                roq->audio_channels = st->codecpar->ch_layout.nb_channels;
                 st->codecpar->sample_rate = RoQ_AUDIO_SAMPLE_RATE;
                 st->codecpar->bits_per_coded_sample = 16;
-                st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+                st->codecpar->bit_rate = roq->audio_channels * st->codecpar->sample_rate *
                     st->codecpar->bits_per_coded_sample;
-                st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
+                st->codecpar->block_align = roq->audio_channels * st->codecpar->bits_per_coded_sample;
             }
         case RoQ_QUAD_VQ:
             if (chunk_type == RoQ_QUAD_VQ) {
