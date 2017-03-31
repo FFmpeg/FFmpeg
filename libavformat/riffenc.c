@@ -77,9 +77,9 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
      * for indicating packet duration. */
     frame_size = av_get_audio_frame_duration2(par, par->block_align);
 
-    waveformatextensible = (par->channels > 2 && par->channel_layout) ||
-                           par->channels == 1 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_MONO ||
-                           par->channels == 2 && par->channel_layout && par->channel_layout != AV_CH_LAYOUT_STEREO ||
+    waveformatextensible = (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+                            av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO) &&
+                            av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) ||
                            par->sample_rate > 48000 ||
                            par->codec_id == AV_CODEC_ID_EAC3 || par->codec_id == AV_CODEC_ID_DFPWM ||
                            av_get_bits_per_sample(par->codec_id) > 16;
@@ -89,7 +89,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     else
         avio_wl16(pb, par->codec_tag);
 
-    avio_wl16(pb, par->channels);
+    avio_wl16(pb, par->ch_layout.nb_channels);
     avio_wl32(pb, par->sample_rate);
     if (par->codec_id == AV_CODEC_ID_ATRAC3 ||
         par->codec_id == AV_CODEC_ID_G723_1 ||
@@ -119,13 +119,13 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     } else if (par->codec_id == AV_CODEC_ID_AC3) {
         blkalign = 3840;                /* maximum bytes per frame */
     } else if (par->codec_id == AV_CODEC_ID_AAC) {
-        blkalign = 768 * par->channels; /* maximum bytes per frame */
+        blkalign = 768 * par->ch_layout.nb_channels; /* maximum bytes per frame */
     } else if (par->codec_id == AV_CODEC_ID_G723_1) {
         blkalign = 24;
     } else if (par->block_align != 0) { /* specified by the codec */
         blkalign = par->block_align;
     } else
-        blkalign = bps * par->channels / av_gcd(8, bps);
+        blkalign = bps * par->ch_layout.nb_channels / av_gcd(8, bps);
     if (par->codec_id == AV_CODEC_ID_PCM_U8 ||
         par->codec_id == AV_CODEC_ID_PCM_S24LE ||
         par->codec_id == AV_CODEC_ID_PCM_S32LE ||
@@ -153,7 +153,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
         /* dwHeadBitrate */
         bytestream_put_le32(&riff_extradata, par->bit_rate);
         /* fwHeadMode */
-        bytestream_put_le16(&riff_extradata, par->channels == 2 ? 1 : 8);
+        bytestream_put_le16(&riff_extradata, par->ch_layout.nb_channels == 2 ? 1 : 8);
         /* fwHeadModeExt */
         bytestream_put_le16(&riff_extradata, 0);
         /* wHeadEmphasis */
@@ -180,13 +180,13 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     if (waveformatextensible) {
         int write_channel_mask = !(flags & FF_PUT_WAV_HEADER_SKIP_CHANNELMASK) &&
                                  (s->strict_std_compliance < FF_COMPLIANCE_NORMAL ||
-                                  par->channel_layout < 0x40000);
+                                  par->ch_layout.u.mask < 0x40000);
         /* 22 is WAVEFORMATEXTENSIBLE size */
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22);
         /* ValidBitsPerSample || SamplesPerBlock || Reserved */
         avio_wl16(pb, bps);
         /* dwChannelMask */
-        avio_wl32(pb, write_channel_mask ? par->channel_layout : 0);
+        avio_wl32(pb, write_channel_mask ? par->ch_layout.u.mask : 0);
         /* GUID + next 3 */
         if (par->codec_id == AV_CODEC_ID_EAC3 || par->codec_id == AV_CODEC_ID_DFPWM) {
             ff_put_guid(pb, ff_get_codec_guid(par->codec_id, ff_codec_wav_guids));
