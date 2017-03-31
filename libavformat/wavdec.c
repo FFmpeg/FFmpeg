@@ -221,9 +221,11 @@ static int wav_parse_xma2_tag(AVFormatContext *s, int64_t size, AVStream *st)
         channels += avio_r8(pb);
         avio_skip(pb, 3);
     }
-    st->codecpar->channels = channels;
+    av_channel_layout_uninit(&st->codecpar->ch_layout);
+    st->codecpar->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    st->codecpar->ch_layout.nb_channels = channels;
 
-    if (st->codecpar->channels <= 0 || st->codecpar->sample_rate <= 0)
+    if (st->codecpar->ch_layout.nb_channels <= 0 || st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
@@ -611,15 +613,15 @@ break_loop:
 
     if (   st->codecpar->bit_rate > 0 && data_size > 0
         && st->codecpar->sample_rate > 0
-        && sample_count > 0 && st->codecpar->channels > 1
-        && sample_count % st->codecpar->channels == 0) {
-        if (fabs(8.0 * data_size * st->codecpar->channels * st->codecpar->sample_rate /
+        && sample_count > 0 && st->codecpar->ch_layout.nb_channels > 1
+        && sample_count % st->codecpar->ch_layout.nb_channels == 0) {
+        if (fabs(8.0 * data_size * st->codecpar->ch_layout.nb_channels * st->codecpar->sample_rate /
             sample_count /st->codecpar->bit_rate - 1.0) < 0.3)
-            sample_count /= st->codecpar->channels;
+            sample_count /= st->codecpar->ch_layout.nb_channels;
     }
 
-    if (   data_size > 0 && sample_count && st->codecpar->channels
-        && (data_size << 3) / sample_count / st->codecpar->channels > st->codecpar->bits_per_coded_sample  + 1) {
+    if (data_size > 0 && sample_count && st->codecpar->ch_layout.nb_channels &&
+        (data_size << 3) / sample_count / st->codecpar->ch_layout.nb_channels > st->codecpar->bits_per_coded_sample  + 1) {
         av_log(s, AV_LOG_WARNING, "ignoring wrong sample_count %"PRId64"\n", sample_count);
         sample_count = 0;
     }
@@ -632,34 +634,34 @@ break_loop:
     }
 
     if (!sample_count || av_get_exact_bits_per_sample(st->codecpar->codec_id) > 0)
-        if (   st->codecpar->channels
+        if (   st->codecpar->ch_layout.nb_channels
             && data_size
             && av_get_bits_per_sample(st->codecpar->codec_id)
             && wav->data_end <= avio_size(pb))
             sample_count = (data_size << 3)
                                   /
-                (st->codecpar->channels * (uint64_t)av_get_bits_per_sample(st->codecpar->codec_id));
+                (st->codecpar->ch_layout.nb_channels * (uint64_t)av_get_bits_per_sample(st->codecpar->codec_id));
 
     if (sample_count)
         st->duration = sample_count;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S32LE &&
-        st->codecpar->block_align == st->codecpar->channels * 4 &&
+        st->codecpar->block_align == st->codecpar->ch_layout.nb_channels * 4 &&
         st->codecpar->bits_per_coded_sample == 32 &&
         st->codecpar->extradata_size == 2 &&
         AV_RL16(st->codecpar->extradata) == 1) {
         st->codecpar->codec_id = AV_CODEC_ID_PCM_F16LE;
         st->codecpar->bits_per_coded_sample = 16;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE &&
-               st->codecpar->block_align == st->codecpar->channels * 4 &&
+               st->codecpar->block_align == st->codecpar->ch_layout.nb_channels * 4 &&
                st->codecpar->bits_per_coded_sample == 24) {
         st->codecpar->codec_id = AV_CODEC_ID_PCM_F24LE;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_XMA1 ||
                st->codecpar->codec_id == AV_CODEC_ID_XMA2) {
         st->codecpar->block_align = 2048;
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_ADPCM_MS && st->codecpar->channels > 2 &&
-               st->codecpar->block_align < INT_MAX / st->codecpar->channels) {
-        st->codecpar->block_align *= st->codecpar->channels;
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_ADPCM_MS && st->codecpar->ch_layout.nb_channels > 2 &&
+               st->codecpar->block_align < INT_MAX / st->codecpar->ch_layout.nb_channels) {
+        st->codecpar->block_align *= st->codecpar->ch_layout.nb_channels;
     }
 
     ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
