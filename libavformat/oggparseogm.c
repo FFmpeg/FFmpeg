@@ -97,7 +97,7 @@ ogm_header(AVFormatContext *s, int idx)
             st->codecpar->height = bytestream2_get_le32(&p);
             avpriv_set_pts_info(st, 64, time_unit, spu * 10000000);
         } else {
-            st->codecpar->channels = bytestream2_get_le16(&p);
+            st->codecpar->ch_layout.nb_channels = bytestream2_get_le16(&p);
             bytestream2_skip(&p, 2); /* block_align */
             st->codecpar->bit_rate = bytestream2_get_le32(&p) * 8;
             st->codecpar->sample_rate = spu * 10000000 / time_unit;
@@ -160,7 +160,7 @@ ogm_dshow_header(AVFormatContext *s, int idx)
 
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id = ff_codec_get_id(ff_codec_wav_tags, AV_RL16(p + 124));
-        st->codecpar->channels = AV_RL16(p + 126);
+        st->codecpar->ch_layout.nb_channels = AV_RL16(p + 126);
         st->codecpar->sample_rate = AV_RL32(p + 128);
         st->codecpar->bit_rate = AV_RL32(p + 132) * 8;
     }
