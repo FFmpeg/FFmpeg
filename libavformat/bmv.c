@@ -58,8 +58,7 @@ static int bmv_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
     ast->codecpar->codec_id        = AV_CODEC_ID_BMV_AUDIO;
-    ast->codecpar->channels        = 2;
-    ast->codecpar->channel_layout  = AV_CH_LAYOUT_STEREO;
+    ast->codecpar->ch_layout       = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     ast->codecpar->sample_rate     = 22050;
     avpriv_set_pts_info(ast, 16, 1, 22050);
 
