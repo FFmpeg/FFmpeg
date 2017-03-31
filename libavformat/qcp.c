@@ -103,8 +103,7 @@ static int qcp_read_header(AVFormatContext *s)
     avio_skip(pb, 4 + 8 + 4 + 1 + 1);    // filesize + "QLCMfmt " + chunk-size + major-version + minor-version
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channels   = 1;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avio_read(pb, buf, 16);
     if (is_qcelp_13k_guid(buf)) {
         st->codecpar->codec_id = AV_CODEC_ID_QCELP;
