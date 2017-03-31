@@ -1251,6 +1251,7 @@ check_exec(){
 }
 
 check_exec_crash(){
+    log check_exec_crash "$@"
     code=$(cat)
 
     # exit() is not async signal safe.  _Exit (C99) and _exit (POSIX)
@@ -1321,6 +1322,7 @@ check_compile_assert(){
 }
 
 require(){
+    log require "$@"
     name="$1"
     headers="$2"
     func="$3"
@@ -1337,6 +1339,7 @@ require_cpp(){
 }
 
 use_pkg_config(){
+    log use_pkg_config "$@"
     pkg="$1"
     check_pkg_config "$@" || return 1
     add_cflags    $(get_safe "${pkg}_cflags")
