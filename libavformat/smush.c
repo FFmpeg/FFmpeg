@@ -178,8 +178,7 @@ static int smush_read_header(AVFormatContext *ctx)
         ast->codecpar->codec_id    = AV_CODEC_ID_ADPCM_VIMA;
         ast->codecpar->codec_tag   = 0;
         ast->codecpar->sample_rate = sample_rate;
-        ast->codecpar->channels    = channels;
-
+        ast->codecpar->ch_layout.nb_channels = channels;
         avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
     }
 
