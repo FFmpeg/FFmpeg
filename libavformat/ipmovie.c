@@ -254,16 +254,14 @@ static int init_audio(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = ipmovie->audio_type;
     st->codecpar->codec_tag = 0;  /* no tag */
-    st->codecpar->channels = ipmovie->audio_channels;
-    st->codecpar->channel_layout = st->codecpar->channels == 1 ? AV_CH_LAYOUT_MONO :
-                                                            AV_CH_LAYOUT_STEREO;
+    av_channel_layout_default(&st->codecpar->ch_layout, ipmovie->audio_channels);
     st->codecpar->sample_rate = ipmovie->audio_sample_rate;
     st->codecpar->bits_per_coded_sample = ipmovie->audio_bits;
-    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+    st->codecpar->bit_rate = ipmovie->audio_channels * st->codecpar->sample_rate *
         st->codecpar->bits_per_coded_sample;
     if (st->codecpar->codec_id == AV_CODEC_ID_INTERPLAY_DPCM)
         st->codecpar->bit_rate /= 2;
-    st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample;
+    st->codecpar->block_align = ipmovie->audio_channels * st->codecpar->bits_per_coded_sample;
 
     return 0;
 }
