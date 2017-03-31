@@ -72,8 +72,7 @@ static int yop_read_header(AVFormatContext *s)
     audio_par                 = audio_stream->codecpar;
     audio_par->codec_type     = AVMEDIA_TYPE_AUDIO;
     audio_par->codec_id       = AV_CODEC_ID_ADPCM_IMA_APC;
-    audio_par->channels       = 1;
-    audio_par->channel_layout = AV_CH_LAYOUT_MONO;
+    audio_par->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     audio_par->sample_rate    = 22050;
 
     // Video
