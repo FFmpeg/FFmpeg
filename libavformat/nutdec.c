@@ -457,7 +457,7 @@ static int decode_stream_header(NUTContext *nut)
     } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         GET_V(st->codecpar->sample_rate, tmp > 0);
         ffio_read_varlen(bc); // samplerate_den
-        GET_V(st->codecpar->channels, tmp > 0);
+        GET_V(st->codecpar->ch_layout.nb_channels, tmp > 0);
     }
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR,
@@ -961,8 +961,10 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
         if (!dst)
             return AVERROR(ENOMEM);
         bytestream_put_le32(&dst,
+#if FF_API_OLD_CHANNEL_LAYOUT
                             AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT*(!!channels) +
                             AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT*(!!channel_layout) +
+#endif
                             AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE*(!!sample_rate) +
                             AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS*(!!(width|height))
                            );
