@@ -3552,6 +3552,22 @@ enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
 disabled logging && logfile=/dev/null
 
+die_license_disabled() {
+    enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
+}
+
+die_license_disabled_gpl() {
+    enabled $1 || { enabled $v && die "$v is incompatible with the gpl and --enable-$1 is not specified."; }
+}
+
+map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
+map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
+
+enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST
+map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
+
+enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
+
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
 
@@ -5160,22 +5176,6 @@ build the shared libraries as well. To only build the shared libraries specify
 EOF
     exit 1
 fi
-
-die_license_disabled() {
-    enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
-}
-
-die_license_disabled_gpl() {
-    enabled $1 || { enabled $v && die "$v is incompatible with the gpl and --enable-$1 is not specified."; }
-}
-
-map "die_license_disabled gpl"      $EXTERNAL_LIBRARY_GPL_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
-map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST $EXTERNAL_LIBRARY_GPLV3_LIST
-
-enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_LIST
-map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
-
-enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
