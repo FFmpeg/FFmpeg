@@ -109,19 +109,20 @@ static av_cold int iss_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_ISS;
+
     if (stereo) {
-        st->codecpar->channels       = 2;
-        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     } else {
-        st->codecpar->channels       = 1;
-        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     }
+
     st->codecpar->sample_rate = 44100;
     if(rate_divisor > 0)
          st->codecpar->sample_rate /= rate_divisor;
     st->codecpar->bits_per_coded_sample = 4;
-    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate
-                                      * st->codecpar->bits_per_coded_sample;
+    st->codecpar->bit_rate = st->codecpar->ch_layout.nb_channels *
+                             st->codecpar->sample_rate *
+                             st->codecpar->bits_per_coded_sample;
     st->codecpar->block_align = iss->packet_size;
     avpriv_set_pts_info(st, 32, 1, st->codecpar->sample_rate);
 
@@ -138,8 +139,8 @@ static int iss_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     pkt->pts = avio_tell(s->pb) - iss->sample_start_pos;
-    if(s->streams[0]->codecpar->channels > 0)
-        pkt->pts /= s->streams[0]->codecpar->channels*2;
+    if (s->streams[0]->codecpar->ch_layout.nb_channels > 0)
+        pkt->pts /= s->streams[0]->codecpar->ch_layout.nb_channels * 2;
     return 0;
 }
 
