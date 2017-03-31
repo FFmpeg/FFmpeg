@@ -147,12 +147,12 @@ static av_cold int rl2_read_header(AVFormatContext *s)
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
         st->codecpar->codec_tag = 1;
-        st->codecpar->channels = channels;
+        st->codecpar->ch_layout.nb_channels = channels;
         st->codecpar->bits_per_coded_sample = 8;
         st->codecpar->sample_rate = rate;
-        st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+        st->codecpar->bit_rate = channels * st->codecpar->sample_rate *
             st->codecpar->bits_per_coded_sample;
-        st->codecpar->block_align = st->codecpar->channels *
+        st->codecpar->block_align = channels *
             st->codecpar->bits_per_coded_sample / 8;
         avpriv_set_pts_info(st,32,1,rate);
     }
