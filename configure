@@ -80,7 +80,7 @@ Standard options:
   --logfile=FILE           log tests and output to FILE [config.log]
   --disable-logging        do not log configure debug information
   --fatal-warnings         fail if any configure warning is generated
-  --prefix=PREFIX          install in PREFIX [$prefix]
+  --prefix=PREFIX          install in PREFIX [$prefix_default]
   --bindir=DIR             install binaries in DIR [PREFIX/bin]
   --datadir=DIR            install data files in DIR [PREFIX/share/ffmpeg]
   --docdir=DIR             install documentation in DIR [PREFIX/share/doc/ffmpeg]
@@ -91,7 +91,7 @@ Standard options:
   --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
   --enable-rpath           use rpath to allow installing libraries in paths
                            not part of the dynamic linker search path
-                           use rpath when linking programs [USE WITH CARE]
+                           use rpath when linking programs (USE WITH CARE)
   --install-name-dir=DIR   Darwin directory name for installed targets
 
 Licensing options:
@@ -105,7 +105,7 @@ Configuration options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
   --enable-small           optimize for size instead of speed
-  --disable-runtime-cpudetect disable detecting cpu capabilities at runtime (smaller binary)
+  --disable-runtime-cpudetect disable detecting CPU capabilities at runtime (smaller binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
@@ -6591,7 +6591,6 @@ echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
 echo "postprocessing support    ${postproc-no}"
-echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
@@ -6632,7 +6631,7 @@ done
 
 echo "License: $license"
 
-echo "Creating config.mak, config.h, and doc/config.texi..."
+echo "Creating configuration files ..."
 
 fi # test "$quiet" != "yes"
 
