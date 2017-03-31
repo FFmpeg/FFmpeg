@@ -1453,17 +1453,19 @@ static int64_t mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, 
 
     mxf_write_local_tag(s, 4, 0x3D07);
     if (mxf->channel_count == -1) {
-        if (show_warnings && (s->oformat == &ff_mxf_d10_muxer) && (st->codecpar->channels != 4) && (st->codecpar->channels != 8))
+        if (show_warnings && (s->oformat == &ff_mxf_d10_muxer) &&
+            (st->codecpar->ch_layout.nb_channels != 4) &&
+            (st->codecpar->ch_layout.nb_channels != 8))
             av_log(s, AV_LOG_WARNING, "the number of audio channels shall be 4 or 8 : the output will not comply to MXF D-10 specs, use -d10_channelcount to fix this\n");
-        avio_wb32(pb, st->codecpar->channels);
+        avio_wb32(pb, st->codecpar->ch_layout.nb_channels);
     } else if (s->oformat == &ff_mxf_d10_muxer) {
-        if (show_warnings && (mxf->channel_count < st->codecpar->channels))
+        if (show_warnings && (mxf->channel_count < st->codecpar->ch_layout.nb_channels))
             av_log(s, AV_LOG_WARNING, "d10_channelcount < actual number of audio channels : some channels will be discarded\n");
         if (show_warnings && (mxf->channel_count != 4) && (mxf->channel_count != 8))
             av_log(s, AV_LOG_WARNING, "d10_channelcount shall be set to 4 or 8 : the output will not comply to MXF D-10 specs\n");
         avio_wb32(pb, mxf->channel_count);
     } else {
-        avio_wb32(pb, st->codecpar->channels);
+        avio_wb32(pb, st->codecpar->ch_layout.nb_channels);
     }
 
     mxf_write_local_tag(s, 4, 0x3D01);
@@ -2622,7 +2624,7 @@ static int mxf_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "Only pcm_s16le and pcm_s24le audio codecs are implemented\n");
                     return AVERROR_PATCHWELCOME;
                 }
-                if (st->codecpar->channels != 1) {
+                if (st->codecpar->ch_layout.nb_channels != 1) {
                     av_log(s, AV_LOG_ERROR, "MXF OPAtom only supports single channel audio\n");
                     return AVERROR(EINVAL);
                 }
@@ -2631,11 +2633,11 @@ static int mxf_init(AVFormatContext *s)
                 if((ret = mxf_init_timecode(s, st, tbc)) < 0)
                     return ret;
 
-                mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->channels) >> 3;
+                mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->ch_layout.nb_channels) >> 3;
                 sc->index = INDEX_WAV;
             } else {
                 mxf->slice_count = 1;
-                sc->frame_size = st->codecpar->channels *
+                sc->frame_size = st->codecpar->ch_layout.nb_channels *
                                  av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) *
                                  av_get_bits_per_sample(st->codecpar->codec_id) / 8;
             }
@@ -2781,10 +2783,10 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
 
     avio_w8(pb, (frame_size == 1920 ? 0 : (mxf->edit_units_count-1) % 5 + 1));
     avio_wl16(pb, frame_size);
-    avio_w8(pb, (1<<st->codecpar->channels)-1);
+    avio_w8(pb, (1 << st->codecpar->ch_layout.nb_channels)-1);
 
     while (samples < end) {
-        for (i = 0; i < st->codecpar->channels; i++) {
+        for (i = 0; i < st->codecpar->ch_layout.nb_channels; i++) {
             uint32_t sample;
             if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
                 sample = AV_RL24(samples)<< 4;
