@@ -868,7 +868,7 @@ static int mov_write_chan_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     int64_t pos = avio_tell(pb);
 
     layout_tag = ff_mov_get_channel_layout_tag(track->par->codec_id,
-                                               track->par->channel_layout,
+                                               &track->par->ch_layout,
                                                &bitmap);
     if (!layout_tag) {
         av_log(s, AV_LOG_WARNING, "not writing 'chan' tag due to "
@@ -1137,7 +1137,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     int ret = 0;
 
     if (track->mode == MODE_MOV) {
-        if (track->timescale > UINT16_MAX || !track->par->channels) {
+        if (track->timescale > UINT16_MAX || !track->par->ch_layout.nb_channels) {
             if (mov_get_lpcm_flags(track->par->codec_id))
                 tag = AV_RL32("lpcm");
             version = 2;
@@ -1173,7 +1173,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         avio_wb32(pb, 0x00010000);
         avio_wb32(pb, 72);
         avio_wb64(pb, av_double2int(track->par->sample_rate));
-        avio_wb32(pb, track->par->channels);
+        avio_wb32(pb, track->par->ch_layout.nb_channels);
         avio_wb32(pb, 0x7F000000);
         avio_wb32(pb, av_get_bits_per_sample(track->par->codec_id));
         avio_wb32(pb, mov_get_lpcm_flags(track->par->codec_id));
@@ -1181,7 +1181,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         avio_wb32(pb, get_samples_per_packet(track));
     } else {
         if (track->mode == MODE_MOV) {
-            avio_wb16(pb, track->par->channels);
+            avio_wb16(pb, track->par->ch_layout.nb_channels);
             if (track->par->codec_id == AV_CODEC_ID_PCM_U8 ||
                 track->par->codec_id == AV_CODEC_ID_PCM_S8)
                 avio_wb16(pb, 8); /* bits per sample */
@@ -1194,7 +1194,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             if (track->par->codec_id == AV_CODEC_ID_FLAC ||
                 track->par->codec_id == AV_CODEC_ID_ALAC ||
                 track->par->codec_id == AV_CODEC_ID_OPUS) {
-                avio_wb16(pb, track->par->channels);
+                avio_wb16(pb, track->par->ch_layout.nb_channels);
             } else {
                 avio_wb16(pb, 2);
             }
@@ -1226,7 +1226,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             avio_wb32(pb, 1); /*  must be 1 for  uncompressed formats */
         else
             avio_wb32(pb, track->par->frame_size); /* Samples per packet */
-        avio_wb32(pb, track->sample_size / track->par->channels); /* Bytes per packet */
+        avio_wb32(pb, track->sample_size / track->par->ch_layout.nb_channels); /* Bytes per packet */
         avio_wb32(pb, track->sample_size); /* Bytes per frame */
         avio_wb32(pb, 2); /* Bytes per sample */
     }
@@ -4392,7 +4392,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov, AVFormat
                             track->par->extradata_size);
             param_write_int(pb, "AudioTag", ff_codec_get_tag(ff_codec_wav_tags,
                                                              track->par->codec_id));
-            param_write_int(pb, "Channels", track->par->channels);
+            param_write_int(pb, "Channels", track->par->ch_layout.nb_channels);
             param_write_int(pb, "SamplingRate", track->par->sample_rate);
             param_write_int(pb, "BitsPerSample", 16);
             param_write_int(pb, "PacketSize", track->par->block_align ?
@@ -5150,7 +5150,7 @@ static int mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
     avio_wb32(pb, audio_kbitrate);
     avio_wb32(pb, audio_kbitrate);
     avio_wb32(pb, audio_rate);
-    avio_wb32(pb, audio_par->channels);
+    avio_wb32(pb, audio_par->ch_layout.nb_channels);
 
     avio_wb32(pb, 0x34);  /* size */
     ffio_wfourcc(pb, "VPRF");   /* video */
@@ -6803,7 +6803,8 @@ static int mov_init(AVFormatContext *s)
             }else if (st->codecpar->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
             }else{
-                track->sample_size = (av_get_bits_per_sample(st->codecpar->codec_id) >> 3) * st->codecpar->channels;
+                track->sample_size = (av_get_bits_per_sample(st->codecpar->codec_id) >> 3) *
+                                     st->codecpar->ch_layout.nb_channels;
             }
             if (st->codecpar->codec_id == AV_CODEC_ID_ILBC ||
                 st->codecpar->codec_id == AV_CODEC_ID_ADPCM_IMA_QT) {
@@ -6939,7 +6940,8 @@ static int mov_write_header(AVFormatContext *s)
         }
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO ||
-            track->par->channel_layout != AV_CH_LAYOUT_MONO)
+            av_channel_layout_compare(&track->par->ch_layout,
+                                      &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO))
             continue;
 
         for (j = 0; j < s->nb_streams; j++) {
@@ -6949,7 +6951,8 @@ static int mov_write_header(AVFormatContext *s)
                 continue;
 
             if (stj->codecpar->codec_type != AVMEDIA_TYPE_AUDIO ||
-                trackj->par->channel_layout != AV_CH_LAYOUT_MONO ||
+                av_channel_layout_compare(&trackj->par->ch_layout,
+                                          &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO) ||
                 trackj->language != track->language ||
                 trackj->tag != track->tag
             )
