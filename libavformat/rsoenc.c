@@ -34,7 +34,7 @@ static int rso_write_header(AVFormatContext *s)
     if (!par->codec_tag)
         return AVERROR_INVALIDDATA;
 
-    if (par->channels != 1) {
+    if (par->ch_layout.nb_channels != 1) {
         av_log(s, AV_LOG_ERROR, "RSO only supports mono\n");
         return AVERROR_INVALIDDATA;
     }
