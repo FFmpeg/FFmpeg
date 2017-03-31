@@ -333,7 +333,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
             if (c->n_ast > 1) return NULL;
             /* Some checks -- DV format is very picky about its incoming streams */
             if(st->codecpar->codec_id    != AV_CODEC_ID_PCM_S16LE ||
-               st->codecpar->channels    != 2)
+               st->codecpar->ch_layout.nb_channels    != 2)
                 goto bail_out;
             if (st->codecpar->sample_rate != 48000 &&
                 st->codecpar->sample_rate != 44100 &&
