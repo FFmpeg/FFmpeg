@@ -54,7 +54,6 @@
 
 /* always use the same PCM audio parameters */
 #define WC3_SAMPLE_RATE 22050
-#define WC3_AUDIO_CHANNELS 1
 #define WC3_AUDIO_BITS 16
 
 /* nice, constant framerate */
@@ -195,13 +194,12 @@ static int wc3_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
     st->codecpar->codec_tag = 1;
-    st->codecpar->channels = WC3_AUDIO_CHANNELS;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     st->codecpar->bits_per_coded_sample = WC3_AUDIO_BITS;
     st->codecpar->sample_rate = WC3_SAMPLE_RATE;
-    st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+    st->codecpar->bit_rate = st->codecpar->ch_layout.nb_channels * st->codecpar->sample_rate *
         st->codecpar->bits_per_coded_sample;
-    st->codecpar->block_align = WC3_AUDIO_BITS * WC3_AUDIO_CHANNELS;
+    st->codecpar->block_align = WC3_AUDIO_BITS * st->codecpar->ch_layout.nb_channels;
 
     return 0;
 }
