@@ -252,18 +252,12 @@ static int str_read_packet(AVFormatContext *s,
                 st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
                 st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_XA;
                 st->codecpar->codec_tag   = 0;  /* no fourcc */
-                if (fmt & 1) {
-                    st->codecpar->channels       = 2;
-                    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-                } else {
-                    st->codecpar->channels       = 1;
-                    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-                }
+                av_channel_layout_default(&st->codecpar->ch_layout, (fmt & 1) + 1);
                 st->codecpar->sample_rate = (fmt&4)?18900:37800;
             //    st->codecpar->bit_rate = 0; //FIXME;
                 st->codecpar->block_align = 128;
 
-                avpriv_set_pts_info(st, 64, 18 * 224 / st->codecpar->channels,
+                avpriv_set_pts_info(st, 64, 18 * 224 / st->codecpar->ch_layout.nb_channels,
                                     st->codecpar->sample_rate);
                 st->start_time = 0;
             }
