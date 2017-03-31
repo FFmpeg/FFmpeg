@@ -267,7 +267,9 @@ static int write_manifest(AVFormatContext *s, int final)
             if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
             last = i;
-            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%"PRId64"\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codecpar->bit_rate, os->fourcc, s->streams[i]->codecpar->sample_rate, s->streams[i]->codecpar->channels, os->packet_size, os->audio_tag, os->private_str);
+            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%"PRId64"\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n",
+                        index, s->streams[i]->codecpar->bit_rate, os->fourcc, s->streams[i]->codecpar->sample_rate,
+                        s->streams[i]->codecpar->ch_layout.nb_channels, os->packet_size, os->audio_tag, os->private_str);
             index++;
         }
         output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
