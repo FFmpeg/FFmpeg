@@ -350,7 +350,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         status = hwctx->render2(avctx, frame, (void *)&pic_ctx->info,
                                 pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
     } else
-    status = vdctx->render(vdctx->decoder, surf, (void *)&pic_ctx->info,
+    status = vdctx->render(vdctx->decoder, surf, &pic_ctx->info,
                            pic_ctx->bitstream_buffers_used,
                            pic_ctx->bitstream_buffers);
 
