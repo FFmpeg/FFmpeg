@@ -24,7 +24,7 @@
 static int daud_init(struct AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
-    if (par->channels!=6 || par->sample_rate!=96000)
+    if (par->ch_layout.nb_channels != 6 || par->sample_rate != 96000)
         return AVERROR(EINVAL);
     return 0;
 }

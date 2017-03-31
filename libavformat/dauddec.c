@@ -29,8 +29,7 @@ static int daud_header(AVFormatContext *s) {
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_PCM_S24DAUD;
     st->codecpar->codec_tag = MKTAG('d', 'a', 'u', 'd');
-    st->codecpar->channels = 6;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_5POINT1;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1;
     st->codecpar->sample_rate = 96000;
     st->codecpar->bit_rate = 3 * 6 * 96000 * 8;
     st->codecpar->block_align = 3 * 6;
