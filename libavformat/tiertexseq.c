@@ -242,12 +242,11 @@ static int seq_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE;
     st->codecpar->codec_tag = 0;  /* no tag */
-    st->codecpar->channels = 1;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     st->codecpar->sample_rate = SEQ_SAMPLE_RATE;
     st->codecpar->bits_per_coded_sample = 16;
-    st->codecpar->bit_rate = st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample * st->codecpar->channels;
-    st->codecpar->block_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample / 8;
+    st->codecpar->bit_rate = st->codecpar->sample_rate * st->codecpar->bits_per_coded_sample * st->codecpar->ch_layout.nb_channels;
+    st->codecpar->block_align = st->codecpar->ch_layout.nb_channels * st->codecpar->bits_per_coded_sample / 8;
 
     return 0;
 }
