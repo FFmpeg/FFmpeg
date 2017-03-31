@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+
 #include "internal.h"
 
 #define EA3_HEADER_SIZE 96

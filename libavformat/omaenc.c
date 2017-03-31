@@ -58,7 +58,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
 
     switch (par->codec_tag) {
     case OMA_CODECID_ATRAC3:
-        if (par->channels != 2) {
+        if (par->ch_layout.nb_channels != 2) {
             av_log(s, AV_LOG_ERROR, "ATRAC3 in OMA is only supported with 2 channels\n");
             return AVERROR(EINVAL);
         }
@@ -78,7 +78,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
     case OMA_CODECID_ATRAC3P:
         avio_wb32(s->pb, (OMA_CODECID_ATRAC3P << 24) |
                          (srate_index << 13) |
-                         (par->channels << 10) |
+                         (par->ch_layout.nb_channels << 10) |
                          (par->block_align/8 - 1));
         break;
     default:
