@@ -186,13 +186,8 @@ static int smacker_read_header(AVFormatContext *s)
             } else {
                 par->codec_id  = AV_CODEC_ID_PCM_U8;
             }
-            if (aflag & SMK_AUD_STEREO) {
-                par->channels       = 2;
-                par->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else {
-                par->channels       = 1;
-                par->channel_layout = AV_CH_LAYOUT_MONO;
-            }
+            av_channel_layout_default(&par->ch_layout,
+                                      !!(aflag & SMK_AUD_STEREO) + 1);
             par->sample_rate = rate;
             par->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
             if (par->bits_per_coded_sample == 16 &&
@@ -200,7 +195,7 @@ static int smacker_read_header(AVFormatContext *s)
                 par->codec_id = AV_CODEC_ID_PCM_S16LE;
             else
                 smk->duration_size[i] = 4;
-            avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->channels
+            avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->ch_layout.nb_channels
                                             * par->bits_per_coded_sample / 8);
         }
     }
