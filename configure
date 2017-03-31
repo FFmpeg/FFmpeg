@@ -63,6 +63,7 @@ Options: [defaults in brackets after descriptions]
 
 Help options:
   --help                   print this message
+  --quiet                  Suppress showing informative output
   --list-decoders          show all available decoders
   --list-encoders          show all available encoders
   --list-hwaccels          show all available hardware accelerators
@@ -1417,7 +1418,7 @@ EOF
 }
 
 cp_if_changed(){
-    cmp -s "$1" "$2" && echo "$2 is unchanged" && return
+    cmp -s "$1" "$2" && { test "$quiet" != "yes" && echo "$2 is unchanged"; } && return
     mkdir -p "$(dirname $2)"
     $cp_f "$1" "$2"
 }
@@ -3508,6 +3509,8 @@ for opt do
             eval show_list $NAME \$$(toupper $NAME)_LIST
         ;;
         --help|-h) show_help
+        ;;
+        --quiet|-q) quiet=yes
         ;;
         --fatal-warnings) enable fatal_warnings
         ;;
@@ -6504,6 +6507,19 @@ postproc_deps="$(filter_out 'gpl' $postproc_deps)"
 
 map 'expand_deps $v' $LIBRARY_LIST
 
+license="LGPL version 2.1 or later"
+if enabled nonfree; then
+    license="nonfree and unredistributable"
+elif enabled gplv3; then
+    license="GPL version 3 or later"
+elif enabled lgplv3; then
+    license="LGPL version 3 or later"
+elif enabled gpl; then
+    license="GPL version 2 or later"
+fi
+
+if test "$quiet" != "yes"; then
+
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -6614,20 +6630,11 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     echo
 done
 
-license="LGPL version 2.1 or later"
-if enabled nonfree; then
-    license="nonfree and unredistributable"
-elif enabled gplv3; then
-    license="GPL version 3 or later"
-elif enabled lgplv3; then
-    license="LGPL version 3 or later"
-elif enabled gpl; then
-    license="GPL version 2 or later"
-fi
-
 echo "License: $license"
 
 echo "Creating config.mak, config.h, and doc/config.texi..."
+
+fi # test "$quiet" != "yes"
 
 test -e Makefile || echo "include $source_path/Makefile" > Makefile
 
