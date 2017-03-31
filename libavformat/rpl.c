@@ -194,23 +194,25 @@ static int rpl_read_header(AVFormatContext *s)
     audio_format = read_int(line, &endptr, &error);  // audio format ID
     av_strlcpy(audio_codec, endptr, RPL_LINE_LENGTH);
     if (audio_format) {
+        int channels;
         ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
         ast->codecpar->codec_tag       = audio_format;
         ast->codecpar->sample_rate     = read_line_and_int(pb, &error);  // audio bitrate
-        ast->codecpar->channels        = read_line_and_int(pb, &error);  // number of audio channels
+        channels                       = read_line_and_int(pb, &error);  // number of audio channels
         error |= read_line(pb, line, sizeof(line));
         ast->codecpar->bits_per_coded_sample = read_int(line, &endptr, &error);  // audio bits per sample
         av_strlcpy(audio_type, endptr, RPL_LINE_LENGTH);
+        ast->codecpar->ch_layout.nb_channels = channels;
         // At least one sample uses 0 for ADPCM, which is really 4 bits
         // per sample.
         if (ast->codecpar->bits_per_coded_sample == 0)
             ast->codecpar->bits_per_coded_sample = 4;
 
         ast->codecpar->bit_rate = ast->codecpar->sample_rate *
-                                  (int64_t)ast->codecpar->channels;
+                                  (int64_t)ast->codecpar->ch_layout.nb_channels;
         if (ast->codecpar->bit_rate > INT64_MAX / ast->codecpar->bits_per_coded_sample)
             return AVERROR_INVALIDDATA;
         ast->codecpar->bit_rate *= ast->codecpar->bits_per_coded_sample;
