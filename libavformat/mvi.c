@@ -84,8 +84,7 @@ static int read_header(AVFormatContext *s)
     avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
     ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
     ast->codecpar->codec_id        = AV_CODEC_ID_PCM_U8;
-    ast->codecpar->channels        = 1;
-    ast->codecpar->channel_layout  = AV_CH_LAYOUT_MONO;
+    ast->codecpar->ch_layout       = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     ast->codecpar->bits_per_coded_sample = 8;
     ast->codecpar->bit_rate        = ast->codecpar->sample_rate * 8;
 
