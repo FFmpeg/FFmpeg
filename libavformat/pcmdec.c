@@ -48,7 +48,7 @@ static int pcm_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = s->iformat->raw_codec_id;
     par->sample_rate = s1->sample_rate;
-    par->channels    = s1->channels;
+    par->ch_layout.nb_channels = s1->channels;
 
     av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
     if (mime_type && s->iformat->mime_type) {
@@ -77,7 +77,7 @@ static int pcm_read_header(AVFormatContext *s)
             }
             par->sample_rate = rate;
             if (channels > 0)
-                par->channels = channels;
+                par->ch_layout.nb_channels = channels;
             if (little_endian)
                 par->codec_id = AV_CODEC_ID_PCM_S16LE;
         }
@@ -88,7 +88,7 @@ static int pcm_read_header(AVFormatContext *s)
 
     av_assert0(par->bits_per_coded_sample > 0);
 
-    par->block_align = par->bits_per_coded_sample * par->channels / 8;
+    par->block_align = par->bits_per_coded_sample * par->ch_layout.nb_channels / 8;
 
     avpriv_set_pts_info(st, 64, 1, par->sample_rate);
     return 0;

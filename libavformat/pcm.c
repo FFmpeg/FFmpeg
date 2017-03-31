@@ -63,7 +63,7 @@ int ff_pcm_read_seek(AVFormatContext *s,
     st = s->streams[0];
 
     block_align = st->codecpar->block_align ? st->codecpar->block_align :
-        (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->channels) >> 3;
+        (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->ch_layout.nb_channels) >> 3;
     byte_rate = st->codecpar->bit_rate ? st->codecpar->bit_rate >> 3 :
         block_align * st->codecpar->sample_rate;
 
