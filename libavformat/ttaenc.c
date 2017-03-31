@@ -82,7 +82,7 @@ static int tta_write_header(AVFormatContext *s)
     ffio_init_checksum(tta->seek_table, ff_crcEDB88320_update, UINT32_MAX);
     avio_write(s->pb, "TTA1", 4);
     avio_wl16(s->pb, par->extradata ? AV_RL16(par->extradata + 4) : 1);
-    avio_wl16(s->pb, par->channels);
+    avio_wl16(s->pb, par->ch_layout.nb_channels);
     avio_wl16(s->pb, par->bits_per_raw_sample);
     avio_wl32(s->pb, par->sample_rate);
 
