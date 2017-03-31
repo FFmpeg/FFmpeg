@@ -106,8 +106,7 @@ static int bfi_read_header(AVFormatContext * s)
     /* Set up the audio codec now... */
     astream->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
     astream->codecpar->codec_id        = AV_CODEC_ID_PCM_U8;
-    astream->codecpar->channels        = 1;
-    astream->codecpar->channel_layout  = AV_CH_LAYOUT_MONO;
+    astream->codecpar->ch_layout       = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     astream->codecpar->bits_per_coded_sample = 8;
     astream->codecpar->bit_rate        =
         (int64_t)astream->codecpar->sample_rate * astream->codecpar->bits_per_coded_sample;
