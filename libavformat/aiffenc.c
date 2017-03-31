@@ -144,10 +144,10 @@ static int aiff_write_header(AVFormatContext *s)
         avio_wb32(pb, 0xA2805140);
     }
 
-    if (par->channels > 2 && par->channel_layout) {
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE && par->ch_layout.nb_channels > 2) {
         ffio_wfourcc(pb, "CHAN");
         avio_wb32(pb, 12);
-        ff_mov_write_chan(pb, par->channel_layout);
+        ff_mov_write_chan(pb, par->ch_layout.u.mask);
     }
 
     put_meta(s, "title",     MKTAG('N', 'A', 'M', 'E'));
@@ -158,7 +158,7 @@ static int aiff_write_header(AVFormatContext *s)
     /* Common chunk */
     ffio_wfourcc(pb, "COMM");
     avio_wb32(pb, aifc ? 24 : 18); /* size */
-    avio_wb16(pb, par->channels);  /* Number of channels */
+    avio_wb16(pb, par->ch_layout.nb_channels);  /* Number of channels */
 
     aiff->frames = avio_tell(pb);
     avio_wb32(pb, 0);              /* Number of frames */
@@ -170,7 +170,7 @@ static int aiff_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     if (!par->block_align)
-        par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
+        par->block_align = (par->bits_per_coded_sample * par->ch_layout.nb_channels) >> 3;
 
     avio_wb16(pb, par->bits_per_coded_sample); /* Sample size */
 
