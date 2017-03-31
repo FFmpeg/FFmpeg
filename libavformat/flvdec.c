@@ -629,10 +629,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                     } else if (!strcmp(key, "audiosamplesize") && apar) {
                         apar->bits_per_coded_sample = num_val;
                     } else if (!strcmp(key, "stereo") && apar) {
-                        apar->channels       = num_val + 1;
-                        apar->channel_layout = apar->channels == 2 ?
-                                               AV_CH_LAYOUT_STEREO :
-                                               AV_CH_LAYOUT_MONO;
+                        av_channel_layout_default(&apar->ch_layout, num_val + 1);
                     } else if (!strcmp(key, "width") && vpar) {
                         vpar->width = num_val;
                     } else if (!strcmp(key, "height") && vpar) {
@@ -1202,12 +1199,10 @@ retry_duration:
         sample_rate = 44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >>
                                 FLV_AUDIO_SAMPLERATE_OFFSET) >> 3;
         bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
-        if (!st->codecpar->channels || !st->codecpar->sample_rate ||
+        if (!av_channel_layout_check(&st->codecpar->ch_layout) ||
+            !st->codecpar->sample_rate ||
             !st->codecpar->bits_per_coded_sample) {
-            st->codecpar->channels              = channels;
-            st->codecpar->channel_layout        = channels == 1
-                                               ? AV_CH_LAYOUT_MONO
-                                               : AV_CH_LAYOUT_STEREO;
+            av_channel_layout_default(&st->codecpar->ch_layout, channels);
             st->codecpar->sample_rate           = sample_rate;
             st->codecpar->bits_per_coded_sample = bits_per_coded_sample;
         }
@@ -1217,7 +1212,7 @@ retry_duration:
             flv->last_sample_rate =
             sample_rate           = st->codecpar->sample_rate;
             flv->last_channels    =
-            channels              = st->codecpar->channels;
+            channels              = st->codecpar->ch_layout.nb_channels;
         } else {
             AVCodecParameters *par = avcodec_parameters_alloc();
             if (!par) {
