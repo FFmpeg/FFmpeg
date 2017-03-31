@@ -497,8 +497,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         NULL
     };
     static double (* const func1[])(void *, double) = {
-        (void *)bits2qp,
-        (void *)qp2bits,
+        (double (*)(void *, double)) bits2qp,
+        (double (*)(void *, double)) qp2bits,
         NULL
     };
     static const char * const func1_names[] = {
