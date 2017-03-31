@@ -77,7 +77,7 @@ static int wsaud_write_header(AVFormatContext *ctx)
     a->size = 0;
 
     /* Flag if we have stereo data. */
-    if (st->codecpar->channels == 2)
+    if (st->codecpar->ch_layout.nb_channels == 2)
         flags |= 1;
 
     /* This flags that the file contains 16 bit samples rather than 8 bit
