@@ -190,13 +190,13 @@ static int parse_strk(AVFormatContext *s,
 
     st->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_tag             = 0;
-    st->codecpar->channels              = fourxm->tracks[track].channels;
+    st->codecpar->ch_layout.nb_channels = fourxm->tracks[track].channels;
     st->codecpar->sample_rate           = fourxm->tracks[track].sample_rate;
     st->codecpar->bits_per_coded_sample = fourxm->tracks[track].bits;
-    st->codecpar->bit_rate              = (int64_t)st->codecpar->channels *
+    st->codecpar->bit_rate              = (int64_t)st->codecpar->ch_layout.nb_channels *
                                           st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample;
-    st->codecpar->block_align           = st->codecpar->channels *
+    st->codecpar->block_align           = st->codecpar->ch_layout.nb_channels *
                                           st->codecpar->bits_per_coded_sample;
 
     if (fourxm->tracks[track].adpcm){
