@@ -152,9 +152,13 @@ static int tak_read_header(AVFormatContext *s)
                 st->duration = ti.samples;
             st->codecpar->bits_per_coded_sample = ti.bps;
             if (ti.ch_layout)
-                st->codecpar->channel_layout = ti.ch_layout;
+                av_channel_layout_from_mask(&st->codecpar->ch_layout, ti.ch_layout);
+            else {
+                av_channel_layout_uninit(&st->codecpar->ch_layout);
+                st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+                st->codecpar->ch_layout.nb_channels = ti.channels;
+            }
             st->codecpar->sample_rate           = ti.sample_rate;
-            st->codecpar->channels              = ti.channels;
             st->start_time                   = 0;
             avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
             st->codecpar->extradata             = buffer;
