@@ -332,7 +332,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
             ast->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
             ast->codecpar->codec_id              = packet->codec_id;
             ast->codecpar->codec_tag             = packet->compression;
-            ast->codecpar->channels              = packet->channels;
+            ast->codecpar->ch_layout.nb_channels = packet->channels;
             ast->codecpar->sample_rate           = packet->sample_rate;
             ast->codecpar->bits_per_coded_sample = packet->bits_per_sample;
             ast->codecpar->bit_rate              = packet->bit_rate;
