@@ -85,7 +85,7 @@ static int xwma_read_header(AVFormatContext *s)
      * 20/48/192kbps are all 20kbps, with the exact same codec data).
      * Decoder needs correct bitrate to work, so it's normalized here. */
     if (st->codecpar->codec_id == AV_CODEC_ID_WMAV2) {
-        int ch = st->codecpar->channels;
+        int ch = st->codecpar->ch_layout.nb_channels;
         int sr = st->codecpar->sample_rate;
         int br = st->codecpar->bit_rate;
 
@@ -146,9 +146,9 @@ static int xwma_read_header(AVFormatContext *s)
         }
     }
 
-    if (!st->codecpar->channels) {
+    if (!av_channel_layout_check(&st->codecpar->ch_layout)) {
         av_log(s, AV_LOG_WARNING, "Invalid channel count: %d\n",
-               st->codecpar->channels);
+               st->codecpar->ch_layout.nb_channels);
         return AVERROR_INVALIDDATA;
     }
     if (!st->codecpar->bits_per_coded_sample) {
@@ -236,7 +236,7 @@ static int xwma_read_header(AVFormatContext *s)
     if (dpds_table && dpds_table_size) {
         int64_t cur_pos;
         const uint32_t bytes_per_sample
-                = (st->codecpar->channels * st->codecpar->bits_per_coded_sample) >> 3;
+                = (st->codecpar->ch_layout.nb_channels * st->codecpar->bits_per_coded_sample) >> 3;
 
         /* Estimate the duration from the total number of output bytes. */
         const uint64_t total_decoded_bytes = dpds_table[dpds_table_size - 1];
@@ -244,7 +244,7 @@ static int xwma_read_header(AVFormatContext *s)
         if (!bytes_per_sample) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid bits_per_coded_sample %d for %d channels\n",
-                   st->codecpar->bits_per_coded_sample, st->codecpar->channels);
+                   st->codecpar->bits_per_coded_sample, st->codecpar->ch_layout.nb_channels);
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
