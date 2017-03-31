@@ -286,7 +286,7 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
             return AVERROR(ENOMEM);
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id = AV_CODEC_ID_PCM_S32BE;
-        st->codecpar->channels = r3d->audio_channels;
+        st->codecpar->ch_layout.nb_channels = r3d->audio_channels;
         avpriv_set_pts_info(st, 32, 1, s->streams[0]->time_base.den);
     } else {
         st = s->streams[1];
