@@ -61,14 +61,14 @@ static int sox_write_header(AVFormatContext *s)
         avio_wl32(pb, sox->header_size);
         avio_wl64(pb, 0); /* number of samples */
         avio_wl64(pb, av_double2int(par->sample_rate));
-        avio_wl32(pb, par->channels);
+        avio_wl32(pb, par->ch_layout.nb_channels);
         avio_wl32(pb, comment_size);
     } else if (par->codec_id == AV_CODEC_ID_PCM_S32BE) {
         ffio_wfourcc(pb, "XoS.");
         avio_wb32(pb, sox->header_size);
         avio_wb64(pb, 0); /* number of samples */
         avio_wb64(pb, av_double2int(par->sample_rate));
-        avio_wb32(pb, par->channels);
+        avio_wb32(pb, par->ch_layout.nb_channels);
         avio_wb32(pb, comment_size);
     } else {
         av_log(s, AV_LOG_ERROR, "invalid codec; use pcm_s32le or pcm_s32be\n");

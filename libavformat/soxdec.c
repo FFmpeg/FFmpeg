@@ -49,6 +49,7 @@ static int sox_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned header_size, comment_size;
     double sample_rate, sample_rate_frac;
+    int channels;
     AVStream *st;
 
     st = avformat_new_stream(s, NULL);
@@ -62,16 +63,18 @@ static int sox_read_header(AVFormatContext *s)
         header_size         = avio_rl32(pb);
         avio_skip(pb, 8); /* sample count */
         sample_rate         = av_int2double(avio_rl64(pb));
-        st->codecpar->channels = avio_rl32(pb);
+        channels            = avio_rl32(pb);
         comment_size        = avio_rl32(pb);
     } else {
         st->codecpar->codec_id = AV_CODEC_ID_PCM_S32BE;
         header_size         = avio_rb32(pb);
         avio_skip(pb, 8); /* sample count */
         sample_rate         = av_int2double(avio_rb64(pb));
-        st->codecpar->channels = avio_rb32(pb);
+        channels            = avio_rb32(pb);
         comment_size        = avio_rb32(pb);
     }
+
+    st->codecpar->ch_layout.nb_channels = channels;
 
     if (comment_size > 0xFFFFFFFFU - SOX_FIXED_HDR - 4U) {
         av_log(s, AV_LOG_ERROR, "invalid comment size (%u)\n", comment_size);
@@ -90,7 +93,7 @@ static int sox_read_header(AVFormatContext *s)
                sample_rate_frac);
 
     if ((header_size + 4) & 7 || header_size < SOX_FIXED_HDR + comment_size
-        || st->codecpar->channels > 65535 || st->codecpar->channels <= 0) /* Reserve top 16 bits */ {
+        || channels > 65535 || channels <= 0) /* Reserve top 16 bits */ {
         av_log(s, AV_LOG_ERROR, "invalid header\n");
         return AVERROR_INVALIDDATA;
     }
@@ -115,9 +118,9 @@ static int sox_read_header(AVFormatContext *s)
     st->codecpar->bits_per_coded_sample = 32;
     st->codecpar->bit_rate              = (int64_t)st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample *
-                                          st->codecpar->channels;
+                                          channels;
     st->codecpar->block_align           = st->codecpar->bits_per_coded_sample *
-                                          st->codecpar->channels / 8;
+                                          channels / 8;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
