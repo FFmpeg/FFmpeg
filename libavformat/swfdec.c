@@ -195,13 +195,7 @@ static AVStream *create_new_audio_stream(AVFormatContext *s, int id, int info)
     if (!ast)
         return NULL;
     ast->id = id;
-    if (info & 1) {
-        ast->codecpar->channels       = 2;
-        ast->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-    } else {
-        ast->codecpar->channels       = 1;
-        ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-    }
+    av_channel_layout_default(&ast->codecpar->ch_layout, 1 + (info & 1));
     ast->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     ast->codecpar->codec_id   = ff_codec_get_id(swf_audio_codec_tags, info>>4 & 15);
     ffstream(ast)->need_parsing = AVSTREAM_PARSE_FULL;

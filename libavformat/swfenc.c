@@ -348,7 +348,7 @@ static int swf_write_header(AVFormatContext *s)
             return -1;
         }
         v |= 0x02; /* 16 bit playback */
-        if (swf->audio_par->channels == 2)
+        if (swf->audio_par->ch_layout.nb_channels == 2)
             v |= 0x01; /* stereo playback */
         avio_w8(s->pb, v);
         v |= 0x20; /* mp3 compressed */
