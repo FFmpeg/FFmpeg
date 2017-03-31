@@ -51,6 +51,7 @@ typedef struct QSVContext {
     QSVFrame *work_frames;
 
     AVFifoBuffer *async_fifo;
+    int zero_consume_run;
 
     // the internal parser and codec context for parsing the data
     AVCodecParserContext *parser;
