@@ -218,9 +218,7 @@ static int idcin_read_header(AVFormatContext *s)
         idcin->audio_stream_index = st->index;
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_tag = 1;
-        st->codecpar->channels = channels;
-        st->codecpar->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
-                                                      AV_CH_LAYOUT_MONO;
+        av_channel_layout_default(&st->codecpar->ch_layout, channels);
         st->codecpar->sample_rate = sample_rate;
         st->codecpar->bits_per_coded_sample = bytes_per_sample * 8;
         st->codecpar->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
