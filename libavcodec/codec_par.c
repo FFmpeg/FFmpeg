@@ -31,12 +31,14 @@
 static void codec_parameters_reset(AVCodecParameters *par)
 {
     av_freep(&par->extradata);
+    av_channel_layout_uninit(&par->ch_layout);
 
     memset(par, 0, sizeof(*par));
 
     par->codec_type          = AVMEDIA_TYPE_UNKNOWN;
     par->codec_id            = AV_CODEC_ID_NONE;
     par->format              = -1;
+    par->ch_layout.order     = AV_CHANNEL_ORDER_UNSPEC;
     par->field_order         = AV_FIELD_UNKNOWN;
     par->color_range         = AVCOL_RANGE_UNSPECIFIED;
     par->color_primaries     = AVCOL_PRI_UNSPECIFIED;
@@ -71,6 +73,8 @@ void avcodec_parameters_free(AVCodecParameters **ppar)
 
 int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src)
 {
+    int ret;
+
     codec_parameters_reset(dst);
     memcpy(dst, src, sizeof(*dst));
 
@@ -83,6 +87,10 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
         memcpy(dst->extradata, src->extradata, src->extradata_size);
         dst->extradata_size = src->extradata_size;
     }
+
+    ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -118,8 +126,19 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         break;
     case AVMEDIA_TYPE_AUDIO:
         par->format           = codec->sample_fmt;
-        par->channel_layout   = codec->channel_layout;
-        par->channels         = codec->channels;
+        if (codec->channel_layout)
+            av_channel_layout_from_mask(&par->ch_layout, codec->channel_layout);
+        else {
+            par->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            par->ch_layout.nb_channels = codec->channels;
+        }
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+        par->channel_layout  = par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                               par->ch_layout.u.mask : 0;
+        par->channels        = par->ch_layout.nb_channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         par->sample_rate      = codec->sample_rate;
         par->block_align      = codec->block_align;
         par->frame_size       = codec->frame_size;
@@ -173,8 +192,19 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         break;
     case AVMEDIA_TYPE_AUDIO:
         codec->sample_fmt       = par->format;
-        codec->channel_layout   = par->channel_layout;
-        codec->channels         = par->channels;
+        if (par->ch_layout.nb_channels) {
+            codec->channel_layout = par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                    par->ch_layout.u.mask : 0;
+            codec->channels       = par->ch_layout.nb_channels;
+        }
+#if FF_API_OLD_CHANNEL_LAYOUT
+        else {
+FF_DISABLE_DEPRECATION_WARNINGS
+            codec->channel_layout = par->channel_layout;
+            codec->channels       = par->channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+        }
+#endif
         codec->sample_rate      = par->sample_rate;
         codec->block_align      = par->block_align;
         codec->frame_size       = par->frame_size;
