@@ -95,8 +95,7 @@ static int mpc_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_MUSEPACK7;
-    st->codecpar->channels = 2;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->codecpar->bits_per_coded_sample = 16;
 
     if ((ret = ff_get_extradata(s, st->codecpar, s->pb, 16)) < 0)
