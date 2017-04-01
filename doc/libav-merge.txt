@@ -106,6 +106,7 @@ Collateral damage that needs work locally:
 - Merge proresenc_anatoliy.c and proresenc_kostya.c
 - Remove ADVANCED_PARSER in libavcodec/hevc_parser.c
 - Fix MIPS AC3 downmix
+- hlsenc encryption support may need some adjustment (see edc43c571d)
 
 Extra changes needed to be aligned with Libav:
 ----------------------------------------------
