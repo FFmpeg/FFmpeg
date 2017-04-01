@@ -90,7 +90,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
     const AVPixFmtDescriptor *desc;
     mfxSession session = NULL;
     int iopattern = 0;
-    mfxVideoParam param = { { 0 } };
+    mfxVideoParam param = { 0 };
     int frame_width  = avctx->coded_width;
     int frame_height = avctx->coded_height;
     int ret;
