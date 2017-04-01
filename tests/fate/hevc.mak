@@ -238,6 +238,11 @@ fate-hevc-bsf-mp4toannexb: REF = 1873662a3af1848c37e4eb25722c8df9
 
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
+# this sample has two stsd entries and needs to reload extradata
+FATE_HEVC-$(call DEMDEC, MOV, HEVC) += fate-hevc-extradata-reload
+
+fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 
 fate-hevc: $(FATE_HEVC-yes)
