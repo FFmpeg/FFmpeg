@@ -364,9 +364,9 @@ fail:
 
 static int dnxhd_get_hr_frame_size(const CIDEntry* profile, int mb_num)
 {
-  int result = mb_num * profile->packet_scale.num / profile->packet_scale.den;
-  result = (result + 2048) / 4096 * 4096;
-  return FFMAX(result, 8192);
+    int result = mb_num * profile->packet_scale.num / profile->packet_scale.den;
+    result = (result + 2048) / 4096 * 4096;
+    return FFMAX(result, 8192);
 }
 
 static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
