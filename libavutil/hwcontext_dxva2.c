@@ -278,6 +278,7 @@ static int dxva2_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *
     D3DLOCKED_RECT     LockedRect;
     HRESULT            hr;
     int i, err, nb_planes;
+    int lock_flags = 0;
 
     nb_planes = av_pix_fmt_count_planes(dst->format);
 
@@ -287,8 +288,12 @@ static int dxva2_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *
         return AVERROR_UNKNOWN;
     }
 
-    hr = IDirect3DSurface9_LockRect(surface, &LockedRect, NULL,
-                                    flags & AV_HWFRAME_MAP_READ ? D3DLOCK_READONLY : D3DLOCK_DISCARD);
+    if (!(flags & AV_HWFRAME_MAP_WRITE))
+        lock_flags |= D3DLOCK_READONLY;
+    if (flags & AV_HWFRAME_MAP_OVERWRITE)
+        lock_flags |= D3DLOCK_DISCARD;
+
+    hr = IDirect3DSurface9_LockRect(surface, &LockedRect, NULL, lock_flags);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Unable to lock DXVA2 surface\n");
         return AVERROR_UNKNOWN;
@@ -334,7 +339,8 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     map->format = dst->format;
 
     ret = dxva2_map_frame(ctx, map, download ? src : dst,
-                          download ? AV_HWFRAME_MAP_READ : AV_HWFRAME_MAP_WRITE);
+                          download ? AV_HWFRAME_MAP_READ :
+                                     AV_HWFRAME_MAP_WRITE | AV_HWFRAME_MAP_OVERWRITE);
     if (ret < 0)
         goto fail;
 
