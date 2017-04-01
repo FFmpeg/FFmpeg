@@ -126,6 +126,7 @@ static int daala_header(AVFormatContext *s, int idx)
         if (hdr->gpshift >= 32) {
             av_log(s, AV_LOG_ERROR, "Too large gpshift %d (>= 32).\n",
                    hdr->gpshift);
+            hdr->gpshift = 0;
             return AVERROR_INVALIDDATA;
         }
         hdr->gpmask  = (1U << hdr->gpshift) - 1;
