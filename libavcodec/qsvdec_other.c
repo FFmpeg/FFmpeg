@@ -1,5 +1,5 @@
 /*
- * Intel MediaSDK QSV based MPEG-2 and VC-1 decoders
+ * Intel MediaSDK QSV based MPEG-2, VC-1 and VP8 decoders
  *
  * copyright (c) 2015 Anton Khirnov
  *
@@ -73,6 +73,17 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
 {
     QSVOtherContext *s = avctx->priv_data;
     int ret;
+
+#if CONFIG_VP8_QSV_DECODER
+    if (avctx->codec_id == AV_CODEC_ID_VP8) {
+        static const char *uid_vp8dec_hw = "f622394d8d87452f878c51f2fc9b4131";
+
+        av_freep(&s->qsv.load_plugins);
+        s->qsv.load_plugins = av_strdup(uid_vp8dec_hw);
+        if (!s->qsv.load_plugins)
+            return AVERROR(ENOMEM);
+    }
+#endif
 
     s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
     if (!s->packet_fifo) {
@@ -211,6 +222,41 @@ AVCodec ff_vc1_qsv_decoder = {
     .close          = qsv_decode_close,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
     .priv_class     = &vc1_qsv_class,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_QSV,
+                                                    AV_PIX_FMT_NONE },
+};
+#endif
+
+#if CONFIG_VP8_QSV_HWACCEL
+AVHWAccel ff_vp8_qsv_hwaccel = {
+    .name           = "vp8_qsv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP8,
+    .pix_fmt        = AV_PIX_FMT_QSV,
+};
+#endif
+
+#if CONFIG_VP8_QSV_DECODER
+static const AVClass vp8_qsv_class = {
+    .class_name = "vp8_qsv",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_vp8_qsv_decoder = {
+    .name           = "vp8_qsv",
+    .long_name      = NULL_IF_CONFIG_SMALL("VP8 video (Intel Quick Sync Video acceleration)"),
+    .priv_data_size = sizeof(QSVOtherContext),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP8,
+    .init           = qsv_decode_init,
+    .decode         = qsv_decode_frame,
+    .flush          = qsv_decode_flush,
+    .close          = qsv_decode_close,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING,
+    .priv_class     = &vp8_qsv_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
