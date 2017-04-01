@@ -187,6 +187,19 @@ For Linux and OS X, the supported AviSynth variant is
 @url{https://github.com/avxsynth/avxsynth, AvxSynth}.
 
 @float NOTE
+There is currently a regression in AviSynth+'s @code{capi.h} header as of
+October 2016, which interferes with the ability for builds of Libav to use
+MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
+a known good version is installed by checking out a version from before
+the regression occurred:
+
+@code{git clone -b MT git://github.com/AviSynth/AviSynthPlus.git @*
+cd AviSynthPlus @*
+git checkout -b oldheader b4f292b4dbfad149697fb65c6a037bb3810813f9 @*
+make install PREFIX=/install/prefix}
+@end float
+
+@float NOTE
 AviSynth and AvxSynth are loaded dynamically.  Distributors can build FFmpeg
 with @code{--enable-avisynth}, and the binaries will work regardless of the
 end user having AviSynth or AvxSynth installed - they'll only need to be
