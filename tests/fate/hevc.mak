@@ -241,7 +241,7 @@ FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 # this sample has two stsd entries and needs to reload extradata
 FATE_HEVC-$(call DEMDEC, MOV, HEVC) += fate-hevc-extradata-reload
 
-fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov
+fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -sws_flags bitexact
 
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 
