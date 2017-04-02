@@ -22,7 +22,8 @@
 #include "hevc_parse.h"
 
 static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets *ps,
-                                 int is_nalff, int nal_length_size, void *logctx)
+                                 int is_nalff, int nal_length_size, int err_recognition,
+                                 void *logctx)
 {
     int i;
     int ret = 0;
@@ -38,9 +39,21 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
 
         /* ignore everything except parameter sets and VCL NALUs */
         switch (nal->type) {
-        case HEVC_NAL_VPS: ff_hevc_decode_nal_vps(&nal->gb, logctx, ps);    break;
-        case HEVC_NAL_SPS: ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, 1); break;
-        case HEVC_NAL_PPS: ff_hevc_decode_nal_pps(&nal->gb, logctx, ps);    break;
+        case HEVC_NAL_VPS:
+            ret = ff_hevc_decode_nal_vps(&nal->gb, logctx, ps);
+            if (ret < 0)
+                goto done;
+            break;
+        case HEVC_NAL_SPS:
+            ret = ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, 1);
+            if (ret < 0)
+                goto done;
+            break;
+        case HEVC_NAL_PPS:
+            ret = ff_hevc_decode_nal_pps(&nal->gb, logctx, ps);
+            if (ret < 0)
+                goto done;
+            break;
         default:
             av_log(logctx, AV_LOG_VERBOSE, "Ignoring NAL type %d in extradata\n", nal->type);
             break;
@@ -49,7 +62,10 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
 
 done:
     ff_h2645_packet_uninit(&pkt);
-    return ret;
+    if (err_recognition & AV_EF_EXPLODE)
+        return ret;
+
+    return 0;
 }
 
 int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
@@ -92,7 +108,8 @@ int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
                     return AVERROR_INVALIDDATA;
                 }
 
-                ret = hevc_decode_nal_units(gb.buffer, nalsize, ps, *is_nalff, *nal_length_size, logctx);
+                ret = hevc_decode_nal_units(gb.buffer, nalsize, ps, *is_nalff, *nal_length_size,
+                                            err_recognition, logctx);
                 if (ret < 0) {
                     av_log(logctx, AV_LOG_ERROR,
                            "Decoding nal unit %d %d from hvcC failed\n",
@@ -108,7 +125,8 @@ int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
         *nal_length_size = nal_len_size;
     } else {
         *is_nalff = 0;
-        ret = hevc_decode_nal_units(data, size, ps, *is_nalff, *nal_length_size, logctx);
+        ret = hevc_decode_nal_units(data, size, ps, *is_nalff, *nal_length_size,
+                                    err_recognition, logctx);
         if (ret < 0)
             return ret;
     }
