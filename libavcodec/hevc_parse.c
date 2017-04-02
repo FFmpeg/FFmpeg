@@ -23,7 +23,7 @@
 
 static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets *ps,
                                  int is_nalff, int nal_length_size, int err_recognition,
-                                 void *logctx)
+                                 int apply_defdispwin, void *logctx)
 {
     int i;
     int ret = 0;
@@ -45,7 +45,7 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
                 goto done;
             break;
         case HEVC_NAL_SPS:
-            ret = ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, 1);
+            ret = ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, apply_defdispwin);
             if (ret < 0)
                 goto done;
             break;
@@ -69,8 +69,8 @@ done:
 }
 
 int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
-                             int *is_nalff, int *nal_length_size,
-                             int err_recognition, void *logctx)
+                             int *is_nalff, int *nal_length_size, int err_recognition,
+                             int apply_defdispwin, void *logctx)
 {
     int ret = 0;
     GetByteContext gb;
@@ -109,7 +109,7 @@ int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
                 }
 
                 ret = hevc_decode_nal_units(gb.buffer, nalsize, ps, *is_nalff, *nal_length_size,
-                                            err_recognition, logctx);
+                                            err_recognition, apply_defdispwin, logctx);
                 if (ret < 0) {
                     av_log(logctx, AV_LOG_ERROR,
                            "Decoding nal unit %d %d from hvcC failed\n",
@@ -126,7 +126,7 @@ int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
     } else {
         *is_nalff = 0;
         ret = hevc_decode_nal_units(data, size, ps, *is_nalff, *nal_length_size,
-                                    err_recognition, logctx);
+                                    err_recognition, apply_defdispwin, logctx);
         if (ret < 0)
             return ret;
     }
