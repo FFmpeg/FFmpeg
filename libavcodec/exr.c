@@ -1648,9 +1648,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     int y, ret;
     int out_line_size;
     int nb_blocks;   /* nb scanline or nb tile */
-    uint64_t *table; /* scanline offset table */
-    uint8_t *marker; /* used to recreate invalid scanline offset table */
-    uint8_t *head;
+    uint64_t start_offset_table;
+    uint64_t start_next_scanline;
+    PutByteContext offset_table_writer;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -1738,16 +1738,21 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     // check offset table and recreate it if need
     if (!s->is_tile && bytestream2_peek_le64(&s->gb) == 0) {
-        head = avpkt->data;
-        table = (uint64_t *)s->gb.buffer;
-        marker = head + bytestream2_tell(&s->gb) + nb_blocks * 8;
-
         av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
 
+        start_offset_table = bytestream2_tell(&s->gb);
+        start_next_scanline = start_offset_table + nb_blocks * 8;
+        bytestream2_init_writer(&offset_table_writer, &avpkt->data[start_offset_table], nb_blocks * 8);
+
         for (y = 0; y < nb_blocks; y++) {
-            table[y] = marker - head;
-            marker += ((uint32_t *)marker)[1] + 8;
+            /* write offset of prev scanline in offset table */
+            bytestream2_put_le64(&offset_table_writer, start_next_scanline);
+
+            /* get len of next scanline */
+            bytestream2_seek(&s->gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
+            start_next_scanline += (bytestream2_get_le32(&s->gb) + 8);
         }
+        bytestream2_seek(&s->gb, start_offset_table, SEEK_SET);
     }
 
     // save pointer we are going to use in decode_block
