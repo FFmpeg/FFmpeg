@@ -34,6 +34,7 @@ version 3.3:
 - Removed the legacy X11 screen grabber, use XCB instead
 - MPEG-7 Video Signature filter
 - Removed asyncts filter (use af_aresample instead)
+- Intel QSV-accelerated VP8 video decoding
 
 
 version 3.2:
