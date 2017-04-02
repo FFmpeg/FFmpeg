@@ -1,7 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 3.3:
 - CrystalHD decoder moved to new decode API
 - add internal ebur128 library, remove external libebur128 dependency
 - Pro-MPEG CoP #3-R2 FEC protocol
