@@ -905,8 +905,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             mseq->nal_hrd_parameters_present_flag = 0;
         }
 
-        vseq->intra_period     = ctx->p_per_i * (ctx->b_per_p + 1);
-        vseq->intra_idr_period = vseq->intra_period;
+        vseq->intra_period     = avctx->gop_size;
+        vseq->intra_idr_period = avctx->gop_size;
         vseq->ip_period        = ctx->b_per_p + 1;
     }
 

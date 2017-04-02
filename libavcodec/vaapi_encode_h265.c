@@ -832,8 +832,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
             vseq->vui_time_scale        = avctx->time_base.den;
         }
 
-        vseq->intra_period     = ctx->p_per_i * (ctx->b_per_p + 1);
-        vseq->intra_idr_period = vseq->intra_period;
+        vseq->intra_period     = avctx->gop_size;
+        vseq->intra_idr_period = avctx->gop_size;
         vseq->ip_period        = ctx->b_per_p + 1;
     }
 

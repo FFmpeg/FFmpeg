@@ -1429,8 +1429,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->output_order = - ctx->output_delay - 1;
 
     // Currently we never generate I frames, only IDR.
-    ctx->p_per_i = ((avctx->gop_size + avctx->max_b_frames) /
-                    (avctx->max_b_frames + 1));
+    ctx->p_per_i = INT_MAX;
     ctx->b_per_p = avctx->max_b_frames;
 
     if (ctx->codec->sequence_params_size > 0) {
