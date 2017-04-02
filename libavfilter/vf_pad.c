@@ -24,6 +24,8 @@
  * video padding filter
  */
 
+#include <float.h>  /* DBL_MAX */
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -87,6 +89,7 @@ typedef struct PadContext {
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
     int inlink_w, inlink_h;
+    AVRational aspect;
 
     char *w_expr;           ///< width  expression string
     char *h_expr;           ///< height expression string
@@ -103,6 +106,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     PadContext *s = ctx->priv;
+    AVRational adjusted_aspect = s->aspect;
     int ret;
     double var_values[VARS_NB], res;
     char *expr;
@@ -142,6 +146,15 @@ static int config_input(AVFilterLink *inlink)
     s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
     if (!s->w)
         var_values[VAR_OUT_W] = var_values[VAR_OW] = s->w = inlink->w;
+
+    if (adjusted_aspect.num && adjusted_aspect.den) {
+        adjusted_aspect = av_div_q(adjusted_aspect, inlink->sample_aspect_ratio);
+        if (s->h < av_rescale(s->w, adjusted_aspect.den, adjusted_aspect.num)) {
+            s->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = av_rescale(s->w, adjusted_aspect.den, adjusted_aspect.num);
+        } else {
+            s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = av_rescale(s->h, adjusted_aspect.num, adjusted_aspect.den);
+        }
+    }
 
     /* evaluate x and y */
     av_expr_parse_and_eval(&res, (expr = s->x_expr),
@@ -409,6 +422,7 @@ static const AVOption pad_options[] = {
     { "eval",   "specify when to evaluate expressions",    OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions during initialization and per-frame", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
+    { "aspect",  "pad to fit an aspect instead of a resolution", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, DBL_MAX, FLAGS },
     { NULL }
 };
 

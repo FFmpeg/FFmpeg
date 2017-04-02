@@ -10453,6 +10453,9 @@ Evaluate expressions for each incoming frame.
 
 Default value is @samp{init}.
 
+@item aspect
+Pad to aspect instead to a resolution.
+
 @end table
 
 The value for the @var{width}, @var{height}, @var{x}, and @var{y}
