@@ -253,6 +253,9 @@ fate-exr-rgb-scanline-b44-uint32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_sc
 FATE_EXR += fate-exr-rgb-scanline-pxr24-uint32
 fate-exr-rgb-scanline-pxr24-uint32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_pxr24_uint32.exr -pix_fmt rgb48le
 
+FATE_EXR += fate-exr-rgb-scanline-zip1-half-float-l1-zero-offsets
+fate-exr-rgb-scanline-zip1-half-float-l1-zero-offsets: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_zip1_half_float_zero_offsets.exr -pix_fmt rgb48le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)
