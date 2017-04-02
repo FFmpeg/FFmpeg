@@ -564,7 +564,7 @@ typedef struct HEVCContext {
     uint8_t is_md5;
 
     uint8_t context_initialized;
-    uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
+    int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
 
