@@ -166,7 +166,7 @@ static inline intptr_t atomic_fetch_and(intptr_t *object, intptr_t operand)
     atomic_fetch_or(object, operand)
 
 #define atomic_fetch_xor_explicit(object, operand, order) \
-    atomic_fetch_sub(object, operand)
+    atomic_fetch_xor(object, operand)
 
 #define atomic_fetch_and_explicit(object, operand, order) \
     atomic_fetch_and(object, operand)

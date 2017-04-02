@@ -147,10 +147,10 @@ do {                                    \
     atomic_fetch_or(object, operand)
 
 #define atomic_fetch_xor(object, operand) \
-    __sync_fetch_and_sub(object, operand)
+    __sync_fetch_and_xor(object, operand)
 
 #define atomic_fetch_xor_explicit(object, operand, order) \
-    atomic_fetch_sub(object, operand)
+    atomic_fetch_xor(object, operand)
 
 #define atomic_fetch_and(object, operand) \
     __sync_fetch_and_and(object, operand)
