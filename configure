@@ -2105,6 +2105,7 @@ CONFIG_EXTRA="
     h264parse
     h264pred
     h264qpel
+    hevcparse
     hpeldsp
     huffman
     huffyuvdsp
@@ -2437,7 +2438,7 @@ h264_decoder_suggest="error_resilience"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
-hevc_decoder_select="bswapdsp cabac golomb videodsp"
+hevc_decoder_select="bswapdsp cabac golomb hevcparse videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp llviddsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp llvidencdsp"
 iac_decoder_select="imc_decoder"
@@ -2746,7 +2747,7 @@ hevc_nvenc_encoder_deps="nvenc"
 hevc_qsv_decoder_deps="libmfx"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
 hevc_qsv_encoder_deps="libmfx"
-hevc_qsv_encoder_select="qsvenc"
+hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="vaapi_encode golomb"
 mjpeg_cuvid_decoder_deps="cuda cuvid"
@@ -2794,7 +2795,7 @@ wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
-hevc_parser_select="golomb"
+hevc_parser_select="golomb hevcparse"
 mpegaudio_parser_select="mpegaudioheader"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
