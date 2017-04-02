@@ -41,25 +41,8 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
         case HEVC_NAL_VPS: ff_hevc_decode_nal_vps(&nal->gb, logctx, ps);    break;
         case HEVC_NAL_SPS: ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, 1); break;
         case HEVC_NAL_PPS: ff_hevc_decode_nal_pps(&nal->gb, logctx, ps);    break;
-        case HEVC_NAL_TRAIL_R:
-        case HEVC_NAL_TRAIL_N:
-        case HEVC_NAL_TSA_N:
-        case HEVC_NAL_TSA_R:
-        case HEVC_NAL_STSA_N:
-        case HEVC_NAL_STSA_R:
-        case HEVC_NAL_BLA_W_LP:
-        case HEVC_NAL_BLA_W_RADL:
-        case HEVC_NAL_BLA_N_LP:
-        case HEVC_NAL_IDR_W_RADL:
-        case HEVC_NAL_IDR_N_LP:
-        case HEVC_NAL_CRA_NUT:
-        case HEVC_NAL_RADL_N:
-        case HEVC_NAL_RADL_R:
-        case HEVC_NAL_RASL_N:
-        case HEVC_NAL_RASL_R:
-            av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit: %d\n", nal->type);
-            ret = AVERROR_INVALIDDATA;
-            goto done;
+        default:
+            av_log(logctx, AV_LOG_VERBOSE, "Ignoring NAL type %d in extradata\n", nal->type);
             break;
         }
     }
