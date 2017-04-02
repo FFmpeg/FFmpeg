@@ -24,6 +24,7 @@ version 3.3:
 - threshold filter
 - midequalizer filter
 - Optimal Huffman tables for (M)JPEG encoding
+- VAAPI-accelerated MPEG-2 and VP8 encoding
 - FM Screen Capture Codec decoder
 - native Opus encoder
 - ScreenPressor decoder
@@ -122,7 +123,6 @@ version 3.1:
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
 - VideoToolbox H.264 encoder
-- VAAPI-accelerated MPEG-2 and VP8 encoding
 
 
 version 3.0:
