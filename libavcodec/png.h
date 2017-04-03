@@ -42,11 +42,6 @@
 #define PNG_FILTER_VALUE_PAETH 4
 #define PNG_FILTER_VALUE_MIXED 5
 
-#define PNG_IHDR      0x0001
-#define PNG_IDAT      0x0002
-#define PNG_ALLIMAGE  0x0004
-#define PNG_PLTE      0x0008
-
 #define NB_PASSES 7
 
 #define PNGSIG 0x89504e470d0a1a0a
