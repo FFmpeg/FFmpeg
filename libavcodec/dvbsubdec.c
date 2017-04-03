@@ -85,10 +85,16 @@ static void png_save(const char *filename, uint32_t *bitmap, int w, int h)
     fclose(f);
 
     snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
-    system(command);
+    if (system(command) != 0) {
+        fprintf(stderr, "Error running pnmtopng\n");
+        return;
+    }
 
     snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
-    system(command);
+    if (system(command) != 0) {
+        fprintf(stderr, "Error removing %s and %s\n", fname, fname2);
+        return;
+    }
 }
 #endif
 
