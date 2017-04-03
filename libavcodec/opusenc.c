@@ -255,24 +255,20 @@ static int celt_frame_map_norm_bands(OpusEncContext *s, CeltFrame *f)
 
     for (ch = 0; ch < f->channels; ch++) {
         CeltBlock *block = &f->block[ch];
-        float *start = block->coeffs;
         for (i = 0; i < CELT_MAX_BANDS; i++) {
             float ener = 0.0f;
+            int band_offset = ff_celt_freq_bands[i] << f->size;
+            int band_size   = ff_celt_freq_range[i] << f->size;
+            float *coeffs   = &block->coeffs[band_offset];
 
-            /* Calculate band bins */
-            block->band_bins[i] = ff_celt_freq_range[i] << f->size;
-            block->band_coeffs[i] = start;
-            start += block->band_bins[i];
-
-            /* Normalize band energy */
-            for (j = 0; j < block->band_bins[i]; j++)
-                ener += block->band_coeffs[i][j]*block->band_coeffs[i][j];
+            for (j = 0; j < band_size; j++)
+                ener += coeffs[j]*coeffs[j];
 
             block->lin_energy[i] = sqrtf(ener) + FLT_EPSILON;
             ener = 1.0f/block->lin_energy[i];
 
-            for (j = 0; j < block->band_bins[i]; j++)
-                block->band_coeffs[i][j] *= ener;
+            for (j = 0; j < band_size; j++)
+                coeffs[j] *= ener;
 
             block->energy[i] = log2f(block->lin_energy[i]) - ff_celt_mean_energy[i];
 
