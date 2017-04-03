@@ -1332,7 +1332,7 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
 
 #ifdef DEBUG
-static void png_save(const char *filename, uint32_t *bitmap, int w, int h)
+static void png_save(DVBSubContext *ctx, const char *filename, uint32_t *bitmap, int w, int h)
 {
     int x, y, v;
     FILE *f;
@@ -1382,13 +1382,13 @@ static void png_save(const char *filename, uint32_t *bitmap, int w, int h)
 
     snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
     if (system(command) != 0) {
-        fprintf(stderr, "Error running pnmtopng\n");
+        av_log(ctx, AV_LOG_ERROR, "Error running pnmtopng\n");
         return;
     }
 
     snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
     if (system(command) != 0) {
-        fprintf(stderr, "Error removing %s and %s\n", fname, fname2);
+        av_log(ctx, AV_LOG_ERROR, "Error removing %s and %s\n", fname, fname2);
         return;
     }
 }
@@ -1486,7 +1486,7 @@ static int save_display_set(DVBSubContext *ctx)
 
         snprintf(filename, sizeof(filename), "dvbs.%d", fileno_index);
 
-        png_save(filename, pbuf, width, height);
+        png_save(ctx, filename, pbuf, width, height);
 
         av_freep(&pbuf);
     }
