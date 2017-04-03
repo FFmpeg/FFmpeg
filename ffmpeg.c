@@ -2628,7 +2628,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
-        int64_t duration = 0;
+        int64_t duration_dts = 0;
         int got_output = 0;
         int decode_failed = 0;
 
@@ -2645,22 +2645,22 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                                    &decode_failed);
             if (!repeating || !pkt || got_output) {
                 if (pkt && pkt->duration) {
-                    duration = av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
+                    duration_dts = av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
                 } else if(ist->dec_ctx->framerate.num != 0 && ist->dec_ctx->framerate.den != 0) {
                     int ticks= av_stream_get_parser(ist->st) ? av_stream_get_parser(ist->st)->repeat_pict+1 : ist->dec_ctx->ticks_per_frame;
-                    duration = ((int64_t)AV_TIME_BASE *
+                    duration_dts = ((int64_t)AV_TIME_BASE *
                                     ist->dec_ctx->framerate.den * ticks) /
                                     ist->dec_ctx->framerate.num / ist->dec_ctx->ticks_per_frame;
                 }
 
-                if(ist->dts != AV_NOPTS_VALUE && duration) {
-                    ist->next_dts += duration;
+                if(ist->dts != AV_NOPTS_VALUE && duration_dts) {
+                    ist->next_dts += duration_dts;
                 }else
                     ist->next_dts = AV_NOPTS_VALUE;
             }
 
             if (got_output)
-                ist->next_pts += duration; //FIXME the duration is not correct in some cases
+                ist->next_pts += duration_dts; //FIXME the duration is not correct in some cases
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             if (repeating)
