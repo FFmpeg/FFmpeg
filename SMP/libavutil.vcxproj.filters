@@ -52,6 +52,9 @@
     <YASM Include="..\libavutil\x86\float_dsp.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
+    <YASM Include="..\libavutil\x86\imgutils.asm">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </YASM>
     <YASM Include="..\libavutil\x86\lls.asm">
       <Filter>Source Files\libavutil\x86</Filter>
     </YASM>
@@ -142,9 +145,6 @@
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\hwcontext.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavutil\imgutils.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\integer.c">
@@ -270,6 +270,9 @@
     <ClCompile Include="..\libavutil\x86\float_dsp_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\x86\imgutils_init.c">
+      <Filter>Source Files\libavutil\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\x86\lls_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
@@ -283,6 +286,9 @@
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\fixed_dsp.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavutil\imgutils.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
     <ClCompile Include="..\libavutil\lls.c">

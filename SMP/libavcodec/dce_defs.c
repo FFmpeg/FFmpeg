@@ -25,7 +25,7 @@
 #include "libavcodec/xvmc_internal.h"
 #include "libavcodec/xvididct.h"
 #include "libavcodec/wmv2dsp.h"
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 #include "libavcodec/vp8dsp.h"
 #include "libavcodec/vp56dsp.h"
 #include "libavcodec/vp3dsp.h"
@@ -94,7 +94,7 @@ void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {return;}
 void ff_acelp_filter_init_mips(ACELPFContext *c) {return;}
 void ff_acelp_vectors_init_mips(ACELPVContext *c) {return;}
 #if !(ARCH_X86_32)
-void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, intptr_t w) {return;}
+void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t w) {return;}
 #endif
 #if !(ARCH_X86_32)
 void ff_add_hfyu_left_pred_bgr32_mmx(uint8_t *dst, const uint8_t *src,
@@ -105,7 +105,7 @@ void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w) 
 #endif
 #if !(ARCH_X86_32)
 void ff_add_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
-                               const uint8_t *diff, intptr_t w,
+                               const uint8_t *diff, ptrdiff_t w,
                                int *left, int *left_top) {return;}
 #endif
 void ff_audiodsp_init_arm(AudioDSPContext *c) {return;}
@@ -209,6 +209,30 @@ void ff_hevc_h_loop_filter_luma_8_sse2(uint8_t *pix, ptrdiff_t stride, int beta,
 #endif
 #if !(ARCH_X86_64)
 void ff_hevc_h_loop_filter_luma_8_ssse3(uint8_t *pix, ptrdiff_t stride, int beta, int *tc, uint8_t *no_p, uint8_t *no_q) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_16x16_10_avx(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_16x16_10_sse2(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_16x16_8_avx(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_16x16_8_sse2(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_32x32_10_avx(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_32x32_10_sse2(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_32x32_8_avx(int16_t *coeffs, int col_limit) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_hevc_idct_32x32_8_sse2(int16_t *coeffs, int col_limit) {return;}
 #endif
 void ff_hevc_pred_init_mips(HEVCPredContext *hpc, int bit_depth) {return;}
 #if !(ARCH_X86_64)
@@ -3491,10 +3515,10 @@ void ff_sbrdsp_init_mips(SBRDSPContext *s) {return;}
 void ff_simple_idct10_avx(int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
-void ff_simple_idct10_put_avx(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct10_put_avx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
-void ff_simple_idct10_put_sse2(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct10_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
 void ff_simple_idct10_sse2(int16_t *block) {return;}
@@ -3503,22 +3527,22 @@ void ff_simple_idct10_sse2(int16_t *block) {return;}
 void ff_simple_idct12_avx(int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
-void ff_simple_idct12_put_avx(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct12_put_avx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
-void ff_simple_idct12_put_sse2(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct12_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 #if !(ARCH_X86_64)
 void ff_simple_idct12_sse2(int16_t *block) {return;}
 #endif
 #if !(HAVE_MMX_INLINE)
-void ff_simple_idct_add_mmx(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct_add_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 #if !(HAVE_MMX_INLINE)
 void ff_simple_idct_mmx(int16_t *block) {return;}
 #endif
 #if !(HAVE_MMX_INLINE)
-void ff_simple_idct_put_mmx(uint8_t *dest, int line_size, int16_t *block) {return;}
+void ff_simple_idct_put_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 void ff_svq1enc_init_ppc(SVQ1EncContext *c) {return;}
 void ff_synth_filter_init_aarch64(SynthFilterContext *c) {return;}
@@ -3552,7 +3576,7 @@ void ff_vorbisdsp_init_arm(VorbisDSPContext *dsp) {return;}
 void ff_vorbisdsp_init_ppc(VorbisDSPContext *dsp) {return;}
 void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags) {return;}
 void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags) {return;}
-void ff_vp6dsp_init_arm(VP56DSPContext *s, enum AVCodecID codec) {return;}
+void ff_vp6dsp_init_arm(VP56DSPContext *s) {return;}
 void ff_vp78dsp_init_arm(VP8DSPContext *c) {return;}
 void ff_vp78dsp_init_ppc(VP8DSPContext *c) {return;}
 void ff_vp8dsp_init_arm(VP8DSPContext *c) {return;}

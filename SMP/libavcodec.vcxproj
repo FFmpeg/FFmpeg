@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <YASM Include="..\libavcodec\x86\ac3dsp.asm" />
+    <YASM Include="..\libavcodec\x86\ac3dsp_downmix.asm" />
     <YASM Include="..\libavcodec\x86\audiodsp.asm" />
     <YASM Include="..\libavcodec\x86\blockdsp.asm" />
     <YASM Include="..\libavcodec\x86\bswapdsp.asm" />
@@ -124,10 +125,10 @@
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
     <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
+    <YASM Include="..\libavcodec\x86\hevc_add_res.asm" />
     <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
     <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_res_add.asm" />
+    <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
     <YASM Include="..\libavcodec\x86\hevc_sao.asm" />
     <YASM Include="..\libavcodec\x86\hevc_sao_10bit.asm" />
     <YASM Include="..\libavcodec\x86\jpeg2000dsp.asm" />
@@ -500,7 +501,7 @@
     <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
     <ClCompile Include="..\libavcodec\hapdec.c" />
     <ClCompile Include="..\libavcodec\hap.c" />
-    <ClCompile Include="..\libavcodec\hevc.c" />
+    <ClCompile Include="..\libavcodec\hevcdec.c" />
     <ClCompile Include="..\libavcodec\hevc_mvs.c" />
     <ClCompile Include="..\libavcodec\hevc_ps.c" />
     <ClCompile Include="..\libavcodec\hevc_sei.c" />
@@ -756,7 +757,11 @@
     <ClCompile Include="..\libavcodec\vp6.c" />
     <ClCompile Include="..\libavcodec\vp8.c" />
     <ClCompile Include="..\libavcodec\vp9.c" />
+    <ClCompile Include="..\libavcodec\vp9data.c" />
     <ClCompile Include="..\libavcodec\vp9dsp.c" />
+    <ClCompile Include="..\libavcodec\vp9block.c" />
+    <ClCompile Include="..\libavcodec\vp9prob.c" />
+    <ClCompile Include="..\libavcodec\vp9mvs.c" />
     <ClCompile Include="..\libavcodec\vp9dsp_8bpp.c" />
     <ClCompile Include="..\libavcodec\vp9dsp_10bpp.c" />
     <ClCompile Include="..\libavcodec\vp9dsp_12bpp.c" />
@@ -878,6 +883,7 @@
     <ClCompile Include="..\libavcodec\chomp_bsf.c" />
     <ClCompile Include="..\libavcodec\dump_extradata_bsf.c" />
     <ClCompile Include="..\libavcodec\dca_core_bsf.c" />
+    <ClCompile Include="..\libavcodec\extract_extradata_bsf.c" />
     <ClCompile Include="..\libavcodec\h264_mp4toannexb_bsf.c" />
     <ClCompile Include="..\libavcodec\hevc_mp4toannexb_bsf.c" />
     <ClCompile Include="..\libavcodec\imx_dump_header_bsf.c" />
@@ -1442,8 +1448,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1526,8 +1532,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1616,8 +1622,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1705,8 +1711,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1795,8 +1801,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1884,8 +1890,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1974,8 +1980,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2064,8 +2070,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2162,8 +2168,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2259,8 +2265,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2357,8 +2363,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2454,8 +2460,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2544,8 +2550,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -2634,8 +2640,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>

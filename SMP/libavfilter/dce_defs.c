@@ -187,7 +187,6 @@ void ff_yuv2yuv_444p8to12_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_out_stri
 #if !(ARCH_X86_64)
 void ff_yuv2yuv_444p8to8_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_out_stride[3], uint8_t *yuv_in[3], const ptrdiff_t yuv_in_stride[3], int w, int h, const int16_t yuv2yuv_coeffs[3][3][8], const int16_t yuv_offset[2][8]) {return;}
 #endif
-AVFilter ff_af_asyncts = {0};
 AVFilter ff_af_azmq = {0};
 AVFilter ff_af_bs2b = {0};
 AVFilter ff_af_ladspa = {0};

@@ -301,6 +301,7 @@
     <ClCompile Include="..\libavfilter\vf_shuffleframes.c" />
     <ClCompile Include="..\libavfilter\vf_shuffleplanes.c" />
     <ClCompile Include="..\libavfilter\vf_signalstats.c" />
+    <ClCompile Include="..\libavfilter\vf_signature.c" />
     <ClCompile Include="..\libavfilter\vf_smartblur.c" />
     <ClCompile Include="..\libavfilter\vf_spp.c" />
     <ClCompile Include="..\libavfilter\vf_super2xsai.c" />
@@ -738,8 +739,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -810,8 +811,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -888,8 +889,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -965,8 +966,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1043,8 +1044,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1120,8 +1121,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1198,8 +1199,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1276,8 +1277,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1362,8 +1363,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1447,8 +1448,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1533,8 +1534,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1618,8 +1619,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1696,8 +1697,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1774,8 +1775,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>

@@ -409,8 +409,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -478,8 +478,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -553,8 +553,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -627,8 +627,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -702,8 +702,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -776,8 +776,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -851,8 +851,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -926,8 +926,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1009,8 +1009,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1091,8 +1091,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1174,8 +1174,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1256,8 +1256,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1331,8 +1331,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>
@@ -1406,8 +1406,8 @@ cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
     <YASM>
-      <IncludePaths>.\;..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm</PreIncludeFile>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
       <Debug>true</Debug>
     </YASM>
     <ResourceCompile>

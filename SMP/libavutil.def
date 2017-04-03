@@ -250,6 +250,7 @@ EXPORTS
     av_image_copy
     av_image_copy_plane
     av_image_copy_to_buffer
+    av_image_copy_uc_from
     av_image_fill_arrays
     av_image_fill_linesizes
     av_image_fill_max_pixsteps
@@ -462,7 +463,7 @@ EXPORTS
     av_xtea_le_init
     avpriv_alloc_fixed_dsp
     avpriv_dict_set_timestamp
-    avpriv_emms_yasm
+    avpriv_emms_asm
     avpriv_float_dsp_alloc
     avpriv_frame_get_metadatap
     avpriv_get_gamma_from_trc

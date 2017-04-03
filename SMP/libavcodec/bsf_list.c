@@ -23,6 +23,7 @@ static const AVBitStreamFilter *bitstream_filters[] = {
     &ff_chomp_bsf,
     &ff_dump_extradata_bsf,
     &ff_dca_core_bsf,
+    &ff_extract_extradata_bsf,
     &ff_h264_mp4toannexb_bsf,
     &ff_hevc_mp4toannexb_bsf,
     &ff_imx_dump_header_bsf,
