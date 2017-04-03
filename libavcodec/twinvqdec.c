@@ -181,7 +181,7 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef, int g_coef,
 {
     const TwinVQModeTab *mtab = tctx->mtab;
     int isampf = tctx->avctx->sample_rate /  1000;
-    int ibps   = tctx->avctx->bit_rate    / (1000 * tctx->avctx->channels);
+    int ibps   = tctx->avctx->bit_rate    / (1000 * tctx->avctx->ch_layout.nb_channels);
     int min_period   = ROUNDED_DIV(40 * 2 * mtab->size, isampf);
     int max_period   = ROUNDED_DIV(40 * 2 * mtab->size * 6, isampf);
     int period_range = max_period - min_period;
@@ -254,7 +254,7 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
 {
     TwinVQFrameData     *bits = &tctx->bits[0];
     const TwinVQModeTab *mtab = tctx->mtab;
-    int channels              = tctx->avctx->channels;
+    int channels              = tctx->avctx->ch_layout.nb_channels;
     int sub;
     GetBitContext gb;
     int i, j, k, ret;
@@ -319,14 +319,14 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
 
 static av_cold int twinvq_decode_init(AVCodecContext *avctx)
 {
-    int isampf, ibps;
+    int isampf, ibps, channels;
     TwinVQContext *tctx = avctx->priv_data;
 
     if (!avctx->extradata || avctx->extradata_size < 12) {
         av_log(avctx, AV_LOG_ERROR, "Missing or incomplete extradata\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->channels = AV_RB32(avctx->extradata)     + 1;
+    channels        = AV_RB32(avctx->extradata)     + 1;
     avctx->bit_rate = AV_RB32(avctx->extradata + 4) * 1000;
     isampf          = AV_RB32(avctx->extradata + 8);
 
@@ -349,15 +349,15 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
         break;
     }
 
-    if (avctx->channels <= 0 || avctx->channels > TWINVQ_CHANNELS_MAX) {
+    if (channels <= 0 || channels > TWINVQ_CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
-               avctx->channels);
+               channels);
         return -1;
     }
-    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
-                                                 : AV_CH_LAYOUT_STEREO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_default(&avctx->ch_layout, channels);
 
-    ibps = avctx->bit_rate / (1000 * avctx->channels);
+    ibps = avctx->bit_rate / (1000 * channels);
     if (ibps < 8 || ibps > 48) {
         av_log(avctx, AV_LOG_ERROR, "Bad bitrate per channel value %d\n", ibps);
         return AVERROR_INVALIDDATA;

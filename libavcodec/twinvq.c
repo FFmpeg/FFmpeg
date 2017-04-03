@@ -217,17 +217,18 @@ static void dec_gain(TwinVQContext *tctx,
     const TwinVQModeTab   *mtab =  tctx->mtab;
     const TwinVQFrameData *bits = &tctx->bits[tctx->cur_frame];
     int i, j;
+    int channels   = tctx->avctx->ch_layout.nb_channels;
     int sub        = mtab->fmode[ftype].sub;
     float step     = TWINVQ_AMP_MAX     / ((1 << TWINVQ_GAIN_BITS)     - 1);
     float sub_step = TWINVQ_SUB_AMP_MAX / ((1 << TWINVQ_SUB_GAIN_BITS) - 1);
 
     if (ftype == TWINVQ_FT_LONG) {
-        for (i = 0; i < tctx->avctx->channels; i++)
+        for (i = 0; i < channels; i++)
             out[i] = (1.0 / (1 << 13)) *
                      twinvq_mulawinv(step * 0.5 + step * bits->gain_bits[i],
                                      TWINVQ_AMP_MAX, TWINVQ_MULAW_MU);
     } else {
-        for (i = 0; i < tctx->avctx->channels; i++) {
+        for (i = 0; i < channels; i++) {
             float val = (1.0 / (1 << 23)) *
                         twinvq_mulawinv(step * 0.5 + step * bits->gain_bits[i],
                                         TWINVQ_AMP_MAX, TWINVQ_MULAW_MU);
@@ -380,10 +381,11 @@ static void imdct_output(TwinVQContext *tctx, enum TwinVQFrameType ftype,
 {
     const TwinVQModeTab *mtab = tctx->mtab;
     float *prev_buf           = tctx->prev_frame + tctx->last_block_pos[0];
+    int channels              = tctx->avctx->ch_layout.nb_channels;
     int size1, size2, i;
     float *out1, *out2;
 
-    for (i = 0; i < tctx->avctx->channels; i++)
+    for (i = 0; i < channels; i++)
         imdct_and_window(tctx, ftype, wtype,
                          tctx->spectrum + i * mtab->size,
                          prev_buf + 2 * i * mtab->size,
@@ -399,7 +401,7 @@ static void imdct_output(TwinVQContext *tctx, enum TwinVQFrameType ftype,
     memcpy(out1,         prev_buf,         size1 * sizeof(*out1));
     memcpy(out1 + size1, tctx->curr_frame, size2 * sizeof(*out1));
 
-    if (tctx->avctx->channels == 2) {
+    if (channels == 2) {
         out2 = &out[1][0] + offset;
         memcpy(out2, &prev_buf[2 * mtab->size],
                size1 * sizeof(*out2));
@@ -414,7 +416,7 @@ static void read_and_decode_spectrum(TwinVQContext *tctx, float *out,
 {
     const TwinVQModeTab *mtab = tctx->mtab;
     TwinVQFrameData *bits     = &tctx->bits[tctx->cur_frame];
-    int channels              = tctx->avctx->channels;
+    int channels              = tctx->avctx->ch_layout.nb_channels;
     int sub        = mtab->fmode[ftype].sub;
     int block_size = mtab->size / sub;
     float gain[TWINVQ_CHANNELS_MAX * TWINVQ_SUBBLOCKS_MAX];
@@ -536,7 +538,7 @@ static av_cold int init_mdct_win(TwinVQContext *tctx)
     const TwinVQModeTab *mtab = tctx->mtab;
     int size_s = mtab->size / mtab->fmode[TWINVQ_FT_SHORT].sub;
     int size_m = mtab->size / mtab->fmode[TWINVQ_FT_MEDIUM].sub;
-    int channels = tctx->avctx->channels;
+    int channels = tctx->avctx->ch_layout.nb_channels;
     float norm = channels == 1 ? 2.0 : 1.0;
     int table_size = 2 * mtab->size * channels;
 
@@ -645,10 +647,10 @@ static av_cold void construct_perm_table(TwinVQContext *tctx,
     int16_t *tmp_perm = (int16_t *)tctx->tmp_buf;
 
     if (ftype == TWINVQ_FT_PPC) {
-        size       = tctx->avctx->channels;
+        size       = tctx->avctx->ch_layout.nb_channels;
         block_size = mtab->ppc_shape_len;
     } else {
-        size       = tctx->avctx->channels * mtab->fmode[ftype].sub;
+        size       = tctx->avctx->ch_layout.nb_channels * mtab->fmode[ftype].sub;
         block_size = mtab->size / mtab->fmode[ftype].sub;
     }
 
@@ -666,7 +668,7 @@ static av_cold void construct_perm_table(TwinVQContext *tctx,
 static av_cold void init_bitstream_params(TwinVQContext *tctx)
 {
     const TwinVQModeTab *mtab = tctx->mtab;
-    int n_ch                  = tctx->avctx->channels;
+    int n_ch                  = tctx->avctx->ch_layout.nb_channels;
     int total_fr_bits         = tctx->avctx->bit_rate * mtab->size /
                                 tctx->avctx->sample_rate;
 
