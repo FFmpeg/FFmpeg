@@ -35,40 +35,40 @@ static int video_frame_count = 0;
 
 static int decode_packet(const AVPacket *pkt)
 {
-        int ret = avcodec_send_packet(video_dec_ctx, pkt);
-        if (ret < 0) {
-            fprintf(stderr, "Error while sending a packet to the decoder: %s\n", av_err2str(ret));
+    int ret = avcodec_send_packet(video_dec_ctx, pkt);
+    if (ret < 0) {
+        fprintf(stderr, "Error while sending a packet to the decoder: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    while (ret >= 0)  {
+        ret = avcodec_receive_frame(video_dec_ctx, frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break;
+        } else if (ret < 0) {
+            fprintf(stderr, "Error while receiving a frame from the decoder: %s\n", av_err2str(ret));
             return ret;
         }
 
-        while (ret >= 0)  {
-            ret = avcodec_receive_frame(video_dec_ctx, frame);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-                break;
-            } else if (ret < 0) {
-                fprintf(stderr, "Error while receiving a frame from the decoder: %s\n", av_err2str(ret));
-                return ret;
-            }
+        if (ret >= 0) {
+            int i;
+            AVFrameSideData *sd;
 
-            if (ret >= 0) {
-                int i;
-                AVFrameSideData *sd;
-
-                video_frame_count++;
-                sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-                if (sd) {
-                    const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
-                    for (i = 0; i < sd->size / sizeof(*mvs); i++) {
-                        const AVMotionVector *mv = &mvs[i];
-                        printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64"\n",
-                            video_frame_count, mv->source,
-                            mv->w, mv->h, mv->src_x, mv->src_y,
-                            mv->dst_x, mv->dst_y, mv->flags);
-                    }
+            video_frame_count++;
+            sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+            if (sd) {
+                const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
+                for (i = 0; i < sd->size / sizeof(*mvs); i++) {
+                    const AVMotionVector *mv = &mvs[i];
+                    printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64"\n",
+                        video_frame_count, mv->source,
+                        mv->w, mv->h, mv->src_x, mv->src_y,
+                        mv->dst_x, mv->dst_y, mv->flags);
                 }
-                av_frame_unref(frame);
             }
+            av_frame_unref(frame);
         }
+    }
 
     return 0;
 }
