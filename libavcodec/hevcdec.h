@@ -596,6 +596,11 @@ typedef struct HEVCContext {
     uint32_t max_mastering_luminance;
     uint32_t min_mastering_luminance;
 
+    /* content light level */
+    int sei_content_light_present;
+    uint16_t max_content_light_level;
+    uint16_t max_pic_average_light_level;
+
 } HEVCContext;
 
 int ff_hevc_decode_nal_sei(HEVCContext *s);

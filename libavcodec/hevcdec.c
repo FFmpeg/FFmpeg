@@ -2644,6 +2644,24 @@ static int set_side_data(HEVCContext *s)
                "min_luminance=%f, max_luminance=%f\n",
                av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
     }
+    // Decrement the mastering display flag when IRAP frame has no_rasl_output_flag=1
+    // so the side data persists for the entire coded video sequence.
+    if (s->sei_content_light_present > 0 &&
+        IS_IRAP(s) && s->no_rasl_output_flag) {
+        s->sei_content_light_present--;
+    }
+    if (s->sei_content_light_present) {
+        AVContentLightMetadata *metadata =
+            av_content_light_metadata_create_side_data(out);
+        if (!metadata)
+            return AVERROR(ENOMEM);
+        metadata->MaxCLL  = s->max_content_light_level;
+        metadata->MaxFALL = s->max_pic_average_light_level;
+
+        av_log(s->avctx, AV_LOG_DEBUG, "Content Light Level Metadata:\n");
+        av_log(s->avctx, AV_LOG_DEBUG, "MaxCLL=%d, MaxFALL=%d\n",
+               metadata->MaxCLL, metadata->MaxFALL);
+    }
 
     if (s->a53_caption) {
         AVFrameSideData* sd = av_frame_new_side_data(out,

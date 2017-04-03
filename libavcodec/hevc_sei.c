@@ -102,6 +102,19 @@ static int decode_nal_sei_mastering_display_info(HEVCContext *s)
     return 0;
 }
 
+static int decode_nal_sei_content_light_info(HEVCContext *s)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    // Max and average light levels
+    s->max_content_light_level     = get_bits_long(gb, 16);
+    s->max_pic_average_light_level = get_bits_long(gb, 16);
+    // As this SEI message comes before the first frame that references it,
+    // initialize the flag to 2 and decrement on IRAP access unit so it
+    // persists for the coded video sequence (e.g., between two IRAPs)
+    s-> sei_content_light_present = 2;
+    return  0;
+}
+
 static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -304,6 +317,8 @@ static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
         }
     case SEI_TYPE_MASTERING_DISPLAY_INFO:
         return decode_nal_sei_mastering_display_info(s);
+    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+        return decode_nal_sei_content_light_info(s);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         active_parameter_sets(s);
         av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);

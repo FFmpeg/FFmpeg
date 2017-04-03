@@ -1584,6 +1584,13 @@ enum AVPacketSideDataType {
      * to the AVSphericalMapping structure.
      */
     AV_PKT_DATA_SPHERICAL,
+
+    /**
+     * Content light level (based on CTA-861.3). This metadata should be
+     * associated with a video stream and containts data in the form of the
+     * AVContentLightMetadata struct.
+     */
+    AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
 };
 
 #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
