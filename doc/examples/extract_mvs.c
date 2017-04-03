@@ -34,39 +34,46 @@ static AVFrame *frame = NULL;
 static AVPacket pkt;
 static int video_frame_count = 0;
 
-static int decode_packet(int *got_frame, int cached)
+static int decode_packet(void)
 {
-    int decoded = pkt.size;
-
-    *got_frame = 0;
-
     if (pkt.stream_index == video_stream_idx) {
-        int ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
+        int ret = avcodec_send_packet(video_dec_ctx, &pkt);
         if (ret < 0) {
-            fprintf(stderr, "Error decoding video frame (%s)\n", av_err2str(ret));
+            fprintf(stderr, "Error while sending a packet to the decoder: %s\n", av_err2str(ret));
             return ret;
         }
 
-        if (*got_frame) {
-            int i;
-            AVFrameSideData *sd;
+        while (ret >= 0)  {
+            ret = avcodec_receive_frame(video_dec_ctx, frame);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                break;
+            } else if (ret < 0) {
+                fprintf(stderr, "Error while receiving a frame from the decoder: %s\n", av_err2str(ret));
+                return ret;
+            }
 
-            video_frame_count++;
-            sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-            if (sd) {
-                const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
-                for (i = 0; i < sd->size / sizeof(*mvs); i++) {
-                    const AVMotionVector *mv = &mvs[i];
-                    printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64"\n",
-                           video_frame_count, mv->source,
-                           mv->w, mv->h, mv->src_x, mv->src_y,
-                           mv->dst_x, mv->dst_y, mv->flags);
+            if (ret >= 0) {
+                int i;
+                AVFrameSideData *sd;
+
+                video_frame_count++;
+                sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+                if (sd) {
+                    const AVMotionVector *mvs = (const AVMotionVector *)sd->data;
+                    for (i = 0; i < sd->size / sizeof(*mvs); i++) {
+                        const AVMotionVector *mv = &mvs[i];
+                        printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%"PRIx64"\n",
+                            video_frame_count, mv->source,
+                            mv->w, mv->h, mv->src_x, mv->src_y,
+                            mv->dst_x, mv->dst_y, mv->flags);
+                    }
                 }
+                av_frame_unref(frame);
             }
         }
     }
 
-    return decoded;
+    return 0;
 }
 
 static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
@@ -116,7 +123,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
 
 int main(int argc, char **argv)
 {
-    int ret = 0, got_frame;
+    int ret = 0;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <video>\n", argv[0]);
@@ -157,28 +164,19 @@ int main(int argc, char **argv)
 
     /* initialize packet, set data to NULL, let the demuxer fill it */
     av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
 
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, &pkt) >= 0) {
-        AVPacket orig_pkt = pkt;
-        do {
-            ret = decode_packet(&got_frame, 0);
-            if (ret < 0)
-                break;
-            pkt.data += ret;
-            pkt.size -= ret;
-        } while (pkt.size > 0);
-        av_packet_unref(&orig_pkt);
+        ret = decode_packet();
+        av_packet_unref(&pkt);
+        if (ret < 0)
+            break;
     }
 
     /* flush cached frames */
     pkt.data = NULL;
     pkt.size = 0;
-    do {
-        decode_packet(&got_frame, 1);
-    } while (got_frame);
+    decode_packet();
 
 end:
     avcodec_free_context(&video_dec_ctx);
