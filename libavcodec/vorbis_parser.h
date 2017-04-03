@@ -32,9 +32,6 @@ typedef struct AVVorbisParseContext AVVorbisParseContext;
 
 /**
  * Allocate and initialize the Vorbis parser using headers in the extradata.
- *
- * @param avctx codec context
- * @param s     Vorbis parser context
  */
 AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
                                            int extradata_size);
