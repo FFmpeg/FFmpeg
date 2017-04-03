@@ -564,10 +564,11 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
         atomic_load_explicit(&progress[field], memory_order_relaxed) >= n)
         return;
 
-    p = f->owner->internal->thread_ctx;
+    p = f->owner[field]->internal->thread_ctx;
 
-    if (f->owner->debug&FF_DEBUG_THREADS)
-        av_log(f->owner, AV_LOG_DEBUG, "%p finished %d field %d\n", progress, n, field);
+    if (f->owner[field]->debug&FF_DEBUG_THREADS)
+        av_log(f->owner[field], AV_LOG_DEBUG,
+               "%p finished %d field %d\n", progress, n, field);
 
     pthread_mutex_lock(&p->progress_mutex);
 
@@ -586,10 +587,11 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
         atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
         return;
 
-    p = f->owner->internal->thread_ctx;
+    p = f->owner[field]->internal->thread_ctx;
 
-    if (f->owner->debug&FF_DEBUG_THREADS)
-        av_log(f->owner, AV_LOG_DEBUG, "thread awaiting %d field %d from %p\n", n, field, progress);
+    if (f->owner[field]->debug&FF_DEBUG_THREADS)
+        av_log(f->owner[field], AV_LOG_DEBUG,
+               "thread awaiting %d field %d from %p\n", n, field, progress);
 
     pthread_mutex_lock(&p->progress_mutex);
     while (atomic_load_explicit(&progress[field], memory_order_relaxed) < n)
@@ -882,7 +884,7 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
     PerThreadContext *p = avctx->internal->thread_ctx;
     int err;
 
-    f->owner = avctx;
+    f->owner[0] = f->owner[1] = avctx;
 
     ff_init_buffer_info(avctx, f->f);
 
@@ -986,7 +988,7 @@ void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
         av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p\n", f);
 
     av_buffer_unref(&f->progress);
-    f->owner    = NULL;
+    f->owner[0] = f->owner[1] = NULL;
 
     if (can_direct_free) {
         av_frame_unref(f->f);
