@@ -2368,7 +2368,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output,
     return err < 0 ? err : ret;
 }
 
-static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eof,
+static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *duration_pts, int eof,
                         int *decode_failed)
 {
     AVFrame *decoded_frame;
@@ -2459,6 +2459,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int eo
     ist->hwaccel_retrieved_pix_fmt = decoded_frame->format;
 
     best_effort_timestamp= decoded_frame->best_effort_timestamp;
+    *duration_pts = decoded_frame->pkt_duration;
 
     if (ist->framerate.num)
         best_effort_timestamp = ist->cfr_next_pts++;
@@ -2629,6 +2630,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
         int64_t duration_dts = 0;
+        int64_t duration_pts = 0;
         int got_output = 0;
         int decode_failed = 0;
 
@@ -2641,7 +2643,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                                    &decode_failed);
             break;
         case AVMEDIA_TYPE_VIDEO:
-            ret = decode_video    (ist, repeating ? NULL : &avpkt, &got_output, !pkt,
+            ret = decode_video    (ist, repeating ? NULL : &avpkt, &got_output, &duration_pts, !pkt,
                                    &decode_failed);
             if (!repeating || !pkt || got_output) {
                 if (pkt && pkt->duration) {
@@ -2660,7 +2662,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
             }
 
             if (got_output)
-                ist->next_pts += duration_dts; //FIXME the duration is not correct in some cases
+                ist->next_pts += av_rescale_q(duration_pts, ist->st->time_base, AV_TIME_BASE_Q);
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             if (repeating)
